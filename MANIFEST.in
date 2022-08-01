@@ -10,33 +10,10 @@ include RELEASE_NOTES
 include CITATION
 include CONTRIBUTING.md
 
+# Why is this needed but other compiled code is picked up automatically?
+include sherpa/astro/xspec/src/_xspec.cc
+
 recursive-include helpers *.py
-
-# Header files
-recursive-include sherpa/include *.hh
-
-# Test files
-recursive-include sherpa test_*.py
-include sherpa/tests/*
-include sherpa/astro/datastack/tests/*
-include sherpa/astro/datastack/tests/data/*
-
-# XSPEC module sources
-include sherpa/astro/xspec/src/*.cc
-
-# Region module sources
-include sherpa/astro/utils/src/_region.cc
-
-# WCS module sources
-include sherpa/astro/utils/src/_wcs.cc
-
-# Sherpa optmethods test includes
-include sherpa/optmethods/tests/tstoptfct.hh
-include sherpa/optmethods/tests/tstopt.hh
-
-# Sherpa configuration files
-include sherpa/sherpa.rc
-include sherpa/sherpa-standalone.rc
 
 # HTML/notebook representation
 recursive-include sherpa/static *
@@ -49,7 +26,7 @@ recursive-include docs *
 
 # Quick Start Tutorial
 include notebooks/nbmapping.dat
-include notebooks/SherpaQuickStart.ipynb
+include notebooks/*.ipynb
 
 include sherpa/_version.py
 

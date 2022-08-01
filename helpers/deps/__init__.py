@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2016, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,34 +19,73 @@
 #
 
 
-from subprocess import call
+from contextlib import contextmanager
 from multiprocessing import cpu_count
 import os
+from subprocess import call
 import sys
 
-def clean_deps():
-    prefix = os.getcwd()
-    os.chdir('extern')
-    call(['make', 'uninstall'])
-    call(['make', 'distclean'])
+
+@contextmanager
+def in_dir(cwd):
+    """Run the context in the given directory, which is assumed to exist."""
+
+    owd = os.getcwd()
+    os.chdir(cwd)
     try:
-        os.remove('built')
-    except:
-        pass
-    os.chdir(prefix)
+        yield
+
+    finally:
+        os.chdir(owd)
+
+
+def make(command, opts=None, check=False):
+    """Call make with the given command and possible options."""
+
+    args = ["make"]
+    if opts is not None:
+        args.extend(opts)
+
+    args.append(command)
+    rval = call(args)
+    if check and rval != 0:
+        sys.exit(1)
+
+
+def clean_deps():
+    """Ensure the dependencies are cleaned"""
+
+    with in_dir("extern"):
+        make("uninstall")
+        make("distclean")
+        try:
+            os.remove('built')
+        except:
+            pass
+
 
 def build_deps(configure):
-    if not os.path.exists('extern/built'):
-        prefix=os.getcwd()
-        os.chdir('extern')
+    if os.path.exists('extern/built'):
+        return
+
+    with in_dir("extern"):
         os.chmod(configure[0], 0o755)
+
         env = os.environ.copy()
         env['PYTHON'] = sys.executable
         out = call(configure, env=env)
-        if out != 0: exit(out)
-    #    cflags = '-fPIC'
-    #    out = call(['make', 'CFLAGS='+cflags,'-j'+str(cpu_count()+1), 'install'])
-        out = call(['make', '-j'+str(cpu_count()+1), 'install'])
-        if out != 0: exit(out)
+        if out != 0:
+            sys.exit(out)
+
+        counter = cpu_count() + 1
+        # cflags = '-fPIC'
+        opts = [
+            # "CFLAGS={cflags}",
+            f"-j{counter}"
+        ]
+        make("install", opts, check=True)
+
+        # Create the built file to indicate the dependecies have been
+        # created.
+        #
         open('built', 'w').close()
-        os.chdir(prefix)

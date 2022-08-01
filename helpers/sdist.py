@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2014, 2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2014, 2016, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,31 +19,21 @@
 #
 
 
+# It looks like setuptools sdist is currently incomplete, see
+# https://github.com/numpy/numpy/pull/7131
+# but the replacement test suggests using distutils,
+# which has an add_defaults method.
+#
+# from setuptools.command.sdist import sdist as _sdist
+# from numpy.distutils.command.sdist import sdist as _sdist
 from distutils.command.sdist import sdist as _sdist
-from numpy.distutils.misc_util import get_data_files
 from .deps import clean_deps
+
 
 class sdist(_sdist):
 
-    def add_defaults(self):
-        _sdist.add_defaults(self)
-
-        dist = self.distribution
-
-        if dist.has_data_files():
-            for data in dist.data_files:
-                self.filelist.extend(get_data_files(data))
-
-        if dist.has_headers():
-            headers = []
-            for h in dist.headers:
-                if isinstance(h,str): headers.append(h)
-                else: headers.append(h[1])
-            self.filelist.extend(headers)
-
-        return
-
     def run(self):
         clean_deps()
+        # There is no build_configure step for xspec_config
         self.get_finalized_command('sherpa_config', True).build_configure()
-        _sdist.run(self)
+        super().run()

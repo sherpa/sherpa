@@ -107,6 +107,9 @@ from sherpa.utils import SherpaFloat, guess_amplitude, param_apply_limits, bool_
 from sherpa.utils.err import ParameterErr
 from sherpa.astro.utils import get_xspec_position
 
+# Note that utils also imports _xspec so it will error out if it is
+# not available.
+#
 from .utils import ModelMeta, version_at_least, equal_or_greater_than
 from . import _xspec
 

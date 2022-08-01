@@ -37,11 +37,11 @@ class PyTest(test):
     user_options = [('pytest-args=', 'a', "Arguments to pass to py.test")]
 
     def initialize_options(self):
-        test.initialize_options(self)
+        super().initialize_options()
         self.pytest_args = []
 
     def finalize_options(self):
-        test.finalize_options(self)
+        super().finalize_options()
         self.test_args = []
         self.test_suite = True
         if not self.pytest_args:

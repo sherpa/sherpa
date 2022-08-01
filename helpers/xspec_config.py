@@ -18,10 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from distutils.cmd import Command
+from setuptools import Command
 import re
 
-from .extensions import build_ext, build_lib_arrays
+from .extensions import build_ext
 
 # What versions of XSPEC do we support? I am not sure what the
 # naming of the XSPEC components are, but let's stick with
@@ -117,36 +117,10 @@ class xspec_config(Command):
         pass
 
     def run(self):
-        package = 'sherpa.astro.xspec'
-        dist_packages = self.distribution.packages
-        dist_data = self.distribution.package_data
-
         if not self.with_xspec:
-            if package in dist_packages:
-                dist_packages.remove(package)
-            if package in dist_data:
-                del dist_data[package]
-
             return
 
-        if package not in dist_packages:
-            dist_packages.append(package)
-
-        if package not in dist_data:
-            dist_data[package] = ['tests/test_*.py']
-
-        ld1, inc1, l1 = build_lib_arrays(self, 'xspec')
-        ld2, inc2, l2 = build_lib_arrays(self, 'cfitsio')
-        ld3, inc3, l3 = build_lib_arrays(self, 'ccfits')
-        ld4, inc4, l4 = build_lib_arrays(self, 'wcslib')
-        ld5, inc5, l5 = build_lib_arrays(self, 'gfortran')
-
-        ld = clean(ld1 + ld2 + ld3 + ld4 + ld5)
-        inc = clean(inc1 + inc2 + inc3 + inc4 + inc5)
-        l = clean(l1 + l2 + l3 + l4 + l5)
-
         macros = []
-
         if self.xspec_version:
             self.announce(f"Found XSPEC version: {self.xspec_version}", 2)
             xspec_version = get_version(self.xspec_version)
@@ -162,6 +136,6 @@ class xspec_config(Command):
             if xspec_version > MAX_VERSION:
                 self.warn(f"XSPEC Version is greater than {MAX_VERSION}, which is the latest supported version for Sherpa")
 
-        extension = build_ext('xspec', ld, inc, l, define_macros=macros)
-
+        extension = build_ext(self, 'xspec', 'xspec', 'cfitsio', 'ccfits',
+                              'wcslib', 'gfortran', define_macros=macros)
         self.distribution.ext_modules.append(extension)

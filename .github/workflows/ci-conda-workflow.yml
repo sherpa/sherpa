@@ -139,7 +139,7 @@ jobs:
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
-        python setup.py ${{ matrix.install-type }}
+        pip install . --verbose
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
@@ -148,7 +148,7 @@ jobs:
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
-        python setup.py ${{ matrix.install-type }}
+        pip install -e . --verbose
 
     - name: Install the test data?
       if: matrix.test-data == 'package'

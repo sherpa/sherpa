@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021, 2022
+# Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021, 2022
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -18,39 +18,36 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import os
 import sys
 
-# python_requires will stop pip, but also let users who are using
-# 'python setup.py develop'.
+# Ideally we would rely on the configuration in setup.cfg to avoid
+# this situation, but as we may have users who still use old systems
+# add an error message. As Sherpa releases occur the minimum-supported
+# Python version is going to increase (beyond 3.7) but it is not really
+# worth spending a lot of time on the error message here.
+#
+# This is done before we load in any non-core modules to avoid people
+# installing software that they can not use.
 #
 if sys.version_info < (3, 7):
     sys.stderr.write("Sherpa 4.14 (and later) requires Python 3.7 or later.\n\n")
     sys.stderr.write("Please use Sherpa 4.13.1 if you need to use Python 3.6\n")
     sys.exit(1)
 
-try:
-    import setuptools
-except:
-    print((
-        "WARNING\n"
-        "Could not import setuptools.\n"
-        "This might lead to an incomplete installation\n"
-    ), file=sys.stderr)
-
-# The module used to try to find the numpy module and error out if
-# that could not be found, but it seems simpler to just error out
-# here.
+# We need to import setuptools so that 'python setup.py develop'
+# works, but it isn't needed for 'pip install .'. Is this still true?
+# I am leaving in as I can imagine it might require a newer setuptools
+# than we currently support.
 #
-try:
-    from numpy.distutils import core
+import setuptools
+from numpy.distutils.core import setup
 
-except ImportError:
-    print((
-        "You need to install NUMPY in order to build Sherpa\n"
-        "Other dependencies will be automatically installed\n"
-        "Please install NUMPY (e.g. pip install numpy) and try again."
-    ), file=sys.stderr)
-    sys.exit(2)
+# How do we use local modules like helpers? This is a hack based on
+# discussions around
+# https://github.com/python-versioneer/python-versioneer/issues/193
+#
+sys.path.append(os.path.dirname(__file__))
 
 from helpers import commands as sherpa_commands
 from helpers.extensions import static_ext_modules
@@ -59,85 +56,9 @@ import versioneer
 
 commands = versioneer.get_cmdclass(sherpa_commands)
 
-meta = dict(name='sherpa',
-            version=versioneer.get_version(),
-            author='Smithsonian Astrophysical Observatory / Chandra X-Ray Center',
-            author_email='cxchelp@head.cfa.harvard.edu',
-            url='http://cxc.harvard.edu/sherpa/',
-            description='Modeling and fitting package for scientific data analysis',
-            license='GNU GPL v3',
-            long_description=open('README.md', 'rt').read(),
-            long_description_content_type='text/markdown',
-            platforms='Linux, Mac OS X',
-            python_requires='~=3.7',
-            install_requires=['numpy'],
-            tests_require=['pytest-xvfb', 'pytest>=5.0,!=5.2.3'],
-            packages=['sherpa',
-                      'sherpa.estmethods',
-                      'sherpa.image',
-                      'sherpa.models',
-                      'sherpa.optmethods',
-                      'sherpa.plot',
-                      'sherpa.sim',
-                      'sherpa.stats',
-                      'sherpa.ui',
-                      'sherpa.utils',
-                      'sherpa.astro',
-                      'sherpa.astro.datastack',
-                      'sherpa.astro.io',
-                      'sherpa.astro.models',
-                      'sherpa.astro.optical',
-                      'sherpa.astro.sim',
-                      'sherpa.astro.ui',
-                      'sherpa.astro.utils',
-                      'sherpa.astro.xspec',
-                      ],
-            package_data={# Ordered to match 'find sherpa -name tests | sort'
-                          'sherpa.astro.datastack': ['tests/data/*', 'tests/*.py'],
-                          'sherpa.astro.io': ['tests/test_*.py'],
-                          'sherpa.astro.models': ['tests/test_*.py'],
-                          'sherpa.astro.optical': ['tests/test_*.py'],
-                          'sherpa.astro.sim': ['tests/test_*.py'],
-                          'sherpa.astro': ['tests/test_*.py'],
-                          'sherpa.astro.ui': ['tests/data/*', 'tests/test_*.py'],
-                          'sherpa.astro.utils': ['tests/test_*.py'],
-                          'sherpa.astro.xspec': ['tests/test_*.py'],
-                          'sherpa.estmethods': ['tests/test_*.py'],
-                          'sherpa.image': ['tests/test_*.py'],
-                          'sherpa.models': ['tests/test_*.py'],
-                          'sherpa.optmethods': ['tests/*.hh', 'tests/_tstoptfct.cc', 'tests/test_*.py'],
-                          'sherpa.plot': ['tests/test_*.py'],
-                          'sherpa.sim': ['tests/test_*.py'],
-                          'sherpa.stats': ['tests/test_*.py'],
-                          'sherpa': ['include/sherpa/*.hh',
-                                     'include/sherpa/astro/*.hh',
-                                     'tests/*',
-                                     'static/css/*'],
-                          'sherpa.ui': ['tests/test_*.py'],
-                          'sherpa.utils': ['tests/test_*.py'],
-                          },
-            data_files=[('sherpa',
-                         ['sherpa/sherpa.rc', 'sherpa/sherpa-standalone.rc']), ],
+meta = dict(version=versioneer.get_version(),
             ext_modules=static_ext_modules,
-            cmdclass=commands,
-            entry_points={
-                'console_scripts': [
-                    'sherpa_test = sherpa:clitest',
-                    'sherpa_smoke = sherpa:_smoke_cli',
-                ]
-            },
-            classifiers=[
-                'Intended Audience :: Science/Research',
-                'License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)',
-                'Programming Language :: C',
-                'Programming Language :: Python :: 3.7',
-                'Programming Language :: Python :: 3.8',
-                'Programming Language :: Python :: 3.9',
-                'Programming Language :: Python :: 3.10',
-                'Programming Language :: Python :: Implementation :: CPython',
-                'Topic :: Scientific/Engineering :: Astronomy',
-                'Topic :: Scientific/Engineering :: Physics'
-                ],
+            cmdclass=commands
             )
 
-core.setup(**meta)
+setup(**meta)

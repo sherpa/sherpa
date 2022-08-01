@@ -19,14 +19,15 @@
 #
 
 
-from .extensions import build_ext, build_lib_arrays
-from .deps import build_deps
-
-from distutils.cmd import Command
+from setuptools import Command
 import os
 import sys
 
-version = '{}.{}'.format(sys.version_info[0], sys.version_info[1])
+from .extensions import build_ext
+from .deps import build_deps
+
+version = f'{sys.version_info[0]}.{sys.version_info[1]}'
+
 
 class sherpa_config(Command):
     description = "Configure Sherpa build options. If in doubt, ignore this command and stick to defaults. See setup.cfg for more information."
@@ -54,39 +55,43 @@ class sherpa_config(Command):
                     ]
 
     def initialize_options(self):
-        self.install_dir=os.getcwd()+'/build'
-        self.fftw=None
-        self.fftw_include_dirs=None
-        self.fftw_lib_dirs=None
-        self.fftw_libraries='fftw3'
-        self.region=None
-        self.region_include_dirs=None
-        self.region_lib_dirs=None
-        self.region_libraries='region'
+        self.install_dir = os.path.join(os.getcwd(), 'build')
+        self.fftw = None
+        self.fftw_include_dirs = None
+        self.fftw_lib_dirs = None
+        self.fftw_libraries = 'fftw3'
+        self.region = None
+        self.region_include_dirs = None
+        self.region_lib_dirs = None
+        self.region_libraries = 'region'
         self.region_use_cxc_parser = False
-        self.wcs=None
-        self.wcs_include_dirs=None
-        self.wcs_lib_dirs=None
-        self.wcs_libraries='wcssubs'
-        self.group_location=None
-        self.disable_group=False
-        self.configure='--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib'
-        self.group_cflags=None
-        self.stk_location=None
-        self.disable_stk=False
+        self.wcs = None
+        self.wcs_include_dirs = None
+        self.wcs_lib_dirs = None
+        self.wcs_libraries = 'wcssubs'
+        self.group_location = None
+        self.disable_group = False
+        self.configure = '--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib'
+        self.group_cflags = None
+        self.stk_location = None
+        self.disable_stk = False
 
     def finalize_options(self):
+        incdir = os.path.join(self.install_dir, 'include')
+        libdir = os.path.join(self.install_dir, 'lib')
+        pydir = os.path.join(libdir, f'python{version}', 'site-packages')
+
         if self.fftw_include_dirs is None:
-            self.fftw_include_dirs=self.install_dir+'/include'
+            self.fftw_include_dirs = incdir
 
         if self.fftw_lib_dirs is None:
-            self.fftw_lib_dirs=self.install_dir+'/lib'
+            self.fftw_lib_dirs = libdir
 
         if self.region_include_dirs is None:
-            self.region_include_dirs=self.install_dir+'/include'
+            self.region_include_dirs = incdir
 
         if self.region_lib_dirs is None:
-            self.region_lib_dirs=self.install_dir+'/lib'
+            self.region_lib_dirs = libdir
 
         # It is not clear that the other boolean options work
         # correctly when set to False/false.
@@ -95,33 +100,32 @@ class sherpa_config(Command):
             self.region_use_cxc_parser = self.region_use_cxc_parser.lower() == "true"
 
         if self.wcs_include_dirs is None:
-            self.wcs_include_dirs=self.install_dir+'/include'
+            self.wcs_include_dirs = incdir
 
         if self.wcs_lib_dirs is None:
-            self.wcs_lib_dirs=self.install_dir+'/lib'
+            self.wcs_lib_dirs = libdir
 
         if self.group_location is None:
-            self.group_location = '{}/lib/python{}/site-packages/{}'.format(self.install_dir, version, 'group.so')
+            self.group_location = os.path.join(pydir, 'group.so')
 
         if self.stk_location is None:
-            self.stk_location = '{}/lib/python{}/site-packages/{}'.format(self.install_dir, version, 'stk.so')
+            self.stk_location = os.path.join(pydir, 'stk.so')
 
     def build_configure(self):
-        configure = ['./configure', '--prefix='+self.install_dir, '--with-pic', '--enable-standalone']
-        if self.group_cflags is not None:
-            configure.append('GROUP_CFLAGS="'+self.group_cflags+'"')
-        if self.configure != 'None':
-            configure.extend(self.configure.split(' '))
-        if self.fftw != 'local':
-            configure.append('--enable-fftw')
 
-        self.distribution.ext_modules.append(build_ext('psf', *build_lib_arrays(self, 'fftw')))
-        self.distribution.ext_modules.append(build_ext('wcs', *build_lib_arrays(self, 'wcs')))
-        ld1, inc1, l1 = build_lib_arrays(self, 'wcs')
-        if self.region != 'local':
-            configure.append('--enable-region')
-        ld2, inc2, l2 = build_lib_arrays(self, 'region')
-        ld, inc, l = (ld1+ld2, inc1+inc2, l1+l2)
+        # The sherpa[-standalone].rc files used to be installed with
+        # the options.data_files option, but this is deprecated. In
+        # moving the files into options.package_data it turns out
+        # that the data_files element has been removed. So this is
+        # a simple way to allow the code below still to work, but it
+        # is not ideal as the suggestion is that data_files is going
+        # to go away, and the way we use it below is only to install
+        # the stack and group "modules" outside any namespace, which
+        # is something we want to fix:
+        # https://github.com/sherpa/sherpa/issues/50
+        #
+        if self.distribution.data_files is None:
+            self.distribution.data_files = []
 
         # can we find ascdm.h (if so we can support FITS region files as long
         # as the other settings are set up to include ascdm)?
@@ -130,22 +134,39 @@ class sherpa_config(Command):
         if self.region_use_cxc_parser:
             region_macros = [("USE_CXCDM_PARSER", None)]
 
-        self.distribution.ext_modules.append(build_ext('region', ld, inc, l,
-                                                       define_macros=region_macros))
+        psfext = build_ext(self, 'psf', 'fftw')
+        wcsext = build_ext(self, 'wcs')
+        regext = build_ext(self, 'region', define_macros=region_macros)
+        self.distribution.ext_modules.append(psfext)
+        self.distribution.ext_modules.append(wcsext)
+        self.distribution.ext_modules.append(regext)
+
+        configure = ['./configure', '--prefix=' + self.install_dir,
+                     '--with-pic', '--enable-standalone']
+
+        if self.group_cflags is not None:
+            configure.append(f'GROUP_CFLAGS="{self.group_cflags}"')
+        if self.configure != 'None':
+            configure.extend(self.configure.split(' '))
+        if self.fftw != 'local':
+            configure.append('--enable-fftw')
+        if self.region != 'local':
+            configure.append('--enable-region')
 
         if not self.disable_group:
             configure.append('--enable-group')
-            self.distribution.data_files.append(('', [self.group_location,]))
+            self.distribution.data_files.append(('',
+                                                 [self.group_location, ]))
 
         if not self.disable_stk:
             configure.append('--enable-stk')
-            self.distribution.data_files.append(('', [self.stk_location,]))
+            self.distribution.data_files.append(('',
+                                                 [self.stk_location, ]))
 
         if self.wcs != 'local':
             configure.append('--enable-wcs')
 
-        self.warn('built configure string' + str(configure))
-
+        self.warn(f'built configure string {configure}')
         return configure
 
     def run(self):
