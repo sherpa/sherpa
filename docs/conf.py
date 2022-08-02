@@ -288,6 +288,8 @@ release = sherpa_release
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
+# Changed in Sphinx 5 to complain if set to None.
+#
 language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
