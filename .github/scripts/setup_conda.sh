@@ -46,7 +46,7 @@ fi
 echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}"
 
 # Create and activate conda build environment
-conda create --yes -n build python=${PYTHONVER} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
+conda create --yes -n build python=${PYTHONVER} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers} pyqt=5.9.2
 
 conda activate build
 
