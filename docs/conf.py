@@ -59,17 +59,6 @@ class Mock(BaseMock):
         return BaseMock()
 
 
-class PylabMock(Mock):
-    """Provide defaults for pybab.errorbar"""
-
-    # The pylab backend inspects the errorbar function to extract the
-    # ecolor, capsize, and barsabove settings. So this will need to
-    # be kept up-to-date with pylab.errorbar.
-    #
-    def errorbar(self, ecolor=None, capsize=None, barsabove=False):
-        pass
-
-
 class XSPECMock(Mock):
     """Need to override get_xsversion to return a "useful" string"""
 
@@ -78,12 +67,13 @@ class XSPECMock(Mock):
         return "999.999.999"
 
 
-# It's not clear if pylab is needed here. At present non of the
-# CIAO-related modules (e.g. the crates I/O backend) are mocked;
-# should they be?
+# At present non of the CIAO-related modules (e.g. the crates I/O
+# backend) are mocked; should they be? We do not currently include
+# the I/O backend modules in the documentation, but we do include
+# the plot backends.
 #
 sys.modules['astropy.io.fits'] = Mock()
-sys.modules['pylab'] = PylabMock()
+sys.modules['matplotlib'] = Mock()
 
 # This list was found by trying to import various Sherpa modules, adding
 # in mocks as necessary, and repeating. Some of these may be unnescessary.
@@ -306,6 +296,8 @@ release = sherpa_release
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
+# Changed in Sphinx 5 to complain if set to None.
+#
 language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
