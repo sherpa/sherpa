@@ -16,7 +16,8 @@ else
 
     # install build dependencies
     sudo apt-get update
-    sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev
+    sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev x11-utils
+    echo $DISPLAY
 
     # set os-specific variables
     ds9_os=ubuntu18
