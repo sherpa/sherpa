@@ -36,7 +36,7 @@ conda config --add channels ${sherpa_channel}
 if [ -n "${XSPECVER}" ]; then conda config --add channels ${xspec_channel}; fi
 
 # Figure out requested dependencies
-if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
+if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER} pyqt=5.9.2"; fi
 if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
 # Xspec >=12.10.1n Conda package includes wcslib & CCfits and pulls in cfitsio & fftw
 if [ -n "${XSPECVER}" ];
@@ -46,7 +46,7 @@ fi
 echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}"
 
 # Create and activate conda build environment
-conda create --yes -n build python=${PYTHONVER} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers} pyqt=5.9.2
+conda create --yes -n build python=${PYTHONVER} pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
 
 conda activate build
 
