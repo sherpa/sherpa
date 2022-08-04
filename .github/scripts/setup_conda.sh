@@ -15,6 +15,13 @@ if [ "`uname -s`" == "Darwin" ] ; then
 else
     miniconda_os=Linux
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
+
+    if [ -n "${MATPLOTLIBVER}" ]; then
+        #Installed for qt-main deps which is needed for the QtAgg backend to work for matplotlib
+        #This is only an issue on stripped down systems. You can check for this issue by: 
+        #  ldd $CONDA_PREFIX/plugins/platforms/libqxcb.so | grep "not found"
+        sudo apt-get install -q libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
+   fi
 fi
 
 # Download and install conda
