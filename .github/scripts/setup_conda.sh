@@ -36,9 +36,12 @@ conda config --add channels ${sherpa_channel}
 if [ -n "${XSPECVER}" ]; then conda config --add channels ${xspec_channel}; fi
 
 # Figure out requested dependencies
-if [ -n "${MATPLOTLIBVER}" ]; then 
+if [ -n "${MATPLOTLIBVER}" ]; then
   MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"
-  sudo apt-get install libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
+  #Installed for qt-main deps which is needed for the QtAgg backend to work for matplotlib
+  #This is only an issue on stripped down systems. You can check for this issue by: 
+  #  ldd $CONDA_PREFIX/plugins/platforms/libqxcb.so | grep "not found"
+  sudo apt-get install -q libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
 fi
 if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
 # Xspec >=12.10.1n Conda package includes wcslib & CCfits and pulls in cfitsio & fftw
