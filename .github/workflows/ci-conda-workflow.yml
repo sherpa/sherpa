@@ -1,6 +1,12 @@
 name: Conda CI
 
-on: [push, pull_request]
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - '*'
+  pull_request:
 
 env:
   sherpa_channel: sherpa
@@ -19,49 +25,49 @@ jobs:
     strategy:
       matrix:
         include:
-#          - name: MacOS Full Build
-#            os: macos-latest
-#            python-version: "3.8"
-#            install-type: develop
-#            fits: astropy
-#            test-data: submodule
-#            matplotlib-version: 3
-#            xspec-version: 12.10.1s
-#            # run xvfb with this display
-#            display: :99
-#
-#          - name: Linux Minimum Setup (Python 3.8)
-#            os: ubuntu-latest
-#            python-version: "3.8"
-#            numpy-version: 1.18
-#            install-type: develop
-#            test-data: none
-#
-#          - name: Linux Minimum Setup (Python 3.10)
-#            os: ubuntu-latest
-#            python-version: "3.10"
-#            numpy-version: 1.21
-#            install-type: develop
-#            test-data: none
-#
-#          - name: Linux Full Build (Python 3.9)
-#            os: ubuntu-latest
-#            python-version: "3.9"
-#            install-type: develop
-#            fits: astropy
-#            test-data: submodule
-#            matplotlib-version: 3
-#            xspec-version: 12.12.1
-#
-#          - name: Linux Full Build (Python 3.8)
-#            os: ubuntu-latest
-#            python-version: "3.8"
-#            install-type: develop
-#            fits: astropy
-#            test-data: submodule
-#            matplotlib-version: 3
-#            xspec-version: 12.11.1
-#
+          - name: MacOS Full Build
+            os: macos-latest
+            python-version: "3.8"
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            xspec-version: 12.10.1s
+            # run xvfb with this display
+            display: :99
+
+          - name: Linux Minimum Setup (Python 3.8)
+            os: ubuntu-latest
+            python-version: "3.8"
+            numpy-version: 1.18
+            install-type: develop
+            test-data: none
+
+          - name: Linux Minimum Setup (Python 3.10)
+            os: ubuntu-latest
+            python-version: "3.10"
+            numpy-version: 1.21
+            install-type: develop
+            test-data: none
+
+          - name: Linux Full Build (Python 3.9)
+            os: ubuntu-latest
+            python-version: "3.9"
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            xspec-version: 12.12.1
+
+          - name: Linux Full Build (Python 3.8)
+            os: ubuntu-latest
+            python-version: "3.8"
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            xspec-version: 12.11.1
+
           - name: Linux Full Build (Python 3.7)
             os: ubuntu-latest
             python-version: "3.7"
@@ -71,21 +77,21 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             xspec-version: 12.10.1s
-#
-#          - name: Linux Build (w/o Astropy or Xspec)
-#            os: ubuntu-latest
-#            python-version: "3.9"
-#            install-type: install
-#            test-data: package
-#            matplotlib-version: 3
-#
-#          - name: Linux Build (w/o Matplotlib, Xspec, or test data)
-#            os: ubuntu-latest
-#            python-version: "3.7"
-#            numpy-version: 1.18
-#            install-type: develop
-#            fits: astropy
-#            test-data: none
+
+          - name: Linux Build (w/o Astropy or Xspec)
+            os: ubuntu-latest
+            python-version: "3.9"
+            install-type: install
+            test-data: package
+            matplotlib-version: 3
+
+          - name: Linux Build (w/o Matplotlib, Xspec, or test data)
+            os: ubuntu-latest
+            python-version: "3.7"
+            numpy-version: 1.18
+            install-type: develop
+            fits: astropy
+            test-data: none
 
     steps:
     - name: Checkout Code
@@ -198,9 +204,6 @@ jobs:
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
-        echo "ldd $CONDA_PREFIX/plugins/platforms/libqxcb.so | grep 'xcb'"
-        ldd $CONDA_PREFIX/plugins/platforms/libqxcb.so | grep "xcb"
-        echo "Done"
         python setup.py -q test -a "--cov sherpa --cov-report xml"
 
     - name: sherpa_test Tests
