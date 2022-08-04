@@ -11,7 +11,7 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI arch')))
 
     strategy:
