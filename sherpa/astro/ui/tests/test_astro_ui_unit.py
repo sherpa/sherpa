@@ -1912,8 +1912,13 @@ def test_image_filter_coord_change_same(make_data_path, clean_astro_ui, caplog):
     assert ui.get_filter("foo") == ""
 
     ui.set_coord("foo", "physical")
-    ui.notice2d_id("foo", "rect(4000, 4200, 4100 , 4300 ) ")
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.notice2d_id("foo", "rect(4000, 4200, 4100 , 4300 ) ")
+
     assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+    assert len(caplog.records) == 1
 
     # Is there no way to get the mask data via the UI interface,
     # without calling save_filter?
@@ -1928,7 +1933,12 @@ def test_image_filter_coord_change_same(make_data_path, clean_astro_ui, caplog):
     assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
     assert d.mask.sum() == expected
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "foo: Field() -> Rectangle(4000,4200,4100,4300)"
 
 
 @requires_fits
@@ -1953,24 +1963,33 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui, caplog):
     # test_image_filter_coord_change_same_negate we re-run some
     # of the tests.
     #
-    ui.notice2d_id(["foo"], "rect(4000, 4200, 4100 , 4300 ) ")
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.notice2d_id(["foo"], "rect(4000, 4200, 4100 , 4300 ) ")
+
     assert ui.get_filter("foo") == "Rectangle(4000,4200,4100,4300)"
+    assert len(caplog.records) == 1
 
     expected = 2500
     d = ui.get_data("foo")
     assert d.mask.sum() == expected
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.set_coord("foo", "logical")
 
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 2
 
     # The region filter has been removed
     assert ui.get_filter("foo") == ""
     assert d.mask is True
 
     r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "foo: Field() -> Rectangle(4000,4200,4100,4300)"
+
+    r = caplog.record_tuples[1]
     assert r[0] == "sherpa.astro.data"
     assert r[1] == logging.WARN
     assert r[2].startswith("Region filter has been removed from '")
@@ -1986,8 +2005,12 @@ def test_image_filter_coord_change_same_negate(make_data_path, clean_astro_ui, c
     ui.load_image("foo", make_data_path("image2.fits"))
 
     ui.set_coord("foo", "physical")
-    ui.ignore2d_id("foo", "rect(4000, 4200, 4100 , 4300 ) ")
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.ignore2d_id("foo", "rect(4000, 4200, 4100 , 4300 ) ")
+
     assert ui.get_filter("foo") == "Field()&!Rectangle(4000,4200,4100,4300)"
+    assert len(caplog.records) == 1
 
     # The image has 56376 pixels and we know from
     # test_image_filter_coord_change that that filter selects 2500
@@ -2004,7 +2027,12 @@ def test_image_filter_coord_change_same_negate(make_data_path, clean_astro_ui, c
     assert ui.get_filter("foo") == "Field()&!Rectangle(4000,4200,4100,4300)"
     assert d.mask.sum() == expected
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "foo: Field() -> Field()&!Rectangle(4000,4200,4100,4300)"
 
 
 @requires_fits
@@ -2025,23 +2053,32 @@ def test_image_filter_coord_change_negate(make_data_path, clean_astro_ui, caplog
     # test_image_filter_coord_change_same_negate we re-run some
     # of the tests.
     #
-    ui.ignore2d_id(["foo"], "rect(4000, 4200, 4100 , 4300 ) ")
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.ignore2d_id(["foo"], "rect(4000, 4200, 4100 , 4300 ) ")
+
+    assert len(caplog.records) == 1
     assert ui.get_filter("foo") == "Field()&!Rectangle(4000,4200,4100,4300)"
 
     expected = 56376 - 2500
     d = ui.get_data("foo")
     assert d.mask.sum() == expected
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.set_coord("foo", "logical")
 
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 2
 
     assert ui.get_filter("foo") == ""
     assert d.mask is True
 
     r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "foo: Field() -> Field()&!Rectangle(4000,4200,4100,4300)"
+
+    r = caplog.record_tuples[1]
     assert r[0] == "sherpa.astro.data"
     assert r[1] == logging.WARN
     assert r[2].startswith("Region filter has been removed from '")

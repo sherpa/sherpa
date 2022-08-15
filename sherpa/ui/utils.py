@@ -36,7 +36,7 @@ from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, ModelErr, PlotErr, SessionErr
+    DataErr, IdentifierErr, ModelErr, PlotErr, SessionErr
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -88,8 +88,6 @@ def _is_subclass(t1, t2):
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
 
-
-
 def get_plot_prefs(plotobj):
     """Return the preferences for the plot object.
 
@@ -108,6 +106,94 @@ def get_plot_prefs(plotobj):
             return plotobj.plot_prefs
         except AttributeError:
             raise AttributeError("plot object has no preferences") from None
+
+
+def _get_filter(data):
+    """Report the filter for report_filter_change.
+
+    This takes care of calling get_filter with the correct
+    arguments (needed in case anyone wants to use the string
+    in a call to notice/ignore), and it handles the case of
+    the case of all-data-being-filtered leading to an error
+    for certain data types.
+    """
+
+    try:
+        return data.get_filter(delim=':', format='%g')
+    except DataErr as exc:
+        if str(exc) == "mask excludes all data":
+            return ""
+
+        # Is it worth handling this possibility?
+        raise exc
+
+
+def report_filter_change(idval, ofilter, nfilter,
+                         xlabel, bkg_id=None):
+    """Report the filter change for ignore/filter.
+
+    Parameters
+    ----------
+    idval : int or str
+       The dataset identifier
+    ofilter, nfilter : str
+       The filter string before and after filtering (the output
+       of _get_filter).
+    xlabel : str or None
+       The units of the filter (if set).
+    bkg_id : int or None
+       The background identifier (PHA data only).
+
+    Notes
+    -----
+
+    We technically don't require the delim=':', format='%g' arguments
+    to the get_filter call, but I list them so we have consistent
+    code. Ideally this would be encapsulated in the Data class, so we
+    let the object define the best arguments to use, but it's not
+    guaranteed to work well so we are trynig this explicit approach.
+
+    A filter expression of "" (the empty string) is taken to mean all
+    data has been removed, and converted to something more readable
+    here.
+
+    """
+
+    ostr = f"{idval}:"
+    if bkg_id is not None:
+        ostr += f"{bkg_id}:"
+
+    ostr += " "
+
+    # Make it easy to handle labels being optional
+    if xlabel is None:
+        label = ""
+    else:
+        label = f" {xlabel}"
+
+    # We have to be careful because we can get a filter expression
+    # of '' when there's no data. The current handling of this case
+    # is not robust (sometimes it errors out, sometimes it is an
+    # empty string).
+    #
+    if ofilter == "":
+        if nfilter == "":
+            ostr += "no data (unchanged)"
+
+        else:
+            ostr += f"no data -> {nfilter}{label}"
+
+    elif nfilter == "":
+        ostr += f"{ofilter}{label} -> no data"
+
+    else:
+        ostr += f"{ofilter}"
+        if ofilter == nfilter:
+            ostr += f" {xlabel} (unchanged)"
+        else:
+            ostr += f" -> {nfilter}{label}"
+
+    info(ostr)
 
 
 ###############################################################################
@@ -5001,10 +5087,34 @@ class Session(NoNewAttributesAfterInit):
         """
         if len(self._data) == 0:
             raise IdentifierErr("nodatasets")
+
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr(lo, **kwargs)
-        for d in self._data.values():
-            d.notice(lo, hi, **kwargs)
+
+        # Jump through the data sets in "order".
+        #
+        # The bkg_id argument is astro-specific. The need
+        # to use it to access the correct data object is
+        # problematic.
+        #
+        try:
+            bkg_id = kwargs["bkg_id"]
+            del kwargs["bkg_id"]  # important to remove
+        except KeyError:
+            bkg_id = None
+
+        for idval in self.list_data_ids():
+
+            data = self.get_data(idval)
+            if bkg_id is not None:
+                data = data.get_background(bkg_id)
+
+            ofilter = _get_filter(data)
+            data.notice(lo, hi, **kwargs)
+            nfilter = _get_filter(data)
+
+            report_filter_change(idval, ofilter, nfilter,
+                                 data.get_xlabel(), bkg_id=bkg_id)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
     # should only be in the sherpa.astro.ui version, but it is not
@@ -5186,8 +5296,31 @@ class Session(NoNewAttributesAfterInit):
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr_id(ids, lo, **kwargs)
 
-        for i in ids:
-            self.get_data(i).notice(lo, hi, **kwargs)
+        # Unlike notice() we do not sort the id list as this
+        # was set by the user.
+        #
+        # The bkg_id argument is astro-specific. The need
+        # to use it to access the correct data object is
+        # problematic.
+        #
+        try:
+            bkg_id = kwargs["bkg_id"]
+            del kwargs["bkg_id"]  # important to remove
+        except KeyError:
+            bkg_id = None
+
+        for idval in ids:
+
+            data = self.get_data(idval)
+            if bkg_id is not None:
+                data = data.get_background(bkg_id)
+
+            ofilter = _get_filter(data)
+            data.notice(lo, hi, **kwargs)
+            nfilter = _get_filter(data)
+
+            report_filter_change(idval, ofilter, nfilter,
+                                 data.get_xlabel(), bkg_id=bkg_id)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
     # should only be in the sherpa.astro.ui version, but it is not

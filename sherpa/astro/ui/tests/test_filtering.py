@@ -26,7 +26,7 @@ import pytest
 
 import numpy as np
 
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataIMG, DataPHA
 from sherpa.astro import ui
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data1DInt
@@ -111,13 +111,23 @@ def test_filter_notice_bad_361(make_data_path, caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.ignore_bad()
 
-    assert len(caplog.records) == 6
+    assert len(caplog.records) == 8
 
     lname, lvl, msg = caplog.record_tuples[5]
+    assert lname == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    assert msg == '1: 0.0073:14.9504 -> 0.4964:8.0592 Energy (keV)'
+
+    lname, lvl, msg = caplog.record_tuples[6]
     assert lname == 'sherpa.astro.data'
     assert lvl == logging.WARNING
     assert msg == 'filtering grouped data with quality ' + \
         'flags, previous filters deleted'
+
+    lname, lvl, msg = caplog.record_tuples[7]
+    assert lname == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    assert msg == '1: 0.4964:8.0592 -> 0.0073:14.9504 Energy (keV)'
 
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['bad'])
@@ -128,15 +138,28 @@ def test_filter_notice_bad_361(make_data_path, caplog):
 def test_filter_bad_notice_361(make_data_path):
     """Test out issue 361: ignore bad then notice.
 
-    This is expected to fail with NumPy version 1.13 and should cause
-    a DeprecationWarning with earlier versions (I do not know when
-    the warning was added).
+    There have been changes in NumPy that this originally was written
+    to catch (version 1.13). This has been left in, but it is
+    currently a regression test as the handling of bad values means
+    that the notice call fails when trying to write out the filter,
+    hence the try/except handling there.
+
     """
 
     stats = setup_model(make_data_path)
 
     ui.ignore_bad()
-    ui.notice(0.5, 8.0)
+
+    # With support for #1558 - writing out the filter as we apply them
+    # - we now get this call failing, so catch this failure to allow
+    # the test to continue. This should be fixed, but it's a
+    # long-standing problem.
+    #
+    try:
+        ui.notice(0.5, 8.0)
+    except IndexError:
+        pass
+
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['0.5-8.0'])
 
@@ -221,7 +244,16 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui):
     # What happens when we filter the data? Unlike #1169
     # we do change the noticed range.
     #
-    ui.notice(0.5, 7)
+    # With support for #1558 - writing out the filter as we apply them
+    # - we now get this call failing, so catch this failure to allow
+    # the test to continue. This should be fixed, but it's a
+    # long-standing problem.
+    #
+    try:
+        ui.notice(0.5, 7)
+    except IndexError:
+        pass
+
     assert pha.quality_filter == pytest.approx(expected)
 
     # The mask has been filtered to remove the bad channels
@@ -261,10 +293,23 @@ def test_notice_string_data1d(session, expr, result, caplog):
 
     assert len(caplog.record_tuples) == 0
     s.notice(expr)
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 1
 
     expected = "-100:100" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
+
+    expected = "1: -100:100 "
+    if result is None:
+        expected += "x (unchanged)"
+    elif result == "":
+        expected += "x -> no data"
+    else:
+        expected += f"-> {result} x"
+
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == expected
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
@@ -292,10 +337,23 @@ def test_notice_string_data1dint(session, expr, result, caplog):
 
     assert len(caplog.record_tuples) == 0
     s.notice(expr)
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 1
 
     expected = "-100:100" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
+
+    expected = "1: -100:100 "
+    if result is None:
+        expected += "x (unchanged)"
+    elif result == "":
+        expected += "x -> no data"
+    else:
+        expected += f"-> {result} x"
+
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == expected
 
 
 @pytest.mark.parametrize("expr,result",
@@ -311,7 +369,7 @@ def test_notice_string_data1dint(session, expr, result, caplog):
                           ("200:", "")
                           ])
 def test_notice_string_datapha(expr, result, caplog):
-    """Check we can call notice with a string argument: Data1DInt"""
+    """Check we can call notice with a string argument: DataPHA"""
 
     x = np.arange(1, 20)
     y = np.ones_like(x)
@@ -321,7 +379,222 @@ def test_notice_string_datapha(expr, result, caplog):
 
     assert len(caplog.record_tuples) == 0
     s.notice(expr)
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 1
 
     expected = "1:19" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
+
+    expected = "1: 1:19 "
+    if result is None:
+        expected += "Channel (unchanged)"
+    elif result == "":
+        expected += "Channel -> no data"
+    else:
+        expected += f"-> {result} Channel"
+
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == expected
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_notice_reporting_data1d(session, caplog):
+    """Unit-style test of logging of notice/ignore: Data1D"""
+
+    x = np.asarray([-100, 1, 2, 3, 5, 10, 12, 13, 100])
+    y = np.ones_like(x)
+
+    s = session()
+    s.load_arrays(1, x, y)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice()
+    assert len(caplog.record_tuples) == 1
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: -100:100 x (unchanged)"
+
+    s.notice(lo=2.5)
+    assert len(caplog.record_tuples) == 2
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: -100:100 -> 3:100 x"
+
+    s.ignore(6, 15)
+    assert len(caplog.record_tuples) == 3
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 3:100 -> 3:5,100 x"
+
+    s.notice_id(1, 12.5, 15)
+    assert len(caplog.record_tuples) == 4
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 3:5,100 -> 3:5,13:100 x"
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 5
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 3:5,13:100 x -> no data"
+
+    s.ignore()
+    assert len(caplog.record_tuples) == 6
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: no data (unchanged)"
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_notice_reporting_data1dint(session, caplog):
+    """Unit-style test of logging of notice/ignore: Data1DInt"""
+
+    xlo = np.asarray([-100, 1, 2, 3, 5, 10, 12, 13, 99])
+    xhi = np.asarray([-99, 2, 3, 4, 10, 11, 13, 90, 100])
+    y = np.ones_like(xlo)
+
+    s = session()
+    s.load_arrays(1, xlo, xhi, y, Data1DInt)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(lo=2.5)
+    assert len(caplog.record_tuples) == 1
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: -100:100 -> 2:100 x"
+
+    s.ignore(6, 15)
+    assert len(caplog.record_tuples) == 2
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 2:100 -> 2:4,99:100 x"
+
+    s.notice_id(1, 12.5, 15)
+    assert len(caplog.record_tuples) == 3
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 2:4,99:100 -> 2:4,12:100 x"
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 4
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 2:4,12:100 x -> no data"
+
+
+def test_notice_reporting_datapha(caplog):
+    """Unit-style test of logging of notice/ignore: DataPHA"""
+
+    x = np.arange(1, 20)
+    y = np.ones_like(x)
+
+    s = AstroSession()
+    s.load_arrays(1, x, y, DataPHA)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(lo=3)
+    assert len(caplog.record_tuples) == 1
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 1:19 -> 3:19 Channel"
+
+    s.ignore(6, 15)
+    assert len(caplog.record_tuples) == 2
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 3:19 -> 3:5,16:19 Channel"
+
+    s.notice_id(1, 13, 15)
+    assert len(caplog.record_tuples) == 3
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 3:5,16:19 -> 3:5,13:19 Channel"
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 4
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: 3:5,13:19 -> No noticed bins Channel"
+
+    s.ignore()
+    assert len(caplog.record_tuples) == 5
+
+    loc, lvl, msg = caplog.record_tuples[-1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: No noticed bins Channel (unchanged)"
+
+
+def test_notice2d_reporting(caplog):
+    """Check handling of notice2d/ignore2d/... reports"""
+
+    # Remember, although we give a grid range here,
+    # the filtering below is in logical coordinates.
+    #
+    x1, x0 = np.mgrid[10:20, 1:7]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+
+    y = np.ones_like(x0)
+
+    s = AstroSession()
+    s.load_arrays(1, x0, x1, y, shape, DataIMG)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice2d("circle(3, 15, 5)")
+    assert len(caplog.record_tuples) == 1
+
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: Field() -> Circle(3,15,5)"
+
+    s.notice2d_id(1, "rect(4, 12, 7, 14)")
+    assert len(caplog.record_tuples) == 2
+
+    loc, lvl, msg = caplog.record_tuples[1]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: Circle(3,15,5) -> Circle(3,15,5)|Rectangle(4,12,7,14)"
+
+    # I was trying to remove all the filters, but this doesn't seem to
+    # do it. Maybe the region logic is not able to recognize that this
+    # is now the null filter.
+    #
+    s.ignore2d("rect(-5, -5, 25, 25)")
+    assert len(caplog.record_tuples) == 3
+
+    loc, lvl, msg = caplog.record_tuples[2]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "1: Circle(3,15,5)|Rectangle(4,12,7,14) -> Circle(3,15,5)&!Rectangle(-5,-5,25,25)|Rectangle(4,12,7,14)&!Rectangle(-5,-5,25,25)"

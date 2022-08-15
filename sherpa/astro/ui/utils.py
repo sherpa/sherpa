@@ -50,6 +50,28 @@ info = logging.getLogger(__name__).info
 __all__ = ('Session',)
 
 
+def _get_image_filter(data):
+    """When reporting filters, we need to handle images separately.
+
+    There is a disconnect between 1D and 2D filters as an empty string
+    means no data has been seected for the former, but all data is
+    selected in the latter. For the logging of the filters this makes
+    things awkward, so we over-ride the image case and replace an mpty
+    string with "Field()".
+
+    Parameters
+    ----------
+    data : sherpa.astro.data.DataIMG instance
+
+    """
+
+    out = data.get_filter()
+    if out == "":
+        return "Field()"
+
+    return out
+
+
 class Session(sherpa.ui.utils.Session):
 
     ###########################################################################
@@ -6709,10 +6731,19 @@ class Session(sherpa.ui.utils.Session):
         '0.001460000058:14.950400352478'
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
+        idval = self._fix_id(id)
+        if bkg_id is None:
+            data = self._get_pha_data(idval)
+        else:
+            data = self.get_bkg(idval, bkg_id)
+
+        ofilter = data.get_filter(delim=':', format='%g')
         data.ignore_bad()
+        nfilter = data.get_filter(delim=':', format='%g')
+
+        sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
+                                             data.get_xlabel(),
+                                             bkg_id=bkg_id)
 
     def _notice_warning(self):
         quantities = numpy.asarray([data.get_analysis()
@@ -6875,10 +6906,20 @@ class Session(sherpa.ui.utils.Session):
         >>> notice2d()
 
         """
-        for d in self._data.values():
+
+        # Use a sorted list for the ids.
+        #
+        for idval in self.list_data_ids():
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
                         'a image data set')
+
+            ofilter = _get_image_filter(d)
             d.notice2d(val, False)
+            nfilter = _get_image_filter(d)
+            sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
+                                                 xlabel=None)
 
     def ignore2d(self, val=None):
         """Exclude a spatial region from all data sets.
@@ -6929,10 +6970,24 @@ class Session(sherpa.ui.utils.Session):
         >>> ignore2d()
 
         """
-        for d in self._data.values():
+
+        # It would be good to copy notice and just let notice2d
+        # handle this case, but we do not have a kwargs or
+        # explicit argument that supports this.
+        #
+        # Use a sorted list for the ids.
+        #
+        for idval in self.list_data_ids():
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
                         'a image data set')
+
+            ofilter = _get_image_filter(d)
             d.notice2d(val, True)
+            nfilter = _get_image_filter(d)
+            sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
+                                                 xlabel=None)
 
     def notice2d_id(self, ids, val=None):
         """Include a spatial region of a data set.
@@ -6997,10 +7052,19 @@ class Session(sherpa.ui.utils.Session):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for id in ids:
-            _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
+        # Unlike notice2d we use the order supplied by the user.
+        #
+        for idval in ids:
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
+            _check_type(d, sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
-            self.get_data(id).notice2d(val, False)
+
+            ofilter = _get_image_filter(d)
+            d.notice2d(val, False)
+            nfilter = _get_image_filter(d)
+            sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
+                                                 xlabel=None)
 
     def ignore2d_id(self, ids, val=None):
         """Exclude a spatial region from a data set.
@@ -7048,6 +7112,11 @@ class Session(sherpa.ui.utils.Session):
         >>> ignore2d_id(1, 'region(srcs.reg)')
 
         """
+
+        # It would be good to copy notice and just let notice2d_id
+        # handle this case, but we do not have a kwargs or
+        # explicit argument that supports this.
+        #
         if self._valid_id(ids):
             ids = (ids,)
         else:
@@ -7057,10 +7126,17 @@ class Session(sherpa.ui.utils.Session):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for id in ids:
-            _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
+        for idval in ids:
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
+            _check_type(d, sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
-            self.get_data(id).notice2d(val, True)
+
+            ofilter = _get_image_filter(d)
+            d.notice2d(val, True)
+            nfilter = _get_image_filter(d)
+            sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
+                                                 xlabel=None)
 
     def notice2d_image(self, ids=None):
         """Include pixels using the region defined in the image viewer.
@@ -7115,16 +7191,20 @@ class Session(sherpa.ui.utils.Session):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for id in ids:
-            _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
+        for idval in ids:
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
+            _check_type(d, sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
-            coord = self.get_coord(id)
+
+            coord = d.coord
             if coord == 'logical':
                 coord = 'image'
             elif coord == 'world':
                 coord = 'wcs'
+
             regions = self.image_getregion(coord).replace(';', '')
-            self.notice2d_id(id, regions)
+            self.notice2d_id(idval, regions)
 
     def ignore2d_image(self, ids=None):
         """Exclude pixels using the region defined in the image viewer.
@@ -7168,6 +7248,10 @@ class Session(sherpa.ui.utils.Session):
         >>> ignore2d_image(["src", "bg"])
 
         """
+
+        # It would be better to just be able to call notice2d_image as
+        # we do with ignore/notice.
+        #
         if ids is None:
             ids = self._default_id
         if self._valid_id(ids):
@@ -7179,16 +7263,20 @@ class Session(sherpa.ui.utils.Session):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for id in ids:
-            _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
+        for idval in ids:
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
+            _check_type(d, sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
-            coord = self.get_coord(id)
+
+            coord = d.coord
             if coord == 'logical':
                 coord = 'image'
             elif coord == 'world':
                 coord = 'wcs'
+
             regions = self.image_getregion(coord).replace(';', '')
-            self.ignore2d_id(id, regions)
+            self.ignore2d_id(idval, regions)
 
     # DOC-TODO: how best to include datastack support? How is it handled here?
     def load_bkg(self, id, arg=None, use_errors=False, bkg_id=None):
