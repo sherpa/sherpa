@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +26,11 @@ import pytest
 
 import numpy as np
 
+from sherpa.astro.data import DataPHA
 from sherpa.astro import ui
+from sherpa.astro.ui.utils import Session as AstroSession
+from sherpa.data import Data1DInt
+from sherpa.ui.utils import Session
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -230,3 +235,93 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui):
     expected[0:34] = False
     expected[481:996] = False
     assert pha.get_mask() == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("expr,result",
+                         [("4:13", "5:13"),
+                          (":11", "-100:10"),
+                          ("5:", "5:100"),
+                          (":", None),
+                          (":-100", "-100"),
+                          ("100:", "100"),
+                          ("2", "2"),
+                          ("11", ""),
+                          (":-150", ""),
+                          ("200:", "")
+                          ])
+def test_notice_string_data1d(session, expr, result, caplog):
+    """Check we can call notice with a string argument: Data1D"""
+
+    x = np.asarray([-100, 1, 2, 3, 5, 10, 12, 13, 100])
+    y = np.ones_like(x)
+
+    s = session()
+    s.load_arrays(1, x, y)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(expr)
+    assert len(caplog.record_tuples) == 0
+
+    expected = "-100:100" if result is None else result
+    assert s.get_data().get_filter(format='%d') == expected
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("expr,result",
+                         [("4:13", "5:13"),
+                          (":11", "-100:11"),
+                          ("5:", "5:100"),
+                          (":", None),
+                          (":-100", ""),
+                          ("100:", ""),
+                          ("2", ""),
+                          ("11", ""),
+                          (":-150", ""),
+                          ("200:", "")
+                          ])
+def test_notice_string_data1dint(session, expr, result, caplog):
+    """Check we can call notice with a string argument: Data1DInt"""
+
+    xlo = np.asarray([-100, 1, 2, 3, 5, 10, 12, 13, 99])
+    xhi = np.asarray([-99, 2, 3, 4, 10, 11, 13, 90, 100])
+    y = np.ones_like(xlo)
+
+    s = session()
+    s.load_arrays(1, xlo, xhi, y, Data1DInt)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(expr)
+    assert len(caplog.record_tuples) == 0
+
+    expected = "-100:100" if result is None else result
+    assert s.get_data().get_filter(format='%d') == expected
+
+
+@pytest.mark.parametrize("expr,result",
+                         [("4:13", "4:13"),
+                          (":11", "1:11"),
+                          ("5:", "5:19"),
+                          (":", None),
+                          (":-100", ""),
+                          ("100:", ""),
+                          ("2", "2"),
+                          ("11", "11"),
+                          (":-150", ""),
+                          ("200:", "")
+                          ])
+def test_notice_string_datapha(expr, result, caplog):
+    """Check we can call notice with a string argument: Data1DInt"""
+
+    x = np.arange(1, 20)
+    y = np.ones_like(x)
+
+    s = AstroSession()
+    s.load_arrays(1, x, y, DataPHA)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(expr)
+    assert len(caplog.record_tuples) == 0
+
+    expected = "1:19" if result is None else result
+    assert s.get_data().get_filter(format='%d') == expected
