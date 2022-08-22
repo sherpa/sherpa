@@ -39,14 +39,14 @@ jobs:
           - name: Linux Minimum Setup (Python 3.8)
             os: ubuntu-latest
             python-version: "3.8"
-            numpy-version: 1.18
+            numpy-version: "1.18"
             install-type: develop
             test-data: none
 
           - name: Linux Minimum Setup (Python 3.10)
             os: ubuntu-latest
             python-version: "3.10"
-            numpy-version: 1.21
+            numpy-version: "1.21"
             install-type: develop
             test-data: none
 
@@ -87,7 +87,7 @@ jobs:
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
             python-version: "3.8"
-            numpy-version: 1.20
+            numpy-version: "1.20"
             install-type: develop
             fits: astropy
             test-data: none
