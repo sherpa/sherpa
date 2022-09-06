@@ -96,9 +96,9 @@ Example: new functionality, such as
 
 **Software versions**
 
-Development should use Python 3.7 or later.
+Development should use Python 3.8 or later.
 
-Ideally, NumPy support should be 1.17 or greater, but please include a comment
+Ideally, NumPy support should be 1.20 or greater, but please include a comment
 if you need to restrict (or relax) this further.
 
 Sherpa requires a C compiler, along with related tools, to build. Additional
