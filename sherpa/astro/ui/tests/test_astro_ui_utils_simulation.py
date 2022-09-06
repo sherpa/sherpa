@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021
+#  Copyright (C) 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -190,7 +190,7 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui, reset_seed):
 def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui, reset_seed):
     """Similar to test_fake_pha_basic but instead of passing in
     the RMF, we set it before. The result should be the same, so we
-    don't have ot go through all the parameterization of that test.
+    don't have to go through all the parameterization of that test.
     """
 
     np.random.seed(20348)
@@ -546,3 +546,28 @@ def test_fake_pha_issue_1209(make_data_path, clean_astro_ui, tmp_path):
     ui.set_arf(3, arf)
     ui.set_source(3, pl)
     assert ui.calc_stat(3) == pytest.approx(stat)
+
+@requires_fits
+@requires_data
+def test_fake_pha_issue_1568(make_data_path, clean_astro_ui, tmp_path):
+    """Check issue #1568.
+
+    In some cases, in particular XMM/RGS we only have an RMF, but no ARF.
+    Make sure faking still works.
+    """
+    infile = make_data_path("xmmrgs/P0112880201R1S004RSPMAT1003.FTZ")
+    np.random.seed(22347)
+
+    ui.set_source("gauss1d.g1")
+    g1 = ui.get_source()
+    g1.pos = 2.
+    g1.FWHM = .5
+
+    ui.fake_pha(None, arf=None, rmf=infile, exposure=1000.)
+    data = ui.get_data()
+    # Even with noise, maximum should be close to 3 keV
+    assert np.isclose(data.get_x()[np.argmax(data.counts)], 2., atol=.2)
+
+    # This normalization should generate a good number of counts.
+    assert data.counts.sum() > 5000
+    assert data.counts.sum() < 10000
