@@ -27,7 +27,7 @@ jobs:
         include:
           - name: MacOS Full Build
             os: macos-latest
-            python-version: "3.8"
+            python-version: "3.10"
             install-type: develop
             fits: astropy
             test-data: submodule
