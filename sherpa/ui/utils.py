@@ -6340,7 +6340,7 @@ class Session(NoNewAttributesAfterInit):
                     'a model object or model expression string')
 
         # Fit(data, model) does the dimensionality validation. Note
-        # that we assume that any convolution-style model (e.g.  a PSF
+        # that we assume that any convolution-style model (e.g. a PSF
         # or a PHA response) does not change the dimensionality check.
         #
         id = self._fix_id(id)

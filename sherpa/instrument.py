@@ -968,7 +968,7 @@ they do not match.
         # This has been pulled out of fold so is currently lacking in documentation.
         #
         # To support using any callable, not just a model, we need
-        # to allow the "kernel dimensinoality" to be unknown. The
+        # to allow the "kernel dimensionality" to be unknown. The
         # alternative is to require the kernel to nave a ndim
         # attribute, but there are a number of places the code
         # allows the kernel to not be a model instance (e.g. the

@@ -209,7 +209,7 @@ class IntegratedAxis(Axis):
         then the data axis is said to be empty. The axis can be in
         ascending or descending order.
     hi : array_like or None
-        The ending point of the axis. It must match `lo` (either `None`
+        The ending point of the axis. The number of elements must match `lo` (either `None`
         or a sequence of the same size). Each element is expected to
         be larger than the corresponding element of the `lo` axis,
         even if the `lo` array is in descending order.

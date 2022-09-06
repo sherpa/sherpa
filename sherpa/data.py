@@ -68,7 +68,7 @@ The design for the `Data` class assumes
 
 - `Data` objects can be created with no data, but are fixed once an
   axis - expected to be the independent axis but it need not be - is
-  set (see the `~Data.size` attrinbute). In general the data is
+  set (see the `~Data.size` attribute). In general the data is
   assumed to be set when the object is created.
 
 - there are checks to ensure that the data has the correct size, shape,
@@ -833,7 +833,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def _check_data_space(self, dataspace):
         """Check that the data space has the correct size.
 
-        Note that this also sets the size of the data object if it as
+        Note that this also sets the size of the data object if it has
         not been set.
 
         Parameters
@@ -891,7 +891,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """Set a field that must match the independent axes size.
 
         The value can be None or something with the same length as the
-        independent axis. This is intended to be use from the property
+        independent axis. This is intended to be used from the property
         setter. There is also a check to warn the user if the value
         contains a NumPy masked array which does not match the
         dependent axis.
@@ -1061,7 +1061,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         # This is a low-level check so raise a normal Python error
         # rather than DataErr. Do we want to allow a sequence here,
-        # that is not force a tuple? The concern then is that it gets
+        # that is not forced to be a tuple? The concern then is that it gets
         # harder to distinguish between a user accidentally giving x,
         # where it's an array, rather than (x,), say.
         #

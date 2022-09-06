@@ -876,7 +876,7 @@ class Fit(NoNewAttributesAfterInit):
                  itermethod_opts=None):
 
         # Ensure the data and model match dimensionality. It is
-        # expected that both data and model nave a ndim attribute
+        # expected that both data and model have a ndim attribute
         # but allow them to be missing (e.g. user-defined or
         # loaded from a pickled file before ndim was added).
         #

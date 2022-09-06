@@ -703,7 +703,7 @@ Notes on the design and changes to Sherpa.
 N-dimensional data and models
 -----------------------------
 
-In order to support N-D data sets, models and data objects are
+Models and data objects are
 designed to work with flattened arrays, so a 1D dataset has ``x`` and
 ``y`` for the independent and dependent axes, and a 2D dataset will
 have ``x0``, ``x1``, and ``y`` values, with each value stored as a 1D
@@ -772,7 +772,7 @@ current way that models are checked:
 * as :ref:`descibed below <data_design_ndim>`, the dimensions of
   data and model can be compared.
 
-An alternative approach would have been to introdude 1D and 2D
+An alternative approach would have been to introduce 1D and 2D
 specific classes, from which all models derive, and then require the
 parent classes to match. This was not attempted as it would require
 significantly-larger changes to Sherpa (but this change could still be

@@ -1814,7 +1814,7 @@ must be an integer.""")
 
         The value can be None, a scalar (if allow_scalar is set), or
         something with the same length as the independent axis. This
-        is intended to be use from the property setter.
+        is intended to be used from the property setter.
 
         """
         if val is None:
@@ -1913,7 +1913,7 @@ must be an integer.""")
 
         A group is indicated by a sequence of flag values starting
         with ``1`` and then ``-1`` for all the channels in the group,
-        following [OGIP_92_007]_.  The grouping array match the number of
+        following [OGIP_92_007]_.  The grouping array must match the number of
         channels and it will be converted to an integer type if
         necessary.
 
@@ -1948,7 +1948,7 @@ must be an integer.""")
         A quality value of 0 indicates a good channel, otherwise
         (values >=1) the channel is considered bad and can be excluded
         using the `ignore_bad` method, as discussed in [OGIP_92_007]_. The
-        quality array match the number of channels and it will be
+        quality array must match the number of channels and it will be
         converted to an integer type if necessary.
 
         Returns
