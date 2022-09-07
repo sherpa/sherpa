@@ -8622,14 +8622,15 @@ class Session(sherpa.ui.utils.Session):
         arf : filename or ARF object or list of filenames
            The name of the ARF, or an ARF data object (e.g.  as
            returned by `get_arf` or `unpack_arf`). A list of filenames
-           can be passed in for instruments that require multile ARFs.
+           can be passed in for instruments that require multiple ARFs.
            Set this to `None` to use any arf that is already set for
-           the data set given by id.
+           the data set given by id or for instruments that do not use an
+           ARF separate from the RMF (e.g. XMM-Newton/RGS).
         rmf : filename or RMF object or list of filenames
-           The name of the RMF, or an RMF data object (e.g.  as
-           returned by `get_arf` or `unpack_arf`).  A list of filenames
-           can be passed in for instruments that require multile RMFs.
-           Set this to `None` to use any arf that is already set for
+           The name of the RMF, or an RMF data object (e.g. as
+           returned by `get_rmf` or `unpack_rmf`).  A list of filenames
+           can be passed in for instruments that require multiple RMFs.
+           Set this to `None` to use any rmf that is already set for
            the data set given by id.
         exposure : number
            The exposure time, in seconds.
@@ -8779,8 +8780,13 @@ class Session(sherpa.ui.utils.Session):
         if not (rmf is None and arf is None):
             if numpy.iterable(arf):
                 self.load_multi_arfs(id, arf, range(len(arf)))
+            elif arf is None:
+               # In some cases, arf is None, but rmf is not.
+               # For example, XMM/RGS does uses only a single file (the RMF)
+               # to hold all information.
+               pass
             else:
-                self.set_arf(id, arf)
+               self.set_arf(id, arf)
 
             if numpy.iterable(rmf):
                 self.load_multi_rmfs(id, rmf, range(len(rmf)))
