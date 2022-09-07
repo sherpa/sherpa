@@ -176,13 +176,19 @@ ubuntu20-test:
   before_script:
       - apt-get update && apt-get install -y -q bzip2 curl libxext6 libsm6 libxrender1 less
 
-fedora34-test:
+ubuntu22-test:
   <<: *template-linux-test
-  image: fedora:34
+  image: ubuntu:22.04
+  before_script:
+      - apt-get update && apt-get install -y -q bzip2 curl libxext6 libsm6 libxrender1 less
 
 fedora35-test:
   <<: *template-linux-test
   image: fedora:35
+
+fedora36-test:
+  <<: *template-linux-test
+  image: fedora:36
 
 macos-10.13-test:
   <<: *template-macos-test
