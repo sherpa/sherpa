@@ -566,9 +566,10 @@ def test_fake_pha_issue_1568(make_data_path, clean_astro_ui, reset_seed):
 
     ui.fake_pha(None, arf=None, rmf=infile, exposure=1000.)
     data = ui.get_data()
-    # Even with noise, maximum should be close to 3 keV
-    assert np.isclose(data.get_x()[np.argmax(data.counts)], 2., atol=.2)
 
-    # This normalization should generate a good number of counts.
-    assert data.counts.sum() > 5000
-    assert data.counts.sum() < 10000
+    # The maximum count value should be near 2 keV, thanks to the response,
+    # and there's a reasonable number of counts. With this random seed
+    # we can check the values.
+    #
+    assert data.counts.sum() == 7968
+    assert data.get_x()[np.argmax(data.counts)] == pytest.approx(1.957132)
