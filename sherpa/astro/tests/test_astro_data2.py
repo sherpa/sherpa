@@ -1519,7 +1519,7 @@ def test_pha_analysis_factor_invalid(invalid, make_test_pha):
     assert str(err.value) == f"unknown factor setting: '{invalid}'"
 
 
-def test_pha_get_spectresp_no_response(make_test_pha):
+def test_pha_get_specresp_no_response(make_test_pha):
     pha = make_test_pha
     assert pha.get_specresp() is None
 
@@ -2420,6 +2420,55 @@ def test_pha_apply_filter_check():
     got = data.apply_filter(all_vals, groupfunc=np.sum)
     assert got == pytest.approx(expected)
 
+
+
+@pytest.mark.parametrize("backscal", [0, -2.1e-10, -12])
+def test_datapha_negative_scale_check(backscal):
+    """Check of < 0 condition in DataPHA._check_scale.
+
+    The current test relies on us not restricting the
+    backscal value to > 0. Perhaps we should do that and
+    then we may be able to remove the code being tested
+    in _check_scale.
+    """
+
+    # Create a PHA with no ARF or RMF
+    channels = np.arange(1, 5, dtype=np.int16)
+    counts = np.asarray([10, 5, 12, 7], dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  exposure=10.0, backscal=0.2)
+
+    assert pha.get_backscal() == pytest.approx(0.2)
+
+    pha.backscal = backscal
+    assert pha.get_backscal() == pytest.approx(1.0)
+
+
+def test_datapha_apply_grouping_quality_filter_length_check():
+    """Check we get an error for this case."""
+
+    channels = np.arange(1, 5, dtype=np.int16)
+    counts = np.asarray([10, 5, 12, 7], dtype=np.int16)
+    grouping = np.asarray([1, -1, 1, 1])
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  grouping=grouping)
+
+    assert pha.grouped
+
+    # Manually set the quality_filter field. We do not have any
+    # documentation on what this is or how it's meant to work.
+    #
+    # I think the only way that the code in apply_grouping can
+    # fail is if the quality_filter array is the wrong size.
+    # We may be able to add a check to the attribute to force
+    # this, which would avoid the need for this test and the
+    # code check.
+    #
+    pha.quality_filter = np.asarray([1, 1, 1, 1, 1], dtype=bool)
+
+    with pytest.raises(DataErr,
+                       match="size mismatch between quality filter and data array"):
+        pha.apply_grouping([1, 2, 3, 4])
 
 
 @requires_fits

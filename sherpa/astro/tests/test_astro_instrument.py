@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,18 +21,9 @@
 """
 Test the instrument-handling code without requiring external
 data files.
-
-TODO:
-
-  - add grouping to the PHA
-  - ARF and RMF can have different grids; I believe this is supported
-  - no testing of the startup/teardown methods; should this be done here?
-  - no testing of the nested models (also not fully tested in the full suite?)
-  - no testing of pileup
-  - no testing of PSFModel (also not fully tested in the full suite?)
-
 """
 
+from dataclasses import dataclass
 import logging
 import warnings
 
@@ -40,16 +32,18 @@ from numpy.testing import assert_allclose
 
 import pytest  # pytest >= 3.0 is needed
 
-from sherpa.models.model import ArithmeticModel, \
-    ArithmeticConstantModel, BinaryOpModel
+from sherpa.astro import hc
+from sherpa.astro.data import DataPHA, DataRMF, DataIMG
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
     RSPModelNoPHA, RSPModelPHA, create_arf, create_delta_rmf, \
     PSFModel, has_pha_response
+from sherpa.data import Data1D
 from sherpa.fit import Fit
-from sherpa.astro.data import DataPHA, DataRMF
-from sherpa.astro import hc
-from sherpa.models.basic import Box1D, Const1D, Gauss1D, Polynom1D, PowLaw1D
+from sherpa.models.basic import Box1D, Const1D, Gauss1D, Polynom1D, \
+    PowLaw1D, TableModel
+from sherpa.models.model import ArithmeticModel, \
+    ArithmeticConstantModel, BinaryOpModel
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
 
@@ -210,6 +204,20 @@ def create_non_delta_specresp():
                       dtype=np.float32)
 
 
+def test_datarmf_get_y():
+    """Just check the y accessor works.
+
+    This is technically a test of sherpa.astro.data code
+    but do it here as it's easier (since we've set up
+    a "complex" RMF anyway).
+    """
+
+    rmf = create_non_delta_rmf()
+    matrix = get_non_delta_matrix()
+    y = matrix[matrix > 0]
+    assert rmf.y == pytest.approx(y)
+
+
 def test_arf1d_empty():
 
     arf = ARF1D(None)
@@ -260,11 +268,9 @@ def test_rsp1d_pha_empty():
     pha = DataPHA('test-pha', channel=channels, counts=counts,
                   exposure=12.2)
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="No instrument response found for dataset test-pha"):
         Response1D(pha)
-
-    emsg = 'No instrument response found for dataset test-pha'
-    assert str(exc.value) == emsg
 
 
 def test_arf1d_no_pha_no_exposure_basic():
@@ -724,11 +730,9 @@ def test_rmfmodelpha_matrix_mismatch(analysis):
                   exposure=exposure)
     pha.set_rmf(rdata)
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="RMF 'non-delta-rmf' is incompatible with PHA dataset 'test-pha'"):
         pha.set_analysis(analysis)
-
-    emsg = "RMF 'non-delta-rmf' is incompatible with PHA dataset 'test-pha'"
-    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("analysis", ["energy", "wave"])
@@ -754,12 +758,10 @@ def test_rsp_normf_error(analysis):
                   exposure=exposure)
     pha.set_arf(adata)
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="response incomplete for dataset test-pha, " +
+                       "check the instrument model"):
         pha.set_analysis(analysis)
-
-    emsg = "response incomplete for dataset test-pha, " + \
-           "check the instrument model"
-    assert str(exc.value) == emsg
 
 
 def test_rsp_norsp_error():
@@ -775,11 +777,9 @@ def test_rsp_norsp_error():
     counts = np.ones(nchans, dtype=np.int16)
     pha = DataPHA('test-pha', channel=channels, counts=counts)
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="No instrument response found for dataset test-pha"):
         Response1D(pha)
-
-    emsg = "No instrument response found for dataset test-pha"
-    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("ignore", [None, 0, 1, 17, 26])
@@ -1376,11 +1376,9 @@ def test_arf1d_no_pha_zero_energy_bin():
     elo = egrid[:-1]
     ehi = egrid[1:]
     specresp = np.asarray([10.2, 9.8, 10.0, 12.0, 8.0, 10.0])
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The ARF 'user-arf' has an ENERG_LO value <= 0"):
         create_arf(elo, ehi, specresp, exposure=exposure)
-
-    emsg = "The ARF 'user-arf' has an ENERG_LO value <= 0"
-    assert str(exc.value) == emsg
 
 
 def test_arf1d_no_pha_zero_energy_bin_replace():
@@ -1471,11 +1469,9 @@ def test_rmf1d_delta_no_pha_zero_energy_bin():
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The RMF 'delta-rmf' has an ENERG_LO value <= 0"):
         create_delta_rmf(elo, ehi, ethresh=ethresh)
-
-    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
-    assert str(exc.value) == emsg
 
 
 def test_rmf1d_delta_no_pha_zero_energy_bin_replace():
@@ -1745,6 +1741,101 @@ def test_psf1d_convolved_pars():
     assert len(cpars) == 6
     for bpar, cpar in zip(bpars, cpars):
         assert cpar == bpar
+
+
+def test_psfmodel_kernel_has_no_dimension():
+    """It is expected that this will error out, but just where.
+
+    It was intended to catch a different error condition but
+    it is hard to trigger without writing very low-level test
+    code, so just check what happens here.
+    """
+
+    x = np.arange(0.5, 10.5, 1)
+    y = np.ones_like(x)
+    data = Data1D("data-data", x, y)
+
+    m = PSFModel(kernel=TableModel())
+    with pytest.raises(TypeError,
+                       match=r"object of type 'NoneType' has no len\(\)"):
+        m.get_kernel(data)
+
+
+def test_psfmodel_fold_check_kernel_no_cdelt_warning(caplog):
+    """Check behavior"""
+
+    # The actual kernel does not matter, but do something that
+    # is vaguely PSF-like.
+    #
+    kx1, kx0 = np.mgrid[1:4, 1:3]
+    kshape = kx0.shape
+    kx0 = kx0.flatten()
+    kx1 = kx1.flatten()
+    ky = 1 / np.abs((kx0 - 0.4) + (kx1 - 1.9))
+    kdata = DataIMG("kernel-data", kx0, kx1, ky, kshape)
+
+    x1, x0 = np.mgrid[-4:5, -5:-4]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.ones_like(x0)
+    data = DataIMG("data-data", x0, x1, y, shape)
+
+    m = PSFModel(kernel=kdata)
+
+    # The message is via a warning, not the logger.
+    #
+    assert len(caplog.records) == 0
+    with pytest.warns(UserWarning,
+                      match="^PSF Image does not have a pixel size. " +
+                      "Sherpa will assume the pixel size is the same as the data$"):
+        m.fold(data)
+
+    assert len(caplog.records) == 0
+
+
+@dataclass
+class FakeWCS:
+    cdelt: float = 1.0
+
+
+def test_psfmodel_fold_check_data_no_cdelt_warning(caplog):
+    """Check behavior"""
+
+    # The actual kernel does not matter, but do something that
+    # is vaguely PSF-like.
+    #
+    kx1, kx0 = np.mgrid[1:4, 1:3]
+    kshape = kx0.shape
+    kx0 = kx0.flatten()
+    kx1 = kx1.flatten()
+    ky = 1 / np.abs((kx0 - 0.4) + (kx1 - 1.9))
+    kdata = DataIMG("kernel-data", kx0, kx1, ky, kshape)
+
+    # For this we just need a kdata.sky.cdelt setting, we do not need
+    # to bother with a full WCS object (at least at present; we could
+    # require it in the future).
+    #
+    kdata.sky = FakeWCS()
+
+    x1, x0 = np.mgrid[-4:5, -5:-4]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.ones_like(x0)
+    data = DataIMG("data-data", x0, x1, y, shape)
+
+    m = PSFModel(kernel=kdata)
+
+    # The message is via a warning, not the logger.
+    #
+    assert len(caplog.records) == 0
+    with pytest.warns(UserWarning,
+                      match="^Data Image does not have a pixel size. " +
+                      "Sherpa will assume the pixel size is the same as the PSF$"):
+        m.fold(data)
+
+    assert len(caplog.records) == 0
 
 
 def test_has_pha_response():

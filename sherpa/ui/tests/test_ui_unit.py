@@ -1131,7 +1131,8 @@ def test_set_error_array_wrong(field, clean_ui):
     assert getfunc() == pytest.approx([1, 2, 3, 4])
 
 
-def test_set_filter_unmasked(clean_ui):
+@pytest.mark.parametrize("ignore", [False, True])
+def test_set_filter_unmasked(ignore, clean_ui):
     """What happens when we call set_filter to an unfiltered dataset?"""
 
     x = np.asarray([10, 20, 30])
@@ -1141,8 +1142,13 @@ def test_set_filter_unmasked(clean_ui):
     data = ui.get_data()
     assert data.mask
 
-    ui.set_filter(np.asarray([True, False, True]))
-    assert data.mask == pytest.approx([True, False, True])
+    if ignore:
+        expected = [False, True, False]
+    else:
+        expected = [True, False, True]
+
+    ui.set_filter(np.asarray([True, False, True]), ignore=ignore)
+    assert data.mask == pytest.approx(expected)
 
 
 def test_set_filter_unmasked_wrong(clean_ui):
@@ -1160,7 +1166,8 @@ def test_set_filter_unmasked_wrong(clean_ui):
     assert str(err.value) == "size mismatch between 3 and 2"
 
 
-def test_set_filter_masked(clean_ui):
+@pytest.mark.parametrize("ignore", [False, True])
+def test_set_filter_masked(ignore, clean_ui):
     """What happens when we call set_filter to a filtered dataset?"""
 
     x = np.asarray([10, 20, 30, 40, 50])
@@ -1172,8 +1179,16 @@ def test_set_filter_masked(clean_ui):
     data = ui.get_data()
     assert data.mask == pytest.approx([True, False, False, False, True])
 
-    ui.set_filter(np.asarray([True, False, True, False, False]))
-    assert data.mask == pytest.approx([True, False, True, False, True])
+    # Unlike test_set_filter_masked the two expected values are not
+    # logical inverses, since we need to consider the existing mask.
+    #
+    if ignore:
+        expected = [False, False, False, False, True]
+    else:
+        expected = [True, False, True, False, True]
+
+    ui.set_filter(np.asarray([True, False, True, False, False]), ignore=ignore)
+    assert data.mask == pytest.approx(expected)
 
 
 def test_set_filter_masked_wrong(clean_ui):

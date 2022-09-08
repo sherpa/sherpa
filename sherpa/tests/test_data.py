@@ -22,8 +22,8 @@ import numpy
 
 import pytest
 
-from sherpa.data import Data, Data1D, DataSimulFit, Data1DInt, Data2D, \
-    Data2DInt, BaseData
+from sherpa.data import Data, Data1D, DataSimulFit, Data1DInt, \
+    Data2D, Data2DInt, BaseData, IntegratedDataSpace2D, Filter
 from sherpa.models import Polynom1D, Polynom2D
 from sherpa.utils.err import NotImplementedErr, DataErr
 from sherpa.ui.utils import Session
@@ -718,6 +718,14 @@ def test_data1d_get_img_yfunc(data):
 def test_data1d_get_imgerr(data):
     expected_error = numpy.sqrt(SYSTEMATIC_ERROR_ARRAY ** 2 + STATISTICAL_ERROR_ARRAY ** 2)
     numpy.testing.assert_array_equal(data.get_imgerr(), [expected_error, ])
+
+
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_imgerr_when_none(data):
+    # Clear out the errors
+    data.syserror = None
+    data.staterror = None
+    assert data.get_imgerr() is None
 
 
 @pytest.mark.parametrize("data", (Data1D, Data1DInt), indirect=True)
@@ -1512,6 +1520,53 @@ def test_data1dint_check_limit(ignore, lo, hi, evals):
     c1, c2, c3 = evals
     expected = [vout] * c1 + [vin] * c2 + [vout] * c3
     assert d.mask == pytest.approx(expected)
+
+
+def test_filter_apply_none():
+    """What happens here?
+
+    This is just to ensure a code path is tested. We might want to
+    understand if we can ever call apply with None in a "normal" use
+    case.
+
+    """
+
+    assert Filter().apply(None) is None
+
+
+def test_data_mask_when_no_elements():
+    """what happens when there's no data?
+
+    This is a regresion test until the code is changed.
+    """
+
+    data = Data1D("x", None, None)
+    assert data.mask is True
+
+    data.mask = [1, 2]
+    assert data.mask == pytest.approx([True, True])
+
+
+def test_data1d_get_y_checks_model_dim():
+    """Check an error message"""
+
+    data = Data1D("x", None, None)
+    mdl = Polynom2D()
+
+    with pytest.raises(TypeError,
+                       match=r"function missing required argument 'x1lo' \(pos 3\)"):
+        data.get_y(yfunc=mdl)
+
+
+def test_ispace2d_mismatch():
+    """There is currently no check for this mis-match.
+
+    This is a regression test.
+    """
+
+    x0 = numpy.arange(10)
+    x1 = numpy.arange(11)
+    IntegratedDataSpace2D(Filter(), x0[:-1], x1[:-1], x0[1:], x1[1:])
 
 
 @pytest.fixture

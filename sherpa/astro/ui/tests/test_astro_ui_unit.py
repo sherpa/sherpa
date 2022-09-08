@@ -2263,6 +2263,42 @@ def simple_pha(clean_astro_ui):
     return 2 * np.asarray([1 + 2 + 3, 4, 5 + 6 + 7, 8, 9])
 
 
+@pytest.fixture
+def background_pha(clean_astro_ui):
+    """A simple PHA dataset with background and response.
+
+    The source and background ARFs are different but the
+    RMF is the same.
+    """
+
+    chans = np.arange(1, 10)
+    counts = chans * 2
+    grouping = np.asarray([1, -1, -1, 1, 1, -1, -1, 1, 1])
+    data = ui.DataPHA('x', chans, counts, grouping=grouping)
+    data.grouping = grouping
+    assert data.grouped
+
+    bkg = ui.DataPHA('y', chans, np.ones_like(chans))
+
+    ui.set_data(data)
+    ui.set_bkg(bkg)
+    ui.set_stat("chi2datavar")
+
+    egrid = np.arange(1, 11) * 0.1
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    ui.set_rmf(rmf)
+    ui.set_rmf(rmf, bkg_id=1)
+
+    sarf = create_arf(elo, ehi, np.ones_like(elo) * 0.8)
+    barf = create_arf(elo, ehi, np.ones_like(elo) * 0.4)
+
+    ui.set_arf(sarf)
+    ui.set_arf(barf, bkg_id=1)
+
+
 def test_pha_set_dep_none(simple_pha):
     """What happens if set_dep is called with None?"""
 
@@ -2476,6 +2512,18 @@ def test_pha_set_filter_masked_wrong(simple_pha):
     assert str(err.value) == "size mismatch between 5 and 2"
 
 
+def test_pha_get_specresp_src(background_pha):
+
+    arf = np.ones(9) * 0.8
+    assert ui.get_specresp() == pytest.approx(arf)
+
+
+def test_pha_get_specresp_bkg(background_pha):
+
+    arf = np.ones(9) * 0.4
+    assert ui.get_specresp(bkg_id=1) == pytest.approx(arf)
+
+
 def test_get_arf_not_pha(clean_astro_ui):
     ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
     ui.load_arrays(2, [1, 2], [1, 2])
@@ -2497,3 +2545,116 @@ def test_get_order_not_pha(clean_astro_ui):
     with pytest.raises(ArgumentErr,
                        match="data set 2 does not contain PHA data"):
         ui.get_order_plot(2)
+
+
+@pytest.mark.parametrize("label", ["area", "back"])
+def test_set_xxxscal_no_data(label, clean_astro_ui):
+    """What happens when the dataset does not exist?"""
+
+    func = getattr(ui, f"get_{label}scal")
+
+    with pytest.raises(IdentifierErr,
+                       match="data set 1 has not been set"):
+        func()
+
+
+@pytest.mark.parametrize("label", ["area", "back"])
+def test_set_xxxscal_no_data_id(label, clean_astro_ui):
+    """What happens when the dataset does not exist?"""
+
+    func = getattr(ui, f"get_{label}scal")
+
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    with pytest.raises(IdentifierErr,
+                       match="data set 2 has not been set"):
+        func(2)
+
+
+@pytest.mark.parametrize("label", ["area", "back"])
+def test_set_xxxscal_can_be_none(label, clean_astro_ui):
+    """What happens when xxxscal is not set?
+
+    This is a regression test. We may decide to handle this
+    differently in the future.
+
+    """
+    func = getattr(ui, f"get_{label}scal")
+
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    assert func() is None
+
+
+@pytest.mark.parametrize("label", ["area", "back"])
+def test_set_xxxscal_invalid(label, clean_astro_ui):
+    """What happens when xxxscal is obviously wrong?
+
+    At the moment there's no check, so it is allowed.
+    """
+    getfunc = getattr(ui, f"get_{label}scal")
+    setfunc = getattr(ui, f"set_{label}scal")
+
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    setfunc(0)
+    assert getfunc() == pytest.approx(0)
+
+
+@pytest.mark.parametrize("label", ["area", "back"])
+def test_set_xxxscal_integer(label, clean_astro_ui):
+    """What happens when xxxscal is set to an integer?"""
+    getfunc = getattr(ui, f"get_{label}scal")
+    setfunc = getattr(ui, f"set_{label}scal")
+
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    setfunc(12)
+    got = getfunc()
+    assert got == pytest.approx(12)
+    assert isinstance(got, np.float64)
+
+
+@pytest.mark.parametrize("label", ["area", "back"])
+def test_set_xxxscal_float(label, clean_astro_ui):
+    """What happens when xxxscal is set to a float?"""
+    getfunc = getattr(ui, f"get_{label}scal")
+    setfunc = getattr(ui, f"set_{label}scal")
+
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    setfunc(1.2e-3)
+    got = getfunc()
+    assert got == pytest.approx(1.2e-3)
+    assert isinstance(got, np.float64)
+
+
+@pytest.mark.parametrize("label", ["area", "back"])
+def test_set_xxxscal_bkg(label, clean_astro_ui):
+    getfunc = getattr(ui, f"get_{label}scal")
+    setfunc = getattr(ui, f"set_{label}scal")
+
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+    bkg = ui.DataPHA("bkg", [1, 2], [1, 2])
+    ui.set_bkg(bkg)
+
+    setfunc(1.2e-2)
+    setfunc(2.4e-2, bkg_id=1)
+    got1 = getfunc()
+    got2 = getfunc(bkg_id=1)
+
+    assert got2 / got1 == pytest.approx(2)
+    assert got2 == pytest.approx(2.4e-2)
+
+
+@pytest.mark.parametrize("label", ["area", "back"])
+def test_set_xxxscal_id(label, clean_astro_ui):
+    getfunc = getattr(ui, f"get_{label}scal")
+    setfunc = getattr(ui, f"set_{label}scal")
+
+    ui.load_arrays("foo", [1, 2], [1, 2], ui.DataPHA)
+    bkg = ui.DataPHA("bkg", [1, 2], [1, 2])
+    ui.set_bkg("foo", bkg)
+
+    setfunc("foo", 1.2e-2)
+    setfunc("foo", 2.4e-2, bkg_id=1)
+    got1 = getfunc("foo")
+    got2 = getfunc("foo", bkg_id=1)
+
+    assert got2 / got1 == pytest.approx(2)
+    assert got2 == pytest.approx(2.4e-2)

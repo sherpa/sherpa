@@ -1103,3 +1103,21 @@ def test_interp_method_is_callable():
         rmdl.method = True
 
     assert str(exc.value) == "method argument 'True' is not callable"
+
+
+@pytest.mark.xfail
+def test_evaluationspace1d_zeros_like_empty():
+
+    # This fails with the following AttribteError error:
+    # 'NoneType' object has no attribute 'size'
+    assert EvaluationSpace1D().zeros_like() == pytest.approx([])
+
+
+def test_evaluationspace1d_zeros_like_point():
+
+    assert EvaluationSpace1D([3, 2, -1]).zeros_like() == pytest.approx([0, 0, 0])
+
+
+def test_evaluationspace1d_zeros_like_integrated():
+
+    assert EvaluationSpace1D([3, 2, -1], [2, 1, -3]).zeros_like() == pytest.approx([0, 0, 0])
