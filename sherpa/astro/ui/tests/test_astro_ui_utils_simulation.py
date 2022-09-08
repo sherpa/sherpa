@@ -547,9 +547,10 @@ def test_fake_pha_issue_1209(make_data_path, clean_astro_ui, tmp_path):
     ui.set_source(3, pl)
     assert ui.calc_stat(3) == pytest.approx(stat)
 
+
 @requires_fits
 @requires_data
-def test_fake_pha_issue_1568(make_data_path, clean_astro_ui, tmp_path):
+def test_fake_pha_issue_1568(make_data_path, clean_astro_ui, reset_seed):
     """Check issue #1568.
 
     In some cases, in particular XMM/RGS we only have an RMF, but no ARF.
