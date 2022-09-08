@@ -3896,8 +3896,8 @@ def test_set_plot_opt_explicit(cls):
                          [sherpa.ui.utils.Session, sherpa.astro.ui.utils.Session])
 @pytest.mark.parametrize("name,extraargs",
                          [("data", []), ("model", []), ("source", []),
-                          ("model_component", ["mdl"]),
-                          ("source_component", ["mdl"])
+                          ("model_component", ["m1"]),
+                          ("source_component", ["m1"])
                           ])
 def test_set_plot_opt_changes_fields(cls, name, extraargs):
     """Does "all" change all the type-specific plots?
