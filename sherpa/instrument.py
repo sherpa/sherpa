@@ -559,6 +559,7 @@ class PSFModel(Model):
         try:
             self.ndim = getattr(kernel, "ndim")
         except AttributeError:
+            # It's hard to trigger this case so we have no test coverage.
             self.ndim = None
 
         clear_fields()
@@ -669,11 +670,16 @@ they do not match.
 
         """
 
+        # This is tricky to trigger (in fact, the only existing uses
+        # of this code does not set the model to None), so we do not
+        # add a test.
+        #
         if model is None:
             self._model = None
             return
 
-        # Is this worthwhile
+        # Is this worthwhile, e.g.:
+        # It's hard to trigger this case so we have no test coverage.
         if self.ndim is not None and self.ndim != model.ndim:
             raise PSFErr(f"Dimension of model do not match the kernel: {model.ndim}D and {self.ndim}D")
 
@@ -771,10 +777,10 @@ they do not match.
                   "origin": self.origin
                   }
 
-        # This validates the dimensionality of data.
-        #
-        # TODO: can we remove the ndim checks in the code below? I am
-        # not convinced yet, so leave them in.
+        # This validates the dimensionality of data. We can probably
+        # remove the ndim checks below because of this, but I am not
+        # convinced yet, so leave them in. This means that several
+        # error conditions do not have test coverage.
         #
         (args, dshape) = self._create_spaces(data)
         kwargs['args'] = args
@@ -788,7 +794,6 @@ they do not match.
             if nkernel != data.ndim:
                 raise PSFErr("mismatch_dims", self.kernel.name,
                              data.name, nkernel, data.ndim)
-
 
             if self.center is None:
                 self.center = [int(dim / 2.) for dim in kshape]
@@ -989,7 +994,8 @@ they do not match.
             elif self.ndim == 2:
                 self.data_space = EvaluationSpace2D(*indep)
             else:
-                # leave in in case we support higher dimensions
+                # leave in in case we support higher dimensions or one
+                # of the rare dimensionless models is in use.
                 raise PSFErr("ndim")
 
             self._must_rebin = False

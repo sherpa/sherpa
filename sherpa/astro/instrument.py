@@ -1229,6 +1229,7 @@ class PSFModel(_PSFModel):
             return DataIMG('kernel', indep[0], indep[1], dep,
                            kshape[::-1], sky=sky, eqpos=eqpos)
 
+        # It's hard to trigger this case so we have no test coverage.
         raise PSFErr('ndim')
 
 
