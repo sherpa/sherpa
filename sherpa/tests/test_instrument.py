@@ -712,28 +712,30 @@ def test_psf_set_model_to_bool(kernel_func):
         m.model = False
 
 
-@pytest.mark.parametrize("dshape,kshape,exc",
-                         [(None, None, TypeError), (None, [1], TypeError), ([1], None, TypeError),
-                          ([1], [1, 2], ValueError), ([1, 2], [1], ValueError),
-                          ([], [1], ValueError), ([1], [], ValueError),
-                          ([1, 3, 4], ([1, 2, 3]), PSFErr)])
-def test_kernel_checks_arguments(dshape, kshape, exc):
+@pytest.mark.parametrize("dshape,kshape,exc,msg",
+                         [(None, None, TypeError,
+                           "dshape must be a sequence"),
+                          (None, [1], TypeError,
+                           "dshape must be a sequence"),
+                          ([1], None, TypeError,
+                           "kshape must be a sequence"),
+                          ([], [], ValueError,
+                           "0D kernel is not supported"),
+                          ([1], [1, 2], ValueError,
+                           "dshape and kshape must be the same size, not 1 and 2"),
+                          ([1, 2], [1], ValueError,
+                           "dshape and kshape must be the same size, not 2 and 1"),
+                          ([], [1], ValueError,
+                           "dshape and kshape must be the same size, not 0 and 1"),
+                          ([1], [], ValueError,
+                           "dshape and kshape must be the same size, not 1 and 0"),
+                          ([1, 3, 4], ([1, 2, 3]), PSFErr,
+                           "PSF model dimension must be <= 2")])
+def test_kernel_checks_arguments(dshape, kshape, exc, msg):
     """Check that we error out"""
 
-    with pytest.raises(exc):
+    with pytest.raises(exc, match=msg):
         Kernel(dshape, kshape)
-
-
-def test_kernel_is_not_0d():
-    """Should this error out? This could have been done as part of
-    test_kernel_checks_arguments but has been split out for now.
-
-    This is a regression test.
-    """
-
-    with pytest.raises(ValueError,
-                       match="0D kernel is not supported"):
-        Kernel([], [])
 
 
 def test_radialprofile_is_1d():
