@@ -46,11 +46,9 @@ def test_filter_resp_nochans():
     matrix = [1.0, 1.0]
     offset = 1
 
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError,
+                       match="There are no noticed channels"):
         filter_resp([], ngrp, f_chan, n_chan, matrix, offset)
-
-    emsg = "There are no noticed channels"
-    assert str(excinfo.value) == emsg
 
 
 # See https://github.com/sherpa/sherpa/issues/405
@@ -63,11 +61,9 @@ def test_rmf_filter_no_chans(make_data_path):
 
     rmffile = make_data_path('3c273.rmf')
     rmf = ui.unpack_rmf(rmffile)
-    with pytest.raises(ValueError) as excinfo:
+    with pytest.raises(ValueError,
+                       match="There are no noticed channels"):
         rmf.notice([])
-
-    emsg = "There are no noticed channels"
-    assert str(excinfo.value) == emsg
 
 
 @pytest.mark.parametrize("lo, hi, expected",
@@ -155,19 +151,17 @@ def test_range_overlap_1dint_ascending(lo, hi, expected, reverse):
 def test_do_group_invalid_scheme():
     """Check we error out and not segfault if the name is unknown."""
 
-    with pytest.raises(ValueError) as ve:
+    with pytest.raises(ValueError,
+                       match="^unsupported group function: foo$"):
         do_group([1, 2, 3], [1, 1, 1], 'foo')
-
-    assert str(ve.value) == 'unsupported group function: foo'
 
 
 def test_do_group_check_lengths():
     """Check we error out if lengths do not match."""
 
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match, data: 3 vs group: 2$"):
         do_group([1, 2, 3], [1, 1], 'sum')
-
-    assert str(te.value) == 'input array sizes do not match, data: 3 vs group: 2'
 
 
 @pytest.mark.parametrize("func,expected",
@@ -289,12 +283,12 @@ def test_calc_data_sum_invalid_range(data_class):
     """lo > hi"""
 
     data = make_data(data_class)
-    with pytest.raises(IOErr) as err:
-        utils.calc_data_sum(data, 10, 2)
 
     # TODO: This error message is not great.
     #
-    assert str(err.value) == "the energy range is not consistent, 10 !< 2"
+    with pytest.raises(IOErr,
+                       match="^the energy range is not consistent, 10 !< 2$"):
+        utils.calc_data_sum(data, 10, 2)
 
 
 @pytest.mark.parametrize("data_class", ["1d", "1dint", "pha", "grp", "qual"])
@@ -538,11 +532,9 @@ def test_calc_data_sum2d_no_range_1d(data_class):
     """What happens when data is not an IMG class: 1D"""
 
     data = make_data(data_class)
-    with pytest.raises(AttributeError) as err:
+    with pytest.raises(AttributeError,
+                       match="^'Data.*' object has no attribute 'notice2d'$"):
         utils.calc_data_sum2d(data)
-
-    assert re.match("^'Data.*' object has no attribute 'notice2d'",
-                    str(err.value))
 
 
 @pytest.mark.parametrize("data_class", ["2d", "2dint"])
@@ -550,11 +542,9 @@ def test_calc_data_sum2d_no_range_2d_but_not_img(data_class):
     """What happens when data is not an IMG class: 2D"""
 
     data = make_data(data_class)
-    with pytest.raises(AttributeError) as err:
+    with pytest.raises(AttributeError,
+                       match="^'Data.*' object has no attribute 'notice2d'$"):
         utils.calc_data_sum2d(data)
-
-    assert re.match("^'Data.*' object has no attribute 'notice2d'",
-                    str(err.value))
 
 
 @pytest.mark.parametrize("data_class", ["img", "imgint"])

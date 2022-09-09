@@ -298,11 +298,9 @@ def test_arf_with_non_positive_thresh(ethresh):
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError,
+                       match="ethresh is None or > 0"):
         create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
-
-    emsg = "ethresh is None or > 0"
-    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("idx", [0, 1, 5, -2, -1])
@@ -391,12 +389,9 @@ def test_arf_with_zero_energy_elem():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    emsg = "The ARF 'user-arf' has an ENERG_LO value <= 0"
-
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The ARF 'user-arf' has an ENERG_LO value <= 0"):
         create_arf(energ_lo, energ_hi, specresp)
-
-    assert str(exc.value) == emsg
 
 
 def test_arf_with_zero_energy_elem_replace():
@@ -458,13 +453,10 @@ def test_arf_with_grid_below_thresh_zero():
     energ_lo[0] = 0.0
     energ_hi[0] = 1e-7
 
-    emsg = "The ARF 'user-arf' has an ENERG_HI value <= " + \
-           "the replacement value of 1e-05"
-
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The ARF 'user-arf' has an ENERG_HI value <= " +
+                       "the replacement value of 1e-05"):
         create_arf(energ_lo, energ_hi, ethresh=1e-5)
-
-    assert str(exc.value) == emsg
 
 
 def test_arf_with_decreasing_energies():
@@ -500,11 +492,9 @@ def test_rmf_with_non_positive_thresh(ethresh):
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    emsg = "ethresh is None or > 0"
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError,
+                       match="ethresh is None or > 0"):
         create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
-
-    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("idx", [0, 1, 5, -2, -1])
@@ -590,12 +580,9 @@ def test_rmf_with_zero_energy_elem():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
-
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The RMF 'delta-rmf' has an ENERG_LO value <= 0"):
         create_delta_rmf(energ_lo, energ_hi)
-
-    assert str(exc.value) == emsg
 
 
 def test_rmf_with_zero_energy_elem_replace():
@@ -638,11 +625,9 @@ def test_arf_with_negative_energy_elem():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    emsg = "The ARF 'user-arf' has an ENERG_LO value <= 0"
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The ARF 'user-arf' has an ENERG_LO value <= 0"):
         create_arf(energ_lo, energ_hi, specresp)
-
-    assert str(exc.value) == emsg
 
 
 def test_arf_with_negative_energy_elem_replace():
@@ -684,11 +669,9 @@ def test_rmf_with_negative_energy_elem():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The RMF 'delta-rmf' has an ENERG_LO value <= 0"):
         create_delta_rmf(energ_lo, energ_hi)
-
-    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
-    assert str(exc.value) == emsg
 
 
 def test_rmf_with_negative_energy_elem_replace():
@@ -747,12 +730,10 @@ def test_rmf_with_grid_below_thresh_zero():
     energ_lo[0] = 0.0
     energ_hi[0] = 1e-7
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The RMF 'delta-rmf' has an ENERG_HI value <= " +
+                       "the replacement value of 1e-05"):
         create_delta_rmf(energ_lo, energ_hi, ethresh=1e-5)
-
-    emsg = "The RMF 'delta-rmf' has an ENERG_HI value <= " + \
-           "the replacement value of 1e-05"
-    assert str(exc.value) == emsg
 
 
 # Bug https://github.com/sherpa/sherpa/issues/572
@@ -950,10 +931,9 @@ def test_sum_background_data_missing():
     """Check we error out if there's no background data"""
 
     d = DataPHA('tmp', np.arange(3), np.arange(3))
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="data set 'tmp' does not have any associated backgrounds"):
         d.sum_background_data()
-
-    assert str(exc.value) == "data set 'tmp' does not have any associated backgrounds"
 
 
 @requires_data
@@ -1656,10 +1636,9 @@ def test_pha_validates_limits(units, notice, lo, hi, make_data_path):
     pha.units = units
     func = pha.notice if notice else pha.ignore
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="^unknown "):
         func(lo, hi)
-
-    assert str(de.value).startswith('unknown ')
 
 
 @requires_data
@@ -1672,10 +1651,10 @@ def test_pha_validates_range(notice, make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
     func = pha.notice if notice else pha.ignore
-    with pytest.raises(DataErr) as de:
-        func(3, 2)
 
-    assert str(de.value) == "unknown hi argument: 'must be >= lo'"
+    with pytest.raises(DataErr,
+                       match="unknown hi argument: 'must be >= lo'"):
+        func(3, 2)
 
 
 @requires_data
@@ -1943,11 +1922,9 @@ def test_pha_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
     """Check we get an error if lo or hi are strings."""
 
     d = DataPHA('tmp', np.arange(3), np.arange(3))
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match=f'strings not allowed in {emsg} bound list'):
         d.notice(lo, hi, ignore=ignore)
-
-    err = f'strings not allowed in {emsg} bound list'
-    assert str(de.value) == err
 
 
 def test_pha_creation_warns_about_non_numpy_channel():
@@ -3144,10 +3121,9 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
     """
 
     data = data_class("empty", *args)
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(TypeError,
+                       match="object of type 'NoneType' has no len()"):
         data.set_dep(2)
-
-    assert str(err.value) == "object of type 'NoneType' has no len()"
 
 
 #@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[1:])
@@ -3503,10 +3479,9 @@ def test_image_sparse_get_dep(make_image_sparse):
 
 def test_image_sparse_get_img(make_image_sparse):
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError,
+                       match=r"cannot reshape array of size 5 into shape \(2,3\)"):
         make_image_sparse.get_img()
-
-    assert str(err.value) == "cannot reshape array of size 5 into shape (2,3)"
 
 
 def test_image_sparse_region_filter(make_image_sparse):

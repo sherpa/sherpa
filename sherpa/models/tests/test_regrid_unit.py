@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
+
 import numpy as np
 from numpy.testing import assert_allclose
 
@@ -413,11 +415,10 @@ def test_regrid1d_error_calc_no_args(setup_1d):
     rmdl = ModelDomainRegridder1D(grid_evaluate)
     mdl = rmdl.apply_to(internal_mdl)
 
-    with pytest.raises(ModelErr) as excinfo:
+    with pytest.raises(ModelErr,
+                       match=ModelErr.dict['nogrid']):
         pvals = [p.val for p in internal_mdl.pars]
         mdl.calc(p=pvals)
-
-    assert ModelErr.dict['nogrid'] in str(excinfo.value)
 
 
 def test_regrid1d_error_grid_mismatch_1(setup_1d):
@@ -431,10 +432,9 @@ def test_regrid1d_error_grid_mismatch_1(setup_1d):
 
     mdl = rmdl.apply_to(internal_mdl)
     grid_run = np.arange(0, 20, 10)
-    with pytest.raises(ModelErr) as excinfo:
+    with pytest.raises(ModelErr,
+                       match=re.escape(ModelErr.dict['needsint'])):
         mdl(grid_run)
-
-    assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 
 def test_ui_regrid1d_non_overlapping_not_allowed():
@@ -448,10 +448,9 @@ def test_ui_regrid1d_non_overlapping_not_allowed():
     b1.ampl.max = 100
     grid_hi = np.linspace(2, 101, 600)
     grid_lo = np.linspace(1, 100, 600)
-    with pytest.raises(ModelErr) as excinfo:
+    with pytest.raises(ModelErr,
+                       match=re.escape(ModelErr.dict['needsint'])):
         b1.regrid(grid_lo, grid_hi)
-
-    assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 
 def test_low_level_regrid1d_non_overlapping_not_allowed():
@@ -460,10 +459,9 @@ def test_low_level_regrid1d_non_overlapping_not_allowed():
     c = Box1D()
     lo = np.linspace(1, 100, 600)
     hi = np.linspace(2, 101, 600)
-    with pytest.raises(ModelErr) as excinfo:
+    with pytest.raises(ModelErr,
+                       match=re.escape(ModelErr.dict['needsint'])):
         c.regrid(lo, hi)
-
-    assert ModelErr.dict['needsint'] in str(excinfo.value)
 
 
 def test_regrid1d_error_grid_mismatch_2(setup_1d):
@@ -476,10 +474,9 @@ def test_regrid1d_error_grid_mismatch_2(setup_1d):
 
     mdl = rmdl.apply_to(internal_mdl)
     grid_run = np.arange(0, 20, 10)
-    with pytest.raises(ModelErr) as excinfo:
+    with pytest.raises(ModelErr,
+                       match=ModelErr.dict['needspoint']):
         mdl(grid_run[:-1], grid_run[1:])
-
-    assert ModelErr.dict['needspoint'] in str(excinfo.value)
 
 
 @pytest.mark.parametrize("requested",
@@ -1090,19 +1087,17 @@ def test_wrong_kwargs():
     d = Data1D('tst', xgrid, np.ones_like(xgrid))
     mdl = Box1D()
     requested = np.arange(1, 7, 0.1)
-    with pytest.raises(TypeError) as excinfo:
+    with pytest.raises(TypeError,
+                       match="unknown keyword argument: 'fubar'"):
         d.eval_model(mdl.regrid(requested, fubar='wrong_kwargs'))
-
-    assert "unknown keyword argument: 'fubar'" in str(excinfo.value)
 
 
 def test_interp_method_is_callable():
     """Check that method is callable."""
     rmdl = ModelDomainRegridder1D()
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(TypeError,
+                       match="method argument 'True' is not callable"):
         rmdl.method = True
-
-    assert str(exc.value) == "method argument 'True' is not callable"
 
 
 @pytest.mark.xfail

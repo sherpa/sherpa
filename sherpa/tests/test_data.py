@@ -1245,9 +1245,9 @@ def test_manual_setting_mask():
     d.mask = arr.mask
     assert len(d.get_dep(filter=True)) == 3
 
-    with pytest.raises(DataErr) as e:
+    with pytest.raises(DataErr,
+                       match="True, False, or a mask array"):
         d.mask = None
-    assert 'True, False, or a mask array' in str(e.value)
 
 
 def test_data_filter_no_data():
@@ -1259,10 +1259,9 @@ def test_data_filter_no_data():
     d.ignore()
     assert d.mask is False
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
         d.apply_filter([1, 2, 3])
-
-    assert str(de.value) == 'mask excludes all data'
 
 
 def test_data_filter_invalid_size_scalar():
@@ -1273,10 +1272,9 @@ def test_data_filter_invalid_size_scalar():
     d.ignore(None, 2)
     assert d.mask == pytest.approx([False, False, True])
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between mask and data array"):
         d.apply_filter(4)
-
-    assert str(err.value) == 'size mismatch between mask and data array'
 
 
 @pytest.mark.parametrize("vals", [[4], [2, 3, 4, 5]])
@@ -1287,10 +1285,9 @@ def test_data_filter_invalid_size_sequence(vals):
     d = Data1D('x', x, x)
     d.ignore(None, 2)
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between mask and data array"):
         d.apply_filter(vals)
-
-    assert str(err.value) == 'size mismatch between mask and data array'
 
 
 @pytest.mark.parametrize("vals", [[[2, 3, 4]], [[2, 3], [3, 2]]])
@@ -1301,10 +1298,9 @@ def test_data_filter_invalid_size_sequence_nd(vals):
     d = Data1D('x', x, x)
     d.ignore(None, 2)
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between mask and data array"):
         d.apply_filter(vals)
-
-    assert str(err.value) == 'size mismatch between mask and data array'
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -1342,10 +1338,9 @@ def test_data1d_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
     xhi = numpy.asarray([2, 3, 8])
     y = numpy.zeros(3)
     d = Data1D('tmp', xlo, xhi, y)
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match=f"strings not allowed in {emsg} bound list"):
         d.notice(lo, hi, ignore=ignore)
-
-    assert str(err.value) == f'strings not allowed in {emsg} bound list'
 
 
 @pytest.mark.parametrize("expected,args",
@@ -1920,10 +1915,9 @@ def test_mask_sent_scalar_nomask(data):
 def test_mask_sent_scalar_non_bool(data):
     """What happens if the mask is sent a scalar non-bool?"""
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="'mask' must be True, False, or a mask array"):
         data.mask = "true"
-
-    assert str(err.value) == "'mask' must be True, False, or a mask array"
 
 
 def test_mask_sent_array_non_bool():
@@ -2219,12 +2213,11 @@ def test_indep_must_be_1d(data):
     """
 
     indep = [d.reshape(2, d.size // 2) for d in data.indep]
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^Data arrays should be 1-dimensional. " +
+                       r"Did you call 'flatten\(\)' on \[\["):
         # XFAIL: does not raise an error for Data1D types but does for Data2D
         data.indep = indep
-
-    emsg = "Data arrays should be 1-dimensional. Did you call 'flatten()' on [["
-    assert str(te.value).startswith(emsg)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2418,10 +2411,9 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
     """
 
     data = data_class("empty", *args)
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(TypeError,
+                       match="object of type 'NoneType' has no len()"):
         data.set_dep(2)
-
-    assert str(err.value) == "object of type 'NoneType' has no len()"
 
 
 #@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[2:])

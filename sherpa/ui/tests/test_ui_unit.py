@@ -86,10 +86,9 @@ def test_check_ids_not_none(func, lo):
     if the lo argument was a string or not,hence the check.
     """
 
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="'ids' must be an identifier or list of identifiers"):
         func(None, lo)
-
-    assert str(exc.value) == "'ids' must be an identifier or list of identifiers"
 
 
 @pytest.mark.parametrize("func", [ui.notice, ui.ignore])
@@ -102,10 +101,9 @@ def test_filter_no_data_is_an_error(func, lo, hi, clean_ui):
     had lead to an error state not being reached.
     """
 
-    with pytest.raises(IdentifierErr) as ie:
+    with pytest.raises(IdentifierErr,
+                       match="No data sets found"):
         func(lo, hi)
-
-    assert str(ie.value) == 'No data sets found'
 
 
 def test_save_filter_data1d(tmp_path, clean_ui):
@@ -131,17 +129,15 @@ def test_save_filter_data1d(tmp_path, clean_ui):
 
 
 def test_set_iter_method_type_not_string():
-    with pytest.raises(ArgumentTypeErr) as te:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'meth' must be a string$"):
         ui.set_iter_method(23)
-
-    assert str(te.value) == "'meth' must be a string"
 
 
 def test_set_iter_method_type_not_enumeration():
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^a random string is not an iterative fitting method$"):
         ui.set_iter_method('a random string')
-
-    assert str(te.value) == "a random string is not an iterative fitting method"
 
 
 class NonIterableObject:
@@ -159,18 +155,16 @@ def test_filter_errors_out_invalid_id(func):
     """
 
     ids = NonIterableObject()
-    with pytest.raises(ArgumentTypeErr) as te:
+    with pytest.raises(ArgumentTypeErr,
+                       match="'ids' must be an identifier or list of identifiers"):
         func(ids)
-
-    assert str(te.value) == "'ids' must be an identifier or list of identifiers"
 
 
 def test_set_model_autoassign_func_type():
 
-    with pytest.raises(ArgumentTypeErr) as te:
+    with pytest.raises(ArgumentTypeErr,
+                       match="'func' must be a function or other callable object"):
         ui.set_model_autoassign_func(23)
-
-    assert str(te.value) == "'func' must be a function or other callable object"
 
 
 class DummyModel(ArithmeticModel):
@@ -296,10 +290,9 @@ def test_err_estimate_errors_on_frozen(method, clean_ui):
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
     ui.set_source(ui.polynom1d.mdl)
-    with pytest.raises(ParameterErr) as exc:
+    with pytest.raises(ParameterErr,
+                       match="parameter 'mdl.c1' is frozen"):
         method(mdl.c0, mdl.c1)
-
-    assert str(exc.value) == "parameter 'mdl.c1' is frozen"
 
 
 @pytest.mark.parametrize("method", [ui.conf, ui.covar, ui.proj])
@@ -313,10 +306,9 @@ def test_err_estimate_errors_model_all_frozen(method, clean_ui):
     for par in mdl.pars:
         par.freeze()
 
-    with pytest.raises(ParameterErr) as exc:
+    with pytest.raises(ParameterErr,
+                       match="Model 'polynom1d.mdl' has no thawed parameters"):
         method(mdl)
-
-    assert str(exc.value) == "Model 'polynom1d.mdl' has no thawed parameters"
 
 
 @pytest.mark.parametrize("method", [ui.conf, ui.covar, ui.proj])
@@ -331,10 +323,9 @@ def test_err_estimate_errors_on_list_argument(method, id, otherids, clean_ui):
 
     """
 
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="identifiers must be integers or strings"):
         method(id, otherids)
-
-    assert str(exc.value) == "identifiers must be integers or strings"
 
 
 def setup_err_estimate_multi_ids(strings=False):
@@ -730,7 +721,8 @@ def test_thaw_alwaysfrozen_parameter(string, clean_ui):
     assert ui.get_num_par_thawed() == 3
     assert ui.get_num_par_frozen() == 1
 
-    with pytest.raises(ParameterErr) as pe:
+    with pytest.raises(ParameterErr,
+                       match="^parameter mdl.ref is always frozen and cannot be thawed$"):
         if string:
             ui.thaw("mdl.ref")
         else:
@@ -739,8 +731,6 @@ def test_thaw_alwaysfrozen_parameter(string, clean_ui):
     assert mdl.ref.frozen
     assert ui.get_num_par_thawed() == 3
     assert ui.get_num_par_frozen() == 1
-
-    assert str(pe.value) == "parameter mdl.ref is always frozen and cannot be thawed"
 
 
 @pytest.mark.parametrize("string", [True, False])
@@ -888,13 +878,12 @@ def test_freeze_invalid_arguments(string, clean_ui):
     mdl = ui.create_model_component("logparabola", "mdl")
     ui.set_source(mdl)
 
-    with pytest.raises(ArgumentTypeErr) as ae:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'par' must be a parameter or model object or expression string$"):
         if string:
             ui.freeze("1")
         else:
             ui.freeze(1)
-
-    assert str(ae.value) == "'par' must be a parameter or model object or expression string"
 
 
 @pytest.mark.parametrize("string", [True, False])
@@ -904,13 +893,12 @@ def test_thaw_invalid_arguments(string, clean_ui):
     mdl = ui.create_model_component("logparabola", "mdl")
     ui.set_source(mdl)
 
-    with pytest.raises(ArgumentTypeErr) as ae:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'par' must be a parameter or model object or expression string$"):
         if string:
             ui.thaw("1")
         else:
             ui.thaw(1)
-
-    assert str(ae.value) == "'par' must be a parameter or model object or expression string"
 
 
 def test_set_dep_none(clean_ui):
@@ -997,10 +985,9 @@ def test_set_syserror_none(clean_ui):
 
     ui.set_syserror(None)
     assert ui.get_staterror() == pytest.approx(staterror)
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="data set '1' does not specify systematic errors"):
         ui.get_syserror()
-
-    assert str(err.value) == "data set '1' does not specify systematic errors"
 
     combo = staterror
     assert ui.get_error() == pytest.approx(combo)
@@ -1160,10 +1147,9 @@ def test_set_filter_unmasked_wrong(clean_ui):
 
     data = ui.get_data()
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between 3 and 2"):
         ui.set_filter(np.asarray([True, False]))
-
-    assert str(err.value) == "size mismatch between 3 and 2"
 
 
 @pytest.mark.parametrize("ignore", [False, True])
@@ -1200,7 +1186,6 @@ def test_set_filter_masked_wrong(clean_ui):
 
     ui.ignore(lo=15, hi=45)
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between 3 and 2"):
         ui.set_filter(np.asarray([True, False]))
-
-    assert str(err.value) == "size mismatch between 3 and 2"

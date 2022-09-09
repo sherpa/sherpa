@@ -103,10 +103,9 @@ def test_covar_wrong_stat(stat, clean_ui, setup_covar):
 
     ui.covar()
     ui.set_stat(stat)
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError,
+                       match=WRONG_STAT_MSG.format(stat)):
         ui.get_draws()
-
-    assert WRONG_STAT_MSG.format(stat) == str(exc.value)
 
 
 @requires_data
@@ -115,10 +114,9 @@ def test_covar_wstat_no_background(clean_ui, setup_covar):
 
     ui.covar()
     ui.set_stat("wstat")
-    with pytest.raises(StatErr) as exc:
+    with pytest.raises(StatErr,
+                       match=WSTAT_ERR_MSG):
         ui.get_draws()
-
-    assert WSTAT_ERR_MSG == str(exc.value)
 
 
 @requires_data
@@ -127,10 +125,9 @@ def test_no_covar(stat, clean_ui, setup_covar):
     "Test an exception is thrown if covar is not run"
 
     ui.set_stat(stat)
-    with pytest.raises(SessionErr) as exc:
+    with pytest.raises(SessionErr,
+                       match=NO_COVAR_MSG):
         ui.get_draws()
-
-    assert NO_COVAR_MSG == str(exc.value)
 
 
 # Test get_draws returns a valid response when the covariance matrix is provided
@@ -264,10 +261,9 @@ def test_ui_set_full_model_2d_mismatch_1d(clean_ui, setup_ui_2d):
 
 def test_ui_set_full_model_checks_dimensions_match(clean_ui, setup_ui_2d):
     ui.load_psf('psf1', 'gauss2d.g1')
-    with pytest.raises(ArgumentErr) as err:
+    with pytest.raises(ArgumentErr,
+                       match=r"invalid model expression: Models do not match: 2D \(gauss2d.g1\) and 1D \(gauss1d.g2\)"):
         ui.set_full_model('psf1(gauss1d.g2)+const2d.c1')
-
-    assert str(err.value) == "invalid model expression: Models do not match: 2D (gauss2d.g1) and 1D (gauss1d.g2)"
 
 
 # Bug 12644
@@ -278,23 +274,17 @@ def test_ui_source_methods_with_full_model(clean_ui, setup_ui_full):
     ui.set_full_model('full', 'powlaw1d.p1')
 
     # Test Case 1
-    with pytest.raises(IdentifierErr) as exc:
+    with pytest.raises(IdentifierErr,
+                       match="Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use get_model instead."):
         ui.get_source('full')
 
-    emsg = "Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use get_model instead."
-    assert str(exc.value) == emsg
-
-    with pytest.raises(IdentifierErr) as exc:
+    with pytest.raises(IdentifierErr,
+                       match="Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use plot_model instead."):
         ui.plot_source('full')
 
-    emsg = "Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use plot_model instead."
-    assert str(exc.value) == emsg
-
-    with pytest.raises(IdentifierErr) as exc:
+    with pytest.raises(IdentifierErr,
+                       match="Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use get_model_plot instead."):
         ui.get_source_plot('full')
-
-    emsg = "Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use get_model_plot instead."
-    assert str(exc.value) == emsg
 
     # Test Case 2
     ui.set_source('full', 'powlaw1d.p2')
@@ -302,11 +292,9 @@ def test_ui_source_methods_with_full_model(clean_ui, setup_ui_full):
 
     # Test Case 3
     ui.load_data('not_full', setup_ui_full.ascii)
-    with pytest.raises(IdentifierErr) as exc:
+    with pytest.raises(IdentifierErr,
+                       match=r"source not_full has not been set, consider using set_source\(\) or set_model\(\)"):
         ui.get_source('not_full')
-
-    emsg = 'source not_full has not been set, consider using set_source() or set_model()'
-    assert emsg == str(exc.value)
 
 
 @pytest.mark.parametrize('model', ['gauss1d', 'delta1d', 'normgauss1d'])

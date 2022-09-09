@@ -204,10 +204,9 @@ def test_fit_profile(model, stat, pars, reset_seed, clean_astro_ui):
 def test_check_ids_not_none(func):
     """Check they error out when id is None"""
 
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="'ids' must be an identifier or list of identifiers"):
         func(None)
-
-    assert str(exc.value) == "'ids' must be an identifier or list of identifiers"
 
 
 @pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
@@ -219,10 +218,9 @@ def test_set_filter_mismatch(f, bid):
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="size mismatch between 3 and 2"):
         ui.set_filter(f, bkg_id=bid)
-
-    assert str(exc.value) == "size mismatch between 3 and 2"
 
 
 @pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
@@ -240,10 +238,9 @@ def test_set_filter_mismatch_with_filter(f, bid):
 
     ui.ignore(3, None)  # set the .mask attribute to an array
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="size mismatch between 3 and 2"):
         ui.set_filter(f, bkg_id=bid)
-
-    assert str(exc.value) == "size mismatch between 3 and 2"
 
 
 @pytest.mark.parametrize("bid", [None, 1])
@@ -253,10 +250,9 @@ def test_get_syserror_missing(bid):
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="data set '1' does not specify systematic errors"):
         ui.get_syserror(bkg_id=bid)
-
-    assert str(exc.value) == "data set '1' does not specify systematic errors"
 
 
 @requires_fits
@@ -417,10 +413,9 @@ def test_save_filter_ignored(bid, tmp_path):
     ui.ignore(None, None)
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
         ui.save_filter(str(outfile), bkg_id=bid)
-
-    assert str(exc.value) == "mask excludes all data"
 
 
 @pytest.mark.parametrize("func,etype,emsg",
@@ -437,7 +432,7 @@ def test_save_filter_ignored(bid, tmp_path):
                           (ui.save_error,  StatErr,
                            "If you select chi2 as the statistic, all datasets must provide a staterror column"),
                           (ui.save_source,  IdentifierErr,
-                           "source 1 has not been set, consider using set_source() or set_model()"),
+                           r"source 1 has not been set, consider using set_source\(\) or set_model\(\)"),
                           (ui.save_model,  IdentifierErr,
                            "model 1 has not been set"),
                           (ui.save_resid,  IdentifierErr,
@@ -456,10 +451,9 @@ def test_save_xxx_nodata(func, etype, emsg, tmp_path, clean_astro_ui):
     ui.set_stat("chi2")
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
-    with pytest.raises(etype) as exc:
+    with pytest.raises(etype,
+                       match=emsg):
         func(str(outfile))
-
-    assert str(exc.value) == emsg
 
 
 @requires_fits
@@ -474,10 +468,9 @@ def test_save_image_nodata(tmp_path):
     ui.set_bkg(bkg)
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
-    with pytest.raises(IOErr) as exc:
+    with pytest.raises(IOErr,
+                       match="data set '' does not contain an image"):
         ui.save_image(str(outfile))
-
-    assert str(exc.value) == "data set '' does not contain an image"
 
 
 @pytest.mark.parametrize("func,etype,emsg",
@@ -516,10 +509,9 @@ def test_save_xxx_bkg_nodata(func, etype, emsg, tmp_path):
     ui.set_stat("chi2")
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
-    with pytest.raises(etype) as exc:
+    with pytest.raises(etype,
+                       match=emsg):
         func(str(outfile), bkg_id=1)
-
-    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("func,etype,emsg",
@@ -530,7 +522,7 @@ def test_save_xxx_bkg_nodata(func, etype, emsg, tmp_path):
                           (ui.save_quality,  ArgumentErr,
                            "data set 1 does not contain PHA data"),
                           (ui.save_source,  IdentifierErr,
-                           "source 1 has not been set, consider using set_source() or set_model()"),
+                           r"source 1 has not been set, consider using set_source\(\) or set_model\(\)"),
                           (ui.save_model,  IdentifierErr,
                            "model 1 has not been set"),
                           (ui.save_resid,  IdentifierErr,
@@ -544,10 +536,9 @@ def test_save_xxx_data1d_nodata(func, etype, emsg, tmp_path):
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
-    with pytest.raises(etype) as exc:
+    with pytest.raises(etype,
+                       match=emsg):
         func(str(outfile))
-
-    assert str(exc.value) == emsg
 
 
 @requires_fits
@@ -560,10 +551,9 @@ def test_save_image_data1d_nodata(tmp_path):
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
 
     outfile = tmp_path / "temp-file-that-should-not-be-created"
-    with pytest.raises(IOErr) as exc:
+    with pytest.raises(IOErr,
+                       match="data set '' does not contain an image"):
         ui.save_image(str(outfile))
-
-    assert str(exc.value) == "data set '' does not contain an image"
 
 
 @pytest.mark.parametrize("savefunc", [ui.save_data,
@@ -585,10 +575,9 @@ def test_save_xxx_not_a_string(savefunc, tmp_path):
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
     out = tmp_path / "data.dat"
 
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="'filename' must be a string"):
         savefunc(out)
-
-    assert str(exc.value) == "'filename' must be a string"
 
 
 def test_save_delchi_image_fails(tmp_path):
@@ -606,10 +595,9 @@ def test_save_delchi_image_fails(tmp_path):
     ui.set_source(ui.const2d.cmdl)
 
     out = tmp_path / "does-not-exist"
-    with pytest.raises(AttributeError) as exc:
+    with pytest.raises(AttributeError,
+                       match=r"save_delchi\(\) does not apply for images"):
         ui.save_delchi(str(out))
-
-    assert str(exc.value) == "save_delchi() does not apply for images"
 
 
 def check_clobber(outpath, func):
@@ -625,12 +613,9 @@ def check_clobber(outpath, func):
     old = outpath.read_text()
 
     # check it clobbers
-    with pytest.raises(IOErr) as exc:
+    with pytest.raises(IOErr,
+                       match="^file '.*' exists and clobber is not set$"):
         func(str(outpath))
-
-    emsg = str(exc.value)
-    assert emsg.startswith("file '")
-    assert emsg.endswith("' exists and clobber is not set")
 
     # Check the file hasn't changed
     new = outpath.read_text()
@@ -1388,10 +1373,9 @@ def test_delete_bkg_model(clean_astro_ui):
 
     # Expression has been removed
     #
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match="background model 2 for data set 1 has not been set"):
         ui.get_bkg_source(bkg_id=2)
-
-    assert str(exc.value) == "background model 2 for data set 1 has not been set"
 
     # components still exist
     mdls = ui.list_model_components()
@@ -1486,10 +1470,9 @@ def test_bkg_id_get_bkg_source(clean_astro_ui):
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
 
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match="background model 1 for data set x has not been set"):
         ui.get_bkg_source()
-
-    assert str(exc.value) == "background model 1 for data set x has not been set"
 
 
 def test_fix_background_id_error_checks1():
@@ -1499,10 +1482,9 @@ def test_fix_background_id_error_checks1():
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(2, bkg)
 
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="identifiers must be integers or strings"):
         ui.get_bkg_source(id=2, bkg_id=bkg)
-
-    assert str(exc.value) == "identifiers must be integers or strings"
 
 
 def test_fix_background_id_error_checks2():
@@ -1512,10 +1494,9 @@ def test_fix_background_id_error_checks2():
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(2, bkg)
 
-    with pytest.raises(IdentifierErr) as exc:
+    with pytest.raises(IdentifierErr,
+                       match="identifier 'bkg' is a reserved word"):
         ui.get_bkg_source(id=2, bkg_id="bkg")
-
-    assert str(exc.value) == "identifier 'bkg' is a reserved word"
 
 
 @pytest.mark.parametrize("id", [1, "x"])
@@ -1533,11 +1514,9 @@ def test_delete_bkg_model_with_bkgid(id, clean_astro_ui):
     ui.delete_bkg_model(id, bkg_id=2)
     assert ui.list_model_components() == ["bmdl"]
 
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match=f"background model 2 for data set {id} has not been set"):
         ui.get_bkg_source(id, 2)
-
-    emsg = f"background model 2 for data set {id} has not been set"
-    assert str(exc.value) == emsg
 
 
 @requires_fits
@@ -1548,10 +1527,9 @@ def test_load_xxx_no_data(loadfunc, clean_astro_ui, tmp_path):
     path = tmp_path / "data"
     path.write_text("1\n0\n0\n")
 
-    with pytest.raises(IdentifierErr) as exc:
+    with pytest.raises(IdentifierErr,
+                       match="data set 2 has not been set"):
         loadfunc(2, str(path))
-
-    assert str(exc.value) == "data set 2 has not been set"
 
 
 @requires_fits
@@ -1564,10 +1542,9 @@ def test_load_xxx_not_pha(loadfunc, clean_astro_ui, tmp_path):
     path = tmp_path / "data"
     path.write_text("1\n0\n0\n")
 
-    with pytest.raises(ArgumentErr) as exc:
+    with pytest.raises(ArgumentErr,
+                       match="data set 2 does not contain PHA data"):
         loadfunc(2, str(path))
-
-    assert str(exc.value) == "data set 2 does not contain PHA data"
 
 
 @requires_fits
@@ -1676,10 +1653,9 @@ def test_xxx_not_pha(callfunc):
 
     ui.load_arrays(1, [1, 2, 3], [4, 5, 6])
 
-    with pytest.raises(ArgumentErr) as exc:
+    with pytest.raises(ArgumentErr,
+                       match="data set 1 does not contain PHA data"):
         callfunc()
-
-    assert str(exc.value) == "data set 1 does not contain PHA data"
 
 
 def test_get_axes_data1d():
@@ -1804,10 +1780,9 @@ def test_wstat_errors_data1d(clean_astro_ui, make_data_path):
 
     ui.set_stat("wstat")
 
-    with pytest.raises(StatErr) as exc:
+    with pytest.raises(StatErr,
+                       match="No background data has been supplied. Use cstat"):
         ui.get_stat_info()
-
-    assert str(exc.value) == "No background data has been supplied. Use cstat"
 
 
 @pytest.mark.parametrize("label,vals",
@@ -1861,10 +1836,9 @@ def test_pha_column_checks_pha(label, clean_astro_ui):
 
     ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.Data1D)
 
-    with pytest.raises(ArgumentErr) as err:
+    with pytest.raises(ArgumentErr,
+                       match="data set 1 does not contain PHA data"):
         getattr(ui, f"get_{label}")()
-
-    assert str(err.value) == "data set 1 does not contain PHA data"
 
 
 @pytest.mark.parametrize("label", ["grouping", "quality"])
@@ -2032,10 +2006,9 @@ def test_model_dimensionality_check_is_not_triggered_calc_stat(clean_astro_ui):
 
     # However, this creates a Fit object and so does error out
     #
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
         ui.calc_stat()
-
-    assert str(err.value) == "Data and model dimensionality do not match: 1D and 2D"
 
 
 @pytest.mark.xfail
@@ -2057,10 +2030,9 @@ def test_model_dimensionality_check_is_not_triggered_plot_model(clean_astro_ui):
     src = ui.get_source()
     assert src.ndim == 2
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
         ui.plot_model()
-
-    assert str(err.value) == "Data and model dimensionality do not match: 1D and 2D"
 
 
 def simple_data1dint(idval):
@@ -2117,10 +2089,9 @@ def test_1444_1d_data_2d(idval, clean_astro_ui):
     """
 
     simple_data1dint(idval)
-    with pytest.raises(AttributeError) as exc:
+    with pytest.raises(AttributeError,
+                       match="'Data1DInt' object has no attribute 'notice2d'"):
         ui.calc_data_sum2d(id=idval)
-
-    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
 
 
 @pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
@@ -2142,10 +2113,9 @@ def test_1444_1d_model_2d(idval, clean_astro_ui):
     """
 
     simple_data1dint(idval)
-    with pytest.raises(AttributeError) as exc:
+    with pytest.raises(AttributeError,
+                       match="'Data1DInt' object has no attribute 'notice2d'"):
         ui.calc_model_sum2d(id=idval)
-
-    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
 
 
 @pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
@@ -2168,10 +2138,9 @@ def test_1444_1d_source_2d(idval, clean_astro_ui):
     """
 
     simple_data1dint(idval)
-    with pytest.raises(AttributeError) as exc:
+    with pytest.raises(AttributeError,
+                       match="'Data1DInt' object has no attribute 'notice2d'"):
         ui.calc_source_sum2d(id=idval)
-
-    assert str(exc.value) == "'Data1DInt' object has no attribute 'notice2d'"
 
 
 @pytest.mark.parametrize("idval", [None, 1, 9, "foo"])
@@ -2334,10 +2303,9 @@ def test_pha_set_dep_array_wrong(simple_pha):
     ui.set_dep([2, 4, 5])
 
     # this does error out
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(TypeError,
+                       match="input array sizes do not match, data: 3 vs group: 9"):
         ui.get_dep()
-
-    assert str(err.value) == "input array sizes do not match, data: 3 vs group: 9"
 
 
 def test_pha_get_staterror(simple_pha):
@@ -2351,10 +2319,9 @@ def test_pha_get_staterror(simple_pha):
 def test_pha_get_syserror(simple_pha):
     """Check get_syserror with a PHA dataset"""
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="data set '1' does not specify systematic errors"):
         ui.get_syserror()
-
-    assert str(err.value) == "data set '1' does not specify systematic errors"
 
 
 def test_pha_set_staterror_scalar_no_fractional(simple_pha):
@@ -2462,10 +2429,9 @@ def test_pha_set_error_array_wrong(field, simple_pha):
 
     # this does error out
     getfunc = getattr(ui, f"get_{field}")
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(TypeError,
+                       match="input array sizes do not match, data: 4 vs group: 9"):
         getfunc()
-
-    assert str(err.value) == "input array sizes do not match, data: 4 vs group: 9"
 
 
 def test_pha_set_filter_unmasked(simple_pha):
@@ -2483,10 +2449,9 @@ def test_pha_set_filter_unmasked(simple_pha):
 def test_pha_set_filter_unmasked_wrong(simple_pha):
     """What happens when we call set_filter to an unfiltered dataset with the wrong size?"""
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between 5 and 2"):
         ui.set_filter(np.asarray([True, False]))
-
-    assert str(err.value) == "size mismatch between 5 and 2"
 
 
 def test_pha_set_filter_masked(simple_pha):
@@ -2506,10 +2471,9 @@ def test_pha_set_filter_masked_wrong(simple_pha):
 
     ui.ignore(4, 8)
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between 5 and 2"):
         ui.set_filter(np.asarray([True, False]))
-
-    assert str(err.value) == "size mismatch between 5 and 2"
 
 
 def test_pha_get_specresp_src(background_pha):

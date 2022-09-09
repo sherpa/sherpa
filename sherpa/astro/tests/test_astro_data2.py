@@ -48,10 +48,9 @@ def test_can_not_group_ungrouped():
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
     assert not pha.grouped
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="data set 'name' does not specify grouping flags"):
         pha.grouped = True
-
-    assert str(exc.value) == "data set 'name' does not specify grouping flags"
 
 
 def test_get_mask_is_none():
@@ -224,12 +223,9 @@ def test_error_on_invalid_channel_grouped2(chan):
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
                   grouping=[1, -1, 1])
     assert pha.grouped
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match=f"invalid group number: {chan - 1}"):
         pha._from_channel(chan)
-
-    # The error message is wrong
-    # assert str(exc.value) == f"invalid group number: {chan}"
-    assert str(exc.value) == f"invalid group number: {chan - 1}"
 
 
 def test_pha_get_xerr_all_bad_channel_no_group():
@@ -315,10 +311,9 @@ def test_pha_get_xerr_all_bad_energy_group():
 
     # Should this error out or not?
     assert pha.get_filter() == ''
-    # with pytest.raises(DataErr) as de:
+    # with pytest.raises(DataErr,
+    #                    match="mask excludes all data"):
     #     pha.get_filter()
-
-    # assert str(de.value) == 'mask excludes all data'
 
     assert pha.get_xerr() == pytest.approx([])
 
@@ -334,10 +329,9 @@ def test_pha_channel_limits_are_integers(ignore, lbl, lo, hi):
                   grouping=[1, -1, 1])
 
     func = pha.ignore if ignore else pha.notice
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match=f"unknown {lbl} argument: 'must be an integer channel value'"):
         func(lo, hi)
-
-    assert str(exc.value) == f"unknown {lbl} argument: 'must be an integer channel value'"
 
 
 def test_288_a():
@@ -399,10 +393,9 @@ def test_288_b():
     pha = DataPHA('x', channels, counts, grouping=grouping)
 
     assert pha.mask
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="unknown lo argument: 'must be an integer channel value'"):
         pha.ignore(3.1, 4)
-
-    assert str(de.value) == "unknown lo argument: 'must be an integer channel value'"
 
 
 def test_288_b_energy():
@@ -812,10 +805,9 @@ def test_img_get_img_model_filter_none1(make_test_image):
 
     img = make_test_image
     img.notice2d(ignore=True)
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
         img.get_img(image_callable)
-
-    assert str(err.value) == "mask excludes all data"
 
 
 def test_img_get_img_model_filter_none2(make_test_image):
@@ -920,10 +912,9 @@ def test_img_can_not_set_coord(make_test_image):
     # This dataset does not have a physical system, but we
     # do not get a DataErr but an AttributeError.
     #
-    with pytest.raises(AttributeError) as ae:
+    with pytest.raises(AttributeError,
+                       match="can't set attribute"):
         d.coord = "physical"
-
-    assert  "can't set attribute" in str(ae.value)
 
 
 def test_img_set_coord_invalid(make_test_image):
@@ -931,12 +922,11 @@ def test_img_set_coord_invalid(make_test_image):
     d = make_test_image
     assert d.coord == 'logical'
 
-    with pytest.raises(DataErr) as exc:
-        d.set_coord('bob')
-
     emsg = "unknown coordinates: 'bob'\n"
     emsg += "Valid options: logical, image, physical, world, wcs"
-    assert str(exc.value) == emsg
+    with pytest.raises(DataErr,
+                       match=emsg):
+        d.set_coord('bob')
 
     assert d.coord == 'logical'
 
@@ -949,11 +939,9 @@ def test_img_set_coord_notset(coord, expected, make_test_image):
     """A valid coord setting but we don't have the data"""
 
     d = make_test_image
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match=f"data set 'd' does not contain a {expected} coordinate system"):
         d.set_coord(coord)
-
-    emsg = f"data set 'd' does not contain a {expected} coordinate system"
-    assert str(exc.value) == emsg
 
     assert d.coord == 'logical'
 
@@ -967,11 +955,9 @@ def test_img_get_coord_notset(coord, expected, make_test_image):
     d = make_test_image
 
     meth = getattr(d, f"get_{coord}")
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match=f"data set 'd' does not contain a {expected} coordinate system"):
         meth()
-
-    emsg = f"data set 'd' does not contain a {expected} coordinate system"
-    assert str(exc.value) == emsg
 
 
 def test_img_set_coord_image(make_test_image):
@@ -1478,19 +1464,17 @@ def test_pha_valid_units(requested, expected, make_test_pha):
 def test_pha_invalid_units(invalid, make_test_pha):
     """Check we can not set units to an invalid value"""
     pha = make_test_pha
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match=f"unknown quantity: '{invalid}'"):
         pha.units = invalid
-
-    assert str(de.value) == f"unknown quantity: '{invalid}'"
 
 
 @pytest.mark.parametrize("invalid", ["RATE", "COUNTS", "rates", "count", "count-rate"])
 def test_pha_analysis_type_invalid(invalid, make_test_pha):
     pha = make_test_pha
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match=f"unknown plot type '{invalid}', choose 'rate' or 'counts'"):
         pha.set_analysis("channel", type=invalid)
-
-    assert str(err.value) == f"unknown plot type '{invalid}', choose 'rate' or 'counts'"
 
 
 def test_pha_analysis_plot_fac_valid(make_test_pha):
@@ -1504,19 +1488,23 @@ def test_pha_analysis_plot_fac_valid(make_test_pha):
 @pytest.mark.parametrize("invalid", ["1", 2.01, 0.5, complex(1)])
 def test_pha_analysis_plot_fac_invalid(invalid, make_test_pha):
     pha = make_test_pha
-    with pytest.raises(DataErr) as err:
+    # Need to protect the '(1+0j)' brackets.
+    #
+    emsg = re.escape(f"unknown plot_fac setting: '{invalid}'")
+    with pytest.raises(DataErr,
+                       match=emsg):
         pha.plot_fac = invalid
-
-    assert str(err.value) == f"unknown plot_fac setting: '{invalid}'"
 
 
 @pytest.mark.parametrize("invalid", ["1", 2.01, 0.5, complex(1)])
 def test_pha_analysis_factor_invalid(invalid, make_test_pha):
     pha = make_test_pha
-    with pytest.raises(DataErr) as err:
+    # Need to protect the '(1+0j)' brackets.
+    #
+    emsg = re.escape(f"unknown factor setting: '{invalid}'")
+    with pytest.raises(DataErr,
+                       match=emsg):
         pha.set_analysis("channel", factor=invalid)
-
-    assert str(err.value) == f"unknown factor setting: '{invalid}'"
 
 
 def test_pha_get_specresp_no_response(make_test_pha):
@@ -1527,10 +1515,9 @@ def test_pha_get_specresp_no_response(make_test_pha):
 def test_pha_ignore_bad_no_quality(make_test_pha):
     pha = make_test_pha
     assert pha.quality is None
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="data set 'p' does not specify quality flags"):
         pha.ignore_bad()
-
-    assert str(err.value) == "data set 'p' does not specify quality flags"
 
 
 def test_pha_grouping_changed_no_filter_1160(make_test_pha):
@@ -2234,11 +2221,9 @@ def test_pha_zero_quality_apply_xxx_invalid_size(label, vals, make_test_pha):
     pha.group()
 
     func = getattr(pha, f"apply_{label}")
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match, data: [128] vs group: 4$"):
         func(vals)
-
-    assert re.match("^input array sizes do not match, data: [128] vs group: 4$",
-                    str(err.value))
 
 
 @pytest.mark.parametrize("vals", [(2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
@@ -2256,12 +2241,11 @@ def test_pha_zero_quality_filtered_apply_filter_invalid_size(vals, make_test_pha
     assert not np.all(pha.mask)
     assert np.any(pha.mask)
 
-    with pytest.raises(ValueError) as err:
-        pha.apply_filter(vals)
-
     # The error strong may depend on the NumPy version.
     #
-    assert str(err.value).startswith("NumPy boolean array indexing ")
+    with pytest.raises(ValueError,
+                       match="^NumPy boolean array indexing "):
+        pha.apply_filter(vals)
 
 
 @pytest.mark.parametrize("vals", [[1], (2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
@@ -2275,11 +2259,9 @@ def test_pha_zero_quality_filtered_apply_grouping_invalid_size(vals, make_test_p
 
     pha.ignore(hi=2)
 
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match, data: [128] vs group: 4$"):
         pha.apply_grouping(vals)
-
-    assert re.match("^input array sizes do not match, data: [128] vs group: 4$",
-                    str(err.value))
 
 
 @pytest.mark.parametrize("vals", [(2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
@@ -2288,12 +2270,11 @@ def test_pha_quality_apply_filter_invalid_size(vals, make_grouped_pha):
 
     pha = make_grouped_pha
 
-    with pytest.raises(ValueError) as err:
-        pha.apply_filter(vals)
-
-    # The error strong may depend on the NumPy version.
+    # The error string may depend on the NumPy version.
     #
-    assert str(err.value).startswith("NumPy boolean array indexing ")
+    with pytest.raises(ValueError,
+                       match="^NumPy boolean array indexing "):
+        pha.apply_filter(vals)
 
 
 @pytest.mark.parametrize("vals", [(2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
@@ -2307,12 +2288,11 @@ def test_pha_quality_filtered_apply_filter_invalid_size(vals, make_grouped_pha):
     assert pha.mask == pytest.approx([False, True])
     assert pha.get_mask() == pytest.approx([False, False, False, True])
 
-    with pytest.raises(IndexError) as err:
-        pha.apply_filter(vals)
-
-    # The error strong may depend on the NumPy version.
+    # The error string may depend on the NumPy version.
     #
-    assert str(err.value).startswith("boolean index did not match indexed array ")
+    with pytest.raises(IndexError,
+                       match="^boolean index did not match indexed array "):
+        pha.apply_filter(vals)
 
 
 @pytest.mark.parametrize("vals", [pytest.param([42], marks=pytest.mark.xfail), [10, 20, 35, 42, 55]])
@@ -2334,10 +2314,9 @@ def test_pha_quality_apply_grouping_invalid_size(vals, make_grouped_pha):
 
     pha = make_grouped_pha
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between quality filter and data array"):
         pha.apply_grouping(vals)
-
-    assert str(err.value) == "size mismatch between quality filter and data array"
 
 
 @pytest.mark.parametrize("vals", [[1], (2, 3), [1, 2, 3, 4, 5, 6, 7, 8]])
@@ -2347,10 +2326,9 @@ def test_pha_quality_filtered_apply_grouping_invalid_size(vals, make_grouped_pha
     pha = make_grouped_pha
     pha.ignore(hi=1)
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between quality filter and data array"):
         pha.apply_grouping(vals)
-
-    assert str(err.value) == "size mismatch between quality filter and data array"
 
 
 def test_pha_apply_filter_check():
@@ -2671,19 +2649,17 @@ def test_img_sky_physical(path, make_test_image_sky):
 def test_img_world_physical(make_test_image_world):
     """The physical axes are not defined."""
     d = make_test_image_world
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="data set 'world-ey' does not contain a physical coordinate system"):
         d.set_coord("physical")
-
-    assert str(de.value) == "data set 'world-ey' does not contain a physical coordinate system"
 
 
 def test_img_sky_world(make_test_image_sky):
     """The world axes are not defined."""
     d = make_test_image_sky
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="data set 'sky-ey' does not contain a world coordinate system"):
         d.set_coord("world")
-
-    assert str(de.value) == "data set 'sky-ey' does not contain a world coordinate system"
 
 
 @pytest.mark.parametrize("path", [[],
@@ -2751,19 +2727,17 @@ def test_img_sky_get_physical(path, make_test_image_sky):
 def test_img_world_get_physical(make_test_image_world):
     """Check get_physical errors out"""
     d = make_test_image_world
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="data set 'world-ey' does not contain a physical coordinate system"):
         d.get_physical()
-
-    assert str(de.value) == "data set 'world-ey' does not contain a physical coordinate system"
 
 
 def test_img_sky_get_world(make_test_image_sky):
     """Check get_world errors out"""
     d = make_test_image_sky
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="data set 'sky-ey' does not contain a world coordinate system"):
         d.get_world()
-
-    assert str(de.value) == "data set 'sky-ey' does not contain a world coordinate system"
 
 
 @pytest.mark.parametrize("path", [[],
@@ -2821,10 +2795,9 @@ def test_arf_checks_energy_length():
     ehi = np.arange(2, 9)
     dummy = []
 
-    with pytest.raises(ValueError) as ve:
+    with pytest.raises(ValueError,
+                       match="The energy arrays must have the same size, not 4 and 7"):
         DataARF("dummy", elo, ehi, dummy)
-
-    assert str(ve.value) == "The energy arrays must have the same size, not 4 and 7"
 
 
 def test_rmf_checks_energy_length():
@@ -2834,10 +2807,9 @@ def test_rmf_checks_energy_length():
     ehi = np.arange(2, 9)
     dummy = []
 
-    with pytest.raises(ValueError) as ve:
+    with pytest.raises(ValueError,
+                       match="The energy arrays must have the same size, not 4 and 7"):
         DataRMF("dummy", 1024, elo, ehi, dummy, dummy, dummy, dummy)
-
-    assert str(ve.value) == "The energy arrays must have the same size, not 4 and 7"
 
 
 def test_rmf_invalid_offset():
@@ -2847,10 +2819,9 @@ def test_rmf_invalid_offset():
     ehi = elo + 1
     dummy = []
 
-    with pytest.raises(ValueError) as ve:
+    with pytest.raises(ValueError,
+                       match="offset must be >=0, not -1"):
         DataRMF("dummy", 1024, elo, ehi, dummy, dummy, dummy, dummy, offset=-1)
-
-    assert str(ve.value) == "offset must be >=0, not -1"
 
 
 @pytest.mark.parametrize("subtract", [True, False])
@@ -2864,10 +2835,9 @@ def test_pha_no_bkg(subtract):
     counts = np.ones_like(chans)
     pha = DataPHA("dummy", chans, counts)
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="data set 'dummy' does not have any associated backgrounds"):
         pha.subtracted = subtract
-
-    assert str(de.value) == "data set 'dummy' does not have any associated backgrounds"
 
 
 @pytest.mark.parametrize("attr", ["response", "background"])
@@ -2878,10 +2848,9 @@ def test_pha_xxx_ids_invalid_not_an_iterable(attr):
     counts = np.ones_like(chans)
     pha = DataPHA("dummy", chans, counts)
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match=f"{attr} ids 'None' does not appear to be an array"):
         setattr(pha, f"{attr}_ids", None)
-
-    assert str(de.value) == f"{attr} ids 'None' does not appear to be an array"
 
 
 @pytest.mark.parametrize("attr", ["response", "background"])
@@ -2892,13 +2861,12 @@ def test_pha_xxx_ids_invalid_not_known(attr):
     counts = np.ones_like(chans)
     pha = DataPHA("dummy", chans, counts)
 
-    with pytest.raises(DataErr) as de:
-        setattr(pha, f"{attr}_ids", [3])
-
     # The error message could be better (use list to remove the dict_keys)
     # but it is not a high priority.
     #
-    assert str(de.value) == f"3 is not a valid {attr} id in dict_keys([])"
+    with pytest.raises(DataErr,
+                       match=re.escape(f"3 is not a valid {attr} id in dict_keys([])")):
+        setattr(pha, f"{attr}_ids", [3])
 
 
 def test_pha_set_analysis_rate_invalid():
@@ -2908,10 +2876,9 @@ def test_pha_set_analysis_rate_invalid():
     counts = np.ones_like(chans)
     pha = DataPHA("dummy", chans, counts)
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="unknown plot type 'None', choose 'rate' or 'counts'"):
         pha.set_analysis("channel", type=None)
-
-    assert str(de.value) == "unknown plot type 'None', choose 'rate' or 'counts'"
 
 
 def test_pha_ignore_bad_no_quality():
@@ -2921,10 +2888,9 @@ def test_pha_ignore_bad_no_quality():
     counts = np.ones_like(chans)
     pha = DataPHA("dummy", chans, counts)
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="data set 'dummy' does not specify quality flags"):
         pha.ignore_bad()
-
-    assert str(de.value) == "data set 'dummy' does not specify quality flags"
 
 
 def test_pha_get_ylabel_yfac0():
@@ -3439,10 +3405,9 @@ def test_dataimgint_attribute_is_none(attribute, make_dataimgint):
 def test_dataimgint_no_sky(make_dataimgint):
     """Basic check (rely on base class to check all the combinations)."""
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="data set 'ival' does not contain a physical coordinate system"):
         make_dataimgint.get_physical()
-
-    assert str(de.value) == "data set 'ival' does not contain a physical coordinate system"
 
 
 def test_dataimgint_sky(make_dataimgint):
@@ -3765,10 +3730,9 @@ def test_image_filtered_apply_filter_invalid_size(make_test_image):
     data.mask = np.ones(data.y.size, dtype=bool)
     data.mask[0] = False
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="size mismatch between mask and data array"):
         data.apply_filter([1, 2])
-
-    assert str(de.value) == 'size mismatch between mask and data array'
 
 
 def test_pha_subtract_bkg_no_staterror():
@@ -3842,7 +3806,6 @@ def test_pha_subtract_bkg_filter_cih2datavar():
     error function.
 
     """
-
 
     chans = np.arange(1, 5)
     counts = np.asarray([10, 9, 3, 7])

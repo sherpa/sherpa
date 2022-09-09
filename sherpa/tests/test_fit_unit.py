@@ -450,12 +450,10 @@ def test_fit_raises_error_on_bgsubtraction(stat):
     fit = setup_pha_single(False, False, False, None, None, stat=statobj)
     fit.data.subtract()
 
-    with pytest.raises(FitErr) as excinfo:
+    with pytest.raises(FitErr,
+                       match=f"{statobj.name} statistics cannot be used with " +
+                       "background subtracted data"):
         fit.fit()
-
-    emsg = f"{statobj.name} statistics cannot be used with " + \
-           "background subtracted data"
-    assert str(excinfo.value) == emsg
 
 
 expected_leastsq = 31.5625
@@ -1751,11 +1749,9 @@ def test_fit_single_fails_nobins(stat):
     statobj = stat()
     fit = setup_stat_single(statobj, True, False)
     fit.data.ignore(None, None)
-    with pytest.raises(DataErr) as excinfo:
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
         fit.fit()
-
-    emsg = 'mask excludes all data'
-    assert str(excinfo.value) == emsg
 
 
 @pytest.mark.parametrize("stat",
@@ -1775,11 +1771,9 @@ def test_fit_single_fails_pha_nobins(stat):
     statobj = stat()
     fit = setup_pha_single(True, True, False, None, None, stat=statobj)
     fit.data.ignore(None, None)
-    with pytest.raises(DataErr) as excinfo:
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
         fit.fit()
-
-    emsg = 'mask excludes all data'
-    assert str(excinfo.value) == emsg
 
 
 # Note that prior to Sherpa 4.8.1 the error here would have been a
@@ -1798,12 +1792,10 @@ def test_fit_single_fails_dvar(usesys):
 
     statobj = Chi2DataVar()
     fit = setup_stat_single(statobj, False, usesys)
-    with pytest.raises(FitErr) as excinfo:
+    with pytest.raises(FitErr,
+                       match="zeros found in uncertainties, consider using " +
+                       "calculated uncertainties"):
         fit.fit()
-
-    emsg = 'zeros found in uncertainties, consider using ' + \
-           'calculated uncertainties'
-    assert str(excinfo.value) == emsg
 
 
 # Calculated using LevMar
@@ -2135,11 +2127,9 @@ def test_est_errors_single_fails_lsq(method, estmethod, usestat, usesys):
     fit.estmethod = estmethod()
     fit.fit()
 
-    with pytest.raises(EstErr) as excinfo:
+    with pytest.raises(EstErr,
+                       match="cannot estimate confidence limits with LeastSq"):
         fit.est_errors()
-
-    emsg = 'cannot estimate confidence limits with LeastSq'
-    assert str(excinfo.value) == emsg
 
 
 @pytest.mark.parametrize("method, estmethod", [
@@ -2163,11 +2153,9 @@ def test_est_errors_single_fails_nobins(method, estmethod):
     fit.fit()
 
     fit.data.ignore(None, None)
-    with pytest.raises(DataErr) as excinfo:
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
         fit.est_errors()
-
-    emsg = 'mask excludes all data'
-    assert str(excinfo.value) == emsg
 
 
 # Using Covariance does not trigger this error.
@@ -2195,11 +2183,9 @@ def test_est_errors_single_fails_badfit(stat, method, estmethod):
     fit.method = method()
     fit.estmethod = estmethod()
 
-    with pytest.raises(EstErr) as excinfo:
+    with pytest.raises(EstErr,
+                       match="reduced statistic larger than 3"):
         fit.est_errors()
-
-    emsg = 'reduced statistic larger than 3'
-    assert str(excinfo.value) == emsg
 
 
 # Restrict the choices run here to save time; ideally the parameter
@@ -2641,10 +2627,9 @@ def test_563_still_exists():
     mdl.c0 = 5.1
 
     fit = Fit(d, mdl, stat=WStat())
-    with pytest.raises(AttributeError) as excinfo:
+    with pytest.raises(AttributeError,
+                       match="'list' object has no attribute 'size'"):
         fit.calc_stat_info()
-
-    assert "'list' object has no attribute 'size'" in str(excinfo.value)
 
 
 # Note that the dof=1 tests don't really add any coverage to other
