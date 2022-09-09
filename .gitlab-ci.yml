@@ -12,7 +12,7 @@ stages:
   - deploy
   - test deploy
 
-#See this doc for GitLab's reccomendation for passing env variables between jobs:
+#See this doc for GitLab's recommendation for passing env variables between jobs:
 # https://docs.gitlab.com/ee/ci/variables/index.html#pass-an-environment-variable-to-another-job
 define-version:
   stage: version
