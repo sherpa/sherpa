@@ -283,6 +283,20 @@ def test_data_get_dims(data):
     assert data.get_dims() == ((X_ARRAY.size, ), X_ARRAY.size)
 
 
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_len_empty(data_class, args):
+    data = data_class("empty", *args)
+    assert len(data) == 0
+
+
+@pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
+def test_data_len(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    data = Dataclass(*args)
+    size = args[POS_Y_ARRAY[Dataclass]].size
+    assert len(data) == size
+
+
 @pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_str_repr(data):
     assert repr(data) == "<Data data set instance 'data_test'>"

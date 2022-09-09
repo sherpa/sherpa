@@ -799,6 +799,17 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         return len(ogrid)
 
+    # Allow users to len() a data object. The idea is that this
+    # represents the "number of elements" (e.g. the size of the
+    # independent axis). Does this make sense for some of the data
+    # classes (in particular RMF)?
+    #
+    def __len__(self):
+        if self.size is None:
+            return 0
+
+        return self.size
+
     @property
     def dep(self):
         """

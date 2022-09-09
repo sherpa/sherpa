@@ -991,7 +991,7 @@ def test_psfmodel_data_kernel_keep_dim():
     y = np.asarray([0.7, 0.2, 0.1])
     mdl = PSFModel(kernel=Data1D("foo", x, y))
     assert mdl.ndim is None
-    assert mdl.kernel.size == 3
+    assert len(mdl.kernel) == 3
 
     # DJB does not understand what these fields really mean,
     # but let's just check if they are changed or not.
@@ -1004,7 +1004,7 @@ def test_psfmodel_data_kernel_keep_dim():
     mdl.kernel = Data1D("bar", x2, y2)
     assert isinstance(mdl.kernel, Data1D)
     assert mdl.ndim is None
-    assert mdl.kernel.size == 4
+    assert len(mdl.kernel) == 4
     assert mdl.center == 3
     assert mdl.origin == 2
 
@@ -1015,7 +1015,7 @@ def test_psfmodel_data_kernel_change_dim():
     x = np.asarray([1, 2, 3])
     y = np.asarray([0.7, 0.2, 0.1])
     mdl = PSFModel(kernel=Data1D("foo", x, y))
-    assert mdl.kernel.size == 3
+    assert len(mdl.kernel) == 3
 
     # DJB does not understand what these fields really mean,
     # but let's just check if they are changed or not.
@@ -1028,7 +1028,7 @@ def test_psfmodel_data_kernel_change_dim():
     mdl.kernel = Data2D("bar", x0, x1, np.ones(5))
     assert isinstance(mdl.kernel, Data2D)
     assert mdl.ndim is None
-    assert mdl.kernel.size == 5
+    assert len(mdl.kernel) == 5
     assert mdl.center == pytest.approx(3)
     assert mdl.origin == pytest.approx(2)
 

@@ -3536,3 +3536,45 @@ def test_image_sparse_region_filter_out_all(make_image_sparse):
 
     out = data.get_dep(True)
     assert out == pytest.approx([])
+
+
+@pytest.mark.parametrize("data_args",
+                         [ARF_ARGS, RMF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
+def test_len_data(data_args):
+    data_class, args = data_args
+    data = data_class(*args)
+
+    # The last argument should be the "dependent" axis (it
+    # is tricky for the RMF case).
+    #
+    assert len(data) == args[-1].size
+
+
+def test_len_datapha_empty():
+    data = DataPHA('empty', None, None)
+    assert len(data) == 0
+
+
+def test_len_datapha_grouped():
+    """Special case a grouped PHA"""
+    chans = np.arange(1, 51, 1, dtype=int)
+    grps = [1] + [-1] * 49
+    data = DataPHA('testdata', chans, np.zeros_like(chans),
+                   grouping=grps)
+
+    # Just make sure they behave as expected, as a reminder if we
+    # change any routine.
+    assert data.grouped
+    assert len(data) == 50
+    assert len(data.y) == 50
+    assert len(data.get_y()) == 1
+    assert len(data.get_dep()) == 50
+    assert len(data.get_dep(filter=True)) == 1
+
+
+def test_len_image_sparse(make_image_sparse):
+    """Special case an image"""
+    data = make_image_sparse
+
+    assert len(data) == len(data.y)
+    assert len(data) == 5
