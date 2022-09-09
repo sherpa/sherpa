@@ -12,7 +12,7 @@ stages:
       - conda build --python ${SHERPA_PYTHON_VERSION} --output-folder /tmp/packages recipes/conda       #Specifying Python version with "--python 3.*" is required to allow selectors like "# [py>39]" to work
       - cp -r /tmp/packages .
   artifacts:
-    expire_in: "2 weeks"
+    expire_in: "3 days"
     paths:
         - packages/
 
