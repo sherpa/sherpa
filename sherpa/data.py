@@ -124,7 +124,8 @@ __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
            'Data1DAsymmetricErrs', 'Data2D', 'Data2DInt')
 
 
-def _check(array, warn_on_convert=True):
+def _check(array):
+    """Ensure the data is a 1D array, or can be converted to one."""
 
     # Special case support for None.
     if array is None:
@@ -142,9 +143,6 @@ def _check(array, warn_on_convert=True):
 
         return array
 
-    if warn_on_convert:
-        warnings.warn(f"Converting array {array} to numpy array.")
-
     return _check(numpy.asanyarray(array))
 
 
@@ -155,7 +153,7 @@ def _check_nomask(array):
     # Ensure we do NumPy conversions after checking for mask to
     # make sure we don't end up removing .mask in the following.
     #
-    return _check(array, warn_on_convert=False)
+    return _check(array)
 
 
 def _check_dep(array):
@@ -631,7 +629,7 @@ class Filter():
 
         # Ensure we always return a ndarray.
         #
-        array = _check(array, warn_on_convert=False)
+        array = _check(array)
         if self.mask is True:
             return array
 
@@ -914,7 +912,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
                 warnings.warn(f"The mask of {attr} differs from the dependent array, only the mask of the dependent array is used in Sherpa.")
 
-        val = _check(val, warn_on_convert=False)
+        val = _check(val)
         nval = len(val)
 
         nelem = self.size
@@ -1329,7 +1327,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         if nelem is None:
             raise DataErr("sizenotset", self.name)
 
-        data = _check(data, warn_on_convert=False)
+        data = _check(data)
         ndata = len(data)
 
         if ndata != nelem:

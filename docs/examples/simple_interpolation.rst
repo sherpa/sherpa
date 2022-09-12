@@ -42,7 +42,7 @@ x    y
 
 which can be "loaded" into Sherpa using the
 :py:class:`~sherpa.data.Data1D` class:
-    
+
    >>> from sherpa.data import Data1D
    >>> x = [1, 1.5, 2, 4, 8, 17]
    >>> y = [1, 1.5, 1.75, 3.25, 6, 16]
@@ -55,22 +55,13 @@ which can be "loaded" into Sherpa using the
    syserror  = None
    None
 
-.. note::
-
-   Creating the :py:class:`~sherpa.data.Data1D` object will - from
-   Sherpa 4.12.0 - warn you that it is converting the dependent axis
-   data to NumPy. That is, the above call will cause the following
-   message to be displayed::
-
-        UserWarning: Converting array [1, 1.5, 1.75, 3.25, 6, 16] to numpy array
-
 This can be displayed using the :py:class:`~sherpa.plot.DataPlot` class:
 
    >>> from sherpa.plot import DataPlot
    >>> dplot = DataPlot()
    >>> dplot.prepare(d)
    >>> dplot.plot()
-   
+
 .. image:: ../_static/examples/interpolation/data.png
 
 Setting up the model
@@ -85,16 +76,16 @@ data by using the :py:class:`~sherpa.models.basic.Polynom1D` class:
    polynom1d
       Param        Type          Value          Min          Max      Units
       -----        ----          -----          ---          ---      -----
-      polynom1d.c0 thawed            1 -3.40282e+38  3.40282e+38           
-      polynom1d.c1 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c2 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38           
+      polynom1d.c0 thawed            1 -3.40282e+38  3.40282e+38
+      polynom1d.c1 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c2 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38
 
 The help for Polynom1D shows that the model is defined as:
 
@@ -148,7 +139,7 @@ select the more robust method):
    stat      = LeastSq
    method    = NelderMead
    estmethod = Covariance
-   
+
 In this case there is no need to change any of the options for the
 optimiser (the least-squares statistic has no options), so the objects
 are passed straight to the :py:class:`~sherpa.fit.Fit` object.
@@ -163,7 +154,7 @@ the fit was succesfull (i.e. it converged):
    >>> res = f.fit()
    >>> res.succeeded
    True
-   
+
 For this example the time to perform the fit is very short, but for
 complex data sets and models the call can take a long time!
 
@@ -179,8 +170,8 @@ variable retutrns more details:
    Data points           = 6
    Degrees of freedom    = 4
    Change in statistic   = 253.438
-      polynom1d.c0   1.77498     
-      polynom1d.c2   0.0500999   
+      polynom1d.c0   1.77498
+      polynom1d.c2   0.0500999
    >>> print(res)
    datasets       = None
    itermethodname = none
@@ -205,16 +196,16 @@ The best-fit parameter values can also be retrieved from the model itself:
    polynom1d
       Param        Type          Value          Min          Max      Units
       -----        ----          -----          ---          ---      -----
-      polynom1d.c0 thawed      1.77498 -3.40282e+38  3.40282e+38           
-      polynom1d.c1 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c2 thawed    0.0500999 -3.40282e+38  3.40282e+38           
-      polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38           
+      polynom1d.c0 thawed      1.77498 -3.40282e+38  3.40282e+38
+      polynom1d.c1 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c2 thawed    0.0500999 -3.40282e+38  3.40282e+38
+      polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38
 
 .. _simple_interpolation_stat_order2:
 
@@ -234,7 +225,7 @@ which will make more sense
    set of parameter values, to give more confidence that the fit has
    not been caught in a local minimum. This example is simple enough
    that this is not needed here.
-   
+
 To compare the new model to the data I am going to use a
 :py:class:`~sherpa.plot.FitPlot` - which combines a DataPlot
 and ModelPlot - and a :py:class:`~sherpa.plot.ResidPlot` - to look
@@ -303,16 +294,16 @@ The new model parameters are:
    polynom1d
       Param        Type          Value          Min          Max      Units
       -----        ----          -----          ---          ---      -----
-      polynom1d.c0 thawed    -0.248624 -3.40282e+38  3.40282e+38           
-      polynom1d.c1 thawed     0.925127 -3.40282e+38  3.40282e+38           
-      polynom1d.c2 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38           
-      polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38           
+      polynom1d.c0 thawed    -0.248624 -3.40282e+38  3.40282e+38
+      polynom1d.c1 thawed     0.925127 -3.40282e+38  3.40282e+38
+      polynom1d.c2 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c3 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c4 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c5 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c6 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c7 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.c8 frozen            0 -3.40282e+38  3.40282e+38
+      polynom1d.offset frozen            0 -3.40282e+38  3.40282e+38
 
 .. _simple_interpolation_stat_order1:
 
@@ -330,7 +321,7 @@ and the best-fit statistic value can be compared to the
    :py:func:`sherpa.utils.calc_mlr`, to see if one can be preferred
    over the other, but these are not relevant here, as the statistic
    being used is just the least-squared difference.
-   
+
 The two models can be visually compared by taking advantage of the previous
 plot objects retaining the values from the previous fit:
 
@@ -359,5 +350,5 @@ to match the colors of the previous plot):
    >>> plt.plot(xgrid, y1, label='order=1');
    >>> plt.legend();
    >>> plt.title("Manual evaluation of the models");
-   
+
 .. image:: ../_static/examples/interpolation/model_comparison_manual.png

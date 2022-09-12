@@ -1931,13 +1931,12 @@ def test_pha_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
 def test_pha_creation_warns_about_non_numpy_channel():
     """What happens if the channel array is not a NumPy array?
 
-    At the moment there is no warning for the independent axis.
+    There used to be a UserWarning but this has now been removed.
     """
 
     chans = [1, 2, 3]
     counts = np.ones(3)
-    with pytest.warns(UserWarning, match=r'Converting array \[1, 2, 3\] to numpy array\.'):
-        d = DataPHA('tmp', chans, counts)
+    d = DataPHA('tmp', chans, counts)
 
     assert isinstance(d.x, np.ndarray)
     assert isinstance(d.channel, np.ndarray)
@@ -1946,12 +1945,14 @@ def test_pha_creation_warns_about_non_numpy_channel():
 
 
 def test_pha_creation_warns_about_non_numpy_counts():
-    """What happens if the counts array is not a NumPy array?"""
+    """What happens if the counts array is not a NumPy array?
+
+    There used to be a UserWarning but this has now been removed.
+    """
 
     chans = np.asarray([1, 2, 3])
     counts = [1, 0, 1]
-    with pytest.warns(UserWarning, match=r'Converting array \[1, 0, 1\] to numpy array\.'):
-        d = DataPHA('tmp', chans, counts)
+    d = DataPHA('tmp', chans, counts)
 
     assert isinstance(d.y, np.ndarray)
     assert isinstance(d.counts, np.ndarray)

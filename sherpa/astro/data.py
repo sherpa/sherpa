@@ -3089,7 +3089,7 @@ must be an integer.""")
         if nelem is None:
             raise DataErr("sizenotset", self.name)
 
-        data = _check(data, warn_on_convert=False)
+        data = _check(data)
         ndata = len(data)
 
         # We allow the data to have either (using the un-grouped data)
@@ -3241,7 +3241,7 @@ must be an integer.""")
         if nelem is None:
             raise DataErr("sizenotset", self.name)
 
-        data = _check(data, warn_on_convert=False)
+        data = _check(data)
         ndata = len(data)
         if ndata != nelem:
             raise DataErr("mismatchn", "data", "array", nelem, ndata)
