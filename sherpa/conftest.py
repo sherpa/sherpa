@@ -558,6 +558,15 @@ def old_numpy_printing():
 
 PLOT_BACKENDS = [dummy_backend]
 if pylab_backend is not None:
+
+    # override the matplotlib backend from TkAgg to Agg to try
+    # and avoid errors from multiprocessing thanks to the error
+    # "Tcl_AsyncDelete: async handler deleted by the wrong thread"
+    # See issue #1590.
+    #
+    import matplotlib
+    matplotlib.use("agg")
+
     PLOT_BACKENDS.append(pylab_backend)
 
 
