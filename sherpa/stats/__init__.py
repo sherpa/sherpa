@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019, 2020
-#             Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019, 2020, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -793,8 +793,11 @@ class Chi2XspecVar(Chi2):
     bin.
 
     The calculation of the variance is the same as `Chi2DataVar`
-    except that if the number of counts in a bin is less than 1
-    then the variance for that bin is set to 1.
+    except that if the number of counts in a bin is less than 1 then
+    the variance for that bin is set to 1. Note that this does not
+    handle background subtraction, so to match XSPEC extra logic is
+    present in sherpa.astro.data.DataPHA.get_staterror to handle that
+    case.
 
     See Also
     --------

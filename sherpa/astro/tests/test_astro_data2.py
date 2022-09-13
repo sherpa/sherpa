@@ -37,6 +37,7 @@ from sherpa.astro.utils._region import Region
 from sherpa.data import Data2D, Data2DInt
 from sherpa.models import Delta2D, Polynom2D
 from sherpa.plot import backend, dummy_backend
+from sherpa.stats._statfcts import calc_chi2datavar_errors
 from sherpa.utils import dataspace2d
 from sherpa.utils.err import DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
@@ -3719,3 +3720,94 @@ def test_image_filtered_apply_filter_invalid_size(make_test_image):
         data.apply_filter([1, 2])
 
     assert str(de.value) == 'size mismatch between mask and data array'
+
+
+def test_pha_subtract_bkg_no_staterror():
+    """Check what happens with no staterror function for the background.
+
+    The idea is that the data has a statistical error column but the
+    background does not. In this case we can't calculate an error. The
+    code currently returns None rather than raising an error.
+
+    """
+
+    chans = np.arange(1, 5)
+    counts = np.asarray([10, 9, 3, 7])
+    errs = np.asarray([3, 2, 1, 2])
+    data = DataPHA("ex", chans, counts, errs)
+
+    bcounts = np.asarray([2, 1, 2, 4])
+    bkg = DataPHA("bkg", chans, bcounts)
+
+    data.set_background(bkg)
+    data.subtract()
+
+    assert bkg.staterror is None
+    assert data.staterror is not None
+
+    # The data.get_staterror call is the code being tested here, but
+    # the other asserts are being made to check that nothing has
+    # changed.
+    #
+    assert bkg.get_staterror() is None
+    assert data.get_staterror() is None
+
+
+def test_pha_subtract_bkg_filter_false():
+    """Check what happens with background and filter=False
+
+    Looks like this has not been tested, so add an explicit check.
+
+    """
+
+    # Note that the background has a different set of groups to the
+    # data, but it is over-ridden when computing the
+    # background-subtracted values.
+    #
+    chans = np.arange(1, 5)
+    counts = np.asarray([10, 9, 3, 7])
+    grps = np.asarray([1, 1, -1, 1])
+    data = DataPHA("ex", chans, counts, grouping=grps)
+
+    bcounts = np.asarray([2, 0, 2, 4])
+    bgrps = np.asarray([1, -1, -1, 1])
+    bkg = DataPHA("bkg", chans, bcounts, grouping=bgrps)
+
+    data.set_background(bkg)
+    data.subtract()
+
+    bgot = bkg.get_staterror(filter=False, staterrfunc=lambda x: np.sqrt(x))
+    assert bgot == pytest.approx([2, 2])
+
+    expected = np.sqrt(np.asarray([10, 12, 7]) + np.asarray([2, 2, 4]))
+    got = data.get_staterror(filter=False, staterrfunc=lambda x: np.sqrt(x))
+    assert got == pytest.approx(expected)
+
+
+def test_pha_subtract_bkg_filter_cih2datavar():
+    """Check what happens with background and chi2datavar
+
+    Looks like this has not been tested, so add an explicit check.
+
+    Follows test_pha_subtract_bkg_filter_false but uses a different
+    error function.
+
+    """
+
+
+    chans = np.arange(1, 5)
+    counts = np.asarray([10, 9, 3, 7])
+    data = DataPHA("ex", chans, counts)
+
+    bcounts = np.asarray([2, 0, 2, 4])
+    bkg = DataPHA("bkg", chans, bcounts)
+
+    data.set_background(bkg)
+    data.subtract()
+
+    bgot = bkg.get_staterror(staterrfunc=calc_chi2datavar_errors)
+    assert bgot == pytest.approx([np.sqrt(2), 0, np.sqrt(2), np.sqrt(4)])
+
+    expected = np.sqrt(np.asarray([10, 9, 3, 7]) + np.asarray([2, 0, 2, 4]))
+    got = data.get_staterror(staterrfunc=calc_chi2datavar_errors)
+    assert got == pytest.approx(expected)

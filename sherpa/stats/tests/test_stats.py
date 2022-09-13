@@ -1,6 +1,6 @@
 #
 #  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021, 2022
-#       Smithsonian Astrophysical Observatory
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -731,19 +731,30 @@ def test_wstat_calc_stat_info(hide_logging, make_data_path, clean_astro_ui):
     ui.get_stat_info()
 
 
-@pytest.mark.xfail(reason='y errors are not calculated correctly')
-@pytest.mark.parametrize("bexp,yexp,dyexp",
-                         [(1,
+@pytest.mark.parametrize("sexp,bexp,sscal,bscal,yexp,dyexp",
+                         [(1, 1, 1, 1,
                            [0, -1, -3, 1, 3, 0, -2, 2, 0],
                            [1, 1, 1.73205078, 1, 1.73205078, 1.41421354, 2, 2, 2.44948983]),
-                          (10,
+                          (1, 10, 1, 1,
                            [0, -0.1, -0.3, 1, 3, 0.9, 0.7, 2.9, 2.7],
                            [0.1, 0.1, 0.173205078, 1, 1.73205078, 1.0049876, 1.01488912, 1.73493516, 1.74068952]),
-                          (0.1,
+                          (1, 0.1, 1.0, 1.0,
                            [0, -10, -30, 1, 3, -9, -29, -7, -27],
-                           [1, 10, 17.320507, 1, 1.73205078, 10.0498753, 17.3493519, 10.1488914, 17.4068947])
+                           [1, 10, 17.320507, 1, 1.73205078, 10.0498753, 17.3493519, 10.1488914, 17.4068947]),
+                          (100, 10, 0.1, 0.1,
+                           [0, -10, -30, 1, 3, -9, -29, -7, -27],
+                           [1, 10, 17.3205078, 1, 1.73205081, 10.0498758, 17.3493519, 10.1488918, 17.4068958]),
+                          (100, 10, 0.1, 0.2,
+                           [0, -5, -15, 1, 3, -4, -14, -2, -12],
+                           [1, 5, 8.66025388, 1, 1.73205081, 5.09901941, 8.7177977, 5.29150255, 8.83176103]),
+                          (100, 50, 0.1, 0.4,
+                           [0, -0.5, -1.5, 1, 3, 0.5, -0.5, 2.5, 1.5],
+                           [0.5, 0.5, 0.866025407, 1, 1.73205081, 1.11803403, 1.32287564, 1.80277564, 1.93649177]),
+                          (100, 200, 0.1, 0.2,
+                           [0, -0.25, -0.75, 1, 3, 0.75, 0.25, 2.75, 2.25],
+                           [0.25, 0.25, 0.433012703, 1, 1.73205081, 1.03077637, 1.08972471, 1.75, 1.78535711])
                           ])
-def test_xspecvar_zero_handling(bexp, yexp, dyexp):
+def test_xspecvar_zero_handling(sexp, bexp, sscal, bscal, yexp, dyexp):
     """How does XSPEC variance handle 0 in source and/or background?
 
     The values were calculated using XSPEC 12.10.1m (HEASOFT 6.26.1)
@@ -757,8 +768,12 @@ def test_xspecvar_zero_handling(bexp, yexp, dyexp):
 
     where foo.fits is a fake PHA file set up to have the channel/count
     values used below (a CSC-style PHA file was used so that source
-    and background were in the same file but a separate bgnd PHA
-    file could also have been used).
+    and background were in the same file but a separate bgnd PHA file
+    could also have been used). Remember that XSPEC plots rates and
+    not counts, so when the source exposure is not 1s, you need to
+    account for this, as the y and dy values checked in this routine
+    are in counts.
+
     """
 
     stat = Chi2XspecVar()
@@ -766,10 +781,39 @@ def test_xspecvar_zero_handling(bexp, yexp, dyexp):
     scnts = numpy.asarray([0, 0, 0, 1, 3, 1, 1, 3, 3], dtype=numpy.int16)
     bcnts = numpy.asarray([0, 1, 3, 0, 0, 1, 3, 1, 3], dtype=numpy.int16)
 
-    s = DataPHA('src', chans, scnts, exposure=1)
-    b = DataPHA('bkg', chans, bcnts, exposure=bexp)
+    s = DataPHA('src', chans, scnts, exposure=sexp, backscal=sscal)
+    b = DataPHA('bkg', chans, bcnts, exposure=bexp, backscal=bscal)
     s.set_background(b)
     s.subtract()
+
+    y, dy, other = s.to_fit(staterrfunc=stat.calc_staterror)
+    assert other is None
+    assert y == pytest.approx(yexp)
+    assert dy == pytest.approx(dyexp)
+
+
+def test_xspecvar_zero_handling_variable():
+    """How does XSPEC variance handle variable BACKSCAL?
+
+    test_xspecvar_zero_handling checks most things, but not a
+    variable scaling (that is, some combination of AREASCAL and
+    BACKSCAL is not constant for each bin). In this case we handle
+    a single case jsut to check.
+    """
+
+    stat = Chi2XspecVar()
+    chans = numpy.arange(1, 5, dtype=numpy.int16)
+    cnts = numpy.zeros(4, dtype=numpy.int16)
+
+    sscal = numpy.asarray([0.1, 0.2, 2, 5])
+    bscal = numpy.asarray([0.1, 0.1, 4, 20])
+    s = DataPHA('src', chans, cnts, exposure=100, backscal=sscal)
+    b = DataPHA('bkg', chans, cnts, exposure=125, backscal=bscal)
+    s.set_background(b)
+    s.subtract()
+
+    yexp = numpy.asarray([0, 0, 0, 0])
+    dyexp = numpy.asarray([0.8, 1.0, 0.4, 0.2])
 
     y, dy, other = s.to_fit(staterrfunc=stat.calc_staterror)
     assert other is None

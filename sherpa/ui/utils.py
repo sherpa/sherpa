@@ -2264,7 +2264,8 @@ class Session(NoNewAttributesAfterInit):
            data.
 
         chi2datavar
-           Chi-squared with data variance.
+           Chi-squared with data variance. If the data has 0 counts then
+           the error for that bin is 0.
 
         chi2gehrels
            Chi-squared with gehrels method [2]_. This is the default method.
@@ -2273,8 +2274,13 @@ class Session(NoNewAttributesAfterInit):
            Chi-squared with model amplitude variance.
 
         chi2xspecvar
-           Chi-squared with data variance (XSPEC-style, variance = 1.0
-           if data less than or equal to 0.0).
+           Chi-squared with data variance to match XSPEC. Errors from
+           zero-count channels (source or background) are ignored if
+           the other channel (background or source) contains counts,
+           or replaced by a minimum value (when both source or
+           background are empty). It should not be used when a model
+           is fit to the background rather than the background is
+           subtracted from the data.
 
         cstat
            A maximum likelihood function (the XSPEC implementation of

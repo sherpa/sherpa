@@ -98,6 +98,7 @@ import numpy
 from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
+from sherpa.stats import Chi2XspecVar
 from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
@@ -1334,6 +1335,156 @@ def validate_wavelength_limits(wlo, whi, emax):
         hi = None
 
     return lo, hi
+
+
+def replace_xspecvar_values(src_counts, bkg_counts,
+                            staterr, bkg_variances,
+                            src_scale, bkg_scales):
+    """Handle error/variances when 0's are present using XSPEC var.
+
+    Correct the error for background-subtracted data when using the
+    XSPEC variance when at least one of the source or background terms
+    has 0 counts in it. This is to address
+    https://github.com/sherpa/sherpa/issues/356
+
+    Parameters
+    ----------
+    src_counts : ndarray
+        The number of source counts in each group.
+    bkg_counts : list of ndarray
+        The number of background counts in each group, for each
+        background element.
+    staterr : ndarray
+        The error terms for the source counts (expected to be the XSPEC
+        error function ran on src_counts). This may be changed.
+    bkg_variances : list of ndarray
+        The variances for the background counts (expected to be the
+        square of the XSPEC error function ran on the bkg_counts
+        elements). This may be changed. The length of bkg_variances must
+        match bkg_counts.
+    src_scale : number or ndarray
+        The combined exposure, backscal, and areascal for the source.
+    bkg_scales : list of number or ndarray
+        The combined exposure, backscal, and areascal for the background
+        components.
+
+    Notes
+    -----
+    The chi2xspecvar error returns 1 when given 0 counts, which is
+    okay when there's no background, but fails
+
+    - when there's background subtraction, as it doesn't match XSPEC,
+      and is addressed here
+
+    - is not at all obvious what to do when using chi2xspecvar but are
+      trying to fit the background rather than subtract is,
+      and this is *not* addressed here.
+
+    When looking at the simple case of a source bin with a single
+    background component then we have to be concerned with
+
+    a) either the source or the background component has 0 counts but
+       the other one has positive (non-zero) counts
+
+    b) both source and background have 0 counts.
+
+    For case a, we can just set the error (or variance) value to 0 for
+    the element with 0 counts. This essentially drops that element
+    from the calculation.
+
+    For case b then, in order to match XSPEC, we have to clear out the
+    background component and then replace the source error term with a
+    value depending on the value of the relative scaling terms of the
+    source and background components.
+
+    """
+
+    # We care about those elements where either
+    # - all components (source, background_1 .. n) are 0
+    # - some are 0
+    #
+    counts = numpy.asarray([src_counts] + bkg_counts)
+    numzero = numpy.sum(counts == 0, axis=0)
+
+    nbkg = len(bkg_variances)
+    ncpts = 1 + nbkg
+    all_zero = numzero == ncpts
+    some_zero = (numzero > 0) & (numzero < ncpts)
+
+    # For the some_zero cases we just set them to 0. Unfortunately
+    # identifying them requires another loop as some_zero has
+    # collapsed the data.
+    #
+    idx, = numpy.asarray(src_counts == 0 & some_zero).nonzero()
+    staterr[idx] = 0
+
+    for bcnts, bvar in zip(bkg_counts, bkg_variances):
+        idx, = numpy.asarray(bcnts == 0 & some_zero).nonzero()
+        bvar[idx] = 0
+
+    # Do we have any bins where all source and background components
+    # are zero? If not, we can return immediately.
+    #
+    nzero = all_zero.sum()
+    if nzero == 0:
+        return
+
+    # When both source and background are 0, the replacement
+    # depends on how the source and background scaling works.
+    # This is based on a discussion with the XSPEC developers
+    # and the code in Xspec/sc/XSStat/ChiSquare.cxx, in
+    # particular ChiSquare::applyMinVariance. The XSPEC code
+    # only deals with a single background component, so here
+    # we average the scaling factors from multiple components
+    # for the check.
+    #
+    # The XSPEC code uses a value (for the variance) of the
+    # minumum of
+    #
+    #    1 / src_texp^2
+    #    scale^2 / bkg_texp^2
+    #
+    # where scale = (AREASCAL * BACKSCAL)_src / (AREASCAL * BACKSCAL)_bkg
+    #
+    # However, XSPEC is calculating a rate and we want counts,
+    # so we care about the minimum of (for the variance)
+    #
+    #   1
+    #   scale^2 * src_texp^2 / bkg_texp^2
+    #
+    # although we actually use the square root of this, as we
+    # change the staterr array (to ensure it doesn't get
+    # re-scaled when calculating statvar below).
+    #
+
+    # The conversion is per-bin, as the scaling factors are per-bin,
+    # but they may be specified as a scalar.  In that case, convert
+    # into an array to simplify the following. The requirement here is
+    # that we have the same channel range in each background component
+    # as the source.
+    #
+    nelem = len(staterr)
+    scales = numpy.zeros((nbkg, nelem))
+    for idx, bscale in enumerate(bkg_scales):
+        if numpy.isscalar(bscale):
+            scales[idx] = numpy.ones(nelem) * bscale
+        else:
+            scales[idx] = bscale
+
+    # Use the average background-scaling factor for the background, as
+    # it's not clear what is done in XSPEC for multiple-background
+    # cases.
+    #
+    bkg_scale = scales.sum(axis=0) / nbkg
+
+    s = numpy.ones(nzero)
+    b = (src_scale / bkg_scale)[all_zero]
+    combined = numpy.asarray([s, b])
+    minval = numpy.min(combined, axis=0)
+
+    staterr[all_zero] = minval
+    for bvar in bkg_variances:
+        bvar[all_zero] = 0
 
 
 class DataPHA(Data1D):
@@ -3468,135 +3619,151 @@ must be an integer.""")
         >>> dy = dset.get_staterror(staterrfunc=stat.calc_staterror)
 
         """
-        staterr = self.staterror
 
         filter = bool_cast(filter)
         if filter:
-            staterr = self.apply_filter(staterr, self._sum_sq)
+            filterfunc = self.apply_filter
         else:
-            staterr = self.apply_grouping(staterr, self._sum_sq)
+            filterfunc = self.apply_grouping
 
-        # The source AREASCAL is not applied here, but the
-        # background term is.
+        # Use local definitions for routines that calculate the error
+        # and scaling terms as they use the same logic for the source
+        # and background datasets, including making it obvious that
+        # the filtering and grouping comes from the "source" object
+        # (i.e. the self object).
         #
-        if (staterr is None) and (staterrfunc is not None):
-            cnts = self.counts
+        def get_error(dataobj):
+            """Get the fitered and grouped error.
 
-            if filter:
-                cnts = self.apply_filter(cnts)
-            else:
-                cnts = self.apply_grouping(cnts)
+            The return value is the error array and then either None
+            or the counts array that was used to calculate the errors.
+            That is, the second term is only set when staterrfunc was
+            called (this is only needed when the XSPEC variance
+            routine is used but this is not checked for here).
 
-            staterr = staterrfunc(cnts)
-
-            # Need to apply the area scaling to the calculated
-            # errors. Grouping and filtering complicate this; is
-            # _middle the best choice here?
-            #
-            """
-            area = self.areascal
-            if staterr is not None and area is not None:
-                if numpy.isscalar(area):
-                    area = numpy.zeros(self.channel.size) + area
-
-                # TODO: replace with _check_scale?
-                if filter:
-                    area = self.apply_filter(area, self._middle)
-                else:
-                    area = self.apply_grouping(area, self._middle)
-                staterr = staterr / area
             """
 
-        if (staterr is not None) and self.subtracted:
-            bkg_staterr_list = []
+            if dataobj.staterror is None:
+                if staterrfunc is None:
+                    return None, None
 
-            # for bkg in self._backgrounds.values():
-            for key in self.background_ids:
-                bkg = self.get_background(key)
-                berr = bkg.staterror
-                if filter:
-                    berr = self.apply_filter(berr, self._sum_sq)
-                else:
-                    berr = self.apply_grouping(berr, self._sum_sq)
+                cnts = filterfunc(dataobj.counts)
+                return staterrfunc(cnts), cnts
 
-                if (berr is None) and (staterrfunc is not None):
-                    bkg_cnts = bkg.counts
-                    if filter:
-                        bkg_cnts = self.apply_filter(bkg_cnts)
-                    else:
-                        bkg_cnts = self.apply_grouping(bkg_cnts)
+            return filterfunc(dataobj.staterror,
+                              groupfunc=dataobj._sum_sq), None
 
-                    # TODO: shouldn't the following logic be somewhere
-                    #       else more general?
-                    if hasattr(staterrfunc, '__name__') and \
-                       staterrfunc.__name__ == 'calc_chi2datavar_errors' and \
-                       0.0 in bkg_cnts:
-                        mask = (numpy.asarray(bkg_cnts) != 0.0)
-                        berr = numpy.zeros(len(bkg_cnts))
-                        berr[mask] = staterrfunc(bkg_cnts[mask])
-                    else:
-                        berr = staterrfunc(bkg_cnts)
+        def get_scale(dataobj):
+            """Calculate the scaling value.
 
-                # FIXME: handle this
-                # assert (berr is not None)
+            Returns EXPOSURE * BACKSCAL * AREASCAL (1.0 is used as a
+            replacement for any value is not set).
 
-                # This case appears when the source dataset has an error
-                # column and at least one of the background(s) do not.
-                # Because the staterr is not None and staterrfunc is, I think
-                # we should return None.  This way the user knows to call with
-                # staterrfunc next time.
-                if berr is None:
-                    return None
+            """
 
-                bksl = bkg.backscal
-                if bksl is not None:
-                    bksl = self._check_scale(bksl, filter=filter)
-                    berr = berr / bksl
+            scale = 1.0
+            if dataobj.backscal is not None:
+                scale *= self._check_scale(dataobj.backscal, filter=filter)
 
-                # Need to apply filter/grouping of the source dataset
-                # to the background areascal, so can not just say
-                #   area = bkg.get_areascal(filter=filter)
+            if dataobj.areascal is not None:
+                scale *= self._check_scale(dataobj.areascal, filter=filter)
+
+            if dataobj.exposure is not None:
+                scale *= dataobj.exposure
+
+            return scale
+
+        staterr, src_counts = get_error(self)
+        if staterr is None:
+            return None
+
+        if not self.subtracted:
+            return staterr
+
+        src_scale = get_scale(self)
+
+        # For each background dataset we filter and/or group the
+        # errors to match the source dataset, and then apply the
+        # various scaling factors (areascal, backscal, and exposure
+        # scaling) to correct them to match the source dataset.  The
+        # per-group variance is then stored, so that it can be
+        # combined to create the overall background contribution,
+        # which can then have the "source" side of the scaling values
+        # applied to it before being added to the source error term.
+        #
+        # A complication is if the errors are being calculated with
+        # the datavar method. That is, if the staterror attribute is
+        # None and staterrfunc is using "XSPEC" errors - in this case
+        # Chi2XspecVar.calc_staterror (technically it's really
+        # anything that uses
+        # sherpa.stats._statfcts.calc_chi2xspecvar_errors but do we
+        # want to catch this as well as the more OO version). This
+        # requires storing the scaling factors.
+        #
+        bkg_variances = []
+        bkg_counts = []
+        bkg_scales = []
+
+        for key in self.background_ids:
+            bkg = self.get_background(key)
+            berr, bcounts = get_error(bkg)
+            if berr is None:
+                # We do not know how to generate an error, so
+                # return None. An alternative would be to raise an
+                # error, since we have an error from the source.
                 #
-                area = bkg.areascal
-                if area is not None:
-                    area = self._check_scale(area, filter=filter)
-                    berr = berr / area
+                return None
 
-                if bkg.exposure is not None:
-                    berr = berr / bkg.exposure
+            bscale = get_scale(bkg)
 
-                berr = berr * berr
-                bkg_staterr_list.append(berr)
+            # Apply the scaling factors to the variances
+            #
+            bkg_variances.append(1.0 * berr * berr / (bscale * bscale))
 
-            nbkg = len(bkg_staterr_list)
-            assert nbkg > 0  # TODO: should we remove this assert?
-            if nbkg == 1:
-                bkgsum = bkg_staterr_list[0]
-            else:
-                bkgsum = sum(bkg_staterr_list)
+            # These only need to be stored for the XSPEC variance case.
+            #
+            bkg_scales.append(bscale)
+            bkg_counts.append(bcounts)
 
-            bscal = self.backscal
-            if bscal is not None:
-                bscal = self._check_scale(bscal, filter=filter)
-                bkgsum = (bscal * bscal) * bkgsum
+        # For the variance case we need to handle things carefully
+        # when
+        #
+        #  1. we are calculating errors rather than them being
+        #     sent in (i.e. both src_counts and bkg_counts are
+        #     not None);
+        #
+        #  2. and we are using the XSPEC variance method (we check
+        #     only for the Chi2XspecVar method version and not the
+        #     low-level
+        #     sherpa.stats._statfcts.calc_chi2xspecvar_errors
+        #     case, as users are not expected to be using this).
+        #
+        # The reason for point 2 is that calc_chi2xspecvar_errors
+        # returns an error of 1 when the number of counts is 0.  This
+        # is okay when there's no background subtraction, but once we
+        # have to worry about the background bins it gets complicated.
+        # For each bin we have src_i and bkg_i_j (for j=1 to N where N
+        # is normally 1), and these refer to the number of counts that
+        # are in this bin (i.e. that are then passed to staterrfct).
+        #
+        # If all the values for the bin are > 0 then we can combine
+        # the variances (and so can ignore them here), otherwise we have
+        # to recalculate the error terms.
+        #
+        if staterrfunc == Chi2XspecVar.calc_staterror and \
+           src_counts is not None and all(n is not None for n in bkg_counts):
+            replace_xspecvar_values(src_counts, bkg_counts,
+                                    staterr, bkg_variances,
+                                    src_scale, bkg_scales)
 
-            # Correct the background counts by the source AREASCAL
-            # setting. Is this correct?
-            ascal = self.areascal
-            if ascal is not None:
-                ascal = self._check_scale(ascal, filter=filter)
-                bkgsum = (ascal * ascal) * bkgsum
+        nbkg = len(bkg_variances)
+        if nbkg == 1:
+            bkgvar = bkg_variances[0]
+        else:
+            bkgvar = sum(bkg_variances) / (nbkg * nbkg)
 
-            if self.exposure is not None:
-                bkgsum = (self.exposure * self.exposure) * bkgsum
-
-            nbkg = SherpaFloat(nbkg)
-
-            if staterr is not None:
-                staterr = staterr * staterr + bkgsum / (nbkg * nbkg)
-                staterr = numpy.sqrt(staterr)
-
-        return staterr
+        statvar = staterr * staterr + bkgvar * src_scale * src_scale
+        return numpy.sqrt(statvar)
 
     def get_syserror(self, filter=False):
         """Return any systematic error.
