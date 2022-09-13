@@ -28,7 +28,7 @@ define-version:
   artifacts:
     reports:
       dotenv: version.env
-    expire_in: "2 weeks"
+    expire_in: "3 days"
 
 .template-conda-build: &template_conda_build
   stage: build and package
