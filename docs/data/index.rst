@@ -145,6 +145,16 @@ parts of the data (perhaps because there are problems, or to help
 restrict parameter values). There are routines to filter the data
 and to find out what bins have been selected.
 
+.. note:: Sherpa has *limited* support for `Numpy masked arrays
+   <https://numpy.org/doc/stable/reference/maskedarray.html>`_. This
+   is **only** applied to the dependent axis; that is, masked values
+   are ignored when found on any other field, including the
+   independent axes, error values, and the mask attribute.
+
+   On reading in a Numpy masked array, the mask values will be
+   converted, since in Sherpa a mask value of `True` means the value
+   is included and `False` the value is excluded.
+
 The :py:meth:`~sherpa.data.Data.ignore` and
 :py:meth:`~sherpa.data.Data.notice` methods are used to
 define the ranges to exclude or include.
@@ -153,9 +163,9 @@ whether a filter has been applied: if it returns ``True`` then
 no filter is set, ``False`` when all data has been filtered out,
 otherwise it is a bool array
 where ``False`` values indicate those elements that are to be
-ignored. 
+ignored.
 Note that the Sherpa definition is opposite of the convention in numpy, where `True` indicates
-a masked value to be ignored, while Sherpa uses `False` for this purpose. 
+a masked value to be ignored, while Sherpa uses `False` for this purpose.
 For example, the following
 hides those values where the independent axis values are between
 21.2 and 22.8::

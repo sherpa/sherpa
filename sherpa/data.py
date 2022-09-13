@@ -75,9 +75,14 @@ The design for the `Data` class assumes
   and potentially data type, but this is not intended to catch all
   possible problems.
 
-- there is very-limited support for NumPy masked arrays, but it is
-  expected that any filtering has been applied before the `Data`
-  object is created.
+- Numpy masked arrays can be used to initialize the dependent variable
+  and the mask is converted to the format of the `~Data.mask`
+  attribute of the `Data` object, taking into account that for Sherpa
+  a value of True indicates a valid quantity, while the opposite is
+  true in numpy.
+
+  In general, it is expected that any filtering has been applied
+  before the `Data` object is created.
 
 - the independent axes are marked as read-only, so the only way to change
   a value is to replace the whole axis, in which case any existing
