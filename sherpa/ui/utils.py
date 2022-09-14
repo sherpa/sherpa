@@ -151,7 +151,7 @@ def report_filter_change(idval, ofilter, nfilter,
     to the get_filter call, but I list them so we have consistent
     code. Ideally this would be encapsulated in the Data class, so we
     let the object define the best arguments to use, but it's not
-    guaranteed to work well so we are trynig this explicit approach.
+    guaranteed to work well so we are trying this explicit approach.
 
     A filter expression of "" (the empty string) is taken to mean all
     data has been removed, and converted to something more readable

@@ -54,9 +54,9 @@ def _get_image_filter(data):
     """When reporting filters, we need to handle images separately.
 
     There is a disconnect between 1D and 2D filters as an empty string
-    means no data has been seected for the former, but all data is
+    means no data has been selected for the former, but all data is
     selected in the latter. For the logging of the filters this makes
-    things awkward, so we over-ride the image case and replace an mpty
+    things awkward, so we over-ride the image case and replace an empty
     string with "Field()".
 
     Parameters
