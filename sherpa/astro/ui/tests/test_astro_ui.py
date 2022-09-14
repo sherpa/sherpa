@@ -1227,9 +1227,9 @@ def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, fstr, bkg_id,
     assert name == 'sherpa.ui.utils'
     assert lvl == logging.INFO
     if bkg_id is None:
-        assert msg == f"check: 0.00146:14.9504 -> {fstr} Energy (keV)"
+        assert msg == f"dataset check: 0.00146:14.9504 -> {fstr} Energy (keV)"
     else:
-        assert msg == f"check:1: no data (unchanged)"
+        assert msg == f"dataset check: background 1: no data (unchanged)"
 
 
 @pytest.mark.parametrize('dtype', [ui.Data1D, ui.Data1DInt, ui.DataPHA,

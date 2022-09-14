@@ -159,11 +159,9 @@ def report_filter_change(idval, ofilter, nfilter,
 
     """
 
-    ostr = f"{idval}:"
+    ostr = f"dataset {idval}: "
     if bkg_id is not None:
-        ostr += f"{bkg_id}:"
-
-    ostr += " "
+        ostr += f"background {bkg_id}: "
 
     # Make it easy to handle labels being optional
     if xlabel is None:

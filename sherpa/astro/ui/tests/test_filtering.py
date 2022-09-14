@@ -116,7 +116,7 @@ def test_filter_notice_bad_361(make_data_path, caplog):
     lname, lvl, msg = caplog.record_tuples[5]
     assert lname == 'sherpa.ui.utils'
     assert lvl == logging.INFO
-    assert msg == '1: 0.0073:14.9504 -> 0.4964:8.0592 Energy (keV)'
+    assert msg == 'dataset 1: 0.0073:14.9504 -> 0.4964:8.0592 Energy (keV)'
 
     lname, lvl, msg = caplog.record_tuples[6]
     assert lname == 'sherpa.astro.data'
@@ -127,7 +127,7 @@ def test_filter_notice_bad_361(make_data_path, caplog):
     lname, lvl, msg = caplog.record_tuples[7]
     assert lname == 'sherpa.ui.utils'
     assert lvl == logging.INFO
-    assert msg == '1: 0.4964:8.0592 -> 0.0073:14.9504 Energy (keV)'
+    assert msg == 'dataset 1: 0.4964:8.0592 -> 0.0073:14.9504 Energy (keV)'
 
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['bad'])
@@ -298,7 +298,7 @@ def test_notice_string_data1d(session, expr, result, caplog):
     expected = "-100:100" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
 
-    expected = "1: -100:100 "
+    expected = "dataset 1: -100:100 "
     if result is None:
         expected += "x (unchanged)"
     elif result == "":
@@ -342,7 +342,7 @@ def test_notice_string_data1dint(session, expr, result, caplog):
     expected = "-100:100" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
 
-    expected = "1: -100:100 "
+    expected = "dataset 1: -100:100 "
     if result is None:
         expected += "x (unchanged)"
     elif result == "":
@@ -384,7 +384,7 @@ def test_notice_string_datapha(expr, result, caplog):
     expected = "1:19" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
 
-    expected = "1: 1:19 "
+    expected = "dataset 1: 1:19 "
     if result is None:
         expected += "Channel (unchanged)"
     elif result == "":
@@ -415,7 +415,7 @@ def test_notice_reporting_data1d(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: -100:100 x (unchanged)"
+    assert msg == "dataset 1: -100:100 x (unchanged)"
 
     s.notice(lo=2.5)
     assert len(caplog.record_tuples) == 2
@@ -423,7 +423,7 @@ def test_notice_reporting_data1d(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: -100:100 -> 3:100 x"
+    assert msg == "dataset 1: -100:100 -> 3:100 x"
 
     s.ignore(6, 15)
     assert len(caplog.record_tuples) == 3
@@ -431,7 +431,7 @@ def test_notice_reporting_data1d(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 3:100 -> 3:5,100 x"
+    assert msg == "dataset 1: 3:100 -> 3:5,100 x"
 
     s.notice_id(1, 12.5, 15)
     assert len(caplog.record_tuples) == 4
@@ -439,7 +439,7 @@ def test_notice_reporting_data1d(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 3:5,100 -> 3:5,13:100 x"
+    assert msg == "dataset 1: 3:5,100 -> 3:5,13:100 x"
 
     s.ignore_id(1)
     assert len(caplog.record_tuples) == 5
@@ -447,7 +447,7 @@ def test_notice_reporting_data1d(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 3:5,13:100 x -> no data"
+    assert msg == "dataset 1: 3:5,13:100 x -> no data"
 
     s.ignore()
     assert len(caplog.record_tuples) == 6
@@ -455,7 +455,7 @@ def test_notice_reporting_data1d(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: no data (unchanged)"
+    assert msg == "dataset 1: no data (unchanged)"
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
@@ -476,7 +476,7 @@ def test_notice_reporting_data1dint(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: -100:100 -> 2:100 x"
+    assert msg == "dataset 1: -100:100 -> 2:100 x"
 
     s.ignore(6, 15)
     assert len(caplog.record_tuples) == 2
@@ -484,7 +484,7 @@ def test_notice_reporting_data1dint(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 2:100 -> 2:4,99:100 x"
+    assert msg == "dataset 1: 2:100 -> 2:4,99:100 x"
 
     s.notice_id(1, 12.5, 15)
     assert len(caplog.record_tuples) == 3
@@ -492,7 +492,7 @@ def test_notice_reporting_data1dint(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 2:4,99:100 -> 2:4,12:100 x"
+    assert msg == "dataset 1: 2:4,99:100 -> 2:4,12:100 x"
 
     s.ignore_id(1)
     assert len(caplog.record_tuples) == 4
@@ -500,7 +500,7 @@ def test_notice_reporting_data1dint(session, caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 2:4,12:100 x -> no data"
+    assert msg == "dataset 1: 2:4,12:100 x -> no data"
 
 
 def test_notice_reporting_datapha(caplog):
@@ -519,7 +519,7 @@ def test_notice_reporting_datapha(caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 1:19 -> 3:19 Channel"
+    assert msg == "dataset 1: 1:19 -> 3:19 Channel"
 
     s.ignore(6, 15)
     assert len(caplog.record_tuples) == 2
@@ -527,7 +527,7 @@ def test_notice_reporting_datapha(caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 3:19 -> 3:5,16:19 Channel"
+    assert msg == "dataset 1: 3:19 -> 3:5,16:19 Channel"
 
     s.notice_id(1, 13, 15)
     assert len(caplog.record_tuples) == 3
@@ -535,7 +535,7 @@ def test_notice_reporting_datapha(caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 3:5,16:19 -> 3:5,13:19 Channel"
+    assert msg == "dataset 1: 3:5,16:19 -> 3:5,13:19 Channel"
 
     s.ignore_id(1)
     assert len(caplog.record_tuples) == 4
@@ -543,7 +543,7 @@ def test_notice_reporting_datapha(caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: 3:5,13:19 -> No noticed bins Channel"
+    assert msg == "dataset 1: 3:5,13:19 -> No noticed bins Channel"
 
     s.ignore()
     assert len(caplog.record_tuples) == 5
@@ -551,7 +551,7 @@ def test_notice_reporting_datapha(caplog):
     loc, lvl, msg = caplog.record_tuples[-1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: No noticed bins Channel (unchanged)"
+    assert msg == "dataset 1: No noticed bins Channel (unchanged)"
 
 
 def test_notice2d_reporting(caplog):
@@ -577,7 +577,7 @@ def test_notice2d_reporting(caplog):
     loc, lvl, msg = caplog.record_tuples[0]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: Field() -> Circle(3,15,5)"
+    assert msg == "dataset 1: Field() -> Circle(3,15,5)"
 
     s.notice2d_id(1, "rect(4, 12, 7, 14)")
     assert len(caplog.record_tuples) == 2
@@ -585,7 +585,7 @@ def test_notice2d_reporting(caplog):
     loc, lvl, msg = caplog.record_tuples[1]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: Circle(3,15,5) -> Circle(3,15,5)|Rectangle(4,12,7,14)"
+    assert msg == "dataset 1: Circle(3,15,5) -> Circle(3,15,5)|Rectangle(4,12,7,14)"
 
     # I was trying to remove all the filters, but this doesn't seem to
     # do it. Maybe the region logic is not able to recognize that this
@@ -597,4 +597,4 @@ def test_notice2d_reporting(caplog):
     loc, lvl, msg = caplog.record_tuples[2]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
-    assert msg == "1: Circle(3,15,5)|Rectangle(4,12,7,14) -> Circle(3,15,5)&!Rectangle(-5,-5,25,25)|Rectangle(4,12,7,14)&!Rectangle(-5,-5,25,25)"
+    assert msg == "dataset 1: Circle(3,15,5)|Rectangle(4,12,7,14) -> Circle(3,15,5)&!Rectangle(-5,-5,25,25)|Rectangle(4,12,7,14)&!Rectangle(-5,-5,25,25)"

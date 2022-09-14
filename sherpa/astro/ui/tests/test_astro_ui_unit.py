@@ -1938,7 +1938,7 @@ def test_image_filter_coord_change_same(make_data_path, clean_astro_ui, caplog):
     r = caplog.record_tuples[0]
     assert r[0] == "sherpa.ui.utils"
     assert r[1] == logging.INFO
-    assert r[2] == "foo: Field() -> Rectangle(4000,4200,4100,4300)"
+    assert r[2] == "dataset foo: Field() -> Rectangle(4000,4200,4100,4300)"
 
 
 @requires_fits
@@ -1987,7 +1987,7 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui, caplog):
     r = caplog.record_tuples[0]
     assert r[0] == "sherpa.ui.utils"
     assert r[1] == logging.INFO
-    assert r[2] == "foo: Field() -> Rectangle(4000,4200,4100,4300)"
+    assert r[2] == "dataset foo: Field() -> Rectangle(4000,4200,4100,4300)"
 
     r = caplog.record_tuples[1]
     assert r[0] == "sherpa.astro.data"
@@ -2032,7 +2032,7 @@ def test_image_filter_coord_change_same_negate(make_data_path, clean_astro_ui, c
     r = caplog.record_tuples[0]
     assert r[0] == "sherpa.ui.utils"
     assert r[1] == logging.INFO
-    assert r[2] == "foo: Field() -> Field()&!Rectangle(4000,4200,4100,4300)"
+    assert r[2] == "dataset foo: Field() -> Field()&!Rectangle(4000,4200,4100,4300)"
 
 
 @requires_fits
@@ -2076,7 +2076,7 @@ def test_image_filter_coord_change_negate(make_data_path, clean_astro_ui, caplog
     r = caplog.record_tuples[0]
     assert r[0] == "sherpa.ui.utils"
     assert r[1] == logging.INFO
-    assert r[2] == "foo: Field() -> Field()&!Rectangle(4000,4200,4100,4300)"
+    assert r[2] == "dataset foo: Field() -> Field()&!Rectangle(4000,4200,4100,4300)"
 
     r = caplog.record_tuples[1]
     assert r[0] == "sherpa.astro.data"
