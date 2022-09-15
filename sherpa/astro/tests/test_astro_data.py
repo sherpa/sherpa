@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
 import re
 import warnings
 
@@ -2588,7 +2589,7 @@ IMG_ARGS = DataIMG, ("img", X0, X1, IMG_ONES)
 IMGINT_ARGS = DataIMGInt, ("imgint", X0, X1, X0 + 1, X1 + 1, IMG_ONES)
 
 
-def test_is_mask_reset_pha():
+def test_is_mask_reset_pha(caplog):
     """What happens to the mask attribute after the independent axis is changed? PHA"""
 
     data = PHA_ARGS[0](*PHA_ARGS[1])
@@ -2600,18 +2601,22 @@ def test_is_mask_reset_pha():
 
     # Change the independent axis, but to something of the same
     # length.
-    with warnings.catch_warnings(record=True) as ws:
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
         data.indep = (data.channel + 20, )
+
+    assert len(caplog.records) == 1
 
     # The mask has been cleared
     assert data.mask
 
-    assert len(ws) == 1
-    assert str(ws[0].message) == "Filter has been removed from 'pha'"
-    assert ws[0].category == UserWarning
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.data"
+    assert r[1] == logging.WARN
+    assert r[2] == "Filter has been removed from 'pha'"
 
 
-def test_is_mask_reset_pha_channel():
+def test_is_mask_reset_pha_channel(caplog):
     """What happens to the mask attribute after the channel is changed? PHA
 
     Extends test_is_mask_reset_pha
@@ -2621,20 +2626,24 @@ def test_is_mask_reset_pha_channel():
     data.ignore(None, 2)
 
     # Change the independent axis via the channel field
-    with warnings.catch_warnings(record=True) as ws:
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
         data.channel = data.channel + 40
+
+    assert len(caplog.records) == 1
 
     # The mask has been cleared
     assert data.mask
 
-    assert len(ws) == 1
-    assert str(ws[0].message) == "Filter has been removed from 'pha'"
-    assert ws[0].category == UserWarning
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.data"
+    assert r[1] == logging.WARN
+    assert r[2] == "Filter has been removed from 'pha'"
 
 
 @pytest.mark.parametrize("data_args",
                          [IMG_ARGS, IMGINT_ARGS])
-def test_is_mask_reset_img(data_args):
+def test_is_mask_reset_img(data_args, caplog):
     """What happens to the mask attribute after the independent axis is changed? img/imgint"""
 
     data_class, args = data_args
@@ -2653,16 +2662,20 @@ def test_is_mask_reset_img(data_args):
 
     # Change the independent axis, but to something of the same
     # length.
-    with warnings.catch_warnings(record=True) as ws:
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
         indep = [x + 40 for x in data.indep]
         data.indep = tuple(indep)
+
+    assert len(caplog.records) == 1
 
     # The mask has been cleared
     assert data.mask
 
-    assert len(ws) == 1
-    assert str(ws[0].message).startswith("Region filter has been removed from 'img")
-    assert ws[0].category == UserWarning
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.astro.data"
+    assert r[1] == logging.WARN
+    assert r[2].startswith("Region filter has been removed from 'img")
 
 
 @pytest.mark.parametrize("data_args",

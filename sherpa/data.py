@@ -112,6 +112,7 @@ dependent axis (``y``) then filter to select only those values between
 >>> d1.ignore(520, 530)
 
 """
+import logging
 import warnings
 from abc import ABCMeta
 
@@ -123,6 +124,8 @@ from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, create_expr_integrated, calc_total_error, bool_cast, \
     filter_bins, parallel_map_funcs
 from sherpa.utils import formatting
+
+warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
@@ -1057,7 +1060,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         #
         if self.mask is not True:
             self.mask = True
-            warnings.warn(f"Filter has been removed from '{self.name}'")
+            warning(f"Filter has been removed from '{self.name}'")
 
     @indep.setter
     def indep(self, val):

@@ -2745,7 +2745,7 @@ def test_img_sky_can_filter(make_test_image_sky):
     assert data.get_filter() == "Field()&!Rectangle(2009,-5006,2011,-5000)"
 
 
-def test_img_sky_can_filter_change_coords(make_test_image_sky):
+def test_img_sky_can_filter_change_coords(make_test_image_sky, caplog):
     """What happens to a filter after changing coordinates?
 
     This is a regression test.
@@ -2755,16 +2755,20 @@ def test_img_sky_can_filter_change_coords(make_test_image_sky):
     data.set_coord("physical")
     data.notice2d("rect(2009,-5006,2011,-5000)", ignore=True)
 
-    with warnings.catch_warnings(record=True) as ws:
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
         data.set_coord("image")
+
+    assert len(caplog.records) == 1
 
     assert data.coord == "logical"
     assert data.mask
     assert data.get_filter() == ""
 
-    assert len(ws) == 1
-    assert str(ws[0].message) == "Region filter has been removed from 'sky-ey'"
-    assert ws[0].category == UserWarning
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.astro.data"
+    assert r[1] == logging.WARN
+    assert r[2] == "Region filter has been removed from 'sky-ey'"
 
 
 def test_arf_checks_energy_length():

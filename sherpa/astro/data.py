@@ -4816,7 +4816,7 @@ class DataIMG(Data2D):
         # Ensure that the region is cleared
         if self._region is not None:
             self.notice2d()
-            warnings.warn(f"Region filter has been removed from '{self.name}'")
+            warning(f"Region filter has been removed from '{self.name}'")
 
         # It is unlikely we need to call the super-class as
         # the notice2d call will have cleared mask, but it is

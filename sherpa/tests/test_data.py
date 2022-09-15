@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
 import re
 import warnings
 
@@ -1880,7 +1881,7 @@ def test_data2dint_attribute_is_none(attribute, make_data2dint):
 # notice/ignore call does not match the 1D cases.
 #
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-def test_is_mask_reset(data):
+def test_is_mask_reset(data, caplog):
     """What happens to the mask attribute after the independent axis is changed?"""
 
     # Pick a value somewhere within the independent axis
@@ -1891,16 +1892,20 @@ def test_is_mask_reset(data):
 
     # Change the independent axis, but to something of the same
     # length.
-    with warnings.catch_warnings(record=True) as ws:
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
         indep = [x + 100 for x in data.indep]
         data.indep = tuple(indep)
+
+    assert len(caplog.records) == 1
 
     # The mask has been cleared
     assert data.mask is True
 
-    assert len(ws) == 1
-    assert str(ws[0].message) == "Filter has been removed from 'data_test'"
-    assert ws[0].category == UserWarning
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.data"
+    assert r[1] == logging.WARN
+    assert r[2] == "Filter has been removed from 'data_test'"
 
 
 @pytest.mark.parametrize("data", (Data, ) + ALL_DATA_CLASSES, indirect=True)

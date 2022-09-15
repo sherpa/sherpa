@@ -27,6 +27,7 @@ this duplication? Yes, we can parametrize by Session class
 and run on both, to avoid duplication.
 """
 
+import logging
 import sys
 import warnings
 
@@ -1927,7 +1928,7 @@ def test_image_filter_coord_change_same(make_data_path, clean_astro_ui):
 
 @requires_fits
 @requires_data
-def test_image_filter_coord_change(make_data_path, clean_astro_ui):
+def test_image_filter_coord_change(make_data_path, clean_astro_ui, caplog):
     """What happens to the mask after a coordinate change?
 
     This is the more-general case of test_image_filter_coord_change_same
@@ -1951,8 +1952,11 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui):
     d = ui.get_data("foo")
     assert d.mask.sum() == 2500
 
-    with warnings.catch_warnings(record=True) as ws:
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.set_coord("foo", "logical")
+
+    assert len(caplog.records) == 1
 
     # The region filter has been removed
     assert ui.get_filter("foo") == ""
@@ -1961,9 +1965,10 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui):
     #
     assert d.mask
 
-    assert len(ws) == 1
-    assert str(ws[0].message).startswith("Region filter has been removed from '")
-    assert ws[0].category == UserWarning
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.astro.data"
+    assert r[1] == logging.WARN
+    assert r[2].startswith("Region filter has been removed from '")
 
 
 def test_set_source_checks_dimensionality_1d(clean_astro_ui):
