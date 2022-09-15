@@ -49,7 +49,7 @@ Design
 ------
 
 The `DataPHA` class adds support for grouping data - effectively
-reducing the number of values in a data set - and adding an extra way
+reducing the number of values in a data set - and adds an extra way
 to filter the data with the quality array. The class extends
 `~sherpa.data.Data1D`, since the primary data is channels and
 counts, but it also has to act like an integrated data set
@@ -1867,7 +1867,7 @@ must be an integer.""")
         # rather than iterable, to avoid selecting strings).
         #
         if self.grouped and val is not None and not numpy.isscalar(val):
-            # The assumption is that is the data is grouped then it contains data.
+            # The assumption is that if the data is grouped then it contains data.
             nexp = len(self.get_y(filter=False))
             if len(val) != nexp:
                 raise DataErr("mismatchn", "grouped data", "mask", nexp, len(val))

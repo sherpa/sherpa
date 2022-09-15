@@ -714,7 +714,7 @@ irregularly-placed grids.
 
   >>> from sherpa.data import Data1D, Data1DInt, Data2D
 
-As examples, we have a one-dimension dataset with data values
+As examples, we have a one-dimensional dataset with data values
 (dependent axis, y) of 2.3, 13.2, and -4.3 corresponding to the
 independent axis (x) values of 1, 2, and 5::
 
@@ -722,7 +722,7 @@ independent axis (x) values of 1, 2, and 5::
 
 An "integrated" one-dimensional dataset for the independent axis
 bins 23-44, 45-50, 50-53, and 55-57, with data values of
-12, 14, 2, and 22:
+12, 14, 2, and 22 looks like this:
 
   >>> d2 = Data1DInt("ex2", [23, 45, 50, 55], [44, 50, 53, 57], [12, 14, 2, 22])
 
@@ -738,9 +738,10 @@ arguments must be flattened:
 
   >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
   >>> shp = x0.shape
+  >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
   >>> x0 = x0.flatten()
   >>> x1 = x1.flatten()
-  >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+  >>> y = y.flatten()
   >>> d4 = Data2D("ex4", x0, x1, y, shape=shp)
 
 .. _model_dimensions:
@@ -769,7 +770,7 @@ current way that models are checked:
   ``ndim`` value (ignoring those models whose dimensionality
   is set to ``None``). If there is a mis-match then a
   :py:class:`sherpa.utils.err.ModelErr` is raised.
-* as :ref:`descibed below <data_design_ndim>`, the dimensions of
+* as :ref:`described below <data_design_ndim>`, the dimensions of
   data and model can be compared.
 
 An alternative approach would have been to introduce 1D and 2D
@@ -785,8 +786,8 @@ The data class
 
 Prior to Sherpa 4.14.1, the `~sherpa.data.Data` object did not have
 many explicit checks on the data it was sent, instead relying on
-checks when the data was used. This has been changed to apply
-validation checks when fields are changed, rather than when the data
+checks when the data was used. Now, validation checks  are done
+when fields are changed, rather than when the data
 is used. This has been done primarily by marking field accessors as
 property attributes, so that they can apply the validation checks when
 the field is changed.  The intention is not to catch all possible
@@ -860,10 +861,6 @@ to see if they are 1D and have the correct size. Some fields may have
 extra checks, such as the `~sherpa.astro.data.DataPHA.grouping` and
 `~sherpa.astro.data.DataPHA.quality` columns for PHA data which
 are converted to integer values.
-
-There is limited support for NumPy masked arrays, but the assumption
-is that and data has been masked before being added to a
-`~sherpa.data.Data` object.
 
 One example of where there is incomplete validation is that the
 `~sherpa.astro.data.DataPHA.bin_lo` and
@@ -981,18 +978,18 @@ In this case the term ``32424.43`` is converted to an
 combined with the remaining model instance (``XSpowerlaw``).
 
 For those models that require the full set of elements, such as
-multiplication by a :term:`RMF` or a convolution kernel, requires
+multiplication by a :term:`RMF` or a convolution kernel, this requires
 creating a model that can "wrap" another model. The wrapping model
 will evaluate the wrapped model on the requested grid, and then apply
 any modifications.  Examples include the
-:py:class:`sherpa.instrument.PSFModel` class, which creats
+:py:class:`sherpa.instrument.PSFModel` class, which creates
 :py:class:`sherpa.instrument.ConvolutionModel` instances, and the
 :py:class:`sherpa.astro.xspec.XSConvolutionKernel` class, which
 creates :py:class:`sherpa.astro.xspec.XSConvolutionModel` instances.
 
-Wen comnining models, :py:class:`~sherpa.models.model.BinaryOpModel`
+When combining models, :py:class:`~sherpa.models.model.BinaryOpModel`
 (actually, this check is handled by the super class
-:py:class:`~sherpa.models.model.CompositeModel`), will ensure that the
+:py:class:`~sherpa.models.model.CompositeModel`), this approach will ensure that the
 dimensions of the two expressions match. There are some models, such
 as :py:class:`~sherpa.models.basic.TableModel` and
 :py:class:`~sherpa.models.model.ArithmeticConstantModel`, which do not
