@@ -2327,15 +2327,30 @@ must be an integer.""")
 
         Returns
         -------
-        arf : array
+        arf : array or None
            The effective area values for the data set (or background
-           component).
+           component) if set.
+
+        Notes
+        -----
+        This will return `None` when a RSP file (a combined ARF and
+        RMF) is used, rather than separate responses. The relationship
+        between RSP, ARF, and RMF is described in
+        `OGIP Calibration Memo CAL/GEN/92-002
+        <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_
+        and
+        `OGIP Calibration Memo CAL/GEN/92-002a
+        <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html>`_.
 
         """
         self.notice_response(False)
         arf, rmf = self.get_response()
 
-        # Should we allow an ARF-only analysis?
+        # It's not clear why we do interpolation below, why we replace
+        # with 1 rather than 0, or how it is even meant to work, since
+        # the current code returns different values depending on the
+        # units setting - see issue #1582
+        #
         if arf is None or rmf is None:
             return None
 

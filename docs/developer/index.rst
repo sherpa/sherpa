@@ -862,7 +862,7 @@ extra checks, such as the `~sherpa.astro.data.DataPHA.grouping` and
 `~sherpa.astro.data.DataPHA.quality` columns for PHA data which
 are converted to integer values.
 
-One example of where there is incomplete validation is that the
+One example of incomplete validation is that the
 `~sherpa.astro.data.DataPHA.bin_lo` and
 `~sherpa.astro.data.DataPHA.bin_hi` fields are not checked to ensure
 that both are set, or that they are in descending order, that the
