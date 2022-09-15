@@ -8613,13 +8613,17 @@ class Session(sherpa.ui.utils.Session):
         time, along with a Poisson noise term. A background component can
         be included.
 
+        .. versionchanged:: 4.15.0
+           The arf argument can now be set to `None` when the data
+           uses a RSP file (combined RMF and ARF).
+
         Parameters
         ----------
         id : int or str
            The identifier for the data set to create. If it already
            exists then it is assumed to contain a PHA data set and the
            counts will be over-written.
-        arf : filename or ARF object or list of filenames
+        arf : None or filename or ARF object or list of filenames
            The name of the ARF, or an ARF data object (e.g.  as
            returned by `get_arf` or `unpack_arf`). A list of filenames
            can be passed in for instruments that require multiple ARFs.
@@ -8729,6 +8733,7 @@ class Session(sherpa.ui.utils.Session):
         >>> fake_pha('sim', arf, rmf, texp, backscal=bscal, bkg='model',
         ...          grouping=grp, quality=qual, grouped=True)
         >>> save_pha('sim', 'sim.pi')
+
         """
         id = self._fix_id(id)
 
@@ -8759,7 +8764,7 @@ class Session(sherpa.ui.utils.Session):
 
         # Get one rmf for testing the channel number
         # This would be a lot simpler if I could just raise the
-        # incombatiblersp error on the OO layer (that happens, but the id
+        # incompatiblersp error on the OO layer (that happens, but the id
         # is not in the error messaage).
         if rmf is None:
             rmf0 = d.get_rmf()
