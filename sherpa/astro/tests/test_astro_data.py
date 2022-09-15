@@ -2605,15 +2605,10 @@ def test_is_mask_reset_pha(caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         data.indep = (data.channel + 20, )
 
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 0
 
-    # The mask has been cleared
-    assert data.mask
-
-    r = caplog.record_tuples[0]
-    assert r[0] == "sherpa.data"
-    assert r[1] == logging.WARN
-    assert r[2] == "Filter has been removed from 'pha'"
+    # The mask has *not* been cleared
+    assert data.mask == pytest.approx([False, False, True])
 
 
 def test_is_mask_reset_pha_channel(caplog):
@@ -2630,15 +2625,10 @@ def test_is_mask_reset_pha_channel(caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         data.channel = data.channel + 40
 
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 0
 
-    # The mask has been cleared
-    assert data.mask
-
-    r = caplog.record_tuples[0]
-    assert r[0] == "sherpa.data"
-    assert r[1] == logging.WARN
-    assert r[2] == "Filter has been removed from 'pha'"
+    # The mask has not been cleared
+    assert data.mask == pytest.approx([False, False, True])
 
 
 @pytest.mark.parametrize("data_args",

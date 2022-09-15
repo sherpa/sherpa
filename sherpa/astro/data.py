@@ -4813,17 +4813,14 @@ class DataIMG(Data2D):
         super().__init__(name, x0, x1, y, shape, staterror, syserror)
 
     def _clear_filter(self):
-        # Ensure that the region is cleared
-        if self._region is not None:
-            self.notice2d()
-            warning(f"Region filter has been removed from '{self.name}'")
+        if self._region is None:
+            return
 
-        # It is unlikely we need to call the super-class as
-        # the notice2d call will have cleared mask, but it is
-        # possible that a mask was created without using
-        # notice2d.
+        # Remove the spatial filter, as if the axis has changed we know
+        # it is going to be wrong.
         #
-        super()._clear_filter()
+        self.notice2d()
+        warning(f"Region filter has been removed from '{self.name}'")
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data

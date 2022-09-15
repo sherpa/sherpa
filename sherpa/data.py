@@ -1054,13 +1054,10 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
 
-        # The mask could be left as is if the independent axis has
-        # not changed, but it does not seem worth adding logic to
-        # check for this condition.
+        # This is currently a no-op. It may beover-ridden by a
+        # subclass.
         #
-        if self.mask is not True:
-            self.mask = True
-            warning(f"Filter has been removed from '{self.name}'")
+        pass
 
     @indep.setter
     def indep(self, val):

@@ -1897,15 +1897,10 @@ def test_is_mask_reset(data, caplog):
         indep = [x + 100 for x in data.indep]
         data.indep = tuple(indep)
 
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 0
 
-    # The mask has been cleared
-    assert data.mask is True
-
-    r = caplog.record_tuples[0]
-    assert r[0] == "sherpa.data"
-    assert r[1] == logging.WARN
-    assert r[2] == "Filter has been removed from 'data_test'"
+    # The mask has *not* been cleared
+    assert data.mask == pytest.approx(omask)
 
 
 @pytest.mark.parametrize("data", (Data, ) + ALL_DATA_CLASSES, indirect=True)
