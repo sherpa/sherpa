@@ -299,6 +299,10 @@ def range_overlap_1dint(axislist, lo, hi):
 
 
 def _flux(data, lo, hi, src, eflux=False, srcflux=False):
+
+    if data.ndim != 1:
+        raise DataErr("wrongdim", data.name, 1)
+
     lo, hi = bounds_check(lo, hi)
 
     try:
@@ -404,6 +408,10 @@ def _counts(data, lo, hi, func, *args):
     calc_data_sum/calc_model_sum.
 
     """
+
+    if data.ndim != 1:
+        raise DataErr("wrongdim", data.name, 1)
+
     lo, hi = bounds_check(lo, hi)
     old_mask = data.mask
     old_quality_filter = getattr(data, 'quality_filter', None)
@@ -435,6 +443,10 @@ def _counts2d(data, reg, func, *args):
     calc_data_sum2d/calc_model_sum2d.
 
     """
+
+    if data.ndim != 2:
+        raise DataErr("wrongdim", data.name, 2)
+
     old_mask = data.mask
     old_region = getattr(data, '_region', None)
     try:

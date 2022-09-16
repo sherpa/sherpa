@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020, 2021
+# Copyright (C) 2020, 2021, 2022
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -291,8 +291,11 @@ def test_img_real(coord, make_data_path,
 # does this needs a decorator if region support is not available?
 @requires_data
 @requires_fits
-@pytest.mark.parametrize('coord', ['logical', 'physical'])
-def test_img_real_filtered(coord, make_data_path,
+@pytest.mark.parametrize("coord,region",
+                         [("logical", "circle(90, 190, 20)"),
+                          ("physical", "circle(3151.3 , 4524.1, 20 )")
+                          ])
+def test_img_real_filtered(coord, region, make_data_path,
                            override_plot_backend, old_numpy_printing):
     """Filter the image.
 
@@ -302,9 +305,9 @@ def test_img_real_filtered(coord, make_data_path,
     d = read_image(make_data_path('acisf07999_000N001_r0035_regevt3_srcimg.fits'))
     d.name = 'regevt3'
 
-    d.set_coord('logical')
-    d.notice2d("circle(90, 190, 20)")
+    # We need to filter after setting up the coordinate system
     d.set_coord(coord)
+    d.notice2d(region)
 
     r = d._repr_html_()
 

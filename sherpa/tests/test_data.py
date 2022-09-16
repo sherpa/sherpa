@@ -18,12 +18,16 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+import re
+import warnings
+
 import numpy
 
 import pytest
 
-from sherpa.data import Data, Data1D, DataSimulFit, Data1DInt, Data2D, \
-    Data2DInt, BaseData
+from sherpa.data import Data, Data1D, DataSimulFit, Data1DInt, \
+    Data2D, Data2DInt, BaseData, IntegratedDataSpace2D, Filter
 from sherpa.models import Polynom1D, Polynom2D
 from sherpa.utils.err import NotImplementedErr, DataErr
 from sherpa.ui.utils import Session
@@ -279,6 +283,20 @@ def test_data_get_ylabel(data):
 @pytest.mark.parametrize("data", (Data, ), indirect=True)
 def test_data_get_dims(data):
     assert data.get_dims() == ((X_ARRAY.size, ), X_ARRAY.size)
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_data_len_empty(data_class, args):
+    data = data_class("empty", *args)
+    assert len(data) == 0
+
+
+@pytest.mark.parametrize("Dataclass", REALLY_ALL_DATA_CLASSES)
+def test_data_len(Dataclass):
+    args = list(INSTANCE_ARGS[Dataclass])
+    data = Dataclass(*args)
+    size = args[POS_Y_ARRAY[Dataclass]].size
+    assert len(data) == size
 
 
 @pytest.mark.parametrize("data", (Data, ), indirect=True)
@@ -720,6 +738,14 @@ def test_data1d_get_imgerr(data):
     numpy.testing.assert_array_equal(data.get_imgerr(), [expected_error, ])
 
 
+@pytest.mark.parametrize("data", (Data1D,), indirect=True)
+def test_data1d_get_imgerr_when_none(data):
+    # Clear out the errors
+    data.syserror = None
+    data.staterror = None
+    assert data.get_imgerr() is None
+
+
 @pytest.mark.parametrize("data", (Data1D, Data1DInt), indirect=True)
 def test_data1d_get_x(data):
     numpy.testing.assert_array_equal(data.get_x(), X_ARRAY)
@@ -1017,28 +1043,32 @@ def array_sizes_fixture():
 def test_data2d_wrong_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         Data2D('name', x0, x1, y.flatten(), staterror=numpy.sqrt(y).flatten())
 
 
 def test_data2d_wrong_y_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         Data2D('name', x0.flatten(), x1.flatten(), y, staterror=numpy.sqrt(y).flatten())
 
 
 def test_data2d_int_wrong_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         Data2DInt('name', x0, x0, x1, x1, y.flatten(), staterror=numpy.sqrt(y).flatten())
 
 
 def test_data2d_int_wrong_y_array_size(array_sizes_fixture):
     x0, x1, dx, y = array_sizes_fixture
 
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         Data2DInt('name', x0.flatten(), x0.flatten(), x1.flatten(), x1.flatten(), y, staterror=numpy.sqrt(y).flatten())
 
 
@@ -1080,7 +1110,7 @@ def test_data_err_masked_numpyarray(arrpos, Dataclass):
     args = list(INSTANCE_ARGS[Dataclass])
     mask = numpy.random.rand(*(args[i].shape)) > 0.5
     args[i] = numpy.ma.array(args[i], mask=mask)
-    with pytest.warns(UserWarning, match="differs from the mask of the dependent array"):
+    with pytest.warns(UserWarning, match=" differs from the dependent array, "):
         data = Dataclass(*args)
     assert len(data.get_dep(filter=True)) == len(args[POS_Y_ARRAY[Dataclass]])
 
@@ -1237,9 +1267,9 @@ def test_manual_setting_mask():
     d.mask = arr.mask
     assert len(d.get_dep(filter=True)) == 3
 
-    with pytest.raises(DataErr) as e:
+    with pytest.raises(DataErr,
+                       match="True, False, or a mask array"):
         d.mask = None
-    assert 'True, False, or a mask array' in str(e.value)
 
 
 def test_data_filter_no_data():
@@ -1251,10 +1281,9 @@ def test_data_filter_no_data():
     d.ignore()
     assert d.mask is False
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
         d.apply_filter([1, 2, 3])
-
-    assert str(de.value) == 'mask excludes all data'
 
 
 def test_data_filter_invalid_size_scalar():
@@ -1265,10 +1294,9 @@ def test_data_filter_invalid_size_scalar():
     d.ignore(None, 2)
     assert d.mask == pytest.approx([False, False, True])
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
         d.apply_filter(4)
-
-    assert str(err.value) == 'size mismatch between mask and data array'
 
 
 @pytest.mark.parametrize("vals", [[4], [2, 3, 4, 5]])
@@ -1279,10 +1307,9 @@ def test_data_filter_invalid_size_sequence(vals):
     d = Data1D('x', x, x)
     d.ignore(None, 2)
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match=f"size mismatch between data and array: 3 vs {len(vals)}"):
         d.apply_filter(vals)
-
-    assert str(err.value) == 'size mismatch between mask and data array'
 
 
 @pytest.mark.parametrize("vals", [[[2, 3, 4]], [[2, 3], [3, 2]]])
@@ -1293,10 +1320,9 @@ def test_data_filter_invalid_size_sequence_nd(vals):
     d = Data1D('x', x, x)
     d.ignore(None, 2)
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         d.apply_filter(vals)
-
-    assert str(err.value) == 'size mismatch between mask and data array'
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -1306,8 +1332,9 @@ def test_data_apply_filter_invalid_size(data):
     Test related to issue #1439 which is an issue with the DataPHA class.
     """
 
-    # this does not raise an error
-    data.apply_filter([1, 2])
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between data and array: (100?) vs 2$"):
+        data.apply_filter([1, 2])
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
@@ -1321,8 +1348,9 @@ def test_data_apply_filter_empty(data_class, args):
     data = data_class("empty", *args)
 
     orig = [1, 2]
-    ans = data.apply_filter(orig)
-    assert ans == pytest.approx(orig)
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
+        data.apply_filter(orig)
 
 
 @pytest.mark.parametrize("lo,hi,emsg", [("1:20", None, 'lower'), (None, "2", 'upper'), ("0.5", "7", 'lower')])
@@ -1334,10 +1362,9 @@ def test_data1d_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
     xhi = numpy.asarray([2, 3, 8])
     y = numpy.zeros(3)
     d = Data1D('tmp', xlo, xhi, y)
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match=f"strings not allowed in {emsg} bound list"):
         d.notice(lo, hi, ignore=ignore)
-
-    assert str(err.value) == f'strings not allowed in {emsg} bound list'
 
 
 @pytest.mark.parametrize("expected,args",
@@ -1512,6 +1539,54 @@ def test_data1dint_check_limit(ignore, lo, hi, evals):
     c1, c2, c3 = evals
     expected = [vout] * c1 + [vin] * c2 + [vout] * c3
     assert d.mask == pytest.approx(expected)
+
+
+def test_filter_apply_none():
+    """What happens here?
+
+    This is just to ensure a code path is tested. We might want to
+    understand if we can ever call apply with None in a "normal" use
+    case.
+
+    """
+
+    assert Filter().apply(None) is None
+
+
+def test_data_mask_when_no_elements():
+    """what happens when there's no data?"""
+
+    data = Data1D("x", None, None)
+    assert data.mask is True
+
+    with pytest.raises(DataErr,
+                       match="The independent axis has not been set yet"):
+        data.mask = [1, 2]
+
+
+def test_data1d_get_y_checks_model_dim():
+    """Check an error message"""
+
+    data = Data1D("x", None, None)
+    mdl = Polynom2D()
+
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
+        data.get_y(yfunc=mdl)
+
+
+def test_ispace2d_mismatch():
+    """There is currently no check for this mis-match.
+
+    This is a regression test.
+    """
+
+    x0 = numpy.arange(10)
+    x1 = numpy.arange(11)
+
+    with pytest.raises(DataErr,
+                       match="size mismatch between x0 and x1: 9 vs 10"):
+        IntegratedDataSpace2D(Filter(), x0[:-1], x1[:-1], x0[1:], x1[1:])
 
 
 @pytest.fixture
@@ -1806,7 +1881,7 @@ def test_data2dint_attribute_is_none(attribute, make_data2dint):
 # notice/ignore call does not match the 1D cases.
 #
 @pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-def test_is_mask_reset(data):
+def test_is_mask_reset(data, caplog):
     """What happens to the mask attribute after the independent axis is changed?"""
 
     # Pick a value somewhere within the independent axis
@@ -1817,11 +1892,14 @@ def test_is_mask_reset(data):
 
     # Change the independent axis, but to something of the same
     # length.
-    indep = [x + 100 for x in data.indep]
-    data.indep = tuple(indep)
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        indep = [x + 100 for x in data.indep]
+        data.indep = tuple(indep)
 
-    # This is a regression test as there is an argument that the mask
-    # should be cleared.
+    assert len(caplog.records) == 0
+
+    # The mask has *not* been cleared
     assert data.mask == pytest.approx(omask)
 
 
@@ -1833,8 +1911,9 @@ def test_dependent_field_can_not_be_a_scalar(data):
     fields are not all handled the same.
     """
 
-    # does not raise an error
-    data.y = 2
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        data.y = 2
 
 
 @pytest.mark.parametrize("data", (Data, ) + ALL_DATA_CLASSES, indirect=True)
@@ -1842,8 +1921,9 @@ def test_dependent_field_can_not_be_a_scalar(data):
 def test_related_field_can_not_be_a_scalar(related, data):
     """The related fields (staterror/syserror) can not be a scalar."""
 
-    # does not raise an error
-    setattr(data, related, 2)
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        setattr(data, related, 2)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -1865,10 +1945,9 @@ def test_mask_sent_scalar_nomask(data):
 def test_mask_sent_scalar_non_bool(data):
     """What happens if the mask is sent a scalar non-bool?"""
 
-    with pytest.raises(DataErr) as err:
+    with pytest.raises(DataErr,
+                       match="'mask' must be True, False, or a mask array"):
         data.mask = "true"
-
-    assert str(err.value) == "'mask' must be True, False, or a mask array"
 
 
 def test_mask_sent_array_non_bool():
@@ -1892,8 +1971,9 @@ def test_mask_sent_array_non_bool():
 def test_mask_size_must_match(data):
     """Check if the mask can be set to the wrong length"""
 
-    # does not raise an error
-    data.mask = [1, 0, 1]
+    with pytest.raises(DataErr,
+                       match="^size mismatch between independent axis and mask: 100? vs 3$"):
+        data.mask = [1, 0, 1]
 
 
 @pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)
@@ -1919,19 +1999,9 @@ def test_reduce_axis_size_1d(data):
     for indep in data.indep:
         smaller.append(indep[1:-1])
 
-    data.indep = tuple(smaller)
-
-    # Check what has changed.
-    #
-    assert len(data.indep) == nindep
-    for indep in data.indep:
-        assert len(indep) == 8
-
-    # Note that the other values have not changed.
-    #
-    for attr in ["dep", "staterror", "syserror"]:
-        aval = getattr(data, attr)
-        assert len(aval) == 10
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 10 to 8"):
+        data.indep = tuple(smaller)
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
@@ -1963,21 +2033,9 @@ def test_reduce_axis_size_2d(data):
     for indep in data.indep:
         smaller.append(indep[1:-1])
 
-    data.indep = tuple(smaller)
-
-    # Check what has changed.
-    #
-    assert len(data.indep) == nindep
-    for indep in data.indep:
-        assert len(indep) == 98
-
-    # Note that the other values have not changed.
-    #
-    assert data.shape == (10, 10)
-
-    for attr in ["dep", "staterror", "syserror"]:
-        aval = getattr(data, attr)
-        assert len(aval) == 100
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 100 to 98"):
+        data.indep = tuple(smaller)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -1989,8 +2047,8 @@ def test_reduce_axis_size_2d(data):
 def test_invalid_independent_axis_not_a_tuple_set_indep(val, etype, data):
     """The independent axis must be a tuple: set_indep"""
 
-    # There is no consistent error message to test here
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError,
+                       match=f"independent axis must be sent a tuple, not {etype}"):
         data.set_indep(val)
 
 
@@ -2003,8 +2061,8 @@ def test_invalid_independent_axis_not_a_tuple_set_indep(val, etype, data):
 def test_invalid_independent_axis_not_a_tuple_indep(val, etype, data):
     """The independent axis must be a tuple: .indep"""
 
-    # There is no consistent error message to test here
-    with pytest.raises(TypeError):
+    with pytest.raises(TypeError,
+                       match=f"independent axis must be sent a tuple, not {etype}"):
         data.indep = val
 
 
@@ -2016,7 +2074,8 @@ def test_invalid_independent_axis(data):
     """
 
     indep = data.indep
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="^data set 'data_test' sent wrong tuple size for the independent axis: [124] not [248]$"):
         data.indep = tuple(list(indep) * 2)
 
 
@@ -2026,13 +2085,14 @@ def test_invalid_independent_axis_component_size(data):
 
     It only makes sense to do this for data classes with
     multiple components. We remove one entry from the
-    second component,
+    second component.
     """
 
     indep = list(data.indep)
     indep[1] = indep[1][:-1]
-    # At the moment this does not error out
-    data.indep = tuple(indep)
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between (lo|x0) and (hi|x1): (10|100|99) vs (9|99|100)$"):
+        data.indep = tuple(indep)
 
 
 @pytest.mark.parametrize("data", (Data1DInt, Data2D, Data2DInt), indirect=True)
@@ -2044,8 +2104,9 @@ def test_invalid_independent_axis_component_none(data):
 
     indep = list(data.indep)
     indep[1] = None
-    # At the moment this does not error out
-    data.indep = tuple(indep)
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between (lo|x0) and (hi|x1): (10|100|None) vs (0|100|None)$"):
+        data.indep = tuple(indep)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2053,8 +2114,9 @@ def test_invalid_dependent_axis(data):
     """What happens if the dependent axis does not match the independent axis?
     """
 
-    # This currently does not fail
-    data.y = data.y[:-2]
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and y: 100? vs 9?8$"):
+        data.y = data.y[:-2]
 
 
 @pytest.mark.parametrize("data_class", ALL_DATA_CLASSES)
@@ -2074,26 +2136,21 @@ def test_make_invalid_dependent_axis(data_class):
     ypos = POS_Y_ARRAY[data_class]
     args[ypos] = args[ypos][:-1]
 
-    # This does not raise an error
-    data_class(*args)
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and y: 100? vs 9?9$"):
+        data_class(*args)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_set_independent_axis_to_none(data):
-    """What happens if we clear the independent axis?
-
-    It's not entirely clear what we mean by setting the independent
-    axis to None: do we need to set all components or is it sufficient
-    to use a single None. Similarly, what should the response be. We
-    currently only test the current behavior.
-
-    """
+    """What happens if we clear the independent axis?"""
 
     assert all(d is not None for d in data.indep)
 
     indep = [None for d in data.indep]
-    data.set_indep(tuple(indep))
-    assert all(d is None for d in data.indep)
+    with pytest.raises(DataErr,
+                       match="independent axis can not be cleared"):
+        data.set_indep(tuple(indep))
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2104,8 +2161,9 @@ def test_set_error_axis_wrong_length(data, column):
     col = getattr(data, column)
     assert col is not None
 
-    # does not raise an error
-    setattr(data, column, [1, 2])
+    with pytest.raises(DataErr,
+                       match=rf"^size mismatch between independent axis and {column}: (100?) vs 2$"):
+        setattr(data, column, [1, 2])
 
 
 @pytest.mark.parametrize("column", ["y", "staterror", "syserror"])
@@ -2121,8 +2179,9 @@ def test_check_related_fields_correct_size(column):
     d = Data1D('example', None, None)
     setattr(d, column, numpy.asarray([2, 10, 3]))
 
-    # does not raise an error
-    d.indep = (numpy.asarray([2, 3, 4, 5]), )
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 3 to 4"):
+        d.indep = (numpy.asarray([2, 3, 4, 5]), )
 
 
 def test_data1d_mismatched_related_fields():
@@ -2139,23 +2198,15 @@ def test_data1d_mismatched_related_fields():
     # Create an empty object, set the syserror and staterror fields to
     # different lengths, then set the independent axis.
     #
-    # Ideally one of these calls will error out but currently they do not.
-    #
     d = Data1D("x", None, None)
 
     d.staterror = [1, 2, 3, 4]
-    d.syserror = [2, 3, 4, 5, 20, 12]
-    d.set_indep(([2.3], ))
-
-    mdl = Polynom1D()
-    mdl.c0 = 10
-    mdl.c1 = 2
-    ans = d.eval_model(mdl)
-    assert ans == pytest.approx([14.6])
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and syserror: 4 vs 6"):
+        d.syserror = [2, 3, 4, 5, 20, 12]
 
 
-# should be ALL_DATA_CLASSES but only some of the classes pass
-@pytest.mark.parametrize("data", (pytest.param(Data1D, marks=pytest.mark.xfail), pytest.param(Data1DInt, marks=pytest.mark.xfail), Data2D, Data2DInt), indirect=True)
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_indep_must_be_1d(data):
     """Check that the indep data must be 1D.
 
@@ -2163,13 +2214,10 @@ def test_indep_must_be_1d(data):
     or that the length check fails.
     """
 
-    indep = [d.reshape(2, d.size // 2) for d in data.indep]
-    with pytest.raises(TypeError) as te:
-        # XFAIL: does not raise an error for Data1D types but does for Data2D
+    indep = tuple([d.reshape(2, d.size // 2) for d in data.indep])
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
         data.indep = indep
-
-    emsg = "Data arrays should be 1-dimensional. Did you call 'flatten()' on [["
-    assert str(te.value).startswith(emsg)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2177,8 +2225,9 @@ def test_dep_must_be_1d(data):
     """Check that the dependent data must be 1D."""
 
     dep = data.dep.reshape(2, data.dep.size // 2)
-    # does not raise an error
-    data.set_dep(dep)
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
+        data.set_dep(dep)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2186,35 +2235,34 @@ def test_dep_must_be_1d(data):
 def test_error_must_be_1d(data, column):
     """Check that the error data must be 1D."""
 
-    err = getattr(data, column)
-    err = err.reshape(2, err.size // 2)
-    # does not raise an error
-    setattr(data, column, err)
+    errval = getattr(data, column)
+    errval = errval.reshape(2, errval.size // 2)
+    with pytest.raises(DataErr,
+                       match="Array must be 1D"):
+        setattr(data, column, errval)
 
 
-#@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
-@pytest.mark.parametrize("data", (Data1D, pytest.param(Data1DInt, marks=pytest.mark.xfail)), indirect=True)
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
 @pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
 def test_data_eval_model_checks_dimensionality_1d(data, funcname):
     """Does eval_model check the model dimensionality?"""
 
     model = Polynom2D()
     func = getattr(data, funcname)
-    with pytest.raises(TypeError):
-        # XFAIL: Data1DInt does not raise an error
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
         func(model)
 
 
-#@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
-@pytest.mark.parametrize("data", (pytest.param(Data2D, marks=pytest.mark.xfail), Data2DInt), indirect=True)
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
 @pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
 def test_data_eval_model_checks_dimensionality_2d(data, funcname):
     """Does eval_model check the model dimensionality?"""
 
     model = Polynom1D()
     func = getattr(data, funcname)
-    with pytest.raises(TypeError):
-        # XFAIL: Data2D does not raise an error
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 2D and 1D"):
         func(model)
 
 
@@ -2232,8 +2280,8 @@ def test_data1d_create_not_ndarray():
     assert isinstance(d.indep[0], numpy.ndarray)
 
     assert isinstance(d.y, numpy.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, numpy.ndarray)
+    assert isinstance(d.syserror, numpy.ndarray)
 
 
 def test_data1dint_create_not_ndarray():
@@ -2251,8 +2299,8 @@ def test_data1dint_create_not_ndarray():
     assert isinstance(d.indep[1], numpy.ndarray)
 
     assert isinstance(d.y, numpy.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, numpy.ndarray)
+    assert isinstance(d.syserror, numpy.ndarray)
 
 
 def test_data2d_create_not_ndarray():
@@ -2270,8 +2318,8 @@ def test_data2d_create_not_ndarray():
     assert isinstance(d.indep[1], numpy.ndarray)
 
     assert isinstance(d.y, numpy.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, numpy.ndarray)
+    assert isinstance(d.syserror, numpy.ndarray)
 
 
 def test_data2dint_create_not_ndarray():
@@ -2292,8 +2340,8 @@ def test_data2dint_create_not_ndarray():
     assert isinstance(d.indep[3], numpy.ndarray)
 
     assert isinstance(d.y, numpy.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, numpy.ndarray)
+    assert isinstance(d.syserror, numpy.ndarray)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2307,7 +2355,7 @@ def test_data_set_not_ndarray(data, field):
     setattr(data, field, tuple([1] * len(data.y)))
     got = getattr(data, field)
 
-    assert isinstance(got, tuple)
+    assert isinstance(got, numpy.ndarray)
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
@@ -2327,8 +2375,7 @@ def test_data_is_empty(data_class, args):
     """There is no size attribute"""
 
     data = data_class("empty", *args)
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size is None
 
 
 @pytest.mark.parametrize("data", (Data, ) + DATA_1D_CLASSES, indirect=True)
@@ -2339,8 +2386,7 @@ def test_data_size_1d(data):
     easier to check given the existing test infrastructure.
     """
 
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size == 10
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
@@ -2351,8 +2397,7 @@ def test_data_size_2d(data):
     easier to check given the existing test infrastructure.
     """
 
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size == 100
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
@@ -2363,16 +2408,12 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
     """
 
     data = data_class("empty", *args)
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
         data.set_dep(2)
 
-    assert str(err.value) == "object of type 'NoneType' has no len()"
 
-
-#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[2:])
-@pytest.mark.parametrize("data_class,args",
-                         [(Data2D, [None] * 3),
-                          pytest.param(Data2DInt, [None] * 5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[2:])
 @pytest.mark.parametrize("index", ["x0", "x1"])
 def test_data_empty_get_x_2d(data_class, args, index):
     """What happens when there's no data?
@@ -2382,7 +2423,6 @@ def test_data_empty_get_x_2d(data_class, args, index):
 
     data = data_class("empty", *args)
     getfunc = getattr(data, f"get_{index}")
-    # XFAIL: for Data2DInt there's a TypeError about adding None to None
     assert getfunc() is None
 
 
@@ -2395,16 +2435,10 @@ def test_data_change_independent_element(data_copy):
     # The x axis is > 0. but just check this
     assert data.indep[0][1] > 0
 
-    expected = [d.copy() for d in data.indep]
-    expected[0][1] = -100
-
     # change the second element of the first component
-    data.indep[0][1] = -100
-
-    # check we have only changed the one element
-    assert len(data.indep) == len(expected)
-    for e, n in zip(expected, data.indep):
-        assert n == pytest.approx(e)
+    with pytest.raises(ValueError,
+                       match="assignment destination is read-only"):
+        data.indep[0][1] = -100
 
 
 @pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
@@ -2472,8 +2506,9 @@ def test_data1d_do_we_copy_the_independent_axis():
     assert data.indep[0] == pytest.approx(x)
 
     # If an element of x is changed, does the independent axis change?
+    xorig = x.copy()
     x[1] = -20
-    assert data.indep[0] == pytest.approx(x)
+    assert data.indep[0] == pytest.approx(xorig)
 
 
 def test_data1d_do_we_copy_the_independent_axis_v2():
@@ -2484,10 +2519,9 @@ def test_data1d_do_we_copy_the_independent_axis_v2():
 
     data = Data1D("change", x, y)
 
-    data.indep[0][1] = -20
-
-    x[1] = -20
-    assert data.indep[0] == pytest.approx(x)
+    with pytest.raises(ValueError,
+                       match="assignment destination is read-only"):
+        data.indep[0][1] = -20
 
 
 def test_data1d_do_we_copy_the_dependent_axis():

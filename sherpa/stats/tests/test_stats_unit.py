@@ -52,7 +52,7 @@ from sherpa.data import Data1D, Data1DInt, Data2D, DataSimulFit
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Polynom1D
 from sherpa.astro.models import Lorentz2D
-from sherpa.utils.err import FitErr, StatErr
+from sherpa.utils.err import DataErr, FitErr, StatErr
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
     Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Cash, CStat, WStat, UserStat
@@ -427,12 +427,10 @@ def test_stats_calc_chisqr_chi2_nostat(usesys):
 
     data, model = setup_single(False, usesys)
     statobj = Chi2()
-    with pytest.raises(StatErr) as excinfo:
+    with pytest.raises(StatErr,
+                       match="If you select chi2 as the statistic, all " +
+                       "datasets must provide a staterror column"):
         statobj.calc_chisqr(data, model)
-
-    emsg = 'If you select chi2 as the statistic, all datasets ' + \
-           'must provide a staterror column'
-    assert emsg == str(excinfo.value)
 
 
 @pytest.mark.parametrize("usesys", [True, False])
@@ -441,12 +439,10 @@ def test_stats_calc_stat_chi2_nostat(usesys):
 
     data, model = setup_single(False, usesys)
     statobj = Chi2()
-    with pytest.raises(StatErr) as excinfo:
+    with pytest.raises(StatErr,
+                       match="If you select chi2 as the statistic, all " +
+                       "datasets must provide a staterror column"):
         statobj.calc_stat(data, model)
-
-    emsg = 'If you select chi2 as the statistic, all datasets ' + \
-           'must provide a staterror column'
-    assert emsg == str(excinfo.value)
 
 
 @pytest.mark.parametrize("stat", [Cash, CStat, WStat])
@@ -458,12 +454,12 @@ def test_stats_calc_stat_likelihood_bgnd(stat):
     data, model = setup_multiple_pha(False, False, background=True)
     data.datasets[1].subtract()
     statobj = stat()
-    with pytest.raises(FitErr) as excinfo:
-        statobj.calc_stat(data, model)
 
     emsg = '{} statistics cannot be used with '.format(statobj.name) + \
            'background subtracted data'
-    assert emsg == str(excinfo.value)
+    with pytest.raises(FitErr,
+                       match=emsg):
+        statobj.calc_stat(data, model)
 
 
 @pytest.mark.parametrize("usestat,usesys", [
@@ -517,11 +513,9 @@ def test_stats_calc_stat_wstat_diffbins():
     data2.set_rmf(data.get_rmf())
     data2.set_background(data.get_background())
 
-    # There is no Sherpa error for this, which seems surprising
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(DataErr,
+                       match="size mismatch between data and array: 4 vs 5"):
         statobj.calc_stat(data2, model)
-
-    assert str(err.value) == "input array sizes do not match, data: 5 vs group: 4"
 
 
 # Numeric answers calculated using CIAO 4.8 (sherpa 4.8.0)

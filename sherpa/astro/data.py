@@ -45,6 +45,23 @@ Both types of data extend the capabilities of the
   background for the observation (for PHA files) that can then be
   subtracted from the data or a background model fit to them.
 
+Design
+------
+
+The `DataPHA` class adds support for grouping data - effectively
+reducing the number of values in a data set - and adds an extra way
+to filter the data with the quality array. The class extends
+`~sherpa.data.Data1D`, since the primary data is channels and
+counts, but it also has to act like an integrated data set
+(`~sherpa.data.Data1DInt`) in some cases. In an extension to
+OGIP support, there is limited support for the ``BIN_LO`` and
+``BIN_HI`` fields provided with Chandra grating data.
+
+The `DataIMG` class extends 2D support for "gridded" data, with
+multiple possible coordinate systems (e.g. ``logical``, ``physical``,
+and ``world``).  Along with this, spatial filters can be applied,
+using the CIAO region syntax [REGION]_.
+
 Notes
 -----
 
@@ -63,6 +80,18 @@ References
 ----------
 
 .. [AstroNoteBook] https://sherpa.readthedocs.io/en/latest/NotebookSupport.html
+
+.. [OGIP_92_007] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
+
+.. [OGIP_92_007a] "The OGIP Spectral File Format Addendum: Changes log ", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html
+
+.. [CAL_92_002] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+
+.. [CAL_92_002a] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
+
+.. [PRIVATE_KA] Private communication with Keith Arnaud
+
+.. [REGION] https://cxc.harvard.edu/ciao/ahelp/dmregions.html
 
 Examples
 --------
@@ -978,7 +1007,8 @@ class DataOgipResponse(Data1DInt):
 class DataARF(DataOgipResponse):
     """ARF data set.
 
-    The ARF format is described in OGIP documents [1]_ and [2]_.
+    The ARF format is described in OGIP documents [CAL_92_002]_ and
+    [CAL_92_002a]_.
 
     Parameters
     ----------
@@ -1009,13 +1039,6 @@ class DataARF(DataOgipResponse):
     There is limited checking that the ARF matches the OGIP standard,
     but as there are cases of released data products that do not follow
     the standard, these checks can not cover all cases.
-
-    References
-    ----------
-
-    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
-
-    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
 
     """
     _ui_name = "ARF"
@@ -1101,7 +1124,8 @@ class DataARF(DataOgipResponse):
 class DataRMF(DataOgipResponse):
     """RMF data set.
 
-    The RMF format is described in OGIP documents [1]_ and [2]_.
+    The RMF format is described in OGIP documents [CAL_92_002]_ and
+    [CAL_92_002a]_.
 
     Parameters
     ----------
@@ -1128,13 +1152,6 @@ class DataRMF(DataOgipResponse):
     but as there are cases of released data products that do not follow
     the standard, these checks can not cover all cases. If a check fails
     then a warning message is logged.
-
-    References
-    ----------
-
-    .. [1] "The Calibration Requirements for Spectral Analysis (Definition of RMF and ARF file formats)", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
-
-    .. [2] "The Calibration Requirements for Spectral Analysis Addendum: Changes log", https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html
 
     """
     _ui_name = "RMF"
@@ -1168,6 +1185,20 @@ class DataRMF(DataOgipResponse):
         self._lo = energ_lo
         self._hi = energ_hi
         Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
+
+    # Although we have a Data1DInt-like dataset, the dependent axis
+    # does not match the independent axes. So we have to remove the
+    # checks on y. We could enforce the internal constraints but this
+    # is hard to do sensibly, so just do not bother.
+    #
+    @property
+    def y(self):
+        """The dependent axis."""
+        return self._y
+
+    @y.setter
+    def y(self, val):
+        self._y = val
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the RMF
@@ -1490,7 +1521,8 @@ def replace_xspecvar_values(src_counts, bkg_counts,
 class DataPHA(Data1D):
     """PHA data set, including any associated instrument and background data.
 
-    The PHA format is described in an OGIP document [1]_ and [2]_.
+    The PHA format is described in an OGIP document [OGIP_92_007]_ and
+    [OGIP_92_007a]_.
 
     Parameters
     ----------
@@ -1503,6 +1535,8 @@ class DataPHA(Data1D):
         The statistical and systematic errors for the data, if
         defined.
     bin_lo, bin_hi : array or None, optional
+        The wavelength ranges for the channels. This is intended to support
+        Chandra grating spectra.
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
@@ -1517,15 +1551,7 @@ class DataPHA(Data1D):
     ----------
     name : str
         Used to store the file name, for data read from a file.
-    staterror
-    syserror
-    bin_lo
-    bin_hi
-    grouping
-    quality
     exposure
-    backscal
-    areascal
 
     Notes
     -----
@@ -1556,32 +1582,26 @@ class DataPHA(Data1D):
 
     The handling of the AREASCAl value - whether it is a scalar or
     array - is currently in flux. It is a value that is stored with
-    the PHA file, and the OGIP PHA standard ([1]_, [2]_) describes the
-    observed counts being divided by the area scaling before
-    comparison to the model. However, this is not valid for
-    Poisson-based statistics, and is also not how XSPEC handles
-    AREASCAL ([3]_); the AREASCAL values are used to scale the
-    exposure times instead. The aim is to add this logic to the
-    instrument models in `sherpa.astro.instrument`, such as
+    the PHA file, and the OGIP PHA standard ([OGIP_92_007]_,
+    [OGIP_92_007a]_) describes the observed counts being divided by
+    the area scaling before comparison to the model. However, this is
+    not valid for Poisson-based statistics, and is also not how XSPEC
+    handles AREASCAL ([PRIVATE_KA]_); the AREASCAL values are used to
+    scale the exposure times instead. The aim is to add this logic to
+    the instrument models in `sherpa.astro.instrument`, such as
     `sherpa.astro.instrument.RMFModelPHA`. The area scaling still has
     to be applied when calculating the background contribution to a
     spectrum, as well as when calculating the data and model values
     used for plots (following XSPEC so as to avoid sharp
     discontinuities where the area-scaling factor changes strongly).
 
-    References
-    ----------
-
-    .. [1] "The OGIP Spectral File Format", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
-
-    .. [2] "The OGIP Spectral File Format Addendum: Changes log ", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html
-
-    .. [3] Private communication with Keith Arnaud
-
     """
     _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
                      'plot_fac', 'response_ids', 'background_ids')
+
+    _related_fields = Data1D._related_fields + ("bin_lo", "bin_hi", "counts", "grouping", "quality",
+                                                "backscal", "areascal")
 
     def _get_grouped(self):
         return self._grouped
@@ -1710,12 +1730,13 @@ must be an integer.""")
     def _set_response_ids(self, ids):
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'response', str(ids))
+
         keys = self._responses.keys()
         for id in ids:
             if id not in keys:
                 raise DataErr('badids', str(id), 'response', str(keys))
-        ids = list(ids)
-        self._response_ids = ids
+
+        self._response_ids = list(ids)
 
     response_ids = property(_get_response_ids, _set_response_ids,
                             doc=('IDs of defined instrument responses ' +
@@ -1727,12 +1748,13 @@ must be an integer.""")
     def _set_background_ids(self, ids):
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'background', str(ids))
+
         keys = self._backgrounds.keys()
         for id in ids:
             if id not in keys:
                 raise DataErr('badids', str(id), 'background', str(keys))
-        ids = list(ids)
-        self._background_ids = ids
+
+        self._background_ids = list(ids)
 
     background_ids = property(_get_background_ids, _set_background_ids,
                               doc='IDs of defined background data sets')
@@ -1741,12 +1763,18 @@ must be an integer.""")
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
 
+        # Set the size of the object as soon as we know (it makes it
+        # easier to get usable error messages when checking the
+        # related fields). This is only done for the channel case to
+        # allow the counts field to be set but the channel field
+        # unset.
+        #
         channel = _check(channel)
+        if channel is not None:
+            self._size = len(channel)
+
         counts = _check(counts)
 
-        # These are now aliases to indep and y so do not need to be set
-        # self.channel = channel
-        # self.counts = counts
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
         self.quality = quality
@@ -1781,6 +1809,27 @@ must be an integer.""")
         self.quality_filter = None
         super().__init__(name, channel, counts, staterror, syserror)
 
+    def _set_related(self, attr, val, check_mask=True, allow_scalar=False):
+        """Set a field that must match the independent axes size.
+
+        The value can be None, a scalar (if allow_scalar is set), or
+        something with the same length as the independent axis. This
+        is intended to be used from the property setter.
+
+        """
+        if val is None:
+            setattr(self, f"_{attr}", None)
+            return
+
+        if not numpy.iterable(val):
+            if not allow_scalar:
+                raise DataErr("notanarray")
+
+            setattr(self, f"_{attr}", val)
+            return
+
+        super()._set_related(attr, val, check_mask=check_mask)
+
     # Set up the aliases for channel and counts
     #
     @property
@@ -1806,6 +1855,149 @@ must be an integer.""")
     @counts.setter
     def counts(self, val):
         self.y = val
+
+    # Override the mask handling because the mask matches the grouped
+    # data length, not the independent axis.
+    #
+    @Data1D.mask.setter
+    def mask(self, val):
+
+        # We only need to over-ride the behavior if the data is
+        # grouped and val is a sequence (so we test with isscalar
+        # rather than iterable, to avoid selecting strings).
+        #
+        if self.grouped and val is not None and not numpy.isscalar(val):
+            # The assumption is that if the data is grouped then it contains data.
+            nexp = len(self.get_y(filter=False))
+            if len(val) != nexp:
+                raise DataErr("mismatchn", "grouped data", "mask", nexp, len(val))
+
+            self._data_space.filter.mask = val
+            return
+
+        # This is a bit messy just to call the original code
+        Data1D.mask.fset(self, val)
+
+    # Set up the properties for the related fields
+    #
+    @property
+    def bin_lo(self):
+        """The lower edge of each channel, in Angstroms, or None.
+
+        The values are expected to be in descending order. This is
+        only expected to be set for Chandra grating data.
+        """
+        return self._bin_lo
+
+    @bin_lo.setter
+    def bin_lo(self, val):
+        self._set_related("bin_lo", val)
+
+    @property
+    def bin_hi(self):
+        """The upper edge of each channel, in Angstroms, or None.
+
+        The values are expected to be in descending order, with the
+        bin_hi value larger than the corresponding bin_lo element.
+        This is only expected to be set for Chandra grating data.
+        """
+        return self._bin_hi
+
+    @bin_hi.setter
+    def bin_hi(self, val):
+        self._set_related("bin_hi", val)
+
+    @property
+    def grouping(self):
+        """The grouping data.
+
+        A group is indicated by a sequence of flag values starting
+        with ``1`` and then ``-1`` for all the channels in the group,
+        following [OGIP_92_007]_.  The grouping array must match the number of
+        channels and it will be converted to an integer type if
+        necessary.
+
+        Returns
+        -------
+        grouping : numpy.ndarray or None
+
+        See Also
+        --------
+        group, grouped, quality
+
+        """
+        return self._grouping
+
+    @grouping.setter
+    def grouping(self, val):
+        # _set_related checks if it's a scalar value, so we just need
+        # to check it's convertable to ndarray.
+        #
+        if val is not None:
+            try:
+                val = numpy.asarray(val, dtype=numpy.int16)
+            except TypeError:
+                raise DataErr("notanintarray") from None
+
+        self._set_related("grouping", val)
+
+    @property
+    def quality(self):
+        """The quality data.
+
+        A quality value of 0 indicates a good channel, otherwise
+        (values >=1) the channel is considered bad and can be excluded
+        using the `ignore_bad` method, as discussed in [OGIP_92_007]_. The
+        quality array must match the number of channels and it will be
+        converted to an integer type if necessary.
+
+        Returns
+        -------
+        quality : numpy.ndarray or None
+
+        See Also
+        --------
+        group, grouping
+
+        """
+        return self._quality
+
+    @quality.setter
+    def quality(self, val):
+        # _set_related checks if it's a scalar value, so we just need
+        # to check it's convertable to ndarray.
+        #
+        if val is not None:
+            try:
+                val = numpy.asarray(val, dtype=numpy.int16)
+            except TypeError:
+                raise DataErr("notanintarray") from None
+
+        self._set_related("quality", val)
+
+    @property
+    def areascal(self):
+        """The area scaling value (can be a scalar or array).
+
+        If this is an array then it must match the length of channel.
+        """
+        return self._areascal
+
+    @areascal.setter
+    def areascal(self, val):
+        self._set_related("areascal", val, allow_scalar=True)
+
+    @property
+    def backscal(self):
+        """The background scaling value (can be a scalar or array).
+
+        If this is an array then it must match the length of channel.
+        """
+        return self._backscal
+
+    @backscal.setter
+    def backscal(self, val):
+        self._set_related("backscal", val, allow_scalar=True)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PHA
@@ -1916,9 +2108,10 @@ must be an integer.""")
         return self.units
 
     def _fix_response_id(self, id):
-        if id is None:
-            id = self.primary_response_id
-        return id
+        if id is not None:
+            return id
+
+        return self.primary_response_id
 
     def get_response(self, id=None):
         """Return the response component.
@@ -1980,6 +2173,7 @@ must be an integer.""")
         ids = self.response_ids[:]
         if id not in ids:
             ids.append(id)
+
         self.response_ids = ids
 
         # To support simulated data (e.g. issue #1209) we over-write
@@ -2133,26 +2327,42 @@ must be an integer.""")
 
         Returns
         -------
-        arf : array
+        arf : array or None
            The effective area values for the data set (or background
-           component).
+           component) if set.
+
+        Notes
+        -----
+        This will return `None` when a RSP file (a combined ARF and
+        RMF) is used, rather than separate responses. The relationship
+        between RSP, ARF, and RMF is described in
+        `OGIP Calibration Memo CAL/GEN/92-002
+        <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_
+        and
+        `OGIP Calibration Memo CAL/GEN/92-002a
+        <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002a/cal_gen_92_002a.html>`_.
 
         """
-        filter = bool_cast(filter)
         self.notice_response(False)
         arf, rmf = self.get_response()
-        newarf = None
 
-        if arf is not None and rmf is not None:
-            specresp = arf.get_dep()
-            elo, ehi = arf.get_indep()
-            lo, hi = self._get_ebins(group=False)
+        # It's not clear why we do interpolation below, why we replace
+        # with 1 rather than 0, or how it is even meant to work, since
+        # the current code returns different values depending on the
+        # units setting - see issue #1582
+        #
+        if arf is None or rmf is None:
+            return None
 
-            newarf = interpolate(lo, elo, specresp)
-            newarf[newarf <= 0] = 1.
+        specresp = arf.get_dep()
+        elo, ehi = arf.get_indep()
+        lo, hi = self._get_ebins(group=False)
 
-            if filter:
-                newarf = self.apply_filter(newarf, self._middle)
+        newarf = interpolate(lo, elo, specresp)
+        newarf[newarf <= 0] = 1.
+
+        if bool_cast(filter):
+            newarf = self.apply_filter(newarf, self._middle)
 
         return newarf
 
@@ -2185,14 +2395,12 @@ must be an integer.""")
         from sherpa.astro import instrument
 
         if pileup_model is not None:
-            resp = instrument.PileupResponse1D(self, pileup_model)
-        elif len(self._responses) > 1:
-            resp = instrument.MultipleResponse1D(self)
-        else:
-            resp = instrument.Response1D(self)
+            return instrument.PileupResponse1D(self, pileup_model)
 
-        return resp
+        if len(self._responses) > 1:
+            return instrument.MultipleResponse1D(self)
 
+        return instrument.Response1D(self)
 
     def _get_ebins(self, response_id=None, group=True):
         """Return the low and high edges of the independent axis.
@@ -2434,7 +2642,6 @@ must be an integer.""")
         # the group).
         #
         mid = numpy.floor(mid)
-
         val = numpy.asarray(val).astype(numpy.int_) - 1
         try:
             return mid[val]
@@ -2457,6 +2664,7 @@ must be an integer.""")
                 vals = tiny
         else:
             vals[vals == 0.0] = tiny
+
         vals = hc / vals
         return vals
 
@@ -2464,9 +2672,10 @@ must be an integer.""")
     """The identifier for the background component when not set."""
 
     def _fix_background_id(self, id):
-        if id is None:
-            id = self.default_background_id
-        return id
+        if id is not None:
+            return id
+
+        return self.default_background_id
 
     def get_background(self, id=None):
         """Return the background component.
@@ -2706,8 +2915,9 @@ must be an integer.""")
 
         """
         if numpy.isscalar(scale) and scale <= 0.0:
-            scale = 1.0
-        elif numpy.iterable(scale):
+            return 1.0
+
+        if numpy.iterable(scale):
             scale = numpy.asarray(scale, dtype=SherpaFloat)
             if group:
                 if filter:
@@ -2716,12 +2926,14 @@ must be an integer.""")
                     scale = self.apply_grouping(scale, self._middle)
 
             scale[scale <= 0.0] = 1.0
+
         return scale
 
     def get_backscal(self, group=True, filter=False):
         """Return the background scaling of the PHA data set.
 
-        Return the BACKSCAL setting [BSCAL]_ for the PHA data set.
+        Return the BACKSCAL setting [OGIP_92_007]_ for the PHA data
+        set.
 
         Parameters
         ----------
@@ -2750,12 +2962,6 @@ must be an integer.""")
         only the ratio of source and background BACKSCAL values is
         used. It can be a scalar or an array.
 
-        References
-        ----------
-
-        .. [BSCAL] "The OGIP Spectral File Format", Arnaud, K. & George, I.
-               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
-
         Examples
         --------
 
@@ -2771,7 +2977,8 @@ must be an integer.""")
     def get_areascal(self, group=True, filter=False):
         """Return the fractional area factor of the PHA data set.
 
-        Return the AREASCAL setting [ASCAL]_ for the PHA data set.
+        Return the AREASCAL setting [OGIP_92_007]_ for the PHA data
+        set.
 
         Parameters
         ----------
@@ -2793,12 +3000,6 @@ must be an integer.""")
         -----
         The fractional area scale is normally set to 1, with the ARF used
         to scale the model.
-
-        References
-        ----------
-
-        .. [ASCAL] "The OGIP Spectral File Format", Arnaud, K. & George, I.
-               http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html
 
         Examples
         --------
@@ -2833,7 +3034,7 @@ must be an integer.""")
 
         Raises
         ------
-        TypeError
+        sherpa.utils.err.DataErr
             If the data size does not match the number of channels.
         ValueError
             If the name of groupfunc is not supported or the data
@@ -2897,27 +3098,61 @@ must be an integer.""")
 
         """
         if data is None:
-            return data
+            return None
 
-        if len(data) != len(self.counts):
-            # Two possible error cases here:
-            # - mask is None, in which case the apply_grouping call will
-            #   fail with a TypeError
-            # - mask is not None but the filter does not match the data
-            #   size, which causes a ValueError from the assignment below
-            # Both could be caught here, but there used to be an attempt
-            # to do this (for the first case) which has been commented out
-            # since the initial git commit, so leave as is.
-            #
-            counts = numpy.zeros(len(self.counts), dtype=SherpaFloat)
+        nelem = self.size
+        if nelem is None:
+            raise DataErr("sizenotset", self.name)
+
+        data = _check(data)
+        ndata = len(data)
+
+        # We allow the data to have either (using the un-grouped data)
+        #
+        # - the size of the data object (all channels)
+        # - the size of the filtered object
+        #
+        # This is unlike the other Data classes, where only the "all
+        # channel" case is supported. We need to allow this new
+        # behavior to support model evaluation via eval_model_to_fit
+        # when using a PHA-based instrument model.
+        #
+        if ndata != nelem:
+
             mask = self.get_mask()
-            if mask is not None:
-                counts[mask] = numpy.asarray(data, dtype=SherpaFloat)
-                data = counts
-            # else:
-            #     raise DataErr('mismatch', "filter", "data array")
+            if mask is None:
+                raise DataErr("mismatchn", "data", "array", nelem, ndata)
 
-        return super().apply_filter(self.apply_grouping(data, groupfunc))
+            nfiltered = mask.sum()
+            if nfiltered != ndata:
+                # It is hard to get a concise error here: assume that the user
+                # would prefer to know about the filtered length.
+                #
+                raise DataErr("mismatchn", "filtered data", "array",
+                              nfiltered, ndata)
+
+            # Create an array for the full channel range and insert
+            # the user-values into it.
+            #
+            temp = numpy.zeros(nelem, dtype=SherpaFloat)
+            temp[mask] = data
+            data = temp
+
+        gdata = self.apply_grouping(data, groupfunc)
+
+        # We can not
+        #
+        #   return super().apply_filter(gdata)
+        #
+        # because the super-class does not know that gdata is a
+        # grouped dataset, and so may be smaller than self.size.  The
+        # problem is that the size attribute in the PHA case is poorly
+        # defined: does it mean the number of channels or the number
+        # of grouped channels? At the moment it means the former, and
+        # there are places where we need this behavior. Can we add an
+        # "effective size" property?
+        #
+        return self._data_space.filter.apply(gdata)
 
     def apply_grouping(self, data, groupfunc=numpy.sum):
         """Apply the grouping scheme of the data set to the supplied data.
@@ -2941,7 +3176,7 @@ must be an integer.""")
 
         Raises
         ------
-        TypeError
+        sherpa.utils.err.DataErr
             If the data size does not match the number of channels.
         ValueError
             If the name of groupfunc is not supported.
@@ -3014,7 +3249,22 @@ must be an integer.""")
         True
 
         """
-        if data is None or not self.grouped:
+        if data is None:
+            return None
+
+        nelem = self.size
+        if nelem is None:
+            raise DataErr("sizenotset", self.name)
+
+        data = _check(data)
+        ndata = len(data)
+        if ndata != nelem:
+            raise DataErr("mismatchn", "data", "array", nelem, ndata)
+
+        # TODO: This should probably apply the quality filter whether
+        # grouped or not.
+        #
+        if not self.grouped:
             return data
 
         groups = self.grouping
@@ -3022,8 +3272,9 @@ must be an integer.""")
         if filter is None:
             return do_group(data, groups, groupfunc.__name__)
 
-        if len(data) != len(filter) or len(groups) != len(filter):
-            raise DataErr('mismatch', "quality filter", "data array")
+        nfilter = len(filter)
+        if len(data) != nfilter or len(groups) != nfilter:
+            raise DataErr("mismatchn", "quality filter", "array", nfilter, len(data))
 
         filtered_data = numpy.asarray(data)[filter]
         groups = numpy.asarray(groups)[filter]
@@ -3422,11 +3673,9 @@ must be an integer.""")
             bkg.group_adapt_snr(minimum, maxLength=maxLength,
                                 tabStops=tabStops, errorCol=errorCol)
 
-    def eval_model(self, modelfunc):
-        return modelfunc(*self.get_indep(filter=False))
-
     def eval_model_to_fit(self, modelfunc):
-        return self.apply_filter(modelfunc(*self.get_indep(filter=True)))
+        model = super().eval_model_to_fit(modelfunc)
+        return self.apply_filter(model)
 
     def sum_background_data(self,
                             get_bdata_func=(lambda key, bkg: bkg.counts)):
@@ -3531,7 +3780,6 @@ must be an integer.""")
         # return self.counts - self.sum_background_data()
 
         dep = self.counts
-        filter = bool_cast(filter)
 
         # The area scaling is not applied to the data, since it
         # should be being applied to the model via the *PHA
@@ -3546,30 +3794,31 @@ must be an integer.""")
                 raise DataErr("subtractlength")
             dep = dep - bkg
 
-        if filter:
+        if bool_cast(filter):
             dep = self.apply_filter(dep)
+
         return dep
 
-    def set_dep(self, val):
-        # QUS: should this "invert" the areascaling to val
-        #      to get the stored values?
-        #
-        #      Otherwise, when areascal /= 1
-        #            y1 = d.get_dep()
-        #            d.set_dep(y1)
-        #            y2 = d.get_dep()
-        #            y1 != y2
-        #
-        # Or perhaps it removes the areascal value in this case?
-        # We already have this split in the API when background data
-        # is available and is subtracted.
-        #
-        if numpy.iterable(val):
-            dep = numpy.asarray(val, SherpaFloat)
-        else:
-            val = SherpaFloat(val)
-            dep = numpy.array([val] * len(self.get_indep()[0]))
-        self.counts = dep
+    # The code used to re-define set_dep, but the only difference
+    # from the parent class was that it set the counts attribute and
+    # not the y attribute. These are now the same so it is no-longer
+    # needed.
+    #
+    # There was the following comment in the code which we keep here:
+    #
+    # QUS: should this "invert" the areascaling to val
+    #      to get the stored values?
+    #
+    #      Otherwise, when areascal /= 1
+    #            y1 = d.get_dep()
+    #            d.set_dep(y1)
+    #            y2 = d.get_dep()
+    #            y1 != y2
+    #
+    # Or perhaps it removes the areascal value in this case?
+    # We already have this split in the API when background data
+    # is available and is subtracted.
+    #
 
     def get_staterror(self, filter=False, staterrfunc=None):
         """Return the statistical error.
@@ -3784,11 +4033,11 @@ must be an integer.""")
         There is no scaling by the AREASCAL setting.
         """
         syserr = self.syserror
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             syserr = self.apply_filter(syserr, self._sum_sq)
         else:
             syserr = self.apply_grouping(syserr, self._sum_sq)
+
         return syserr
 
     def get_x(self, filter=False, response_id=None):
@@ -3804,6 +4053,7 @@ must be an integer.""")
             xlabel += ' (Angstrom)'
         # elif self.units == 'channel' and self.grouped:
         #     xlabel = 'Group Number'
+
         return xlabel
 
     def _set_initial_quantity(self):
@@ -3913,8 +4163,7 @@ must be an integer.""")
         return self._fix_y_units(err, filter, response_id)
 
     def get_xerr(self, filter=False, response_id=None):
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             # If we apply a filter, make sure that
             # ebins are ungrouped before applying
             # the filter.
@@ -4053,6 +4302,7 @@ must be an integer.""")
         chans = self.get_noticed_channels()
         if self.mask is False or len(chans) == 0:
             return 'No noticed channels'
+
         return create_expr(chans, format='%i')
 
     def get_filter(self, group=True, format='%.12f', delim=':'):
@@ -4562,6 +4812,16 @@ class DataIMG(Data2D):
 
         super().__init__(name, x0, x1, y, shape, staterror, syserror)
 
+    def _clear_filter(self):
+        if self._region is None:
+            return
+
+        # Remove the spatial filter, as if the axis has changed we know
+        # it is going to be wrong.
+        #
+        self.notice2d()
+        warning(f"Region filter has been removed from '{self.name}'")
+
     def _repr_html_(self):
         """Return a HTML (string) representation of the data
         """
@@ -4754,6 +5014,10 @@ class DataIMG(Data2D):
 
     def set_coord(self, coord):
         """Change the `coord` attribute.
+
+        .. versionchanged:: 4.14.1
+           The filter created by `notice2d` is now cleared when the
+           coordinate system is changed.
 
         Parameters
         ----------
@@ -4979,13 +5243,23 @@ class DataIMGInt(DataIMG):
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
     def _init_data_space(self, filter, *data):
-        return IntegratedDataSpace2D(filter, *data)
+        ndata = len(data)
+        if ndata != 4:
+            raise DataErr("wrongaxiscount", self.name, 4, ndata)
+
+        ds = IntegratedDataSpace2D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x0(self, filter=False):
+        if self.size is None:
+            return None
         indep = self._data_space.get(filter)
         return (indep.x0lo + indep.x0hi) / 2.0
 
     def get_x1(self, filter=False):
+        if self.size is None:
+            return None
         indep = self._data_space.get(filter)
         return (indep.x1lo + indep.x1hi) / 2.0
 

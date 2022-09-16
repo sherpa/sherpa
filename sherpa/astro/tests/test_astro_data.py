@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+import re
 import warnings
 
 import numpy as np
@@ -298,11 +300,9 @@ def test_arf_with_non_positive_thresh(ethresh):
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError,
+                       match="ethresh is None or > 0"):
         create_arf(energ_lo, energ_hi, specresp, ethresh=ethresh)
-
-    emsg = "ethresh is None or > 0"
-    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("idx", [0, 1, 5, -2, -1])
@@ -391,12 +391,9 @@ def test_arf_with_zero_energy_elem():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    emsg = "The ARF 'user-arf' has an ENERG_LO value <= 0"
-
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The ARF 'user-arf' has an ENERG_LO value <= 0"):
         create_arf(energ_lo, energ_hi, specresp)
-
-    assert str(exc.value) == emsg
 
 
 def test_arf_with_zero_energy_elem_replace():
@@ -458,13 +455,10 @@ def test_arf_with_grid_below_thresh_zero():
     energ_lo[0] = 0.0
     energ_hi[0] = 1e-7
 
-    emsg = "The ARF 'user-arf' has an ENERG_HI value <= " + \
-           "the replacement value of 1e-05"
-
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The ARF 'user-arf' has an ENERG_HI value <= " +
+                       "the replacement value of 1e-05"):
         create_arf(energ_lo, energ_hi, ethresh=1e-5)
-
-    assert str(exc.value) == emsg
 
 
 def test_arf_with_decreasing_energies():
@@ -500,11 +494,9 @@ def test_rmf_with_non_positive_thresh(ethresh):
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    emsg = "ethresh is None or > 0"
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError,
+                       match="ethresh is None or > 0"):
         create_delta_rmf(energ_lo, energ_hi, ethresh=ethresh)
-
-    assert str(exc.value) == emsg
 
 
 @pytest.mark.parametrize("idx", [0, 1, 5, -2, -1])
@@ -590,12 +582,9 @@ def test_rmf_with_zero_energy_elem():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
-
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The RMF 'delta-rmf' has an ENERG_LO value <= 0"):
         create_delta_rmf(energ_lo, energ_hi)
-
-    assert str(exc.value) == emsg
 
 
 def test_rmf_with_zero_energy_elem_replace():
@@ -638,11 +627,9 @@ def test_arf_with_negative_energy_elem():
     energ_hi = energy[1:]
     specresp = energ_lo * 0 + 1.0
 
-    emsg = "The ARF 'user-arf' has an ENERG_LO value <= 0"
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The ARF 'user-arf' has an ENERG_LO value <= 0"):
         create_arf(energ_lo, energ_hi, specresp)
-
-    assert str(exc.value) == emsg
 
 
 def test_arf_with_negative_energy_elem_replace():
@@ -684,11 +671,9 @@ def test_rmf_with_negative_energy_elem():
     energ_lo = energy[:-1]
     energ_hi = energy[1:]
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The RMF 'delta-rmf' has an ENERG_LO value <= 0"):
         create_delta_rmf(energ_lo, energ_hi)
-
-    emsg = "The RMF 'delta-rmf' has an ENERG_LO value <= 0"
-    assert str(exc.value) == emsg
 
 
 def test_rmf_with_negative_energy_elem_replace():
@@ -747,12 +732,10 @@ def test_rmf_with_grid_below_thresh_zero():
     energ_lo[0] = 0.0
     energ_hi[0] = 1e-7
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="The RMF 'delta-rmf' has an ENERG_HI value <= " +
+                       "the replacement value of 1e-05"):
         create_delta_rmf(energ_lo, energ_hi, ethresh=1e-5)
-
-    emsg = "The RMF 'delta-rmf' has an ENERG_HI value <= " + \
-           "the replacement value of 1e-05"
-    assert str(exc.value) == emsg
 
 
 # Bug https://github.com/sherpa/sherpa/issues/572
@@ -950,10 +933,9 @@ def test_sum_background_data_missing():
     """Check we error out if there's no background data"""
 
     d = DataPHA('tmp', np.arange(3), np.arange(3))
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="data set 'tmp' does not have any associated backgrounds"):
         d.sum_background_data()
-
-    assert str(exc.value) == "data set 'tmp' does not have any associated backgrounds"
 
 
 @requires_data
@@ -1656,10 +1638,9 @@ def test_pha_validates_limits(units, notice, lo, hi, make_data_path):
     pha.units = units
     func = pha.notice if notice else pha.ignore
 
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match="^unknown "):
         func(lo, hi)
-
-    assert str(de.value).startswith('unknown ')
 
 
 @requires_data
@@ -1672,10 +1653,10 @@ def test_pha_validates_range(notice, make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
     func = pha.notice if notice else pha.ignore
-    with pytest.raises(DataErr) as de:
-        func(3, 2)
 
-    assert str(de.value) == "unknown hi argument: 'must be >= lo'"
+    with pytest.raises(DataErr,
+                       match="unknown hi argument: 'must be >= lo'"):
+        func(3, 2)
 
 
 @requires_data
@@ -1943,23 +1924,20 @@ def test_pha_notice_errors_out_on_string_range(lo, hi, emsg, ignore):
     """Check we get an error if lo or hi are strings."""
 
     d = DataPHA('tmp', np.arange(3), np.arange(3))
-    with pytest.raises(DataErr) as de:
+    with pytest.raises(DataErr,
+                       match=f'strings not allowed in {emsg} bound list'):
         d.notice(lo, hi, ignore=ignore)
-
-    err = f'strings not allowed in {emsg} bound list'
-    assert str(de.value) == err
 
 
 def test_pha_creation_warns_about_non_numpy_channel():
     """What happens if the channel array is not a NumPy array?
 
-    At the moment there is no warning for the independent axis.
+    There used to be a UserWarning but this has now been removed.
     """
 
     chans = [1, 2, 3]
     counts = np.ones(3)
-    with pytest.warns(UserWarning, match=r'Converting array \[1, 2, 3\] to numpy array\.'):
-        d = DataPHA('tmp', chans, counts)
+    d = DataPHA('tmp', chans, counts)
 
     assert isinstance(d.x, np.ndarray)
     assert isinstance(d.channel, np.ndarray)
@@ -1968,12 +1946,14 @@ def test_pha_creation_warns_about_non_numpy_channel():
 
 
 def test_pha_creation_warns_about_non_numpy_counts():
-    """What happens if the counts array is not a NumPy array?"""
+    """What happens if the counts array is not a NumPy array?
+
+    There used to be a UserWarning but this has now been removed.
+    """
 
     chans = np.asarray([1, 2, 3])
     counts = [1, 0, 1]
-    with pytest.warns(UserWarning, match=r'Converting array \[1, 0, 1\] to numpy array\.'):
-        d = DataPHA('tmp', chans, counts)
+    d = DataPHA('tmp', chans, counts)
 
     assert isinstance(d.y, np.ndarray)
     assert isinstance(d.counts, np.ndarray)
@@ -2544,21 +2524,16 @@ def test_pha_channel0_subtract():
 
 
 def test_set_channel_sets_independent_axis():
-    """What happens if the channel attribute is set?
+    """What happens if the channel attribute is set?"""
 
-    This is meant to check if the independent axis is also
-    changed to match the new channel setting.
-
-    """
     chans = np.arange(1, 5)
     counts = chans + 1
     d = DataPHA("x", chans, counts)
 
     chans2 = np.arange(10, 20)
-    d.channel = chans2
-    assert len(d.indep) == 1
-    assert d.indep[0] == pytest.approx(chans2)
-    assert d.y == pytest.approx(counts)
+    with pytest.raises(DataErr,
+                       match="independent axis can not change size: 4 to 10"):
+        d.channel = chans2
 
 
 def test_set_counts_sets_y_axis():
@@ -2614,7 +2589,7 @@ IMG_ARGS = DataIMG, ("img", X0, X1, IMG_ONES)
 IMGINT_ARGS = DataIMGInt, ("imgint", X0, X1, X0 + 1, X1 + 1, IMG_ONES)
 
 
-def test_is_mask_reset_pha():
+def test_is_mask_reset_pha(caplog):
     """What happens to the mask attribute after the independent axis is changed? PHA"""
 
     data = PHA_ARGS[0](*PHA_ARGS[1])
@@ -2626,14 +2601,17 @@ def test_is_mask_reset_pha():
 
     # Change the independent axis, but to something of the same
     # length.
-    data.indep = (data.channel + 20, )
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        data.indep = (data.channel + 20, )
 
-    # This is a regression test as there is an argument that the mask
-    # should be cleared.
+    assert len(caplog.records) == 0
+
+    # The mask has *not* been cleared
     assert data.mask == pytest.approx([False, False, True])
 
 
-def test_is_mask_reset_pha_channel():
+def test_is_mask_reset_pha_channel(caplog):
     """What happens to the mask attribute after the channel is changed? PHA
 
     Extends test_is_mask_reset_pha
@@ -2643,16 +2621,19 @@ def test_is_mask_reset_pha_channel():
     data.ignore(None, 2)
 
     # Change the independent axis via the channel field
-    data.channel += 40
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        data.channel = data.channel + 40
 
-    # This is a regression test as there is an argument that the mask
-    # should be cleared.
+    assert len(caplog.records) == 0
+
+    # The mask has not been cleared
     assert data.mask == pytest.approx([False, False, True])
 
 
 @pytest.mark.parametrize("data_args",
                          [IMG_ARGS, IMGINT_ARGS])
-def test_is_mask_reset_img(data_args):
+def test_is_mask_reset_img(data_args, caplog):
     """What happens to the mask attribute after the independent axis is changed? img/imgint"""
 
     data_class, args = data_args
@@ -2671,12 +2652,20 @@ def test_is_mask_reset_img(data_args):
 
     # Change the independent axis, but to something of the same
     # length.
-    indep = [x + 40 for x in data.indep]
-    data.indep = tuple(indep)
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        indep = [x + 40 for x in data.indep]
+        data.indep = tuple(indep)
 
-    # This is a regression test as there is an argument that the mask
-    # should be cleared.
-    assert data.mask == pytest.approx(omask)
+    assert len(caplog.records) == 1
+
+    # The mask has been cleared
+    assert data.mask
+
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.astro.data"
+    assert r[1] == logging.WARN
+    assert r[2].startswith("Region filter has been removed from 'img")
 
 
 @pytest.mark.parametrize("data_args",
@@ -2690,7 +2679,8 @@ def test_invalid_independent_axis(data_args):
     data_class, args = data_args
     data = data_class(*args)
     indep = data.indep
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="^data set '.*' sent wrong tuple size for the independent axis: [124] not [248]$"):
         data.indep = tuple(list(indep) * 2)
 
 
@@ -2706,8 +2696,10 @@ def test_invalid_independent_axis_component(data_args):
     data = data_class(*args)
     indep = list(data.indep)
     indep[1] = indep[1][:-1]
-    # At the moment this does not error out
-    data.indep = tuple(indep)
+
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between (lo|x0) and (hi|x1): (3|11|12) vs (2|11|12)$"):
+        data.indep = tuple(indep)
 
 
 @pytest.mark.parametrize("data_args",
@@ -2721,8 +2713,9 @@ def test_invalid_dependent_axis(data_args):
 
     data_class, args = data_args
     data = data_class(*args)
-    # This currently does not fail
-    data.y = data.y[:-2]
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and y: (3|12) vs (10?)$"):
+        data.y = data.y[:-2]
 
 
 @pytest.mark.parametrize("data_class,args",
@@ -2738,8 +2731,9 @@ def test_make_invalid_dependent_axis(data_class, args):
     here.
     """
 
-    # This does not raise an error
-    data_class("wrong", *args)
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and y: (3|12) vs (2|10|34)$"):
+        data_class("wrong", *args)
 
 
 def test_pha_fails_when_bin_lo_is_invalid():
@@ -2748,8 +2742,9 @@ def test_pha_fails_when_bin_lo_is_invalid():
     This is to test the order of calls in the __init__ method.
     """
 
-    # this does not fail
-    DataPHA("something", CHANS, ONES, bin_lo=[1, 3])
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and bin_lo: 3 vs 2"):
+        DataPHA("something", CHANS, ONES, bin_lo=[1, 3])
 
 
 def test_pha_fails_when_bin_hi_is_invalid():
@@ -2758,8 +2753,9 @@ def test_pha_fails_when_bin_hi_is_invalid():
     This is to test the order of calls in the __init__ method.
     """
 
-    # this does not fail
-    DataPHA("something", CHANS, ONES, bin_hi=[1, 3])
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and bin_hi: 3 vs 2"):
+        DataPHA("something", CHANS, ONES, bin_hi=[1, 3])
 
 
 @pytest.mark.parametrize("data_args",
@@ -2773,8 +2769,9 @@ def test_set_independent_axis_to_none(data_args):
     assert all(d is not None for d in data.indep)
 
     indep = [None for d in data.indep]
-    data.set_indep(tuple(indep))
-    assert all(d is None for d in data.indep)
+    with pytest.raises(DataErr,
+                       match="independent axis can not be cleared"):
+        data.set_indep(tuple(indep))
 
 
 def test_set_independent_axis_to_none_pha_channel():
@@ -2784,9 +2781,9 @@ def test_set_independent_axis_to_none_pha_channel():
     assert data.channel is not None
     assert data.indep[0] is not None
 
-    data.channel = None
-    assert len(data.indep) == 1
-    assert data.indep[0] is None
+    with pytest.raises(DataErr,
+                       match="independent axis can not be cleared"):
+        data.channel = None
 
 
 # Should we remove support for the error columns for DataARF/DataRMF?
@@ -2803,8 +2800,9 @@ def test_set_error_axis_wrong_length(data_args, column):
     col = getattr(data, column)
     assert col is None
 
-    # does not raise an error
-    setattr(data, column, [1, 2])
+    with pytest.raises(DataErr,
+                       match=rf"^size mismatch between independent axis and {column}: \d+ vs 2$"):
+        setattr(data, column, [1, 2])
 
 
 @pytest.mark.parametrize("related", ["y", "counts"])
@@ -2817,78 +2815,55 @@ def test_pha_dependent_field_can_not_be_a_scalar(related):
 
     data_class, args = PHA_ARGS
     data = data_class(*args)
-    # does not raise an error
-    setattr(data, related, 2)
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        setattr(data, related, 2)
 
 
 @pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
 def test_pha_bin_field_must_match_initialization(vals):
-    """The bin_lo/hi must match when creating the object"""
+    """The bin_lo/hi must match the data"""
 
     data_class, args = PHA_ARGS
-    # this does not raise an error
-    data_class(*args, bin_lo=[1, 2, 3], bin_hi=vals)
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and bin_hi: 3 vs [14]$"):
+        data_class(*args, bin_lo=[1, 2, 3], bin_hi=vals)
 
 
 @pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
 def test_pha_bin_field_must_match_after(vals):
-    """The bin_lo/hi must match when creating the object"""
+    """The bin_lo/hi must match the data"""
 
     data_class, args = PHA_ARGS
     data = data_class(*args)
     data.bin_hi = [4, 5, 6]
-    # this does not raise an error
-    data.bin_lo = vals
+    with pytest.raises(DataErr,
+                       match=r"^size mismatch between independent axis and bin_lo: 3 vs [14]$"):
+        data.bin_lo = vals
 
 
-@pytest.mark.parametrize("field", ["bin_lo", "bin_hi"])
-@pytest.mark.parametrize("vals", [True, 0, np.asarray(1)])
-def test_pha_bin_field_can_not_be_a_scalar(field, vals):
-    """The bin_lo/hi fields can not be a scalar.
-
-    Note that these fields are different to sys/staterror.
-    """
-
-    data_class, args = PHA_ARGS
-    data = data_class(*args)
-    # this does not raise an error
-    setattr(data, field, vals)
-
-
-@pytest.mark.parametrize("field", ["bin_lo", "bin_hi"])
-@pytest.mark.parametrize("vals", [[1, 1], np.ones(10)])
-def test_pha_bin_field_can_not_be_a_sequence_wrong_size(field, vals):
-    """The bin_lo/hi fields can not be a scalar.
-
-    Note that these fields are different to sys/staterror.
-    """
-
-    data_class, args = PHA_ARGS
-    data = data_class(*args)
-    # this does not raise an error
-    setattr(data, field, vals)
-
-
-@pytest.mark.parametrize("related", ["staterror", "syserror", "grouping", "quality"])
+@pytest.mark.parametrize("related", ["staterror", "syserror", "grouping", "quality", "bin_lo", "bin_hi"])
 @pytest.mark.parametrize("vals", [True, 0, np.asarray(1)])
 def test_pha_related_field_can_not_be_a_scalar(related, vals):
-    """The related fields (staterror/syserror/grouping/quality) can not be a scalar."""
+    """The related fields (staterror/syserror/grouping/quality/...) can not be a scalar."""
 
     data_class, args = PHA_ARGS
     data = data_class(*args)
-    # this does not raise an error
-    setattr(data, related, vals)
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        setattr(data, related, vals)
 
 
-@pytest.mark.parametrize("label", ["staterror", "syserror", "grouping", "quality"])
+@pytest.mark.parametrize("label", ["staterror", "syserror", "grouping", "quality", "bin_lo", "bin_hi"])
 @pytest.mark.parametrize("vals", [[1, 1], np.ones(10)])
 def test_pha_related_field_can_not_be_a_sequence_wrong_size(label, vals):
     """Check we error out if column=label has the wrong size: sequence"""
 
     data_class, args = PHA_ARGS
     data = data_class(*args)
-    # this does not raise an error
-    setattr(data, label, vals)
+    with pytest.raises(DataErr,
+                       match=f"^size mismatch between independent axis and {label}: 3 vs (2|10)$"):
+        setattr(data, label, vals)
 
 
 def test_pha_independent_axis_can_not_be_a_set():
@@ -2903,8 +2878,9 @@ def test_pha_independent_axis_can_not_be_a_set():
     data_class, args = PHA_ARGS
     data = data_class(*args)
 
-    # this does not raise an error
-    data.set_indep(({"abc", False, 23.4}, ))
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        data.set_indep(({"abc", False, 23.4}, ))
 
 
 def test_pha_independent_axis_can_not_be_a_set_sequence():
@@ -2923,7 +2899,7 @@ def test_pha_independent_axis_can_not_be_a_set_sequence():
     data.set_indep(([{"abc", False, 23.4}] * 3, ))
 
 
-@pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", "grouping", "quality"])
+@pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", pytest.param("grouping", marks=pytest.mark.xfail), pytest.param("quality", marks=pytest.mark.xfail)])
 def test_pha_related_field_can_not_be_a_set(field):
     """Check we error out if y/counts/... is a set
 
@@ -2936,11 +2912,13 @@ def test_pha_related_field_can_not_be_a_set(field):
     data_class, args = PHA_ARGS
     data = data_class(*args)
 
-    # this does not fail
-    setattr(data, field, {"abc", False, 23.4})
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence or None"):
+        # XFAIL does not raise an error for grouping/quality
+        setattr(data, field, {"abc", False, 23.4})
 
 
-@pytest.mark.parametrize("field", ["y", "counts", "staterror", "syserror", "grouping", "quality"])
+@pytest.mark.parametrize("field", [pytest.param("y", marks=pytest.mark.xfail), pytest.param("counts", marks=pytest.mark.xfail), pytest.param("staterror", marks=pytest.mark.xfail), pytest.param("syserror", marks=pytest.mark.xfail), "grouping", "quality"])
 def test_pha_related_field_can_not_be_a_set_sequence(field):
     """Check we error out if y/counts/... is a sequence of sets
 
@@ -2953,8 +2931,11 @@ def test_pha_related_field_can_not_be_a_set_sequence(field):
     data_class, args = PHA_ARGS
     data = data_class(*args)
 
-    # this does not fail
-    setattr(data, field, [{"abc", False, 23.4}] * 3)
+    # once non-quality/grouping fields fail the error check will need to be changed
+    with pytest.raises(DataErr,
+                       match="Array must be a sequence of integers or None"):
+        # XFAIL does not raise an error except for grouping/quality
+        setattr(data, field, [{"abc", False, 23.4}] * 3)
 
 
 def test_pha_mask_size_must_match_ungrouped():
@@ -2966,8 +2947,9 @@ def test_pha_mask_size_must_match_ungrouped():
     data.grouping = [1, -1, -1, 1, -1, -1, 1, 1]
     assert not data.grouped
 
-    # does not raise an error
-    data.mask = [1, 0, 1]
+    with pytest.raises(DataErr,
+                       match="size mismatch between independent axis and mask: 8 vs 3"):
+        data.mask = [1, 0, 1]
 
 
 def test_pha_mask_size_must_match_grouped():
@@ -2980,8 +2962,9 @@ def test_pha_mask_size_must_match_grouped():
     data.grouped = True
 
     # The length is chosen to match the un-grouped data.
-    # does not raise an error
-    data.mask = [1, 0, 1, 1, 0, 1, 0, 0]
+    with pytest.raises(DataErr,
+                       match="size mismatch between grouped data and mask: 4 vs 8"):
+        data.mask = [1, 0, 1, 1, 0, 1, 0, 0]
 
 
 @pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
@@ -2991,7 +2974,8 @@ def test_pha_eval_model_checks_dimensionality_pha(funcname):
     data = DataPHA('tmp', np.arange(3), np.arange(3))
     model = Gauss2D()
     func = getattr(data, funcname)
-    with pytest.raises(TypeError):
+    with pytest.raises(DataErr,
+                       match="Data and model dimensionality do not match: 1D and 2D"):
         func(model)
 
 
@@ -3013,14 +2997,14 @@ def test_datapha_create_not_ndarray():
     assert isinstance(d.channel, np.ndarray)
     assert isinstance(d.y, np.ndarray)
     assert isinstance(d.counts, np.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, np.ndarray)
+    assert isinstance(d.syserror, np.ndarray)
 
-    assert isinstance(d.grouping, tuple)
-    assert isinstance(d.quality, tuple)
+    assert isinstance(d.grouping, np.ndarray)
+    assert isinstance(d.quality, np.ndarray)
 
-    assert isinstance(d.areascal, tuple)
-    assert isinstance(d.backscal, list)
+    assert isinstance(d.areascal, np.ndarray)
+    assert isinstance(d.backscal, np.ndarray)
 
 
 @pytest.mark.parametrize("field", ["staterror", "syserror",
@@ -3038,7 +3022,7 @@ def test_datapha_set_not_ndarray(field):
     setattr(data, field, tuple([1] * len(data.y)))
     got = getattr(data, field)
 
-    assert isinstance(got, tuple)
+    assert isinstance(got, np.ndarray)
 
 
 def test_datapha_mask_set_not_ndarray():
@@ -3076,8 +3060,8 @@ def test_dataimg_create_not_ndarray():
     assert isinstance(d.indep[1], np.ndarray)
 
     assert isinstance(d.y, np.ndarray)
-    assert isinstance(d.staterror, tuple)
-    assert isinstance(d.syserror, list)
+    assert isinstance(d.staterror, np.ndarray)
+    assert isinstance(d.syserror, np.ndarray)
 
 
 @pytest.mark.parametrize("field", ["staterror", "syserror"])
@@ -3093,7 +3077,7 @@ def test_dataimg_set_not_ndarray(field):
     setattr(data, field, tuple([1] * len(data.y)))
     got = getattr(data, field)
 
-    assert isinstance(got, tuple)
+    assert isinstance(got, np.ndarray)
 
 
 def test_dataimg_mask_set_not_ndarray():
@@ -3115,16 +3099,14 @@ def test_data_is_empty(data_class, args):
     """There is no size attribute"""
 
     data = data_class("empty", *args)
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size is None
 
 
 def test_datapha_size():
     """Check the size field."""
 
     data = PHA_ARGS[0](*PHA_ARGS[1])
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size == 3
 
 
 @pytest.mark.parametrize("data_args", [IMG_ARGS, IMGINT_ARGS])
@@ -3132,8 +3114,7 @@ def test_data2d_size(data_args):
     """Check the size field."""
 
     data = data_args[0](*data_args[1])
-    with pytest.raises(AttributeError):
-        data.size
+    assert data.size == 12
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
@@ -3144,16 +3125,12 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
     """
 
     data = data_class("empty", *args)
-    with pytest.raises(TypeError) as err:
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
         data.set_dep(2)
 
-    assert str(err.value) == "object of type 'NoneType' has no len()"
 
-
-#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[1:])
-@pytest.mark.parametrize("data_class,args",
-                         [(DataIMG, [None] * 3),
-                          pytest.param(DataIMGInt, [None] * 5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[1:])
 @pytest.mark.parametrize("index", ["x0", "x1"])
 def test_data_empty_get_x_2d(data_class, args, index):
     """What happens when there's no data?
@@ -3163,15 +3140,10 @@ def test_data_empty_get_x_2d(data_class, args, index):
 
     data = data_class("empty", *args)
     getfunc = getattr(data, f"get_{index}")
-    # XFAIL: for Data2DInt there's a TypeError about adding None to None
     assert getfunc() is None
 
 
-#@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
-@pytest.mark.parametrize("data_class,args",
-                         [pytest.param(DataPHA, [None] * 2, marks=pytest.mark.xfail),
-                          (DataIMG, [None] * 3),
-                          (DataIMGInt, [None] * 5)])
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
 def test_data_empty_apply_filter(data_class, args):
     """What does apply_filter do when the data set is empty?
 
@@ -3181,9 +3153,9 @@ def test_data_empty_apply_filter(data_class, args):
 
     data = data_class("empty", *args)
     orig = [2, 5]
-    ans = data.apply_filter(orig)
-    # XFAIL for DataPHA get a TypeError from calling len(None)
-    assert ans == pytest.approx(orig)
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
+        data.apply_filter(orig)
 
 
 def test_pha_apply_grouping_empty():
@@ -3195,8 +3167,9 @@ def test_pha_apply_grouping_empty():
 
     pha = DataPHA("example", None, None)
     orig = [2, 5]
-    ans = pha.apply_grouping(orig)
-    assert ans == pytest.approx(orig)
+    with pytest.raises(DataErr,
+                       match="The size of 'example' has not been set"):
+        pha.apply_grouping(orig)
 
 
 def test_pha_change_independent_element():
@@ -3212,12 +3185,9 @@ def test_pha_change_independent_element():
     assert pha.indep[0][1] == 2
 
     # change the second element of the first component
-    pha.indep[0][1] = -100
-
-    expected = chans.copy()
-    expected[1] = -100
-    assert len(pha.indep) == 1
-    assert pha.indep[0] == pytest.approx(expected)
+    with pytest.raises(ValueError,
+                       match="assignment destination is read-only"):
+        pha.indep[0][1] = -100
 
 
 @pytest.mark.parametrize("field", ["y", "dep", "counts"])
@@ -3259,8 +3229,9 @@ def test_pha_do_we_copy_the_independent_axis():
     assert pha.indep[0] == pytest.approx(chans)
 
     # what happens if we change the chans array?
+    orig = chans.copy()
     chans[1] = -100
-    assert pha.indep[0] == pytest.approx(chans)
+    assert pha.indep[0] == pytest.approx(orig)
 
 
 def test_pha_do_we_copy_the_dependent_axis():
@@ -3503,10 +3474,9 @@ def test_image_sparse_get_dep(make_image_sparse):
 
 def test_image_sparse_get_img(make_image_sparse):
 
-    with pytest.raises(ValueError) as err:
+    with pytest.raises(ValueError,
+                       match=r"cannot reshape array of size 5 into shape \(2,3\)"):
         make_image_sparse.get_img()
-
-    assert str(err.value) == "cannot reshape array of size 5 into shape (2,3)"
 
 
 def test_image_sparse_region_filter(make_image_sparse):
@@ -3565,3 +3535,45 @@ def test_image_sparse_region_filter_out_all(make_image_sparse):
 
     out = data.get_dep(True)
     assert out == pytest.approx([])
+
+
+@pytest.mark.parametrize("data_args",
+                         [ARF_ARGS, RMF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
+def test_len_data(data_args):
+    data_class, args = data_args
+    data = data_class(*args)
+
+    # The last argument should be the "dependent" axis (it
+    # is tricky for the RMF case).
+    #
+    assert len(data) == args[-1].size
+
+
+def test_len_datapha_empty():
+    data = DataPHA('empty', None, None)
+    assert len(data) == 0
+
+
+def test_len_datapha_grouped():
+    """Special case a grouped PHA"""
+    chans = np.arange(1, 51, 1, dtype=int)
+    grps = [1] + [-1] * 49
+    data = DataPHA('testdata', chans, np.zeros_like(chans),
+                   grouping=grps)
+
+    # Just make sure they behave as expected, as a reminder if we
+    # change any routine.
+    assert data.grouped
+    assert len(data) == 50
+    assert len(data.y) == 50
+    assert len(data.get_y()) == 1
+    assert len(data.get_dep()) == 50
+    assert len(data.get_dep(filter=True)) == 1
+
+
+def test_len_image_sparse(make_image_sparse):
+    """Special case an image"""
+    data = make_image_sparse
+
+    assert len(data) == len(data.y)
+    assert len(data) == 5

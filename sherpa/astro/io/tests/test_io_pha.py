@@ -138,18 +138,9 @@ def test_pha_write_basic(make_data_path, tmp_path):
             assert len(obj.quality) == 1024
             assert obj.quality == pytest.approx(np.zeros(1024))
 
-        if backend_is("crates"):
-            assert obj.grouping.dtype == np.dtype("int16")
-            if not roundtrip:
-                assert obj.quality.dtype == np.dtype("int16")
-
-        elif backend_is("pyfits"):
-            assert obj.grouping.dtype == np.dtype(">i2")
-            if not roundtrip:
-                assert obj.quality.dtype == np.dtype(">i2")
-
-        else:
-            pytest.fail("Unrecognized IO backend")
+        assert obj.grouping.dtype == np.dtype("int16")
+        if not roundtrip:
+            assert obj.quality.dtype == np.dtype("int16")
 
         one, = np.where(obj.grouping == 1)
         expected = [0,  17,  21,  32,  39,  44,  48,  51,  54,  56,  59,  61,  65,
@@ -285,18 +276,9 @@ def test_pha_write_basic_errors(make_data_path, tmp_path):
             assert len(obj.quality) == 1024
             assert obj.quality == pytest.approx(np.zeros(1024))
 
-        if backend_is("crates"):
-            assert obj.grouping.dtype == np.dtype("int16")
-            if not roundtrip:
-                assert obj.quality.dtype == np.dtype("int16")
-
-        elif backend_is("pyfits"):
-            assert obj.grouping.dtype == np.dtype(">i2")
-            if not roundtrip:
-                assert obj.quality.dtype == np.dtype(">i2")
-
-        else:
-            pytest.fail("Unrecognized IO backend")
+        assert obj.grouping.dtype == np.dtype("int16")
+        if not roundtrip:
+            assert obj.quality.dtype == np.dtype("int16")
 
         one, = np.where(obj.grouping == 1)
         expected = [0,  17,  21,  32,  39,  44,  48,  51,  54,  56,  59,  61,  65,
@@ -1299,61 +1281,6 @@ def test_write_pha_missing_column(column, is_ascii, tmp_path):
     assert tmpfile.exists()
     assert tmpfile.is_file()
     assert tmpfile.stat().st_size > 0
-
-
-@requires_fits
-def test_write_pha_columnn_length_mismatch_ascii(tmp_path):
-    """What happens when "required" column do not match.
-
-    This is separate from test_write_pha_columnn_length_mismatch_fits
-    as the behavior is different-enough it's not worth adding a
-    is_ascii parameter. It also depends on the backend.
-    """
-
-    chans = np.arange(1, 4, dtype=np.int32)
-    counts = np.arange(1, 6, dtype=np.int32)
-    pha = DataPHA("tmp", chans, counts)
-
-    tmpfile = tmp_path / 'test.fits'
-    if backend_is("crates"):
-        io.write_pha(str(tmpfile), pha, ascii=True)
-        dat = io.read_table(str(tmpfile))
-        assert len(dat.x) == 5
-        assert len(dat.y) == 5
-        assert dat.x == pytest.approx([1, 2, 3, 0, 0])
-        assert dat.y == pytest.approx([1, 2, 3, 4, 5])
-
-    elif backend_is("pyfits"):
-        with pytest.raises(IOErr) as err:
-            io.write_pha(str(tmpfile), pha, ascii=True)
-
-        assert str(err.value) == "not all arrays are of equal length"
-
-    else:
-        assert False  # programming error
-
-
-@requires_fits
-def test_write_pha_columnn_length_mismatch_fits(tmp_path):
-    """What happens when "required" column do not match.
-
-    At the moment we write out the file with mis-matched lengths.
-
-    """
-
-    chans = np.arange(1, 4, dtype=np.int32)
-    counts = np.arange(1, 6, dtype=np.int32)
-    pha = DataPHA("tmp", chans, counts)
-
-    tmpfile = tmp_path / 'test.fits'
-    io.write_pha(str(tmpfile), pha, ascii=False)
-
-    # The extra rows are padded with 0
-    dat = io.read_table(str(tmpfile))
-    assert len(dat.x) == 5
-    assert len(dat.y) == 5
-    assert dat.x == pytest.approx([1, 2, 3, 0, 0])
-    assert dat.y == pytest.approx([1, 2, 3, 4, 5])
 
 
 def test_pack_pha_invalid_counts():

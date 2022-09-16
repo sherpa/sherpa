@@ -30,7 +30,7 @@ from numpy import arange, array, abs, iterable, sqrt, where, \
     ones_like, isnan, isinf, any
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
-from sherpa.utils.err import FitErr, EstErr, SherpaErr
+from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
 from sherpa.utils import formatting
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
@@ -874,6 +874,17 @@ class Fit(NoNewAttributesAfterInit):
 
     def __init__(self, data, model, stat=None, method=None, estmethod=None,
                  itermethod_opts=None):
+
+        # Ensure the data and model match dimensionality. It is
+        # expected that both data and model have a ndim attribute
+        # but allow them to be missing (e.g. user-defined or
+        # loaded from a pickled file before ndim was added).
+        #
+        ddim = getattr(data, 'ndim', None)
+        mdim = getattr(model, 'ndim', None)
+        if None not in [mdim, ddim] and mdim != ddim:
+            raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
+
         if itermethod_opts is None:
             itermethod_opts = {'name': 'none'}
         self.data = data

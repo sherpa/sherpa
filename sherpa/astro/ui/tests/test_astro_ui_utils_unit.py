@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2018, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -186,7 +187,6 @@ def test_spatial_filter_errors_out_invalid_id(func):
     """
 
     ids = NonIterableObject()
-    with pytest.raises(ArgumentTypeErr) as te:
+    with pytest.raises(ArgumentTypeErr,
+                       match="'ids' must be an identifier or list of identifiers"):
         func(ids)
-
-    assert str(te.value) == "'ids' must be an identifier or list of identifiers"""

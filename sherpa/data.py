@@ -35,6 +35,59 @@ and hiding the range c to d (``ignore``). This is used with the
 evaluating models on different grids to the data, and then converting
 back to the data space, whether by rebinnig or interpolation.
 
+Design
+------
+
+The design for the `Data` class assumes
+
+- the basic fields are the independent axis - which is thought of as a
+  tuple of arrays - and the dependent axis, where normally the
+  independent axis is labelled starting with ``x``, and the dependent axis
+  ``y``.
+
+- there are a number of related fields - such as the statistical and
+  systematic errors - that follow the same behavior as the
+  independent and dependent axes.
+
+- fields are converted to `ndarray` when read in.
+
+- the independent axes can either be points (`~sherpa.models.regrid.PointAxis`)
+  or integrated (`~sherpa.models.regrid.IntegratedAxis`). There is
+  currently no support for an object with a combination of point and
+  integrated axes but it could be added.
+
+- the independent axis is mediated by a "Data Space" (`DataSpaceND`,
+  `DataSpace1D`, `IntegratedDataSpace1D`, `DataSpace2D`, and
+  `IntegratedDataSpace2D`).
+
+- `Data` objects contain the `~Data.ndim` field to indicate the number of
+  independent axes it supports.
+
+- to support arbitrary dimensions, the data is treated as one-dimensional
+  arrays.
+
+- `Data` objects can be created with no data, but are fixed once an
+  axis - expected to be the independent axis but it need not be - is
+  set (see the `~Data.size` attribute). In general the data is
+  assumed to be set when the object is created.
+
+- there are checks to ensure that the data has the correct size, shape,
+  and potentially data type, but this is not intended to catch all
+  possible problems.
+
+- Numpy masked arrays can be used to initialize the dependent variable
+  and the mask is converted to the format of the `~Data.mask`
+  attribute of the `Data` object, taking into account that for Sherpa
+  a value of True indicates a valid quantity, while the opposite is
+  true in numpy.
+
+  In general, it is expected that any filtering has been applied
+  before the `Data` object is created.
+
+- the independent axes are marked as read-only, so the only way to change
+  a value is to replace the whole axis, in which case any existing
+  filter will be removed.
+
 Notebook support
 ----------------
 
@@ -59,17 +112,20 @@ dependent axis (``y``) then filter to select only those values between
 >>> d1.ignore(520, 530)
 
 """
+import logging
 import warnings
 from abc import ABCMeta
 
 import numpy
 
-from sherpa.models.regrid import EvaluationSpace1D
+from sherpa.models.regrid import EvaluationSpace1D, IntegratedAxis, PointAxis
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, create_expr_integrated, calc_total_error, bool_cast, \
     filter_bins, parallel_map_funcs
 from sherpa.utils import formatting
+
+warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
@@ -77,24 +133,35 @@ __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
 
 
 def _check(array):
+    """Ensure the data is a 1D array, or can be converted to one."""
+
+    # Special case support for None.
     if array is None:
-        # There may be valid reasons for the array to be None, e.g. that's what we do in fake_pha
+        return None
+
+    # Assume that having a shape attribute means "this is near-enough
+    # an ndarray" that we don't need to convert it.
+    #
+    if hasattr(array, "shape"):
+        # Special-case the 0-dim case
+        if len(array.shape) == 0:
+            raise DataErr("notanarray")
+        if len(array.shape) != 1:
+            raise DataErr("not1darray")
+
         return array
 
-    if hasattr(array, "shape"):
-        if len(array.shape) != 1:
-            raise TypeError(f"Data arrays should be 1-dimensional. Did you call 'flatten()' on {array}?)")
-    else:
-        warnings.warn(f"Converting array {array} to numpy array.")
-        array = numpy.asanyarray(array)
-        return _check(array)
-    return array
+    return _check(numpy.asanyarray(array))
 
 
 def _check_nomask(array):
     if hasattr(array, 'mask'):
         warnings.warn(f'Input array {array} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.')
-    return array
+
+    # Ensure we do NumPy conversions after checking for mask to
+    # make sure we don't end up removing .mask in the following.
+    #
+    return _check(array)
 
 
 def _check_dep(array):
@@ -108,14 +175,6 @@ def _check_dep(array):
     # We don't know what the mask convention is
     warnings.warn(f'Format of mask for array {array} not supported thus the mask is is ignored and values `behind the mask` are used. Set .mask attribute manually or use "set_filter" function.')
     return _check(array), True
-
-
-def _check_err(array, masktemplate):
-    '''Accept array without mask or with a mask that matches the template'''
-    if hasattr(array, 'mask') and \
-       (not hasattr(masktemplate, 'mask') or not numpy.all(array.mask == masktemplate.mask)):
-        warnings.warn(f'The mask of {array} differs from the mask of the dependent array, only the mask of the dependent array is used in Sherpa.')
-    return array
 
 
 class DataSpace1D(EvaluationSpace1D):
@@ -177,9 +236,9 @@ class DataSpace1D(EvaluationSpace1D):
         """
         evaluation_space = None
 
-        if model is not None and hasattr(model, "evaluation_space"):
-            if self not in model.evaluation_space:
-                evaluation_space = self
+        if model is not None and hasattr(model, "evaluation_space") \
+           and self not in model.evaluation_space:
+            evaluation_space = self
 
         return self if evaluation_space is None else evaluation_space
 
@@ -199,8 +258,18 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         xhi : array_like
             the higher bounds array of this data space
         """
+        xlo = _check_nomask(xlo)
+        xhi = _check_nomask(xhi)
+
+        # We only have to check if xhi is None, as if it's set then the
+        # superclass will check the length. We do need to support both
+        # values being None though.
+        #
+        if xlo is not None and xhi is None:
+            raise DataErr("mismatchn", "lo", "hi", len(xlo), "None")
+
         self.filter = filter
-        super().__init__(_check_nomask(xlo), _check_nomask(xhi))
+        super().__init__(xlo, xhi)
 
     def get(self, filter=False):
         """
@@ -244,31 +313,44 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         """
         evaluation_space = None
 
-        if model is not None and hasattr(model, "evaluation_space"):
-            if self not in model.evaluation_space:
-                evaluation_space = self
+        if model is not None and hasattr(model, "evaluation_space") \
+           and self not in model.evaluation_space:
+            evaluation_space = self
 
         return self if evaluation_space is None else evaluation_space
 
 
+# We do not inherit from EvaluationSpace2D because that would require
+# that the x0 and x1 arrays form a grid (e.g. nx by ny) and we need
+# to be able to support a non-grid set of points.
+#
+# The code is written to resemble sherpa.models.grid.EvaluationSpace2D
+# though, so that the checks added for that code are run here.
+#
 class DataSpace2D():
+    """Class for representing 2-D Data Spaces.
+
+    Data Spaces are spaces that describe the data domain.
+
+    Parameters
+    ----------
+    filter : Filter
+        A filter object that initialized this data space.
+    x0, x1 : array_like
+        The first and second axes of this data space. The arrays are
+        copied.
+
     """
-    Class for representing 2-D Data Spaces. Data Spaces are spaces that describe the data domain.
-    """
+
     def __init__(self, filter, x0, x1):
-        """
-        Parameters
-        ----------
-        filter : Filter
-            a filter object that initialized this data space
-        x0 : array_like
-            the first axis of this data space
-        x1 : array_like
-            the second axis of this data space
-        """
+        x0 = _check_nomask(x0)
+        x1 = _check_nomask(x1)
+
         self.filter = filter
-        self.x0 = _check(_check_nomask(x0))
-        self.x1 = _check(_check_nomask(x1))
+        self.x_axis = PointAxis(x0)
+        self.y_axis = PointAxis(x1)
+        if self.x_axis.size != self.y_axis.size:
+            raise DataErr("mismatchn", "x0", "x1", self.x_axis.size, self.y_axis.size)
 
     def get(self, filter=False):
         """
@@ -295,44 +377,55 @@ class DataSpace2D():
 
     @property
     def grid(self):
-        """
-        Return the grid representation of this dataset.
+        """The grid representation of this dataset.
 
         The x0 and x1 arrays in the grid are one-dimensional representations of the meshgrid obtained
         from the x and y axis arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
 
         Returns
         -------
-        tuple
-            A tuple representing the x0 and x1 axes. The tuple will contain two arrays.
+        (x0, x1) : (ndarray, ndarray)
+            A tuple representing the x0 and x1 axes.
         """
-        return self.x0, self.x1
+        return self.x_axis.x, self.y_axis.x
+
+    # Should these be deprecated now that the code attempts to mimic EvaluationSpace2D?
+    #
+    @property
+    def x0(self):
+        """Return the first axis."""
+        return self.x_axis.x
+
+    @property
+    def x1(self):
+        """Return the second axis."""
+        return self.y_axis.x
 
 
 class IntegratedDataSpace2D():
+    """Same as DataSpace2D, but for supporting integrated data sets.
+
+    Parameters
+    ----------
+    filter : Filter
+        A filter object that initialized this data space.
+    x0lo, x1lo, x0hi, x1hi : array_like
+        The lower bounds array of the first and second axes, then the
+        upper bounds.
+
     """
-    Same as DataSpace2D, but for supporting integrated data sets.
-    """
+
     def __init__(self, filter, x0lo, x1lo, x0hi, x1hi):
-        """
-        Parameters
-        ----------
-        filter : Filter
-            a filter object that initialized this data space
-        x0lo : array_like
-            the lower bounds array of the x0 axis
-        x0hi : array_like
-            the higher bounds array of the xhi axis
-        x1lo : array_like
-            the lower bounds array of the x0 axis
-        x1hi : array_like
-            the higher bounds array of the xhi axis
-        """
+        x0lo = _check_nomask(x0lo)
+        x1lo = _check_nomask(x1lo)
+        x0hi = _check_nomask(x0hi)
+        x1hi = _check_nomask(x1hi)
+
         self.filter = filter
-        self.x0lo = _check(_check_nomask(x0lo))
-        self.x1lo = _check(_check_nomask(x1lo))
-        self.x0hi = _check(_check_nomask(x0hi))
-        self.x1hi = _check(_check_nomask(x1hi))
+        self.x_axis = IntegratedAxis(x0lo, x0hi)
+        self.y_axis = IntegratedAxis(x1lo, x1hi)
+        if self.x_axis.size != self.y_axis.size:
+            raise DataErr("mismatchn", "x0", "x1", self.x_axis.size, self.y_axis.size)
 
     def get(self, filter=False):
         """
@@ -359,35 +452,58 @@ class IntegratedDataSpace2D():
 
     @property
     def grid(self):
-        """
-        Return the grid representation of this dataset.
+        """The grid representation of this dataset.
 
         The x0 and x1 arrays in the grid are one-dimensional representations of the meshgrid obtained
         from the x and y axis arrays, as in `numpy.meshgrid(x, y)[0].ravel()`
 
         Returns
         -------
-        tuple
-            A tuple representing the x and y axes. The tuple will contain four arrays.
+        (x0lo, x1lo, x0hi, x1hi) : (ndarray, ndarray, ndarray, ndarray)
+            The axis data.
+
         """
-        return self.x0lo, self.x1lo, self.x0hi, self.x1hi
+        return self.x_axis.lo, self.y_axis.lo, self.x_axis.hi, self.y_axis.hi
+
+    # Should these be deprecated now that the code attempts to mimic EvaluationSpace2D?
+    #
+    @property
+    def x0lo(self):
+        """Return the first axis (low edge)"""
+        return self.x_axis.lo
+
+    @property
+    def x0hi(self):
+        """Return the first axis (high edge)."""
+        return self.x_axis.hi
+
+    @property
+    def x1lo(self):
+        """Return the second axis (low edge)."""
+        return self.y_axis.lo
+
+    @property
+    def x1hi(self):
+        """Return the second axis (high edge)."""
+        return self.y_axis.hi
 
 
 class DataSpaceND():
+    """Class for representing arbitray N-Dimensional data domains
+
+    Parameters
+    ----------
+    filter : Filter
+        A filter object that initialized this data space.
+    indep : tuple of array_like
+        The tuple of independent axes. The arrays are copied rather
+        than storing a reference.
+
     """
-    Class for representing arbitray N-Dimensional data domains
-    """
+
     def __init__(self, filter, indep):
-        """
-        Parameters
-        ----------
-        filter : Filter
-            a filter object that initialized this data space
-        indep : tuple of array_like
-            the tuple of independent axes.
-        """
         self.filter = filter
-        self.indep = _check_nomask(indep)
+        self.indep = tuple(_check_nomask(d) for d in indep)
 
     def get(self, filter=False):
         """
@@ -425,9 +541,19 @@ class DataSpaceND():
         return self.indep
 
 
+# NOTE:
+#
+# Although this is labelled as supporting N-D datasets, the
+# implementation assumes that the data has been flattened to 1D arrays
+# - in particular the notice method. It is likely that we can document
+# this - i.e. that the mask is going to be 1D.
+#
 class Filter():
-    """
-    A class for representing filters of N-Dimentional datasets.
+    """A class for representing filters of N-Dimensional datasets.
+
+    The filter does not know the size of the dataset or the values of
+    the independent axes.
+
     """
     def __init__(self):
         self._mask = True
@@ -444,31 +570,52 @@ class Filter():
 
     @mask.setter
     def mask(self, val):
-        if (val is True) or (val is False):
-            self._mask = val
-        # if val is of type np.bool_ and True, it failed the previous test because
-        # "is True" compares with Python "True" singelton.
-        # Yet, we do not want to allow arbitrary values that evaluate as True.
+        if val is None:
+            raise DataErr('ismask')
+
+        # The code below has to deal with bool-like values, such as
+        # numpy.ma.nomask (this evaluates to False but is not a bool),
+        # and numpy.bool_ values. The following code is intended to
+        # catch these "special" values. Note that we explicitly check
+        # for boolean values ('val is True' and 'val is False') rather
+        # than just whether val behaves like a boolean - for example
+        # 'if val or not val: ...'.
+        #
+        if not numpy.isscalar(val):
+            # Is it possible for the following to throw a conversion
+            # error? If so, we could catch it and convert it into a
+            # DataErr, but it does not seem worth it (as it's not
+            # obvious what the error to catch would be).
+            #
+            self._mask = numpy.asarray(val, bool)
+
         elif val is numpy.ma.nomask:
             self._mask = True
-        elif numpy.isscalar(val) and isinstance(val, numpy.bool_):
+
+        elif (val is True) or (val is False):
+            self._mask = val
+
+        elif isinstance(val, numpy.bool_):
+            # are there other types we could be looking for here?
             self._mask = bool(val)
-        elif (val is None) or numpy.isscalar(val):
-            raise DataErr('ismask')
+
         else:
-            self._mask = numpy.asarray(val, numpy.bool_)
+            # Note that setting mask to 2.0 will fail, but an array
+            # of 2.0's will get converted to booleans.
+            #
+            raise DataErr('ismask')
 
     def apply(self, array):
         """Apply this filter to an array
 
         Parameters
         ----------
-        array : array_like
+        array : array_like or None
             Array to be filtered
 
         Returns
         -------
-        array_like : filtered array
+        array_like : ndarray or None
 
         Raises
         ------
@@ -482,18 +629,21 @@ class Filter():
 
         """
         if array is None:
-            return
+            return None
 
         # Note that mask may not be a boolean but an array.
         if self.mask is False:
             raise DataErr('notmask')
 
+        # Ensure we always return a ndarray.
+        #
+        array = _check(array)
         if self.mask is True:
             return array
 
-        array = numpy.asarray(array)
-        if array.shape != self.mask.shape:
-            raise DataErr('mismatch', 'mask', 'data array')
+        if array.size != self.mask.size:
+            raise DataErr("mismatchn", "mask", "data array", self.mask.size, array.size)
+
         return array[self.mask]
 
     def notice(self, mins, maxes, axislist, ignore=False, integrated=False):
@@ -665,13 +815,61 @@ class Data(NoNewAttributesAfterInit, BaseData):
     _extra_fields = ()
     """Any extra fields that should be displayed by str(object)."""
 
+    _related_fields = ("y", "staterror", "syserror")
+    """What fields must match the size of the independent axis.
+
+    These fields are set to None whenever the independent axis size
+    is set or changed.
+    """
+
+    _y = None
+    _size = None
+
+    ndim = None
+    "The dimensionality of the dataset, if defined, or None."
+
     def __init__(self, name, indep, y, staterror=None, syserror=None):
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
-        self.staterror = _check_err(staterror, y)
-        self.syserror = _check_err(syserror, y)
+        self.staterror = staterror
+        self.syserror = syserror
         NoNewAttributesAfterInit.__init__(self)
+
+    def _check_data_space(self, dataspace):
+        """Check that the data space has the correct size.
+
+        Note that this also sets the size of the data object if it has
+        not been set.
+
+        Parameters
+        ----------
+        dataspace
+            The dataspace object for the data object.
+
+        """
+
+        indep0 = dataspace.get().grid[0]
+        nold = self.size
+
+        # If there is no data then we need to update the size, unless
+        # the new data is also empty.
+        #
+        if nold is None:
+            if indep0 is None:
+                return
+
+            self._size = len(indep0)
+            return
+
+        # We could allow the independent axis to be reset to None.
+        #
+        if indep0 is None:
+            raise DataErr("independent axis can not be cleared")
+
+        nnew = len(indep0)
+        if nnew != nold:
+            raise DataErr(f"independent axis can not change size: {nold} to {nnew}")
 
     def _init_data_space(self, filter, *data):
         """
@@ -690,7 +888,87 @@ class Data(NoNewAttributesAfterInit, BaseData):
             an instance of the dataspace associated with this data set.
 
         """
-        return DataSpaceND(filter, data)
+
+        ds = DataSpaceND(filter, data)
+        self._check_data_space(ds)
+        return ds
+
+    def _set_related(self, attr, val, check_mask=True):
+        """Set a field that must match the independent axes size.
+
+        The value can be None or something with the same length as the
+        independent axis. This is intended to be used from the property
+        setter. There is also a check to warn the user if the value
+        contains a NumPy masked array which does not match the
+        dependent axis.
+
+        """
+        if val is None:
+            setattr(self, f"_{attr}", None)
+            return
+
+        if not numpy.iterable(val):
+            raise DataErr("notanarray")
+
+        # Check the mask before calling _check, which could call asarray
+        # and so lose the mask setting.
+        #
+        if check_mask and hasattr(val, "mask"):
+            if not hasattr(self.y, "mask") or \
+               len(self.y) != len(val) or \
+                   not numpy.all(self.y.mask == val.mask):
+
+                warnings.warn(f"The mask of {attr} differs from the dependent array, only the mask of the dependent array is used in Sherpa.")
+
+        val = _check(val)
+        nval = len(val)
+
+        nelem = self.size
+        if nelem is None:
+            # We set the object size here
+            self._size  = nval
+            setattr(self, f"_{attr}", val)
+            return
+
+        nval = len(val)
+        if nval != nelem:
+            raise DataErr('mismatchn', 'independent axis', attr, nelem, nval)
+
+        setattr(self, f"_{attr}", val)
+
+    @property
+    def y(self):
+        """The dependent axis.
+
+        If set, it must match the size of the independent axes.
+        """
+        return self._y
+
+    @y.setter
+    def y(self, val):
+        self._set_related("y", val, check_mask=False)
+
+    @property
+    def size(self):
+        """The number of elements in the data set.
+
+        Returns
+        -------
+        size : int or None
+            If the size has not been set then None is returned.
+        """
+        return self._size
+
+    # Allow users to len() a data object. The idea is that this
+    # represents the "number of elements" (e.g. the size of the
+    # independent axis). Does this make sense for some of the data
+    # classes (in particular RMF)?
+    #
+    def __len__(self):
+        if self.size is None:
+            return 0
+
+        return self.size
 
     @property
     def dep(self):
@@ -716,6 +994,24 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     @mask.setter
     def mask(self, val):
+
+        # If we have a scalar then
+        # - we do not check sizes (as it's possible to set even though
+        #   the independent axis is not set)
+        # - we do not want to convert it to a ndarray
+        #
+        # Note that numpy.iterable and numpy.isscalar are not inverses,
+        # for instance a string is both iterable and a scalar. Of
+        # course, isscalar does not think None is a scalar, hence the
+        # extra check.
+        #
+        if val is not None and not numpy.isscalar(val):
+            if self.size is None:
+                raise DataErr("The independent axis has not been set yet")
+
+            if len(val) != self.size:
+                raise DataErr("mismatchn", "independent axis", "mask", self.size, len(val))
+
         self._data_space.filter.mask = val
 
     def get_dims(self):
@@ -733,18 +1029,50 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     @property
     def indep(self):
-        """
-        Return the grid of the data space associated with this data set.
+        """The grid of the data space associated with this data set.
+
+        When set, the field must be set to a tuple, even for a
+        one-dimensional data set. The "related" fields such as the
+        dependent axis and the error fields are set to None if their
+        size does not match.
+
+        .. versionchanged:: 4.14.1
+           The filter created by `notice` and `ignore` is now cleared
+           when the independent axis is changed.
 
         Returns
         -------
         tuple of array_like
+
         """
         return self._data_space.get().grid
 
+    def _clear_filter(self):
+        """Clear out the existing filter.
+
+        This is designed for use by @indep.setter.
+
+        """
+
+        # This is currently a no-op. It may beover-ridden by a
+        # subclass.
+        #
+        pass
+
     @indep.setter
     def indep(self, val):
+
+        # This is a low-level check so raise a normal Python error
+        # rather than DataErr. Do we want to allow a sequence here,
+        # that is not forced to be a tuple? The concern then is that it gets
+        # harder to distinguish between a user accidentally giving x,
+        # where it's an array, rather than (x,), say.
+        #
+        if not isinstance(val, tuple):
+            raise TypeError(f"independent axis must be sent a tuple, not {type(val).__name__}")
+
         self._data_space = self._init_data_space(self._data_space.filter, *val)
+        self._clear_filter()
 
     def get_indep(self, filter=False):
         """Return the independent axes of a data set.
@@ -766,8 +1094,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         get_dep : Return the dependent axis of a data set.
 
         """
-        data_space = self._data_space.get(filter)
-        return data_space.grid
+        return self._data_space.get(filter).grid
 
     def set_indep(self, val):
         self.indep = val
@@ -796,9 +1123,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         dep = self.dep
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             dep = self.apply_filter(dep)
+
         return dep
 
     def set_dep(self, val):
@@ -807,17 +1134,20 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         Parameters
         ----------
-        val
-
-        Returns
-        -------
+        val : sequence or number
+            If a number then it is used for each element.
 
         """
         if numpy.iterable(val):
             dep = numpy.asarray(val, SherpaFloat)
         else:
+            nelem = self.size
+            if nelem is None:
+                raise DataErr("sizenotset", self.name)
+
             val = SherpaFloat(val)
-            dep = numpy.array([val] * len(self.get_indep()[0]))
+            dep = val * numpy.ones(nelem, dtype=SherpaFloat)
+
         self.y = dep
 
     def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
@@ -835,15 +1165,39 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         y = self.get_dep(filter)
+        if yfunc is None:
+            return y
 
-        if yfunc is not None:
-            if filter:
-                yfunc = self.eval_model_to_fit(yfunc)
-            else:
-                yfunc = self.eval_model(yfunc)
-            y = (y, yfunc)
+        if filter:
+            y2 = self.eval_model_to_fit(yfunc)
+        else:
+            y2 = self.eval_model(yfunc)
 
-        return y
+        return (y, y2)
+
+    @property
+    def staterror(self):
+        """The statistical error on the dependent axis, if set.
+
+        This must match the size of the independent axis.
+        """
+        return self._staterror
+
+    @staterror.setter
+    def staterror(self, val):
+        self._set_related("staterror", val)
+
+    @property
+    def syserror(self):
+        """The systematic error on the dependent axis, if set.
+
+        This must match the size of the independent axis.
+        """
+        return self._syserror
+
+    @syserror.setter
+    def syserror(self, val):
+        self._set_related("syserror", val)
 
     def get_staterror(self, filter=False, staterrfunc=None):
         """Return the statistical error on the dependent axis of a data set.
@@ -878,10 +1232,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
             staterror = self.apply_filter(staterror)
 
         if (staterror is None) and (staterrfunc is not None):
-            dep = self.get_dep()
-            if filter:
-                dep = self.apply_filter(dep)
+            dep = self.get_dep(filter)
             staterror = staterrfunc(dep)
+
         return staterror
 
     def get_syserror(self, filter=False):
@@ -908,9 +1261,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         syserr = getattr(self, 'syserror', None)
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             syserr = self.apply_filter(syserr)
+
         return syserr
 
     def get_error(self, filter=False, staterrfunc=None):
@@ -972,6 +1325,19 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return 'y'
 
     def apply_filter(self, data):
+        if data is None:
+            return None
+
+        nelem = self.size
+        if nelem is None:
+            raise DataErr("sizenotset", self.name)
+
+        data = _check(data)
+        ndata = len(data)
+
+        if ndata != nelem:
+            raise DataErr("mismatchn", "data", "array", nelem, ndata)
+
         return self._data_space.filter.apply(data)
 
     def notice(self, mins, maxes, ignore=False, integrated=False):
@@ -983,9 +1349,21 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self.notice(*args, **kwargs)
 
     def eval_model(self, modelfunc):
+        """Evaluate the model on the independent axis."""
+        mdim = getattr(modelfunc, "ndim", None)
+        ddim = getattr(self, "ndim", None)
+        if None not in [mdim, ddim] and mdim != ddim:
+            raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
+
         return modelfunc(*self.get_indep())
 
     def eval_model_to_fit(self, modelfunc):
+        """Evaluate the model on the independent axis after filtering."""
+        mdim = getattr(modelfunc, "ndim", None)
+        ddim = getattr(self, "ndim", None)
+        if None not in [mdim, ddim] and mdim != ddim:
+            raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
+
         return modelfunc(*self.get_indep(filter=True))
 
     def to_guess(self):
@@ -1067,19 +1445,20 @@ class DataSimulFit(NoNewAttributesAfterInit):
             for func, data in zip(modelfuncs, self.datasets):
                 tmp_model = data.eval_model_to_fit(func)
                 total_model.append(tmp_model)
+
             return numpy.concatenate(total_model)
-        else:
-            # best to make this a different derived class
-            funcs = []
-            datasets = []
-            for func, data in zip(modelfuncs, self.datasets):
-                funcs.append(func)
-                datasets.append(data.get_indep(filter=False))
-            total_model = parallel_map_funcs(funcs, datasets, self.numcores)
-            all_model = []
-            for model, data in zip(total_model, self.datasets):
-                all_model.append(data.apply_filter(model))
-            return numpy.concatenate(all_model)
+
+        # best to make this a different derived class
+        funcs = []
+        datasets = []
+        for func, data in zip(modelfuncs, self.datasets):
+            funcs.append(func)
+            datasets.append(data.get_indep(filter=False))
+        total_model = parallel_map_funcs(funcs, datasets, self.numcores)
+        all_model = []
+        for model, data in zip(total_model, self.datasets):
+            all_model.append(data.apply_filter(model))
+        return numpy.concatenate(all_model)
 
     def to_fit(self, staterrfunc=None):
         total_dep = []
@@ -1128,6 +1507,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
 
 class Data1D(Data):
     _fields = ("name", "x", "y", "staterror", "syserror")
+    ndim = 1
 
     def __init__(self, name, x, y, staterror=None, syserror=None):
         super().__init__(name, (x, ), y, staterror, syserror)
@@ -1138,9 +1518,21 @@ class Data1D(Data):
         return html_data1d(self)
 
     def _init_data_space(self, filter, *data):
-        return DataSpace1D(filter, *data)
+        ndata = len(data)
+        if ndata != 1:
+            raise DataErr("wrongaxiscount", self.name, 1, ndata)
+
+        ds = DataSpace1D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
+
+        if model is not None:
+            mdim = getattr(model, "ndim", None)
+            if mdim is not None and mdim != 1:
+                raise DataErr(f"Data and model dimensionality do not match: 1D and {mdim}D")
+
         return self.get_evaluation_indep(filter, model, use_evaluation_space)[0]
 
     def get_xerr(self, filter=False, yfunc=None):
@@ -1185,12 +1577,15 @@ class Data1D(Data):
 
         """
         y = self.get_dep(filter)
+        if yfunc is None:
+            return y
 
-        if yfunc is not None:
-            model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
-            y = y, model_evaluation
+        mdim = getattr(yfunc, "ndim", None)
+        if mdim is not None and mdim != 1:
+            raise DataErr(f"Data and model dimensionality do not match: 1D and {mdim}D")
 
-        return y
+        model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
+        return (y, model_evaluation)
 
     def get_bounding_mask(self):
         mask = self.mask
@@ -1199,6 +1594,7 @@ class Data1D(Data):
             # create bounding box around noticed image regions
             mask = numpy.array(self.mask)
             size = (mask.size,)
+
         return mask, size
 
     def get_img(self, yfunc=None):
@@ -1219,13 +1615,15 @@ class Data1D(Data):
                      y_img[1].reshape(1, y_img[1].size))
         else:
             y_img = y_img.reshape(1, y_img.size)
+
         return y_img
 
     def get_imgerr(self):
         err = self.get_error()
-        if err is not None:
-            err = err.reshape(1, err.size)
-        return err
+        if err is None:
+            return None
+
+        return err.reshape(1, err.size)
 
     def get_filter(self, format='%.4f', delim=':'):
         """Return the data filter as a string.
@@ -1269,6 +1667,7 @@ class Data1D(Data):
             mask = self.mask
         else:
             mask = numpy.ones(len(x), dtype=bool)
+
         return create_expr(x, mask=mask, format=format, delim=delim)
 
     def get_filter_expr(self):
@@ -1320,8 +1719,8 @@ class Data1D(Data):
         data_space = self._data_space.get(filter)
         if use_evaluation_space:
             return data_space.for_model(model).grid
-        else:
-            return data_space.grid
+
+        return data_space.grid
 
     def notice(self, xlo=None, xhi=None, ignore=False):
         """Notice or ignore the given range.
@@ -1411,7 +1810,13 @@ class Data1DInt(Data1D):
         return html_data1dint(self)
 
     def _init_data_space(self, filter, *data):
-        return IntegratedDataSpace1D(filter, *data)
+        ndata = len(data)
+        if ndata != 2:
+            raise DataErr("wrongaxiscount", self.name, 2, ndata)
+
+        ds = IntegratedDataSpace1D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x(self, filter=False, model=None, use_evaluation_space=False):
         indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
@@ -1569,6 +1974,7 @@ class Data1DInt(Data1D):
 
 class Data2D(Data):
     _fields = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
+    ndim = 2
 
     # Why should we add shape to extra-fields instead? See #1359 to
     # fix #47.
@@ -1588,7 +1994,13 @@ class Data2D(Data):
         return html_data2d(self)
 
     def _init_data_space(self, filter, *data):
-        return DataSpace2D(filter, *data)
+        ndata = len(data)
+        if ndata != 2:
+            raise DataErr("wrongaxiscount", self.name, 2, ndata)
+
+        ds = DataSpace2D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x0(self, filter=False):
         return self._data_space.get(filter).x0
@@ -1622,6 +2034,7 @@ class Data2D(Data):
         # self._check_shape()
         if self.shape is not None:
             return self.shape[::-1]
+
         return len(self.get_x0(filter)), len(self.get_x1(filter))
 
     def get_filter_expr(self):
@@ -1654,6 +2067,7 @@ class Data2D(Data):
         """
         if dep is None:
             dep = self.get_dep(True)
+
         x0 = self.get_x0(True)
         x1 = self.get_x1(True)
 
@@ -1745,13 +2159,23 @@ class Data2DInt(Data2D):
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
     def _init_data_space(self, filter, *data):
-        return IntegratedDataSpace2D(filter, *data)
+        ndata = len(data)
+        if ndata != 4:
+            raise DataErr("wrongaxiscount", self.name, 4, ndata)
+
+        ds = IntegratedDataSpace2D(filter, *data)
+        self._check_data_space(ds)
+        return ds
 
     def get_x0(self, filter=False):
+        if self.size is None:
+            return None
         indep = self._data_space.get(filter)
         return (indep.x0lo + indep.x0hi) / 2.0
 
     def get_x1(self, filter=False):
+        if self.size is None:
+            return None
         indep = self._data_space.get(filter)
         return (indep.x1lo + indep.x1hi) / 2.0
 

@@ -29,8 +29,10 @@ import numpy as np
 import pytest
 
 from sherpa.data import Data1D, Data2D
-from sherpa.instrument import Kernel, PSFModel, RadialProfileKernel
-from sherpa.models.basic import Box1D, Box2D, Const2D, Const1D, Gauss1D, Gauss2D, StepLo1D
+from sherpa.instrument import Kernel, PSFModel, RadialProfileKernel, \
+    ConvolutionKernel, PSFKernel
+from sherpa.models.basic import Box1D, Box2D, Const1D, Const2D, Gauss1D, \
+    StepLo1D, TableModel
 from sherpa.utils.err import PSFErr
 
 
@@ -257,15 +259,32 @@ def test_psf1d_convolved_pars():
         assert cpar == bpar
 
 
+def test_psfmodel_kernel_has_no_dimension():
+    """It is expected that this will error out, but just where.
+
+    It was intended to catch a different error condition but
+    it is hard to trigger without writing very low-level test
+    code, so just check what happens here.
+    """
+
+    x = np.arange(0.5, 10.5, 1)
+    y = np.ones_like(x)
+    data = Data1D("data-data", x, y)
+
+    m = PSFModel(kernel=TableModel())
+    with pytest.raises(PSFErr,
+                       match="PSF model dimension must be <= 2"):
+        m.get_kernel(data)
+
+
 def test_psf1d_no_kernel():
     """Error out if there's no kernel"""
 
     m = PSFModel('bob')
     b = Box1D()
-    with pytest.raises(PSFErr) as exc:
+    with pytest.raises(PSFErr,
+                       match="PSF kernel has not been set"):
         m(b)
-
-    assert "PSF kernel has not been set" == str(exc.value)
 
 
 def test_psf1d_fold_no_kernel():
@@ -273,10 +292,9 @@ def test_psf1d_fold_no_kernel():
 
     m = PSFModel('bob')
     dfold = Data1D('fold', np.arange(10), np.zeros(10))
-    with pytest.raises(PSFErr) as exc:
+    with pytest.raises(PSFErr,
+                       match="model 'bob' does not have an associated PSF function"):
         m.fold(dfold)
-
-    assert "model 'bob' does not have an associated PSF function" == str(exc.value)
 
 
 def test_psf1d_no_fold():
@@ -288,10 +306,9 @@ def test_psf1d_no_fold():
     cpt = Gauss1D()
     sm = psf(cpt)
 
-    with pytest.raises(PSFErr) as exc:
+    with pytest.raises(PSFErr,
+                       match="PSF model has not been folded"):
         sm([1, 2, 3, 4, 5])
-
-    assert "PSF model has not been folded" == str(exc.value)
 
 
 def test_psf1d_kernel_data(caplog):
@@ -593,151 +610,75 @@ def test_psf1d_combined_v2():
 
 
 def test_psf1d_model_given_2d_dataset():
-    """Do we error out or not?
-
-    This is a regression test.
-    """
+    """Check that we error out"""
 
     psf = PSFModel('psf', make_1d_model())
     d = make_2d_data()
 
-    # Does this error out?
-    psf.fold(d)
-
-    smdl = StepLo1D()
-    smdl.xcut = 100
-    smdl.ampl = 10
-
-    cmdl = Const1D()
-    cmdl.c0 = -500
-
-    imdl = smdl + cmdl
-
-    # Or maybe this errors out?
-    smoothed = psf(imdl)
-    with pytest.raises(TypeError) as err:
-        smoothed(np.arange(1, 7))
-
-    # It is not at all obvious why we have 36 for the source dim.
-    #
-    assert str(err.value) == "input array sizes do not match dimensions, source size: 6 vs source dim: 36"
+    with pytest.raises(PSFErr,
+                       match="kernel 'box1' and data 'twod' do not match: 1D vs 2D"):
+        psf.fold(d)
 
 
 def test_psf1d_data_given_2d_dataset():
-    """Do we error out or not?
-
-    This is a regression test.
-    """
+    """Check that we error out"""
 
     psf = PSFModel('psf', make_1d_data())
     d = make_2d_data()
 
-    # Does this error out?
-    psf.fold(d)
-
-    smdl = StepLo1D()
-    smdl.xcut = 100
-    smdl.ampl = 10
-
-    cmdl = Const1D()
-    cmdl.c0 = -500
-
-    imdl = smdl + cmdl
-
-    # Or maybe this errors out?
-    smoothed = psf(imdl)
-    with pytest.raises(TypeError) as err:
-        smoothed(np.arange(1, 7))
-
-    assert str(err.value) == "input array sizes do not match, dims_src: 2 vs dims_kern: 1"
+    with pytest.raises(PSFErr,
+                       match="kernel 'oned' and data 'twod' do not match: 1D vs 2D"):
+        psf.fold(d)
 
 
 def test_psf2d_model_given_1d_dataset():
-    """Do we error out or not?
-
-    This is a regression test.
-    """
+    """Check that we error out"""
 
     psf = PSFModel('psf', make_2d_model())
     d = make_1d_data()
 
-    # Does this error out?
-    psf.fold(d)
-
-    smdl = Gauss2D()
-    smdl.ampl = 1000
-
-    cmdl = Const2D()
-    cmdl.c0 = -500
-
-    imdl = smdl + cmdl
-
-    # Or maybe this errors out?
-    smoothed = psf(imdl)
-    with pytest.raises(TypeError) as err:
-        smoothed(np.arange(1, 7))
-
-    assert str(err.value) == "function missing required argument 'x1lo' (pos 3)"
+    with pytest.raises(PSFErr,
+                       match="kernel 'box2' and data 'oned' do not match: 2D vs 1D"):
+        psf.fold(d)
 
 
 def test_psf2d_data_given_1d_dataset():
-    """Do we error out or not?
-
-    This is a regression test.
-    """
+    """Check that we error out"""
 
     psf = PSFModel('psf', make_2d_data())
     d = make_1d_data()
 
-    # Does this error out?
-    psf.fold(d)
-
-    smdl = Gauss2D()
-    smdl.ampl = 1000
-
-    cmdl = Const2D()
-    cmdl.c0 = -500
-
-    imdl = smdl + cmdl
-
-    # Or maybe this errors out?
-    smoothed = psf(imdl)
-    with pytest.raises(TypeError) as err:
-        smoothed(np.arange(1, 7))
-
-    assert str(err.value) == "function missing required argument 'x1lo' (pos 3)"
+    with pytest.raises(PSFErr,
+                       match="kernel 'twod' and data 'oned' do not match: 2D vs 1D"):
+        psf.fold(d)
 
 
 @pytest.mark.parametrize("kernel_func", [make_1d_model, make_1d_data])
 @pytest.mark.parametrize("field", ["size", "origin", "center"])
-@pytest.mark.parametrize("vals", [[2, 3], [2, 3, 4]])
-def test_psf1d_set_invalid_field(kernel_func, field, vals):
-    """What happens if we send in a 2D array?
-
-    This is a regression test (since it currently does not error out).
-    """
+@pytest.mark.parametrize("vals,ndim", [([2, 3], 2), ([2, 3, 4], 3)])
+def test_psf1d_set_invalid_field(kernel_func, field, vals, ndim):
+    """Check that we error out"""
 
     kernel = kernel_func()
     m = PSFModel("p1", kernel)
 
-    setattr(m, field, vals)
-    assert getattr(m, field) == pytest.approx(vals)
+    with pytest.raises(PSFErr,
+                       match=f"kernel 'p1' and data '{field}' do not match: 1D vs {ndim}D"):
+        setattr(m, field, vals)
 
 
 @pytest.mark.parametrize("kernel_func", [make_2d_model, make_2d_data])
 @pytest.mark.parametrize("field", ["size", "origin", "center"])
-@pytest.mark.parametrize("vals", [4, [2, 3, 4]])
-def test_psf2d_set_invalid_field(kernel_func, field, vals):
-    """What happens if we send in a 2D array?
-
-    This is a regression test (since it currently does not error out).
-    """
+@pytest.mark.parametrize("vals,ndim", [(4, 1), ([2, 3, 4], 3)])
+def test_psf2d_set_invalid_field(kernel_func, field, vals, ndim):
+    """Check that we error out"""
 
     kernel = kernel_func()
     m = PSFModel("p2", kernel)
 
-    setattr(m, field, vals)
-    assert getattr(m, field) == pytest.approx(vals)
+    with pytest.raises(PSFErr,
+                       match=f"kernel 'p2' and data '{field}' do not match: 2D vs {ndim}D"):
+        setattr(m, field, vals)
 
 
 @pytest.mark.parametrize("kernel_func", [make_none, make_1d_model, make_1d_data, make_2d_model, make_2d_data])
@@ -748,10 +689,10 @@ def test_psf_set_model_to_model(kernel_func):
     """
 
     m = PSFModel(kernel=kernel_func())
-    with pytest.raises(AttributeError) as err:
+    with pytest.raises(AttributeError,
+                       match="'PSFModel' object attribute 'model' " +
+                       "cannot be replaced with a callable attribute"):
         m.model = Box1D()
-
-    assert str(err.value) == "'PSFModel' object attribute 'model' cannot be replaced with a callable attribute"
 
 
 @pytest.mark.parametrize("kernel_func", [make_none, make_1d_model, make_1d_data, make_2d_model, make_2d_data])
@@ -762,29 +703,310 @@ def test_psf_set_model_to_bool(kernel_func):
     """
 
     m = PSFModel(kernel=kernel_func())
-    # This does not error out
-    m.model = False
+    with pytest.raises(AttributeError,
+                       # The exact message depends on python version,
+                       # as 3.10 includes the attribute name - here
+                       # 'model' - and 3.9 and earlier does not.
+                       #
+                       match="can't set attribute"):
+        m.model = False
 
 
-@pytest.mark.parametrize("dshape,kshape",
-                         [pytest.param(None, None, marks=pytest.mark.xfail), (None, [1]), pytest.param([1], None, marks=pytest.mark.xfail),
-                          ([1], [1, 2]), ([1, 2], [1]),
-                          ([], [1]), ([1], []),
-                          ([1, 3, 4], ([1, 2, 3]))])
-def test_kernel_checks_arguments(dshape, kshape):
-    """Do these error out?
+@pytest.mark.parametrize("dshape,kshape,exc,msg",
+                         [(None, None, TypeError,
+                           "dshape must be a sequence"),
+                          (None, [1], TypeError,
+                           "dshape must be a sequence"),
+                          ([1], None, TypeError,
+                           "kshape must be a sequence"),
+                          ([], [], ValueError,
+                           "0D kernel is not supported"),
+                          ([1], [1, 2], ValueError,
+                           "dshape and kshape must be the same size, not 1 and 2"),
+                          ([1, 2], [1], ValueError,
+                           "dshape and kshape must be the same size, not 2 and 1"),
+                          ([], [1], ValueError,
+                           "dshape and kshape must be the same size, not 0 and 1"),
+                          ([1], [], ValueError,
+                           "dshape and kshape must be the same size, not 1 and 0"),
+                          ([1, 3, 4], ([1, 2, 3]), PSFErr,
+                           "PSF model dimension must be <= 2")])
+def test_kernel_checks_arguments(dshape, kshape, exc, msg):
+    """Check that we error out"""
 
-    This is a regression test.
-    """
-
-    # XFAIL: when kshape is None a TypeError is raised from len(None)
-    Kernel(dshape, kshape)
+    with pytest.raises(exc, match=msg):
+        Kernel(dshape, kshape)
 
 
 def test_radialprofile_is_1d():
-    """Do these error out?
+    """Check that we error out"""
+
+    with pytest.raises(PSFErr,
+                       match="^Radial profile requires 1D data, not 2D$"):
+        RadialProfileKernel([10, 10], [4, 3])
+
+
+def test_kernel_repr():
+
+    assert repr(Kernel([5], [3])) == "<Kernel kernel instance>"
+
+
+def test_convolutionkernel_repr():
+
+    assert repr(ConvolutionKernel(None)) == "<ConvolutionKernel kernel instance>"
+
+
+def test_kernel_show_1d():
+
+    kern = Kernel([5], [3])
+    out = str(kern).split("\n")
+
+    assert out[0] == "dshape   = [5]"
+    assert out[1] == "kshape   = [3]"
+    assert out[2] == "skshape  = None"
+    assert out[3] == "norm     = False"
+    assert out[4] == "origin   = [0.]"
+    assert out[5] == "frozen   = True"
+    assert out[6] == "center   = None"
+    assert out[7] == "args     = []"
+    assert out[8] == "kwargs   = {}"
+    assert out[9] == "renorm_shape  = None"
+    assert out[10] == "renorm   = None"
+    assert out[11] == "do_pad   = False"
+    assert out[12] == "pad_mask = None"
+    assert out[13] == "frac     = None"
+
+    assert len(out) == 14
+
+
+def test_convolutionkernel_show_2d():
+
+    mdl = Const2D()
+    mdl.c0.set(2, min=2, max=2)
+    kern = ConvolutionKernel(mdl)
+    out = str(kern).split("\n")
+    print(kern)
+
+    assert out[0] == "Convolution Kernel:"
+    assert out[1] == "const2d"
+    assert out[2] == "   Param        Type          Value          Min          Max      Units"
+    assert out[3] == "   -----        ----          -----          ---          ---      -----"
+    assert out[4] == "   const2d.c0   thawed            2            2            2           "
+
+    assert len(out) == 5
+
+
+def test_psfkernel_show_1d():
+
+    kern = PSFKernel([5], [3])
+    out = str(kern).split("\n")
+
+    assert out[0] == "dshape   = [5]"
+    assert out[1] == "kshape   = [3]"
+    assert out[2] == "skshape  = None"
+    assert out[3] == "norm     = True"
+    assert out[4] == "origin   = None"
+    assert out[5] == "frozen   = True"
+    assert out[6] == "center   = None"
+    assert out[7] == "args     = []"
+    assert out[8] == "kwargs   = {}"
+    assert out[9] == "renorm_shape  = None"
+    assert out[10] == "renorm   = None"
+    assert out[11] == "do_pad   = False"
+    assert out[12] == "pad_mask = None"
+    assert out[13] == "frac     = None"
+    assert out[14] == "is_model = False"
+    assert out[15] == "size     = None"
+    assert out[16] == "lo       = None"
+    assert out[17] == "hi       = None"
+    assert out[18] == "width    = None"
+    assert out[19] == "radial   = 0"
+
+    assert len(out) == 20
+
+
+def test_radialprofilekernel_show_1d():
+
+    kern = RadialProfileKernel([5], [3])
+    out = str(kern).split("\n")
+
+    assert out[0] == "dshape   = [5]"
+    assert out[1] == "kshape   = [3]"
+    assert out[2] == "skshape  = None"
+    assert out[3] == "norm     = True"
+    assert out[4] == "origin   = None"
+    assert out[5] == "frozen   = True"
+    assert out[6] == "center   = None"
+    assert out[7] == "args     = []"
+    assert out[8] == "kwargs   = {}"
+    assert out[9] == "renorm_shape  = None"
+    assert out[10] == "renorm   = None"
+    assert out[11] == "do_pad   = False"
+    assert out[12] == "pad_mask = None"
+    assert out[13] == "frac     = None"
+    assert out[14] == "is_model = False"
+    assert out[15] == "size     = None"
+    assert out[16] == "lo       = None"
+    assert out[17] == "hi       = None"
+    assert out[18] == "width    = None"
+    assert out[19] == "radial   = 1"
+    assert out[20] == "radialsize = None"
+
+    assert len(out) == 21
+
+
+def test_empty_psfmodel_has_no_kernel():
+
+    assert PSFModel().kernel is None
+
+
+def test_psfmodel_set_kernel():
+
+    mdl = PSFModel(kernel=Box1D())
+    print(mdl.kernel)
+    print(type(mdl.kernel))
+    assert isinstance(mdl.kernel, Box1D)
+
+
+def test_psfmodel_can_not_set_scalar_kernel():
+    """This is really a check of a non-callable kernel
 
     This is a regression test.
     """
 
-    RadialProfileKernel([10, 10], [4, 3])
+    with pytest.raises(PSFErr,
+                       match="model 'psfmodel' does not have an associated PSF function"):
+        PSFModel().kernel = 23
+
+
+def test_psfmodel_clearing_model_kernel_to_none():
+    """The code suggests this should be possible, but ither
+    parts of the system means it can't happen, at least like
+    this.
+    """
+
+    mdl = PSFModel(kernel=Box1D())
+
+    with pytest.raises(AttributeError,
+                       match="'PSFModel' object attribute 'kernel' cannot be replaced with a non-callable attribute"):
+        mdl.kernel = None
+
+
+def test_psfmodel_clearing_data_kernel_to_none():
+    """We can clear a data kernel, but what else happens?
+
+    This is a regression test.
+    """
+
+    x = np.asarray([1, 2, 3])
+    y = np.asarray([0.7, 0.2, 0.1])
+    mdl = PSFModel(kernel=Data1D("foo", x, y))
+
+    assert mdl.ndim == 1
+
+    # DJB does not understand what these fields really mean,
+    # but let's just check if they are changed or not.
+    #
+    mdl.center = 3
+    mdl.origin = 2
+
+    mdl.kernel = None
+    assert mdl.kernel is None
+    assert mdl.ndim is None
+    assert mdl.center is None
+    assert mdl.origin is None
+
+
+def test_psfmodel_data_kernel_keep_dim():
+    """What changes when the data dimensionality is the same?"""
+
+    x = np.asarray([1, 2, 3])
+    y = np.asarray([0.7, 0.2, 0.1])
+    mdl = PSFModel(kernel=Data1D("foo", x, y))
+    assert mdl.ndim == 1
+    assert len(mdl.kernel) == 3
+
+    # DJB does not understand what these fields really mean,
+    # but let's just check if they are changed or not.
+    #
+    mdl.center = 3
+    mdl.origin = 2
+
+    x2 = np.asarray([300, 500, 1000, 2000])
+    y2 = np.asarray([10, 14, 12, 2])
+    mdl.kernel = Data1D("bar", x2, y2)
+    assert isinstance(mdl.kernel, Data1D)
+    assert mdl.ndim == 1
+    assert len(mdl.kernel) == 4
+    assert mdl.center == pytest.approx(3)
+    assert mdl.origin == pytest.approx(2)
+
+
+def test_psfmodel_data_kernel_change_dim():
+    """What changes when the data dimensionality changes?"""
+
+    x = np.asarray([1, 2, 3])
+    y = np.asarray([0.7, 0.2, 0.1])
+    mdl = PSFModel(kernel=Data1D("foo", x, y))
+    assert len(mdl.kernel) == 3
+
+    # DJB does not understand what these fields really mean,
+    # but let's just check if they are changed or not.
+    #
+    mdl.center = 3
+    mdl.origin = 2
+
+    x0 = np.asarray([300, 500, 1000, 2000, 5000])
+    x1 = np.asarray([10, 14, 12, 2, 7])
+    mdl.kernel = Data2D("bar", x0, x1, np.ones(5))
+    assert isinstance(mdl.kernel, Data2D)
+    assert mdl.ndim == 2
+    assert len(mdl.kernel) == 5
+    assert mdl.center is None
+    assert mdl.origin is None
+
+
+def test_psfmodel_get_kernel_subkernel():
+    """Check code has been tested
+
+    It's not obvious what is going on here, so just check this
+    particular code path has been run.
+    """
+
+    kernel = Data1D("input",
+                    np.asarray([1, 2, 3]),
+                    np.asarray([7, 2, 1]))
+
+    mdl = PSFModel(kernel=kernel)
+
+    x = np.asarray([1, 2, 3, 4, 5])
+    y = np.asarray([10, 14, 12, 2, 7])
+    response = mdl.get_kernel(Data1D("other", x, y))
+
+    assert isinstance(response, Data1D)
+    assert response.name == "kernel"
+    assert response.x == pytest.approx([1, 2, 3])
+    assert response.y == pytest.approx([0.7, 0.2, 0.1])
+
+
+def test_psfmodel_get_kernel_no_subkernel():
+    """Check code has been tested
+
+    It's not obvious what is going on here, so just check this
+    particular code path has been run.
+    """
+
+    kernel = Data1D("input",
+                    np.asarray([1, 2, 3]),
+                    np.asarray([7, 2, 1]))
+
+    mdl = PSFModel(kernel=kernel)
+
+    x = np.asarray([1, 2, 3, 4, 5])
+    y = np.asarray([10, 14, 12, 2, 7])
+    response = mdl.get_kernel(Data1D("other", x, y), subkernel=False)
+
+    assert isinstance(response, Data1D)
+    assert response.name == "kernel"
+    assert response.x == pytest.approx([1, 2, 3])
+    assert response.y == pytest.approx([7, 2, 1])

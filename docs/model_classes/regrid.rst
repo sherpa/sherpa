@@ -4,7 +4,7 @@ The sherpa.models.regrid module
 
 .. currentmodule:: sherpa.models.regrid
 
-.. automodule:: sherpa.models.regrid                   
+.. automodule:: sherpa.models.regrid
 
    .. rubric:: Classes
 
@@ -12,11 +12,13 @@ The sherpa.models.regrid module
       :toctree: api
 
       Axis
+      IntegratedAxis
+      PointAxis
       EvaluationSpace1D
       EvaluationSpace2D
       ModelDomainRegridder1D
       ModelDomainRegridder2D
-      
+
    .. rubric:: Functions
 
    .. autosummary::
@@ -29,6 +31,5 @@ The sherpa.models.regrid module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: Axis EvaluationSpace1D EvaluationSpace2D ModelDomainRegridder1D ModelDomainRegridder2D
+.. inheritance-diagram:: Axis IntegratedAxis PointAxis EvaluationSpace1D EvaluationSpace2D ModelDomainRegridder1D ModelDomainRegridder2D
    :parts: 1
-
