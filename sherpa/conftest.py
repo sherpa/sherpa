@@ -128,12 +128,23 @@ known_warnings = {
             #
             r'Attempting to set identical bottom==top results\nin singular transformations; automatically expanding.\nbottom=1.0, top=1.0',
 
-            # See issue #571 and tests
-            # test_ui_plot.py
-            #    test_plot_fit_xxx_pylab
-            #    test_plot_fit_xxx_overplot_pylab
+            # See issues #571, #1584, and matplotlib issue
+            # https://github.com/matplotlib/matplotlib/issues/9970
+            #
+            # The exact warning message appears to depend on the
+            # matplotlib version and are related to doing
+            #
+            #     plot_fit_xxx(xlog=True)
+            #     plot_fit_yyy(...)
+            #
+            # with the second call causing the problem (there may be
+            # other cases, but this is the one that fits the mpl
+            # issue).
+            #
             r"Attempted to set non-positive xlimits for log-scale axis; invalid limits will be ignored.",
             r"Attempted to set non-positive left xlim on a log-scaled axis.*",
+            r"Attempt to set non-positive xlim on a log-scaled axis will be ignored."
+
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
