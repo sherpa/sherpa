@@ -116,33 +116,61 @@ def _get_filter(data):
     in a call to notice/ignore), and it handles the case of
     the case of all-data-being-filtered leading to an error
     for certain data types.
+
+    Parameters
+    ----------
+    data : sherpa.data.Data1D instance
+
+    Returns
+    -------
+    msg : str or None
+        The filter expression, with "all-data-filtered" indicated by
+        the empty string, or None when there was an error (which
+        shouldn't happen, but we don't want to fail a notice or ignore
+        call when reporting the change).
+
     """
 
+    # See #1430 for a discussion on why we have different behavior
+    # when all the data is excluded: it should be unified.
+    #
     try:
         return data.get_filter(delim=':', format='%g')
     except DataErr as exc:
         if str(exc) == "mask excludes all data":
             return ""
 
-        # Is it worth handling this possibility?
-        raise exc
+        # It's not clear if this can happen, but assume it can.
+        #
+        return None
+
+    except TypeError:
+        # This can happen when the dataset is Data2D, as get_filter
+        # does not accept kwargs, so we skip over it (as the handling
+        # of filters for Data2D is not clear).
+        #
+        return None
+
+    except IndexError:
+        # This is a known failure case with ignore_bad handling of
+        # DataPHA.
+        #
+        return None
 
 
-def report_filter_change(idval, ofilter, nfilter,
-                         xlabel, bkg_id=None):
+def report_filter_change(idstr, ofilter, nfilter, xlabel=None):
     """Report the filter change for ignore/filter.
 
     Parameters
     ----------
-    idval : int or str
-       The dataset identifier
-    ofilter, nfilter : str
+    idstr : str
+       The dataset identifier (expected to be "dataset <idval>" but
+       may be "dataset <idval>: background <bkg_id>" for DataPHA).
+    ofilter, nfilter : str or None
        The filter string before and after filtering (the output
        of _get_filter).
     xlabel : str or None
        The units of the filter (if set).
-    bkg_id : int or None
-       The background identifier (PHA data only).
 
     Notes
     -----
@@ -157,11 +185,19 @@ def report_filter_change(idval, ofilter, nfilter,
     data has been removed, and converted to something more readable
     here.
 
+    If either ofilter or nfilter is None then we assume that some
+    error has happened and drop the reporting for this. This is an
+    unusual situation, so we do not try to provide extra information
+    to the user, we just want to make sure the notice/ignore call
+    succeeds (as well as it can, given that something is wrong with
+    the system).
+
     """
 
-    ostr = f"dataset {idval}: "
-    if bkg_id is not None:
-        ostr += f"background {bkg_id}: "
+    if ofilter is None or nfilter is None:
+        return
+
+    ostr = f"{idstr}: "
 
     # Make it easy to handle labels being optional
     if xlabel is None:
@@ -5103,16 +5139,23 @@ class Session(NoNewAttributesAfterInit):
 
         for idval in self.list_data_ids():
 
+            idstr = f"dataset {idval}"
             data = self.get_data(idval)
             if bkg_id is not None:
                 data = data.get_background(bkg_id)
+                idstr += f": background {bkg_id}"
 
             ofilter = _get_filter(data)
             data.notice(lo, hi, **kwargs)
             nfilter = _get_filter(data)
 
-            report_filter_change(idval, ofilter, nfilter,
-                                 data.get_xlabel(), bkg_id=bkg_id)
+            try:
+                xlabel = data.get_xlabel()
+            except AttributeError:
+                # Data2D case
+                xlabel = None
+
+            report_filter_change(idstr, ofilter, nfilter, xlabel)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
     # should only be in the sherpa.astro.ui version, but it is not
@@ -5309,16 +5352,23 @@ class Session(NoNewAttributesAfterInit):
 
         for idval in ids:
 
+            idstr = f"dataset {idval}"
             data = self.get_data(idval)
             if bkg_id is not None:
                 data = data.get_background(bkg_id)
+                idstr += f": background {bkg_id}"
 
             ofilter = _get_filter(data)
             data.notice(lo, hi, **kwargs)
             nfilter = _get_filter(data)
 
-            report_filter_change(idval, ofilter, nfilter,
-                                 data.get_xlabel(), bkg_id=bkg_id)
+            try:
+                xlabel = data.get_xlabel()
+            except AttributeError:
+                # Data2D case
+                xlabel = None
+
+            report_filter_change(idstr, ofilter, nfilter, xlabel)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
     # should only be in the sherpa.astro.ui version, but it is not

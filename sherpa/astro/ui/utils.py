@@ -65,6 +65,9 @@ def _get_image_filter(data):
 
     """
 
+    # Unlike sherpa.ui.utils._get_filter, there is no known "the
+    # get_filter call can raise an exception" case to handle.
+    #
     out = data.get_filter()
     if out == "":
         return "Field()"
@@ -6732,18 +6735,19 @@ class Session(sherpa.ui.utils.Session):
 
         """
         idval = self._fix_id(id)
+        idstr = f"dataset {idval}"
         if bkg_id is None:
             data = self._get_pha_data(idval)
         else:
             data = self.get_bkg(idval, bkg_id)
+            idstr += f": background {bkg_id}"
 
         ofilter = data.get_filter(delim=':', format='%g')
         data.ignore_bad()
         nfilter = data.get_filter(delim=':', format='%g')
 
-        sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
-                                             data.get_xlabel(),
-                                             bkg_id=bkg_id)
+        sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
+                                             data.get_xlabel())
 
     def _notice_warning(self):
         quantities = numpy.asarray([data.get_analysis()
@@ -6918,8 +6922,9 @@ class Session(sherpa.ui.utils.Session):
             ofilter = _get_image_filter(d)
             d.notice2d(val, False)
             nfilter = _get_image_filter(d)
-            sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
-                                                 xlabel=None)
+
+            idstr = f"dataset {idval}"
+            sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def ignore2d(self, val=None):
         """Exclude a spatial region from all data sets.
@@ -6986,8 +6991,9 @@ class Session(sherpa.ui.utils.Session):
             ofilter = _get_image_filter(d)
             d.notice2d(val, True)
             nfilter = _get_image_filter(d)
-            sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
-                                                 xlabel=None)
+
+            idstr = f"dataset {idval}"
+            sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def notice2d_id(self, ids, val=None):
         """Include a spatial region of a data set.
@@ -7063,8 +7069,9 @@ class Session(sherpa.ui.utils.Session):
             ofilter = _get_image_filter(d)
             d.notice2d(val, False)
             nfilter = _get_image_filter(d)
-            sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
-                                                 xlabel=None)
+
+            idstr = f"dataset {idval}"
+            sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def ignore2d_id(self, ids, val=None):
         """Exclude a spatial region from a data set.
@@ -7135,8 +7142,9 @@ class Session(sherpa.ui.utils.Session):
             ofilter = _get_image_filter(d)
             d.notice2d(val, True)
             nfilter = _get_image_filter(d)
-            sherpa.ui.utils.report_filter_change(idval, ofilter, nfilter,
-                                                 xlabel=None)
+
+            idstr = f"dataset {idval}"
+            sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def notice2d_image(self, ids=None):
         """Include pixels using the region defined in the image viewer.

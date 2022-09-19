@@ -29,7 +29,7 @@ import numpy as np
 from sherpa.astro.data import DataIMG, DataPHA
 from sherpa.astro import ui
 from sherpa.astro.ui.utils import Session as AstroSession
-from sherpa.data import Data1DInt
+from sherpa.data import Data1DInt, Data2D
 from sherpa.ui.utils import Session
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -212,7 +212,7 @@ def test_filter_bad_ungrouped(make_data_path, clean_astro_ui):
 
 @requires_fits
 @requires_data
-def test_filter_bad_grouped(make_data_path, clean_astro_ui):
+def test_filter_bad_grouped(make_data_path, clean_astro_ui, caplog):
     """Check behavior when the data is grouped.
 
     This is a test of the current behavior, to check that
@@ -233,7 +233,10 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui):
     # The last group is marked as quality=2 and so calling
     # ignore_bad means we lose that group.
     #
+    assert len(caplog.records) == 5
     ui.ignore_bad()
+    assert len(caplog.records) == 6
+
     assert ui.get_dep().shape == (438, )
     assert pha.mask is True
 
@@ -241,18 +244,22 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui):
     expected[996:1025] = False
     assert pha.quality_filter == pytest.approx(expected)
 
+    # Do we really want this (added in #1562)? For now assume so.
+    #
+    lname, lvl, msg = caplog.record_tuples[5]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg == "dataset 1: 0.0073:14.9504 Energy (keV) (unchanged)"
+
     # What happens when we filter the data? Unlike #1169
     # we do change the noticed range.
     #
-    # With support for #1558 - writing out the filter as we apply them
-    # - we now get this call failing, so catch this failure to allow
-    # the test to continue. This should be fixed, but it's a
-    # long-standing problem.
+    # This should create a filter message, but thanks to ignore_bad we
+    # get an IndexError, which has been caught and that causes the
+    # filter message to not be displayed.
     #
-    try:
-        ui.notice(0.5, 7)
-    except IndexError:
-        pass
+    ui.notice(0.5, 7)
+    assert len(caplog.records) == 6
 
     assert pha.quality_filter == pytest.approx(expected)
 
@@ -552,6 +559,48 @@ def test_notice_reporting_datapha(caplog):
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
     assert msg == "dataset 1: No noticed bins Channel (unchanged)"
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_notice_reporting_data2d(session, caplog):
+    """Unit-style test of logging of notice/ignore: Data2D
+
+    At the moment it's not clear what the notice/ignore call is
+    meant to do, as the ui layer doesn't really support the Data2D
+    case.
+    """
+
+    x1, x0 = np.mgrid[10:20, 1:7]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+
+    y = np.ones_like(x0)
+
+    s = session()
+    s.load_arrays(1, x0, x1, y, shape, Data2D)
+
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+    # At the moment it's not obvious what the arguments mean, so just
+    # act as a regression test. In particuar, we get no caplog output.
+    #
+    s.notice(lo=13)
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+    s.ignore(6, 15)
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+    s.notice_id(1, 13, 15)
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
 
 
 def test_notice2d_reporting(caplog):
