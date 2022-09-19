@@ -761,6 +761,7 @@ with:
 A regularly-gridded 2D dataset can be created, but note that the
 arguments must be flattened:
 
+  >>> import numpy as np
   >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
   >>> shp = x0.shape
   >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
@@ -907,12 +908,16 @@ raised. The aim is to provide some context in the message, such as::
   >>> x = np.asarray([1, 2, 3])
   >>> y = np.asarray([1, 2])
   >>> data = Data1D('example', x, y)
+  Traceback (most recent call last):
+  ...
   sherpa.utils.err.DataErr: size mismatch between independent axis and y: 3 vs 2
 
 and::
 
   >>> data = Data1D('example', x, x + 10)
   >>> data.apply_filter(y)
+  Traceback (most recent call last):
+  ...
   sherpa.utils.err.DataErr: size mismatch between data and array: 3 vs 2
 
 For `~sherpa.astro.data.DataPHA` objects, where some length checks
@@ -1104,7 +1109,7 @@ The :py:meth:`sherpa.ui.utils.Session.plot` and
 plots to be created by specifying the plot type as a list of
 argumemts. For example::
 
-    >>> s.plot('data', 'model', 'data', 2, 'model', 2)
+    >>> s.plot('data', 'model', 'data', 2, 'model', 2)  # doctest: +SKIP
 
 will create four plots, in a two-by-two grid, showing the
 data and model values for the default dataset and the
@@ -1161,11 +1166,11 @@ We can view the model plot object::
     >>> print(plot)
     xlo    = [2,3,5,7,8]
     xhi    = [3,5,6,8,9]
-    y      = [ 8.5,20. ,11.5,13.5,14.5]
+    y      = [ 6.,12., 6., 6., 6.]
     xlabel = x
     ylabel = y
     title  = Model
-    histo_prefs = {'yerrorbars': False, 'ecolor': None, ... , 'linecolor': None}
+    histo_prefs = {'xerrorbars': False, 'yerrorbars': False, ..., 'linecolor': None}
 
 
 .. _dataimg_coords:
@@ -1212,6 +1217,7 @@ transform, then they can just be set when creating the
 `~sherpa.astro.data.DataIMG.coord` attribute set to
 ``logical``.
 
+  >>> from sherpa.astro.data import DataIMG
   >>> x0 = np.asarray([1000, 1200, 2000])
   >>> x1 = np.asarray([-500, 500, -500])
   >>> y = np.asarray([10, 200, 30])

@@ -170,12 +170,11 @@ interrogate the object.
 
    >>> from sherpa.astro.io import read_pha
    >>> pha = read_pha('sherpa-test-data/sherpatest/9774.pi')
+   read ARF file sherpa-test-data/sherpatest/9774.arf
+   read RMF file sherpa-test-data/sherpatest/9774.rmf
+   read background file sherpa-test-data/sherpatest/9774_bg.pi
 
-This will print::
 
-   read ARF file 9774.arf
-   read RMF file 9774.rmf
-   read background file 9774_bg.pi
 
 We can see that the ARF, RMF, and a background dataset have
 automatically been loaded for us. They can be loaded manually - with
