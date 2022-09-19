@@ -515,11 +515,11 @@ def test_notice_reporting_datapha(caplog):
 
     s.ignore_id(1)
     assert len(caplog.record_tuples) == 4
-    clc_filter(caplog, "dataset 1: 3:5,13:19 -> No noticed bins Channel")
+    clc_filter(caplog, "dataset 1: 3:5,13:19 Channel -> no data")
 
     s.ignore()
     assert len(caplog.record_tuples) == 5
-    clc_filter(caplog, "dataset 1: No noticed bins Channel (unchanged)")
+    clc_filter(caplog, "dataset 1: no data (unchanged)")
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])

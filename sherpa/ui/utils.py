@@ -134,9 +134,23 @@ def _get_filter(data):
     # See #1430 for a discussion on why we have different behavior
     # when all the data is excluded: it should be unified.
     #
+    # We follow the approach used for the DataIMG case be relying on
+    # the mask attribute to determine what the output should
+    # be. Unfortunately this is only helpful for the "all data
+    # excluded" case, as we do not have the equivalent of "Field()" to
+    # indicate "use all the data", and we can not remove the DataErr
+    # exception check from get_filter, just in case.
+    #
+    if data.mask is False:
+        return ""
+
     try:
         return data.get_filter(delim=':', format='%g')
     except DataErr as exc:
+        # It may be possible that this happens - e.g. that data.mask
+        # is a ndarray of all False vaues - but it is not 100%
+        # obvious.  This is left in just in case.
+        #
         if str(exc) == "mask excludes all data":
             return ""
 
