@@ -223,7 +223,7 @@ def report_filter_change(idstr, ofilter, nfilter, xlabel=None):
     else:
         ostr += f"{ofilter}"
         if ofilter == nfilter:
-            ostr += f" {xlabel} (unchanged)"
+            ostr += f"{label} (unchanged)"
         else:
             ostr += f" -> {nfilter}{label}"
 

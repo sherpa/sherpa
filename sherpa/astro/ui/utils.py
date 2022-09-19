@@ -57,22 +57,36 @@ def _get_image_filter(data):
     means no data has been selected for the former, but all data is
     selected in the latter. For the logging of the filters this makes
     things awkward, so we over-ride the image case and replace an empty
-    string with "Field()".
+    string with "Field()". See also issue #1430 which points out that
+    the empty string can also mean "all data has been ignored".
 
     Parameters
     ----------
     data : sherpa.astro.data.DataIMG instance
 
+    Returns
+    -------
+    msg : str
+        The filter expression. An empty string means all data has been
+        ignored, to match the 1D case.
+
     """
+
+    # We can not rely on get_filter as it returns the empty string to
+    # indicate both "all data is selected" and "add data is
+    # ignored". So we add in a check on the mask tri-state (a boolean
+    # or a ndarray).
+    #
+    if data.mask is True:
+        return "Field()"
+
+    if data.mask is False:
+        return ""  # follow the 1D case and use "" to mean no data
 
     # Unlike sherpa.ui.utils._get_filter, there is no known "the
     # get_filter call can raise an exception" case to handle.
     #
-    out = data.get_filter()
-    if out == "":
-        return "Field()"
-
-    return out
+    return data.get_filter()
 
 
 class Session(sherpa.ui.utils.Session):
