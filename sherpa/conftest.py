@@ -132,7 +132,7 @@ known_warnings = {
             # https://github.com/matplotlib/matplotlib/issues/9970
             #
             # The exact warning message appears to depend on the
-            # matplotlib version and are related to doing
+            # matplotlib version and is related to doing
             #
             #     plot_fit_xxx(xlog=True)
             #     plot_fit_yyy(...)
