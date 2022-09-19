@@ -6683,6 +6683,10 @@ class Session(sherpa.ui.utils.Session):
         Ignore any bin in the PHA data set which has a quality value
         that is larger than zero.
 
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset,
+           to match the behavior of `notice` and `ignore`.
+
         Parameters
         ----------
         id : int or str, optional
@@ -6719,6 +6723,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> load_pha('src.pi')
         >>> ignore_bad()
+        dataset 1: 1:256 Channel (unchanged)
 
         The data set 'jet' is grouped, and a filter applied. After
         ignoring the bad-quality points, the filter has been removed
@@ -6726,10 +6731,12 @@ class Session(sherpa.ui.utils.Session):
 
         >>> group_counts('jet', 20)
         >>> notice_id('jet', 0.5, 7)
+        dataset jet: 0.00146:14.9504 -> 0.438:13.4612 Energy (keV)
         >>> get_filter('jet')
-        '0.496399998665:7.212399959564'
+        '0.437999993563:13.461199760437'
         >>> ignore_bad('jet')
         WARNING: filtering grouped data with quality flags, previous filters deleted
+        dataset jet: 0.438:13.4612 -> 0.00146:14.9504 Energy (keV)
         >>> get_filter('jet')
         '0.001460000058:14.950400352478'
 
@@ -6784,6 +6791,9 @@ class Session(sherpa.ui.utils.Session):
 
         Select a spatial region to include in the fit. The filter is
         applied to all data sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for each dataset.
 
         Parameters
         ----------
@@ -6878,36 +6888,56 @@ class Session(sherpa.ui.utils.Session):
         syntax. That is ``region(s1.reg)+region(s2.reg)`` is not
         supported.
 
+        The report of the change in the filter expression can be
+        controlled with the `SherpaVerbosity` context manager, as
+        shown in the examples below.
+
         Examples
         --------
 
         Include the data points that lie within a circle centered
         at 4324.5,3827.5 with a radius of 300:
 
-        >>> set_coord('physical')
-        >>> notice2d('circle(4324.5,3827.5,430)')
-
-        Read in the filter from the file ``ds9.reg``, using either:
-
-        >>> notice2d('ds9.reg')
-
-        or, when using CIAO,
-
-        >>> notice2d('region(ds9.reg)')
-
-        Select those points that lie both within the rotated box and
-        the annulus (i.e. an intersection of the two shapes):
-
-        >>> notice2d('rotbox(100,200,50,40,45)*annulus(120,190,20,60)')
-
-        Select those points that lie within the rotated box or the
-        annulus (i.e. a union of the two shapes):
-
-        >>> notice2d('rotbox(100,200,50,40,45)+annulus(120,190,20,60)')
+        >>> set_coord("physical")
+        >>> notice2d("circle(4324.5,3827.5,430)")
+        dataset 1: Field() -> Circle(4324.5,3827.5,430)
+        >>> get_filter()
+        'Circle(4324.5,3827.5,430)'
 
         All existing spatial filters are removed:
 
         >>> notice2d()
+        dataset 1: Circle(4324.5,3827.5,430) -> Field()
+        >>> get_filter()
+        ''
+
+        Read in the filter from the file ``ds9.reg``, using either:
+
+        >>> set_coord("physical")
+        >>> notice2d("ds9.reg")
+        dataset 1: Field() -> Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)
+
+        or, when using CIAO,
+
+        >>> set_coord("physical")
+        >>> notice2d("region(ds9.reg)")
+        dataset 1: Field() -> Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)
+
+        Select those points that lie both within the rotated box and
+        the annulus (i.e. an intersection of the two shapes):
+
+        >>> set_coord("logical")
+        >>> notice2d("rotbox(100,200,50,40,45)*annulus(120,190,20,60)")
+        dataset 1: Field() -> RotBox(100,200,50,40,45)&Annulus(120,190,20,60)
+
+        Select those points that lie within the rotated box or the
+        annulus (i.e. a union of the two shapes) combined with the
+        previous filter:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     notice2d("rotbox(100,200,50,40,45)+annulus(120,190,20,60)")
+        ...
 
         """
 
@@ -6931,6 +6961,9 @@ class Session(sherpa.ui.utils.Session):
 
         Select a spatial region to exclude in the fit. The filter is
         applied to all data sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for each dataset.
 
         Parameters
         ----------
@@ -6959,20 +6992,29 @@ class Session(sherpa.ui.utils.Session):
 
         Exclude points that fall within the two regions:
 
-        >>> ignore2d('ellipse(200,300,40,30,-34)')
-        >>> ignore2d('box(40,100,30,40)')
+        >>> ignore2d("ellipse(200,300,40,30,-34)")
+        dataset 1: Field() -> Field()&!Ellipse(200,300,40,30,-34)
+        >>> ignore2d("box(40,100,30,40)")
+        dataset 1: Field()&!Ellipse(200,300,40,30,-34) -> Field()&!Ellipse(200,300,40,30,-34)&!Box(40,100,30,40)
 
         Use a region file called 'reg.fits', by using either:
 
-        >>> ignore2d('reg.fits')
+        >>> set_coord("physical")
+        >>> ignore2d("reg.fits")
+        dataset 1: Field() -> Field()&!Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)
 
         or
 
-        >>> ignore2d('region(reg.fits)')
+        >>> set_coord("physical")
+        >>> ignore2d("region(reg.fits)")
+        dataset 1: Field() -> Field()&!Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)
 
-        Exclude all points.
+        Exclude all points and hide the screen output:
 
-        >>> ignore2d()
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     ignore2d()
+        ...
 
         """
 
@@ -7000,6 +7042,9 @@ class Session(sherpa.ui.utils.Session):
 
         Select a spatial region to include in the fit. The filter is
         applied to the given data set, or sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         Parameters
         ----------
@@ -7031,6 +7076,7 @@ class Session(sherpa.ui.utils.Session):
         Select all the pixels in the default data set:
 
         >>> notice2d_id(1)
+        dataset 1: Circle(100,45,10) -> Field()
 
         Select all the pixels in data sets 'i1' and 'i2':
 
@@ -7039,6 +7085,7 @@ class Session(sherpa.ui.utils.Session):
         Apply the filter to the 'img' data set:
 
         >>> notice2d_id('img', 'annulus(4324.2,3982.2,40.2,104.3)')
+        dataset 1: Field() -> annulus(4324.2,3982.2,40.2,104.3)
 
         Use the regions in the file `srcs.reg` for data set 1:
 
@@ -7078,6 +7125,9 @@ class Session(sherpa.ui.utils.Session):
 
         Select a spatial region to exclude in the fit. The filter is
         applied to the given data set, or sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         Parameters
         ----------
@@ -7152,6 +7202,9 @@ class Session(sherpa.ui.utils.Session):
         Include points that lie within the region defined in the image
         viewer.
 
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
+
         Parameters
         ----------
         ids : int or str, or sequence of int or str, optional
@@ -7219,6 +7272,9 @@ class Session(sherpa.ui.utils.Session):
 
         Exclude points that lie within the region defined in the image
         viewer.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         Parameters
         ----------

@@ -5031,6 +5031,9 @@ class Session(NoNewAttributesAfterInit):
         the independent axis value. The filter is applied to all data
         sets.
 
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for each dataset.
+
         .. versionchanged:: 4.14.0
            Integrated data sets - so Data1DInt and DataPHA when using
            energy or wavelengths - now ensure that the `hi` argument
@@ -5077,13 +5080,17 @@ class Session(NoNewAttributesAfterInit):
         then the filter is applied to the existing data.
 
         For binned data sets, the bin is included if the noticed range
-        falls anywhere within the bin, but excluing the ``hi`` value
+        falls anywhere within the bin, but excluding the ``hi`` value
         (except for PHA data sets when using ``channel`` units).
 
         The units used depend on the ``analysis`` setting of the data
         set, if appropriate.
 
         To filter a 2D data set by a shape use `notice2d`.
+
+        The report of the change in the filter expression can be
+        controlled with the `SherpaVerbosity` context manager, as
+        shown in the examples below.
 
         Examples
         --------
@@ -5094,29 +5101,45 @@ class Session(NoNewAttributesAfterInit):
 
         >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
         >>> notice(12, 28)
+        dataset 1: 10:30 -> 15:20 x
         >>> get_dep(filter=True)
         array([10,  7])
 
         As no limits are given, the whole data set is included:
 
         >>> notice()
+        dataset 1: 15:20 -> 10:30 x
         >>> get_dep(filter=True)
         array([ 5, 10,  7, 13])
 
         The `ignore` call excludes the first two points, but the
         `notice` call adds back in the second point:
 
-        >>> ignore(None, 17)
+        >>> ignore(hi=17)
+        dataset 1: 10:30 -> 20:30 x
         >>> notice(12, 16)
+        dataset 1: 20:30 -> 15:30 x
         >>> get_dep(filter=True)
         array([10,  7, 13])
 
         Only include data points in the range 8<=X<=12 and 18<=X=22:
 
         >>> ignore()
+        dataset 1: 15:30 x -> no data
         >>> notice("8:12, 18:22")
+        dataset 1: no data -> 10 x
+        dataset 1: 10 -> 10,20 x
         >>> get_dep(filter=True)
         array([5, 7])
+
+        The messages from `notice` and `ignore` use the standard
+        Sherpa logging infrastructure, and so can be ignored by using
+        `SherpaVerbosity`:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     notice()
+        ...
 
         """
         if len(self._data) == 0:
@@ -5168,6 +5191,9 @@ class Session(NoNewAttributesAfterInit):
         the independent axis value. The filter is applied to all data
         sets.
 
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for each dataset.
+
         .. versionchanged:: 4.14.0
            Integrated data sets - so Data1DInt and DataPHA when using
            energy or wavelengths - now ensure that the `hi` argument
@@ -5215,6 +5241,10 @@ class Session(NoNewAttributesAfterInit):
 
         To filter a 2D data set by a shape use `ignore2d`.
 
+        The report of the change in the filter expression can be
+        controlled with the `SherpaVerbosity` context manager, as
+        shown in the examples below.
+
         Examples
         --------
 
@@ -5224,13 +5254,15 @@ class Session(NoNewAttributesAfterInit):
 
         >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
         >>> ignore(12, 18)
+        dataset 1: 10:30 -> 10,20:30 x
         >>> get_dep(filter=True)
         array([ 5,  7, 13])
 
         Filtering X values that are 25 or larger means that the last
         point is also ignored:
 
-        >>> ignore(25, None)
+        >>> ignore(lo=25)
+        dataset 1: 10,20:30 -> 10,20 x
         >>> get_dep(filter=True)
         array([ 5,  7])
 
@@ -5239,9 +5271,20 @@ class Session(NoNewAttributesAfterInit):
         12 and 18 and 22:
 
         >>> notice()
-        >>> ignore("8:12,18:22")
+        dataset 1: 10,20 -> 10:30 x
+        >>> ignore("8:12, 18:22")
+        dataset 1: 10:30 -> 15:30 x
+        dataset 1: 15:30 -> 15,30 x
         >>> get_dep(filter=True)
         array([10, 13])
+
+        The `SherpaVerbosity` context manager can be used to hide the
+        screen output:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     ignore(hi=12)
+        ...
 
         """
         kwargs['ignore'] = True
@@ -5257,6 +5300,9 @@ class Session(NoNewAttributesAfterInit):
         Select one or more ranges of data to include by filtering on
         the independent axis value. The filter is applied to the
         given data set, or data sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         .. versionchanged:: 4.14.0
            Integrated data sets - so Data1DInt and DataPHA when using
@@ -5302,6 +5348,10 @@ class Session(NoNewAttributesAfterInit):
 
         To filter a 2D data set by a shape use `ignore2d`.
 
+        The report of the change in the filter expression can be
+        controlled with the `SherpaVerbosity` context manager, as
+        shown in the examples below.
+
         Examples
         --------
 
@@ -5309,16 +5359,24 @@ class Session(NoNewAttributesAfterInit):
         between 12 and 18 for data set 1:
 
         >>> notice_id(1, 12, 18)
+        dataset 1: 10:30 -> 15:20 x
 
-        Include the range 0.5 to 7, for data sets 1,
-        2, and 3:
+        Include the range 0.5 to 7, for data sets 1, 2, and 3 (the
+        screen output will depend on the existing data and filters
+        applied to them):
 
-        >>> notice_id([1,2,3], 0.5, 7)
+        >>> notice_id([1, 2, 3], 0.5, 7)
+        dataset 1: 0.00146:14.9504 -> 0.4818:9.0374 Energy (keV)
+        dataset 2: 0.00146:14.9504 -> 0.4964:13.6072 Energy (keV)
+        dataset 3: 0.00146:14.9504 -> 0.4234:9.3878 Energy (keV)
 
         Apply the filter 0.5 to 2 and 2.2 to 7 to the data sets "core"
-        and "jet":
+        and "jet", and hide the screen output:
 
-        >>> notice_id(["core","jet"], "0.5:2, 2.2:7")
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbsity("WARN"):
+        ...     notice_id(["core", "jet"], "0.5:2, 2.2:7")
+        ...
 
         """
         if ids is None:
@@ -5381,6 +5439,9 @@ class Session(NoNewAttributesAfterInit):
         the independent axis value. The filter is applied to the given
         data set, or sets.
 
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
+
         .. versionchanged:: 4.14.0
            Integrated data sets - so Data1DInt and DataPHA when using
            energy or wavelengths - now ensure that the `hi` argument
@@ -5432,17 +5493,27 @@ class Session(NoNewAttributesAfterInit):
         between 12 and 18 for data set 1:
 
         >>> ignore_id(1, 12, 18)
+        dataset 1: 10:30 -> 10,20:30 x
 
         Ignore the range up to 0.5 and 7 and above, for data sets 1,
         2, and 3:
 
-        >>> ignore_id([1,2,3], None, 0.5)
-        >>> ignore_id([1,2,3], 7, None)
+        >>> ignore_id([1, 2, 3], hi=0.5)
+        dataset 1: 0.00146:14.9504 -> 0.584:14.9504 Energy (keV)
+        dataset 2: 0.00146:14.9504 -> 0.6424:14.9504 Energy (keV)
+        dataset 3: 0.00146:14.9504 -> 0.511:14.9504 Energy (keV)
+        >>> ignore_id([1, 2, 3], lo=7)
+        dataset 1: 0.584:14.9504 -> 0.584:4.4384 Energy (keV)
+        dataset 2: 0.6424:14.9504 -> 0.6424:5.1392 Energy (keV)
+        dataset 3: 0.511:14.9504 -> 0.511:4.526 Energy (keV)
 
-        Apply the same filter as the previous example, but to
-        data sets "core" and "jet":
+        Apply the same filter as the previous example, but to data
+        sets "core" and "jet", and hide the screen output:
 
-        >>> ignore_id(["core","jet"], ":0.5,7:")
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbsity("WARN"):
+        ...     ignore_id(["core", "jet"], ":0.5,7:")
+        ...
 
         """
         kwargs['ignore'] = True
