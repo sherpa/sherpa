@@ -80,6 +80,7 @@ class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
                     ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
+                    ("xspec-env-name", None, "The environment variable used by the XSPEC model library"),
                     ('xspec-version', None, "the XSPEC version (default 12.10.1)"),
                     ('xspec-lib-dirs', None, "Where the xspec libraries are located, if with-xspec is True"),
                     ('xspec-libraries', None, "Name of the libraries that should be linked for xspec"),
@@ -95,6 +96,7 @@ class xspec_config(Command):
 
     def initialize_options(self):
         self.with_xspec = False
+        self.xspec_env_name = "HEADAS"
         self.xspec_version = '12.10.1'
         self.xspec_include_dirs = ''
         self.xspec_lib_dirs = ''
@@ -120,7 +122,7 @@ class xspec_config(Command):
         if not self.with_xspec:
             return
 
-        macros = []
+        macros = [("XSPEC_ENV_NAME", self.xspec_env_name)]
         if self.xspec_version:
             self.announce(f"Found XSPEC version: {self.xspec_version}", level=2)
             xspec_version = get_version(self.xspec_version)

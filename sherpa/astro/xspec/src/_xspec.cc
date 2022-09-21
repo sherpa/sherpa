@@ -17,6 +17,16 @@
 //  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 //
 
+// Access the XSPEC_ENV_NAME definition. We do this to allow either
+// HEADAS or CIAO_HEADAS to be set. It could have been selected via a
+// boolean but allow it to be a string in case there's future changes
+// needed.
+//
+#define V__(x) #x
+#define V_(x) V__(x)
+#define HEADAS V_(XSPEC_ENV_NAME)
+
+
 // Have sherpa include first so that Python.h is first, to avoid warning
 // messages about redefining _XOPEN_SOURCE
 #include "sherpa/astro/xspec_extension.hh"
@@ -284,10 +294,10 @@ static int _sherpa_init_xspec_library()
   if ( init )
     return EXIT_SUCCESS;
 
-  if ( !getenv("HEADAS") ) {
+  if ( !getenv(HEADAS) ) {
     PyErr_SetString( PyExc_ImportError,
 		     (char*)"XSPEC initialization failed; "
-		     "HEADAS environment variable is not set" );
+		     HEADAS " environment variable is not set" );
     return EXIT_FAILURE;
   }
 
@@ -367,7 +377,7 @@ static int _sherpa_init_xspec_library()
     // Raise appropriate error message that XSPEC initialization failed.
     PyErr_SetString( PyExc_ImportError,
 		     (char*)"XSPEC initialization failed; "
-		     "check HEADAS environment variable" );
+		     "check " HEADAS " environment variable" );
     return EXIT_FAILURE;
 
   }
