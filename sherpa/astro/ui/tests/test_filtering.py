@@ -28,6 +28,7 @@ import numpy as np
 
 from sherpa.astro.data import DataIMG, DataPHA
 from sherpa.astro import ui
+from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data1DInt, Data2D
 from sherpa.ui.utils import Session
@@ -491,8 +492,8 @@ def test_notice_reporting_data1dint(session, caplog):
     clc_filter(caplog, "dataset 1: 2:4,12:100 x -> no data")
 
 
-def test_notice_reporting_datapha(caplog):
-    """Unit-style test of logging of notice/ignore: DataPHA"""
+def test_notice_reporting_datapha_no_response(caplog):
+    """Unit-style test of logging of notice/ignore: DataPHA no ARF/RMF"""
 
     x = np.arange(1, 20)
     y = np.ones_like(x)
@@ -520,6 +521,55 @@ def test_notice_reporting_datapha(caplog):
     s.ignore()
     assert len(caplog.record_tuples) == 5
     clc_filter(caplog, "dataset 1: no data (unchanged)")
+
+
+def test_notice_reporting_datapha_with_response(caplog):
+    """Unit-style test of logging of notice/ignore: DataPHA + fake ARF/RMF"""
+
+    x = np.arange(1, 20)
+    y = np.ones_like(x)
+
+    s = AstroSession()
+    s.load_arrays(1, x, y, DataPHA)
+
+    egrid = np.arange(1, 21) * 0.1
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    arf = create_arf(elo, ehi)
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    s.set_rmf(rmf)
+    s.set_arf(arf)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(lo=1.3)
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset 1: 0.1:2 -> 1.3:2 Energy (keV)")
+
+    s.ignore(1.7, 1.8)
+    assert len(caplog.record_tuples) == 2
+    clc_filter(caplog, "dataset 1: 1.3:2 -> 1.3:1.7,1.8:2 Energy (keV)")
+
+    # switch analysis units so the ignore call returns different values
+    s.set_analysis("wave")
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 3
+    clc_filter(caplog, "dataset 1: 6.19921:6.88801,7.29319:9.53725 Wavelength (Angstrom) -> no data")
+
+    s.ignore()
+    assert len(caplog.record_tuples) == 4
+    clc_filter(caplog, "dataset 1: no data (unchanged)")
+
+    s.notice(8, 12)
+    assert len(caplog.record_tuples) == 5
+    clc_filter(caplog, "dataset 1: no data -> 7.74901:12.3984 Wavelength (Angstrom)")
+
+    s.set_analysis("chan")
+
+    s.notice_id(1)
+    assert len(caplog.record_tuples) == 6
+    clc_filter(caplog, "dataset 1: 10:15 -> 1:19 Channel")
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])

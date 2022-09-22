@@ -244,6 +244,59 @@ def report_filter_change(idstr, ofilter, nfilter, xlabel=None):
     info(ostr)
 
 
+def notice_data_range(get_data, ids, lo, hi, kwargs):
+    """Filter each dataset and report the change in filter.
+
+    Parameters
+    ----------
+    get_data : callable
+        The routine to use to return the data object given a dataset
+        identifier.
+    ids : sequence of int or str
+        The identifiers to process, in order. It is required that
+        get_data can be called on each item in this sequence.
+    lo, hi : number or None
+        The arguments for `notice`.
+    kwargs
+        The extra arguments to pass to the Data `notice`, and
+        the "bkg_id" identifier if the data to be filtered is a
+        background PHA component instead.
+
+    Notes
+    -----
+    This could be part of the Session class, but we don't need more
+    methods there, so see how well things work with it out here. If it
+    were a class method we could move the handling of the bkg_id
+    argument to the astro Session class.
+
+    """
+
+    # The bkg_id argument is astro-specific. The need
+    # to use it to access the correct data object is
+    # problematic.
+    #
+    bkg_id = kwargs.pop("bkg_id", None)
+
+    for idval in ids:
+        idstr = f"dataset {idval}"
+        data = get_data(idval)
+        if bkg_id is not None:
+            data = data.get_background(bkg_id)
+            idstr += f": background {bkg_id}"
+
+        ofilter = _get_filter(data)
+        data.notice(lo, hi, **kwargs)
+        nfilter = _get_filter(data)
+
+        try:
+            xlabel = data.get_xlabel()
+        except AttributeError:
+            # Data2D case
+            xlabel = None
+
+        report_filter_change(idstr, ofilter, nfilter, xlabel)
+
+
 ###############################################################################
 #
 # Pickling support
@@ -5164,35 +5217,7 @@ class Session(NoNewAttributesAfterInit):
 
         # Jump through the data sets in "order".
         #
-        # The bkg_id argument is astro-specific. The need
-        # to use it to access the correct data object is
-        # problematic.
-        #
-        try:
-            bkg_id = kwargs["bkg_id"]
-            del kwargs["bkg_id"]  # important to remove
-        except KeyError:
-            bkg_id = None
-
-        for idval in self.list_data_ids():
-
-            idstr = f"dataset {idval}"
-            data = self.get_data(idval)
-            if bkg_id is not None:
-                data = data.get_background(bkg_id)
-                idstr += f": background {bkg_id}"
-
-            ofilter = _get_filter(data)
-            data.notice(lo, hi, **kwargs)
-            nfilter = _get_filter(data)
-
-            try:
-                xlabel = data.get_xlabel()
-            except AttributeError:
-                # Data2D case
-                xlabel = None
-
-            report_filter_change(idstr, ofilter, nfilter, xlabel)
+        notice_data_range(self.get_data, self.list_data_ids(), lo, hi, kwargs)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
     # should only be in the sherpa.astro.ui version, but it is not
@@ -5412,35 +5437,7 @@ class Session(NoNewAttributesAfterInit):
         # Unlike notice() we do not sort the id list as this
         # was set by the user.
         #
-        # The bkg_id argument is astro-specific. The need
-        # to use it to access the correct data object is
-        # problematic.
-        #
-        try:
-            bkg_id = kwargs["bkg_id"]
-            del kwargs["bkg_id"]  # important to remove
-        except KeyError:
-            bkg_id = None
-
-        for idval in ids:
-
-            idstr = f"dataset {idval}"
-            data = self.get_data(idval)
-            if bkg_id is not None:
-                data = data.get_background(bkg_id)
-                idstr += f": background {bkg_id}"
-
-            ofilter = _get_filter(data)
-            data.notice(lo, hi, **kwargs)
-            nfilter = _get_filter(data)
-
-            try:
-                xlabel = data.get_xlabel()
-            except AttributeError:
-                # Data2D case
-                xlabel = None
-
-            report_filter_change(idstr, ofilter, nfilter, xlabel)
+        notice_data_range(self.get_data, ids, lo, hi, kwargs)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
     # should only be in the sherpa.astro.ui version, but it is not
