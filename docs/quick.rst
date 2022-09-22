@@ -480,7 +480,7 @@ The default error estimation routine is
 
     >>> from sherpa.estmethods import Confidence
     >>> gefit.estmethod = Confidence()
-    >>> print(gefit.estmethod)  # doctest: +SKIP
+    >>> print(gefit.estmethod)  # doctest: +IGNORE_OUTPUT
     name         = confidence
     sigma        = 1
     eps          = 0.01
@@ -495,6 +495,10 @@ The default error estimation routine is
     tol          = 0.2
     verbose      = False
     openinterval = False
+
+..
+   Comment: IGNORE_OUTPUT is neccessary because numcores will have
+   different value, depending on the machine that runs the doctest.
 
 Running the error analysis can take time, for particularly complex
 models. The default behavior is to use all the available CPU cores

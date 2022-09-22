@@ -170,14 +170,19 @@ interrogate the object.
 
    >>> from sherpa.astro.io import read_pha
    >>> pha = read_pha( data_dir + '9774.pi')
+
+We can see that the ARF, RMF, and a background dataset have
+automatically been loaded for us.
+
+::
+
    read ARF file .../9774.arf
    read RMF file .../9774.rmf
    read background file .../9774_bg.pi
 
 
 
-We can see that the ARF, RMF, and a background dataset have
-automatically been loaded for us. They can be loaded manually - with
+Instead, ARF and RMF could be loaded manually - with
 :py:func:`sherpa.astro.io.read_arf`, :py:func:`sherpa.astro.io.read_rmf`,
 and :py:func:`sherpa.astro.io.read_pha` -
 and set with :py:meth:`~sherpa.astro.data.DataPHA.set_arf`,
