@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2017, 2018, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2018, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +26,13 @@ import pytest
 
 import numpy as np
 
+from sherpa.astro.data import DataIMG, DataPHA
 from sherpa.astro import ui
+from sherpa.astro.instrument import create_arf, create_delta_rmf
+from sherpa.astro.ui.utils import Session as AstroSession
+from sherpa.data import Data1DInt, Data2D
+from sherpa.ui.utils import Session
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -56,6 +63,21 @@ def setup_model(make_data_path):
     return {'all': 2716.7086246284807,
             'bad': 2716.682482792285,
             '0.5-8.0': 1127.7165108405597}
+
+
+def check_last_caplog(caplog, lname, lvl, msg):
+    """Check the last element contains the expected data"""
+
+    lname_got, lvl_got, msg_got = caplog.record_tuples[-1]
+    assert lname_got == lname
+    assert lvl_got == lvl
+    assert msg_got == msg
+
+
+def clc_filter(caplog, msg):
+    """Special case for the ignore/notice filter check"""
+
+    check_last_caplog(caplog, "sherpa.ui.utils", logging.INFO, msg)
 
 
 @requires_fits
@@ -106,13 +128,20 @@ def test_filter_notice_bad_361(make_data_path, caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.ignore_bad()
 
-    assert len(caplog.records) == 6
+    assert len(caplog.records) == 8
 
     lname, lvl, msg = caplog.record_tuples[5]
+    assert lname == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    assert msg == 'dataset 1: 0.0073:14.9504 -> 0.4964:8.0592 Energy (keV)'
+
+    lname, lvl, msg = caplog.record_tuples[6]
     assert lname == 'sherpa.astro.data'
     assert lvl == logging.WARNING
     assert msg == 'filtering grouped data with quality ' + \
         'flags, previous filters deleted'
+
+    clc_filter(caplog, "dataset 1: 0.4964:8.0592 -> 0.0073:14.9504 Energy (keV)")
 
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['bad'])
@@ -123,22 +152,35 @@ def test_filter_notice_bad_361(make_data_path, caplog):
 def test_filter_bad_notice_361(make_data_path):
     """Test out issue 361: ignore bad then notice.
 
-    This is expected to fail with NumPy version 1.13 and should cause
-    a DeprecationWarning with earlier versions (I do not know when
-    the warning was added).
+    There have been changes in NumPy that this originally was written
+    to catch (version 1.13). This has been left in, but it is
+    currently a regression test as the handling of bad values means
+    that the notice call fails when trying to write out the filter,
+    hence the try/except handling there.
+
     """
 
     stats = setup_model(make_data_path)
 
     ui.ignore_bad()
-    ui.notice(0.5, 8.0)
+
+    # With support for #1558 - writing out the filter as we apply them
+    # - we now get this call failing, so catch this failure to allow
+    # the test to continue. This should be fixed, but it's a
+    # long-standing problem.
+    #
+    try:
+        ui.notice(0.5, 8.0)
+    except IndexError:
+        pass
+
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['0.5-8.0'])
 
 
 @requires_fits
 @requires_data
-def test_filter_bad_ungrouped(make_data_path, clean_astro_ui):
+def test_filter_bad_ungrouped(make_data_path, clean_astro_ui, caplog):
     """Check behavior when the data is ungrouped.
 
     This is a test of the current behavior, to check that
@@ -147,18 +189,27 @@ def test_filter_bad_ungrouped(make_data_path, clean_astro_ui):
     """
 
     infile = make_data_path('q1127_src1_grp30.pi')
-    ui.load_pha(infile)
+    with SherpaVerbosity("WARN"):
+        ui.load_pha(infile)
+
     pha = ui.get_data()
     assert pha.quality_filter is None
     assert pha.mask is True
 
+    assert len(caplog.records) == 0
+
     assert ui.get_dep().shape == (439, )
     ui.ungroup()
+    assert len(caplog.records) == 0
+
     assert ui.get_dep().shape == (1024, )
     assert pha.quality_filter is None
     assert pha.mask is True
 
     ui.ignore_bad()
+    assert len(caplog.records) == 1
+    clc_filter(caplog, "dataset 1: 0.0073:14.9504 -> 0.0073:14.5416 Energy (keV)")
+
     assert ui.get_dep().shape == (1024, )
     assert pha.quality_filter is None
 
@@ -171,12 +222,21 @@ def test_filter_bad_ungrouped(make_data_path, clean_astro_ui):
     # anything. See issue #1169
     #
     ui.notice(0.5, 7)
+    assert len(caplog.records) == 2
+    clc_filter(caplog, "dataset 1: 0.0073:14.5416 Energy (keV) (unchanged)")
+
     assert pha.mask == pytest.approx(expected)
 
     # We need to ignore to change the mask.
     #
     ui.ignore(None, 0.5)
+    assert len(caplog.records) == 3
+    clc_filter(caplog, "dataset 1: 0.0073:14.5416 -> 0.511:14.5416 Energy (keV)")
+
     ui.ignore(7, None)
+    assert len(caplog.records) == 4
+    clc_filter(caplog, "dataset 1: 0.511:14.5416 -> 0.511:6.9934 Energy (keV)")
+
     expected[0:35] = False
     expected[479:1025] = False
     assert pha.mask == pytest.approx(expected)
@@ -184,7 +244,7 @@ def test_filter_bad_ungrouped(make_data_path, clean_astro_ui):
 
 @requires_fits
 @requires_data
-def test_filter_bad_grouped(make_data_path, clean_astro_ui):
+def test_filter_bad_grouped(make_data_path, clean_astro_ui, caplog):
     """Check behavior when the data is grouped.
 
     This is a test of the current behavior, to check that
@@ -193,7 +253,9 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui):
     """
 
     infile = make_data_path('q1127_src1_grp30.pi')
-    ui.load_pha(infile)
+    with SherpaVerbosity("WARN"):
+        ui.load_pha(infile)
+
     pha = ui.get_data()
     assert pha.quality_filter is None
     assert pha.mask is True
@@ -205,7 +267,10 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui):
     # The last group is marked as quality=2 and so calling
     # ignore_bad means we lose that group.
     #
+    assert len(caplog.records) == 0
     ui.ignore_bad()
+    assert len(caplog.records) == 1
+
     assert ui.get_dep().shape == (438, )
     assert pha.mask is True
 
@@ -213,10 +278,20 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui):
     expected[996:1025] = False
     assert pha.quality_filter == pytest.approx(expected)
 
+    # Do we really want this (added in #1562)? For now assume so.
+    #
+    clc_filter(caplog, "dataset 1: 0.0073:14.9504 Energy (keV) (unchanged)")
+
     # What happens when we filter the data? Unlike #1169
     # we do change the noticed range.
     #
+    # This should create a filter message, but thanks to ignore_bad we
+    # get an IndexError, which has been caught and that causes the
+    # filter message to not be displayed.
+    #
     ui.notice(0.5, 7)
+    assert len(caplog.records) == 1
+
     assert pha.quality_filter == pytest.approx(expected)
 
     # The mask has been filtered to remove the bad channels
@@ -230,3 +305,368 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui):
     expected[0:34] = False
     expected[481:996] = False
     assert pha.get_mask() == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("expr,result",
+                         [("4:13", "5:13"),
+                          (":11", "-100:10"),
+                          ("5:", "5:100"),
+                          (":", None),
+                          (":-100", "-100"),
+                          ("100:", "100"),
+                          ("2", "2"),
+                          ("11", ""),
+                          (":-150", ""),
+                          ("200:", "")
+                          ])
+def test_notice_string_data1d(session, expr, result, caplog):
+    """Check we can call notice with a string argument: Data1D"""
+
+    x = np.asarray([-100, 1, 2, 3, 5, 10, 12, 13, 100])
+    y = np.ones_like(x)
+
+    s = session()
+    s.load_arrays(1, x, y)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(expr)
+    assert len(caplog.record_tuples) == 1
+
+    expected = "-100:100" if result is None else result
+    assert s.get_data().get_filter(format='%d') == expected
+
+    expected = "dataset 1: -100:100 "
+    if result is None:
+        expected += "x (unchanged)"
+    elif result == "":
+        expected += "x -> no data"
+    else:
+        expected += f"-> {result} x"
+
+    clc_filter(caplog, expected)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+@pytest.mark.parametrize("expr,result",
+                         [("4:13", "5:13"),
+                          (":11", "-100:11"),
+                          ("5:", "5:100"),
+                          (":", None),
+                          (":-100", ""),
+                          ("100:", ""),
+                          ("2", ""),
+                          ("11", ""),
+                          (":-150", ""),
+                          ("200:", "")
+                          ])
+def test_notice_string_data1dint(session, expr, result, caplog):
+    """Check we can call notice with a string argument: Data1DInt"""
+
+    xlo = np.asarray([-100, 1, 2, 3, 5, 10, 12, 13, 99])
+    xhi = np.asarray([-99, 2, 3, 4, 10, 11, 13, 90, 100])
+    y = np.ones_like(xlo)
+
+    s = session()
+    s.load_arrays(1, xlo, xhi, y, Data1DInt)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(expr)
+    assert len(caplog.record_tuples) == 1
+
+    expected = "-100:100" if result is None else result
+    assert s.get_data().get_filter(format='%d') == expected
+
+    expected = "dataset 1: -100:100 "
+    if result is None:
+        expected += "x (unchanged)"
+    elif result == "":
+        expected += "x -> no data"
+    else:
+        expected += f"-> {result} x"
+
+    clc_filter(caplog, expected)
+
+
+@pytest.mark.parametrize("expr,result",
+                         [("4:13", "4:13"),
+                          (":11", "1:11"),
+                          ("5:", "5:19"),
+                          (":", None),
+                          (":-100", ""),
+                          ("100:", ""),
+                          ("2", "2"),
+                          ("11", "11"),
+                          (":-150", ""),
+                          ("200:", "")
+                          ])
+def test_notice_string_datapha(expr, result, caplog):
+    """Check we can call notice with a string argument: DataPHA"""
+
+    x = np.arange(1, 20)
+    y = np.ones_like(x)
+
+    s = AstroSession()
+    s.load_arrays(1, x, y, DataPHA)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(expr)
+    assert len(caplog.record_tuples) == 1
+
+    expected = "1:19" if result is None else result
+    assert s.get_data().get_filter(format='%d') == expected
+
+    expected = "dataset 1: 1:19 "
+    if result is None:
+        expected += "Channel (unchanged)"
+    elif result == "":
+        expected += "Channel -> no data"
+    else:
+        expected += f"-> {result} Channel"
+
+    clc_filter(caplog, expected)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_notice_reporting_data1d(session, caplog):
+    """Unit-style test of logging of notice/ignore: Data1D"""
+
+    x = np.asarray([-100, 1, 2, 3, 5, 10, 12, 13, 100])
+    y = np.ones_like(x)
+
+    s = session()
+    s.load_arrays(1, x, y)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice()
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset 1: -100:100 x (unchanged)")
+
+    s.notice(lo=2.5)
+    assert len(caplog.record_tuples) == 2
+    clc_filter(caplog, "dataset 1: -100:100 -> 3:100 x")
+
+    s.ignore(6, 15)
+    assert len(caplog.record_tuples) == 3
+    clc_filter(caplog, "dataset 1: 3:100 -> 3:5,100 x")
+
+    s.notice_id(1, 12.5, 15)
+    assert len(caplog.record_tuples) == 4
+    clc_filter(caplog, "dataset 1: 3:5,100 -> 3:5,13:100 x")
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 5
+    clc_filter(caplog, "dataset 1: 3:5,13:100 x -> no data")
+
+    s.ignore()
+    assert len(caplog.record_tuples) == 6
+    clc_filter(caplog, "dataset 1: no data (unchanged)")
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_notice_reporting_data1dint(session, caplog):
+    """Unit-style test of logging of notice/ignore: Data1DInt"""
+
+    xlo = np.asarray([-100, 1, 2, 3, 5, 10, 12, 13, 99])
+    xhi = np.asarray([-99, 2, 3, 4, 10, 11, 13, 90, 100])
+    y = np.ones_like(xlo)
+
+    s = session()
+    s.load_arrays(1, xlo, xhi, y, Data1DInt)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(lo=2.5)
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset 1: -100:100 -> 2:100 x")
+
+    s.ignore(6, 15)
+    assert len(caplog.record_tuples) == 2
+    clc_filter(caplog, "dataset 1: 2:100 -> 2:4,99:100 x")
+
+    s.notice_id(1, 12.5, 15)
+    assert len(caplog.record_tuples) == 3
+    clc_filter(caplog, "dataset 1: 2:4,99:100 -> 2:4,12:100 x")
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 4
+    clc_filter(caplog, "dataset 1: 2:4,12:100 x -> no data")
+
+
+def test_notice_reporting_datapha_no_response(caplog):
+    """Unit-style test of logging of notice/ignore: DataPHA no ARF/RMF"""
+
+    x = np.arange(1, 20)
+    y = np.ones_like(x)
+
+    s = AstroSession()
+    s.load_arrays(1, x, y, DataPHA)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(lo=3)
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset 1: 1:19 -> 3:19 Channel")
+
+    s.ignore(6, 15)
+    assert len(caplog.record_tuples) == 2
+    clc_filter(caplog, "dataset 1: 3:19 -> 3:5,16:19 Channel")
+
+    s.notice_id(1, 13, 15)
+    assert len(caplog.record_tuples) == 3
+    clc_filter(caplog, "dataset 1: 3:5,16:19 -> 3:5,13:19 Channel")
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 4
+    clc_filter(caplog, "dataset 1: 3:5,13:19 Channel -> no data")
+
+    s.ignore()
+    assert len(caplog.record_tuples) == 5
+    clc_filter(caplog, "dataset 1: no data (unchanged)")
+
+
+def test_notice_reporting_datapha_with_response(caplog):
+    """Unit-style test of logging of notice/ignore: DataPHA + fake ARF/RMF"""
+
+    x = np.arange(1, 20)
+    y = np.ones_like(x)
+
+    s = AstroSession()
+    s.load_arrays(1, x, y, DataPHA)
+
+    egrid = np.arange(1, 21) * 0.1
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    arf = create_arf(elo, ehi)
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    s.set_rmf(rmf)
+    s.set_arf(arf)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice(lo=1.3)
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset 1: 0.1:2 -> 1.3:2 Energy (keV)")
+
+    s.ignore(1.7, 1.8)
+    assert len(caplog.record_tuples) == 2
+    clc_filter(caplog, "dataset 1: 1.3:2 -> 1.3:1.7,1.8:2 Energy (keV)")
+
+    # switch analysis units so the ignore call returns different values
+    s.set_analysis("wave")
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 3
+    clc_filter(caplog, "dataset 1: 6.19921:6.88801,7.29319:9.53725 Wavelength (Angstrom) -> no data")
+
+    s.ignore()
+    assert len(caplog.record_tuples) == 4
+    clc_filter(caplog, "dataset 1: no data (unchanged)")
+
+    s.notice(8, 12)
+    assert len(caplog.record_tuples) == 5
+    clc_filter(caplog, "dataset 1: no data -> 7.74901:12.3984 Wavelength (Angstrom)")
+
+    s.set_analysis("chan")
+
+    s.notice_id(1)
+    assert len(caplog.record_tuples) == 6
+    clc_filter(caplog, "dataset 1: 10:15 -> 1:19 Channel")
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_notice_reporting_data2d(session, caplog):
+    """Unit-style test of logging of notice/ignore: Data2D
+
+    At the moment it's not clear what the notice/ignore call is
+    meant to do, as the ui layer doesn't really support the Data2D
+    case.
+    """
+
+    x1, x0 = np.mgrid[10:20, 1:7]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+
+    y = np.ones_like(x0)
+
+    s = session()
+    s.load_arrays(1, x0, x1, y, shape, Data2D)
+
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+    # At the moment it's not obvious what the arguments mean, so just
+    # act as a regression test. In particuar, we get no caplog output.
+    #
+    s.notice(lo=13)
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+    s.ignore(6, 15)
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+    s.notice_id(1, 13, 15)
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+    s.ignore_id(1)
+    assert len(caplog.record_tuples) == 0
+    assert s.get_filter() == ""
+
+
+def test_notice2d_reporting(caplog):
+    """Check handling of notice2d/ignore2d/... reports"""
+
+    # Remember, although we give a grid range here,
+    # the filtering below is in logical coordinates.
+    #
+    x1, x0 = np.mgrid[10:20, 1:7]
+    shape = x0.shape
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+
+    y = np.ones_like(x0)
+
+    s = AstroSession()
+    s.load_arrays(1, x0, x1, y, shape, DataIMG)
+
+    assert len(caplog.record_tuples) == 0
+    s.notice2d("circle(3, 15, 5)")
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset 1: Field() -> Circle(3,15,5)")
+
+    s.notice2d_id(1, "rect(4, 12, 7, 14)")
+    assert len(caplog.record_tuples) == 2
+    clc_filter(caplog, "dataset 1: Circle(3,15,5) -> Circle(3,15,5)|Rectangle(4,12,7,14)")
+
+    # I was trying to remove all the filters, but this doesn't seem to
+    # do it. Maybe the region logic is not able to recognize that this
+    # is now the null filter.
+    #
+    s.ignore2d("rect(-5, -5, 25, 25)")
+    assert len(caplog.record_tuples) == 3
+    clc_filter(caplog, "dataset 1: Circle(3,15,5)|Rectangle(4,12,7,14) -> Circle(3,15,5)&!Rectangle(-5,-5,25,25)|Rectangle(4,12,7,14)&!Rectangle(-5,-5,25,25)")
+
+    # what happens if we clear the filter?
+    #
+    s.notice2d()
+    assert len(caplog.record_tuples) == 4
+    clc_filter(caplog, "dataset 1: Circle(3,15,5)&!Rectangle(-5,-5,25,25)|Rectangle(4,12,7,14)&!Rectangle(-5,-5,25,25) -> Field()")
+
+    # and again (this was added to catch a problem in the code).
+    #
+    s.notice2d()
+    assert len(caplog.record_tuples) == 5
+    clc_filter(caplog, "dataset 1: Field() (unchanged)")
+
+    # now what happens if we ignore everything?
+    #
+    s.ignore2d()
+    assert len(caplog.record_tuples) == 6
+    clc_filter(caplog, "dataset 1: Field() -> no data")
+
+    # and again?
+    #
+    s.ignore2d()
+    assert len(caplog.record_tuples) == 7
+    clc_filter(caplog, "dataset 1: no data (unchanged)")

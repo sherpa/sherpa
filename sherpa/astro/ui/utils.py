@@ -50,6 +50,45 @@ info = logging.getLogger(__name__).info
 __all__ = ('Session',)
 
 
+def _get_image_filter(data):
+    """When reporting filters, we need to handle images separately.
+
+    There is a disconnect between 1D and 2D filters as an empty string
+    means no data has been selected for the former, but all data is
+    selected in the latter. For the logging of the filters this makes
+    things awkward, so we over-ride the image case and replace an empty
+    string with "Field()". See also issue #1430 which points out that
+    the empty string can also mean "all data has been ignored".
+
+    Parameters
+    ----------
+    data : sherpa.astro.data.DataIMG instance
+
+    Returns
+    -------
+    msg : str
+        The filter expression. An empty string means all data has been
+        ignored, to match the 1D case.
+
+    """
+
+    # We can not rely on get_filter as it returns the empty string to
+    # indicate both "all data is selected" and "add data is
+    # ignored". So we add in a check on the mask tri-state (a boolean
+    # or a ndarray).
+    #
+    if data.mask is True:
+        return "Field()"
+
+    if data.mask is False:
+        return ""  # follow the 1D case and use "" to mean no data
+
+    # Unlike sherpa.ui.utils._get_filter, there is no known "the
+    # get_filter call can raise an exception" case to handle.
+    #
+    return data.get_filter()
+
+
 class Session(sherpa.ui.utils.Session):
 
     ###########################################################################
@@ -6658,6 +6697,10 @@ class Session(sherpa.ui.utils.Session):
         Ignore any bin in the PHA data set which has a quality value
         that is larger than zero.
 
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset,
+           to match the behavior of `notice` and `ignore`.
+
         Parameters
         ----------
         id : int or str, optional
@@ -6694,6 +6737,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> load_pha('src.pi')
         >>> ignore_bad()
+        dataset 1: 1:256 Channel (unchanged)
 
         The data set 'jet' is grouped, and a filter applied. After
         ignoring the bad-quality points, the filter has been removed
@@ -6701,18 +6745,30 @@ class Session(sherpa.ui.utils.Session):
 
         >>> group_counts('jet', 20)
         >>> notice_id('jet', 0.5, 7)
+        dataset jet: 0.00146:14.9504 -> 0.438:13.4612 Energy (keV)
         >>> get_filter('jet')
-        '0.496399998665:7.212399959564'
+        '0.437999993563:13.461199760437'
         >>> ignore_bad('jet')
         WARNING: filtering grouped data with quality flags, previous filters deleted
+        dataset jet: 0.438:13.4612 -> 0.00146:14.9504 Energy (keV)
         >>> get_filter('jet')
         '0.001460000058:14.950400352478'
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
+        idval = self._fix_id(id)
+        idstr = f"dataset {idval}"
+        if bkg_id is None:
+            data = self._get_pha_data(idval)
+        else:
+            data = self.get_bkg(idval, bkg_id)
+            idstr += f": background {bkg_id}"
+
+        ofilter = data.get_filter(delim=':', format='%g')
         data.ignore_bad()
+        nfilter = data.get_filter(delim=':', format='%g')
+
+        sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
+                                             data.get_xlabel())
 
     def _notice_warning(self):
         quantities = numpy.asarray([data.get_analysis()
@@ -6749,6 +6805,9 @@ class Session(sherpa.ui.utils.Session):
 
         Select a spatial region to include in the fit. The filter is
         applied to all data sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for each dataset.
 
         Parameters
         ----------
@@ -6843,48 +6902,82 @@ class Session(sherpa.ui.utils.Session):
         syntax. That is ``region(s1.reg)+region(s2.reg)`` is not
         supported.
 
+        The report of the change in the filter expression can be
+        controlled with the `SherpaVerbosity` context manager, as
+        shown in the examples below.
+
         Examples
         --------
 
         Include the data points that lie within a circle centered
         at 4324.5,3827.5 with a radius of 300:
 
-        >>> set_coord('physical')
-        >>> notice2d('circle(4324.5,3827.5,430)')
-
-        Read in the filter from the file ``ds9.reg``, using either:
-
-        >>> notice2d('ds9.reg')
-
-        or, when using CIAO,
-
-        >>> notice2d('region(ds9.reg)')
-
-        Select those points that lie both within the rotated box and
-        the annulus (i.e. an intersection of the two shapes):
-
-        >>> notice2d('rotbox(100,200,50,40,45)*annulus(120,190,20,60)')
-
-        Select those points that lie within the rotated box or the
-        annulus (i.e. a union of the two shapes):
-
-        >>> notice2d('rotbox(100,200,50,40,45)+annulus(120,190,20,60)')
+        >>> set_coord("physical")
+        >>> notice2d("circle(4324.5,3827.5,430)")
+        dataset 1: Field() -> Circle(4324.5,3827.5,430)
+        >>> get_filter()
+        'Circle(4324.5,3827.5,430)'
 
         All existing spatial filters are removed:
 
         >>> notice2d()
+        dataset 1: Circle(4324.5,3827.5,430) -> Field()
+        >>> get_filter()
+        ''
+
+        Read in the filter from the file ``ds9.reg``, using either:
+
+        >>> set_coord("physical")
+        >>> notice2d("ds9.reg")
+        dataset 1: Field() -> Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)
+
+        or, when using CIAO,
+
+        >>> set_coord("physical")
+        >>> notice2d("region(ds9.reg)")
+        dataset 1: Field() -> Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)
+
+        Select those points that lie both within the rotated box and
+        the annulus (i.e. an intersection of the two shapes):
+
+        >>> set_coord("logical")
+        >>> notice2d("rotbox(100,200,50,40,45)*annulus(120,190,20,60)")
+        dataset 1: Field() -> RotBox(100,200,50,40,45)&Annulus(120,190,20,60)
+
+        Select those points that lie within the rotated box or the
+        annulus (i.e. a union of the two shapes) combined with the
+        previous filter:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     notice2d("rotbox(100,200,50,40,45)+annulus(120,190,20,60)")
+        ...
 
         """
-        for d in self._data.values():
+
+        # Use a sorted list for the ids.
+        #
+        for idval in self.list_data_ids():
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
                         'a image data set')
+
+            ofilter = _get_image_filter(d)
             d.notice2d(val, False)
+            nfilter = _get_image_filter(d)
+
+            idstr = f"dataset {idval}"
+            sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def ignore2d(self, val=None):
         """Exclude a spatial region from all data sets.
 
         Select a spatial region to exclude in the fit. The filter is
         applied to all data sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for each dataset.
 
         Parameters
         ----------
@@ -6913,32 +7006,59 @@ class Session(sherpa.ui.utils.Session):
 
         Exclude points that fall within the two regions:
 
-        >>> ignore2d('ellipse(200,300,40,30,-34)')
-        >>> ignore2d('box(40,100,30,40)')
+        >>> ignore2d("ellipse(200,300,40,30,-34)")
+        dataset 1: Field() -> Field()&!Ellipse(200,300,40,30,-34)
+        >>> ignore2d("box(40,100,30,40)")
+        dataset 1: Field()&!Ellipse(200,300,40,30,-34) -> Field()&!Ellipse(200,300,40,30,-34)&!Box(40,100,30,40)
 
         Use a region file called 'reg.fits', by using either:
 
-        >>> ignore2d('reg.fits')
+        >>> set_coord("physical")
+        >>> ignore2d("reg.fits")
+        dataset 1: Field() -> Field()&!Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)
 
         or
 
-        >>> ignore2d('region(reg.fits)')
+        >>> set_coord("physical")
+        >>> ignore2d("region(reg.fits)")
+        dataset 1: Field() -> Field()&!Ellipse(3144.52,4518.81,25.2979,19.1119,42.9872)
 
-        Exclude all points.
+        Exclude all points and hide the screen output:
 
-        >>> ignore2d()
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     ignore2d()
+        ...
 
         """
-        for d in self._data.values():
+
+        # It would be good to copy notice and just let notice2d
+        # handle this case, but we do not have a kwargs or
+        # explicit argument that supports this.
+        #
+        # Use a sorted list for the ids.
+        #
+        for idval in self.list_data_ids():
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
             _check_type(d, sherpa.astro.data.DataIMG, 'img',
                         'a image data set')
+
+            ofilter = _get_image_filter(d)
             d.notice2d(val, True)
+            nfilter = _get_image_filter(d)
+
+            idstr = f"dataset {idval}"
+            sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def notice2d_id(self, ids, val=None):
         """Include a spatial region of a data set.
 
         Select a spatial region to include in the fit. The filter is
         applied to the given data set, or sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         Parameters
         ----------
@@ -6970,6 +7090,7 @@ class Session(sherpa.ui.utils.Session):
         Select all the pixels in the default data set:
 
         >>> notice2d_id(1)
+        dataset 1: Circle(100,45,10) -> Field()
 
         Select all the pixels in data sets 'i1' and 'i2':
 
@@ -6978,6 +7099,7 @@ class Session(sherpa.ui.utils.Session):
         Apply the filter to the 'img' data set:
 
         >>> notice2d_id('img', 'annulus(4324.2,3982.2,40.2,104.3)')
+        dataset 1: Field() -> annulus(4324.2,3982.2,40.2,104.3)
 
         Use the regions in the file `srcs.reg` for data set 1:
 
@@ -6997,16 +7119,29 @@ class Session(sherpa.ui.utils.Session):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for id in ids:
-            _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
+        # Unlike notice2d we use the order supplied by the user.
+        #
+        for idval in ids:
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
+            _check_type(d, sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
-            self.get_data(id).notice2d(val, False)
+
+            ofilter = _get_image_filter(d)
+            d.notice2d(val, False)
+            nfilter = _get_image_filter(d)
+
+            idstr = f"dataset {idval}"
+            sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def ignore2d_id(self, ids, val=None):
         """Exclude a spatial region from a data set.
 
         Select a spatial region to exclude in the fit. The filter is
         applied to the given data set, or sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         Parameters
         ----------
@@ -7048,6 +7183,11 @@ class Session(sherpa.ui.utils.Session):
         >>> ignore2d_id(1, 'region(srcs.reg)')
 
         """
+
+        # It would be good to copy notice and just let notice2d_id
+        # handle this case, but we do not have a kwargs or
+        # explicit argument that supports this.
+        #
         if self._valid_id(ids):
             ids = (ids,)
         else:
@@ -7057,16 +7197,27 @@ class Session(sherpa.ui.utils.Session):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for id in ids:
-            _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
+        for idval in ids:
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
+            _check_type(d, sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
-            self.get_data(id).notice2d(val, True)
+
+            ofilter = _get_image_filter(d)
+            d.notice2d(val, True)
+            nfilter = _get_image_filter(d)
+
+            idstr = f"dataset {idval}"
+            sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
     def notice2d_image(self, ids=None):
         """Include pixels using the region defined in the image viewer.
 
         Include points that lie within the region defined in the image
         viewer.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         Parameters
         ----------
@@ -7115,22 +7266,29 @@ class Session(sherpa.ui.utils.Session):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for id in ids:
-            _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
+        for idval in ids:
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
+            _check_type(d, sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
-            coord = self.get_coord(id)
+
+            coord = d.coord
             if coord == 'logical':
                 coord = 'image'
             elif coord == 'world':
                 coord = 'wcs'
+
             regions = self.image_getregion(coord).replace(';', '')
-            self.notice2d_id(id, regions)
+            self.notice2d_id(idval, regions)
 
     def ignore2d_image(self, ids=None):
         """Exclude pixels using the region defined in the image viewer.
 
         Exclude points that lie within the region defined in the image
         viewer.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         Parameters
         ----------
@@ -7168,6 +7326,10 @@ class Session(sherpa.ui.utils.Session):
         >>> ignore2d_image(["src", "bg"])
 
         """
+
+        # It would be better to just be able to call notice2d_image as
+        # we do with ignore/notice.
+        #
         if ids is None:
             ids = self._default_id
         if self._valid_id(ids):
@@ -7179,16 +7341,20 @@ class Session(sherpa.ui.utils.Session):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for id in ids:
-            _check_type(self.get_data(id), sherpa.astro.data.DataIMG,
+        for idval in ids:
+            # d = self._get_img_data(idval)   would be better
+            d = self.get_data(idval)
+            _check_type(d, sherpa.astro.data.DataIMG,
                         'img', 'a image data set')
-            coord = self.get_coord(id)
+
+            coord = d.coord
             if coord == 'logical':
                 coord = 'image'
             elif coord == 'world':
                 coord = 'wcs'
+
             regions = self.image_getregion(coord).replace(';', '')
-            self.ignore2d_id(id, regions)
+            self.ignore2d_id(idval, regions)
 
     # DOC-TODO: how best to include datastack support? How is it handled here?
     def load_bkg(self, id, arg=None, use_errors=False, bkg_id=None):

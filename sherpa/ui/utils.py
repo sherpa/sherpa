@@ -36,7 +36,7 @@ from sherpa.models.basic import TableModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, ModelErr, PlotErr, SessionErr
+    DataErr, IdentifierErr, ModelErr, PlotErr, SessionErr
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -88,8 +88,6 @@ def _is_subclass(t1, t2):
     return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
 
-
-
 def get_plot_prefs(plotobj):
     """Return the preferences for the plot object.
 
@@ -108,6 +106,195 @@ def get_plot_prefs(plotobj):
             return plotobj.plot_prefs
         except AttributeError:
             raise AttributeError("plot object has no preferences") from None
+
+
+def _get_filter(data):
+    """Report the filter for report_filter_change.
+
+    This takes care of calling get_filter with the correct
+    arguments (needed in case anyone wants to use the string
+    in a call to notice/ignore), and it handles the case of
+    the case of all-data-being-filtered leading to an error
+    for certain data types.
+
+    Parameters
+    ----------
+    data : sherpa.data.Data1D instance
+
+    Returns
+    -------
+    msg : str or None
+        The filter expression, with "all-data-filtered" indicated by
+        the empty string, or None when there was an error (which
+        shouldn't happen, but we don't want to fail a notice or ignore
+        call when reporting the change).
+
+    """
+
+    # See #1430 for a discussion on why we have different behavior
+    # when all the data is excluded: it should be unified.
+    #
+    # We follow the approach used for the DataIMG case be relying on
+    # the mask attribute to determine what the output should
+    # be. Unfortunately this is only helpful for the "all data
+    # excluded" case, as we do not have the equivalent of "Field()" to
+    # indicate "use all the data", and we can not remove the DataErr
+    # exception check from get_filter, just in case.
+    #
+    if data.mask is False:
+        return ""
+
+    try:
+        return data.get_filter(delim=':', format='%g')
+    except DataErr as exc:
+        # It may be possible that this happens - e.g. that data.mask
+        # is a ndarray of all False vaues - but it is not 100%
+        # obvious.  This is left in just in case.
+        #
+        if str(exc) == "mask excludes all data":
+            return ""
+
+        # It's not clear if this can happen, but assume it can.
+        #
+        return None
+
+    except TypeError:
+        # This can happen when the dataset is Data2D, as get_filter
+        # does not accept kwargs, so we skip over it (as the handling
+        # of filters for Data2D is not clear).
+        #
+        return None
+
+    except IndexError:
+        # This is a known failure case with ignore_bad handling of
+        # DataPHA.
+        #
+        return None
+
+
+def report_filter_change(idstr, ofilter, nfilter, xlabel=None):
+    """Report the filter change for ignore/filter.
+
+    Parameters
+    ----------
+    idstr : str
+       The dataset identifier (expected to be "dataset <idval>" but
+       may be "dataset <idval>: background <bkg_id>" for DataPHA).
+    ofilter, nfilter : str or None
+       The filter string before and after filtering (the output
+       of _get_filter).
+    xlabel : str or None
+       The units of the filter (if set).
+
+    Notes
+    -----
+
+    We technically don't require the delim=':', format='%g' arguments
+    to the get_filter call, but I list them so we have consistent
+    code. Ideally this would be encapsulated in the Data class, so we
+    let the object define the best arguments to use, but it's not
+    guaranteed to work well so we are trying this explicit approach.
+
+    A filter expression of "" (the empty string) is taken to mean all
+    data has been removed, and converted to something more readable
+    here.
+
+    If either ofilter or nfilter is None then we assume that some
+    error has happened and drop the reporting for this. This is an
+    unusual situation, so we do not try to provide extra information
+    to the user, we just want to make sure the notice/ignore call
+    succeeds (as well as it can, given that something is wrong with
+    the system).
+
+    """
+
+    if ofilter is None or nfilter is None:
+        return
+
+    ostr = f"{idstr}: "
+
+    # Make it easy to handle labels being optional
+    if xlabel is None:
+        label = ""
+    else:
+        label = f" {xlabel}"
+
+    # We have to be careful because we can get a filter expression
+    # of '' when there's no data. The current handling of this case
+    # is not robust (sometimes it errors out, sometimes it is an
+    # empty string).
+    #
+    if ofilter == "":
+        if nfilter == "":
+            ostr += "no data (unchanged)"
+
+        else:
+            ostr += f"no data -> {nfilter}{label}"
+
+    elif nfilter == "":
+        ostr += f"{ofilter}{label} -> no data"
+
+    else:
+        ostr += f"{ofilter}"
+        if ofilter == nfilter:
+            ostr += f"{label} (unchanged)"
+        else:
+            ostr += f" -> {nfilter}{label}"
+
+    info(ostr)
+
+
+def notice_data_range(get_data, ids, lo, hi, kwargs):
+    """Filter each dataset and report the change in filter.
+
+    Parameters
+    ----------
+    get_data : callable
+        The routine to use to return the data object given a dataset
+        identifier.
+    ids : sequence of int or str
+        The identifiers to process, in order. It is required that
+        get_data can be called on each item in this sequence.
+    lo, hi : number or None
+        The arguments for `notice`.
+    kwargs
+        The extra arguments to pass to the Data `notice`, and
+        the "bkg_id" identifier if the data to be filtered is a
+        background PHA component instead.
+
+    Notes
+    -----
+    This could be part of the Session class, but we don't need more
+    methods there, so see how well things work with it out here. If it
+    were a class method we could move the handling of the bkg_id
+    argument to the astro Session class.
+
+    """
+
+    # The bkg_id argument is astro-specific. The need
+    # to use it to access the correct data object is
+    # problematic.
+    #
+    bkg_id = kwargs.pop("bkg_id", None)
+
+    for idval in ids:
+        idstr = f"dataset {idval}"
+        data = get_data(idval)
+        if bkg_id is not None:
+            data = data.get_background(bkg_id)
+            idstr += f": background {bkg_id}"
+
+        ofilter = _get_filter(data)
+        data.notice(lo, hi, **kwargs)
+        nfilter = _get_filter(data)
+
+        try:
+            xlabel = data.get_xlabel()
+        except AttributeError:
+            # Data2D case
+            xlabel = None
+
+        report_filter_change(idstr, ofilter, nfilter, xlabel)
 
 
 ###############################################################################
@@ -4911,6 +5098,9 @@ class Session(NoNewAttributesAfterInit):
         the independent axis value. The filter is applied to all data
         sets.
 
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for each dataset.
+
         .. versionchanged:: 4.14.0
            Integrated data sets - so Data1DInt and DataPHA when using
            energy or wavelengths - now ensure that the `hi` argument
@@ -4957,13 +5147,17 @@ class Session(NoNewAttributesAfterInit):
         then the filter is applied to the existing data.
 
         For binned data sets, the bin is included if the noticed range
-        falls anywhere within the bin, but excluing the ``hi`` value
+        falls anywhere within the bin, but excluding the ``hi`` value
         (except for PHA data sets when using ``channel`` units).
 
         The units used depend on the ``analysis`` setting of the data
         set, if appropriate.
 
         To filter a 2D data set by a shape use `notice2d`.
+
+        The report of the change in the filter expression can be
+        controlled with the `SherpaVerbosity` context manager, as
+        shown in the examples below.
 
         Examples
         --------
@@ -4974,37 +5168,56 @@ class Session(NoNewAttributesAfterInit):
 
         >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
         >>> notice(12, 28)
+        dataset 1: 10:30 -> 15:20 x
         >>> get_dep(filter=True)
         array([10,  7])
 
         As no limits are given, the whole data set is included:
 
         >>> notice()
+        dataset 1: 15:20 -> 10:30 x
         >>> get_dep(filter=True)
         array([ 5, 10,  7, 13])
 
         The `ignore` call excludes the first two points, but the
         `notice` call adds back in the second point:
 
-        >>> ignore(None, 17)
+        >>> ignore(hi=17)
+        dataset 1: 10:30 -> 20:30 x
         >>> notice(12, 16)
+        dataset 1: 20:30 -> 15:30 x
         >>> get_dep(filter=True)
         array([10,  7, 13])
 
         Only include data points in the range 8<=X<=12 and 18<=X=22:
 
         >>> ignore()
+        dataset 1: 15:30 x -> no data
         >>> notice("8:12, 18:22")
+        dataset 1: no data -> 10 x
+        dataset 1: 10 -> 10,20 x
         >>> get_dep(filter=True)
         array([5, 7])
+
+        The messages from `notice` and `ignore` use the standard
+        Sherpa logging infrastructure, and so can be ignored by using
+        `SherpaVerbosity`:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     notice()
+        ...
 
         """
         if len(self._data) == 0:
             raise IdentifierErr("nodatasets")
+
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr(lo, **kwargs)
-        for d in self._data.values():
-            d.notice(lo, hi, **kwargs)
+
+        # Jump through the data sets in "order".
+        #
+        notice_data_range(self.get_data, self.list_data_ids(), lo, hi, kwargs)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
     # should only be in the sherpa.astro.ui version, but it is not
@@ -5016,6 +5229,9 @@ class Session(NoNewAttributesAfterInit):
         Select one or more ranges of data to exclude by filtering on
         the independent axis value. The filter is applied to all data
         sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for each dataset.
 
         .. versionchanged:: 4.14.0
            Integrated data sets - so Data1DInt and DataPHA when using
@@ -5064,6 +5280,10 @@ class Session(NoNewAttributesAfterInit):
 
         To filter a 2D data set by a shape use `ignore2d`.
 
+        The report of the change in the filter expression can be
+        controlled with the `SherpaVerbosity` context manager, as
+        shown in the examples below.
+
         Examples
         --------
 
@@ -5073,13 +5293,15 @@ class Session(NoNewAttributesAfterInit):
 
         >>> load_arrays(1, [10, 15, 20, 30], [5, 10, 7, 13])
         >>> ignore(12, 18)
+        dataset 1: 10:30 -> 10,20:30 x
         >>> get_dep(filter=True)
         array([ 5,  7, 13])
 
         Filtering X values that are 25 or larger means that the last
         point is also ignored:
 
-        >>> ignore(25, None)
+        >>> ignore(lo=25)
+        dataset 1: 10,20:30 -> 10,20 x
         >>> get_dep(filter=True)
         array([ 5,  7])
 
@@ -5088,9 +5310,20 @@ class Session(NoNewAttributesAfterInit):
         12 and 18 and 22:
 
         >>> notice()
-        >>> ignore("8:12,18:22")
+        dataset 1: 10,20 -> 10:30 x
+        >>> ignore("8:12, 18:22")
+        dataset 1: 10:30 -> 15:30 x
+        dataset 1: 15:30 -> 15,30 x
         >>> get_dep(filter=True)
         array([10, 13])
+
+        The `SherpaVerbosity` context manager can be used to hide the
+        screen output:
+
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbosity("WARN"):
+        ...     ignore(hi=12)
+        ...
 
         """
         kwargs['ignore'] = True
@@ -5106,6 +5339,9 @@ class Session(NoNewAttributesAfterInit):
         Select one or more ranges of data to include by filtering on
         the independent axis value. The filter is applied to the
         given data set, or data sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         .. versionchanged:: 4.14.0
            Integrated data sets - so Data1DInt and DataPHA when using
@@ -5151,6 +5387,10 @@ class Session(NoNewAttributesAfterInit):
 
         To filter a 2D data set by a shape use `ignore2d`.
 
+        The report of the change in the filter expression can be
+        controlled with the `SherpaVerbosity` context manager, as
+        shown in the examples below.
+
         Examples
         --------
 
@@ -5158,16 +5398,24 @@ class Session(NoNewAttributesAfterInit):
         between 12 and 18 for data set 1:
 
         >>> notice_id(1, 12, 18)
+        dataset 1: 10:30 -> 15:20 x
 
-        Include the range 0.5 to 7, for data sets 1,
-        2, and 3:
+        Include the range 0.5 to 7, for data sets 1, 2, and 3 (the
+        screen output will depend on the existing data and filters
+        applied to them):
 
-        >>> notice_id([1,2,3], 0.5, 7)
+        >>> notice_id([1, 2, 3], 0.5, 7)
+        dataset 1: 0.00146:14.9504 -> 0.4818:9.0374 Energy (keV)
+        dataset 2: 0.00146:14.9504 -> 0.4964:13.6072 Energy (keV)
+        dataset 3: 0.00146:14.9504 -> 0.4234:9.3878 Energy (keV)
 
         Apply the filter 0.5 to 2 and 2.2 to 7 to the data sets "core"
-        and "jet":
+        and "jet", and hide the screen output:
 
-        >>> notice_id(["core","jet"], "0.5:2, 2.2:7")
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbsity("WARN"):
+        ...     notice_id(["core", "jet"], "0.5:2, 2.2:7")
+        ...
 
         """
         if ids is None:
@@ -5186,8 +5434,10 @@ class Session(NoNewAttributesAfterInit):
         if lo is not None and type(lo) in (str, numpy.string_):
             return self._notice_expr_id(ids, lo, **kwargs)
 
-        for i in ids:
-            self.get_data(i).notice(lo, hi, **kwargs)
+        # Unlike notice() we do not sort the id list as this
+        # was set by the user.
+        #
+        notice_data_range(self.get_data, ids, lo, hi, kwargs)
 
     # DOC-NOTE: inclusion of bkg_id is technically wrong, as it
     # should only be in the sherpa.astro.ui version, but it is not
@@ -5199,6 +5449,9 @@ class Session(NoNewAttributesAfterInit):
         Select one or more ranges of data to exclude by filtering on
         the independent axis value. The filter is applied to the given
         data set, or sets.
+
+        .. versionchanged:: 4.15.0
+           The change in the filter is now reported for the dataset.
 
         .. versionchanged:: 4.14.0
            Integrated data sets - so Data1DInt and DataPHA when using
@@ -5251,17 +5504,27 @@ class Session(NoNewAttributesAfterInit):
         between 12 and 18 for data set 1:
 
         >>> ignore_id(1, 12, 18)
+        dataset 1: 10:30 -> 10,20:30 x
 
         Ignore the range up to 0.5 and 7 and above, for data sets 1,
         2, and 3:
 
-        >>> ignore_id([1,2,3], None, 0.5)
-        >>> ignore_id([1,2,3], 7, None)
+        >>> ignore_id([1, 2, 3], hi=0.5)
+        dataset 1: 0.00146:14.9504 -> 0.584:14.9504 Energy (keV)
+        dataset 2: 0.00146:14.9504 -> 0.6424:14.9504 Energy (keV)
+        dataset 3: 0.00146:14.9504 -> 0.511:14.9504 Energy (keV)
+        >>> ignore_id([1, 2, 3], lo=7)
+        dataset 1: 0.584:14.9504 -> 0.584:4.4384 Energy (keV)
+        dataset 2: 0.6424:14.9504 -> 0.6424:5.1392 Energy (keV)
+        dataset 3: 0.511:14.9504 -> 0.511:4.526 Energy (keV)
 
-        Apply the same filter as the previous example, but to
-        data sets "core" and "jet":
+        Apply the same filter as the previous example, but to data
+        sets "core" and "jet", and hide the screen output:
 
-        >>> ignore_id(["core","jet"], ":0.5,7:")
+        >>> from sherpa.utils.logging import SherpaVerbosity
+        >>> with SherpaVerbsity("WARN"):
+        ...     ignore_id(["core", "jet"], ":0.5,7:")
+        ...
 
         """
         kwargs['ignore'] = True

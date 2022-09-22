@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1183,12 +1183,17 @@ def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xlo, e
 
 @requires_fits
 @requires_data
-@pytest.mark.parametrize("elo,ehi,nbins",
-                         [(None, 5, 41), (1, None, 33), (1, 5, 28)])
+@pytest.mark.parametrize("elo,ehi,nbins,fstr",
+                         [(None, 5, 41, "0.00146:5.0224"),
+                          (1, None, 33, "0.9928:14.9504"),
+                          (1, 5, 28, "0.9928:5.0224")])
 @pytest.mark.parametrize("bkg_id", [None, 1])
-def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, bkg_id,
+def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, fstr, bkg_id,
                                                  caplog, make_data_path, clean_astro_ui):
-    """Check we get the warning messages with background filtering"""
+    """Check we get the warning messages with background filtering
+
+    We also get information from the notice_bad call.
+    """
 
     ui.load_pha('check', make_data_path('3c273.pi'))
 
@@ -1210,12 +1215,21 @@ def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, bkg_id,
         assert nback == 0
 
     # did we get a warning message from the background?
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 2
     name, lvl, msg = caplog.record_tuples[0]
     assert name == 'sherpa.astro.data'
     assert lvl == logging.INFO
     assert msg.startswith('Skipping dataset ')
     assert msg.endswith('/3c273_bg.pi: mask excludes all data')
+
+    # Check the filter output
+    name, lvl, msg = caplog.record_tuples[1]
+    assert name == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    if bkg_id is None:
+        assert msg == f"dataset check: 0.00146:14.9504 -> {fstr} Energy (keV)"
+    else:
+        assert msg == f"dataset check: background 1: no data (unchanged)"
 
 
 @pytest.mark.parametrize('dtype', [ui.Data1D, ui.Data1DInt, ui.DataPHA,
