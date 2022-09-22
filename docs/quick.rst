@@ -504,6 +504,15 @@ bound is calculated, to indicate progress::
   
     >>> errors = gefit.est_errors()
 
+And this is the output::
+
+    gerr.fwhm lower bound:	-0.0326327
+    gerr.fwhm upper bound:	0.0332578
+    gerr.pos lower bound:	-0.0140981
+    gerr.pos upper bound:	0.0140981
+    gerr.ampl lower bound:	-0.0456119
+    gerr.ampl upper bound:	0.0456119
+
 The results can be displayed::
   
     >>> print(errors.format())

@@ -104,11 +104,11 @@ If `doctestplus <https://pypi.org/project/pytest-doctestplus/>` is installed
 (and it probably is because it's part of
 `sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`,
 which is required to build the documentation locally), you can
-run the the examples in the documentation or in the doctrings of individual
-functions:
+run the examples in the documentation or in the doctrings of individual
+functions, for example:
 
-   pytest --doctest-plus /Users/guenther/code/sherpa/sherpa/astro/data.py
-   pytest --doctest-plus /Users/guenther/code/sherpa/sherpa/data.py
+   pytest --doctest-plus sherpa/astro/data.py
+   pytest --doctest-plus sherpa/data.py
    pytest --doctest-rst docs/quick.rst
    pytest --doctest-rst docs/evaluation/combine.rst
 
@@ -121,7 +121,20 @@ excluded in `pytest.ini`.
 If you fix examples to pass these tests, remove them from the exclusion list in
 `pytest.ini`! The goal is to eventually pass on all files.
 
-Note: Doctests are not currently run on CI.
+.. note::
+   The doctests are not run as part of the CI process.
+   The plan is to add them in once we have more experience with the system.
+
+Some doctests (in the documentation or in the docstrings of individual
+functions) load data files. Those datafiles can be found in the
+`sherpa-test-data <https://github.com/sherpa/sherpa-test-data>` directory
+as explained in the description of the :ref:`development build <developer-build>`.
+There is a `conftest.py` file in the `sherpa/docs` directory and in the `sherpa/sherpa`
+directory that sets up a
+pytest fixture to define a variable called `data_dir` which points to this directory.
+That way, we do not need to clutter the example with long filename, but the
+`sherpa-test-data` directory has to be present as a submodule to successfully pass all
+doctests.
 
 
 How do I ...

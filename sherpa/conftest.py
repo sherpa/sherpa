@@ -647,3 +647,8 @@ def cleanup_ds9_backend():
     #
     from sherpa.image import backend
     backend.close()
+
+@pytest.fixture(autouse=True)
+def add_sherpa_test_data_dir(doctest_namespace):
+    doctest_namespace["data_dir"] = 'sherpa-test-data/sherpatest/'
+    doctest_namespace["data_3c273"] = 'sherpa/astro/datastack/tests/data/'

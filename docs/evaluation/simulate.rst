@@ -65,8 +65,8 @@ and counts empty, because these will be filled in by the simulation::
   >>> from sherpa.astro.data import DataPHA
   >>> from sherpa.astro.io import read_arf, read_rmf, read_pha
   >>> data = DataPHA(name='any', channel=None, counts=None, exposure=10000.)
-  >>> data.set_arf(read_arf('sherpa-test-data/sherpatest/9774.arf'))
-  >>> data.set_rmf(read_rmf('sherpa-test-data/sherpatest/9774.rmf'))
+  >>> data.set_arf(read_arf(data_dir + '9774.arf'))
+  >>> data.set_rmf(read_rmf(data_dir + '9774.rmf'))
 
 Alternatively, one could read in a PHA file (``data =
 read_pha('9774_bg.pi')``). In this case, the response and backgrounds

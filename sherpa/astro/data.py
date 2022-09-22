@@ -96,21 +96,21 @@ References
 Examples
 --------
 
-Read in a 2D dataset from the file 'clus.fits' and then filter it to
+Read in a 2D dataset from the file 'image2.fits' and then filter it to
 only use those pixels that lie within 45 units from the physical
 coordinate 3150,4515:
 
 >>> from sherpa.astro.io import read_image
->>> img = read_image('sherpa-test-data/sherpatest/image2.fits')
+>>> img = read_image(data_dir + 'image2.fits')
 >>> img.set_coord('physical')
 >>> img.notice2d('circle(3150,4515,45)')
 
-Read in a PHA dataset from the file 'src.pi', subtract the background,
+Read in a PHA dataset from the file '3c273.pi', subtract the background,
 filter to only use the data 0.5 to 7 keV, and re-group the data within
 this range to have at least 20 counts per group:
 
 >>> from sherpa.astro.io import read_pha
->>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+>>> pha = read_pha(data_3c273 + '3c273.pi')
 >>> pha.subtract()
 >>> pha.set_analysis('energy')
 >>> pha.notice(0.5, 7)
@@ -2048,7 +2048,7 @@ must be an integer.""")
         --------
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.set_analysis('energy')
 
         >>> pha.set_analysis('wave', type='counts', factor=1)
@@ -2105,7 +2105,7 @@ must be an integer.""")
         --------
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.set_analysis("wave")
         >>> is_wave = pha.get_analysis() == 'wavelength'
 
@@ -2445,7 +2445,7 @@ must be an integer.""")
         --------
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.ungroup()
         >>> pha.units = 'channel'
         >>> clo, chi = pha._get_ebins()
@@ -2558,7 +2558,7 @@ must be an integer.""")
         --------
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.units = 'energy'
         >>> elo, ehi = pha._get_indep()
         >>> elo.shape
@@ -2975,7 +2975,7 @@ must be an integer.""")
         --------
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.get_backscal()
         2.5264364698914e-06
 
@@ -3016,7 +3016,7 @@ must be an integer.""")
         --------
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.get_areascal()
         1.0
 
@@ -3064,7 +3064,7 @@ must be an integer.""")
         with a filter:
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.grouped
         True
         >>> pha.notice()
@@ -3232,7 +3232,7 @@ must be an integer.""")
         True is generally preferred to using this method):
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> gcounts = pha.apply_grouping(pha.counts)
 
         The grouping for an unfiltered PHA data set with 1024 channels
@@ -3736,7 +3736,7 @@ must be an integer.""")
         the source:
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> bcounts = pha.sum_background_data()
 
         Calculate the scaling factor that you need to multiply the
@@ -3880,7 +3880,7 @@ must be an integer.""")
         --------
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi', use_errors=True)
+        >>> pha = read_pha(data_3c273 + '3c273.pi', use_errors=True)
         >>> dy = pha.get_staterror()
 
         Ensure that there is no pre-defined statistical-error column
@@ -4366,7 +4366,7 @@ must be an integer.""")
         For a Chandra non-grating dataset which has been grouped:
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.set_analysis('energy')
         >>> pha.notice(0.5, 7)
         >>> pha.get_filter(format='%.4f')
@@ -4551,7 +4551,7 @@ must be an integer.""")
         So, for an ungrouped PHA file with 1024 channels:
 
         >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.ungroup()
         >>> pha.units = 'channel'
         >>> pha.get_filter()
@@ -4580,7 +4580,7 @@ must be an integer.""")
         range will not always match the requested range because each
         channel has a finite width in these spaces:
 
-        >>> pha = read_pha('sherpa/astro/datastack/tests/data/3c273.pi')
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
         >>> pha.grouped
         True
         >>> pha.get_analysis()

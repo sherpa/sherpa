@@ -13,7 +13,7 @@ Examples
    method (or introduces the concept)?
 
 The following examples show the different ways that a model can
-be evaluted, for a range of situations. The
+be evaluated, for a range of situations. The
 :ref:`direct method <model_evaluate_example_oned_direct>` is
 often sufficient, but for more complex cases it can be useful to
 :ref:`ask a data object to evaluate the
@@ -169,10 +169,10 @@ interrogate the object.
 ::
 
    >>> from sherpa.astro.io import read_pha
-   >>> pha = read_pha('sherpa-test-data/sherpatest/9774.pi')
-   read ARF file sherpa-test-data/sherpatest/9774.arf
-   read RMF file sherpa-test-data/sherpatest/9774.rmf
-   read background file sherpa-test-data/sherpatest/9774_bg.pi
+   >>> pha = read_pha( data_dir + '9774.pi')
+   read ARF file .../9774.arf
+   read RMF file .../9774.rmf
+   read background file .../9774_bg.pi
 
 
 
@@ -186,13 +186,13 @@ and set with :py:meth:`~sherpa.astro.data.DataPHA.set_arf`,
 methods of the :py:class:`~sherpa.astro.data.DataPHA` class::
 
    >>> pha
-   <DataPHA data set instance 'sherpa-test-data/sherpatest/9774.pi'>
+   <DataPHA data set instance '.../9774.pi'>
    >>> pha.get_background()
-   <DataPHA data set instance 'sherpa-test-data/sherpatest/9774_bg.pi'>
+   <DataPHA data set instance '.../9774_bg.pi'>
    >>> pha.get_arf()
-   <DataARF data set instance 'sherpa-test-data/sherpatest/9774.arf'>
+   <DataARF data set instance '.../9774.arf'>
    >>> pha.get_rmf()
-   <DataRMF data set instance 'sherpa-test-data/sherpatest/9774.rmf'>
+   <DataRMF data set instance '.../9774.rmf'>
 
 This is a Chandra imaging-mode ACIS observation, as shown
 by header keywords defined by :term:`OGIP`, and so it has
