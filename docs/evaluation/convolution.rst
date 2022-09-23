@@ -69,6 +69,7 @@ In this example we want to convolve a model by the "kernel"
 :py:class:`sherpa.data.Data1D` instance to store the
 data, and then pass it to :py:class:`sherpa.instrument.PSFModel`:
 
+    >>> import numpy as np
     >>> from sherpa.data import Data1D
     >>> from sherpa.instrument import PSFModel
     >>> k = np.asarray([5, 10, 3, 2])
@@ -92,26 +93,26 @@ since it has sharp edges and so the convolution is more obvious).
     >>> point.xlow = 9.5
     >>> point.xhi = 10.5
     >>> print(point)
-    point
+    pt
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       point.xlow   thawed          9.5 -3.40282e+38  3.40282e+38
-       point.xhi    thawed         10.5 -3.40282e+38  3.40282e+38
-       point.ampl   thawed            1           -1            1
+       pt.xlow      thawed          9.5 -3.40282e+38  3.40282e+38
+       pt.xhi       thawed         10.5 -3.40282e+38  3.40282e+38
+       pt.ampl      thawed            1           -1            1
 
 The convolution case is created by applying the `psf1` model
 to the `point` model (the :ref:`2D example <convolution-psf2d-convolve>`
 below shows an example of applying a kernel to a
 composite model):
 
-    >>> convolved = psf1(pt)
+    >>> convolved = psf1(point)
     >>> print(convolved)
-    psfmodel(point)
+    psf1(pt)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       point.xlow   thawed          9.5 -3.40282e+38  3.40282e+38
-       point.xhi    thawed         10.5 -3.40282e+38  3.40282e+38
-       point.ampl   thawed            1           -1            1
+       pt.xlow      thawed          9.5 -3.40282e+38  3.40282e+38
+       pt.xhi       thawed         10.5 -3.40282e+38  3.40282e+38
+       pt.ampl      thawed            1           -1            1
 
 .. _convolution-1d-fold:
 
@@ -154,14 +155,14 @@ kernel. The parameters of the convolution kernel (in this case
 ``psf1``) can be changed to control the behavior.
 
     >>> print(psf1)
-    psfmodel
+    psf1
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       psfmodel.kernel frozen       kdata1
-       psfmodel.size frozen            4            4            4
-       psfmodel.center frozen            2            2            2
-       psfmodel.radial frozen            0            0            1
-       psfmodel.norm frozen            1            0            1
+       psf1.kernel  frozen       kdata1
+       psf1.size    frozen            4            4            4
+       psf1.center  frozen            2            2            2
+       psf1.radial  frozen            0            0            1
+       psf1.norm    frozen            1            0            1
 
 .. note::
 
@@ -200,7 +201,7 @@ the steps needed in the
     >>> k = np.asarray([[0, 1, 0], [1, 0, 1], [0, 1, 0]])
     >>> yg, xg = np.mgrid[:3, :3]
     >>> kernel = Data2D('kdata', xg.flatten(), yg.flatten(), k.flatten(),
-                        shape=k.shape)
+    ...                 shape=k.shape)
     >>> psf = PSFModel(kernel=kernel)
     >>> print(psf)
     psfmodel
@@ -236,12 +237,13 @@ the sum of a single pixel and a line of pixels, using
        pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38
        pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38
        pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38
-       pt.ampl      thawed           10 -3.40282e+38  3.40282e+38
+       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38
        box.xlow     thawed            4 -3.40282e+38  3.40282e+38
        box.xhi      thawed           10 -3.40282e+38  3.40282e+38
        box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38
        box.yhi      thawed          7.5 -3.40282e+38  3.40282e+38
        box.ampl     thawed           10 -3.40282e+38  3.40282e+38
+
 
 .. note::
 
@@ -270,7 +272,7 @@ This can be a single model or - as in this case - a composite one::
        pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38
        pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38
        pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38
-       pt.ampl      thawed           10 -3.40282e+38  3.40282e+38
+       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38
        box.xlow     thawed            4 -3.40282e+38  3.40282e+38
        box.xhi      thawed           10 -3.40282e+38  3.40282e+38
        box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38
@@ -292,7 +294,7 @@ component that is not affected by the PSF::
        pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38
        pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38
        pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38
-       pt.ampl      thawed           10 -3.40282e+38  3.40282e+38
+       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38
        box.xlow     thawed            4 -3.40282e+38  3.40282e+38
        box.xhi      thawed           10 -3.40282e+38  3.40282e+38
        box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38
@@ -383,9 +385,9 @@ comparing the signal in the unconvolved and convolved images, which
 are (to numerical precision) the same:
 
     >>> m1.sum()
-    60.0
+    58.0
     >>> m2.sum()
-    60.0
+    58.0
 
 The use of a fourier transform means that low-level signal will be
 found in many pixels which would expect to be 0. For example,
