@@ -24,7 +24,8 @@ define-version:
     - export SHERPA_VERSION=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}'`
     - export SHERPA_BUILD_NUMBER=`echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}'`
     - echo "SHERPA_VERSION=${SHERPA_VERSION}" >> version.env
-    - echo "SHERPA_BUILD_NUMBER=${SHERPA_BUILD_NUMBER}" >> version.env
+    - echo "SHERPA_BUILD_NUMBER=${SHERPA_BUILD_NUMBER:-0}" >> version.env
+    - echo "SHERPA_BUILD_NUMBER=${SHERPA_BUILD_NUMBER:-0}"
   artifacts:
     reports:
       dotenv: version.env
