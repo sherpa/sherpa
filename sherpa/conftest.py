@@ -666,7 +666,7 @@ def add_sherpa_test_data_dir(doctest_namespace):
     #
     path = get_datadir()
     if path is None:
-        pytest.skip("sherpa-test-data not found")
+        return None
 
     if not path.endswith('/'):
         path += '/'
