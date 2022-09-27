@@ -13,7 +13,7 @@ Examples
    method (or introduces the concept)?
 
 The following examples show the different ways that a model can
-be evaluated, for a range of situations. The
+be evaluted, for a range of situations. The
 :ref:`direct method <model_evaluate_example_oned_direct>` is
 often sufficient, but for more complex cases it can be useful to
 :ref:`ask a data object to evaluate the
@@ -113,7 +113,7 @@ the model on the grid defined by the data set, so it is the same
 as calling the model directly with these values::
 
     >>> twod.eval_model(mdl) == mdl(x0, x1)
-    array([ True,  True,  True,  True])
+    array([ True,  True,  True,  True], dtype=bool)
 
 The :py:meth:`~sherpa.data.Data.eval_model_to_fit` method
 will apply any filter associated with the data before
@@ -169,20 +169,13 @@ interrogate the object.
 ::
 
    >>> from sherpa.astro.io import read_pha
-   >>> pha = read_pha( data_dir + '9774.pi')
+   >>> pha = read_pha('9774.pi')
+   read ARF file 9774.arf
+   read RMF file 9774.rmf
+   read background file 9774_bg.pi
 
 We can see that the ARF, RMF, and a background dataset have
-automatically been loaded for us.
-
-::
-
-   read ARF file .../9774.arf
-   read RMF file .../9774.rmf
-   read background file .../9774_bg.pi
-
-
-
-Instead, ARF and RMF could be loaded manually - with
+automatically been loaded for us. They can be loaded manually - with
 :py:func:`sherpa.astro.io.read_arf`, :py:func:`sherpa.astro.io.read_rmf`,
 and :py:func:`sherpa.astro.io.read_pha` -
 and set with :py:meth:`~sherpa.astro.data.DataPHA.set_arf`,
@@ -191,13 +184,13 @@ and set with :py:meth:`~sherpa.astro.data.DataPHA.set_arf`,
 methods of the :py:class:`~sherpa.astro.data.DataPHA` class::
 
    >>> pha
-   <DataPHA data set instance '.../9774.pi'>
+   <DataPHA data set instance '9774.pi'>
    >>> pha.get_background()
-   <DataPHA data set instance '.../9774_bg.pi'>
+   <DataPHA data set instance '9774_bg.pi'>
    >>> pha.get_arf()
-   <DataARF data set instance '.../9774.arf'>
+   <DataARF data set instance '9774.arf'>
    >>> pha.get_rmf()
-   <DataRMF data set instance '.../9774.rmf'>
+   <DataRMF data set instance '9774.rmf'>
 
 This is a Chandra imaging-mode ACIS observation, as shown
 by header keywords defined by :term:`OGIP`, and so it has
@@ -266,11 +259,10 @@ show the "raw" data (you can see that each group has at least
    >>> gchans = pha.apply_filter(chans, pha._middle)
    >>> gchans.size
    143
-   >>> import matplotlib.pyplot as plt
    >>> plt.clf()
-   >>> lines = plt.plot(gchans, counts, 'o')
-   >>> xlabel = plt.xlabel('Channel')
-   >>> ylabel = plt.ylabel('Counts')
+   >>> plt.plot(gchans, counts, 'o')
+   >>> plt.xlabel('Channel')
+   >>> plt.ylabel('Counts')
 
 .. image:: ../_static/evaluation/pha_data_manual.png
 
@@ -292,7 +284,7 @@ show they match::
    >>> x = pha.apply_filter(x, pha._middle)
    >>> y = pha.get_y(filter=True)
    >>> dplot.plot(xlog=True, ylog=True)
-   >>> lines = plt.plot(x, y)
+   >>> plt.plot(x, y)
 
 .. image:: ../_static/evaluation/pha_data_compare.png
 
@@ -303,7 +295,6 @@ to wavelength will create a plot in Angstroms::
    >>> pha.set_analysis('wave')
    >>> pha.get_x().max()
    1544.0122577477066
-   >>> from sherpa.plot import DataPlot
    >>> wplot = DataPlot()
    >>> wplot.prepare(pha)
    >>> wplot.plot(linestyle='solid', xlog=True, ylog=True)
@@ -340,7 +331,7 @@ powerlaw (:py:class:`~sherpa.models.basic.PowLaw1D`)::
    (phabs * powlaw1d)
       Param        Type          Value          Min          Max      Units
       -----        ----          -----          ---          ---      -----
-      phabs.nH     thawed          0.2            0        1e+06 10^22 atoms / cm^2
+      phabs.nH     thawed          0.2            0       100000 10^22 atoms / cm^2
       powlaw1d.gamma thawed          1.7          -10           10
       powlaw1d.ref frozen            1 -3.40282e+38  3.40282e+38
       powlaw1d.ampl thawed            1            0  3.40282e+38
@@ -351,16 +342,15 @@ for use. As the data is binned we call the models - here the
 commbined model labelled "Absorbed" and just the powerlaw
 component labelled "Unabsorbed" - with both low and high edges::
 
-   >>> import numpy as np
    >>> egrid = np.arange(0.1, 10, 0.01)
    >>> elo, ehi = egrid[:-1], egrid[1:]
    >>> emid = (elo + ehi) / 2
    >>> plt.clf()
-   >>> lines = plt.plot(emid, mdl(elo, ehi), label='Absorbed')
-   >>> lines = plt.plot(emid, pl(elo, ehi), ':', label='Unabsorbed')
+   >>> plt.plot(emid, mdl(elo, ehi), label='Absorbed')
+   >>> plt.plot(emid, pl(elo, ehi), ':', label='Unabsorbed')
    >>> plt.xscale('log')
-   >>> ylim = plt.ylim(0, 0.01)
-   >>> legend = plt.legend()
+   >>> plt.ylim(0, 0.01)
+   >>> plt.legend()
 
 The Y axis has been restricted because the absorption is quite severe
 at low energies!
@@ -382,7 +372,7 @@ called ``full``, which includes the corrections::
    apply_rmf(apply_arf((75141.227687398 * (phabs * powlaw1d))))
       Param        Type          Value          Min          Max      Units
       -----        ----          -----          ---          ---      -----
-      phabs.nH     thawed          0.2            0        1e+06 10^22 atoms / cm^2
+      phabs.nH     thawed          0.2            0       100000 10^22 atoms / cm^2
       powlaw1d.gamma thawed          1.7          -10           10
       powlaw1d.ref frozen            1 -3.40282e+38  3.40282e+38
       powlaw1d.ampl thawed            1            0  3.40282e+38
@@ -403,7 +393,7 @@ such as ``PowLaw1D``.
    like
 
    >>> from sherpa.astro.instrument import RSPModelPHA
-   >>> full = RSPModelPHA(arf, rmf, pha, pha.exposure * mdl)  # doctest: +SKIP
+   >>> full = RSPModelPHA(arf, rmf, pha, pha.exposure * mdl)
 
    Note that the exposure time is not automatically included for you as it
    is with ``Response1D``.
@@ -426,9 +416,9 @@ The evaluated model can therefore be displayed with a
 call such as::
 
    >>> plt.clf()
-   >>> lines = plt.plot(pha.channel, full(pha.channel))
-   >>> xlabel = plt.xlabel('Channel')
-   >>> ylabel = plt.ylabel('Counts')
+   >>> plt.plot(pha.channel, full(pha.channel))
+   >>> plt.xlabel('Channel')
+   >>> plt.ylabel('Counts')
 
 The reason for the ridiculously-large count range is because
 the powerlaw amplitude has not been changed from its
@@ -477,9 +467,9 @@ attribute to get the exposure time)::
    >>> x2 = pha.get_x()
    >>> xmid = pha.apply_filter(x2, pha._middle)
    >>> plt.clf()
-   >>> lines = plt.plot(xmid, y2 / (xhi - xlo) / pha.exposure)
-   >>> xlabel = plt.xlabel('Energy (keV)')
-   >>> ylable = plt.ylabel('Counts/sec/keV')
+   >>> plt.plot(xmid, y2 / (xhi - xlo) / pha.exposure)
+   >>> plt.xlabel('Energy (keV)')
+   >>> plt.ylabel('Counts/sec/keV')
 
 .. image:: ../_static/evaluation/pha_eval_model_to_fit.png
 
@@ -518,9 +508,9 @@ consider)::
    Probability [Q-value] = 0.995322
    Reduced statistic     = 0.716768
    Change in statistic   = 3.34091e+11
-      phabs.nH       0.0129623    +/- 0.00727297
-      powlaw1d.gamma   1.78432      +/- 0.0459881
-      powlaw1d.ampl   7.17014e-05  +/- 2.48851e-06
+      phabs.nH       0.0129625    +/- 0.00727019
+      powlaw1d.gamma   1.78432      +/- 0.0459786
+      powlaw1d.ampl   7.17014e-05  +/- 2.48751e-06
 
 We can see the amplitude has changed from 1 to :math:`\sim 10^{-4}`,
 which should make the predicted counts a lot more believable!

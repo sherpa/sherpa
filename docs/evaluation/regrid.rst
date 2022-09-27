@@ -107,15 +107,10 @@ style of grid, and will raise a :py:class:`~sherpa.utils.err.ModelErr`
 error::
 
    >>> rmdl(x[:-1], x[1:])
-   Traceback (most recent call last):
-   ...
-   sherpa.utils.err.ModelErr: A non-integrated grid is required for model evaluation
-
+   ModelErr: A non-integrated grid is required for model evaluation
 
    >>> imdl(x)
-   Traceback (most recent call last):
-   ...
-   sherpa.utils.err.ModelErr: A non-overlapping integrated grid is required for model evaluation,
+   ModelErr: A non-overlapping integrated grid is required for model evaluation,
    e.g. [0.1,0.2],[0.2,0.3]
 
 
