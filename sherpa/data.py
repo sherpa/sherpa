@@ -107,9 +107,6 @@ Create a data set representing the independent axis (``x``) and
 dependent axis (``y``) then filter to select only those values between
 500-520 and 530-700:
 
->>> import numpy as np
->>> x = np.arange(1000)
->>> y = np.random.normal(size=1000)
 >>> d1 = Data1D('example', x, y)
 >>> d1.notice(500, 700)
 >>> d1.ignore(520, 530)
@@ -726,7 +723,7 @@ class Filter():
         array([False,  True,  True,  False, False])
         >>> f.notice([None, 1.5], [3.5, None], (xlo, xhi), integrated=True)
         >>> f.mask
-        array([ True,  True,  True, False, False])
+        array([True,  True,  True,  False, False])
 
         """
 
@@ -1651,7 +1648,6 @@ class Data1D(Data):
         Examples
         --------
 
-        >>> import numpy as np
         >>> x = np.asarray([1, 2, 3, 5, 6])
         >>> y = np.ones(5)
         >>> d = Data1D('example', x, y)
@@ -1693,15 +1689,9 @@ class Data1D(Data):
         Examples
         --------
 
-        >>> d = Data1D('example', [1., 2., 3., 5., 6., 7.], [0, .4, .5, .6, .7, .8])
-        >>> d.notice(1., 6.)
-        >>> d.ignore(2.5, 4.)
         >>> d.get_filter_expr()
         '1.0000-2.0000,5.0000-6.0000 x'
 
-        Note that the expression lists the valid data points. While we ignore
-        only the range 2.5-4.0, there is no data point between 4. and 5., so
-        the second part of the valid range is 5.0 to 6.0.
         """
         return self.get_filter(delim='-') + ' ' + self.get_xlabel()
 
@@ -1761,7 +1751,6 @@ class Data1D(Data):
         Examples
         --------
 
-        >>> import numpy as np
         >>> x = np.arange(0.4, 2.6, 0.2)
         >>> y = np.ones_like(x)
         >>> d = Data1D('example', x, y)
@@ -1877,7 +1866,6 @@ class Data1DInt(Data1D):
         Examples
         --------
 
-        >>> import numpy as np
         >>> xlo = np.asarray([1, 2, 3, 5, 6])
         >>> xhi = xlo + 1
         >>> y = np.ones(5)
@@ -1948,7 +1936,6 @@ class Data1DInt(Data1D):
         Examples
         --------
 
-        >>> import numpy as np
         >>> edges = np.arange(0.4, 2.6, 0.2)
         >>> xlo, xhi = edges[:-1], edges[1:]
         >>> y = np.ones_like(xlo)
