@@ -381,6 +381,25 @@ def test_get_fwhm(x, y, expected):
     assert ans == pytest.approx(expected)
 
 
+def test_histogram1d_sort_axis():
+    """Does histogram1d change the grid arguments?
+
+    This just checks the existing behavior.
+
+    """
+
+    glo = numpy.asarray([1, 3, 6, 7, 9])
+    ghi = numpy.asarray([6, 3, 12, 7, 9])
+
+    ga = glo.copy()
+    gb = ghi.copy()
+    n = histogram1d([2, 3, 4, 5, 6, -1, 7, 20, 8, 9], glo, ghi)
+
+    assert glo == pytest.approx(sorted(ga))
+    assert ghi == pytest.approx(sorted(ghi))
+    assert n == pytest.approx([1, 3, 1, 2, 1])
+
+
 @pytest.mark.xfail
 def test_histogram1d_with_fixed_bins():
     """What happens when the lo/hi bins can not be copied.
