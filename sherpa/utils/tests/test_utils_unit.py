@@ -395,12 +395,11 @@ def test_histogram1d_sort_axis():
     gb = ghi.copy()
     n = histogram1d([2, 3, 4, 5, 6, -1, 7, 20, 8, 9], glo, ghi)
 
-    assert glo == pytest.approx(sorted(ga))
-    assert ghi == pytest.approx(sorted(ghi))
+    assert glo == pytest.approx(ga)
+    assert ghi == pytest.approx(ghi)
     assert n == pytest.approx([1, 3, 1, 2, 1])
 
 
-@pytest.mark.xfail
 def test_histogram1d_with_fixed_bins():
     """What happens when the lo/hi bins can not be copied.
 
@@ -426,7 +425,6 @@ def test_histogram1d_with_fixed_bins():
     assert n == pytest.approx([1, 3, 1, 2, 1])
 
 
-@pytest.mark.xfail
 def test_histogram2d_with_fixed_bins():
     """What happens when the lo/hi bins can not be copied.
 
