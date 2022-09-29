@@ -2088,13 +2088,12 @@ def histogram1d(x, x_lo, x_hi):
     >>> xhi = edges[1:]
     >>> y = histogram1d(x, xlo, xhi)
 
-    Given a list of samples (``vals``), bin them up so that
-    they can be used as the dependent axis (the value to
-    be fitted) in a Sherpa data set:
+    Given a list of samples, bin them up so that they can be used as
+    the dependent axis (the value to be fitted) in a Sherpa data set:
 
-    >>> dataspace1d(0.1, 10, 0.1)
-    >>> (lo, hi) = get_indep()
-    >>> n = histogram1d(vals, lo, hi)
+    >>> dataspace1d(1, 10, 1)
+    >>> lo, hi = get_indep()
+    >>> n = histogram1d([2, 3, 2, 8, 5, 2], lo, hi)
     >>> set_dep(n)
 
     """
