@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2007, 2015, 2016, 2018, 2019  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2022
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -39,7 +40,7 @@ extern "C" {
 
 static PyObject* wofz( PyObject* self, PyObject* args )
 {
-  
+
   ComplexArray xxx;
   if( !PyArg_ParseTuple( args, (char*)"O&",
                          CONVERTME(ComplexArray), &xxx) )
@@ -59,7 +60,7 @@ static PyObject* wofz( PyObject* self, PyObject* args )
 
 static PyObject* ftest( PyObject* self, PyObject* args )
 {
-  
+
   DoubleArray dof_1;
   DoubleArray dof_2;
   DoubleArray chisq_1;
@@ -140,7 +141,7 @@ static PyObject* ftest( PyObject* self, PyObject* args )
                          (dof_2[ii] / ( tmp ) ) );
 
   }
-  
+
   return result.return_new_ref();
 
 }
@@ -158,7 +159,7 @@ static PyObject* mlr( PyObject* self, PyObject* args )
 			 (converter)sherpa::convert_to_array< DoubleArray >,
 			 &delta_chisq ) )
     return NULL;
-  
+
   npy_intp nelem = delta_dof.get_size();
 
   if ( delta_chisq.get_size() != nelem  ) {
@@ -176,8 +177,8 @@ static PyObject* mlr( PyObject* self, PyObject* args )
     return NULL;
 
   for ( npy_intp ii = 0; ii < nelem; ii++ )
-    result[ii] = igamc( delta_dof[ii] / 2.0, delta_chisq[ii] / 2.0 );  
- 
+    result[ii] = igamc( delta_dof[ii] / 2.0, delta_chisq[ii] / 2.0 );
+
   return result.return_new_ref();
 
 }
@@ -201,7 +202,7 @@ static PyObject* gamma( PyObject* self, PyObject* args )
     result[ii] = Gamma(x[ii]);
     result[ii] *= sgngam;
   }
-  
+
   return result.return_new_ref();
 
 }
@@ -218,7 +219,7 @@ static PyObject* igam( PyObject* self, PyObject* args )
 			 (converter)sherpa::convert_to_array< DoubleArray >,
 			 &x ) )
     return NULL;
-  
+
   npy_intp asize = a.get_size();
   npy_intp xsize = x.get_size();
 
@@ -243,8 +244,8 @@ static PyObject* igam( PyObject* self, PyObject* args )
       return NULL;
     }
 
-    result[ii] = igam( a[ii], x[ii]);  
- 
+    result[ii] = igam( a[ii], x[ii]);
+
   }
   return result.return_new_ref();
 
@@ -262,7 +263,7 @@ static PyObject* igamc( PyObject* self, PyObject* args )
 			 (converter)sherpa::convert_to_array< DoubleArray >,
 			 &x ) )
     return NULL;
-  
+
   npy_intp asize = a.get_size();
   npy_intp xsize = x.get_size();
 
@@ -287,8 +288,8 @@ static PyObject* igamc( PyObject* self, PyObject* args )
       return NULL;
     }
 
-    result[ii] = igamc( a[ii], x[ii]);  
- 
+    result[ii] = igamc( a[ii], x[ii]);
+
   }
   return result.return_new_ref();
 
@@ -439,7 +440,7 @@ PyObject* _sherpa_fcmp( PyObject *self, PyObject *args )
 			 &x2,
 			 &epsilon ) )
     return NULL;
-  
+
   npy_intp n1 = x1.get_size();
   npy_intp n2 = x2.get_size();
 
@@ -473,14 +474,14 @@ PyObject* _sherpa_fcmp( PyObject *self, PyObject *args )
 template <typename ArrayType, typename DataType>
 PyObject* rebin( PyObject* self, PyObject* args )
 {
-  
+
   ArrayType x0;
   ArrayType x0lo;
   ArrayType x0hi;
   ArrayType x1;
   ArrayType x1lo;
   ArrayType x1hi;
-  
+
   if ( !PyArg_ParseTuple( args, (char*)"O&O&O&O&O&",
 			  (converter)sherpa::convert_to_array<ArrayType>,
 			  &x0,
@@ -492,9 +493,9 @@ PyObject* rebin( PyObject* self, PyObject* args )
 			  &x1lo,
 			  (converter)sherpa::convert_to_array<ArrayType>,
 			  &x1hi ))
-    
+
     return NULL;
-  
+
   if ( x0.get_size() != x0lo.get_size()  ) {
     std::ostringstream err;
     err << "input array sizes do not match, "
@@ -509,7 +510,7 @@ PyObject* rebin( PyObject* self, PyObject* args )
 	<< "x0hi: " << x0hi.get_size() << " vs x0lo: " << x0lo.get_size();
     PyErr_SetString( PyExc_TypeError, err.str().c_str() );
     return NULL;
-  }	 
+  }
 
   if ( x1hi.get_size() != x1lo.get_size() ) {
     std::ostringstream err;
@@ -531,62 +532,17 @@ PyObject* rebin( PyObject* self, PyObject* args )
     PyErr_SetString( PyExc_ValueError, (char*)"rebinning data failed" );
     return NULL;
   }
-  
+
   return x1.return_new_ref();
-  
+
 }
 
-template <typename ArrayType, typename DataType,
-	  typename IndexArrayType, typename IndexType>
-PyObject* histogram1d( PyObject* self, PyObject* args )
-{
-  
-  ArrayType x;
-  ArrayType x_lo;
-  ArrayType x_hi;
-  IndexArrayType res;
-
-  if ( !PyArg_ParseTuple( args, (char*)"O&O&O&",
-			  CONVERTME(ArrayType),
-			  &x,
-			  CONVERTME(ArrayType),
-			  &x_lo,
-			  CONVERTME(ArrayType),
-			  &x_hi ))
-    return NULL;
-
-  if ( x_lo.get_size() != x_hi.get_size()  ) {
-    std::ostringstream err;
-    err << "input array sizes do not match, "
-	<< "x_lo: " << x_lo.get_size() << " vs x_hi: " << x_hi.get_size();
-    PyErr_SetString( PyExc_TypeError, err.str().c_str() );
-    return NULL;
-  }
-  
-  if ( (x.get_size() < 1) || (x_lo.get_size() < 1) || (x_hi.get_size() < 1) ) {
-    PyErr_SetString( PyExc_TypeError,
-		     (char*)"need at least one element for histogram");
-    return NULL;
-  }
-
-  if ( EXIT_SUCCESS != res.zeros(  x_lo.get_ndim(), x_lo.get_dims() ) )
-    return NULL;
-
-  if ( EXIT_SUCCESS != (sherpa::utils::histogram1d
-			<ArrayType, DataType, IndexArrayType, IndexType>
-			( x, x_lo, x_hi, res ) ) ) {
-    PyErr_SetString( PyExc_ValueError, (char*)"histogram1d failed" );
-    return NULL;
-  }
-  
-  return res.return_new_ref();
-}
 
 template <typename ArrayType, typename DataType,
 	  typename IndexArrayType, typename IndexType>
 PyObject* histogram2d( PyObject* self, PyObject* args )
 {
-  
+
   ArrayType x;
   ArrayType y;
   ArrayType x_grid;
@@ -603,7 +559,7 @@ PyObject* histogram2d( PyObject* self, PyObject* args )
 			  CONVERTME(ArrayType),
 			  &y_grid))
     return NULL;
-  
+
   if ( x.get_size() != y.get_size()  ) {
     std::ostringstream err;
     err << "input array sizes do not match, "
@@ -630,7 +586,7 @@ PyObject* histogram2d( PyObject* self, PyObject* args )
     PyErr_SetString( PyExc_ValueError, (char*)"histogram2d failed" );
     return NULL;
   }
-  
+
   return res.return_new_ref();
 }
 
@@ -639,7 +595,7 @@ template <typename FloatArrayType, typename IntArrayType,
 	  typename DataType, typename IntType, typename IndexType>
 PyObject* sum_intervals( PyObject* self, PyObject* args )
 {
-  
+
   FloatArrayType src;
   FloatArrayType model;
   IntArrayType indx0;
@@ -653,7 +609,7 @@ PyObject* sum_intervals( PyObject* self, PyObject* args )
 			  CONVERTME(IntArrayType),
 			  &indx1))
     return NULL;
-  
+
   if ( indx0.get_size() != indx1.get_size()  ) {
     std::ostringstream err;
     err << "input array sizes do not match, "
@@ -664,7 +620,7 @@ PyObject* sum_intervals( PyObject* self, PyObject* args )
 
   if ( EXIT_SUCCESS != model.zeros( indx0.get_ndim(), indx0.get_dims() ) )
     return NULL;
-  
+
   if ( EXIT_SUCCESS != (sherpa::utils::sum_intervals<DataType,
 			DataType, IntType, IndexType>
 			(&src[0], &indx0[0], &indx1[0], model.get_size(),
@@ -672,14 +628,14 @@ PyObject* sum_intervals( PyObject* self, PyObject* args )
     PyErr_SetString( PyExc_ValueError, (char*)"sum_intervals" );
     return NULL;
   }
-  
+
   return model.return_new_ref();
 }
 
 template <typename ArrayType, typename DataType>
 PyObject* neville( PyObject* self, PyObject* args )
 {
-  
+
   ArrayType xout;
   ArrayType xin;
   ArrayType yin;
@@ -693,7 +649,7 @@ PyObject* neville( PyObject* self, PyObject* args )
 			  CONVERTME(ArrayType),
 			  &yin))
     return NULL;
-  
+
   if ( xin.get_size() != yin.get_size()  ) {
     std::ostringstream err;
     err << "input array sizes do not match, "
@@ -704,7 +660,7 @@ PyObject* neville( PyObject* self, PyObject* args )
 
   if ( EXIT_SUCCESS != result.zeros( xout.get_ndim(), xout.get_dims() ) )
     return NULL;
-  
+
   int nin = (int) xin.get_size();
   int nout = (int) xout.get_size();
 
@@ -718,16 +674,16 @@ PyObject* neville( PyObject* self, PyObject* args )
 
       return NULL;
     }
-    
+
   }
-  
+
   return result.return_new_ref();
 }
 
 
 static PyObject* sao_arange( PyObject* self, PyObject* args )
 {
-  
+
   double start, stop, step = 1.0;
   DoubleArray result;
   std::vector<double> arr;
@@ -735,7 +691,7 @@ static PyObject* sao_arange( PyObject* self, PyObject* args )
 
   if ( !PyArg_ParseTuple( args, (char*)"dd|d", &start, &stop, &step ) )
     return NULL;
-  
+
   int count = 0;
   double bin = start;
   while( sao_fcmp(bin, stop, eps) < 0 ) {
@@ -743,16 +699,16 @@ static PyObject* sao_arange( PyObject* self, PyObject* args )
     arr.push_back(bin);
     ++count;
   }
-  
+
   npy_intp dim;
   dim = (npy_intp)arr.size();
 
   if ( EXIT_SUCCESS != result.create( 1, &dim ) )
     return NULL;
-  
+
   for(npy_intp ii = 0; ii < dim; ++ii)
     result[ii] = arr[ii];
-   
+
   return result.return_new_ref();
 }
 
@@ -763,7 +719,7 @@ static PyMethodDef UtilsFcts[] = {
 
   // F-Test
   FCTSPEC(calc_ftest, ftest),
-  
+
   // Maximum likelihood ratio
   FCTSPEC(calc_mlr, mlr),
 
@@ -775,10 +731,10 @@ static PyMethodDef UtilsFcts[] = {
 
   // Incomplete beta function
   FCTSPEC(incbet, incbet),
-  
+
   // Gamma function
   FCTSPEC(gamma, gamma),
-  
+
   // Log gamma function
   FCTSPEC(lgam, lgam),
 
@@ -790,7 +746,7 @@ static PyMethodDef UtilsFcts[] = {
 
   // This function determines whether x and y are approximately equal
   // to a relative accuracy epsilon.
-  FCTSPEC(gsl_fcmp, _sherpa_fcmp< gsl_fcmp >), 
+  FCTSPEC(gsl_fcmp, _sherpa_fcmp< gsl_fcmp >),
 
   //Same as gsl_fcmp, but also handles the case where one of the args is 0.
   FCTSPEC(sao_fcmp, _sherpa_fcmp< sao_fcmp >),
@@ -798,10 +754,7 @@ static PyMethodDef UtilsFcts[] = {
   //Rebin to new grid
   FCTSPEC(rebin, (rebin<SherpaFloatArray, SherpaFloat>)),
 
-  //Histogram1d 
-  { (char*) "hist1d",(PyCFunction)(histogram1d<SherpaFloatArray, SherpaFloat, IntArray, int>), METH_VARARGS, (char*) " create 1D histogram\n\nExample:\nsherpa> histogram1d( x, xlo, xhi )"},
-  
-  //Histogram2d 
+  //Histogram2d
   { (char*) "hist2d",(PyCFunction)(histogram2d<SherpaFloatArray, SherpaFloat, IntArray, int>), METH_VARARGS, (char*) " create 2D histogram\n\nExample:\nsherpa> histogram2d( x, y, x_grid, y_grid )"},
 
   FCTSPEC(sum_intervals, (sum_intervals<SherpaFloatArray, IntArray,
@@ -811,7 +764,7 @@ static PyMethodDef UtilsFcts[] = {
   FCTSPEC(neville, (neville<SherpaFloatArray, SherpaFloat>)),
 
   FCTSPEC(sao_arange, sao_arange),
-  
+
   { NULL, NULL, 0, NULL }
 
 };

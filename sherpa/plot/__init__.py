@@ -906,9 +906,9 @@ class LRHistogram(HistogramPlot):
         self.lr = float(lr)
         y = numpy.asarray(ratios)
         self.ratios = y
-        self.xlo, self.xhi = dataspace1d(y.min(), y.max(),
-                                         numbins=bins + 1)[:2]
-        y = histogram1d(y, self.xlo, self.xhi)
+        y, bin_edges = numpy.histrogram(y, bins=bins)
+        self.xlo = bin_edges[:-1]
+        self.xhi = bin_edges[1:]
         self.y = y / float(niter)
         self.title = "Likelihood Ratio Distribution"
         self.xlabel = "Likelihood Ratio"

@@ -635,7 +635,7 @@ def test_str_flux_histogram_full(energy, cls, old_numpy_printing):
                        [0.5, 0.4, 0.9, 1]])
 
     obj = cls()
-    obj.prepare(args, 3)
+    obj.prepare(args, 4)
 
     out = str(obj).split('\n')
     print(out)

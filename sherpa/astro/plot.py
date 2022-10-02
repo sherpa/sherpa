@@ -690,9 +690,9 @@ class FluxHistogram(ModelHistogram):
         self.flux = y
         self.modelvals = fluxes[:, 1:-1]
         self.clipped = fluxes[:, -1]
-        self.xlo, self.xhi = dataspace1d(y.min(), y.max(),
-                                         numbins=bins + 1)[:2]
-        y = histogram1d(y, self.xlo, self.xhi)
+        y, bin_edges = np.histogram(y, bins=bins)
+        self.xlo = bin_edges[:-1]
+        self.xhi = bin_edges[1:]
         self.y = y / float(y.max())
 
 

@@ -7,10 +7,10 @@ The sherpa.utils module
 .. automodule:: sherpa.utils
 
    .. rubric:: Functions
-               
+
    .. autosummary::
       :toctree: api
-               
+
       Knuth_close
       _guess_ampl_scale
       apache_muller
@@ -45,7 +45,6 @@ The sherpa.utils module
       guess_position
       guess_radius
       guess_reference
-      histogram1d
       histogram2d
       igam
       igamc
@@ -75,9 +74,9 @@ The sherpa.utils module
       set_origin
       sum_intervals
       zeroin
-      
+
    .. rubric:: Classes
-               
+
    .. autosummary::
       :toctree: api
 

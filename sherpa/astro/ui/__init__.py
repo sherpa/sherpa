@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2018, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -31,7 +32,7 @@ from sherpa.logposterior import Prior
 # We build up __all__ as we go along
 __all__ = ['DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt', 'Data1D',
            'Data1DInt', 'Data2D', 'Data2DInt', 'calc_mlr', 'calc_ftest', 'rebin',
-           'histogram1d', 'histogram2d', 'gamma', 'lgam', 'igamc',
+           'histogram2d', 'gamma', 'lgam', 'igamc',
            'igam', 'incbet', 'Prior', 'multinormal_pdf', 'multit_pdf']
 
 _session = utils.Session()

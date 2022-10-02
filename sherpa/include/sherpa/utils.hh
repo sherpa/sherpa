@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2008, 2021  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2008, 2021, 2022
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -34,7 +35,7 @@
 
 #include <sherpa/constants.hh>
 #include <sherpa/myArray.hh>
-#include "sherpa/fcmp.hh" 
+#include "sherpa/fcmp.hh"
 
 #define ACOS(x)			std::acos(x)
 #define ASIN(x)			std::asin(x)
@@ -235,7 +236,7 @@ namespace sherpa { namespace utils {
   inline int radius2( const ConstArrayType& p,
 		      DataType x0, DataType x1, DataType& val )
   {
-  
+
     DataType deltaX = x0 - p[1];
     DataType deltaY = x1 - p[2];
     DataType p_four = p[4];
@@ -261,10 +262,10 @@ namespace sherpa { namespace utils {
       val = deltaX * deltaX + deltaY * deltaY;
       return EXIT_SUCCESS;
     }
-  
+
     val = 0.0;
     return EXIT_SUCCESS;
-  
+
   }
 
   template <typename DataType, typename ConstArrayType>
@@ -311,11 +312,11 @@ namespace sherpa { namespace utils {
     val = SQRT( val );
 
     return EXIT_SUCCESS;
-    
+
   }
 
   // {
-  
+
   //   DataType deltaX = x0 - p[1];
   //   DataType deltaY = x1 - p[2];
   //   DataType p_four = p[4];
@@ -340,27 +341,28 @@ namespace sherpa { namespace utils {
   //     val = SQRT( deltaX * deltaX + deltaY * deltaY );
   //     return EXIT_SUCCESS;
   //   }
-  
+
   //   val = 0.0;
   //   return EXIT_SUCCESS;
-  
+
   // }
 
 
 
-//     Copyright (C) 2000 Massachusetts Institute of Technology 
- 
+//  Copyright (C) 2000, 2022
+//  Massachusetts Institute of Technology
+
 //     Author:  John E. Davis <davis@space.mit.edu>
 
 //     This program is free software; you can redistribute it and/or modify
 //     it under the terms of the GNU General Public License as published by
 //     the Free Software Foundation; either version 2 of the License, or
 //     (at your option) any later version.
- 
+
 //     This program is distributed in the hope that it will be useful,
 //     but WITHOUT ANY WARRANTY; without even the implied warranty of
 //     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//     GNU General Public License for more details. 
+//     GNU General Public License for more details.
 
 //     You should have received a copy of the GNU General Public License
 //     along with this program; if not, write to the Free Software
@@ -391,7 +393,7 @@ namespace sherpa { namespace utils {
 
         t0 = tlo[t];
         t1 = thi[t];
-	
+
         /* Accumulate sum over 'from' bins
          * which overlap 'to' bin t
          */
@@ -400,10 +402,10 @@ namespace sherpa { namespace utils {
           {
 	    DataType f0, f1;
 	    DataType min_max, max_min;
-	    
+
 	    f0 = flo[f];
 	    f1 = fhi[f];
-	    
+
 	    // t0 > f1
 	    if ( sao_fcmp( t0, f1, tol ) == 1 )
 	      continue;
@@ -411,35 +413,35 @@ namespace sherpa { namespace utils {
 	    // f0 > t1
 	    if ( sao_fcmp( f0, t1, tol ) == 1 )
 	      break;
-	    
+
 	    // t0 > f0
 	    if ( sao_fcmp( t0, f0, tol ) == 1 )
 	      max_min = t0;
 	    else
 	      max_min = f0;
-	    
+
 	    // t1 < f1
 	    if ( sao_fcmp( t1, f1, tol ) == -1 )
 	      min_max = t1;
 	    else
 	      min_max = f1;
-	    
+
 	    /* prevent division by zero */
 	    // f0 == f1
 	    if ( sao_fcmp( f0, f1, tol ) == 0 )
 	      return EXIT_FAILURE;
-	    
+
 	    s += fy[f] * (min_max - max_min) / (f1 - f0);
-	    
+
 	    /* s += fy[f] * overlap_frac (f0, f1, t0, t1); */
-	    
+
 	    if (f1 > t1)
 	      break;
           }
-	
+
         ty[t] = s;
       }
-    
+
     return EXIT_SUCCESS;
   }
 
@@ -465,15 +467,15 @@ namespace sherpa { namespace utils {
 	  return EXIT_FAILURE;
 	p[ii] = ( (xinterp-x[ii-jj])*p[ii] - (xinterp-x[ii])*p[ii-1] ) / denom;
       }
-    
+
     answer = p[n-1];
     return EXIT_SUCCESS;
-    
+
   }
-    
+
   template<typename ConstFloatArrayType, typename FloatType>
-  inline int neville2d( int m, int n, const ConstFloatArrayType& x, 
-			const ConstFloatArrayType& y, 
+  inline int neville2d( int m, int n, const ConstFloatArrayType& x,
+			const ConstFloatArrayType& y,
 			const sherpa::Array2D<FloatType, FloatType >& fxy,
 			FloatType xinterp, FloatType yinterp,
 			FloatType& answer ) {
@@ -488,7 +490,7 @@ namespace sherpa { namespace utils {
 
   //
   // The following text was taken verbatim from:
-  //        
+  //
   // http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
   //
   // In most cases it is unreasonable to use an operator==(...)
@@ -498,10 +500,10 @@ namespace sherpa { namespace utils {
   // confident solution presented by D. E. Knuth in 'The art of computer
   // programming (vol II)'. For a given floating point values u and v and
   // a tolerance e:
-  //    
+  //
   // | u - v | <= e * |u| and | u - v | <= e * |v|                    (1)
   // defines a "very close with tolerance e" relationship between u and v
-  //    
+  //
   // | u - v | <= e * |u| or   | u - v | <= e * |v|                   (2)
   // defines a "close enough with tolerance e" relationship between
   // u and v. Both relationships are commutative but are not transitive.
@@ -521,7 +523,7 @@ namespace sherpa { namespace utils {
     // avoid underflow
     if ( 0.0 == num || (denom > 1 && num < denom * my_min) )
       return T(0);
-    
+
     return num / denom;
 
   }
@@ -590,16 +592,16 @@ namespace sherpa { namespace utils {
     if (isnan(x))
 #else
     if (std::isnan(x))
-#endif 
+#endif
      return -1;
-    
+
     if (sao_fcmp(x, lo[0], tol) == -1 ||
     	sao_fcmp(hi[n-1], x, tol) == -1 )
       return -1;
-    
+
     n0 = 0;
     n1 = n;
-    
+
     while (n1 > n0 + 1) {
     	n2 = (n0 + n1) / 2;
     	if (sao_fcmp(x, hi[n2], tol) == -1) {
@@ -609,33 +611,10 @@ namespace sherpa { namespace utils {
     	  }
     	else n0 = n2;
       }
-    
+
     return n0;
   }
 
-  template <typename ConstArrayType, typename FloatType,
-	    typename IntArrayType, typename IntType>
-  inline int histogram1d (const ConstArrayType& bv,
-			  const ConstArrayType& x_lo,
-			  const ConstArrayType& x_hi,
-			  IntArrayType& res) {
-    IntType n, nbins;
-    
-    n = bv.get_size();
-    nbins = x_lo.get_size();
-
-    for (IntType i = 0; i < n; i++)
-      {
-        FloatType t = bv[i];
-        IntType k = find_bin (t, x_lo, x_hi, nbins);
-	if (k >= n)
-	  return EXIT_FAILURE;
-	if (k >= 0)
-	  res[k] += 1;
-      }
-    
-    return EXIT_SUCCESS;
-  }
 
   template <typename ConstArrayType, typename FloatType,
 	    typename IntArrayType, typename IntType>
@@ -646,7 +625,7 @@ namespace sherpa { namespace utils {
 			  IntArrayType& res) {
     IntType i, n, nx, ny;
     FloatType xmax, ymax, *x, *y, *bx, *by;
-    
+
     n = (IntType)py_x.get_size();
     nx = (IntType)grid_x.get_size();
     ny = (IntType)grid_y.get_size();
@@ -655,7 +634,7 @@ namespace sherpa { namespace utils {
     by = (FloatType*) &py_y[0];
     x = (FloatType*) &grid_x[0];
     y = (FloatType*) &grid_y[0];
-    
+
     xmax = x[nx-1];
     ymax = y[ny-1];
 
@@ -664,25 +643,25 @@ namespace sherpa { namespace utils {
         FloatType b_x = bx[i];
         FloatType b_y = by[i];
         IntType ix, iy, k;
-	
+
         if (b_x >= xmax)
           ix = nx-1;
         else if ((ix = find_bin (b_x, x, x+1, nx-1)) < 0)
           continue;
-	
+
         if (b_y >= ymax)
           iy = ny-1;
         else if ((iy = find_bin (b_y, y, y+1, ny-1)) < 0)
           continue;
-	
+
         k = iy + ny * ix;
-	
+
         res[k] += 1;
       }
-    
+
     return EXIT_SUCCESS;
   }
-    
+
   }  }  // namespace utils, namespace sherpa
 
 
