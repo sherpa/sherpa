@@ -2117,7 +2117,7 @@ def histogram2d(x, y, x_grid, y_grid):
     See the `numpy.histogram2d` routine for a version with more options.
 
     .. versionchanged:: 4.15.0
-       The x_grid and x_grid arguments are no-longer changed (sorted)
+       The x_grid and y_grid arguments are no-longer changed (sorted)
        by this routine.
 
     Parameters
