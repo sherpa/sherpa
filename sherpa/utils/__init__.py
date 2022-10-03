@@ -2060,6 +2060,10 @@ def histogram1d(x, x_lo, x_hi):
 
     See the `numpy.histogram` routine for a version with more options.
 
+    .. versionchanged:: 4.15.0
+       The x_lo and x_hi arguments are no-longer changed (sorted) by
+       this routine.
+
     Parameters
     ----------
     x : sequence of numbers
@@ -2088,19 +2092,18 @@ def histogram1d(x, x_lo, x_hi):
     >>> xhi = edges[1:]
     >>> y = histogram1d(x, xlo, xhi)
 
-    Given a list of samples (``vals``), bin them up so that
-    they can be used as the dependent axis (the value to
-    be fitted) in a Sherpa data set:
+    Given a list of samples, bin them up so that they can be used as
+    the dependent axis (the value to be fitted) in a Sherpa data set:
 
-    >>> dataspace1d(0.1, 10, 0.1)
-    >>> (lo, hi) = get_indep()
-    >>> n = histogram1d(vals, lo, hi)
+    >>> dataspace1d(1, 10, 1)
+    >>> lo, hi = get_indep()
+    >>> n = histogram1d([2, 3, 2, 8, 5, 2], lo, hi)
     >>> set_dep(n)
 
     """
 
-    x_lo = numpy.asarray(x_lo)
-    x_hi = numpy.asarray(x_hi)
+    x_lo = numpy.asarray(x_lo).copy()
+    x_hi = numpy.asarray(x_hi).copy()
 
     x_lo.sort()
     x_hi.sort()
@@ -2112,6 +2115,10 @@ def histogram2d(x, y, x_grid, y_grid):
     """Create 2D histogram from a sequence of samples.
 
     See the `numpy.histogram2d` routine for a version with more options.
+
+    .. versionchanged:: 4.15.0
+       The x_grid and y_grid arguments are no-longer changed (sorted)
+       by this routine.
 
     Parameters
     ----------
@@ -2145,8 +2152,8 @@ def histogram2d(x, y, x_grid, y_grid):
     >>> set_dep(n)
 
     """
-    x_grid = numpy.asarray(x_grid)
-    y_grid = numpy.asarray(y_grid)
+    x_grid = numpy.asarray(x_grid).copy()
+    y_grid = numpy.asarray(y_grid).copy()
 
     x_grid.sort()
     y_grid.sort()

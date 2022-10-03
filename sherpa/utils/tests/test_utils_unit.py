@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018, 2019, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,7 +24,7 @@ from numpy.testing import assert_almost_equal, assert_array_equal, \
 import pytest
 
 from sherpa.utils import _utils, is_binary_file, pad_bounding_box, \
-    get_fwhm
+    get_fwhm, histogram1d, histogram2d
 from sherpa.utils.testing import requires_data
 
 
@@ -378,3 +379,69 @@ def test_get_fwhm(x, y, expected):
 
     ans = get_fwhm(y, x)
     assert ans == pytest.approx(expected)
+
+
+def test_histogram1d_sort_axis():
+    """Does histogram1d change the grid arguments?
+
+    This just checks the existing behavior.
+
+    """
+
+    glo = numpy.asarray([1, 3, 6, 7, 9])
+    ghi = numpy.asarray([6, 3, 12, 7, 9])
+
+    ga = glo.copy()
+    gb = ghi.copy()
+    n = histogram1d([2, 3, 4, 5, 6, -1, 7, 20, 8, 9], glo, ghi)
+
+    assert glo == pytest.approx(ga)
+    assert ghi == pytest.approx(ghi)
+    assert n == pytest.approx([1, 3, 1, 2, 1])
+
+
+def test_histogram1d_with_fixed_bins():
+    """What happens when the lo/hi bins can not be copied.
+
+    With #1477 one of the examples started to fail because the
+    get_indep arguments can not be changed. As we currently do not
+    have doctest running (and the example test would need to be
+    updated to make it testable) let's check what happens here. The
+    original example is shown below, but it has been updated to know
+    make it doctestable, so this test is a low-level test.
+
+    >>> dataspace1d(0.1, 10, 0.1)
+    >>> (lo, hi) = get_indep()
+    >>> n = histogram1d(vals, lo, hi)
+    >>> set_dep(n)
+
+    """
+
+    # Ensure we can't overwrite the grid
+    grid = numpy.asarray([1, 3, 6, 7, 9, 12])
+    grid.setflags(write=False)
+
+    n = histogram1d([2, 3, 4, 5, 6, -1, 7, 20, 8, 9], grid[:-1], grid[1:])
+    assert n == pytest.approx([1, 3, 1, 2, 1])
+
+
+def test_histogram2d_with_fixed_bins():
+    """What happens when the lo/hi bins can not be copied.
+
+    Similar to test_histogram1d_with_fixed_bins.
+
+    """
+
+    x0 = numpy.asarray([1, 2, 3])
+    x1 = numpy.asarray([1, 2, 3, 4])
+    x0.setflags(write=False)
+    x1.setflags(write=False)
+
+    x = numpy.asarray([2, 3, 0])
+    y = numpy.asarray([3, 4, 0])
+
+    n = histogram2d(x, y, x0, x1)
+    expected = numpy.zeros((3, 4))
+    expected[1, 2] = 1
+    expected[2, 3] = 1
+    assert n == pytest.approx(expected)
