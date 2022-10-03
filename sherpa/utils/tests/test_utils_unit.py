@@ -445,3 +445,37 @@ def test_histogram2d_with_fixed_bins():
     expected[1, 2] = 1
     expected[2, 3] = 1
     assert n == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("invals,expected",
+                         [([0], [0, 0, 0, 0]),
+                          ([1], [1, 0, 0, 0]),
+                          pytest.param([2], [0, 1, 0, 0], marks=pytest.mark.xfail),
+                          pytest.param([3], [0, 1, 0, 0], marks=pytest.mark.xfail),
+                          pytest.param([4], [0, 0, 1, 0], marks=pytest.mark.xfail),
+                          pytest.param([5], [0, 0, 1, 0], marks=pytest.mark.xfail),
+                          pytest.param([6], [0, 0, 0, 1], marks=pytest.mark.xfail),
+                          pytest.param([7], [0, 0, 0, 1], marks=pytest.mark.xfail),  # Note the behavior of 7
+                          ([8], [0, 0, 0, 0]),
+                          ([0, 1], [1, 0, 0, 0]),
+                          ([0, 1, 0], [1, 0, 0, 0]),
+                          ([0, 1, 0, 2], [1, 1, 0, 0]),
+                          ([0, 1, 8, 2], [1, 1, 0, 0]),
+                          ([0, 1, 5, 2], [1, 1, 1, 0]),
+                          ([0, 1, 5, 1], [2, 0, 1, 0]),
+                          ([0, 1, 6.5, 1], [2, 0, 0, 1]),
+                          pytest.param([1, 6.5, 1], [2, 0, 0, 1], marks=pytest.mark.xfail),
+                          ([-1, 8, -14, 12], [0, 0, 0, 0]),
+                          ([-1, 8, 0.5, 12], [1, 0, 0, 0]),
+                          ([-1, 8, 7, 12], [0, 0, 0, 1]),  # Note the behavior of 7
+                          ])
+def test_hist1d_basic(invals, expected):
+    """Check whether _utils.hist1d shows issue #1605
+
+    At the moment the upper-limit of the last bin is included, which
+    seems wrong but that is a separate issue to #1605 (see #1606).
+
+    """
+
+    ans = _utils.hist1d(invals, [0.5, 1.5, 3.1, 6], [1.5, 3.1, 6, 7])
+    assert ans == pytest.approx(expected)
