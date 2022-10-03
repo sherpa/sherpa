@@ -450,12 +450,12 @@ def test_histogram2d_with_fixed_bins():
 @pytest.mark.parametrize("invals,expected",
                          [([0], [0, 0, 0, 0]),
                           ([1], [1, 0, 0, 0]),
-                          pytest.param([2], [0, 1, 0, 0], marks=pytest.mark.xfail),
-                          pytest.param([3], [0, 1, 0, 0], marks=pytest.mark.xfail),
-                          pytest.param([4], [0, 0, 1, 0], marks=pytest.mark.xfail),
-                          pytest.param([5], [0, 0, 1, 0], marks=pytest.mark.xfail),
-                          pytest.param([6], [0, 0, 0, 1], marks=pytest.mark.xfail),
-                          pytest.param([7], [0, 0, 0, 1], marks=pytest.mark.xfail),  # Note the behavior of 7
+                          ([2], [0, 1, 0, 0]),
+                          ([3], [0, 1, 0, 0]),
+                          ([4], [0, 0, 1, 0]),
+                          ([5], [0, 0, 1, 0]),
+                          ([6], [0, 0, 0, 1]),
+                          ([7], [0, 0, 0, 1]),  # Note the behavior of 7
                           ([8], [0, 0, 0, 0]),
                           ([0, 1], [1, 0, 0, 0]),
                           ([0, 1, 0], [1, 0, 0, 0]),
@@ -464,7 +464,7 @@ def test_histogram2d_with_fixed_bins():
                           ([0, 1, 5, 2], [1, 1, 1, 0]),
                           ([0, 1, 5, 1], [2, 0, 1, 0]),
                           ([0, 1, 6.5, 1], [2, 0, 0, 1]),
-                          pytest.param([1, 6.5, 1], [2, 0, 0, 1], marks=pytest.mark.xfail),
+                          ([1, 6.5, 1], [2, 0, 0, 1]),
                           ([-1, 8, -14, 12], [0, 0, 0, 0]),
                           ([-1, 8, 0.5, 12], [1, 0, 0, 0]),
                           ([-1, 8, 7, 12], [0, 0, 0, 1]),  # Note the behavior of 7
