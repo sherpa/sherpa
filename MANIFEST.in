@@ -13,6 +13,12 @@ include CONTRIBUTING.md
 # Why is this needed but other compiled code is picked up automatically?
 include sherpa/astro/xspec/src/_xspec.cc
 
+# This appears to be necessary in some situations (e.g. using tox),
+# but was that a temporary issue or is it something expected? For
+# whatever reason, let's be explicit.
+#
+include setup.py
+
 recursive-include helpers *.py
 
 # HTML/notebook representation
