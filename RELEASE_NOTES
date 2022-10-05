@@ -1,5 +1,178 @@
 Release Notes
 
+Sherpa 4.15.0
+=============
+
+This release of Sherpa includes various enhancements, documentation updates,  bug fixes, and infrastructure changes.
+
+* enhancements:
+    * Improved validation of arguments when creating Data objects:
+        * arrays sent to Data objects are now converted to ndarrays
+        * the independent axis is now made read-only
+        * the size of a data object is now fixed.
+    * Filter setting with notice/ignore are reported to the screen for the users of the UI layer.
+    * Increased test coverage for plotting
+* documentation changes:
+    * updated readthedocs to use pip and pytest instead of setup.py
+    * several updates to documentation, including updates to fake_pha, calc_ftest, calc_mlr
+* Infrastructure changes:
+    * Drop support for Python 3.7
+    * Updates to start creating Python 3.10 Conda packages.
+    * Use Numpy 1.20 for Python 3.8/3.9 and Numpy 1.21 for Python 3.10.
+    * Moves toward PEP-517 with some distutils cleanup and more configuration moved from setup.py to setup.cfg
+    * Various improvements to the GitHub Actions and GitLab workflows
+* bug fixes:
+    * Ensure chi2xspecvar errors match XSPEC when 0 counts are present during background subtraction
+    * Remove model instances from the global symbol table when clean is called
+    * Addresses new warnings in the tests for Matplotlib 3.6.0 and AstroPy 5.1
+    * Minor copy and paste error in fake_pha docstring
+    * Test issues in test_fake_pha.py due to randomness
+
+Details
+-------
+
+#1329 - Build updates (move towards PEP-517 support)
+    Move the Sherpa build system towards a more static configuration (PEP 517)
+
+#1412 - XSPEC: initialize XSPEC library at load time
+    Simplify how and when the XSPEC model library is initialized. Fixes #1388
+
+#1477 - Add data validation
+    Improve the validation of arguments when creating Data objects- Arrays sent to
+    Data objects are now converted to ndarrays, the independent axis is now made
+    read-only, the size of a data object is now fixed.
+
+#1504 - CI: rework setup
+    Update the GitHub workflows for Continuous Integration to better take advantage
+    of the workflow language.
+
+#1505 - RTD use pip/pytest rather than setup.py for install/develop/test
+    Change the RTD documentation to use pip and pytest rather than setup.py when
+    building and testing Sherpa
+
+#1507 - tests: ensure DS9 window is closed after the tests
+    Ensure that any DS9 process started by the Sherpa tests is closed when the tests
+    are finished.
+
+#1510 - Tests: improve test coverage of plot code
+    Improve the testing coverage for several plot routines.
+
+#1513 - Minor UI tweaks
+    Added validation to the set_xlog/ylog/xlinear/ylinear and updated save_model,
+    save_source, save_resid, and save_delchi commands from sherpa.ui to not error
+    out if not given an explicit identifier.
+
+#1516 - Consolidate plot and set_xlog handling
+    Use the same labels for the plot and set_xlog/set_ylog/set_xlinear/set_ylinear
+    functions. As a result, a number of names can no-longer be used as an identifier
+    for a dataset (bkg_chisqr, bkg_delchi, bkg_fit, bkg_model, bkg_ratio, bkg_resid,
+    bkg_source).
+
+#1519 - Use direct html links instead of using `[1]` and a reference section
+    This replaces the use of a "References" section with direct URL links in
+    particular in cases where the reference is just a plain old HTML website and
+    not a scholarly publication.
+
+#1523 - Ensure the region-lib code is re-generated when needed
+    Fix a build issue with clang where the region-library code caused an error
+    message
+
+#1529 - Add arguments to -i in sed calls in config script
+    Update sed command in config script for improved portability
+
+#1532 - Add plot related tests
+    Add more tests to cover corner case scenarios (mostly plotting related).
+
+#1534 - docs: fix calc_ftest/mlr documentation
+    Note that calc_ftest and calc_mlr can return an array or scalar value, depending
+    on the input.
+
+#1536 - Tests: add more tests of get_order_plot/plot_order
+    Add a test for multiple orders and plot_order.
+
+#1537 - Remove model instances from the global symbol table when clean is called
+    Ensure that models are removed when clean() is called.
+
+#1538 - Ensure chi2xspecvar errors match XSPEC when 0 counts are present during background subtraction
+    When using the chi2xspecvar statistic for estimating PHA errors, ensure that the
+    errors match those calculated by XSPEC when the background is subtracted and the
+    source or background group contains 0 counts
+
+#1540 - Tests: fix the random seed for a fake_pha test
+    Remove randomness from a test.
+
+#1547 - Fix CI failures from AstroPy 5.1 warning changes
+    Allow the macOS tests to run on CI with AstroPy 5.1.
+
+#1554 - Install New libxcb Dependencies for Qt
+    For Linux GitHub Actions, we now install libxcb dependencies required for
+    Conda's Qt package.
+
+#1555 - Bump the ci-pip-arch workflow to ubuntu-20.04
+    Update to use ubuntu 20 as GutHub Actions is deprecating ubuntu 18.04
+
+#1562 - report the change in the filter because of calls to notice and ignore
+    When a notice or ignore call - including the variants like notice_id and
+    ignore2d - then the change in the filter is reported to the screen (for users
+    of the ui layer).
+
+#1563 - Add Python 3.10 Conda Builds, Drop Python 3.7 and Numpy <1.20, Switch to Pip for Conda Builds
+    Drop official support for Python 3.7 and start creating Python 3.10 Conda
+    packages. Our Conda builds now use Numpy 1.20 for Python 3.8/3.9 and
+    Numpy 1.21 for Python 3.10.
+
+#1566 - GitLab: Add version info to deploy test, update test OS, and allow interrupt.
+    Updates to gitlab to support automated tests, save version info, set default to
+    interruptible to allow canceling pipelines, and switched to source conda instead
+    of adding it to the path
+
+#1567 - Fix minor copy and paste error in fake_pha docstring
+    Make UI layer fake_pha work for XMM/RGS by accepting input of arf=None when an
+    RMF file is given.
+
+#1569 - Minor changes to the fake_pha test added in #1567
+    Internal changes to the test added for fake_pha in #1567
+
+#1572 - Tests: fix a logical test error
+    Fix a logical error in a plotting test.
+
+#1574 - Avoid occasional test errors from Tcl_AsyncDelete
+    Switch the matplotlib tests to use the Agg backend to avoid possible
+    Tcl_AsyncDelete errors (issue #1509)
+
+#1578 - Gitlab: Reduce artifact retention period
+    reduces artifact retention from 2 weeks to 3 days due to new gitlab 5gb
+    restrictions
+
+#1579 - Add back --python removed in #1566
+    reinserts --python flag that was accidentally removed in #1566
+
+#1580 -add a versionchanged note for the fake_pha command
+    Update the documentation to note the change to fake_pha in #1567
+
+#1585 - Tests: work around matplotlib 3.6.0 warning
+    Allow the tests to pass when run with matplotlib version 3.6.0.
+
+#1589 - Set the language when building the documentation
+    Ensure the language setting is defined for recent versions of Sphinx
+
+#1594 - gitlab-ci: Set build num to 0 if not set
+    Set the default Sherpa build number to 0 in our GitLab workflow to know which
+    package to run deploy tests on for official release builds.
+
+#1600 - Change the histogram1d and 2d routines so that they do not sort the input arguments
+    Address some failures in histogram1d and histogram2d routines by making sure
+    they copy the input arguments before sorting them.
+
+Caveats
+-----------
+
+* There are known issues (#1602, #1605, #1606) in the histogram1d/histogram2d functions
+    leading to failures which were not fully addressed in this release (see the failed
+    case in the second histogram1d example). This is not the Sherpa core functionality
+    and numpy.histogram can be used if needed.
+
+
 Sherpa 4.14.1
 =============
 This release of Sherpa includes various enhancements, documentation updates, bug fixes, and infrastructure changes.
