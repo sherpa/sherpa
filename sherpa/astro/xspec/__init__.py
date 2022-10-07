@@ -5318,7 +5318,7 @@ class XSkerrdisk(XSAdditiveModel):
 
     """
 
-    __function__ = "spin"
+    __function__ = "C_spin"
 
     def __init__(self, name='kerrdisk'):
         self.lineE = XSParameter(name, 'lineE', 6.4, 0.1, 100., 0.1, 100, units='keV', frozen=True)

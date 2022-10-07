@@ -141,7 +141,6 @@ extern "C" {
   xsf77Call jet_;
 
   xsf77Call xsgrbm_;
-  xsf77Call spin_;
 
   xsf77Call kyrline_;
 
@@ -877,7 +876,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_zkerrbb, 10 ),
 
   XSPECMODELFCT_C_NORM( C_kerrd, 8 ),
-  XSPECMODELFCT_NORM( spin, 10 ),
+  XSPECMODELFCT_C_NORM( C_spin, 10 ),
 
   XSPECMODELFCT_NORM( kyrline, 12 ),
 
