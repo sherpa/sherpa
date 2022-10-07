@@ -101,13 +101,8 @@
 // functionMap.h but that requires using the XSPEC build location
 // rather than install location.
 //
-#ifdef XSPEC_12_12_0
 #include "XSFunctions/Utilities/xsFortran.h"
 #include "XSFunctions/funcWrappers.h"
-#else
-#include "xsFortran.h"
-#include "funcWrappers.h"
-#endif
 
 // TODO: is this defined in an XSPEC header file?
 #define ABUND_SIZE (30) // number of elements in Solar Abundance table
@@ -117,9 +112,7 @@ extern "C" {
   xsf77Call agnsed_;
   xsf77Call qsosed_;
 
-#ifdef XSPEC_12_11_0
   xsf77Call agnslim_;
-#endif
 
   xsf77Call xsblbd_;
   xsf77Call xsbbrd_;
@@ -228,23 +221,16 @@ extern "C" {
 
   xsccCall slimbbmodel;
 
-#ifdef XSPEC_12_11_0
   xsccCall beckerwolff;
-#endif
 
 #ifdef XSPEC_12_12_1
   xsF77Call ismabs_;
   xsF77Call ismdust_;
   xsF77Call olivineabs_;
 #else
-
   xsf77Call ismabs_;
-
-#ifdef XSPEC_12_11_0
   xsf77Call ismdust_;
   xsf77Call olivineabs_;
-#endif
-
 #endif // XSPEC_12_12_1
 
 // XSPEC convolution models
@@ -254,15 +240,10 @@ extern "C" {
 
   xsf77Call kyconv_;
 
-#ifdef XSPEC_12_11_0
   xsf77Call thcompf_;
-#endif
 
-// XSPEC 12.12.0 changes
-#ifdef XSPEC_12_12_0
   xsccCall xsgrbjet;
   xsf77Call zxipab_;
-#endif
 
 }
 
@@ -846,9 +827,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( agnsed, 16 ),
   XSPECMODELFCT_NORM( qsosed, 7 ),
 
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT_NORM( agnslim, 15 ),
-#endif
 
   XSPECMODELFCT_C_NORM( C_apec, 4 ),
   XSPECMODELFCT_C_NORM( C_bapec, 5 ),
@@ -895,9 +874,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( xsgrbm, 4 ),
   XSPECMODELFCT_C_NORM( C_kerrbb, 10 ),
 
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT_C_NORM( C_zkerrbb, 10 ),
-#endif
 
   XSPECMODELFCT_C_NORM( C_kerrd, 8 ),
   XSPECMODELFCT_NORM( spin, 10 ),
@@ -1054,13 +1031,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_vvpshock, 35 ),
   XSPECMODELFCT_C_NORM( C_vvsedov, 35 ),
 
-#ifdef XSPEC_12_11_0
   // We do not have a direct interface to the c_func routines, so
   // take advantage of the fact XSPEC provides multiple APIs
   // and use the C one.
   // XSPECMODELFCT_C_NORM( c_beckerwolff, 13 ),
   XSPECMODELFCT_C_NORM( beckerwolff, 13 ),
-#endif
 
   //multiplicative
   XSPECMODELFCT( xsphei, 3 ),
@@ -1094,9 +1069,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_zashift, 1),
   XSPECMODELFCT_CON(C_zmshift, 1),
 
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT_CON_F77(thcompf, 4),
-#endif
 
   // Models from 12.9.1
   //
@@ -1138,25 +1111,19 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_DBL(ismdust, 3),
   XSPECMODELFCT_DBL(olivineabs, 2),
 #else
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT(ismdust, 3),
   XSPECMODELFCT(olivineabs, 2),
-#endif
 #endif // XSPEC_12_12_1
 
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT_C(C_logconst, 1),
   XSPECMODELFCT_C(C_log10con, 1),
-#endif
 
-#ifdef XSPEC_12_12_0
   XSPECMODELFCT_C_NORM( xsgrbjet, 14 ),  // follow xsgrbcomp and drop the leading c_
   XSPECMODELFCT_C_NORM( C_vvwDem, 37 ),
   XSPECMODELFCT_C_NORM( C_vwDem, 21 ),
   XSPECMODELFCT_C_NORM( C_wDem, 8 ),
 
   XSPECMODELFCT(zxipab, 5),
-#endif
 
   { NULL, NULL, 0, NULL }
 

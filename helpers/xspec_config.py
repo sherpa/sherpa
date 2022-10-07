@@ -28,9 +28,7 @@ from .extensions import build_ext
 # major, minor, and micro. We drop the patch level - e.g.
 # "c" in "12.12.0c" as that is not helpful to track here.
 #
-SUPPORTED_VERSIONS = [(12, 10, 1),
-                      (12, 11, 0), (12, 11, 1),
-                      (12, 12, 0), (12, 12, 1)]
+SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1)]
 
 
 # We could use packaging.versions.Version here, but for our needs we
@@ -80,7 +78,7 @@ class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
                     ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
-                    ('xspec-version', None, "the XSPEC version (default 12.10.1)"),
+                    ('xspec-version', None, "the XSPEC version (default 12.12.0)"),
                     ('xspec-lib-dirs', None, "Where the xspec libraries are located, if with-xspec is True"),
                     ('xspec-libraries', None, "Name of the libraries that should be linked for xspec"),
                     ('cfitsio-lib-dirs', None, "Where the cfitsio libraries are located, if with-xspec is True"),
@@ -95,7 +93,7 @@ class xspec_config(Command):
 
     def initialize_options(self):
         self.with_xspec = False
-        self.xspec_version = '12.10.1'
+        self.xspec_version = '12.12.0'
         self.xspec_include_dirs = ''
         self.xspec_lib_dirs = ''
         # This is set up for how CIAO builds XSPEC; other users may require more libraries

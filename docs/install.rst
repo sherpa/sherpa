@@ -224,7 +224,7 @@ made to the ``xspec_config`` section of the ``setup.cfg`` file. The
 available options (with default values) are::
 
     with-xspec = False
-    xspec_version = 12.10.1
+    xspec_version = 12.12.0
     xspec_lib_dirs = None
     xspec_include_dirs = None
     xspec_libraries = XSFunctions XSUtil XS
@@ -275,43 +275,7 @@ match the contents of the XSPEC installation.
    where the version numbers were taken from version 6.29 of HEASOFT and
    may need updating with a newer release.
 
-3. If the full XSPEC 12.11.1 system has been built then use::
-
-       with-xspec = True
-       xspec_version = 12.11.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.28
-       ccfits_libraries = CCfits_2.5
-       wcslib_libraries = wcs-5.19.1
-
-   where the version numbers were taken from version 6.28 of HEASOFT.
-
-4. If the full XSPEC 12.11.0 system has been built then use::
-
-       with-xspec = True
-       xspec_version = 12.11.0
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.27
-       ccfits_libraries = CCfits_2.5
-       wcslib_libraries = wcs-5.19.1
-
-   where the version numbers were taken from version 6.27 of HEASOFT.
-
-5. If the full XSPEC 12.10.1 system has been built then use::
-
-       with-xspec = True
-       xspec_version = 12.10.1
-       xspec_lib_dirs = $HEADAS/lib
-       xspec_include_dirs = $HEADAS/include
-       xspec_libraries = XSFunctions XSUtil XS hdsp_6.26
-       ccfits_libraries = CCfits_2.5
-       wcslib_libraries = wcs-5.19.1
-
-   where the version numbers were taken from version 6.26.1 of HEASOFT.
-
-6. If the model-only build of XSPEC - created with the
+3. If the model-only build of XSPEC - created with the
    ``--enable-xs-models-only`` flag when building HEASOFT - has been
    installed, then the configuration is similar, but the library names
    may not need version numbers and locations, depending on how the
