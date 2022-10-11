@@ -122,16 +122,16 @@ class xspec_config(Command):
 
         macros = []
         if self.xspec_version:
-            self.announce(f"Found XSPEC version: {self.xspec_version}", 2)
+            self.announce(f"Found XSPEC version: {self.xspec_version}", level=2)
             xspec_version = get_version(self.xspec_version)
+
+            if xspec_version < MIN_VERSION:
+                raise ValueError(f"XSPEC Version {xspec_version} is less than {MIN_VERSION}, which is the earliest supported version for Sherpa")
 
             for version in SUPPORTED_VERSIONS:
                 if xspec_version >= version:
                     major, minor, micro = version
                     macros += [(f'XSPEC_{major}_{minor}_{micro}', None)]
-
-            if xspec_version < MIN_VERSION:
-                self.warn("XSPEC Version is less than {MIN_VERSION}, which is the minimal supported version for Sherpa")
 
             if xspec_version > MAX_VERSION:
                 self.warn(f"XSPEC Version is greater than {MAX_VERSION}, which is the latest supported version for Sherpa")
