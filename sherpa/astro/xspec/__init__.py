@@ -688,6 +688,7 @@ def set_xsxsect(name: str) -> None:
 #
 xsstate: dict[str, Any] = {
     "paths": {},
+    "xfltnums": set(),
 }
 
 
@@ -825,6 +826,98 @@ def set_xsxset(name: str, value: str) -> None:
     _xspec.set_xsxset(name.upper(), value)
 
 
+def clear_xsxflt() -> None:
+    """Clear out the XFLT database for all spectra.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    get_xflt, set_xflt
+
+    Examples
+    --------
+
+    >>> clear_xsxflt()
+
+    """
+    _xspec.clear_xflt()
+    xsstate["xfltnums"].clear()
+
+
+def get_xsxflt(spectrumNumber: int) -> dict[str, float]:
+    """Return the XFLT values stored for a spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    spectrumNumber : int
+        The spectrum number (as used by XSPEC).
+
+    Returns
+    -------
+    xflt : dict
+        The current keywords (strings) and values (numbers) associated
+        with the current spectrumNumber. It may be empty.
+
+    See Also
+    --------
+    clear_xsxflt, set_xsxflt
+
+    Examples
+    --------
+
+    >>> get_xsxflt(1)
+    {}
+
+    >>> set_xsxflt(2, {"inner": 0.2, "outer": 2, "width": 360})
+    >>> get_xsxflt(2)
+    {'inner': 0.2, 'outer': 2.0, 'width': 360.0}
+
+    """
+    # We could check xsstate["xfltnums"] but pass through to XSPEC to
+    # check instead.
+    #
+    return _xspec.get_xflt(spectrumNumber)
+
+
+def set_xsxflt(spectrumNumber: int, xflt: dict[str, float]) -> None:
+    """Set the XFLT values stored for a spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    spectrumNumber : int
+        The spectrum number (as used by XSPEC).
+    xflt : dict
+        The keywords (strings) and values (numbers) for the current
+        spectrumNumber. These values over-ride any existing
+        values. Using an empty dictionary will remove the settings for
+        this spectrumNumber.
+
+    See Also
+    --------
+    clear_xsxflt, get_xsxflt
+
+    Examples
+    --------
+
+    >>> set_xsxflt(2, {"inner": 0.2, "outer": 2})
+    >>> set_xsxflt(2, {"width": 360})
+    >>> get_xsxflt(2)
+    {'width': 360.0}
+
+    """
+
+    # We store the spectrumNumber values that have data, so that we
+    # can query the database when it comes to calling get_xsstate.
+    #
+    _xspec.set_xflt(spectrumNumber, xflt)
+    xsstate["xfltnums"].add(spectrumNumber)
+
+
 def get_xspath_manager() -> str:
     """Return the path to the files describing the XSPEC models.
 
@@ -897,49 +990,53 @@ def set_xspath_manager(path: str) -> None:
     xsstate["paths"]["manager"] = path
 
 
-# Provide XSPEC module state as a dictionary.  The "cosmo" state is
-# a 3-tuple, and "modelstrings" is a dictionary of model strings
-# applicable to certain models.  The abund and xsect settings are
-# strings.  The chatter setting is an integer.  Please see the
-# XSPEC manual concerning the following commands: abund, chatter,
-# cosmo, xsect, and xset.
-# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Control.html
-# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Setting.html
-#
-# The path dictionary contains the manager path, which can be
-# explicitly set. It could also contain the model path, but there
-# is no XSPEC routine to change that; instead a user would set the
-# XSPEC_MDATA_DIR environment variable before starting XSPEC.
-# Should this path be included?
-#
 def get_xsstate() -> dict[str, Any]:
     """Return the state of the XSPEC module.
+
+    .. versionchanged:: 4.17.0
+       The state now contains any XFLT keywords that have been set.
 
     Returns
     -------
     state : dict
         The current settings for the XSPEC module, including but not
-        limited to: the abundance and cross-section settings, parameters
-        for the cosmological model, any XSET parameters that have been
-        set, and changes to the paths used by the model library.
+        limited to: the abundance and cross-section settings,
+        parameters for the cosmological model, any XSET and XFLT
+        parameters that have been set, and changes to the paths used
+        by the model library.
 
     See Also
     --------
-    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
-    set_xsstate
+    get_xsabund, get_xschatter, get_xscosmo, get_xsxflt, get_xsxsect,
+    get_xsxset, set_xsstate
+
     """
+
+    # We don't keep the current XFLT database, just a list of those
+    # spectrmNumber cases that have data.
+    #
+    xflt = {}
+    for spectrumNumber in xsstate["xfltnums"]:
+        store = get_xsxflt(spectrumNumber)
+        if len(store) > 0:
+            xflt[spectrumNumber] = store
 
     return {"abund": get_xsabund(),
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
             "modelstrings": get_xsxset(),
-            "paths": xsstate["paths"].copy()
+            "paths": xsstate["paths"].copy(),
+            "xflt": xflt
             }
 
 
 def set_xsstate(state: dict[str, Any]) -> None:
     """Restore the state of the XSPEC module.
+
+    .. versionchanged:: 4.17.0
+       The state can now include XFLT keywords under the 'xflt'
+       keyword.
 
     Parameters
     ----------
@@ -947,8 +1044,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'. If a keyword is missing then that setting will
-        not be changed.
+        'xflt', and 'paths'. If a keyword is missing then that setting
+        will not be changed.
 
     See Also
     --------
@@ -992,6 +1089,12 @@ def set_xsstate(state: dict[str, Any]) -> None:
         clear_xsxset()
         for name, value in settings.items():
             set_xsxset(name, value)
+
+    xflt = state.get("xflt", None)
+    if xflt is not None:
+        clear_xsxflt()
+        for spectrumNumber, values in xflt.items():
+            set_xsxflt(spectrumNumber, values)
 
     paths = state.get("paths", {})
     try:
@@ -1147,6 +1250,7 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'get_xsversion',
            'set_xsxset', 'get_xsxset', 'clear_xsxset',
            'set_xsstate', 'get_xsstate',
+           'clear_xsxflt', 'get_xsxflt', 'set_xsxflt', 'clear_xsxflt',
            'get_xsabundances', 'set_xsabundances')
 
 
