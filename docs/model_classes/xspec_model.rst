@@ -31,6 +31,7 @@ for a general description of the ``sherpa.astro.xspec`` module.
    .. autosummary::
       :toctree: api
 
+      clear_xsxflt
       clear_xsxset
       get_xsabund
       get_xsabund_doc
@@ -38,17 +39,20 @@ for a general description of the ``sherpa.astro.xspec`` module.
       get_xsabundances_path
       get_xschatter
       get_xscosmo
+      get_xsxflt
       get_xspath_manager
       get_xspath_model
       get_xsstate
       get_xsversion
       get_xsxsect
       get_xsxset
+      load_xsxflt
       read_xstable_model
       set_xsabund
       set_xsabundances
       set_xschatter
       set_xscosmo
+      set_xsxflt
       set_xspath_manager
       set_xspath_model
       set_xsstate
