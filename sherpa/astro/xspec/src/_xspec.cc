@@ -522,6 +522,25 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 }
 
 
+static PyObject *emptyDict() { return PyDict_New(); }
+
+// This is not a generic routine (i.e. it's only for the Python type
+// dict[str, float]). Note that Real is a typedef for double, which is
+// why it can be used for both getAllXFLT and getAllDbValues.
+//
+static PyObject *mapToDict(const std::map<string, double> &map) {
+  PyObject *d = PyDict_New();
+
+  for (const auto& item : map) {
+    PyObject *value = PyFloat_FromDouble(item.second);
+    PyDict_SetItemString(d, item.first.c_str(), value);
+    Py_DECREF(value);
+  }
+
+  return d;
+}
+
+
 // XFLT functions
 //
 //      static int getNumberXFLT(int ifl);
@@ -552,22 +571,15 @@ static PyObject* getAllXFLT( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"i", &spectrumNumber ) )
     return NULL;
 
-  PyObject *d = PyDict_New();
-
   // Check that we have data, to avoid a YellowAlert when calling
   // getAllXFLT.
   //
   if (FunctionUtility::getNumberXFLT(spectrumNumber) > 0) {
     const std::map<string, Real> xflt = FunctionUtility::getAllXFLT(spectrumNumber);
-
-    for (const auto& item : xflt) {
-      PyObject *value = PyFloat_FromDouble(item.second);
-      PyDict_SetItemString(d, item.first.c_str(), value);
-      Py_DECREF(value);
-    }
+    return mapToDict(xflt);
+  } else {
+    return emptyDict();
   }
-
-  return d;
 }
 
 static PyObject* loadXFLT( PyObject *self, PyObject *args )
@@ -607,6 +619,43 @@ static PyObject* loadXFLT( PyObject *self, PyObject *args )
 
   // We do not check if xflt is empty.
   FunctionUtility::loadXFLT(spectrumNumber, xflt);
+  Py_RETURN_NONE;
+}
+
+
+// This is easy to provide access to, but is it worth it?
+//
+//   static double getDbValue(const string keyword);
+//   static void loadDbValue(const string keyword, const double value);
+//   static void clearDb();
+//   static string getDbKeywords();
+//   static const std::map<string,double>& getAllDbValues();
+//
+// Follow the XFLT approach and just provide an access via
+// dictionaries, although in  this case we do support a way
+// to set a single value.
+//
+static PyObject* clearDb( PyObject *self )
+{
+  FunctionUtility::clearDb();
+  Py_RETURN_NONE;
+}
+
+static PyObject* getAllDb( PyObject *self )
+{
+  const std::map<string, double> db = FunctionUtility::getAllDbValues();
+  return mapToDict(db);
+}
+
+static PyObject* loadDbValue( PyObject *self, PyObject *args )
+{
+  char* key = NULL;
+  double value = 0;
+
+  if ( !PyArg_ParseTuple( args, (char*)"sd", &key, &value ) )
+    return NULL;
+
+  FunctionUtility::loadDbValue(string(key), value);
   Py_RETURN_NONE;
 }
 
@@ -654,6 +703,11 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(clear_xflt, clearXFLT),
   FCTSPEC(get_xflt, getAllXFLT),
   FCTSPEC(set_xflt, loadXFLT),
+
+  // DB commands
+  NOARGSPEC(clear_db, clearDb),
+  NOARGSPEC(get_db, getAllDb),
+  FCTSPEC(set_db, loadDbValue),
 
   // The set commands are not wrapped yet as it's not clear how well
   // the system handles these changes (e.g. it doesn't seem to update
