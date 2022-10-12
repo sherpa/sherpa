@@ -811,7 +811,7 @@ def test_get_xsstate_keys():
     ostate = xspec.get_xsstate()
     assert isinstance(ostate, dict)
 
-    for key in ["abund", "chatter", "cosmo", "xsect", "xflt",
+    for key in ["abund", "chatter", "cosmo", "xsect", "xflt", "db",
                 "modelstrings", "paths"]:
         assert key in ostate
 
@@ -2407,3 +2407,53 @@ def test_xflt_can_set_xsxstate():
 
     # And this is an unknown record
     assert xspec.get_xsxflt(3) == {}
+
+
+@requires_xspec
+def test_db_can_clear_all():
+    """Check clear_db() does something."""
+
+    from sherpa.astro import xspec
+
+    xspec.set_xsdb("a", 23);
+    xspec.set_xsdb("b", 4.9);
+    xspec.clear_xsdb()
+
+    assert len(xspec.get_xsdb()) == 0
+
+
+@requires_xspec
+def test_db_can_set():
+    """We can set a single value."""
+
+    from sherpa.astro import xspec
+
+    xspec.set_xsdb("aA", -1.2e4);
+    ans = xspec.get_xsdb()
+    assert ans["aa"] == pytest.approx(-1.2e4);
+
+    xspec.clear_xsdb()
+
+
+@requires_xspec
+def test_db_can_get():
+    """We can get the values we set.
+
+    It appears that the keys are converted to lower case.
+
+    """
+
+    from sherpa.astro import xspec
+
+    xspec.clear_xsdb()
+    xspec.set_xsdb("aA", 23)
+    xspec.set_xsdb("b", 4.9)
+    xspec.set_xsdb("CC", -1.2e-2)
+
+    out = xspec.get_xsdb()
+    assert len(out) == 3
+    assert out["aa"] == pytest.approx(23)
+    assert out["b"] == pytest.approx(4.9)
+    assert out["cc"] == pytest.approx(-1.2e-2)
+
+    xspec.clear_xsdb()

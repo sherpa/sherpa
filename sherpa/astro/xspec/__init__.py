@@ -918,6 +918,81 @@ def set_xsxflt(spectrumNumber: int, xflt: dict[str, float]) -> None:
     xsstate["xfltnums"].add(spectrumNumber)
 
 
+def clear_xsdb() -> None:
+    """Clear out the XSPEC database.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    get_xsdb, set_xsdb
+
+    Examples
+    --------
+
+    >>> clear_xsdb()
+
+    """
+    return _xspec.clear_db()
+
+
+def get_xsdb() -> dict[str, float]:
+    """Return the XSPEC database values.
+
+    .. versionadded:: 4.17.0
+
+    Returns
+    -------
+    db : dict
+        The current keywords (strings) and values (numbers) associated
+        with the XSPEC database. It may be empty.
+
+    See Also
+    --------
+    clear_xsdb, set_xsdb
+
+    Examples
+    --------
+
+    >>> get_xsdb()
+    {}
+
+    >>> set_db("inner", 0.2)
+    >>> set_db("outer", 2)
+    >>> get_db()
+    {'inner': 0.2, 'outer': 2.0}
+
+    """
+    return _xspec.get_db()
+
+
+def set_xsdb(key: str, value: float) -> None:
+    """Set a XSPEC database value.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    key : str
+        The keyword to set (it is converted to lower case).
+    value : number
+        The number to set.
+
+    See Also
+    --------
+    clear_db, get_db
+
+    Examples
+    --------
+
+    >>> set_xsdb("inner", 0.2)
+    >>> set_xsdb("outer", 2)
+    >>> get_xsdb()
+
+    """
+    _xspec.set_db(key, value)
+
+
 def get_xspath_manager() -> str:
     """Return the path to the files describing the XSPEC models.
 
@@ -1007,8 +1082,8 @@ def get_xsstate() -> dict[str, Any]:
 
     See Also
     --------
-    get_xsabund, get_xschatter, get_xscosmo, get_xsxflt, get_xsxsect,
-    get_xsxset, set_xsstate
+    get_xsabund, get_xschatter, get_xscosmo, get_xsdb, get_xsxflt,
+    get_xsxsect, get_xsxset, set_xsstate
 
     """
 
@@ -1027,6 +1102,7 @@ def get_xsstate() -> dict[str, Any]:
             "xsect": get_xsxsect(),
             "modelstrings": get_xsxset(),
             "paths": xsstate["paths"].copy(),
+            "db": get_xsdb(),
             "xflt": xflt
             }
 
@@ -1044,8 +1120,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        'xflt', and 'paths'. If a keyword is missing then that setting
-        will not be changed.
+        'xflt', 'db', and 'paths'. If a keyword is missing then that
+        setting will not be changed.
 
     See Also
     --------
@@ -1089,6 +1165,12 @@ def set_xsstate(state: dict[str, Any]) -> None:
         clear_xsxset()
         for name, value in settings.items():
             set_xsxset(name, value)
+
+    db = state.get("db", None)
+    if db is not None:
+        clear_xsdb()
+        for name, value in db.items():
+            set_xsdb(name, value)
 
     xflt = state.get("xflt", None)
     if xflt is not None:
@@ -1250,7 +1332,8 @@ __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'get_xsversion',
            'set_xsxset', 'get_xsxset', 'clear_xsxset',
            'set_xsstate', 'get_xsstate',
-           'clear_xsxflt', 'get_xsxflt', 'set_xsxflt', 'clear_xsxflt',
+           'get_xsxflt', 'set_xsxflt', 'clear_xsxflt',
+           'clear_xsdb', 'get_xsdb', 'set_xsdb', 'clear_xsdb',
            'get_xsabundances', 'set_xsabundances')
 
 
