@@ -16,7 +16,7 @@ stages:
 # https://docs.gitlab.com/ee/ci/variables/index.html#pass-an-environment-variable-to-another-job
 define-version:
   stage: version
-  image: registry.gitlab.com/cxc/sherpa/sherpa-docker-build:main
+  image: registry.gitlab.com/cxc-sherpa/sherpa/sherpa-docker-build:main
   tags:
     - sherpa
   script:
@@ -45,7 +45,7 @@ define-version:
 
 .template-linux-conda-build: &template_linux_conda_build
   <<: *template_conda_build
-  image: registry.gitlab.com/cxc/sherpa/sherpa-docker-build:main
+  image: registry.gitlab.com/cxc-sherpa/sherpa/sherpa-docker-build:main
   tags:
     - sherpa
 
@@ -88,7 +88,7 @@ conda:
   stage: deploy
   tags:
       - sherpa
-  image: registry.gitlab.com/cxc/sherpa/sherpa-docker-build:main
+  image: registry.gitlab.com/cxc-sherpa/sherpa/sherpa-docker-build:main
   interruptible: false
   dependencies:
       - linux-python3.8-conda-build
