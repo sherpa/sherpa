@@ -589,7 +589,7 @@ def test_get_xsstate_keys():
     ostate = xspec.get_xsstate()
     assert isinstance(ostate, dict)
 
-    for key in ["abund", "chatter", "cosmo", "xsect",
+    for key in ["abund", "chatter", "cosmo", "xsect", "xflt",
                 "modelstrings", "paths"]:
         assert key in ostate
 
@@ -1701,3 +1701,62 @@ def test_xspec_model_kwarg_cached_not_needed():
     assert mdl._cache_ctr['misses'] == 3
 
     assert y3 == pytest.approx(y1)
+
+
+@requires_xspec
+def test_xflt_can_clear_all():
+    """Check clear_xsxflt() does something."""
+
+    from sherpa.astro import xspec
+
+    xspec.set_xsxflt(1, {"a": 23})
+    xspec.set_xsxflt(3, {"b": 4.9})
+    xspec.clear_xsxflt()
+
+    # We check spectrumNumber 1, 2, and 3 just to make sure.
+    for i in range(1, 4):
+        assert len(xspec.get_xsxflt(i)) == 0
+
+
+@requires_xspec
+def test_xflt_can_clear_single():
+    """We can clear a single spectrumNumber with an empty dict."""
+
+    from sherpa.astro import xspec
+
+    xspec.set_xsxflt(1, {"a": 23, "b": 4.9})
+    xspec.set_xsxflt(2, {"a": 23, "b": 4.9})
+
+    assert len(xspec.get_xsxflt(1)) == 2
+    assert len(xspec.get_xsxflt(2)) == 2
+
+    xspec.set_xsxflt(2, {})
+
+    assert len(xspec.get_xsxflt(1)) == 2
+    assert len(xspec.get_xsxflt(2)) == 0
+
+    xspec.clear_xsxflt()
+
+
+@requires_xspec
+def test_xflt_can_get():
+    """We can get the values we set.
+
+    It's not clear whether we should upper-case the keys, so check
+    that we do not change the case (this could be changed in the
+    future).
+
+    """
+
+    from sherpa.astro import xspec
+
+    xspec.clear_xsxflt()
+    xspec.set_xsxflt(1, {"CC": -1.2e-2, "aA": 23, "b": 4.9})
+
+    out = xspec.get_xsxflt(1)
+    assert len(out) == 3
+    assert out["aA"] == pytest.approx(23)
+    assert out["b"] == pytest.approx(4.9)
+    assert out["CC"] == pytest.approx(-1.2e-2)
+
+    xspec.clear_xsxflt()
