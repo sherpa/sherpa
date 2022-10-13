@@ -142,7 +142,6 @@ warning = logging.getLogger(__name__).warning
 # record these settings manually.
 #
 xsstate: dict[str, Any] = {
-    "modelstrings": {},
     "paths": {},
 }
 
@@ -723,24 +722,71 @@ def set_xsxsect(name: str) -> None:
     _xspec.set_xsxsect(name)
 
 
+def clear_xsxset() -> None:
+    """Remove all existing X-Spec model settings.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    get_xsxset, set_xsxset
+
+    Examples
+    --------
+
+    >>> set_xsxset("POW_EMIN", "0.5")
+    >>> get_xsxset()
+    {'POW_EMIN': '0.5'}
+    >>> clear_xsxset()
+    >>> get_xsxset()
+    {}
+
+    """
+    return _xspec.clear_xsxset()
+
+
+@overload
+def get_xsxset() -> dict[str, str]:
+    ...
+
+@overload
+def get_xsxset(name: None) -> dict[str, str]:
+    ...
+
+@overload
 def get_xsxset(name: str) -> str:
-    """Return the X-Spec model setting.
+    ...
+
+def get_xsxset(name: str | None = None) -> str | dict[str, str]:
+    """Return the X-Spec model setting or settings.
+
+    .. versionchanged:: 4.17.1
+       This routine can now be called with no argument, which means
+       that a dictionary containing all the settings is returned.
+       Asking for an unset keyword now raises a KeyError rather than
+       returning the empty string.
 
     Parameters
     ----------
-    name : str
+    name : str or None, optional
        The name of the setting (converted to upper case before being
        sent to X-Spec). There is no check that the name is valid.
 
     Returns
     -------
-    val : str
-       Returns the value set by a previous call to `set_xsxset` or the
-       empty string, if the value has not been previously set.
+    val : str or dict
+       When name is set, returns the value set by a previous call to
+       `set_xsxset`. When name is not set a dictionary of all the
+       settings is returned.
+
+    Raises
+    ------
+    KeyError
+       When the name has not been set.
 
     See Also
     --------
-    set_xsxset
+    clear_xsxset, set_xsxset
 
     Notes
     -----
@@ -756,9 +802,14 @@ def get_xsxset(name: str) -> str:
     >>> get_xsxset("pow_emin")
     '0.5'
 
+    >>> get_xsxset()
+    {'POW_EMIN': '0.5'}
+
     """
-    name = name.upper()
-    return _xspec.get_xsxset(name)
+    if name is None:
+        return _xspec.get_xsxset()
+
+    return _xspec.get_xsxset(name.upper())
 
 
 def set_xsxset(name: str, value: str) -> None:
@@ -775,12 +826,14 @@ def set_xsxset(name: str, value: str) -> None:
        The name of the setting. It is converted to upper case before
        being used. There is no check that the name is valid.
     value : str
-       The new value of the setting. It must be given as a string.
+       The new value of the setting. It must be given as a string.  If
+       it is the empty string then the name is removed from the model
+       settings.
 
     See Also
     --------
-    get_xsxset, get_xsversion, set_xsabund, set_xschatter, set_xscosmo,
-    set_xsxsect
+    clear_xsxset, get_xsxset, get_xsversion, set_xsabund, set_xschatter,
+    set_xscosmo, set_xsxsect
 
     Notes
     -----
@@ -792,6 +845,10 @@ def set_xsxset(name: str, value: str) -> None:
 
     The model settings are stored so that they can be included in the
     output of `sherpa.astro.ui.save_all`.
+
+    Setting the name argument to "INITIALIZE" will clear the settings,
+    but this is deprecated and the `clear_xsxset` routine must be used
+    instead.
 
     References
     ----------
@@ -812,11 +869,7 @@ def set_xsxset(name: str, value: str) -> None:
     >>> set_xsxset('POW_EMAX', '2.0')
 
     """
-    name = name.upper()
-    _xspec.set_xsxset(name, value)
-    nval = get_xsxset(name)
-    if nval != "":
-        xsstate["modelstrings"][name] = nval
+    _xspec.set_xsxset(name.upper(), value)
 
 
 def get_xspath_manager() -> str:
@@ -875,7 +928,7 @@ def set_xspath_manager(path: str) -> None:
 
     See Also
     --------
-    get_xspath_manager : Return the path to the files describing the XSPEC models.
+    get_xspath_manager
 
     Examples
     --------
@@ -923,12 +976,11 @@ def get_xsstate() -> dict[str, Any]:
     set_xsstate
     """
 
-    # Do not return the internal dictionary but a copy of it.
     return {"abund": get_xsabund(),
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
-            "modelstrings": xsstate["modelstrings"].copy(),
+            "modelstrings": get_xsxset(),
             "paths": xsstate["paths"].copy()
             }
 
@@ -978,15 +1030,19 @@ def set_xsstate(state: dict[str, Any]) -> None:
         h0, q0, l0 = state["cosmo"]
         set_xscosmo(h0, q0, l0)
 
+    # We clear out the XSET settings if modelstrings is present, even
+    # if it is empty (since that means there are no keys).
+    #
     with suppress(KeyError):
-        # Should this remove any old keys? With the current API this
-        # is hard to do reliably.
-        #
-        for name, value in state["modelstrings"].items():
+        # Assume it is a dictionary.
+        modelstrings = state["modelstrings"]
+        clear_xsxset()
+        for name, value in modelstrings.items():
             set_xsxset(name, value)
 
+    paths = state.get("paths", {})
     with suppress(KeyError):
-        set_xspath_manager(state["paths"]["manager"])
+        set_xspath_manager(paths["manager"])
 
 
 def read_xstable_model(modelname: str,
@@ -1143,8 +1199,10 @@ def read_xstable_model(modelname: str,
 __all__ : tuple[str, ...]
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
-           'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
-           'get_xsstate', 'get_xsabundances', 'set_xsabundances')
+           'get_xsversion',
+           'set_xsxset', 'get_xsxset', 'clear_xsxset',
+           'set_xsstate', 'get_xsstate',
+           'get_xsabundances', 'set_xsabundances')
 
 
 class XSBaseParameter(Parameter):
