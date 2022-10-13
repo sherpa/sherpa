@@ -527,16 +527,14 @@ static PyObject* get_xspec_string( PyObject *self ) {
   return Py_BuildValue( (char*)"s", get().c_str() );
 }
 
-static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
-{
-
+template <void set(const std::string& value)>
+static PyObject* set_xspec_string( PyObject *self, PyObject *args ) {
   char* path = NULL;
   if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
     return NULL;
 
-  FunctionUtility::managerPath(string(path));
+  set(string(path));
   Py_RETURN_NONE;
-
 }
 
 #define NOARGSPEC(name, func) \
@@ -573,7 +571,8 @@ static PyMethodDef XSpecMethods[] = {
 
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
-  FCTSPEC(set_xspath_manager, set_manager_data_path),
+  FCTSPEC(set_xspath_manager, set_xspec_string<FunctionUtility::managerPath>),
+  FCTSPEC(set_xspath_model, set_xspec_string<FunctionUtility::modelDataPath>),
 
   // Start model definitions
 

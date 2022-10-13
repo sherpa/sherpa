@@ -104,6 +104,7 @@ References
 
 from contextlib import suppress
 import logging
+from pathlib import Path
 import string
 import tempfile
 from typing import Any, Optional, Union
@@ -1027,7 +1028,7 @@ def get_xspath_model() -> str:
 
     See Also
     --------
-    get_xspath_manager
+    get_xspath_manager, set_xspath_model
 
     Examples
     --------
@@ -1039,30 +1040,62 @@ def get_xspath_model() -> str:
     return _xspec.get_xspath_model()
 
 
-def set_xspath_manager(path: str) -> None:
+def set_xspath_manager(path: Union[Path, str]) -> None:
     """Set the path to the files describing the XSPEC models.
+
+    .. versionchanged:: 4.17.0
+       The argument can now be sent in as a Path object.
 
     Parameters
     ----------
-    path : str
+    path : str or Path
         The new path.
 
     See Also
     --------
-    get_xspath_manager : Return the path to the files describing the XSPEC models.
+    get_xspath_manager, set_xspath_model
 
     Examples
     --------
     >>> set_xspath_manager('/data/xspec/spectral/manager')
     """
 
-    _xspec.set_xspath_manager(path)
-    spath = get_xspath_manager()
-    if spath != path:
+    spath = str(path)
+    _xspec.set_xspath_manager(spath)
+    got = get_xspath_manager()
+    if got != spath:
         raise IOError("Unable to set the XSPEC manager path "
-                      f"to '{path}'")
+                      f"to '{spath}'")
 
-    xsstate["paths"]["manager"] = path
+    xsstate["paths"]["manager"] = spath
+
+
+def set_xspath_model(path: Union[Path, str]) -> None:
+    """Set the path to the XSPEC model data files.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    path : str or Path
+        The new path.
+
+    See Also
+    --------
+    get_xspath_model, set_xspath_manager
+
+    Examples
+    --------
+    >>> set_xspath_model('/data/xspec/spectral/modelData/')
+    """
+
+    spath = str(path)
+    _xspec.set_xspath_model(spath)
+    got = get_xspath_model()
+    if got != spath:
+        raise IOError(f"Unable to set the XSPEC model path to '{spath}'")
+
+    xsstate["paths"]["model"] = spath
 
 
 def get_xsstate() -> dict[str, Any]:
@@ -1181,6 +1214,11 @@ def set_xsstate(state: dict[str, Any]) -> None:
     paths = state.get("paths", {})
     try:
         set_xspath_manager(paths["manager"])
+    except KeyError:
+        pass
+
+    try:
+        set_xspath_model(paths["model"])
     except KeyError:
         pass
 
