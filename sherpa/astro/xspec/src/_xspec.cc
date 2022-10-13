@@ -319,8 +319,12 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
 }
 
 
-// TODO: We could have a seperate "reset" command
-//
+static PyObject* clear_xset( PyObject *self )
+{
+  FunctionUtility::eraseModelStringDataBase();
+  Py_RETURN_NONE;
+}
+
 static PyObject* set_xset( PyObject *self, PyObject *args )
 {
 
@@ -330,6 +334,9 @@ static PyObject* set_xset( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"ss", &str_name, &str_value ) )
     return NULL;
 
+  // Support the initalize option to follow XSPEC, but it is expected
+  // that users will use the clear_xset routine directly.
+  //
   string name = XSutility::upperCase(string(str_name));
   if (name == "INITIALIZE") {
     FunctionUtility::eraseModelStringDataBase();
@@ -345,13 +352,31 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
   char* str_name = NULL;
 
-  if ( !PyArg_ParseTuple( args, (char*)"s", &str_name ) )
+  if ( !PyArg_ParseTuple( args, (char*)"|s", &str_name ) )
     return NULL;
 
+  // If no argument is given then we return a dictonary
+  // of all items.
+  //
+  if ( str_name == NULL ) {
+
+    PyObject *d = PyDict_New();
+    for (const auto& item : FunctionUtility::modelStringDataBase()) {
+      PyObject *value = PyUnicode_FromString(item.second.c_str());
+      PyDict_SetItemString(d, item.first.c_str(), value);
+      Py_DECREF(value);
+    }
+
+    return d;
+  }
+
+  // Treat an unknown key as an error.
+  //
   static string value;
   value = FunctionUtility::getModelString(string(str_name));
   if (value == FunctionUtility::NOT_A_KEY()) {
-    value.erase();
+    PyErr_SetString( PyExc_KeyError, str_name );
+    return NULL;
   }
 
   return Py_BuildValue( (char*)"s", value.c_str() );
@@ -393,6 +418,7 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),
 
   FCTSPEC(set_xsxsect, set_cross),
+  NOARGSPEC(clear_xsxset, clear_xset),
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),

@@ -74,7 +74,6 @@ DEFAULT_COSMO = (70.0, 0.0, 0.73)
 # will not be used by an actual model so we can set it.
 #
 DEFAULT_XSET_NAME = 'SHERPA-TEST-DUMMY-NAME'
-DEFAULT_XSET_VALUE = ''
 
 # The number of elements in the abundance table
 ELEMENT_NAMES = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
@@ -195,12 +194,11 @@ def test_xset_default():
     from sherpa.astro import xspec
 
     # The test is case insensitive, but this test doesn't really
-    # test this out (since it is expected to return '' whatever
-    # the input name is).
+    # test this out.
     #
     name = DEFAULT_XSET_NAME.lower()
-    oval = xspec.get_xsxset(name)
-    assert oval == DEFAULT_XSET_VALUE
+    with pytest.raises(KeyError):
+        xspec.get_xsxset(name)
 
 
 @requires_xspec
@@ -705,25 +703,18 @@ def test_xset_change():
 
     from sherpa.astro import xspec
 
-    def getfunc():
-        return xspec.get_xsxset(DEFAULT_XSET_NAME)
+    with pytest.raises(KeyError):
+        xspec.get_xsxset(DEFAULT_XSET_NAME)
 
-    def setfunc(val):
-        xspec.set_xsxset(DEFAULT_XSET_NAME.lower(), val)
+    try:
+        xspec.set_xsxset(DEFAULT_XSET_NAME.lower(), 'dummy value')
+        got = xspec.get_xsxset(DEFAULT_XSET_NAME)
+    finally:
+        # clear out the keyword
+        xspec.set_xsxset(DEFAULT_XSET_NAME, '')
 
-    val1 = 'dummy value'
-    val2 = 'a different setting'
-    validate_xspec_setting(getfunc, setfunc, val1, val2)
-
-    # A separate part of the XSET interface is that the settings
-    # are recorded in the XSPEC state maintained by the xspec
-    # module, so check that the stored value is included in this.
-    #
-    modelvals = xspec.get_xsstate()['modelstrings']
-    assert DEFAULT_XSET_NAME in modelvals
-
-    # Is it worth changing the code so we know which to check for?
-    assert modelvals[DEFAULT_XSET_NAME] in [val1, val2]
+    with pytest.raises(KeyError):
+        xspec.get_xsxset(DEFAULT_XSET_NAME)
 
 
 @requires_xspec
@@ -902,35 +893,26 @@ def test_set_xsstate_xset():
 
     ukey = key.upper()
 
-    # There should be no value for this key (since it isn't in
-    # modelstrings by construction). Note that this access, that is
-    # via xspec.xsstate, is not guaranteed (i.e. it is an
-    # implementation detail).
+    # There should be no value for this key.
     #
-    assert key not in xspec.xsstate["modelstrings"]
-    assert xspec.get_xsxset(key) == ''
+    assert key not in xspec.get_xsxset()
+    with pytest.raises(KeyError):
+        xspec.get_xsxset(key)
 
     nstate = copy.deepcopy(ostate)
     nstate['modelstrings'][key] = val
     xspec.set_xsstate(nstate)
 
     assert xspec.get_xsxset(key) == val
-    assert ukey in xspec.xsstate["modelstrings"]
-    assert xspec.xsstate["modelstrings"][ukey] == val
+    modelstrings = xspec.get_xsxset()
+    assert ukey in modelstrings
+    assert modelstrings[ukey] == val
 
     xspec.set_xsstate(ostate)
 
-    # Unfortunately, due to there being no attempt at clearing out the
-    # XSET settings (e.g. removing existing settings before restoring
-    # the state), the following tests fail.
-    #
-    # TODO: the code should probably be updated to fix this
-    #
-    # assert xspec.get_xsxset(key) == ''
-    # assert xspec.get_xsstate() == ostate
+    with pytest.raises(KeyError):
+        assert xspec.get_xsxset(key)
 
-    xspec.set_xsxset(key, '')
-    del xspec.xsstate["modelstrings"][ukey]
     assert xspec.get_xsstate() == ostate
 
 
