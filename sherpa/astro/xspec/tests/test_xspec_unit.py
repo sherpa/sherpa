@@ -554,6 +554,19 @@ def test_path_manager_change(tmp_path):
                            str(tmp_path))
 
 
+@requires_xspec
+def test_path_model_change(tmp_path):
+    """Can we change the model-path setting?
+    """
+
+    from sherpa.astro import xspec
+
+    validate_xspec_setting(xspec.get_xspath_model,
+                           xspec.set_xspath_model,
+                           '/dev/null',
+                           str(tmp_path))
+
+
 # Note that the XSPEC state is used in test_xspec.py, but only
 # to save/restore the state after each test. There is no
 # explicit test there of the functionality. The state tests here

@@ -833,7 +833,7 @@ def get_xspath_model():
 
     See Also
     --------
-    get_xspath_manager
+    get_xspath_manager, set_xspath_model
 
     Examples
     --------
@@ -855,7 +855,7 @@ def set_xspath_manager(path):
 
     See Also
     --------
-    get_xspath_manager : Return the path to the files describing the XSPEC models.
+    get_xspath_manager, set_xspath_model
 
     Examples
     --------
@@ -865,10 +865,36 @@ def set_xspath_manager(path):
     _xspec.set_xspath_manager(path)
     spath = get_xspath_manager()
     if spath != path:
-        raise IOError("Unable to set the XSPEC manager path " +
-                      "to '{}'".format(path))
+        raise IOError(f"Unable to set the XSPEC manager path to '{path}'")
 
     xspecpaths['manager'] = path
+
+
+def set_xspath_model(path):
+    """Set the path to the XSPEC model data files.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    path : str
+        The new path.
+
+    See Also
+    --------
+    get_xspath_model, set_xspath_manager
+
+    Examples
+    --------
+    >>> set_xspath_model('/data/xspec/spectral/modelData/')
+    """
+
+    _xspec.set_xspath_model(path)
+    spath = get_xspath_model()
+    if spath != path:
+        raise IOError(f"Unable to set the XSPEC model path to '{path}'")
+
+    xspecpaths['model'] = path
 
 
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is a
@@ -1008,8 +1034,17 @@ def set_xsstate(state):
             set_xsxflt(spectrumNumber, values)
 
     try:
-        managerpath = state['paths']['manager']
-        set_xspath_manager(managerpath)
+        paths = state['paths']
+    except KeyError:
+        paths = {}
+
+    try:
+        set_xspath_manager(paths['manager'])
+    except KeyError:
+        pass
+
+    try:
+        set_xspath_model(paths['model'])
     except KeyError:
         pass
 
