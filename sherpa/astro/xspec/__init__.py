@@ -136,10 +136,9 @@ warning = logging.getLogger(__name__).warning
 # a structured type (e.g. a dataclass), but it's not clear how we want
 # this to evolve, so leave as a dict.
 #
-# The idea is that we do not always want to rely on the XSPEC model
-# library - since it doesn't always let you ask "what has the user
-# set", with the interface currently available to Sherpa - so we
-# record these settings manually.
+# We only want to note any changes the user has made to the paths,
+# rather than storing in the state the default settings (which may
+# change with system or version).
 #
 xsstate: dict[str, Any] = {
     "paths": {},
@@ -906,7 +905,7 @@ def get_xspath_model() -> str:
 
     See Also
     --------
-    get_xspath_manager
+    get_xspath_manager, set_xspath_model
 
     Examples
     --------
@@ -918,30 +917,64 @@ def get_xspath_model() -> str:
     return _xspec.get_xspath_model()
 
 
-def set_xspath_manager(path: str) -> None:
+def set_xspath_manager(path: Path | str) -> None:
     """Set the path to the files describing the XSPEC models.
+
+    .. versionchanged:: 4.17.1
+       The argument can now be sent in as a Path object.
 
     Parameters
     ----------
-    path : str
+    path : str or Path
         The new path.
 
     See Also
     --------
-    get_xspath_manager
+    get_xspath_manager, set_xspath_model
 
     Examples
     --------
     >>> set_xspath_manager('/data/xspec/spectral/manager')
     """
 
-    _xspec.set_xspath_manager(path)
-    spath = get_xspath_manager()
-    if spath != path:
+    spath = str(path)
+    _xspec.set_xspath_manager(spath)
+    got = get_xspath_manager()
+    if got != spath:
         raise IOError("Unable to set the XSPEC manager path "
-                      f"to '{path}'")
+                      f"to '{spath}'")
 
-    xsstate["paths"]["manager"] = path
+    # Inform the state that the manager path has been changed.
+    xsstate["paths"]["manager"] = spath
+
+
+def set_xspath_model(path: Path | str) -> None:
+    """Set the path to the XSPEC model data files.
+
+    .. versionadded:: 4.17.1
+
+    Parameters
+    ----------
+    path : str or Path
+        The new path.
+
+    See Also
+    --------
+    get_xspath_model, set_xspath_manager
+
+    Examples
+    --------
+    >>> set_xspath_model('/data/xspec/spectral/modelData/')
+    """
+
+    spath = str(path)
+    _xspec.set_xspath_model(spath)
+    got = get_xspath_model()
+    if got != spath:
+        raise IOError(f"Unable to set the XSPEC model path to '{spath}'")
+
+    # Inform the state that the model path has been changed.
+    xsstate["paths"]["model"] = spath
 
 
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is
@@ -1043,6 +1076,9 @@ def set_xsstate(state: dict[str, Any]) -> None:
     paths = state.get("paths", {})
     with suppress(KeyError):
         set_xspath_manager(paths["manager"])
+
+    with suppress(KeyError):
+        set_xspath_model(paths["model"])
 
 
 def read_xstable_model(modelname: str,

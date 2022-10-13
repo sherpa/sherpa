@@ -527,7 +527,13 @@ def validate_xspec_setting(getfunc, setfunc, newval, altval):
     finally:
         setfunc(oval)
 
-    assert xval == nval
+    # If nval is a Path we need to convert it to a str since we
+    # (currently) do not return a Path but a str.
+    #
+    if isinstance(nval, Path):
+        assert xval == str(nval)
+    else:
+        assert xval == nval
 
     # As a sanity check ensure we are back at the starting point
     assert getfunc() == oval
@@ -732,16 +738,30 @@ def test_cosmo_change():
 
 
 @requires_xspec
-def test_path_manager_change(tmp_path):
-    """Can we change the manager-path setting?
+@pytest.mark.parametrize("name", ["manager", "model"])
+@pytest.mark.parametrize("usepath", [True, False])
+def test_path_change(name, usepath, tmp_path):
+    """Can we change the path setting?
+
+    We allow string or Path objects to be sent in, which is what the
+    usepath boolean checks. It would be nice to send in the actual
+    arguments, but that would be very complicated to set up, as it
+    involves the tmp_path setting).
+
     """
 
     from sherpa.astro import xspec
 
-    validate_xspec_setting(xspec.get_xspath_manager,
-                           xspec.set_xspath_manager,
-                           '/dev/null',
-                           str(tmp_path))
+    if usepath:
+        newval = Path('/dev/null')
+        altval = tmp_path
+    else:
+        newval = '/dev/null'
+        altval = str(tmp_path)
+
+    getfn = getattr(xspec, f"get_xspath_{name}")
+    setfn = getattr(xspec, f"set_xspath_{name}")
+    validate_xspec_setting(getfn, setfn, newval, altval)
 
 
 # Note that the XSPEC state is used in test_xspec.py, but only
@@ -812,7 +832,7 @@ def test_set_xsstate_missing_key(miss_key):
             'chatter': 10,
             'cosmo': (50, 0.1, 0.4),
             'modelstrings': {'foo': '2'},
-            'paths': {'manager': '/dev/null'}}
+            'paths': {'manager': '/dev/null', 'model': '/dev/null'}}
 
     del fake[miss_key]
 
