@@ -678,15 +678,18 @@ def set_xsxsect(name: str) -> None:
     _xspec.set_xsxsect(name)
 
 
-# Wrap the XSET function in Python, so that we can keep a record of
-# the strings the user sent as specific XSPEC model strings (if any) during
-# the session.  Only store if setting was successful.
-# See:
-# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
-modelstrings = {}
-
-# Store any path changes
-xspecpaths = {}
+# Store information useful to re-create the XSPEC state. This could be
+# a structured type (e.g. a dataclass), but it's not clear how we want
+# this to evolve, so leave as a dict.
+#
+# The idea is that we do not always want to rely on the XSPEC model
+# library - since it doesn't always let you ask "what has the user
+# set" - so we record these settings manually.
+#
+xsstate: dict[str, Any] = {
+    "modelstrings": {},
+    "paths": {},
+}
 
 
 def get_xsxset(name: str) -> str:
@@ -781,7 +784,7 @@ def set_xsxset(name: str, value: str) -> None:
     name = name.upper()
     _xspec.set_xsxset(name, value)
     if get_xsxset(name) != "":
-        modelstrings[name] = get_xsxset(name)
+        xsstate["modelstrings"][name] = get_xsxset(name)
 
 
 def get_xspath_manager() -> str:
@@ -853,7 +856,7 @@ def set_xspath_manager(path: str) -> None:
         raise IOError("Unable to set the XSPEC manager path "
                       f"to '{path}'")
 
-    xspecpaths['manager'] = path
+    xsstate["paths"]["manager"] = path
 
 
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is
@@ -893,8 +896,9 @@ def get_xsstate() -> dict[str, Any]:
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
-            "modelstrings": modelstrings.copy(),
-            "paths": xspecpaths.copy()}
+            "modelstrings": xsstate["modelstrings"].copy(),
+            "paths": xsstate["paths"].copy()
+            }
 
 
 def set_xsstate(state: dict[str, Any]) -> None:
@@ -906,47 +910,55 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'.
+        and 'paths'. If a keyword is missing then that setting will
+        not be changed.
 
     See Also
     --------
     get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxsect,
     set_xsxset
 
-    Notes
-    -----
-    The state of the XSPEC module will only be changed if all
-    the required keys in the dictionary are present. All keys apart
-    from 'paths' are required.
     """
 
-    if type(state) == dict and \
-       'abund' in state and \
-       'chatter' in state and \
-       'cosmo' in state and \
-       'xsect' in state and \
-       'modelstrings' in state:
-
-        h0, q0, l0 = state["cosmo"]
-
+    # As the input argument has changed over time, allow each setting
+    # to be optional (previously changes were only made if all keys
+    # existed).
+    #
+    try:
         set_xsabund(state["abund"])
+    except KeyError:
+        pass
+
+    except TypeError:
+        # assume not a dict
+        return
+
+    try:
         set_xschatter(state["chatter"])
-        set_xscosmo(h0, q0, l0)
+    except KeyError:
+        pass
+
+    try:
         set_xsxsect(state["xsect"])
-        for name in state["modelstrings"].keys():
-            set_xsxset(name, state["modelstrings"][name])
+    except KeyError:
+        pass
 
-        # This is optional to support re-loading state information
-        # from a version of XSPEC which did not provide the path
-        # information.
-        #
-        try:
-            managerpath = state['paths']['manager']
-        except KeyError:
-            managerpath = None
+    try:
+        # if cosmo is set it is assumed to be a triple
+        h0, q0, l0 = state["cosmo"]
+        set_xscosmo(h0, q0, l0)
+    except KeyError:
+        pass
 
-        if managerpath is not None:
-            set_xspath_manager(managerpath)
+    settings = state.get("modelstrings", {})
+    for name, value in settings.items():
+        set_xsxset(name, value)
+
+    paths = state.get("paths", {})
+    try:
+        set_xspath_manager(paths["manager"])
+    except KeyError:
+        pass
 
 
 def read_xstable_model(modelname, filename, etable=False):

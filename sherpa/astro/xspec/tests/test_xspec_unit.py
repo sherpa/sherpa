@@ -826,8 +826,10 @@ def test_get_xsstate_keys():
 
 
 @requires_xspec
-def test_set_xsstate_missing_key():
-    """Check set_xsstate does nothing if required key is missing.
+@pytest.mark.parametrize("key_to_remove",
+                         ["abund", "xsect", "chatter", "cosmo", "modelstrings", "paths"])
+def test_set_xsstate_missing_key(key_to_remove):
+    """Check set_xsstate handles some missing keys.
 
     """
 
@@ -838,26 +840,26 @@ def test_set_xsstate_missing_key():
     for val in ostate.values():
         assert val is not None
 
-    # paths is not a required key
-    #
-    req_keys = ["abund", "chatter", "cosmo", "xsect",
-                "modelstrings"]
+    assert key_to_remove in ostate
 
-    fake = {'abund': ostate['abund'] + '_copy',
-            'xsect': ostate['xsect'] + '_copy',
-            'chatter': -10,
-            'cosmo': (0.0, 0.0),  # two elements will cause a failure
-            'modelstrings': {'foo': 2, 'bar': None},
+    def not_elem(value, vals):
+        """Pick the first item in vals that is not value"""
+        return [v for v in vals if v != value][0]
+
+    fake = {'abund': not_elem(ostate['abund'], ["angr", "aspl", "grsa"]),
+            'xsect': not_elem(ostate['xsect'], ["bcmc", "vern", "obcm"]),
+            'chatter': 10,
+            'cosmo': (50, 0.1, 0.4),
+            'modelstrings': {'foo': '2'},
             'paths': {'manager': '/dev/null'}}
 
-    for key in req_keys:
+    del fake[key_to_remove]
+    xspec.set_xsstate(fake)
 
-        copy = fake.copy()
-        del copy[key]
-        xspec.set_xsstate(copy)
+    nstate = xspec.get_xsstate()
+    assert nstate[key_to_remove] == ostate[key_to_remove]
 
-        nstate = xspec.get_xsstate()
-        assert nstate == ostate
+    xspec.set_xsstate(ostate)
 
 
 @requires_xspec
@@ -900,10 +902,12 @@ def test_set_xsstate_xset():
 
     ukey = key.upper()
 
-    # There should be no value for this key (since it isn't
-    # in modelstrings by construction).
+    # There should be no value for this key (since it isn't in
+    # modelstrings by construction). Note that this access, that is
+    # via xspec.xsstate, is not guaranteed (i.e. it is an
+    # implementation detail).
     #
-    assert key not in xspec.modelstrings
+    assert key not in xspec.xsstate["modelstrings"]
     assert xspec.get_xsxset(key) == ''
 
     nstate = copy.deepcopy(ostate)
@@ -911,8 +915,8 @@ def test_set_xsstate_xset():
     xspec.set_xsstate(nstate)
 
     assert xspec.get_xsxset(key) == val
-    assert ukey in xspec.modelstrings
-    assert xspec.modelstrings[ukey] == val
+    assert ukey in xspec.xsstate["modelstrings"]
+    assert xspec.xsstate["modelstrings"][ukey] == val
 
     xspec.set_xsstate(ostate)
 
@@ -926,7 +930,7 @@ def test_set_xsstate_xset():
     # assert xspec.get_xsstate() == ostate
 
     xspec.set_xsxset(key, '')
-    del xspec.modelstrings[ukey]
+    del xspec.xsstate["modelstrings"][ukey]
     assert xspec.get_xsstate() == ostate
 
 
