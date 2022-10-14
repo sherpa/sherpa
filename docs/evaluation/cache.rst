@@ -110,9 +110,9 @@ True
 {}
 >>> print(m([1, 2, 3, 4, 5, 6]))
 [0. 1. 1. 1. 0. 0.]
->>> print(m._cache)
+>>> print(m._cache)  # doctest: +SKIP
 {b'<random byte string>': array([0., 1., 1., 1., 0., 0.])}
->>> print(m._queue)
+>>> print(m._queue)  # doctest: +SKIP
 [b'<random byte string>']
 
 Fit and the startup method

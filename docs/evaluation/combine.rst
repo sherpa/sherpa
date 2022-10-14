@@ -198,7 +198,7 @@ combination of the ``lhs`` and ``rhs`` attributes)::
     >>> sim_model.parts
     (<Gauss1D model instance 'sim1'>, <Gauss1D model instance 'sim2'>)
     >>> for cpt in sim_model.parts:
-       ...:     print(cpt)
+    ...     print(cpt)
     sim1
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
@@ -306,8 +306,8 @@ values)::
     >>> mplot.prepare(d, mdl)
     >>> fplot.prepare(dplot, mplot)
     >>> fplot.plot()
-    >>> plt.plot(x, ystart, label='Start')
-    >>> plt.legend(loc=2)
+    >>> out = plt.plot(x, ystart, label='Start')
+    >>> out = plt.legend(loc=2)
 
 .. image:: ../_static/models/combine/model_combine.png
 
@@ -334,10 +334,10 @@ These can be used to query - as shown below - or change the model
 values:
    
     >>> for p in mdl.pars:
-       ...:     if p.link is None:
-       ...:         print("{:10s} -> {:.3f}".format(p.fullname, p.val))
-       ...:     else:
-       ...:         print("{:10s} -> link to {}".format(p.fullname, p.link.name))
+    ...     if p.link is None:
+    ...         print("{:10s} -> {:.3f}".format(p.fullname, p.val))
+    ...     else:
+    ...         print("{:10s} -> link to {}".format(p.fullname, p.link.name))
     g1.fwhm    -> 0.516
     g1.pos     -> 0.004
     g1.ampl    -> 0.985
