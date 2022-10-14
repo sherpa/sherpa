@@ -107,7 +107,6 @@ from contextlib import suppress
 import logging
 from pathlib import Path
 import string
-import tempfile
 from typing import Any, overload
 import warnings
 
@@ -142,6 +141,7 @@ warning = logging.getLogger(__name__).warning
 # record these settings manually.
 #
 xsstate: dict[str, Any] = {
+    "abundances": None,
     "paths": {},
 }
 
@@ -291,11 +291,6 @@ def get_xsabund_doc(name: str | None = None) -> str:
     return _xspec.get_xsabund_doc(aname).strip()
 
 
-# The current interface to the XSPEC model library makes this awkward
-# to write. Once the interface switches to using the FunctionUtility
-# interface this code will be a lot simpler internally, without
-# changing the API.
-#
 def set_xsabundances(abundances: dict[str, float]) -> None:
     """Set the abundances used by X-Spec.
 
@@ -338,22 +333,8 @@ def set_xsabundances(abundances: dict[str, float]) -> None:
 
         out[z - 1] = abund
 
-    # Write them to a file and then load them.
-    #
-    # This should set delete_on_close=False but that
-    # requires Python 3.12.
-    #
-    with tempfile.NamedTemporaryFile(encoding="ascii", mode="w",
-                                     delete=False) as fh:
-        for elem in out:
-            fh.write(f"{elem}\n")
-
-        # Make sure data is written to disk. Could this just
-        # be fh.flush() and avoid closing the file?
-        #
-        fh.close()
-
-        set_xsabund(fh.name)
+    _xspec.set_xsabund_vector(out)
+    xsstate["abundances"] = get_xsabundances()
 
 
 # This function is not added to __all__ as it is very specialized.
@@ -396,6 +377,38 @@ def get_xselements() -> dict[str, int]:
         out[elem] = idx
 
     return out
+
+
+# This function is not added to __all__ as it is very specialized.
+#
+def get_xsabundances_path() -> Path:
+    """Return the path to the abundances file used by X-Spec.
+
+    This file is used by X-Spec to determine the different
+    abundance-table settings used by set_xsabund and get_xsabund.
+
+    .. versionadded:: 4.17.1
+
+    Returns
+    -------
+    path : pathlib.Path
+        The full path to the abundances file.
+
+    See Also
+    --------
+    get_xsabund, set_xsabund
+
+    Examples
+    --------
+
+    >>> get_xsabundances_path()
+    PosixPath('/path/to/spectral/manager/abundances.dat')
+
+    """
+
+    out = Path(_xspec.get_xspath_abundance())
+    out /= Path(_xspec.get_abundance_file())
+    return out.resolve()
 
 
 def get_xschatter() -> int:
@@ -583,6 +596,13 @@ def set_xsabund(abundance: str) -> None:
     """
 
     _xspec.set_xsabund(abundance)
+
+    # Ensure the abundances state setting is created or deleted.
+    #
+    if get_xsabund() == "file":
+        xsstate["abundances"] = get_xsabundances()
+    else:
+        xsstate["abundances"] = None
 
 
 def set_xschatter(level: int) -> None:
@@ -976,7 +996,12 @@ def get_xsstate() -> dict[str, Any]:
     set_xsstate
     """
 
+    abundances = xsstate["abundances"]
+    if abundances is not None:
+        abundances = abundances.copy()
+
     return {"abund": get_xsabund(),
+            "abundances": abundances,
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
@@ -998,8 +1023,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'. If a keyword is missing then that setting will
-        not be changed.
+        'abundances', and 'paths'. If a keyword is missing
+        then that setting will not be changed.
 
     See Also
     --------
@@ -1020,8 +1045,18 @@ def set_xsstate(state: dict[str, Any]) -> None:
             # Assume state is not a dictionary, so return.
             return
 
-    with suppress(KeyError):
-        set_xsabund(state["abund"])
+    # If a manually-set up table has been loaded then we use that
+    # (this is given by the "abundances" value being set), otherwise
+    # we use the abundance table (the "abund" value).
+    #
+    abundances = state.get("abundances", None)
+    if abundances is None:
+        with suppress(KeyError):
+            set_xsabund(state["abund"])
+
+    else:
+        # This is expected to be a dict of abundance names and values.
+        set_xsabundances(abundances)
 
     with suppress(KeyError):
         set_xsxsect(state["xsect"])

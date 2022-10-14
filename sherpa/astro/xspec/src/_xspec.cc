@@ -202,8 +202,6 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
 
 // Based on xsFortran::FPSOLR
 //
-// TODO: add a version where we can send in an array of numbers
-//
 static PyObject* set_abund( PyObject *self, PyObject *args )
 {
 
@@ -224,7 +222,7 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     Py_RETURN_NONE;
   }
 
-  // If we've got here then try to read the data from a file
+  // If we've got here then try to read the data from a file.
   //
   const size_t nelems = FunctionUtility::NELEMS();
   std::vector<float> vals(nelems, 0);
@@ -261,6 +259,55 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
 
   Py_RETURN_NONE;
 
+}
+
+
+// Handle a vector of abundances. It must be the right size.
+// To match set_abund when given a file name we set the
+// abundances to "file". This means that a user can not
+// load up a set of abundances and *NOT* use them; they
+// would have to reset the abundance table after loading.
+//
+static PyObject* set_abund_vector( PyObject *self, PyObject *args )
+{
+  sherpa::astro::xspec::FloatArray vector;
+  if ( !PyArg_ParseTuple( args, (char*)"O&",
+			  (converter)sherpa::convert_to_contig_array< sherpa::astro::xspec::FloatArray >,
+			  &vector ) )
+    return NULL;
+
+  size_t nelem = FunctionUtility::NELEMS();
+  size_t nvector = static_cast<size_t>(vector.get_size());
+
+  // Rather than worry about what to do with either too many or too
+  // few values, just error out.
+  //
+  if ( nvector != nelem ) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"Array must contain %d elements, not %d",
+			 nelem, nvector );
+  }
+
+  std::vector<float> vals(nelem);
+  std::copy(&vector[0], &vector[0] + nelem, &vals[0]);
+
+  // Hide the screen output from this call.
+  //
+  std::ostream* outStream = IosHolder::outHolder();
+  std::ostringstream tmpStream;
+  IosHolder::setStreams(IosHolder::inHolder(),
+			&tmpStream,
+			IosHolder::errHolder());
+
+  FunctionUtility::ABUND("file");
+
+  IosHolder::setStreams(IosHolder::inHolder(),
+			outStream,
+			IosHolder::errHolder());
+
+  FunctionUtility::abundanceVectors("file", vals);
+
+  Py_RETURN_NONE;
 }
 
 
@@ -415,6 +462,7 @@ static PyMethodDef XSpecMethods[] = {
   FCTSPEC(get_xsabund, get_abund),
   FCTSPEC(get_xsabund_doc, get_abund_doc),
   FCTSPEC(set_xsabund, set_abund),
+  FCTSPEC(set_xsabund_vector, set_abund_vector),
   FCTSPEC(set_xscosmo, set_cosmo),
   NOARGSPEC(get_xscosmo, get_cosmo),
   NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),
@@ -423,6 +471,23 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(clear_xsxset, clear_xset),
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
+
+  // The set commands are not wrapped yet as it's not clear how well
+  // the system handles these changes (e.g. it doesn't seem to update
+  // the stored abundances if you change one or both of the abundance
+  // settings). The cross-section file should also be accessible in a
+  // similar manner, but the XSPEC API does not provide access to this
+  // (at least for XSPEC 12.12.1).
+  //
+  // Also, abundPath is essentially managerPath, but we provide access
+  // to it as it could be changed (but not by any routine we currently
+  // provide access to).
+  //
+  NOARGSPEC(get_abundance_file, get_xspec_string<FunctionUtility::abundanceFile>),
+  NOARGSPEC(get_xspath_abundance, get_xspec_string<FunctionUtility::abundPath>),
+  // FCTSPEC(set_abundance_file, set_xspec_string<FunctionUtility::abundanceFile>),
+  // FCTSPEC(set_xspath_abundance, set_xspec_string<FunctionUtility::abundPath>),
+
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
   FCTSPEC(set_xspath_manager, set_manager_data_path),
