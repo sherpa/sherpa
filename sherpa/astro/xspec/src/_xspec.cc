@@ -155,7 +155,9 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
 
   // Get the specific abundance. Unfortunately getAbundance reports an
   // error to stderr when an invalid element is used, so we need to
-  // hide this.
+  // hide this. An alternative would be to only accept an atomic
+  // number here, and deal with the symbol-to-number conversion in
+  // Python.
   //
   std::ostream* errStream = IosHolder::errHolder();
   std::ostringstream tmpStream;
@@ -163,7 +165,22 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
 			IosHolder::outHolder(),
 			&tmpStream);
 
-  float abundVal = FunctionUtility::getAbundance(string(element));
+  float abundVal = 0;
+  try {
+    abundVal = FunctionUtility::getAbundance(string(element));
+  } catch (FunctionUtility::NoInitializer&) {
+
+    IosHolder::setStreams(IosHolder::inHolder(),
+			  IosHolder::outHolder(),
+			  errStream);
+
+    // This is only likely to happen if the user has selected
+    // the file abundance table but has not loaded any elements.
+    //
+    return PyErr_Format( PyExc_ValueError,
+			 "could not find element '%s' from table '%s'",
+			 element, FunctionUtility::ABUND().c_str() );
+  }
 
   IosHolder::setStreams(IosHolder::inHolder(),
 			IosHolder::outHolder(),
@@ -177,7 +194,6 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
   }
 
   return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
-
 }
 
 
@@ -222,10 +238,32 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
 
 }
 
+// Ideally XSPEC would check this, but it doesn't appear to. This has
+// been added to make sure that get_xsabund(<element>) will not fail,
+// although we also have code there to catch that eventuality.
+//
+static bool abundances_can_be_set_to_file = false;
+
+
+// This is used in two places, so it has been moved into a
+// separate routine. The code assumes that vals is the
+// correct size by the time we get here.
+//
+static void set_abundances_from_vector(const std::vector<float> vals) {
+  FunctionUtility::abundanceVectors("file", vals);
+  FunctionUtility::ABUND("file");
+
+  // Now we have loaded data we can let the user use the "file" label.
+  // This label handles both "read-from-a-file" and "sent in an array"
+  // cases.
+  //
+  if (!abundances_can_be_set_to_file) {
+    abundances_can_be_set_to_file = true;
+  }
+}
+
 
 // Based on xsFortran::FPSOLR
-//
-// TODO: add a version where we can send in an array of numbers
 //
 static PyObject* set_abund( PyObject *self, PyObject *args )
 {
@@ -237,7 +275,16 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
   string tableName = string(table);
   tableName = XSutility::lowerCase(tableName);
 
+  // Make sure we can't select the file option if we have not loaded
+  // any data.
+  //
   if (tableName == "file") {
+    if (!abundances_can_be_set_to_file) {
+      PyErr_SetString( PyExc_ValueError,
+		       (char*)"Abundances have not been read in from a file/vector" );
+      return NULL;
+    }
+
     FunctionUtility::ABUND(tableName);
     Py_RETURN_NONE;
   }
@@ -247,7 +294,8 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     Py_RETURN_NONE;
   }
 
-  // If we've got here then try to read the data from a file
+  // If we've got here then try to read the data from a file. This follows
+  // the XSPEC code (as there's currently no method that does just this).
   //
   const size_t nelems = FunctionUtility::NELEMS();
   std::vector<float> vals(nelems, 0);
@@ -279,11 +327,41 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     }
   }
 
-  FunctionUtility::ABUND("file");
-  FunctionUtility::abundanceVectors("file", vals);
-
+  set_abundances_from_vector(vals);
   Py_RETURN_NONE;
+}
 
+
+// Handle a vector of abundances. It must be the right size.
+// To match set_abund when given a file name we set the
+// abundances to "file". This means that a user can not
+// load up a set of abundances and *NOT* use them; they
+// would have to reset the abundance table after loading.
+//
+static PyObject* set_abund_vector( PyObject *self, PyObject *args )
+{
+  sherpa::astro::xspec::FloatArray vector;
+  if ( !PyArg_ParseTuple( args, (char*)"O&",
+			  (converter)sherpa::convert_to_contig_array< sherpa::astro::xspec::FloatArray >,
+			  &vector ) )
+    return NULL;
+
+  size_t nelem = FunctionUtility::NELEMS();
+  size_t nvector = static_cast<size_t>(vector.get_size());
+
+  if ( nvector != nelem ) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"Array must contain %d elements, not %d",
+			 nelem, nvector );
+  }
+
+  std::vector<float> vals(nelem);
+  for (const auto idx: irange(nelem)) {
+    vals[idx] = vector[idx];
+  }
+
+  set_abundances_from_vector(vals);
+  Py_RETURN_NONE;
 }
 
 
@@ -590,6 +668,7 @@ static PyMethodDef XSpecMethods[] = {
   FCTSPEC(get_xsabund, get_abund),
   FCTSPEC(get_xsabund_doc, get_abund_doc),
   FCTSPEC(set_xsabund, set_abund),
+  FCTSPEC(set_xsabund_vector, set_abund_vector),
   FCTSPEC(set_xscosmo, set_cosmo),
   NOARGSPEC(get_xscosmo, get_cosmo),
   NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),

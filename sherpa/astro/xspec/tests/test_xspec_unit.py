@@ -456,6 +456,7 @@ def test_abund_get_dict():
     """Can we access the elemental settings?
 
     Make the same checks as test_abund_element
+
     """
 
     from sherpa.astro import xspec
@@ -576,6 +577,103 @@ def test_abund_set_dict_invalid_value():
     assert nvals == ovals
 
 
+@requires_xspec
+def test_abund_vector():
+    """Can we set an array of abundances?
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    assert oval != "file"
+
+    abundances = [0.1] * 10 + [0.01] * 10 + [0.05] * 9 + [0.2]
+    try:
+        xspec.set_xsabund(abundances)
+        assert xspec.get_xsabund() == "file"
+
+        got = []
+        for elem in ELEMENT_NAMES:
+            got.append(xspec.get_xsabund(elem))
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    for i in range(0, 10):
+        assert got[i] == pytest.approx(0.1)
+
+    for i in range(10, 20):
+        assert got[i] == pytest.approx(0.01)
+
+    for i in range(20, 29):
+        assert got[i] == pytest.approx(0.05)
+
+    assert got[29] == pytest.approx(0.2)
+
+
+@requires_xspec
+def test_abund_vector_too_small():
+    """Can we set an array of abundances?
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    assert oval != "file"
+
+    abundances = np.asarray([0.1] * 10)
+    try:
+        xspec.set_xsabund(abundances)
+        assert xspec.get_xsabund() == "file"
+
+        got = []
+        for elem in ELEMENT_NAMES:
+            got.append(xspec.get_xsabund(elem))
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    for i in range(0, 10):
+        assert got[i] == pytest.approx(0.1)
+
+    for i in range(10, 30):
+        assert got[i] == pytest.approx(0.0)
+
+
+@requires_xspec
+def test_abund_vector_too_large():
+    """Can we set an array of abundances?
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    assert oval != "file"
+
+    abundances = [0.1] * 10 + [0.01] * 10 + [0.05] * 9 + [0.2] + [2] * 5
+    try:
+        xspec.set_xsabund(abundances)
+        assert xspec.get_xsabund() == "file"
+
+        got = []
+        for elem in ELEMENT_NAMES:
+            got.append(xspec.get_xsabund(elem))
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    for i in range(0, 10):
+        assert got[i] == pytest.approx(0.1)
+
+    for i in range(10, 20):
+        assert got[i] == pytest.approx(0.01)
+
+    for i in range(20, 29):
+        assert got[i] == pytest.approx(0.05)
+
+    assert got[29] == pytest.approx(0.2)
+
+
 def validate_xspec_setting(getfunc, setfunc, newval, altval):
     """Check we can change an XSPEC setting.
 
@@ -646,7 +744,19 @@ def validate_xspec_state_setting(key, newval, altval):
 
     validate_xspec_setting(getfunc, setfunc, newval, altval)
 
-    assert xspec.get_xsstate() == ostate
+    # Remove the abundances keys as they don't compare nicely.
+    # We can not guarantee when this test is run whether any
+    # abundace vectors have been set.
+    #
+    nstate = xspec.get_xsstate()
+
+    try:
+        del ostate["abundances"]
+        del nstate["abundances"]
+    except KeyError:
+        pass
+
+    assert nstate == ostate
 
 
 @requires_xspec
@@ -1013,7 +1123,19 @@ def test_set_xsstate_xset():
     with pytest.raises(KeyError):
         assert xspec.get_xsxset(key)
 
-    assert xspec.get_xsstate() == ostate
+    # Remove the abundances keys as they don't compare nicely.
+    # We can not guarantee when this test is run whether any
+    # abundace vectors have been set.
+    #
+    nstate = xspec.get_xsstate()
+
+    try:
+        del ostate["abundances"]
+        del nstate["abundances"]
+    except KeyError:
+        pass
+
+    assert nstate == ostate
 
 
 @requires_xspec
@@ -1059,7 +1181,39 @@ def test_set_xsstate_path_manager():
     # assert xspec.get_xsstate() == ostate
 
     xspec.set_xspath_manager(opath)
-    # should really clear out xspec.xspecpaths
+    # should this clear out xspec.xsstate["paths"]?
+
+
+@requires_xspec
+def test_set_xsstate_abundances():
+    """Check we can restore manually-created abundances.
+    """
+
+    from sherpa.astro import xspec
+
+    oabund = xspec.get_xsabund()
+    assert oabund != "file"
+
+    ostate = xspec.get_xsstate()
+
+    xspec.set_xsabund([1] + [0.5] * 28 + [0.1])
+    nstate = xspec.get_xsstate()
+
+    # Change the abundances so we know the set_xsstate call works
+    xspec.set_xsabund("angr")
+    assert xspec.get_xsabund() == "angr"
+
+    xspec.set_xsstate(nstate)
+    assert xspec.get_xsabund() == "file"
+    assert xspec.get_xsabund("H") == pytest.approx(1)
+    assert xspec.get_xsabund("He") == pytest.approx(0.5)
+    assert xspec.get_xsabund("C") == pytest.approx(0.5)
+    assert xspec.get_xsabund("Fe") == pytest.approx(0.5)
+    assert xspec.get_xsabund("Cu") == pytest.approx(0.5)
+    assert xspec.get_xsabund("Zn") == pytest.approx(0.1)
+
+    xspec.set_xsstate(ostate)
+    assert xspec.get_xsabund() == oabund
 
 
 @requires_data

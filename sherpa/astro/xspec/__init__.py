@@ -623,11 +623,17 @@ def set_xsabund(abundance: str) -> None:
     photoelectric absorption models. It is equivalent to the X-Spec
     ``abund`` command [1]_.
 
+    .. versionchanged:: 4.16.0
+       The abundance parameter can be a list of numbers as well as a
+       string.
+
     Parameters
     ----------
-    abundance : str
-       A file name, format described below, or one of the pre-defined
-       names listed in the Notes section below.
+    abundance : str or list of numbers
+       A file name, format described below, one of the pre-defined
+       names listed in the Notes section below, or a list of numbers
+       that contain the abundances relative to Hydrogen (in this case
+       the label, returned by get_xsabund(), is set to "file").
 
     See Also
     --------
@@ -694,6 +700,14 @@ def set_xsabund(abundance: str) -> None:
            New Series, vol VI/4B, pp 560–630 (2009)
            https://ui.adsabs.harvard.edu/abs/2009LanB...4B..712L/abstract
 
+    Notes
+    -----
+    If an array of numbers is used then it is checked against the
+    number of elements supported by X-Spec (for XSPEC 12.12.0 this is
+    30), and resized if it does not match. If it is too short then the
+    remaining elements have abundances set to 0, and if it's too long
+    then the excess elements are ignored.
+
     Examples
     --------
 
@@ -703,9 +717,49 @@ def set_xsabund(abundance: str) -> None:
     >>> set_xsabund('abund.dat')
      Solar Abundance Vector set to file:  User defined abundance vector / no description specified
 
+    Make everything up to Oxygen be as abundant as Hydrogen, and the
+    rest has 0 (this is not realistic!):
+
+    >>> set_xsabund([1] * 8)
+     Solar Abundance Vector set to file:  User defined abundance vector / no description specified
+    >>> get_xsabund('O')
+    1.0
+    >>> get_xsabund('F')
+    0.0
+
     """
 
-    _xspec.set_xsabund(abundance)
+    # Rather than try and check if abundance is a string, let's
+    # see if it can get converted to an array.
+    #
+    arg = np.asarray(abundance)
+    if arg.shape == ():
+        _xspec.set_xsabund(abundance)
+
+        if get_xsabund() == "file":
+            # Sort by atomic number
+            elems = get_xselements()
+            names = sorted(elems, key=lambda el: elems[el])
+            abunds = np.asarray([get_xsabund(n) for n in names])
+            xsstate["abundances"] = abunds
+
+        return
+
+    # Check that arg has the correct size:
+    # - if too long, drop the extra elements
+    # - if too short, fill up with zeros.
+    #
+    nelem = get_xsnelem()
+    if arg.size < nelem:
+        out = np.zeros(nelem, float)
+        out[:arg.size] = arg
+        arg = out
+
+    elif arg.size > nelem:
+        arg = arg[:nelem]
+
+    _xspec.set_xsabund_vector(arg)
+    xsstate["abundances"] = arg.copy()
 
 
 def set_xschatter(level: int) -> None:
@@ -854,8 +908,9 @@ def set_xsxsect(name: str) -> None:
 # set" - so we record these settings manually.
 #
 xsstate: dict[str, Any] = {
+    "abundances": None,
     "paths": {},
-    "xfltnums": set(),
+    "xfltnums": set()
 }
 
 
@@ -1298,16 +1353,21 @@ def get_xsstate() -> dict[str, Any]:
     versions = {"atomdb": get_xsversion("atomdb"),
                 "nei": get_xsversion("nei")}
 
-    return {"abund": get_xsabund(),
-            "chatter": get_xschatter(),
-            "cosmo": get_xscosmo(),
-            "xsect": get_xsxsect(),
-            "modelstrings": get_xsxset(),
+    out = {"abund": get_xsabund(),
+           "chatter": get_xschatter(),
+           "cosmo": get_xscosmo(),
+           "xsect": get_xsxsect(),
+           "modelstrings": get_xsxset(),
             "paths": xsstate["paths"].copy(),
             "versions": versions,
             "db": get_xsdb(),
             "xflt": xflt
-            }
+           }
+
+    if xsstate["abundances"] is not None:
+        out["abundances"] = xsstate["abundances"]
+
+    return out
 
 
 def set_xsstate(state: dict[str, Any]) -> None:
@@ -1322,8 +1382,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        'xflt', 'db', 'versions', and 'paths'. If a keyword is missing
-        then that setting will not be changed.
+        'xflt', 'db', 'versions', 'abundances', and 'paths'. If a
+        keyword is missing then that setting will not be changed.
 
     See Also
     --------
@@ -1337,7 +1397,7 @@ def set_xsstate(state: dict[str, Any]) -> None:
     # existed).
     #
     try:
-        set_xsabund(state["abund"])
+        set_xschatter(state["chatter"])
     except KeyError:
         pass
 
@@ -1345,8 +1405,17 @@ def set_xsstate(state: dict[str, Any]) -> None:
         # assume not a dict
         return
 
+    # If the abundance table is set to "file" then we want to make
+    # sure we've restored the abundance settings first, assuming they
+    # are present. Note that if this fires then abunds is expected to
+    # be a vector/array, whereas the abund setting is a string.
+    #
+    abunds = state.get("abundances", None)
+    if abunds is not None:
+        set_xsabund(abunds)
+
     try:
-        set_xschatter(state["chatter"])
+        set_xsabund(state["abund"])
     except KeyError:
         pass
 
