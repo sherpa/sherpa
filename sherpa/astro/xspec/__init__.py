@@ -107,7 +107,7 @@ import logging
 from pathlib import Path
 import string
 import tempfile
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 import warnings
 
 import numpy as np
@@ -404,13 +404,31 @@ def get_xscosmo() -> tuple[float, float, float]:
     return _xspec.get_xscosmo()
 
 
-def get_xsversion() -> str:
+VersionType = Union[Literal["atomdb"], Literal["nei"]]
+
+
+def get_xsversion(name: Optional[VersionType] = None) -> str:
     """Return the version of the X-Spec model library in use.
+
+    .. versionchanged:: 4.17.0
+       The routine can now return the atomdb or nei versions in use
+       when given the optional name argument.
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei"}, optional
+       If not set, the XSPEC version is returned, otherwise it must be
+       one of "atomdb" or "nei", in which case the version in use for
+       the given database is returned.
 
     Returns
     -------
     version : str
        The version of the X-Spec model library used by Sherpa [1]_.
+
+    See Also
+    --------
+    set_xsversion
 
     References
     ----------
@@ -421,10 +439,60 @@ def get_xsversion() -> str:
     --------
 
     >>> get_xsversion()
-    '12.11.0m'
+    '12.13.1a'
+
+    >>> get_xsversion("atomdb")
+    '3.0.9'
+
+    >>> get_xsversion("nei")
+    '3.0.4'
+
     """
 
-    return _xspec.get_xsversion()
+    if name is None:
+        return _xspec.get_xsversion()
+
+    if name == "atomdb":
+        return _xspec.get_xsversion_atomdb()
+
+    if name == "nei":
+        return _xspec.get_xsversion_nei()
+
+    raise ValueError(f"name must be one of None, 'atomdb', or 'nei', not '{name}'")
+
+
+def set_xsversion(name: VersionType, version: str) -> None:
+    """Set the version of the libraries library used by X-Spec.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei"}
+       The library version to set.
+    version : str
+       The version of the library to use.
+
+    See Also
+    --------
+    get_xsversion
+
+    Examples
+    --------
+
+    >>> set_xsversion('atomdb', '3.0.9')
+
+    >>> set_xsversion('nei', '3.0.4')
+
+    """
+
+    if name == "atomdb":
+        return _xspec.set_xsversion_atomdb(version)
+
+    if name == "nei":
+        return _xspec.set_xsversion_nei(version)
+
+    raise ValueError(f"name must be 'atomdb' or 'nei', not '{name}'")
 
 
 def get_xsxsect() -> str:
@@ -1102,7 +1170,7 @@ def get_xsstate() -> dict[str, Any]:
     """Return the state of the XSPEC module.
 
     .. versionchanged:: 4.17.0
-       The state now contains any XFLT keywords that have been set.
+       More XSPEC settings are now saved.
 
     Returns
     -------
@@ -1110,8 +1178,8 @@ def get_xsstate() -> dict[str, Any]:
         The current settings for the XSPEC module, including but not
         limited to: the abundance and cross-section settings,
         parameters for the cosmological model, any XSET and XFLT
-        parameters that have been set, and changes to the paths used
-        by the model library.
+        parameters that have been set, versions changed, and changes
+        to the paths used by the model library.
 
     See Also
     --------
@@ -1129,12 +1197,16 @@ def get_xsstate() -> dict[str, Any]:
         if len(store) > 0:
             xflt[spectrumNumber] = store
 
+    versions = {"atomdb": get_xsversion("atomdb"),
+                "nei": get_xsversion("nei")}
+
     return {"abund": get_xsabund(),
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
             "modelstrings": get_xsxset(),
             "paths": xsstate["paths"].copy(),
+            "versions": versions,
             "db": get_xsdb(),
             "xflt": xflt
             }
@@ -1144,8 +1216,7 @@ def set_xsstate(state: dict[str, Any]) -> None:
     """Restore the state of the XSPEC module.
 
     .. versionchanged:: 4.17.0
-       The state can now include XFLT keywords under the 'xflt'
-       keyword.
+       More XSPEC settings are now restored, if set.
 
     Parameters
     ----------
@@ -1153,8 +1224,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        'xflt', 'db', and 'paths'. If a keyword is missing then that
-        setting will not be changed.
+        'xflt', 'db', 'versions', and 'paths'. If a keyword is missing
+        then that setting will not be changed.
 
     See Also
     --------
@@ -1219,6 +1290,18 @@ def set_xsstate(state: dict[str, Any]) -> None:
 
     try:
         set_xspath_model(paths["model"])
+    except KeyError:
+        pass
+
+    versions = state.get('versions', {})
+
+    try:
+        set_xsversion("atomdb", versions['atomdb'])
+    except KeyError:
+        pass
+
+    try:
+        set_xsversion("nei", versions['nei'])
     except KeyError:
         pass
 
@@ -1367,7 +1450,7 @@ def read_xstable_model(modelname, filename, etable=False):
 __all__ : tuple[str, ...]
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
-           'get_xsversion',
+           'get_xsversion', 'set_xsversion',
            'set_xsxset', 'get_xsxset', 'clear_xsxset',
            'set_xsstate', 'get_xsstate',
            'get_xsxflt', 'set_xsxflt', 'clear_xsxflt',

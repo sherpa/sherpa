@@ -569,6 +569,11 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(get_db, getAllDb),
   FCTSPEC(set_db, loadDbValue),
 
+  NOARGSPEC(get_xsversion_atomdb, get_xspec_string<FunctionUtility::atomdbVersion>),
+  NOARGSPEC(get_xsversion_nei, get_xspec_string<FunctionUtility::neiVersion>),
+  FCTSPEC(set_xsversion_atomdb, set_xspec_string<FunctionUtility::atomdbVersion>),
+  FCTSPEC(set_xsversion_nei, set_xspec_string<FunctionUtility::neiVersion>),
+
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
   FCTSPEC(set_xspath_manager, set_xspec_string<FunctionUtility::managerPath>),
