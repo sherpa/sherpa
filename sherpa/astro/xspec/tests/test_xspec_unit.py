@@ -249,6 +249,16 @@ def test_abund_default():
 
 
 @requires_xspec
+def test_get_xsabundancies_file():
+    """Minimal test of get_xsabundancies"""
+    from sherpa.astro import xspec
+
+    # We assume the file must exist if we have got this far
+    path = xspec.get_xsabundances_file()
+    assert path.is_file()
+
+
+@requires_xspec
 def test_xset_default():
     """Check the expected default setting for the xset setting.
 

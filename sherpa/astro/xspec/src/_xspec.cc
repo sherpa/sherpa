@@ -599,6 +599,22 @@ static PyMethodDef XSpecMethods[] = {
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
 
+  // The set commands are not wrapped yet as it's not clear how well
+  // the system handles these changes (e.g. it doesn't seem to update
+  // the stored abundances if you change one or both of the abundance
+  // settings). The cross-section file should also be accessible in a
+  // similar manner, but the XSPEC API does not provide access to this
+  // (at least for XSPEC 12.12.1).
+  //
+  // Also, abundPath is essentially managerPath, but we provide access
+  // to it as it could be changed (but not by any routine we currently
+  // provide access to).
+  //
+  NOARGSPEC(get_abundance_file, get_xspec_string<FunctionUtility::abundanceFile>),
+  NOARGSPEC(get_xspath_abundance, get_xspec_string<FunctionUtility::abundPath>),
+  // FCTSPEC(set_abundance_file, set_xspec_string<FunctionUtility::abundanceFile>),
+  // FCTSPEC(set_xspath_abundance, set_xspec_string<FunctionUtility::abundPath>),
+
   // XFLT commands
   NOARGSPEC(clear_xflt, clearXFLT),
   FCTSPEC(get_xflt, getAllXFLT),
