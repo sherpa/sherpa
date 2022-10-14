@@ -237,6 +237,17 @@ def test_abund_default():
 
 
 @requires_xspec
+def test_get_xsabundances_path():
+    """Minimal test of get_xsabundances_path"""
+
+    from sherpa.astro import xspec
+
+    # We assume the file must exist if we have got this far
+    path = xspec.get_xsabundances_path()
+    assert path.is_file()
+
+
+@requires_xspec
 def test_xset_default():
     """Check the expected default setting for the xset setting.
 
@@ -874,8 +885,11 @@ def test_set_xsstate_missing_key(miss_key):
 
     ostate = xspec.get_xsstate()
     assert miss_key in ostate
-    for val in ostate.values():
-        assert val is not None
+    for key, val in ostate.items():
+        if key == "abundances":
+            assert val is None
+        else:
+            assert val is not None
 
     def not_elem(value, vals):
         """Pick the first item in vals that is not value"""
@@ -892,6 +906,8 @@ def test_set_xsstate_missing_key(miss_key):
             'paths': {'manager': '/dev/null', 'model': '/dev/null'}}
 
     del fake[miss_key]
+
+    assert xspec.get_xsabund() != 'file'
 
     try:
         xspec.set_xsstate(fake)
@@ -924,6 +940,11 @@ def test_set_xsstate_missing_key(miss_key):
         #
         for key in fake.get("modelstrings", {}).keys():
             xspec.set_xsxset(key, "")
+
+    # Safety check (this was not being reset correctly when working on
+    # using set_xsabund_vector and the abundances state setting).
+    #
+    assert xspec.get_xsabund() != 'file'
 
 
 @requires_xspec
@@ -1033,7 +1054,40 @@ def test_set_xsstate_path_manager():
     # assert xspec.get_xsstate() == ostate
 
     xspec.set_xspath_manager(opath)
-    # should really clear out xspec.xspecpaths
+    # should really clear out xspec.xsstate["paths"]
+
+
+@requires_xspec
+def test_set_xsstate_abundances():
+    """Check we can restore manually-created abundances.
+    """
+
+    from sherpa.astro import xspec
+
+    oabund = xspec.get_xsabund()
+    assert oabund != "file"
+
+    ostate = xspec.get_xsstate()
+
+    xspec.set_xsabundances({"H": 1, "He": 0.6, "C": 0.5, "Fe": 0.25, "Zn": 0.1})
+
+    nstate = xspec.get_xsstate()
+
+    # Change the abundances so we know the set_xsstate call works
+    xspec.set_xsabund("angr")
+    assert xspec.get_xsabund() == "angr"
+
+    xspec.set_xsstate(nstate)
+    assert xspec.get_xsabund() == "file"
+    assert xspec.get_xsabund("H") == pytest.approx(1)
+    assert xspec.get_xsabund("He") == pytest.approx(0.6)
+    assert xspec.get_xsabund("C") == pytest.approx(0.5)
+    assert xspec.get_xsabund("Fe") == pytest.approx(0.25)
+    assert xspec.get_xsabund("Cu") == pytest.approx(0.0)
+    assert xspec.get_xsabund("Zn") == pytest.approx(0.1)
+
+    xspec.set_xsstate(ostate)
+    assert xspec.get_xsabund() == oabund
 
 
 @requires_data
