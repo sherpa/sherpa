@@ -495,6 +495,71 @@ def set_xsversion(name: VersionType, version: str) -> None:
     raise ValueError(f"name must be 'atomdb' or 'nei', not '{name}'")
 
 
+# This function is not added to __all__ as it is very specialized.
+#
+def get_xselements() -> dict[str, int]:
+    """Return the elements names and atomic numbers used by X-Spec.
+
+    .. versionadded:: 4.17.0
+
+    Returns
+    -------
+    elements : dict
+        The keys are the element names and the values the atomic
+        numbers.
+
+    See Also
+    --------
+    get_xsnelem
+
+    Examples
+    --------
+
+    >>> els = get_xselements()
+    >>> len(els)
+    30
+    >>> els['H']
+    1
+    >>> els['Zn']
+    30
+
+    """
+
+    # This could have accessed a Python dict, such as {'H': 1, 'He':
+    # 2, ..., 'Zn': 30}, which would have been a lot simpler, but this
+    # is ore future-proof, in the very-unlikely case that XSPEC adds
+    # more elements.
+    #
+    return _xspec.get_xselements()
+
+
+# This function is not added to __all__ as it is very specialized.
+#
+def get_xsnelem() -> int:
+    """Return the number of elements used by XSPEC.
+
+    .. versionadded:: 4.17.0
+
+    Returns
+    -------
+    nelem : int
+        The number of elements.
+
+    See Also
+    --------
+    get_xselements
+
+    Examples
+    --------
+
+    >>> get_xsnelem()
+    30
+
+    """
+
+    return len(get_xselements())
+
+
 def get_xsxsect() -> str:
     """Return the cross sections used by X-Spec models.
 

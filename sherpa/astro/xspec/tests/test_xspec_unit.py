@@ -77,6 +77,8 @@ DEFAULT_COSMO = (70.0, 0.0, 0.73)
 DEFAULT_XSET_NAME = 'SHERPA-TEST-DUMMY-NAME'
 
 # The number of elements in the abundance table
+# (this is assumed to be unlikely to change).
+#
 ELEMENT_NAMES = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
                  'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
                  'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni',
@@ -174,16 +176,26 @@ def test_set_version_error(name):
 
 
 @requires_xspec
-def test_expected_elements():
-    """If this fails then something is wrong!"""
+def test_expected_number_of_elements():
+    """Check we know how many elements are needed by XSPEC.
+
+    If this changes then we need to re-do some of the test
+    code but in and of itself it is not a terrible change. It
+    is an unlikely change though!
+    """
 
     from sherpa.astro import xspec
 
-    # At the moment this just checks I can repeat the information in
-    # two places, but the aim is to change the interface to access
-    # this information from XSPEC itself, at which point it becomes a
-    # regression test.
-    #
+    assert xspec.get_xsnelem() == NELEM
+
+
+@requires_xspec
+def test_expected_elements():
+    """If this fails then something is wrong!
+    """
+
+    from sherpa.astro import xspec
+
     xselems = xspec.get_xselements()
     for idx, elem in enumerate(ELEMENT_NAMES, 1):
         assert xselems[elem] == idx
