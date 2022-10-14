@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015 - 2025
+#  Copyright (C) 2010, 2015-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -109,7 +109,8 @@ import functools
 import logging
 from pathlib import Path
 import string
-from typing import Any, overload
+import tempfile
+from typing import Any, Literal, overload
 import warnings
 
 import numpy as np
@@ -137,13 +138,14 @@ warning = logging.getLogger(__name__).warning
 # a structured type (e.g. a dataclass), but it's not clear how we want
 # this to evolve, so leave as a dict.
 #
-# We only want to note any changes the user has made to the paths,
-# rather than storing in the state the default settings (which may
-# change with system or version).
+# We only want to note any changes the user has made to the paths or
+# versions, rather than storing in the state the default settings
+# (which may change with system or version).
 #
 xsstate: dict[str, Any] = {
     "abundances": None,
     "paths": {},
+    "versions": {}
 }
 
 
@@ -473,27 +475,106 @@ def get_xscosmo() -> tuple[float, float, float]:
     return _xspec.get_xscosmo()
 
 
-def get_xsversion() -> str:
+VersionType = Literal["atomdb"] | Literal["nei"]
+
+
+def get_xsversion(name: VersionType | None = None) -> str:
     """Return the version of the X-Spec model library in use.
+
+    .. versionchanged:: 4.18.0
+       The routine can now return the atomdb or nei versions in use
+       when given the optional name argument.
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei"}, optional
+       If not set, the XSPEC version is returned, otherwise it must be
+       one of "atomdb" or "nei", in which case the version in use for
+       the given database is returned.
 
     Returns
     -------
     version : str
-       The version of the X-Spec model library used by Sherpa [1]_.
+       The version of the X-Spec model library or database.
 
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/
+    See Also
+    --------
+    set_xsversion
 
     Examples
     --------
 
     >>> get_xsversion()
-    '12.11.0m'
+    '12.14.0i'
+
+    >>> get_xsversion("atomdb")
+    '3.0.9'
+
+    >>> get_xsversion("nei")
+    '3.0.4'
+
     """
 
-    return _xspec.get_xsversion()
+    match name:
+        case None:
+            return _xspec.get_xsversion()
+
+        case "atomdb":
+            return _xspec.get_xsversion_atomdb()
+
+        case "nei":
+            return _xspec.get_xsversion_nei()
+
+        case _:
+            raise ValueError("name must be one of None, 'atomdb', or 'nei', "
+                             f"not '{name}'")
+
+
+def set_xsversion(name: VersionType,
+                  version: str) -> None:
+    """Set the version of the libraries library used by X-Spec.
+
+    .. versionadded:: 4.18.0
+
+    Parameters
+    ----------
+    name : {"atomdb", "nei"}
+       The library version to set.
+    version : str
+       The version of the library to use.
+
+    See Also
+    --------
+    get_xsversion
+
+    Examples
+    --------
+
+    >>> set_xsversion('atomdb', '3.0.9')
+
+    >>> set_xsversion('nei', '3.0.4')
+
+    """
+
+    match name:
+        case "atomdb":
+            setfn = _xspec.set_xsversion_atomdb
+            getfn = _xspec.get_xsversion_atomdb
+
+        case "nei":
+            setfn = _xspec.set_xsversion_nei
+            getfn = _xspec.get_xsversion_nei
+
+        case _:
+            raise ValueError("name must be 'atomdb' or 'nei', "
+                             f"not '{name}'")
+
+    # We store whatever XSPEC converts the version to, rather than the
+    # version the user sent in, just in case there is any validation
+    # done by the XSPEC code.
+    #
+    setfn(version)
+    xsstate["versions"][name] = getfn()
 
 
 def get_xsxsect() -> str:
@@ -1033,18 +1114,23 @@ def set_xspath_model(path: Path | str) -> None:
 def get_xsstate() -> dict[str, Any]:
     """Return the state of the XSPEC module.
 
+    .. versionchanged:: 4.18.0
+       More XSPEC settings are now saved.
+
     Returns
     -------
     state : dict
         The current settings for the XSPEC module, including but not
-        limited to: the abundance and cross-section settings, parameters
-        for the cosmological model, any XSET parameters that have been
-        set, and changes to the paths used by the model library.
+        limited to: the abundance and cross-section settings,
+        parameters for the cosmological model, any XSET parameters
+        that have been set, versions changed, and changes to the paths
+        used by the model library.
 
     See Also
     --------
     get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
     set_xsstate
+
     """
 
     abundances = xsstate["abundances"]
@@ -1057,12 +1143,16 @@ def get_xsstate() -> dict[str, Any]:
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
             "modelstrings": get_xsxset(),
-            "paths": xsstate["paths"].copy()
+            "paths": xsstate["paths"].copy(),
+            "versions": xsstate["versions"].copy(),
             }
 
 
 def set_xsstate(state: dict[str, Any]) -> None:
     """Restore the state of the XSPEC module.
+
+    .. versionchanged:: 4.18.0
+       More XSPEC settings are restored, if set.
 
     .. versionchanged:: 4.17.1
        The input state no-longer requires all the keys to be
@@ -1074,7 +1164,7 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        'abundances', and 'paths'. If a keyword is missing
+        'abundances', 'versions', and 'paths'. If a keyword is missing
         then that setting will not be changed.
 
     See Also
@@ -1132,6 +1222,13 @@ def set_xsstate(state: dict[str, Any]) -> None:
 
     with suppress(KeyError):
         set_xspath_model(paths["model"])
+
+    versions = state.get("versions", {})
+    with suppress(KeyError):
+        set_xsversion("atomdb", versions["atomdb"])
+
+    with suppress(KeyError):
+        set_xsversion("nei", versions["nei"])
 
 
 def read_xstable_model(modelname: str,
@@ -1288,7 +1385,7 @@ def read_xstable_model(modelname: str,
 __all__ : tuple[str, ...]
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
-           'get_xsversion',
+           'get_xsversion', 'set_xsversion',
            'set_xsxset', 'get_xsxset', 'clear_xsxset',
            'set_xsstate', 'get_xsstate',
            'get_xsabundances', 'set_xsabundances')

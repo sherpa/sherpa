@@ -581,6 +581,11 @@ static PyMethodDef XSpecMethods[] = {
   // FCTSPEC(set_abundance_file, set_xspec_string<FunctionUtility::abundanceFile>),
   // FCTSPEC(set_xspath_abundance, set_xspec_string<FunctionUtility::abundPath>),
 
+  NOARGSPEC(get_xsversion_atomdb, get_xspec_string<FunctionUtility::atomdbVersion>),
+  NOARGSPEC(get_xsversion_nei, get_xspec_string<FunctionUtility::neiVersion>),
+  FCTSPEC(set_xsversion_atomdb, set_xspec_string<FunctionUtility::atomdbVersion>),
+  FCTSPEC(set_xsversion_nei, set_xspec_string<FunctionUtility::neiVersion>),
+
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
   FCTSPEC(set_xspath_manager, set_xspec_string<FunctionUtility::managerPath>),
