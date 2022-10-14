@@ -91,6 +91,7 @@ References
 
 
 import logging
+from pathlib import Path
 import string
 import warnings
 
@@ -172,6 +173,39 @@ def get_xsabund(element=None):
         return _xspec.get_xsabund()
     else:
         return _xspec.get_xsabund(element)
+
+
+# This function is not added to __all__ as it is not likely to be well
+# used.
+#
+def get_xsabundances_file():
+    """Return the path to the abundances file used by X-Spec.
+
+    This file is used by X-Spec to determine the different
+    abundance-table settings used by set_xsabund and get_xsabund.
+
+    .. versionadded:: 4.16.0
+
+    Returns
+    -------
+    path : pathlib.Path
+        The full path to the abundances file.
+
+    See Also
+    --------
+    get_xsabund, set_xsabund
+
+    Examples
+    --------
+
+    >>> get_xsabundances_file()
+    PosixPath('/path/to/spectral/manager/abundances.dat')
+
+    """
+
+    out = Path(_xspec.get_xspath_abundance())
+    out /= Path(_xspec.get_abundance_file())
+    return out.resolve()
 
 
 def get_xschatter():
