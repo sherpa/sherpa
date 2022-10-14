@@ -100,7 +100,8 @@ def test_chatter_default():
 
 
 @requires_xspec
-def test_version():
+@pytest.mark.parametrize("name", [None, "atomdb", "nei"])
+def test_version(name):
     """Can we get at the XSPEC version?
 
     There is limited testing of the return value.
@@ -108,12 +109,68 @@ def test_version():
 
     from sherpa.astro import xspec
 
-    v = xspec.get_xsversion()
+    v = xspec.get_xsversion(name)
     assert isinstance(v, (str, ))
     assert len(v) > 0
 
-    # Could check it's of the form a.b.c[optional] but leave that for
-    # now.
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["ATOMDB", "", "foo"])
+def test_version_error(name):
+    """Does this error out?
+
+    At the moment we are case sensitive when checking the name.
+
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^name must be one of None, 'atomdb', or 'nei', not '{name}'$"):
+        xspec.get_xsversion(name)
+
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["atomdb", "nei"])
+def test_set_version(name):
+    """Can we set the XSPEC version?
+
+    This is just to check we can call the routine - we don't really do
+    much with it.
+
+    """
+
+    from sherpa.astro import xspec
+
+    old = xspec.get_xsversion(name)
+
+    # pick a value that is "realistic" but old, and should not
+    # appear with any supported XSPEC version.
+    #
+    new = '3.0.0'
+    assert old != new
+
+    try:
+        xspec.set_xsversion(name, new)
+        assert xspec.get_xsversion(name) == new
+    finally:
+        xspec.set_xsversion(name, old)
+
+
+@requires_xspec
+@pytest.mark.parametrize("name", ["ATOMDB", "", "foo"])
+def test_set_version_error(name):
+    """Does this error out?
+
+    At the moment we are case sensitive when checking the name.
+
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^name must be 'atomdb' or 'nei', not '{name}'$"):
+        xspec.set_xsversion(name, "1.2.3")
 
 
 @requires_xspec
