@@ -37,6 +37,30 @@
 #include <XSFunctions/funcWrappers.h>
 #include <XSFunctions/functionMap.h>
 
+
+// A simple range iterator for integer-like types since we don't have boost.
+// We don't really need it to be templated as it's only used with size_t,
+// and similarly start is always set to 0, but leave this for now.
+//
+template <typename T>
+class irange
+{
+private:
+  T lastval;
+  T current;
+
+public:
+  irange(T end, T start=0): lastval(end),current(start) {}
+
+  bool operator!=(const irange&) const { return current < lastval; }
+  void operator++() { ++current; }
+  T operator*() const { return current; }
+
+  const irange& begin() const { return *this; }
+  const irange& end() const { return *this; }
+};
+
+
 // The XSPEC initialization used to be done lazily - that is, only
 // when the first routine from XSPEC was about to be called - but
 // the module is now set up so that we need to know the version
@@ -510,6 +534,25 @@ static PyObject* loadDbValue( PyObject *self, PyObject *args )
 }
 
 
+// Provide access to the element table. This returns
+// a dictionary where the key is the name and the value
+// the atomic number (so 'He' maps to 2).
+//
+static PyObject* get_elements( PyObject *self ) {
+  PyObject *d = PyDict_New();
+
+  for (const auto i: irange<size_t>(FunctionUtility::NELEMS())) {
+    PyObject *key = PyUnicode_FromString(FunctionUtility::elements(i).c_str());
+    PyObject *value = PyLong_FromSize_t(i + 1);
+    PyDict_SetItem(d, key, value);
+    Py_DECREF(value);
+    Py_DECREF(key);
+  }
+
+  return d;
+}
+
+
 template <const std::string& get()>
 static PyObject* get_xspec_string( PyObject *self ) {
   return Py_BuildValue( (char*)"s", get().c_str() );
@@ -560,6 +603,10 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(get_xsversion_nei, get_xspec_string<FunctionUtility::neiVersion>),
   FCTSPEC(set_xsversion_atomdb, set_xspec_string<FunctionUtility::atomdbVersion>),
   FCTSPEC(set_xsversion_nei, set_xspec_string<FunctionUtility::neiVersion>),
+
+  // element access
+  //
+  NOARGSPEC(get_xselements, get_elements),
 
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
