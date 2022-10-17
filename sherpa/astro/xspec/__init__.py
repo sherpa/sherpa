@@ -210,14 +210,14 @@ def get_xsabund(element: Optional[Union[str, int]] = None
 
 
 def get_xsabundances() -> dict[str, float]:
-    """Return the abundance settings used by X-Spec.
+    """Return the current abundance settings used by X-Spec.
 
     .. versionadded:: 4.17.0
 
     Returns
     -------
     abundances : dict
-        The current set of abundances. The keys are the element names
+        The current set of abundances. The keys are the element name
         (e.g. 'Fe') and the values are the abundances.
 
     See Also
@@ -232,8 +232,11 @@ def get_xsabundances() -> dict[str, float]:
 
     """
 
-    return {name: _xspec.get_xsabund(name)
-            for name in get_xselements().keys()}
+    out = {}
+    for name, z in get_xselements().items():
+        out[name] = _xspec.get_xsabund_z(z)
+
+    return out
 
 
 def get_xsabund_doc(name: Optional[str] = None) -> str:
@@ -268,11 +271,6 @@ def get_xsabund_doc(name: Optional[str] = None) -> str:
     return _xspec.get_xsabund_doc(aname).strip()
 
 
-# The current interface to the XSPEC model library makes this awkward
-# to write. Once the interface switches to using the FunctionUtility
-# interface this code will be a lot simpler internally, without
-# changing the API.
-#
 def set_xsabundances(abundances: dict[str, float]) -> None:
     """Set the abundances used by X-Spec.
 
@@ -283,8 +281,7 @@ def set_xsabundances(abundances: dict[str, float]) -> None:
     abundances : dict
         The new set of abundances. The keys are the element name
         (e.g. 'Fe') and the values are the abundances. Any element
-        that is not present is set to 0.0, and other keywords are
-        ignored.
+        that is not present is set to 0.0.
 
     See Also
     --------
@@ -301,36 +298,13 @@ def set_xsabundances(abundances: dict[str, float]) -> None:
 
     """
 
-    # Get the list of elemental values. We do not require that the
-    # dictionary contain all the elements, but it can not contain
-    # unknown elements.
-    #
     elems = get_xselements()
-    out = np.zeros(len(elems))
+    out = np.zeros(get_xsnelem())
     for name, abund in abundances.items():
-        try:
-            z = elems[name]
-        except KeyError:
-            raise ArgumentErr(f"Invalid element name: '{name}'") from None
-
+        z = elems[name]
         out[z - 1] = abund
 
-    # Write them to a file and then load them.
-    #
-    # This should set delete_on_close=False but that
-    # requires Python 3.12.
-    #
-    with tempfile.NamedTemporaryFile(encoding="ascii", mode="w",
-                                     delete=False) as fh:
-        for elem in out:
-            fh.write(f"{elem}\n")
-
-        # Make sure data is written to disk. Could this just
-        # be fh.flush() and avoid closing the file?
-        #
-        fh.close()
-
-        set_xsabund(fh.name)
+    _xspec.set_xsabund_vector(out)
 
 
 # This function is not added to __all__ as it is very specialized.
@@ -1633,6 +1607,7 @@ def read_xstable_model(modelname, filename, etable=False):
 __all__ : tuple[str, ...]
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
+           'get_xsabundances', 'set_xsabundances',
            'get_xsversion', 'set_xsversion',
            'set_xsxset', 'get_xsxset', 'clear_xsxset',
            'set_xsstate', 'get_xsstate',

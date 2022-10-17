@@ -695,6 +695,81 @@ def test_abund_vector_too_large():
     assert got[29] == pytest.approx(0.2)
 
 
+@requires_xspec
+def test_abund_get_dict():
+    """Can we access the elemental settings?
+
+    Make the same checks as test_abund_element
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    assert oval != 'wilm'
+    try:
+        xspec.set_xsabund('wilm')
+        abunds = xspec.get_xsabundances()
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    check_abundances(abunds['H'],
+                     abunds['He'],
+                     abunds['Si'],
+                     abunds['Ar'],
+                     abunds['K'],
+                     abunds['Fe'])
+
+
+@requires_xspec
+def test_abund_set_dict():
+    """Can we set a dict of abundances?
+
+    Unlike test_abund_vector, but a bit-like
+    test_abund_vector_too_small, we only set a sub-set of elements,
+    with the rest being set to 0.
+
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+
+    # This is a pre-condition. It is't really needed, but it is a better
+    # test if it holds.
+    #
+    assert oval != "file"
+
+    abundances = {'He': 0.1, 'H': 1.0, 'O': 0.2, 'Fe': 0.3, 'Mn': 0.4}
+    try:
+        xspec.set_xsabundances(abundances)
+        assert xspec.get_xsabund() == "file"
+
+        got = []
+        for elem in ELEMENT_NAMES:
+            got.append(xspec.get_xsabund(elem))
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert got[0] == pytest.approx(1.0)
+    assert got[1] == pytest.approx(0.1)
+    assert got[7] == pytest.approx(0.2)
+    assert got[25] == pytest.approx(0.3)
+    assert got[24] == pytest.approx(0.4)
+
+    for i in range(2, 7):
+        assert got[i] == pytest.approx(0.0)
+
+    for i in range(8, 24):
+        assert got[i] == pytest.approx(0.0)
+
+    for i in range(26, 30):
+        assert got[i] == pytest.approx(0.0)
+
+    assert xspec.get_xsabund() == oval
+
+
 def validate_xspec_setting(getfunc, setfunc, newval, altval):
     """Check we can change an XSPEC setting.
 
@@ -878,39 +953,6 @@ def test_abund_change_file_subset(tmp_path):
             assert out[n] == pytest.approx(0)
 
     assert out2 == out
-
-
-@requires_xspec
-def test_abund_change_file_subset(tmp_path):
-    """What happens if send in too-few elements?"""
-
-    from sherpa.astro import xspec
-
-    elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)
-             if i < 10}
-
-    tmpname = tmp_path / "abunds.xspec"
-    with open(tmpname, "w") as tfh:
-        for v in elems.values():
-            tfh.write(f"{v}\n")
-
-    oval = xspec.get_xsabund()
-    try:
-        xspec.set_xsabund(str(tmpname))
-
-        abund = xspec.get_xsabund()
-        out = {n: xspec.get_xsabund(n)
-               for n in ELEMENT_NAMES}
-
-    finally:
-        xspec.set_xsabund(oval)
-
-    assert abund == 'file'
-    for i, n in enumerate(ELEMENT_NAMES):
-        if i < 10:
-            assert out[n] == pytest.approx(elems[n])
-        else:
-            assert out[n] == pytest.approx(0)
 
 
 @requires_xspec
