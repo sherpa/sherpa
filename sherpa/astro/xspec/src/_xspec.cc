@@ -148,7 +148,8 @@ static PyObject* get_chatter( PyObject *self )
 static PyObject* get_abund_name( PyObject *self, PyObject *args )
 {
   char* element = NULL;
-  if ( !PyArg_ParseTuple( args, (char*)"s", &element ) )
+  char *name = NULL;
+  if ( !PyArg_ParseTuple( args, (char*)"s|z", &element, &name ) )
     return NULL;
 
   const size_t nelem = FunctionUtility::NELEMS();
@@ -157,19 +158,19 @@ static PyObject* get_abund_name( PyObject *self, PyObject *args )
       continue;
     }
 
-    float abundVal = 0.0;
-    try {
-      abundVal = FunctionUtility::getAbundance(idx + 1);
-    } catch (FunctionUtility::NoInitializer&) {
-      // This is only likely to happen if the user has selected the
-      // file abundance table but has not loaded any elements.  The
-      // abundances_set_from_file symbol added here should mean that
-      // this error condition can not happen, but it has been left in
-      // just in case.
-      //
-      return PyErr_Format( PyExc_ValueError,
-			   "could not find element '%s' from table '%s'",
-			   element, FunctionUtility::ABUND().c_str() );
+    const size_t z = idx + 1;
+
+    float abundVal;
+    if (name == NULL) {
+      abundVal = FunctionUtility::getAbundance(z);
+    } else {
+      try {
+	abundVal = FunctionUtility::getAbundance(string(name), z);
+      } catch (FunctionUtility::NoInitializer&) {
+	// Fortunately this error does not lead to stderr output
+	return PyErr_Format( PyExc_ValueError,
+			     "Unknown abundance table '%s'", name );
+      }
     }
 
     return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
@@ -182,8 +183,9 @@ static PyObject* get_abund_name( PyObject *self, PyObject *args )
 
 static PyObject* get_abund_z( PyObject *self, PyObject *args )
 {
+  char *name = NULL;
   int zarg = 0;
-  if ( !PyArg_ParseTuple( args, (char*)"i", &zarg ) )
+  if ( !PyArg_ParseTuple( args, (char*)"i|z", &zarg, &name ) )
     return NULL;
 
   size_t z = static_cast<size_t>(zarg);
@@ -192,7 +194,19 @@ static PyObject* get_abund_z( PyObject *self, PyObject *args )
 			 (char*)"Unsupported atomic number: %d", zarg );
   }
 
-  float abundVal = FunctionUtility::getAbundance(z);
+  float abundVal;
+  if (name == NULL) {
+    abundVal = FunctionUtility::getAbundance(z);
+  } else {
+    try {
+      abundVal = FunctionUtility::getAbundance(string(name), z);
+    } catch (FunctionUtility::NoInitializer&) {
+      // Fortunately this error does not lead to stderr output
+      return PyErr_Format( PyExc_ValueError,
+			   "Unknown abundance table '%s'", name );
+    }
+  }
+
   return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
 }
 
@@ -279,7 +293,8 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
   }
 
   // If we've got here then try to read the data from a file. This follows
-  // the XSPEC code (as there's currently no method that does just this).
+  // the XSPEC code - it is very-similar to FunctionUtility::readNewAbundances
+  // but is this supported in 12.12.0 (it is in 12.12.1)?
   //
   const size_t nelems = FunctionUtility::NELEMS();
   std::vector<float> vals(nelems, 0);

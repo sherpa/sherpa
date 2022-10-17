@@ -121,11 +121,12 @@ warning = logging.getLogger(__name__).warning
 # when the compiled code has not been compiled (e.g. for a Sphinx
 # documentation run).
 #
-def get_xsabund(element=None):
+def get_xsabund(element=None, table=None):
     """Return the X-Spec abundance setting or elemental abundance.
 
     .. versionchanged 4.16.0::
-       The element can now be specified via it's atomic number.
+       The element can now be specified via it's atomic number and the
+       abundance table to search can be given.
 
     Parameters
     ----------
@@ -137,6 +138,9 @@ def get_xsabund(element=None):
        'Fe', 'Co', 'Ni', 'Cu', 'Zn'. Case is important. If it is an
        integer then it must be the atomic number of the element (1 to
        30).
+    table : str, optional
+       The abundance table to use. It accepts the same string labels
+       as `set_xsabund` and is ignored if element is not set.
 
     Returns
     -------
@@ -167,6 +171,13 @@ def get_xsabund(element=None):
     >>> get_xsabund(2)
     0.09769999980926514
 
+    Compare the Oxygen abundances for the angr and wilm tables:
+
+    >>> get_xsabund('O', 'angr')
+    0.0008510000188834965
+    >>> get_xsabund('O', 'wilm')
+    0.0004900000058114529
+
     The `set_xsabund` function has been used to read in the
     abundances from a file, so the routine now returns the
     string 'file':
@@ -181,21 +192,33 @@ def get_xsabund(element=None):
         return _xspec.get_xsabund_table()
 
     # Let the C API decide whether we recognize the argument rather
-    # than checking here.
+    # than checking here. To avoid worrying about table being the
+    # wrong type, it gets converted to a string before being passed to
+    # the _xspec routine.
     #
+    if table is not None:
+        table = str(table)
+
     try:
-        return _xspec.get_xsabund_name(element)
+        return _xspec.get_xsabund_name(element, table)
     except TypeError:
         try:
-            return _xspec.get_xsabund_z(element)
+            return _xspec.get_xsabund_z(element, table)
         except TypeError:
-            raise TypeError("element must be None, a string, or an integer.") from None
+            raise TypeError("element must be None, a string, or an integer") from None
 
 
-def get_xsabundances():
-    """Return the current abundance settings used by X-Spec.
+def get_xsabundances(table=None):
+    """Return the abundance settings used by X-Spec.
 
     .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    table : str, optional
+       If not set the current table is used, otherwise the abundance
+       table to use (it accepts the same string labels as
+       `set_xsabund`).
 
     Returns
     -------
@@ -217,7 +240,7 @@ def get_xsabundances():
 
     out = {}
     for name, z in get_xselements().items():
-        out[name] = _xspec.get_xsabund_z(z)
+        out[name] = _xspec.get_xsabund_z(z, table)
 
     return out
 
