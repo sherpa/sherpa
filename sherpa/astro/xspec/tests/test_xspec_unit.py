@@ -406,14 +406,35 @@ def test_abund_element():
 
 
 @requires_xspec
+def test_abund_element_z():
+    """Can we access the elemental settings with atomic number?
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund('wilm')
+        h = xspec.get_xsabund(1)
+        he = xspec.get_xsabund(2)
+        si = xspec.get_xsabund(14)
+        ar = xspec.get_xsabund(18)
+        k = xspec.get_xsabund(19)
+        fe = xspec.get_xsabund(26)
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    check_abundances(h, he, si, ar, k, fe)
+
+
+@requires_xspec
 def test_abund_get_invalid_element(caplog):
     """Check what happens if sent the wrong element name"""
 
     from sherpa.astro import xspec
 
-    # TODO: TypeError is not the best error type here.
-    with pytest.raises(TypeError,
-                       match="^could not find element 'O3'$"):
+    with pytest.raises(ValueError, match="^could not find element 'O3'$"):
         xspec.get_xsabund("O3")
 
     assert len(caplog.records) == 0

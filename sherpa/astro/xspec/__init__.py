@@ -137,18 +137,23 @@ warning = logging.getLogger(__name__).warning
 # when the compiled code has not been compiled (e.g. for a Sphinx
 # documentation run).
 #
-def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
+def get_xsabund(element: Optional[Union[str, int]] = None
+                ) -> Union[str, float]:
     """Return the X-Spec abundance setting or elemental abundance.
+
+    .. versionchanged 4.17.0::
+       The element can now be specified via it's atomic number.
 
     Parameters
     ----------
-    element : str, optional
-       When not given, the abundance table name is returned.
-       If a string, then it must be an element name from:
-       'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
-       'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K',
-       'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni',
-       'Cu', 'Zn'. Case is important.
+    element : str or int, optional
+       When not given, the abundance table name is returned.  If a
+       string, then it must be an element name from: 'H', 'He', 'Li',
+       'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si',
+       'P', 'S', 'Cl', 'Ar', 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn',
+       'Fe', 'Co', 'Ni', 'Cu', 'Zn'. Case is important. If it is an
+       integer then it must be the atomic number of the element (1 to
+       30).
 
     Returns
     -------
@@ -156,8 +161,8 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
        When `element` is `None`, the abundance table name is returned
        (see `set_xsabund`); the string 'file' is used when the
        abundances were read from a file or vector. A numeric value is
-       returned when an element name is given. This value is the
-       elemental abundance relative to H.
+       returned when an element name or number is given. This value is
+       the elemental abundance relative to H.
 
     See Also
     --------
@@ -176,6 +181,8 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
 
     >>> get_xsabund('He')
     0.09769999980926514
+    >>> get_xsabund(2)
+    0.09769999980926514
 
     The `set_xsabund` function has been used to read in the
     abundances from a file, so the routine now returns the
@@ -188,9 +195,18 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
     """
 
     if element is None:
-        return _xspec.get_xsabund()
+        return _xspec.get_xsabund_table()
 
-    return _xspec.get_xsabund(element)
+    # Let the C API decide whether we recognize the argument rather
+    # than checking here.
+    #
+    try:
+        return _xspec.get_xsabund_name(element)
+    except TypeError:
+        try:
+            return _xspec.get_xsabund_z(element)
+        except TypeError:
+            raise TypeError("element must be None, a string, or an integer.") from None
 
 
 def get_xsabundances() -> dict[str, float]:

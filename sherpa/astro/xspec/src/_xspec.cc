@@ -140,59 +140,53 @@ static PyObject* get_chatter( PyObject *self )
 }
 
 
-// TODO: we could send in an integer for the Z number (ie either name or number)
-static PyObject* get_abund( PyObject *self, PyObject *args )
+static PyObject* get_abund_name( PyObject *self, PyObject *args )
 {
-
   char* element = NULL;
-  if ( !PyArg_ParseTuple( args, (char*)"|s", &element ) )
+  if ( !PyArg_ParseTuple( args, (char*)"s", &element ) )
     return NULL;
 
-  // Not asked for an element so return the table name
-  if ( !element ) {
-    return (PyObject*) Py_BuildValue( (char*)"s", FunctionUtility::ABUND().c_str() );
+  // We have to find the element with the given name.
+  //
+  const size_t nelem = FunctionUtility::NELEMS();
+  for (const auto idx: irange(nelem)) {
+    if (FunctionUtility::elements(idx) != element) {
+      continue;
+    }
+
+    float abundVal = 0.0;
+    try {
+      abundVal = FunctionUtility::getAbundance(idx + 1);
+    } catch (FunctionUtility::NoInitializer&) {
+      // This is only likely to happen if the user has selected the
+      // file abundance table but has not loaded any elements.
+      //
+      return PyErr_Format( PyExc_ValueError,
+			   "could not find element '%s' from table '%s'",
+			   element, FunctionUtility::ABUND().c_str() );
+    }
+
+    return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
   }
 
-  // Get the specific abundance. Unfortunately getAbundance reports an
-  // error to stderr when an invalid element is used, so we need to
-  // hide this. An alternative would be to only accept an atomic
-  // number here, and deal with the symbol-to-number conversion in
-  // Python.
-  //
-  std::ostream* errStream = IosHolder::errHolder();
-  std::ostringstream tmpStream;
-  IosHolder::setStreams(IosHolder::inHolder(),
-			IosHolder::outHolder(),
-			&tmpStream);
+  return PyErr_Format( PyExc_ValueError,
+		       (char*)"could not find element '%s'", element);
+}
 
-  float abundVal = 0;
-  try {
-    abundVal = FunctionUtility::getAbundance(string(element));
-  } catch (FunctionUtility::NoInitializer&) {
 
-    IosHolder::setStreams(IosHolder::inHolder(),
-			  IosHolder::outHolder(),
-			  errStream);
+static PyObject* get_abund_z( PyObject *self, PyObject *args )
+{
+  int zarg = 0;
+  if ( !PyArg_ParseTuple( args, (char*)"i", &zarg ) )
+    return NULL;
 
-    // This is only likely to happen if the user has selected
-    // the file abundance table but has not loaded any elements.
-    //
+  size_t z = static_cast<size_t>(zarg);
+  if (z < 1 || z > FunctionUtility::NELEMS()) {
     return PyErr_Format( PyExc_ValueError,
-			 "could not find element '%s' from table '%s'",
-			 element, FunctionUtility::ABUND().c_str() );
+			 (char*)"Unsupported atomic number: %d", zarg );
   }
 
-  IosHolder::setStreams(IosHolder::inHolder(),
-			IosHolder::outHolder(),
-			errStream);
-
-  // Was there an error?
-  //
-  if( tmpStream.str().size() > 0 ) {
-    return PyErr_Format( PyExc_TypeError, // TODO: change from TypeError to ValueError?
-			 (char*)"could not find element '%s'", element);
-  }
-
+  float abundVal = FunctionUtility::getAbundance(z);
   return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
 }
 
@@ -665,15 +659,20 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(get_xsversion, get_xspec_string<XSutility::xs_version>),
   NOARGSPEC(get_xschatter, get_chatter),
   FCTSPEC(set_xschatter, set_chatter),
-  FCTSPEC(get_xsabund, get_abund),
+
+  NOARGSPEC(get_xsabund_table, get_xspec_string<FunctionUtility::ABUND>),
+  FCTSPEC(get_xsabund_name, get_abund_name),
+  FCTSPEC(get_xsabund_z, get_abund_z),
   FCTSPEC(get_xsabund_doc, get_abund_doc),
   FCTSPEC(set_xsabund, set_abund),
   FCTSPEC(set_xsabund_vector, set_abund_vector),
-  FCTSPEC(set_xscosmo, set_cosmo),
-  NOARGSPEC(get_xscosmo, get_cosmo),
-  NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),
 
+  NOARGSPEC(get_xscosmo, get_cosmo),
+  FCTSPEC(set_xscosmo, set_cosmo),
+
+  NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),
   FCTSPEC(set_xsxsect, set_cross),
+
   NOARGSPEC(clear_xsxset, clear_xset),
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
