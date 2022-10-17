@@ -192,6 +192,72 @@ def get_xsabund(element=None):
             raise TypeError("element must be None, a string, or an integer.") from None
 
 
+def get_xsabundances():
+    """Return the current abundance settings used by X-Spec.
+
+    .. versionadded:: 4.16.0
+
+    Returns
+    -------
+    abundances : dict
+        The current set of abundances. The keys are the element name
+        (e.g. 'Fe') and the values are the abundances.
+
+    See Also
+    --------
+    get_xsabund, set_xsabund, set_xsabundances
+
+    Examples
+    --------
+
+    >>> get_xsabundances()
+    {'H': 1.0, 'He': ...}
+
+    """
+
+    out = {}
+    for name, z in get_xselements().items():
+        out[name] = _xspec.get_xsabund_z(z)
+
+    return out
+
+
+def set_xsabundances(abundances):
+    """Set the abundances used by X-Spec.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    abundances : dict
+        The new set of abundances. The keys are the element name
+        (e.g. 'Fe') and the values are the abundances. Any element
+        that is not present is set to 0.0.
+
+    See Also
+    --------
+    get_xsabund, get_xsabundances, set_xsabund
+
+    Examples
+    --------
+
+    Change the relative abundance of Chromium:
+
+    >>> abunds = get_xsabundances()
+    >>> abunds['Cr'] = 4.2e-6
+    >>> set_xsabundances(abunds)
+
+    """
+
+    elems = get_xselements()
+    out = [0.0] * get_xsnelem()
+    for name, abund in abundances.items():
+        z = elems[name]
+        out[z - 1] = abund
+
+    _xspec.set_xsabund_vector(out)
+
+
 # This function is not added to __all__ as it is not likely to be well
 # used.
 #
@@ -1393,6 +1459,7 @@ def read_xstable_model(modelname, filename, etable=False):
 #
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
+           'get_xsabundances', 'set_xsabundances',
            'get_xsversion', 'set_xsversion',
            'clear_xsxset', 'set_xsxset', 'get_xsxset',
            'clear_xsxflt', 'get_xsxflt', 'set_xsxflt',
