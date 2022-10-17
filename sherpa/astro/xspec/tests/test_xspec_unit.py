@@ -329,6 +329,25 @@ def test_cosmo_default():
     assert oval[2] == pytest.approx(DEFAULT_COSMO[2])
 
 
+def check_abundances(h, he, si, ar, k, fe):
+    """Check wilm abundances.
+
+    These values were found from HEASOFT version 6.19
+    spectral/manager/abundances.dat
+    The values are given to two decimal places in this file.
+    It is not worth testing all settings, since we are not
+    testing the XSPEC implementation itself, just our use of it.
+
+    """
+
+    assert h == pytest.approx(1.0)
+    assert he == pytest.approx(9.77e-2)
+    assert si == pytest.approx(1.86e-05)
+    assert ar == pytest.approx(2.57e-06)
+    assert k == pytest.approx(0.0)
+    assert fe == pytest.approx(2.69e-05)
+
+
 @requires_xspec
 def test_abund_element():
     """Can we access the elemental settings?
@@ -349,18 +368,30 @@ def test_abund_element():
     finally:
         xspec.set_xsabund(oval)
 
-    # These values were found from HEASOFT version 6.19
-    # spectral/manager/abundances.dat
-    # The values are given to two decimal places in this file.
-    # It is not worth testing all settings, since we are not
-    # testing the XSPEC implementation itself, just our use of it.
-    #
-    assert h == pytest.approx(1.0)
-    assert he == pytest.approx(9.77e-2)
-    assert si == pytest.approx(1.86e-05)
-    assert ar == pytest.approx(2.57e-06)
-    assert k == pytest.approx(0.0)
-    assert fe == pytest.approx(2.69e-05)
+    check_abundances(h, he, si, ar, k, fe)
+
+
+@requires_xspec
+def test_abund_element_z():
+    """Can we access the elemental settings with atomic number?
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund('wilm')
+        h = xspec.get_xsabund(1)
+        he = xspec.get_xsabund(2)
+        si = xspec.get_xsabund(14)
+        ar = xspec.get_xsabund(18)
+        k = xspec.get_xsabund(19)
+        fe = xspec.get_xsabund(26)
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    check_abundances(h, he, si, ar, k, fe)
 
 
 @requires_xspec
@@ -369,8 +400,7 @@ def test_abund_get_invalid_element(caplog):
 
     from sherpa.astro import xspec
 
-    # TODO: TypeError is not the best error type here.
-    with pytest.raises(TypeError, match="^could not find element 'O3'$"):
+    with pytest.raises(ValueError, match="^could not find element 'O3'$"):
         xspec.get_xsabund("O3")
 
     assert len(caplog.records) == 0
