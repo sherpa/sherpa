@@ -504,7 +504,23 @@ def test_abund_set_dict():
     """Can we set a dict of abundances?
 
     We only set a sub-set of elements, with the rest being set to 0.
+    """
 
+    h = xspec.get_xsabund('H', 'wilm')
+    he = xspec.get_xsabund('He', 'wilm')
+    si = xspec.get_xsabund('Si', 'wilm')
+    ar = xspec.get_xsabund('Ar', 'wilm')
+    k = xspec.get_xsabund('K', 'wilm')
+    fe = xspec.get_xsabund('Fe', 'wilm')
+
+    check_abundances(h, he, si, ar, k, fe)
+
+
+# TODO: is this the correct test or did rebasing mess things up?
+#
+@requires_xspec
+def test_abund_element_named_z_todo_check_name():
+    """Can we access the elemental settings with atomic numbers?
     """
 
     from sherpa.astro import xspec
@@ -596,6 +612,95 @@ def test_abund_set_dict_invalid_value():
     # table should not have changed
     nvals = xspec.get_xsabundances()
     assert nvals == ovals
+
+
+@requires_xspec
+def test_abund_element_named():
+    """Can we access the elemental settings?
+
+    """
+
+    from sherpa.astro import xspec
+
+    h = xspec.get_xsabund('H', 'wilm')
+    he = xspec.get_xsabund('He', 'wilm')
+    si = xspec.get_xsabund('Si', 'wilm')
+    ar = xspec.get_xsabund('Ar', 'wilm')
+    k = xspec.get_xsabund('K', 'wilm')
+    fe = xspec.get_xsabund('Fe', 'wilm')
+
+    check_abundances(h, he, si, ar, k, fe)
+
+
+@requires_xspec
+def test_abund_element_named_z():
+    """Can we access the elemental settings?
+
+    """
+
+    from sherpa.astro import xspec
+
+    h = xspec.get_xsabund(1, 'wilm')
+    he = xspec.get_xsabund(2, 'wilm')
+    si = xspec.get_xsabund(14, 'wilm')
+    ar = xspec.get_xsabund(18, 'wilm')
+    k = xspec.get_xsabund(19, 'wilm')
+    fe = xspec.get_xsabund(26, 'wilm')
+
+    check_abundances(h, he, si, ar, k, fe)
+
+
+@pytest.mark.parametrize("table", [None, "angr"])
+@requires_xspec
+def test_abund_element_wrong(table):
+    """Check we error out with the wrong element name
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match="^could not find element 'H2'$"):
+        xspec.get_xsabund('H2', table)
+
+
+@pytest.mark.parametrize("table", [None, "angr"])
+@pytest.mark.parametrize("z", [0, 200])
+@requires_xspec
+def test_abund_element_wrong_z(table, z):
+    """Check we error out with the wrong element Z
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match=f"^Unsupported atomic number: {z}$"):
+        xspec.get_xsabund(z, table)
+
+
+@pytest.mark.parametrize("table", [None, "angr"])
+@requires_xspec
+def test_abund_element_wrong_type(table):
+    """Check we error out with the wrong type for the element
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(TypeError,
+                       match="^element must be None, a string, or an integer$"):
+        xspec.get_xsabund(23.4, table)
+
+
+@pytest.mark.parametrize("arg", ["He", 2])
+@requires_xspec
+def test_abund_element_named_wrong(arg):
+    """Check we error out with the wrong table name
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match="^Unknown abundance table 'foobar'$"):
+        xspec.get_xsabund(arg, 'foobar')
 
 
 @requires_xspec
@@ -712,6 +817,23 @@ def test_abund_get_dict():
 
     finally:
         xspec.set_xsabund(oval)
+
+    check_abundances(abunds['H'],
+                     abunds['He'],
+                     abunds['Si'],
+                     abunds['Ar'],
+                     abunds['K'],
+                     abunds['Fe'])
+
+
+@requires_xspec
+def test_abund_get_dict_named():
+    """Can we access the elemental settings - a named table"""
+
+    from sherpa.astro import xspec
+
+    assert xspec.get_xsabund() != 'wilm'
+    abunds = xspec.get_xsabundances('wilm')
 
     check_abundances(abunds['H'],
                      abunds['He'],
