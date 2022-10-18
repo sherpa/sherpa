@@ -655,10 +655,10 @@ def set_xsxsect(name):
     _xspec.set_xsxsect(name)
 
 
-# Store any path changes or where XFLT keywords have been set.
+# Store information useful to re-create the XSPEC state.
 #
-xspecpaths = {}
-xfltnums = set()
+xsstate = {"paths": {},
+           "xfltnums": set()}
 
 
 def clear_xsxset():
@@ -811,7 +811,7 @@ def clear_xsxflt():
 
     """
     _xspec.clear_xflt()
-    xfltnums.clear()
+    xsstate["xfltnums"].clear()
 
 
 def get_xsxflt(spectrumNumber):
@@ -845,7 +845,9 @@ def get_xsxflt(spectrumNumber):
     {'inner': 0.2, 'outer': 2.0, 'width': 360.0}
 
     """
-    # We could check xfltnums but pass through to XSPEC to check.
+    # We could check xsstate["xfltnums"] but pass through to XSPEC to
+    # check instead.
+    #
     return _xspec.get_xflt(spectrumNumber)
 
 
@@ -882,7 +884,7 @@ def set_xsxflt(spectrumNumber, xflt):
     # can query the database when it comes to calling get_xsstate.
     #
     _xspec.set_xflt(spectrumNumber, xflt)
-    xfltnums.add(spectrumNumber)
+    xsstate["xfltnums"].add(spectrumNumber)
 
 
 def clear_xsdb():
@@ -1028,7 +1030,7 @@ def set_xspath_manager(path):
     if spath != path:
         raise IOError(f"Unable to set the XSPEC manager path to '{path}'")
 
-    xspecpaths['manager'] = path
+    xsstate["paths"]["manager"] = path
 
 
 def set_xspath_model(path):
@@ -1055,7 +1057,7 @@ def set_xspath_model(path):
     if spath != path:
         raise IOError(f"Unable to set the XSPEC model path to '{path}'")
 
-    xspecpaths['model'] = path
+    xsstate["paths"]["model"] = path
 
 
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is a
@@ -1100,7 +1102,7 @@ def get_xsstate():
     # spectrmNumber cases that have data.
     #
     xflt = {}
-    for spectrumNumber in xfltnums:
+    for spectrumNumber in xsstate["xfltnums"]:
         store = get_xflt(spectrumNumber)
         if len(store) > 0:
             xflt[spectrumNumber] = store
@@ -1116,7 +1118,7 @@ def get_xsstate():
             "xflt": xflt,
             "db": get_xsdb(),
             "versions": versions,
-            "paths": xspecpaths.copy()}
+            "paths": xsstate["paths"].copy()}
 
 
 def set_xsstate(state):
