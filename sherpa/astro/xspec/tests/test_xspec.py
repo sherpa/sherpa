@@ -344,7 +344,7 @@ def test_lowlevel_checks_too_many_arguments(model):
     with pytest.raises(TypeError) as exc:
         mdl._calc()
 
-    assert str(exc.value) == "function takes at least 2 arguments (0 given)"
+    assert str(exc.value) == "function missing required argument 'pars' (pos 1)"
 
 
 @requires_xspec

@@ -1380,7 +1380,6 @@ def test_xsparameter_limits(base):
     assert p.hard_max == pytest.approx(8)
 
 
-@pytest.mark.xfail
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["XSpowerlaw", "XSphabs"])
 def test_model_can_send_spectrumnumber_indiv(clsname):
