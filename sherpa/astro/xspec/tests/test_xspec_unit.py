@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1593,3 +1593,50 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
 
     assert y21 == pytest.approx(y12)
     assert y12 == pytest.approx([2, 2, 2])
+
+
+@requires_xspec
+def test_xspec_model_kwarg_cached_not_needed():
+    """Does the cache recognize when a kwarg has changed?
+
+    This is for a XSPEC model that is known to not depend on the
+    spectrumNumber/ifl argument (i.e. the definition in model.dat has
+    a second 0 after the model type, in this case saying "add 0 0" or
+    "add 0" as the 0 is inferred).
+
+    At the moment Sherpa does not wrap any of the models (smaug,
+    polcost, pollin, polpow, pileup) which have a 1 instead of a 0.
+
+    For this case we test the current behavior (which ignores the
+    spectrumNumber argument), as it is not clear what the best
+    behavior is.
+
+    """
+
+    from sherpa.astro import xspec
+
+    mdl = xspec.XSpowerlaw()
+
+    # check the cache is working
+    assert mdl._cache_ctr['hits'] == 0
+    assert mdl._cache_ctr['misses'] == 0
+
+    egrid = np.arange(0.2, 0.6, 0.1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    y1 = mdl(elo, ehi)
+    assert mdl._cache_ctr['hits'] == 0
+    assert mdl._cache_ctr['misses'] == 1
+
+    y2 = mdl(elo, ehi, spectrumNumber=2)
+    assert mdl._cache_ctr['hits'] == 1
+    assert mdl._cache_ctr['misses'] == 1
+
+    assert y2 == pytest.approx(y1)
+
+    y3 = mdl(elo, ehi, spectrumNumber=1)
+    assert mdl._cache_ctr['hits'] == 2
+    assert mdl._cache_ctr['misses'] == 1
+
+    assert y3 == pytest.approx(y1)
