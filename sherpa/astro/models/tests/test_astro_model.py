@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -71,6 +72,58 @@ def test_create_and_evaluate():
             assert out.shape == (4, )
 
     assert count == 20
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("cls", [models.Atten,
+                                 models.BBody,
+                                 models.BBodyFreq,
+                                 models.BPL1D,
+                                 models.Beta1D,
+                                 models.Edge,
+                                 models.LineBroad,
+                                 models.Lorentz1D,
+                                 models.NormBeta1D,
+                                 models.PseudoVoigt1D,
+                                 models.Schechter,
+                                 models.Voigt1D])
+def test_send_keyword_1d(cls):
+    """What happens if we use an un-supported keyword?"""
+
+    mdl = cls()
+    mdl._use_caching = False
+
+    if cls == models.LineBroad:
+        mdl.vsini = 1e6
+
+    # Not guaranteed to produce interesting results
+    x = [10, 12, 13, 15]
+    y1 = mdl(x)
+    # This fails
+    y2 = mdl(x, not_an_argument=True)
+    assert y2 == pytest.approx(y1)
+
+
+@pytest.mark.parametrize("cls", [pytest.param(models.Beta2D, marks=pytest.mark.xfail),
+                                 pytest.param(models.DeVaucouleurs2D, marks=pytest.mark.xfail),
+                                 models.Disk2D,
+                                 pytest.param(models.HubbleReynolds, marks=pytest.mark.xfail),
+                                 pytest.param(models.Lorentz2D, marks=pytest.mark.xfail),
+                                 pytest.param(models.Sersic2D, marks=pytest.mark.xfail),
+                                 models.Shell2D])
+def test_send_keyword_2d(cls):
+    """What happens if we use an un-supported keyword?"""
+
+    mdl = cls()
+    mdl._use_caching = False
+
+    # Not guaranteed to produce interesting results
+    x0 =  [10, 12, 13, 15]
+    x1 =  [5, 7, 12, 13]
+    y1 = mdl(x0, x1)
+    # This fails for most models
+    y2 = mdl(x0, x1, not_an_argument=True)
+    assert y2 == pytest.approx(y1)
 
 
 @pytest.mark.parametrize("test_input, expected", [
