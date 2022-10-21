@@ -1412,7 +1412,6 @@ def test_model_thaw_alwaysfrozen():
     assert mdl.thawedpars == [1.0, 1.0, 1.0]
 
 
-@pytest.mark.xfail
 # just pick some of the models we are already using
 @pytest.mark.parametrize("cls", [Sin, Const1D, Box1D, LogParabola, Polynom1D, Scale1D])
 def test_model1d_existing_keywords(cls):
@@ -1426,12 +1425,10 @@ def test_model1d_existing_keywords(cls):
 
     x = [1.1, 1.6, 3.2]
     y1 = mdl(x)
-    # This fails
     y2 = mdl(x, made_up_argument=False)
     assert y2 == pytest.approx(y1)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("cls", [Const2D, Gauss2D, Scale2D])
 def test_model2d_existing_keywords(cls):
     """Check we can send keyword arguments to existing models"""
@@ -1445,7 +1442,6 @@ def test_model2d_existing_keywords(cls):
     x0 = [1.1, 1.6, 3.2]
     x1 = [-2.1, 0.4, 3.4]
     y1 = mdl(x0, x1)
-    # This fails
     y2 = mdl(x0, x1, made_up_argument=False)
     assert y2 == pytest.approx(y1)
 
@@ -1496,8 +1492,8 @@ def test_model_unop_keywords(kwargs):
 
 
 @pytest.mark.parametrize("kwargs", [None, {},
-                                    pytest.param({"foo": 23}, marks=pytest.mark.xfail),
-                                    pytest.param({"aA": True, "fooFoo": [1, 2]}, marks=pytest.mark.xfail)])
+                                    {"foo": 23},
+                                    {"aA": True, "fooFoo": [1, 2]}])
 def test_model_binop_keywords(kwargs):
     """Check we can send keyword arguments to a BinOp model"""
 
@@ -1530,7 +1526,6 @@ def test_model_binop_keywords(kwargs):
         y = mdl([1, 1.5, 3])
         kwargs = {}
     else:
-        # This fails when kwargs is not empty
         y = mdl([1, 1.5, 3], **kwargs)
 
     assert y == pytest.approx([14, 14, 14])

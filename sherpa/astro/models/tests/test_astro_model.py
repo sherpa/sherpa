@@ -79,7 +79,6 @@ def test_create_and_evaluate(name, cls):
         assert out.shape == x.shape
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("cls", [models.Atten,
                                  models.BBody,
                                  models.BBodyFreq,
@@ -104,17 +103,16 @@ def test_send_keyword_1d(cls):
     # Not guaranteed to produce interesting results
     x = [10, 12, 13, 15]
     y1 = mdl(x)
-    # This fails
     y2 = mdl(x, not_an_argument=True)
     assert y2 == pytest.approx(y1)
 
 
-@pytest.mark.parametrize("cls", [pytest.param(models.Beta2D, marks=pytest.mark.xfail),
-                                 pytest.param(models.DeVaucouleurs2D, marks=pytest.mark.xfail),
+@pytest.mark.parametrize("cls", [models.Beta2D,
+                                 models.DeVaucouleurs2D,
                                  models.Disk2D,
-                                 pytest.param(models.HubbleReynolds, marks=pytest.mark.xfail),
-                                 pytest.param(models.Lorentz2D, marks=pytest.mark.xfail),
-                                 pytest.param(models.Sersic2D, marks=pytest.mark.xfail),
+                                 models.HubbleReynolds,
+                                 models.Lorentz2D,
+                                 models.Sersic2D,
                                  models.Shell2D])
 def test_send_keyword_2d(cls):
     """What happens if we use an un-supported keyword?"""
@@ -126,7 +124,6 @@ def test_send_keyword_2d(cls):
     x0 =  [10, 12, 13, 15]
     x1 =  [5, 7, 12, 13]
     y1 = mdl(x0, x1)
-    # This fails for most models
     y2 = mdl(x0, x1, not_an_argument=True)
     assert y2 == pytest.approx(y1)
 

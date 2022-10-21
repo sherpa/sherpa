@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -46,6 +46,59 @@ __all__ = ('Box1D', 'Const1D', 'Cos', 'Delta1D', 'Erf', 'Erfc', 'Exp', 'Exp10',
            'Integrate1D')
 
 DBL_EPSILON = numpy.finfo(float).eps
+
+# This relies on the PyArg_ParseTypleAndKeywords calls in model_extension.hh
+#
+ALLOWED_KEYWORDS_1D = set(["pars", "xlo", "xhi", "integrate"])
+ALLOWED_KEYWORDS_2D = set(["pars", "x0lo", "x1lo", "x0hi", "x1hi", "integrate"])
+
+
+def clean_kwargs(allowed, model, kwargs):
+    """Remove un-supported keywords for these models.
+
+    Parameters
+    ----------
+    model : Model instance
+        It must have an integrate field.
+    kwargs : dict
+        The input keyword arguments
+    allowed : set of str
+        The allowed keyword names.
+
+    Returns
+    -------
+    allowed : dict
+        The keyword arguments (names and values) that are allowed.
+
+    """
+
+    # TODO: remove the use of bool_cast here.
+    #
+    out = {"integrate": bool_cast(model.integrate)}
+    for key in [k for k in kwargs.keys() if k in allowed]:
+        out[key] = kwargs[key]
+
+    return out
+
+
+def clean_kwargs1d(model, kwargs):
+    """Remove un-supported keywords for these models.
+
+    The supported arguments are ALLOWED_KEYWORDS_1D.
+
+    """
+
+    return clean_kwargs(ALLOWED_KEYWORDS_1D, model, kwargs)
+
+
+def clean_kwargs2d(model, kwargs):
+    """Remove un-supported keywords for these models.
+
+    The supported arguments are ALLOWED_KEYWORDS_2D.
+
+    """
+
+    return clean_kwargs(ALLOWED_KEYWORDS_2D, model, kwargs)
 
 
 class Box1D(RegriddableModel1D):
@@ -101,7 +154,7 @@ class Box1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.box1d(*args, **kwargs)
 
 
@@ -156,7 +209,7 @@ class Const1D(RegriddableModel1D, Const):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.const1d(*args, **kwargs)
 
 
@@ -199,7 +252,7 @@ class Cos(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.cos(*args, **kwargs)
 
 
@@ -255,7 +308,7 @@ class Delta1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.delta1d(*args, **kwargs)
 
 
@@ -308,7 +361,7 @@ class Erf(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.erf(*args, **kwargs)
 
 
@@ -361,7 +414,7 @@ class Erfc(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.erfc(*args, **kwargs)
 
 
@@ -400,7 +453,7 @@ class Exp(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.exp(*args, **kwargs)
 
 
@@ -439,7 +492,7 @@ class Exp10(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.exp10(*args, **kwargs)
 
 
@@ -528,7 +581,7 @@ class Gauss1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.gauss1d(*args, **kwargs)
 
 
@@ -567,7 +620,7 @@ class Log(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.log(*args, **kwargs)
 
 
@@ -606,7 +659,7 @@ class Log10(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.log10(*args, **kwargs)
 
 
@@ -656,7 +709,7 @@ class LogParabola(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.logparabola(*args, **kwargs)
 
 
@@ -722,7 +775,7 @@ class NormGauss1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.ngauss1d(*args, **kwargs)
 
 
@@ -771,7 +824,7 @@ class Poisson(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.poisson(*args, **kwargs)
 
 
@@ -887,7 +940,7 @@ class Polynom1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.poly1d(*args, **kwargs)
 
 
@@ -935,7 +988,7 @@ class PowLaw1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, pars, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         if kwargs['integrate']:
             # avoid numerical issues with C pow() function close to zero,
             # 0.0 +- ~1.e-14.  PowLaw1D integrated has multiple calls to
@@ -1022,7 +1075,7 @@ class Sin(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.sin(*args, **kwargs)
 
 
@@ -1057,7 +1110,7 @@ class Sqrt(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.sqrt(*args, **kwargs)
 
 
@@ -1106,7 +1159,7 @@ class StepHi1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.stephi1d(*args, **kwargs)
 
 
@@ -1155,7 +1208,7 @@ class StepLo1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.steplo1d(*args, **kwargs)
 
 
@@ -1198,7 +1251,7 @@ class Tan(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.tan(*args, **kwargs)
 
 
@@ -1267,7 +1320,7 @@ class Box2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.box2d(*args, **kwargs)
 
 
@@ -1301,7 +1354,7 @@ class Const2D(RegriddableModel2D, Const):
         self.cache = 0
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.const2d(*args, **kwargs)
 
 
@@ -1399,7 +1452,7 @@ class Delta2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.delta2d(*args, **kwargs)
 
 
@@ -1489,7 +1542,7 @@ class Gauss2D(RegriddableModel2D):
         param_apply_limits(fwhm, self.fwhm, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.gauss2d(*args, **kwargs)
 
 
@@ -1570,7 +1623,7 @@ class SigmaGauss2D(Gauss2D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.sigmagauss2d(*args, **kwargs)
 
 
@@ -1670,7 +1723,7 @@ class NormGauss2D(RegriddableModel2D):
         param_apply_limits(ampl, self.ampl, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.ngauss2d(*args, **kwargs)
 
 
@@ -1780,7 +1833,7 @@ class Polynom2D(RegriddableModel2D):
         param_apply_limits(c22, self.cx2y2, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.poly2d(*args, **kwargs)
 
 

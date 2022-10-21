@@ -1534,7 +1534,6 @@ def test_model_can_send_spectrumnumber_combine():
     assert args[2][1] == "con"
 
 
-@pytest.mark.xfail
 @requires_xspec
 def test_model_can_send_spectrumnumber_combine_non_xspec():
     """Check the spectrumNumber is sent through with non-XSPEC models.
@@ -1585,7 +1584,6 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
 
     args.clear()
 
-    # This fails
     y21 = comb21(elo, ehi, spectrumNumber=4)
     assert len(args) == 1
     assert args[0][0] == 4
