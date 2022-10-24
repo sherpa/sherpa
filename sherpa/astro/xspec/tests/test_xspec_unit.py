@@ -1604,9 +1604,12 @@ def test_xspec_model_kwarg_cached_not_needed():
     At the moment Sherpa does not wrap any of the models (smaug,
     polcost, pollin, polpow, pileup) which have a 1 instead of a 0.
 
-    For this case we test the current behavior (which ignores the
-    spectrumNumber argument), as it is not clear what the best
-    behavior is.
+    Technically we could make the cache ignore the spectrumNumber
+    value, since it does not change the model output, but it is tricky
+    to do, so we do make each call be different. This is a
+    pessimisation (i.e. it potentially slows down model evaluation)
+    and could be changed in the future). It depends on how often the
+    spectrumNumber argument will be added to model calls.
 
     """
 
@@ -1627,13 +1630,13 @@ def test_xspec_model_kwarg_cached_not_needed():
     assert mdl._cache_ctr['misses'] == 1
 
     y2 = mdl(elo, ehi, spectrumNumber=2)
-    assert mdl._cache_ctr['hits'] == 1
-    assert mdl._cache_ctr['misses'] == 1
+    assert mdl._cache_ctr['hits'] == 0
+    assert mdl._cache_ctr['misses'] == 2
 
     assert y2 == pytest.approx(y1)
 
     y3 = mdl(elo, ehi, spectrumNumber=1)
-    assert mdl._cache_ctr['hits'] == 2
-    assert mdl._cache_ctr['misses'] == 1
+    assert mdl._cache_ctr['hits'] == 0
+    assert mdl._cache_ctr['misses'] == 3
 
     assert y3 == pytest.approx(y1)

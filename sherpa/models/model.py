@@ -375,7 +375,14 @@ def modelCacher1d(func):
     Apply to the `calc` method of a 1D model to allow the model
     evaluation to be cached. The decision is based on the
     `_use_caching` attribute of the cache along with the `integrate`
-    setting, the evaluation grid, and parameter values.
+    setting, the evaluation grid, parameter values, and the keywords
+    sent to the model.
+
+    Notes
+    -----
+    The keywords are included in the hash calculation even if they are
+    not relevant for the model (as there's no easy way to find this
+    out).
 
     Example
     -------
@@ -392,63 +399,73 @@ def modelCacher1d(func):
 
     @functools.wraps(func)
     def cache_model(cls, pars, xlo, *args, **kwargs):
-        use_caching = cls._use_caching
-        cache = cls._cache
-        cache_ctr = cls._cache_ctr
-        queue = cls._queue
-
         # Counts all accesses, even those that do not use the cache.
+        cache_ctr = cls._cache_ctr
         cache_ctr['check'] += 1
 
-        digest = ''
-        if use_caching:
+        # Short-cut if the cache is not being used.
+        #
+        if not cls._use_caching:
+            return func(cls, pars, xlo, *args, **kwargs)
 
-            # Up until Sherpa 4.12.2 we used the kwargs to define the
-            # integrate setting, with
-            # boolean_to_byte(kwargs.get('integrate', False)) but
-            # unfortunately this is used in code like
+        # Up until Sherpa 4.12.2 we used the kwargs to define the
+        # integrate setting, with
+        # boolean_to_byte(kwargs.get('integrate', False)) but
+        # unfortunately this is used in code like
+        #
+        #    @modelCacher1d
+        #    def calc(..):
+        #        kwargs['integrate'] = self.integrate
+        #        return somefunc(... **kwargs)
+        #
+        # and the decorator is applied to calc, which is not
+        # called with a integrate kwarg, rather than the call to
+        # somefunc, which was sent an integrate setting.
+        #
+        try:
+            integrate = cls.integrate
+        except AttributeError:
+            # Rely on the integrate kwarg as there's no
+            # model setting.
             #
-            #    @modelCacher1d
-            #    def calc(..):
-            #        kwargs['integrate'] = self.integrate
-            #        return somefunc(... **kwargs)
-            #
-            # and the decorator is applied to calc, which is not
-            # called with a integrate kwarg, rather than the call to
-            # somefunc, which was sent an integrate setting.
-            #
-            try:
-                integrate = cls.integrate
-            except AttributeError:
-                # Rely on the integrate kwarg as there's no
-                # model setting.
-                #
-                integrate = kwargs.get('integrate', False)
+            integrate = kwargs.get('integrate', False)
 
-            data = [numpy.array(pars).tobytes(),
-                    boolean_to_byte(integrate),
-                    numpy.asarray(xlo).tobytes()]
-            if args:
-                data.append(numpy.asarray(args[0]).tobytes())
+        data = [numpy.array(pars).tobytes(),
+                boolean_to_byte(integrate),
+                numpy.asarray(xlo).tobytes()]
+        if args:
+            data.append(numpy.asarray(args[0]).tobytes())
 
-            token = b''.join(data)
-            digest = hashfunc(token).digest()
-            if digest in cache:
-                cache_ctr['hits'] += 1
-                return cache[digest].copy()
+        # Add any keyword arguments to the list. This will
+        # include the xhi named argument if given. Can the
+        # value field fail here?
+        #
+        for k, v in kwargs.items():
+            data.extend([k.encode(), numpy.asarray(v).tobytes()])
 
+        # Is the value cached?
+        #
+        token = b''.join(data)
+        digest = hashfunc(token).digest()
+        cache = cls._cache
+        if digest in cache:
+            cache_ctr['hits'] += 1
+            return cache[digest].copy()
+
+        # Evaluate the model.
+        #
         vals = func(cls, pars, xlo, *args, **kwargs)
 
-        if use_caching:
-            # remove first item in queue and remove from cache
-            key = queue.pop(0)
-            cache.pop(key, None)
+        # remove first item in queue and remove from cache
+        queue = cls._queue
+        key = queue.pop(0)
+        cache.pop(key, None)
 
-            # append newest model values to queue
-            queue.append(digest)
-            cache[digest] = vals.copy()
+        # append newest model values to queue
+        queue.append(digest)
+        cache[digest] = vals.copy()
 
-            cache_ctr['misses'] += 1
+        cache_ctr['misses'] += 1
 
         return vals
 

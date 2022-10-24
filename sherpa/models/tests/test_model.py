@@ -1124,7 +1124,12 @@ def test_cache_integrate_fall_through_integrate_true():
     pars = []
     data = [numpy.asarray(pars).tobytes(),
             b'1', # integrated
-            x.tobytes()]
+            x.tobytes(),
+            # The integrate setting is included twice because we can
+            # not guarantee it has been sent in with a keyword
+            # argument.
+            b'integrate',
+            numpy.asarray(True).tobytes()]
 
     token = b''.join(data)
     digest = hashfunc(token).digest()
@@ -1151,7 +1156,12 @@ def test_cache_integrate_fall_through_integrate_false():
     pars = []
     data = [numpy.asarray(pars).tobytes(),
             b'0', # not integrated
-            x.tobytes()]
+            x.tobytes(),
+            # The integrate setting is included twice because we can
+            # not guarantee it has been sent in with a keyword
+            # argument.
+            b'integrate',
+            numpy.asarray(False).tobytes()]
 
     token = b''.join(data)
     digest = hashfunc(token).digest()
@@ -1556,13 +1566,13 @@ def test_model_keyword_cache():
     assert len(store) == 1
     assert store[0][1] == {"user_arg": 1}
 
-    # Are the user arguments used as part of the cache index?
-    # At the moment they are not, so the store doesn't get
-    # updated with this call.
-    #
-    mdl(x, user_arg=2)
+    mdl(x, user_arg=1)
     assert len(store) == 1
     assert store[0][1] == {"user_arg": 1}
+
+    mdl(x, user_arg=2)
+    assert len(store) == 2
+    assert store[1][1] == {"user_arg": 2}
 
     # Explicit check what happens when we turn off the cache
     mdl._use_caching = False
@@ -1599,7 +1609,6 @@ def test_model1d_cache_xhi_positional():
     assert y3 == pytest.approx(10, 10, 10)
 
 
-@pytest.mark.xfail
 def test_model1d_cache_xhi_named():
     """Do we cache the model when xhi argument is named?"""
 
@@ -1619,6 +1628,5 @@ def test_model1d_cache_xhi_named():
     # Now change xhi so we can see if it is used in the cache?
     xhi = [x + 1 for x in xlo]
     y3 = mdl(xlo, xhi=xhi)
-    # This fails because it has used the cached values rather than re-evaluate
     assert len(store) == 2
     assert y3 == pytest.approx(10, 10, 10)
