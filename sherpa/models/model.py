@@ -20,34 +20,35 @@
 
 """Allow models to be defined and combined.
 
-A single model is defined by the parameters of the model - represented
-as sherpa.models.model.Parameter instances - and the function that
+A single model is defined by the parameters of the model - stored
+as `sherpa.models.model.Parameter` instances - and the function that
 takes the parameter values along with an array of grid values. The
 main classes are:
 
-* Model which is the base class and defines most of the interfaces.
+* `Model` which is the base class and defines most of the interfaces.
 
-* ArithmeticConstantModel and ArithmeticFunctionModel for representing
+* `ArithmeticConstantModel` and `ArithmeticFunctionModel` for representing
   a constant value or a function.
 
-* ArithmeticModel is the main base class for deriving user models since
+* `ArithmeticModel` is the main base class for deriving user models since
   it supports combining models (e.g. by addition or multiplication) and
   a cache to reduce evaluation time at the expense of memory use.
 
-* RegriddableModel builds on ArithmeticModel to allow a model to be
+* `RegriddableModel` builds on ArithmeticModel to allow a model to be
   evaluated on a different grid to that requested: most model classes
-  are derived from the 1D and 2D variants of RegriddableModel.
+  are derived from the 1D (`RegriddableModel1D`) and 2D
+  (`RegriddableModel2D`) variants of RegriddableModel.
 
-* CompositeModel which is used to represent a model expression, that
+* `CompositeModel` which is used to represent a model expression, that
   is combined models, such as `m1 * (m2 + m3)`
 
-  * UnaryOpModel for model expressions such as `- m1`.
+  * `UnaryOpModel` for model expressions such as `-m1`.
 
-  * BinaryOpModel for model expressions such as `m1 + m2`.
+  * `BinaryOpModel` for model expressions such as `m1 + m2`.
 
-  * NestedModel for applying one model to another.
+  * `NestedModel` for applying one model to another.
 
-* SimulFitModel for fitting multiple models and datasets.
+* `SimulFitModel` for fitting multiple models and datasets.
 
 Creating a model
 ================
@@ -92,7 +93,7 @@ be inspected with print or the pars attribute:
     >>> print(m2.pars)
     (<Parameter 'fwhm' of model 'gmdl'>, <Parameter 'pos' of model 'gmdl'>, <Parameter 'ampl' of model 'gmdl'>)
 
-The parameters are instances of the sherpa.models.parameter.Parameter
+The parameters are instances of the `sherpa.models.parameter.Parameter`
 class:
 
     >>> print(m2.fwhm)
@@ -129,8 +130,8 @@ Linking parameters
 ------------------
 
 One parameter can be made to reference one or more other parameters, a
-process called "linking". The lniked is no-longer considered a free
-parameter in a fit since it's value is derived from the other
+process called "linking". The linked parameter is no-longer considered
+a free parameter in a fit since it's value is derived from the other
 parameters. This link can be a simple one-to-one case, such as
 ensuring the fwhm parameter of one model is the same as the other:
 
@@ -169,7 +170,7 @@ to indicate the expression:
 Model evaluation
 ================
 
-With a sherpa.data.Data instance a model can be evaluated with the
+With a `sherpa.data.Data` instance a model can be evaluated with the
 eval_model method of the object. For example:
 
     >>> import numpy as np
@@ -211,9 +212,10 @@ overlap, but they do not need to be consecutive.
 The behavior of a model when given low and high edges depends on
 whether the model is written to support this mode - that is,
 integrating the model across the bin - and the setting of the
-integrate flag of the model. The Gauss1D model does support an
-integrated mode, so switching the integrate flag will change the model
-output:
+integrate flag of the model. For example, the
+`sherpa.models.basic.Gauss1D` model will, by default, integrate the
+model across each bin when given the bin edges, but if the flag is set
+to `False` then just the first array (here ``xlo``) is used:
 
     >>> print(mdl.integrate)
     True
@@ -221,13 +223,9 @@ output:
     >>> y2 = mdl(xlo, xhi)
     >>> print(y2)
     [48.63274737 49.65462477 49.91343163 50.         49.65462477]
-
-The behavior when the integrate flag is False depends on the model but
-it normally just uses the low edge, as shown for the Gauss1D case:
-
     >>> y3 = mdl(xlo)
-    >>> print(y2 == y3)
-    [ True  True  True  True  True]
+    >>> y2 == y3
+    array([ True,  True,  True,  True,  True])
 
 Direct access
 -------------
@@ -247,7 +245,7 @@ The parameter order matches the pars attribute of the model:
 Model expressions
 =================
 
-The CompositeModel class is the base class for creating model
+The `CompositeModel` class is the base class for creating model
 expressions - that is the overall model that is combined of one or
 more model objects along with possible numeric terms, such as a
 model containing two gaussians and a polynomial:
@@ -267,9 +265,9 @@ component:
     >>> x = np.arange(-10, 40, 2)
     >>> y = mdl(x)
 
-This model is written so that the amplitude of the `l2` component is
-half the `l1` component by linking the two `ampl` parameters and then
-including a scaling factor in the model expression for `l2`. An
+This model is written so that the amplitude of the ``l2`` component is
+half the ``l1`` component by linking the two ``ampl`` parameters and then
+including a scaling factor in the model expression for ``l2``. An
 alternative would have been to include this scaling factor in the link
 expression:
 
@@ -278,7 +276,7 @@ expression:
 Model cache
 ===========
 
-The ArithmeticModel class and modelCacher1d decorator provide basic
+The `ArithmeticModel` class and `modelCacher1d` decorator provide basic
 support for caching one-dimensional model evaluations - that is, to
 avoid re-calculating the model. The idea is to save the results of the
 latest calls to a model and return the values from the cache,
@@ -286,22 +284,22 @@ hopefully saving time at the expense of using more memory. This is
 most effective when the same model is used with multiple datasets
 which all have the same grid.
 
-The _use_caching attribute of the model is used to determine whether
+The `_use_caching` attribute of the model is used to determine whether
 the cache is used, but this setting can be over-ridden by the startup
 method, which is automatically called by the fit and est_errors
-methods of a sherpa.fit.Fit object.
+methods of a `sherpa.fit.Fit` object.
 
-The cache_clear and cache_status methods of ArithmeticModel and
-CompositeModel allow you to clear the cache and display to the
-standard output the cache status of each model component.
+The `cache_clear` and `cache_status` methods of the `ArithmeticModel`
+and `CompositeModel` classes allow you to clear the cache and display
+to the standard output the cache status of each model component.
 
 Example
 =======
 
 The following class implements a simple scale model which has a single
-parameter (`scale`) which defaults to 1. It can be used for both
+parameter (``scale``) which defaults to 1. It can be used for both
 non-integrated and integrated datasets of any dimensionality (see
-sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
+`sherpa.models.basic.Scale1D` and `sherpa.models.basic.Scale2D`)::
 
     class ScaleND(ArithmeticModel):
         '''A constant value per element.'''
@@ -1172,7 +1170,18 @@ class ArithmeticModel(Model):
 
 
 class RegriddableModel(ArithmeticModel):
+    """Support models that can be evaluated on a different grid.
+
+    """
+
     def regrid(self, *args, **kwargs):
+        """Allow a model to be evaluated on a different grid than requested.
+
+        The return value is a new instance of the model, set up to
+        evaluate the model on the supplied axes which will be
+        regridded onto the requested grid.
+
+        """
         raise NotImplementedError
 
 
