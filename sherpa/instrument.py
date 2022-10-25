@@ -743,11 +743,11 @@ they do not match.
 
         return ConvolutionModel(kernel, model, self)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         if self.model is None:
             raise PSFErr('nofold')
 
-        psf_space_evaluation = self.model.calc(*args, **kwargs)
+        psf_space_evaluation = self.model.calc(p, *args, **kwargs)
 
         if self._must_rebin:
             return rebin_2d(psf_space_evaluation, self.psf_space, self.data_space).ravel()

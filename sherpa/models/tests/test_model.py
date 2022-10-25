@@ -97,12 +97,12 @@ class ParameterCase(ArithmeticModel):
         self._basemodel = Sin()
         super().__init__(name, pars)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         for par in self.pars:
             setattr(self._basemodel, par.name, par.val)
 
         self._basemodel.integrate = self.integrate
-        return self._basemodel.calc(*args, **kwargs)
+        return self._basemodel.calc(p, *args, **kwargs)
 
 
 class ShowableModel(ArithmeticModel):

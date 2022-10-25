@@ -94,11 +94,11 @@ class Atten(RegriddableModel1D):
                                  (self.hcol, self.heiRatio, self.heiiRatio))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         # atten should act like xsphabs, never integrate.
         kwargs['integrate'] = False
-        return _modelfcts.atten(*args, **kwargs)
+        return _modelfcts.atten(p, *args, **kwargs)
 
 
 class BBody(RegriddableModel1D):
@@ -176,9 +176,9 @@ class BBody(RegriddableModel1D):
         param_apply_limits(mod, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.bbody(*args, **kwargs)
+        return _modelfcts.bbody(p, *args, **kwargs)
 
 
 class BBodyFreq(RegriddableModel1D):
@@ -233,9 +233,9 @@ class BBodyFreq(RegriddableModel1D):
         param_apply_limits(t, self.t, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.bbodyfreq(*args, **kwargs)
+        return _modelfcts.bbodyfreq(p, *args, **kwargs)
 
 
 class Beta1D(RegriddableModel1D):
@@ -303,9 +303,9 @@ class Beta1D(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.beta1d(*args, **kwargs)
+        return _modelfcts.beta1d(p, *args, **kwargs)
 
 
 class BPL1D(RegriddableModel1D):
@@ -363,9 +363,9 @@ class BPL1D(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.bpl1d(*args, **kwargs)
+        return _modelfcts.bpl1d(p, *args, **kwargs)
 
 
 # TODO: what are the units of the independent axis: Angstrom?
@@ -428,9 +428,9 @@ class Dered(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, (self.rv, self.nhgal))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.dered(*args, **kwargs)
+        return _modelfcts.dered(p, *args, **kwargs)
 
 
 class Edge(RegriddableModel1D):
@@ -479,9 +479,9 @@ class Edge(RegriddableModel1D):
                                  (self.space, self.thresh, self.abs))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.edge(*args, **kwargs)
+        return _modelfcts.edge(p, *args, **kwargs)
 
 
 # DOC-NOTE:
@@ -544,9 +544,9 @@ class LineBroad(RegriddableModel1D):
         param_apply_limits(mod, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.linebroad(*args, **kwargs)
+        return _modelfcts.linebroad(p, *args, **kwargs)
 
 
 # DOC-NOTE: for some reason the division in the equation in the notes
@@ -612,9 +612,9 @@ class Lorentz1D(RegriddableModel1D):
             param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.lorentz1d(*args, **kwargs)
+        return _modelfcts.lorentz1d(p, *args, **kwargs)
 
 
 class Voigt1D(RegriddableModel1D):
@@ -728,9 +728,9 @@ class Voigt1D(RegriddableModel1D):
         param_apply_limits(ampl, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.wofz(*args, **kwargs)
+        return _modelfcts.wofz(p, *args, **kwargs)
 
 
 class PseudoVoigt1D(RegriddableModel1D):
@@ -815,15 +815,12 @@ class PseudoVoigt1D(RegriddableModel1D):
         param_apply_limits(ampl, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
 
-        pars = args[0]
-        xargs = args[1:]
-
-        frac = pars[0]
-        gmdl = sherpa.models._modelfcts.ngauss1d(pars[1:], *xargs, **kwargs)
-        lmdl = _modelfcts.lorentz1d(pars[1:], *xargs, **kwargs)
+        frac = p[0]
+        gmdl = sherpa.models._modelfcts.ngauss1d(p[1:], *args, **kwargs)
+        lmdl = _modelfcts.lorentz1d(p[1:], *args, **kwargs)
         return frac * gmdl + (1 - frac) * lmdl
 
 
@@ -894,9 +891,9 @@ class NormBeta1D(RegriddableModel1D):
         param_apply_limits(ampl, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.nbeta1d(*args, **kwargs)
+        return _modelfcts.nbeta1d(p, *args, **kwargs)
 
 
 class Schechter(RegriddableModel1D):
@@ -939,11 +936,11 @@ class Schechter(RegriddableModel1D):
         param_apply_limits(norm, self.norm, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         if not self.integrate:
             raise ModelErr('alwaysint', self.name)
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.schechter(*args, **kwargs)
+        return _modelfcts.schechter(p, *args, **kwargs)
 
 
 class Beta2D(RegriddableModel2D):
@@ -1033,9 +1030,9 @@ class Beta2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.beta2d(*args, **kwargs)
+        return _modelfcts.beta2d(p, *args, **kwargs)
 
 
 class DeVaucouleurs2D(RegriddableModel2D):
@@ -1115,9 +1112,9 @@ class DeVaucouleurs2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.devau(*args, **kwargs)
+        return _modelfcts.devau(p, *args, **kwargs)
 
 
 class HubbleReynolds(RegriddableModel2D):
@@ -1201,9 +1198,9 @@ class HubbleReynolds(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.hr(*args, **kwargs)
+        return _modelfcts.hr(p, *args, **kwargs)
 
 
 class Lorentz2D(RegriddableModel2D):
@@ -1275,9 +1272,9 @@ class Lorentz2D(RegriddableModel2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.lorentz2d(*args, **kwargs)
+        return _modelfcts.lorentz2d(p, *args, **kwargs)
 
 
 class JDPileup(RegriddableModel1D):
@@ -1492,9 +1489,9 @@ class Sersic2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(rad, self.r0, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.sersic(*args, **kwargs)
+        return _modelfcts.sersic(p, *args, **kwargs)
 
 
 # ## disk2d and shell2d models

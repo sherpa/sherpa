@@ -372,9 +372,9 @@ class MyConst1D(Const1D):
         self._calc_store = []
         Const1D.__init__(self, name)
 
-    def calc(self, *args, **kwargs):
-        self._calc_store.append((args, kwargs))
-        return Const1D.calc(self, *args, **kwargs)
+    def calc(self, p, *args, **kwargs):
+        self._calc_store.append((p, args, kwargs))
+        return Const1D.calc(self, p, *args, **kwargs)
 
 
 def test_regrid1d_passes_through_the_grid():
@@ -394,17 +394,16 @@ def test_regrid1d_passes_through_the_grid():
     y = mdl(grid_requested)
     assert len(y) == len(grid_requested)
     assert len(store) == 1
-    store = store[0]
-    assert len(store) == 2
 
-    assert len(store[0]) == 2
-    assert store[1] == {'integrate': True}
+    p, args, kwargs = store[0]
 
-    store = store[0]
-    assert store[0] == [-34.5]
+    assert p == [-34.5]
+
     combine = np.unique(np.append(grid_expected, grid_requested))
-    indices = combine.searchsorted(store[1])
-    assert (store[1] == combine[indices]).all()
+    indices = combine.searchsorted(args)
+    assert (args == combine[indices]).all()
+
+    assert kwargs == {'integrate': True}
 
 
 def test_regrid1d_error_calc_no_args(setup_1d):

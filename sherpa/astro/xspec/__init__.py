@@ -1153,7 +1153,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         """Calculate the model given the parameters and grid.
 
         Notes
@@ -1167,7 +1167,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         Keyword arguments are ignored.
         """
 
-        nargs = len(args)
+        nargs = 1 + len(args)
         if nargs != 3:
             emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
             warnings.warn(emsg, FutureWarning)
@@ -1179,7 +1179,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         #  - it is easier
         #  - it allows for the user to find out what bins are bad,
         #    by directly calling the _calc function of a model
-        out = self._calc(*args, **kwargs)
+        out = self._calc(p, *args, **kwargs)
 
         # This check is being skipped in the 4.8.0 release as it
         # has had un-intended consequences. It should be re-evaluated
