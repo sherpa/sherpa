@@ -26,52 +26,57 @@ import sherpa.astro.models as models
 from sherpa.utils import SherpaFloat
 from sherpa.models.model import ArithmeticModel, RegriddableModel2D, \
     RegriddableModel1D, boolean_to_byte
-from sherpa.models.basic import Const
+from sherpa.models import basic
 
 
-EXCLUDED_MODEL_CLASSES = (ArithmeticModel, RegriddableModel1D,
-                          RegriddableModel2D, Const)
+# See sherpa/models/tests/test_basic.py
+#
+EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D,
+                   RegriddableModel2D)
 
 
-def test_create_and_evaluate():
+TESTABLE = []
+for name in dir(models):
+    cls = getattr(models, name)
+    if not isinstance(cls, type) or \
+       not issubclass(cls, ArithmeticModel) or \
+       cls in EXCLUDED_MODELS:
+        continue
+
+    TESTABLE.append((name, cls))
+
+
+def test_expected_number():
+    assert len(TESTABLE) == 21
+
+
+@pytest.mark.parametrize("name,cls", TESTABLE)
+def test_create_and_evaluate(name, cls):
+
+    # This has a very different interface than the others
+    if name == 'JDPileup':
+        return
 
     x = np.arange(1.0, 5.0)
-    count = 0
 
-    for cls in dir(models):
-        clsobj = getattr(models, cls)
+    m = cls()
+    assert type(m).__name__.lower() == m.name
 
-        if not isinstance(clsobj, type) or \
-           not issubclass(clsobj, ArithmeticModel) or \
-           clsobj in EXCLUDED_MODEL_CLASSES:
-            continue
+    if m.name == 'linebroad':
+        # for some reason with the default params and this x grid
+        # the model will fail
+        m.vsini = 1e6
 
-        # This has a very different interface than the others
-        if cls == 'JDPileup':
-            continue
+    if m.ndim == 2:
+        pt_out = m(x, x)
+        int_out = m(x, x, x, x)
+    else:
+        pt_out = m(x)
+        int_out = m(x, x)
 
-        m = clsobj()
-        assert type(m).__name__.lower() == m.name
-        count += 1
-
-        if m.name == 'linebroad':
-            m.vsini = 1e6
-
-        try:
-            if m.name.count('2d') or m.name == 'hubblereynolds':
-                pt_out = m(x, x)
-                int_out = m(x, x, x, x)
-            else:
-                pt_out = m(x)
-                int_out = m(x, x)
-        except ValueError:
-            assert False, "evaluation of model '{}' failed".format(cls)
-
-        for out in (pt_out, int_out):
-            assert out.dtype.type is SherpaFloat
-            assert out.shape == (4, )
-
-    assert count == 20
+    for out in (pt_out, int_out):
+        assert out.dtype.type is SherpaFloat
+        assert out.shape == x.shape
 
 
 @pytest.mark.xfail

@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021
-#      Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -36,51 +36,52 @@ def userfunc(pars, x, *args, **kwargs):
 EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D,
                    basic.Const)
 
+TESTABLE = []
+for name in dir(basic):
+    cls = getattr(basic, name)
+    if not isinstance(cls, type) or \
+       not issubclass(cls, ArithmeticModel) or \
+       cls in EXCLUDED_MODELS:
+        continue
 
-def test_create_and_evaluate():
+    TESTABLE.append((name, cls))
+
+
+def test_expected_number():
+    assert len(TESTABLE) == 34
+
+
+@pytest.mark.parametrize("name,cls", TESTABLE)
+def test_create_and_evaluate(name, cls):
+
+    # These have very different interfaces than the others
+    if name in ['Integrator1D', 'Integrate1D']:
+        return
 
     x = np.arange(1.0, 5.0)
-    count = 0
 
-    for cls in dir(basic):
-        clsobj = getattr(basic, cls)
+    m = cls()
+    assert type(m).__name__.lower() == m.name
 
-        if not isinstance(clsobj, type) \
-           or not issubclass(clsobj, ArithmeticModel) \
-           or clsobj in EXCLUDED_MODELS:
-            continue
+    if isinstance(m, basic.TableModel):
+        m.load(x, x)
+    if isinstance(m, basic.UserModel):
+        m.calc = userfunc
 
-        # These have very different interfaces than the others
-        if cls == 'Integrator1D' or cls == 'Integrate1D':
-            continue
+    if m.ndim == 2:
+        pt_out = m(x, x)
+        int_out = m(x, x, x, x)
+    else:
+        if m.name in ('log', 'log10'):
+            xx = -x
+        else:
+            xx = x
+        pt_out = m(xx)
+        int_out = m(xx, xx)
 
-        m = clsobj()
-        if isinstance(m, basic.TableModel):
-            m.load(x, x)
-        if isinstance(m, basic.UserModel):
-            m.calc = userfunc
-        assert type(m).__name__.lower() == m.name
-        count += 1
-
-        try:
-            if m.name.count('2d'):
-                pt_out = m(x, x)
-                int_out = m(x, x, x, x)
-            else:
-                if m.name in ('log', 'log10'):
-                    xx = -x
-                else:
-                    xx = x
-                pt_out = m(xx)
-                int_out = m(xx, xx)
-        except ValueError:
-            assert False, "evaluation of model '{}' failed".format(cls)
-
-        for out in (pt_out, int_out):
-            assert out.dtype.type is SherpaFloat
-            assert out.shape == x.shape
-
-    assert count == 32
+    for out in (pt_out, int_out):
+        assert out.dtype.type is SherpaFloat
+        assert out.shape == x.shape
 
 
 def test_polynom2d_guess():
