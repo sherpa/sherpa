@@ -34,7 +34,7 @@ def userfunc(pars, x, *args, **kwargs):
 
 
 EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D,
-                   basic.Const)
+                   basic.Const, basic.Callable1D, basic.Callable2D)
 
 TESTABLE = []
 for name in dir(basic):

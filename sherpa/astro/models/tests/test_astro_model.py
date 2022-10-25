@@ -32,7 +32,7 @@ from sherpa.models import basic
 # See sherpa/models/tests/test_basic.py
 #
 EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D,
-                   RegriddableModel2D)
+                   RegriddableModel2D, basic.Callable1D, basic.Callable2D)
 
 
 TESTABLE = []

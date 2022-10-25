@@ -29,9 +29,10 @@ from sherpa.astro.data import DataIMG, DataIMGInt
 from sherpa.astro.ui.utils import Session
 from sherpa.data import Data1DInt, Data1D
 from sherpa.fit import Fit
-from sherpa.models.basic import Box1D
-from sherpa.models import Const1D, RegriddableModel1D, Parameter, Const2D, \
-    RegriddableModel2D, ArithmeticModel, Gauss2D, basic, model
+from sherpa.models.basic import Callable1D, Box1D, Const1D, \
+    Const2D, Gauss2D
+from sherpa.models import RegriddableModel1D, Parameter, \
+    RegriddableModel2D, ArithmeticModel, basic, model
 from sherpa.optmethods import LevMar
 from sherpa.stats import LeastSq
 from sherpa.utils.err import ModelErr
@@ -404,11 +405,12 @@ def test_regrid_binaryop_2d():
     assert (ans3 == truth).all()
 
 
-class Wrappable1D(model.RegriddableModel1D):
+class Wrappable1D(Callable1D):
 
     def __init__(self, cls, name):
         self.ncalled = []  # record the number of elements
         self.baseclass = cls
+        self._calc = cls._calc  # this is ugly
         self.baseclass.__init__(self, name)
 
     def calc(self, pars, xlo, *args, **kwargs):
