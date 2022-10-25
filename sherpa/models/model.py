@@ -471,6 +471,16 @@ def modelCacher1d(func):
 
     return cache_model
 
+# It is tempting to convert the explicit class names below into calls
+# to super(), but this is problematic since it ends up breaking a
+# number of invariants the classes rely on. An example is that
+# instances of Unary/BinaryOpModel classes should not cache-related
+# attributes, but they can do if we change to using super. There is
+# mode discussion of this in
+# https://www.artima.com/weblogs/viewpost.jsp?thread=237121 which
+# points out that you should either always use super or never do (or,
+# that multiple inheritance is tricky in Python).
+#
 
 class Model(NoNewAttributesAfterInit):
     """The base class for Sherpa models.
@@ -583,27 +593,32 @@ class Model(NoNewAttributesAfterInit):
     def __setattr__(self, name, val):
         lname = name.lower()
         par = getattr(self, lname, None)
-        if (par is not None) and isinstance(par, Parameter):
-            # When setting an attribute that is a Parameter, set the parameter's
-            # value instead.
+        if isinstance(par, Parameter):
+            # When setting an attribute that is a Parameter, set the
+            # parameter's value instead.
             par.val = val
-        else:
-            NoNewAttributesAfterInit.__setattr__(self, name, val)
-            if isinstance(val, Parameter):
-                vname = val.name.lower()
+            return
 
-                # Check the parameter names match - as this is a
-                # 'development' error then just make this an assert.
-                # Ideally it should be exact but support lower case
-                # comparison only
-                assert lname == vname, (name, val.name, self.name)
+        NoNewAttributesAfterInit.__setattr__(self, name, val)
+        if not isinstance(val, Parameter):
+            return
 
-                # Update parameter index
-                self._par_index[vname] = val
-                if val.aliases:
-                    # Update index of aliases, if necessary
-                    for alias in val.aliases:
-                        self._par_index[alias] = val
+        vname = val.name.lower()
+
+        # Check the parameter names match - as this is a
+        # 'development' error then just make this an assert.
+        # Ideally it should be exact but support lower case
+        # comparison only
+        assert lname == vname, (name, val.name, self.name)
+
+        # Update parameter index
+        self._par_index[vname] = val
+        if not val.aliases:
+            return
+
+        # Update index of aliases, if necessary
+        for alias in val.aliases:
+            self._par_index[alias] = val
 
     def startup(self, cache=False):
         """Called before a model may be evaluated multiple times.
@@ -856,21 +871,21 @@ class CompositeModel(Model):
     Composite models can be iterated through to find their
     components:
 
-       >>> l1 = Gauss1D('l1')
-       >>> l2 = Gauss1D('l2')
-       >>> b = Polynom1D('b')
-       >>> mdl = l1 + (0.5 * l2) + b
-       >>> mdl
-       <BinaryOpModel model instance '((l1 + (0.5 * l2)) + polynom1d)'>
-       >>> for cpt in mdl:
-       ...     print(type(c))
-       ...
-       <class 'BinaryOpModel'>
-       <class 'sherpa.models.basic.Gauss1D'>
-       <class 'BinaryOpModel'>
-       <class 'ArithmeticConstantModel'>
-       <class 'sherpa.models.basic.Gauss1D'>
-       <class 'sherpa.models.basic.Polynom1D'>
+    >>> l1 = Gauss1D('l1')
+    >>> l2 = Gauss1D('l2')
+    >>> b = Polynom1D('b')
+    >>> mdl = l1 + (0.5 * l2) + b
+    >>> mdl
+    <BinaryOpModel model instance '((l1 + (0.5 * l2)) + polynom1d)'>
+    >>> for cpt in mdl:
+    ...     print(type(c))
+    ...
+    <class 'BinaryOpModel'>
+    <class 'sherpa.models.basic.Gauss1D'>
+    <class 'BinaryOpModel'>
+    <class 'ArithmeticConstantModel'>
+    <class 'sherpa.models.basic.Gauss1D'>
+    <class 'sherpa.models.basic.Polynom1D'>
 
     """
 
@@ -892,11 +907,17 @@ class CompositeModel(Model):
 
             for p in part.pars:
                 if p in allpars:
-                    # If we already have a reference to this parameter, store
-                    # a hidden, linked proxy instead
+                    # If we already have a reference to this
+                    # parameter, store a hidden, linked proxy
+                    # instead. This is presumably to ensure that we
+                    # have the correct number of degrees of freedom
+                    # (as pnew is frozen) while stil sending the
+                    # correct parameters to the different components.
+                    #
                     pnew = Parameter(p.modelname, p.name, 0.0, hidden=True)
                     pnew.link = p
                     p = pnew
+
                 allpars.append(p)
 
         Model.__init__(self, name, allpars)
@@ -1005,6 +1026,8 @@ class SimulFitModel(CompositeModel):
     def __iter__(self):
         return iter(self.parts)
 
+    # Why is this not defined in CompositeModel?
+    #
     def startup(self, cache=False):
         for part in self:
             part.startup(cache)
@@ -1173,11 +1196,13 @@ class ArithmeticModel(Model):
     def startup(self, cache=False):
         self.cache_clear()
         self._use_caching = cache
-        if int(self.cache) > 0:
-            self._queue = [''] * int(self.cache)
-            frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
-            if len(frozen) > 0 and frozen.all():
-                self._use_caching = cache
+        if int(self.cache) <= 0:
+            return
+
+        self._queue = [''] * int(self.cache)
+        frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
+        if len(frozen) > 0 and frozen.all():
+            self._use_caching = cache
 
     def teardown(self):
         self._use_caching = False
@@ -1592,7 +1617,9 @@ def _wrapobj(obj, wrapper):
     # the full list of classes are needed to be accessible
     # when called.
     #
-    if isinstance(obj, (ArithmeticModel, ArithmeticConstantModel, ArithmeticFunctionModel)):
+    if isinstance(obj, (ArithmeticModel,
+                        ArithmeticConstantModel,
+                        ArithmeticFunctionModel)):
         return obj
 
     return wrapper(obj)
@@ -1606,8 +1633,8 @@ def modelcomponents_to_list(model):
         for p in model.parts:
             modellist.extend(modelcomponents_to_list(p))
         return modellist
-    else:
-        return [model]
+
+    return [model]
 
 
 def html_model(mdl):
