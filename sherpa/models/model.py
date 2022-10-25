@@ -310,8 +310,8 @@ non-integrated and integrated datasets of any dimensionality (see
             pars = (self.scale, )
             ArithmeticModel.__init__(self, name, pars)
 
-        def calc(self, *args, **kwargs):
-            return self.scale.val * np.ones(len(args[0]))
+        def calc(self, p, *args, **kwargs):
+            return p[0] * np.ones_like(args[0])
 
 """
 
@@ -392,7 +392,7 @@ def modelCacher1d(func):
         def MyModel(ArithmeticModel):
             ...
             @modelCacher1d
-            def calc(self, *args, **kwargs):
+            def calc(self, p, *args, **kwargs):
                 ...
 
     """
@@ -647,6 +647,8 @@ class Model(NoNewAttributesAfterInit):
             and the number depends on the dimensionality of the
             model and whether it is being evaluated over an
             integrated grid or at a point (or points).
+        **kwargs
+            Any model-specific values that are not parameters.
         """
         raise NotImplementedError
 
@@ -1098,6 +1100,7 @@ class ArithmeticConstantModel(Model):
         pass
 
     def calc(self, p, *args, **kwargs):
+        # Shouldn't this return p[0]?
         return self.val
 
     def teardown(self):
@@ -1389,6 +1392,8 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         CompositeModel.teardown(self)
 
     def calc(self, p, *args, **kwargs):
+        # Note that the kwargs are sent to both model components.
+        #
         nlhs = len(self.lhs.pars)
         lhs = self.lhs.calc(p[:nlhs], *args, **kwargs)
         rhs = self.rhs.calc(p[nlhs:], *args, **kwargs)

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -934,7 +934,7 @@ class ModelDomainRegridder2D():
 
         requested_eval_space = self._make_and_validate_grid(args)
 
-        return self._evaluate(requested_eval_space, pars, modelfunc)
+        return self._evaluate(requested_eval_space, pars, modelfunc, **kwargs)
 
     def _make_and_validate_grid(self, args_array):
         """
@@ -963,7 +963,7 @@ class ModelDomainRegridder2D():
 
         return requested_eval_space
 
-    def _evaluate(self, requested_space, pars, modelfunc):
+    def _evaluate(self, requested_space, pars, modelfunc, **kwargs):
         # Evaluate the model on the user-defined grid and then rebin
         # onto the desired grid.
 
@@ -971,7 +971,7 @@ class ModelDomainRegridder2D():
             warnings.warn("requested space and evaluation space do not overlap, evaluating model to 0")
             return requested_space.zeros_like()
 
-        y = modelfunc(pars, *self.grid)
+        y = modelfunc(pars, *self.grid, **kwargs)
         return rebin_2d(y, self.evaluation_space, requested_space).ravel()
 
 
