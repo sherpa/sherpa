@@ -53,15 +53,15 @@ jobs:
           - name: MacOS Python 3.8
             os: macos-10.15
             python-version: "3.8"
-            conda-os: "macOS"
+            conda-os: "MacOSX"
           - name: MacOS Python 3.9
             os: macos-10.15
             python-version: "3.9"
-            conda-os: "macOS"
+            conda-os: "MacOSX"
           - name: MacOS Python 3.10
             os: macos-10.15
             python-version: "3.10"
-            conda-os: "macOS"
+            conda-os: "MacOSX"
 
     steps:
     - name: Checkout Code
@@ -79,13 +79,13 @@ jobs:
         conda create -yq -n builder conda-build conda-verify
 
     - name: macOS 10.9 SDK
-      if: ${{ matrix.conda-os == 'macOS' }}
+      if: ${{ matrix.conda-os == 'MacOSX' }}
       run: |
-        #Download the macOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
+        #Download the MacOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
         mkdir -p ${GITHUB_WORKSPACE}/10.9SDK
         wget https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -O MacOSX10.9.sdk.tar.xz
         if [[ $? -ne 0 ]]; then
-            echo "macOS 10.9 SDK download failed"
+            echo "MacOS 10.9 SDK download failed"
         fi
         tar -C ${GITHUB_WORKSPACE}/10.9SDK -xf MacOSX10.9.sdk.tar.xz
 
@@ -117,9 +117,9 @@ jobs:
             os: ubuntu-latest
             container: fedora:36
             conda-os: "Linux"
-          - name: Latest macOS Pre-Deploy Test
+          - name: Latest MacOS Pre-Deploy Test
             os: macos-latest
-            conda-os: "macOS"
+            conda-os: "MacOSX"
 
     steps:
     - name: Conda Setup
