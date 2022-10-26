@@ -1,0 +1,209 @@
+name: Conda Deployments
+
+#Only run for main and ciaox branches if not a directly tagged build
+#Only run for the release branch on the tag (must be #.##.# tag only)
+#reduce duplication
+on:
+  push:
+    branches:
+    - main
+    - ciaox
+    - 'releases/**'
+    - gh-deployments
+
+concurrency: 
+  group: ${{ github.ref }}
+  cancel-in-progress: true
+
+#Temporarily upload this to my channel for testing
+env:
+  sherpa_channel: Marie-Terrell
+  sherpa_label: dev
+  miniconda_loc: ${{ github.workspace }}/miniconda
+  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.9SDK/MacOSX10.9.sdk
+
+jobs:
+  build:
+    defaults:
+      run:
+        shell: bash
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Linux Python 3.8
+            os: ubuntu-latest
+            container: 
+              image: centos:centos7
+              env: 
+                python-version: "3.8"
+                conda-os: "Linux" 
+          - name: Linux Python 3.9
+            os: ubuntu-latest
+            container: 
+              image: centos:centos7
+              env: 
+                python-version: "3.9"
+                conda-os: "Linux"
+           - name: Linux Python 3.10
+             os: ubuntu-latest
+             container: 
+               image: centos:centos7
+               env: 
+                 python-version: "3.10"
+                 conda-os: "Linux"
+          - name: MacOS Python 3.8
+            os: macos-10.15
+            python-version: "3.8"
+            conda-os: "macOS"
+          - name: MacOS Python 3.9
+            os: macos-10.15
+            python-version: "3.9"
+            conda-os: "macOS"
+          - name: MacOS Python 3.10
+            os: macos-10.15
+            python-version: "3.10"
+            conda-os: "macOS"
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+        with:
+          submodules: 'True'
+
+      - name: Conda Setup
+        env:
+          CONDA_OS: ${{ matrix.conda-os }}
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}-x86_64.sh
+          bash miniconda.sh -b -p ${miniconda_loc}
+          source ${miniconda_loc}/etc/profile.d/conda.sh
+          conda create -yq -n builder conda-build conda-verify
+
+      - name: macOS 10.9 SDK
+        if: matrix.conda-os == "macOS"
+        run: |
+          #Download the macOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
+          mkdir -p ${GITHUB_WORKSPACE}/10.9SDK
+          wget https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -O MacOSX10.9.sdk.tar.xz
+          if [[ $? -ne 0 ]]; then
+              echo "macOS 10.9 SDK download failed"
+          fi
+          tar -C ${GITHUB_WORKSPACE}/10.9SDK -xf MacOSX10.9.sdk.tar.xz
+
+      - name: Build Sherpa
+        env:
+          SHERPA_PYTHON_VERSION: ${{ matrix.python-version }}
+        run: |
+          source ${miniconda_loc}/etc/profile.d/conda.sh
+          conda activate builder
+          conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
+
+      - uses: actions/upload-artifact@v3
+        with:
+          path: ${GITHUB_WORKSPACE}/packages
+          if-no-files-found: error
+          retention-days: 3
+
+  pre-deploy-test:
+    defaults:
+      run:
+        shell: bash
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Latest Ubuntu Pre-Deploy Test
+            os: ubuntu-latest
+            env:
+              conda-os: "Linux"
+          - name: Fedora 36 Pre-Deploy Test
+            os: ubuntu-latest
+            container:
+              image: fedora:36
+              env:
+                conda-os: "Linux"
+          - name: Latest macOS Pre-Deploy Test
+            os: macos-latest
+            env:
+              conda-os: "macOS"
+
+    steps:
+      - name: Conda Setup
+        env:
+          CONDA_OS: ${{ matrix.conda-os }}
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}-x86_64.sh
+          bash miniconda.sh -b -p ${miniconda_loc}
+          source ${miniconda_loc}/etc/profile.d/conda.sh
+
+      #Download all artifacts
+      - uses: actions/download-artifact@v3
+
+      - name: Index the downloads
+        run: |
+          source ${miniconda_loc}/etc/profile.d/conda.sh
+          conda install conda-build
+          conda index packages
+
+      - name: Run the tests
+        run: |
+          curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/main.zip 
+          conda create -n test38 --yes -q -c file://$(pwd)/packages python=3.8 astropy sherpa matplotlib
+          conda activate test38
+          pip install main.zip
+          sherpa_smoke -f astropy
+          sherpa_test
+          conda create -n test39 --yes -q -c file://$(pwd)/packages python=3.9 astropy sherpa matplotlib
+          conda activate test39
+          pip install main.zip
+          sherpa_smoke -f astropy
+          sherpa_test
+          conda create -n test310 --yes -q -c file://$(pwd)/packages python=3.10 astropy sherpa matplotlib
+          conda activate test310
+          pip install main.zip
+          sherpa_smoke -f astropy
+          sherpa_test
+
+  deploy:
+    defaults:
+      run:
+        shell: bash
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Deploy to Dev Channel
+            os: ubuntu-latest
+
+    concurrency:
+      cancel-in-progress: false
+
+    steps:
+      #Download all artifacts
+      - uses: actions/download-artifact@v3
+
+      - name: Anaconda-Client Setup
+        env:
+          CONDA_OS: ${{ matrix.conda-os }}
+        run: |
+          wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}-x86_64.sh
+          bash miniconda.sh -b -p ${miniconda_loc}
+          source ${miniconda_loc}/etc/profile.d/conda.sh
+          conda install -yq anaconda-client
+      
+      - name: Deploy Sherpa
+        env:
+          CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
+        run: |
+          source ${miniconda_loc}/etc/profile.d/conda.sh
+          conda activate
+          #We can switch this to use "--force" if we run into issues with the upload cutting or needing to re-run
+          anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} packages/linux-64/sherpa*
+          anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} packages/osx-64/sherpa*
