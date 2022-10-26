@@ -79,7 +79,7 @@ jobs:
         conda create -yq -n builder conda-build conda-verify
 
     - name: macOS 10.9 SDK
-      if: ${{ matrix.conda-os == "macOS" }}
+      if: ${{ matrix.conda-os == 'macOS' }}
       run: |
         #Download the macOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
         mkdir -p ${GITHUB_WORKSPACE}/10.9SDK
