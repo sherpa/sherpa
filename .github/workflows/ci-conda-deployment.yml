@@ -104,6 +104,7 @@ jobs:
         retention-days: 3
 
   pre-deploy-test:
+    needs: build
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -158,6 +159,7 @@ jobs:
         sherpa_test
 
   deploy:
+    needs: pre-deploy-test
     name: Deploy to Dev Channel
     runs-on: ubuntu-latest
     #Do NOT auto cancel the GH Action run during the deploy stage
