@@ -32,19 +32,21 @@ jobs:
   build-linux:
     name: Linux Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    container: ${{ matrix.container }}
+    container:
+      image: ${{ matrix.image }}
+      env:
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+      volumes:
+        - ${{ github.workspace }}:${{ github.workspace }}
     strategy:
       matrix:
-        container: ["centos:centos7"]
+        image: ["centos:centos7"]
         conda-os: ["Linux-x86_64"]
         python-version: ["3.8", "3.9", "3.10"]
           
     steps:
     - name: Install git
       run: yum install -y -q git
-
-    - name: Checkout Code
-      uses: actions/checkout@v2
 
     - name: Conda Setup
       env:
@@ -55,14 +57,23 @@ jobs:
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda create -yq -n builder conda-build conda-verify
 
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
     - name: Build Sherpa
       env:
         SHERPA_PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
+        #Seems like we have to cd here because we are in a container
+        cd ${{ github.workspace }}/sherpa
         export SHERPA_FULL_VERSION=$(git describe --tags --always)
         export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
         export SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
         echo "Version: ${SHERPA_VERSION} Build Number: ${SHERPA_BUILD_NUMBER}"
+        if [ -z ${SHERPA_VERSION} ] || [ -z ${SHERPA_BUILDNUMBER} ] ; then
+          echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set"
+          exit 1
+        fi
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate builder
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
@@ -84,11 +95,6 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
 
     steps:
-    - name: Checkout Code
-      uses: actions/checkout@v2
-      with:
-        submodules: 'True'
-
     - name: Conda Setup
       env:
         CONDA_OS: ${{ matrix.conda-os }}
@@ -109,6 +115,9 @@ jobs:
         fi
         tar -C ${GITHUB_WORKSPACE}/10.9SDK -xf MacOSX10.9.sdk.tar.xz
 
+    - name: Checkout Code
+      uses: actions/checkout@v2
+
     - name: Build Sherpa
       env:
         SHERPA_PYTHON_VERSION: ${{ matrix.python-version }}
@@ -117,6 +126,10 @@ jobs:
         export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
         export SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
         echo "Version: ${SHERPA_VERSION} Build Number: ${SHERPA_BUILD_NUMBER}"
+        if [ -z ${SHERPA_VERSION} ] || [ -z ${SHERPA_BUILDNUMBER} ] ; then
+          echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set"
+          exit 1
+        fi
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate builder
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
