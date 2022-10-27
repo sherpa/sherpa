@@ -174,7 +174,6 @@ jobs:
     needs: pre-deploy-test
     name: Deploy to Dev Channel
     runs-on: ubuntu-latest
-    conda-os: "Linux-x86_64"
     #Do NOT auto cancel the GH Action run during the deploy stage
     concurrency:
       group: ${{ github.ref }}
@@ -185,10 +184,8 @@ jobs:
     - uses: actions/download-artifact@v3
 
     - name: Anaconda-Client Setup
-      env:
-        CONDA_OS: ${{ matrix.conda-os }}
       run: |
-        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -O miniconda.sh
+        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
         bash miniconda.sh -b -p ${miniconda_loc}
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda install -yq anaconda-client
