@@ -50,7 +50,7 @@ jobs:
       env:
         CONDA_OS: ${{ matrix.conda-os }}
       run: |
-        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -O miniconda.sh
+        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
         bash miniconda.sh -b -p ${miniconda_loc}
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda create -yq -n builder conda-build conda-verify
@@ -93,7 +93,7 @@ jobs:
       env:
         CONDA_OS: ${{ matrix.conda-os }}
       run: |
-        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -O miniconda.sh
+        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
         bash miniconda.sh -b -p ${miniconda_loc}
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda create -yq -n builder conda-build conda-verify
@@ -103,7 +103,7 @@ jobs:
       run: |
         #Download the MacOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
         mkdir -p ${GITHUB_WORKSPACE}/10.9SDK
-        wget https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -O MacOSX10.9.sdk.tar.xz
+        curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -o MacOSX10.9.sdk.tar.xz
         if [[ $? -ne 0 ]]; then
             echo "MacOS 10.9 SDK download failed"
         fi
@@ -150,7 +150,7 @@ jobs:
       env:
         CONDA_OS: ${{ matrix.conda-os }}
       run: |
-        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -O miniconda.sh
+        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
         bash miniconda.sh -b -p ${miniconda_loc}
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda install conda-build
@@ -191,7 +191,7 @@ jobs:
 
     - name: Anaconda-Client Setup
       run: |
-        wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh
         bash miniconda.sh -b -p ${miniconda_loc}
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda install -yq anaconda-client
