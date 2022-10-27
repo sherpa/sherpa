@@ -40,6 +40,9 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
           
     steps:
+    - name: Install git
+      run: yum install -y -q git
+
     - name: Checkout Code
       uses: actions/checkout@v2
       with:
@@ -53,9 +56,6 @@ jobs:
         bash miniconda.sh -b -p ${miniconda_loc}
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda create -yq -n builder conda-build conda-verify
-
-    - name: Install git
-      run: yum install -y -q git
 
     - name: Build Sherpa
       env:
