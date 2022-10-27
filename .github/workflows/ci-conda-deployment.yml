@@ -35,7 +35,7 @@ jobs:
     container: ${{ matrix.container }}
     strategy:
       matrix:
-        container: [centos:centos7]
+        container: ["centos:centos7"]
         conda-os: ["Linux-x86_64"]
         python-version: ["3.8", "3.9", "3.10"]
           
@@ -81,7 +81,7 @@ jobs:
     runs-on: ${{ matrix.os-type }}
     strategy:
       matrix:
-        os-type: [macos-10.15]
+        os-type: ["macos-10.15"]
         conda-os: ["MacOSX-x86_64"]
         python-version: ["3.8", "3.9", "3.10"]
 
