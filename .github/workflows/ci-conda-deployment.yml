@@ -64,8 +64,6 @@ jobs:
       env:
         SHERPA_PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
-        #Seems like we have to cd here because we are in a container
-        cd ${{ github.workspace }}/sherpa
         export SHERPA_FULL_VERSION=$(git describe --tags --always)
         export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
         export SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
