@@ -843,12 +843,17 @@ def _install_test_deps():
             raise
 
     deps = ['pytest>=5.0,!=5.2.3']  # List of packages to be installed
-    pytest_plugins = []  # List of pytest plugins to be installed
+    pytest_plugins = ["pytest-xvfb"]  # List of pytest plugins to be installed
 
     # If the plugins are installed "now", pytest won't load them because they are not registered as python packages
     # by the time this code runs. So we need to keep track of the plugins and explicitly pass them to `pytest.main()`.
     # Note that explicitly passing plugins that were already registered would result in an error, hence this
     # complexity seems to be required.
+    #
+    # Is this still needed? A test with Python 3.10/pip 22.1.2
+    # and "pytest-xvfb" failed when "pytest_xvfb" was added to
+    # installed_plugins.
+    #
     installed_plugins = []
 
     for dep in deps:
@@ -863,7 +868,8 @@ def _install_test_deps():
             importlib.import_module(module)
         except ImportError:
             install(plugin_name)
-            installed_plugins.append(module)
+            # See comment above.
+            # installed_plugins.append(mod)
 
     return installed_plugins
 
