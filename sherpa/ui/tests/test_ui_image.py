@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -126,7 +126,6 @@ def test_load_arrays2d(session, shape):
         assert got.shape == pytest.approx(shape)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_data_image(session):
     from sherpa.image import DataImage
@@ -148,7 +147,6 @@ def test_get_data_image(session):
     assert y[2, 5] == pytest.approx(100.0)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_model_image(session):
     from sherpa.image import ModelImage
@@ -172,7 +170,6 @@ def test_get_model_image(session):
     assert y[3, 3] == pytest.approx(102.0)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_model_component_image(session):
     from sherpa.image import ComponentModelImage
@@ -199,7 +196,6 @@ def test_get_model_component_image(session):
     assert y[3, 3] == pytest.approx(100.0)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_model_component_image_with_convolution(session):
     """What happens if there's a convolution component in play?"""
@@ -235,7 +231,6 @@ def test_get_model_component_image_with_convolution(session):
     assert y[3, 3] == pytest.approx(42.25302)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_source_image(session):
     """Note that here there's no difference of source and model"""
@@ -260,7 +255,6 @@ def test_get_source_image(session):
     assert y[3, 3] == pytest.approx(102.0)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_source_component_image(session):
     """Note that here there's no difference of source and model"""
@@ -285,7 +279,6 @@ def test_get_source_component_image(session):
     assert y[3, 3] == pytest.approx(100.0)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_source_component_image_with_convolution(session):
     """There is a difference thanks to the PSF"""
@@ -314,7 +307,6 @@ def test_get_source_component_image_with_convolution(session):
     assert y[3, 3] == pytest.approx(100.0)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_resid_image(session):
     from sherpa.image import ResidImage
@@ -339,7 +331,6 @@ def test_get_resid_image(session):
     assert y[3, 3] == pytest.approx(-71.0983)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_ratio_image(session):
     from sherpa.image import RatioImage
@@ -364,7 +355,6 @@ def test_get_ratio_image(session):
     assert y[3, 3] == pytest.approx(0.302958)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_psf_image(session):
     from sherpa.image import PSFImage
@@ -389,7 +379,6 @@ def test_get_psf_image(session):
     assert obj.y == pytest.approx(y)
 
 
-@requires_ds9
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 def test_get_kernel_image(session):
     from sherpa.image import PSFKernelImage
