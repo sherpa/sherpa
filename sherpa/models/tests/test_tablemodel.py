@@ -169,7 +169,7 @@ def test_load_no_x_check_storage():
     mdl = TableModel()
     mdl.load(None, [1, 3, 7])
     y = mdl.get_y()
-    assert isinstance(y, list)  # Note: not ndarray
+    assert isinstance(y, np.ndarray)
 
 
 def test_load_x_y_sorted_check_storage():
@@ -207,8 +207,8 @@ def test_load_no_y():
     """
 
     mdl = TableModel()
-    with pytest.raises(IndexError,
-                       match="too many indices for array"):
+    with pytest.raises(ModelErr,
+                       match="^y must be set if x is set$"):
         mdl.load([12, 14, 17], None)
 
 
@@ -219,8 +219,8 @@ def test_load_x_longer_than_y():
     """
 
     mdl = TableModel()
-    with pytest.raises(IndexError,
-                       match="index 2 is out of bounds"):
+    with pytest.raises(ModelErr,
+                       match="^size mismatch between x and y: 3 vs 2$"):
         mdl.load([12, 14, 17], [3, 2])
 
 
@@ -231,9 +231,9 @@ def test_load_x_shorter_than_y():
     """
 
     mdl = TableModel()
-    mdl.load([12, 17, 14], [3, 2, 4, 5])
-    assert mdl.get_x() == pytest.approx([12, 14, 17])
-    assert mdl.get_y() == pytest.approx([3, 4, 2])
+    with pytest.raises(ModelErr,
+                       match="^size mismatch between x and y: 3 vs 4$"):
+        mdl.load([12, 17, 14], [3, 2, 4, 5])
 
 
 def test_load_y_not_1d():
@@ -245,8 +245,8 @@ def test_load_y_not_1d():
     x = np.arange(6) + 1
     y = np.arange(6).reshape(2, 3)
     mdl = TableModel()
-    with pytest.raises(IndexError,
-                       match="index 2 is out of bounds"):
+    with pytest.raises(ModelErr,
+                       match="Array must be 1D or None"):
         mdl.load(x, y)
 
 
@@ -273,7 +273,7 @@ def test_eval_x_y(x2, iflag):
     assert yout == pytest.approx(exp)
 
 
-@pytest.mark.parametrize("y", [pytest.param([4, 6, 2], marks=pytest.mark.xfail), np.asarray([4, 6, 2])])
+@pytest.mark.parametrize("y", [[4, 6, 2], np.asarray([4, 6, 2])])
 @pytest.mark.parametrize("x2,iflag",
                          [(None, False),
                           ([14, 16, 20], False),
@@ -298,7 +298,7 @@ def test_eval_no_x(y, x2, iflag):
     assert yout == pytest.approx([40, 60, 20])
 
 
-@pytest.mark.parametrize("y", [pytest.param([4, 6, 2, 8, 7], marks=pytest.mark.xfail), np.asarray([4, 6, 2, 8, 7])])
+@pytest.mark.parametrize("y", [[4, 6, 2, 8, 7], np.asarray([4, 6, 2, 8, 7])])
 @pytest.mark.parametrize("iflag", [False, True])
 def test_eval_filtered(y, iflag):
     """Check we can return something after load(None, y) and filtering the dataset.
@@ -319,7 +319,6 @@ def test_eval_filtered(y, iflag):
     assert yout == pytest.approx([60, 20, 70])
 
 
-@pytest.mark.xfail
 def test_eval_pick_up_changed_load():
     """Corner case: does __filtered_y get cleaned up?
 
@@ -329,7 +328,7 @@ def test_eval_pick_up_changed_load():
     """
 
     tm = TableModel()
-    tm.load(None, np.asarray([5, 7, 2, 8, 4]))
+    tm.load(None, [5, 7, 2, 8, 4])
     tm.ampl = 10
 
     d = Data1D('simple', [20, 30, 40, 50, 70], [1, 2, 3, 4, 5])
@@ -343,26 +342,16 @@ def test_eval_pick_up_changed_load():
 
     # Call load with a different y array
     #
-    tm.load(None, np.asarray([2, 3, 1, 4, 2]))
+    tm.load(None, [2, 3, 1, 4, 2])
 
-    # The way the code is written, if we send it a 5-element array we
-    # will get back the new data.
+    # The filter has been removed, so we can not call it with a
+    # filtered array.
     #
     assert tm([1, 2, 3, 4, 5]) == pytest.approx([20, 30, 10, 40, 20])
 
-    # In reality we'd expect the user to call fold again, which would
-    # pick up the change, but if you do not do so then we should check
-    # what the answer is.
-    #
-    # What is the correct answer here? Shouldn't we error out here
-    # because the model hasn't been updated with fold, so it shouldn't
-    # know about the filter - that is, shouldn't this fall over
-    # because the model should be evaluated on a 5-element array?
-    #
-    # This fails as it returns [70, 20, 80, 40], which is frmo the
-    # old data.
-    #
-    assert tm([1, 2, 3, 4]) == pytest.approx([30, 10, 40, 20])
+    with pytest.raises(ModelErr,
+                       match=r"^Mismatch between table model and data, \(5 vs 4\)$"):
+        tm([1, 2, 3, 4])
 
 
 @pytest.mark.parametrize("flag", [True, False])
@@ -396,14 +385,13 @@ def test_eval_pass_kwargs():
     """
 
     mdl = TableModel()
-    mdl.load(None, np.asarray([10, 12 , 2]))
+    mdl.load(None, [10, 12 , 2])
     mdl.ampl = 5
 
     y = mdl([1, 2, 3], arg1=True, not_a_kwarg={"answer": 23})
     assert y == pytest.approx([50, 60, 10])
 
 
-@pytest.mark.xfail
 def test_eval_checks_length():
     """Check we error out when the lengths are wrong: calc via model evaluation
 
@@ -414,14 +402,11 @@ def test_eval_checks_length():
 
     tm = TableModel('tbl')
 
-    # It is not clear what we want the error message to be
     with pytest.raises(ModelErr,
-                       match="Mismatch between table model and data"):
-        # This fails with an internal error
+                       match="^The tablemodel's load method must be called first$"):
         tm([1, 2, 3])
 
 
-@pytest.mark.xfail
 def test_fold_no_load_checks_length():
     """Check we error out when the lengths are wrong: fold.
 
@@ -431,7 +416,7 @@ def test_fold_no_load_checks_length():
 
     """
 
-    ytbl = np.asarray([5, 7, 3, 2])
+    ytbl = [5, 7, 3, 2]
     tm = TableModel('tbl')
 
     xdata = np.asarray([0, 10, 20, 25, 30, 40])
@@ -439,10 +424,8 @@ def test_fold_no_load_checks_length():
     d = Data1D('ex', xdata, ydata)
     d.ignore(xhi=7)
 
-    # It is not clear what we want the error message to be
     with pytest.raises(ModelErr,
-                       match="Mismatch between table model and data"):
-        # This fails with an internal error
+                       match="^The tablemodel's load method must be called first$"):
         tm.fold(d)
 
 
@@ -455,7 +438,7 @@ def test_fold_load_checks_length():
 
     """
 
-    ytbl = np.asarray([5, 7, 3, 2])
+    ytbl = [5, 7, 3, 2]
     tm = TableModel('tbl')
     tm.load(None, ytbl)
 
@@ -506,7 +489,6 @@ def test_cached_basic():
     assert mdl._cache_ctr["misses"] == 2
 
 
-@pytest.mark.xfail
 def test_cache_is_revoked():
     """Loading new data should clear the cache. Does it?
     """
@@ -535,7 +517,6 @@ def test_cache_is_revoked():
     assert mdl._cache_ctr["misses"] == 1
 
 
-@pytest.mark.xfail
 def test_cache_method():
     """Does changing the method cause the cache to change?
 
@@ -626,7 +607,7 @@ def test_pickle_y(tmp_path):
     """Can we save/restore a TableModel with just y and filtered?"""
 
     x = [0, 1, 2, 3, 5]
-    y = np.asarray([0, 4, -2, 13, 2])
+    y = [0, 4, -2, 13, 2]
     xtest = [1, 2, 3]
     ytest = [-5 * 4, -5 * -2, -5 * 13]
 
