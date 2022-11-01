@@ -1902,13 +1902,6 @@ class TableModel(ArithmeticModel):
         self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.ampl,))
 
-    def __setstate__(self, state):
-        self.__x = None
-        self.__y = state.pop('_y', None)
-        self.__filtered_y = state.pop('_filtered_y', None)
-        self.filename = state.pop('_file', None)
-        ArithmeticModel.__setstate__(self, state)
-
     def load(self, x, y):
         """Set the model values.
 
