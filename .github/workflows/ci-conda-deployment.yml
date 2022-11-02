@@ -133,7 +133,7 @@ jobs:
         export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
         export SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
         echo "Version: ${SHERPA_VERSION} Build Number: ${SHERPA_BUILD_NUMBER}"
-        if [ -z ${SHERPA_VERSION} ] || [ -z ${SHERPA_BUILDNUMBER} ] ; then
+        if [ -z ${SHERPA_VERSION} ] || [ -z ${SHERPA_BUILD_NUMBER} ] ; then
           echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set"
           exit 1
         fi
