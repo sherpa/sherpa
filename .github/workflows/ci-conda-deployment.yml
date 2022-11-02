@@ -45,8 +45,8 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
           
     steps:
-    - name: Install git
-      run: yum install -y -q git
+    - name: Install git and diff
+      run: yum install -y -q git diff
 
     - name: Conda Setup
       env:
@@ -120,11 +120,15 @@ jobs:
 
     - name: Checkout Code
       uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+        path: sherpa
 
     - name: Build Sherpa
       env:
         SHERPA_PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
+        cd sherpa
         export SHERPA_FULL_VERSION=$(git describe --tags --always)
         export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
         export SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
