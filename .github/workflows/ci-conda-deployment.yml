@@ -62,11 +62,13 @@ jobs:
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
+        path: sherpa
 
     - name: Build Sherpa
       env:
         SHERPA_PYTHON_VERSION: ${{ matrix.python-version }}
       run: |
+        cd sherpa
         export SHERPA_FULL_VERSION=$(git describe --tags --always)
         export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
         export SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
