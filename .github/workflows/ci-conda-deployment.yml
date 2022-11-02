@@ -116,7 +116,7 @@ jobs:
         if [[ $? -ne 0 ]]; then
             echo "MacOS 10.9 SDK download failed"
         fi
-        tar -C /opt -xf MacOSX10.9.sdk.tar.xz
+        sudo tar -C /opt -xf MacOSX10.9.sdk.tar.xz
 
     - name: Checkout Code
       uses: actions/checkout@v2
