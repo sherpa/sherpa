@@ -46,7 +46,7 @@ jobs:
           
     steps:
     - name: Install git and diff
-      run: yum install -y -q git diff
+      run: yum install -y -q git diffutils
 
     - name: Conda Setup
       env:
