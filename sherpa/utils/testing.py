@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020, 2021
+#  Copyright (C) 2017, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -182,8 +182,13 @@ if HAS_PYTEST:
         return requires_package("stk library required", 'stk')(test_function)
 
     def requires_ds9(test_function):
-        """Decorator for test functions requiring ds9"""
-        return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
+        """Decorator for test functions requiring ds9
+
+        This adds a ds9 mark as well, which can be used with the
+        --skipds9 command-line option to skip the test.
+        """
+        base = requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
+        return pytest.mark.ds9(base)
 
     def requires_xspec(test_function):
         return requires_package("xspec required", "sherpa.astro.xspec")(test_function)

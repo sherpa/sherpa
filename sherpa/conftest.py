@@ -83,17 +83,32 @@ def pytest_addoption(parser):
     parser.addoption("--runzenodo", action="store_true", default=False,
                      help="run tests that query Zenodo (requires internet)")
 
+    parser.addoption("--skipds9", action="store_false", default=True,
+                     help="skip DS9 tests if DS9 is installed")
+
 
 def pytest_collection_modifyitems(config, items):
 
     # Skip tests unless --runxxx given in cli
     #
     for label in ["slow", "zenodo"]:
-        opt = "--run{}".format(label)
+        opt = f"--run{label}"
         if config.getoption(opt):
             continue
 
-        skip = pytest.mark.skip(reason="need {} option to run".format(opt))
+        skip = pytest.mark.skip(reason=f"need {opt} option to run")
+        for item in items:
+            if label in item.keywords:
+                item.add_marker(skip)
+
+    # Skip tests if --skipxxx given in cli
+    #
+    for label in ["ds9"]:
+        opt = f"--skip{label}"
+        if config.getoption(opt):
+            continue
+
+        skip = pytest.mark.skip(reason=f"{opt} was set")
         for item in items:
             if label in item.keywords:
                 item.add_marker(skip)
@@ -312,6 +327,7 @@ def pytest_configure(config):
 
     config.addinivalue_line("markers", "slow: mark test as slow to run")
     config.addinivalue_line("markers", "zenodo: indicates requires internet access to Zenodo")
+    config.addinivalue_line("markers", "ds9: mark test as requiring DS9")
 
 
 @pytest.fixture(scope="session")

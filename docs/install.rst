@@ -392,8 +392,8 @@ section - can be found with::
   pytest sherpa --help
 
 and to pass an argument to the Sherpa test suite (there are currently
-three options, namely ``--test-data``, ``--runslow``, and
-``--runzenodo``)::
+four options, namely ``--test-data``, ``--runslow``, ``--runzenodo``,
+and ``--skipds9``)::
 
     pytest sherpa --runslow
 
@@ -414,6 +414,19 @@ which can be distracting, as it can cause loss of mouse focus (depending
 on how X-windows is set up). This can be avoided by installing the
 `X virtual-frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_
 and the ``pytest-xvfb`` package.
+
+The ``--skipds9`` option will skip the DS9 tests even if DS9 is
+installed.  This is useful because these tests can not be run in
+parallel, since the single DS9 instance can not handle multiple
+different connections.  If the ``pytest-xdist`` package has been
+installed with ``pip``
+
+::
+
+    pytest sherpa -n auto --skipds9
+
+will distribute the tests across the CPU cores on the machine while
+skipping the DS9 tests.
 
 Building the documentation
 --------------------------
