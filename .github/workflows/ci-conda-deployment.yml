@@ -22,7 +22,7 @@ env:
   sherpa_channel: Marie-Terrell
   sherpa_label: dev
   miniconda_loc: ${{ github.workspace }}/miniconda
-  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.9SDK/MacOSX10.9.sdk
+  CONDA_BUILD_SYSROOT: /opt/MacOSX10.9.sdk
 
 defaults:
   run:
@@ -111,12 +111,12 @@ jobs:
       if: ${{ matrix.conda-os == 'MacOSX-x86_64' }}
       run: |
         #Download the MacOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
-        mkdir -p ${GITHUB_WORKSPACE}/10.9SDK
+        mkdir -p /opt
         curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -o MacOSX10.9.sdk.tar.xz
         if [[ $? -ne 0 ]]; then
             echo "MacOS 10.9 SDK download failed"
         fi
-        tar -C ${GITHUB_WORKSPACE}/10.9SDK -xf MacOSX10.9.sdk.tar.xz
+        tar -C /opt -xf MacOSX10.9.sdk.tar.xz
 
     - name: Checkout Code
       uses: actions/checkout@v2
