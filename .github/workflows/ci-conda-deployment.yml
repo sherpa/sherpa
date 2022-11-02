@@ -165,6 +165,8 @@ jobs:
     steps:
     #Download all artifacts
     - uses: actions/download-artifact@v3
+      with:
+        path: packages
 
     - name: Conda Setup & Index Artifacts
       env:
@@ -208,6 +210,8 @@ jobs:
     steps:
     #Download all artifacts
     - uses: actions/download-artifact@v3
+      with:
+        path: packages
 
     - name: Anaconda-Client Setup
       run: |
