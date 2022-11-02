@@ -84,7 +84,7 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
-        path: ${GITHUB_WORKSPACE}/packages/
+        path: ${{ github.workspace }}/packages/
         if-no-files-found: error
         retention-days: 3
 
@@ -144,7 +144,7 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
-        path: ${GITHUB_WORKSPACE}/packages/
+        path: ${{ github.workspace }}/packages/
         if-no-files-found: error
         retention-days: 3
 
