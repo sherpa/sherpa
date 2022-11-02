@@ -40,7 +40,7 @@ jobs:
         - ${{ github.workspace }}:${{ github.workspace }}
     strategy:
       matrix:
-        image: ["centos:centos7"]
+        image: ["centos:centos8"]
         conda-os: ["Linux-x86_64"]
         python-version: ["3.8", "3.9", "3.10"]
           
