@@ -80,11 +80,11 @@ jobs:
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate builder
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
-        conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ../packages recipes/conda
+        conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
 
     - uses: actions/upload-artifact@v3
       with:
-        path: ../packages
+        path: ${GITHUB_WORKSPACE}/packages
         if-no-files-found: error
         retention-days: 3
 
@@ -140,11 +140,11 @@ jobs:
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda activate builder
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
-        conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ../packages recipes/conda
+        conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
 
     - uses: actions/upload-artifact@v3
       with:
-        path: ../packages
+        path: ${GITHUB_WORKSPACE}/packages
         if-no-files-found: error
         retention-days: 3
 
