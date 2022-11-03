@@ -84,7 +84,7 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
-        path: ${{ github.workspace }}/packages/
+        path: ${{ github.workspace }}/packages
         if-no-files-found: error
         retention-days: 3
 
@@ -144,7 +144,7 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
-        path: ${{ github.workspace }}/packages/
+        path: ${{ github.workspace }}/packages
         if-no-files-found: error
         retention-days: 3
 
@@ -176,6 +176,7 @@ jobs:
         bash miniconda.sh -b -p ${miniconda_loc}
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda install conda-build
+        echo "conda index packages"
         conda index packages
 
     - name: Run the tests
