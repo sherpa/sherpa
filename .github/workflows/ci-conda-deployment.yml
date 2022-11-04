@@ -171,6 +171,7 @@ jobs:
     steps:
     #Download all artifacts
     - uses: actions/download-artifact@v3
+      id: download
       with:
         name: ${{ matrix.os-dir }}
         path: packages/${{ matrix.os-dir }}
@@ -183,6 +184,8 @@ jobs:
         bash miniconda.sh -b -p ${miniconda_loc}
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda install conda-build
+        echo "Packages downloaded here: ${{steps.download.outputs.download-path}}"
+        ls packages/*/sherpa*bz2
         echo "conda index packages"
         conda index packages
 
