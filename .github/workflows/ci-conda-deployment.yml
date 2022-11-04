@@ -163,10 +163,10 @@ jobs:
             os: ubuntu-latest
             conda-os: "Linux-x86_64"
             os-dir: "linux-64"
-          - name: Latest MacOS Pre-Deploy Test
-            os: macos-latest
-            conda-os: "MacOSX-x86_64"
-            os-dir: "osx-64"
+#          - name: Latest MacOS Pre-Deploy Test
+#            os: macos-latest
+#            conda-os: "MacOSX-x86_64"
+#            os-dir: "osx-64"
 
     steps:
     #Download all artifacts
