@@ -179,6 +179,7 @@ jobs:
     - name: Conda Setup & Index Artifacts
       env:
         CONDA_OS: ${{ matrix.conda-os }}
+      working-directory: ${{ github.workspace }}
       run: |
         curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
         bash miniconda.sh -b -p ${miniconda_loc}
@@ -190,6 +191,7 @@ jobs:
         conda index packages
 
     - name: Run the tests
+      working-directory: ${{ github.workspace }}
       run: |
         source ${miniconda_loc}/etc/profile.d/conda.sh
         curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/main.zip 
@@ -232,6 +234,7 @@ jobs:
         conda install -yq anaconda-client
       
     - name: Deploy Sherpa
+      working-directory: ${{ github.workspace }}
       env:
         CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
       run: |
