@@ -42,6 +42,7 @@ jobs:
       matrix:
         image: ["redhat/ubi8"]
         conda-os: ["Linux-x86_64"]
+        os-dir: ["linux-64"]
         python-version: ["3.8", "3.9", "3.10"]
           
     steps:
@@ -84,6 +85,7 @@ jobs:
 
     - uses: actions/upload-artifact@v3
       with:
+        name: ${{ matrix.os-dir }}
         path: ${{ github.workspace }}/packages/*/sherpa*bz2
         if-no-files-found: error
         retention-days: 3
@@ -95,6 +97,7 @@ jobs:
 #      matrix:
 #        os-type: ["macos-10.15"]
 #        conda-os: ["MacOSX-x86_64"]
+#        os-dir: ["osx-64"]
 #        python-version: ["3.8", "3.9", "3.10"]
 #
 #    steps:
@@ -144,6 +147,7 @@ jobs:
 #
 #    - uses: actions/upload-artifact@v3
 #      with:
+#        name: ${{ matrix.os-dir }}
 #        path: ${{ github.workspace }}/packages/*/sherpa*bz2
 #        if-no-files-found: error
 #        retention-days: 3
@@ -158,15 +162,18 @@ jobs:
           - name: Latest Ubuntu Pre-Deploy Test
             os: ubuntu-latest
             conda-os: "Linux-x86_64"
+            os-dir: "linux-64"
           - name: Latest MacOS Pre-Deploy Test
             os: macos-latest
             conda-os: "MacOSX-x86_64"
+            os-dir: "osx-64"
 
     steps:
     #Download all artifacts
     - uses: actions/download-artifact@v3
       with:
-        path: packages
+        name: ${{ matrix.os-dir }}
+        path: packages/${{ matrix.os-dir }}
 
     - name: Conda Setup & Index Artifacts
       env:
