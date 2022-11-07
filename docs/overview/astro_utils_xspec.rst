@@ -13,3 +13,21 @@ The sherpa.astro.utils.xspec module
 
       create_xspec_code
       parse_xspec_model_description
+
+   .. rubric:: Classes
+
+   .. autosummary::
+      :toctree: api
+
+      XSPECcode
+      ModelDefinition
+      AddModelDefinition
+      MulModelDefinition
+      ConModelDefinition
+      MixModelDefinition
+      AcnModelDefinition
+      AmxModelDefinition
+      ParameterDefinition
+      BasicParameterDefinition
+      SwitchParameterDefinition
+      ScaleParameterDefinition

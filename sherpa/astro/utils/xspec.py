@@ -36,18 +36,30 @@ References
 
 """
 
-from collections import Counter, namedtuple
+from __future__ import annotations
+
+from typing import Callable, List, Optional, Sequence, TextIO, Tuple, Type, Union
+
+from collections import Counter
+from dataclasses import dataclass
+from os import PathLike
 import logging
 import string
 
 
-__all__ = ("parse_xspec_model_description", "create_xspec_code")
+__all__ = ("XSPECcode", "ModelDefinition", "AddModelDefinition",
+           "MulModelDefinition", "ConModelDefinition",
+           "MixModelDefinition", "AcnModelDefinition",
+           "AmxModelDefinition", "ParameterDefinition",
+           "BasicParameterDefinition", "SwitchParameterDefinition",
+           "ScaleParameterDefinition",
+           "parse_xspec_model_description", "create_xspec_code")
 
 
 warning = logging.getLogger(__name__).warning
 
 
-class ModelDefinition():
+class ModelDefinition:
     """Represent the model definition from an XSPEC model file.
 
     Parameters
@@ -74,7 +86,7 @@ class ModelDefinition():
     See Also
     --------
     AddModelDefinition, MulModelDefinition, ConModelDefinition,
-    MixModelDefintion, AcnModelDefinition, AmxModelDefinition
+    MixModelDefinition, AcnModelDefinition, AmxModelDefinition
 
     Notes
     -----
@@ -82,11 +94,13 @@ class ModelDefinition():
 
     """
 
-    modeltype = None
-    language = None
+    modeltype: str
+    """A label used to represent the type of the model."""
 
-    def __init__(self, name, clname, funcname, flags, elo, ehi, pars,
-                 initString=None):
+    def __init__(self, name: str, clname: str, funcname: str,
+                 flags: Sequence[int], elo: float, ehi: float,
+                 pars: Sequence[ParameterDefinition],
+                 initString: Optional[str] = None) -> None:
         assert self.modeltype is not None, \
             "ModelDefinition should not be directly created."
         self.name = name
@@ -123,17 +137,17 @@ class ModelDefinition():
 
         self.initString = initString
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.modeltype}:{self.name}:{self.funcname}:{len(self.pars)} pars>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         pars = "\n".join([str(p) for p in self.pars])
         return f"{self.modeltype}.{self.name} " +  \
             f"function={self.funcname}\n{self.language}\n{pars}"
 
 
 class AddModelDefinition(ModelDefinition):
-    """XSPEC additive models.
+    """XSPEC additive model.
 
     See [1]_ for examples.
 
@@ -147,7 +161,7 @@ class AddModelDefinition(ModelDefinition):
 
 
 class MulModelDefinition(ModelDefinition):
-    """XSPEC multiplicative models.
+    """XSPEC multiplicative model.
 
     See [1]_ for examples.
 
@@ -161,7 +175,7 @@ class MulModelDefinition(ModelDefinition):
 
 
 class ConModelDefinition(ModelDefinition):
-    """XSPEC convolution models.
+    """XSPEC convolution model.
 
     See [1]_ for examples.
 
@@ -175,7 +189,7 @@ class ConModelDefinition(ModelDefinition):
 
 
 class MixModelDefinition(ModelDefinition):
-    """XSPEC mixing models.
+    """XSPEC mixing model.
 
     See [1]_ for examples. These are currently unsupported in Sherpa.
 
@@ -189,7 +203,7 @@ class MixModelDefinition(ModelDefinition):
 
 
 class AcnModelDefinition(ModelDefinition):
-    """XSPEC Acn model: pile-up models.
+    """XSPEC Acn model: pile-up model.
 
     These are currently unsupported in Sherpa.
 
@@ -201,7 +215,7 @@ class AcnModelDefinition(ModelDefinition):
 # Found in looking through
 #   heasoft-6.16/Xspec/src/tools/initpackage/ModelMap.cxx
 class AmxModelDefinition(ModelDefinition):
-    """XSPEC Amx model: a combination of mixing and pile-up models.
+    """XSPEC Amx model: a combination of mixing and pile-up model.
 
     These are currently unsupported in Sherpa.
 
@@ -209,7 +223,7 @@ class AmxModelDefinition(ModelDefinition):
     modeltype = "Amx: apparently a combination of mixing and pile-up models"
 
 
-class ParameterDefinition():
+class ParameterDefinition:
     """Represent an XSPEC parameter.
 
     Parameters
@@ -218,18 +232,18 @@ class ParameterDefinition():
         The parameter name.
     default : float
         The default value
-    units : str or None, optinal
+    units : str or None, optional
         The unit field. There is no check this meets any standard.
     softmin, softmax, hardmin, hardmax : float or None
         The minimum and maximum values for the parameter (using the
         XSPEC definition of soft and hard, not Sherpa).
-    delta : floar or None, optional
+    delta : float or None, optional
         The delta parameter. At present this is only used to determine
         if the parameter is frozen by default (delta < 0).
 
     See Also
     --------
-    BasicParametertDefinition, SwitchParameterDefinition,
+    BasicParameterDefinition, SwitchParameterDefinition,
     ScaleParameterDefinition
 
     Notes
@@ -241,11 +255,16 @@ class ParameterDefinition():
 
     """
 
-    paramtype = None
+    paramtype: str
+    """A label used to represent the type of the parameter."""
 
-    def __init__(self, name, default, units=None,
-                 softmin=None, softmax=None,
-                 hardmin=None, hardmax=None, delta=None):
+    def __init__(self, name: str, default: float,
+                 units: Optional[str] = None,
+                 softmin: Optional[float] = None,
+                 softmax: Optional[float] = None,
+                 hardmin: Optional[float] = None,
+                 hardmax: Optional[float] = None,
+                 delta: Optional[float] = None) -> None:
         assert self.paramtype is not None, \
             'ParameterDefinition should not be directly created'
 
@@ -259,10 +278,12 @@ class ParameterDefinition():
         self.hardmax = hardmax
         self.delta = None if delta is None else abs(delta)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} = {self.default}"
 
-    def param_string(self):
+    def param_string(self) -> str:
+        """The code needed to create the parameter instance."""
+
         out = f"XSParameter(name, '{self.name}', {self.default}"
 
         for (pval, pname) in [(self.softmin, "min"),
@@ -283,7 +304,8 @@ class SwitchParameterDefinition(ParameterDefinition):
     """A "switch" parameter.
 
     These are for parameter values that change how the model evaluates
-    and are not changed during a fit.
+    and are not changed during a fit. These values are meant to be
+    integers but the XSPEC system treats them as floats.
 
     """
 
@@ -298,7 +320,7 @@ class ScaleParameterDefinition(ParameterDefinition):
 
     paramtype = "Scale"
 
-    def __str__(self):
+    def __str__(self) -> str:
         out = super().__str__()
         if self.units is not None:
             out += " units={}".format(self.units)
@@ -314,8 +336,9 @@ class BasicParameterDefinition(ParameterDefinition):
 
     paramtype = "Basic"
 
-    def __init__(self, name, default, units, softmin, softmax,
-                 hardmin, hardmax, delta):
+    def __init__(self, name: str, default: float,
+                 units: Optional[str], softmin: float, softmax: float,
+                 hardmin: float, hardmax: float, delta: float) -> None:
 
         self.name = name
 
@@ -347,7 +370,7 @@ class BasicParameterDefinition(ParameterDefinition):
             self.frozen = False
             self.delta = delta
 
-    def __str__(self):
+    def __str__(self) -> str:
         out = f"{self.name} = {self.default} ({self.softmin} to {self.softmax})"
         if self.units is not None:
             out += f" units={self.units}"
@@ -355,7 +378,7 @@ class BasicParameterDefinition(ParameterDefinition):
             out += " frozen"
         return out
 
-    def param_string(self):
+    def param_string(self) -> str:
 
         # We need to decide between
         #   XSParameter
@@ -381,7 +404,7 @@ class BasicParameterDefinition(ParameterDefinition):
         return out
 
 
-def read_model_definition(fh, namefunc):
+def read_model_definition(fh: TextIO, namefunc: Callable[[str], str]) -> Optional[ModelDefinition]:
     """Parse the next model definition.
 
     The code attempts to handle the wide variety of model definitions
@@ -445,7 +468,7 @@ def read_model_definition(fh, namefunc):
 
     flags = [int(t) for t in toks[6:]]
 
-    pars = []
+    pars: List[ParameterDefinition] = []
     while len(pars) < npars:
         pline = fh.readline().strip()
 
@@ -460,7 +483,7 @@ def read_model_definition(fh, namefunc):
     if modeltype == "add":
         nstr = 'norm " " 1.0 0.0 0.0 1.0e24 1.0e24 0.1'
         pars.append(process_parameter_definition(nstr, model=name))
-        factory = AddModelDefinition
+        factory = AddModelDefinition  # type: Type[ModelDefinition]
 
     elif modeltype == "mul":
         factory = MulModelDefinition
@@ -496,7 +519,10 @@ def read_model_definition(fh, namefunc):
                    initString=initString)
 
 
-def mpop(array, defval=None):
+# We could try to be general with the typing, but we know that we are
+# using pop/mpop on string inputs only here.
+#
+def mpop(array: List[str], defval: Optional[float]=None) -> Optional[float]:
     """Pop first element from array (converting to float),
     returning defval if empty.
     """
@@ -507,7 +533,7 @@ def mpop(array, defval=None):
         return defval
 
 
-def pop(array):
+def pop(array: List[str]) -> float:
     """Pop first element from array (converting to float).
 
     Raises
@@ -519,7 +545,7 @@ def pop(array):
     return float(array.pop(0))
 
 
-def process_parameter_definition(pline, model):
+def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
     """Process a parameter description.
 
     Parameters
@@ -579,6 +605,16 @@ def process_parameter_definition(pline, model):
     if name in ["break", "lambda", "type"]:
         name += "_"
 
+    # Please the type checker
+    default: Optional[float] = None
+    hardmin: Optional[float] = None
+    softmin: Optional[float] = None
+    softmax: Optional[float] = None
+    hardmax: Optional[float] = None
+    delta: Optional[float] = None
+
+    units: Optional[str] = None
+
     if orig_parname.startswith('$'):
         # switch parameter
         # the XSPEC documentation say that switches only have 2
@@ -588,6 +624,10 @@ def process_parameter_definition(pline, model):
         # $switch    1     0       0     1      1       -1
         # $method   " "   1       1       1       3       3     -0.01
         # $model    " "     0
+        #
+        # It would be nice to treat the value and default as integers,
+        # the rest of XSPEC treats them as floats, so what is the best
+        # way to handle it?
         #
         ntoks = len(toks)
         if ntoks == 1:
@@ -630,7 +670,6 @@ def process_parameter_definition(pline, model):
 
         raise NotImplementedError("(switch) model={} pline=\n{}".format(model, pline))
 
-    # Handle units
     val = toks.pop(0)
     if val.startswith('"'):
         units = val[1:]
@@ -639,7 +678,7 @@ def process_parameter_definition(pline, model):
 
         else:
             flag = True
-            units = [units]
+            units_list = [units]
             while flag:
                 try:
                     val = toks.pop(0)
@@ -650,9 +689,9 @@ def process_parameter_definition(pline, model):
                     val = val[:-1]
                     flag = False
 
-                units.append(val)
+                units_list.append(val)
 
-            units = ' '.join(units).strip()
+            units = ' '.join(units_list).strip()
 
     else:
         units = val
@@ -689,12 +728,13 @@ def process_parameter_definition(pline, model):
                                     hardmin, hardmax, delta)
 
 
-def add_xs_prefix(inval):
+def add_xs_prefix(inval: str) -> str:
     """Returns XS prepended to inval"""
     return f"XS{inval}"
 
 
-def parse_xspec_model_description(modelfile, namefunc=add_xs_prefix):
+def parse_xspec_model_description(modelfile,  # typing modelfile is awkward so we do not
+                                  namefunc: Callable[[str], str]=add_xs_prefix) -> List[ModelDefinition]:
     """Given an XSPEC model file - e.g. the lmodel.dat file -
     return information about the models it contains.
 
@@ -703,7 +743,7 @@ def parse_xspec_model_description(modelfile, namefunc=add_xs_prefix):
     modelfile : str or os.PathLike or file-like
         The name of the model file (often called model.dat or
         lmodel.dat) or a file-like object containing the file
-    namefunc : callable or None, optional
+    namefunc : callable, optional
         The routine used to convert an XSPEC model name, such as
         "apec", into the Sherpa class name. The default function
         prepends 'XS' to the name.
@@ -757,15 +797,13 @@ def parse_xspec_model_description(modelfile, namefunc=add_xs_prefix):
     #
     if hasattr(modelfile, 'read'):
         with modelfile as fh:
-            out = process_fh(fh)
-    else:
-        with open(modelfile, "r") as fh:
-            out = process_fh(fh)
+            return process_fh(fh)
 
-    return out
+    with open(modelfile, "r") as fh:
+        return process_fh(fh)
 
 
-def simple_wrap(modelname, mdl):
+def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     """Create the Python class wrapping this model.
 
     This creates the "starting point" for the user (it can be used
@@ -832,7 +870,11 @@ def simple_wrap(modelname, mdl):
     return out
 
 
-def additive_wrap(mdl):
+# It would be good to mark the xxx_wrap routines as accepting just the
+# correct model definition class, but it doesn't seem worth it to get
+# the typing to work.
+#
+def additive_wrap(mdl: ModelDefinition) -> str:
     """Return a string representing the Python code used to wrap
     up access to an Additive user model.
     """
@@ -840,7 +882,7 @@ def additive_wrap(mdl):
     return simple_wrap('AdditiveModel', mdl)
 
 
-def multiplicative_wrap(mdl):
+def multiplicative_wrap(mdl: ModelDefinition) -> str:
     """Return a string representing the Python code used to wrap
     up access to an Multiplicative user model.
     """
@@ -848,7 +890,7 @@ def multiplicative_wrap(mdl):
     return simple_wrap('MultiplicativeModel', mdl)
 
 
-def convolution_wrap(mdl):
+def convolution_wrap(mdl: ModelDefinition) -> str:
     """Return a string representing the Python code used to wrap
     up access to a Convolution user model.
     """
@@ -856,7 +898,7 @@ def convolution_wrap(mdl):
     return simple_wrap('ConvolutionKernel', mdl)
 
 
-def model_to_python(mdl):
+def model_to_python(mdl: ModelDefinition) -> str:
     """Return a string representing the Python code used to wrap
     up access to the given user model.
 
@@ -889,7 +931,7 @@ def model_to_python(mdl):
         raise ValueError("No wrapper for model={} type={}".format(mdl.name, mdl.modeltype))
 
 
-def model_to_compiled(mdl):
+def model_to_compiled(mdl: ModelDefinition) -> Tuple[str, str, str]:
     """Return a string representing the C++ code needed to build the module.
 
     Parameters
@@ -992,7 +1034,7 @@ def model_to_compiled(mdl):
     return wrapcode, defcode, ocode
 
 
-def models_to_compiled(mdls):
+def models_to_compiled(mdls: Sequence[ModelDefinition]) -> str:
     """Return the C++ code needed to build the module.
 
     Parameters
@@ -1011,22 +1053,23 @@ def models_to_compiled(mdls):
 
     """
 
-    defcode = []
-    wrapcode = []
-    ocode = []
+    defcode_list = []
+    wrapcode_list = []
+    ocode_list = []
     for mdl in mdls:
         w, d, o = model_to_compiled(mdl)
 
-        wrapcode.append(w)
+        wrapcode_list.append(w)
         if d != '':
-            defcode.append(d)
+            defcode_list.append(d)
 
-        if o != '' and o not in ocode:
-            ocode.append(o)
+        # we do not want to redefine the wrapper code
+        if o != '' and o not in ocode_list:
+            ocode_list.append(o)
 
-    defcode = '\n'.join(defcode)
-    wrapcode = '\n'.join(wrapcode)
-    ocode = '\n'.join(ocode)
+    defcode = '\n'.join(defcode_list)
+    wrapcode = '\n'.join(wrapcode_list)
+    ocode = '\n'.join(ocode_list)
     if ocode != '':
         ocode += '\n'
 
@@ -1040,7 +1083,22 @@ def models_to_compiled(mdls):
     return out
 
 
-def create_xspec_code(models):
+@dataclass
+class XSPECcode:
+    """Represent the code needed to build XSPEC user models.
+
+    These fragments are meant for use with external tooling to create
+    the necessary code to support the XSPEC user models.
+
+    """
+
+    python: str
+    """The Python code fragment."""
+    compiled: str
+    """The C++ code fragment."""
+
+
+def create_xspec_code(models: Sequence[ModelDefinition]) -> XSPECcode:
     """Create the Python classes and C++ code for the models.
 
     Create the code fragments needed to build the XSPEC interface
@@ -1052,9 +1110,8 @@ def create_xspec_code(models):
 
     Returns
     -------
-    code : namedtuple
-        The code stored in a namedtuple with fields 'python' and
-        'compiled'.
+    code : XSPECcode instance
+        The code is stored in the fields 'python' and 'compiled'.
 
     Notes
     -----
@@ -1116,15 +1173,14 @@ def create_xspec_code(models):
     if nmdl == 0:
         raise ValueError("No supported models were found!")
 
-    out = namedtuple('XSPECcode', ['python', 'compiled'])
-
-    out.python = "\n\n".join([model_to_python(mdl) for mdl in mdls])
+    python_code = "\n\n".join([model_to_python(mdl) for mdl in mdls])
 
     # Do we need to import the warnings module? It breaks Python
     # best-practices to put it here, but it should at least work.
     #
     if requires_warnings:
-        out.python = "import warnings\n" + out.python
+        python_code = "import warnings\n" + python_code
 
-    out.compiled = models_to_compiled(mdls)
-    return out
+    compiled_code = models_to_compiled(mdls)
+
+    return XSPECcode(python=python_code, compiled=compiled_code)
