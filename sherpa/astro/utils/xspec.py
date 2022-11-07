@@ -1041,6 +1041,7 @@ def create_xspec_code(models):
     #
     mdls = []
     langs = set()
+    requires_warnings = False
     for mdl in models:
         if mdl.modeltype in ['Mix', 'Acn']:
             warning(f"Skipping {mdl.name} as model type = {mdl.modeltype}")
@@ -1057,9 +1058,11 @@ def create_xspec_code(models):
         if nflags > 0:
             if mdl.flags[0] == 1:
                 warning(f"{mdl.name} calculates model variances; this is untested/unsupported in Sherpa")
+                requires_warnings = True
 
             if nflags > 1 and mdl.flags[1] == 1:
                 warning(f"{mdl.name} needs to be re-calculated per spectrum; this is untested.")
+                requires_warnings = True
 
         langs.add(mdl.language)
         mdls.append(mdl)
@@ -1071,5 +1074,12 @@ def create_xspec_code(models):
     out = namedtuple('XSPECcode', ['python', 'compiled'])
 
     out.python = "\n\n".join([model_to_python(mdl) for mdl in mdls])
+
+    # Do we need to import the warnings module? It breaks Python
+    # best-practices to put it here, but it should at least work.
+    #
+    if requires_warnings:
+        out.python = "import warnings\n" + out.python
+
     out.compiled = models_to_compiled(mdls)
     return out
