@@ -43,8 +43,7 @@ jobs:
         image: ["redhat/ubi8"]
         conda-os: ["Linux-x86_64"]
         os-dir: ["linux-64"]
-        python-version: ["3.8"]
-        #python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
           
     steps:
     - name: Install git and diff
