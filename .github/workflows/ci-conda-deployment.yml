@@ -175,7 +175,7 @@ jobs:
       id: download
       with:
         name: ${{ matrix.os-dir }}
-        path: packages/${{ matrix.os-dir }}
+        path: packages
 
     - name: Conda Setup & Index Artifacts
       env:
