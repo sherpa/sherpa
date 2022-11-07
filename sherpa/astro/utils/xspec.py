@@ -58,7 +58,8 @@ class ModelDefinition():
        The class name used to represent this model in Sherpa.
     funcname : str
        The name of the function from the model file (so it should
-       include any prefix like C_).
+       include any prefix like C_, and the case given in the model
+       file, as these will be processed during initialisation).
     flags : sequence of int
        The flags value.
     elo : float
@@ -101,9 +102,12 @@ class ModelDefinition():
         #
         # The use of strings for the language is not ideal; really
         # should use some form of an enumeration.
+        #
+        # Note that we use lower-case for Fortran model names.
+        #
         if self.funcname.startswith('F_'):
             self.language = 'Fortran - double precision'
-            self.funcname = self.funcname[2:]
+            self.funcname = self.funcname[2:].lower()
         elif self.funcname.startswith('c_'):
             self.language = 'C style'
             self.funcname = self.funcname[2:]
@@ -112,6 +116,7 @@ class ModelDefinition():
             self.funcname = self.funcname[2:]
         else:
             self.language = 'Fortran - single precision'
+            self.funcname = self.funcname.lower()
 
         if initString is not None and self.language.startswith('F'):
             initString = None
