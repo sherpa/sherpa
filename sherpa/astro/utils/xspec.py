@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2013, 2014, 2015, 2016, 2020, 2021
+#  Copyright (C) 2012, 2013, 2014, 2015, 2016, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -819,7 +819,7 @@ def simple_wrap(modelname, mdl):
             out += "(variances are calculated by the model) is untested.')\n"
 
         if nflags > 1 and mdl.flags[1] == 1:
-            out += "{t2}warnings.warn('support for models like {mdl.clname.lower()} "
+            out += f"{t2}warnings.warn('support for models like {mdl.clname.lower()} "
             out += "(recalculated per spectrum) is untested.')\n"
 
     out += f"{t2}XS{modelname}.__init__(self, name, {pstr})\n"
