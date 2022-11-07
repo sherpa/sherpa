@@ -14,7 +14,7 @@ on:
 #Reduces GH Action duplication:
 # Cancels the previous pipeline for this ref it is still running
 concurrency: 
-  group: ${{ github.ref }}
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 #Temporarily upload this to my channel for testing
@@ -222,7 +222,7 @@ jobs:
     runs-on: ubuntu-latest
     #Do NOT auto cancel the GH Action run during the deploy stage
     concurrency:
-      group: ${{ github.ref }}
+      group: ${{ github.workflow }}-${{ github.ref }}-deploy
       cancel-in-progress: false
 
     steps:
