@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -356,7 +357,11 @@ kT      keV     1.    0.008   0.008   64.0      64.0      .01
     assert "        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)" in python
     assert '        XSAdditiveModel.__init__(self, name, (self.kT,self.norm))' in python
 
-    assert converted.compiled.find('\nextern "C" {\n\n}\n') > -1
+    assert 'extern "C" {' in compiled
+    assert "  xsCCall apec;" in compiled
+    assert "  void C_apec(const double* energy, int nFlux, " in converted.compiled
+    assert "{\n    cppModelWrapper(energy, nFlux, " in converted.compiled
+    assert ", initStr, 1, apec);\n" in converted.compiled
     assert '  XSPECMODELFCT_C_NORM(C_apec, 2),' in compiled
 
 
@@ -382,7 +387,7 @@ nH      cm^-3   1.0   1.e-6  1.e-5  1.e19  1.e20   -0.01
     assert "        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')" in python
     assert '        XSMultiplicativeModel.__init__(self, name, (self.nH,))' in python
 
-    assert '  void foos_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);' in compiled
+    assert '  xsf77Call foos_;' in compiled
     assert '  XSPECMODELFCT(foos, 1),' in compiled
 
 
@@ -408,7 +413,7 @@ order    " "  -1.   -3.    -3.      -1.       -1.       -1
     assert "        self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)" in python
     assert '        XSConvolutionKernel.__init__(self, name, (self.order,))' in python
 
-    assert '  void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);' in compiled
+    assert '  xsf77Call rgsxsrc_;' in compiled
     assert '  XSPECMODELFCT_CON_F77(rgsxsrc, 1),' in compiled
 
 

@@ -898,9 +898,10 @@ def model_to_compiled(mdl):
 
     Returns
     -------
-    wrapcode, defcode : tuple of str, str
-        The code needed to build the Python wrapper and any
-        definition code needed (the latter can be the empty string).
+    wrapcode, defcode, precode : tuple of str, str, str
+        The code needed to build the Python wrapper, any definition
+        code needed in the extern C block, and any code defined before
+        this (the latter two can be the empty string).
 
     Raises
     ------
@@ -941,23 +942,54 @@ def model_to_compiled(mdl):
 
     wrapcode += f'({funcname}, {len(mdl.pars)}),'
 
-    # Do we need to define this model? We assume we can use the same logic
-    # as for the XSPEC model library - we only need to define FORTRAN
-    # code.
+    # Do we need to define this model? It looks like it may be beneficial
+    # to label all models, not just FORTRAN.
     #
-    # Do we need to include C style?
+    # Actually, for C++ models it's a bit complicated as we need to
+    # create the C to C++ interface (as we don't bind to the C++
+    # version directly).
     #
     defcode = ''
+    wrapper = None
+    suffix = ""
     if is_fortran:
-        defcode = f'  void {mdl.funcname}'
         if mdl.language == 'Fortran - single precision':
-            # Note add _ (assume this is needed)
-            defcode += '_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);'
+            wrapper = "f77"
         elif mdl.language == 'Fortran - double precision':
-            # Note add _ (assume this is needed)
-            defcode += '_(double* ear, int* ne, double* param, int* ifl, double* photar, double* photer);'
+            wrapper = "F77"
 
-    return wrapcode, defcode
+        suffix = "_"
+
+    elif mdl.language == "C style":
+        wrapper = "cc"
+
+    if wrapper is not None:
+        defcode = f'  xs{wrapper}Call {mdl.funcname}{suffix};'
+
+    ocode = ''
+
+    # Special case the C++ conversion code
+    #
+    if mdl.language == "C++ style":
+        assert defcode == "", f"defcode={defcode}"
+
+        # I think we have to do the "remove 1 for additive models" case.
+        npars = len(mdl.pars)
+        if mdl.modeltype == "Add":
+            npars -= 1
+
+        defcode = f"""  xsCCall {mdl.funcname};
+  void C_{mdl.funcname}(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {{
+    cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, {npars}, {mdl.funcname});
+  }}
+"""
+
+        ocode = """void cppModelWrapper(const double* energy, int nFlux, const double* params,
+  int spectrumNumber, double* flux, double* fluxError, const char* initStr, int nPar,
+  void (*cppFunc)(const RealArray&, const RealArray&, int, RealArray&, RealArray&, const string&));
+"""
+
+    return wrapcode, defcode, ocode
 
 
 def models_to_compiled(mdls):
@@ -981,17 +1013,25 @@ def models_to_compiled(mdls):
 
     defcode = []
     wrapcode = []
+    ocode = []
     for mdl in mdls:
-        w, d = model_to_compiled(mdl)
+        w, d, o = model_to_compiled(mdl)
 
         wrapcode.append(w)
         if d != '':
             defcode.append(d)
 
+        if o != '' and o not in ocode:
+            ocode.append(o)
+
     defcode = '\n'.join(defcode)
     wrapcode = '\n'.join(wrapcode)
+    ocode = '\n'.join(ocode)
+    if ocode != '':
+        ocode += '\n'
 
     out = '// Defines\n\n'
+    out += ocode;
     out += 'extern "C" {\n'
     out += f'{defcode}\n}}\n\n// Wrapper\n\n'
     out += 'static PyMethodDef Wrappers[] = {\n'
