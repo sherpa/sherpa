@@ -996,7 +996,7 @@ def models_to_compiled(mdls):
     out += f'{defcode}\n}}\n\n// Wrapper\n\n'
     out += 'static PyMethodDef Wrappers[] = {\n'
     out += f'{wrapcode}'
-    out += '\n  { NULL, NULL, 0, NULL }\n}\n'
+    out += '\n  { NULL, NULL, 0, NULL }\n};\n'
     return out
 
 
