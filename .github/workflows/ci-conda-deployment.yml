@@ -95,7 +95,7 @@ jobs:
     runs-on: ${{ matrix.os-type }}
     strategy:
       matrix:
-        os-type: ["macos-10.11"]
+        os-type: ["macos-11"]
         conda-os: ["MacOSX-x86_64"]
         os-dir: ["osx-64"]
         python-version: ["3.8", "3.9", "3.10"]
