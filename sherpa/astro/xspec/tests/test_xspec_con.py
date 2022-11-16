@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021
+#  Copyright (C) 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -43,6 +43,7 @@ from sherpa.astro import ui
 # as well as the number of thawed and frozen parameters.
 #
 XSPEC_CON_MODELS = [('cflux', 1, 2),
+                    ('cglumin', 1, 3),
                     ('clumin', 1, 3),
                     ('cpflux', 1, 2),
                     ('gsmooth', 1, 1),

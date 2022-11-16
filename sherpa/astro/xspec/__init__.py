@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,9 +20,9 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.12.1 and 12.12.0 of XSPEC [1]_, and can be
-built against the model library or the full application.  There is no
-guarantee of support for older or newer versions of XSPEC.
+Sherpa supports versions 12.13.0, 12.12.1, and 12.12.0 of XSPEC [1]_,
+and can be built against the model library or the full application.
+There is no guarantee of support for older or newer versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -30,7 +30,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.12.1'
+   '12.13.0'
 
 Initializing XSPEC
 ------------------
@@ -107,7 +107,7 @@ from sherpa.astro.utils import get_xspec_position
 # Note that utils also imports _xspec so it will error out if it is
 # not available.
 #
-from .utils import ModelMeta
+from .utils import ModelMeta, version_at_least
 from . import _xspec
 
 
@@ -12354,7 +12354,7 @@ class XScflux(XSConvolutionKernel):
 
     See Also
     --------
-    XSclumin, XScpflux
+    XScglumin, XSclumin, XScpflux
 
     Notes
     -----
@@ -12431,7 +12431,7 @@ class XSclumin(XSConvolutionKernel):
 
     See Also
     --------
-    XScflux, XScpflux
+    XScflux, XScglumin, XScpflux
 
     Notes
     -----
@@ -12487,6 +12487,86 @@ class XSclumin(XSConvolutionKernel):
                                                   ))
 
 
+@version_at_least("12.13.0")
+class XScglumin(XSConvolutionKernel):
+    """The XSPEC cglumin convolution model: calculate luminosity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.15.1
+
+    Attributes
+    ----------
+    Emin
+        Minimum energy over which the luminosity is calculated.
+    Emax
+        Maximum energy over which the luminosity is calculated.
+    Distance
+        Distance to the source in kpc.
+    lg10Lum
+        log (base 10) of the luminosity in erg/s
+
+    See Also
+    --------
+    XScflux, XSclumin, XScpflux
+
+    Notes
+    -----
+    Unlike XSPEC, the convolution model is applied directly to the model, or
+    models, rather than using the multiplication symbol.
+
+    See [1]_ for the meaning and restrictions, in particular the
+    necessity of freezing the amplitude, or normalization, of the
+    emission component (or components) at 1.
+
+    This model is only available when used with XSPEC 12.13.0 or later.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCglumin.html
+
+    Examples
+    --------
+
+    With the following definitions:
+
+    >>> cglumin = XScglumin()
+    >>> absmdl = XSphabs()
+    >>> plmdl = XSpowerlaw()
+    >>> gmdl = XSgaussian()
+    >>> srcmdl = plmdl + gmdl
+
+    then the model can be applied in a number of ways, such as:
+
+    >>> mdl1 = cglumin(absmdl * srcmdl)
+    >>> mdl2 = absmdl * cglumin(srcmdl)
+    >>> mdl3 = absmdl * (plmdl + cglumin(gmdl))
+
+    """
+
+    __function__ = "C_cglumin"
+
+    def __init__(self, name='xscglumin'):
+        self.Emin = XSParameter(name, 'Emin', 0.5, min=0.0, max=1e6,
+                                hard_min=0.0, hard_max=1e6, frozen=True,
+                                units='keV')
+        self.Emax = XSParameter(name, 'Emax', 10.0, min=0.0, max=1e6,
+                                hard_min=0.0, hard_max=1e6, frozen=True,
+                                units='keV')
+        self.Distance = XSParameter(name, 'Distance', 10, min=0, max=1e4,
+                                    hard_min=0, hard_max=1e6, frozen=True,
+                                    units="kpc")
+        self.lg10Lum = XSParameter(name, 'lg10Lum', 40.0, min=-100.0,
+                                   max=100.0, hard_min=-100.0, hard_max=100.0,
+                                   frozen=False, units='cgs')
+        XSConvolutionKernel.__init__(self, name, (self.Emin,
+                                                  self.Emax,
+                                                  self.Distance,
+                                                  self.lg10Lum
+                                                  ))
+
+
 class XScpflux(XSConvolutionKernel):
     """The XSPEC cpflux convolution model: calculate photon flux
 
@@ -12505,7 +12585,7 @@ class XScpflux(XSConvolutionKernel):
 
     See Also
     --------
-    XScflux, XSclumin
+    XScflux, XScglumin, XSclumin
 
     Notes
     -----

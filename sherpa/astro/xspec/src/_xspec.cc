@@ -961,6 +961,9 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_xscatmodel, 4),
 
   XSPECMODELFCT_CON(C_clumin, 4),
+#ifdef XSPEC_12_13_0
+  XSPECMODELFCT_CON(C_cglumin, 4),
+#endif
   XSPECMODELFCT_CON(C_rfxconv, 5),
   XSPECMODELFCT_CON(C_vashift, 1),
   XSPECMODELFCT_CON(C_vmshift, 1),
