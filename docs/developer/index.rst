@@ -346,7 +346,11 @@ XSPEC 12.12.0 (released in HEASOFT 6.29) support was added::
    There can be other output due to parameter-value changes
    which are also important to review but this is just focussing
    on the list of models that could be added to
-   :py:mod:`sherpa.astro.xspec`
+   :py:mod:`sherpa.astro.xspec`.
+
+   The screen output may differ slightly from that shown above, such
+   as including the interface used by the model (e.g. C, C++,
+   FORTRAN).
 
 The code needed to add support for the wdem module can be found with::
 
