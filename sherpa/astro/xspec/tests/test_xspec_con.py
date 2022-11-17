@@ -67,32 +67,59 @@ XSPEC_CON_MODELS = [('cflux', 1, 2),
 
 
 @requires_xspec
-def test_count_xspec_convolution_models():
-    """Do we have all the models we expect"""
+@pytest.mark.parametrize("name,nfree,nfrozen", XSPEC_CON_MODELS)
+def test_count_xspec_convolution_models(name, nfree, nfrozen):
+    """Does the model exist and have the expected number of parameters?
+
+    This does not check that XSPEC_CON_MODELS contains all the
+    convolution models in sherpa.astro.xspec. That is done
+    by test_check_no_extra_xspec_convolution_models.
+
+    """
 
     from sherpa.astro import xspec
 
-    for n, _, _ in XSPEC_CON_MODELS:
-        clsname = 'XS{}'.format(n)
-        try:
-            cls = getattr(xspec, clsname)
-        except AttributeError:
-            assert False, 'missing convolution model {}'.format(clsname)
+    # Does the class exist?
+    #
+    clsname = 'XS{}'.format(name)
+    cls = getattr(xspec, clsname)
 
-        mdl = cls()
-        assert issubclass(cls, xspec.XSConvolutionKernel), mdl
+    # Is it a convolution kernel?
+    #
+    mdl = cls()
+    assert issubclass(cls, xspec.XSConvolutionKernel), mdl
+
+    # Does it have the right number of parameters?
+    #
+    npars = len(mdl.pars)
+    nfrozen_got = len([p for p in mdl.pars if p.frozen])
+    assert nfrozen_got == nfrozen
+    assert (npars - nfrozen_got) == nfree
 
 
 @requires_xspec
 def test_check_no_extra_xspec_convolution_models():
     """Are we missing any?
 
-    This is for the test suite (check we know about everything)
-    rather than catching any errors in the code.
+    This is just to catch new models, letting us know we need to
+    update XSPEC_CON_MODELS.
+
     """
 
     from sherpa.astro import xspec
 
+    # What are the names we expect?
+    #
+    expected = set([f"XS{n[0]}" for n in XSPEC_CON_MODELS])
+
+    # This is just an internal check that XSPEC_CON_MODELS doesn't
+    # have a repeated argument.
+    #
+    assert len(expected) == len(XSPEC_CON_MODELS)
+
+    # The only one we need to have here is XSConvolutionKernel, but we
+    # know there are some we can exclude, so why not do so.
+    #
     exclude = ['XSModel', 'XSAdditiveModel', 'XSMultiplicativeModel',
                'XSConvolutionModel', 'XSConvolutionKernel',
                'XSBaseParameter', 'XSParameter']
@@ -100,20 +127,11 @@ def test_check_no_extra_xspec_convolution_models():
     names = [(n, getattr(xspec, n))
              for n in dir(xspec)
              if n.startswith('XS') and n not in exclude]
-
-    classes = set([])
     for name, cls in names:
-        try:
-            mdl = cls()
-        except TypeError:
-            pass
+        if not issubclass(cls, xspec.XSConvolutionKernel):
+            continue
 
-        if isinstance(mdl, xspec.XSConvolutionKernel):
-            npars = len(mdl.pars)
-            nfrozen = len([p for p in mdl.pars if p.frozen])
-            classes.add((name[2:], npars - nfrozen, nfrozen))
-
-    assert classes == set(XSPEC_CON_MODELS)
+        assert name in expected
 
 
 def setup_data(elo=0.1, ehi=10.0, ebin=0.01):
