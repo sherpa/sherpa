@@ -1913,9 +1913,14 @@ must be an integer.""")
 
         A group is indicated by a sequence of flag values starting
         with ``1`` and then ``-1`` for all the channels in the group,
-        following [OGIP_92_007]_.  The grouping array must match the number of
-        channels and it will be converted to an integer type if
-        necessary.
+        following [OGIP_92_007]_.  The grouping array must match the
+        number of channels and it will be converted to an integer type
+        if necessary.
+
+        .. versionchanged:: 4.15.1
+           The filter is now re-calculated when the grouping is
+           changed. It is suggested that the filter be checked with
+           `get_filter` to check it is still sensible.
 
         Returns
         -------
@@ -1939,7 +1944,30 @@ must be an integer.""")
             except TypeError:
                 raise DataErr("notanintarray") from None
 
+        # If this is called within __init__ then we do not want to
+        # recreate the filter expression. If the mask is either True
+        # or False then we do not want to recreate filter (as a mask
+        # of True will get converted to [True] * nbins which then
+        # breaks downstream processing, as it looks like notice/ignore
+        # has already been called).
+        #
+        ofilter = None
+        if self._NoNewAttributesAfterInit__initialized and numpy.iterable(self.mask):
+            ofilter = self.get_filter()
+
         self._set_related("grouping", val)
+
+        if ofilter is not None:
+            # If the data has been filtered then we want to re-create
+            # the filter (which is needed because the mask size may
+            # have changed).  This is not ideal, since the actual
+            # filter is not necessarily the requested filter (thanks
+            # to the width of a group), so this could end up selecting
+            # a surprising range.
+            #
+            self.ignore()
+            for vals in parse_expr(ofilter):
+                self.notice(*vals)
 
     @property
     def quality(self):
@@ -1973,6 +2001,11 @@ must be an integer.""")
             except TypeError:
                 raise DataErr("notanintarray") from None
 
+        # If the quality changes, should we re-create the filter as we
+        # do with grouping? No, because the quality array is currently
+        # not automatically applied. Although perhaps we should reset
+        # quality_filter?
+        #
         self._set_related("quality", val)
 
     @property

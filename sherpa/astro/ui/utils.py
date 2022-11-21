@@ -7553,6 +7553,11 @@ class Session(sherpa.ui.utils.Session):
         with ``1`` and then ``-1`` for all the channels in the group,
         following [1]_.
 
+        .. versionchanged:: 4.15.1
+           The filter is now re-calculated to match the new grouping
+           scheme. It is suggested that the filter be checked with
+           `get_filter` to check it is still sensible.
+
         Parameters
         ----------
         id : int or str, optional
