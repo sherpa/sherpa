@@ -1,5 +1,6 @@
-// 
-//  Copyright (C) 2007, 2016, 2017, 2020  Smithsonian Astrophysical Observatory
+//
+//  Copyright (C) 2007, 2016, 2017, 2020, 2022
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -39,7 +40,7 @@ typedef int (*converter)( PyObject*, void* );
 #define CONVERTME(arg) ((converter) sherpa::convert_to_contig_array<arg>)
 
 #define SHERPAMOD(name, fctlist) \
-static struct PyModuleDef module##name = {\
+static struct PyModuleDef module##name = { \
 PyModuleDef_HEAD_INIT, \
 #name, \
 NULL, \
@@ -52,8 +53,25 @@ PyMODINIT_FUNC PyInit_##name(void) { \
   return PyModule_Create(&module##name); \
 }
 
+#define SHERPAMODDOC(name, fctlist, doc) \
+static struct PyModuleDef module##name = { \
+PyModuleDef_HEAD_INIT, \
+#name, \
+PyDoc_STR(doc), \
+-1, \
+fctlist \
+}; \
+\
+PyMODINIT_FUNC PyInit_##name(void) { \
+  import_array(); \
+  return PyModule_Create(&module##name); \
+}
+
 #define FCTSPEC(name, func) \
  { (char*)#name, (PyCFunction)func, METH_VARARGS, NULL }
+
+#define FCTSPECDOC(name, func, doc) \
+  { (char*)#name, (PyCFunction)func, METH_VARARGS, PyDoc_STR(doc) }
 
 
 #endif /* __sherpa_extension_hh__ */
