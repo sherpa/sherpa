@@ -1525,7 +1525,6 @@ def test_pha_grouping_changed_no_filter_1160(make_test_pha):
     assert d4 == pytest.approx([1, 2, 3])
 
 
-@pytest.mark.xfail
 def test_pha_grouping_changed_filter_1160(make_test_pha):
     """What happens when the grouping is changed?
 
@@ -1548,8 +1547,6 @@ def test_pha_grouping_changed_filter_1160(make_test_pha):
     d3 = pha.get_dep(filter=True)
     assert d3 == pytest.approx([2, 0, 3])
 
-    # This currently raises a DataErr due to
-    # 'size mismatch between mask and data array'
     pha.grouping = [1, 1, -1, 1]
     d4 = pha.get_dep(filter=True)
     assert d4 == pytest.approx([2, 3])
@@ -1581,7 +1578,6 @@ def test_pha_grouping_changed_1160_grped_no_filter(make_grouped_pha):
     assert pha.get_filter() == ofilter
 
 
-@pytest.mark.xfail
 def test_pha_grouping_changed_1160_grped_with_filter(make_grouped_pha):
     """Test based on work on #1160
 
@@ -1610,15 +1606,16 @@ def test_pha_grouping_changed_1160_grped_with_filter(make_grouped_pha):
     assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
     assert pha.get_dep(filter=True) == pytest.approx([3])
 
-    # Change the grouping
+    # Change the grouping; it would be nice if it could have
+    # recognized the requested range was > 1 and <= 5 but the current
+    # code does not support this.
+    #
     pha.grouping = [1] * 5
 
     assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([3])
 
-    # This fails with DataErr: size mismatch between mask and data array: 2 vs 4
-    assert pha.get_dep(filter=True) == pytest.approx([2, 0, 3])
-
-    assert pha.get_filter() == "2:4"
+    assert pha.get_filter() == "4"
 
 
 def test_pha_grouping_changed_1160_ungrped_with_filter(make_grouped_pha):
@@ -1655,7 +1652,6 @@ def test_pha_grouping_changed_1160_ungrped_with_filter(make_grouped_pha):
     assert pha.get_filter() == "4"
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 def test_1160(make_data_path):

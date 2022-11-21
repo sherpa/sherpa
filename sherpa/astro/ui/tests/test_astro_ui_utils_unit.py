@@ -194,7 +194,6 @@ def test_spatial_filter_errors_out_invalid_id(func):
         func(ids)
 
 
-@pytest.mark.xfail
 @requires_data
 @requires_fits
 def test_1160_original(make_data_path, clean_astro_ui, caplog):
