@@ -1854,17 +1854,23 @@ def test_pha_change_quality_values(caplog):
     # With no tabStops set it uses ~pha.get_mask() which in this case
     # is [False] * 5 + [True] * 2,
     #
-    pha.group_counts(4)
+    assert len(caplog.record_tuples) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        pha.group_counts(4)
+
     assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0, 0])
 
     # Should quality filter be reset?
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
-    assert pha.get_dep(filter=True) == pytest.approx([4, 2])
+    assert pha.quality_filter is None
+    assert pha.get_dep(filter=True) == pytest.approx([4, 2, 2, 1])
     assert pha.get_filter() == '1:7'
 
-    # Do we provide any logging information?
+    # check captured log
     #
-    assert len(caplog.record_tuples) == 0
+    emsg = "The ignore_bad() call has been removed as quality has changed"
+    assert caplog.record_tuples == [
+        ("sherpa.astro.data", logging.WARNING, emsg)
+        ]
 
 
 def test_pha_group_adapt_check(caplog):
