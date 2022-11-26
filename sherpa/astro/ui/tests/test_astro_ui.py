@@ -387,9 +387,20 @@ def test_more_ui_bug38(make_data_path, caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.group_counts('3c273', 30)
 
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "dataset 3c273: 0.2482:2.0294 -> 0.00146:2.0294 Energy (keV)"
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.group_counts('3c273', 15)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 2
+    r = caplog.record_tuples[1]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "dataset 3c273: 0.00146:2.0294 Energy (keV) (unchanged)"
 
 
 @requires_fits
@@ -475,7 +486,11 @@ def test_group_reporting_case(clean_astro_ui, caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.group_width(3)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    assert msg == "dataset 1: 5:7,9:11,13:15 -> 4:15 Channel"
 
     assert ui.get_filter() == "4:15"
 
@@ -504,7 +519,11 @@ def test_group_bins(idval, clean_astro_ui, caplog):
         else:
             ui.group_bins(idval, 3)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    assert msg == f"dataset {idarg}: 5:7,9:11,13:15 -> 1:21 Channel"
 
     assert ui.get_grouping(idval) == pytest.approx([1, -1, -1, -1, -1, -1, -1] * 3)
     assert ui.get_quality(idval) == pytest.approx([0] * 21)
@@ -539,7 +558,11 @@ def test_group_snr(idval, clean_astro_ui, caplog):
         else:
             ui.group_snr(idval, 3)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    assert msg == f"dataset {idarg}: 1:6 Channel (unchanged)"
 
     assert ui.get_grouping(idval) == pytest.approx([1, -1, -1, 1, -1, -1])
     assert ui.get_quality(idval) == pytest.approx([0] * 6)
@@ -566,7 +589,11 @@ def test_group_adapt(idval, clean_astro_ui, caplog):
         else:
             ui.group_adapt(idval, 5)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    assert msg == f"dataset {idarg}: 1:6 Channel (unchanged)"
 
     assert ui.get_grouping(idval) == pytest.approx([1, 1, 1, -1, 1, 1])
     assert ui.get_quality(idval) == pytest.approx([2] + [0] * 4 + [2])
@@ -593,7 +620,11 @@ def test_group_adapt_snr(idval, clean_astro_ui, caplog):
         else:
             ui.group_adapt_snr(idval, 3)
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+    name, lvl, msg = caplog.record_tuples[0]
+    assert name == 'sherpa.ui.utils'
+    assert lvl == logging.INFO
+    assert msg == f"dataset {idarg}: 1:6 Channel (unchanged)"
 
     assert ui.get_grouping(idval) == pytest.approx([1, 1, -1, 1, -1, -1])
     assert ui.get_quality(idval) == pytest.approx([2] + [0] * 2 + [2] * 3)

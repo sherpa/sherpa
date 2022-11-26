@@ -224,12 +224,24 @@ def test_show_bkg_model_with_bkg(make_data_path):
 
 # Fix 476 - this should be in sherpa/ui/tests/test_session.py
 @requires_group
-def test_zero_division_calc_stat():
+def test_zero_division_calc_stat(caplog):
     ui = AstroSession()
     x = numpy.arange(100)
     y = numpy.zeros(100)
     ui.load_arrays(1, x, y, DataPHA)
-    ui.group_counts(1, 100)
+
+    assert len(caplog.record_tuples) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.group_counts(1, 100)
+
+    assert ui.get_data().grouped
+
+    assert len(caplog.record_tuples) == 1
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg =="dataset 1: 0:99 Channel (unchanged)"
+
     ui.set_full_model(1, Const1D("const"))
 
     # in principle I wouldn't need to call calc_stat_info(), I could just
