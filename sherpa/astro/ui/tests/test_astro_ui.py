@@ -21,7 +21,6 @@
 from collections import namedtuple
 import os
 import re
-import tempfile
 import logging
 
 import numpy
@@ -380,11 +379,17 @@ def test_more_ui_string_model_with_rmf(make_data_path):
 @requires_fits
 @requires_data
 @requires_group
-def test_more_ui_bug38(make_data_path):
+def test_more_ui_bug38(make_data_path, caplog):
     ui.load_pha('3c273', make_data_path('3c273.pi'))
     ui.notice_id('3c273', 0.3, 2)
-    ui.group_counts('3c273', 30)
-    ui.group_counts('3c273', 15)
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.group_counts('3c273', 30)
+
+        ui.group_counts('3c273', 15)
+
+    assert len(caplog.records) == 0
 
 
 @requires_fits
@@ -405,7 +410,7 @@ def test_bug38_filtering(make_data_path):
 @requires_fits
 @requires_data
 @requires_group
-def test_bug38_filtering_grouping(make_data_path):
+def test_bug38_filtering_grouping(make_data_path, caplog):
     """Low-level tests related to bugs #38, #917: filter+group"""
 
     from sherpa.astro.io import read_pha
@@ -418,7 +423,14 @@ def test_bug38_filtering_grouping(make_data_path):
     assert pha.get_filter(group=True, format='%.4f') == expected
     assert pha.get_filter(group=False, format='%.4f') == expected
 
-    pha.group_width(40)
+    # Just check that the logging that may happen at the UI level does
+    # not happen here.
+    #
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        pha.group_width(40)
+
+    assert len(caplog.records) == 0
 
     expected = '0.5840:2.9200,3.5040:7.0080'
     assert pha.get_filter(group=True, format='%.4f') == expected
@@ -441,6 +453,153 @@ def test_bug38_filtering_grouping(make_data_path):
 
     assert elo[1] == elo_all[40]
     assert ehi[11] == ehi_all[479]
+
+
+@requires_group
+def test_group_reporting_case(clean_astro_ui, caplog):
+    """logging group output can provide surprising output.
+
+    Filter and grouping can provide surprising results, so check the
+    current behaviour.
+    """
+
+    x = numpy.arange(1, 22)
+    ui.load_arrays(1, x, x, ui.DataPHA)
+    ui.notice(5, 7)
+    ui.notice(9, 11)
+    ui.notice(13, 15)
+
+    assert ui.get_filter() == "5:7,9:11,13:15"
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.group_width(3)
+
+    assert len(caplog.records) == 0
+
+    assert ui.get_filter() == "4:15"
+
+
+@requires_group
+@pytest.mark.parametrize("idval", [None, 2])
+def test_group_bins(idval, clean_astro_ui, caplog):
+    """Just check out group_bins"""
+
+    idarg = 1 if idval is None else idval
+
+    x = numpy.arange(1, 22)
+    ui.load_arrays(idarg, x, x, ui.DataPHA)
+    ui.notice(5, 7)
+    ui.notice(9, 11)
+    ui.notice(13, 15)
+
+    assert ui.get_filter(idval) == "5:7,9:11,13:15"
+    assert ui.get_dep(idval) == pytest.approx(x)
+    assert ui.get_dep(idval, filter=True) == pytest.approx([5, 6, 7, 9, 10, 11, 13, 14, 15])
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        if idval is None:
+            ui.group_bins(3)
+        else:
+            ui.group_bins(idval, 3)
+
+    assert len(caplog.records) == 0
+
+    assert ui.get_grouping(idval) == pytest.approx([1, -1, -1, -1, -1, -1, -1] * 3)
+    assert ui.get_quality(idval) == pytest.approx([0] * 21)
+
+    # The grouped values are
+    #     1+2+3+4+5+6+7  = 28
+    #     8+..+14        = 77
+    #     15+..+21       = 126
+    # and the widths of each group are 7, hence get_dep returns
+    #     4, 11, 18
+    #
+    assert ui.get_filter(idval) == "1:21"
+    assert ui.get_dep(idval) == pytest.approx([4, 11, 18])
+    assert ui.get_dep(idval, filter=True) == pytest.approx([4, 11, 18])
+
+
+@requires_group
+@pytest.mark.parametrize("idval", [None, 2])
+def test_group_snr(idval, clean_astro_ui, caplog):
+    """Just check out group_snr"""
+
+    idarg = 1 if idval is None else idval
+
+    x = [1, 2, 3, 4, 5, 6]
+    y = [2, 6, 3, 4, 5, 3]
+    ui.load_arrays(idarg, x, y, ui.DataPHA)
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        if idval is None:
+            ui.group_snr(3)
+        else:
+            ui.group_snr(idval, 3)
+
+    assert len(caplog.records) == 0
+
+    assert ui.get_grouping(idval) == pytest.approx([1, -1, -1, 1, -1, -1])
+    assert ui.get_quality(idval) == pytest.approx([0] * 6)
+
+    assert ui.get_dep(idval) == pytest.approx([11 / 3, 4])
+    assert ui.get_dep(idval, filter=True) == pytest.approx([11 / 3, 4])
+
+
+@requires_group
+@pytest.mark.parametrize("idval", [None, 2])
+def test_group_adapt(idval, clean_astro_ui, caplog):
+    """Just check out group_adapt"""
+
+    idarg = 1 if idval is None else idval
+
+    x = [1, 2, 3, 4, 5, 6]
+    y = [2, 6, 3, 4, 5, 3]
+    ui.load_arrays(idarg, x, y, ui.DataPHA)
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        if idval is None:
+            ui.group_adapt(5)
+        else:
+            ui.group_adapt(idval, 5)
+
+    assert len(caplog.records) == 0
+
+    assert ui.get_grouping(idval) == pytest.approx([1, 1, 1, -1, 1, 1])
+    assert ui.get_quality(idval) == pytest.approx([2] + [0] * 4 + [2])
+
+    assert ui.get_dep(idval) == pytest.approx([2, 6, 3.5, 5, 3])
+    assert ui.get_dep(idval, filter=True) == pytest.approx([2, 6, 3.5, 5, 3])
+
+
+@requires_group
+@pytest.mark.parametrize("idval", [None, 2])
+def test_group_adapt_snr(idval, clean_astro_ui, caplog):
+    """Just check out group_adapt_snr"""
+
+    idarg = 1 if idval is None else idval
+
+    x = [1, 2, 3, 4, 5, 6]
+    y = [2, 6, 3, 4, 5, 3]
+    ui.load_arrays(idarg, x, y, ui.DataPHA)
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        if idval is None:
+            ui.group_adapt_snr(3)
+        else:
+            ui.group_adapt_snr(idval, 3)
+
+    assert len(caplog.records) == 0
+
+    assert ui.get_grouping(idval) == pytest.approx([1, 1, -1, 1, -1, -1])
+    assert ui.get_quality(idval) == pytest.approx([2] + [0] * 2 + [2] * 3)
+
+    assert ui.get_dep(idval) == pytest.approx([2, 4.5, 4])
+    assert ui.get_dep(idval, filter=True) == pytest.approx([2, 4.5, 4])
 
 
 # bug #12578
@@ -652,7 +811,7 @@ def test_chi2(make_data_path, clean_astro_ui):
     assert stat12 == 'chi2'
 
 
-def save_arrays(colnames, fits, read_func):
+def save_arrays(tmp_path, colnames, fits, read_func):
     """Write out a small set of data using ui.save_arrays
     and then read it back in, to check it was written out
     correctly (or, at least, in a way that can be read back
@@ -660,6 +819,8 @@ def save_arrays(colnames, fits, read_func):
 
     Parameter
     ---------
+    tmp_path
+        The tmp_path fixture
     colnames, fits : bool
     read_func : function
 
@@ -676,11 +837,11 @@ def save_arrays(colnames, fits, read_func):
     else:
         fields = None
 
-    ofh = tempfile.NamedTemporaryFile(suffix='sherpa_test')
-    ui.save_arrays(ofh.name, [a, b, c], fields=fields,
+    ofile = str(tmp_path / "out.dat")
+    ui.save_arrays(ofile, [a, b, c], fields=fields,
                    ascii=not fits, clobber=True)
 
-    out = read_func(ofh.name)
+    out = read_func(ofile)
     assert isinstance(out, Data1D)
 
     rtol = 0
@@ -689,7 +850,7 @@ def save_arrays(colnames, fits, read_func):
     # remove potential dm syntax introduced by backend before checking for equality
     out_name = re.sub(r"\[.*\]", "", out.name)
 
-    assert ofh.name == out_name, 'file name'
+    assert ofile == out_name, 'file name'
     assert_allclose(out.x, a, rtol=rtol, atol=atol, err_msg="x column")
     assert_allclose(out.y, b, rtol=rtol, atol=atol, err_msg="y column")
     assert_allclose(out.staterror, c, rtol=rtol, atol=atol,
@@ -699,52 +860,56 @@ def save_arrays(colnames, fits, read_func):
 
 @requires_fits
 @pytest.mark.parametrize("colnames", [False, True])
-def test_save_arrays_FITS(colnames):
+def test_save_arrays_FITS(colnames, tmp_path):
 
     def read_func(filename):
         return ui.unpack_table(filename, ncols=3)
 
-    save_arrays(colnames=colnames, fits=True, read_func=read_func)
+    save_arrays(tmp_path, colnames=colnames, fits=True,
+                read_func=read_func)
 
 
 @requires_fits
 @pytest.mark.parametrize("colnames", [False, True])
-def test_save_arrays_ASCII(colnames):
+def test_save_arrays_ASCII(colnames, tmp_path):
 
     def read_func(filename):
         return ui.unpack_ascii(filename, ncols=3)
 
-    save_arrays(colnames=colnames, fits=False, read_func=read_func)
-
+    save_arrays(tmp_path, colnames=colnames, fits=False,
+                read_func=read_func)
 
 
 @requires_fits
 @pytest.mark.parametrize("ascii_type", [False, True])
-def test_save_arrays_colmismatch_errs(ascii_type):
-    with pytest.raises(IOErr) as exc:
-        a = numpy.asarray([1, 3, 5])
-        b = numpy.asarray([4, 6, 8])
-        c = a*b
-        fields = ["odd", "even"]
-        ui.save_arrays("bogus_tempfile_name", [a, b, c], fields=fields,
-                   ascii=ascii_type, clobber=True)
-    assert 'Expected 3 columns but found 2' in str(exc.value)
+def test_save_arrays_colmismatch_errs(ascii_type, tmp_path):
 
+    ofile = str(tmp_path / "should_not_get_created")
+
+    a = numpy.asarray([1, 3, 5])
+    b = numpy.asarray([4, 6, 8])
+    c = a*b
+    fields = ["odd", "even"]
+
+    with pytest.raises(IOErr,
+                       match="Expected 3 columns but found 2"):
+        ui.save_arrays(ofile, [a, b, c], fields=fields,
+                       ascii=ascii_type, clobber=True)
 
 
 @requires_fits
 @requires_data
-def testWrite(make_data_path):
+def testWrite(make_data_path, tmp_path):
 
     fname = make_data_path('3c273.pi')
     ui.load_pha(1, fname)
     pha_orig = ui.get_data(1)
 
-    ofh = tempfile.NamedTemporaryFile(suffix='sherpa_test')
-    ui.save_pha(1, ofh.name, ascii=False, clobber=True)
+    ofile = str(tmp_path / "saved.pha")
+    ui.save_pha(1, ofile, ascii=False, clobber=True)
 
     # limited checks
-    pha = ui.unpack_pha(ofh.name)
+    pha = ui.unpack_pha(ofile)
     assert isinstance(pha, DataPHA)
 
     for key in ["channel", "counts"]:
