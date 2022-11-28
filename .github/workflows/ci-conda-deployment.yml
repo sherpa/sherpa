@@ -186,7 +186,6 @@ jobs:
         source ${miniconda_loc}/etc/profile.d/conda.sh
         conda install conda-build
         echo "Packages downloaded here: ${{steps.download.outputs.download-path}}"
-        ls -d packages/*/*
         echo "ls packages/*/sherpa*.bz2"
         ls packages/*/sherpa*.bz2
         echo "conda index packages"
