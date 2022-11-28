@@ -29,11 +29,11 @@ import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
 from sherpa.ui.utils import _check_type, _check_str_type, _is_str
-from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
-    send_to_pager
+from sherpa.utils import SherpaFloat, sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
-from sherpa.data import Data1D, Data1DAsymmetricErrs
+from sherpa.data import Data1D, Data1DInt, Data1DAsymmetricErrs, \
+    Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
@@ -41,7 +41,7 @@ from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
 from sherpa.astro import fake
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataPHA, DataIMG, DataIMGInt
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -397,7 +397,7 @@ class Session(sherpa.ui.utils.Session):
 
             data_str += 'Data Set: %s\n' % id
             data_str += 'Filter: %s\n' % data.get_filter_expr()
-            if isinstance(data, sherpa.astro.data.DataPHA):
+            if isinstance(data, DataPHA):
 
                 nbkg = len(data.background_ids)
                 for bkg_id in data.background_ids:
@@ -425,7 +425,7 @@ class Session(sherpa.ui.utils.Session):
 
             data_str += data.__str__() + '\n\n'
 
-            if isinstance(data, sherpa.astro.data.DataPHA):
+            if isinstance(data, DataPHA):
                 for resp_id in data.response_ids:
                     # ARF or RMF could be None
                     arf, rmf = data.get_response(resp_id)
@@ -449,7 +449,7 @@ class Session(sherpa.ui.utils.Session):
         for id in ids:
             data = self.get_data(id)
 
-            if not isinstance(data, sherpa.astro.data.DataPHA):
+            if not isinstance(data, DataPHA):
                 continue
 
             bkg_ids = data.background_ids
@@ -650,7 +650,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace1d(self, start, stop, step=1, numbins=None,
-                    id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
+                    id=None, bkg_id=None, dstype=Data1DInt):
         """Create the independent axis for a 1D data set.
 
         Create an "empty" one-dimensional data set by defining the
@@ -734,7 +734,7 @@ class Session(sherpa.ui.utils.Session):
         # support non-integrated grids with inclusive boundaries
         # We do NOT want to use an isinstance check since Data1DInt is
         # derived from Data1D.
-        if dstype in (sherpa.data.Data1D, sherpa.astro.data.DataPHA):
+        if dstype in (Data1D, DataPHA):
             stop += step
 
         xlo, xhi, y = sherpa.utils.dataspace1d(start, stop, step=step,
@@ -742,12 +742,12 @@ class Session(sherpa.ui.utils.Session):
         args = [xlo, xhi, y]
         kwargs = {}
 
-        if dstype is sherpa.astro.data.DataPHA:
+        if dstype is DataPHA:
             channel = numpy.arange(1, len(xlo) + 1, dtype=float)
             args = [channel, y]
             # kwargs['bin_lo'] = xlo
             # kwargs['bin_hi'] = xhi
-        elif dstype is not sherpa.data.Data1DInt:
+        elif dstype is not Data1DInt:
             args = [xlo, y]
 
         if bkg_id is not None:
@@ -758,7 +758,7 @@ class Session(sherpa.ui.utils.Session):
             self.set_data(id, dstype('dataspace1d', *args, **kwargs))
 
     # DOC-NOTE: also in sherpa.utils
-    def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):
+    def dataspace2d(self, dims, id=None, dstype=DataIMG):
         """Create the independent axis for a 2D data set.
 
         Create an "empty" two-dimensional data set by defining the
@@ -801,8 +801,7 @@ class Session(sherpa.ui.utils.Session):
         x0, x1, y, shape = sherpa.utils.dataspace2d(dims)
 
         dataset = None
-        if issubclass(dstype, (sherpa.astro.data.DataIMGInt,
-                               sherpa.data.Data2DInt)):
+        if issubclass(dstype, (DataIMGInt, Data2DInt)):
             dataset = dstype('dataspace2d', x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5,
                              y, shape)
         else:
@@ -1413,13 +1412,13 @@ class Session(sherpa.ui.utils.Session):
         """
         try:
             return self.unpack_pha(filename, *args, **kwargs)
-        except:
+        except Exception:
             try:
                 return self.unpack_image(filename, *args, **kwargs)
-            except:
+            except Exception:
                 try:
                     return self.unpack_table(filename, *args, **kwargs)
-                except:
+                except Exception:
                     # If this errors out then so be it
                     return self.unpack_ascii(filename, *args, **kwargs)
 
@@ -1657,7 +1656,7 @@ class Session(sherpa.ui.utils.Session):
         self._load_data(id, datasets)
 
     def unpack_image(self, arg, coord='logical',
-                     dstype=sherpa.astro.data.DataIMG):
+                     dstype=DataIMG):
         """Create an image data structure.
 
         Parameters
@@ -1711,7 +1710,7 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
     def load_image(self, id, arg=None, coord='logical',
-                   dstype=sherpa.astro.data.DataIMG):
+                   dstype=DataIMG):
         """Load an image as a data set.
 
         Parameters
@@ -1790,7 +1789,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        pha : a `sherpa.astro.data.DataPHA` instance
+        pha : a sherpa.astro.data.DataPHA instance
 
         See Also
         --------
@@ -1843,7 +1842,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        pha : a `sherpa.astro.data.DataPHA` instance
+        pha : a sherpa.astro.data.DataPHA instance
 
         See Also
         --------
@@ -2021,14 +2020,14 @@ class Session(sherpa.ui.utils.Session):
     def _get_pha_data(self, id):
         """Ensure the dataset is a PHA"""
         data = self.get_data(id)
-        if not isinstance(data, sherpa.astro.data.DataPHA):
+        if not isinstance(data, DataPHA):
             raise ArgumentErr('nopha', self._fix_id(id))
         return data
 
     def _get_img_data(self, id):
         """Ensure the dataset is an image"""
         data = self.get_data(id)
-        if not isinstance(data, sherpa.astro.data.DataIMG):
+        if not isinstance(data, DataIMG):
             raise ArgumentErr('noimg', self._fix_id(id))
         return data
 
@@ -2642,7 +2641,6 @@ class Session(sherpa.ui.utils.Session):
         """
         if val is None:
             val, id = id, val
-        err = None
 
         d = self.get_data(id)
         if bkg_id is not None:
@@ -2705,7 +2703,6 @@ class Session(sherpa.ui.utils.Session):
         """
         if val is None:
             val, id = id, val
-        err = None
 
         d = self.get_data(id)
         if bkg_id is not None:
@@ -3337,11 +3334,10 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        if isinstance(d, DataPHA):
             return d._get_ebins(group=False)
 
-        if isinstance(d, (sherpa.data.Data2D,
-                          sherpa.astro.data.DataIMG)):
+        if isinstance(d, (Data2D, DataIMG)):
             return d.get_axes()
 
         return d.get_indep()
@@ -3433,7 +3429,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        if isinstance(d, DataPHA):
             old = d._rate
             d._rate = False  # return predicted counts, not rate for PHA
             dep = d.get_y(filter)
@@ -3868,9 +3864,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             d = self.get_bkg(id, bkg_id)
 
-        if isinstance(d, (sherpa.astro.data.DataIMG,
-                          sherpa.astro.data.DataIMGInt,
-                          sherpa.data.Data2D, sherpa.data.Data2DInt)):
+        if isinstance(d, (DataIMG, DataIMGInt, Data2D, Data2DInt)):
 
             backup = d.y
             if objtype == 'delchi':
@@ -3908,10 +3902,10 @@ class Session(sherpa.ui.utils.Session):
         args = None
         fields = None
 
-#        if type(d) in (sherpa.data.Data1DInt, sherpa.astro.data.DataPHA):
+#        if type(d) in (Data1DInt, DataPHA):
 #            args = [obj.xlo, obj.xhi, obj.y]
 #            fields = ["XLO", "XHI", str(objtype).upper()]
-        if isinstance(d, sherpa.astro.data.DataPHA) and \
+        if isinstance(d, DataPHA) and \
            objtype in ('model', 'source'):
             args = [obj.xlo, obj.xhi, obj.y]
             fields = ["XLO", "XHI", str(objtype).upper()]
@@ -4406,7 +4400,7 @@ class Session(sherpa.ui.utils.Session):
         if not numpy.iterable(d.mask):
             raise DataErr('nomask', id)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        if isinstance(d, DataPHA):
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -4499,7 +4493,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        if isinstance(d, DataPHA):
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -4589,7 +4583,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        if isinstance(d, DataPHA):
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -4686,7 +4680,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(id, bkg_id)
         id = self._fix_id(id)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        if isinstance(d, DataPHA):
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -6427,7 +6421,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg is None:
             id, bkg = bkg, id
         data = self._get_pha_data(id)
-        _check_type(bkg, sherpa.astro.data.DataPHA, 'bkg', 'a PHA data set')
+        _check_type(bkg, DataPHA, 'bkg', 'a PHA data set')
         data.set_background(bkg, bkg_id)
 
     def list_bkg_ids(self, id=None):
@@ -6817,8 +6811,7 @@ class Session(sherpa.ui.utils.Session):
     def _notice_warning(self):
         quantities = numpy.asarray([data.get_analysis()
                                     for data in self._data.values()
-                                    if isinstance(data,
-                                                  sherpa.astro.data.DataPHA)])
+                                    if isinstance(data, DataPHA)])
 
         if len(quantities) > 1 and not (quantities == quantities[0]).all():
             warning("not all PHA datasets have equal analysis quantities")
@@ -7004,7 +6997,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in self.list_data_ids():
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG, 'img',
+            _check_type(d, DataIMG, 'img',
                         'a image data set')
 
             ofilter = _get_image_filter(d)
@@ -7085,7 +7078,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in self.list_data_ids():
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG, 'img',
+            _check_type(d, DataIMG, 'img',
                         'a image data set')
 
             ofilter = _get_image_filter(d)
@@ -7168,7 +7161,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in ids:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG,
+            _check_type(d, DataIMG,
                         'img', 'a image data set')
 
             ofilter = _get_image_filter(d)
@@ -7244,7 +7237,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in ids:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG,
+            _check_type(d, DataIMG,
                         'img', 'a image data set')
 
             ofilter = _get_image_filter(d)
@@ -7313,7 +7306,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in ids:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG,
+            _check_type(d, DataIMG,
                         'img', 'a image data set')
 
             coord = d.coord
@@ -7388,7 +7381,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in ids:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG,
+            _check_type(d, DataIMG,
                         'img', 'a image data set')
 
             coord = d.coord
@@ -8970,7 +8963,7 @@ class Session(sherpa.ui.utils.Session):
         if id in self._data:
             d = self._get_pha_data(id)
         else:
-            d = sherpa.astro.data.DataPHA('', None, None)
+            d = DataPHA('', None, None)
             self.set_data(id, d)
 
         if rmf is None and len(d.response_ids) == 0:
@@ -9016,12 +9009,12 @@ class Session(sherpa.ui.utils.Session):
             if numpy.iterable(arf):
                 self.load_multi_arfs(id, arf, range(len(arf)))
             elif arf is None:
-               # In some cases, arf is None, but rmf is not.
-               # For example, XMM/RGS does uses only a single file (the RMF)
-               # to hold all information.
-               pass
+                # In some cases, arf is None, but rmf is not.
+                # For example, XMM/RGS does uses only a single file (the RMF)
+                # to hold all information.
+                pass
             else:
-               self.set_arf(id, arf)
+                self.set_arf(id, arf)
 
             if numpy.iterable(rmf):
                 self.load_multi_rmfs(id, rmf, range(len(rmf)))
@@ -9078,7 +9071,7 @@ class Session(sherpa.ui.utils.Session):
         if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
-            except:
+            except Exception:
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
@@ -9170,7 +9163,7 @@ class Session(sherpa.ui.utils.Session):
             id, model = model, id
 
         data = self.get_data(id)
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             model = self.get_model(id)
 
             if data._responses:
@@ -9225,7 +9218,7 @@ class Session(sherpa.ui.utils.Session):
         model = super()._add_convolution_models(id, data, model, is_source)
 
         # If we don't need to deal with DataPHA issues we can return
-        if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
+        if not isinstance(data, DataPHA) or not is_source:
             return model
 
         return sherpa.astro.background.add_response(self, id, data, model)
@@ -9866,7 +9859,7 @@ class Session(sherpa.ui.utils.Session):
         except TypeError:
             y = sherpa.astro.io.backend.get_ascii_data(filename, *args,
                                                        **kwargs)[1].pop()
-        except:
+        except Exception:
             try:
                 data = self.unpack_table(filename, *args, **kwargs)
                 x = data.get_x()
@@ -9878,7 +9871,7 @@ class Session(sherpa.ui.utils.Session):
             except TypeError:
                 y = sherpa.astro.io.backend.get_table_data(filename, *args,
                                                            **kwargs)[1].pop()
-            except:
+            except Exception:
                 # unpack_data doesn't include a call to try
                 # getting data from image, so try that here.
                 data = self.unpack_image(filename, *args, **kwargs)
@@ -10061,7 +10054,7 @@ class Session(sherpa.ui.utils.Session):
             y = None
             try:
                 x, y = self._read_user_model(filename, *args, **kwargs)
-            except:
+            except Exception:
                 # Fall back to reading plain ASCII, if no other
                 # more sophisticated I/O backend loaded (such as
                 # pyfits or crates) SMD 05/29/13
@@ -10175,7 +10168,7 @@ class Session(sherpa.ui.utils.Session):
     # TODO: change bkg_ids default to None or some other "less-dangerous" value
     def _add_extra_data_and_models(self, ids, datasets, models, bkg_ids={}):
         for id, d in zip(ids, datasets):
-            if isinstance(d, sherpa.astro.data.DataPHA):
+            if isinstance(d, DataPHA):
                 bkg_models = self._background_models.get(id, {})
                 bkg_srcs = self._background_sources.get(id, {})
                 if d.subtracted:
@@ -10443,9 +10436,9 @@ class Session(sherpa.ui.utils.Session):
         # result in regular fit
         # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
         valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores')
-        for key in kwargs.keys():
+        for key in kwargs:
             if key not in valid_keys:
-                raise TypeError("unknown keyword argument: '%s'" % key)
+                raise TypeError(f"unknown keyword argument: '{key}'")
 
         numcores = kwargs.get('numcores', 1)
 
@@ -10527,7 +10520,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["data"][2]
             if recalc:
                 plotobj.prepare(data, self.get_stat())
@@ -10544,7 +10537,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["model"][2]
             if recalc:
                 plotobj.prepare(data, self.get_model(id), self.get_stat())
@@ -10636,7 +10629,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["source"][2]
             if recalc:
                 plotobj.prepare(data, self.get_source(id), lo=lo, hi=hi)
@@ -10652,7 +10645,7 @@ class Session(sherpa.ui.utils.Session):
             return plotobj
 
         data = self.get_data(id)
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
 
             dataobj = self.get_data_plot(id, recalc=recalc)
 
@@ -10752,7 +10745,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["model_component"][2]
             if recalc:
                 if not has_pha_response(model):
@@ -10780,7 +10773,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["source_component"][2]
             if recalc:
                 plotobj.prepare(data, model, self.get_stat())
@@ -10796,7 +10789,7 @@ class Session(sherpa.ui.utils.Session):
                         recalc=False):
 
         if recalc and conv_model is None and \
-           isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
+           isinstance(self.get_data(id), DataPHA):
             conv_model = self.get_response(id)
 
         return super().get_pvalue_plot(null_model=null_model, alt_model=alt_model,
@@ -11900,7 +11893,7 @@ class Session(sherpa.ui.utils.Session):
         """
 
         data = self.get_data(id)
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             # Note: lo/hi arguments mean we can not just rely on superclass
             plotobj = self.get_source_plot(id, lo=lo, hi=hi, recalc=not replot)
             self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
@@ -13737,7 +13730,7 @@ class Session(sherpa.ui.utils.Session):
         original model flux = 2.88993e-14, + 1.92575e-15, - 1.81963e-15
         model component flux = 7.96865e-14, + 4.65144e-15, - 4.41222e-15
         >>> f0, fhi, flo = cflux
-        >>> print("Flux: {:.2e} {:+.2e} {:+.2e}".format(f0, fhi-f0, flo-f0))
+        >>> print(f"Flux: {f0:.2e} {fhi-f0:+.2e} {flo-f0:+.2e}")
         Flux: 7.97e-14 +4.65e-15 -4.41e-15
 
         This time the parameters are assumed to be correlated, using
@@ -15026,12 +15019,12 @@ class Session(sherpa.ui.utils.Session):
 
         if _is_str(outfile):
             if os.path.isfile(outfile):
-                if sherpa.utils.bool_cast(clobber):
-                    os.remove(outfile)
-                else:
+                if not sherpa.utils.bool_cast(clobber):
                     raise IOErr('filefound', outfile)
 
-            with open(outfile, 'w') as fh:
+                os.remove(outfile)
+
+            with open(outfile, 'wt', encoding="UTF-8") as fh:
                 serialize.save_all(self, fh)
 
         else:
