@@ -293,6 +293,32 @@ def test_save_filter_pha(ascii, reader, bid, tmp_path, clean_astro_ui):
 @requires_fits
 @pytest.mark.parametrize("ascii,reader",
                          [(True, ui.unpack_ascii), (False, ui.unpack_table)])
+@pytest.mark.parametrize("idval", [None, 2])
+def test_save_filter_data1d(ascii, reader, idval, tmp_path, clean_astro_ui):
+    """Does save_filter work? [Data1D]"""
+
+    x = np.arange(1, 11, dtype=np.int16)
+    ui.load_arrays(1, x, x)
+
+    ui.notice(2, 4)
+    ui.notice(6, 8)
+
+    outfile = tmp_path / "filter.dat"
+    ui.save_filter(str(outfile), ascii=ascii)
+
+    expected = [0, 1, 1, 1, 0, 1, 1, 1, 0, 0]
+
+    d = reader(str(outfile), colkeys=["X", "FILTER"])
+    assert isinstance(d, ui.Data1D)
+    assert d.x == pytest.approx(x)
+    assert d.y == pytest.approx(expected)
+    assert d.staterror is None
+    assert d.syserror is None
+
+
+@requires_fits
+@pytest.mark.parametrize("ascii,reader",
+                         [(True, ui.unpack_ascii), (False, ui.unpack_table)])
 @pytest.mark.parametrize("bid,expected",
                          [(None, [1, -1, 1, 1, 1, -1, -1, 1, 1, -1]),
                           (1, [1] * 10)])
@@ -1008,6 +1034,27 @@ def test_save_data_datapha(tmp_path):
 
 
 @requires_fits
+@pytest.mark.parametrize("idval", [None, 2])
+def test_save_data_datapha_bkg(idval, tmp_path):
+    """Does save_data work for DataPHA [bkg]?"""
+
+    idarg = 1 if idval is None else idval
+    ui.load_arrays(idarg, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    ui.set_bkg(idarg, ui.DataPHA("bg", [1, 2, 3], [0, 2, 1]))
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    if idval is None:
+        ui.save_data(outfile, bkg_id=1)
+    else:
+        ui.save_data(idval, outfile, bkg_id=1)
+
+    cts = out.read_text()
+    check_output(cts, ["CHANNEL", "COUNTS"],
+                 [[1, 0], [2, 2], [3, 1]])
+
+
+@requires_fits
 def test_save_pha(tmp_path):
     """Does save_pha work for DataPHA?"""
 
@@ -1021,6 +1068,38 @@ def test_save_pha(tmp_path):
     assert cts[0] == "SIMPLE"
     assert cts[1] == "="
     assert cts[2] == "T"
+
+
+@requires_fits
+@pytest.mark.parametrize("idval", [None, 2])
+def test_save_pha_bkg(idval, tmp_path):
+    """Does save_pha work for DataPHA (bkg, ascii)?"""
+
+    idarg = 1 if idval is None else idval
+    ui.load_arrays(idarg, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    ui.set_exposure(idarg, 10)
+
+    bkg1 = ui.DataPHA("bkg1", [1, 2, 3], [2, 1, 4])
+    ui.set_bkg(idarg, bkg1)
+    ui.set_exposure(idarg, 20, bkg_id=1)
+
+    bkg2 = ui.DataPHA("bkg2", [1, 2, 3], [1, 0, 3])
+    ui.set_bkg(idarg, bkg2, bkg_id=2)
+    ui.set_exposure(idarg, 40, bkg_id=2)
+
+    out = tmp_path / "data.dat"
+    outfile = str(out)
+    if idval is None:
+        ui.save_pha(outfile, bkg_id=2, ascii=True)
+    else:
+        ui.save_pha(idval, outfile, bkg_id=2, ascii=True)
+
+    # The exact format depends on the I/O backend so just check we can
+    # read it back in using Sherpa I/O routines.
+    #
+    data = io.read_ascii(outfile, colkeys=["CHANNEL", "COUNTS"])
+    assert data.x == pytest.approx([1, 2, 3])
+    assert data.y == pytest.approx([1, 0, 3])
 
 
 @requires_fits
@@ -1099,6 +1178,50 @@ def test_save_model_pha_ascii(clean_astro_ui, tmp_path):
     cts = out.read_text()
     check_output(cts, ["XLO", "XHI", "MODEL"],
                  [[0.1, 0.2, 20], [0.2, 0.4, 40]])
+
+
+@requires_fits
+def test_save_model_pha_bkg_ascii(clean_astro_ui, tmp_path):
+    """Can we write out data for save_model (background)? DataPHA and ASCII"""
+
+    data = ui.DataPHA("ex", [1, 2], [5, 10])
+
+    # we need a response
+    egrid = np.asarray([0.1, 0.2, 0.4])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    data.set_rmf(rmf)
+
+    yarf = np.asarray([10, 20])
+    arf = create_arf(elo, ehi, yarf)
+    data.set_arf(arf)
+
+    # It is not 100% clear when the code picks up the response
+    # for the background data from the source region. I had
+    # thought this would do it, but the plot output below
+    # suggests the RMF has not been used.
+    #
+    bkg = ui.DataPHA("bex", [1, 2], [2, 3])
+    data.set_background(bkg)
+
+    ui.set_data(1, data)
+
+    ui.set_source(ui.const1d.cmdl)
+    ui.set_bkg_source(ui.const1d.bmdl)
+    cmdl.c0 = 2
+    bmdl.c0 = 10
+
+    out = tmp_path / "model.dat"
+    ui.save_model(str(out), ascii=True, bkg_id=1)
+
+    # As mentioned above, I had expected this to be in energy units
+    # but it is not. So for now treat this as a regression test.
+    #
+    cts = out.read_text()
+    print(cts)
+    check_output(cts, ["XLO", "XHI", "MODEL"],
+                 [[1, 2, 10], [2, 3, 40]])  # note: channels!
 
 
 @requires_fits
@@ -1551,7 +1674,7 @@ def test_load_xxx_not_pha(loadfunc, clean_astro_ui, tmp_path):
 
 @requires_fits
 @pytest.mark.parametrize("idval", [None, 1, "xx"])
-def test_load_grouping(idval, clean_astro_ui, tmp_path):
+def test_load_grouping(idval, clean_astro_ui, tmp_path, caplog):
     """Simple grouping check"""
 
     x = [1, 2, 3]
@@ -1575,9 +1698,12 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path):
     assert not data.grouped
     assert data.grouping is not None
 
-    ui.group(idval)
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.group(idval)
 
     assert data.grouped
+    assert len(caplog.records) == 0
 
     grps = ui.get_grouping(idval)
     assert grps.shape == (3, )
@@ -1598,8 +1724,55 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path):
     assert y == pytest.approx([2, 3])
 
 
+@requires_fits
 @pytest.mark.parametrize("idval", [None, 1, "xx"])
-def test_group_already_grouped(idval):
+def test_load_quality(idval, clean_astro_ui, tmp_path, caplog):
+    """Simple quality check"""
+
+    x = [1, 2, 3]
+    y = [0, 4, 3]
+    qual = [0, 2, 0]
+    if idval is None:
+        ui.load_arrays(1, x, y, ui.DataPHA)
+        idstr = "1"
+    else:
+        ui.load_arrays(idval, x, y, ui.DataPHA)
+        idstr = str(idval)
+
+    path = tmp_path / "qual.dat"
+    path.write_text("0\n2\n0")
+
+    data = ui.get_data(idval)
+    assert data.quality is None
+
+    if idval is None:
+        ui.load_quality(str(path))
+    else:
+        ui.load_quality(idval, str(path))
+
+    assert not data.grouped
+    assert data.quality == pytest.approx(qual)
+
+    qual = ui.get_quality(idval)
+
+    assert qual == pytest.approx(qual)
+
+    # Because the data is not grouped the quality filter is reported
+    # as part of the filter string.
+    #
+    assert ui.get_filter(idval) == "1:3"
+    ui.ignore_bad(idval)
+    assert ui.get_filter(idval) == "1,3"
+
+    y = ui.get_dep(idval, filter=True)
+    assert y == pytest.approx([0, 3])
+
+    y = ui.get_dep(idval, filter=False)
+    assert y == pytest.approx([0, 4, 3])
+
+
+@pytest.mark.parametrize("idval", [None, 1, "xx"])
+def test_group_already_grouped(idval, caplog):
     """Does group still work if the data is already grouped?"""
 
     x = [1, 2, 3]
@@ -1614,13 +1787,21 @@ def test_group_already_grouped(idval):
     data = ui.get_data(idval)
     assert not data.grouped
 
-    ui.group(idval)
-    assert data.grouped
-    assert ui.get_dep(idval) == pytest.approx([2, 3])
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.group(idval)
 
-    ui.group(idval)
+    assert data.grouped
+    assert ui.get_dep(idval) == pytest.approx([2, 3])
+    assert len(caplog.records) == 0
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.group(idval)
+
     assert ui.get_dep(idval) == pytest.approx([2, 3])
     assert data.grouped
+    assert len(caplog.records) == 0
 
 
 @pytest.mark.parametrize("idval", [None, 1, "xx"])
@@ -1884,16 +2065,110 @@ def test_pha_does_set_grouping_set_grouped(clean_astro_ui):
     assert ui.get_dep() == pytest.approx(counts)
 
 
+def test_group_when_background_has_no_grouping(clean_astro_ui, caplog):
+    """How does group behave when the background has no grouping?
 
-def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui):
+    This is something of a corner case, so we act as a regression
+    test.
+    """
+
+    src = ui.DataPHA('src', [1, 2, 3], [10, 12, 2])
+    bkg = ui.DataPHA('bkg', [1, 2, 3], [2, 1, 1])
+    src.set_background(bkg)
+    ui.set_data(src)
+
+    # Done this way, the data set is not grouped
+    ui.set_grouping([1, 1, 1])
+    assert not ui.get_data().grouped
+    assert ui.get_data().get_background().grouping is None
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.group()
+
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.astro.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "data set 'bkg' does not specify grouping flags"
+
+
+@pytest.mark.xfail
+def test_set_grouping_1636_indirect(clean_astro_ui, caplog):
+    """See issue #1636. Also #1635.
+
+    I assume this was broken by #1477. Issue #1636 points out this is
+    broken biut #1635 asks what the behavior should be, so this is
+    a regression test.
+
+    See also test_set_grouping_1636_direct.
+
+    """
+
+    src = ui.DataPHA('src', [1, 2, 3], [10, 12, 2], grouping=[1, 1, 1])
+    bkg = ui.DataPHA('bkg', [1, 2, 3], [2, 1, 1])
+    src.set_background(bkg)
+    ui.set_data(src)
+
+    # Done this way, the data set is grouped, unlike
+    # test_group_when_background_has_no_grouping
+    assert ui.get_data().grouped
+    assert ui.get_data().get_background().grouping == pytest.approx([1, 1, 1])
+
+    # For some reason, sending both the id and the value, when val is None,
+    # is a problem.
+    #
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        # FAILS with DataErr: Array must be a sequence or None
+        ui.set_grouping(1, None)
+
+    # For the moment there's no logging
+    assert len(caplog.records) == 0
+
+    assert ui.get_data().grouped
+    assert ui.get_data().grouping is None
+
+
+@pytest.mark.xfail
+def test_set_grouping_1636_direct(clean_astro_ui, caplog):
+    """See issue #1636. Also #1635.
+
+    See also test_set_grouping_1636_indirect
+
+    """
+
+    src = ui.DataPHA('src', [1, 2, 3], [10, 12, 2], grouping=[1, 1, 1])
+    bkg = ui.DataPHA('bkg', [1, 2, 3], [2, 1, 1])
+    src.set_background(bkg)
+    ui.set_data(src)
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        # FAILS with DataErr: Array must be a sequence or None
+        ui.set_grouping(id=1, val=None)
+
+    # For the moment there's no logging
+    assert len(caplog.records) == 0
+
+    assert ui.get_data().grouped
+    assert ui.get_data().grouping is None
+
+
+def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui, caplog):
     """Regression test for get_dep with grouped data"""
 
     ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
     ui.set_grouping([1, -1, 1, -1, -1])
-    ui.group()
+
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.group()
 
     # Looks like it's returning mean of channel values in group
     assert ui.get_dep() == pytest.approx([4.5, 4])
+
+    assert len(caplog.records) == 0
 
 
 @requires_fits

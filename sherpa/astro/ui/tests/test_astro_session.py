@@ -24,6 +24,7 @@
 from io import StringIO
 import logging
 import os
+import re
 import sys
 
 import numpy
@@ -2155,6 +2156,100 @@ def test_get_source_with_convolved_model(session):
         s.get_source()
 
 
+def test_set_full_model_pha_warning_no_response(caplog):
+    """Check we do not get the warning.
+
+    This requires a PHA dataset with no response.
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+
+    gmdl = s.create_model_component("gauss1d", "gmdl")
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        s.set_full_model(gmdl)
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_set_full_model_pha_warning_no_response_bkg(caplog):
+    """Check we do not get the warning.
+
+    This requires a PHA dataset with no response.
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+    s.set_bkg(1, DataPHA("b", [1, 2], [1, 2]))
+
+    gmdl = s.create_model_component("gauss1d", "gmdl")
+
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        s.set_bkg_full_model(gmdl)
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_set_full_model_pha_warning_response(caplog):
+    """Check we do get the warning.
+
+    This requires a PHA dataset with a response.
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+
+    egrid = numpy.asarray([0.1, 0.2, 0.3])
+    s.set_arf(create_arf(egrid[:-1], egrid[1:], [10, 20]))
+
+    gmdl = s.create_model_component("gauss1d", "gmdl")
+    assert len(caplog.record_tuples) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        s.set_full_model(gmdl)
+
+    assert len(caplog.record_tuples) == 1
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.astro.ui.utils"
+    assert lvl == logging.WARNING
+    assert msg == "PHA source model 'gauss1d.gmdl' \n" + \
+        "does not have an associated instrument model; consider using \n" + \
+        "set_source() instead of set_full_model() to include associated \n" + \
+        "instrument automatically"
+
+
+def test_set_full_model_pha_warning_response_bkg():
+    """Check we do get the warning. Actually, this is an error.
+
+    This requires a PHA dataset with a response.
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+    s.set_bkg(1, DataPHA("b", [1, 2], [1, 2]))
+
+    egrid = numpy.asarray([0.1, 0.2, 0.3])
+    s.set_arf(create_arf(egrid[:-1], egrid[1:], [10, 20]))
+    s.set_arf(create_arf(egrid[:-1], egrid[1:], [5, 10]), bkg_id=1)
+
+    gmdl = s.create_model_component("gauss1d", "gmdl")
+
+    msg = "PHA background source model 'gauss1d.gmdl' \n" + \
+          " does not have an associated instrument model; consider using\n" + \
+          " set_bkg_source() instead of set_bkg_model() to include associated\n" + \
+          " instrument automatically"
+    with pytest.raises(TypeError, match=re.escape(msg)):
+        s.set_bkg_full_model(gmdl)
+
+
 def test_bkg_model_warns_after_full(caplog):
     """Check we get a warning"""
 
@@ -2182,7 +2277,7 @@ def test_bkg_model_warns_after_full(caplog):
     loc, lvl, msg = caplog.record_tuples[0]
     assert loc == "sherpa.astro.ui.utils"
     assert lvl == logging.WARNING
-    assert msg =="Clearing background convolved model\n'gauss1d.g1'\nfor dataset 1 background 1"
+    assert msg == "Clearing background convolved model\n'gauss1d.g1'\nfor dataset 1 background 1"
 
 
 # Note: the Session message can be either fit() or Fit.fit(), so
