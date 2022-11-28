@@ -3958,9 +3958,10 @@ class Session(sherpa.ui.utils.Session):
             if objtype == 'delchi':
                 raise AttributeError("save_delchi() does not apply for images")
 
-            imgtype = getattr(self, 'get_' + objtype + '_image', None)
+            aname = f'get_{objtype}_image'
+            imgtype = getattr(self, aname, None)
             if imgtype is None:
-                raise AttributeError("'get_%s_image()' not found" % objtype)
+                raise AttributeError(f"'{aname}()' not found")
 
             obj = imgtype(id)
 
@@ -3978,13 +3979,14 @@ class Session(sherpa.ui.utils.Session):
         if bkg_id is not None:
             funcname += 'bkg_'
 
-        plottype = getattr(self, funcname + objtype + '_plot', None)
+        aname = f'{funcname}{objtype}_plot'
+        plottype = getattr(self, aname, None)
         if plottype is None:
-            raise AttributeError("'%s%s_plot()' not found" % (funcname,
-                                                              objtype))
+            raise AttributeError(f"'{aname}()' not found")
 
-        obj = plottype(id)
-        if bkg_id is not None:
+        if bkg_id is None:
+            obj = plottype(id)
+        else:
             obj = plottype(id, bkg_id=bkg_id)
 
         args = None
