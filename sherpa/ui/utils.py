@@ -333,11 +333,11 @@ copy_reg.pickle(numpy.ufunc, reduce_ufunc)
 
 class ModelWrapper(NoNewAttributesAfterInit):
 
-    def __init__(self, session, modeltype, args=(), kwargs={}):
+    def __init__(self, session, modeltype, args=(), kwargs=None):
         self._session = session
         self.modeltype = modeltype
         self.args = args
-        self.kwargs = kwargs
+        self.kwargs = kwargs if kwargs else {}
         NoNewAttributesAfterInit.__init__(self)
 
     def __call__(self, name):
@@ -5614,7 +5614,7 @@ class Session(NoNewAttributesAfterInit):
             self._model_types[name] = ModelWrapper(self, cls)
             self._model_globals.update(self._model_types)
 
-    def add_model(self, modelclass, args=(), kwargs={}):
+    def add_model(self, modelclass, args=(), kwargs=None):
         """Create a user-defined model class.
 
         Create a model from a class. The name of the class can then be
@@ -5629,7 +5629,7 @@ class Session(NoNewAttributesAfterInit):
            model.
         args
            Arguments for the class constructor.
-        kwargs
+        kwargs : dict, optional
            Keyword arguments for the class constructor.
 
         See Also
@@ -5666,6 +5666,9 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source(mygauss1d.g1 + mygauss1d.g2)
 
         """
+        if kwargs is None:
+            kwargs = {}
+
         name = modelclass.__name__.lower()
 
         if not _is_subclass(modelclass, sherpa.models.ArithmeticModel):
@@ -7427,7 +7430,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: Improve priors documentation
     def load_user_stat(self, statname, calc_stat_func, calc_err_func=None,
-                       priors={}):
+                       priors=None):
         """Create a user-defined statistic.
 
         The choice of statistics - that is, the numeric value that is
@@ -7445,7 +7448,7 @@ class Session(NoNewAttributesAfterInit):
            The function that calculates the statistic.
         calc_err_func : func, optional
            How to calculate the statistical error on a data point.
-        priors : dict
+        priors : dict or None
            A dictionary of hyper-parameters for the priors.
 
         See Also
