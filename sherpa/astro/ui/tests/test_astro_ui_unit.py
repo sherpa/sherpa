@@ -1922,6 +1922,30 @@ def test_get_axes_datapha_rsp():
     assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
 
 
+def test_get_axes_datapha_rsp_bkg(clean_astro_ui):
+    """Let's have a RMF and ARF for fun (but only for source)
+
+    It is not clear whether we expect the respnose to be automatically
+    applied to the background here, so treat this as a regression test
+    (because, at present, we do not have units=energy for the
+    background(.
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+    ui.set_bkg(1, ui.DataPHA("x", [1, 2, 3], [9, 0, 7]))
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    ui.set_arf(ui.create_arf(elo, ehi))
+    ui.set_rmf(ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    ax = ui.get_axes(bkg_id=1)
+    assert len(ax) == 2
+    assert ax[0] == pytest.approx([1, 2, 3])
+    assert ax[1] == pytest.approx([2, 3, 4])
+
+
 def test_get_axes_dataimg_logical():
     """We don't set up a coordinate system so we just get logical back"""
 
@@ -1939,6 +1963,46 @@ def test_get_axes_dataimg_logical():
     assert len(ax) == 2
     assert ax[0] == pytest.approx([1, 2, 3])
     assert ax[1] == pytest.approx([1, 2, 3, 4])
+
+
+def test_get_rate_data1d(clean_astro_ui):
+    """Check this falls over"""
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
+    with pytest.raises(ArgumentErr,
+                       match="data set 1 does not contain PHA data"):
+        ui.get_rate()
+
+
+def test_get_rate_datapha_rsp():
+    """Let's have a RMF and ARF for fun"""
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+    ui.set_exposure(100)
+
+    ebins = np.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    ui.set_arf(ui.create_arf(elo, ehi, np.asarray([10, 20, 15])))
+    ui.set_rmf(ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    # check we do not have rate selected
+    ui.set_analysis("energy", type="counts")
+    assert not ui.get_data().rate
+
+    # counts
+    assert ui.get_dep() == pytest.approx([1, 2, 3])
+
+    # counts / bin width / exposure time
+    expected = np.asarray([1, 2, 3]) / np.asarray([0.1, 0.2, 0.4]) / 100
+    assert ui.get_rate() == pytest.approx(expected)
+
+    # and now switch to rate
+    ui.set_analysis("energy", type="rate")
+    assert ui.get_data().rate
+
+    assert ui.get_dep() == pytest.approx([1, 2, 3])
+    assert ui.get_rate() == pytest.approx(expected)
 
 
 @requires_fits

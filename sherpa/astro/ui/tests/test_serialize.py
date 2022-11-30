@@ -40,13 +40,13 @@ corresponding functions in sherpa.astro.ui.utils.
 from io import StringIO
 import logging
 import re
-import tempfile
 
 import numpy
 from numpy.testing import assert_array_equal
 
 import pytest
 
+from sherpa.utils.err import IOErr
 from sherpa.utils.testing import get_datadir, requires_data, \
     requires_xspec, has_package_from_list, requires_fits, requires_group
 from sherpa.astro import ui
@@ -1401,18 +1401,39 @@ def test_restore_empty():
     restore()
 
 
+def test_save_all_checks_clobber(tmp_path):
+    """We should error out if the output file exists"""
+    outfile = tmp_path / "save.sherpa"
+    outfile.write_text("x")
+
+    with pytest.raises(IOErr,
+                       match="^file '.*' exists and clobber is not set$"):
+        ui.save_all(str(outfile))
+
+
+def test_save_all_does_clobber(tmp_path):
+    """We should clobber the file if told too"""
+    outfile = tmp_path / "save.sherpa"
+    outfile.write_text("x")
+    ui.save_all(str(outfile), clobber=True)
+
+    # All we care about is that the original text has been replaced.
+    #
+    cts = outfile.read_text()
+    assert cts.startswith("import numpy\n")
+
+
 def test_canonical_empty():
     "Contents of empty state are as expected"
     compare(_canonical_empty)
 
 
-def test_canonical_empty_outfile():
+def test_canonical_empty_outfile(tmp_path):
     "Can read in a save file"
-    tfile = tempfile.NamedTemporaryFile(suffix='.sherpa')
-    ui.save_all(tfile.name, clobber=True)
-    with open(tfile.name, 'r') as fh:
-        output = fh.read()
 
+    outfile = tmp_path / "save.sherpa"
+    ui.save_all(str(outfile))
+    output = outfile.read_text()
     compare_lines(_canonical_empty, output)
 
 
