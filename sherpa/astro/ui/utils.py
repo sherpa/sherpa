@@ -18,6 +18,16 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# It would be better to not have redefined-builtin be a global,
+# but as so many methods take an id argument it may as well be
+# global.
+#
+# pylint: disable=invalid-name
+# pylint: disable=redefined-builtin
+# pylint: disable=too-many-lines
+
+"""Support for Astronomy specific sessions."""
+
 import logging
 import os
 import sys
@@ -105,9 +115,11 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
 
     """
 
+    # pylint: disable=protected-access
     idval = session._fix_id(idval)
     idstr = f"dataset {idval}"
 
+    # pylint: disable=protected-access
     data = session._get_pha_data(idval, bkg_id)
     if bkg_id is not None:
         idstr += f": background {bkg_id}"
@@ -117,17 +129,24 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
     # not seem worth the complexity to address this to save the time
     # needed to call _get_filter.
     #
+    # pylint: disable=protected-access
     ofilter = sherpa.ui.utils._get_filter(data)
     changefunc(data)
     if not data.grouped:
         return
 
+    # pylint: disable=protected-access
     nfilter = sherpa.ui.utils._get_filter(data)
     sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
                                          data.get_xlabel())
 
 
 class Session(sherpa.ui.utils.Session):
+    """The Astronomy Session class"""
+
+    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-instance-attributes
+    # pylint: disable=too-many-arguments
 
     ###########################################################################
     # Standard methods
@@ -452,6 +471,7 @@ class Session(sherpa.ui.utils.Session):
 
             bkg_ids = data.background_ids
             if bkg_id is not None:
+                # pylint: disable=protected-access
                 bkg_ids = [data._fix_background_id(bkg_id)]
 
             for bkg_id in bkg_ids:
@@ -3354,6 +3374,7 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(idval, bkg_id)
 
         if isinstance(d, DataPHA):
+            # pylint: disable=protected-access
             return d._get_ebins(group=False)
 
         if isinstance(d, (Data2D, DataIMG)):
@@ -3451,9 +3472,12 @@ class Session(sherpa.ui.utils.Session):
             d = self.get_bkg(idval, bkg_id)
 
         if isinstance(d, DataPHA):
+            # pylint: disable=protected-access
             old = d._rate
+            # pylint: disable=protected-access
             d._rate = False  # return predicted counts, not rate for PHA
             dep = d.get_y(filter)
+            # pylint: disable=protected-access
             d._rate = old
 
         else:
@@ -3555,9 +3579,12 @@ class Session(sherpa.ui.utils.Session):
         """
         d = self._get_pha_data(id, bkg_id)
 
+        # pylint: disable=protected-access
         old = d._rate
+        # pylint: disable=protected-access
         d._rate = True     # return count rate for PHA
         rate = d.get_y(filter)
+        # pylint: disable=protected-access
         d._rate = old
         return rate
 
@@ -3861,6 +3888,8 @@ class Session(sherpa.ui.utils.Session):
         return d.areascal
 
     def _save_type(self, objtype, id, filename, bkg_id=None, **kwargs):
+        # pylint: disable=too-many-branches
+
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -4407,6 +4436,7 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('nomask', id)
 
         if isinstance(d, DataPHA):
+            # pylint: disable=protected-access
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -4500,6 +4530,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
 
         if isinstance(d, DataPHA):
+            # pylint: disable=protected-access
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -4590,6 +4621,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
 
         if isinstance(d, DataPHA):
+            # pylint: disable=protected-access
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -4687,6 +4719,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
 
         if isinstance(d, DataPHA):
+            # pylint: disable=protected-access
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -5427,10 +5460,11 @@ class Session(sherpa.ui.utils.Session):
         """
         idval = self._fix_id(id)
         data = self._get_pha_data(idval, bkg_id)
+        # pylint: disable=protected-access
+        resp_id = data._fix_response_id(resp_id)
         arf, rmf = data.get_response(resp_id)
         if arf is None:
-            raise IdentifierErr('getitem', 'ARF data set',
-                                data._fix_response_id(resp_id),
+            raise IdentifierErr('getitem', 'ARF data set', resp_id,
                                 f'in PHA data set {idval} has not been set')
 
         if isinstance(arf, sherpa.astro.data.DataARF):
@@ -5508,13 +5542,16 @@ class Session(sherpa.ui.utils.Session):
 
         # store only the ARF dataset in the PHA response dict
         if type(arf) in (sherpa.astro.instrument.ARF1D,):
+            # pylint: disable=protected-access
             arf = arf._arf
+
         _check_type(arf, sherpa.astro.data.DataARF, 'arf', 'an ARF data set')
 
         data = self._get_pha_data(id, bkg_id)
         data.set_arf(arf, resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
+            # pylint: disable=protected-access
             data._set_initial_quantity()
 
     def unpack_arf(self, arg):
@@ -5895,10 +5932,11 @@ class Session(sherpa.ui.utils.Session):
         """
         idval = self._fix_id(id)
         data = self._get_pha_data(idval, bkg_id)
+        # pylint: disable=protected-access
+        resp_id = data._fix_response_id(resp_id)
         arf, rmf = data.get_response(resp_id)
         if rmf is None:
-            raise IdentifierErr('getitem', 'RMF data set',
-                                data._fix_response_id(resp_id),
+            raise IdentifierErr('getitem', 'RMF data set', resp_id,
                                 f'in PHA data set {idval} has not been set')
 
         if isinstance(rmf, sherpa.astro.data.DataRMF):
@@ -5976,13 +6014,16 @@ class Session(sherpa.ui.utils.Session):
 
         # store only the RMF dataset in the PHA response dict
         if type(rmf) in (sherpa.astro.instrument.RMF1D,):
+            # pylint: disable=protected-access
             rmf = rmf._rmf
+
         _check_type(rmf, sherpa.astro.data.DataRMF, 'rmf', 'an RMF data set')
 
         data = self._get_pha_data(id, bkg_id)
         data.set_rmf(rmf, resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
+            # pylint: disable=protected-access
             data._set_initial_quantity()
 
     def unpack_rmf(self, arg):
@@ -6342,10 +6383,12 @@ class Session(sherpa.ui.utils.Session):
         """
         idval = self._fix_id(id)
         data = self._get_pha_data(idval)
+        # pylint: disable=protected-access
+        bkg_id = data._fix_background_id(bkg_id)
         bkg = data.get_background(bkg_id)
         if bkg is None:
             raise IdentifierErr('getitem', 'background data set',
-                                data._fix_background_id(bkg_id),
+                                bkg_id,
                                 f'in PHA data set {idval} has not been set')
 
         return bkg
@@ -6439,6 +6482,7 @@ class Session(sherpa.ui.utils.Session):
         load_bkg : Load the background of a PHA data set.
 
         """
+        # pylint: disable=protected-access
         return list(self._get_pha_data(id)._backgrounds.keys())
 
     def list_response_ids(self, id=None, bkg_id=None):
@@ -6471,6 +6515,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
         data = self._get_pha_data(id, bkg_id)
+        # pylint: disable=protected-access
         return list(data._responses.keys())
 
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
@@ -7569,10 +7614,12 @@ class Session(sherpa.ui.utils.Session):
         # Note: we always report the change in filter status, even
         # when already grouped.
         #
+        # pylint: disable=protected-access
         ofilter = sherpa.ui.utils._get_filter(data)
         if not data.grouped:
             data.group()
 
+        # pylint: disable=protected-access
         nfilter = sherpa.ui.utils._get_filter(data)
         sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
                                              data.get_xlabel())
@@ -8792,6 +8839,10 @@ class Session(sherpa.ui.utils.Session):
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
                  grouping=None, grouped=False, quality=None, bkg=None):
+        # pylint: disable=too-many-statements
+        # pylint: disable=too-many-branches
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-arguments
         """Simulate a PHA data set from a model.
 
         The function creates a simulated PHA data set based on a source
@@ -8921,6 +8972,7 @@ class Session(sherpa.ui.utils.Session):
         >>> save_pha('sim', 'sim.pi')
 
         """
+
         id = self._fix_id(id)
 
         if id in self._data:
@@ -9129,6 +9181,7 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(data, DataPHA):
             model = self.get_model(id)
 
+            # pylint: disable=protected-access
             if data._responses:
 
                 instruments = (sherpa.astro.instrument.RSPModel,
@@ -9138,15 +9191,15 @@ class Session(sherpa.ui.utils.Session):
                                sherpa.astro.instrument.PileupRMFModel)
 
                 do_warning = True
-                # if type(model) in instruments:
-                # if isinstance(model, instruments):
+                # pylint: disable=protected-access
                 if sherpa.ui.utils._is_subclass(type(model), instruments):
                     do_warning = False
+
                 for part in model:
-                    # if type(part) in instruments:
-                    # if isinstance(part, instruments):
+                    # pylint: disable=protected-access
                     if sherpa.ui.utils._is_subclass(type(part), instruments):
                         do_warning = False
+
                 if do_warning:
                     warning(f"PHA source model '{model.name}' \ndoes not" +
                             " have an associated instrument model; " +
@@ -9624,6 +9677,7 @@ class Session(sherpa.ui.utils.Session):
         # this for set_full_model and the data setting can get changed
         # at any point.
         #
+        # pylint: disable=protected-access
         if data.units != 'channel' and data._responses:
 
             instruments = (sherpa.astro.instrument.RSPModel,
@@ -9633,15 +9687,15 @@ class Session(sherpa.ui.utils.Session):
                            sherpa.astro.instrument.PileupRMFModel)
 
             do_warning = True
-            # if type(model) in instruments:
-            # if isinstance(model, instruments):
+            # pylint: disable=protected-access
             if sherpa.ui.utils._is_subclass(type(model), instruments):
                 do_warning = False
+
             for part in model:
-                # if type(part) in instruments:
-                # if isinstance(part, instruments):
+                # pylint: disable=protected-access
                 if sherpa.ui.utils._is_subclass(type(part), instruments):
                     do_warning = False
+
             if do_warning:
                 self.delete_bkg_model(id, bkg_id)
                 raise TypeError(f"PHA background source model '{model.name}' \n" +
@@ -9910,20 +9964,24 @@ class Session(sherpa.ui.utils.Session):
         """
 
         try:
+            # pylint: disable=import-outside-toplevel
             from sherpa.astro import xspec
         except ImportError as exc:
             # TODO: what is the best error to raise here?
             raise ImportErr('notsupported', 'XSPEC') from exc
 
-        tablemodel = xspec.read_xstable_model(modelname, filename, etable=etable)
+        tablemodel = xspec.read_xstable_model(modelname, filename,
+                                              etable=etable)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
     # also in sherpa.utils
     # DOC-NOTE: can filename be a crate/hdulist?
-    # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
+    # DOC-TODO: how to describe the supported args/kwargs
+    #           (not just for this function)?
     def load_table_model(self, modelname, filename,
-                         method=sherpa.utils.linear_interp, *args, **kwargs):
+                         method=sherpa.utils.linear_interp,
+                         *args, **kwargs):
         # pylint: disable=W1113
         """Load tabular or image data and use it as a model component.
 
@@ -10010,7 +10068,8 @@ class Session(sherpa.ui.utils.Session):
             x = None
             y = None
             try:
-                x, y = self._read_user_model(filename, *args, **kwargs)
+                x, y = self._read_user_model(filename, *args,
+                                             **kwargs)
             except Exception:
                 # Fall back to reading plain ASCII, if no other
                 # more sophisticated I/O backend loaded (such as
@@ -10026,7 +10085,8 @@ class Session(sherpa.ui.utils.Session):
     # ## also in sherpa.utils
     # DOC-TODO: how to describe *args/**kwargs
     # DOC-TODO: how is the _y value used if set
-    def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
+    def load_user_model(self, func, modelname, filename=None,
+                        *args, **kwargs):
         # pylint: disable=W1113
         """Create a user-defined model.
 
@@ -10112,17 +10172,21 @@ class Session(sherpa.ui.utils.Session):
         """
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
+        # pylint: disable=protected-access
         usermodel._file = filename
         if filename is not None:
-            _, usermodel._y = self._read_user_model(filename, *args, **kwargs)
+            _, usermodel._y = self._read_user_model(filename, *args,
+                                                    **kwargs)
 
         self._add_model_component(usermodel)
 
-    ###########################################################################
+    #################################################################
     # Fitting
-    ###########################################################################
+    #################################################################
 
-    def _add_extra_data_and_models(self, ids, datasets, models, bkg_ids=None):
+    def _add_extra_data_and_models(self, ids, datasets, models,
+                                   bkg_ids=None):
+        # pylint: disable=too-many-locals
 
         # bkg_ids used to default to {} but this is "dangerous", so we
         # use the following. When bkg_ids is None we don't care about
@@ -10424,6 +10488,7 @@ class Session(sherpa.ui.utils.Session):
         info(res.format())
 
     def _get_stat_info(self):
+        # pylint: disable=too-many-locals
 
         ids, datasets, models = self._prepare_fit(None)
 
@@ -12431,6 +12496,7 @@ class Session(sherpa.ui.utils.Session):
                          recalc=True, clip='hard',
                          overplot=False, clearwindow=True,
                          **kwargs):
+        # pylint: disable=too-many-locals
         """Display the energy flux distribution.
 
         For each iteration, draw the parameter values of the model
@@ -12586,6 +12652,7 @@ class Session(sherpa.ui.utils.Session):
                          recalc=True, clip='hard',
                          overplot=False, clearwindow=True,
                          **kwargs):
+        # pylint: disable=too-many-locals
         """Display the photon flux distribution.
 
         For each iteration, draw the parameter values of the model
@@ -13573,6 +13640,7 @@ class Session(sherpa.ui.utils.Session):
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                     num=1, scales=None, correlated=False,
                     numcores=None, bkg_id=None, Xrays=True, confidence=68):
+        # pylint: disable=too-many-locals
         """Return the flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -13794,6 +13862,8 @@ class Session(sherpa.ui.utils.Session):
     def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None,
                 error=False, params=None, otherids=(), niter=1000,
                 covar_matrix=None):
+        # pylint: disable=too-many-statements
+        # pylint: disable=too-many-locals
         """Calculate the equivalent width of an emission or absorption line.
 
         The `equivalent width <https://en.wikipedia.org/wiki/Equivalent_width>`_
@@ -13958,7 +14028,9 @@ class Session(sherpa.ui.utils.Session):
             else:
                 is_numpy_ndarray(params, 'params', npar)
 
+            # pylint: disable=protected-access
             mins = fit.model._get_thawed_par_mins()
+            # pylint: disable=protected-access
             maxs = fit.model._get_thawed_par_maxes()
             eqw = numpy.zeros_like(params[0, :])
             for params_index in range(len(params[0, :])):

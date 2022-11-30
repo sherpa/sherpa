@@ -18,6 +18,16 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# It would be better to not have redefined-builtin be a global,
+# but as so many methods take an id argument it may as well be
+# global.
+#
+# pylint: disable=invalid-name
+# pylint: disable=redefined-builtin
+# pylint: disable=too-many-lines
+
+"""General support for sessions."""
+
 from configparser import ConfigParser
 import copy
 import copyreg as copy_reg
@@ -521,6 +531,10 @@ def set_filter(data, val, ignore=False):
 #
 ###############################################################################
 class Session(NoNewAttributesAfterInit):
+    """The Session class"""
+
+    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-instance-attributes
 
     ###########################################################################
     # Standard methods
@@ -570,6 +584,7 @@ class Session(NoNewAttributesAfterInit):
         return allnames
 
     def clean(self):
+        # pylint: disable=too-many-statements
         """Clear out the current Sherpa session.
 
         The `clean` function removes all data sets and model
@@ -1751,6 +1766,7 @@ class Session(NoNewAttributesAfterInit):
         return item
 
     def _set_item(self, id, item, itemdict, itemtype, itemname, itemdesc):
+        # pylint: disable=too-many-arguments
         id = self._fix_id(id)
         _check_type(item, itemtype, itemname, itemdesc)
         itemdict[id] = item
@@ -2777,6 +2793,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_staterror(self, id, filename=None, ncols=2, *args, **kwargs):
+        # pylint: disable=keyword-arg-before-vararg
         """Load the statistical errors from an ASCII file.
 
         Read in a column or image from a file and use the values
@@ -2849,6 +2866,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
     def load_syserror(self, id, filename=None, ncols=2, *args, **kwargs):
+        # pylint: disable=keyword-arg-before-vararg
         """Load the systematic errors from an ASCII file.
 
         Read in a column or image from a file and use the values
@@ -2919,6 +2937,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: does ncols make sense here? (have removed for now)
     def load_filter(self, id, filename=None, ignore=False, ncols=2,
                     *args, **kwargs):
+        # pylint: disable=keyword-arg-before-vararg
         """Load the filter array from an ASCII file and add to a data set.
 
         Parameters
@@ -3754,6 +3773,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def dataspace1d(self, start, stop, step=1, numbins=None,
                     id=None, dstype=sherpa.data.Data1DInt):
+        # pylint: disable=too-many-arguments
         """Create the independent axis for a 1D data set.
 
         Create an "empty" one-dimensional data set by defining the
@@ -4027,6 +4047,7 @@ class Session(NoNewAttributesAfterInit):
     def unpack_data(self, filename, ncols=2, colkeys=None,
                     dstype=sherpa.data.Data1D, sep=' ', comment='#',
                     require_floats=True):
+        # pylint: disable=too-many-arguments
         """Create a sherpa data object from an ASCII file.
 
         This function is used to read in columns from an ASCII
@@ -4135,6 +4156,7 @@ class Session(NoNewAttributesAfterInit):
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
                   dstype=sherpa.data.Data1D, sep=' ', comment='#',
                   require_floats=True):
+        # pylint: disable=too-many-arguments
         """Load a data set from an ASCII file.
 
         Parameters
@@ -4207,7 +4229,6 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: rework the Data type notes section (also needed by unpack_arrays)
-    # @loggable(with_id = True)
     def load_arrays(self, id, *args):
         """Create a data set from array values.
 
@@ -4328,6 +4349,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Write a list of arrays to an ASCII file.
 
         Parameters
@@ -4386,6 +4408,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_source(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the model values to a file.
 
         The model is evaluated on the grid of the data set, but does
@@ -4461,6 +4484,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_model(self, id, filename=None, clobber=False, sep=' ',
                    comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the model values to a file.
 
         The model is evaluated on the grid of the data set, including
@@ -4537,6 +4561,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_resid(self, id, filename=None, clobber=False, sep=' ',
                    comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the residuals (data-model) to a file.
 
         Parameters
@@ -4607,6 +4632,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_delchi(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the ratio of residuals (data-model) to error to a file.
 
         Parameters
@@ -4677,6 +4703,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def save_data(self, id, filename=None, fields=None, sep=' ', comment='#',
                   clobber=False, linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the data to a file.
 
         Parameters
@@ -4759,6 +4786,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_filter(self, id, filename=None, clobber=False, sep=' ',
                     comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the filter array to a file.
 
         Parameters
@@ -4838,6 +4866,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_staterror(self, id, filename=None, clobber=False, sep=' ',
                        comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the statistical errors to a file.
 
         If the statistical errors have not been set explicitly, then
@@ -4918,6 +4947,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_syserror(self, id, filename=None, clobber=False, sep=' ',
                       comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the statistical errors to a file.
 
         Parameters
@@ -4996,6 +5026,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_error(self, id, filename=None, clobber=False, sep=' ',
                    comment='#', linebreak='\n', format='%g'):
+        # pylint: disable=too-many-arguments
         """Save the errors to a file.
 
         The total errors for a data set are the quadrature combination
@@ -6178,15 +6209,13 @@ class Session(NoNewAttributesAfterInit):
 
         _remove_obj_from_main(name)
 
-    # Back-compatibility
-    # create_model = create_model_component
-
     #
     # Source models
     #
 
     def _eval_model_expression(self, expr, typestr='model'):
         try:
+            # pylint: disable=eval-used
             return eval(expr, self._model_globals, self._model_components)
         except Exception as exc:
             raise ArgumentErr('badexpr', typestr, sys.exc_info()[1]) from exc
@@ -6414,7 +6443,6 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: what examples/info should be talked about here?
     # (e.g. no PHA/ARF/RMF)
-    # @loggable(with_id=True, with_keyword='model')
     def set_full_model(self, id, model=None):
         """Define the convolved model expression for a data set.
 
@@ -6475,7 +6503,6 @@ class Session(NoNewAttributesAfterInit):
         self._runparamprompt(model.pars)
 
     # DOC-TODO: the .cache value appears to default to 5
-    # @loggable(with_id=True, with_keyword="model")
     def set_model(self, id, model=None):
         """Set the source model expression for a data set.
 
@@ -6896,6 +6923,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _read_user_model(self, filename, ncols=2, colkeys=None,
                          dstype=sherpa.data.Data1D, sep=' ', comment='#'):
+        # pylint: disable=too-many-arguments
         x = None
         y = None
         try:
@@ -6917,6 +6945,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: description of template interpolation needs a lot of work.
     def load_template_model(self, modelname, templatefile, dstype=sherpa.data.Data1D,
                             sep=' ', comment='#', method=sherpa.utils.linear_interp, template_interpolator_name='default'):
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         """Load a set of templates and use it as a model component.
 
         A template model can be considered to be an extension
@@ -7082,7 +7112,6 @@ class Session(NoNewAttributesAfterInit):
         self._add_model_component(templatemodel)
 
     # DOC-TODO: description of template interpolation needs a lot of work.
-    # @loggable()
     def load_template_interpolator(self, name, interpolator_class, **kwargs):
         """Set the template interpolation scheme.
 
@@ -7115,6 +7144,7 @@ class Session(NoNewAttributesAfterInit):
     def load_table_model(self, modelname, filename, ncols=2, colkeys=None,
                          dstype=sherpa.data.Data1D, sep=' ', comment='#',
                          method=sherpa.utils.linear_interp):
+        # pylint: disable=too-many-arguments
         """Load ASCII tabular data and use it as a model component.
 
         A table model is defined on a grid of points which is
@@ -7208,10 +7238,10 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils
     # DOC-TODO: how is the _y value used if set
-    # @loggable()
     def load_user_model(self, func, modelname, filename=None, ncols=2,
                         colkeys=None, dstype=sherpa.data.Data1D,
                         sep=' ', comment='#'):
+        # pylint: disable=too-many-arguments
         """Create a user-defined model.
 
         Assign a name to a function; this name can then be used as any
@@ -7305,16 +7335,18 @@ class Session(NoNewAttributesAfterInit):
         """
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
+        # pylint: disable=protected-access
         usermodel._file = filename
         if (filename is not None):
             x, usermodel._y = self._read_user_model(filename, ncols, colkeys,
                                                     dstype, sep, comment)
         self._add_model_component(usermodel)
 
-    # @loggable()
     def add_user_pars(self, modelname, parnames,
                       parvals=None, parmins=None, parmaxs=None,
                       parunits=None, parfrozen=None):
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         """Add parameter information to a user model.
 
         Parameters
@@ -7420,7 +7452,9 @@ class Session(NoNewAttributesAfterInit):
         # (these are the only attributes we care about preserving)
         newusermodel = sherpa.models.UserModel(modelname, pars)
         newusermodel.calc = usermodel.calc
+        # pylint: disable=protected-access
         newusermodel._file = usermodel._file
+        # pylint: disable=protected-access
         newusermodel._y = usermodel._y
 
         # Remove old usermodel from collection of known model
@@ -7500,9 +7534,6 @@ class Session(NoNewAttributesAfterInit):
 
         _assign_obj_to_main(statname, userstat)
 
-    # Back-compatibility
-    # set_source = set_model
-
     #
     # Conv
     #
@@ -7510,7 +7541,6 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: why isn't the "flux" of the convolved model ~
     # that of the unconvolved model?
     # DOC-NOTE: better description of conv vs psf
-    # @loggable()
     def load_conv(self, modelname, filename_or_model, *args, **kwargs):
         """Load a 1D convolution model.
 
@@ -7648,7 +7678,6 @@ class Session(NoNewAttributesAfterInit):
         self._psf_models.append(psf)
 
     # DOC-TODO: am I correct about the multiple use warning?
-    # @loggable(with_id=True, with_keyword='psf')
     def set_psf(self, id, psf=None):
         """Add a PSF model to a data set.
 
@@ -7953,6 +7982,7 @@ class Session(NoNewAttributesAfterInit):
     # since you can just change the values directly then (although
     # may have to car about order of operations)
     def set_par(self, par, val=None, min=None, max=None, frozen=None):
+        # pylint: disable=too-many-arguments
         """Set the value, limits, or behavior of a model parameter.
 
         Parameters
@@ -8723,6 +8753,7 @@ class Session(NoNewAttributesAfterInit):
             info(f'WARNING: No guess found for {self.get_model(id).name}')
 
     def calc_stat(self, id=None, *otherids):
+        # pylint: disable=keyword-arg-before-vararg
         """Calculate the fit statistic for a data set.
 
         Evaluate the model for one or more data sets, compare it to
@@ -8780,6 +8811,7 @@ class Session(NoNewAttributesAfterInit):
         return f.calc_stat()
 
     def calc_chisqr(self, id=None, *otherids):
+        # pylint: disable=keyword-arg-before-vararg
         """Calculate the per-bin chi-squared statistic.
 
         Evaluate the model for one or more data sets, compare it to the
@@ -8840,6 +8872,7 @@ class Session(NoNewAttributesAfterInit):
 
     # also in sherpa.astro.utils
     def fit(self, id=None, *otherids, **kwargs):
+        # pylint: disable=keyword-arg-before-vararg
         """Fit a model to one or more data sets.
 
         Use forward fitting to find the best-fit model to one or more
@@ -9000,6 +9033,7 @@ class Session(NoNewAttributesAfterInit):
                     id=1, otherids=(), num=500, bins=25, numcores=None,
                     replot=False, overplot=False, clearwindow=True,
                     **kwargs):
+        # pylint: disable=too-many-arguments
         """Compute and plot a histogram of likelihood ratios by simulating data.
 
         Compare the likelihood of the null model to an alternative model
@@ -9099,6 +9133,7 @@ class Session(NoNewAttributesAfterInit):
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id=1, otherids=(), num=500, bins=25, numcores=None,
                         recalc=False):
+        # pylint: disable=too-many-arguments
         """Return the data used by plot_pvalue.
 
         Access the data arrays and preferences defining the histogram plot
@@ -9197,6 +9232,7 @@ class Session(NoNewAttributesAfterInit):
 
     def normal_sample(self, num=1, sigma=1, correlate=True,
                       id=None, otherids=(), numcores=None):
+        # pylint: disable=too-many-arguments
         """Sample the fit statistic by taking the parameter values
         from a normal distribution.
 
@@ -9267,6 +9303,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve the description of factor parameter
     def uniform_sample(self, num=1, factor=4,
                        id=None, otherids=(), numcores=None):
+        # pylint: disable=too-many-arguments
         """Sample the fit statistic by taking the parameter values
         from an uniform distribution.
 
@@ -9321,6 +9358,7 @@ class Session(NoNewAttributesAfterInit):
         return sherpa.sim.uniform_sample(fit, num, factor, numcores)
 
     def t_sample(self, num=1, dof=None, id=None, otherids=(), numcores=None):
+        # pylint: disable=too-many-arguments
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
 
@@ -13247,6 +13285,7 @@ class Session(NoNewAttributesAfterInit):
     #           but does the astro version support a bkg_id parameter?
     def plot_source_component(self, id, model=None, replot=False,
                               overplot=False, clearwindow=True, **kwargs):
+        # pylint: disable=too-many-arguments
         """Plot a component of the source expression for a data set.
 
         This function evaluates and plots a component of the model
@@ -13318,6 +13357,7 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_model_component(self, id, model=None, replot=False,
                              overplot=False, clearwindow=True, **kwargs):
+        # pylint: disable=too-many-arguments
         """Plot a component of the model for a data set.
 
         This function evaluates and plots a component of the model
@@ -14320,6 +14360,7 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_pdf(self, points, name="x", xlabel="x", bins=12, normed=True,
                  replot=False, overplot=False, clearwindow=True, **kwargs):
+        # pylint: disable=too-many-arguments
         """Plot the probability density function of an array of values.
 
         Create and plot the probability density function (PDF) of
@@ -14391,6 +14432,7 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_cdf(self, points, name="x", xlabel="x",
                  replot=False, overplot=False, clearwindow=True, **kwargs):
+        # pylint: disable=too-many-arguments
         """Plot the cumulative density function of an array of values.
 
         Create and plot the cumulative density function (CDF) of
@@ -14460,6 +14502,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: what does xlabel do?
     def plot_trace(self, points, name="x", xlabel="x",
                    replot=False, overplot=False, clearwindow=True, **kwargs):
+        # pylint: disable=too-many-arguments
         """Create a trace plot of row number versus value.
 
         Dispay a plot of the ``points`` array values (Y axis) versus row
@@ -14534,6 +14577,7 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
                      replot=False, overplot=False, clearwindow=True, **kwargs):
+        # pylint: disable=too-many-arguments
         """Create a scatter plot.
 
         Parameters
@@ -15122,6 +15166,8 @@ class Session(NoNewAttributesAfterInit):
     def get_int_proj(self, par=None, id=None, otherids=None, recalc=False,
                      fast=True, min=None, max=None, nloop=20, delv=None, fac=1,
                      log=False, numcores=None):
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         """Return the interval-projection object.
 
         This returns (and optionally calculates) the data used to
@@ -15234,6 +15280,7 @@ class Session(NoNewAttributesAfterInit):
     def get_int_unc(self, par=None, id=None, otherids=None, recalc=False,
                     min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                     numcores=None):
+        # pylint: disable=too-many-arguments
         """Return the interval-uncertainty object.
 
         This returns (and optionally calculates) the data used to
@@ -15342,6 +15389,8 @@ class Session(NoNewAttributesAfterInit):
                      recalc=False, fast=True, min=None, max=None,
                      nloop=(10, 10), delv=None, fac=4, log=(False, False),
                      sigma=(1, 2, 3), levels=None, numcores=None):
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         """Return the region-projection object.
 
         This returns (and optionally calculates) the data used to
@@ -15468,6 +15517,8 @@ class Session(NoNewAttributesAfterInit):
                     recalc=False, min=None, max=None, nloop=(10, 10),
                     delv=None, fac=4, log=(False, False), sigma=(1, 2, 3),
                     levels=None, numcores=None):
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         """Return the region-uncertainty object.
 
         This returns (and optionally calculates) the data used to
@@ -15596,6 +15647,7 @@ class Session(NoNewAttributesAfterInit):
     def int_proj(self, par, id=None, otherids=None, replot=False, fast=True,
                  min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                  numcores=None, overplot=False):
+        # pylint: disable=too-many-arguments
         """Calculate and plot the fit statistic versus fit parameter value.
 
         Create a confidence plot of the fit statistic as a function of
@@ -15715,6 +15767,7 @@ class Session(NoNewAttributesAfterInit):
     def int_unc(self, par, id=None, otherids=None, replot=False, min=None,
                 max=None, nloop=20, delv=None, fac=1, log=False,
                 numcores=None, overplot=False):
+        # pylint: disable=too-many-arguments
         """Calculate and plot the fit statistic versus fit parameter value.
 
         Create a confidence plot of the fit statistic as a function of
@@ -15832,6 +15885,8 @@ class Session(NoNewAttributesAfterInit):
                  fast=True, min=None, max=None, nloop=(10, 10), delv=None,
                  fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
                  numcores=None, overplot=False):
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
@@ -15964,6 +16019,8 @@ class Session(NoNewAttributesAfterInit):
                 min=None, max=None, nloop=(10, 10), delv=None, fac=4,
                 log=(False, False), sigma=(1, 2, 3), levels=None,
                 numcores=None, overplot=False):
+        # pylint: disable=too-many-arguments
+        # pylint: disable=too-many-locals
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
@@ -16092,12 +16149,6 @@ class Session(NoNewAttributesAfterInit):
                                    sigma=sigma, levels=levels,
                                    numcores=numcores)
         self._contour(plotobj, overcontour=overplot)
-
-    # Aliases
-    # interval_projection = int_proj
-    # interval_uncertainty = int_unc
-    # region_projection = reg_proj
-    # region_uncertainty = reg_unc
 
     ###########################################################################
     # Basic imaging
