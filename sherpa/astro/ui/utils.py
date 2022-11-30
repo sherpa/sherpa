@@ -141,6 +141,61 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
                                          data.get_xlabel())
 
 
+def _save_errorcol(session, idval, filename, bkg_id,
+                   clobber, asciiflag,
+                   get_err, colname):
+    # pylint: disable=too-many-arguments
+    """Write out the error column.
+
+    Parameters
+    ----------
+    session : AstroSession instance
+    idval : int or str or None
+        The identifier (or filename)
+    filename : str or None
+        The filename (when idval is not None)
+    bkg_id : int or None
+        The background identifier (if wanted).
+    clobber : bool
+        Do we clobber the file if it exists?
+    asciiflag : bool
+        Is the file an ASCII or FITS file?
+    get_err : callable
+        The method to call to get the error data.
+    colname : str
+        The name of the error column in the output file.
+
+    Notes
+    -----
+    This could be updated to handle Data1DInt data (e.g. write
+    out XLO and XHI).
+
+    """
+
+    clobber = sherpa.utils.bool_cast(clobber)
+    asciiflag = sherpa.utils.bool_cast(asciiflag)
+    if filename is None:
+        idval, filename = filename, idval
+
+    # pylint: disable=protected-access
+    idval = session._fix_id(idval)
+    _check_str_type(filename, 'filename')
+    if bkg_id is not None:
+        d = session.get_bkg(idval, bkg_id)
+    else:
+        d = session.get_data(idval)
+
+    if isinstance(d, DataPHA):
+        # pylint: disable=protected-access
+        x = d._get_ebins(group=True)[0]
+    else:
+        x = d.get_indep(filter=False)[0]
+
+    err = get_err(idval, filter=False, bkg_id=bkg_id)
+    session.save_arrays(filename, [x, err], fields=['X', colname],
+                        ascii=asciiflag, clobber=clobber)
+
+
 class Session(sherpa.ui.utils.Session):
     """The Astronomy Session class"""
 
@@ -4447,8 +4502,8 @@ class Session(sherpa.ui.utils.Session):
                          ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_staterror(self, id, filename=None, bkg_id=None, ascii=True,
-                       clobber=False):
+    def save_staterror(self, id, filename=None, bkg_id=None,
+                       ascii=True, clobber=False):
         """Save the statistical errors to a file.
 
         If the statistical errors have not been set explicitly, then
@@ -4519,29 +4574,14 @@ class Session(sherpa.ui.utils.Session):
         >>> save_staterror('staterr.fits', ascii=False)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
-        if filename is None:
-            id, filename = filename, id
-        _check_str_type(filename, 'filename')
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        id = self._fix_id(id)
 
-        if isinstance(d, DataPHA):
-            # pylint: disable=protected-access
-            x = d._get_ebins(group=True)[0]
-        else:
-            x = d.get_indep(filter=False)[0]
+        _save_errorcol(self, id, filename, bkg_id, clobber, ascii,
+                       self.get_staterror, 'STAT_ERR')
 
-        err = self.get_staterror(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], fields=['X', 'STAT_ERR'],
-                         ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_syserror(self, id, filename=None, bkg_id=None, ascii=True,
-                      clobber=False):
+    def save_syserror(self, id, filename=None, bkg_id=None,
+                      ascii=True, clobber=False):
         """Save the systematic errors to a file.
 
         Parameters
@@ -4610,25 +4650,9 @@ class Session(sherpa.ui.utils.Session):
         >>> save_syserror('syserr.fits', ascii=False)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
-        if filename is None:
-            id, filename = filename, id
-        _check_str_type(filename, 'filename')
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        id = self._fix_id(id)
 
-        if isinstance(d, DataPHA):
-            # pylint: disable=protected-access
-            x = d._get_ebins(group=True)[0]
-        else:
-            x = d.get_indep(filter=False)[0]
-
-        err = self.get_syserror(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], fields=['X', 'SYS_ERR'],
-                         ascii=ascii, clobber=clobber)
+        _save_errorcol(self, id, filename, bkg_id, clobber, ascii,
+                       self.get_syserror, 'SYS_ERR')
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_error(self, id, filename=None, bkg_id=None, ascii=True,
@@ -4708,25 +4732,9 @@ class Session(sherpa.ui.utils.Session):
         >>> save_error('err.fits', ascii=False)
 
         """
-        clobber = sherpa.utils.bool_cast(clobber)
-        ascii = sherpa.utils.bool_cast(ascii)
-        if filename is None:
-            id, filename = filename, id
-        _check_str_type(filename, 'filename')
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        id = self._fix_id(id)
 
-        if isinstance(d, DataPHA):
-            # pylint: disable=protected-access
-            x = d._get_ebins(group=True)[0]
-        else:
-            x = d.get_indep(filter=False)[0]
-
-        err = self.get_error(id, filter=False, bkg_id=bkg_id)
-        self.save_arrays(filename, [x, err], fields=['X', 'ERR'],
-                         ascii=ascii, clobber=clobber)
+        _save_errorcol(self, id, filename, bkg_id, clobber, ascii,
+                       self.get_error, 'ERR')
 
     def save_pha(self, id, filename=None, bkg_id=None, ascii=False,
                  clobber=False):
@@ -4801,9 +4809,11 @@ class Session(sherpa.ui.utils.Session):
         _check_str_type(filename, 'filename')
         d = self._get_pha_data(id, bkg_id)
 
-        sherpa.astro.io.write_pha(filename, d, ascii=ascii, clobber=clobber)
+        sherpa.astro.io.write_pha(filename, d, ascii=ascii,
+                                  clobber=clobber)
 
-    def save_grouping(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
+    def save_grouping(self, id, filename=None, bkg_id=None,
+                      ascii=True, clobber=False):
         """Save the grouping scheme to a file.
 
         The output is a two-column file, containing the channel and
