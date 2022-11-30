@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2021 Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2016, 2018, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -70,12 +71,11 @@ def test_load_template_interpolator(run_thread, clean_ui):
 # not represent (gridsearch with wrong values)
 @requires_data
 def test_load_template_model_without_interpolation_2_31(run_thread, clean_ui):
-    with pytest.raises(ModelErr) as me:
+    emsg = 'Interpolation of template parameters was disabled for this model, but parameter values not in the template library have been requested. Please use gridsearch method and make sure the sequence option is consistent with the template library'
+
+    with pytest.raises(ModelErr, match=emsg):
         run_thread('load_template_without_interpolation',
                    scriptname='test_case_2_and_3.1.py')
-
-    emsg = 'Interpolation of template parameters was disabled for this model, but parameter values not in the template library have been requested. Please use gridsearch method and make sure the sequence option is consistent with the template library'
-    assert str(me.value) == emsg
 
 
 # TestCase 3.2 discrete templates fail when probed for values they do
@@ -83,12 +83,10 @@ def test_load_template_model_without_interpolation_2_31(run_thread, clean_ui):
 #
 @requires_data
 def test_load_template_model_without_interpolation_32(run_thread, clean_ui):
-    with pytest.raises(ModelErr) as me:
+    emsg = r"You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading \(which is the default behavior\)."
+    with pytest.raises(ModelErr, match=emsg):
         run_thread('load_template_without_interpolation',
                    scriptname='test_case_3.2.py')
-
-    emsg = "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior)."
-    assert str(me.value) == emsg
 
 
 # TestCase 4 gridsearch with right values succeeds
@@ -110,7 +108,6 @@ def setUp():
     x = numpy.linspace(0.1, 5, 50)
 
     num = 4
-    ncoords = 100
     ntemplates = 2**num
     g1 = Gauss1D('g1')
 
@@ -118,7 +115,7 @@ def setUp():
     grid = numpy.mgrid[[slice(0, 2, 1) for ii in range(num)]]
     grid = numpy.asarray(list(map(numpy.ravel, grid))).T
     coords = numpy.linspace(0.01, 6, 100)
-    names = ["p%i" % i for i in range(num)]
+    names = [f"p{i}" for i in range(num)]
     templates = []
     for ii in range(ntemplates):
         t = TableModel()

@@ -23,22 +23,30 @@ There is a copy of this test in sherpa/ui/astro/tests/ that needs
 to be kept up to date.
 """
 
+# pylint: disable=missing-module-docstring
+# pylint: disable=missing-function-docstring
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-statements
+# pylint: disable=invalid-name
+# pylint: disable=protected-access
+
 from io import StringIO
 import logging
+import pickle
 from unittest.mock import patch
 
 from numpy.testing import assert_array_equal
 
 import pytest
 
-from sherpa.models import parameter
+from sherpa.models import Model, parameter
 import sherpa.models.basic
 from sherpa import estmethods as est
 from sherpa import optmethods as opt
 from sherpa import stats
-from sherpa.ui.utils import Session
+from sherpa.ui.utils import Session, ModelWrapper
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    IdentifierErr, SessionErr
+    IdentifierErr, IOErr, SessionErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_plotting, requires_xspec
 
@@ -111,8 +119,8 @@ def test_list_ids():
 
 
 # bug #297
-def test_save_restore(tmpdir):
-    outfile = tmpdir.join("sherpa.save")
+def test_save_restore(tmp_path):
+    outfile = tmp_path / "sherpa.save"
     session = Session()
     session.load_arrays(1, TEST, TEST2)
     session.save(str(outfile), clobber=True)
@@ -123,6 +131,32 @@ def test_save_restore(tmpdir):
     assert {1, } == set(session.list_data_ids())
     assert_array_equal(TEST, session.get_data(1).get_indep()[0])
     assert_array_equal(TEST2, session.get_data(1).get_dep())
+
+
+def test_save_clobber_check(tmp_path):
+    """Check we handle clobber case"""
+
+    tmp = tmp_path / "x.sherpa"
+    tmp.write_text("not-empty")
+
+    s = Session()
+    with pytest.raises(IOErr,
+                       match="' exists and clobber is not set"):
+        s.save(str(tmp), clobber=False)
+
+
+def test_restore_not_a_session(tmp_path):
+    """Check we error out when it's not a Session object"""
+
+    # Argh tmppath and pickle don't play well together
+    tmp = tmp_path / "not-sherpa.state"
+    with open(tmp, 'wb') as ofh:
+        pickle.dump({"x": 23}, ofh)
+
+    s = Session()
+    with pytest.raises(ArgumentErr,
+                       match="' does not contain a saved Sherpa session"):
+        s.restore(str(tmp))
 
 
 def test_models_models():
@@ -1082,3 +1116,301 @@ def test_set_default_id_check_invalid(value):
         s.set_default_id(value)
 
     assert str(err.value) == f"identifier '{value}' is a reserved word"
+
+
+class ModelWithDoc(Model):
+    """This has a doc string"""
+    # pylint: disable=abstract-method
+
+    _hidden = False
+
+
+class ModelWithNoDoc(Model):
+    # This does not have a doc string
+    # pylint: disable=missing-class-docstring
+    # pylint: disable=abstract-method
+
+    pass
+
+
+def test_modelwrapper_init():
+    """Basic ModelWrapper check"""
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithDoc)
+    assert repr(wrap) == "<ModelWithDoc model type>"
+
+
+def test_modelwrapper_str_with_doc():
+    """Basic ModelWrapper check"""
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithDoc)
+    assert str(wrap) == "This has a doc string"
+
+
+def test_modelwrapper_str_no_doc():
+    """Basic ModelWrapper check"""
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithNoDoc)
+    assert str(wrap) == "<ModelWithNoDoc model type>"
+
+
+def test_modelwrapper_what_is_the_docstring():
+    """What do we want help(wrappedmodel) to return"""
+
+    # Check current behavior
+    assert ModelWrapper.__doc__ is None
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithNoDoc)
+    assert wrap.__doc__ is None
+
+
+@pytest.mark.parametrize("attr", ["_hidden", "_foo_bar"])
+def test_modelwrapper_getattr_no_hidden(attr):
+    """How does attribute access work?
+
+    We can't access attributes of the original model or unknown
+    attribues if they start with _.
+
+    """
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithDoc)
+
+    with pytest.raises(AttributeError,
+                       match=f"^'ModelWrapper' object has no attribute '{attr}'$"):
+        getattr(wrap, attr)
+
+
+def test_modelwrapper_getattr_instance():
+    """The access works for the model instance"""
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithDoc)
+    mdl = wrap("bob")
+    assert not mdl._hidden
+
+
+def test_modelwrapper_getattr_instance_unknown():
+    """The access works for the model instance"""
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithNoDoc)
+    mdl = wrap("bob")
+    with pytest.raises(AttributeError,
+                       match="^'ModelWithNoDoc' object has no attribute '_hidden'$"):
+        got = mdl._hidden
+
+
+def test_modelwrapper_direct():
+    """Compare behavior with test_modelwrapper_call"""
+
+    s = Session()
+
+    wrap = ModelWrapper(s, ModelWithNoDoc)
+    assert s.list_model_components() == []
+
+    mdl = wrap("foo")
+    assert isinstance(mdl, ModelWithNoDoc)
+    assert mdl.name == "modelwithnodoc.foo"
+
+    assert s.list_model_components() == ["foo"]
+
+
+def test_modelwrapper_call():
+    """The reason for the class"""
+
+    s = Session()
+
+    wrap = ModelWrapper(s, ModelWithNoDoc)
+    assert s.list_model_components() == []
+
+    mdl = wrap.foo
+    assert isinstance(mdl, ModelWithNoDoc)
+    assert mdl.name == "modelwithnodoc.foo"
+
+    assert s.list_model_components() == ["foo"]
+
+
+def test_show_data_explicit_id():
+    """Check we can call show_data with an id"""
+
+    s = Session()
+    s.load_arrays(1, [1, 2], [10, 20])
+    s.load_arrays("bob", [12, 14, 20], [3, 1, 2])
+
+    out = StringIO()
+    s.show_data("bob", outfile=out)
+
+    # not a full check of the output
+    assert out.getvalue().startswith("Data Set: bob\nname      = \n")
+
+
+def test_show_kernel_explicit_id(tmp_path):
+    """Check we can call show_kernel with an id"""
+
+    s = Session()
+
+    s.load_arrays("bob", [1, 2, 3, 4, 5], [10, 5, 3, 2, 1])
+
+    tmp = tmp_path / "tmp.dat"
+    tmp.write_text("! X Y\n1 10\n2 5\n 3 0\n4 1\n")
+
+    s.load_psf("foo", str(tmp), comment="!")
+    s.set_psf("bob", "foo")
+
+    out = StringIO()
+    s.show_kernel("bob", outfile=out)
+
+    # Since we do not have many other tests of this, do a more-complete
+    # check than some of the other routines here.
+    #
+    toks = out.getvalue().split("\n")
+    assert toks[0] == "PSF Kernel: bob"
+    assert toks[1] == "psfmodel.foo"
+    assert " Param " in toks[2]
+    assert " ----- " in toks[3]
+
+    # Can the file path contain spaces?
+    words = toks[4].split()
+    assert len(words) >= 3
+    assert words[0] == "foo.kernel"
+    assert words[1] == "frozen"
+
+    def check(lstr, name, val, minval, maxval):
+        words = lstr.split()
+        assert len(words) == 5
+        assert words[0] == name
+        assert words[1] == "frozen"
+        assert words[2] == val
+        assert words[3] == minval
+        assert words[4] == maxval
+
+    check(toks[5], "foo.size", "4", "4", "4")
+    check(toks[6], "foo.center", "2", "2", "2")
+    check(toks[7], "foo.radial", "0", "0", "1")
+    check(toks[8], "foo.norm", "1", "0", "1")
+
+    assert toks[9] == ""
+    assert toks[10] == ""
+    assert toks[11] == ""
+    assert len(toks) == 12
+
+
+def test_show_psf_explicit_id(tmp_path):
+    """Check we can call show_psf with an id"""
+
+    s = Session()
+
+    s.load_arrays("bob", [1, 2, 3, 4, 5], [10, 5, 3, 2, 1])
+
+    tmp = tmp_path / "tmp.dat"
+    tmp.write_text("! X Y\n1 10\n2 5\n 3 0\n4 1\n")
+
+    s.load_psf("foo", str(tmp), comment="!")
+    s.set_psf("bob", "foo")
+
+    out = StringIO()
+    s.show_psf("bob", outfile=out)
+
+    print(out.getvalue())
+
+    # Since we do not have many other tests of this, do a more-complete
+    # check than some of the other routines here.
+    #
+    toks = out.getvalue().split("\n")
+    assert toks[0] == "PSF Model: bob"
+    assert toks[1].startswith("name      = ")
+    assert toks[2] == "x         = Float64[4]"
+    assert toks[3] == "y         = Float64[4]"
+    assert toks[4] == "staterror = None"
+    assert toks[5] == "syserror  = None"
+
+    assert toks[6] == ""
+    assert toks[7] == ""
+    assert toks[8] == ""
+    assert len(toks) == 9
+
+
+def test_show_kernel_multiple(tmp_path):
+    """Check we can call show_kernel with multiple datasets, not all with a PSF"""
+
+    s = Session()
+
+    s.load_arrays("bob", [1, 2, 3, 4, 5], [10, 5, 3, 2, 1])
+    s.load_arrays(1, [1, 2, 3], [4, 5, 6])
+
+    tmp = tmp_path / "tmp.dat"
+    tmp.write_text("! X Y\n1 10\n2 5\n 3 0\n4 1\n")
+
+    s.load_psf("foo", str(tmp), comment="!")
+    s.set_psf("bob", "foo")
+
+    out = StringIO()
+    s.show_kernel("bob", outfile=out)
+
+    print(out.getvalue())
+
+    # Since we do not have many other tests of this, do a more-complete
+    # check than some of the other routines here.
+    #
+    toks = out.getvalue().split("\n")
+    assert toks[0] == "PSF Kernel: bob"
+    assert toks[1] == "psfmodel.foo"
+    assert toks[2][2:].startswith(" Param ")
+    assert toks[3][2:].startswith(" ----- ")
+    assert toks[4].startswith("   foo.kernel   frozen ")
+    assert toks[5].startswith("   foo.size     frozen ")
+    assert toks[6].startswith("   foo.center   frozen ")
+    assert toks[7].startswith("   foo.radial   frozen ")
+    assert toks[8].startswith("   foo.norm     frozen ")
+    assert toks[9] == ""
+    assert toks[10] == ""
+    assert toks[11] == ""
+    assert len(toks) == 12
+
+
+@pytest.mark.parametrize("idval", [None, 1])
+def test_load_filter_simple(idval, tmp_path):
+    """Although there is a version in astro we only check the non-astro
+    version as the behavior is different (e.g. the astro version needs
+    I/O suppport.
+
+    """
+
+    s = Session()
+    s.load_arrays(idval, [1, 2, 3], [12, 15, 2])
+
+    infile = tmp_path / "filter.dat"
+    infile.write_text("0\n0\n1\n")
+
+    if idval is None:
+        s.load_filter(str(infile), ncols=1, ignore=True)
+    else:
+        s.load_filter(idval, str(infile), ncols=1, ignore=True)
+
+    assert s.get_data().mask == pytest.approx([True, True, False])
+
+
+@pytest.mark.parametrize("idval", [None, 1])
+def test_save_filter_simple(idval, tmp_path):
+    """Although there is a version in astro we only check the non-astro
+    version as the behavior is different (e.g. the astro version needs
+    I/O suppport.
+
+    """
+
+    s = Session()
+    s.load_arrays(idval, [1, 2, 3], [12, 15, 2])
+    s.get_data(idval).mask = [True, False, True]
+
+    outfile = tmp_path / "filter.dat"
+    if idval is None:
+        s.save_filter(str(outfile), comment="P ", linebreak="+")
+    else:
+        s.save_filter(idval, str(outfile), comment="P ", linebreak="+")
+
+    assert outfile.read_text() == "P X FILTER+1 1+2 0+3 1+"

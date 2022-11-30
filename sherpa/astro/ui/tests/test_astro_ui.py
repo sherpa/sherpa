@@ -28,10 +28,10 @@ from numpy.testing import assert_allclose
 
 import pytest
 
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataIMG, DataPHA
 from sherpa.astro.instrument import RMFModelPHA
 from sherpa.astro import ui
-from sherpa.data import Data1D
+from sherpa.data import Data1D, Data2D, Data2DInt
 from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, IOErr, StatErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
@@ -732,6 +732,51 @@ def test_psf_model2d(model, clean_astro_ui):
     mdl = ui.get_model_component('mdl')
     assert (numpy.array(mdl.get_center()) ==
             numpy.array([108, 130])).all()
+
+
+def test_dataspace2d_default(clean_astro_ui):
+    """What happens when we calll dataspace2d: default"""
+
+    ui.dataspace2d([3, 5], 2)
+    data = ui.get_data(2)
+    assert isinstance(data, DataIMG)
+    assert data.name == "dataspace2d"
+    assert data.shape == (5, 3)
+    assert data.x0 == pytest.approx([1, 2, 3] * 5)
+    assert data.x1 == pytest.approx([1] * 3 + [2] * 3 + [3] * 3 + [4] * 3 + [5] * 3)
+    assert data.y == pytest.approx(numpy.zeros(15))
+
+
+def test_dataspace2d_data2d(clean_astro_ui):
+    """What happens when we calll dataspace2d: Data2D"""
+
+    ui.dataspace2d([3, 5], 2, Data2D)
+    data = ui.get_data(2)
+    assert isinstance(data, Data2D)
+    assert data.name == "dataspace2d"
+    assert data.shape == (5, 3)
+    assert data.x0 == pytest.approx([1, 2, 3] * 5)
+    assert data.x1 == pytest.approx([1] * 3 + [2] * 3 + [3] * 3 + [4] * 3 + [5] * 3)
+    assert data.y == pytest.approx(numpy.zeros(15))
+
+
+def test_dataspace2d_data2dint(clean_astro_ui):
+    """What happens when we calll dataspace2d: Data2DInt"""
+
+    ui.dataspace2d([3, 5], 2, Data2DInt)
+    data = ui.get_data(2)
+    assert isinstance(data, Data2DInt)
+    assert data.name == "dataspace2d"
+    assert data.shape == (5, 3)
+    assert data.x0lo == pytest.approx([0.5, 1.5, 2.5] * 5)
+    assert data.x0hi == pytest.approx([1.5, 2.5, 3.5] * 5)
+    assert data.x1lo == pytest.approx([0.5] * 3 + [1.5] * 3 + [2.5] * 3 + [3.5] * 3 + [4.5] * 3)
+    assert data.x1hi == pytest.approx([1.5] * 3 + [2.5] * 3 + [3.5] * 3 + [4.5] * 3 + [5.5] * 3)
+    assert data.y == pytest.approx(numpy.zeros(15))
+
+    # These are presumably auto-generated
+    assert data.x0 == pytest.approx([1, 2, 3] * 5)
+    assert data.x1 == pytest.approx([1] * 3 + [2] * 3 + [3] * 3 + [4] * 3 + [5] * 3)
 
 
 def test_psf_pars_are_frozen(clean_astro_ui):
@@ -1539,3 +1584,25 @@ def test_unpack_arrays_dataimg():
     assert ans.shape == pytest.approx(3, 4)
     assert ans.staterror is None
     assert ans.syserror is None
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("idval", [None, 2])
+def test_get_rate_bkg(idval, clean_astro_ui, make_data_path):
+    """Check we can call get_rate with bkg_id"""
+
+    ui.load_pha(idval, make_data_path("3c273.pi"))
+
+    r1 = ui.get_rate(idval)
+    r2 = ui.get_rate(idval, bkg_id=1)
+
+    # All we do is check they are different
+    assert isinstance(r1, numpy.ndarray)
+    assert isinstance(r2, numpy.ndarray)
+
+    # We can not say r1 > r2 as this is not true for all bins.
+    # Technically two bins could be the same, but they are not for
+    # this dataset.
+    #
+    assert numpy.all(r1 != r2)
