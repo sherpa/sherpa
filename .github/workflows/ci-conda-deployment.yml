@@ -33,7 +33,7 @@ jobs:
   check-skip:
     name: Skip the Pipeline if tagged and NOT on the release branch
     runs-on: ubuntu-latest
-    output:
+    outputs:
       skip_pipeline: ${{ steps.skip_check.outputs.skip_pipeline }}
     concurrency:
       group: ${{ github.workflow }}-${{ github.ref }}
