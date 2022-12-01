@@ -4296,7 +4296,7 @@ class Session(NoNewAttributesAfterInit):
                 raise AttributeError("save_delchi() can not be used " +
                                      "with 2D datasets")
 
-            funcname = "get_{}_image()".format(objtype)
+            funcname = "get_{}_image".format(objtype)
             """
             imgtype = getattr(self, funcname, None)
             if imgtype is None:

@@ -18,8 +18,13 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# pylint: disable=missing-module-docstring
 # pylint: disable=missing-function-docstring
+# pylint: disable=too-many-lines
+# pylint: disable=too-many-locals
+# pylint: disable=too-many-statements
 # pylint: disable=invalid-name
+# pylint: disable=protected-access
 
 from io import StringIO
 import logging
@@ -513,6 +518,7 @@ def test_astro_plot_bkg_xxx(label):
     s.plot(f"bkg_{label}")
 
 
+# pylint: disable=too-many-arguments
 def save_ascii_file(s, kwargs, idval, outfile, savefunc, syserr=False):
     """create data and save a file based on it"""
 
@@ -2164,6 +2170,7 @@ def test_get_stat_info_astro_two(caplog):
     check_stat_info_basic(sinfo[2], "Datasets [1, 2]", [1, 2], 6, 17)
 
 
+# pylint: disable=too-few-public-methods
 class DummyClass:
     "A dummy class"
     pass
@@ -2445,7 +2452,7 @@ def test_notice_warning(caplog):
     loc, lvl, msg = caplog.record_tuples[0]
     assert loc == "sherpa.astro.ui.utils"
     assert lvl == logging.WARNING
-    assert msg == "not all PHA datasets have equal analysis quantities"
+    assert msg == "not all PHA datasets have equal analysis quantities: channel, energy"
 
     loc, lvl, msg = caplog.record_tuples[1]
     assert loc == "sherpa.ui.utils"
@@ -2459,7 +2466,7 @@ def test_notice_warning(caplog):
 
 
 def test_ignore_warning(caplog):
-    """Check we get a warning from ignore
+    """Check we get a warning from ignore (was a test of #1641)
 
     The messages are slightly different to notice, hence the
     separate check
@@ -2481,23 +2488,18 @@ def test_ignore_warning(caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         s.ignore(lo=2)
 
-    assert len(caplog.record_tuples) == 4
+    assert len(caplog.record_tuples) == 3
     loc, lvl, msg = caplog.record_tuples[0]
     assert loc == "sherpa.astro.ui.utils"
     assert lvl == logging.WARNING
-    assert msg == "not all PHA datasets have equal analysis quantities"
+    assert msg == "not all PHA datasets have equal analysis quantities: channel, energy"
 
     loc, lvl, msg = caplog.record_tuples[1]
-    assert loc == "sherpa.astro.ui.utils"
-    assert lvl == logging.WARNING
-    assert msg == "not all PHA datasets have equal analysis quantities"
-
-    loc, lvl, msg = caplog.record_tuples[2]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
     assert msg == "dataset 1: 1:3 -> 1 Channel"
 
-    loc, lvl, msg = caplog.record_tuples[3]
+    loc, lvl, msg = caplog.record_tuples[2]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
     assert msg == "dataset 2: 0.5:2 Energy (keV) (unchanged)"
@@ -2543,7 +2545,7 @@ def check_output(expected, got):
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
-                         [pytest.param(Session, {"comment": "!! "}, ["!! SOURCE", "7 11", ""], marks=pytest.mark.xfail),  # bug #1642
+                         [(Session, {"comment": "!! "}, ["!! SOURCE", "7 11", ""]),
                           (AstroSession, {"ascii": True}, ["7", "11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):
@@ -2575,7 +2577,7 @@ def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, sk
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
-                         [pytest.param(Session, {"comment": ""}, ["MODEL", "7 11", ""], marks=pytest.mark.xfail),  # bug #1642
+                         [(Session, {"comment": ""}, ["MODEL", "7 11", ""]),
                           (AstroSession, {"ascii": True}, ["7", "11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):
@@ -2607,7 +2609,7 @@ def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, ski
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
-                         [pytest.param(Session, {}, ["#RESID", "-7 -11", ""], marks=pytest.mark.xfail),  # bug #1642
+                         [(Session, {}, ["#RESID", "-7 -11", ""]),
                           (AstroSession, {"ascii": True}, ["-7", "-11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_resid_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):

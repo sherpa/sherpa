@@ -6809,31 +6809,22 @@ class Session(sherpa.ui.utils.Session):
         sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
                                              data.get_xlabel())
 
-    def _notice_warning(self):
-        quantities = numpy.asarray([data.get_analysis()
-                                    for data in self._data.values()
-                                    if isinstance(data, DataPHA)])
-
-        if len(quantities) > 1 and not (quantities == quantities[0]).all():
-            warning("not all PHA datasets have equal analysis quantities")
-
+    # Since ignore calls notice, we only need to change notice.
+    #
     def notice(self, lo=None, hi=None, **kwargs):
 
         if lo is not None or hi is not None:
-            self._notice_warning()
+            units = set(data.get_analysis()
+                        for data in self._data.values()
+                        if isinstance(data, DataPHA))
+            if len(units) > 1:
+                units = ", ".join(sorted(units))
+                warning("not all PHA datasets have equal analysis quantities: %s",
+                        units)
 
         super().notice(lo, hi, **kwargs)
 
     notice.__doc__ = sherpa.ui.utils.Session.notice.__doc__
-
-    def ignore(self, lo=None, hi=None, **kwargs):
-
-        if lo is not None or hi is not None:
-            self._notice_warning()
-
-        super().ignore(lo, hi, **kwargs)
-
-    ignore.__doc__ = sherpa.ui.utils.Session.ignore.__doc__
 
     # DOC-TODO: how best to document the region support?
     # DOC-TODO: I have not mentioned the support for radii in arcsec/minutes/degrees
