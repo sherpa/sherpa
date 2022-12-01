@@ -40,6 +40,12 @@ jobs:
       cancel-in-progress: true
 
     steps:
+    #Checkout the code with a depth of 0 to grab the tags/branches as well
+    - name: Checkout Code
+      uses: actions/checkout@v3.1.0
+      with:
+        fetch-depth: 0
+
     - name: Check build number
       id: skip_check
       run: |
