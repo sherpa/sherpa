@@ -1,8 +1,8 @@
 name: Conda Deployments
 
-#Only run for main and ciaox branches if not a directly tagged build
-#Only run for the release branch on the tag (must be #.##.# tag only)
-#reduce duplication
+#Only run when updating main, ciaox, or release/... branches (no PRs).
+#With check-skip job, we skip build on main/ciaox if directly tagged as a release.
+# (To only build releases on the release branch)
 on:
   push:
     branches:
@@ -11,26 +11,54 @@ on:
     - 'releases/**'
     - gh-deployments
 
-#Reduces GH Action duplication:
-# Cancels the previous pipeline for this ref it is still running
-concurrency: 
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
-
 #Temporarily upload this to my channel for testing
 env:
   sherpa_channel: Marie-Terrell
   sherpa_label: dev
   miniconda_loc: ${{ github.workspace }}/miniconda
-  CONDA_BUILD_SYSROOT: /opt/MacOSX10.9.sdk
 
 defaults:
   run:
     shell: bash
 
+#Note on "concurrency": GH does not seem to allow us override a workflow concurrency for one job.
+# To allow cancellation for everything except deployment, we must set for EACH job.
+# To avoid the linux and macOS builds canceling each other while allowing a new build to cancel a test
+# we use these as concurrency groupings:
+#   - <workflow name>-<branch>: main build/test thread
+#   - <workflow name>-<branch>-macos-build: macOS build
+#   - <workflow name>-<deploy>: deployment
+
 jobs:
+  check-skip:
+    name: Skip the Pipeline if tagged and NOT on the release branch
+    runs-on: ubuntu-latest
+    output:
+      skip_pipeline: ${{ steps.skip_check.outputs.skip_pipeline }}
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
+    steps:
+    - name: Check build number
+      id: skip_check
+      run: |
+        #BUILD_NUM not passed to future jobs to maintain a separate Git sanity check
+        BUILD_NUM="$(git describe --tags --always | awk '{split($0,a,"-"); print a[2]}')"
+        echo "BUILD_NUM=${BUILD_NUM}"
+        if [ -z "${BUILD_NUM}" ] && [ "${GITHUB_REF:0:20}" != "refs/heads/releases/" ] ; then
+            #Skip the build/test/deploy if directly on a tag and NOT on a release branch
+            echo "skip_pipeline=true" >> $GITHUB_OUTPUT
+        else
+            echo "skip_pipeline=false" >> $GITHUB_OUTPUT
+        fi
+
+  #Linux and macOS build separate as a we can't use container option dynamically
+  # based on it being defined in the matrix or not.
   build-linux:
     name: Linux Python ${{ matrix.python-version }}
+    if: github.repository == 'sherpa/sherpa' && ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
+    needs: ["check-skip"]
     runs-on: ubuntu-latest
     container:
       image: ${{ matrix.image }}
@@ -44,7 +72,10 @@ jobs:
         conda-os: ["Linux-x86_64"]
         os-dir: ["linux-64"]
         python-version: ["3.8", "3.9", "3.10"]
-          
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
+
     steps:
     - name: Install git and diff
       run: yum install -y -q git diffutils
@@ -72,7 +103,8 @@ jobs:
         cd sherpa
         export SHERPA_FULL_VERSION=$(git describe --tags --always)
         export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
-        export SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
+        SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
+        export SHERPA_BUILD_NUMBER="${SHERPA_BUILD_NUMBER:-0}"
         echo "Version: ${SHERPA_VERSION} Build Number: ${SHERPA_BUILD_NUMBER}"
         if [ -z ${SHERPA_VERSION} ] || [ -z ${SHERPA_BUILD_NUMBER} ] ; then
           echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set."
@@ -92,6 +124,8 @@ jobs:
 
   build-macos:
     name: MacOS Python ${{ matrix.python-version }}
+    if: github.repository == 'sherpa/sherpa' && ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
+    needs: ["check-skip"]
     runs-on: ${{ matrix.os-type }}
     strategy:
       matrix:
@@ -99,6 +133,11 @@ jobs:
         conda-os: ["MacOSX-x86_64"]
         os-dir: ["osx-64"]
         python-version: ["3.8", "3.9", "3.10"]
+    env:
+      CONDA_BUILD_SYSROOT: /opt/MacOSX10.9.sdk
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}-macos-build
+      cancel-in-progress: true
 
     steps:
     - name: Conda Setup
@@ -134,7 +173,8 @@ jobs:
         cd sherpa
         export SHERPA_FULL_VERSION=$(git describe --tags --always)
         export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
-        export SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
+        SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
+        export SHERPA_BUILD_NUMBER="${SHERPA_BUILD_NUMBER:-0}"
         echo "Version: ${SHERPA_VERSION} Build Number: ${SHERPA_BUILD_NUMBER}"
         if [ -z ${SHERPA_VERSION} ] || [ -z ${SHERPA_BUILD_NUMBER} ] ; then
           echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set"
@@ -152,6 +192,10 @@ jobs:
         if-no-files-found: error
         retention-days: 3
 
+#The jobs below should not run if "build-linux" or "build-macos" are skipped.
+#If they try to, then the "pre-deploy-test" stage will fail anyway and the deployment will NOT be attempted.
+#If the "pre-deploy-test" stage is attempted when it shouldn't be, GH Actions might have updated the
+# condition for skipping a "needs" option.
   pre-deploy-test:
     needs: ["build-linux", "build-macos"]
     name: ${{ matrix.name }}
@@ -167,6 +211,9 @@ jobs:
             os: macos-latest
             conda-os: "MacOSX-x86_64"
             os-dir: "osx-64"
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+      cancel-in-progress: true
 
     steps:
     #Download all artifacts
@@ -221,7 +268,7 @@ jobs:
     runs-on: ubuntu-latest
     #Do NOT auto cancel the GH Action run during the deploy stage
     concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-deploy
+      group: ${{ github.workflow }}-deploy
       cancel-in-progress: false
 
     steps:
