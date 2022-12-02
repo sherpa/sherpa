@@ -325,8 +325,8 @@ def reduce_ufunc(func):
     modname = getattr(func, '__module__', 'numpy')
     funcname = func.__name__
     if func is not getattr(sys.modules[modname], funcname, None):
-        raise ValueError("module '%s' does not contain ufunc '%s'" %
-                         (modname, funcname))
+        raise ValueError(f"module '{modname}' does not contain ufunc '{funcname}'")
+
     return (construct_ufunc, (modname, funcname))
 
 
@@ -342,6 +342,16 @@ copy_reg.pickle(numpy.ufunc, reduce_ufunc)
 
 
 class ModelWrapper(NoNewAttributesAfterInit):
+    """Wrap up a model class so we can create instances easily.
+
+    The created instances can be used in a "model language" to create
+    complex expressions. If mdl1 and mdl2 have been created by
+    ModelWrapper then a user can say mdl1.n1 + mdl2.n2 to create model
+    instances named n1 and n2 and then return the expression which
+    represents their sum.
+
+    """
+
 
     def __init__(self, session, modeltype, args=(), kwargs=None):
         self._session = session
@@ -363,12 +373,11 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
     def __getattr__(self, name):
         if name.startswith('_'):
-            raise AttributeError("'%s\' object has no attribute '%s'" %
-                                 (type(self).__name__, name))
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
         return self(name)
 
     def __repr__(self):
-        return '<%s model type>' % self.modeltype.__name__
+        return f'<{self.modeltype.__name__} model type>'
 
     def __str__(self):
         if self.modeltype.__doc__ is not None:
@@ -405,7 +414,7 @@ def _assign_model_to_main(name, model):
     """
     # Ask sys what the __main__ module is; packages such
     # as IPython can add their own __main__ module.
-    model.name = '%s.%s' % (type(model).__name__.lower(), name)
+    model.name = f'{type(model).__name__.lower()}.{name}'
     _assign_obj_to_main(name, model)
 
 
@@ -525,6 +534,68 @@ def set_filter(data, val, ignore=False):
         data.mask = ~val
 
 
+def freeze_or_thaw(session, is_freeze, pars):
+    """Freeze or thaw each parameter.
+
+    Parameters
+    ----------
+    session : Session object
+    is_freeze : bool
+        True if we freeze each parameter, otherwise we thaw.
+    pars : sequence of Parameter or str
+        The parameters to change.
+
+    """
+
+    for par in list(pars):
+        if _is_str(par):
+            # pylint: disable=protected-access
+            par = session._eval_model_expression(par, 'parameter or model')
+
+        try:
+            # We could have used getattr with a supplied name, but we
+            # know this is limited to two choices to use a boolean.
+            #
+            if is_freeze:
+                par.freeze()
+            else:
+                par.thaw()
+
+        except AttributeError:
+            raise ArgumentTypeErr('badarg', 'par',
+                                  'a parameter or model object or expression string') from None
+
+
+def access_model(session, filename_or_model, args, kwargs):
+    """Access the model underlying a symbol (e.g. as a string)
+
+    Parameters
+    ----------
+    session : Session instance
+    filename_or_model : str or Model instance
+        The model, defined as the actual instance, the name of the
+        model, or a filename from which to access the data, in which
+        case the args and kwargs values are used.
+    args, kwargs
+        The arguments to send to unpack_data along with the filename.
+
+    Returns
+    -------
+    model : model or Data instance
+
+    """
+
+    if not _is_str(filename_or_model):
+        return filename_or_model
+
+    try:
+        # pylint: disable=protected-access
+        return session._eval_model_expression(filename_or_model)
+    except Exception:
+        # We should be able to catch just ArgumentErr
+        return session.unpack_data(filename_or_model, *args, **kwargs)
+
+
 ###############################################################################
 #
 # Session
@@ -627,8 +698,10 @@ class Session(NoNewAttributesAfterInit):
         # such as table and psf models.
         #
         try:
+            # pylint: disable=comparison-with-callable
             if self._model_autoassign_func == _assign_model_to_main:
-                for name in self._model_components.keys():
+                # pylint: disable=access-member-before-definition
+                for name in self._model_components:
                     _remove_obj_from_main(name)
 
         except AttributeError:
@@ -840,11 +913,8 @@ class Session(NoNewAttributesAfterInit):
         if os.path.isfile(filename) and not clobber:
             raise sherpa.utils.err.IOErr("filefound", filename)
 
-        fout = open(filename, 'wb')
-        try:
+        with open(filename, 'wb') as fout:
             pickle.dump(self, fout, 2)  # Use newer binary protocol
-        finally:
-            fout.close()
 
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
@@ -892,11 +962,8 @@ class Session(NoNewAttributesAfterInit):
         """
         _check_str_type(filename, "filename")
 
-        fin = open(filename, 'rb')
-        try:
+        with open(filename, 'rb') as fin:
             obj = pickle.load(fin)
-        finally:
-            fin.close()
 
         if not isinstance(obj, Session):
             raise ArgumentErr('nosession', filename)
@@ -924,8 +991,8 @@ class Session(NoNewAttributesAfterInit):
         if id is not None:
             ids = [self._fix_id(id)]
         for id in ids:
-            data_str += 'Data Set: %s\n' % id
-            data_str += self.get_data(id).__str__() + '\n\n'
+            data_str += f'Data Set: {id}\n'
+            data_str += str(self.get_data(id)) + '\n\n'
         return data_str
 
     def _get_show_filter(self, id=None):
@@ -934,7 +1001,7 @@ class Session(NoNewAttributesAfterInit):
         if id is not None:
             ids = [self._fix_id(id)]
         for id in ids:
-            filt_str += 'Data Set Filter: %s\n' % id
+            filt_str += f'Data Set Filter: {id}\n'
             filt_str += self.get_data(id).get_filter_expr() + '\n\n'
         return filt_str
 
@@ -946,8 +1013,8 @@ class Session(NoNewAttributesAfterInit):
             ids = [self._fix_id(id)]
         for id in ids:
             if id in mdl_ids:
-                model_str += 'Model: %s\n' % id
-                model_str += self.get_model(id).__str__() + '\n\n'
+                model_str += f'Model: {id}\n'
+                model_str += str(self.get_model(id)) + '\n\n'
         return model_str
 
     def _get_show_source(self, id=None):
@@ -958,8 +1025,8 @@ class Session(NoNewAttributesAfterInit):
             ids = [self._fix_id(id)]
         for id in ids:
             if id in src_ids:
-                model_str += 'Model: %s\n' % id
-                model_str += self.get_source(id).__str__() + '\n\n'
+                model_str += f'Model: {id}\n'
+                model_str += str(self.get_source(id)) + '\n\n'
         return model_str
 
     def _get_show_kernel(self, id=None):
@@ -968,10 +1035,10 @@ class Session(NoNewAttributesAfterInit):
         if id is not None:
             ids = [self._fix_id(id)]
         for id in ids:
-            if id in self._psf.keys():
-                kernel_str += 'PSF Kernel: %s\n' % id
+            if id in self._psf:
+                kernel_str += f'PSF Kernel: {id}\n'
                 # Show the PSF parameters
-                kernel_str += self.get_psf(id).__str__() + '\n\n'
+                kernel_str += str(self.get_psf(id)) + '\n\n'
         return kernel_str
 
     def _get_show_psf(self, id=None):
@@ -980,21 +1047,17 @@ class Session(NoNewAttributesAfterInit):
         if id is not None:
             ids = [self._fix_id(id)]
         for id in ids:
-            if id in self._psf.keys():
-                psf_str += 'PSF Model: %s\n' % id
+            if id in self._psf:
+                psf_str += f'PSF Model: {id}\n'
                 # Show the PSF dataset or PSF model
-                psf_str += self.get_psf(id).kernel.__str__() + '\n\n'
+                psf_str += str(self.get_psf(id).kernel) + '\n\n'
         return psf_str
 
     def _get_show_method(self):
-        return ('Optimization Method: %s\n%s\n' %
-                (type(self._current_method).__name__,
-                 self._current_method.__str__()))
+        return f'Optimization Method: {type(self._current_method).__name__}\n{self._current_method}\n'
 
     def _get_show_stat(self):
-        return ('Statistic: %s\n%s\n' %
-                (type(self._current_stat).__name__,
-                 self._current_stat.__str__()))
+        return f'Statistic: {type(self._current_stat).__name__}\n{self._current_stat}\n'
 
     def _get_show_fit(self):
         if self._fit_results is None:
@@ -1629,7 +1692,7 @@ class Session(NoNewAttributesAfterInit):
         funcs_list = self.get_functions()
         funcs = ''
         for func in funcs_list:
-            funcs += '%s\n' % func
+            funcs += f'{func}\n'
 
         send_to_pager(funcs, outfile, clobber)
 
@@ -2997,10 +3060,8 @@ class Session(NoNewAttributesAfterInit):
         if filename is None:
             id, filename = filename, id
 
-        self.set_filter(id,
-                        self._read_error(
-                            filename, ncols=ncols, *args, **kwargs),
-                        ignore=ignore)
+        fvals = self._read_error(filename, ncols=ncols, *args, **kwargs)
+        self.set_filter(id, fvals, ignore=ignore)
 
     def set_filter(self, id, val=None, ignore=False):
         """Set the filter array of a data set.
@@ -3207,7 +3268,6 @@ class Session(NoNewAttributesAfterInit):
         """
         if val is None:
             val, id = id, val
-        err = None
 
         d = self.get_data(id)
         set_error(d, "syserror", val, fractional=fractional)
@@ -4317,29 +4377,13 @@ class Session(NoNewAttributesAfterInit):
                 raise AttributeError("save_delchi() can not be used " +
                                      "with 2D datasets")
 
-            funcname = "get_{}_image".format(objtype)
-            """
-            imgtype = getattr(self, funcname, None)
-            if imgtype is None:
-                # raise AttributeErr('attributeerr', 'session', fname)
-                raise AttributeError("Unable to find " + funcname)
-            """
-            imgtype = getattr(self, funcname)
-
+            imgtype = getattr(self, f"get_{objtype}_image")
             obj = imgtype(id)
             args = [obj.y]
             fields = [str(objtype).upper()]
 
         else:
-            funcname = "get_{}_plot".format(objtype)
-            """
-            plottype = getattr(self, funcname, None)
-            if plottype is None:
-                # raise AttributeErr('attributeerr', 'session', funcname)
-                raise AttributeError("Unable to find " + funcname)
-            """
-            plottype = getattr(self, funcname)
-
+            plottype = getattr(self, f"get_{objtype}_plot")
             obj = plottype(id)
             args = [obj.x, obj.y]
             fields = ["X", str(objtype).upper()]
@@ -5697,13 +5741,10 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source(mygauss1d.g1 + mygauss1d.g2)
 
         """
-        if kwargs is None:
-            kwargs = {}
 
         name = modelclass.__name__.lower()
-
         if not _is_subclass(modelclass, sherpa.models.ArithmeticModel):
-            raise TypeError("model class '%s' is not a derived class" % name +
+            raise TypeError(f"model class '{name}' is not a derived class" +
                             " from sherpa.models.ArithmeticModel")
 
         self._model_types[name] = ModelWrapper(self, modelclass, args, kwargs)
@@ -6136,15 +6177,19 @@ class Session(NoNewAttributesAfterInit):
         >>> reset(get_source(2))
 
         """
-        ids = [id]
-        if id is None:
-            ids = self._sources.keys()
 
+        # TODO: should we allow model to be a string?
         if model is not None:
             model.reset()
+            return
+
+        if id is None:
+            ids = self._sources.keys()
         else:
-            for id in ids:
-                self.get_source(id).reset()
+            ids = [id]
+
+        for idval in ids:
+            self.get_source(idval).reset()
 
     def delete_model_component(self, name):
         """Delete a model component.
@@ -6336,8 +6381,8 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'%s'\n is set for dataset %s. You should use get_model instead." %
-                                (mdl.name, str(id)))
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'\n is set for dataset {id}. You should use get_model instead.")
+
         return self._get_item(id, self._sources, 'source',
                               'has not been set, consider using set_source()' +
                               ' or set_model()')
@@ -6647,8 +6692,7 @@ class Session(NoNewAttributesAfterInit):
         # Delete any previous model set with set_full_model()
         mdl = self._models.pop(id, None)
         if mdl is not None:
-            warning("Clearing convolved model\n'%s'\nfor dataset %s" %
-                    (mdl.name, str(id)))
+            warning(f"Clearing convolved model\n'{mdl.name}'\nfor dataset {id}")
 
     set_source = set_model
 
@@ -6943,8 +6987,11 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: I am not sure I have the data format correct.
     # DOC-TODO: description of template interpolation needs a lot of work.
-    def load_template_model(self, modelname, templatefile, dstype=sherpa.data.Data1D,
-                            sep=' ', comment='#', method=sherpa.utils.linear_interp, template_interpolator_name='default'):
+    def load_template_model(self, modelname, templatefile,
+                            dstype=sherpa.data.Data1D,
+                            sep=' ', comment='#',
+                            method=sherpa.utils.linear_interp,
+                            template_interpolator_name='default'):
         # pylint: disable=too-many-arguments
         # pylint: disable=too-many-locals
         """Load a set of templates and use it as a model component.
@@ -7095,16 +7142,18 @@ class Session(NoNewAttributesAfterInit):
                                                      sep=sep, comment=comment)
             if len(tcols) == 1:
                 raise sherpa.utils.err.IOErr('onecolneedtwo', filename)
-            elif len(tcols) == 2:
-                tm = TableModel(filename)
-                tm.method = method  # interpolation method
-                tm.load(*tcols)
-                tm.ampl.freeze()
-                templates.append(tm)
-            else:
+
+            if len(tcols) != 2:
                 raise sherpa.utils.err.IOErr('wrongnumcols', 2, len(tnames))
 
-        assert(len(templates) == parvals.shape[0])
+            tm = TableModel(filename)
+            tm.method = method  # interpolation method
+            tm.load(tcols[0], tcols[1])
+            tm.ampl.freeze()
+            templates.append(tm)
+
+        # TODO: remove the assert or replace with an actual exception
+        assert len(templates) == parvals.shape[0]
 
         templatemodel = sherpa.models.create_template_model(modelname, parnames, parvals,
                                                             templates, template_interpolator_name)
@@ -7337,7 +7386,7 @@ class Session(NoNewAttributesAfterInit):
         usermodel.calc = func
         # pylint: disable=protected-access
         usermodel._file = filename
-        if (filename is not None):
+        if filename is not None:
             x, usermodel._y = self._read_user_model(filename, ncols, colkeys,
                                                     dstype, sep, comment)
         self._add_model_component(usermodel)
@@ -7412,8 +7461,7 @@ class Session(NoNewAttributesAfterInit):
         _check_str_type(modelname, "model name")
 
         usermodel = self._get_model_component(modelname)
-        if (usermodel is None or
-                type(usermodel) is not sherpa.models.UserModel):
+        if (usermodel is None or not isinstance(usermodel, sherpa.models.UserModel)):
             raise ArgumentTypeErr('badarg', modelname, "a user model")
 
         pars = []
@@ -7527,7 +7575,7 @@ class Session(NoNewAttributesAfterInit):
         userstat = sherpa.stats.UserStat(calc_stat_func,
                                          calc_err_func, statname)
         if priors:
-            pars = [(key, priors.pop(key)) for key in priors.keys()
+            pars = [(key, priors.pop(key)) for key in priors
                     if isinstance(priors[key], sherpa.models.Parameter)]
             pars = dict(pars)
             userstat = sherpa.logposterior.Prior(calc_stat_func, priors, pars)
@@ -7601,14 +7649,8 @@ class Session(NoNewAttributesAfterInit):
         >>> load_conv('cmodel', 'conv.dat')
 
         """
-        kernel = filename_or_model
-        if _is_str(filename_or_model):
-            try:
-                kernel = self._eval_model_expression(filename_or_model)
-            except:
-                kernel = self.unpack_data(filename_or_model,
-                                          *args, **kwargs)
 
+        kernel = access_model(self, filename_or_model, args, kwargs)
         conv = sherpa.instrument.ConvolutionKernel(kernel, modelname)
         self._add_model_component(conv)
 
@@ -7665,14 +7707,8 @@ class Session(NoNewAttributesAfterInit):
         >>> set_psf('bgnd', 'pmodel')
 
         """
-        kernel = filename_or_model
-        if _is_str(filename_or_model):
-            try:
-                kernel = self._eval_model_expression(filename_or_model)
-            except:
-                kernel = self.unpack_data(filename_or_model,
-                                          *args, **kwargs)
 
+        kernel = access_model(self, filename_or_model, args, kwargs)
         psf = sherpa.instrument.PSFModel(modelname, kernel)
         self._add_model_component(psf)
         self._psf_models.append(psf)
@@ -8090,15 +8126,7 @@ class Session(NoNewAttributesAfterInit):
         >>> freeze(gal.nh, src.abund)
 
         """
-        for par in list(args):
-            if _is_str(par):
-                par = self._eval_model_expression(par, 'parameter or model')
-
-            try:
-                par.freeze()
-            except AttributeError:
-                raise ArgumentTypeErr('badarg', 'par',
-                                      'a parameter or model object or expression string')
+        freeze_or_thaw(self, True, args)
 
     def thaw(self, *args):
         """Allow model parameters to be varied during a fit.
@@ -8153,15 +8181,7 @@ class Session(NoNewAttributesAfterInit):
         >>> thaw(gal.nh, src.abund)
 
         """
-        for par in list(args):
-            if _is_str(par):
-                par = self._eval_model_expression(par, 'parameter or model')
-
-            try:
-                par.thaw()
-            except AttributeError:
-                raise ArgumentTypeErr('badarg', 'par',
-                                      'a parameter or model object or expression string')
+        freeze_or_thaw(self, False, args)
 
     def link(self, par, val):
         """Link a parameter to a value.
@@ -8278,7 +8298,7 @@ class Session(NoNewAttributesAfterInit):
         # as input list the data sets to be fit.
         if id is None:
             all_ids = self.list_data_ids()
-            if (len(all_ids) > 0):
+            if len(all_ids) > 0:
                 id = all_ids[0]
                 del all_ids[0]
                 otherids = tuple(all_ids)
@@ -8376,7 +8396,7 @@ class Session(NoNewAttributesAfterInit):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
-                statinfo.name = 'Dataset %s' % (str(id))
+                statinfo.name = f'Dataset {id}'
                 statinfo.ids = (id,)
 
                 output.append(statinfo)
@@ -8384,9 +8404,11 @@ class Session(NoNewAttributesAfterInit):
         f = self._get_fit_obj(datasets, models, None)
         statinfo = f.calc_stat_info()
         if len(ids) == 1:
-            statinfo.name = 'Dataset %s' % str(ids)
+            namestr = f'Dataset {ids}'
         else:
-            statinfo.name = 'Datasets %s' % str(ids).strip("()")
+            idstr = str(ids).strip("()")
+            namestr = f'Datasets {idstr}'
+        statinfo.name = namestr
         statinfo.ids = ids
         output.append(statinfo)
 
@@ -11486,8 +11508,8 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'{}'".format(mdl.name) +
-                                "\n is set for dataset {}.".format(id) +
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'" +
+                                f"\n is set for dataset {id}." +
                                 " You should use get_model_plot instead.")
 
         if recalc:
@@ -13517,8 +13539,8 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'{}'".format(mdl.name) +
-                                "\n is set for dataset {}.".format(id) +
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'" +
+                                f"\n is set for dataset {id}." +
                                 " You should use plot_model instead.")
 
         plotobj = self.get_source_plot(id, recalc=not replot)

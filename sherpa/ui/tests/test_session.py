@@ -1160,12 +1160,15 @@ def test_modelwrapper_str_no_doc():
 def test_modelwrapper_what_is_the_docstring():
     """What do we want help(wrappedmodel) to return"""
 
-    # Check current behavior
-    assert ModelWrapper.__doc__ is None
+    # Check current behavior, which is that the docstring is the same
+    # for both the class and the wrapped model. We do not care what
+    # the text is.
+    #
+    assert ModelWrapper.__doc__ is not None
 
     s = Session()
     wrap = ModelWrapper(s, ModelWithNoDoc)
-    assert wrap.__doc__ is None
+    assert wrap.__doc__ == ModelWrapper.__doc__
 
 
 @pytest.mark.parametrize("attr", ["_hidden", "_foo_bar"])
