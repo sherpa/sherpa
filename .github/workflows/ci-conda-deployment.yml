@@ -31,7 +31,8 @@ jobs:
   check-skip:
     name: Skip the Pipeline if tagged and NOT on the release branch
     runs-on: ubuntu-latest
-    if: github.repository == 'sherpa/sherpa'
+#    if: github.repository == 'sherpa/sherpa'
+    if: github.repository == 'Marie-Terrell/sherpa'
     outputs:
       skip_pipeline: ${{ steps.skip_check.outputs.skip_pipeline }}
 
