@@ -11,6 +11,12 @@ on:
     - 'releases/**'
     - gh-deployments
 
+#Reduces GH Action duplication:
+# Cancels the previous pipeline for this ref it is still running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 #Temporarily upload this to my channel for testing
 env:
   sherpa_channel: Marie-Terrell
@@ -21,23 +27,13 @@ defaults:
   run:
     shell: bash
 
-#Note on "concurrency": GH does not seem to allow us override a workflow concurrency for one job.
-# To allow cancellation for everything except deployment, we must set for EACH job.
-# To avoid the linux and macOS builds canceling each other while allowing a new build to cancel a test
-# we use these as concurrency groupings:
-#   - <workflow name>-<branch>: main build/test thread
-#   - <workflow name>-<branch>-macos-build: macOS build
-#   - <workflow name>-<deploy>: deployment
-
 jobs:
   check-skip:
     name: Skip the Pipeline if tagged and NOT on the release branch
     runs-on: ubuntu-latest
+    if: github.repository == 'sherpa/sherpa'
     outputs:
       skip_pipeline: ${{ steps.skip_check.outputs.skip_pipeline }}
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
 
     steps:
     #Checkout the code with a depth of 0 to grab the tags/branches as well
@@ -63,7 +59,7 @@ jobs:
   # based on it being defined in the matrix or not.
   build-linux:
     name: Linux Python ${{ matrix.python-version }}
-    if: github.repository == 'sherpa/sherpa' && ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
+    if: ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
     needs: ["check-skip"]
     runs-on: ubuntu-latest
     container:
@@ -78,9 +74,6 @@ jobs:
         conda-os: ["Linux-x86_64"]
         os-dir: ["linux-64"]
         python-version: ["3.8", "3.9", "3.10"]
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
 
     steps:
     - name: Install git and diff
@@ -141,9 +134,6 @@ jobs:
         python-version: ["3.8", "3.9", "3.10"]
     env:
       CONDA_BUILD_SYSROOT: /opt/MacOSX10.9.sdk
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}-macos-build
-      cancel-in-progress: true
 
     steps:
     - name: Conda Setup
@@ -217,9 +207,6 @@ jobs:
             os: macos-latest
             conda-os: "MacOSX-x86_64"
             os-dir: "osx-64"
-    concurrency:
-      group: ${{ github.workflow }}-${{ github.ref }}
-      cancel-in-progress: true
 
     steps:
     #Download all artifacts
@@ -272,10 +259,6 @@ jobs:
     needs: pre-deploy-test
     name: Deploy to Dev Channel
     runs-on: ubuntu-latest
-    #Do NOT auto cancel the GH Action run during the deploy stage
-    concurrency:
-      group: ${{ github.workflow }}-deploy
-      cancel-in-progress: false
 
     steps:
     #Download all artifacts
