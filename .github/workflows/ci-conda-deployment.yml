@@ -9,7 +9,6 @@ on:
     - main
     - ciaox
     - 'releases/**'
-    - gh-deployments
 
 #Reduces GH Action duplication:
 # Cancels the previous pipeline for this ref it is still running
@@ -17,9 +16,8 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-#Temporarily upload this to my channel for testing
 env:
-  sherpa_channel: Marie-Terrell
+  sherpa_channel: sherpa
   sherpa_label: dev
   miniconda_loc: ${{ github.workspace }}/miniconda
 
@@ -31,8 +29,7 @@ jobs:
   check-skip:
     name: Skip the Pipeline if tagged and NOT on the release branch
     runs-on: ubuntu-latest
-#    if: github.repository == 'sherpa/sherpa'
-    if: github.repository == 'Marie-Terrell/sherpa'
+    if: github.repository == 'sherpa/sherpa'
     outputs:
       skip_pipeline: ${{ steps.skip_check.outputs.skip_pipeline }}
 
