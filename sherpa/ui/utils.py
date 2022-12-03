@@ -7572,14 +7572,17 @@ class Session(NoNewAttributesAfterInit):
             >>> set_stat("qstat")
 
         """
-        userstat = sherpa.stats.UserStat(calc_stat_func,
-                                         calc_err_func, statname)
         if priors:
-            pars = [(key, priors.pop(key)) for key in priors
-                    if isinstance(priors[key], sherpa.models.Parameter)]
-            pars = dict(pars)
+            # TODO: should pars be removed from priors? See #1643
+            pars = dict((key, par) for key, par in priors.items()
+                        if isinstance(par, sherpa.models.Parameter))
             userstat = sherpa.logposterior.Prior(calc_stat_func, priors, pars)
 
+        else:
+            userstat = sherpa.stats.UserStat(calc_stat_func,
+                                             calc_err_func, statname)
+
+        # TODO: should this register the statistic in self._stats?
         _assign_obj_to_main(statname, userstat)
 
     #
