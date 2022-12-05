@@ -551,6 +551,9 @@ class Session(sherpa.ui.utils.Session):
                 self._xspec_state = None
 
     def _get_show_data(self, id=None):
+        # pylint: disable=too-many-branches
+        """Show the data"""
+
         if id is None:
             ids = self.list_data_ids()
         else:
@@ -606,6 +609,7 @@ class Session(sherpa.ui.utils.Session):
         return data_str
 
     def _get_show_bkg(self, id=None, bkg_id=None):
+        """Show the background"""
         if id is None:
             ids = self.list_data_ids()
         else:
@@ -623,9 +627,9 @@ class Session(sherpa.ui.utils.Session):
                 # pylint: disable=protected-access
                 bkg_ids = [data._fix_background_id(bkg_id)]
 
-            for bkg_id in bkg_ids:
-                bkg = self.get_bkg(idval, bkg_id)
-                data_str += f'Background Data Set: {idval}:{bkg_id}\n'
+            for bval in bkg_ids:
+                bkg = self.get_bkg(idval, bval)
+                data_str += f'Background Data Set: {idval}:{bval}\n'
                 data_str += f'Filter: {bkg.get_filter_expr()}\n'
                 data_str += f'Noticed Channels: {bkg.get_noticed_expr()}\n'
                 data_str += str(bkg) + '\n\n'
@@ -634,15 +638,16 @@ class Session(sherpa.ui.utils.Session):
                     # ARF or RMF could be None
                     arf, rmf = bkg.get_response(bk_rp_id)
                     if rmf is not None:
-                        data_str += f'Background RMF Data Set: {idval}:{bkg_id}\n'
+                        data_str += f'Background RMF Data Set: {idval}:{bval}\n'
                         data_str += str(rmf) + '\n\n'
                     if arf is not None:
-                        data_str += f'Background ARF Data Set: {idval}:{bkg_id}\n'
+                        data_str += f'Background ARF Data Set: {idval}:{bval}\n'
                         data_str += str(arf) + '\n\n'
 
         return data_str
 
     def _get_show_bkg_model(self, id=None, bkg_id=None):
+        """Show the background model"""
         if id is None:
             ids = self.list_data_ids()
         else:
@@ -657,13 +662,14 @@ class Session(sherpa.ui.utils.Session):
                 bkg_ids.extend(self._background_sources.get(idval, {}).keys())
                 bkg_ids = list(set(bkg_ids))
 
-            for bkg_id in bkg_ids:
-                model_str += f'Background Model: {idval}:{bkg_id}\n'
-                model_str += str(self.get_bkg_model(idval, bkg_id)) + '\n\n'
+            for bval in bkg_ids:
+                model_str += f'Background Model: {idval}:{bval}\n'
+                model_str += str(self.get_bkg_model(idval, bval)) + '\n\n'
 
         return model_str
 
     def _get_show_bkg_source(self, id=None, bkg_id=None):
+        """Show the background source"""
         if id is None:
             ids = self.list_data_ids()
         else:
@@ -676,9 +682,9 @@ class Session(sherpa.ui.utils.Session):
             else:
                 bkg_ids = self._background_sources.get(idval, {}).keys()
 
-            for bkg_id in bkg_ids:
-                model_str += f'Background Source: {idval}:{bkg_id}\n'
-                model_str += str(self.get_bkg_source(idval, bkg_id)) + '\n\n'
+            for bval in bkg_ids:
+                model_str += f'Background Source: {idval}:{bval}\n'
+                model_str += str(self.get_bkg_source(idval, bval)) + '\n\n'
 
         return model_str
 
