@@ -985,73 +985,53 @@ class Session(NoNewAttributesAfterInit):
             for name, cmpt in self._model_components.items():
                 self._model_autoassign_func(name, cmpt)
 
+    def _get_show_per_id(self, idarg, header, validate, getstr):
+        if idarg is None:
+            ids = self.list_data_ids()
+        else:
+            ids = [self._fix_id(idarg)]
+
+        out = ""
+        for idval in ids:
+            if not validate(idval):
+                continue
+
+            out += f'{header}: {idval}\n'
+            out += getstr(idval) + '\n\n'
+
+        return out
+
     def _get_show_data(self, id=None):
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            data_str += f'Data Set: {id}\n'
-            data_str += str(self.get_data(id)) + '\n\n'
-        return data_str
+        return self._get_show_per_id(id, "Data Set",
+                                     lambda idval: True,
+                                     lambda idval: str(self.get_data(idval)))
 
     def _get_show_filter(self, id=None):
-        filt_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            filt_str += f'Data Set Filter: {id}\n'
-            filt_str += self.get_data(id).get_filter_expr() + '\n\n'
-        return filt_str
+        return self._get_show_per_id(id, "Data Set Filter",
+                                     lambda idval: True,
+                                     lambda idval: self.get_data(idval).get_filter_expr())
 
     def _get_show_model(self, id=None):
-        model_str = ''
-        ids = self.list_data_ids()
         mdl_ids = self.list_model_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            if id in mdl_ids:
-                model_str += f'Model: {id}\n'
-                model_str += str(self.get_model(id)) + '\n\n'
-        return model_str
+        return self._get_show_per_id(id, "Model",
+                                     lambda idval: idval in mdl_ids,
+                                     lambda idval: str(self.get_model(idval)))
 
     def _get_show_source(self, id=None):
-        model_str = ''
-        ids = self.list_data_ids()
         src_ids = self._sources.keys()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            if id in src_ids:
-                model_str += f'Model: {id}\n'
-                model_str += str(self.get_source(id)) + '\n\n'
-        return model_str
+        return self._get_show_per_id(id, "Model",  # TODO: should this be "Source"?
+                                     lambda idval: idval in src_ids,
+                                     lambda idval: str(self.get_source(idval)))
 
     def _get_show_kernel(self, id=None):
-        kernel_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            if id in self._psf:
-                kernel_str += f'PSF Kernel: {id}\n'
-                # Show the PSF parameters
-                kernel_str += str(self.get_psf(id)) + '\n\n'
-        return kernel_str
+        return self._get_show_per_id(id, "PSF Kernel",
+                                     lambda idval: idval in self._psf,
+                                     lambda idval: str(self.get_psf(idval)))
 
     def _get_show_psf(self, id=None):
-        psf_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            if id in self._psf:
-                psf_str += f'PSF Model: {id}\n'
-                # Show the PSF dataset or PSF model
-                psf_str += str(self.get_psf(id).kernel) + '\n\n'
-        return psf_str
+        return self._get_show_per_id(id, "PSF Model",
+                                     lambda idval: idval in self._psf,
+                                     lambda idval: str(self.get_psf(idval).kernel))
 
     def _get_show_method(self):
         return f'Optimization Method: {type(self._current_method).__name__}\n{self._current_method}\n'

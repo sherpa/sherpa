@@ -196,6 +196,97 @@ def _save_errorcol(session, idval, filename, bkg_id,
                         ascii=asciiflag, clobber=clobber)
 
 
+def sample_xxx_flux(session, model, idval, bkg_id, otherids,
+                    correlated, num, lo, hi, numcores, samples, clip,
+                    method):
+    # pylint: disable=too-many-arguments
+    """Helper for sample_photon_flux and sample_energy_flux
+
+    Parameters
+    ----------
+    session : AstroSession object
+    model : model, optional
+       The model to integrate. If left as `None` then the source
+       model for the dataset will be used. This can be used to
+       calculate the unabsorbed flux, as shown in the examples.
+       The model must be part of the source expression.
+    idval : int or string, optional
+       The identifier of the data set to use. If `None`, the
+       default value, then all datasets with associated models are
+       used to calculate the errors and the model evaluation is
+       done using the default dataset.
+    bkg_id : int or string, optional
+       The identifier of the background component to use. This
+       should only be set when the line to be measured is in the
+       background model.
+    otherids : sequence of integer and string ids, optional
+       The list of other datasets that should be included when
+       calculating the errors to draw values from.
+    correlated : bool, optional
+       Should the correlation between the parameters be included
+       when sampling the parameters? If not, then each parameter
+       is sampled from independent distributions. In both cases
+       a normal distribution is used.
+    num : int, optional
+       The number of samples to create. The default is 1.
+    lo : number, optional
+       The lower limit to use when summing up the signal. If not
+       given then the lower value of the data grid is used.
+    hi : optional
+       The upper limit to use when summing up the signal. If not
+       given then the upper value of the data grid is used.
+    numcores : optional
+       The number of CPU cores to use. The default is to use all
+       the cores on the machine.
+    scales : array, optional
+       The scales used to define the normal distributions for the
+       parameters. The size and shape of the array depends on the
+       number of free parameters in the fit (n) and the value of
+       the `correlated` parameter. When the parameter is `True`,
+       scales must be given the covariance matrix for the free
+       parameters (a n by n matrix that matches the parameter
+       ordering used by Sherpa). For un-correlated parameters
+       the covariance matrix can be used, or a one-dimensional
+       array of n elements can be used, giving the width (specified
+       as the sigma value of a normal distribution) for each
+       parameter (e.g. the square root of the diagonal elements
+       of the covariance matrix). If the scales parameter is not
+       given then the covariance matrix is evaluated for the
+       current model and best-fit parameters.
+    clip : {'hard', 'soft', 'none'}, optional
+        What clipping strategy should be applied to the sampled
+        parameters. The default ('hard') is to fix values at their
+        hard limits if they exceed them. A value of 'soft' uses
+        the soft limits instead, and 'none' applies no
+        clipping. The last column in the returned arrays indicates
+        if the row had any clipped parameters (even when clip is
+        set to 'none').
+    method : callable
+        The method to send to sample_flux.
+
+    """
+
+    # pylint: disable=protected-access
+    _, fit = session._get_fit(idval, otherids=otherids)
+
+    if bkg_id is None:
+        data = session.get_data(idval)
+        if model is None:
+            model = session.get_source(idval)
+    else:
+        data = session.get_bkg(idval, bkg_id)
+        if model is None:
+            model = session.get_bkg_source(idval, bkg_id)
+
+    correlated = sherpa.utils.bool_cast(correlated)
+    return sherpa.astro.flux.sample_flux(fit, data, model,
+                                         method=method,
+                                         correlated=correlated,
+                                         num=num, lo=lo, hi=hi,
+                                         numcores=numcores,
+                                         samples=samples, clip=clip)
+
+
 class Session(sherpa.ui.utils.Session):
     """The Astronomy Session class"""
 
@@ -460,14 +551,16 @@ class Session(sherpa.ui.utils.Session):
                 self._xspec_state = None
 
     def _get_show_data(self, id=None):
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
-            data = self.get_data(id)
 
-            data_str += f'Data Set: {id}\n'
+        data_str = ''
+        for idval in ids:
+            data = self.get_data(idval)
+
+            data_str += f'Data Set: {idval}\n'
             data_str += f'Filter: {data.get_filter_expr()}\n'
             if isinstance(data, DataPHA):
 
@@ -502,24 +595,25 @@ class Session(sherpa.ui.utils.Session):
                     # ARF or RMF could be None
                     arf, rmf = data.get_response(resp_id)
                     if rmf is not None:
-                        data_str += f'RMF Data Set: {id}:{resp_id}\n'
+                        data_str += f'RMF Data Set: {idval}:{resp_id}\n'
                         data_str += str(rmf) + '\n\n'
                     if arf is not None:
-                        data_str += f'ARF Data Set: {id}:{resp_id}\n'
+                        data_str += f'ARF Data Set: {idval}:{resp_id}\n'
                         data_str += str(arf) + '\n\n'
 
-                data_str += self._get_show_bkg(id)
+                data_str += self._get_show_bkg(idval)
 
         return data_str
 
     def _get_show_bkg(self, id=None, bkg_id=None):
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
 
-        for id in ids:
-            data = self.get_data(id)
+        data_str = ''
+        for idval in ids:
+            data = self.get_data(idval)
 
             if not isinstance(data, DataPHA):
                 continue
@@ -530,8 +624,8 @@ class Session(sherpa.ui.utils.Session):
                 bkg_ids = [data._fix_background_id(bkg_id)]
 
             for bkg_id in bkg_ids:
-                bkg = self.get_bkg(id, bkg_id)
-                data_str += f'Background Data Set: {id}:{bkg_id}\n'
+                bkg = self.get_bkg(idval, bkg_id)
+                data_str += f'Background Data Set: {idval}:{bkg_id}\n'
                 data_str += f'Filter: {bkg.get_filter_expr()}\n'
                 data_str += f'Noticed Channels: {bkg.get_noticed_expr()}\n'
                 data_str += str(bkg) + '\n\n'
@@ -540,47 +634,51 @@ class Session(sherpa.ui.utils.Session):
                     # ARF or RMF could be None
                     arf, rmf = bkg.get_response(bk_rp_id)
                     if rmf is not None:
-                        data_str += f'Background RMF Data Set: {id}:{bkg_id}\n'
+                        data_str += f'Background RMF Data Set: {idval}:{bkg_id}\n'
                         data_str += str(rmf) + '\n\n'
                     if arf is not None:
-                        data_str += f'Background ARF Data Set: {id}:{bkg_id}\n'
+                        data_str += f'Background ARF Data Set: {idval}:{bkg_id}\n'
                         data_str += str(arf) + '\n\n'
 
         return data_str
 
     def _get_show_bkg_model(self, id=None, bkg_id=None):
-        model_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
+
+        model_str = ''
+        for idval in ids:
             if bkg_id is not None:
                 bkg_ids = [bkg_id]
             else:
-                bkg_ids = list(self._background_models.get(id, {}).keys())
-                bkg_ids.extend(self._background_sources.get(id, {}).keys())
+                bkg_ids = list(self._background_models.get(idval, {}).keys())
+                bkg_ids.extend(self._background_sources.get(idval, {}).keys())
                 bkg_ids = list(set(bkg_ids))
 
             for bkg_id in bkg_ids:
-                model_str += f'Background Model: {id}:{bkg_id}\n'
-                model_str += str(self.get_bkg_model(id, bkg_id)) + '\n\n'
+                model_str += f'Background Model: {idval}:{bkg_id}\n'
+                model_str += str(self.get_bkg_model(idval, bkg_id)) + '\n\n'
 
         return model_str
 
     def _get_show_bkg_source(self, id=None, bkg_id=None):
-        model_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
+
+        model_str = ''
+        for idval in ids:
             if bkg_id is not None:
                 bkg_ids = [bkg_id]
             else:
-                bkg_ids = self._background_sources.get(id, {}).keys()
+                bkg_ids = self._background_sources.get(idval, {}).keys()
 
             for bkg_id in bkg_ids:
-                model_str += f'Background Source: {id}:{bkg_id}\n'
-                model_str += str(self.get_bkg_source(id, bkg_id)) + '\n\n'
+                model_str += f'Background Source: {idval}:{bkg_id}\n'
+                model_str += str(self.get_bkg_source(idval, bkg_id)) + '\n\n'
 
         return model_str
 
@@ -2673,8 +2771,9 @@ class Session(sherpa.ui.utils.Session):
         if val is None:
             val, id = id, val
 
-        d = self.get_data(id)
-        if bkg_id is not None:
+        if bkg_id is None:
+            d = self.get_data(id)
+        else:
             d = self.get_bkg(id, bkg_id)
 
         sherpa.ui.utils.set_dep(d, val)
@@ -2740,8 +2839,9 @@ class Session(sherpa.ui.utils.Session):
         if val is None:
             val, id = id, val
 
-        d = self.get_data(id)
-        if bkg_id is not None:
+        if bkg_id is None:
+            d = self.get_data(id)
+        else:
             d = self.get_bkg(id, bkg_id)
 
         sherpa.ui.utils.set_error(d, "staterror", val, fractional=fractional)
@@ -2802,8 +2902,9 @@ class Session(sherpa.ui.utils.Session):
         if val is None:
             val, id = id, val
 
-        d = self.get_data(id)
-        if bkg_id is not None:
+        if bkg_id is None:
+            d = self.get_data(id)
+        else:
             d = self.get_bkg(id, bkg_id)
 
         sherpa.ui.utils.set_error(d, "syserror", val, fractional=fractional)
@@ -3051,9 +3152,13 @@ class Session(sherpa.ui.utils.Session):
         array([2, 3, 5])
 
         """
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
+
+        idval = self._fix_id(id)
+        if bkg_id is None:
+            d = self.get_data(idval)
+        else:
+            d = self.get_bkg(idval, bkg_id)
+
         return d.get_staterror(filter, self.get_stat().calc_staterror)
 
     # DOC-NOTE: also in sherpa.utils, where it does not have
@@ -3124,6 +3229,7 @@ class Session(sherpa.ui.utils.Session):
         >>> yerr = get_syserror("core", filter=True)
 
         """
+
         idval = self._fix_id(id)
         if bkg_id is None:
             d = self.get_data(idval)
@@ -3211,6 +3317,7 @@ class Session(sherpa.ui.utils.Session):
         >>> berr2 = get_error('core', bkg_id=2, filter=True)
 
         """
+
         idval = self._fix_id(id)
         if bkg_id is None:
             d = self.get_data(idval)
@@ -7494,8 +7601,8 @@ class Session(sherpa.ui.utils.Session):
         bkgsets = self.unpack_bkg(arg, use_errors)
 
         if numpy.iterable(bkgsets):
-            for bkgid, bkg in enumerate(bkgsets):
-                self.set_bkg(id, bkg, bkgid + 1)
+            for bkgid, bkg in enumerate(bkgsets, 1):
+                self.set_bkg(id, bkg, bkgid)
         else:
             self.set_bkg(id, bkgsets, bkg_id)
 
@@ -10197,6 +10304,7 @@ class Session(sherpa.ui.utils.Session):
     def _add_extra_data_and_models(self, ids, datasets, models,
                                    bkg_ids=None):
         # pylint: disable=too-many-locals
+        # pylint: disable=logging-not-lazy
 
         # bkg_ids used to default to {} but this is "dangerous", so we
         # use the following. When bkg_ids is None we don't care about
@@ -10210,35 +10318,40 @@ class Session(sherpa.ui.utils.Session):
             bkg_models = self._background_models.get(idval, {})
             bkg_srcs = self._background_sources.get(idval, {})
             if d.subtracted:
-                if (bkg_models or bkg_srcs):
+                if bkg_models or bkg_srcs:
                     warning(f'data set {idval} is background-subtracted; ' +
                             'background models will be ignored')
-            elif not (bkg_models or bkg_srcs):
+                continue
+
+            if not (bkg_models or bkg_srcs):
                 if d.background_ids and self._current_stat.name != 'wstat':
                     warning(f'data set {idval} has associated backgrounds, ' +
                             'but they have not been subtracted, ' +
                             'nor have background models been set')
-            else:
-                out[idval] = []
-                for bkg_id in d.background_ids:
 
-                    if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
-                        raise ModelErr('nobkg', bkg_id, idval)
+                continue
 
-                    bkg = d.get_background(bkg_id)
-                    datasets.append(bkg)
+            out[idval] = []
+            for bkg_id in d.background_ids:
 
-                    bkg_data = d
-                    if len(bkg.response_ids) != 0:
-                        bkg_data = bkg
+                if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
+                    # This case looks to be hard to trigger
+                    raise ModelErr('nobkg', bkg_id, idval)
 
-                    bkg_model = bkg_models.get(bkg_id, None)
-                    bkg_src = bkg_srcs.get(bkg_id, None)
-                    if bkg_model is None and bkg_src is not None:
-                        resp = sherpa.astro.instrument.Response1D(bkg_data)
-                        bkg_model = resp(bkg_src)
-                    models.append(bkg_model)
-                    out[idval].append(bkg_id)
+                bkg = d.get_background(bkg_id)
+                datasets.append(bkg)
+
+                bkg_data = d
+                if len(bkg.response_ids) != 0:
+                    bkg_data = bkg
+
+                bkg_model = bkg_models.get(bkg_id, None)
+                bkg_src = bkg_srcs.get(bkg_id, None)
+                if bkg_model is None and bkg_src is not None:
+                    resp = sherpa.astro.instrument.Response1D(bkg_data)
+                    bkg_model = resp(bkg_src)
+                models.append(bkg_model)
+                out[idval].append(bkg_id)
 
         return out
 
@@ -13395,25 +13508,13 @@ class Session(sherpa.ui.utils.Session):
         >>> flux2_filt = flux2[v2[:, -1] == 0]
 
         """
-        _, fit = self._get_fit(id, otherids=otherids)
 
-        if bkg_id is None:
-            data = self.get_data(id)
-            if model is None:
-                model = self.get_source(id)
-        else:
-            data = self.get_bkg(id, bkg_id)
-            if model is None:
-                model = self.get_bkg_source(id, bkg_id)
-
-        correlated = sherpa.utils.bool_cast(correlated)
-
-        return sherpa.astro.flux.sample_flux(fit, data, model,
-                                             method=sherpa.astro.utils.calc_photon_flux,
-                                             correlated=correlated,
-                                             num=num, lo=lo, hi=hi,
-                                             numcores=numcores,
-                                             samples=scales, clip=clip)
+        return sample_xxx_flux(self, model=model, idval=id,
+                               bkg_id=bkg_id, otherids=otherids,
+                               correlated=correlated, num=num, lo=lo,
+                               hi=hi, numcores=numcores,
+                               samples=scales, clip=clip,
+                               method=sherpa.astro.utils.calc_photon_flux)
 
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1,
                            scales=None, correlated=False,
@@ -13627,25 +13728,14 @@ class Session(sherpa.ui.utils.Session):
         >>> flux2_filt = flux2[v2[:, -1] == 0]
 
         """
-        _, fit = self._get_fit(id, otherids=otherids)
 
-        if bkg_id is None:
-            data = self.get_data(id)
-            if model is None:
-                model = self.get_source(id)
-        else:
-            data = self.get_bkg(id, bkg_id)
-            if model is None:
-                model = self.get_bkg_source(id, bkg_id)
+        return sample_xxx_flux(self, model=model, idval=id,
+                               bkg_id=bkg_id, otherids=otherids,
+                               correlated=correlated, num=num, lo=lo,
+                               hi=hi, numcores=numcores,
+                               samples=scales, clip=clip,
+                               method=sherpa.astro.utils.calc_energy_flux)
 
-        correlated = sherpa.utils.bool_cast(correlated)
-
-        return sherpa.astro.flux.sample_flux(fit, data, model,
-                                             method=sherpa.astro.utils.calc_energy_flux,
-                                             correlated=correlated,
-                                             num=num, lo=lo, hi=hi,
-                                             numcores=numcores,
-                                             samples=scales, clip=clip)
 
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                     num=1, scales=None, correlated=False,
@@ -13984,8 +14074,10 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_cdf(ews)
 
         """
-        data = self.get_data(id)
-        if bkg_id is not None:
+
+        if bkg_id is None:
+            data = self.get_data(id)
+        else:
             data = self.get_bkg(id, bkg_id)
 
         ####################################################
@@ -14390,8 +14482,10 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_data_sum(12, 45, id=3, bkg_id=2)
 
         """
-        data = self.get_data(id)
-        if bkg_id is not None:
+
+        if bkg_id is None:
+            data = self.get_data(id)
+        else:
             data = self.get_bkg(id, bkg_id)
 
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
@@ -14501,12 +14595,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_model(id, bkg_id)
-        else:
+        if bkg_id is None:
             data = self.get_data(id)
             model = self.get_model(id)
+        else:
+            data = self.get_bkg(id, bkg_id)
+            model = self.get_bkg_model(id, bkg_id)
 
         return sherpa.astro.utils.calc_model_sum(data, model, lo, hi)
 
@@ -14846,12 +14940,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_source(id, bkg_id)
-        else:
+        if bkg_id is None:
             data = self.get_data(id)
             model = self.get_source(id)
+        else:
+            data = self.get_bkg(id, bkg_id)
+            model = self.get_bkg_source(id, bkg_id)
 
         return sherpa.astro.utils.calc_source_sum(data, model, lo, hi)
 
@@ -14974,12 +15068,12 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_source(id, bkg_id)
-        else:
+        if bkg_id is None:
             data = self.get_data(id)
             model = self.get_source(id)
+        else:
+            data = self.get_bkg(id, bkg_id)
+            model = self.get_bkg_source(id, bkg_id)
 
         return sherpa.astro.utils.calc_kcorr(data, model, z, obslo, obshi,
                                              restlo, resthi)
