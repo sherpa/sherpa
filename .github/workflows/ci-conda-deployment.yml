@@ -53,7 +53,7 @@ jobs:
             echo "skip_pipeline=false" >> $GITHUB_OUTPUT
         fi
 
-  #Linux and macOS build separate as a we can't use container option dynamically
+  #Linux and macOS build separate as we can't use container option dynamically
   # based on it being defined in the matrix or not.
   build-linux:
     name: Linux Python ${{ matrix.python-version }}
