@@ -1,0 +1,287 @@
+name: Conda Deployments
+
+#Only run when updating main, ciaox, or release/... branches (no PRs).
+#With check-skip job, we skip build on main/ciaox if directly tagged as a release.
+# (To only build releases on the release branch)
+on:
+  push:
+    branches:
+    - main
+    - ciaox
+    - 'releases/**'
+
+#Reduces GH Action duplication:
+# Cancels the previous pipeline for this ref it is still running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  sherpa_channel: sherpa
+  sherpa_label: dev
+  miniconda_loc: ${{ github.workspace }}/miniconda
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check-skip:
+    name: Skip the Pipeline if tagged and NOT on the release branch
+    runs-on: ubuntu-latest
+    if: github.repository == 'sherpa/sherpa'
+    outputs:
+      skip_pipeline: ${{ steps.skip_check.outputs.skip_pipeline }}
+
+    steps:
+    #Checkout the code with a depth of 0 to grab the tags/branches as well
+    - name: Checkout Code
+      uses: actions/checkout@v3.1.0
+      with:
+        fetch-depth: 0
+
+    - name: Check build number
+      id: skip_check
+      run: |
+        #BUILD_NUM not passed to future jobs to maintain a separate Git sanity check
+        BUILD_NUM="$(git describe --tags --always | awk '{split($0,a,"-"); print a[2]}')"
+        echo "BUILD_NUM=${BUILD_NUM}"
+        if [ -z "${BUILD_NUM}" ] && [ "${GITHUB_REF:0:20}" != "refs/heads/releases/" ] ; then
+            #Skip the build/test/deploy if directly on a tag and NOT on a release branch
+            echo "skip_pipeline=true" >> $GITHUB_OUTPUT
+        else
+            echo "skip_pipeline=false" >> $GITHUB_OUTPUT
+        fi
+
+  #Linux and macOS build separate as we can't use container option dynamically
+  # based on it being defined in the matrix or not.
+  build-linux:
+    name: Linux Python ${{ matrix.python-version }}
+    if: ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
+    needs: ["check-skip"]
+    runs-on: ubuntu-latest
+    container:
+      image: ${{ matrix.image }}
+      env:
+        GITHUB_WORKSPACE: ${{ github.workspace }}
+      volumes:
+        - ${{ github.workspace }}:${{ github.workspace }}
+    strategy:
+      matrix:
+        image: ["redhat/ubi8"]
+        conda-os: ["Linux-x86_64"]
+        os-dir: ["linux-64"]
+        python-version: ["3.8", "3.9", "3.10"]
+
+    steps:
+    - name: Install git and diff
+      run: yum install -y -q git diffutils
+
+    - name: Conda Setup
+      env:
+        CONDA_OS: ${{ matrix.conda-os }}
+      run: |
+        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
+        bash miniconda.sh -b -p ${miniconda_loc}
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda create -yq -n builder conda-build conda-verify
+
+    #Checkout the code with a depth of 0 to grab the tags/branches as well
+    - name: Checkout Code
+      uses: actions/checkout@v3.1.0
+      with:
+        fetch-depth: 0
+        path: sherpa
+
+    - name: Build Sherpa
+      env:
+        SHERPA_PYTHON_VERSION: ${{ matrix.python-version }}
+      run: |
+        cd sherpa
+        export SHERPA_FULL_VERSION=$(git describe --tags --always)
+        export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
+        SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
+        export SHERPA_BUILD_NUMBER="${SHERPA_BUILD_NUMBER:-0}"
+        echo "Version: ${SHERPA_VERSION} Build Number: ${SHERPA_BUILD_NUMBER}"
+        if [ -z ${SHERPA_VERSION} ] || [ -z ${SHERPA_BUILD_NUMBER} ] ; then
+          echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set."
+          exit 1
+        fi
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate builder
+        echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
+        conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.os-dir }}
+        path: ${{ github.workspace }}/packages/*/sherpa*bz2
+        if-no-files-found: error
+        retention-days: 3
+
+  build-macos:
+    name: MacOS Python ${{ matrix.python-version }}
+    if: github.repository == 'sherpa/sherpa' && ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
+    needs: ["check-skip"]
+    runs-on: ${{ matrix.os-type }}
+    strategy:
+      matrix:
+        os-type: ["macos-11"]
+        conda-os: ["MacOSX-x86_64"]
+        os-dir: ["osx-64"]
+        python-version: ["3.8", "3.9", "3.10"]
+    env:
+      CONDA_BUILD_SYSROOT: /opt/MacOSX10.9.sdk
+
+    steps:
+    - name: Conda Setup
+      env:
+        CONDA_OS: ${{ matrix.conda-os }}
+      run: |
+        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
+        bash miniconda.sh -b -p ${miniconda_loc}
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda create -yq -n builder conda-build conda-verify
+
+    - name: macOS 10.9 SDK
+      if: ${{ matrix.conda-os == 'MacOSX-x86_64' }}
+      run: |
+        #Download the MacOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
+        mkdir -p /opt
+        curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -o MacOSX10.9.sdk.tar.xz
+        if [[ $? -ne 0 ]]; then
+            echo "MacOS 10.9 SDK download failed"
+        fi
+        sudo tar -C /opt -xf MacOSX10.9.sdk.tar.xz
+
+    - name: Checkout Code
+      uses: actions/checkout@v3.1.0
+      with:
+        fetch-depth: 0
+        path: sherpa
+
+    - name: Build Sherpa
+      env:
+        SHERPA_PYTHON_VERSION: ${{ matrix.python-version }}
+      run: |
+        cd sherpa
+        export SHERPA_FULL_VERSION=$(git describe --tags --always)
+        export SHERPA_VERSION=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[1]}')
+        SHERPA_BUILD_NUMBER=$(echo $SHERPA_FULL_VERSION | awk '{split($0,a,"-"); print a[2]}')
+        export SHERPA_BUILD_NUMBER="${SHERPA_BUILD_NUMBER:-0}"
+        echo "Version: ${SHERPA_VERSION} Build Number: ${SHERPA_BUILD_NUMBER}"
+        if [ -z ${SHERPA_VERSION} ] || [ -z ${SHERPA_BUILD_NUMBER} ] ; then
+          echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set"
+          exit 1
+        fi
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate builder
+        echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
+        conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
+
+    - uses: actions/upload-artifact@v3
+      with:
+        name: ${{ matrix.os-dir }}
+        path: ${{ github.workspace }}/packages/*/sherpa*bz2
+        if-no-files-found: error
+        retention-days: 3
+
+#The jobs below should not run if "build-linux" or "build-macos" are skipped.
+#If they try to, then the "pre-deploy-test" stage will fail anyway and the deployment will NOT be attempted.
+#If the "pre-deploy-test" stage is attempted when it shouldn't be, GH Actions might have updated the
+# condition for skipping a "needs" option.
+  pre-deploy-test:
+    needs: ["build-linux", "build-macos"]
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Latest Ubuntu Pre-Deploy Test
+            os: ubuntu-latest
+            conda-os: "Linux-x86_64"
+            os-dir: "linux-64"
+          - name: Latest MacOS Pre-Deploy Test
+            os: macos-latest
+            conda-os: "MacOSX-x86_64"
+            os-dir: "osx-64"
+
+    steps:
+    #Download all artifacts
+    - uses: actions/download-artifact@v3
+      id: download
+      with:
+        name: ${{ matrix.os-dir }}
+        path: packages
+
+    - name: Conda Setup & Index Artifacts
+      env:
+        CONDA_OS: ${{ matrix.conda-os }}
+      working-directory: ${{ github.workspace }}
+      run: |
+        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
+        bash miniconda.sh -b -p ${miniconda_loc}
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda install conda-build
+        echo "Packages downloaded here: ${{steps.download.outputs.download-path}}"
+        echo "ls packages/*/sherpa*.bz2"
+        ls packages/*/sherpa*.bz2
+        echo "conda index packages"
+        conda index packages
+
+    - name: Run the tests
+      working-directory: ${{ github.workspace }}
+      run: |
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/main.zip 
+        echo "conda create -n test38 --yes -q -c file://$(pwd)/packages python=3.8 astropy sherpa matplotlib"
+        conda create -n test38 --yes -q -c file://$(pwd)/packages python=3.8 astropy sherpa matplotlib
+        conda activate test38
+        pip install main.zip
+        sherpa_smoke -f astropy
+        sherpa_test
+        echo "conda create -n test39 --yes -q -c file://$(pwd)/packages python=3.9 astropy sherpa matplotlib"
+        conda create -n test39 --yes -q -c file://$(pwd)/packages python=3.9 astropy sherpa matplotlib
+        conda activate test39
+        pip install main.zip
+        sherpa_smoke -f astropy
+        sherpa_test
+        echo "conda create -n test310 --yes -q -c file://$(pwd)/packages python=3.10 astropy sherpa matplotlib"
+        conda create -n test310 --yes -q -c file://$(pwd)/packages python=3.10 astropy sherpa matplotlib
+        conda activate test310
+        pip install main.zip
+        sherpa_smoke -f astropy
+        sherpa_test
+
+  deploy:
+    needs: pre-deploy-test
+    name: Deploy to Dev Channel
+    runs-on: ubuntu-latest
+
+    steps:
+    #Download all artifacts
+    - uses: actions/download-artifact@v3
+      with:
+        path: packages
+
+    - name: Anaconda-Client Setup
+      run: |
+        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh
+        bash miniconda.sh -b -p ${miniconda_loc}
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda install -yq anaconda-client
+      
+    - name: Deploy Sherpa
+      working-directory: ${{ github.workspace }}
+      env:
+        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
+      run: |
+        source ${miniconda_loc}/etc/profile.d/conda.sh
+        conda activate
+        if [ -z ${CONDA_UPLOAD_TOKEN} ] || [ -z ${sherpa_channel} ]; then
+          echo "Error: CONDA_UPLOAD_TOKEN or sherpa_channel is not set."
+          exit 1
+        fi
+        #We can switch this to use "--force" if we run into issues with the upload cutting or needing to re-run
+        anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} ${GITHUB_WORKSPACE}/packages/*/linux-64/sherpa*
+        anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} ${GITHUB_WORKSPACE}/packages/*/osx-64/sherpa*
