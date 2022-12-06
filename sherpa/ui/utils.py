@@ -26,7 +26,179 @@
 # pylint: disable=redefined-builtin
 # pylint: disable=too-many-lines
 
-"""General support for sessions."""
+"""Provide a Domain-Specific Language for model and fit data.
+
+The `Session` class provides data-management capabilities and a
+Domain-Specific Language for loading in data, selecting a statistic
+and optimisation method, creating models, displaying models and data
+(as plots or images), fitting the data and calculating error
+estimates, and writing data out.
+
+Starting a session
+==================
+
+When starting a session, the object is created and then the model
+classes should be registered with the `_add_model_types` method.  The
+following will ensure that the models in `sherpa.models.basic` are
+supported:
+
+   >>> from sherpa.ui.utils import Session
+   >>> import sherpa.models.basic
+   >>> s = Session()
+   >>> s.list_models()
+   []
+   >>> s._add_model_types(sherpa.models.basic)
+   >>> s.list_models()[0:5]
+   ['box1d', 'box2d', 'const1d', 'const2d', 'cos']
+
+Data
+====
+
+Data sets - that is, the data to be fitted - are referenced via an
+identifier, that can be an integer or a string (when using strings
+there are some restrictions on the labels, to avoid confusion with
+certain opertions). The data is normally loaded into the system either
+directly with `Session.load_arrays` or from a file with
+`Session.load_data` using a given identifier. Then the identifier is
+used in commands to reference the data, such as when plotting the
+data, creating a model expression, or fitting the data.
+
+Data can also be created directly as a `sherpa.data.Data` instance,
+such as `sherpa.data.Data1D` or `shera.data.Data2D`, and then loaded
+into the session with the `Session.set_data` method, or via the
+`Session.unpack_data` and `Session.unpack_arrays` methods.
+
+The data can be retrieved from the session with `Session.get_data`,
+which returns a data object based on `sherpa.data.Data`.
+
+    >>> s = Session()
+    >>> s.load_arrays(1, [1, 5, 20], [2, 13, 4])
+    >>> s.list_data_ids()
+    [1]
+    >>> print(s.get_data())
+    name      =
+    x         = Int64[3]
+    y         = Int64[3]
+    staterror = None
+    syserror  = None
+
+Identifiers
+===========
+
+The default identifier is the integer 1, which can often, but not
+always, missed from a method call. This leads to a number of routines
+with somewhat non-Pythonic arguments, where the first two arguments
+can swap meaning. As an example, `Session.set_model` can be called
+as
+
+::
+
+    set_model(mdl)
+    set_model(idval, mdl)
+
+where the first form assumes the default identifier and the second
+form is sent an explicit identifier.
+
+The default ientifier can be changed with `Session.set_default_id` and
+retrieved with `Session.get_default_id`.
+
+Models
+======
+
+The support for models uses the interface provided by the
+`sherpa.models.model` module, where individual models can be fit or
+combined together. Rather than deal directly with instances of
+the model classes, there is support for "named" instances, where
+a string is used to reference a particular model. This is handled by
+the `Session._add_model_types` method, which will take all the
+`sherpa.models.ArithmeticModel` instances in the given module and
+wrap them using the `ModelWrapper` class to
+
+a. create a lower-cased version of the model class as a model factory
+b. the factory function is used to create named instances of the
+   model either as a callable - e.g. ``gauss1d("foo")`` - or via a dotted
+   notation ``gauss1d.foo``, which will create the model called ``foo``
+   which is an instance if `sherpa.models.basic.Gauss1D` (assuming
+   that ``s._add_model_types(sherpa.models.basic)`` had been called.
+
+The model wrapping works best for users of `sherpa.ui`, since the
+symbols wrapping the models get added to the module name space,
+and this is done automatically for you, so you can say either
+
+    >>> from sherpa import ui
+    >>> mdl = ui.gauss1d.cpt1 + ui.polynom1d.cpt2
+    >>> ui.list_model_components()
+    ['cpt1', 'cpt2']
+
+or
+
+    >>> from sherpa.ui import *
+    >>> mdl = gauss1d.cpt1 + polynom1d.cpt2
+    >>> list_model_components()
+    ['cpt1', 'cpt2']
+
+For users of the `Session` class, the models are not directly
+exposed, so access is either via the `Session.create_model_component`
+method or by using a string with `Session.set_model`:
+
+    >>> from sherpa.ui.utils import Session
+    >>> import sherpa.models.basic
+    >>> s = Session()
+    >>> s._add_model_types(sherpa.models.basic)
+    >>> m1 = c.create_model_component("gauss1d", "cpt1")
+    >>> m2 = c.create_model_component("polynom1d", "cpt2")
+    >>> mdl = m1 + m2
+    >>> s.list_model_components()
+    ['cpt1', 'cpt2']
+
+or
+
+    >>> from sherpa.ui.utils import Session
+    >>> import sherpa.models.basic
+    >>> s = Session()
+    >>> s._add_model_types(sherpa.models.basic)
+    >>> s.set_model("gauss1d.cpt1 + polynon1d.cpt2")
+    >>> s.list_model_components()
+    ['cpt1', 'cpt2']
+
+The `Session.get_model_component` routine can be used to access a
+model instance using the name it was given.
+
+Strings
+=======
+
+A number of routines can except string inputs as well as Python
+values. These include
+
+- the `Session.notice` and `Session.ignore` family of commands,
+  where the string argument can be used to filter the data using
+  a complex expression
+
+- the `Session.set_model` and `Session.set_source` commands, which
+  can take a string representation of the model expression
+
+Resetting the session
+=====================
+
+Individual elements can be removed from the session, with commands
+like `Session.delete_data`, `Session.delete_model`, and
+`Session.delete_model_component`. The session state can be restored to
+it's original settings - e.g. removing all data and models - with the
+`Session.clean` method.
+
+Notes
+=====
+
+Although the `Session` class can be used directly, it is expected to
+be used via importing `sherpa.ui`, which hides the class instance and
+provides direct access to the class method, which access the hidden
+`Session` instance. The documentation is written to support this view,
+so the documentation examples do not mention the class instance. In
+fact, the primary use for the documentation is for users of the
+`sherpa.astro.ui` module, so there are places where the documentation
+refers to functionality that is only relevant for the specialied case.
+
+"""
 
 from configparser import ConfigParser
 import copy
@@ -342,13 +514,53 @@ copy_reg.pickle(numpy.ufunc, reduce_ufunc)
 
 
 class ModelWrapper(NoNewAttributesAfterInit):
-    """Wrap up a model class so we can create instances easily.
+    """Factory to create model instances with a name.
 
     The created instances can be used in a "model language" to create
     complex expressions. If mdl1 and mdl2 have been created by
     ModelWrapper then a user can say mdl1.n1 + mdl2.n2 to create model
     instances named n1 and n2 and then return the expression which
-    represents their sum.
+    represents their sum. The names are registered with the session
+    object, so that if a name is re-used then the original model will
+    be returned if the model type has not changed.
+
+    Parameters
+    ----------
+    session : Session instance
+        The session in which to wrap the model.
+    modeltype : Model class
+        The model to wrap.
+    args : tuple
+        Arguments to pass to the model when creating a new instance.
+    kwargs : dict or None
+        Keyword arguments to pass to the model when creating a new
+        instance.
+
+    Examples
+    --------
+
+    In the following, ``wrapper("mdl")`` could have also been used to
+    create the model instance.
+
+    >>> from sherpa.ui.utils import Session,ModelWrapper
+    >>> from sherpa.models.basic import Gauss1D
+    >>> s = Session()
+    >>> wrapper = ModelWrapper(s, Gauss1D)
+    >>> wrapper.mdl
+    <Gauss1D model instance 'gauss1d.mdl'>
+    >>> print(mdl)
+    gauss1d.mdl
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       mdl.fwhm     thawed           10  1.17549e-38  3.40282e+38
+       mdl.pos      thawed            0 -3.40282e+38  3.40282e+38
+       mdl.ampl     thawed            1 -3.40282e+38  3.40282e+38
+    >>> s.list_model_components()
+    ['mdl']
+    >>> mdl([0, 2, 4, 6])
+    array([1.        , 0.89502507, 0.64171295, 0.3685673 ])
+    >>> type(mdl)
+    <class 'sherpa.models.basic.Gauss1D'>
 
     """
 
@@ -639,6 +851,19 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
     def _export_names(self, gdict):
+        """Add symbols defined by this class to gdict.
+
+        Methods are exported via `sherpa.utils.export_method`, so that
+        they hide the Session object and have the self argument
+        removed from the docstring and parameter interface.
+
+        Parameters
+        ----------
+        gdict : dict
+            Assumed to be the output of globals().
+
+        """
+
         allnames = []
 
         for name in dir(self):

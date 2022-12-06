@@ -26,7 +26,55 @@
 # pylint: disable=redefined-builtin
 # pylint: disable=too-many-lines
 
-"""Support for Astronomy specific sessions."""
+"""An Astronomy-specific Domain-Specific Language for fitting data.
+
+The `Session` class extends `Sherpa.ui.utils.Session` to add support
+for
+
+- `sherpa.astro.data.DataPHA` data sets to handle X-ray Astronomical
+  data stored as a PHA file, with associated responses stored in
+  RMF and ARF formats
+- `sherpa.astro.data.DataIMG` data sets to handle 2D images possibly
+  with coordinate mapping via World-Coordinate System data.
+
+The addition of these data types adds extra functionality to commands,
+such as handling of background data sets via the ``bkg_id`` parameter
+and the spatial filering of image data with the `Session.notice2d`
+family of commands.
+
+Starting a session
+==================
+
+The standard start-up is:
+
+   >>> from sherpa.astro.ui.utils import Session
+   >>> import sherpa.models.basic
+   >>> import sherpa.astro.models
+   >>> import sherpa.astro.optical
+   >>> import sherpa.models.template
+   >>> s = Session()
+   >>> s._add_model_types(sherpa.models.basic)
+   >>> s._add_model_types(sherpa.astro.models)
+   >>> s._add_model_types(sherpa.astro.optical)
+   >>> s._add_model_types(sherpa.models.template)
+
+Resetting the session
+=====================
+
+The `Session.clean` method attempts to restore the Session to it's
+original behavior, but it may not restore things completely because it
+is not possible to guarantee that the state of the XSPEC model
+library, as supported by the `sherpa.astro.xspec` module, can be
+completely reset.
+
+Notes
+=====
+
+As with `sherpa.ui.utils.Session`, the documentation has been written
+for users of the `sherpa.astro.ui` module, which hides the session
+class from the user.
+
+"""
 
 import logging
 import os

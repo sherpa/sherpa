@@ -6,17 +6,13 @@ The sherpa.astro.ui.utils module
 
 .. automodule:: sherpa.astro.ui.utils
 
-The :py:mod:`sherpa.astro.ui.utils` module contains the Astronomy-specific
-:py:class:`~sherpa.astro.ui.utils.Session` class that provides the
-data-management code used by the :py:mod:`sherpa.astro.ui` module.
-                
    .. rubric:: Classes
-               
+
    .. autosummary::
       :toctree: api
 
       Session
-      
+
 Class Inheritance Diagram
 =========================
 

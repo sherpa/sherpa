@@ -6,11 +6,6 @@ The sherpa.ui module
 
 .. automodule:: sherpa.ui
 
-The :py:mod:`sherpa.ui` module provides an interface to the
-:py:class:`sherpa.ui.utils.Session`
-object, where a singleton class is used to provide the access but
-hidden away. This needs better explanation...
-
    .. rubric:: Functions
 
    .. autosummary::

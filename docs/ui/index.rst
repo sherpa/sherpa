@@ -190,6 +190,15 @@ such as :py:meth:`~sherpa.ui.utils.Session.set_par`.
 
    >>> s.set_source('const1d.mdl')
 
+.. note::
+
+   Model instances can also be created using
+   :py:meth:`~sherpa.ui.utils.Session.create_model_component`,
+   such as
+
+   >>> mdl = s.create_model_component('const1d', 'mdl')
+   >>> s.set_source(mdl)
+
 The ``instancename`` value is also used to create a Python variable
 which provides direct access to the model component (it can
 also be retrieved with
@@ -304,7 +313,7 @@ preceeding example::
    >>> set_stat('cash')
    >>> set_method('simplex')
 
-   >>> set_source('const1d.mdl')
+   >>> set_source(const1d.mdl)  # NOTE: a string argument is not needed
 
    >>> print(mdl)
    const1d.mdl

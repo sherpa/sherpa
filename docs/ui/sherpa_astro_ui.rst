@@ -6,11 +6,6 @@ The sherpa.astro.ui module
 
 .. automodule:: sherpa.astro.ui
 
-Since some of these are re-exports of the
-:py:mod:`sherpa.ui` version, should
-we only document the new/different ones here? That would be a maintenance
-burden...
-
    .. rubric:: Functions
 
    .. autosummary::
