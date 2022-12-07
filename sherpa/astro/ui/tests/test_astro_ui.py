@@ -602,6 +602,37 @@ def test_group_adapt_snr(idval, clean_astro_ui, caplog):
     assert ui.get_dep(idval, filter=True) == pytest.approx([2, 4.5, 4])
 
 
+@requires_group
+@requires_data
+@requires_fits
+def test_group_snr_oddity(make_data_path, clean_astro_ui):
+    """group_snr was changing the filter; why is this?
+
+    Seen originally in PR #1637. See issue #1646 where it turns out to
+    be due to the behavior of the group module.
+
+    This is a regression test (checking the behavior).
+
+    """
+
+    with SherpaVerbosity("ERROR"):
+        ui.load_pha(make_data_path("3c273.pi"))
+
+    ui.ungroup()
+
+    with SherpaVerbosity("WARN"):
+        ui.notice(0.5, 6)
+
+    assert ui.get_data().get_filter(format="%.3f") == "0.496:6.001"
+
+    ui.group_snr(3, tabStops=~ui.get_data().get_mask())
+
+    # Why has the filter changed? One channel mask has been reset
+    # from False to True.
+    #
+    assert ui.get_data().get_filter(format="%.3f") == "0.482:6.001"
+
+
 # bug #12578
 @requires_data
 @requires_fits

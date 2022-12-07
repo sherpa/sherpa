@@ -3982,3 +3982,34 @@ def test_pha_subtract_bkg_filter_cih2datavar():
     expected = np.sqrt(np.asarray([10, 9, 3, 7]) + np.asarray([2, 0, 2, 4]))
     got = data.get_staterror(staterrfunc=calc_chi2datavar_errors)
     assert got == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("opt,arg",
+                         [("bins", 2), ("width", 2),
+                          ("counts", 3), ("adapt", 3),
+                          pytest.param("snr", 3, marks=pytest.mark.xfail),
+                          ("adapt_snr", 3)])
+def test_1643_group_options(opt, arg):
+    """Check the behavior noted in #1646 and if it's been fixed
+    yet or not (it comes from the group module which is not
+    part of Sherpa).
+    """
+
+    pha = DataPHA("grp", np.arange(1, 12),
+                  [1, 1, 1, 1, 8, 2, 6, 4, 1, 1, 1])
+
+    pha.ignore(hi=4)
+    pha.ignore(lo=9)
+
+    meth = getattr(pha, f"group_{opt}")
+
+    assert pha.get_filter("5:8")
+    meth(arg, tabStops=~pha.mask)
+    assert pha.get_filter("5:8")
+
+    # excluded channels are 0
+    assert pha.grouping[0:4] == pytest.approx([0] * 4)
+    assert pha.quality[0:4] == pytest.approx([0] * 4)
+
+    assert pha.grouping[8:] == pytest.approx([0] * 3)
+    assert pha.quality[8:] == pytest.approx([0] * 3)
