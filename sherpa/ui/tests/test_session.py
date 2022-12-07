@@ -1119,7 +1119,10 @@ def test_set_default_id_check_invalid(value):
 
 
 class ModelWithDoc(Model):
-    """This has a doc string"""
+    """This has a doc string
+
+    But we don't grab this.
+    """
     # pylint: disable=abstract-method
 
     _hidden = False
@@ -1146,7 +1149,7 @@ def test_modelwrapper_str_with_doc():
 
     s = Session()
     wrap = ModelWrapper(s, ModelWithDoc)
-    assert str(wrap) == "This has a doc string"
+    assert str(wrap) == "This has a doc string\n\n    But we don't grab this.\n    "
 
 
 def test_modelwrapper_str_no_doc():
@@ -1157,18 +1160,35 @@ def test_modelwrapper_str_no_doc():
     assert str(wrap) == "<ModelWithNoDoc model type>"
 
 
-def test_modelwrapper_what_is_the_docstring():
+def test_modelwrapper_what_is_the_docstring_has_doc():
     """What do we want help(wrappedmodel) to return"""
 
-    # Check current behavior, which is that the docstring is the same
-    # for both the class and the wrapped model. We do not care what
-    # the text is.
+    # Check that the class and wrapped docstrings are different.
+    #
+    assert ModelWrapper.__doc__ is not None
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithDoc)
+    assert wrap.__doc__ != ModelWrapper.__doc__
+
+    # Check the wrapped docstring references the model and description.
+    #
+    assert wrap.__doc__.startswith("Create a modelwithdoc model instance.\n\n    This has a doc string\n\n    Instances can")
+
+
+def test_modelwrapper_what_is_the_docstring_no_doc():
+    """What do we want help(wrappedmodel) to return"""
+
+    # Check that the class and wrapped docstrings are different.
     #
     assert ModelWrapper.__doc__ is not None
 
     s = Session()
     wrap = ModelWrapper(s, ModelWithNoDoc)
-    assert wrap.__doc__ == ModelWrapper.__doc__
+    assert wrap.__doc__ != ModelWrapper.__doc__
+
+    # Check the wrapped docstring references the model but no description.
+    assert wrap.__doc__.startswith("Create a modelwithnodoc model instance.\n\n    Instances can")
 
 
 @pytest.mark.parametrize("attr", ["_hidden", "_foo_bar"])
