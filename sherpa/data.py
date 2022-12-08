@@ -1027,6 +1027,18 @@ class Data(NoNewAttributesAfterInit, BaseData):
         indep_size = tuple(indep.size for indep in self.indep)
         return indep_size, self.dep.size
 
+    def _clear_filter(self):
+        """Clear out the existing filter.
+
+        This is designed for use by @indep.setter.
+
+        """
+
+        # This is currently a no-op. It may beover-ridden by a
+        # subclass.
+        #
+        pass
+
     @property
     def indep(self):
         """The grid of the data space associated with this data set.
@@ -1046,18 +1058,6 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         return self._data_space.get().grid
-
-    def _clear_filter(self):
-        """Clear out the existing filter.
-
-        This is designed for use by @indep.setter.
-
-        """
-
-        # This is currently a no-op. It may beover-ridden by a
-        # subclass.
-        #
-        pass
 
     @indep.setter
     def indep(self, val):
