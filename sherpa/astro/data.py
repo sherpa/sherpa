@@ -18,6 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+# pylint: disable=invalid-name
+# pylint: disable=redefined-builtin
+# pylint: disable=too-many-lines
+
 """Classes for storing, inspecting, and manipulating astronomical data sets.
 
 The two types of Astronomical data supported in this module are
@@ -324,7 +328,9 @@ def _extract_fields(obj, summary):
 def html_pha(pha):
     """HTML representation: PHA"""
 
+    # pylint: disable=import-outside-toplevel
     from sherpa.astro.plot import DataPHAPlot
+    # pylint: disable=import-outside-toplevel
     from sherpa import plot
 
     ls = []
@@ -504,7 +510,9 @@ def html_arf(arf):
     # It also assumes the units are keV/cm^2 which is not
     # guaranteed.
 
+    # pylint: disable=import-outside-toplevel
     from sherpa.astro.plot import ARFPlot
+    # pylint: disable=import-outside-toplevel
     from sherpa import plot
 
     ls = []
@@ -721,6 +729,7 @@ def html_img(img):
 
 
 def simulate_rmf_plot(rmf):
+    # pylint: disable=too-many-locals
     """Create a plot which shows the response to monochromatic energies.
 
     The SVG of the plot is returned if matplotlib is selected as the
@@ -730,10 +739,13 @@ def simulate_rmf_plot(rmf):
 
     """
 
+    # pylint: disable=import-outside-toplevel
     from sherpa.models.basic import Delta1D
+    # pylint: disable=import-outside-toplevel
     from sherpa import plot
 
     try:
+        # pylint: disable=import-outside-toplevel
         from matplotlib import pyplot as plt
     except ImportError:
         return None
@@ -789,6 +801,7 @@ def simulate_rmf_plot(rmf):
 
 
 def img_plot(img):
+    # pylint: disable=too-many-locals
     """Display the image.
 
     The SVG of the plot is returned if matplotlib is selected as the
@@ -799,9 +812,11 @@ def img_plot(img):
 
     """
 
+    # pylint: disable=import-outside-toplevel
     from sherpa import plot
 
     try:
+        # pylint: disable=import-outside-toplevel
         from matplotlib import pyplot as plt
     except ImportError:
         return None
@@ -816,7 +831,9 @@ def img_plot(img):
     ny, nx = img.shape
     coord = img.coord
     if coord in ['physical', 'world']:
+        # pylint: disable=protected-access
         x0, y0 = img._logical_to_physical(0.5, 0.5)
+        # pylint: disable=protected-access
         x1, y1 = img._logical_to_physical(nx + 0.5, ny + 0.5)
         extent = (x0, x1, y0, y1)
         lbl = 'physical'
@@ -1005,6 +1022,7 @@ class DataOgipResponse(Data1DInt):
 
 
 class DataARF(DataOgipResponse):
+    # pylint: disable=too-many-instance-attributes
     """ARF data set.
 
     The ARF format is described in OGIP documents [CAL_92_002]_ and
@@ -1056,6 +1074,7 @@ class DataARF(DataOgipResponse):
 
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
                  bin_hi=None, exposure=None, header=None, ethresh=None):
+        # pylint: disable=too-many-arguments
         self.specresp = specresp
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
@@ -1117,11 +1136,13 @@ class DataARF(DataOgipResponse):
         return 'Energy (keV)'
 
     def get_ylabel(self):
+        # pylint: disable=import-outside-toplevel
         from sherpa import plot
         return 'cm' + plot.backend.get_latex_for_string('^2')
 
 
 class DataRMF(DataOgipResponse):
+    # pylint: disable=too-many-instance-attributes
     """RMF data set.
 
     The RMF format is described in OGIP documents [CAL_92_002]_ and
@@ -1162,6 +1183,7 @@ class DataRMF(DataOgipResponse):
     def __init__(self, name, detchans, energ_lo, energ_hi, n_grp, f_chan,
                  n_chan, matrix, offset=1, e_min=None, e_max=None,
                  header=None, ethresh=None):
+        # pylint: disable=too-many-arguments
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
         if offset < 0:
@@ -1291,6 +1313,7 @@ class DataRosatRMF(DataRMF):
 
 
 def validate_wavelength_limits(wlo, whi, emax):
+    # pylint: disable=too-many-branches
     """Check that the wavelength limits are sensible.
 
     This is used by DataPHA.notice to ensure that the wavelength
@@ -1371,6 +1394,8 @@ def validate_wavelength_limits(wlo, whi, emax):
 def replace_xspecvar_values(src_counts, bkg_counts,
                             staterr, bkg_variances,
                             src_scale, bkg_scales):
+    # pylint: disable=too-many-arguments
+    # pylint: disable=too-many-locals
     """Handle error/variances when 0's are present using XSPEC var.
 
     Correct the error for background-subtracted data when using the
@@ -1519,6 +1544,8 @@ def replace_xspecvar_values(src_counts, bkg_counts,
 
 
 class DataPHA(Data1D):
+    # pylint: disable=too-many-public-methods
+    # pylint: disable=too-many-instance-attributes
     """PHA data set, including any associated instrument and background data.
 
     The PHA format is described in an OGIP document [OGIP_92_007]_ and
@@ -1771,6 +1798,7 @@ must be an integer.""")
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
                  exposure=None, backscal=None, areascal=None, header=None):
+        # pylint: disable=too-many-arguments
 
         # Set the size of the object as soon as we know (it makes it
         # easier to get usable error messages when checking the
@@ -2429,6 +2457,8 @@ must be an integer.""")
         # import is here because sherpa.astro.instrument depends on
         # sherpa.astro.data. Importing here instead of on the top
         # avoids a circular import.
+        #
+        # pylint: disable=import-outside-toplevel
         from sherpa.astro import instrument
 
         if pileup_model is not None:
@@ -2552,6 +2582,7 @@ must be an integer.""")
         return (self.channel,)
 
     def _get_indep(self, filter=False):
+        # pylint: disable=too-many-branches
         """Return the low and high edges of the independent axis.
 
         Unlike _get_ebins, this returns values in the "native" space
@@ -3845,6 +3876,7 @@ must be an integer.""")
     #
 
     def get_staterror(self, filter=False, staterrfunc=None):
+        # pylint: disable=too-many-locals
         """Return the statistical error.
 
         The staterror column is used if defined, otherwise the
@@ -3923,6 +3955,7 @@ must be an integer.""")
                 cnts = filterfunc(dataobj.counts)
                 return staterrfunc(cnts), cnts
 
+            # pylint: disable=protected-access
             return filterfunc(dataobj.staterror,
                               groupfunc=dataobj._sum_sq), None
 
@@ -4096,6 +4129,7 @@ must be an integer.""")
             self.units = 'energy'
 
     def _fix_y_units(self, val, filter=False, response_id=None):
+        # pylint: disable=too-many-branches
         """Rescale the data to match the 'y' axis."""
 
         if val is None:
@@ -4221,6 +4255,7 @@ must be an integer.""")
                 ylabel += '/channel'
 
         if self.plot_fac:
+            # pylint: disable=import-outside-toplevel
             from sherpa.plot import backend
             latex = backend.get_latex_for_string(
                 f'^{self.plot_fac}')
@@ -4492,6 +4527,8 @@ must be an integer.""")
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
+        # pylint: disable=too-many-locals
+        # pylint: disable=too-many-branches
         """Notice or ignore the given range.
 
         .. versionchanged:: 4.14.0
@@ -4776,6 +4813,7 @@ must be an integer.""")
 
 
 class DataIMG(Data2D):
+    # pylint: disable=too-many-instance-attributes
     "Image data set, including functions for coordinate transformations"
 
     _extra_fields = ("sky", "eqpos", "coord")
@@ -4820,6 +4858,7 @@ class DataIMG(Data2D):
     def __init__(self, name, x0, x1, y, shape=None, staterror=None,
                  syserror=None, sky=None, eqpos=None, coord='logical',
                  header=None):
+        # pylint: disable=too-many-arguments
         self.sky = sky
         self.eqpos = eqpos
         self._set_coord(coord)
@@ -5258,6 +5297,7 @@ class DataIMGInt(DataIMG):
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,
                  coord='logical', header=None):
+        # pylint: disable=too-many-arguments
         self._region = None
         self.sky = sky
         self.eqpos = eqpos
