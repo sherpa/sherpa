@@ -8099,9 +8099,7 @@ class Session(NoNewAttributesAfterInit):
         # fold the PSF with data and model if available, if not pass
         try:
             data = self.get_data(id)
-            psf = self._psf.get(id, None)
-            if psf is not None:
-                psf.fold(data)
+            psf.fold(data)
 
         except IdentifierErr:
             pass
@@ -11473,9 +11471,6 @@ class Session(NoNewAttributesAfterInit):
 
         if covar_matrix is None:
             covar_results = self.get_covar_results()
-            if covar_results is None:
-                raise TypeError("Covariance has not been calculated")
-
             covar_matrix = covar_results.extra_output
 
         stats, accept, params = self._pyblocxs.get_draws(
