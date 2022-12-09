@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2021, 2022
+#  Copyright (C) 2011, 2015, 2016, 2018, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -104,7 +104,7 @@ def test_grid_search_with_discrete_template_parvals(run_thread, clean_ui):
 
 
 @pytest.fixture
-def setUp():
+def setUp(reset_seed):
     x = numpy.linspace(0.1, 5, 50)
 
     num = 4
@@ -116,6 +116,12 @@ def setUp():
     grid = numpy.asarray(list(map(numpy.ravel, grid))).T
     coords = numpy.linspace(0.01, 6, 100)
     names = [f"p{i}" for i in range(num)]
+
+    # Since we randomize the parameters use for the gaussian models,
+    # use a fixed seed.
+    #
+    numpy.random.seed(94272045)
+
     templates = []
     for ii in range(ntemplates):
         t = TableModel()
@@ -132,5 +138,8 @@ def test_template_model_evaluation(setUp):
     x, model = setUp
     model.thawedpars = [0, 1, 0, 1]
 
-    # We want to evaluate the model, but do not check the result
-    model(x)
+    # Evaluate on a very-restricted grid and check the result (this is
+    # a regression test and so the predicted values may change).
+    #
+    y = model([0.55, 1.25, 3.65, 4.95])
+    assert y == pytest.approx([0.13578952, 2.77359801, 8.66001796, 0.04257855])
