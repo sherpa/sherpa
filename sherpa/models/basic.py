@@ -2039,6 +2039,9 @@ class TableModel(ArithmeticModel):
         if not numpy.iterable(mask):
             return
 
+        # At this point we know mask is an iterable, so it should
+        # match the y data of the model.
+        #
         if len(mask) != len(self.__y):
             raise ModelErr("filtermismatch", 'table model',
                            f"data, ({len(self.__y)} vs {len(mask)})")
@@ -2050,7 +2053,7 @@ class TableModel(ArithmeticModel):
         """Evaluate the model.
 
         The load method must have been called first. If both x and y
-        were given then the model is interpoalted onto the x0 grid,
+        were given then the model is interpolated onto the x0 grid,
         otherwise x0 is only checked to see if it has the right size
         (fold should have been called if the data has been filtered).
 

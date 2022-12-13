@@ -150,7 +150,7 @@ def test_load_x_y_sorted():
 
 
 def test_load_x_y_unsorted():
-    """load: x and y (sorted)"""
+    """load: x and y (unsorted)"""
 
     mdl = TableModel()
     mdl.load([17, 12, 14], [7, 3, 2])
