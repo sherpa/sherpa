@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -50,6 +50,16 @@ Notes
 Each optimizer has certain classes of problem where it is more, or
 less, successful. For instance, the `NelderMead` class should
 only be used with chi-square based statistics.
+
+The exact list of optimisers depends on what external packages
+are installed. The current list of optional optimizers is:
+
+- `Minuit` if the Python ``iminuit`` package is installed [IMINUIT]_.
+
+References
+----------
+
+.. [IMINUIT] https://iminuit.readthedocs.io/en/stable/
 
 Examples
 --------
@@ -812,69 +822,42 @@ class NelderMead(OptMethod):
         OptMethod.__init__(self, name, neldermead)
 
 
-###############################################################################
+try:
+    from sherpa.optmethods.myminuit import myminuit
 
-# # from sherpa.optmethods.fminpowell import *
-# # from sherpa.optmethods.nmpfit import *
+    __all__ = tuple(list(__all__) + ["Minuit"])
 
-# # from sherpa.optmethods.odrpack import odrpack
-# # from sherpa.optmethods.stogo import stogo
-# # from sherpa.optmethods.chokkan import chokkanlbfgs
-# # from sherpa.optmethods.odr import odrf77
+    class Minuit(OptMethod):
+        r"""The Minuit2 optimiser from CERN.
 
-# # def myall( targ, arg ):
-# #     fubar = list( targ )
-# #     fubar.append( arg )
-# #     return tuple( fubar )
+        Minuit was designed to minimise statistical cost functions,
+        for likelihood and least-squares fits of parametric models to
+        data. It provides the best-fit parameters and error estimates
+        from likelihood profile analysis. See
+        https://iminuit.readthedocs.io/en/stable/
 
-# # __all__ = myall( __all__, 'Bobyqa' )
-# # __all__ = myall( __all__, 'Chokkan' )
-# # __all__ = myall( __all__, 'cppLevMar' )
-# # __all__ = myall( __all__, 'Dif_Evo' )
-# # __all__ = myall( __all__, 'MarLev' )
-# # __all__ = myall( __all__, 'MyMinim' )
-# # __all__ = myall( __all__, 'Nelder_Mead' )
-# # __all__ = myall( __all__, 'NMPFIT' )
-# # __all__ = myall( __all__, 'Newuoa' )
-# # __all__ = myall( __all__, 'Odr' )
-# # __all__ = myall( __all__, 'OdrPack' )
-# # __all__ = myall( __all__, 'PortChi' )
-# # __all__ = myall( __all__, 'PortFct' )
-# # __all__ = myall( __all__, 'ScipyPowell' )
-# # __all__ = myall( __all__, 'StoGo' )
+        Attributes
+        ----------
+        ftol : number
+           The function tolerance to terminate the search for the minimum.
+        maxfev : int or `None`
+           The maximum number of function evaluations; the default
+           value of `None` means to use ``128 * n`` or ``512 * n``,
+           where `n` is the number of free parameters and ``128`` is used
+           if ``migrad`` is set.
+        leastsqr : bool
+           Should the optimiser assume least-squares (`True`) or likelihood
+           (`False`) for error estimation?
+        migrad : bool
+           If `True` then use the Migrad minimization, otherwise the Simplex
+           method.
+        verbose : int
+           The amount of information to print during the fit. The default
+           is `0`, which means no output.
 
-# # class Chokkan(OptMethod):
-# #     def __init__(self, name='chokkan'):
-# #         OptMethod.__init__(self, name, chokkanlbfgs)
+        """
+        def __init__(self, name='minuit'):
+            OptMethod.__init__(self, name, myminuit)
 
-# # class cppLevMar(OptMethod):
-
-# #    def __init__(self, name='clevmar'):
-# # 	OptMethod.__init__(self, name, optfcts.lmdif_cpp)
-
-# # class MyMinim(OptMethod):
-
-# #     def __init__(self, name='simplex'):
-# # 	OptMethod.__init__(self, name, minim)
-
-# # class NMPFIT(OptMethod):
-# #     def __init__(self, name='pytools_nmpfit'):
-# #         OptMethod.__init__(self, name, nmpfit.pytools_nmpfit)
-
-# # class OdrPack(OptMethod):
-# #     def __init__(self, name='odrpack'):
-# #         OptMethod.__init__(self, name, odrpack)
-
-# # class Odr(OptMethod):
-# #     def __init__(self, name='odr'):
-# #         OptMethod.__init__(self, name, odrf77)
-
-# # class ScipyPowell(OptMethod):
-# #     def __init__(self, name='scipypowell'):
-# #         OptMethod.__init__(self, name, my_fmin_powell)
-
-# # class StoGo(OptMethod):
-# #     def __init__(self, name='stogo'):
-# # 	OptMethod.__init__(self, name, stogo)
-
-###############################################################################
+except ImportError:
+    pass
