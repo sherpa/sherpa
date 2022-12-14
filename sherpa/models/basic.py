@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1951,7 +1951,12 @@ class TableModel(ArithmeticModel):
            The model values. It is expected that either both are
            given, and have the same number of elements, or that only y
            is set, although the model can be cleared by setting both
-           to None.
+           to None. If x is given then the data is saved after bing
+           sorted into increasing order of x.
+
+        See Also
+        --------
+        get_x, get_y
 
         """
 
@@ -1992,18 +1997,30 @@ class TableModel(ArithmeticModel):
         if nx != ny:
             raise ModelErr(f"size mismatch between x and y: {nx} vs {ny}")
 
-        # Ensure the data is sorted. Is this useful?
+        # Ensure the data is sorted.
         #
         idx = self.__x.argsort()
         self.__y = self.__y[idx]
         self.__x = self.__x[idx]
 
     def get_x(self):
-        """Return the independent axis, if set"""
+        """Return the independent axis or None.
+
+        See Also
+        --------
+        get_y, load
+
+        """
         return self.__x
 
     def get_y(self):
-        """Return the dependent axis, if set"""
+        """Return the dependent axis or None.
+
+        See Also
+        --------
+        get_x, load
+
+        """
         return self.__y
 
     def fold(self, data):
