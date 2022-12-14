@@ -348,7 +348,7 @@ namespace sherpa { namespace astro { namespace utils {
       return NULL;
     }
 
-    // Use TypeError for the size=0 checks as this is what historically been
+    // Use TypeError for the size=0 checks as this is what has historically been
     // used for this check (when only mask_size was checked).
     //
     npy_intp mask_size = mask.get_size();
@@ -381,7 +381,7 @@ namespace sherpa { namespace astro { namespace utils {
     //     res[ii] = mask[jj]
     // is insignificant.
     //
-    if( mask[jj] )
+    if( mask[0] )
       res[0] = true;
 
     for( npy_intp ii = 1; ii < group_size; ++ii ) {
@@ -617,7 +617,7 @@ static PyMethodDef UtilsFcts[] = {
 	      "--------\n\n"
 	      ">>> mask = [True, False, False, True]\n"
 	      ">>> group = [1, -1, 1, 1, -1, 1, -1, -1]\n"
-	      ">>> expand_grouped_data(mask, group)\n"
+	      ">>> expand_grouped_mask(mask, group)\n"
 	      "[True, True, False, False, False, True, True, True]\n\n"
               ">>> expand_grouped_mask([True, False], [1, 1])\n"
               "[True, False]\n"
