@@ -172,7 +172,7 @@ def setUp_composite():
 
 @pytest.mark.parametrize("op", [abs, operator.neg,
                                 # Test a selection of numpy ufuncs
-                                #np.abs, np.sin, np.expm1
+                                np.abs, np.sin, np.expm1
                                 ])
 def test_unop(op):
     porig = setUp_p()
@@ -187,16 +187,16 @@ def test_unop_string():
     printing the model representation.
     '''
     porig = setUp_p()
-    assert repr(-porig) == "<UnaryOpParameter '-(model.name)'>"
-    #assert repr(np.cos(porig)) == "<UnaryOpParameter 'cos(model.name)'>"
+    assert repr(-porig) == "<UnaryOpParameter '-model.name'>"
+    assert repr(np.cos(porig)) == "<UnaryOpParameter 'cos(model.name)'>"
 
 
 @pytest.mark.parametrize("op", [operator.add, operator.sub, operator.mul,
                                 operator.floordiv, operator.truediv, operator.mod,
                                 operator.pow,
                                 # Test a random selection of numpy ufuncs
-                                #np.add, np.divide, np.true_divide,
-                                #np.heaviside, np.greater, np.arctan2
+                                np.add, np.divide, np.true_divide,
+                                np.heaviside, np.greater, np.arctan2
                                 ])
 def test_binop(op):
     p, p2 = setUp_composite()
@@ -216,8 +216,8 @@ def test_binop_string():
     assert repr(comp) == "<BinaryOpParameter '(model.p + model.p2)'>"
     comp = 1 + p * 2.7**p2
     assert repr(comp) == "<BinaryOpParameter '(1 + (model.p * (2.7 ** model.p2)))'>"
-    #comp = np.logaddexp2(p, p2)
-    #assert repr(comp) == "<BinaryOpParameter 'logaddexp2(model.p, model.p2)'>"
+    comp = np.logaddexp2(p, p2)
+    assert repr(comp) == "<BinaryOpParameter 'logaddexp2(model.p, model.p2)'>"
 
 
 def test_iter_composite():

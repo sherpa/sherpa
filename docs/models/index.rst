@@ -34,7 +34,7 @@ be set. In this case a one-dimensional gaussian using the
 A description of the model is provided by ``help(g)``.
 
 The parameter values have a current value, a valid range
-(as given by the the minimum and maximum columns in the table above),
+(as given by the minimum and maximum columns in the table above),
 and a units field. The units field is a string, describing the
 expected units for the parameter; there is currently *no support* for
 using `astropy.units
@@ -125,7 +125,7 @@ Changing a parameter
 
 The parameters of a model - those numeric variables that control the
 shape of the model, and that can be varied during a fit -
-can be accesed as attributes, both to read or change
+can be accessed as attributes, both to read or change
 the current settings. The
 :py:attr:`~sherpa.models.parameter.Parameter.val` attribute
 contains the current value::
@@ -220,7 +220,7 @@ values as the hard limits.
 Setting a parameter to a value outside its soft limits will
 raise a :py:exc:`~sherpa.utils.err.ParameterErr` exception.
 
-During a fit the paramater values are bound by the soft limits,
+During a fit the parameter values are bound by the soft limits,
 and a screen message will be displayed if an attempt to move
 outside this range was made. During error analysis the parameter
 values are allowed outside the soft limits, as long as they remain
@@ -233,7 +233,7 @@ Guessing a parameter's value from the data
 
 Sherpa models have a
 :py:meth:`~sherpa.models.model.Model.guess`
-method which is used to seed the paramters (or
+method which is used to seed the parameters (or
 parameter) with values and
 :ref:`soft-limit ranges <params-limits>`
 which match the data.
@@ -334,10 +334,10 @@ related to another: this can be equality, such as saying that
 the width of two model components are the same, or a functional
 form, such as saying that the position of one component is a
 certain distance away from another component. This concept
-is refererred to as linking parameter values. The second case
-incudes the first - where the functional relationship is equality -
+is referred to as linking parameter values. The second case
+includes the first - where the functional relationship is equality -
 but it is treated separately here as it is a common operation.
-Lnking parameters also reduces the number of free parameters in a fit.
+Linking parameters also reduces the number of free parameters in a fit.
 
 The following examples use the same two model components::
 
@@ -426,6 +426,42 @@ directly, it should be multiplied by zero. So, for this example
 the model to be fit would be given by an expression like::
 
    >>> mdl = g1 + g2 + 0 * sep
+
+Complex functional relationships
+--------------------------------
+
+Any `numpy universal function ("ufunc") <https://numpy.org/doc/stable/reference/ufuncs.html#ufuncs>`_
+can be used in the linking expression, for example::
+
+    >>> import numpy as np
+    >>> g2.ampl = np.cos(g1.ampl)
+
+This includes many commonly used mathematical and trigonometric functions
+such as log, exp, sin, cos, which allows building quite complex parameter
+linkage. Only the numpy versions work here, but not the functions from the
+build-in ``math`` module, so use `numpy.exp` instead of `math.exp`.
+Many more complex functions are available in
+`scipy.special <https://docs.scipy.org/doc/scipy/reference/special.html>`_;
+any arbitrary Python function can be turned into a ufunc with
+`numpy.frompyfunc <https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html#numpy.frompyfunc>`_
+and the interface is also available for
+`C extensions <https://numpy.org/doc/stable/user/c-info.ufunc-tutorial.html#creating-a-new-universal-function>`.
+However, if such complex expressions are required to link model parameters
+together, it might be better to write a
+:ref:`dedicated user model <usermodel>` that describes the data with the
+appropriate parameters in the first place.
+
+Not every possible link function makes sense
+--------------------------------------------
+
+With this flexibility, it is possible to define links that make no sense,
+for example taking the logical not of a parameter that represents a mass or
+turning values of parameters into arrays (Sherpa optimisers can only deal
+with scalar parameters.) In practice, such mistakes
+are easy to spot when displaying a model; because Sherpa is meant to be
+a general and flexible modelling application that works with (almost)
+arbitrary user-defined models, the code puts as few a-priory restrictions
+as possible on the functions used for linking parameters.
 
 .. _parameter_reset:
 

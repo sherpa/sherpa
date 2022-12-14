@@ -11,7 +11,7 @@ external code.
 
    There should be some description of what needs to be done, as well
    as examples.
-   Does the 1D example need to be cleaned up to separate out unnescessary code,
+   Does the 1D example need to be cleaned up to separate out unnecessary code,
    perhaps just hiding the setup code (and it would be nice if
    this could be shared with the setup).
    Should the 2D example add commentary to point out the following
