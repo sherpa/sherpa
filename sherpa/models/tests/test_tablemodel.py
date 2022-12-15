@@ -71,7 +71,7 @@ def test_filename():
 def test_ndim():
     """What is the ndim?
 
-    At the moment we can use this with nD data but ony really if we do
+    At the moment we can use this with nD data but only really if we do
     not set the "x" argument.
     """
 

@@ -1951,7 +1951,7 @@ class TableModel(ArithmeticModel):
            The model values. It is expected that either both are
            given, and have the same number of elements, or that only y
            is set, although the model can be cleared by setting both
-           to None. If x is given then the data is saved after bing
+           to None. If x is given then the data is saved after being
            sorted into increasing order of x.
 
         See Also
