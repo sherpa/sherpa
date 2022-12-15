@@ -3757,7 +3757,7 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
         The output has the form of a list:
         ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
         the location of the root, and ``x1`` and ``x2`` are the previous
-        steps. The function value for those steps is returend as well.
+        steps. The function value for those steps is returned as well.
         ``nfev`` is the total number of function evaluations.
         If any of those values is not available, ``None`` will be returned
         instead.
@@ -3898,7 +3898,7 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
              maxfev=32, tol=1.0e-6):
     """A root-finding algorithm using Muller's method.
 
-    The algorithm is described at http://en.wikipedia.org/wiki/Muller%27s_method.
+    The algorithm is described at https://en.wikipedia.org/wiki/Muller%27s_method.
 
     ::
 
@@ -3965,7 +3965,7 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
         The output has the form of a list:
         ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
         the location of the root, and ``x1`` and ``x2`` are the previous
-        steps. The function value for those steps is returend as well.
+        steps. The function value for those steps is returned as well.
         ``nfev`` is the total number of function evaluations.
         If any of those values is not available, ``None`` will be returned
         instead.
@@ -4062,7 +4062,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
         The output has the form of a list:
         ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
         the location of the root, and ``x1`` and ``x2`` are the previous
-        steps. The function value for those steps is returend as well.
+        steps. The function value for those steps is returned as well.
         ``nfev`` is the total number of function evaluations.
         If any of those values is not available, ``None`` will be returned
         instead.
@@ -4211,7 +4211,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
         The output has the form of a list:
         ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
         the location of the root, and ``x1`` and ``x2`` are the previous
-        steps. The function value for those steps is returend as well.
+        steps. The function value for those steps is returned as well.
         ``nfev`` is the total number of function evaluations.
         If any of those values is not available, ``None`` will be returned
         instead.
@@ -4406,7 +4406,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
         The output has the form of a list:
         ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
         the location of the root, and ``x1`` and ``x2`` are the previous
-        steps. The function value for those steps is returend as well.
+        steps. The function value for those steps is returned as well.
         ``nfev`` is the total number of function evaluations.
         If any of those values is not available, ``None`` will be returned
         instead.
