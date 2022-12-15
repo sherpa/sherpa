@@ -3723,7 +3723,52 @@ class QuadEquaRealRoot:
 
 
 def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
+    """A basic root finding algorithm that uses standard bisection
 
+    Bisection is a relatively slow method for root finding, but it guaranteed to
+    work for a continuous function with a root in a bracketed interval; in other
+    words the function must undergo a sign change between the bracketing values.
+
+    See https://en.wikipedia.org/wiki/Bisection_method for a description of the
+    bisection method.
+
+    Parameters
+    ----------
+    fcn : callable
+        The function with a root. The function signature is ``fcn(x, *args)``.
+    xa : float
+        Lower limit of the bracketing interval
+    xb : float
+        Upper limit of the bracketing interval
+    fa : float or None
+        Function value at ``xa``. This parameter is optional and can be passed
+        to save time in cases where ``fcn(xa, *args)`` is already known and
+        function evaluation takes a long time. If `None`, it will be
+        calculated.
+    fb : float or None
+        Function value at ``xb``. This parameter is optional and can be passed
+        to save time in cases where ``fcn(xb, *args)`` is already known and
+        function evaluation takes a long time. If `None`, it will be
+        calculated.
+    args : tuple
+        Additional parameters that will be passed through to ``fcn``.
+    maxfev : int
+        Maximal number of function evaluations
+    tol : float
+        The root finding algorithm stops if a value x with
+        ``abs(fcn(x)) < tol`` is found.
+
+    Returns
+    -------
+    out : list
+        The output has the form of a list:
+        ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
+        the location of the root, and ``x1`` and ``x2`` are the previous
+        steps. The function value for those steps is returned as well.
+        ``nfev`` is the total number of function evaluations.
+        If any of those values is not available, ``None`` will be returned
+        instead.
+    """
     history = [[], []]
     nfev, myfcn = func_counter_history(fcn, history)
 
@@ -3860,7 +3905,7 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
              maxfev=32, tol=1.0e-6):
     """A root-finding algorithm using Muller's method.
 
-    The algorithm is described at [1]_.
+    The algorithm is described at https://en.wikipedia.org/wiki/Muller%27s_method.
 
     ::
 
@@ -3901,11 +3946,36 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
 
     In other words: O(h^p) where p is approximately 1.839286755.
 
-    References
+    Parameters
     ----------
+    fcn : callable
+        The function with a root. The function signature is ``fcn(x, *args)``.
+    xa, xb, xc : float
+        Muller's method requires three initial values.
+    fa, fb, fc : float or None
+        Function values at ``xa``, ``xb``, and ``xc``. These parameters are
+        optional and can be passed
+        to save time in cases where ``fcn(xa, *args)`` is already known and
+        function evaluation takes a long time. If `None`, they will be
+        calculated.
+    args : tuple
+        Additional parameters that will be passed through to ``fcn``.
+    maxfev : int
+        Maximal number of function evaluations
+    tol : float
+        The root finding algorthm stops if the function value a value x with
+        ``abs(fcn(x)) < tol`` is found.
 
-    .. [1] http://en.wikipedia.org/wiki/Muller%27s_method
-
+    Returns
+    -------
+    out : list
+        The output has the form of a list:
+        ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
+        the location of the root, and ``x1`` and ``x2`` are the previous
+        steps. The function value for those steps is returned as well.
+        ``nfev`` is the total number of function evaluations.
+        If any of those values is not available, ``None`` will be returned
+        instead.
     """
 
     def is_nan(arg):
@@ -3971,7 +4041,39 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
 
 
 def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
+    '''Alternative implementation of Mueller's method for root finding
 
+    Parameters
+    ----------
+    fcn : callable
+        The function with a root. The function signature is ``fcn(x, *args)``.
+    xa, xb: float
+        Muller's method requires three initial values.
+    fa, fb: float or None
+        Function values at ``xa`` and ``xb``. These parameters are
+        optional and can be passed
+        to save time in cases where ``fcn(xa, *args)`` is already known and
+        function evaluation takes a long time. If `None`, they will be
+        calculated.
+    args : tuple
+        Additional parameters that will be passed through to ``fcn``.
+    maxfev : int
+        Maximal number of function evaluations
+    tol : float
+        The root finding algorthm stops if the function value a value x with
+        ``abs(fcn(x)) < tol`` is found.
+
+    Returns
+    -------
+    out : list
+        The output has the form of a list:
+        ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
+        the location of the root, and ``x1`` and ``x2`` are the previous
+        steps. The function value for those steps is returned as well.
+        ``nfev`` is the total number of function evaluations.
+        If any of those values is not available, ``None`` will be returned
+        instead.
+    '''
     # This function does not appear to be used
     def regula_falsi(x0, x1, f0, f1):
         if f0 < f1:
@@ -4084,7 +4186,43 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
 
 def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                   tol=1.0e-6):
+    '''An alternative implementation of Muller's method for root finding.
 
+    Unlike the rest of Sherpa, this method is available
+    the Apache Software Foundation (ASF) licence - see code for this method
+    for details.
+
+    Parameters
+    ----------
+    fcn : callable
+        The function with a root. The function signature is ``fcn(x, *args)``.
+    xa, xb: float
+        Muller's method requires three initial values.
+    fa, fb: float or None
+        Function values at ``xa`` and ``xb``. These parameters are
+        optional and can be passed
+        to save time in cases where ``fcn(xa, *args)`` is already known and
+        function evaluation takes a long time. If `None`, they will be
+        calculated.
+    args : tuple
+        Additional parameters that will be passed through to ``fcn``.
+    maxfev : int
+        Maximal number of function evaluations
+    tol : float
+        The root finding algorthm stops if the function value a value x with
+        ``abs(fcn(x)) < tol`` is found.
+
+    Returns
+    -------
+    out : list
+        The output has the form of a list:
+        ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
+        the location of the root, and ``x1`` and ``x2`` are the previous
+        steps. The function value for those steps is returned as well.
+        ``nfev`` is the total number of function evaluations.
+        If any of those values is not available, ``None`` will be returned
+        instead.
+    '''
     history = [[], []]
     nfev, myfcn = func_counter_history(fcn, history)
 
@@ -4242,6 +4380,43 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
     too close to the end points of the interval), the point is accepted
     as a new approximation to the root. Otherwise, the result of the
     bissection is used.
+
+    Parameters
+    ----------
+    fcn : callable
+        The function with a root. The function signature is ``fcn(x, *args)``.
+    xa : float
+        Lower limit of the bracketing interval
+    xb : float
+        Upper limit of the bracketing interval
+    fa : float or None
+        Function value at ``xa``. This parameter is optional and can be passed
+        to save time in cases where ``fcn(xa, *args)`` is already known and
+        function evaluation takes a long time. If `None`, it will be
+        calculated.
+    fb : float or None
+        Function value at ``xb``. This parameter is optional and can be passed
+        to save time in cases where ``fcn(xb, *args)`` is already known and
+        function evaluation takes a long time. If `None`, it will be
+        calculated.
+    args : tuple
+        Additional parameters that will be passed through to ``fcn``.
+    maxfev : int
+        Maximal number of function evaluations
+    tol : float
+        The root finding algorithm stops if a value x with
+        ``abs(fcn(x)) < tol`` is found.
+
+    Returns
+    -------
+    out : list
+        The output has the form of a list:
+        ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
+        the location of the root, and ``x1`` and ``x2`` are the previous
+        steps. The function value for those steps is returned as well.
+        ``nfev`` is the total number of function evaluations.
+        If any of those values is not available, ``None`` will be returned
+        instead.
 
     """
 
