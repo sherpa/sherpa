@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -679,7 +679,7 @@ def test_create_expr_mask_size_error(mask):
 
 @pytest.mark.parametrize("val,expected",
                          [(numpy.int16(3), "3"),
-                          pytest.param(numpy.float32(3), "3.0", marks=pytest.mark.xfail)  # see #1334
+                          (numpy.float32(3), "3.0")
                           ])
 def test_create_expr_singleton(val, expected):
     """Simple test of create_expr with no mask."""
