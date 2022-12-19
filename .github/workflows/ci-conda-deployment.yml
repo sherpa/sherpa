@@ -283,5 +283,5 @@ jobs:
           exit 1
         fi
         #We can switch this to use "--force" if we run into issues with the upload cutting or needing to re-run
-        anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} ${GITHUB_WORKSPACE}/packages/*/linux-64/sherpa*
-        anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} ${GITHUB_WORKSPACE}/packages/*/osx-64/sherpa*
+        anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} --force ${GITHUB_WORKSPACE}/packages/*/linux-64/sherpa*
+        anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} --force ${GITHUB_WORKSPACE}/packages/*/osx-64/sherpa*
