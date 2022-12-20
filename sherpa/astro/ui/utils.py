@@ -90,7 +90,11 @@ def _get_image_filter(data):
 
 
 def _pha_report_filter_change(session, idval, bkg_id, changefunc):
-    """Change the PHA object and report the filter change, if grouped.
+    """Change the PHA object and report the filter change
+
+    This reports the filter change even if the data is not grouped, as
+    it was thought to be easier to understand (ie always reporting
+    it).
 
     Parameters
     ----------
@@ -121,9 +125,6 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
     #
     ofilter = sherpa.ui.utils._get_filter(data)
     changefunc(data)
-    if not data.grouped:
-        return
-
     nfilter = sherpa.ui.utils._get_filter(data)
     sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
                                          data.get_xlabel())
