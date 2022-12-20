@@ -200,14 +200,15 @@ def test_filter_bad_ungrouped(make_data_path, clean_astro_ui, caplog):
 
     assert ui.get_dep().shape == (439, )
     ui.ungroup()
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+    clc_filter(caplog, "dataset 1: 0.0073:14.9504 Energy (keV) (unchanged)")
 
     assert ui.get_dep().shape == (1024, )
     assert pha.quality_filter is None
     assert pha.mask is True
 
     ui.ignore_bad()
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 2
     clc_filter(caplog, "dataset 1: 0.0073:14.9504 -> 0.0073:14.5416 Energy (keV)")
 
     assert ui.get_dep().shape == (1024, )
@@ -222,7 +223,7 @@ def test_filter_bad_ungrouped(make_data_path, clean_astro_ui, caplog):
     # anything. See issue #1169
     #
     ui.notice(0.5, 7)
-    assert len(caplog.records) == 2
+    assert len(caplog.records) == 3
     clc_filter(caplog, "dataset 1: 0.0073:14.5416 Energy (keV) (unchanged)")
 
     assert pha.mask == pytest.approx(expected)
@@ -230,11 +231,11 @@ def test_filter_bad_ungrouped(make_data_path, clean_astro_ui, caplog):
     # We need to ignore to change the mask.
     #
     ui.ignore(None, 0.5)
-    assert len(caplog.records) == 3
+    assert len(caplog.records) == 4
     clc_filter(caplog, "dataset 1: 0.0073:14.5416 -> 0.511:14.5416 Energy (keV)")
 
     ui.ignore(7, None)
-    assert len(caplog.records) == 4
+    assert len(caplog.records) == 5
     clc_filter(caplog, "dataset 1: 0.511:14.5416 -> 0.511:6.9934 Energy (keV)")
 
     expected[0:35] = False

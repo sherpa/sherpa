@@ -7584,51 +7584,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        # We can not use _pha_report_filter_change like we do for
-        # set_grouping / group_counts ... because the logic of what we
-        # do for the background datasets is different. See also issue
-        # #1657 which discusses whether some of this logic should be
-        # in the DataPHA class instead.
+        # This will call the background datasets to be grouped
+        # as well (when bkg_id is not set).
         #
-        idval = self._fix_id(id)
-        idstr = f"dataset {idval}"
+        def change(data):
+            if not data.grouped:
+                data.group()
 
-        if bkg_id is None:
-            data = self._get_pha_data(idval)
-
-            # TODO: Do we care about the lack of grouping if the data
-            # is subtracted? Should we even bother trying to group the
-            # backgrounds?
-            #
-            # We do not just call self.group(idval, bid) here (which
-            # is what we do in ungroup), as we do not want the filter
-            # to be displayed for the backgrounds. This matches
-            # notice/ignore, where we do not dispay the filters for
-            # the background unless the user has explicitly set
-            # bkg_id.
-            #
-            for bid in data.background_ids:
-                bdata = data.get_background(bid)
-                try:
-                    bdata.group()
-
-                except DataErr as e:
-                    info(str(e))
-
-        else:
-            data = self.get_bkg(idval, bkg_id)
-            idstr += f": background {bkg_id}"
-
-        # Note: we always report the change in filter status, even
-        # when already grouped.
-        #
-        ofilter = sherpa.ui.utils._get_filter(data)
-        if not data.grouped:
-            data.group()
-
-        nfilter = sherpa.ui.utils._get_filter(data)
-        sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
-                                             data.get_xlabel())
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     def set_grouping(self, id, val=None, bkg_id=None):
         """Apply a set of grouping flags to a PHA data set.
@@ -8039,27 +8002,17 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        # This is different-enough from group that we repeat the code
-        # rather than abstracting away the logic like we do for the
-        # group_xxx calls.
+        # This will call the background datasets to be ungrouped
+        # as well (when bkg_id is not set).
         #
-        idval = self._fix_id(id)
-        if bkg_id is None:
-            data = self._get_pha_data(idval)
+        def change(data):
+            if data.grouped:
+                data.ungroup()
 
-            # First, ungroup backgrounds associated with the
-            # data set ID; report if background(s) already ungrouped.
-            for bid in data.background_ids:
-                try:
-                    self.ungroup(idval, bid)
-                except DataErr as e:
-                    info(str(e))
-
-        else:
-            data = self.get_bkg(idval, bkg_id)
-
-        if data.grouped:
-            data.ungroup()
+        # We can use this as it does not report the filter when the
+        # data is ungrouped, which is true here.
+        #
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     # DOC-TODO: need to document somewhere that this ignores existing
     # quality flags and how to use tabStops to include

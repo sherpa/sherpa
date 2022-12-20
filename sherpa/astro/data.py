@@ -4743,11 +4743,25 @@ must be an integer.""")
         grouping attribute will be used when accessing data values. This
         can be called even if the grouping attribute is empty.
 
+        .. versionchanged:: 4.15.1
+           The grouping status of any background component is now also
+           changed.
+
         See Also
         --------
         ungroup
+
         """
         self.grouped = True
+
+        # Ensure any backgrounds are also grouped.
+        #
+        for bkg_id in self.background_ids:
+            bkg = self.get_background(bkg_id)
+            try:
+                bkg.grouped = True
+            except DataErr as exc:
+                info(str(exc))
 
     def ungroup(self):
         """Remove any data grouping.
@@ -4755,11 +4769,23 @@ must be an integer.""")
         This un-sets the grouping flag which means that the grouping
         attribute will not be used when accessing data values.
 
+        .. versionchanged:: 4.15.1
+           The grouping status of any background component is now also
+           changed.
+
         See Also
         --------
         group
         """
         self.grouped = False
+
+        # Ensure any backgrounds are also grouped.
+        #
+        for bkg_id in self.background_ids:
+            # Unlike the group case we do not need to worry about this
+            # failing.
+            bkg = self.get_background(bkg_id)
+            bkg.grouped = False
 
     def subtract(self):
         """Subtract the background data.
