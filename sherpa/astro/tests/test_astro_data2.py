@@ -3948,11 +3948,11 @@ def test_pha_subtract_bkg_filter_false():
     data.set_background(bkg)
     data.subtract()
 
-    bgot = bkg.get_staterror(filter=False, staterrfunc=lambda x: np.sqrt(x))
+    bgot = bkg.get_staterror(filter=False, staterrfunc=np.sqrt)
     assert bgot == pytest.approx([2, 2])
 
     expected = np.sqrt(np.asarray([10, 12, 7]) + np.asarray([2, 2, 4]))
-    got = data.get_staterror(filter=False, staterrfunc=lambda x: np.sqrt(x))
+    got = data.get_staterror(filter=False, staterrfunc=np.sqrt)
     assert got == pytest.approx(expected)
 
 
@@ -4013,3 +4013,192 @@ def test_1643_group_options(opt, arg):
 
     assert pha.grouping[8:] == pytest.approx([0] * 3)
     assert pha.quality[8:] == pytest.approx([0] * 3)
+
+
+def test_pha_group_background(caplog):
+    """Do we group the background?"""
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = [1, 1, -1]
+
+    src.set_background(bkg)
+
+    assert not src.grouped
+    assert not bkg.grouped
+
+    src.group()
+
+    assert src.grouped
+    assert not bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_group_background_not_set(caplog):
+    """Do we group the background, but grouping not set?"""
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = None
+
+    src.set_background(bkg)
+
+    assert not src.grouped
+    assert bkg.grouped  # TODO: why is this set?
+
+    src.group()
+
+    assert src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background(caplog):
+    """Do we ungroup the background?"""
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = [1, 1, -1]
+    src.grouped = True
+    bkg.grouped = True
+
+    src.set_background(bkg)
+
+    assert src.grouped
+    assert bkg.grouped
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background_not_set(caplog):
+    """Do we ungroup the background, but grouping not set?"""
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = None
+    src.grouped = True
+
+    with pytest.raises(DataErr,
+                       match="data set 'bkg' does not specify grouping flags"):
+        bkg.grouped = True
+
+    src.set_background(bkg)
+
+    assert src.grouped
+    assert bkg.grouped
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background_after(caplog):
+    """Set the background before setting the grouping
+
+    The set_background method does some extra work, so let's
+    see what happens if we don't do that.
+    """
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.set_background(bkg)
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = [1, 1, -1]
+    src.grouped = True
+    bkg.grouped = True
+
+    assert src.grouped
+    assert bkg.grouped
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background_after_not_set(caplog):
+    """Set the background before setting the grouping
+
+    The set_background method does some extra work, so let's
+    see what happens if we don't do that.
+    """
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.set_background(bkg)
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = None
+    src.grouped = True
+
+    with pytest.raises(DataErr,
+                       match="data set 'bkg' does not specify grouping flags"):
+        bkg.grouped = True
+
+    assert src.grouped
+    assert not bkg.grouped
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert not bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background_remove(caplog):
+    """Can we remove the grouping after grouping?
+
+    This is to try and check a corner case.
+    """
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.set_background(bkg)
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = [1, 1, -1]
+    bkg.quality = [0, 0, 0]
+    src.grouped = True
+    bkg.grouped = True
+
+    # TODO: should this remove the grouping flag?
+    bkg.grouping = None
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
