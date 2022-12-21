@@ -1692,7 +1692,10 @@ def test_1160(make_data_path):
 
 @pytest.mark.xfail
 def test_pha_remove_grouping(make_test_pha):
-    """Check we can remove the grouping array."""
+    """Check we can remove the grouping array.
+
+    See issue #1659
+    """
 
     pha = make_test_pha
     assert pha.grouping is None
@@ -1710,10 +1713,16 @@ def test_pha_remove_grouping(make_test_pha):
 
     # Can we remove the grouping column?
     pha.grouping = None
-    # This thinks that pha.grouped is still set
-    assert not pha.grouped
+
+    # Check the get_dep ehavior before grouped as this is currently
+    # causes a TypeError rather than not changing a boolean flag
+    # variable.
+    #
     d2 = pha.get_dep(filter=True)
     assert d2 == pytest.approx(no_data)
+
+    # This thinks that pha.grouped is still set
+    assert not pha.grouped
 
 
 @pytest.mark.xfail
