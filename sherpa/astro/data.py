@@ -1929,7 +1929,8 @@ must be an integer.""")
         .. versionchanged:: 4.15.1
            The filter is now re-calculated when the grouping is
            changed. It is suggested that the filter be checked with
-           `get_filter` to check it is still sensible.
+           `get_filter` to check it is still sensible. If set to None
+           then the group flag is cleared.
 
         Returns
         -------
@@ -1965,6 +1966,12 @@ must be an integer.""")
             ofilter = self.get_filter()
 
         self._set_related("grouping", val)
+
+        # If the array has been removed then we need to reset the
+        # group flag.
+        #
+        if val is None and self._NoNewAttributesAfterInit__initialized and self.grouped:
+            self.grouped = False
 
         if ofilter is not None:
             # If the data has been filtered then we want to re-create

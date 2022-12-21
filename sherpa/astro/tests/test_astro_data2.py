@@ -1685,7 +1685,6 @@ def test_1160(make_data_path):
     assert pha.get_filter(format="%.2f") == fexpr
 
 
-@pytest.mark.xfail
 def test_pha_remove_grouping(make_test_pha):
     """Check we can remove the grouping array.
 
