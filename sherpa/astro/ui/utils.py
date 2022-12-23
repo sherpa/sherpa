@@ -348,16 +348,20 @@ class Session(sherpa.ui.utils.Session):
                 self._xspec_state = None
 
     def _get_show_data(self, id=None):
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
-            ids = [self._fix_id(id)]
-        for id in ids:
-            data = self.get_data(id)
+        """Show the data"""
 
-            data_str += 'Data Set: %s\n' % id
-            data_str += 'Filter: %s\n' % data.get_filter_expr()
-            if isinstance(data, sherpa.astro.data.DataPHA):
+        if id is None:
+            ids = self.list_data_ids()
+        else:
+            ids = [self._fix_id(id)]
+
+        data_str = ''
+        for idval in ids:
+            data = self.get_data(idval)
+
+            data_str += f'Data Set: {idval}\n'
+            data_str += f'Filter: {data.get_filter_expr()}\n'
+            if isinstance(data, DataPHA):
 
                 nbkg = len(data.background_ids)
                 for bkg_id in data.background_ids:
@@ -368,108 +372,118 @@ class Session(sherpa.ui.utils.Session):
 
                     data_str += 'Bkg Scale'
                     if nbkg > 1 or bkg_id != 1:
-                        data_str += ' {}'.format(bkg_id)
+                        data_str += f' {bkg_id}'
 
                     data_str += ': '
                     if numpy.isscalar(scale):
-                        data_str += '{:g}'.format(float(scale))
+                        data_str += f'{float(scale):g}'
                     else:
                         # would like to use sherpa.utils/print_fields style output
                         # but not available and I don't feel like it's
                         # worth it
-                        data_str += '{}[{}]'.format(scale.dtype, scale.size)
+                        data_str += f'{scale.dtype}[{scale.size}]'
 
                     data_str += '\n'
 
-                data_str += 'Noticed Channels: %s\n' % data.get_noticed_expr()
+                data_str += f'Noticed Channels: {data.get_noticed_expr()}\n'
 
-            data_str += data.__str__() + '\n\n'
+            data_str += str(data) + '\n\n'
 
-            if isinstance(data, sherpa.astro.data.DataPHA):
+            if isinstance(data, DataPHA):
                 for resp_id in data.response_ids:
                     # ARF or RMF could be None
                     arf, rmf = data.get_response(resp_id)
                     if rmf is not None:
-                        data_str += 'RMF Data Set: %s:%s\n' % (id, resp_id)
-                        data_str += rmf.__str__() + '\n\n'
+                        data_str += f'RMF Data Set: {idval}:{resp_id}\n'
+                        data_str += str(rmf) + '\n\n'
                     if arf is not None:
-                        data_str += 'ARF Data Set: %s:%s\n' % (id, resp_id)
-                        data_str += arf.__str__() + '\n\n'
+                        data_str += f'ARF Data Set: {idval}:{resp_id}\n'
+                        data_str += str(arf) + '\n\n'
 
-                data_str += self._get_show_bkg(id)
+                data_str += self._get_show_bkg(idval)
 
         return data_str
 
     def _get_show_bkg(self, id=None, bkg_id=None):
-        data_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        """Show the background"""
+
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
 
-        for id in ids:
-            data = self.get_data(id)
-
-            if not isinstance(data, sherpa.astro.data.DataPHA):
+        data_str = ''
+        for idval in ids:
+            data = self.get_data(idval)
+            if not isinstance(data, DataPHA):
                 continue
 
-            bkg_ids = data.background_ids
-            if bkg_id is not None:
+            if bkg_id is None:
+                bkg_ids = data.background_ids
+            else:
                 bkg_ids = [data._fix_background_id(bkg_id)]
 
-            for bkg_id in bkg_ids:
-                bkg = self.get_bkg(id, bkg_id)
-                data_str += 'Background Data Set: %s:%s\n' % (id, bkg_id)
-                data_str += 'Filter: %s\n' % bkg.get_filter_expr()
-                data_str += 'Noticed Channels: %s\n' % bkg.get_noticed_expr()
-                data_str += bkg.__str__() + '\n\n'
+            for bidval in bkg_ids:
+                bkg = self.get_bkg(idval, bidval)
+                data_str += f'Background Data Set: {idval}:{bidval}\n'
+                data_str += f'Filter: {bkg.get_filter_expr()}\n'
+                data_str += f'Noticed Channels: {bkg.get_noticed_expr()}\n'
+                data_str += str(bkg) + '\n\n'
 
+                # TODO: should bk_rp_id be included in the output?
                 for bk_rp_id in bkg.response_ids:
                     # ARF or RMF could be None
                     arf, rmf = bkg.get_response(bk_rp_id)
                     if rmf is not None:
-                        data_str += ('Background RMF Data Set: %s:%s\n' %
-                                     (id, bkg_id))
-                        data_str += rmf.__str__() + '\n\n'
+                        data_str += f'Background RMF Data Set: {idval}:{bidval}\n'
+                        data_str += str(rmf) + '\n\n'
                     if arf is not None:
-                        data_str += ('Background ARF Data Set: %s:%s\n' %
-                                     (id, bkg_id))
-                        data_str += arf.__str__() + '\n\n'
+                        data_str += f'Background ARF Data Set: {idval}:{bidval}\n'
+                        data_str += str(arf) + '\n\n'
 
         return data_str
 
     def _get_show_bkg_model(self, id=None, bkg_id=None):
-        model_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        """Show the background model"""
+
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
+
+        model_str = ''
+        for idval in ids:
             if bkg_id is not None:
                 bkg_ids = [bkg_id]
             else:
-                bkg_ids = list(self._background_models.get(id, {}).keys())
-                bkg_ids.extend(self._background_sources.get(id, {}).keys())
+                bkg_ids = list(self._background_models.get(idval, {}).keys())
+                bkg_ids.extend(self._background_sources.get(idval, {}).keys())
                 bkg_ids = list(set(bkg_ids))
 
-            for bkg_id in bkg_ids:
-                model_str += 'Background Model: %s:%s\n' % (id, bkg_id)
-                model_str += self.get_bkg_model(id, bkg_id).__str__() + '\n\n'
+            for bidval in bkg_ids:
+                model_str += f'Background Model: {idval}:{bidval}\n'
+                model_str += str(self.get_bkg_model(idval, bidval)) + '\n\n'
 
         return model_str
 
     def _get_show_bkg_source(self, id=None, bkg_id=None):
-        model_str = ''
-        ids = self.list_data_ids()
-        if id is not None:
+        """Show the background source"""
+
+        if id is None:
+            ids = self.list_data_ids()
+        else:
             ids = [self._fix_id(id)]
-        for id in ids:
+
+        model_str = ''
+        for idval in ids:
             if bkg_id is not None:
                 bkg_ids = [bkg_id]
             else:
-                bkg_ids = self._background_sources.get(id, {}).keys()
+                bkg_ids = self._background_sources.get(idval, {}).keys()
 
-            for bkg_id in bkg_ids:
-                model_str += 'Background Source: %s:%s\n' % (id, bkg_id)
-                model_str += self.get_bkg_source(id, bkg_id).__str__() + '\n\n'
+            for bidval in bkg_ids:
+                model_str += f'Background Source: {idval}:{bidval}\n'
+                model_str += str(self.get_bkg_source(idval, bidval)) + '\n\n'
 
         return model_str
 
