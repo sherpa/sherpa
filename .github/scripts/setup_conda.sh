@@ -26,8 +26,7 @@ fi
 
 # Download and install conda
 wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${miniconda_os}-x86_64.sh -O miniconda.sh
-chmod +x miniconda.sh
-./miniconda.sh -b -p $miniconda_loc
+bash miniconda.sh -b -p $miniconda_loc
 
 #Source the Conda profile
 source ${miniconda_loc}/etc/profile.d/conda.sh
