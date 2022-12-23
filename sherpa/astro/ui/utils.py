@@ -10149,42 +10149,51 @@ class Session(sherpa.ui.utils.Session):
     # Fitting
     ###########################################################################
 
-    # TODO: change bkg_ids default to None or some other "less-dangerous" value
-    def _add_extra_data_and_models(self, ids, datasets, models, bkg_ids={}):
-        for id, d in zip(ids, datasets):
-            if isinstance(d, sherpa.astro.data.DataPHA):
-                bkg_models = self._background_models.get(id, {})
-                bkg_srcs = self._background_sources.get(id, {})
-                if d.subtracted:
-                    if (bkg_models or bkg_srcs):
-                        warning(('data set %r is background-subtracted; ' +
-                                 'background models will be ignored') % id)
-                elif not (bkg_models or bkg_srcs):
-                    if d.background_ids and self._current_stat.name != 'wstat':
-                        warning(('data set %r has associated backgrounds, ' +
-                                 'but they have not been subtracted, ' +
-                                 'nor have background models been set') % id)
-                else:
-                    bkg_ids[id] = []
-                    for bkg_id in d.background_ids:
+    def _add_extra_data_and_models(self, ids, datasets, models):
+        out = {}
+        for idval, d in zip(ids, datasets):
+            if not isinstance(d, DataPHA):
+                continue
 
-                        if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
-                            raise ModelErr('nobkg', bkg_id, id)
+            bkg_models = self._background_models.get(idval, {})
+            bkg_srcs = self._background_sources.get(idval, {})
+            if d.subtracted:
+                if (bkg_models or bkg_srcs):
+                    warning(f'data set {idval} is background-subtracted; ' +
+                            'background models will be ignored')
 
-                        bkg = d.get_background(bkg_id)
-                        datasets.append(bkg)
+                continue
 
-                        bkg_data = d
-                        if len(bkg.response_ids) != 0:
-                            bkg_data = bkg
+            if not (bkg_models or bkg_srcs):
+                if d.background_ids and self._current_stat.name != 'wstat':
+                    warning(f'data set {idval} has associated backgrounds, ' +
+                            'but they have not been subtracted, ' +
+                            'nor have background models been set')
 
-                        bkg_model = bkg_models.get(bkg_id, None)
-                        bkg_src = bkg_srcs.get(bkg_id, None)
-                        if bkg_model is None and bkg_src is not None:
-                            resp = sherpa.astro.instrument.Response1D(bkg_data)
-                            bkg_model = resp(bkg_src)
-                        models.append(bkg_model)
-                        bkg_ids[id].append(bkg_id)
+                continue
+
+            out[idval] = []
+            for bkg_id in d.background_ids:
+                if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
+                    raise ModelErr('nobkg', bkg_id, idval)
+
+                bkg = d.get_background(bkg_id)
+                datasets.append(bkg)
+
+                bkg_data = d
+                if len(bkg.response_ids) != 0:
+                    bkg_data = bkg
+
+                bkg_model = bkg_models.get(bkg_id, None)
+                bkg_src = bkg_srcs.get(bkg_id, None)
+                if bkg_model is None and bkg_src is not None:
+                    resp = sherpa.astro.instrument.Response1D(bkg_data)
+                    bkg_model = resp(bkg_src)
+
+                models.append(bkg_model)
+                out[idval].append(bkg_id)
+
+        return out
 
     def _prepare_bkg_fit(self, id, otherids=()):
 
@@ -10444,26 +10453,25 @@ class Session(sherpa.ui.utils.Session):
     def _get_stat_info(self):
 
         ids, datasets, models = self._prepare_fit(None)
-
-        extra_ids = {}
-        self._add_extra_data_and_models(ids, datasets, models, extra_ids)
+        extra_ids = self._add_extra_data_and_models(ids, datasets, models)
 
         output = []
         nids = len(ids)
         if len(datasets) > 1:
+
             bkg_datasets = datasets[nids:]
             bkg_models = models[nids:]
             jj = 0
-            for id, d, m in zip(ids, datasets[:nids], models[:nids]):
+            for idval, d, m in zip(ids, datasets[:nids], models[:nids]):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
-                statinfo.name = 'Dataset %s' % (str(id))
-                statinfo.ids = (id,)
+                statinfo.name = f'Dataset {idval}'
+                statinfo.ids = (idval,)
 
                 output.append(statinfo)
 
-                bkg_ids = extra_ids.get(id, ())
+                bkg_ids = extra_ids.get(idval, ())
                 nbkg_ids = len(bkg_ids)
                 idx_lo = jj * nbkg_ids
                 idx_hi = idx_lo + nbkg_ids
@@ -10474,24 +10482,25 @@ class Session(sherpa.ui.utils.Session):
                     bkg_f = sherpa.fit.Fit(bkg, bkg_mdl, self._current_stat)
 
                     statinfo = bkg_f.calc_stat_info()
-                    statinfo.name = ("Background %s for Dataset %s" %
-                                     (str(bkg_id), str(id)))
-                    statinfo.ids = (id,)
+                    statinfo.name = f"Background {bkg_id} for Dataset {idval}"
+                    statinfo.ids = (idval,)
                     statinfo.bkg_ids = (bkg_id,)
 
                     output.append(statinfo)
 
                 jj += 1
 
+        # TODO: document why the statistic is None
         f = self._get_fit_obj(datasets, models, None)
         statinfo = f.calc_stat_info()
         if len(ids) == 1:
-            statinfo.name = 'Dataset %s' % str(ids)
+            statinfo.name = f'Dataset {ids}'
         else:
-            statinfo.name = 'Datasets %s' % str(ids).strip("()")
+            idstr = str(ids).strip("()")
+            statinfo.name = f'Datasets {idstr}'
+
         statinfo.ids = ids
         output.append(statinfo)
-
         return output
 
     ###########################################################################
