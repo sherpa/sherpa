@@ -1619,22 +1619,23 @@ def test_get_stat_info_multi_backgrounds(clean_astro_ui):
     smdl.c0 = 0.2
     bmdl.c0 = 0.1
     stats = ui.get_stat_info()
-    assert len(stats) == 5
+    assert len(stats) == 7
 
-    # NOTE: this misses the backgrounds for dataset c, which is wrong
-    # but leave this as a regression test.
-    #
     assert stats[0].name == 'Dataset a'
     assert stats[1].name == 'Dataset b'
     assert stats[2].name == 'Background 1 for Dataset b'
     assert stats[3].name == 'Dataset c'
-    assert stats[4].name == "Datasets ['a', 'b', 'c']"
+    assert stats[4].name == 'Background up for Dataset c'
+    assert stats[5].name == 'Background down for Dataset c'
+    assert stats[6].name == "Datasets ['a', 'b', 'c']"
 
     check_stat_info(stats[0], ("a", ), None, 2, 1)
     check_stat_info(stats[1], ("b", ), None, 3, 1)
-    check_stat_info(stats[2], ("b", ), (1, ), 4, 3)  # NOTE: numpoints should be 3, dof 2
+    check_stat_info(stats[2], ("b", ), (1, ), 3, 2)
     check_stat_info(stats[3], ("c", ), None, 4, 2)
-    check_stat_info(stats[4], ["a", "b", "c"], None, 20, 18)
+    check_stat_info(stats[4], ("c", ), ("up", ), 4, 3)
+    check_stat_info(stats[5], ("c", ), ("down", ), 4, 3)
+    check_stat_info(stats[6], ["a", "b", "c"], None, 20, 18)
 
 
 @requires_data

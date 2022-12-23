@@ -44,6 +44,7 @@ from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
 from sherpa.astro import fake
 from sherpa.astro.data import DataPHA
+import sherpa.astro.instrument
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -10133,15 +10134,51 @@ class Session(sherpa.ui.utils.Session):
     # Fitting
     ###########################################################################
 
-    # TODO: change bkg_ids default to None or some other "less-dangerous" value
-    def _add_extra_data_and_models(self, ids, datasets, models, bkg_ids={}):
-        for idval, d in zip(ids, datasets):
-            if not isinstance(d, DataPHA):
+    def _prepare_fit(self, id, otherids=()):
+        """Ensure we have all the requested ids, datasets, and models.
+
+        Background datasets are included if present.
+
+        Parameters
+        ----------
+        id: int or str or None
+            If None then this simultaneously-fit all data.
+        otherids: sequence of int or str or None, or None
+            When id is not None, the other identifiers to use.
+
+        Returns
+        -------
+        store : list of tuples
+            Each tuple contains the dataset identifier, the data, and
+            the model and - for backgrounds - the background
+            identifier.
+
+        """
+
+        store = super()._prepare_fit(id, otherids)
+
+        # The backgrounds are added after the source data, that is for
+        # a case where 1 and 3 have backgrounds (2 and 1 components
+        # respectively) but 2 does not we return
+        #
+        #     data 1
+        #     data 1 - background 1
+        #     data 1 - background 2
+        #     data 2
+        #     data 3
+        #     data 3 - background 1
+        #
+        out = []
+        for s in store:
+            out.append(s)
+            data = s[1]
+            if not isinstance(data, DataPHA):
                 continue
 
+            idval = s[0]
             bkg_models = self._background_models.get(idval, {})
             bkg_srcs = self._background_sources.get(idval, {})
-            if d.subtracted:
+            if data.subtracted:
                 if (bkg_models or bkg_srcs):
                     warning(f'data set {repr(idval)} is background-subtracted; ' +
                             'background models will be ignored')
@@ -10149,86 +10186,54 @@ class Session(sherpa.ui.utils.Session):
                 continue
 
             if not (bkg_models or bkg_srcs):
-                if d.background_ids and self._current_stat.name != 'wstat':
+                if data.background_ids and self._current_stat.name != 'wstat':
                     warning(f'data set {repr(idval)} has associated backgrounds, ' +
                             'but they have not been subtracted, ' +
                             'nor have background models been set')
 
                 continue
 
-            bkg_ids[idval] = []
-            for bkg_id in d.background_ids:
+            for bkg_id in data.background_ids:
+                bkg_data = data.get_background(bkg_id)
+                bkg_model = self.get_bkg_model(idval, bkg_id)
+                out.append((idval, bkg_data, bkg_model, bkg_id))
 
-                if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
-                    raise ModelErr('nobkg', bkg_id, idval)
-
-                bkg = d.get_background(bkg_id)
-                datasets.append(bkg)
-
-                bkg_data = d
-                if len(bkg.response_ids) != 0:
-                    bkg_data = bkg
-
-                bkg_model = bkg_models.get(bkg_id, None)
-                bkg_src = bkg_srcs.get(bkg_id, None)
-                if bkg_model is None and bkg_src is not None:
-                    resp = sherpa.astro.instrument.Response1D(bkg_data)
-                    bkg_model = resp(bkg_src)
-
-                models.append(bkg_model)
-                bkg_ids[idval].append(bkg_id)
+        return out
 
     def _prepare_bkg_fit(self, id, otherids=()):
 
-        # prep data ids for fitting
-        ids = self._get_fit_ids(id, otherids)
+        # This replicates some logic from super()._prepare_fit()
+        #
+        datastore = self._get_fit_ids(id, otherids)
 
-        # Gather up lists of data objects and models to fit
-        # to them.  Add to lists *only* if there actually is
-        # a model to fit.  E.g., if data sets 1 and 2 exist,
-        # but only data set 1 has a model, then "fit all" is
-        # understood to mean "fit 1".  If both data sets have
-        # models, then "fit all" means "fit 1 and 2 together".
-        datasets = []
-        models = []
-        fit_to_ids = []
-        for i in ids:
+        # Skip any background dataset that has no background model.
+        #
+        out = []
+        for idval, data in datastore:
+            if not isinstance(data, DataPHA):
+                continue
 
-            # get PHA data and associated background models by id
-            data = self._get_pha_data(i)
-            bkg_models = self._background_models.get(i, {})
-            bkg_sources = self._background_sources.get(i, {})
+            for bkg_id in data.background_ids:
+                bkg_data = self.get_bkg(idval, bkg_id)
+                try:
+                    bkg_model = self.get_bkg_model(idval, bkg_id)
+                except ModelErr:
+                    continue
 
-            for bi in data.background_ids:
-                mod = None
-                ds = self.get_bkg(i, bi)
-                if bi in bkg_models or bi in bkg_sources:
-                    mod = self.get_bkg_model(i, bi)
+                out.append((idval, bkg_data, bkg_model, bkg_id))
 
-                if mod is not None:
-                    datasets.append(ds)
-                    models.append(mod)
-
-            fit_to_ids.append(i)
-
-        # If no data sets have models assigned to them, stop now.
-        if len(models) < 1:
+        # Ensure we have something to fit.
+        #
+        if len(out) == 0:
             raise IdentifierErr("nomodels")
 
-        return fit_to_ids, datasets, models
+        return out
+
 
     def _get_bkg_fit(self, id, otherids=(), estmethod=None, numcores=1):
 
-        fit_to_ids, datasets, models = self._prepare_bkg_fit(id, otherids)
-
-        # Do not add backgrounds to backgrounds.
-        # self._add_extra_data_and_models(fit_to_ids, datasets, models)
-
-        fit_to_ids = tuple(fit_to_ids)
-
-        f = self._get_fit_obj(datasets, models, estmethod, numcores)
-
-        return fit_to_ids, f
+        store = self._prepare_bkg_fit(id, otherids)
+        return self._get_fit_obj(store, estmethod, numcores=numcores)
 
     # also in sherpa.utils
     # DOC-TODO: existing docs suggest that bkg_only can be set, but looking
@@ -10393,8 +10398,8 @@ class Session(sherpa.ui.utils.Session):
         Fit the background for data sets 1 and 2, then do a
         simultaneous fit to the source and background data sets:
 
-        >>> fit_bkg(1,2)
-        >>> fit(1,2)
+        >>> fit_bkg(1, 2)
+        >>> fit(1, 2)
 
         """
         kwargs['bkg_only'] = True
@@ -10430,53 +10435,41 @@ class Session(sherpa.ui.utils.Session):
 
     def _get_stat_info(self):
 
-        ids, datasets, models = self._prepare_fit(None)
+        store = self._prepare_fit(None)
 
-        extra_ids = {}
-        self._add_extra_data_and_models(ids, datasets, models, extra_ids)
-
+        # Create the stat info objects for multiple datasets, with the
+        # backgrounds having a different name (and setting the bkg_ids
+        # field).
+        #
         output = []
-        nids = len(ids)
-        if len(datasets) > 1:
-            bkg_datasets = datasets[nids:]
-            bkg_models = models[nids:]
-            jj = 0
-            for idval, d, m in zip(ids, datasets[:nids], models[:nids]):
-                f = Fit(d, m, self._current_stat)
+        if len(store) > 1:
+            for s in store:
+                idval = s[0]
+                data = s[1]
+                model = s[2]
 
+                f = Fit(data, model, self._current_stat)
                 statinfo = f.calc_stat_info()
-                statinfo.name = f'Dataset {idval}'
-                statinfo.ids = (idval,)
+                statinfo.ids = (idval, )
+
+                if len(s) == 4:
+                    bkg_id = s[3]
+                    statinfo.name = f"Background {bkg_id} for Dataset {idval}"
+                    statinfo.bkg_ids = (bkg_id, )
+
+                else:
+                    statinfo.name = f"Dataset {idval}"
 
                 output.append(statinfo)
 
-                bkg_ids = extra_ids.get(idval, ())
-                nbkg_ids = len(bkg_ids)
-                idx_lo = jj * nbkg_ids
-                idx_hi = idx_lo + nbkg_ids
-                for bkg_id, bkg, bkg_mdl in zip(bkg_ids,
-                                                bkg_datasets[idx_lo:idx_hi],
-                                                bkg_models[idx_lo:idx_hi]):
-
-                    bkg_f = Fit(bkg, bkg_mdl, self._current_stat)
-
-                    statinfo = bkg_f.calc_stat_info()
-                    statinfo.name = f"Background {bkg_id} for Dataset {idval}"
-                    statinfo.ids = (idval,)
-                    statinfo.bkg_ids = (bkg_id,)
-
-                    output.append(statinfo)
-
-                jj += 1
-
-        f = self._get_fit_obj(datasets, models, estmethod=None)
+        idvals, f = self._get_fit_obj(store, estmethod=None)
         statinfo = f.calc_stat_info()
-        if nids == 1:
-            statinfo.name = f'Dataset {ids}'
+        statinfo.ids = list(idvals)  # TODO: list or tuple?
+        if len(idvals) == 1:
+            statinfo.name = f'Dataset {statinfo.ids}'  # TODO: do we want to use ids[0]?
         else:
-            statinfo.name = f'Datasets {ids}'
+            statinfo.name = f'Datasets {statinfo.ids}'
 
-        statinfo.ids = ids
         output.append(statinfo)
         return output
 

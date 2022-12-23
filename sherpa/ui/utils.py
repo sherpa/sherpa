@@ -32,9 +32,10 @@ import numpy
 
 from sherpa import get_config
 import sherpa.all
+from sherpa.data import Data, DataSimulFit
 from sherpa.fit import Fit
 from sherpa.models.basic import TableModel
-from sherpa.models.model import Model
+from sherpa.models.model import Model, SimulFitModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -8297,126 +8298,160 @@ class Session(NoNewAttributesAfterInit):
     ###########################################################################
 
     def _add_extra_data_and_models(self, ids, datasets, models):
-        pass
+        """This is no-longer used."""
+        raise RuntimeError("INTERNAL ERROR - this routine is no-longer used")
 
-    def _get_fit_ids(self, id, otherids):
-        # If id==None, assume it means, simultaneous fit
-        # to all data sets that have models assigned to
-        # them.  Otherwise, assume that id and otherids
-        # as input list the data sets to be fit.
+    def _get_fit_ids(self, id, otherids=None):
+        """Return the identifiers.
+
+        This does enforce that the dataset exists, but not that a
+        an associated model is present.
+
+        Parameters
+        ----------
+        id: int or str or None
+            If None then this will select all data sets.
+        otherids: sequence of int or str or None, or None
+            When id is not None, the other identifiers to use.
+
+        Returns
+        -------
+        store : list of pairs
+            Each pair is the identifier and data.
+
+        """
         if id is None:
-            all_ids = self.list_data_ids()
-            if (len(all_ids) > 0):
-                id = all_ids[0]
-                del all_ids[0]
-                otherids = tuple(all_ids)
-            if id is None:
-                id = self._fix_id(id)
+            ids = self.list_data_ids()
+            if len(ids) == 0:
+                raise IdentifierErr("getitem", "data set", self._default_id, "has not been set")
 
-        ids = [id]
-        for nextid in otherids:
-            nextid = self._fix_id(nextid)
-            if nextid not in ids:
-                ids.append(nextid)
-
-        return ids
-
-    def _get_fit_obj(self, datasets, models, estmethod, numcores=1):
-
-        datasets = tuple(datasets)
-        models = tuple(models)
-        if len(datasets) == 1:
-            d = datasets[0]
-            m = models[0]
         else:
-            d = sherpa.data.DataSimulFit('simulfit data', datasets, numcores)
-            m = sherpa.models.SimulFitModel('simulfit model', models)
+            ids = [id]
+            if otherids is not None:
+                for idval in otherids:
+                    idval = self._fix_id(idval)
+                    if idval not in ids:
+                        ids.append(idval)
+
+        # Check the data exists. At this point ids is not empty.
+        #
+        out = []
+        for idval in ids:
+            out.append((idval, self.get_data(idval)))
+
+        return out
+
+    def _get_fit_obj(self, store, estmethod, numcores=1):
+
         if not self._current_method.name == 'gridsearch':
-            if m.is_discrete:
-                raise ModelErr(
-                    "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
+            for s in store:
+                if s[2].is_discrete:
+                    raise ModelErr(
+                        "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
 
-        f = Fit(d, m, self._current_stat, self._current_method,
-                estmethod, self._current_itermethod)
+        if len(store) == 1:
+            d = store[0][1]
+            m = store[0][2]
+        else:
+            datasets = [s[1] for s in store]
+            d = DataSimulFit('simulfit data', datasets, numcores)
 
-        return f
+            models = [s[2] for s in store]
+            m = SimulFitModel('simulfit model', models)
+
+        # Ensure the id value is not repeated, but keep the order (so can not
+        # just convert to a set and back again).
+        #
+        idvals = []
+        for s in store:
+            idval = s[0]
+            if idval not in idvals:
+                idvals.append(idval)
+
+        return tuple(idvals), Fit(d, m, self._current_stat, self._current_method,
+                                  estmethod, self._current_itermethod)
 
     def _prepare_fit(self, id, otherids=()):
         """Ensure we have all the requested ids, datasets, and models.
 
+        This checks whether the dataset is loaded and has an
+        associated source or model. If datasets are explicitly listed
+        then they must contain both data and a model, but when id is
+        None then those data sets which have no model are skipped.
+
+        Parameters
+        ----------
+        id: int or str or None
+            If None then this simultaneously-fit all data.
+        otherids: sequence of int or str or None, or None
+            When id is not None, the other identifiers to use.
+
+        Returns
+        -------
+        store : list of tuples
+            Each tuple contains the dataset identifier, the data, and
+            the model.
+
         """
 
-        # prep data ids for fitting
-        ids = self._get_fit_ids(id, otherids)
+        datastore = self._get_fit_ids(id, otherids)
 
-        # Which of the requested ids have
-        # - data
-        # - model
-        # - the data and model match dimensionality
+        # Skip any dataset that has no source model.
         #
-        # At present we only check the first two here, as the assumption
-        # is that the results are going to be used to create a Fit object
-        # and that will check the last condition.
-        #
-        datasets = []
-        models = []
-        fit_to_ids = []
-        for i in ids:
-            ds = self.get_data(i)
-            mod = None
-            if i in self._models or i in self._sources:
-                mod = self.get_model(i)
-
-            if mod is None:
+        out = []
+        for idval, data in datastore:
+            try:
+                store = (idval, data, self.get_model(idval))
+            except IdentifierErr:
                 continue
 
-            datasets.append(ds)
-            models.append(mod)
-            fit_to_ids.append(i)
+            out.append(store)
 
-        # If no data sets have models assigned to them, stop now.
-        if len(models) < 1:
+        # Ensure we have something to fit.
+        #
+        if len(out) == 0:
             raise IdentifierErr("nomodels")
 
-        return fit_to_ids, datasets, models
+        return out
 
     def _get_fit(self, id, otherids=(), estmethod=None, numcores=1):
 
-        fit_to_ids, datasets, models = self._prepare_fit(id, otherids)
-
-        self._add_extra_data_and_models(fit_to_ids, datasets, models)
-
-        f = self._get_fit_obj(datasets, models, estmethod, numcores)
-
-        fit_to_ids = tuple(fit_to_ids)
-
-        return fit_to_ids, f
+        store = self._prepare_fit(id, otherids)
+        return self._get_fit_obj(store, estmethod, numcores)
 
     def _get_stat_info(self):
 
-        ids, datasets, models = self._prepare_fit(None)
-
-        self._add_extra_data_and_models(ids, datasets, models)
+        store = self._prepare_fit(None)
 
         output = []
-        if len(datasets) > 1:
-            for idval, d, m in zip(ids, datasets, models):
-                f = Fit(d, m, self._current_stat)
+
+        # Report the per-dataset statistics before the combined data
+        # (only relevant when there's more than one entry).
+        #
+        if len(store) > 1:
+            for s in store:
+                # The store may conain more-than three elements, so do not
+                # deconstruct the tuple in the for loop but individually.
+                #
+                idval = s[0]
+                dataset = s[1]
+                model = s[2]
+                f = Fit(dataset, model, self._current_stat)
 
                 statinfo = f.calc_stat_info()
                 statinfo.name = f'Dataset {idval}'
-                statinfo.ids = (idval,)
+                statinfo.ids = (idval, )
 
                 output.append(statinfo)
 
-        f = self._get_fit_obj(datasets, models, estmethod=None)
+        idvals, f = self._get_fit_obj(store, estmethod=None)
         statinfo = f.calc_stat_info()
-        if len(ids) == 1:
-            statinfo.name = f'Dataset {ids}'  # TODO: do we want to use ids[0]?
+        statinfo.ids = list(idvals)  # TODO: list or tuple?
+        if len(store) == 1:
+            statinfo.name = f'Dataset {statinfo.ids}'  # TODO: do we want to use ids[0]?
         else:
-            statinfo.name = f'Datasets {ids}'
+            statinfo.name = f'Datasets {statinfo.ids}'
 
-        statinfo.ids = ids
         output.append(statinfo)
         return output
 

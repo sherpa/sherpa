@@ -3992,8 +3992,7 @@ def test_fit_datapha_mix_data_only_bkg(id1):
     s.set_bkg_source(id1, bmdl)
 
     s.fit_bkg()
-    check_fit_results(s, (1, 2, 3, 4),  # shouldn't this should just be (id1,) ?
-                      ("bmdl.c0", ),
+    check_fit_results(s, (id1, ), ("bmdl.c0", ),
                       [0.5], 1, 0.5, 2, 1)
 
 
@@ -4039,8 +4038,7 @@ def test_fit_datapha_mix_data_only_bkg_no_response(id1):
     s.set_bkg_source(id1, bmdl)
 
     s.fit_bkg()
-    check_fit_results(s, (1, 2, 3, 4),  # shouldn't this should just be (id1,) ?
-                      ("bmdl.c0", ),
+    check_fit_results(s, (id1, ), ("bmdl.c0", ),
                       [0.5], 1, 0.5, 2, 1)
 
 
