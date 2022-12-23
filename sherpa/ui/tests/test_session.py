@@ -1112,7 +1112,10 @@ def test_set_default_id_check_invalid(value):
 
 
 class ModelWithDoc(Model):
-    """This has a doc string"""
+    """This has a doc string
+
+    But we don't grab this.
+    """
 
     _hidden = False
 
@@ -1131,12 +1134,29 @@ def test_modelwrapper_init():
     assert repr(wrap) == "<ModelWithDoc model type>"
 
 
+def test_modelwrapper_checks_session():
+    """Check we error out"""
+
+    with pytest.raises(ValueError,
+                       match="session is not a Session instance"):
+        ModelWrapper(ModelWithDoc, None)
+
+
+def test_modelwrapper_checks_model():
+    """Check we error out"""
+
+    s = Session()
+    with pytest.raises(ValueError,
+                       match="modeltype is not a Model instance"):
+        ModelWrapper(s, "Gauss1D")
+
+
 def test_modelwrapper_str_with_doc():
     """Basic ModelWrapper check"""
 
     s = Session()
     wrap = ModelWrapper(s, ModelWithDoc)
-    assert str(wrap) == "This has a doc string"
+    assert str(wrap) == "This has a doc string\n\n    But we don't grab this.\n    "
 
 
 def test_modelwrapper_str_no_doc():
@@ -1147,15 +1167,35 @@ def test_modelwrapper_str_no_doc():
     assert str(wrap) == "<ModelWithNoDoc model type>"
 
 
-def test_modelwrapper_what_is_the_docstring():
+def test_modelwrapper_what_is_the_docstring_has_doc():
     """What do we want help(wrappedmodel) to return"""
 
-    # Check current behavior
-    assert ModelWrapper.__doc__ is None
+    # Check that the class and wrapped docstrings are different.
+    #
+    assert ModelWrapper.__doc__ is not None
+
+    s = Session()
+    wrap = ModelWrapper(s, ModelWithDoc)
+    assert wrap.__doc__ != ModelWrapper.__doc__
+
+    # Check the wrapped docstring references the model and description.
+    #
+    assert wrap.__doc__.startswith("Create a modelwithdoc model instance.\n\n    This has a doc string\n\n    Instances can")
+
+
+def test_modelwrapper_what_is_the_docstring_no_doc():
+    """What do we want help(wrappedmodel) to return"""
+
+    # Check that the class and wrapped docstrings are different.
+    #
+    assert ModelWrapper.__doc__ is not None
 
     s = Session()
     wrap = ModelWrapper(s, ModelWithNoDoc)
-    assert wrap.__doc__ is None
+    assert wrap.__doc__ != ModelWrapper.__doc__
+
+    # Check the wrapped docstring references the model but no description.
+    assert wrap.__doc__.startswith("Create a modelwithnodoc model instance.\n\n    Instances can")
 
 
 @pytest.mark.parametrize("attr", ["_hidden", "_foo_bar"])
