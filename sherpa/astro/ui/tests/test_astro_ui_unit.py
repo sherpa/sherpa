@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021, 2022
+#  Copyright (C) 2017, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1925,10 +1925,10 @@ def test_get_axes_datapha_rsp():
 def test_get_axes_datapha_rsp_bkg(clean_astro_ui):
     """Let's have a RMF and ARF for fun (but only for source)
 
-    It is not clear whether we expect the respnose to be automatically
+    It is not clear whether we expect the response to be automatically
     applied to the background here, so treat this as a regression test
     (because, at present, we do not have units=energy for the
-    background(.
+    background).
     """
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
@@ -2162,7 +2162,7 @@ def test_set_grouping_1636_indirect(clean_astro_ui, caplog):
     """See issue #1636. Also #1635.
 
     I assume this was broken by #1477. Issue #1636 points out this is
-    broken biut #1635 asks what the behavior should be, so this is
+    broken but #1635 asks what the behavior should be, so this is
     a regression test.
 
     See also test_set_grouping_1636_direct.

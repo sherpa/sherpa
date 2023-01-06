@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2019, 2020, 2021, 2022
+#  Copyright (C) 2016, 2017, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1185,7 +1185,7 @@ def test_modelwrapper_getattr_instance():
 
 
 def test_modelwrapper_getattr_instance_unknown():
-    """The access works for the model instance"""
+    """The access fails for the model instance when field is unknown"""
 
     s = Session()
     wrap = ModelWrapper(s, ModelWithNoDoc)
@@ -1367,7 +1367,7 @@ def test_show_kernel_multiple(tmp_path):
 def test_load_filter_simple(idval, tmp_path):
     """Although there is a version in astro we only check the non-astro
     version as the behavior is different (e.g. the astro version needs
-    I/O suppport.
+    I/O suppport).
 
     """
 
@@ -1389,7 +1389,7 @@ def test_load_filter_simple(idval, tmp_path):
 def test_save_filter_simple(idval, tmp_path):
     """Although there is a version in astro we only check the non-astro
     version as the behavior is different (e.g. the astro version needs
-    I/O suppport.
+    I/O suppport).
 
     """
 

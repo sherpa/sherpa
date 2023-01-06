@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -704,7 +704,7 @@ def test_psf_model2d(model, clean_astro_ui):
 
 
 def test_dataspace2d_default(clean_astro_ui):
-    """What happens when we calll dataspace2d: default"""
+    """What happens when we call dataspace2d: default"""
 
     ui.dataspace2d([3, 5], 2)
     data = ui.get_data(2)
@@ -717,7 +717,7 @@ def test_dataspace2d_default(clean_astro_ui):
 
 
 def test_dataspace2d_data2d(clean_astro_ui):
-    """What happens when we calll dataspace2d: Data2D"""
+    """What happens when we call dataspace2d: Data2D"""
 
     ui.dataspace2d([3, 5], 2, Data2D)
     data = ui.get_data(2)
@@ -730,7 +730,7 @@ def test_dataspace2d_data2d(clean_astro_ui):
 
 
 def test_dataspace2d_data2dint(clean_astro_ui):
-    """What happens when we calll dataspace2d: Data2DInt"""
+    """What happens when we call dataspace2d: Data2DInt"""
 
     ui.dataspace2d([3, 5], 2, Data2DInt)
     data = ui.get_data(2)

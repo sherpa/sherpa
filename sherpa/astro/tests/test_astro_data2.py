@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1714,7 +1714,7 @@ def test_pha_remove_grouping(make_test_pha):
     # Can we remove the grouping column?
     pha.grouping = None
 
-    # Check the get_dep ehavior before grouped as this is currently
+    # Check the get_dep behavior before grouped as this is currently
     # causes a TypeError rather than not changing a boolean flag
     # variable.
     #
