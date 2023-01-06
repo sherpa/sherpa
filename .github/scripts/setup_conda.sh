@@ -1,7 +1,6 @@
 #!/usr/bin/env bash -e
 
 if [ "`uname -s`" == "Darwin" ] ; then
-    miniconda_os=MacOSX
     compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
 
     #Download the macOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
@@ -13,7 +12,6 @@ if [ "`uname -s`" == "Darwin" ] ; then
     tar -C ${GITHUB_WORKSPACE}/10.9SDK -xf MacOSX10.9.sdk.tar.xz
     #End of Conda compilers section
 else
-    miniconda_os=Linux
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
 
     if [ -n "${MATPLOTLIBVER}" ]; then
@@ -24,13 +22,9 @@ else
    fi
 fi
 
-# Download and install conda
-wget https://repo.anaconda.com/miniconda/Miniconda3-latest-${miniconda_os}-x86_64.sh -O miniconda.sh
-chmod +x miniconda.sh
-./miniconda.sh -b -p $miniconda_loc
-
-#Source the Conda profile
-source ${miniconda_loc}/etc/profile.d/conda.sh
+# Ensure we have set up conda
+#
+source ${CONDA}/etc/profile.d/conda.sh
 
 # update and add channels
 conda update --yes conda

@@ -11,7 +11,6 @@ on:
 env:
   sherpa_channel: sherpa
   xspec_channel: "xspec/label/test"
-  miniconda_loc: ${{ github.workspace }}/miniconda
   CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.9SDK/MacOSX10.9.sdk
 
 jobs:
@@ -119,7 +118,7 @@ jobs:
       env:
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         source .github/scripts/setup_ds9.sh
         source .github/scripts/setup_xspec.sh
@@ -136,7 +135,7 @@ jobs:
       env:
         PYTHON_LDFLAGS: " "
       run: |
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         pip install . --verbose
 
@@ -145,14 +144,14 @@ jobs:
       env:
         PYTHON_LDFLAGS: " "
       run: |
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         pip install -e . --verbose
 
     - name: Install the test data?
       if: matrix.test-data == 'package'
       run: |
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         pip install ./sherpa-test-data
         pip install pytest-xvfb
@@ -172,7 +171,7 @@ jobs:
         if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
         smokevars="${XSPECTEST} ${FITSTEST} -v 3"
         echo "** smoke test: ${smokevars}"
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         cd /home
         sherpa_smoke ${smokevars}
@@ -200,7 +199,7 @@ jobs:
           # make sure pytext-xvfb can find Xvfb
           export PATH="${PATH}:/opt/X11/bin"
         fi
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
         python setup.py -q test -a "--cov sherpa --cov-report xml"
@@ -208,7 +207,7 @@ jobs:
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       run: |
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
         cd $HOME
