@@ -26,7 +26,8 @@ import pytest
 from sherpa.astro.data import DataPHA, DataIMG, DataIMGInt
 from sherpa.astro import ui
 from sherpa.astro import utils
-from sherpa.astro.utils import do_group, filter_resp, range_overlap_1dint
+from sherpa.astro.utils import do_group, expand_grouped_mask, filter_resp, \
+    range_overlap_1dint
 from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.utils.err import DataErr, IOErr
 from sherpa.utils.testing import requires_data, requires_fits
@@ -581,3 +582,90 @@ def test_calc_data_sum2d_filtered_2d(data_class):
     assert utils.calc_data_sum2d(data, "rect(0, 0, 2, 3)") == 16
     assert data.mask == pytest.approx(omask)
     assert data.get_dep(filter=True) == pytest.approx(orig)
+
+
+@pytest.mark.parametrize("group", [[True], [False, True], []])
+def test_expand_grouped_mask_mask_is_empty(group):
+    """Check we get an error"""
+
+    with pytest.raises(TypeError) as err:
+        expand_grouped_mask([], group)
+
+    assert str(err.value) == "mask array has no elements"
+
+
+@pytest.mark.parametrize("mask", [[True], [False], [True, False]])
+def test_expand_grouped_mask_group_is_empty(mask):
+    """This should probably be an error"""
+
+    out = expand_grouped_mask(mask, [])
+    assert len(out) == 0
+
+
+@pytest.mark.parametrize("val", [None, 0, 1, "x"])  # mask is converted to bool so a string/None are accepted
+@pytest.mark.parametrize("group", [[1], [1, -1], [1] * 10, []])
+def test_expand_grouped_mask_mask_is_scalar(val, group):
+    """What happens if mask is a scalar.
+
+    This is an edge case. It should probably error out but at the
+    moment it does not.
+    """
+
+    answer = expand_grouped_mask(val, group)
+    assert len(answer) == len(group)
+
+
+@pytest.mark.parametrize("val", [0, 1])  # group is converted to int so string/None fail, unlike mask
+@pytest.mark.parametrize("mask", [[True], [False], [True] * 5])
+def test_expand_grouped_mask_group_is_scalar(val, mask):
+    """What happens if group is a scalar.
+
+    This is an edge case. It should probably error out but at the
+    moment it does not.
+    """
+
+    # The return value is hard to test, so we just check if it runs or not
+    expand_grouped_mask(mask, val)
+
+
+@pytest.mark.parametrize("group", [[1, 1, 1], [1, -1, 1, -1, 1, -1], [1, -1, -1, -1, -1, 1, 1, 1]])
+def test_expand_grouped_mask_mask_is_to_small(group):
+    """What happens if the group and mask do not match? mask too small.
+
+    This should probably be an error but it currently is not.
+    """
+
+    expand_grouped_mask([True, False], group)
+
+
+@pytest.mark.parametrize("group", [[1, 1], [1, 1, 1, 1], [1, -1, -1, 1, -1, -1, 1, -1, -1]])
+def test_expand_grouped_mask_mask_is_to_large(group):
+    """What happens if the group and mask do not match? mask too large.
+
+    This should probably be an error but it currently is not.
+    """
+
+    expand_grouped_mask([True] * 5, group)
+
+
+@pytest.mark.parametrize("mask,group,expected",
+                         [([True], [1], [True]),
+                          ([False], [1], [False]),
+                          ([True], [1, -1], [True] * 2),
+                          ([False], [1, -1], [False] * 2),
+                          ([True], [1, -1, -1, -1, -1], [True] * 5),
+                          ([False], [1, -1, -1, -1, -1], [False] * 5),
+                          ([True, False], [1, -1, -1, -1, -1, 1], [True] * 5 + [False]),
+                          ([False, True], [1, -1, -1, -1, -1, 1], [False] * 5 + [True]),
+                          ([True, True], [1, 1, -1, -1], [True] * 4),
+                          ([False, False], [1, 1, -1, -1], [False] * 4),
+                          ([False, True], [1, 1, -1, -1], [False] + [True] * 3),
+                          ([True, False], [1, 1, -1, -1], [True] + [False] * 3),
+                          ([False, True, False], [1, -1, 1, 1, -1, -1], [False] * 2 + [True] + [False] * 3),
+                          ([False, True, False], [1, -1, 1, -1, -1, 1, -1], [False] * 2 + [True] * 3 + [False] * 2),
+                          ([False, True, False], [1, 1, 1], [False, True, False]),
+                          ])
+def test_expand_grouped_mask(mask, group, expected):
+    """Check how test_expand_grouped_mask works."""
+
+    assert expand_grouped_mask(mask, group) == pytest.approx(expected)

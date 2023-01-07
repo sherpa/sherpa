@@ -28,10 +28,11 @@ import pytest
 from sherpa.utils.testing import requires_data
 from sherpa.data import Data1D
 from sherpa.fit import Fit
-from sherpa.stats import LeastSq
+from sherpa.instrument import ConvolutionKernel, PSFModel
 from sherpa.models import ArithmeticModel, Parameter
 from sherpa.models.basic import PowLaw1D
 from sherpa.models.parameter import hugeval
+from sherpa.stats import LeastSq
 from sherpa.utils.err import ArgumentErr, IdentifierErr, PSFErr, StatErr, SessionErr
 from sherpa import ui
 
@@ -610,3 +611,45 @@ def test_list_psf_ids_multi(clean_ui):
 
     ans = ui.list_psf_ids()
     assert ans == [1, "2"]
+
+
+def test_load_conv_from_file(tmp_path, clean_ui):
+    """Check we can read in a convolution model from a file.
+
+    This does not require a valid I/O module.
+    """
+
+    tmp = tmp_path / "tmp.dat"
+    tmp.write_text("! X Y\n1 10\n2 5\n 3 0\n4 1\n")
+
+    assert ui.list_model_components() == []
+
+    ui.load_conv("foo", str(tmp), comment="!")
+    assert ui.list_model_components() == ["foo"]
+
+    foo = ui.get_model_component("foo")
+    assert isinstance(foo, ConvolutionKernel)
+    assert isinstance(foo.kernel, Data1D)
+    assert foo.kernel.x == pytest.approx([1, 2, 3, 4])
+    assert foo.kernel.y == pytest.approx([10, 5, 0, 1])
+
+
+def test_load_psf_from_file(tmp_path, clean_ui):
+    """Check we can read in a PSF model from a file.
+
+    This does not require a valid I/O module.
+    """
+
+    tmp = tmp_path / "tmp.dat"
+    tmp.write_text("! X Y Z\n1 10 0.3\n2 5 0.2\n 3 0 0.1\n4 1 0.1\n")
+
+    assert ui.list_model_components() == []
+
+    ui.load_psf("foo", str(tmp), comment="!", colkeys=["X", "Z"])
+    assert ui.list_model_components() == ["foo"]
+
+    foo = ui.get_model_component("foo")
+    assert isinstance(foo, PSFModel)
+    assert isinstance(foo.kernel, Data1D)
+    assert foo.kernel.x == pytest.approx([1, 2, 3, 4])
+    assert foo.kernel.y == pytest.approx([0.3, 0.2, 0.1, 0.1])

@@ -24,12 +24,14 @@
 # out of a single file)
 #
 
+import logging
 import os
 
 import pytest
 
 from sherpa.astro import ui
-from sherpa.utils.err import ArgumentTypeErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
 
@@ -190,3 +192,67 @@ def test_spatial_filter_errors_out_invalid_id(func):
     with pytest.raises(ArgumentTypeErr,
                        match="'ids' must be an identifier or list of identifiers"):
         func(ids)
+
+
+@pytest.mark.xfail
+@requires_data
+@requires_fits
+def test_1160_original(make_data_path, clean_astro_ui, caplog):
+    """Close to the originally-reported bug"""
+
+    with SherpaVerbosity("ERROR"):
+        ui.load_pha(make_data_path("3c273.pi"))
+
+    assert len(caplog.records) == 0
+    ui.notice(0.5, 6)
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "dataset 1: 0.00146:14.9504 -> 0.4672:6.57 Energy (keV)"
+
+    # Use data.get_filter rather than ui.get_filter as can
+    # control the accuracy.
+    #
+    data = ui.get_data()
+
+    fstr = "0.4672:6.5700"
+    assert data.get_filter(format="%.4f") == fstr
+
+    ui.set_grouping([1] * 1024)
+    assert len(caplog.records) == 1
+
+    assert data.get_filter(format="%.4f") == fstr
+
+
+def test_get_dep_1160(clean_astro_ui):
+    """Bizarre behavior was observed trying to fix #1160 so test it.
+
+    Hold on: this is because the ui get_dep normalizes by the
+    bin width (and it's likely that we have other tests of
+    this behavior), but I'm going to leave this here.
+    """
+
+    grping = [1, -1, 1, -1, 1]
+    vals = [1, 2, 3, 4, 5]
+    gvals = [3, 7, 5]
+    dvals = [1.5, 3.5, 5]  # gvals divided by bin width
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], vals, ui.DataPHA)
+    ui.set_grouping(grping)
+    ui.group()
+
+    # These really should be a given, but test just in case
+    pha = ui.get_data()
+    assert pha.grouped
+    assert pha.grouping == pytest.approx(grping)
+
+    assert pha.get_dep(filter=False) == pytest.approx(vals)
+    assert pha.get_dep(filter=True) == pytest.approx(gvals)
+
+    # Now the actual checks. For PHA data ui.get_dep actually
+    # calls pha.get_y with the pha._rate field set to False,
+    # and not pha.get_dep.
+    #
+    assert ui.get_dep(filter=False) == pytest.approx(dvals)
+    assert ui.get_dep(filter=True) == pytest.approx(dvals)

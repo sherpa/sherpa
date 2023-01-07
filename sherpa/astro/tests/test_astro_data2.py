@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1555,9 +1555,147 @@ def test_pha_grouping_changed_filter_1160(make_test_pha):
     assert d4 == pytest.approx([2, 3])
 
 
+def test_pha_grouping_changed_1160_grped_no_filter(make_grouped_pha):
+    """Test based on work on #1160
+
+    This is probably no different to
+    test_pha_grouping_changed_no_filter_1160 and
+    test_pha_grouping_changed_filter_1160 but separated out
+    as more tests here are probably useful.
+    """
+
+    # Do we care about adding a response?
+    pha = make_grouped_pha
+
+    # why does this not understand the "bad quality" filter?
+    ofilter = "1:5"
+    assert pha.get_filter() == ofilter
+
+    # Change the grouping
+    pha.grouping = [1] * 5
+
+    # Although no grouping, we still have the bad filter in place
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([1, 2, 0, 3])
+
+    assert pha.get_filter() == ofilter
+
+
+@pytest.mark.xfail
+def test_pha_grouping_changed_1160_grped_with_filter(make_grouped_pha):
+    """Test based on work on #1160
+
+    See test_pha_grouping_changed_1160_grped_no_filter
+    """
+
+    pha = make_grouped_pha
+
+    # Can not say
+    #   pha.notice(2, 4)
+    # as we have already done a filter, so this would not
+    # act to ignore the first channel.
+    #
+    # The ignore(lo=5) line is not needed as it is already excluded by
+    # a bad-quality channel, but users can say this, so check the the
+    # response.
+    #
+    pha.ignore(hi=1)
+    pha.ignore(lo=5)
+
+    # Dropping channel 1 means the first group gets dropped, so we
+    # only have channel 4 left.
+    #
+    assert pha.get_filter() == "4"
+
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([3])
+
+    # Change the grouping
+    pha.grouping = [1] * 5
+
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+
+    # This fails with DataErr: size mismatch between mask and data array: 2 vs 4
+    assert pha.get_dep(filter=True) == pytest.approx([2, 0, 3])
+
+    assert pha.get_filter() == "2:4"
+
+
+def test_pha_grouping_changed_1160_ungrped_with_filter(make_grouped_pha):
+    """Test based on work on #1160
+
+    A version of
+    test_pha_grouping_changed_1160_grped_with_filter
+    but the data is not grouped, even though the grouping
+    is set/changed.
+
+    """
+
+    pha = make_grouped_pha
+
+    # Apply the filter whilst still grouped
+    pha.ignore(hi=1)
+    pha.ignore(lo=5)
+
+    pha.ungroup()
+
+    # The filtering does not change because of the ungroup call,
+    # although we might like it too.
+    assert pha.get_filter() == "4"
+
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([3])
+
+    # Change the grouping
+    pha.grouping = [1] * 5
+
+    assert pha.get_dep(filter=False) == pytest.approx([1, 2, 0, 3, 12])
+    assert pha.get_dep(filter=True) == pytest.approx([3])
+
+    assert pha.get_filter() == "4"
+
+
+@pytest.mark.xfail
+@requires_fits
+@requires_data
+def test_1160(make_data_path):
+    """Use the dataset we reported this with just as an extra check
+
+    It is slightly different to the other #1160 tests above because
+
+    a) we do not have a non-zero quality bin
+    b) we have an instrument response (this should not really
+       matter here)
+
+    """
+
+    from sherpa.astro.io import read_pha
+    pha = read_pha(make_data_path("3c273.pi"))
+
+    fexpr = "0.47:6.57"
+
+    pha.notice(0.5, 6)
+    assert pha.get_dep(filter=False).shape == (1024, )
+    assert pha.get_dep(filter=True).shape == (41, )
+    assert pha.mask.shape == (46, )
+    assert pha.mask.sum() == 41
+    assert pha.get_filter(format="%.2f") == fexpr
+
+    pha.grouping = [1] * 1024
+    assert pha.get_dep(filter=False).shape == (1024, )
+    # This fails with a DataErr: size mismatch between mask and data array
+    assert pha.get_dep(filter=True).shape == (418, )
+    assert pha.mask.shape == (1024, )
+    assert pha.mask.sum() == 418
+    assert pha.get_filter(format="%.2f") == fexpr
+
+
 @pytest.mark.xfail
 def test_pha_remove_grouping(make_test_pha):
-    """Check we can remove the grouping array."""
+    """Check we can remove the grouping array.
+
+    See issue #1659
+    """
 
     pha = make_test_pha
     assert pha.grouping is None
@@ -1575,10 +1713,28 @@ def test_pha_remove_grouping(make_test_pha):
 
     # Can we remove the grouping column?
     pha.grouping = None
-    # This thinks that pha.grouped is still set
-    assert not pha.grouped
+
+    # Check the get_dep behavior before grouped as this is currently
+    # causes a TypeError rather than not changing a boolean flag
+    # variable.
+    #
     d2 = pha.get_dep(filter=True)
     assert d2 == pytest.approx(no_data)
+
+    # This thinks that pha.grouped is still set
+    assert not pha.grouped
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("grouping", [True, [1, 1], np.ones(10)])
+def test_pha_grouping_size(grouping, make_test_pha):
+    """Check we error out if grouping has the wrong size"""
+
+    pha = make_test_pha
+    with pytest.raises(DataErr) as de:
+        pha.grouping = grouping
+
+    assert str(de.value) == 'size mismatch between channel and grouping'
 
 
 def test_pha_remove_quality(make_test_pha):
@@ -1663,6 +1819,34 @@ def test_pha_quality_bad_filter_remove(make_test_pha):
     # At the moment the filter still includes the quality filter
     pha.quality = None
     assert pha.get_filter() == "2:4"
+
+
+def test_pha_change_quality_values():
+    """What happens if we change the quality column?
+
+    This is a regression test as it is likely we should change the filter,
+    but we have not thought through the consequences. See also #1427
+    """
+
+    pha = DataPHA('ex', [1, 2, 3, 4, 5, 6, 7], [1, 2, 1, 0, 2, 2, 1])
+    pha.group_counts(5)
+    assert pha.quality == pytest.approx([0, 0, 0, 0, 0, 2, 2])
+    assert pha.get_dep(filter=True) == pytest.approx([6, 3])
+    assert pha.get_filter() == '1:7'
+
+    assert pha.quality_filter is None
+    pha.ignore_bad()
+    assert pha.quality_filter == pytest.approx([True] * 5 + [False, False])
+    assert pha.get_dep(filter=True) == pytest.approx([6])
+    assert pha.get_filter() == '1:7'
+
+    pha.group_counts(4)
+    assert pha.quality == pytest.approx([0, 0, 0, 0, 0, 0, 2])
+
+    # Should quality filter be reset?
+    assert pha.quality_filter == pytest.approx([True] * 5 + [False, False])
+    assert pha.get_dep(filter=True) == pytest.approx([4, 2])
+    assert pha.get_filter() == '1:7'
 
 
 @pytest.mark.parametrize("field", ["grouping", "quality"])
@@ -3773,11 +3957,11 @@ def test_pha_subtract_bkg_filter_false():
     data.set_background(bkg)
     data.subtract()
 
-    bgot = bkg.get_staterror(filter=False, staterrfunc=lambda x: np.sqrt(x))
+    bgot = bkg.get_staterror(filter=False, staterrfunc=np.sqrt)
     assert bgot == pytest.approx([2, 2])
 
     expected = np.sqrt(np.asarray([10, 12, 7]) + np.asarray([2, 2, 4]))
-    got = data.get_staterror(filter=False, staterrfunc=lambda x: np.sqrt(x))
+    got = data.get_staterror(filter=False, staterrfunc=np.sqrt)
     assert got == pytest.approx(expected)
 
 
@@ -3807,3 +3991,223 @@ def test_pha_subtract_bkg_filter_cih2datavar():
     expected = np.sqrt(np.asarray([10, 9, 3, 7]) + np.asarray([2, 0, 2, 4]))
     got = data.get_staterror(staterrfunc=calc_chi2datavar_errors)
     assert got == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("opt,arg",
+                         [("bins", 2), ("width", 2),
+                          ("counts", 3), ("adapt", 3),
+                          pytest.param("snr", 3, marks=pytest.mark.xfail),
+                          ("adapt_snr", 3)])
+def test_1643_group_options(opt, arg):
+    """Check the behavior noted in #1646 and if it's been fixed
+    yet or not (it comes from the group module which is not
+    part of Sherpa).
+    """
+
+    pha = DataPHA("grp", np.arange(1, 12),
+                  [1, 1, 1, 1, 8, 2, 6, 4, 1, 1, 1])
+
+    pha.ignore(hi=4)
+    pha.ignore(lo=9)
+
+    meth = getattr(pha, f"group_{opt}")
+
+    assert pha.get_filter("5:8")
+    meth(arg, tabStops=~pha.mask)
+    assert pha.get_filter("5:8")
+
+    # excluded channels are 0
+    assert pha.grouping[0:4] == pytest.approx([0] * 4)
+    assert pha.quality[0:4] == pytest.approx([0] * 4)
+
+    assert pha.grouping[8:] == pytest.approx([0] * 3)
+    assert pha.quality[8:] == pytest.approx([0] * 3)
+
+
+def test_pha_group_background(caplog):
+    """Do we group the background?"""
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = [1, 1, -1]
+
+    src.set_background(bkg)
+
+    assert not src.grouped
+    assert not bkg.grouped
+
+    src.group()
+
+    assert src.grouped
+    assert not bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_group_background_not_set(caplog):
+    """Do we group the background, but grouping not set?"""
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = None
+
+    src.set_background(bkg)
+
+    assert not src.grouped
+    assert bkg.grouped  # TODO: why is this set?
+
+    src.group()
+
+    assert src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background(caplog):
+    """Do we ungroup the background?"""
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = [1, 1, -1]
+    src.grouped = True
+    bkg.grouped = True
+
+    src.set_background(bkg)
+
+    assert src.grouped
+    assert bkg.grouped
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background_not_set(caplog):
+    """Do we ungroup the background, but grouping not set?"""
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = None
+    src.grouped = True
+
+    with pytest.raises(DataErr,
+                       match="data set 'bkg' does not specify grouping flags"):
+        bkg.grouped = True
+
+    src.set_background(bkg)
+
+    assert src.grouped
+    assert bkg.grouped
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background_after(caplog):
+    """Set the background before setting the grouping
+
+    The set_background method does some extra work, so let's
+    see what happens if we don't do that.
+    """
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.set_background(bkg)
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = [1, 1, -1]
+    src.grouped = True
+    bkg.grouped = True
+
+    assert src.grouped
+    assert bkg.grouped
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background_after_not_set(caplog):
+    """Set the background before setting the grouping
+
+    The set_background method does some extra work, so let's
+    see what happens if we don't do that.
+    """
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.set_background(bkg)
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = None
+    src.grouped = True
+
+    with pytest.raises(DataErr,
+                       match="data set 'bkg' does not specify grouping flags"):
+        bkg.grouped = True
+
+    assert src.grouped
+    assert not bkg.grouped
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert not bkg.grouped
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ungroup_background_remove(caplog):
+    """Can we remove the grouping after grouping?
+
+    This is to try and check a corner case.
+    """
+
+    src = DataPHA("src", [1, 2, 3], [1, 2, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [0, 1, 1])
+
+    src.set_background(bkg)
+
+    src.grouping = [1, 1, 1]
+    src.quality = [0, 0, 0]
+    bkg.grouping = [1, 1, -1]
+    bkg.quality = [0, 0, 0]
+    src.grouped = True
+    bkg.grouped = True
+
+    # TODO: should this remove the grouping flag?
+    bkg.grouping = None
+
+    src.ungroup()
+
+    assert not src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.record_tuples) == 0

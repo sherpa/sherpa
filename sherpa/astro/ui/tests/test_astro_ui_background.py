@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -35,7 +36,7 @@ from sherpa.astro import ui
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import ARFModelPHA
 from sherpa.models.model import ArithmeticConstantModel
-from sherpa.utils.err import DataErr, ModelErr
+from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -766,6 +767,77 @@ def test_pha1_eval_vector_show(clean_astro_ui):
     # expected = r(*exps) * r(*bscales) * r(*ascales)
     expected = r(*bscales)
     assert scale.val == pytest.approx(expected)
+
+
+def test_multi_show_data(clean_astro_ui):
+    """What happens if have PHA and non-PHA data?
+
+    The behavior is somewhat different if we use show_bkg: see
+    test_multi_show_bkg
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
+    ui.load_arrays("pha", [1, 2, 3], [1, 2, 3], ui.DataPHA)
+    ui.load_arrays(7, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    bkg = ui.DataPHA("x", [1, 2, 3], [12, 13, 0])
+    ui.set_bkg(7, bkg)
+
+    out = StringIO()
+    ui.show_data(outfile=out)
+    msg = out.getvalue().split('\n\n')
+
+    # There are four useful chunks. We do not bother checking the
+    # individual data, just that we get the data in an 'expected'
+    # order.
+    #
+    assert len(msg) == 5
+
+    assert msg[0].startswith("Data Set: 1\n")
+    assert msg[1].startswith("Data Set: 7\n")
+    assert msg[2].startswith("Background Data Set: 7:1\n")
+    assert msg[3].startswith("Data Set: pha\n")
+    assert msg[4] == "\n"
+
+
+def test_multi_show_bkg(clean_astro_ui):
+    """Should this fall over because we have no data?
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
+    ui.load_arrays("pha", [1, 2, 3], [1, 2, 3], ui.DataPHA)
+    ui.load_arrays(7, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    bkg = ui.DataPHA("x", [1, 2, 3], [12, 13, 0])
+    ui.set_bkg(7, bkg)
+
+    out = StringIO()
+    with pytest.raises(IdentifierErr,
+                       match="background data set 1 in PHA data set pha has not been set"):
+        ui.show_bkg(outfile=out)
+
+
+def test_multi_show_bkg_explicit(clean_astro_ui):
+    """Ensure coverage
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
+    ui.load_arrays("pha", [1, 2, 3], [1, 2, 3], ui.DataPHA)
+    ui.load_arrays(7, [1, 2, 3], [1, 2, 3], ui.DataPHA)
+
+    bkg = ui.DataPHA("x", [1, 2, 3], [12, 13, 0])
+    ui.set_bkg(7, bkg)
+
+    out = StringIO()
+    ui.show_bkg(7, bkg_id=1, outfile=out)
+
+    # We just want to check the correct data is being shown and do not
+    # do a full check here.
+    #
+    msg = out.getvalue().split('\n\n')
+    assert len(msg) == 2
+    assert msg[0].startswith("Background Data Set: 7:1\n")
+    assert msg[1] == "\n"
 
 
 def test_pha1_eval_vector_show_two(clean_astro_ui):
