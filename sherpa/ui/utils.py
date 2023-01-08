@@ -4296,13 +4296,7 @@ class Session(NoNewAttributesAfterInit):
                 raise AttributeError("save_delchi() can not be used " +
                                      "with 2D datasets")
 
-            funcname = "get_{}_image()".format(objtype)
-            """
-            imgtype = getattr(self, funcname, None)
-            if imgtype is None:
-                # raise AttributeErr('attributeerr', 'session', fname)
-                raise AttributeError("Unable to find " + funcname)
-            """
+            funcname = f"get_{objtype}_image"
             imgtype = getattr(self, funcname)
 
             obj = imgtype(id)
@@ -4310,13 +4304,7 @@ class Session(NoNewAttributesAfterInit):
             fields = [str(objtype).upper()]
 
         else:
-            funcname = "get_{}_plot".format(objtype)
-            """
-            plottype = getattr(self, funcname, None)
-            if plottype is None:
-                # raise AttributeErr('attributeerr', 'session', funcname)
-                raise AttributeError("Unable to find " + funcname)
-            """
+            funcname = f"get_{objtype}_plot"
             plottype = getattr(self, funcname)
 
             obj = plottype(id)

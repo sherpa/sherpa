@@ -2539,7 +2539,7 @@ def check_output(expected, got):
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
-                         [pytest.param(Session, {"comment": "!! "}, ["!! SOURCE", "7 11", ""], marks=pytest.mark.xfail),  # bug #1642
+                         [(Session, {"comment": "!! "}, ["!! SOURCE", "7 11", ""]),
                           (AstroSession, {"ascii": True}, ["7", "11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):
@@ -2571,7 +2571,7 @@ def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, sk
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
-                         [pytest.param(Session, {"comment": ""}, ["MODEL", "7 11", ""], marks=pytest.mark.xfail),  # bug #1642
+                         [(Session, {"comment": ""}, ["MODEL", "7 11", ""]),
                           (AstroSession, {"ascii": True}, ["7", "11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):
@@ -2603,7 +2603,7 @@ def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, ski
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
-                         [pytest.param(Session, {}, ["#RESID", "-7 -11", ""], marks=pytest.mark.xfail),  # bug #1642
+                         [(Session, {}, ["#RESID", "-7 -11", ""]),
                           (AstroSession, {"ascii": True}, ["-7", "-11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_resid_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):
