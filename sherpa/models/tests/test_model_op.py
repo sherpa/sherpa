@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,6 +22,7 @@
 
 from functools import reduce
 import operator
+import re
 
 import numpy as np
 
@@ -201,10 +203,9 @@ def test_combine_models_1d_2d():
     m1 = basic.Box1D()
     m2 = basic.Box2D()
 
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match=re.escape("Models do not match: 1D (box1d) and 2D (box2d)")):
         m1 + m2
-
-    assert str(exc.value) == 'Models do not match: 1D (box1d) and 2D (box2d)'
 
 
 @pytest.mark.parametrize("val", [2, [1, 3, 4]])
@@ -223,10 +224,9 @@ def test_arithmeticconstantmodel(val):
 def test_arithmeticconstantmodel_dimerr():
 
     x = np.ones(6).reshape(2, 3)
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match="The constant must be a scalar or 1D, not 2D"):
         ArithmeticConstantModel(x)
-
-    assert str(exc.value) == 'The constant must be a scalar or 1D, not 2D'
 
 
 @requires_xspec
@@ -281,3 +281,84 @@ def test_load_table_model(make_data_path):
     s.load_table_model('tbl', make_data_path('double.dat'))
     tbl = s.get_model_component('tbl')
     assert tbl.ndim is None
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_unop_integrate(flag):
+    """Is the integrate flag carried over"""
+
+    mdl = basic.Const1D()
+    mdl.integrate = flag
+
+    umdl = -mdl
+    with pytest.raises(AttributeError):
+        assert umdl.integrate == flag
+
+
+def test_aconstant_integrate():
+    """Do we have an integrate setting?
+
+    test_unop_integrate_unset and others use an
+    ArithmeticConstantModel (implicitly) because at the time of
+    writing it doesn't have an integrate setting. Make this a
+    regression test (it is not a priori a problem if it does change
+    behavior, we just want to know we have a test).
+
+    """
+
+    mdl = ArithmeticConstantModel(3.2)
+    with pytest.raises(AttributeError):
+        mdl.integrate
+
+
+def test_unop_integrate_unset():
+    """Is the integrate flag not set for an unary op model"""
+
+    # UnaryOpModel converts the constant to an
+    # ArithmeticConstantModel.
+    #
+    mdl = UnaryOpModel(4, np.negative, "-")
+
+    with pytest.raises(AttributeError):
+        mdl.integrate
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_binop_integrate_same(flag):
+    """Is the integrate flag carried over when the same"""
+
+    mdl1 = basic.Const1D()
+    mdl1.integrate = flag
+
+    mdl2 = basic.Const1D()
+    mdl2.integrate = flag
+
+    mdl = mdl1 + mdl2
+    with pytest.raises(AttributeError):
+        assert mdl.integrate == flag
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_binop_integrate_different(flag):
+    """Is the integrate flag not carried over when different"""
+
+    mdl1 = basic.Const1D()
+    mdl1.integrate = flag
+
+    mdl2 = basic.Const1D()
+    mdl2.integrate = not flag
+
+    mdl = mdl1 + mdl2
+    with pytest.raises(AttributeError):
+        mdl.integrate
+
+
+def test_binop_integrate_unset():
+    """Is the integrate flag not set for a binary op model"""
+
+    # The ArithmeticConstantModel, which the binary-op model casts
+    # the constant terms, has no integrate setting.
+    #
+    mdl = BinaryOpModel(4, 4, np.add, '+')
+    with pytest.raises(AttributeError):
+        mdl.integrate

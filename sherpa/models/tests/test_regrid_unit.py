@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,8 +25,9 @@ from numpy.testing import assert_allclose
 
 import pytest
 
-from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
-    ArithmeticFunctionModel, RegridWrappedModel
+from sherpa.models.model import Model, ArithmeticModel, BinaryOpModel, \
+    CompositeModel, ArithmeticConstantModel, ArithmeticFunctionModel, \
+    RegridWrappedModel, UnaryOpModel
 from sherpa.models.basic import Box1D, Const1D, Gauss1D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
@@ -147,7 +148,7 @@ def test_regrid1d_wrapping_name():
     #       incorrect. There is "prior art" here with PSF, ARF,
     #       and RMF models to look at.
     #
-    expected_name = 'regrid1d({})'.format(imodel_name)
+    expected_name = f'regrid1d({imodel_name})'
     assert mdl.name == expected_name
 
 
@@ -172,7 +173,7 @@ def test_regrid1d_wrapping_str():
     rmdl = ModelDomainRegridder1D(name='test')
     mdl = rmdl.apply_to(internal_model)
 
-    expected_name = 'test({})'.format(imodel_name)
+    expected_name = f'test({imodel_name})'
 
     # need to strip off the first line and replace it with
     # the new model name
@@ -389,7 +390,7 @@ def test_regrid1d_passes_through_the_grid():
 
     rmdl.grid = grid_expected
     store = imdl._calc_store
-    len(store) == 0
+    assert len(store) == 0
 
     y = mdl(grid_requested)
     assert len(y) == len(grid_requested)
@@ -828,15 +829,13 @@ class ReNormalizerModel1DInt(CompositeModel, ArithmeticModel):
     def wrapobj(obj):
         if isinstance(obj, ArithmeticModel):
             return obj
-        else:
-            return ArithmeticFunctionModel(obj)
+
+        return ArithmeticFunctionModel(obj)
 
     def __init__(self, model, wrapper):
         self.model = self.wrapobj(model)
         self.wrapper = wrapper
-        CompositeModel.__init__(self,
-                                "{}({})".format(self.wrapper.name,
-                                                self.model.name),
+        CompositeModel.__init__(self, f"{self.wrapper.name}({self.model.name})",
                                 (self.wrapper, self.model))
 
     def calc(self, p, *args, **kwargs):
@@ -1195,3 +1194,220 @@ def test_evaluationspace1d_zeros_like_point():
 def test_evaluationspace1d_zeros_like_integrated():
 
     assert EvaluationSpace1D([3, 2, -1], [2, 1, -3]).zeros_like() == pytest.approx([0, 0, 0])
+
+
+def test_regrid_unop_no_regrid():
+    """Check we can't regrid a model with no regrid"""
+
+    mdl = ArithmeticConstantModel(4)
+    umdl = UnaryOpModel(mdl, np.negative, '-')
+
+    x = np.linspace(1.1, 1.9, 8)
+    with pytest.raises(AttributeError,
+                       match="'UnaryOpModel' object has no attribute 'regrid'"):
+        umdl.regrid(x)
+
+
+def test_regrid_unop():
+    """Test regridding a unary-op model"""
+
+    mdl = Gauss1D()
+    mdl.pos = 25
+    mdl.fwhm = 4
+    mdl.ampl = 10
+
+    umdl = -mdl
+
+    x = np.linspace(23, 27, 7)
+    grid = np.linspace(20, 30, 21)
+
+    with pytest.raises(AttributeError,
+                       match="'UnaryOpModel' object has no attribute 'regrid'"):
+        umdl.regrid(grid)
+
+
+def test_regrid_binop_arithmeticconstantmodel():
+    """If you have managed to create binop(constants) then regridded, does it work"""
+
+    grid = np.linspace(20, 30, 21)
+    orig = BinaryOpModel(4, 6, np.add, '+')
+
+    with pytest.raises(ModelErr) as exc:
+        orig.regrid(grid)
+
+    assert str(exc.value) == 'Neither component supports regrid method'
+
+
+def test_box1d_point():
+    """This model is used in several tests so check it out"""
+
+    cpt = Box1D()
+    cpt.xlow = 130
+    cpt.xhi = 189
+
+    mdl = cpt
+    exp = np.asarray([0, 0, 1, 1, 1, 1, 1])
+
+    xgrid = np.arange(105, 195, 13)
+    assert mdl(xgrid) == pytest.approx(exp)
+
+    xbase = np.arange(100, 200, 10)
+    rmdl = mdl.regrid(xbase)
+    assert rmdl(xgrid) == pytest.approx(exp)
+
+
+def test_constant_box1d_point():
+    """Check 3 + mdl"""
+
+    cpt = Box1D()
+    cpt.xlow = 130
+    cpt.xhi = 189
+
+    mdl = 3 + cpt
+
+    exp = 3 + np.asarray([0, 0, 1, 1, 1, 1, 1])
+
+    xgrid = np.arange(105, 195, 13)
+    assert mdl(xgrid) == pytest.approx(exp)
+
+    xbase = np.arange(100, 200, 10)
+    rmdl = mdl.regrid(xbase)
+    assert rmdl(xgrid) == pytest.approx(exp)
+
+
+def test_box1d_bin():
+    """This model is used in several tests so check it out"""
+
+    cpt = Box1D()
+    cpt.xlow = 130
+    cpt.xhi = 189
+
+    mdl = cpt
+    exp = np.asarray([0, 1, 13, 13, 13, 13])
+
+    # Ideally this would be exp, but it's not quite
+    exp2 = np.asarray([0, 1, 13, 13, 13, 12.7])
+
+    xgrid = np.arange(105, 195, 13)
+    xg1 = xgrid[:-1]
+    xg2 = xgrid[1:]
+    assert mdl(xg1, xg2) == pytest.approx(exp)
+
+    xbase = np.arange(100, 200, 10)
+    rmdl = mdl.regrid(xbase[:-1], xbase[1:])
+    assert rmdl(xg1, xg2) == pytest.approx(exp2)
+
+
+def test_constant_box1d_bin():
+    """Check 3 + mdl"""
+
+    cpt = Box1D()
+    cpt.xlow = 130
+    cpt.xhi = 189
+
+    mdl = 3 + cpt
+
+    # What is the correct value here? That is, what do
+    # we expect the "integrated" version of the constant
+    # to be? It should just be 3 (i.e. it doesn't care about
+    # the bin width), but once we start rebinning things it
+    # gets complicated.
+    #
+    exp = 3 + np.asarray([0, 1, 13, 13, 13, 13])
+
+    # Just report the current value
+    exp2 = 3.9 + np.asarray([0, 1, 13, 13, 13, 12.7])
+
+    xgrid = np.arange(105, 195, 13)
+    xg1 = xgrid[:-1]
+    xg2 = xgrid[1:]
+    assert mdl(xg1, xg2) == pytest.approx(exp)
+
+    xbase = np.arange(100, 200, 10)
+    rmdl = mdl.regrid(xbase[:-1], xbase[1:])
+    assert rmdl(xg1, xg2) == pytest.approx(exp2)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("integrate", [True, False])
+def test_deep_binop_points(integrate):
+    """Can we handle a "deep" binop tree?
+
+    (2 * model) / (3 + model)
+
+    We evaluate it on a set of points, not a grid,
+    so the integration setting doesn't matter.
+    """
+
+    yexp = np.asarray([0, 2/3, 0.5, 0.5, 0.5, 0, 0])
+
+    xbase = np.arange(100, 200, 10)
+    xgrid = np.arange(105, 195, 13)
+
+    m1 = Box1D('m1')
+    m2 = Box1D('m2')
+    m1.xlow = 110
+    m1.xhi = 160
+    m2.xlow = 130
+    m2.xhi = 189
+
+    m1.integrate = integrate
+    m2.integrate = integrate
+
+    mdl = (2 * m1) / (3 + m2)
+    regrid = mdl.regrid(xbase)
+
+    ym = mdl(xgrid)
+    assert ym == pytest.approx(yexp)
+
+    yr = regrid(xgrid)
+    assert yr == pytest.approx(ym)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("integrate,yexp,yexp2",
+                         [(True,
+                           [16/3, 26/4, 26/16, 26/16, 6/16, 0, 0],
+                           [40/7.5, 8.15384615, 2, 2, 0.46153846, 0, 0]
+                         ),
+                          (False,
+                           [0, 2/3, 0.5, 0.5, 0.5, 0, 0],
+                           [4/7.5, 0.85, 0.65, 0.65, 0.65, 0, 0]
+                          )])
+def test_deep_binop_bins(integrate, yexp, yexp2):
+    """Can we handle a "deep" binop tree?
+
+    (2 * model) / (3 + model)
+
+    We evaluate it on bins (lo,hi) so the integration
+    setting does matter here.
+
+    We have to give separate "expected" results for the
+    un-regridded and regridded models as they are not close
+    enough to use the same values.
+    """
+
+    yexp = np.asarray(yexp)
+    yexp2 = np.asarray(yexp2)
+
+    xbase = np.arange(100, 200 + 10, 10)
+    xgrid = np.arange(105, 195 + 13, 13)
+
+    m1 = Box1D('m1')
+    m2 = Box1D('m2')
+    m1.xlow = 110
+    m1.xhi = 160
+    m2.xlow = 130
+    m2.xhi = 189
+
+    m1.integrate = integrate
+    m2.integrate = integrate
+
+    mdl = (2 * m1) / (3 + m2)
+    regrid = mdl.regrid(xbase[:-1], xbase[1:])
+
+    ym = mdl(xgrid[:-1], xgrid[1:])
+    assert ym == pytest.approx(yexp)
+
+    yr = regrid(xgrid[:-1], xgrid[1:])
+    assert yr == pytest.approx(yexp2)
