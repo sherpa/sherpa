@@ -801,7 +801,7 @@ def test_multi_show_data(clean_astro_ui):
 
 
 def test_multi_show_bkg(clean_astro_ui):
-    """Should this fall over because we have no data?
+    """This used to fail because of #1645
     """
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3])
@@ -812,9 +812,17 @@ def test_multi_show_bkg(clean_astro_ui):
     ui.set_bkg(7, bkg)
 
     out = StringIO()
-    with pytest.raises(IdentifierErr,
-                       match="background data set 1 in PHA data set pha has not been set"):
-        ui.show_bkg(outfile=out)
+    ui.show_bkg(outfile=out)
+
+    msg = out.getvalue().split('\n\n')
+
+    # We do not do a full check, just enough to check the data is
+    # what we expect.
+    #
+    assert len(msg) == 2
+
+    assert msg[0].startswith("Background Data Set: 7:1\nFilter: 1-3 Channel\n")
+    assert msg[1] == "\n"
 
 
 def test_multi_show_bkg_explicit(clean_astro_ui):
