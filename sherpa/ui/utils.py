@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -335,12 +335,13 @@ copy_reg.pickle(numpy.ufunc, reduce_ufunc)
 class ModelWrapper(NoNewAttributesAfterInit):
     """Wrap up a model class so we can create instances easily.
 
-    The created instances can be used in a "model language" to create
-    complex expressions. If mdl1 and mdl2 have been created by
-    ModelWrapper then a user can say mdl1.n1 + mdl2.n2 to create model
-    instances named n1 and n2 and then return the expression which
-    represents their sum. Note that the model component is stored in
-    the session object.
+    Creates a model instance with a given name - you can say mdl.mname
+    or mdl("mname") - and either syntax stores the model instance in
+    the session object with the name "mname", over-writing any
+    previous component with this name.  If mdl1 and mdl2 have been
+    created by ModelWrapper then a user can say mdl1.n1 + mdl2.n2 to
+    create model instances named n1 and n2 and then return the
+    expression which represents their sum.
 
     """
 
@@ -349,10 +350,10 @@ class ModelWrapper(NoNewAttributesAfterInit):
         # sherpa.utils.err exceptions.
         #
         if not isinstance(session, Session):
-            raise ValueError("session is not a Session instance")
+            raise ValueError(f"session={session} is not a Session instance")
 
         if not _is_subclass(modeltype, Model):
-            raise ValueError("modeltype is not a Model instance")
+            raise ValueError(f"modeltype={modeltype} is not a Model class")
 
         self._session = session
         self.modeltype = modeltype

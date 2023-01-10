@@ -1114,7 +1114,7 @@ def test_set_default_id_check_invalid(value):
 class ModelWithDoc(Model):
     """This has a doc string
 
-    But we don't grab this.
+    This line is not included in the model-wrapped doc string.
     """
 
     _hidden = False
@@ -1138,7 +1138,7 @@ def test_modelwrapper_checks_session():
     """Check we error out"""
 
     with pytest.raises(ValueError,
-                       match="session is not a Session instance"):
+                       match="session=.* is not a Session instance"):
         ModelWrapper(ModelWithDoc, None)
 
 
@@ -1147,7 +1147,7 @@ def test_modelwrapper_checks_model():
 
     s = Session()
     with pytest.raises(ValueError,
-                       match="modeltype is not a Model instance"):
+                       match="modeltype=Gauss1D is not a Model class"):
         ModelWrapper(s, "Gauss1D")
 
 
@@ -1156,7 +1156,7 @@ def test_modelwrapper_str_with_doc():
 
     s = Session()
     wrap = ModelWrapper(s, ModelWithDoc)
-    assert str(wrap) == "This has a doc string\n\n    But we don't grab this.\n    "
+    assert str(wrap) == "This has a doc string\n\n    This line is not included in the model-wrapped doc string.\n    "
 
 
 def test_modelwrapper_str_no_doc():
