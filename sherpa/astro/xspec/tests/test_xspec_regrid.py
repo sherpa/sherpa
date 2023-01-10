@@ -30,6 +30,8 @@ is to check sepcialized behavior with the XSPEC models.
 
 """
 
+import warnings
+
 import numpy as np
 import pytest
 
@@ -82,11 +84,9 @@ def test_regrid_does_not_require_bins(mname, xsmodel):
 
     emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
     with pytest.warns(FutureWarning, match=emsg):
-        with pytest.raises(TypeError) as exc:
+        with pytest.raises(TypeError,
+                           match=r"\(\) takes no keyword arguments$"):
             regrid([0.4, 0.5, 0.6])
-
-    # assert str(exc.value) == 'calc() requires pars,lo,hi arguments, sent 2 arguments'
-    assert str(exc.value).endswith('() takes no keyword arguments')
 
 
 @requires_data
@@ -150,6 +150,27 @@ def test_regrid_identity_combined():
     y1 = 100 * mdl(elo, ehi)
     y2 = 100 * regrid(elo, ehi)
     assert y2 == pytest.approx(y1)
+
+
+@requires_xspec
+@pytest.mark.parametrize("mname", ["wabs", "powerlaw"])
+def test_regrid_send_point_axis(mname, xsmodel):
+    """When we evaluate the regrid model, do we care about point vs integrated?
+
+    This is a regression test (i.e. check what the code currently does).
+    """
+
+    ebase = np.arange(1.1, 1.5, 0.01)
+    egrid = np.arange(1.1, 1.5, 0.05)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    mdl = xsmodel(mname, "base")
+    regrid = mdl.regrid(ebase)
+
+    with pytest.raises(ModelErr,
+                       match="^A non-integrated grid is required for model evaluation"):
+        regrid(elo, ehi)
 
 
 @pytest.mark.xfail
@@ -477,13 +498,15 @@ def test_sherpa_add_xspec_mul(sherpa_first):
 @requires_data
 @requires_fits
 @requires_xspec
-@pytest.mark.parametrize('name,iflag,tol',
-                         [('xspec-tablemodel-RCS.mod', True, 1e-6),
-                          pytest.param('testpcfabs.mod', False, 1e-3, marks=pytest.mark.xfail)])
-def test_regrid_table(name, iflag, tol, make_data_path):
+@pytest.mark.parametrize('name,iflag,tol,warn',
+                         [('xspec-tablemodel-RCS.mod', True, 1e-6, False),
+                          ('testpcfabs.mod', False, 9e-3, True)])
+def test_regrid_table(name, iflag, tol, warn, make_data_path):
     """Can we regrid a table model?
 
-    We test out both additive and multiplicative models.
+    We test out both additive and multiplicative models. The tolerance
+    for the multiplicative case is quite large.
+
     """
 
     from sherpa.astro import xspec as xs
@@ -503,7 +526,21 @@ def test_regrid_table(name, iflag, tol, make_data_path):
 
     ebase = np.arange(0.45, 1.55, 0.05)
     rtbl = tbl.regrid(ebase[:-1], ebase[1:])
-    y = rtbl(eg1, eg2)
+
+    # I do not know why we get the warning about using a single grid
+    # here (only for the multiplicative case).
+    #
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+
+        y = rtbl(eg1, eg2)
+
+    if warn:
+        assert len(ws) == 1
+        assert ws[0].category == FutureWarning
+        assert str(ws[0].message) == "calc() requires pars,lo,hi arguments, sent 2 arguments"
+    else:
+        assert len(ws) == 0
 
     assert y == pytest.approx(exp, rel=tol)
 
