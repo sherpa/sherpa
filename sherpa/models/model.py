@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -499,7 +499,7 @@ class Model(NoNewAttributesAfterInit):
         NoNewAttributesAfterInit.__init__(self)
 
     def __repr__(self):
-        return "<%s model instance '%s'>" % (type(self).__name__, self.name)
+        return f"<{type(self).__name__} model instance '{self.name}'>"
 
     def __str__(self):
         s = self.name
@@ -512,6 +512,7 @@ class Model(NoNewAttributesAfterInit):
         for p in self.pars:
             if p.hidden:
                 continue
+
             if p.link is not None:
                 tp = 'linked'
             elif p.frozen:
@@ -519,13 +520,15 @@ class Model(NoNewAttributesAfterInit):
             else:
                 tp = 'thawed'
 
+            s += f'\n   {p.fullname:<12s} {tp:<6s} {p.val:12g} '
             if tp == 'linked':
-                linkstr = 'expr: %s' % p.link.fullname
-                s += ('\n   %-12s %-6s %12g %24s %10s' %
-                      (p.fullname, tp, p.val, linkstr, p.units))
+                linkstr = f'expr: {p.link.fullname}'
+                s += f'{linkstr:>24s}'
             else:
-                s += ('\n   %-12s %-6s %12g %12g %12g %10s' %
-                      (p.fullname, tp, p.val, p.min, p.max, p.units))
+                s += f'{p.min:12g} {p.max:12g}'
+
+            s += f" {p.units:>10s}"
+
         return s
 
     def _repr_html_(self):
@@ -549,9 +552,8 @@ class Model(NoNewAttributesAfterInit):
         lowered_name = name.lower()
 
         def warn(oname, nname):
-            wmsg = 'Parameter name {} is deprecated'.format(oname) + \
-                ' for model {}, '.format(type(self).__name__) + \
-                'use {} instead'.format(nname)
+            wmsg = f'Parameter name {oname} is deprecated for model ' + \
+                f'{type(self).__name__}, use {nname} instead'
             warnings.warn(wmsg, DeprecationWarning)
 
         parameter = self._par_index.get(lowered_name)
@@ -666,12 +668,12 @@ class Model(NoNewAttributesAfterInit):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.val = p.min
-                warning(('value of parameter %s is below minimum; ' +
-                         'setting to minimum') % p.fullname)
+                warning('value of parameter %s is below minimum; '
+                        'setting to minimum', p.fullname)
             elif v > p.hard_max:
                 p.val = p.max
-                warning(('value of parameter %s is above maximum; ' +
-                         'setting to maximum') % p.fullname)
+                warning('value of parameter %s is above maximum; '
+                        'setting to maximum', p.fullname)
             else:
                 p._val = v
 
@@ -699,14 +701,14 @@ class Model(NoNewAttributesAfterInit):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.min = p.hard_min
-                warning(('value of parameter %s minimum is below ' +
-                         'hard minimum; ' +
-                         'setting to hard minimum') % p.fullname)
+                warning('value of parameter %s minimum is below '
+                        'hard minimum; setting to hard minimum',
+                        p.fullname)
             elif v > p.hard_max:
                 p.min = p.hard_max
-                warning(('value of parameter %s minimum is above ' +
-                         'hard maximum; ' +
-                         'setting to hard maximum') % p.fullname)
+                warning('value of parameter %s minimum is above '
+                        'hard maximum; setting to hard maximum',
+                        p.fullname)
             else:
                 p._min = v
 
@@ -735,14 +737,14 @@ class Model(NoNewAttributesAfterInit):
             v = SherpaFloat(v)
             if v < p.hard_min:
                 p.max = p.hard_min
-                warning(('value of parameter %s maximum is below ' +
-                         'hard minimum; ' +
-                         'setting to hard minimum') % p.fullname)
+                warning('value of parameter %s maximum is below '
+                        'hard minimum; setting to hard minimum',
+                        p.fullname)
             elif v > p.hard_max:
                 p.max = p.hard_max
-                warning(('value of parameter %s maximum is above ' +
-                         'hard maximum; ' +
-                         'setting to hard maximum') % p.fullname)
+                warning('value of parameter %s maximum is above '
+                        'hard maximum; setting to hard maximum',
+                        p.fullname)
             else:
                 p._max = v
 
@@ -870,8 +872,8 @@ class CompositeModel(Model):
                     model_with_dim = part
                 elif self.ndim != ndim:
                     raise ModelErr('Models do not match: ' +
-                                   '{}D ({}) and '.format(self.ndim, model_with_dim.name) +
-                                   '{}D ({})'.format(ndim, part.name))
+                                   f'{self.ndim}D ({model_with_dim.name}) and ' +
+                                   f'{ndim}D ({part.name})')
 
             for p in part.pars:
                 if p in allpars:
@@ -901,8 +903,8 @@ class CompositeModel(Model):
 
         for p in self.parts:
             # A CompositeModel should not hold a reference to itself
-            assert (p is not self), (("'%s' object holds a reference to " +
-                                      "itself") % type(self).__name__)
+            assert (p is not self), f"'{type(self).__name__}' " + \
+                "object holds a reference to itself"
 
             # Including itself seems a bit strange if it's a CompositeModel
             # but is used by sherpa.astro.instrument.has_pha_instance (and
@@ -1026,8 +1028,8 @@ class ArithmeticConstantModel(Model):
             if numpy.isscalar(val):
                 name = str(val)
             else:
-                name = '{}[{}]'.format(val.dtype.name,
-                                       ','.join([str(s) for s in val.shape]))
+                nstr = ','.join([str(s) for s in val.shape])
+                name = f'{val.dtype.name}[{nstr}]'
 
         self.name = name
         self.val = val
@@ -1257,7 +1259,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
-        CompositeModel.__init__(self, ('%s(%s)' % (opstr, self.arg.name)),
+        CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
 
     def calc(self, p, *args, **kwargs):
@@ -1313,8 +1315,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.opstr = opstr
 
         CompositeModel.__init__(self,
-                                ('(%s %s %s)' %
-                                 (self.lhs.name, opstr, self.rhs.name)),
+                                f'({self.lhs.name} {opstr} {self.rhs.name})',
                                 (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
@@ -1342,10 +1343,10 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         rhs = self.rhs.calc(p[nlhs:], *args, **kwargs)
         try:
             val = self.op(lhs, rhs)
-        except ValueError:
-            raise ValueError("shape mismatch between '%s: %i' and '%s: %i'" %
-                             (type(self.lhs).__name__, len(lhs),
-                              type(self.rhs).__name__, len(rhs)))
+        except ValueError as ve:
+            raise ValueError("shape mismatch between " +
+                             f"'{type(self.lhs).__name__}: {len(lhs)}' and " +
+                             f"'{type(self.rhs).__name__}: {len(rhs)}'") from ve
         return val
 
 
@@ -1382,7 +1383,7 @@ class FilterModel(CompositeModel, ArithmeticModel):
         if filter.stop is not None:
             s += str(filter.stop)
         if filter.step is not None:
-            s += ':%s' % filter.step
+            s += f':{filter.step}'
 
         return s
 
@@ -1460,9 +1461,7 @@ class NestedModel(CompositeModel, ArithmeticModel):
         self.inner = self.wrapobj(inner)
         self.otherargs = otherargs
         self.otherkwargs = otherkwargs
-        CompositeModel.__init__(self,
-                                ('%s(%s)' %
-                                 (self.outer.name, self.inner.name)),
+        CompositeModel.__init__(self, f'{self.outer.name}({self.inner.name})',
                                 (self.outer, self.inner))
 
     def startup(self, cache=False):
@@ -1512,8 +1511,7 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
             self.wrapper.integrate = model.integrate
 
         CompositeModel.__init__(self,
-                                "{}({})".format(self.wrapper.name,
-                                                self.model.name),
+                                f"{self.wrapper.name}({self.model.name})",
                                 (self.model, ))
 
     def calc(self, p, *args, **kwargs):
@@ -1606,12 +1604,13 @@ def html_model(mdl):
             nrows.append(this_comp_nrows)
 
     out = '<table class="model">'
-    out += '<caption>Expression: {}</caption>'.format(formatting.clean_bracket(mdl.name))
+    expr = formatting.clean_bracket(mdl.name)
+    out += f'<caption>Expression: {expr}</caption>'
     out += '<thead><tr>'
     cols = ['Component', 'Parameter', 'Thawed', 'Value',
             'Min', 'Max', 'Units']
     for col in cols:
-        out += '<th>{}</th>'.format(col)
+        out += f'<th>{col}</th>'
 
     out += '</tr></thead><tbody>'
 
@@ -1624,15 +1623,15 @@ def html_model(mdl):
 
             def addtd(val):
                 "Use the parameter to convert to HTML"
-                return '<td>{}</td>'.format(par._val_to_html(val))
+                return f'<td>{par._val_to_html(val)}</td>'
 
-            out += '<tr{}>'.format(style)
-            if i ==0 :
+            out += f'<tr{style}>'
+            if i == 0:
                 cls = "model-" + ("even" if mcount % 2 == 1 else "odd")
-                out += '<th class="{}" scope="rowgroup" '.format(cls)
-                out += 'rowspan={}>{}</th>'.format(n, comp.name)
+                out += f'<th class="{cls}" scope="rowgroup" '
+                out += f'rowspan={n}>{comp.name}</th>'
 
-            out += '<td>{}</td>'.format(par.name)
+            out += f'<td>{par.name}</td>'
 
             if par.link is not None:
                 out += "<td>linked</td>"
@@ -1648,12 +1647,13 @@ def html_model(mdl):
                 # 8592 is single left arrow
                 # 8656 is double left arrow
                 #
-                out += '<td colspan=2>&#8656; {}</td>'.format(formatting.clean_bracket(par.link.fullname))
+                linkstr = formatting.clean_bracket(par.link.fullname)
+                out += f'<td colspan=2>&#8656; {linkstr}</td>'
             else:
                 out += addtd(par.min)
                 out += addtd(par.max)
 
-            out += '<td>{}</td>'.format(par._units_to_html())
+            out += f'<td>{par._units_to_html()}</td>'
             out += '</tr>'
 
     out += '</tbody></table>'
