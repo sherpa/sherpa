@@ -3185,7 +3185,7 @@ def check_text_output(path, header, coldata):
     # possible to access this so we hard code the knowledge here. If
     # we ever get another I/O backend we need to revisit this. It also
     # assumes that if crates is available then it is in use, which
-    # is technically incorrect but should pass for out tests.
+    # is technically incorrect but should pass for our tests.
     #
     if has_package_from_list("pycrates"):
         expected = f"#TEXT/SIMPLE\n# {header}\n"
