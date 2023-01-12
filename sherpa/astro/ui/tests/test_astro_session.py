@@ -2538,6 +2538,39 @@ def check_output(expected, got):
     assert len(toks) == len(expected)
 
 
+def check_save_ascii2d(session, expected, out, savefunc, idval, kwargs):
+    """Checking the output is tricky.
+
+    If crates is in use with the AstroSession backend then the call
+    will fail as we don't allow ASCII images to be written out. Why,
+    I don't know. So catch this so we can see if it ever changes.
+
+    The assumption is that if pycrates is available it is being used
+    in the test. This is not 100% correct in general, but should be
+    good enough for the test.
+
+    """
+
+    if session == AstroSession and has_package_from_list("pycrates"):
+        if idval is None:
+            with pytest.raises(IOErr,
+                               match="writing images in ASCII is not supported"):
+                savefunc(str(out), **kwargs)
+        else:
+            with pytest.raises(IOErr,
+                               match="writing images in ASCII is not supported"):
+                savefunc(idval, str(out), **kwargs)
+
+        return
+
+    if idval is None:
+        savefunc(str(out), **kwargs)
+    else:
+        savefunc(idval, str(out), **kwargs)
+
+    check_output(expected, out.read_text())
+
+
 @pytest.mark.parametrize("session,kwargs,expected",
                          [(Session, {"comment": "!! "}, ["!! SOURCE", "7 11", ""]),
                           (AstroSession, {"ascii": True}, ["7", "11", ""])])
@@ -2562,12 +2595,7 @@ def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, sk
     s.set_source(idval, mdl)
 
     out = tmp_path / "created.dat"
-    if idval is None:
-        s.save_source(str(out), **kwargs)
-    else:
-        s.save_source(idval, str(out), **kwargs)
-
-    check_output(expected, out.read_text())
+    check_save_ascii2d(session, expected, out, s.save_source, idval, kwargs)
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
@@ -2594,12 +2622,7 @@ def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, ski
     s.set_source(idval, mdl)
 
     out = tmp_path / "created.dat"
-    if idval is None:
-        s.save_model(str(out), **kwargs)
-    else:
-        s.save_model(idval, str(out), **kwargs)
-
-    check_output(expected, out.read_text())
+    check_save_ascii2d(session, expected, out, s.save_model, idval, kwargs)
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
@@ -2623,12 +2646,7 @@ def test_save_resid_ascii_data2d(session, kwargs, expected, idval, tmp_path, ski
     s.set_source(idval, mdl)
 
     out = tmp_path / "created.dat"
-    if idval is None:
-        s.save_resid(str(out), **kwargs)
-    else:
-        s.save_resid(idval, str(out), **kwargs)
-
-    check_output(expected, out.read_text())
+    check_save_ascii2d(session, expected, out, s.save_resid, idval, kwargs)
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
@@ -3157,6 +3175,29 @@ def test_get_conf_opt_none(session):
     assert not out["fast"]
 
 
+def check_text_output(path, header, coldata):
+    """The output format for the various backends is subtly different.
+
+    path is the pathlib object representing the file
+    """
+
+    # This requires knowledge of requires_fits, but we don't make it
+    # possible to access this so we hard code the knowledge here. If
+    # we ever get another I/O backend we need to revisit this. It also
+    # assumes that if crates is available then it is in use, which
+    # is technically incorrect but should pass for our tests.
+    #
+    if has_package_from_list("pycrates"):
+        expected = f"#TEXT/SIMPLE\n# {header}\n"
+    elif has_package_from_list("astropy.io.fits"):
+        expected = f"#{header}\n"
+    else:
+        assert False, "Unknown I/O backend"
+
+    expected += coldata
+    assert path.read_text() == expected
+
+
 @requires_fits
 @pytest.mark.parametrize("idval", [None, 1])
 def test_save_filter_astro(idval, tmp_path):
@@ -3172,7 +3213,7 @@ def test_save_filter_astro(idval, tmp_path):
     else:
         s.save_filter(idval, str(outfile))
 
-    assert outfile.read_text() == "#X FILTER\n1 1\n2 0\n3 1\n"
+    check_text_output(outfile, "X FILTER", "1 1\n2 0\n3 1\n")
 
 
 @requires_fits
@@ -3190,7 +3231,7 @@ def test_save_grouping(idval, tmp_path):
     else:
         s.save_grouping(idval, str(outfile))
 
-    assert outfile.read_text() == "#CHANNEL GROUPS\n1 1\n2 -1\n3 1\n"
+    check_text_output(outfile, "CHANNEL GROUPS", "1 1\n2 -1\n3 1\n")
 
 
 @requires_fits
@@ -3208,7 +3249,7 @@ def test_save_quality(idval, tmp_path):
     else:
         s.save_quality(idval, str(outfile))
 
-    assert outfile.read_text() == "#CHANNEL QUALITY\n1 0\n2 2\n3 0\n"
+    check_text_output(outfile, "CHANNEL QUALITY", "1 0\n2 2\n3 0\n")
 
 
 @requires_fits
@@ -3226,7 +3267,7 @@ def test_save_table(idval, tmp_path):
     else:
         s.save_table(idval, str(outfile), ascii=True)
 
-    assert outfile.read_text() == "#CHANNEL COUNTS QUALITY\n1 12 0\n2 15 2\n3 2 0\n"
+    check_text_output(outfile, "CHANNEL COUNTS QUALITY", "1 12 0\n2 15 2\n3 2 0\n")
 
 
 def test_save_all_not_in_session():
@@ -3404,12 +3445,16 @@ def test_do_not_fold_all_models(session, tmp_path, skip_if_no_io):
 
     """
 
+    # In #1662 when the test was added the comment character was '!' and
+    # not '#', but that causes issues with the pycrates backend, so it
+    # was changed as it is not an important part of the test.
+    #
     tblfile = tmp_path / "tbl.dat"
-    tblfile.write_text("!Y\n10\n5\n2\n1\n")
+    tblfile.write_text("#Y\n10\n5\n2\n1\n")
 
     s = session()
-    s.load_table_model("tbl1", str(tblfile), comment="!", ncols=1)
-    s.load_table_model("tbl2", str(tblfile), comment="!", ncols=1)
+    s.load_table_model("tbl1", str(tblfile), comment="#", ncols=1)
+    s.load_table_model("tbl2", str(tblfile), comment="#", ncols=1)
 
     tbl1 = s.get_model_component("tbl1")
     tbl2 = s.get_model_component("tbl2")
