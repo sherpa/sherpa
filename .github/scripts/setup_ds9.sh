@@ -10,7 +10,7 @@ then
 fi
 
 if [ "`uname -s`" == "Darwin" ] ; then
-    ds9_os=darwinmojave
+    ds9_os=darwinbigsurx86
 else
     echo "* installing dev environment"
 
