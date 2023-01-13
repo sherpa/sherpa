@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,6 +33,7 @@ import numpy
 from sherpa import get_config
 import sherpa.all
 from sherpa.models.basic import TableModel
+from sherpa.models.model import Model
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -332,19 +333,86 @@ copy_reg.pickle(numpy.ufunc, reduce_ufunc)
 
 
 class ModelWrapper(NoNewAttributesAfterInit):
+    """Wrap up a model class so we can create instances easily.
 
-    def __init__(self, session, modeltype, args=(), kwargs={}):
+    Creates a model instance with a given name - you can say mdl.mname
+    or mdl("mname") - and either syntax stores the model instance in
+    the session object with the name "mname", over-writing any
+    previous component with this name.  If mdl1 and mdl2 have been
+    created by ModelWrapper then a user can say mdl1.n1 + mdl2.n2 to
+    create model instances named n1 and n2 and then return the
+    expression which represents their sum.
+
+    """
+
+    def __init__(self, session, modeltype, args=(), kwargs=None):
+        # This is an internal class so do not bother with
+        # sherpa.utils.err exceptions.
+        #
+        if not isinstance(session, Session):
+            raise ValueError(f"session={session} is not a Session instance")
+
+        if not _is_subclass(modeltype, Model):
+            raise ValueError(f"modeltype={modeltype} is not a Model class")
+
         self._session = session
         self.modeltype = modeltype
         self.args = args
-        self.kwargs = kwargs
+        self.kwargs = kwargs if kwargs else {}
+
+        # Edit the docstring of the new object to hide the
+        # ModelWrapper text and replace it with a reference to the
+        # wrapped class.
+        #
+        mname = modeltype.__name__.lower()
+        prefix = "an" if mname[0] in "aeiou" else "a"
+
+        # Grab the first line of the model description. It might be
+        # helpful to also list the parameters but this is not easy to
+        # access without actually creating an instance of the model.
+        #
+        if modeltype.__doc__ is None:
+            mdesc = ""
+        else:
+            # Could try to ensure this is a sentence - e.g. ends in a
+            # "." - but rely on the documentation of the model classes
+            # to enforce that.
+            #
+            mdesc = modeltype.__doc__.split("\n")[0]
+            mdesc += "\n\n    "
+
+        self.__doc__ = f"""Create {prefix} {mname} model instance.
+
+    {mdesc}Instances can be created either as an attribute of {mname},
+    as long as the attribute does not begin with an underscore,
+    or by calling {mname} directly.
+
+    Examples
+    --------
+
+    The model, here called mdl, is returned but it's also stored in
+    the session and can be returned with `get_model_component`:
+
+    >>> m1 = {mname}.mdl
+
+    If the model has already been created with the same name then
+    the old version will be returned, rather than creating a new
+    instance:
+
+    >>> m1 = {mname}.mdl
+    >>> m2 = {mname}("mdl")
+    >>> m1 == m2
+    True
+
+"""
+
         NoNewAttributesAfterInit.__init__(self)
 
     def __call__(self, name):
         _check_str_type(name, "name")
 
         m = self._session._get_model_component(name)
-        if (m is not None) and isinstance(m, self.modeltype):
+        if isinstance(m, self.modeltype):
             return m
 
         m = self.modeltype(name, *self.args, **self.kwargs)
@@ -353,16 +421,20 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
     def __getattr__(self, name):
         if name.startswith('_'):
-            raise AttributeError("'%s\' object has no attribute '%s'" %
-                                 (type(self).__name__, name))
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+
         return self(name)
 
     def __repr__(self):
-        return '<%s model type>' % self.modeltype.__name__
+        return f'<{self.modeltype.__name__} model type>'
 
     def __str__(self):
         if self.modeltype.__doc__ is not None:
+            # Use the documentation from wrapped model if available,
+            # rather than a normal "repr" call.
+            #
             return self.modeltype.__doc__
+
         return self.__repr__()
 
 
