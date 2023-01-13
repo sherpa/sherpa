@@ -10,7 +10,7 @@ then
 fi
 
 if [ "`uname -s`" == "Darwin" ] ; then
-    ds9_os=darwinmojave
+    ds9_os=darwinbigsurx86
 else
     echo "* installing dev environment"
 
@@ -19,7 +19,7 @@ else
     sudo apt-get install -qq libx11-dev libsm-dev libxrender-dev
 
     # set os-specific variables
-    ds9_os=ubuntu18
+    ds9_os=ubuntu20
 fi
 
 echo "* ds9_os=$ds9_os"
@@ -33,7 +33,7 @@ download () {
 }
 
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.8.3.tar.gz
+ds9_tar=ds9.${ds9_os}.8.4.1.tar.gz
 xpa_tar=xpa.${ds9_os}.2.1.20.tar.gz
 
 # Fetch them
