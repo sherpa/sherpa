@@ -1,5 +1,6 @@
 // 
-//  Copyright (C) 2007, 2016, 2019, 2020 Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2016, 2019, 2020, 2023
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -447,26 +448,22 @@ PyMODINIT_FUNC PyInit_##name(void) { \
 
 // Allow this to be customized on a per-file basis
 
-#define MODSPEC(name, func) \
-  { (char*)#name, (PyCFunction)((PyCFunctionWithKeywords)func), \
-      METH_VARARGS|METH_KEYWORDS, NULL }
-
 #ifndef _MODELFCTPTR
 #define _MODELFCTPTR(name) \
   sherpa::models::name< SherpaFloat, SherpaFloatArray >
 #endif
 
 #define _MODELFCTSPEC(name, ftype, npars) \
-  MODSPEC(name, (sherpa::models::ftype< SherpaFloatArray, SherpaFloat, npars, \
-                                        _MODELFCTPTR(name##_point), \
-                                        _MODELFCTPTR(name##_integrated) >))
+  KWSPEC(name, (sherpa::models::ftype< SherpaFloatArray, SherpaFloat, npars, \
+                                       _MODELFCTPTR(name##_point), \
+                                       _MODELFCTPTR(name##_integrated) >))
 
 #define _MODELFCTSPEC_NOINT(name, ftype, intftype, npars) \
-  MODSPEC(name, \
-          (sherpa::models::ftype< SherpaFloatArray, SherpaFloat, npars, \
-                                  _MODELFCTPTR(name##_point), \
-                                  sherpa::models::intftype \
-                                    < _MODELFCTPTR(name##_point) > >))
+  KWSPEC(name, \
+         (sherpa::models::ftype< SherpaFloatArray, SherpaFloat, npars, \
+                                 _MODELFCTPTR(name##_point), \
+                                 sherpa::models::intftype \
+                                   < _MODELFCTPTR(name##_point) > >))
 
 #define MODELFCT1D(name, npars)		_MODELFCTSPEC(name, modelfct1d, npars)
 #define MODELFCT2D(name, npars)		_MODELFCTSPEC(name, modelfct2d, npars)

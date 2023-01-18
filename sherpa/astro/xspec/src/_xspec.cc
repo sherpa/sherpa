@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015-2018, 2019, 2020, 2021, 2022
+//  Copyright (C) 2007, 2015-2018, 2019, 2020, 2021, 2022, 2023
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -1295,10 +1295,10 @@ static PyMethodDef XSpecMethods[] = {
 
   // XSPEC table models
 #ifdef XSPEC_12_10_1
-  XSPECTABLEMODEL,
+  KWSPEC(tabint, sherpa::astro::xspec::xspectablemodel),
 #else
-  XSPECTABLEMODEL_NORM( xsatbl ),
-  XSPECTABLEMODEL( xsmtbl ),
+  KWSPEC(xsatbl, sherpa::astro::xspec::xspectablemodel<true, xsatbl>),
+  KWSPEC(xsmtbl, sherpa::astro::xspec::xspectablemodel<false, xsmtbl>),
 #endif
 
   // XSPEC convolution models
