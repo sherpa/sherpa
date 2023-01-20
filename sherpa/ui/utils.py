@@ -34,6 +34,7 @@ from sherpa import get_config
 import sherpa.all
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
+import sherpa.models.model
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -6023,7 +6024,7 @@ class Session(NoNewAttributesAfterInit):
         """
         # If user mistakenly passes an actual model reference,
         # just return the reference
-        if isinstance(name, sherpa.models.Model):
+        if isinstance(name, Model):
             return name
 
         _check_str_type(name, "name")
@@ -6097,7 +6098,7 @@ class Session(NoNewAttributesAfterInit):
         # If user mistakenly passes an actual model reference,
         # just return (i.e., create_model_component(const1d.c1)
         # is redundant, so just return)
-        if isinstance(typename, sherpa.models.Model) and name is None:
+        if isinstance(typename, Model) and name is None:
             return typename
 
         _check_str_type(typename, "typename")
@@ -6524,11 +6525,10 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        if _is_str(model):
-            model = self._eval_model_expression(model)
 
-        self._set_item(id, model, self._models, sherpa.models.Model, 'model',
-                       'a model object or model expression string')
+        model = self._check_model(model)
+        id = self._fix_id(id)
+        self._models[id] = model
         self._runparamprompt(model.pars)
 
     # DOC-TODO: the .cache value appears to default to 5
@@ -6650,23 +6650,14 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        if _is_str(model):
-            model = self._eval_model_expression(model)
 
-        # Check data and model dimensionality matches (catch here
-        # as it is the most likely place a mistake could happen, even
-        # though there are still ways a user could end up with a
-        # mis-matched model. This means we can not just use
-        # _set_item but have to do it manually.
-        #
-        _check_type(model, sherpa.models.Model, 'source model',
-                    'a model object or model expression string')
+        model = self._check_model(model)
+        id = self._fix_id(id)
 
         # Fit(data, model) does the dimensionality validation. Note
         # that we assume that any convolution-style model (e.g. a PSF
         # or a PHA response) does not change the dimensionality check.
         #
-        id = self._fix_id(id)
         data = self._data.get(id)
         if data is not None:
             sherpa.fit.Fit(data, model)
@@ -6722,9 +6713,29 @@ class Session(NoNewAttributesAfterInit):
         self._sources.pop(id, None)
 
     def _check_model(self, model):
+        """Return a Model instance.
+
+        Converts a string to the model instance if necessary.
+
+        Parameters
+        ----------
+        model : str or a sherpa.models.model.Model object
+
+        Returns
+        -------
+        model : sherpa.models.model.Model instance
+
+        Raises
+        ------
+        ArgumentTypeError
+            The argument is not a string or a model
+        ArgumentErr
+            The argument is a string but does not reference a model
+
+        """
         if _is_str(model):
             model = self._eval_model_expression(model)
-        _check_type(model, sherpa.models.Model, 'model',
+        _check_type(model, Model, 'model',
                     'a model object or model expression string')
         return model
 
@@ -10268,7 +10279,7 @@ class Session(NoNewAttributesAfterInit):
                 parlist.append(arg)
                 continue
 
-            if isinstance(arg, sherpa.models.Model):
+            if isinstance(arg, Model):
                 norig = len(parlist)
                 for par in arg.pars:
                     if not par.frozen:
