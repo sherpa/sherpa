@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -319,6 +319,7 @@ sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
 
 
 import functools
+import itertools
 import logging
 import warnings
 
@@ -1572,6 +1573,78 @@ def _wrapobj(obj, wrapper):
         return obj
 
     return wrapper(obj)
+
+
+# Simple model "deconstruction" - that is, turn a model expression
+# like "mdl1 * (mdl2 + mdl3)" into "mdl1 * mdl2" and "mdl1 * mdl3".
+#
+def model_deconstruct(model):
+    """Separate models into additive components.
+
+    Identify the separate "additive" components in the model
+    expression, that is the terms separated by addition or
+    subtraction. The resulting list can be summed together to
+    recreate the original model expression.
+
+    Parameters
+    ----------
+    model : Model instance
+       The model expression to separate.
+
+    Returns
+    -------
+    terms : list of Model instances
+       The separated terms (this list may contain a single
+       element).
+
+    Notes
+    -----
+
+    If the model includes a subtracted component, such as:
+
+        a - b
+
+    then the b component will be negated in the output. This negation
+    is applied directly rather than applied to any term combined with
+    it (such as "a * (b - c)", which will create terms
+
+        a * b
+        a * (-c)
+
+    Examples
+    --------
+
+    >>> from sherpa.models.basic import Box1D, Gauss1d
+    >>> b1 = Box1D("b1")
+    >>> g1 = Gaus1D("g1")
+    >>> g2 = Gauss1D("g2")
+    >>> model_deconstruct(b1)
+    [<Box1D model instance 'b1'>]
+    >>> model_deconstruct(b1 * (g1 + g2))
+    [<BinaryOpModel model instance '(b1 * g1)'>, <BinaryOpModel model instance '(b1 * g2)'>]
+    >>> model_deconstruct(b1 * (g1 - g2))
+    [<BinaryOpModel model instance '(b1 * g1)'>, <BinaryOpModel model instance '(b1 * -(g2))'>]
+
+    """
+
+    if not isinstance(model, BinaryOpModel):
+        return [model]
+
+    lhs = model_deconstruct(model.lhs)
+    rhs = model_deconstruct(model.rhs)
+
+    # We want to combine all the terms when this is not an "additive"
+    # term.
+    #
+    if model.op not in [numpy.add, numpy.subtract]:
+        return [BinaryOpModel(lterm, rterm, model.op, model.opstr)
+                for lterm, rterm in itertools.product(lhs, rhs)]
+
+    if model.op == numpy.subtract:
+        rhs = [-term for term in rhs]
+
+    lhs.extend(rhs)
+    return lhs
 
 
 # Notebook representation

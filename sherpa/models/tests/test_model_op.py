@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,7 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""Do the unary and binary operators work for models?"""
+"""Do the unary and binary operators work for models?
+
+Other tests related to model expressions are also made here.
+
+"""
 
 from functools import reduce
 import operator
@@ -28,7 +33,8 @@ import pytest
 
 from sherpa.astro.ui.utils import Session
 from sherpa.models import basic
-from sherpa.models.model import ArithmeticConstantModel, BinaryOpModel, UnaryOpModel
+from sherpa.models.model import ArithmeticConstantModel, BinaryOpModel, UnaryOpModel, \
+    model_deconstruct
 from sherpa.utils.err import ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
@@ -281,3 +287,90 @@ def test_load_table_model(make_data_path):
     s.load_table_model('tbl', make_data_path('double.dat'))
     tbl = s.get_model_component('tbl')
     assert tbl.ndim is None
+
+
+# Models for testing model_deconstruct.
+#
+# This would be one place where property testing would be useful,
+# since a set of random model combinations could be created and
+# then
+#    - evaluate the original
+#    - evaluate the components
+# and check the latter sums to the former.
+#
+BOX1 = basic.Box1D("b1")
+BOX2 = basic.Box1D("b2")
+GAUSS1 = basic.Gauss1D("g1")
+GAUSS2 = basic.Gauss1D("g2")
+
+
+@pytest.mark.parametrize("model,expecteds",
+                         [(BOX1, ["b1"]),
+                          # unary operator
+                          (-BOX1, ["-(b1)"]),
+                          (-(-BOX1), ["-(-(b1))"]),
+                          # binary operator of singletons
+                          (GAUSS1 + GAUSS2, ["g1", "g2"]),
+                          (GAUSS1 - GAUSS2, ["g1", "-(g2)"]),
+                          (GAUSS1 * GAUSS2, ["(g1 * g2)"]),
+                          (GAUSS1 / GAUSS2, ["(g1 / g2)"]),
+                          (GAUSS1 // GAUSS2, ["(g1 // g2)"]),
+                          # sneaky test with a constant
+                          (BOX1 + 2, ["b1", "2.0"]),
+                          (2 + BOX1, ["2.0", "b1"]),
+                          (BOX1 * 2, ["(b1 * 2.0)"]),
+                          (2 * BOX1, ["(2.0 * b1)"]),
+                          # more-complex binary operator, but still 1 term on one side
+                          #
+                          (BOX1 + (GAUSS1 + GAUSS2), ["b1", "g1", "g2"]),
+                          ((BOX1 + GAUSS1) + GAUSS2, ["b1", "g1", "g2"]),
+                          (BOX1 + (GAUSS1 * GAUSS2), ["b1", "(g1 * g2)"]),
+                          ((BOX1 + GAUSS1) * GAUSS2, ["(b1 * g2)", "(g1 * g2)"]),
+                          (BOX1 * (GAUSS1 + GAUSS2), ["(b1 * g1)", "(b1 * g2)"]),
+                          ((BOX1 * GAUSS1) + GAUSS2, ["(b1 * g1)", "g2"]),
+                          (BOX1 * (GAUSS1 * GAUSS2), ["(b1 * (g1 * g2))"]),
+                          ((BOX1 * GAUSS1) * GAUSS2, ["((b1 * g1) * g2)"]),
+                          # add in negation
+                          (BOX1 - (GAUSS1 + GAUSS2), ["b1", "-(g1)", "-(g2)"]),
+                          (BOX1 - (GAUSS1 * GAUSS2), ["b1", "-((g1 * g2))"]),
+                          ((BOX1 - GAUSS1) + GAUSS2, ["b1", "-(g1)", "g2"]),
+                          ((BOX1 * GAUSS1) - GAUSS2, ["(b1 * g1)", "-(g2)"]),
+                          # try combining binary operators
+                          # - addition
+                          ((BOX1 + BOX2) + (GAUSS1 + GAUSS2),
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + (BOX2 + GAUSS1) + GAUSS2,
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + ((BOX2 + GAUSS1) + GAUSS2),
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + (BOX2 + GAUSS1) + GAUSS2,
+                           ["b1", "b2", "g1", "g2"]),
+                          # - addition and multiplication
+                          ((BOX1 + BOX2) * (GAUSS1 + GAUSS2),
+                           ["(b1 * g1)", "(b1 * g2)", "(b2 * g1)", "(b2 * g2)"]),
+                          ((BOX1 - BOX2) * (GAUSS1 - GAUSS2),
+                           ["(b1 * g1)", "(b1 * -(g2))", "(-(b2) * g1)", "(-(b2) * -(g2))"]),
+                          ((BOX1 * BOX2) - (GAUSS1 * GAUSS2),
+                           ["(b1 * b2)", "-((g1 * g2))"]),
+                          # - more realistic options
+                          (BOX1 * (BOX2 * GAUSS1 + GAUSS2) * BOX1,
+                           ["((b1 * (b2 * g1)) * b1)", "((b1 * g2) * b1)"]),
+                          (BOX1 * (BOX2 * GAUSS1 - GAUSS2) + BOX1,
+                           ["(b1 * (b2 * g1))", "(b1 * -(g2))", "b1"]),
+                          (BOX1 * BOX2 * (GAUSS1 + BOX2 * GAUSS2),
+                           ["((b1 * b2) * g1)", "((b1 * b2) * (b2 * g2))"]),
+                          ((GAUSS1 + BOX2 * GAUSS2) * BOX1 * BOX2,
+                           ["((g1 * b1) * b2)", "(((b2 * g2) * b1) * b2)"])
+                          ])
+def test_model_deconstruct_name(model, expecteds):
+    """Check model deconstruction using the model name.
+
+    This uses a set of known models in the assumption we have
+    covered all the relevant code paths.
+
+    """
+
+    terms = model_deconstruct(model)
+    assert len(terms) == len(expecteds)
+    for term, expected in zip(terms, expecteds):
+        assert term.name == expected
