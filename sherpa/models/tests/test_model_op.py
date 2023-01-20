@@ -18,7 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""Do the unary and binary operators work for models?"""
+"""Do the unary and binary operators work for models?
+
+Other tests related to model expressions are also made here.
+
+"""
 
 from functools import reduce
 import operator
@@ -33,7 +37,8 @@ from sherpa.astro.ui.utils import Session
 from sherpa.instrument import PSFModel
 from sherpa.models import basic
 from sherpa.models.model import ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, UnaryOpModel, Model
+    ArithmeticFunctionModel, BinaryOpModel, UnaryOpModel, Model, \
+    model_deconstruct
 from sherpa.utils.err import ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
@@ -695,3 +700,268 @@ def test_explicit_numpy_combination():
     # Have an actual test, just in case,
     assert yexp == pytest.approx([0.73812041, 14.78302164,
                                   33.66851795, 48, 33.66851795])
+
+
+# Models for testing model_deconstruct. It is tempting to add these as
+# attributes in a class, as is done above for TestBrackets, but we
+# need to call methods and set attributes for these which would
+# complicate things, so leave as module-level symbols.
+#
+BOX1 = basic.Box1D("b1")
+BOX2 = basic.Box1D("b2")
+GAUSS1 = basic.Gauss1D("g1")
+GAUSS2 = basic.Gauss1D("g2")
+SCALE1 = basic.Scale1D("s1")
+
+BOX1.xlow = -10
+BOX1.xhi = 10
+BOX1.ampl.set(5, max=5)
+
+BOX2.xlow = -10
+BOX2.xhi = 10
+BOX2.ampl.set(4, max=4)
+
+GAUSS1.pos = -2
+GAUSS1.fwhm = 5
+GAUSS1.ampl = 8
+
+GAUSS2.pos = 1
+GAUSS2.fwhm = 5
+GAUSS2.ampl = 6
+
+# This isn't really needed, but do it to point out we expect these
+# models not to change.
+#
+BOX1.freeze()
+BOX2.freeze()
+GAUSS1.freeze()
+GAUSS2.freeze()
+SCALE1.freeze()
+
+
+@pytest.mark.parametrize("model,expecteds",
+                         [(BOX1, ["b1"]),
+                          # unary operator
+                          (-BOX1, ["-(b1)"]),
+                          (-(-BOX1), ["-(-(b1))"]),
+                          # binary operator of singletons
+                          (GAUSS1 + GAUSS2, ["g1", "g2"]),
+                          (GAUSS1 - GAUSS2, ["g1", "-(g2)"]),
+                          (GAUSS1 * GAUSS2, ["g1 * g2"]),
+                          (GAUSS1 / GAUSS2, ["g1 / g2"]),
+                          (GAUSS1 // GAUSS2, ["g1 // g2"]),
+                          # sneaky test with a constant
+                          (BOX1 + 2, ["b1", "2.0"]),
+                          (2 + BOX1, ["2.0", "b1"]),
+                          (BOX1 * 2, ["b1 * 2.0"]),
+                          (2 * BOX1, ["2.0 * b1"]),
+                          # more-complex binary operator, but still 1 term on one side
+                          #
+                          (BOX1 + (GAUSS1 + GAUSS2), ["b1", "g1", "g2"]),
+                          ((BOX1 + GAUSS1) + GAUSS2, ["b1", "g1", "g2"]),
+                          (BOX1 + (GAUSS1 * GAUSS2), ["b1", "g1 * g2"]),
+                          ((BOX1 + GAUSS1) * GAUSS2, ["b1 * g2", "g1 * g2"]),
+                          (BOX1 * (GAUSS1 + GAUSS2), ["b1 * g1", "b1 * g2"]),
+                          ((BOX1 * GAUSS1) + GAUSS2, ["b1 * g1", "g2"]),
+                          (BOX1 * (GAUSS1 * GAUSS2), ["b1 * g1 * g2"]),
+                          ((BOX1 * GAUSS1) * GAUSS2, ["b1 * g1 * g2"]),
+                          # add in negation and divison
+                          (BOX1 - (GAUSS1 + GAUSS2), ["b1", "-(g1)", "-(g2)"]),
+                          ((BOX1 - GAUSS1) + GAUSS2, ["b1", "-(g1)", "g2"]),
+                          (BOX1 - (GAUSS1 * GAUSS2), ["b1", "-(g1 * g2)"]),
+                          ((BOX1 * GAUSS1) - GAUSS2, ["b1 * g1", "-(g2)"]),
+                          (BOX1 + (BOX2 / GAUSS1), ["b1", "b2 / g1"]),
+                          ((BOX1 + BOX2) / GAUSS1, ["b1 / g1", "b2 / g1"]),
+                          (GAUSS1 / (BOX1 * BOX2), ["g1 / (b1 * b2)"]),
+                          ((GAUSS1 / BOX1) * BOX2, ["g1 / b1 * b2"]),
+                          (GAUSS1 / (BOX1 + BOX2), ["g1 / (b1 + b2)"]),
+                          # What happens with a unary term applied to a complex
+                          # expression? There is no expansion, which is not
+                          # ideal but safest. However, if written as a BinOp
+                          # it does get expanded, which is a bit surprising!
+                          (-(BOX1 + BOX2 * GAUSS1 + GAUSS2),
+                           ["-(b1 + b2 * g1 + g2)"]),
+                          (BOX2 - (BOX1 + BOX2 * GAUSS1 + GAUSS2),
+                           ["b2", "-(b1)", "-(b2 * g1)", "-(g2)"]),
+                          # note that we do not try to simplify the expressions
+                          ((1 / GAUSS1) * (BOX1 - BOX2),
+                           ["1.0 / g1 * b1", "1.0 / g1 * -(b2)"]),
+                          # try combining binary operators
+                          # - addition
+                          ((BOX1 + BOX2) + (GAUSS1 + GAUSS2),
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + (BOX2 + GAUSS1) + GAUSS2,
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + ((BOX2 + GAUSS1) + GAUSS2),
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + (BOX2 + GAUSS1) + GAUSS2,
+                           ["b1", "b2", "g1", "g2"]),
+                          # - addition and multiplication
+                          ((BOX1 + BOX2) * (GAUSS1 + GAUSS2),
+                           ["b1 * g1", "b1 * g2", "b2 * g1", "b2 * g2"]),
+                          ((BOX1 - BOX2) * (GAUSS1 - GAUSS2),
+                           ["b1 * g1", "b1 * -(g2)", "-(b2) * g1", "-(b2) * -(g2)"]),
+                          ((BOX1 * BOX2) - (GAUSS1 * GAUSS2),
+                           ["b1 * b2", "-(g1 * g2)"]),
+                          # - division
+                          (GAUSS1 * GAUSS2 / (BOX1 * BOX2), ["g1 * g2 / (b1 * b2)"]),
+                          (GAUSS1 * GAUSS2 // (BOX1 * BOX2), ["(g1 * g2) // (b1 * b2)"]),
+                          ((GAUSS1 + GAUSS2) / (BOX1 + BOX2), ["g1 / (b1 + b2)", "g2 / (b1 + b2)"]),
+                          ((GAUSS1 + GAUSS2) // (BOX1 + BOX2), ["(g1 + g2) // (b1 + b2)"]),
+                          ((GAUSS1 - GAUSS2) / (BOX1 + BOX2), ["g1 / (b1 + b2)", "-(g2) / (b1 + b2)"]),
+                          ((GAUSS1 - GAUSS2) // (BOX1 + BOX2), ["(g1 - g2) // (b1 + b2)"]),
+                          # - other combinations
+                          (GAUSS1 * GAUSS2 ** (BOX1 * BOX2), ["g1 * g2 ** (b1 * b2)"]),
+                          (GAUSS1 * GAUSS2 % (BOX1 * BOX2), ["(g1 * g2) % (b1 * b2)"]),
+                          # - more realistic options
+                          (BOX1 * (BOX2 * GAUSS1 + GAUSS2) * BOX1,
+                           ["b1 * b2 * g1 * b1", "b1 * g2 * b1"]),
+                          (BOX1 * (BOX2 * GAUSS1 - GAUSS2) + BOX1,
+                           ["b1 * b2 * g1", "b1 * -(g2)", "b1"]),
+                          (BOX1 * BOX2 * (GAUSS1 + BOX2 * GAUSS2),
+                           ["b1 * b2 * g1", "b1 * b2 * b2 * g2"]),
+                          ((GAUSS1 + BOX2 * GAUSS2) * BOX1 * BOX2,
+                           ["g1 * b1 * b2", "b2 * g2 * b1 * b2"]),
+                          ((GAUSS1 + GAUSS2 - BOX2) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "g2 * b1", "g2 * b2", "-(b2) * b1", "-(b2) * b2"]),
+                          ((GAUSS1 + (GAUSS2 - BOX2)) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "g2 * b1", "g2 * b2", "-(b2) * b1", "-(b2) * b2"]),
+                          ((GAUSS1 + GAUSS2 * GAUSS1 - BOX2) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "g2 * g1 * b1", "g2 * g1 * b2", "-(b2) * b1", "-(b2) * b2"]),
+                          (((1 + GAUSS2) * GAUSS1 - BOX2) * (BOX1 + BOX2),
+                           ["1.0 * g1 * b1", "1.0 * g1 * b2", "g2 * g1 * b1", "g2 * g1 * b2", "-(b2) * b1", "-(b2) * b2"]),
+                          ((GAUSS1 + (1 + (GAUSS2 / BOX1))) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "1.0 * b1", "1.0 * b2", "g2 / b1 * b1", "g2 / b1 * b2"]),
+                          ((GAUSS1 + (1 + (GAUSS2 / (BOX1 + BOX2)))) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "1.0 * b1", "1.0 * b2", "g2 / (b1 + b2) * b1", "g2 / (b1 + b2) * b2"]),
+                          (((GAUSS1 + GAUSS2 - 4) / (BOX1 + BOX2) * SCALE1),
+                           ["g1 / (b1 + b2) * s1",
+                            "g2 / (b1 + b2) * s1",
+                            "-(4.0) / (b1 + b2) * s1"]),
+                           ((BOX1 + BOX2) ** 2 / 2 + GAUSS1,
+                            ["(b1 + b2) ** 2.0 / 2.0",
+                             "g1"]),
+                           (GAUSS1 + (BOX1 - BOX2) ** 2 / 2,
+                            ["g1",
+                             "(b1 - b2) ** 2.0 / 2.0"])
+                          ])
+def test_model_deconstruct(model, expecteds):
+    """Check model deconstruction using the model name and evaluation.
+
+    This uses a set of known models in the assumption we have covered
+    all the relevant code paths. Particular care is needed to ensure
+    conditions like m1 / (m2 + m3) are included. At some point this
+    becomes a regression test, as it's not neessarily important that
+    the best possible" deconstruction is created, just that we get
+    consistent results (e.g. given that the code does not simplify
+    expressions, in particular the handling of negation).
+
+    The evaluation test checks that
+
+        model(x) = sum_i term_i(x)
+
+    for all the terms that model_deconstruct creates. The idea is that
+    the models are set to non-zero values over the range use (ie
+    within -10 to 10 for the box components), and that there are some
+    components which vary with x just to check everything passes
+    through correctly.
+
+    """
+
+    terms = model_deconstruct(model)
+    assert len(terms) == len(expecteds)
+    for term, expected in zip(terms, expecteds):
+        assert term.name == expected
+
+    x = np.arange(-9, 9, 1)
+    got_model = model(x)
+    got_terms = np.zeros_like(got_model)
+    for term in terms:
+        got_terms += term(x)
+
+    assert got_terms == pytest.approx(got_model)
+
+
+def test_model_deconstruct_possible_recursion_error_lhs():
+    """Try and test the recursion-handling on the LHS.
+
+    It is not obvious if the recursion-handling is always going to
+    trigger when 1000 frames are hit, so we try a value which is
+    known - for Python 3.11 - to trigger a recursion error, but it
+    may not with other Python cases.
+
+    """
+
+    def mk(n):
+        return basic.Scale1D(f"c{n}")
+
+    mdl = mk(0)
+    for i in range(1, 1001):
+        mdl += mk(i)
+
+    # mdl is (((...(c0 + c1) + .. ) + c999) + c1000)
+    #
+    cpts = model_deconstruct(mdl)
+
+    # There are 1001 individual components, so this should return each
+    # of them, unless we hit the recursion-error check, at which point
+    # the deconstruction will stop.
+    #
+    ncpts = len(cpts)
+    if ncpts == 1001:
+        # No recursion error found. Is there a nice way to identify
+        # this so we can review? For now, just treat is as a pass.
+        return
+
+    # Just check we aren't creating too-many components.
+    #
+    assert ncpts <= 1001
+
+    # Check we have the expected break down.
+    #
+    assert isinstance(cpts[0], BinaryOpModel)
+    for i in range(1, ncpts):
+        assert isinstance(cpts[i], basic.Scale1D)
+
+
+def test_model_deconstruct_possible_recursion_error_rhs():
+    """Try and test the recursion-handling on the LHS.
+
+    It is not obvious if the recursion-handling is always going to
+    trigger when 1000 frames are hit, so we try a value which is
+    known - for Python 3.11 - to trigger a recursion error, but it
+    may not with other Python cases.
+
+    """
+
+    def mk(n):
+        return basic.Scale1D(f"c{n}")
+
+    mdl = mk(0)
+    for i in range(1, 1001):
+        mdl = BinaryOpModel(mk(i), mdl, np.add, "+")
+
+    # mdl is (c1000 + (c999 + (... + (c1 + c0)...)))
+    #
+    cpts = model_deconstruct(mdl)
+
+    # There are 1001 individual components, so this should return each
+    # of them, unless we hit the recursion-error check, at which point
+    # the deconstruction will stop.
+    #
+    ncpts = len(cpts)
+    if ncpts == 1001:
+        # No recursion error found. Is there a nice way to identify
+        # this so we can review? For now, just treat is as a pass.
+        return
+
+    # Just check we aren't creating too-many components.
+    #
+    assert ncpts <= 1001
+
+    # Check we have the expected break down.
+    #
+    for i in range(0, ncpts - 1):
+        assert isinstance(cpts[i], basic.Scale1D)
+
+    assert isinstance(cpts[ncpts - 1], BinaryOpModel)
