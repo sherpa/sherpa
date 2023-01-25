@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observator
 #
 #
@@ -106,7 +106,7 @@ def apply_areascal(mdl, pha, instlabel):
 
     if numpy.iterable(ascal) and len(ascal) != len(mdl):
         raise DataErr('mismatch', instlabel,
-                      'AREASCAL: {}'.format(pha.name))
+                      f'AREASCAL: {pha.name}')
 
     return mdl * ascal
 
@@ -345,7 +345,7 @@ class RMFModelPHA(RMFModel):
         out = self.rmf.apply_rmf(src, *self.rmfargs)
 
         return apply_areascal(out, self.pha,
-                              "RMF: {}".format(self.rmf.name))
+                              f"RMF: {self.rmf.name}")
 
 
 class RMFModelNoPHA(RMFModel):
@@ -447,7 +447,7 @@ class ARFModelPHA(ARFModel):
         src = self.arf.apply_arf(src, *self.arfargs)
 
         return apply_areascal(src, self.pha,
-                              "ARF: {}".format(self.arf.name))
+                              f"ARF: {self.arf.name}")
 
 
 class ARFModelNoPHA(ARFModel):
@@ -567,7 +567,7 @@ class RSPModelPHA(RSPModel):
         # Assume any issues with the binning (between AREASCAL
         # and src) is related to the RMF rather than the ARF.
         return apply_areascal(src, self.pha,
-                              "RMF: {}".format(self.rmf.name))
+                              f"RMF: {self.rmf.name}")
 
 
 class RSPModelNoPHA(RSPModel):
@@ -1396,7 +1396,7 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
     """
 
     if fname is not None and not os.path.isfile(fname):
-        raise ValueError("{} is not a file".format(fname))
+        raise ValueError(f"{fname} is not a file")
 
     # Set up the delta-function response.
     # TODO: should f_chan start at startchan?
