@@ -58,6 +58,17 @@ def test_basic_unop_neg():
     assert mdl.ndim == 2
 
 
+def test_basic_unop_pos():
+
+    cpt = basic.Polynom2D()
+    mdl = +cpt
+
+    assert mdl.name == '+(polynom2d)'
+    assert mdl.op == np.positive
+    assert mdl.opstr == '+'
+    assert mdl.ndim == 2
+
+
 def test_basic_unop_abs_raw():
 
     cpt = basic.Polynom2D()
@@ -147,6 +158,33 @@ def test_eval_op():
 
     got = mdl(x)
     assert got == pytest.approx(expected)
+
+
+def test_eval_add_sub_op():
+    """Another version of test_eval_op focussed on + and - unary ops"""
+
+    x = np.asarray([2, 4, 5, 6, 7])
+
+    m1 = basic.Const1D("c")
+    m1.c0 = 10
+
+    m2 = basic.Polynom1D("p")
+    m2.c0 = 5
+    m2.c1 = 1
+
+    m3 = basic.Box1D("b")
+    m3.xlow = 5
+    m3.xhi = 6
+
+    mdl = m1 - (+m2 - m3)
+    assert mdl.ndim == 1
+
+    assert mdl.name == "(c - (+(p) - b))"
+
+    bins = np.arange(2, 10, 2)
+    yexp = m1(bins) + m3(bins) - m2(bins)
+    y = mdl(bins)
+    assert y == pytest.approx(yexp)
 
 
 def test_combine_models1d():

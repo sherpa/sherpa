@@ -1124,6 +1124,7 @@ class ArithmeticModel(Model):
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')
+    __pos__ = _make_unop(numpy.positive, '+')
     __abs__ = _make_unop(numpy.absolute, 'abs')
 
     # Binary operations
