@@ -497,6 +497,21 @@ def test_path_manager_change():
 #
 
 @requires_xspec
+@pytest.mark.parametrize("arg", [{}, True])
+def test_set_xsstate_no_op(arg):
+    """Just check we can sent in a "useless" argument.
+
+    All we do is check the call can be made, we do not check whether
+    anything has changed because of it.
+
+    """
+
+    from sherpa.astro import xspec
+
+    xspec.set_xsstate(arg)
+
+
+@requires_xspec
 def test_get_xsstate_keys():
     """Check get_xsstate returns the expected keys.
 
