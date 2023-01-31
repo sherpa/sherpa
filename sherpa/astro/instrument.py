@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observator
 #
 #
@@ -106,7 +106,7 @@ def apply_areascal(mdl, pha, instlabel):
 
     if numpy.iterable(ascal) and len(ascal) != len(mdl):
         raise DataErr('mismatch', instlabel,
-                      'AREASCAL: {}'.format(pha.name))
+                      f'AREASCAL: {pha.name}')
 
     return mdl * ascal
 
@@ -134,7 +134,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
 
-        CompositeModel.__init__(self, 'apply_rmf(%s)' % model.name, (model,))
+        CompositeModel.__init__(self, f'apply_rmf({model.name})', (model,))
         self.filter()
 
     def filter(self):
@@ -183,7 +183,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
         # Logic for ArithmeticModel.__init__
         self.pars = ()
 
-        CompositeModel.__init__(self, 'apply_arf(%s)' % model.name, (model,))
+        CompositeModel.__init__(self, f'apply_arf({model.name})', (model,))
         self.filter()
 
     def filter(self):
@@ -234,7 +234,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
         # Logic for ArithmeticModel.__init__
         self.pars = ()
 
-        CompositeModel.__init__(self, 'apply_rmf(apply_arf(%s))' % model.name,
+        CompositeModel.__init__(self, f'apply_rmf(apply_arf({model.name}))',
                                 (model,))
         self.filter()
 
@@ -345,7 +345,7 @@ class RMFModelPHA(RMFModel):
         out = self.rmf.apply_rmf(src, *self.rmfargs)
 
         return apply_areascal(out, self.pha,
-                              "RMF: {}".format(self.rmf.name))
+                              f"RMF: {self.rmf.name}")
 
 
 class RMFModelNoPHA(RMFModel):
@@ -447,7 +447,7 @@ class ARFModelPHA(ARFModel):
         src = self.arf.apply_arf(src, *self.arfargs)
 
         return apply_areascal(src, self.pha,
-                              "ARF: {}".format(self.arf.name))
+                              f"ARF: {self.arf.name}")
 
 
 class ARFModelNoPHA(ARFModel):
@@ -567,7 +567,7 @@ class RSPModelPHA(RSPModel):
         # Assume any issues with the binning (between AREASCAL
         # and src) is related to the RMF rather than the ARF.
         return apply_areascal(src, self.pha,
-                              "RMF: {}".format(self.rmf.name))
+                              f"RMF: {self.rmf.name}")
 
 
 class RSPModelNoPHA(RSPModel):
@@ -878,9 +878,8 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.models = models
         self.grid = grid
 
-        name = '%s(%s)' % (type(self).__name__,
-                           ','.join(['%s(%s)' % (m.name, source.name)
-                                     for m in models]))
+        expr = ','.join([f'{m.name}({source.name})' for m in models])
+        name = f'{type(self).__name__}({expr})'
         CompositeModel.__init__(self, name, (source,))
 
     def _get_noticed_energy_list(self):
@@ -1048,7 +1047,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         self.otherkwargs = None
         self.pars = ()
         CompositeModel.__init__(self,
-                                ('%s(%s)' % ('apply_rmf', self.model.name)),
+                                f'apply_rmf({self.model.name})',
                                 (self.model,))
 
     def startup(self, cache=False):
@@ -1396,7 +1395,7 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
     """
 
     if fname is not None and not os.path.isfile(fname):
-        raise ValueError("{} is not a file".format(fname))
+        raise ValueError(f"{fname} is not a file")
 
     # Set up the delta-function response.
     # TODO: should f_chan start at startchan?
