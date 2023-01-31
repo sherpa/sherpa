@@ -878,8 +878,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.models = models
         self.grid = grid
 
-        expr = ','.join([f'{m.name}({source.name})'
-                         for m in models])
+        expr = ','.join([f'{m.name}({source.name})' for m in models])
         name = f'{type(self).__name__}({expr})'
         CompositeModel.__init__(self, name, (source,))
 
