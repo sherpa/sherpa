@@ -32,7 +32,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.astro.fake import fake_pha
 from sherpa.astro import io
 from sherpa.models import Box1D, Const1D
-from sherpa.utils.err import DataErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -79,6 +79,18 @@ def test_fake_pha_requires_model():
         fake_pha(pha, [1, 2, 3])
 
 
+def test_fake_pha_requires_callable():
+    """Check what happens when method is not a callable."""
+
+    # We require that the PHA has a response
+    pha = DataPHA("x", channels, channels * 0)
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'method' must be a callable$"):
+        fake_pha(pha, Const1D(), method=True)
+
+
 def test_fake_pha_requires_response():
     """Check we error out when there's no response"""
 
@@ -89,9 +101,19 @@ def test_fake_pha_requires_response():
         fake_pha(pha, mdl)
 
 
+def identity(x):
+    """Return the input data"""
+    return x
+
+
+@pytest.mark.parametrize("method,is_source,expected1,expected2",
+                         [(None, True, [184, 423, 427], [428, 773, 800]),
+                          (identity, True, [200, 400, 400], [400, 800, 800]),
+                          (None, False, [1, 1, 0], [2, 2, 0]),
+                          (identity, False, [2, 2, 2], [2, 2, 2])
+                          ])
 @pytest.mark.parametrize("has_bkg", [True, False])
-@pytest.mark.parametrize("is_source", [True, False])
-def test_fake_pha_basic(has_bkg, is_source, reset_seed):
+def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg, reset_seed):
     """No background.
 
     For simplicity we use perfect responses.
@@ -113,7 +135,7 @@ def test_fake_pha_basic(has_bkg, is_source, reset_seed):
     mdl = Const1D("mdl")
     mdl.c0 = 2
 
-    fake_pha(data, mdl, is_source=is_source, add_bkgs=False)
+    fake_pha(data, mdl, is_source=is_source, add_bkgs=False, method=method)
 
     assert data.exposure == pytest.approx(1000.0)
     assert (data.channel == channels).all()
@@ -132,28 +154,29 @@ def test_fake_pha_basic(has_bkg, is_source, reset_seed):
     else:
         assert data.background_ids == []
 
-    if is_source:
-        # For reference the predicted source signal is
-        #    [200, 400, 400]
-        #
-        assert data.counts == pytest.approx([184, 423, 427])
-    else:
-        # Very few counts.
-        #
-        assert data.counts == pytest.approx([1, 1, 0])
+    # For reference the predicted source signal is
+    #    [200, 400, 400]
+    #
+    # When is_source is not set then the values are significantly
+    # smaller as there's no response, in particular no exposure term
+    # or changes due to bin-widths varying with position.
+    #
+    assert data.counts == pytest.approx(expected1)
 
     # Essentially double the exposure by having two identical arfs
     #
     data.set_arf(arf, 2)
     data.set_rmf(rmf, 2)
-    fake_pha(data, mdl, is_source=is_source, add_bkgs=False)
-    if is_source:
-        assert data.counts == pytest.approx([428, 773, 800])
-    else:
-        assert data.counts == pytest.approx([2, 2, 0])
+    fake_pha(data, mdl, is_source=is_source, add_bkgs=False, method=method)
+
+    assert data.counts == pytest.approx(expected2)
 
 
-def test_fake_pha_background_pha(reset_seed):
+@pytest.mark.parametrize("method,expected1,expected2",
+                         [(None, [186, 197, 212], [9, 4, 6]),  # expected2 is wrong
+                          pytest.param(identity, [200, 200, 200], [202 / 6, 202 / 6, 202 / 6], marks=pytest.mark.xfail)
+                          ])
+def test_fake_pha_background_pha(method, expected1, expected2, reset_seed):
     """Sample from background pha (no background model)"""
     np.random.seed(1234)
 
@@ -182,8 +205,8 @@ def test_fake_pha_background_pha(reset_seed):
     #
     #   1000 / 2 / 2.5 = 1000 / 5 = 200
     #
-    fake_pha(data, mdl, is_source=True, add_bkgs=True)
-    assert data.counts == pytest.approx([186, 197, 212])
+    fake_pha(data, mdl, is_source=True, add_bkgs=True, method=method)
+    assert data.counts == pytest.approx(expected1)
 
     # Add several more backgrounds with, compared to the first
     # background,
@@ -208,16 +231,15 @@ def test_fake_pha_background_pha(reset_seed):
                       exposure=1000, backscal=2.5)
         data.set_background(bkg, id=i)
 
-    # Note: the expected value is ~ 33 but we are getting more like 6,
-    # which happens to be 202 / 6 / 6 = 5.6 because the code is
-    # dividing by the number of backgrounds twice. So these values
-    # are wrong.
-    #
-    fake_pha(data, mdl, is_source=True, add_bkgs=True)
-    assert data.counts == pytest.approx([9, 4, 6])
+    fake_pha(data, mdl, is_source=True, add_bkgs=True, method=method)
+    assert data.counts == pytest.approx(expected2)
 
 
-def test_fake_pha_bkg_model(reset_seed):
+@pytest.mark.parametrize("method,expected1,expected2",
+                         [(None, [186, 411, 405], [197, 396, 389]),
+                          (identity, [200, 400, 400], [200, 400, 400])
+                          ])
+def test_fake_pha_bkg_model(method, expected1, expected2, reset_seed):
     """Test background model
     """
 
@@ -244,15 +266,16 @@ def test_fake_pha_bkg_model(reset_seed):
     # With no background model the simulated source counts
     # are 0.
     #
+    bmodels = {"used-bkg": bmdl}
     fake_pha(data, mdl, is_source=True, add_bkgs=False,
-             bkg_models={"used-bkg": bmdl})
+             bkg_models=bmodels, method=method)
 
     assert data.counts == pytest.approx([0, 0, 0])
 
     # Check we have created source counts this time.
     #
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models={"used-bkg": bmdl})
+             bkg_models=bmodels, method=method)
 
     assert data.exposure == pytest.approx(1000.0)
     assert (data.channel == channels).all()
@@ -287,7 +310,7 @@ def test_fake_pha_bkg_model(reset_seed):
     #
     #    2 * 1000 * [0.1, 0.2, 0.2] = [200, 400, 400]
     #
-    assert data.counts == pytest.approx([186, 411, 405])
+    assert data.counts == pytest.approx(expected1)
 
     # Now add a second set of arf/rmf for the data. However, all the
     # signal is background, so this does not change any of the
@@ -296,16 +319,24 @@ def test_fake_pha_bkg_model(reset_seed):
     data.set_arf(arf, 2)
     data.set_rmf(rmf, 2)
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models={"used-bkg": bmdl})
+             bkg_models=bmodels, method=method)
 
-    assert data.counts == pytest.approx([197, 396, 389])
+    assert data.counts == pytest.approx(expected2)
 
 
-def test_fake_pha_bkg_model_multiple(reset_seed):
+@pytest.mark.parametrize("method,expected1,expected2",
+                         [(None, [388, 777, 755], [479, 957, 785]),  # expected2 values look wrong
+                          pytest.param(identity, [400, 800, 800], [400 + 1000/3, 800 + 1000/3, 800 - 400/3], marks=pytest.mark.xfail)
+                          ])
+def test_fake_pha_bkg_model_multiple(method, expected1, expected2, reset_seed):
     """Test background model with multiple backgounds
 
     This is to check the different scaling factors, in particular
     the exposure to background exposure differences.
+
+    This test takes advantage of the method argument to allow
+    the actual model values to be checked as well as a random
+    realisation using poisson_noise).
     """
 
     np.random.seed(873)
@@ -362,16 +393,16 @@ def test_fake_pha_bkg_model_multiple(reset_seed):
     #   1000 * 4 * [0.1, 0.2, 0.2] = [400, 800, 800]
     #
     fake_pha(data, mdl, is_source=True, add_bkgs=False,
-             bkg_models=bmodels)
+             bkg_models=bmodels, method=method)
 
     assert data.exposure == pytest.approx(1000.0)
-    assert data.counts == pytest.approx([388, 777, 755])
+    assert data.counts == pytest.approx(expected1)
 
     # Check we create the expected signal, which is all from the
     # backgrounds and the source.
     #
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models=bmodels)
+             bkg_models=bmodels, method=method)
 
     # The background identifiers haven't changed.
     #
@@ -411,14 +442,15 @@ def test_fake_pha_bkg_model_multiple(reset_seed):
     #     [400, 800, 800] + [1000, 1000, -400] / 3
     #   = [733.333, 1133.333, 666.66]
     #
-    # These values are wrong (they could be drawn from the above, but
-    # it would be very unlikely).
-    #
-    assert data.counts == pytest.approx([479, 957, 785])
+    assert data.counts == pytest.approx(expected2)
 
 
+@pytest.mark.parametrize("method,expected",
+                         [(None, [433, 793, 806]),
+                          (identity, [400, 800, 800])
+                          ])
 @pytest.mark.parametrize("add_bkgs", [False, True])
-def test_fake_pha_with_no_background(add_bkgs, reset_seed):
+def test_fake_pha_with_no_background(method, expected, add_bkgs, reset_seed):
     """Check add_bkgs keyword does nothing if no background."""
 
     np.random.seed(3567)
@@ -435,11 +467,11 @@ def test_fake_pha_with_no_background(add_bkgs, reset_seed):
     assert data.channel == pytest.approx(channels)
     assert data.counts == pytest.approx(counts)
 
-    fake_pha(data, mdl, add_bkgs=add_bkgs)
+    fake_pha(data, mdl, add_bkgs=add_bkgs, method=method)
 
     assert data.exposure == pytest.approx(1000.0)
     assert data.channel == pytest.approx(channels)
-    assert data.counts == pytest.approx([433, 793, 806])
+    assert data.counts == pytest.approx(expected)
 
 
 @requires_fits

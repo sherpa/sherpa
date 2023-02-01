@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021 MIT
+#  Copyright (C) 2021, 2023 MIT
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -22,8 +22,8 @@ The ``fake_pha`` routine is used to create simulated
 `sherpa.astro.data.DataPHA` data objects.
 '''
 import numpy as np
-import sherpa
-from sherpa.utils.err import DataErr
+from sherpa.utils import poisson_noise
+from sherpa.utils.err import ArgumentTypeErr, DataErr
 from sherpa.astro.background import get_response_for_pha
 
 __all__ = ('fake_pha', )
@@ -31,7 +31,8 @@ __all__ = ('fake_pha', )
 
 def fake_pha(data, model,
              is_source=True, pileup_model=None,
-             add_bkgs=False, bkg_models={}, id=None):
+             add_bkgs=False, bkg_models=None, id=None,
+             method=None):
     """Simulate a PHA data set from a model.
 
     This function replaces the counts in a PHA dataset with simulated counts
@@ -52,6 +53,9 @@ def fake_pha(data, model,
     The backgrounds itself are not changed by this function. To simulate
     backgrounds as well as the source spectrum, call this function on the
     source PHA dataset and the background PHA dataset(s) independently.
+
+    .. versionchanged:: 4.15.1
+       The method parameter was added.
 
     Parameters
     ----------
@@ -82,8 +86,12 @@ def fake_pha(data, model,
         For all background ids not listed in this dictionary, the
         counts will be drawn from the PHA data of the background data set.
     id : str
-        String with id number if called from UI layer. This is only used for
-        certain error messages.
+        String with id number if called from UI layer. This is only
+        used for certain error messages.
+    method : callable or None
+        The routine used to simulate the data. If None (the default)
+        then sherpa.utils.poisson_noise is used, otherwise the function
+        must accept a single ndarray, returning a ndarray of the same shape.
 
     Examples
     --------
@@ -121,6 +129,11 @@ def fake_pha(data, model,
     if len(data.response_ids) == 0:
         raise DataErr('normffake', data.name)
 
+    if method is None:
+        method = poisson_noise
+    elif not callable(method):
+        raise ArgumentTypeErr("badarg", "method", "a callable")
+
     if is_source:
         model = get_response_for_pha(data, model, bkg_srcs={},
                                      pileup_model=pileup_model, id=id)
@@ -132,7 +145,7 @@ def fake_pha(data, model,
 
     # Calculate the source model, and take a Poisson draw based on
     # the source model.  That becomes the simulated data.
-    data.counts = sherpa.utils.poisson_noise(data.eval_model(model))
+    data.counts = method(data.eval_model(model))
 
     # Add in background counts:
     #  -- Scale each background properly given data's
@@ -148,6 +161,9 @@ def fake_pha(data, model,
     # WITHOUT background counts being added in.
     #
     if add_bkgs:
+        if bkg_models is None:
+            bkg_models = {}
+
         nbkg = len(data.background_ids)
         b = 0
         for bkg_id in data.background_ids:
@@ -175,5 +191,5 @@ def fake_pha(data, model,
 
         if nbkg > 0:
             b = b / nbkg
-            b_poisson = sherpa.utils.poisson_noise(b)
+            b_poisson = method(b)
             data.counts = data.counts + b_poisson
