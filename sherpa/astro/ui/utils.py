@@ -9368,6 +9368,12 @@ class Session(sherpa.ui.utils.Session):
         time, along with a Poisson noise term. A background component can
         be included.
 
+        .. versionchanged:: 4.16.1
+           Several bugs have been addressed when simulating data with
+           a background: the background model contribution would be
+           wrong if the source and background exposure times differ or
+           if there were multiple background datasets.
+
         .. versionchanged:: 4.16.0
            The method parameter was added.
 
@@ -9504,16 +9510,16 @@ class Session(sherpa.ui.utils.Session):
         >>> save_pha('sim', 'sim.pi')
 
         """
-        id = self._fix_id(id)
+        idval = self._fix_id(id)
 
-        if id in self._data:
-            d = self._get_pha_data(id)
+        if idval in self._data:
+            d = self._get_pha_data(idval)
         else:
             d = DataPHA('', None, None)
-            self.set_data(id, d)
+            self.set_data(idval, d)
 
         if rmf is None and len(d.response_ids) == 0:
-            raise DataErr('normffake', id)
+            raise DataErr('normffake', idval)
 
         # TODO: do we still expect to get bytes here?
         if isinstance(rmf, (str, numpy.bytes_)):
@@ -9549,27 +9555,27 @@ class Session(sherpa.ui.utils.Session):
 
         else:
             if len(d.channel) != rmf0.detchans:
-                raise DataErr('incompatibleresp', rmf.name, str(id))
+                raise DataErr('incompatibleresp', rmf.name, str(idval))
 
         # at this point, we can be sure that arf is not a string, because
         # if it was, it would have gone through load_arf already above.
         if not (rmf is None and arf is None):
             if numpy.iterable(arf):
                 resp_ids = range(1, len(arf) + 1)
-                self.load_multi_arfs(id, arf, resp_ids=resp_ids)
+                self.load_multi_arfs(idval, arf, resp_ids=resp_ids)
             elif arf is None:
                 # In some cases, arf is None, but rmf is not.
                 # For example, XMM/RGS uses only a single file (the RMF)
                 # to hold all information.
                 pass
             else:
-                self.set_arf(id, arf)
+                self.set_arf(idval, arf)
 
             if numpy.iterable(rmf):
                 resp_ids = range(1, len(rmf) + 1)
-                self.load_multi_rmfs(id, rmf, resp_ids=resp_ids)
+                self.load_multi_rmfs(idval, rmf, resp_ids=resp_ids)
             else:
-                self.set_rmf(id, rmf)
+                self.set_rmf(idval, rmf)
 
         d.exposure = exposure
 
@@ -9591,27 +9597,91 @@ class Session(sherpa.ui.utils.Session):
             else:
                 d.ungroup()
 
-        # Update background here.  bkg contains a new background;
-        # delete the old background (if any) and add the new background
-        # to the simulated data set, BEFORE simulating data, and BEFORE
-        # adding scaled background counts to the simulated data.
-        bkg_models = {}
-        if bkg is not None:
-            if bkg == 'model':
-                bkg_models = {1: self.get_bkg_source(id)}
-            else:
-                for bkg_id in d.background_ids:
-                    d.delete_background(bkg_id)
-                self.set_bkg(id, bkg)
+        # If bkg is None then there is no background component, which
+        # means removing any background dataset or models.  They will
+        # need to be added back after the call to fake_pha.
+        #
+        # If bkg="model" then this is already included (as long as
+        # background models are set, but we do not force this
+        # requirement here).
+        #
+        # If bkg is a DataPHA object then remove all the existing
+        # backgrounds and replace them with the background, and set
+        # include_bkg_data. There is also the need to restore a
+        # background model if set: given that there's only the
+        # possibility of using a single background dataset this
+        # potentially loses information, but it's unclear what the
+        # user really expects here given the existing API.
+        #
+        include_bkg_data = False
+        restore = {}
+        old_model = None
+        if bkg is None:
+            # Remove the background components to try to avoid
+            # potential confusion with downstream processing. There is
+            # an argument to say they should be kept, but it's not
+            # clear what is best.
+            #
+            for bkg_id in d.background_ids:
+                restore[bkg_id] = {"data": d.get_background(bkg_id)}
+                try:
+                    restore[bkg_id]["model"] = self.get_bkg_source(idval, bkg_id)
+                    self.delete_bkg_model(idval, bkg_id)
+                except ModelErr:
+                    pass
 
-        # Calculate the source model, and take a Poisson draw based on
-        # the source model.  That becomes the simulated data.
-        m = self.get_model(id)
+                d.delete_background(bkg_id)
 
-        fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None,
-                      id=str(id), bkg_models=bkg_models, method=method,
-                      rng=self.get_rng())
+        elif bkg != "model":
+            try:
+                # Note: this fails if set_bkg_full_model was used (in
+                # that the old model expression will be lost).
+                #
+                old_model = self.get_bkg_source(idval)
+            except ModelErr as me:
+                old_model = None
+
+            for bkg_id in d.background_ids:
+                self.delete_bkg_model(idval, bkg_id)
+                d.delete_background(bkg_id)
+
+            self.set_bkg(idval, bkg)
+            include_bkg_data = True
+
+        # The source model (which includes any background model
+        # components and the response) is used. The decision here is
+        # whether to set the include_bgnd_flag to True or not. The
+        # idea is that the background components are included IF there
+        # is no source model set. If the used does not want this then
+        # they call fake_pha without setting any backround datasets.
+        #
+        # Unfortunately the existing API for this call makes this all
+        # a bit murky - in particular the bkg parameter.
+        #
+        m = self.get_model(idval)
+        include_bkg_data = False
+        if bkg is not None and bkg != "model":
+            include_bkg_data = True
+
+        fake.fake_pha(d, m, include_bkg_data=include_bkg_data,
+                      method=method, rng=self.get_rng())
         d.name = 'faked'
+
+        # Restore any background that may have been removed.
+        #
+        for bkg_id, bvals in restore.items():
+            self.set_bkg(idval, bkg=bvals["data"], bkg_id=bkg_id)
+            try:
+                self.set_bkg_source(idval, model=bvals["model"], bkg_id=bkg_id)
+            except KeyError:
+                pass
+
+        if old_model is not None:
+            # The current API only allows there to be a single
+            # background (that is, old_model is only set when the bkg
+            # argument is set to a DataPHA value).
+            #
+            self.set_bkg_source(idval, old_model)
 
     ###########################################################################
     # PSF
