@@ -6475,6 +6475,10 @@ class Session(sherpa.ui.utils.Session):
         data set. The ``type`` and ``factor`` arguments control how
         the data is plotted.
 
+        .. versionchanged:: 4.15.1
+           The set_plot_opt function has been added and should be used
+           to set the type and factor plot settings.
+
         Parameters
         ----------
         id : int or str
@@ -6587,6 +6591,111 @@ class Session(sherpa.ui.utils.Session):
 
         """
         return self._get_pha_data(id).get_analysis()
+
+    def set_plot_opt(self, type=None, norm=None, factor=None, id=None):
+        """Set the plot options when displaying spectral data.
+
+        The set_analysis command sets the units for spectral
+        analysis. Note that in order to change the units of a data set
+        from 'channel' to 'energy' or 'wavelength', the appropriate
+        ARF and RMF instrument response files must be loaded for that
+        data set. The ``type`` and ``factor`` arguments control how
+        the data is plotted. Unlike ``set_analysis`` the settins are
+        only changed if explicitly set.
+
+        .. versionadded:: 4.15.1
+           The functionality has been moved here from ``set_analysis``.
+
+        Parameters
+        ----------
+        type : {'rate', 'counts'}, optional
+           The units to use on the Y axis of plots.
+        norm : {'none', 'auto', 'channel', 'energy', 'wavelength'}, optional
+           If 'none' then the Y axis values are not normalised by the
+           bin width, othersise the value declares what they should be
+           normalised by. The default is 'auto', which uses the
+           current analysis setting, but a specific type can be chosen
+           whatever the analysis choice.
+        factor : int, optional
+           The Y axis of plots is multiplied by Energy^factor or
+           Wavelength^factor before display.
+        id : int or str or None, optional
+           The identifier of the data set to change. If None then all
+           datasets are changed.
+
+        Raises
+        ------
+        sherpa.utils.err.IdentifierErr
+           If the `id` argument is not recognized.
+
+        See Also
+        --------
+        set_analysis : Change the analysis setting.
+
+        Examples
+        --------
+
+        Plot all PHA datasets as counts and not a rate:
+
+        >>> set_plot_opt(type='counts')
+
+        Plot all PHA datasets as counts and do not normalize
+        by the bin width:
+
+        >>> set_plot_opt(type='counts', norm='none')
+
+        The Y axis for datasets 1 and 2 will by multiplied by kev^2,
+        so the datasets will show 'counts/s/keV * keV^2' and
+        'counts/s * keV^2' respectively:
+
+        >>> set_analysis('energy')
+        >>> set_plot_opt(id=1, factor=2)
+        >>> set_plot_opt(id=2, factor=2, norm='none')
+
+        The Y axis will be in units of counts per channel and the
+        X axis has energy units:
+
+        >>> set_analysis('energy')
+        >>> set_plot_opt(norm='channel', type='counts')
+
+        """
+
+        if type is None:
+            is_rate = None
+        else:
+            if type not in ['counts', 'rate']:
+                raise ArgumentTypeErr('badarg', 'type', "'counts' or 'rate'")
+
+            is_rate = type == 'rate'
+
+        if factor is not None:
+            # Is there a better way to check for an integer argument?
+            #
+            try:
+                int(f"{factor}")
+            except ValueError:
+                raise ArgumentTypeErr('badarg', 'factor', 'must be an integer') from None
+
+            if factor < 0:
+                raise ArgumentTypeErr('badarg', 'factor', 'must be 0 or larger')
+
+        # We rely on plot_norm to validate the norm setting
+        #
+        if id is None:
+            ids = self.list_data_ids()
+        else:
+            ids = [id]
+
+        for id in ids:
+            d = self._get_pha_data(id)
+            if factor is not None:
+                d.plot_fac = factor
+
+            if norm is not None:
+                d.plot_norm = norm
+
+            if is_rate is not None:
+                d.rate = is_rate
 
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_coord
     # DOC-TODO: how best to document the wcssubs support?
@@ -12990,7 +13099,7 @@ class Session(sherpa.ui.utils.Session):
         each realization, and displays the average and standard
         deviation for each parameter.
 
-        .. versionadded:: 4.12.2
+        .. versionchanged:: 4.12.2
            The samples and statistic keys were added to the return
            value and the parameter values are returned as NumPy arrays
            rather than as lists.

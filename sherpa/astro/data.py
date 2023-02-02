@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -128,9 +128,9 @@ from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
-from sherpa.utils.err import DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
+from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import formatting
 from sherpa.astro import hc
 
@@ -161,6 +161,41 @@ except ImportError:
 
 
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt', 'DataRosatRMF')
+
+
+def validate_units(val):
+    """Check that the units setting is validate and normalize it.
+
+    Parameters
+    ----------
+    val : str
+        The units setting. This is a case-insensitive comparison.
+
+    Returns
+    -------
+    units : {'channel', 'energy', 'wavelength'}
+        The normalized units value.
+
+    Notes
+    -----
+    The supported values are 'bin' or any string starting with the four
+    characters 'chan', 'ener', or 'wave'.
+    """
+
+    units = str(val).strip().lower()
+    if units == 'bin':
+        return 'channel'
+
+    if units.startswith('chan'):
+        return 'channel'
+
+    if units.startswith('ener'):
+        return 'energy'
+
+    if units.startswith('wave'):
+        return 'wavelength'
+
+    raise DataErr('bad', 'quantity', val)
 
 
 def _notice_resp(chans, arf, rmf):
@@ -1598,7 +1633,7 @@ class DataPHA(Data1D):
     """
     _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
-                     'plot_fac', 'response_ids', 'background_ids')
+                     'plot_fac', 'plot_norm', 'response_ids', 'background_ids')
 
     _related_fields = Data1D._related_fields + ("bin_lo", "bin_hi", "counts", "grouping", "quality",
                                                 "backscal", "areascal")
@@ -1655,27 +1690,19 @@ class DataPHA(Data1D):
         return self._units
 
     def _set_units(self, val):
-        units = str(val).strip().lower()
+        units = validate_units(val)
 
-        if units == 'bin':
-            units = 'channel'
-
-        if units.startswith('chan'):
+        if units == 'channel':
             # Note: the names of these routines appear confusing because of the
             #       way group values are used
             self._from_channel = self._group_to_channel
-            units = 'channel'
 
-        elif units.startswith('ener'):
+        elif units == 'energy':
             self._from_channel = self._channel_to_energy
-            units = 'energy'
-
-        elif units.startswith('wave'):
-            self._from_channel = self._channel_to_wavelength
-            units = 'wavelength'
 
         else:
-            raise DataErr('bad', 'quantity', val)
+            # assume must be wavelength
+            self._from_channel = self._channel_to_wavelength
 
         for id in self.background_ids:
             bkg = self.get_background(id)
@@ -1732,6 +1759,24 @@ a rate.""")
 The Y axis values are multiplied by X^plot_fac. The default
 value of 0 means the X axis is not used in plots. The value
 must be an integer.""")
+
+    def _get_plot_norm(self):
+        return self._plot_norm
+
+    def _set_plot_norm(self, val):
+        norm = str(val).lower()
+        if norm not in ['none', 'auto']:
+            try:
+                norm = validate_units(val)
+            except DataErr:
+                raise ArgumentTypeErr('badarg', 'norm', "must be 'none', 'auto', or an analysis unit") from None
+
+        self._plot_norm = norm
+        for id in self.background_ids:
+            self.get_background(id).plot_norm = norm
+
+    plot_norm = property(_get_plot_norm, _set_plot_norm,
+                         doc='How do we normalize the y-axis by the bin width?')
 
     def _get_response_ids(self):
         return self._response_ids
@@ -1814,6 +1859,8 @@ must be an integer.""")
         self._backgrounds = {}
         self._rate = True
         self._plot_fac = 0
+        self._plot_norm = True
+        self._plot_norm = 'auto'
         self.units = "channel"
         self.quality_filter = None
         super().__init__(name, channel, counts, staterror, syserror)
@@ -4103,6 +4150,9 @@ must be an integer.""")
     def _fix_y_units(self, val, filter=False, response_id=None):
         """Rescale the data to match the 'y' axis."""
 
+        # This needs to be kept up-to-date with get_ylabel
+        #
+
         if val is None:
             return val
 
@@ -4122,9 +4172,16 @@ must be an integer.""")
             areascal = self._check_scale(self.areascal, filter=filter)
             val /= areascal
 
-        if self.grouped or self.rate:
+        # Do we divide by the bin width, and if so what units do we use?
+        #
+        width = self.plot_norm
+        if width != 'none':
 
-            if self.units != 'channel':
+            if width == 'auto':
+                width = self.units
+
+            # TODO: shouldn't this be a generic routine, not special-cased here?
+            if width != 'channel':
                 elo, ehi = self._get_ebins(response_id, group=False)
             else:
                 elo, ehi = (self.channel, self.channel + 1.)
@@ -4139,14 +4196,14 @@ must be an integer.""")
                 elo = self.apply_grouping(elo, self._min)
                 ehi = self.apply_grouping(ehi, self._max)
 
-            if self.units == 'energy':
+            if width == 'energy':
                 ebin = ehi - elo
-            elif self.units == 'wavelength':
+            elif width == 'wavelength':
                 ebin = hc / elo - hc / ehi
-            elif self.units == 'channel':
+            elif width == 'channel':
                 ebin = ehi - elo
             else:
-                raise DataErr("bad", "quantity", self.units)
+                raise DataErr("bad", "plot_norm", width)
 
             val /= numpy.abs(ebin)
 
@@ -4157,12 +4214,16 @@ must be an integer.""")
 
         scale = self.apply_filter(self.get_x(response_id=response_id),
                                   self._middle)
+
+        # TODO: val *= np.power(scale, self.plot_fac)
         for ii in range(self.plot_fac):
             val *= scale
 
         return val
 
-    def get_y(self, filter=False, yfunc=None, response_id=None, use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None, response_id=None,
+              use_evaluation_space=False):
+
         vallist = Data.get_y(self, yfunc=yfunc)
         filter = bool_cast(filter)
 
@@ -4217,15 +4278,19 @@ must be an integer.""")
         if self.rate and self.exposure:
             ylabel += '/sec'
 
-        if self.rate or self.grouped:
-            if self.units == 'energy':
+        width = self.plot_norm
+        if width != 'none':
+            if width == 'auto':
+                width = self.units
+
+            if width == 'energy':
                 ylabel += '/keV'
-            elif self.units == 'wavelength':
+            elif width == 'wavelength':
                 ylabel += '/Angstrom'
-            elif self.units == 'channel':
+            elif width == 'channel':
                 ylabel += '/channel'
 
-        if self.plot_fac:
+        if self.plot_fac > 0:
             from sherpa.plot import backend
             latex = backend.get_latex_for_string(
                 f'^{self.plot_fac}')
@@ -4728,9 +4793,13 @@ must be an integer.""")
                 self.get_syserror(True))
 
     def to_plot(self, yfunc=None, staterrfunc=None, response_id=None):
-        return (self.apply_filter(self.get_x(response_id=response_id),
-                                  self._middle),
-                self.get_y(True, yfunc, response_id=response_id),
+
+        x = self.apply_filter(self.get_x(response_id=response_id),
+                              self._middle)
+        y = self.get_y(True, yfunc, response_id=response_id)
+
+        return (x,
+                y,
                 self.get_yerr(True, staterrfunc, response_id=response_id),
                 self.get_xerr(True, response_id=response_id),
                 self.get_xlabel(),

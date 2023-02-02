@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022
+#  Copyright (C) 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -129,10 +129,9 @@ def example_pha_with_bkg_data(direct=True):
     Parameters
     ----------
     direct : bool, optional
-        If True then the background is added to the source
-        and only the source is returned. If False then the
-        return is (source, bgnd) and the background is not
-        associated with the source.
+        If True then the background is added to the source and only
+        the source is returned. If False then the return is (source,
+        bgnd) and the background is not associated with the source.
 
     """
 
@@ -231,10 +230,15 @@ def setup_example_bkg_model(idval, direct=True):
     ----------
     idval : None, int, str
         The dataset identifier.
+    direct : bool, optional
+        If True then the background is added to the source and only
+        the source is returned. If False then the return is (source,
+        bgnd) and the background is not associated with the source.
 
     See Also
     --------
     setup_example_bkg
+
     """
 
     d = example_pha_with_bkg_data(direct=direct)
@@ -4005,6 +4009,214 @@ def test_set_plot_opt_explicit_astro():
     assert fig.axes[3].get_yscale() == 'linear'
 
     plt.close(fig)
+
+
+@pytest.mark.parametrize("setting,value",
+                         [("factor", 1.0), ("factor", -1), ("factor", "two"),
+                          ("norm", True), ("norm", "dodads"), ("norm", 2),
+                          ("type", "RATE"), ("type", True)])
+def test_set_plot_opt_invalid(setting, value):
+    """check for invalid values for set_plot_opt.
+
+    As we are relying on the data object to throw some of the
+    errors we need to set up a dataset.
+
+    """
+
+    ui.load_arrays(1, [1, 2], [1, 2], ui.DataPHA)
+
+    with pytest.raises(ArgumentTypeErr):
+        ui.set_plot_opt(**{setting: value})
+
+
+@pytest.mark.parametrize("idval", [None, "foo"])
+def test_set_plot_opt_factor(idval, clean_astro_ui):
+    """Do PHA plots respect the factor setting?
+
+    This does not check that the setting actually does anything.
+    """
+
+    setup_example_bkg_model(idval)
+    d = ui.get_data(idval)
+    b = ui.get_bkg(idval)
+
+    assert d.plot_fac == 0
+    assert b.plot_fac == 0
+
+    ui.set_plot_opt(factor=2, id=idval)
+
+    assert d.plot_fac == 2
+    assert b.plot_fac == 2
+
+
+@pytest.mark.parametrize("idval", [None, "foo"])
+@pytest.mark.parametrize("norm,ans", [("none", "none"),
+                                      ("AUTO", "auto"),
+                                      ("auto", "auto"),
+                                      ("biN", "channel"),
+                                      ("channel", "channel"),
+                                      ("channels", "channel"),
+                                      ("energ", "energy"),
+                                      ("energy", "energy"),
+                                      ("energies", "energy"),
+                                      ("wave", "wavelength"),
+                                      ("wavelength", "wavelength"),
+                                      ("wavelengths", "wavelength")])
+def test_set_plot_opt_norm(idval, norm, ans, clean_astro_ui):
+    """Do PHA plots respect the norm setting?
+
+    This does not check that the setting actually does anything.
+    """
+
+    setup_example_bkg_model(idval)
+    d = ui.get_data(idval)
+    b = ui.get_bkg(idval)
+
+    assert d.plot_norm == 'auto'
+    assert b.plot_norm == 'auto'
+
+    ui.set_plot_opt(norm=norm, id=idval)
+
+    assert d.plot_norm == ans
+    assert b.plot_norm == ans
+
+
+@pytest.mark.parametrize("idval", [None, "foo"])
+def test_set_plot_opt_rate(idval, clean_astro_ui):
+    """Do PHA plots respect the rate setting?
+
+    This does not check that the setting actually does anything.
+    """
+
+    setup_example_bkg_model(idval)
+    d = ui.get_data(idval)
+    b = ui.get_bkg(idval)
+
+    assert d.rate
+    assert b.rate
+
+    ui.set_plot_opt(type='counts', id=idval)
+
+    assert not d.rate
+    assert not b.rate
+
+
+@pytest.mark.parametrize("idval", [None, "foo"])
+@pytest.mark.parametrize("plot",
+                         ["data", "model", "fit",
+                          "resid",
+                          "bkg",
+                          ])
+def test_set_plot_opt_norm_ylabel(idval, plot, clean_astro_ui):
+    """Do PHA plots respect the norm setting?
+
+    All we check is that the axis is labelled correctly.
+
+    We should just check the plot classes directly, but it's worth
+    having a UI-level set of tests as this is how we expect most users
+    to interact with the system, and let's us test it is all plumbed
+    together.
+    """
+
+    plotfunc = getattr(ui, f'plot_{plot}')
+    getfunc = getattr(ui, f'get_{plot}_plot')
+
+    setup_example_bkg_model(idval)
+    d = ui.get_data(idval)
+    b = ui.get_bkg(idval)
+
+    ui.set_analysis('energy')
+
+    ui.set_plot_opt(norm='none', id=idval)
+
+    if idval is None:
+        plotfunc()
+        pdata = getfunc()
+    else:
+        plotfunc(idval)
+        pdata = getfunc(idval)
+
+    if plot == 'fit':
+        ylabel = pdata.dataplot.ylabel
+    else:
+        ylabel = pdata.ylabel
+
+    assert ylabel == 'Counts/sec'
+
+    ui.set_plot_opt(norm='auto', id=idval)
+
+    if idval is None:
+        plotfunc()
+        pdata = getfunc()
+    else:
+        plotfunc(idval)
+        pdata = getfunc(idval)
+
+    if plot == 'fit':
+        ylabel = pdata.dataplot.ylabel
+    else:
+        ylabel = pdata.ylabel
+
+    assert ylabel == 'Counts/sec/keV'
+
+
+@pytest.mark.parametrize("idval", [None, "foo"])
+@pytest.mark.parametrize("plot",
+                         ["data", "model", "fit",
+                          "resid",
+                          "bkg",
+                          ])
+def test_set_plot_opt_norm_counts_ylabel(idval, plot, clean_astro_ui):
+    """Do PHA plots respect the norm and rate=counts setting?
+
+    All we check is that the axis is labelled correctly.
+
+    We should just check the plot classes directly, but it's worth
+    having a UI-level set of tests as this is how we expect most users
+    to interact with the system, and let's us test it is all plumbed
+    together.
+    """
+
+    plotfunc = getattr(ui, f'plot_{plot}')
+    getfunc = getattr(ui, f'get_{plot}_plot')
+
+    setup_example_bkg_model(idval)
+    d = ui.get_data(idval)
+    b = ui.get_bkg(idval)
+
+    ui.set_analysis('energy')
+
+    ui.set_plot_opt(norm='none', type='counts', id=idval)
+
+    if idval is None:
+        plotfunc()
+        pdata = getfunc()
+    else:
+        plotfunc(idval)
+        pdata = getfunc(idval)
+
+    if plot == 'fit':
+        ylabel = pdata.dataplot.ylabel
+    else:
+        ylabel = pdata.ylabel
+
+    assert ylabel == 'Counts'
+
+    ui.set_plot_opt(norm='auto', id=idval)
+
+    if idval is None:
+        plotfunc()
+        pdata = getfunc()
+    else:
+        plotfunc(idval)
+        pdata = getfunc(idval)
+
+    if plot == 'fit':
+        ylabel = pdata.dataplot.ylabel
+    else:
+        ylabel = pdata.ylabel
+
+    assert ylabel == 'Counts/keV'
 
 
 @pytest.mark.parametrize("cls",
