@@ -107,8 +107,17 @@ def test_fake_pha_incompatible_rmf(idval, clean_astro_ui):
         ui.fake_pha(idval, arf, rmf, 1000.0)
 
 
+def identity(x):
+    """Return the input data"""
+    return x
+
+
+@pytest.mark.parametrize("method,expected",
+                         [(None, [13, 16, 16]),
+                          (identity, [12, 12, 12])
+                          ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_exposure_is_none_data_is_none(idval, clean_astro_ui, reset_seed):
+def test_fake_pha_exposure_is_none_data_is_none(method, expected, idval, clean_astro_ui, reset_seed):
     """What happens if the exposure is None in the fake_pha call and the DataPHA?"""
 
     np.random.seed(7239652)
@@ -133,16 +142,20 @@ def test_fake_pha_exposure_is_none_data_is_none(idval, clean_astro_ui, reset_see
     cpt.c0 = 24
     ui.set_source(idval, cpt)
 
-    ui.fake_pha(idval, arf=None, rmf=None, exposure=None)
+    ui.fake_pha(idval, arf=None, rmf=None, exposure=None, method=method)
 
     # The exposure time is ignored.
     d = ui.get_data(idval)
-    assert d.counts == pytest.approx([13, 16, 16])
+    assert d.counts == pytest.approx(expected)
     assert d.exposure is None
 
 
+@pytest.mark.parametrize("method,expected",
+                         [(None, [9, 12, 18]),
+                          (identity, [12, 12, 12])
+                          ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_exposure_is_none_data_is_set(idval, clean_astro_ui, reset_seed):
+def test_fake_pha_exposure_is_none_data_is_set(method, expected, idval, clean_astro_ui, reset_seed):
     """What happens if the exposure is None in the fake_pha call but is set in DataPHA?"""
 
     np.random.seed(4596)
@@ -165,20 +178,24 @@ def test_fake_pha_exposure_is_none_data_is_set(idval, clean_astro_ui, reset_seed
     cpt.c0 = 24
     ui.set_source(idval, cpt)
 
-    ui.fake_pha(idval, arf=None, rmf=None, exposure=None)
+    ui.fake_pha(idval, arf=None, rmf=None, exposure=None, method=method)
 
     # The model evaluation should now be texp * c0 * bin-width
     # but the exposure time is being over-written so it is
     # not included.
     #
     d = ui.get_data(idval)
-    assert d.counts == pytest.approx([9, 12, 18])
+    assert d.counts == pytest.approx(expected)
     assert d.exposure is None
 
 
+@pytest.mark.parametrize("method,expected",
+                         [(None, [215, 390, 425]),
+                          (identity, [200, 400, 400])
+                          ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 @pytest.mark.parametrize("has_bkg", [True, False])
-def test_fake_pha_basic(idval, has_bkg, clean_astro_ui, reset_seed):
+def test_fake_pha_basic(method, expected, idval, has_bkg, clean_astro_ui, reset_seed):
     """No background.
 
     See also test_fake_pha_add_background
@@ -213,7 +230,7 @@ def test_fake_pha_basic(idval, has_bkg, clean_astro_ui, reset_seed):
     mdl.c0 = 2
     ui.set_source(idval, mdl)
 
-    ui.fake_pha(idval, arf, rmf, 1000.0)
+    ui.fake_pha(idval, arf, rmf, 1000.0, method=method)
 
     faked = ui.get_data(idval)
     assert faked.exposure == pytest.approx(1000.0)
@@ -236,10 +253,14 @@ def test_fake_pha_basic(idval, has_bkg, clean_astro_ui, reset_seed):
     # For reference the predicted source signal is
     #    [200, 400, 400]
     #
-    assert faked.counts == pytest.approx([215, 390, 425])
+    assert faked.counts == pytest.approx(expected)
 
 
-def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui, reset_seed):
+@pytest.mark.parametrize("method,expected",
+                         [(None, [198, 384, 409]),
+                          (identity, [200, 400, 400])
+                          ])
+def test_fake_pha_basic_arfrmf_set_in_advance(method, expected, clean_astro_ui, reset_seed):
     """Similar to test_fake_pha_basic but instead of passing in
     the RMF, we set it before. The result should be the same, so we
     don't have to go through all the parameterization of that test.
@@ -265,7 +286,7 @@ def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui, reset_seed):
     mdl.c0 = 2
     ui.set_source('id123', mdl)
 
-    ui.fake_pha('id123', None, None, 1000.0)
+    ui.fake_pha('id123', None, None, 1000.0, method=method)
 
     faked = ui.get_data('id123')
     assert faked.exposure == pytest.approx(1000.0)
@@ -277,11 +298,15 @@ def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui, reset_seed):
     # For reference the predicted source signal is
     #    [200, 400, 400]
     #
-    assert faked.counts == pytest.approx([198, 384, 409])
+    assert faked.counts == pytest.approx(expected)
 
 
+@pytest.mark.parametrize("method,expected",
+                         [(None, [321, 506, 504]),
+                          (identity, [325, 525, 525])
+                          ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_add_background(idval, clean_astro_ui, reset_seed):
+def test_fake_pha_add_background(method, expected, idval, clean_astro_ui, reset_seed):
     """Check we can add a background component.
 
     See also test_fake_pha_basic.
@@ -312,7 +337,7 @@ def test_fake_pha_add_background(idval, clean_astro_ui, reset_seed):
     mdl.c0 = 2
     ui.set_source(idval, mdl)
 
-    ui.fake_pha(idval, arf, rmf, 1000.0, bkg=bkg)
+    ui.fake_pha(idval, arf, rmf, 1000.0, bkg=bkg, method=method)
 
     faked = ui.get_data(idval)
     assert faked.exposure == pytest.approx(1000.0)
@@ -323,11 +348,15 @@ def test_fake_pha_add_background(idval, clean_astro_ui, reset_seed):
     # and the background signal is
     #    [125, 125, 125]
     #
-    assert faked.counts == pytest.approx([321, 506, 504])
+    assert faked.counts == pytest.approx(expected)
 
 
+@pytest.mark.parametrize("method,expected",
+                         [(None, [189, 382, 400]),
+                          (identity, [200, 400, 400])
+                          ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_no_data(idval, clean_astro_ui, reset_seed):
+def test_fake_pha_no_data(method, expected, idval, clean_astro_ui, reset_seed):
     """What happens if there is no data loaded at the id?
     """
 
@@ -343,7 +372,7 @@ def test_fake_pha_no_data(idval, clean_astro_ui, reset_seed):
     mdl.c0 = 2
     ui.set_source(idval, mdl)
 
-    ui.fake_pha(idval, arf, rmf, 1000.0)
+    ui.fake_pha(idval, arf, rmf, 1000.0, method=method)
 
     channels = np.arange(1, 4)
     counts = [1, 1, 1]
@@ -361,7 +390,7 @@ def test_fake_pha_no_data(idval, clean_astro_ui, reset_seed):
     # For reference the predicted source signal is
     #    [200, 400, 400]
     #
-    assert faked.counts == pytest.approx([189, 382, 400])
+    assert faked.counts == pytest.approx(expected)
 
 
 @requires_fits
@@ -477,7 +506,11 @@ def test_fake_pha_multi_file(make_data_path, clean_astro_ui, reset_seed):
     assert 7050 <= total <= 7150
 
 
-def test_fake_pha_background_model(clean_astro_ui, reset_seed):
+@pytest.mark.parametrize("method,expected",
+                         [(None, [42, 137, 53]),
+                          (identity, [50, 151.25, 50])  # TODO: should be [50, 150, 50]
+                          ])
+def test_fake_pha_background_model(method, expected, clean_astro_ui, reset_seed):
     """Check we can add a background component.
 
     See also test_fake_pha_basic.
@@ -519,18 +552,33 @@ def test_fake_pha_background_model(clean_astro_ui, reset_seed):
     ui.set_arf(idval, arf, bkg_id=1)
     ui.set_rmf(idval, rmf, bkg_id=1)
 
-    ui.fake_pha(idval, arf, rmf, 1000.0, bkg='model')
+    ui.fake_pha(idval, arf, rmf, 1000.0, bkg='model', method=method)
 
     faked = ui.get_data(idval)
     assert faked.exposure == pytest.approx(1000.0)
     assert (faked.channel == channels).all()
 
     # For reference the predicted source signal is
-    #    [50, 100, 0]
-    # and the background signal for the source is
-    #    [0, 200, 200]
+    #    1000 * [0.5, 0.5, 0] * [0.1, 0.2, 0.2] = [50, 100, 0]
+    # and the background signal for the source is, before backscal
+    #    1000 * [0, 1, 1]     * [0.1, 0.2, 0.2] = [0, 200, 200]
+    # and after source_backscal / bkg_backscal
+    #    [0, 200, 200] * 0.1 / 0.4              = [0, 50, 50]
     #
-    assert faked.counts == pytest.approx([42, 137, 53])
+    # So the predicted signal is [50, 150, 50]
+    #
+    # The idea here is that the observed background data should
+    # not contribute.
+    #
+    # The current predicted signal is actually
+    #
+    #    [50, 150, 50] + [0, 1.25, 0]
+    #
+    # where the extra term is because the background model has
+    # been evaluated again, this time with no response, to calculate
+    # [0, 1, 0] and then scaled by 100 * (100 / 200) * (0.1 / 0.4).
+    #
+    assert faked.counts == pytest.approx(expected)
 
 
 @requires_fits
@@ -704,6 +752,28 @@ def setup_fake_pha_test():
 
     assert ui.get_data().counts == pytest.approx([20, 20, 20])
 
+    # Explaining get_model_plot return (for counts):
+    #
+    # - expected source signal, from sbox
+    #
+    #    texp * arf * model * bin-widths
+    #    100 * [2, 2, 2] * [2, 1, 0] * [0.2, 0.4, 1.0]
+    #
+    #    = [80, 80, 0]
+    #
+    # - expected background signal, from bbox
+    #
+    #    texp * arf * model * bin-widths * src_backscal / bkg_backscal
+    #    100 * [2, 2, 2] * [0, 0, 3] * [0.2, 0.4, 1.0] * 0.2 / 0.4
+    #
+    #    = [0, 0, 300]
+    #
+    # For get_bkg_model_plot we use the background exposure and ARF values:
+    #
+    #    500 * [0.8, 0.8, 0.8] * [0, 0, 3] * [0.2, 0.4, 1.0]
+    #
+    #    = [0, 0, 1200]
+    #
     ui.set_analysis(1, "energy", type="counts")
     assert ui.get_data_plot().y == pytest.approx([20, 20, 20])
     assert ui.get_bkg_plot().y == pytest.approx([300, 300, 300])
@@ -726,14 +796,17 @@ def setup_fake_pha_test():
     return (arf_src, rmf_src)
 
 
-def test_fake_pha_without_bgnd(clean_astro_ui, reset_seed):
+@pytest.mark.parametrize("method,expected",
+                         [(None, [85, 75, 297]),
+                          (identity, [80, 80, 300])
+                          ])
+def test_fake_pha_without_bgnd(method, expected, clean_astro_ui, reset_seed):
     """Extend test_fake_pha_with_bgnd_model to check with no background"""
 
-    expected = [85, 75, 297]  # This is the current behavior but it includes the background
     bexpected = [300, 300, 300]
 
     arf, rmf = setup_fake_pha_test()
-    ui.fake_pha(1, arf, rmf, 100, bkg=None)
+    ui.fake_pha(1, arf, rmf, 100, bkg=None, method=method)
 
     # Check what's changed and what hasn't
     ui.set_analysis(1, "energy", type="counts")
@@ -755,7 +828,11 @@ def test_fake_pha_without_bgnd(clean_astro_ui, reset_seed):
     assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
 
 
-def test_fake_pha_with_bgnd_model(clean_astro_ui, reset_seed):
+@pytest.mark.parametrize("method,expected",
+                         [(None, [85, 76, 297]),
+                          (identity, [80, 80.3, 300.3])  # TODO: should be [80, 80, 300]
+                          ])
+def test_fake_pha_with_bgnd_model(method, expected, clean_astro_ui, reset_seed):
     """Add a test found when investigating #1685
 
     At some point working on #1684 this included the background twice,
@@ -763,13 +840,19 @@ def test_fake_pha_with_bgnd_model(clean_astro_ui, reset_seed):
 
     """
 
-    expected = [85, 76, 297]
     bexpected = [300, 300, 300]
 
     arf, rmf = setup_fake_pha_test()
-    ui.fake_pha(1, arf, rmf, 100, bkg="model")
+    ui.fake_pha(1, arf, rmf, 100, bkg="model", method=method)
 
     # Check what's changed and what hasn't
+    #
+    # The simulated data should match the model plot - that is
+    # [80, 80, 300], but the background model gets included twice,
+    # with the second time without a response, so it ends up adding
+    # signal to the second two bins from 0.1 * [0, 3, 3], which
+    # accounts for the [0, 0.3, 0.3] addition.
+    #
     ui.set_analysis(1, "energy", type="counts")
     assert ui.get_data_plot().y == pytest.approx(expected)
     assert ui.get_bkg_plot().y == pytest.approx(bexpected)
@@ -789,10 +872,13 @@ def test_fake_pha_with_bgnd_model(clean_astro_ui, reset_seed):
     assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
 
 
-def test_fake_pha_with_bgnd_data(clean_astro_ui, reset_seed):
+@pytest.mark.parametrize("method,expected",
+                         [(None, [90, 89, 1196]),
+                          (identity, [85, 87.5, 1202.5])
+                          ])
+def test_fake_pha_with_bgnd_data(method, expected, clean_astro_ui, reset_seed):
     """Extend test_fake_pha_with_bgnd_model to check with a dataset."""
 
-    expected = [90, 89, 1196]
     bexpected = [10, 15, 5]
 
     # Choose a different background to the actual background,
@@ -803,9 +889,22 @@ def test_fake_pha_with_bgnd_data(clean_astro_ui, reset_seed):
     bkg.backscal = 0.1
 
     arf, rmf = setup_fake_pha_test()
-    ui.fake_pha(1, arf, rmf, 100, bkg=bkg)
+    ui.fake_pha(1, arf, rmf, 100, bkg=bkg, method=method)
 
     # Check what's changed and what hasn't
+    #
+    # The expected signal should be the sum of the expected model
+    # and the scaled background counts. That is
+    #
+    #     [80, 80, 1200] +
+    #     (100 / 400) * (0.2 / 0.1) * [10, 15, 5]
+    #
+    #   = [80, 80, 1200] + 0.5 * [10, 15, 5]
+    #   = [85, 87.5, 1202.5]
+    #
+    # Note that this includes the background model as well as the
+    # background data.
+    #
     ui.set_analysis(1, "energy", type="counts")
     assert ui.get_data_plot().y == pytest.approx(expected)
     assert ui.get_bkg_plot().y == pytest.approx(bexpected)
