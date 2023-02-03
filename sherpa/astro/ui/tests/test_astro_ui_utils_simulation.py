@@ -32,49 +32,46 @@ from sherpa.astro import ui
 from sherpa.utils.err import DataErr, IOErr
 
 
-@pytest.mark.parametrize("id", [None, 1, "faked"])
-def test_fake_pha_no_rmf(id, clean_astro_ui):
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+def test_fake_pha_no_rmf(idval, clean_astro_ui):
     """Check we error out if RMF is None."""
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
 
-    ui.load_arrays(id, channels, counts, ui.DataPHA)
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
 
     # RMF is checked first
     #
-    with pytest.raises(DataErr) as exc:
-        ui.fake_pha(id, arf=None, rmf=None, exposure=1000.0)
-
-    id = 1 if id is None else id
-    emsg = f'An RMF has not been found or supplied for data set {id}'
-    assert str(exc.value) == emsg
+    idval = 1 if idval is None else idval
+    emsg = f'An RMF has not been found or supplied for data set {idval}'
+    with pytest.raises(DataErr, match=emsg):
+        ui.fake_pha(idval, arf=None, rmf=None, exposure=1000.0)
 
 
-@pytest.mark.parametrize("id", [None, 1, "faked"])
-def test_fake_pha_missing_rmf(id, clean_astro_ui, tmp_path):
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+def test_fake_pha_missing_rmf(idval, clean_astro_ui, tmp_path):
     """Check we error out if RMF is not valid."""
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
 
-    ui.load_arrays(id, channels, counts, ui.DataPHA)
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
 
     rmf = tmp_path / 'rmf'
-    with pytest.raises(IOErr) as exc:
-        ui.fake_pha(id, None, str(rmf), 1000.0)
+    with pytest.raises(IOErr,
+                       match=f"file '{rmf}' not found"):
+        ui.fake_pha(idval, None, str(rmf), 1000.0)
 
-    assert str(exc.value) == f"file '{rmf}' not found"
 
-
-@pytest.mark.parametrize("id", [None, 1, "faked"])
-def test_fake_pha_missing_arf(id, clean_astro_ui, tmp_path):
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+def test_fake_pha_missing_arf(idval, clean_astro_ui, tmp_path):
     """Check we error out if ARF is not valid."""
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
 
-    ui.load_arrays(id, channels, counts, ui.DataPHA)
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
 
     ebins = np.asarray([1.1, 1.2, 1.4, 1.6])
     elo = ebins[:-1]
@@ -83,20 +80,19 @@ def test_fake_pha_missing_arf(id, clean_astro_ui, tmp_path):
 
     arf = tmp_path / 'arf'
 
-    with pytest.raises(IOErr) as exc:
-        ui.fake_pha(id, str(arf), rmf, 1000.0)
+    with pytest.raises(IOErr,
+                       match=f"file '{arf}' not found"):
+        ui.fake_pha(idval, str(arf), rmf, 1000.0)
 
-    assert str(exc.value) == f"file '{arf}' not found"
 
-
-@pytest.mark.parametrize("id", [None, 1, "faked"])
-def test_fake_pha_incompatible_rmf(id, clean_astro_ui):
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+def test_fake_pha_incompatible_rmf(idval, clean_astro_ui):
     """Check we error out if RMF is wrong size."""
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
 
-    ui.load_arrays(id, channels, counts, ui.DataPHA)
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
 
     ebins = np.asarray([1.1, 1.2, 1.4, 1.6, 1.8, 2.0])
     elo = ebins[:-1]
@@ -104,17 +100,15 @@ def test_fake_pha_incompatible_rmf(id, clean_astro_ui):
     arf = ui.create_arf(elo, ehi)
     rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
 
-    with pytest.raises(DataErr) as exc:
-        ui.fake_pha(id, arf, rmf, 1000.0)
-
-    id = 1 if id is None else id
-    emsg = f"RMF 'delta-rmf' is incompatible with PHA dataset '{id}'"
-    assert str(exc.value) == emsg
+    idval = 1 if idval is None else idval
+    emsg = f"RMF 'delta-rmf' is incompatible with PHA dataset '{idval}'"
+    with pytest.raises(DataErr, match=emsg):
+        ui.fake_pha(idval, arf, rmf, 1000.0)
 
 
-@pytest.mark.parametrize("id", [None, 1, "faked"])
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
 @pytest.mark.parametrize("has_bkg", [True, False])
-def test_fake_pha_basic(id, has_bkg, clean_astro_ui, reset_seed):
+def test_fake_pha_basic(idval, has_bkg, clean_astro_ui, reset_seed):
     """No background.
 
     See also test_fake_pha_add_background
@@ -131,13 +125,13 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui, reset_seed):
     counts = np.ones(3, dtype=np.int16)
     bcounts = 100 * counts
 
-    ui.load_arrays(id, channels, counts, ui.DataPHA)
-    ui.set_exposure(id, 100)
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
+    ui.set_exposure(idval, 100)
 
     if has_bkg:
         bkg = ui.DataPHA('bkg', channels, bcounts,
                          exposure=200, backscal=0.4)
-        ui.set_bkg(id, bkg, bkg_id='faked-bkg')
+        ui.set_bkg(idval, bkg, bkg_id='faked-bkg')
 
     ebins = np.asarray([1.1, 1.2, 1.4, 1.6])
     elo = ebins[:-1]
@@ -147,11 +141,11 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui, reset_seed):
 
     mdl = ui.create_model_component('const1d', 'mdl')
     mdl.c0 = 2
-    ui.set_source(id, mdl)
+    ui.set_source(idval, mdl)
 
-    ui.fake_pha(id, arf, rmf, 1000.0)
+    ui.fake_pha(idval, arf, rmf, 1000.0)
 
-    faked = ui.get_data(id)
+    faked = ui.get_data(idval)
     assert faked.exposure == pytest.approx(1000.0)
     assert (faked.channel == channels).all()
 
@@ -161,7 +155,7 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui, reset_seed):
 
     if has_bkg:
         assert faked.background_ids == ['faked-bkg']
-        bkg = ui.get_bkg(id, 'faked-bkg')
+        bkg = ui.get_bkg(idval, 'faked-bkg')
         assert bkg.name == 'bkg'
         assert bkg.counts == pytest.approx(bcounts)
         assert bkg.exposure == pytest.approx(200)
@@ -169,22 +163,10 @@ def test_fake_pha_basic(id, has_bkg, clean_astro_ui, reset_seed):
     else:
         assert faked.background_ids == []
 
-    # check we've faked counts (the scaling is such that it is
-    # very improbable that this condition will fail)
-    #
-    assert (faked.counts > counts).all()
-
     # For reference the predicted source signal is
     #    [200, 400, 400]
     #
-    # What we'd like to say is that the predicted counts are
-    # similar, but this is not easy to do. What we can try
-    # is summing the counts (to average over the randomness)
-    # and then a simple check
-    #
-    assert (faked.counts.sum() > 200) and (faked.counts.sum() < 3000)
-    # This is more likely to fail by chance, but still very unlikely
-    assert faked.counts[1] > faked.counts[0]
+    assert faked.counts == pytest.approx([215, 390, 425])
 
 
 def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui, reset_seed):
@@ -222,25 +204,14 @@ def test_fake_pha_basic_arfrmf_set_in_advance(clean_astro_ui, reset_seed):
     assert faked.name == 'faked'
     assert faked.background_ids == []
 
-    # check we've faked counts (the scaling is such that it is
-    # very improbable that this condition will fail)
-    assert (faked.counts > counts).all()
-
     # For reference the predicted source signal is
     #    [200, 400, 400]
     #
-    # What we'd like to say is that the predicted counts are
-    # similar, but this is not easy to do. What we can try
-    # is summing the counts (to average over the randomness)
-    # and then a simple check
-    #
-    assert (faked.counts.sum() > 200) and (faked.counts.sum() < 3000)
-    # This is more likely to fail by chance, but still very unlikely
-    assert faked.counts[1] > faked.counts[0]
+    assert faked.counts == pytest.approx([198, 384, 409])
 
 
-@pytest.mark.parametrize("id", [None, 1, "faked"])
-def test_fake_pha_add_background(id, clean_astro_ui, reset_seed):
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+def test_fake_pha_add_background(idval, clean_astro_ui, reset_seed):
     """Check we can add a background component.
 
     See also test_fake_pha_basic.
@@ -254,9 +225,9 @@ def test_fake_pha_add_background(id, clean_astro_ui, reset_seed):
     counts = np.ones(3, dtype=np.int16)
     bcounts = 100 * counts
 
-    ui.load_arrays(id, channels, counts, ui.DataPHA)
-    ui.set_exposure(id, 100)
-    ui.set_backscal(id, 0.1)
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
+    ui.set_exposure(idval, 100)
+    ui.set_backscal(idval, 0.1)
 
     bkg = ui.DataPHA('bkg', channels, bcounts,
                      exposure=200, backscal=0.4)
@@ -269,35 +240,24 @@ def test_fake_pha_add_background(id, clean_astro_ui, reset_seed):
 
     mdl = ui.create_model_component('const1d', 'mdl')
     mdl.c0 = 2
-    ui.set_source(id, mdl)
+    ui.set_source(idval, mdl)
 
-    ui.fake_pha(id, arf, rmf, 1000.0, bkg=bkg)
+    ui.fake_pha(idval, arf, rmf, 1000.0, bkg=bkg)
 
-    faked = ui.get_data(id)
+    faked = ui.get_data(idval)
     assert faked.exposure == pytest.approx(1000.0)
     assert (faked.channel == channels).all()
-
-    # check we've faked counts (the scaling is such that it is
-    # very improbable that this condition will fail)
-    assert (faked.counts > counts).all()
 
     # For reference the predicted source signal is
     #    [200, 400, 400]
     # and the background signal is
     #    [125, 125, 125]
-    # so, even with randomly drawn values, the following
-    # checks should be robust.
     #
-    predicted_by_source = 1000 * mdl(elo, ehi)
-    predicted_by_bkg = (1000/200) * (0.1/0.4) * bcounts
-    assert (faked.counts > predicted_by_source).all()
-    assert (faked.counts > predicted_by_bkg).all()
-    # This is more likely to fail by chance, but still very unlikely
-    assert faked.counts[1] > faked.counts[0]
+    assert faked.counts == pytest.approx([321, 506, 504])
 
 
-@pytest.mark.parametrize("id", [None, 1, "faked"])
-def test_fake_pha_no_data(id, clean_astro_ui, reset_seed):
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+def test_fake_pha_no_data(idval, clean_astro_ui, reset_seed):
     """What happens if there is no data loaded at the id?
     """
 
@@ -311,20 +271,14 @@ def test_fake_pha_no_data(id, clean_astro_ui, reset_seed):
 
     mdl = ui.create_model_component('const1d', 'mdl')
     mdl.c0 = 2
-    ui.set_source(id, mdl)
+    ui.set_source(idval, mdl)
 
-    ui.fake_pha(id, arf, rmf, 1000.0)
+    ui.fake_pha(idval, arf, rmf, 1000.0)
 
-    # We don't really check anything sensible with the counts.
-    # It is unlikely the simulated counts will be <= 1.
-    #
-    # For reference the predicted source signal is
-    #    [200, 400, 400]
-    #
     channels = np.arange(1, 4)
     counts = [1, 1, 1]
 
-    faked = ui.get_data(id)
+    faked = ui.get_data(idval)
     assert faked.exposure == pytest.approx(1000.0)
     assert (faked.channel == channels).all()
 
@@ -334,18 +288,10 @@ def test_fake_pha_no_data(id, clean_astro_ui, reset_seed):
 
     assert faked.background_ids == []
 
-    # check we've faked counts (the scaling is such that it is
-    # very improbable that this condition will fail)
-    assert (faked.counts > counts).all()
-
-    # What we'd like to say is that the predicted counts are
-    # similar, but this is not easy to do. What we can try
-    # is summing the counts (to average over the randomness)
-    # and then a simple check
+    # For reference the predicted source signal is
+    #    [200, 400, 400]
     #
-    assert (faked.counts.sum() > 200) and (faked.counts.sum() < 3000)
-    # This is more likely to fail by chance, but still very unlikely
-    assert faked.counts[1] > faked.counts[0]
+    assert faked.counts == pytest.approx([189, 382, 400])
 
 
 @requires_fits
@@ -367,15 +313,21 @@ def test_fake_pha_file(make_data_path, clean_astro_ui, reset_seed):
     ui.fake_pha(None,
                 make_data_path('3c120_heg_-1.arf.gz'),
                 make_data_path('3c120_heg_-1.rmf.gz'),
-                 1000.)
+                1000.)
     data = ui.get_data()
-    # Even with noise, maximum should be close to 3 keV
+
+    # Even with noise, maximum should be close to 3 keV. With the
+    # fixed seed this check could be made exact, but leave as is.
+    #
     assert np.isclose(data.get_x()[np.argmax(data.counts)], 3., atol=.2)
 
-    # This is not a test from first principles, but at least a check of
-    # the current behaviour
-    assert data.counts.sum() > 5000
-    assert data.counts.sum() < 10000
+    # The model is localised around 3 keV so we could check that most
+    # of the data is zero, but that seems excessive. Unlike other tests
+    # we can not just check data.counts.sum() equals a certain value
+    # since the value depends on OS: linux gets 6845 but macOS gets 6842.
+    #
+    total = data.counts.sum()
+    assert 6840 <= total <= 6850
 
 
 @requires_fits
@@ -440,13 +392,19 @@ def test_fake_pha_multi_file(make_data_path, clean_astro_ui, reset_seed):
                  make_data_path('3c120_heg_1.rmf.gz')],
                 500.)
     data = ui.get_data()
-    # Even with noise, maximum should be close to 3 keV
+
+    # Even with noise, maximum should be close to 3 keV. With the
+    # fixed seed this check could be made exact, but leave as is.
+    #
     assert np.isclose(data.get_x()[np.argmax(data.counts)], 3., atol=.2)
 
-    # This is not a test from first principles, but at least a check of
-    # the current behaviour
-    assert data.counts.sum() > 5000
-    assert data.counts.sum() < 10000
+    # The model is localised around 3 keV so we could check that most
+    # of the data is zero, but that seems excessive. Unlike other tests
+    # we can not just check data.counts.sum() equals a certain value
+    # since the value depends on OS: linux gets 7053 but macOS gets 7133.
+    #
+    total = data.counts.sum()
+    assert 7050 <= total <= 7150
 
 
 def test_fake_pha_background_model(clean_astro_ui, reset_seed):
@@ -459,14 +417,14 @@ def test_fake_pha_background_model(clean_astro_ui, reset_seed):
 
     np.random.seed(27347)
 
-    id = 'qwerty'
+    idval = 'qwerty'
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
     bcounts = 100 * counts
 
-    ui.load_arrays(id, channels, counts, ui.DataPHA)
-    ui.set_exposure(id, 100)
-    ui.set_backscal(id, 0.1)
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
+    ui.set_exposure(idval, 100)
+    ui.set_backscal(idval, 0.1)
 
     bkg = ui.DataPHA('bkg', channels, bcounts,
                      exposure=200, backscal=0.4)
@@ -477,38 +435,32 @@ def test_fake_pha_background_model(clean_astro_ui, reset_seed):
     arf = ui.create_arf(elo, ehi)
     rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
 
-    mdl = ui.create_model_component('const1d', 'mdl')
-    mdl.c0 = 0
-    bkgmdl = ui.create_model_component('const1d', 'mdl')
-    bkgmdl.c0 = 2
-    ui.set_source(id, mdl)
-    ui.set_bkg(id, bkg)
-    ui.set_bkg_source(id, bkgmdl)
-    ui.set_arf(id, arf, bkg_id=1)
-    ui.set_rmf(id, rmf, bkg_id=1)
+    mdl = ui.create_model_component('box1d', 'mdl')
+    mdl.xlow = 1
+    mdl.xhi = 1.4
+    mdl.ampl = 0.5
+    bkgmdl = ui.create_model_component('box1d', 'bkgmdl')
+    bkgmdl.xlow = 1.2
+    bkgmdl.xhi = 2
+    bkgmdl.ampl = 1
+    ui.set_source(idval, mdl)
+    ui.set_bkg(idval, bkg)
+    ui.set_bkg_source(idval, bkgmdl)
+    ui.set_arf(idval, arf, bkg_id=1)
+    ui.set_rmf(idval, rmf, bkg_id=1)
 
-    ui.fake_pha(id, arf, rmf, 1000.0, bkg='model')
+    ui.fake_pha(idval, arf, rmf, 1000.0, bkg='model')
 
-    faked = ui.get_data(id)
+    faked = ui.get_data(idval)
     assert faked.exposure == pytest.approx(1000.0)
     assert (faked.channel == channels).all()
 
-    # check we've faked counts (the scaling is such that it is
-    # very improbable that this condition will fail)
-    assert (faked.counts > counts).all()
-
     # For reference the predicted source signal is
-    #    [200, 400, 400]
-    # and the background signal is
-    #    [125, 125, 125]
-    # so, even with randomly drawn values, the following
-    # checks should be robust.
+    #    [50, 100, 0]
+    # and the background signal for the source is
+    #    [0, 200, 200]
     #
-    predicted_by_source = 1000 * mdl(elo, ehi)
-    predicted_by_bkg = (1000/200) * (0.1/0.4) * bcounts
-    assert (faked.counts > predicted_by_source).all()
-    assert (faked.counts > predicted_by_bkg).all()
-    # This is more likely to fail by chance, but still very unlikely
+    assert faked.counts == pytest.approx([42, 137, 53])
 
 
 @requires_fits
