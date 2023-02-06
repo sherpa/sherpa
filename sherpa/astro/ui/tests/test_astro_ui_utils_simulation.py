@@ -28,6 +28,7 @@ import numpy as np
 import pytest
 
 from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro import ui
 from sherpa.utils.err import DataErr, IOErr
 
@@ -564,3 +565,186 @@ def test_fake_pha_issue_1568(make_data_path, clean_astro_ui, reset_seed):
     #
     assert data.counts.sum() == 7968
     assert data.get_x()[np.argmax(data.counts)] == pytest.approx(1.957132)
+
+
+def setup_fake_pha_test():
+    """Set up for test_fake_pha_xxx
+
+    The test calling this should use the reset_seed fixture as this
+    sets the random seed to a known value.
+
+    """
+
+    # Fake up a 3-channel source and background dataset with different
+    # exposure times, backscal, and ARFs (the RMF will be "perfect" to
+    # make this simple).
+    #
+    #               Source  Bgnd
+    #    exposure =   100    500
+    #    backscal =   0.2    0.4
+    #         ARF =     2    0.8
+    #
+    # The RMF does not have equal-width energy bins just to show that
+    # this has an affect.
+    #
+    #     1.0 - 1.2, 1.2 - 1.6, 1.6 - 2.6 keV
+    #
+    egrid = np.asarray([1, 1.2, 1.6, 2.6])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    arf_src = create_arf(elo, ehi, [2, 2, 2])
+    arf_bkg = create_arf(elo, ehi, [0.8, 0.8, 0.8])
+
+    rmf_src = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    rmf_bkg = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    ui.load_arrays(1, [1, 2, 3], [20, 20, 20], ui.DataPHA)
+    ui.set_exposure(100)
+    ui.set_backscal(0.2)
+
+    ui.set_rmf(rmf_src)
+    ui.set_arf(arf_src)
+
+    ui.set_analysis("energy")
+
+    # We do not have a "ui" way to create the background
+    #
+    bkg = ui.DataPHA("bkg", [1, 2, 3], [300, 300, 300], exposure=500, backscal=0.4)
+    bkg.set_arf(arf_bkg)
+    bkg.set_rmf(rmf_bkg)
+
+    ui.set_bkg(bkg)
+
+    ui.set_source(ui.box1d.sbox)
+    ui.set_bkg_source(ui.box1d.bbox)
+
+    sbox.xlow = 0
+    sbox.xhi = 1.4
+    sbox.ampl.set(2, max=2)
+
+    bbox.xlow = 1.6
+    bbox.xhi = 3
+    bbox.ampl.set(3, max=3)
+
+    assert ui.get_data().counts == pytest.approx([20, 20, 20])
+
+    ui.set_analysis(1, "energy", type="counts")
+    assert ui.get_data_plot().y == pytest.approx([20, 20, 20])
+    assert ui.get_bkg_plot().y == pytest.approx([300, 300, 300])
+    assert ui.get_model_plot().y == pytest.approx([80, 80, 300])
+    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 1200])
+
+    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
+    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+
+    ui.set_analysis(1, "energy", type="rate")
+    assert ui.get_data_plot().y == pytest.approx([1, 0.5, 0.2])
+    assert ui.get_bkg_plot().y == pytest.approx([3, 1.5, 0.6])
+    assert ui.get_model_plot().y == pytest.approx([4, 2, 3])
+    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 2.4])
+
+    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
+    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+
+    np.random.seed(392347)
+    return (arf_src, rmf_src)
+
+
+def test_fake_pha_without_bgnd(clean_astro_ui, reset_seed):
+    """Extend test_fake_pha_with_bgnd_model to check with no background"""
+
+    expected = [85, 75, 297]  # This is the current behavior but it includes the background
+    bexpected = [300, 300, 300]
+
+    arf, rmf = setup_fake_pha_test()
+    ui.fake_pha(1, arf, rmf, 100, bkg=None)
+
+    # Check what's changed and what hasn't
+    ui.set_analysis(1, "energy", type="counts")
+    assert ui.get_data_plot().y == pytest.approx(expected)
+    assert ui.get_bkg_plot().y == pytest.approx(bexpected)
+    assert ui.get_model_plot().y == pytest.approx([80, 80, 300])
+    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 1200])
+
+    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
+    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+
+    ui.set_analysis(1, "energy", type="rate")
+    assert ui.get_data_plot().y == pytest.approx(expected / np.asarray([20, 40, 100]))
+    assert ui.get_bkg_plot().y == pytest.approx(bexpected / np.asarray([100, 200, 500]))
+    assert ui.get_model_plot().y == pytest.approx([4, 2, 3])
+    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 2.4])
+
+    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
+    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+
+
+def test_fake_pha_with_bgnd_model(clean_astro_ui, reset_seed):
+    """Add a test found when investigating #1685
+
+    At some point working on #1684 this included the background twice,
+    so add the test in to ensure this never happens.
+
+    """
+
+    expected = [85, 76, 297]
+    bexpected = [300, 300, 300]
+
+    arf, rmf = setup_fake_pha_test()
+    ui.fake_pha(1, arf, rmf, 100, bkg="model")
+
+    # Check what's changed and what hasn't
+    ui.set_analysis(1, "energy", type="counts")
+    assert ui.get_data_plot().y == pytest.approx(expected)
+    assert ui.get_bkg_plot().y == pytest.approx(bexpected)
+    assert ui.get_model_plot().y == pytest.approx([80, 80, 300])
+    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 1200])
+
+    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
+    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+
+    ui.set_analysis(1, "energy", type="rate")
+    assert ui.get_data_plot().y == pytest.approx(expected / np.asarray([20, 40, 100]))
+    assert ui.get_bkg_plot().y == pytest.approx(bexpected / np.asarray([100, 200, 500]))
+    assert ui.get_model_plot().y == pytest.approx([4, 2, 3])
+    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 2.4])
+
+    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
+    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+
+
+def test_fake_pha_with_bgnd_data(clean_astro_ui, reset_seed):
+    """Extend test_fake_pha_with_bgnd_model to check with a dataset."""
+
+    expected = [90, 89, 1196]
+    bexpected = [10, 15, 5]
+
+    # Choose a different background to the actual background,
+    # particularly with different exposure/backscal.
+    #
+    bkg = ui.DataPHA("fakey", [1, 2, 3], bexpected)
+    bkg.exposure = 400
+    bkg.backscal = 0.1
+
+    arf, rmf = setup_fake_pha_test()
+    ui.fake_pha(1, arf, rmf, 100, bkg=bkg)
+
+    # Check what's changed and what hasn't
+    ui.set_analysis(1, "energy", type="counts")
+    assert ui.get_data_plot().y == pytest.approx(expected)
+    assert ui.get_bkg_plot().y == pytest.approx(bexpected)
+    assert ui.get_model_plot().y == pytest.approx([80, 80, 1200])
+    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 2400])
+
+    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
+    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+
+    ui.set_analysis(1, "energy", type="rate")
+    assert ui.get_data_plot().y == pytest.approx(expected / np.asarray([20, 40, 100]))
+    assert ui.get_bkg_plot().y == pytest.approx(bexpected / np.asarray([80, 160, 400]))
+    assert ui.get_model_plot().y == pytest.approx([4, 2, 12])
+    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 6])
+
+    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
+    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
