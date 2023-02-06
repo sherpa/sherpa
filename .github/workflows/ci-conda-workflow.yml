@@ -31,7 +31,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            xspec-version: 12.10.1s
+            xspec-version: 12.13.0c
             # run xvfb with this display
             display: :99
 
@@ -56,7 +56,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            xspec-version: 12.12.1
+            xspec-version: 12.13.0c
 
           - name: Linux Full Build (Python 3.9)
             os: ubuntu-latest
@@ -65,7 +65,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            xspec-version: 12.11.1
+            xspec-version: 12.12.1c
 
           - name: Linux Full Build (Python 3.8)
             os: ubuntu-latest
@@ -74,7 +74,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            xspec-version: 12.10.1s
+            xspec-version: 12.12.0g
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest

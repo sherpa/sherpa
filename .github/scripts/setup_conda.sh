@@ -33,8 +33,11 @@ conda update --yes conda
 # https://github.com/sherpa/sherpa/pull/794#issuecomment-616570995 )
 # the XSPEC-related channels are only added if needed
 #
+if [ -n "${XSPECVER}" ]; then
+ conda config --add channels conda-forge
+ conda config --add channels ${xspec_channel}
+fi
 conda config --add channels ${sherpa_channel}
-if [ -n "${XSPECVER}" ]; then conda config --add channels ${xspec_channel}; fi
 
 # Figure out requested dependencies
 if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
