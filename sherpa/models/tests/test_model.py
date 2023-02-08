@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020, 2021, 2022
+#  Copyright (C) 2007, 2016, 2017, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,13 +34,13 @@ import numpy
 
 import pytest
 
-from sherpa.utils.err import ModelErr
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
     Scale1D, Integrate1D
+from sherpa.utils.err import ModelErr, ParameterErr
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
@@ -330,10 +330,14 @@ def test_get_mins_maxes_errors(setup):
     """Check that we get errors when setting values incorrectly"""
     mdl, _ = setup()
 
-    with pytest.raises(ModelErr):
+    # The message depends on the model being checked. The actual
+    # values could be sent in but just go with this for now.
+    #
+    emsg = r"^expected \d thawed parameters, got \d$"
+    with pytest.raises(ModelErr, match=emsg):
         mdl.thawedparmins = [-5, -7]
 
-    with pytest.raises(ModelErr):
+    with pytest.raises(ModelErr, match=emsg):
         mdl.thawedparmaxes = [2, 3, 4, 5]
 
 
@@ -387,6 +391,86 @@ def test_get_mins_maxes_warns(caplog):
 
     assert msgs[4] == 'value of parameter box1d.xlow minimum is below hard minimum; setting to hard minimum'
     assert msgs[5] == 'value of parameter box1d.xlow maximum is below hard minimum; setting to hard minimum'
+
+
+def test_set_hard_limit_warns(caplog):
+    """Setting the thawed pars is different to changing the par directly.
+
+    Check one of these cases. Created to address #1688.  Unfortunately
+    the check using caplog captures the logging output correctly, and
+    not as a used would see it (where the %s was not being replaced),
+    which means this can not check #1688 is fixed. DJB does not know
+    how to do such a check witout adding extensive testing machinery
+    which is not warranted in this case.
+
+    """
+
+    mdl = Sin("m")
+
+    # Check the defaults haven't changed.
+    #
+    assert mdl.thawedpars == pytest.approx([1, 0, 1])
+
+    # Check minimum values.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        mdl.thawedpars = [0, -1, -1]
+
+    assert mdl.thawedpars == pytest.approx([1e-10, 0, 1e-5])
+    assert len(caplog.records) == 3
+
+    # Check maximum values.
+    #
+    big = 4e40
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        mdl.thawedpars = [big, big, big]
+
+    assert mdl.thawedpars == pytest.approx([10, hugeval, hugeval])
+    assert len(caplog.records) == 6
+
+    msgs = []
+    for (log_name, log_level, message) in caplog.record_tuples:
+        assert log_level == logging.WARNING
+        assert log_name == 'sherpa.models.model'
+        msgs.append(message)
+
+    def minstr(name):
+        return f"value of parameter {name} is below minimum; setting to minimum"
+
+    def maxstr(name):
+        return f"value of parameter {name} is above maximum; setting to maximum"
+
+    assert msgs[0] == minstr("m.period")
+    assert msgs[1] == minstr("m.offset")
+    assert msgs[2] == minstr("m.ampl")
+    assert msgs[3] == maxstr("m.period")
+    assert msgs[4] == maxstr("m.offset")
+    assert msgs[5] == maxstr("m.ampl")
+
+
+def test_set_pars_errors_soft_limits():
+    """Do we get errors about soft limits
+
+    Similar to test_get_mins_maxes_warns but it's an error,
+    not a warning.
+    """
+
+    # Ensure the ampl parameter has a known range for testing.
+    #
+    mdl = Box1D("b")
+    mdl.ampl.set(0.5, min=0, max=1)
+
+    with pytest.raises(ParameterErr,
+                       match="^parameter b.ampl has a minimum of 0$"):
+        mdl.ampl = -1
+
+    assert mdl.ampl.val == pytest.approx(0.5)
+
+    with pytest.raises(ParameterErr,
+                       match="^parameter b.ampl has a maximum of 1$"):
+        mdl.ampl = 10
+
+    assert mdl.ampl.val == pytest.approx(0.5)
 
 
 def test_reset():
