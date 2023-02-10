@@ -36,6 +36,24 @@ from sherpa.models.basic import Box1D, Box2D, Const1D, Const2D, Gauss1D, \
 from sherpa.utils.err import PSFErr
 
 
+def check_lines(out, lines):
+    """Check out, when split on new line, matches lines.
+
+    Parameters
+    ----------
+    out : str
+        Text to check
+    lines : list of str
+        The expected output of out.split("\n")
+    """
+
+    olines = out.split("\n")
+    for oline, expected in zip(olines, lines):
+        assert oline == expected
+
+    assert len(olines) == len(lines)
+
+
 def make_none():
     """We can use this to create no kernel"""
 
@@ -152,16 +170,16 @@ def test_psf1d_model_show():
     dfold = Data1D('fold', np.arange(10), np.zeros(10))
     m.fold(dfold)
 
-    out = str(m).split("\n")
-    assert len(out) == 8
-    assert out[0] == "pmodel1"
-    assert out[1] == "   Param        Type          Value          Min          Max      Units"
-    assert out[2] == "   -----        ----          -----          ---          ---      -----"
-    assert out[3] == "   pmodel1.kernel frozen         box1"
-    assert out[4] == "   pmodel1.size frozen           10           10           10"
-    assert out[5] == "   pmodel1.center frozen            5            5            5"
-    assert out[6] == "   pmodel1.radial frozen            0            0            1           "
-    assert out[7] == "   pmodel1.norm frozen            1            0            1           "
+    check_lines(str(m),
+                [ "pmodel1"
+                , "   Param        Type          Value          Min          Max      Units"
+                , "   -----        ----          -----          ---          ---      -----"
+                , "   pmodel1.kernel frozen         box1"
+                , "   pmodel1.size frozen           10           10           10"
+                , "   pmodel1.center frozen            5            5            5"
+                , "   pmodel1.radial frozen            0            0            1           "
+                , "   pmodel1.norm frozen            1            0            1           "
+                ])
 
 
 def test_psf2d_data_show():
@@ -182,16 +200,16 @@ def test_psf2d_data_show():
     dfold = Data2D('fold', xx, yy, zz)
     m.fold(dfold)
 
-    out = str(m).split("\n")
-    assert len(out) == 8
-    assert out[0] == "pdata2"
-    assert out[1] == "   Param        Type          Value          Min          Max      Units"
-    assert out[2] == "   -----        ----          -----          ---          ---      -----"
-    assert out[3] == "   pdata2.kernel frozen        data2"
-    assert out[4] == "   pdata2.size  frozen       (6, 6)       (6, 6)       (6, 6)"
-    assert out[5] == "   pdata2.center frozen       (3, 3)       (3, 3)       (3, 3)"
-    assert out[6] == "   pdata2.radial frozen            0            0            1           "
-    assert out[7] == "   pdata2.norm  frozen            1            0            1           "
+    check_lines(str(m),
+                [ "pdata2"
+                , "   Param        Type          Value          Min          Max      Units"
+                , "   -----        ----          -----          ---          ---      -----"
+                , "   pdata2.kernel frozen        data2"
+                , "   pdata2.size  frozen       (6, 6)       (6, 6)       (6, 6)"
+                , "   pdata2.center frozen       (3, 3)       (3, 3)       (3, 3)"
+                , "   pdata2.radial frozen            0            0            1           "
+                , "   pdata2.norm  frozen            1            0            1           "
+                ])
 
 
 def test_psf2d_model_show():
@@ -206,17 +224,16 @@ def test_psf2d_model_show():
     dfold = Data2D('fold', xx, yy, zz)
     m.fold(dfold)
 
-    print(m)
-    out = str(m).split("\n")
-    assert len(out) == 8
-    assert out[0] == "pmodel2"
-    assert out[1] == "   Param        Type          Value          Min          Max      Units"
-    assert out[2] == "   -----        ----          -----          ---          ---      -----"
-    assert out[3] == "   pmodel2.kernel frozen         box2"
-    assert out[4] == "   pmodel2.size frozen     (72, 72)     (72, 72)     (72, 72)"
-    assert out[5] == "   pmodel2.center frozen     (36, 36)     (36, 36)     (36, 36)"
-    assert out[6] == "   pmodel2.radial frozen            0            0            1           "
-    assert out[7] == "   pmodel2.norm frozen            1            0            1           "
+    check_lines(str(m),
+                [ "pmodel2"
+                , "   Param        Type          Value          Min          Max      Units"
+                , "   -----        ----          -----          ---          ---      -----"
+                , "   pmodel2.kernel frozen         box2"
+                , "   pmodel2.size frozen     (72, 72)     (72, 72)     (72, 72)"
+                , "   pmodel2.center frozen     (36, 36)     (36, 36)     (36, 36)"
+                , "   pmodel2.radial frozen            0            0            1           "
+                , "   pmodel2.norm frozen            1            0            1           "
+                ])
 
 
 def test_psf1d_empty_pars():
@@ -758,24 +775,22 @@ def test_convolutionkernel_repr():
 def test_kernel_show_1d():
 
     kern = Kernel([5], [3])
-    out = str(kern).split("\n")
-
-    assert out[0] == "dshape   = [5]"
-    assert out[1] == "kshape   = [3]"
-    assert out[2] == "skshape  = None"
-    assert out[3] == "norm     = False"
-    assert out[4] == "origin   = [0.]"
-    assert out[5] == "frozen   = True"
-    assert out[6] == "center   = None"
-    assert out[7] == "args     = []"
-    assert out[8] == "kwargs   = {}"
-    assert out[9] == "renorm_shape  = None"
-    assert out[10] == "renorm   = None"
-    assert out[11] == "do_pad   = False"
-    assert out[12] == "pad_mask = None"
-    assert out[13] == "frac     = None"
-
-    assert len(out) == 14
+    check_lines(str(kern),
+                [ "dshape   = [5]"
+                , "kshape   = [3]"
+                , "skshape  = None"
+                , "norm     = False"
+                , "origin   = [0.]"
+                , "frozen   = True"
+                , "center   = None"
+                , "args     = []"
+                , "kwargs   = {}"
+                , "renorm_shape  = None"
+                , "renorm   = None"
+                , "do_pad   = False"
+                , "pad_mask = None"
+                , "frac     = None"
+                ])
 
 
 def test_convolutionkernel_show_2d():
@@ -783,75 +798,68 @@ def test_convolutionkernel_show_2d():
     mdl = Const2D()
     mdl.c0.set(2, min=2, max=2)
     kern = ConvolutionKernel(mdl)
-    out = str(kern).split("\n")
-    print(kern)
-
-    assert out[0] == "Convolution Kernel:"
-    assert out[1] == "const2d"
-    assert out[2] == "   Param        Type          Value          Min          Max      Units"
-    assert out[3] == "   -----        ----          -----          ---          ---      -----"
-    assert out[4] == "   const2d.c0   thawed            2            2            2           "
-
-    assert len(out) == 5
+    check_lines(str(kern),
+                [ "Convolution Kernel:"
+                , "const2d"
+                , "   Param        Type          Value          Min          Max      Units"
+                , "   -----        ----          -----          ---          ---      -----"
+                , "   const2d.c0   thawed            2            2            2           "
+                ])
 
 
 def test_psfkernel_show_1d():
 
     kern = PSFKernel([5], [3])
-    out = str(kern).split("\n")
-
-    assert out[0] == "dshape   = [5]"
-    assert out[1] == "kshape   = [3]"
-    assert out[2] == "skshape  = None"
-    assert out[3] == "norm     = True"
-    assert out[4] == "origin   = None"
-    assert out[5] == "frozen   = True"
-    assert out[6] == "center   = None"
-    assert out[7] == "args     = []"
-    assert out[8] == "kwargs   = {}"
-    assert out[9] == "renorm_shape  = None"
-    assert out[10] == "renorm   = None"
-    assert out[11] == "do_pad   = False"
-    assert out[12] == "pad_mask = None"
-    assert out[13] == "frac     = None"
-    assert out[14] == "is_model = False"
-    assert out[15] == "size     = None"
-    assert out[16] == "lo       = None"
-    assert out[17] == "hi       = None"
-    assert out[18] == "width    = None"
-    assert out[19] == "radial   = 0"
-
-    assert len(out) == 20
+    check_lines(str(kern),
+                [ "dshape   = [5]"
+                , "kshape   = [3]"
+                , "skshape  = None"
+                , "norm     = True"
+                , "origin   = None"
+                , "frozen   = True"
+                , "center   = None"
+                , "args     = []"
+                , "kwargs   = {}"
+                , "renorm_shape  = None"
+                , "renorm   = None"
+                , "do_pad   = False"
+                , "pad_mask = None"
+                , "frac     = None"
+                , "is_model = False"
+                , "size     = None"
+                , "lo       = None"
+                , "hi       = None"
+                , "width    = None"
+                , "radial   = 0"
+                ])
 
 
 def test_radialprofilekernel_show_1d():
 
     kern = RadialProfileKernel([5], [3])
-    out = str(kern).split("\n")
-
-    assert out[0] == "dshape   = [5]"
-    assert out[1] == "kshape   = [3]"
-    assert out[2] == "skshape  = None"
-    assert out[3] == "norm     = True"
-    assert out[4] == "origin   = None"
-    assert out[5] == "frozen   = True"
-    assert out[6] == "center   = None"
-    assert out[7] == "args     = []"
-    assert out[8] == "kwargs   = {}"
-    assert out[9] == "renorm_shape  = None"
-    assert out[10] == "renorm   = None"
-    assert out[11] == "do_pad   = False"
-    assert out[12] == "pad_mask = None"
-    assert out[13] == "frac     = None"
-    assert out[14] == "is_model = False"
-    assert out[15] == "size     = None"
-    assert out[16] == "lo       = None"
-    assert out[17] == "hi       = None"
-    assert out[18] == "width    = None"
-    assert out[19] == "radial   = 1"
-    assert out[20] == "radialsize = None"
-
-    assert len(out) == 21
+    check_lines(str(kern),
+                [ "dshape   = [5]"
+                , "kshape   = [3]"
+                , "skshape  = None"
+                , "norm     = True"
+                , "origin   = None"
+                , "frozen   = True"
+                , "center   = None"
+                , "args     = []"
+                , "kwargs   = {}"
+                , "renorm_shape  = None"
+                , "renorm   = None"
+                , "do_pad   = False"
+                , "pad_mask = None"
+                , "frac     = None"
+                , "is_model = False"
+                , "size     = None"
+                , "lo       = None"
+                , "hi       = None"
+                , "width    = None"
+                , "radial   = 1"
+                , "radialsize = None"
+                ])
 
 
 def test_empty_psfmodel_has_no_kernel():
@@ -862,8 +870,6 @@ def test_empty_psfmodel_has_no_kernel():
 def test_psfmodel_set_kernel():
 
     mdl = PSFModel(kernel=Box1D())
-    print(mdl.kernel)
-    print(type(mdl.kernel))
     assert isinstance(mdl.kernel, Box1D)
 
 
