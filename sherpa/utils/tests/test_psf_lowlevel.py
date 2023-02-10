@@ -53,10 +53,9 @@ def test_tcdData_convolve_error1():
     out = _psf.tcdData()
     data = [1, 2, 3]
     kernel = [1, 2, 2, 1]
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match, dims_src: 1 vs dims_kern: 2$"):
         out.convolve(data, kernel, [3], [2, 2], [0])
-
-    assert str(te.value) == 'input array sizes do not match, dims_src: 1 vs dims_kern: 2'
 
 
 @pytest.mark.parametrize('center', [[0], 0])
@@ -65,10 +64,9 @@ def test_tcdData_convolve_error2(center):
     out = _psf.tcdData()
     data = [1, 2, 3, 4]
     kernel = [1, 2, 2, 1]
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match, dims_kern: 2 vs center: 1$"):
         out.convolve(data, kernel, [2, 2], [2, 2], center)
-
-    assert str(te.value) == 'input array sizes do not match, dims_kern: 2 vs center: 1'
 
 
 def test_tcdData_convolve_error3():
@@ -76,10 +74,9 @@ def test_tcdData_convolve_error3():
     out = _psf.tcdData()
     data = [1, 2, 3]
     kernel = [1, 2, 2, 1]
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match dimensions, source size: 3 vs source dim: 4$"):
         out.convolve(data, kernel, [2, 2], [2, 2], [0, 0])
-
-    assert str(te.value) == 'input array sizes do not match dimensions, source size: 3 vs source dim: 4'
 
 
 def test_tcdData_convolve_error4():
@@ -87,10 +84,9 @@ def test_tcdData_convolve_error4():
     out = _psf.tcdData()
     data = [1, 2, 3, 2]
     kernel = [1, 2, 2]
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match dimensions, kernel size: 3 vs kernel dim: 4$"):
         out.convolve(data, kernel, [2, 2], [2, 2], [0, 0])
-
-    assert str(te.value) == 'input array sizes do not match dimensions, kernel size: 3 vs kernel dim: 4'
 
 
 def test_tcdData_convolve_error_3d():
@@ -98,10 +94,9 @@ def test_tcdData_convolve_error_3d():
     out = _psf.tcdData()
     data = [1, 2, 3, 4, 5, 6, 7, 8]
     kernel = [1, 2, 2, 1]
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^Padding dimension not supported$"):
         out.convolve(data, kernel, [2, 2, 2], [2, 2, 1], [0, 0, 0])
-
-    assert str(te.value) == 'Padding dimension not supported'
 
 
 @pytest.mark.parametrize('actual,expected',
@@ -120,10 +115,9 @@ def test_get_padsize(actual, expected):
 def test_get_padsize_too_large():
     """Pick one larger than the current maximum"""
 
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^Padding dimension length 32401 not supported$"):
         _psf.get_padsize(32401)
-
-    assert str(te.value) == 'Padding dimension length 32401 not supported'
 
 
 def test_pad_data_basic():
@@ -152,10 +146,9 @@ def test_unpad_data_basic():
                           (_psf.unpad_data, 2, 1)])
 def test_xpad_data_error1(func, i, j):
 
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match=f"^input array sizes do not match, shape: {i} vs padshape: {j}$"):
         func([1, 2, 3], [3], [1, 3])
-
-    assert str(te.value) == f'input array sizes do not match, shape: {i} vs padshape: {j}'
 
 
 @pytest.mark.parametrize('func,i',
@@ -163,40 +156,36 @@ def test_xpad_data_error1(func, i, j):
                           (_psf.unpad_data, 1)])
 def test_xpad_data_error2(func, i):
 
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match=fr"^pad size is smaller than data shape, padshape\[{i}\]: 1 < shape\[{i}\]: 3$"):
         func([1, 2, 3], [3, 1], [1, 3])
-
-    assert str(te.value) == f'pad size is smaller than data shape, padshape[{i}]: 1 < shape[{i}]: 3'
 
 
 def test_pad_data_error3():
 
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match dimensions, kernel size: 3 vs kernel dim: 2$"):
         _psf.pad_data([1, 2, 3], [2], [3])
-
-    assert str(te.value) == 'input array sizes do not match dimensions, kernel size: 3 vs kernel dim: 2'
 
 
 def test_unpad_data_error3():
 
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^input array sizes do not match dimensions, kernel size: 3 vs kernel dim: 4$"):
         _psf.unpad_data([1, 2, 3], [4], [3])
-
-    assert str(te.value) == 'input array sizes do not match dimensions, kernel size: 3 vs kernel dim: 4'
 
 
 @pytest.mark.parametrize('func', [_psf.pad_data, _psf.unpad_data])
 def test_xpad_data_error4(func):
-
-    with pytest.raises(TypeError) as te:
-        func([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2], [2, 2, 2])
 
     if func.__name__ == 'pad_data':
         emsg = 'Padding dimension not supported'
     else:
         emsg = 'unpadding kernel failed-dimension unsupported'
 
-    assert str(te.value) == emsg
+    with pytest.raises(TypeError,
+                       match=f"^{emsg}$"):
+        func([1, 2, 3, 4, 5, 6, 7, 8], [2, 2, 2], [2, 2, 2])
 
 
 @pytest.mark.parametrize('flags,expected',
@@ -218,11 +207,10 @@ def test_pad_bounding_box_basic(flags, expected):
 
 def test_pad_bounding_box_error():
 
-    with pytest.raises(TypeError) as te:
+    with pytest.raises(TypeError,
+                       match="^kernel size: 5 is > than mask size: 4$"):
         _psf.pad_bounding_box([1, 2, 3, 4, 5],
                               [4, 3, 0, 1])
-
-    assert str(te.value) == 'kernel size: 5 is > than mask size: 4'
 
 
 def test_convolve_simple_1d():
