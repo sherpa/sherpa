@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -251,7 +251,6 @@ def test_convolve_simple_1d():
     assert out2 == pytest.approx(out)
 
 
-@pytest.mark.xfail  # see #1334
 def test_convolve_combined_1d():
     """Try to replicate the logic of test_psf1d_step_v2
     from sherpa/tests/test_instrument.py

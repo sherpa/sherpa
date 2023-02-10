@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -515,7 +515,6 @@ def test_psf1d_step():
     assert y == pytest.approx([10.0, 10.0, 10.0, 0, 0, 0], abs=1e-4)
 
 
-@pytest.mark.xfail  # see #1334
 def test_psf1d_step_v2():
     """Trying to track down why we have seen different behavior in
     test_regrid_unit.py.
