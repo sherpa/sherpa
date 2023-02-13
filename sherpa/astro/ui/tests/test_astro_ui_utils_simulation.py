@@ -108,6 +108,75 @@ def test_fake_pha_incompatible_rmf(idval, clean_astro_ui):
 
 
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
+def test_fake_pha_exposure_is_none_data_is_none(idval, clean_astro_ui, reset_seed):
+    """What happens if the exposure is None in the fake_pha call and the DataPHA?"""
+
+    np.random.seed(7239652)
+
+    channels = np.arange(1, 4, dtype=np.int16)
+    counts = np.ones(3, dtype=np.int16)
+
+    # 0.5 keV bin widths mean that source evaluation is half the
+    # c0 value for a const1d model.
+    #
+    egrid = np.arange(2, 6) * 0.5
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    arf = ui.create_arf(elo, ehi)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
+    ui.set_rmf(idval, rmf)
+    ui.set_arf(idval, arf)
+
+    cpt = ui.create_model_component('const1d', 'cpt')
+    cpt.c0 = 24
+    ui.set_source(idval, cpt)
+
+    ui.fake_pha(idval, arf=None, rmf=None, exposure=None)
+
+    # The exposure time is ignored.
+    d = ui.get_data(idval)
+    assert d.counts == pytest.approx([13, 16, 16])
+    assert d.exposure is None
+
+
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+def test_fake_pha_exposure_is_none_data_is_set(idval, clean_astro_ui, reset_seed):
+    """What happens if the exposure is None in the fake_pha call but is set in DataPHA?"""
+
+    np.random.seed(4596)
+
+    channels = np.arange(1, 4, dtype=np.int16)
+    counts = np.ones(3, dtype=np.int16)
+
+    egrid = np.arange(2, 6) * 0.5
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    arf = ui.create_arf(elo, ehi)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
+    ui.set_exposure(idval, 5)
+    ui.set_rmf(idval, rmf)
+    ui.set_arf(idval, arf)
+
+    cpt = ui.create_model_component('const1d', 'cpt')
+    cpt.c0 = 24
+    ui.set_source(idval, cpt)
+
+    ui.fake_pha(idval, arf=None, rmf=None, exposure=None)
+
+    # The model evaluation should now be texp * c0 * bin-width
+    # but the exposure time is being over-written so it is
+    # not included.
+    #
+    d = ui.get_data(idval)
+    assert d.counts == pytest.approx([9, 12, 18])
+    assert d.exposure is None
+
+
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
 @pytest.mark.parametrize("has_bkg", [True, False])
 def test_fake_pha_basic(idval, has_bkg, clean_astro_ui, reset_seed):
     """No background.
