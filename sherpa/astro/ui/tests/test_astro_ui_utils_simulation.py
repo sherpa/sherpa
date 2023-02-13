@@ -128,9 +128,6 @@ def test_fake_pha_exposure_is_none_data_is_none(method, expected, idval, clean_a
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
 
-    # 0.5 keV bin widths mean that source evaluation is half the
-    # c0 value for a const1d model.
-    #
     egrid = np.arange(2, 6) * 0.5
     elo = egrid[:-1]
     ehi = egrid[1:]
@@ -154,8 +151,8 @@ def test_fake_pha_exposure_is_none_data_is_none(method, expected, idval, clean_a
 
 
 @pytest.mark.parametrize("method,expected",
-                         [(None, [9, 12, 18]),
-                          (identity, [12, 12, 12])
+                         [(None, [54, 60, 74]),
+                          (identity, [60, 60, 60])
                           ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 def test_fake_pha_exposure_is_none_data_is_set(method, expected, idval, clean_astro_ui):
@@ -183,13 +180,11 @@ def test_fake_pha_exposure_is_none_data_is_set(method, expected, idval, clean_as
 
     ui.fake_pha(idval, arf=None, rmf=None, exposure=None, method=method)
 
-    # The model evaluation should now be texp * c0 * bin-width
-    # but the exposure time is being over-written so it is
-    # not included.
+    # The model evaluation should now be texp * c0 * bin-width.
     #
     d = ui.get_data(idval)
     assert d.counts == pytest.approx(expected)
-    assert d.exposure is None
+    assert d.exposure == pytest.approx(5)
 
 
 @pytest.mark.parametrize("method,expected",
@@ -237,6 +232,69 @@ def test_fake_pha_basic(method, expected, idval, has_bkg, clean_astro_ui):
 
     faked = ui.get_data(idval)
     assert faked.exposure == pytest.approx(1000.0)
+    assert (faked.channel == channels).all()
+
+    assert faked.name == 'faked'
+    assert faked.get_arf().name == 'test-arf'
+    assert faked.get_rmf().name == 'delta-rmf'
+
+    if has_bkg:
+        assert faked.background_ids == ['faked-bkg']
+        bkg = ui.get_bkg(idval, 'faked-bkg')
+        assert bkg.name == 'bkg'
+        assert bkg.counts == pytest.approx(bcounts)
+        assert bkg.exposure == pytest.approx(200)
+
+    else:
+        assert faked.background_ids == []
+
+    # For reference the predicted source signal is
+    #    [200, 400, 400]
+    #
+    assert faked.counts == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("method,expected",
+                         [(None, [16, 38, 39]),
+                          (identity, [20, 40, 40])
+                          ])
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+@pytest.mark.parametrize("has_bkg", [True, False])
+def test_fake_pha_basic_no_args(method, expected, idval, has_bkg, clean_astro_ui):
+    """test_fake_pha_basic but call fake_pha just with idval
+
+    """
+
+    ui.set_rng(np.random.RandomState(9836))
+
+    channels = np.arange(1, 4, dtype=np.int16)
+    counts = np.ones(3, dtype=np.int16)
+    bcounts = 100 * counts
+
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
+    ui.set_exposure(idval, 100)
+
+    if has_bkg:
+        bkg = ui.DataPHA('bkg', channels, bcounts,
+                         exposure=200, backscal=0.4)
+        ui.set_bkg(idval, bkg, bkg_id='faked-bkg')
+
+    ebins = np.asarray([1.1, 1.2, 1.4, 1.6])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    arf = ui.create_arf(elo, ehi)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    mdl = ui.create_model_component('const1d', 'mdl')
+    mdl.c0 = 2
+    ui.set_source(idval, mdl)
+    ui.set_rmf(idval, rmf)
+    ui.set_arf(idval, arf)
+
+    ui.fake_pha(idval, method=method)
+
+    faked = ui.get_data(idval)
+    assert faked.exposure == pytest.approx(100.0)
     assert (faked.channel == channels).all()
 
     assert faked.name == 'faked'

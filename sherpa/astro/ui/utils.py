@@ -9358,8 +9358,9 @@ class Session(sherpa.ui.utils.Session):
         if d.subtracted:
             d.unsubtract()
 
-    def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
-                 grouping=None, grouped=False, quality=None, bkg=None,
+    def fake_pha(self, id, arf=None, rmf=None, exposure=None,
+                 backscal=None, areascal=None, grouping=None,
+                 grouped=False, quality=None, bkg=None,
                  method=None):
         """Simulate a PHA data set from a model.
 
@@ -9372,7 +9373,8 @@ class Session(sherpa.ui.utils.Session):
            Several bugs have been addressed when simulating data with
            a background: the background model contribution would be
            wrong if the source and background exposure times differ or
-           if there were multiple background datasets.
+           if there were multiple background datasets. The arf, rmf,
+           and exposure arguments are now optional.
 
         .. versionchanged:: 4.16.0
            The method parameter was added.
@@ -9387,23 +9389,22 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to create. If it already
            exists then it is assumed to contain a PHA data set and the
            counts will be over-written.
-        arf : None or filename or ARF object or list of filenames
+        arf : None or filename or ARF object or list of filenames, optional
            The name of the ARF, or an ARF data object (e.g.  as
            returned by `get_arf` or `unpack_arf`). A list of filenames
            can be passed in for instruments that require multiple ARFs.
            Set this to `None` to use any arf that is already set for
            the data set given by id or for instruments that do not use an
            ARF separate from the RMF (e.g. XMM-Newton/RGS).
-        rmf : filename or RMF object or list of filenames
+        rmf : filename or RMF object or list of filenames, optional
            The name of the RMF, or an RMF data object (e.g. as
            returned by `get_rmf` or `unpack_rmf`).  A list of filenames
            can be passed in for instruments that require multiple RMFs.
            Set this to `None` to use any rmf that is already set for
            the data set given by id.
-        exposure : number
-           The exposure time, in seconds.
-           Set this to `None` to use any exposure that is already set for
-           the data set given by id.
+        exposure : number, optional
+           The exposure time, in seconds. If not set (i.e. is `None`) then
+           use the exposure time of the data set given by id.
         backscal : number, optional
            The 'BACKSCAL' value for the data set.
         areascal : number, optional
@@ -9465,6 +9466,21 @@ class Session(sherpa.ui.utils.Session):
 
         Examples
         --------
+
+        Fit a model - an absorbed powerlaw - to the data in the file
+        src.pi and then simulate the data using the fitted model.  The
+        exposure time, ARF, and RMF are taken from the data in src.pi.
+
+        >>> load_pha("src.pi")
+        >>> set_source(xsphabs.gal * powlawd.pl)
+        >>> notice(0.5, 6)
+        >>> fit(1)
+        >>> fake_pha(1)
+
+        Simulate the data but for a 1 Ms observation:
+
+        >>> fake_pha(1, exposure=1e6)
+
         Estimate the signal from a 5000 second observation using the
         ARF and RMF from "src.arf" and "src.rmf" respectively:
 
@@ -9547,9 +9563,8 @@ class Session(sherpa.ui.utils.Session):
         if d.channel is None:
             d.channel = sao_arange(1, rmf0.detchans)
 
-        else:
-            if len(d.channel) != rmf0.detchans:
-                raise DataErr('incompatibleresp', rmf.name, str(idval))
+        elif len(d.channel) != rmf0.detchans:
+            raise DataErr('incompatibleresp', rmf.name, str(idval))
 
         # at this point, we can be sure that arf is not a string, because
         # if it was, it would have gone through load_arf already above.
@@ -9571,7 +9586,8 @@ class Session(sherpa.ui.utils.Session):
             else:
                 self.set_rmf(idval, rmf)
 
-        d.exposure = exposure
+        if exposure is not None:
+            d.exposure = exposure
 
         if backscal is not None:
             d.backscal = backscal
