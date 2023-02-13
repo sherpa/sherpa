@@ -9523,16 +9523,10 @@ class Session(sherpa.ui.utils.Session):
 
         # TODO: do we still expect to get bytes here?
         if isinstance(rmf, (str, numpy.bytes_)):
-            if not os.path.isfile(rmf):
-                raise IOErr("filenotfound", rmf)
-
             rmf = self.unpack_rmf(rmf)
 
         # TODO: do we still expect to get bytes here?
         if isinstance(arf, (str, numpy.bytes_)):
-            if not os.path.isfile(arf):
-                raise IOErr("filenotfound", arf)
-
             arf = self.unpack_arf(arf)
 
         if not (rmf is None and arf is None):

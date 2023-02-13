@@ -31,6 +31,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro import ui
 from sherpa.utils.err import DataErr, IOErr
+from sherpa.utils.testing import requires_fits
 
 
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
@@ -50,6 +51,7 @@ def test_fake_pha_no_rmf(idval, clean_astro_ui):
         ui.fake_pha(idval, arf=None, rmf=None, exposure=1000.0)
 
 
+@requires_fits
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 def test_fake_pha_missing_rmf(idval, clean_astro_ui, tmp_path):
     """Check we error out if RMF is not valid."""
@@ -65,6 +67,7 @@ def test_fake_pha_missing_rmf(idval, clean_astro_ui, tmp_path):
         ui.fake_pha(idval, None, str(rmf), 1000.0)
 
 
+@requires_fits
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 def test_fake_pha_missing_arf(idval, clean_astro_ui, tmp_path):
     """Check we error out if ARF is not valid."""
