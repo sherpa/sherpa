@@ -16,7 +16,7 @@ Contolling the verbosity of Sherpa
 ==================================
 
 Sherpa uses `Python logging
-<https://docs.python.org/3/library/logging.htm>`_ for most
+<https://docs.python.org/3/library/logging.html>`_ for most
 messages. This allows the user to redirected the output to a file or
 suppress it by setting the logging level. The following example will
 globally change the level for all sherpa moduls, such that debug and
