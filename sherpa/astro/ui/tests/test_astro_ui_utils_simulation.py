@@ -563,6 +563,9 @@ def test_fake_pha_issue_1209(make_data_path, clean_astro_ui, tmp_path):
     assert d1.header["TOTCTS"] == 855
     assert d1.counts.sum() == 855
 
+    assert not d1.grouped
+    assert not d1.subtracted
+
     ui.set_source("newid", pl)
     ui.fake_pha("newid",
                 exposure=ui.get_exposure(),
@@ -585,6 +588,9 @@ def test_fake_pha_issue_1209(make_data_path, clean_astro_ui, tmp_path):
 
     assert d3.background_ids == []
     assert d3.response_ids == []
+
+    assert not d3.grouped
+    assert not d3.subtracted
 
     # check the header
     hdr = d3.header
@@ -817,3 +823,59 @@ def test_fake_pha_with_bgnd_data(clean_astro_ui, reset_seed):
 
     assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
     assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+
+
+@pytest.mark.parametrize("grouped", [False, True])
+def test_fake_pha_grouping(grouped, clean_astro_ui):
+    """What happens with grouped data?"""
+
+    ui.dataspace1d(1, 5, dstype=ui.DataPHA)
+    ui.set_exposure(10)
+
+    grping = [1, -1, 1, -1, -1]
+    ui.set_grouping(1, grping)
+    ui.group(1)
+
+    egrid = np.arange(1, 7) * 0.5
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf(1, rmf)
+
+    assert ui.get_data().grouped
+
+    mdl = ui.create_model_component("polynom1d", "mdl")
+    ui.set_source(1, mdl)
+
+    ui.fake_pha(1, arf=None, rmf=None, exposure=10, grouped=grouped)
+
+    assert ui.get_grouping(1) == pytest.approx(grping)
+    assert ui.get_data().grouped is grouped
+
+
+def test_fake_pha_subtracted(clean_astro_ui):
+    """What happens with subtracted data?"""
+
+    ui.dataspace1d(1, 5, dstype=ui.DataPHA)
+    ui.set_exposure(10)
+
+    bkg = ui.DataPHA("b", [1, 2, 3, 4, 5], [0, 0, 0, 0, 0])
+    bkg.exposure = 5
+    ui.set_bkg(1, bkg)
+
+    ui.subtract()
+
+    egrid = np.arange(1, 7) * 0.5
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    ui.set_rmf(1, rmf)
+
+    assert ui.get_data().subtracted
+
+    mdl = ui.create_model_component("polynom1d", "mdl")
+    ui.set_source(1, mdl)
+
+    ui.fake_pha(1, arf=None, rmf=None, exposure=10)
+
+    assert ui.get_data().subtracted
