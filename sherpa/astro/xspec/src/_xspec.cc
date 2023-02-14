@@ -114,35 +114,17 @@
 
 extern "C" {
 
-#ifdef XSPEC_12_10_1
   xsf77Call agnsed_;
   xsf77Call qsosed_;
-#endif
 
 #ifdef XSPEC_12_11_0
   xsf77Call agnslim_;
-#endif
-
-#ifndef XSPEC_12_9_1
-  xsf77Call xsaped_;
-  xsf77Call xsbape_;
 #endif
 
   xsf77Call xsblbd_;
   xsf77Call xsbbrd_;
   xsf77Call xsbmc_;
   xsf77Call xsbrms_;
-
-#ifndef XSPEC_12_9_1
-  xsf77Call xsbvpe_;
-#endif
-
-#ifndef XSPEC_12_10_0
-  xsf77Call c6mekl_;
-  xsf77Call c6pmekl_;
-  xsf77Call c6pvmkl_;
-  xsf77Call c6vmekl_;
-#endif
 
   xsf77Call cemekl_;
   xsf77Call compbb_;
@@ -152,9 +134,6 @@ extern "C" {
   xsf77Call disk_;
   xsf77Call diskir_;
   xsf77Call xsdskb_;
-#ifndef XSPEC_12_10_1
-  xsf77Call xsdili_;
-#endif
   xsf77Call diskm_;
   xsf77Call disko_;
   xsf77Call diskpbb_;
@@ -162,77 +141,36 @@ extern "C" {
   xsf77Call xsxpdec_;
   xsf77Call ezdiskbb_;
 
-#ifndef XSPEC_12_9_1
-  xsf77Call xsgaul_;
-#endif
-
   xsf77Call grad_;
 
-#ifdef XSPEC_12_10_0
   xsccCall xsgrbcomp;
 
   xsf77Call jet_;
-#endif
 
   xsf77Call xsgrbm_;
   xsf77Call spin_;
 
-#ifdef XSPEC_12_10_1
   xsf77Call kyrline_;
-#endif
-
-#ifndef XSPEC_12_9_1
-  xsf77Call xslorz_;
-  xsf77Call xsmeka_;
-  xsf77Call xsmekl_;
-#endif
 
   xsf77Call nsa_;
   xsf77Call nsagrav_;
   xsf77Call nsatmos_;
 
-#ifndef XSPEC_12_10_0
-  xsf77Call nsmax_;
-#endif
-
   xsf77Call xspegp_;
   xsf77Call xsp1tr_;
   xsf77Call xsposm_;
-
-#ifndef XSPEC_12_9_1
-  xsf77Call xsrays_;
-#endif
 
   xsf77Call xredge_;
   xsf77Call xsrefsch_;
   xsf77Call srcut_;
   xsf77Call sresc_;
-#ifdef XSPEC_12_10_0
   xsf77Call ssa_;
-#endif
   xsf77Call xsstep_;
-
-#ifndef XSPEC_12_9_1
-  xsf77Call xsvape_;
-#endif
 
   xsf77Call xsbrmv_;
 
-#ifndef XSPEC_12_9_1
-  xsf77Call xsvmek_;
-  xsf77Call xsvmkl_;
-#endif
-
-#ifndef XSPEC_12_9_1
-  xsf77Call xsvrys_;
-#endif
-
   xsf77Call xszbod_;
   xsf77Call xszbrm_;
-
-#ifndef XSPEC_12_10_0
-  xsf77Call acisabs_;
-#endif
 
   xsf77Call xscnst_;
   xsf77Call xscabs_;
@@ -252,10 +190,6 @@ extern "C" {
   xsf77Call xsspln_;
   xsf77Call xssssi_;
 
-#ifndef XSPEC_12_10_0
-  xsf77Call swind1_;
-#endif
-
   xsf77Call xsred_;
   xsf77Call xsabsv_;
   xsf77Call xsvphb_;
@@ -268,10 +202,6 @@ extern "C" {
   xsf77Call xszabp_;
   xsf77Call xszphb_;
 
-#ifndef XSPEC_12_10_0
-  xsf77Call zxipcf_;
-#endif
-
   xsf77Call xszcrd_;
   xsf77Call msldst_;
   xsf77Call xszvab_;
@@ -280,17 +210,8 @@ extern "C" {
   xsf77Call xszabs_;
   xsf77Call xszwnb_;
 
-
-#ifndef XSPEC_12_9_1
-  xsf77Call xsbvvp_;
-  xsf77Call xsvvap_;
-#endif
-
   xsf77Call zigm_;
 
-#ifndef XSPEC_12_10_1
-  xsf77Call logpar_;
-#endif
   xsf77Call eplogpar_;
   xsf77Call optxagn_;
   xsf77Call optxagnf_;
@@ -300,19 +221,12 @@ extern "C" {
   xsccCall xscompmag;
   xsccCall xscomptb;
 
-#ifndef XSPEC_12_10_0
-  xsf77Call nsmaxg_;
-  xsf77Call nsx_;
-#endif
-
 //multiplicative
   xsf77Call xsphei_;
   xsf77Call xslyman_;
   xsccCall xszbabs;
 
-#ifdef XSPEC_12_9_1
   xsccCall slimbbmodel;
-#endif
 
 #ifdef XSPEC_12_11_0
   xsccCall beckerwolff;
@@ -324,9 +238,7 @@ extern "C" {
   xsF77Call olivineabs_;
 #else
 
-#ifdef XSPEC_12_9_1
   xsf77Call ismabs_;
-#endif
 
 #ifdef XSPEC_12_11_0
   xsf77Call ismdust_;
@@ -335,28 +247,12 @@ extern "C" {
 
 #endif // XSPEC_12_12_1
 
-// XSPEC table models; in XSPEC 12.10.1 these have been consolidated
-// into the tabint routine, but that is only available to C++, and
-// so is defined in sherpa/include/sherpa/astro/xspec_extension.hh
-// In XSPEC 12.11.0 tabint is available in C scope (but is again
-// defined in xspec_extension.hh as it doesn't need to be visible
-// here).
-//
-#ifndef XSPEC_12_10_1
-void xsatbl(float* ear, int ne, float* param, const char* filenm, int ifl,
-	    float* photar, float* photer);
-void xsmtbl(float* ear, int ne, float* param, const char* filenm, int ifl,
-	    float* photar, float* photer);
-#endif
-
 // XSPEC convolution models
 //
 
   xsf77Call rgsxsrc_;
 
-#ifdef XSPEC_12_10_1
   xsf77Call kyconv_;
-#endif
 
 #ifdef XSPEC_12_11_0
   xsf77Call thcompf_;
@@ -457,17 +353,6 @@ static int _sherpa_init_xspec_library()
     csmph0( 70.0 );
     csmpq0( 0.0 );
     csmpl0( 0.73 );
-
-    // Work around a XSPEC 12.10.0 issue where the atomdb version is
-    // hardcoded to 3.0.7 for the models-only build but it should be
-    // 3.0.9. This is fixed in the yet-to-be-released 12.10.1 (hence
-    // the attempt to only restrict to 12.10.0).
-    //
-#if defined (XSPEC_12_10_0) && !defined (XSPEC_12_10_1)
-    char atomdbVersion1210[6] = "3.0.9";
-    atomdbVersion1210[5] = '\0';
-    FPATDV(atomdbVersion1210);
-#endif
 
   } catch(...) {
 
@@ -958,22 +843,15 @@ static PyMethodDef XSpecMethods[] = {
     (PyCFunction)get_model_data_path, METH_NOARGS, NULL },
   FCTSPEC(set_xspath_manager, set_manager_data_path),
 
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_NORM( agnsed, 16 ),
   XSPECMODELFCT_NORM( qsosed, 7 ),
-#endif
 
 #ifdef XSPEC_12_11_0
   XSPECMODELFCT_NORM( agnslim, 15 ),
 #endif
 
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_apec, 4 ),
   XSPECMODELFCT_C_NORM( C_bapec, 5 ),
-#else
-  XSPECMODELFCT_NORM( xsaped, 4 ),
-  XSPECMODELFCT_NORM( xsbape, 5 ),
-#endif
   XSPECMODELFCT_NORM( xsblbd, 2 ),
   XSPECMODELFCT_NORM( xsbbrd, 2 ),
   XSPECMODELFCT_C_NORM( C_xsbexrav, 10 ),
@@ -983,26 +861,13 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_sirf, 10 ),
   XSPECMODELFCT_NORM( xsbmc, 4 ),
   XSPECMODELFCT_NORM( xsbrms, 2 ),
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C_NORM( C_brnei, 7 ),
-#endif
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_bvapec, 17 ),
-#else
-  XSPECMODELFCT_NORM( xsbvpe, 17 ),
-#endif
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C_NORM( C_bvrnei, 19 ),
   XSPECMODELFCT_C_NORM( C_c6mekl, 11 ),
   XSPECMODELFCT_C_NORM( C_c6pmekl, 11 ),
   XSPECMODELFCT_C_NORM( C_c6pvmkl, 24 ),
   XSPECMODELFCT_C_NORM( C_c6vmekl, 24 ),
-#else
-  XSPECMODELFCT_NORM( c6mekl, 11 ),
-  XSPECMODELFCT_NORM( c6pmekl, 11 ),
-  XSPECMODELFCT_NORM( c6pvmkl, 24 ),
-  XSPECMODELFCT_NORM( c6vmekl, 24 ),
-#endif
   XSPECMODELFCT_NORM( cemekl, 7 ),
   XSPECMODELFCT_C_NORM( C_cemVMekal, 20 ),
   XSPECMODELFCT_C_NORM( C_xscflw, 6 ),
@@ -1015,11 +880,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( disk, 4 ),
   XSPECMODELFCT_NORM( diskir, 9 ),
   XSPECMODELFCT_NORM( xsdskb, 2 ),
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_C_NORM( C_diskline, 6 ),
-#else
-  XSPECMODELFCT_NORM( xsdili, 6 ),
-#endif
   XSPECMODELFCT_NORM( diskm, 5 ),
   XSPECMODELFCT_NORM( disko, 5 ),
   XSPECMODELFCT_NORM( diskpbb, 3 ),
@@ -1027,16 +888,10 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_equil, 4 ),
   XSPECMODELFCT_NORM( xsxpdec, 2 ),
   XSPECMODELFCT_NORM( ezdiskbb, 2 ),
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_gaussianLine, 3 ),
-#else
-  XSPECMODELFCT_NORM( xsgaul, 3 ),
-#endif
   XSPECMODELFCT_C_NORM( C_gnei, 6 ),
   XSPECMODELFCT_NORM( grad, 7 ),
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C_NORM( xsgrbcomp, 10 ),
-#endif
   XSPECMODELFCT_NORM( xsgrbm, 4 ),
   XSPECMODELFCT_C_NORM( C_kerrbb, 10 ),
 
@@ -1044,36 +899,16 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_zkerrbb, 10 ),
 #endif
 
-#ifdef XSPEC_12_10_0
-  /* From an email from Craig Gordon at HEASARC:
-     12.10.0 and later: for kerrd call C_kerrd. For earlier versions kerrd should call C_kerrdisk.
-     (the model.dat file gives C_kerrdisk up to 12.10.1b)
-  */
   XSPECMODELFCT_C_NORM( C_kerrd, 8 ),
-#else
-  XSPECMODELFCT_C_NORM( C_kerrdisk, 8 ),
-#endif
   XSPECMODELFCT_NORM( spin, 10 ),
 
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_NORM( kyrline, 12 ),
-#endif
 
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_C_NORM( C_laor, 6 ),
-#else
-  XSPECMODELFCT_C_NORM( C_xslaor, 6 ),
-#endif
   XSPECMODELFCT_C_NORM( C_laor2, 8 ),
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_lorentzianLine, 3 ),
   XSPECMODELFCT_C_NORM( C_meka, 5 ),
   XSPECMODELFCT_C_NORM( C_mekal, 6 ),
-#else
-  XSPECMODELFCT_NORM( xslorz, 3 ),
-  XSPECMODELFCT_NORM( xsmeka, 5 ),
-  XSPECMODELFCT_NORM( xsmekl, 6 ),
-#endif
   XSPECMODELFCT_C_NORM( C_xsmkcf, 6 ),
   XSPECMODELFCT_C_NORM( C_nei, 5 ),
   XSPECMODELFCT_C_NORM( C_nlapec, 4 ),
@@ -1081,11 +916,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( nsa, 5 ),
   XSPECMODELFCT_NORM( nsagrav, 4 ),
   XSPECMODELFCT_NORM( nsatmos, 5 ),
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C_NORM( C_nsmax, 4 ),
-#else
-  XSPECMODELFCT_NORM( nsmax, 4 ),
-#endif
   XSPECMODELFCT_C_NORM( C_xsnteea, 16 ),
   XSPECMODELFCT_C_NORM( C_nthcomp, 6 ),
   XSPECMODELFCT_NORM( xspegp, 4 ),
@@ -1095,76 +926,45 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_powerLaw, 2 ),
   XSPECMODELFCT_NORM( xsposm, 1 ),
   XSPECMODELFCT_C_NORM( C_pshock, 6 ),
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM(C_raysmith, 4 ),
-#else
-  XSPECMODELFCT_NORM( xsrays, 4 ),
-#endif
   XSPECMODELFCT_NORM( xredge, 3 ),
   XSPECMODELFCT_NORM( xsrefsch, 14 ),
 
   XSPECMODELFCT_C_NORM( C_sedov, 6 ),
   XSPECMODELFCT_NORM( srcut, 3 ),
   XSPECMODELFCT_NORM( sresc, 3 ),
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_NORM( ssa, 3 ),
-#endif
   XSPECMODELFCT_NORM( xsstep, 3 ),
 
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_vapec, 16 ),
-#else
-  XSPECMODELFCT_NORM( xsvape, 16 ),
-#endif
   XSPECMODELFCT_NORM( xsbrmv, 3 ),
 
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_C_NORM( C_vcph, 18 ),
-#endif
 
   XSPECMODELFCT_C_NORM( C_vequil, 15 ),
   XSPECMODELFCT_C_NORM( C_vgnei, 18 ),
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_vmeka, 18 ),
   XSPECMODELFCT_C_NORM( C_vmekal, 19 ),
-#else
-  XSPECMODELFCT_NORM( xsvmek, 18 ),
-  XSPECMODELFCT_NORM( xsvmkl, 19 ),
-#endif
   XSPECMODELFCT_C_NORM( C_xsvmcf, 19 ),
   XSPECMODELFCT_C_NORM( C_vnei, 17 ),
   XSPECMODELFCT_C_NORM( C_vnpshock, 19 ),
   XSPECMODELFCT_C_NORM( C_vpshock, 18 ),
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_vraysmith, 15 ),
-#else
-  XSPECMODELFCT_NORM( xsvrys, 15 ),
-#endif
   XSPECMODELFCT_C_NORM( C_vsedov, 18 ),
   XSPECMODELFCT_NORM( xszbod, 3 ),
 
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_C_NORM( C_zBrokenPowerLaw, 5 ),
-#endif
 
   XSPECMODELFCT_NORM( xszbrm, 3 ),
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C_NORM( C_zcutoffPowerLaw, 4),
-#endif
   XSPECMODELFCT_C_NORM( C_xszgau, 4 ),
 
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_C_NORM( C_zLogpar, 5 ),
-#endif
 
   XSPECMODELFCT_C_NORM( C_zpowerLaw, 3 ),
   XSPECMODELFCT_C( C_xsabsori, 6 ),
 
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C( C_acisabs, 8 ),
-#else
-  XSPECMODELFCT( acisabs, 8 ),
-#endif
 
   XSPECMODELFCT( xscnst, 1 ),
   XSPECMODELFCT( xscabs, 1 ),
@@ -1187,11 +987,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT( xsspln, 6 ),
   XSPECMODELFCT( xssssi, 1 ),
 
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C( C_swind1, 4 ),
-#else
-  XSPECMODELFCT( swind1, 4 ),
-#endif
 
   XSPECMODELFCT_C( C_tbabs, 1 ),
   XSPECMODELFCT_C( C_tbgrain, 6 ),
@@ -1208,11 +1004,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT( xszabp, 3 ),
   XSPECMODELFCT( xszphb, 2 ),
 
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C( C_zxipcf, 4 ),
-#else
-  XSPECMODELFCT( zxipcf, 4 ),
-#endif
 
   XSPECMODELFCT( xszcrd, 2 ),
   XSPECMODELFCT( msldst, 4 ),
@@ -1223,34 +1015,21 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT( xszabs, 2 ),
   XSPECMODELFCT( xszwnb, 3 ),
 
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_C_NORM( C_cph, 5 ),
-#endif
 
   XSPECMODELFCT_C_NORM( C_cplinear, 21 ),
   XSPECMODELFCT_C_NORM( C_xseqpair, 21 ),
   XSPECMODELFCT_C_NORM( C_xseqth, 21 ),
   XSPECMODELFCT_C_NORM( C_xscompth, 21 ),
-#ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM( C_bvvapec, 34 ),
   XSPECMODELFCT_C_NORM( C_vvapec, 33 ),
-#else
-  XSPECMODELFCT_NORM( xsbvvp, 34 ),
-  XSPECMODELFCT_NORM( xsvvap, 33 ),
-#endif
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C_NORM( C_bvvrnei, 36 ),
-#endif
   XSPECMODELFCT( zigm, 3 ),
   // New XSPEC 12.7.1 models
   XSPECMODELFCT_C_NORM( C_gaussDem, 7 ),
   XSPECMODELFCT_C_NORM( C_vgaussDem, 20 ),
   XSPECMODELFCT_NORM( eplogpar, 3 ),
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_C_NORM( C_logpar, 4 ),
-#else
-  XSPECMODELFCT_NORM( logpar, 4 ),
-#endif
   XSPECMODELFCT_NORM( optxagn, 14 ),
   XSPECMODELFCT_NORM( optxagnf, 12 ),
   XSPECMODELFCT_NORM( pexmon, 8 ),
@@ -1263,13 +1042,8 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( xscompmag, 9 ), // DJB thinks it's okay to use the C++ wrapper for C
   XSPECMODELFCT_C_NORM( xscomptb, 7 ), // DJB thinks it's okay to use the C++ wrapper for C
 
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_C_NORM( C_nsmaxg, 6 ),
   XSPECMODELFCT_C_NORM( C_nsx, 6 ),
-#else
-  XSPECMODELFCT_NORM( nsmaxg, 6 ),
-  XSPECMODELFCT_NORM( nsx, 6 ),
-#endif
 
   XSPECMODELFCT_C_NORM( C_rnei, 6 ),
   XSPECMODELFCT_C_NORM( C_vrnei, 18 ),
@@ -1294,37 +1068,22 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C( xszbabs, 4 ), // DJB thinks it's okay to use the C++ wrapper for C
 
   // XSPEC table models
-#ifdef XSPEC_12_10_1
   KWSPEC(tabint, sherpa::astro::xspec::xspectablemodel),
-#else
-  KWSPEC(xsatbl, sherpa::astro::xspec::xspectablemodel<true, xsatbl>),
-  KWSPEC(xsmtbl, sherpa::astro::xspec::xspectablemodel<false, xsmtbl>),
-#endif
 
   // XSPEC convolution models
   XSPECMODELFCT_CON(C_cflux, 3),
   XSPECMODELFCT_CON(C_cpflux, 3),
 
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_CON(C_gsmooth, 2),
-#else
-  XSPECMODELFCT_CON(C_xsgsmt, 2),
-#endif
 
   XSPECMODELFCT_CON(C_ireflct, 7),
   XSPECMODELFCT_CON(C_kdblur, 4),
   XSPECMODELFCT_CON(C_kdblur2, 6),
   XSPECMODELFCT_CON(C_spinconv, 7),
 
-#ifdef XSPEC_12_10_1
   XSPECMODELFCT_CON_F77(kyconv, 12),
-#endif
 
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_CON(C_lsmooth, 2),
-#else
-  XSPECMODELFCT_CON(C_xslsmt, 2),
-#endif
 
   XSPECMODELFCT_CON(C_PartialCovering, 1),
   XSPECMODELFCT_CON(C_rdblur, 4),
@@ -1342,7 +1101,6 @@ static PyMethodDef XSpecMethods[] = {
   // Models from 12.9.1
   //
   //
-  #ifdef XSPEC_12_9_1
   XSPECMODELFCT_C_NORM(C_btapec, 6),
   XSPECMODELFCT_C_NORM(C_bvtapec, 18),
   XSPECMODELFCT_C_NORM(C_bvvtapec, 35),
@@ -1373,11 +1131,8 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_vashift, 1),
   XSPECMODELFCT_CON(C_vmshift, 1),
   XSPECMODELFCT_CON(C_xilconv, 6),
-  #endif
 
-#ifdef XSPEC_12_10_0
   XSPECMODELFCT_NORM(jet, 16),
-#endif
 
 #ifdef XSPEC_12_12_1
   XSPECMODELFCT_DBL(ismdust, 3),

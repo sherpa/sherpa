@@ -28,8 +28,7 @@ from .extensions import build_ext
 # major, minor, and micro. We drop the patch level - e.g.
 # "c" in "12.12.0c" as that is not helpful to track here.
 #
-SUPPORTED_VERSIONS = [(12, 9, 0), (12, 9, 1),
-                      (12, 10, 0), (12, 10, 1),
+SUPPORTED_VERSIONS = [(12, 10, 1),
                       (12, 11, 0), (12, 11, 1),
                       (12, 12, 0), (12, 12, 1)]
 
@@ -81,7 +80,7 @@ class xspec_config(Command):
     description = "Configure XSPEC Models external module (optional) "
     user_options = [
                     ('with-xspec', None, "Whether sherpa must build the XSPEC module (default False)"),
-                    ('xspec-version', None, "the XSPEC version (default 12.9.0)"),
+                    ('xspec-version', None, "the XSPEC version (default 12.10.1)"),
                     ('xspec-lib-dirs', None, "Where the xspec libraries are located, if with-xspec is True"),
                     ('xspec-libraries', None, "Name of the libraries that should be linked for xspec"),
                     ('cfitsio-lib-dirs', None, "Where the cfitsio libraries are located, if with-xspec is True"),
@@ -96,10 +95,11 @@ class xspec_config(Command):
 
     def initialize_options(self):
         self.with_xspec = False
-        self.xspec_version = '12.9.0'
+        self.xspec_version = '12.10.1'
         self.xspec_include_dirs = ''
         self.xspec_lib_dirs = ''
-        self.xspec_libraries = 'XSFunctions XSModel XSUtil XS'
+        # This is set up for how CIAO builds XSPEC; other users may require more libraries
+        self.xspec_libraries = 'XSFunctions XSUtil XS'
         self.cfitsio_include_dirs = ''
         self.cfitsio_lib_dirs = ''
         self.cfitsio_libraries = ''
@@ -122,16 +122,16 @@ class xspec_config(Command):
 
         macros = []
         if self.xspec_version:
-            self.announce(f"Found XSPEC version: {self.xspec_version}", 2)
+            self.announce(f"Found XSPEC version: {self.xspec_version}", level=2)
             xspec_version = get_version(self.xspec_version)
+
+            if xspec_version < MIN_VERSION:
+                raise ValueError(f"XSPEC Version {xspec_version} is less than {MIN_VERSION}, which is the earliest supported version for Sherpa")
 
             for version in SUPPORTED_VERSIONS:
                 if xspec_version >= version:
                     major, minor, micro = version
                     macros += [(f'XSPEC_{major}_{minor}_{micro}', None)]
-
-            if xspec_version < MIN_VERSION:
-                self.warn("XSPEC Version is less than {MIN_VERSION}, which is the minimal supported version for Sherpa")
 
             if xspec_version > MAX_VERSION:
                 self.warn(f"XSPEC Version is greater than {MAX_VERSION}, which is the latest supported version for Sherpa")
