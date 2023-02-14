@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2007, 2016, 2017, 2020, 2022
+//  Copyright (C) 2007, 2016, 2017, 2020, 2022, 2023
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -73,5 +73,8 @@ PyMODINIT_FUNC PyInit_##name(void) { \
 #define FCTSPECDOC(name, func, doc) \
   { (char*)#name, (PyCFunction)func, METH_VARARGS, PyDoc_STR(doc) }
 
+#define KWSPEC(name, func) \
+  { (char*)#name, (PyCFunction)((PyCFunctionWithKeywords)func), \
+      METH_VARARGS|METH_KEYWORDS, NULL }
 
 #endif /* __sherpa_extension_hh__ */

@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2015, 2017, 2020, 2021, 2022
+//  Copyright (C) 2009, 2015, 2017, 2020, 2021, 2022, 2023
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -1209,52 +1209,29 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds ) {
 } } } /* namespace xspec, namespace astro, namespace sherpa */
 
 
-#define _XSPECFCTSPEC(name, npars, has_norm) \
-		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, has_norm, \
-				name##_ >))
-
-#define XSPECMODELFCT(name, npars)  _XSPECFCTSPEC(name, npars, false)
-#define XSPECMODELFCT_NORM(name, npars)  _XSPECFCTSPEC(name, npars, true)
-
-// double precision
-#define XSPECMODELFCT_DBL(name, npars) \
-		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_dbl< npars, false, \
-				name##_ >))
-
-#define XSPECMODELFCT_C(name, npars) \
-		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, false, name >))
-
-#define XSPECMODELFCT_C_NORM(name, npars) \
-		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, true, name >))
-
-#define XSPECMODELFCT_CON(name, npars) \
-		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con< npars, name >))
+// Fortran models
+//
+#define XSPECMODELFCT(name, npars) \
+   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, false, name##_ >))
+#define XSPECMODELFCT_NORM(name, npars) \
+   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, true, name##_ >))
 
 #define XSPECMODELFCT_CON_F77(name, npars) \
-		FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, name##_ >))
+   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, name##_ >))
 
+// C/C++ models
+//
+#define XSPECMODELFCT_DBL(name, npars) \
+   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_dbl< npars, false, name##_ >))
 
-#ifdef XSPEC_12_10_1
-#define XSPECTABLEMODEL        \
-		{ (char*)"tabint", \
-	(PyCFunction)((PyCFunctionWithKeywords)sherpa::astro::xspec::xspectablemodel), \
-	METH_VARARGS|METH_KEYWORDS, \
-	NULL }
+#define XSPECMODELFCT_C(name, npars) \
+   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, false, name >))
 
-#else
+#define XSPECMODELFCT_C_NORM(name, npars) \
+   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, true, name >))
 
-#define _XSPECTABLEMODELSPEC(name, has_norm) \
-		{ (char*)#name, \
-	(PyCFunction)((PyCFunctionWithKeywords)sherpa::astro::xspec::xspectablemodel< has_norm, name >), \
-	METH_VARARGS|METH_KEYWORDS, \
-	NULL }
+#define XSPECMODELFCT_CON(name, npars) \
+   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con< npars, name >))
 
-#define XSPECTABLEMODEL(name) \
-		_XSPECTABLEMODELSPEC(name, false)
-
-#define XSPECTABLEMODEL_NORM(name) \
-		_XSPECTABLEMODELSPEC(name, true)
-
-#endif
 
 #endif /* __sherpa_astro_xspec_extension_hh__ */
