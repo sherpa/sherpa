@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
-#     Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -216,8 +216,7 @@ def test_image_getregion(coordsys):
     # This is not ideal.
     from sherpa.image import ds9_backend
 
-    ctor = sherpa.image.ds9_backend.DS9.DS9Win
-    im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
+    im = ds9_backend.imager
     im.doOpen()
     im.showArray(data.y)
 
