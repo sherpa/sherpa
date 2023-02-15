@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021, 2022
+# Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -54,11 +54,6 @@ from helpers.extensions import static_ext_modules
 
 import versioneer
 
-commands = versioneer.get_cmdclass(sherpa_commands)
-
-meta = dict(version=versioneer.get_version(),
-            ext_modules=static_ext_modules,
-            cmdclass=commands
-            )
-
-setup(**meta)
+setup(version=versioneer.get_version(),
+      cmdclass=versioneer.get_cmdclass(sherpa_commands),
+      ext_modules=static_ext_modules)
