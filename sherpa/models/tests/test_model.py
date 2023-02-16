@@ -400,7 +400,7 @@ def test_set_hard_limit_warns(caplog):
     the check using caplog captures the logging output correctly, and
     not as a used would see it (where the %s was not being replaced),
     which means this can not check #1688 is fixed. DJB does not know
-    how to do such a check witout adding extensive testing machinery
+    how to do such a check without adding extensive testing machinery
     which is not warranted in this case.
 
     """
