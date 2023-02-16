@@ -34,69 +34,19 @@
 
 #include "sherpa/fcmp.hh"
 
-// We should be able to just include funcType.h but our XSPEC conda
-// builds, at least for testing/12.11.1, do not include this file,
-// so we just include what we need.
+#include <XSFunctions/Utilities/funcType.h>
+#include <XSFunctions/Utilities/xsFortran.h>
+
+// The table interface is defined in XSPEC 12.12.1 in xsFortran.h
+// (and uses const parameters) but it is not defined in 12.12.0.
 //
-// #ifdef XSPEC_12_12_0
-// #include "XSFunctions/Utilities/funcType.h"
-// #else
-// #include "funcType.h"
-// #endif
-
-#include "xsTypes.h"   // get Real typedef
-
-extern "C" {
-
-        typedef void (xsf77Call) (const float* energyArray,
-                                  const int& Nenergy,
-                                  const float* parameterValues,
-                                  const int& spectrumNumber,
-                                  float* flux,
-                                  float* fluxError);
-
-        typedef void (xsF77Call) (const double* energyArray,
-                                  const int& Nenergy,
-                                  const double* parameterValues,
-                                  const int& spectrumNumber,
-                                  double* flux,
-                                  double* fluxError);
-
-        typedef void (xsccCall)   (const Real* energyArray,
-                                   int Nenergy,
-                                   const Real* parameterValues,
-                                   int spectrumNumber,
-                                   Real* flux,
-                                   Real* fluxError,
-                                   const char* initString);
-}
-
-// Prior to XSPEC 12.10.1, the table models were split into different
-// functions. These functions are defined in _xspec.cc.
-//
-// In 12.10.1 they were consolidated into a single function, tabint,
-// and so the declaration was moved here. The function was only
-// available in C++ scope.
-//
-// In XSPEC 12.11.0 (the next one after 12.10.1), the tabint function
-// was moved into C scope. In XSPEC 12.12.1 the signature was changed
-// to mark more arguments as const.
-//
-#ifdef XSPEC_12_11_0
-extern "C" {
-#endif
-
 #ifndef XSPEC_12_12_1
+extern "C" {
+
   void tabint(float* ear, int ne, float* param,
 	      int npar, const char* filenm, int ifl,
 	      const char* tabtyp, float* photar, float* photer);
-#else
-  void tabint(const float* ear, const int ne, const float* param,
-	      const int npar, const char* filenm, int ifl,
-	      const char* tabtyp, float* photar, float* photer);
-#endif
 
-#ifdef XSPEC_12_11_0
 }
 #endif
 

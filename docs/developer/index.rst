@@ -296,7 +296,7 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.12.1 down to 12.10.1. It may build against
+:term:`XSPEC` versions 12.12.1 down to 12.12.0. It may build against
 newer versions, but if it does it will not provide access to any new
 models in the release. The following sections of the `XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
@@ -419,9 +419,7 @@ available.
    ``SUPPORTED_VERSIONS`` list was changed to include the triple
    ``(12, 12, 1)``::
 
-     SUPPORTED_VERSIONS = [(12, 10, 1),
-                           (12, 11, 0), (12, 11, 1),
-                           (12, 12, 0), (12, 12, 1)]
+     SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1)]
 
    This list is used to select which functions to include when
    compiling the C++ interface code. For reference, the defines are
@@ -526,6 +524,9 @@ available.
    to ``True``. Another option is the "scale" parameter, which is
    labelled with a ``*`` prefix, and these are treated as normal
    parameter values.
+
+   .. note:: The examples below may refer to XSPEC versions we
+	     no-longer support.
 
    a. ``sherpa/astro/xspec/src/_xspec.cc``
 
@@ -650,6 +651,10 @@ available.
 	is specified as a string using the ``__function__`` attribute. The
 	:py:class:`sherpa.astro.xspec.utils.ModelMeta` metaclass performs
 	a runtime check to ensure that the model can be used.
+
+        For example (from when XSPEC 12.9.0 was still supported):
+
+            __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
 
    c. ``sherpa/astro/xspec/tests/test_xspec.py``
 

@@ -98,173 +98,15 @@
 // TODO:: switch to C++ FuntionUtility interface rather than use xsFortran.h
 //
 // funcWrappers: C_<model> are declared here; the other models are defined in
-// functionMap.h but that requires using the XSPEC build location
-// rather than install location.
+// functionMap.h
 //
-#ifdef XSPEC_12_12_0
-#include "XSFunctions/Utilities/xsFortran.h"
-#include "XSFunctions/funcWrappers.h"
-#else
-#include "xsFortran.h"
-#include "funcWrappers.h"
-#endif
+#include <XSFunctions/Utilities/xsFortran.h>
+#include <XSFunctions/funcWrappers.h>
+#include <XSFunctions/functionMap.h>
 
 // TODO: is this defined in an XSPEC header file?
 #define ABUND_SIZE (30) // number of elements in Solar Abundance table
 
-extern "C" {
-
-  xsf77Call agnsed_;
-  xsf77Call qsosed_;
-
-#ifdef XSPEC_12_11_0
-  xsf77Call agnslim_;
-#endif
-
-  xsf77Call xsblbd_;
-  xsf77Call xsbbrd_;
-  xsf77Call xsbmc_;
-  xsf77Call xsbrms_;
-
-  xsf77Call cemekl_;
-  xsf77Call compbb_;
-  xsf77Call compls_;
-  xsf77Call compst_;
-  xsf77Call xstitg_;
-  xsf77Call disk_;
-  xsf77Call diskir_;
-  xsf77Call xsdskb_;
-  xsf77Call diskm_;
-  xsf77Call disko_;
-  xsf77Call diskpbb_;
-  xsf77Call xsdiskpn_;
-  xsf77Call xsxpdec_;
-  xsf77Call ezdiskbb_;
-
-  xsf77Call grad_;
-
-  xsccCall xsgrbcomp;
-
-  xsf77Call jet_;
-
-  xsf77Call xsgrbm_;
-  xsf77Call spin_;
-
-  xsf77Call kyrline_;
-
-  xsf77Call nsa_;
-  xsf77Call nsagrav_;
-  xsf77Call nsatmos_;
-
-  xsf77Call xspegp_;
-  xsf77Call xsp1tr_;
-  xsf77Call xsposm_;
-
-  xsf77Call xredge_;
-  xsf77Call xsrefsch_;
-  xsf77Call srcut_;
-  xsf77Call sresc_;
-  xsf77Call ssa_;
-  xsf77Call xsstep_;
-
-  xsf77Call xsbrmv_;
-
-  xsf77Call xszbod_;
-  xsf77Call xszbrm_;
-
-  xsf77Call xscnst_;
-  xsf77Call xscabs_;
-  xsf77Call xscycl_;
-  xsf77Call xsdust_;
-  xsf77Call xsedge_;
-  xsf77Call xsabsc_;
-  xsf77Call xsexp_;
-  xsf77Call xshecu_;
-  xsf77Call xshrfl_;
-  xsf77Call xsntch_;
-  xsf77Call xsabsp_;
-  xsf77Call xsphab_;
-  xsf77Call xsplab_;
-  xsf77Call xscred_;
-  xsf77Call xssmdg_;
-  xsf77Call xsspln_;
-  xsf77Call xssssi_;
-
-  xsf77Call xsred_;
-  xsf77Call xsabsv_;
-  xsf77Call xsvphb_;
-  xsf77Call xsabsw_;
-  xsf77Call xswnab_;
-  xsf77Call xsxirf_;
-  xsf77Call mszdst_;
-  xsf77Call xszedg_;
-  xsf77Call xszhcu_;
-  xsf77Call xszabp_;
-  xsf77Call xszphb_;
-
-  xsf77Call xszcrd_;
-  xsf77Call msldst_;
-  xsf77Call xszvab_;
-  xsf77Call xszvfe_;
-  xsf77Call xszvph_;
-  xsf77Call xszabs_;
-  xsf77Call xszwnb_;
-
-  xsf77Call zigm_;
-
-  xsf77Call eplogpar_;
-  xsf77Call optxagn_;
-  xsf77Call optxagnf_;
-  xsf77Call pexmon_;
-
-// additive
-  xsccCall xscompmag;
-  xsccCall xscomptb;
-
-//multiplicative
-  xsf77Call xsphei_;
-  xsf77Call xslyman_;
-  xsccCall xszbabs;
-
-  xsccCall slimbbmodel;
-
-#ifdef XSPEC_12_11_0
-  xsccCall beckerwolff;
-#endif
-
-#ifdef XSPEC_12_12_1
-  xsF77Call ismabs_;
-  xsF77Call ismdust_;
-  xsF77Call olivineabs_;
-#else
-
-  xsf77Call ismabs_;
-
-#ifdef XSPEC_12_11_0
-  xsf77Call ismdust_;
-  xsf77Call olivineabs_;
-#endif
-
-#endif // XSPEC_12_12_1
-
-// XSPEC convolution models
-//
-
-  xsf77Call rgsxsrc_;
-
-  xsf77Call kyconv_;
-
-#ifdef XSPEC_12_11_0
-  xsf77Call thcompf_;
-#endif
-
-// XSPEC 12.12.0 changes
-#ifdef XSPEC_12_12_0
-  xsccCall xsgrbjet;
-  xsf77Call zxipab_;
-#endif
-
-}
 
 // The XSPEC initialization used to be done lazily - that is, only
 // when the first routine from XSPEC was about to be called - but
@@ -846,9 +688,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( agnsed, 16 ),
   XSPECMODELFCT_NORM( qsosed, 7 ),
 
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT_NORM( agnslim, 15 ),
-#endif
 
   XSPECMODELFCT_C_NORM( C_apec, 4 ),
   XSPECMODELFCT_C_NORM( C_bapec, 5 ),
@@ -895,12 +735,10 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM( xsgrbm, 4 ),
   XSPECMODELFCT_C_NORM( C_kerrbb, 10 ),
 
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT_C_NORM( C_zkerrbb, 10 ),
-#endif
 
   XSPECMODELFCT_C_NORM( C_kerrd, 8 ),
-  XSPECMODELFCT_NORM( spin, 10 ),
+  XSPECMODELFCT_C_NORM( C_spin, 10 ),
 
   XSPECMODELFCT_NORM( kyrline, 12 ),
 
@@ -1054,13 +892,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM( C_vvpshock, 35 ),
   XSPECMODELFCT_C_NORM( C_vvsedov, 35 ),
 
-#ifdef XSPEC_12_11_0
   // We do not have a direct interface to the c_func routines, so
   // take advantage of the fact XSPEC provides multiple APIs
   // and use the C one.
   // XSPECMODELFCT_C_NORM( c_beckerwolff, 13 ),
   XSPECMODELFCT_C_NORM( beckerwolff, 13 ),
-#endif
 
   //multiplicative
   XSPECMODELFCT( xsphei, 3 ),
@@ -1094,9 +930,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_CON(C_zashift, 1),
   XSPECMODELFCT_CON(C_zmshift, 1),
 
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT_CON_F77(thcompf, 4),
-#endif
 
   // Models from 12.9.1
   //
@@ -1138,25 +972,19 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_DBL(ismdust, 3),
   XSPECMODELFCT_DBL(olivineabs, 2),
 #else
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT(ismdust, 3),
   XSPECMODELFCT(olivineabs, 2),
-#endif
 #endif // XSPEC_12_12_1
 
-#ifdef XSPEC_12_11_0
   XSPECMODELFCT_C(C_logconst, 1),
   XSPECMODELFCT_C(C_log10con, 1),
-#endif
 
-#ifdef XSPEC_12_12_0
   XSPECMODELFCT_C_NORM( xsgrbjet, 14 ),  // follow xsgrbcomp and drop the leading c_
   XSPECMODELFCT_C_NORM( C_vvwDem, 37 ),
   XSPECMODELFCT_C_NORM( C_vwDem, 21 ),
   XSPECMODELFCT_C_NORM( C_wDem, 8 ),
 
   XSPECMODELFCT(zxipab, 5),
-#endif
 
   { NULL, NULL, 0, NULL }
 
