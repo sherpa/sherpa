@@ -52,6 +52,7 @@ The sherpa.astro.xspec module
       XScevmkl
       XScflow
       XScflux
+      XScglumin
       XSclumin
       XScompLS
       XScompPS
@@ -240,5 +241,5 @@ Class Inheritance Diagram
 .. inheritance-diagram:: XSSSS_ice XSTBabs XSTBfeo XSTBgas XSTBgrain XSTBpcf XSTBrel XSTBvarabs XSabsori XSacisabs XScabs XSconstant XScyclabs XSdust XSedge XSexpabs XSexpfac XSgabs XSheilin XShighecut XShrefl XSismabs XSismdust XSlog10con XSlogconst XSlyman XSnotch XSolivineabs XSpcfabs XSphabs XSplabs XSpwab XSredden XSsmedge XSspexpcut XSspline XSswind1 XSuvred XSvarabs XSvphabs XSwabs XSwndabs XSxion XSxscat XSzTBabs XSzbabs XSzdust XSzedge XSzhighect XSzigm XSzpcfabs XSzphabs XSzredden XSzsmdust XSzvarabs XSzvfeabs XSzvphabs XSzwabs XSzwndabs XSzxipcf
    :parts: 1
 
-.. inheritance-diagram:: XScflux XSclumin XScpflux XSgsmooth XSireflect XSkdblur XSkdblur2 XSkerrconv XSkyconv XSlsmooth XSpartcov XSrdblur XSreflect XSrfxconv XSrgsxsrc XSsimpl XSthcomp XSvashift XSvmshift XSxilconv XSzashift XSzmshift
+.. inheritance-diagram:: XScflux XScglumin XSclumin XScpflux XSgsmooth XSireflect XSkdblur XSkdblur2 XSkerrconv XSkyconv XSlsmooth XSpartcov XSrdblur XSreflect XSrfxconv XSrgsxsrc XSsimpl XSthcomp XSvashift XSvmshift XSxilconv XSzashift XSzmshift
    :parts: 1

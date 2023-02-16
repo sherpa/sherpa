@@ -249,7 +249,20 @@ by the actual path to the HEADAS installation, and the versions of
 the libraries - such as ``CCfits_2.6`` - may need to be changed to
 match the contents of the XSPEC installation.
 
-1. If the full XSPEC 12.12.1 system has been built then use::
+1. If the full XSPEC 12.13.0 system has been built then use::
+
+       with-xspec = True
+       xspec_version = 12.13.0
+       xspec_lib_dirs = $HEADAS/lib
+       xspec_include_dirs = $HEADAS/include
+       xspec_libraries = XSFunctions XSUtil XS hdsp_6.31
+       ccfits_libraries = CCfits_2.6
+       wcslib_libraries = wcs-7.7
+
+   where the version numbers were taken from version 6.31 of HEASOFT and
+   may need updating with a newer release.
+
+2. If the full XSPEC 12.12.1 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.12.1
@@ -262,7 +275,7 @@ match the contents of the XSPEC installation.
    where the version numbers were taken from version 6.30.1 of HEASOFT and
    may need updating with a newer release.
 
-2. If the full XSPEC 12.12.0 system has been built then use::
+3. If the full XSPEC 12.12.0 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.12.0
@@ -275,7 +288,7 @@ match the contents of the XSPEC installation.
    where the version numbers were taken from version 6.29 of HEASOFT and
    may need updating with a newer release.
 
-3. If the model-only build of XSPEC - created with the
+4. If the model-only build of XSPEC - created with the
    ``--enable-xs-models-only`` flag when building HEASOFT - has been
    installed, then the configuration is similar, but the library names
    may not need version numbers and locations, depending on how the
@@ -300,7 +313,7 @@ module, but a quick check of an installed version can be made with
 the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
-    12.12.0
+    12.13.0
 
 Other options
 ^^^^^^^^^^^^^
