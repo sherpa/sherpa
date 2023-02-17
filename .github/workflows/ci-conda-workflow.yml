@@ -214,7 +214,7 @@ jobs:
         sherpa_test --cov sherpa --cov-report xml
 
     - name: upload coverage
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
         files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
