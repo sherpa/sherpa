@@ -1681,8 +1681,10 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path, caplog):
     y = [0, 4, 3]
     if idval is None:
         ui.load_arrays(1, x, y, ui.DataPHA)
+        idstr = "1"
     else:
         ui.load_arrays(idval, x, y, ui.DataPHA)
+        idstr = str(idval)
 
     path = tmp_path / "group.dat"
     path.write_text("1\n-1\n1")
@@ -1690,20 +1692,31 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path, caplog):
     data = ui.get_data(idval)
     assert data.grouping is None
 
+    assert len(caplog.records) == 0
     if idval is None:
         ui.load_grouping(str(path))
     else:
         ui.load_grouping(idval, str(path))
 
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[-1]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == f"dataset {idstr}: 1:3 Channel (unchanged)"
+
     assert not data.grouped
     assert data.grouping is not None
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.group(idval)
 
     assert data.grouped
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 2
+    r = caplog.record_tuples[-1]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == f"dataset {idstr}: 1:3 Channel (unchanged)"
 
     grps = ui.get_grouping(idval)
     assert grps.shape == (3, )
@@ -1722,6 +1735,10 @@ def test_load_grouping(idval, clean_astro_ui, tmp_path, caplog):
     y = ui.get_dep(idval)
     assert y.shape == (2, )
     assert y == pytest.approx([2, 3])
+
+    # Just to check no more logging has been done.
+    #
+    assert len(caplog.records) == 2
 
 
 @requires_fits
@@ -1779,29 +1796,46 @@ def test_group_already_grouped(idval, caplog):
     y = [0, 4, 3]
     if idval is None:
         ui.load_arrays(1, x, y, ui.DataPHA)
+        assert len(caplog.records) == 0
         ui.set_grouping([1, -1, 1])
+        idstr = "1"
     else:
         ui.load_arrays(idval, x, y, ui.DataPHA)
+        assert len(caplog.records) == 0
         ui.set_grouping(idval, [1, -1, 1])
+        idstr = str(idval)
+
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[-1]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == f"dataset {idstr}: 1:3 Channel (unchanged)"
 
     data = ui.get_data(idval)
     assert not data.grouped
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.group(idval)
 
     assert data.grouped
     assert ui.get_dep(idval) == pytest.approx([2, 3])
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 2
+    r = caplog.record_tuples[-1]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == f"dataset {idstr}: 1:3 Channel (unchanged)"
 
-    assert len(caplog.records) == 0
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.group(idval)
 
     assert ui.get_dep(idval) == pytest.approx([2, 3])
     assert data.grouped
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 3
+    r = caplog.record_tuples[-1]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == f"dataset {idstr}: 1:3 Channel (unchanged)"
 
 
 @pytest.mark.parametrize("idval", [None, 1, "xx"])
@@ -2141,20 +2175,33 @@ def test_group_when_background_has_no_grouping(clean_astro_ui, caplog):
     src.set_background(bkg)
     ui.set_data(src)
 
+    assert len(caplog.records) == 0
+
     # Done this way, the data set is not grouped
     ui.set_grouping([1, 1, 1])
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "dataset 1: 1:3 Channel (unchanged)"
+
     assert not ui.get_data().grouped
     assert ui.get_data().get_background().grouping is None
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.group()
 
-    assert len(caplog.records) == 1
-    r = caplog.record_tuples[0]
+    assert len(caplog.records) == 3
+    r = caplog.record_tuples[1]
     assert r[0] == "sherpa.astro.ui.utils"
     assert r[1] == logging.INFO
     assert r[2] == "data set 'bkg' does not specify grouping flags"
+
+    r = caplog.record_tuples[2]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "dataset 1: 1:3 Channel (unchanged)"
 
 
 @pytest.mark.xfail
@@ -2223,16 +2270,26 @@ def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui, caplog):
     """Regression test for get_dep with grouped data"""
 
     ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 4, 2, 3, 7], ui.DataPHA)
-    ui.set_grouping([1, -1, 1, -1, -1])
-
     assert len(caplog.records) == 0
+
+    ui.set_grouping([1, -1, 1, -1, -1])
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "dataset 1: 1:5 Channel (unchanged)"
+
     with caplog.at_level(logging.INFO, logger='sherpa'):
         ui.group()
 
     # Looks like it's returning mean of channel values in group
     assert ui.get_dep() == pytest.approx([4.5, 4])
 
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 2
+    r = caplog.record_tuples[-1]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "dataset 1: 1:5 Channel (unchanged)"
 
 
 @requires_fits

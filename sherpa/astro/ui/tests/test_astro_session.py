@@ -259,7 +259,11 @@ def test_zero_division_calc_stat(caplog):
 
     assert ui.get_data().grouped
 
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 1
+    loc, lvl, msg = caplog.record_tuples[0]
+    assert loc == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    assert msg =="dataset 1: 0:99 Channel (unchanged)"
 
     ui.set_full_model(1, Const1D("const"))
 

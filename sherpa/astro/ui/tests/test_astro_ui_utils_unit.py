@@ -219,9 +219,14 @@ def test_1160_original(make_data_path, clean_astro_ui, caplog):
     assert data.get_filter(format="%.4f") == fstr
 
     ui.set_grouping([1] * 1024)
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 2
 
     assert data.get_filter(format="%.4f") == fstr
+
+    r = caplog.record_tuples[1]
+    assert r[0] == "sherpa.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == "dataset 1: 0.4672:6.57 Energy (keV) (unchanged)"
 
 
 def test_get_dep_1160(clean_astro_ui):

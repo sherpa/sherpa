@@ -89,6 +89,47 @@ def _get_image_filter(data):
     return data.get_filter()
 
 
+def _pha_report_filter_change(session, idval, bkg_id, changefunc):
+    """Change the PHA object and report the filter change
+
+    This reports the filter change even if the data is not grouped, as
+    it was thought to be easier to understand (ie always reporting
+    it).
+
+    Parameters
+    ----------
+    session : sherpa.astro.ui.utils.Session instance
+    idval : int, str, or None
+        The dataset identifier, which must represent a DataPHA object.
+    bkg_id : int or None
+        The background identifier (if set)
+    changefunc : callable
+        This takes a DataPHA instance and changes it, possibly
+        changing the filtering.
+
+    """
+
+    idval = session._fix_id(idval)
+    idstr = f"dataset {idval}"
+
+    if bkg_id is None:
+        data = session._get_pha_data(idval)
+    else:
+        data = session.get_bkg(idval, bkg_id)
+        idstr += f": background {bkg_id}"
+
+    # We could not create ofilter, but that depends on what changefunc
+    # does (i.e. it could change the data.grouped flag) and it does
+    # not seem worth the complexity to address this to save the time
+    # needed to call _get_filter.
+    #
+    ofilter = sherpa.ui.utils._get_filter(data)
+    changefunc(data)
+    nfilter = sherpa.ui.utils._get_filter(data)
+    sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
+                                         data.get_xlabel())
+
+
 class Session(sherpa.ui.utils.Session):
 
     ###########################################################################
@@ -2270,8 +2311,8 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
 
-        self.set_quality(id,
-                         self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
+        mdata = self._read_user_model(filename, *args, **kwargs)
+        self.set_quality(id, mdata[1], bkg_id=bkg_id)
 
     def set_filter(self, id, val=None, bkg_id=None, ignore=False):
         """Set the filter array of a data set.
@@ -5136,6 +5177,10 @@ class Session(sherpa.ui.utils.Session):
         else:
             d = self.get_data(id)
 
+        # Wouldn't it be better to key off the data class here, as we
+        # know the mapping from class to write routine, rather than
+        # try this try/except approach?
+        #
         try:
             sherpa.astro.io.write_pha(filename, d, ascii=ascii,
                                       clobber=clobber)
@@ -7458,6 +7503,10 @@ class Session(sherpa.ui.utils.Session):
         changed dynamically, using the ``group_xxx`` series of
         routines.
 
+        .. versionchanged:: 4.15.1
+           The filter is now reported, noting any changes the new
+           grouping scheme has made.
+
         Parameters
         ----------
         id : int or str, optional
@@ -7542,23 +7591,52 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_fit_resid()
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
+
+        # We can not use _pha_report_filter_change like we do for
+        # set_grouping / group_counts ... because the logic of what we
+        # do for the background datasets is different. See also issue
+        # #1657 which discusses whether some of this logic should be
+        # in the DataPHA class instead.
+        #
+        idval = self._fix_id(id)
+        idstr = f"dataset {idval}"
 
         if bkg_id is None:
-            # First, group backgrounds associated with the
-            # data set ID; report if background(s) already grouped.
+            data = self._get_pha_data(idval)
+
+            # TODO: Do we care about the lack of grouping if the data
+            # is subtracted? Should we even bother trying to group the
+            # backgrounds?
+            #
+            # We do not just call self.group(idval, bid) here (which
+            # is what we do in ungroup), as we do not want the filter
+            # to be displayed for the backgrounds. This matches
+            # notice/ignore, where we do not dispay the filters for
+            # the background unless the user has explicitly set
+            # bkg_id.
+            #
             for bid in data.background_ids:
+                bdata = data.get_background(bid)
                 try:
-                    self.group(id, bid)
+                    bdata.group()
+
                 except DataErr as e:
                     info(str(e))
 
-            # Now check if data is already grouped, and send error message
-            # if so
+        else:
+            data = self.get_bkg(idval, bkg_id)
+            idstr += f": background {bkg_id}"
+
+        # Note: we always report the change in filter status, even
+        # when already grouped.
+        #
+        ofilter = sherpa.ui.utils._get_filter(data)
         if not data.grouped:
             data.group()
+
+        nfilter = sherpa.ui.utils._get_filter(data)
+        sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
+                                             data.get_xlabel())
 
     def set_grouping(self, id, val=None, bkg_id=None):
         """Apply a set of grouping flags to a PHA data set.
@@ -7569,8 +7647,10 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.15.1
            The filter is now re-calculated to match the new grouping
-           scheme. It is suggested that the filter be checked with
-           `get_filter` to check it is still sensible.
+           scheme. If the data is already grouped then the filter will
+           be displayed, so it can be reviewed to see if it remains
+           sensible (as repeated changes to the grouping column can
+           increase the number of noticed channels).
 
         Parameters
         ----------
@@ -7644,11 +7724,10 @@ class Session(sherpa.ui.utils.Session):
         if val is None:
             id, val = val, id
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
+        def change(data):
+            data.grouping = val
 
-        data.grouping = val
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     def get_grouping(self, id=None, bkg_id=None):
         """Return the grouping array for a PHA data set.
@@ -7967,21 +8046,26 @@ class Session(sherpa.ui.utils.Session):
         False
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
 
+        # This is different-enough from group that we repeat the code
+        # rather than abstracting away the logic like we do for the
+        # group_xxx calls.
+        #
+        idval = self._fix_id(id)
         if bkg_id is None:
+            data = self._get_pha_data(idval)
+
             # First, ungroup backgrounds associated with the
             # data set ID; report if background(s) already ungrouped.
             for bid in data.background_ids:
                 try:
-                    self.ungroup(id, bid)
+                    self.ungroup(idval, bid)
                 except DataErr as e:
                     info(str(e))
 
-            # Now check if data is already ungrouped, and send error message
-            # if so
+        else:
+            data = self.get_bkg(idval, bkg_id)
+
         if data.grouped:
             data.ungroup()
 
@@ -7999,6 +8083,10 @@ class Session(sherpa.ui.utils.Session):
         but any existing filter - created by the `ignore` or `notice`
         set of functions - is re-applied after the data has been
         grouped.
+
+        .. versionchanged:: 4.15.1
+           The filter is now reported, noting any changes the new
+           grouping scheme has made.
 
         Parameters
         ----------
@@ -8097,10 +8185,10 @@ class Session(sherpa.ui.utils.Session):
         if num is None:
             id, num = num, id
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-        data.group_bins(num, tabStops)
+        def change(data):
+            data.group_bins(num, tabStops)
+
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     # DOC-TODO: should num= be renamed val= to better match
     # underlying code/differ from group_bins?
@@ -8111,6 +8199,10 @@ class Session(sherpa.ui.utils.Session):
         The binning scheme is applied to all the channels, but any
         existing filter - created by the `ignore` or `notice` set of
         functions - is re-applied after the data has been grouped.
+
+        .. versionchanged:: 4.15.1
+           The filter is now reported, noting any changes the new
+           grouping scheme has made.
 
         Parameters
         ----------
@@ -8206,10 +8298,10 @@ class Session(sherpa.ui.utils.Session):
         if num is None:
             id, num = num, id
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-        data.group_width(num, tabStops)
+        def change(data):
+            data.group_width(num, tabStops)
+
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     def group_counts(self, id, num=None, bkg_id=None,
                      maxLength=None, tabStops=None):
@@ -8222,6 +8314,10 @@ class Session(sherpa.ui.utils.Session):
         The background is *not* included in this calculation; the
         calculation is done on the raw data even if `subtract` has
         been called on this data set.
+
+        .. versionchanged:: 4.15.1
+           The filter is now reported, noting any changes the new
+           grouping scheme has made.
 
         Parameters
         ----------
@@ -8320,10 +8416,10 @@ class Session(sherpa.ui.utils.Session):
         if num is None:
             id, num = num, id
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-        data.group_counts(num, maxLength, tabStops)
+        def change(data):
+            data.group_counts(num, maxLength, tabStops)
+
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     # DOC-TODO: check the Poisson stats claim; I'm guessing it means
     #           gaussian (i.e. sqrt(n))
@@ -8338,6 +8434,10 @@ class Session(sherpa.ui.utils.Session):
         been grouped.  The background is *not* included in this
         calculation; the calculation is done on the raw data even if
         `subtract` has been called on this data set.
+
+        .. versionchanged:: 4.15.1
+           The filter is now reported, noting any changes the new
+           grouping scheme has made.
 
         Parameters
         ----------
@@ -8420,10 +8520,11 @@ class Session(sherpa.ui.utils.Session):
         """
         if snr is None:
             id, snr = snr, id
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-        data.group_snr(snr, maxLength, tabStops, errorCol)
+
+        def change(data):
+            data.group_snr(snr, maxLength, tabStops, errorCol)
+
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     def group_adapt(self, id, min=None, bkg_id=None,
                     maxLength=None, tabStops=None):
@@ -8439,6 +8540,10 @@ class Session(sherpa.ui.utils.Session):
         is applied to all the channels, but any existing filter -
         created by the `ignore` or `notice` set of functions - is
         re-applied after the data has been grouped.
+
+        .. versionchanged:: 4.15.1
+           The filter is now reported, noting any changes the new
+           grouping scheme has made.
 
         Parameters
         ----------
@@ -8516,10 +8621,11 @@ class Session(sherpa.ui.utils.Session):
         """
         if min is None:
             id, min = min, id
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-        data.group_adapt(min, maxLength, tabStops)
+
+        def change(data):
+            data.group_adapt(min, maxLength, tabStops)
+
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     # DOC-TODO: shouldn't this be snr=None rather than min=None
     def group_adapt_snr(self, id, min=None, bkg_id=None,
@@ -8536,6 +8642,10 @@ class Session(sherpa.ui.utils.Session):
         is applied to all the channels, but any existing filter -
         created by the `ignore` or `notice` set of functions - is
         re-applied after the data has been grouped.
+
+        .. versionchanged:: 4.15.1
+           The filter is now reported, noting any changes the new
+           grouping scheme has made.
 
         Parameters
         ----------
@@ -8619,10 +8729,11 @@ class Session(sherpa.ui.utils.Session):
         """
         if min is None:
             id, min = min, id
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-        data.group_adapt_snr(min, maxLength, tabStops, errorCol)
+
+        def change(data):
+            data.group_adapt_snr(min, maxLength, tabStops, errorCol)
+
+        _pha_report_filter_change(self, id, bkg_id, change)
 
     def subtract(self, id=None):
         """Subtract the background estimate from a data set.
@@ -9594,6 +9705,10 @@ class Session(sherpa.ui.utils.Session):
         self._background_models.setdefault(id, {})[bkg_id] = model
 
         data = self.get_bkg(id, bkg_id)
+        # TODO: should we remove the units check since we do not do
+        # this for set_full_model and the data setting can get changed
+        # at any point.
+        #
         if data.units != 'channel' and data._responses:
 
             instruments = (sherpa.astro.instrument.RSPModel,
