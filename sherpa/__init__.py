@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2014, 2015, 2016, 2019, 2020, 2021, 2022
+#  Copyright (C) 2007, 2014, 2015, 2016, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -51,10 +51,12 @@ __version__ = _version.get_versions()['version']
 
 class Formatter(logging.Formatter):
     def format(self, record):
+        # Get the full message, #1688 shows we can not rely
+        # in record.msg.
+        #
+        msg = record.getMessage()
         if record.levelno > logging.INFO:
-            msg = '%s: %s' % (record.levelname, record.msg)
-        else:
-            msg = record.msg
+            msg = f"{record.levelname}: {msg}"
         return msg
 
 
