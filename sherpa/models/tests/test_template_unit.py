@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2022
+#  Copyright (C) 2016, 2018, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -527,3 +527,28 @@ def test_interpolate_par3(order, k, pval1, pval2, pval3, expected):
     tmpl.pb = pval2
     tmpl.pc = pval3
     assert tmpl(x) == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("pa,expected",
+                         [(1, [4.8, 6, 7.6, 8.2, 10]),
+                          (1.5, [10.4, 11, 16.466667, 18.516667, 24.66667]),
+                          (2, [16, 16, 25.333333, 28.83333, 39.33333])])
+def test_template_with_different_independent_axes(pa, expected):
+    """Check we can have different x values."""
+
+    t1 = TableModel("m1")
+    t1.load([10, 20, 30], [4, 6, 8])
+
+    t2 = TableModel("m2")
+    t2.load([12, 20, 32], [16, 16, 30])
+
+    templates = [t1, t2]
+
+    mdl = create_template_model("bob", ["pa"], np.asarray([[1], [2]]),
+                                templates)
+
+    # Evaluate in the grid 14, 20, 28, 31, 40
+    #
+    mdl.pa = pa
+    got = mdl([14, 20, 28, 31, 40])
+    assert got == pytest.approx(expected)
