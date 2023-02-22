@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2021, 2023
+#  Copyright (C) 2007, 2016, 2017, 2021, 2023, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,7 +25,41 @@ from sherpa.utils.err import DS9Err
 
 from . import DS9
 
-imager = DS9.DS9Win(DS9._DefTemplate, False)
+# If a user wants a unique name they can use set_template - e.g.
+#
+#    set_template(f"sherpa-{os.getpid()}")
+#
+_TemplateName: str = DS9._DefTemplate
+
+
+def get_template() -> str:
+    """The template name used to determine the DS9 instance."""
+    return _TemplateName
+
+
+def set_template(template: str) -> None:
+    """Change the template name for DS9.
+
+    Parameters
+    ----------
+    template : str
+       The name used with the DS9 instance. It must not contain
+       whitespace or be empty.
+
+    """
+
+    # Validation of the template argument is done by the caller.
+    global _TemplateName, imager
+    _TemplateName = template
+
+    imager = DS9.DS9Win(_TemplateName, False)
+
+
+imager = DS9.DS9Win(get_template(), False)
+"""The DS9 instance.
+
+There is only one DS9 instance that can be communicated with.
+"""
 
 
 # TODO: the except blocks would ideally catch explicit errors; the present
