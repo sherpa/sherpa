@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2017, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +19,7 @@
 #
 
 import time
-from os import access, R_OK
+import os
 
 from sherpa.utils.err import DS9Err
 
@@ -163,7 +164,7 @@ def set_region(reg, coord):
         raise DS9Err('open')
     try:
         # Assume a region file defines everything correctly
-        if access(reg, R_OK):
+        if os.access(reg, os.R_OK):
             imager.xpaset("regions load " + "'" + reg + "'")
         else:
             # Assume region string has to be in CIAO format
