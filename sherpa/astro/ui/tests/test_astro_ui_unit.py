@@ -2194,7 +2194,7 @@ def test_group_when_background_has_no_grouping(clean_astro_ui, caplog):
 
     assert len(caplog.records) == 3
     r = caplog.record_tuples[1]
-    assert r[0] == "sherpa.astro.ui.utils"
+    assert r[0] == "sherpa.astro.data"
     assert r[1] == logging.INFO
     assert r[2] == "data set 'bkg' does not specify grouping flags"
 
@@ -2202,6 +2202,7 @@ def test_group_when_background_has_no_grouping(clean_astro_ui, caplog):
     assert r[0] == "sherpa.ui.utils"
     assert r[1] == logging.INFO
     assert r[2] == "dataset 1: 1:3 Channel (unchanged)"
+
 
 
 @pytest.mark.xfail
