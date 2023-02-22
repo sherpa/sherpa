@@ -1929,7 +1929,8 @@ must be an integer.""")
         .. versionchanged:: 4.15.1
            The filter is now re-calculated when the grouping is
            changed. It is suggested that the filter be checked with
-           `get_filter` to check it is still sensible.
+           `get_filter` to check it is still sensible. If set to None
+           then the group flag is cleared.
 
         Returns
         -------
@@ -1965,6 +1966,12 @@ must be an integer.""")
             ofilter = self.get_filter()
 
         self._set_related("grouping", val)
+
+        # If the array has been removed then we need to reset the
+        # group flag.
+        #
+        if val is None and self._NoNewAttributesAfterInit__initialized and self.grouped:
+            self.grouped = False
 
         if ofilter is not None:
             # If the data has been filtered then we want to re-create
@@ -4743,11 +4750,25 @@ must be an integer.""")
         grouping attribute will be used when accessing data values. This
         can be called even if the grouping attribute is empty.
 
+        .. versionchanged:: 4.15.1
+           The grouping status of any background component is now also
+           changed.
+
         See Also
         --------
         ungroup
+
         """
         self.grouped = True
+
+        # Ensure any backgrounds are also grouped.
+        #
+        for bkg_id in self.background_ids:
+            bkg = self.get_background(bkg_id)
+            try:
+                bkg.grouped = True
+            except DataErr as exc:
+                info(str(exc))
 
     def ungroup(self):
         """Remove any data grouping.
@@ -4755,11 +4776,23 @@ must be an integer.""")
         This un-sets the grouping flag which means that the grouping
         attribute will not be used when accessing data values.
 
+        .. versionchanged:: 4.15.1
+           The grouping status of any background component is now also
+           changed.
+
         See Also
         --------
         group
         """
         self.grouped = False
+
+        # Ensure any backgrounds are also grouped.
+        #
+        for bkg_id in self.background_ids:
+            # Unlike the group case we do not need to worry about this
+            # failing.
+            bkg = self.get_background(bkg_id)
+            bkg.grouped = False
 
     def subtract(self):
         """Subtract the background data.

@@ -1685,7 +1685,6 @@ def test_1160(make_data_path):
     assert pha.get_filter(format="%.2f") == fexpr
 
 
-@pytest.mark.xfail
 def test_pha_remove_grouping(make_test_pha):
     """Check we can remove the grouping array.
 
@@ -4037,7 +4036,7 @@ def test_pha_group_background(caplog):
     src.group()
 
     assert src.grouped
-    assert not bkg.grouped
+    assert bkg.grouped
 
     assert len(caplog.record_tuples) == 0
 
@@ -4085,7 +4084,7 @@ def test_pha_ungroup_background(caplog):
     src.ungroup()
 
     assert not src.grouped
-    assert bkg.grouped
+    assert not bkg.grouped
 
     assert len(caplog.record_tuples) == 0
 
@@ -4113,7 +4112,7 @@ def test_pha_ungroup_background_not_set(caplog):
     src.ungroup()
 
     assert not src.grouped
-    assert bkg.grouped
+    assert not bkg.grouped
 
     assert len(caplog.record_tuples) == 0
 
@@ -4142,7 +4141,7 @@ def test_pha_ungroup_background_after(caplog):
     src.ungroup()
 
     assert not src.grouped
-    assert bkg.grouped
+    assert not bkg.grouped
 
     assert len(caplog.record_tuples) == 0
 
@@ -4203,6 +4202,6 @@ def test_pha_ungroup_background_remove(caplog):
     src.ungroup()
 
     assert not src.grouped
-    assert bkg.grouped
+    assert not bkg.grouped
 
     assert len(caplog.record_tuples) == 0

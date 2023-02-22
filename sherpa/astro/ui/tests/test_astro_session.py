@@ -2445,7 +2445,7 @@ def test_notice_warning(caplog):
     loc, lvl, msg = caplog.record_tuples[0]
     assert loc == "sherpa.astro.ui.utils"
     assert lvl == logging.WARNING
-    assert msg == "not all PHA datasets have equal analysis quantities"
+    assert msg == "not all PHA datasets have equal analysis quantities: channel, energy"
 
     loc, lvl, msg = caplog.record_tuples[1]
     assert loc == "sherpa.ui.utils"
@@ -2459,10 +2459,10 @@ def test_notice_warning(caplog):
 
 
 def test_ignore_warning(caplog):
-    """Check we get a warning from ignore
+    """Check we get a warning from ignore (was a test of #1641)
 
-    The messages are slightly different to notice, hence the
-    separate check
+    This used to be more-different to test_ignore_warning (before
+    #1641 was fixed), but keep it a separate test.
     """
 
     s = AstroSession()
@@ -2481,23 +2481,18 @@ def test_ignore_warning(caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         s.ignore(lo=2)
 
-    assert len(caplog.record_tuples) == 4
+    assert len(caplog.record_tuples) == 3
     loc, lvl, msg = caplog.record_tuples[0]
     assert loc == "sherpa.astro.ui.utils"
     assert lvl == logging.WARNING
-    assert msg == "not all PHA datasets have equal analysis quantities"
+    assert msg == "not all PHA datasets have equal analysis quantities: channel, energy"
 
     loc, lvl, msg = caplog.record_tuples[1]
-    assert loc == "sherpa.astro.ui.utils"
-    assert lvl == logging.WARNING
-    assert msg == "not all PHA datasets have equal analysis quantities"
-
-    loc, lvl, msg = caplog.record_tuples[2]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
     assert msg == "dataset 1: 1:3 -> 1 Channel"
 
-    loc, lvl, msg = caplog.record_tuples[3]
+    loc, lvl, msg = caplog.record_tuples[2]
     assert loc == "sherpa.ui.utils"
     assert lvl == logging.INFO
     assert msg == "dataset 2: 0.5:2 Energy (keV) (unchanged)"
