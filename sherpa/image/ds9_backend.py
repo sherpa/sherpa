@@ -36,8 +36,43 @@ from sherpa.utils.err import DS9Err
 
 from . import DS9
 
+# If a user wants a unique name they can use set_template - e.g.
+#
+#    set_template(f"sherpa-{os.getpid()}")
+#
+_TemplateName: str = DS9._DefTemplate
 
-imager = DS9.DS9Win(template=DS9._DefTemplate, doOpen=False)
+
+def get_template() -> str:
+    """The template name used to determine the DS9 instance."""
+    return _TemplateName
+
+
+def set_template(template: str) -> None:
+    """Change the template name for DS9.
+
+    Parameters
+    ----------
+    template : str
+       The name used with the DS9 instance. It must not contain
+       whitespace or be empty.
+
+    """
+
+    # Validation of the template argument is done by the caller.
+    global _TemplateName, imager
+    _TemplateName = template
+
+    imager = DS9.DS9Win(template=_TemplateName, doOpen=False)
+
+
+imager = DS9.DS9Win(template=get_template(), doOpen=False)
+"""The DS9 instance.
+
+There is only one DS9 instance that can be communicated with at a
+time.
+
+"""
 
 
 # The except blocks would ideally catch explicit errors; the present

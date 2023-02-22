@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2010, 2016, 2026
+#  Copyright (C) 2009-2010, 2016, 2026
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,6 +34,25 @@ from sherpa.astro.io.wcs import WCS
 
 imager = None
 """The DS9 window, or None"""
+
+
+def get_template() -> str:
+    """The template name used to determine the DS9 instance."""
+    return "sherpa"  # hard-coded to the default
+
+
+def set_template(template: str) -> None:
+    """Change the template name for DS9.
+
+    Parameters
+    ----------
+    template : str
+       The name used with the DS9 instance. It must not contain
+       whitespace or be empty.
+
+    """
+
+    pass
 
 
 def close() -> None:
