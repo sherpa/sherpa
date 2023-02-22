@@ -23,11 +23,47 @@
 import os
 import time
 
-from sherpa.utils.err import DS9Err
+from sherpa.utils.err import ArgumentTypeErr, DS9Err
 
 from . import DS9
 
-imager = DS9.DS9Win(DS9._DefTemplate, False)
+# Go back to using a non-nuique name. If a user wants a unique name
+# they can use set_template - e.g.
+#
+#    set_template(f"sherpa-{os.getpid()}")
+#
+_TemplateName = DS9._DefTemplate
+
+
+def get_template():
+    """The template name used to determine the DS9 instance."""
+    return _TemplateName
+
+
+def set_template(template):
+    """Change the template name for DS9.
+
+    Parameters
+    ----------
+    template : str
+        The name used with the DS9 instance.
+
+    """
+
+    if not isinstance(template, str):
+        raise ArgumentTypeErr("badarg", "template", "a string")
+
+    global _TemplateName, imager
+    _TemplateName = template
+
+    imager = DS9.DS9Win(_TemplateName, False)
+
+
+imager = DS9.DS9Win(get_template(), False)
+"""The DS9 instance.
+
+There is only one DS9 instance that can be communicated with.
+"""
 
 
 def close():

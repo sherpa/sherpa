@@ -100,8 +100,8 @@ def get_arr_from_imager(im, yexp):
 
 @requires_ds9
 def test_ds9():
-    ctor = sherpa.image.ds9_backend.DS9.DS9Win
-    im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
+    ctor = sherpa.image.DS9.DS9Win
+    im = ctor(sherpa.image.ds9_backend.get_template(), False)
     im.doOpen()
     im.showArray(data.y)
     data_out = get_arr_from_imager(im, data.y)
