@@ -26,7 +26,7 @@
 
 """
 
-from os import access, R_OK
+import os
 import time
 
 import numpy as np
@@ -253,7 +253,7 @@ def set_region(reg: str, coord: str) -> None:
         raise DS9Err('open')
     try:
         # Assume a region file defines everything correctly
-        if access(reg, R_OK):
+        if os.access(reg, os.R_OK):
             imager.xpaset(f"regions load '{reg}'")
         else:
             # Assume region string has to be in CIAO format
