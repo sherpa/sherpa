@@ -3022,11 +3022,8 @@ def test_pha_xxx_ids_invalid_not_known(attr):
     counts = np.ones_like(chans)
     pha = DataPHA("dummy", chans, counts)
 
-    # The error message could be better (use list to remove the dict_keys)
-    # but it is not a high priority.
-    #
     with pytest.raises(DataErr,
-                       match=re.escape(f"3 is not a valid {attr} id in dict_keys([])")):
+                       match=re.escape(f"3 is not a valid {attr} id in []")):
         setattr(pha, f"{attr}_ids", [3])
 
 
@@ -4263,7 +4260,7 @@ def test_pha_check_background_ids_basic():
     # We can not set an unknown background.
     #
     with pytest.raises(DataErr,
-                       match=r"^foo is not a valid background id in dict_keys\(\['up', 1\]\)$"):
+                       match=r"^foo is not a valid background id in \['up', 1\]$"):
         pha.background_ids = ["foo"]
 
     # And it hasn't changed.
@@ -4328,7 +4325,7 @@ def test_pha_check_response_ids_basic():
     # We can not set an unknown response.
     #
     with pytest.raises(DataErr,
-                       match=r"^foo is not a valid response id in dict_keys\(\['up', 1\]\)$"):
+                       match=r"^foo is not a valid response id in \['up', 1\]$"):
         pha.response_ids = ["foo"]
 
     # And it hasn't changed.
