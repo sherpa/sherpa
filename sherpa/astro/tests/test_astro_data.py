@@ -3287,6 +3287,84 @@ def test_pha_compare_mask_and_filter():
     assert data.get_dep(filter=True) == pytest.approx([20, 50, 60, 70])
 
 
+def test_pha_notice_bkg_id_none():
+    """Check bkg_id=None."""
+
+    pha = DataPHA("src", [1, 2], [10, 10])
+    b1 = DataPHA("1", [1, 2], [2, 2])
+    bup = DataPHA("up", [1, 2], [3, 4])
+
+    pha.set_background(b1, id=1)
+    pha.set_background(bup, id="up")
+
+    pha.notice(lo=2, bkg_id=None)  # the default
+
+    assert pha.mask == pytest.approx([False, True])
+    assert b1.mask == pytest.approx([False, True])
+    assert bup.mask == pytest.approx([False, True])
+
+
+@pytest.mark.parametrize("bkg_id", [1, pytest.param("up", marks=pytest.mark.xfail)])  # bug: #1709
+def test_pha_notice_bkg_id_scalar(bkg_id):
+    """Check bkg_id=scalar."""
+
+    pha = DataPHA("src", [1, 2], [10, 10])
+    b1 = DataPHA("1", [1, 2], [2, 2])
+    bup = DataPHA("up", [1, 2], [3, 4])
+
+    pha.set_background(b1, id=1)
+    pha.set_background(bup, id="up")
+
+    pha.notice(lo=2, bkg_id=bkg_id)
+
+    assert pha.mask is True
+    if bkg_id == 1:
+        assert b1.mask == pytest.approx([False, True])
+        assert bup.mask is True
+    else:
+        assert b1.mask is True
+        assert bup.mask == pytest.approx([False, True])
+
+
+def test_pha_notice_bkg_id_array_all():
+    """Check bkg_id=array of all ids."""
+
+    pha = DataPHA("src", [1, 2], [10, 10])
+    b1 = DataPHA("1", [1, 2], [2, 2])
+    bup = DataPHA("up", [1, 2], [3, 4])
+
+    pha.set_background(b1, id=1)
+    pha.set_background(bup, id="up")
+
+    pha.notice(lo=2, bkg_id=["up", 1])
+
+    assert pha.mask is True
+    assert b1.mask == pytest.approx([False, True])
+    assert bup.mask == pytest.approx([False, True])
+
+
+@pytest.mark.parametrize("bkg_id", [1, "up"])
+def test_pha_notice_bkg_id_array_subset(bkg_id):
+    """Check bkg_id=array of one."""
+
+    pha = DataPHA("src", [1, 2], [10, 10])
+    b1 = DataPHA("1", [1, 2], [2, 2])
+    bup = DataPHA("up", [1, 2], [3, 4])
+
+    pha.set_background(b1, id=1)
+    pha.set_background(bup, id="up")
+
+    pha.notice(lo=2, bkg_id=[bkg_id])
+
+    assert pha.mask is True
+    if bkg_id == 1:
+        assert b1.mask == pytest.approx([False, True])
+        assert bup.mask is True
+    else:
+        assert b1.mask is True
+        assert bup.mask == pytest.approx([False, True])
+
+
 def get_img_spatial_mask():
     """This is a regression test, but it does look sensible."""
 
