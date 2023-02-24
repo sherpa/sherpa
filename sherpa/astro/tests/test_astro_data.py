@@ -3304,7 +3304,7 @@ def test_pha_notice_bkg_id_none():
     assert bup.mask == pytest.approx([False, True])
 
 
-@pytest.mark.parametrize("bkg_id", [1, pytest.param("up", marks=pytest.mark.xfail)])  # bug: #1709
+@pytest.mark.parametrize("bkg_id", [1, "up"])
 def test_pha_notice_bkg_id_scalar(bkg_id):
     """Check bkg_id=scalar."""
 

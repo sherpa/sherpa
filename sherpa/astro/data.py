@@ -4707,7 +4707,12 @@ will be removed.
         #
         filter_background_only = False
         if bkg_id is not None:
-            if numpy.iterable(bkg_id):
+            # As bkg_id can be
+            #   - int or str
+            #   - iterable of int or str
+            # it's a bit awkward to identify what is meant.
+            #
+            if not isinstance(bkg_id, str) and numpy.iterable(bkg_id):
                 bkg_ids = bkg_id
             else:
                 bkg_ids = [bkg_id]
