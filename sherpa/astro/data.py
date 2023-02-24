@@ -1751,7 +1751,7 @@ must be an integer.""")
                             doc="""IDs of defined instrument responses (ARF/RMF pairs).
 
 If set, the identifiers must already exist, and any other responses
-will be removed.
+will be removed. The identiers can be integers or strings.
 """)
 
     def _get_background_ids(self):
@@ -1772,7 +1772,7 @@ will be removed.
                               doc="""IDs of defined background data sets.
 
 If set, the identifiers must already exist, and any other backgrounds
-will be removed.
+will be removed. The identifiers can be integers or strings.
 """)
 
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
@@ -2729,7 +2729,10 @@ will be removed.
         return vals
 
     default_background_id = 1
-    """The identifier for the background component when not set."""
+    """The identifier for the background component when not set.
+
+It is an integer or string.
+"""
 
     def _fix_background_id(self, id):
         """Identify the backround identifier.
@@ -2742,7 +2745,7 @@ will be removed.
 
         Returns
         -------
-        bkg_id : int
+        bkg_id : int or str
             The background identifier.
 
         """
@@ -4584,7 +4587,7 @@ will be removed.
         ignore : bool, optional
             Set to True if the range should be ignored. The default is
             to notice the range.
-        bkg_id : int or sequence of int or None, optional
+        bkg_id : int or str, or sequence of int or str, optional
             If not None then apply the filter to the given background
             dataset or datasets, otherwise change the object and all
             its background datasets.
