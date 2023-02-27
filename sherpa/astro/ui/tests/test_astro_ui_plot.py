@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022
+#  Copyright (C) 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1931,6 +1931,7 @@ DATA_PREFS = {'alpha': None,
               'ecolor': None,
               'linecolor': None,
               'linestyle': 'None',
+              'linewidth': None,
               'marker': '.',
               'markerfacecolor': None,
               'markersize': None,
@@ -1949,6 +1950,7 @@ MODEL_PREFS = {'alpha': None,
                'ecolor': None,
                'linecolor': None,
                'linestyle': '-',
+               'linewidth': None,
                'marker': 'None',
                'markerfacecolor': None,
                'markersize': None,

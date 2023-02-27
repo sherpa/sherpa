@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2017, 2019, 2020, 2021
+#  Copyright (C) 2010, 2015, 2017, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -211,6 +211,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
           xlog=False,
           ylog=False,
           linestyle='solid',
+          linewidth=None,
           drawstyle='default',
           color=None,
           alpha=None,
@@ -250,7 +251,7 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
                 xerrorbars=False, yerrorbars=False,
                 ecolor=ecolor, capsize=capsize, barsabove=barsabove,
                 xlog=xlog, ylog=ylog,
-                linestyle=linestyle,
+                linestyle=linestyle, linewidth=linewidth,
                 drawstyle=drawstyle,
                 color=color, marker=None, alpha=alpha,
                 xaxis=False, ratioline=False)
@@ -275,11 +276,11 @@ def histo(xlo, xhi, y, yerr=None, title=None, xlabel=None, ylabel=None,
     #
     # Unlike plot, using errorbar for both cases.
     #
-
     axes.errorbar(xmid, y, yerr, xerr,
                   color=color,
                   alpha=alpha,
                   linestyle='',
+                  linewidth=linewidth,
                   marker=marker,
                   markersize=markersize,
                   markerfacecolor=markerfacecolor,
@@ -364,6 +365,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
          xlog=False,
          ylog=False,
          linestyle='solid',
+         linewidth=None,
          drawstyle='default',
          color=None,
          marker='None',
@@ -409,6 +411,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
         objs = axes.errorbar(x, y, yerr, xerr,
                              color=color,
                              linestyle=linestyle,
+                             linewidth=linewidth,
                              marker=marker,
                              markersize=markersize,
                              markerfacecolor=markerfacecolor,
@@ -423,6 +426,7 @@ def plot(x, y, yerr=None, xerr=None, title=None, xlabel=None, ylabel=None,
                          color=color,
                          alpha=alpha,
                          linestyle=linestyle,
+                         linewidth=linewidth,
                          drawstyle=drawstyle,
                          marker=marker,
                          markersize=markersize,
