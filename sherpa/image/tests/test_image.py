@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019
-#     Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -19,7 +19,6 @@
 #
 
 import numpy as np
-from numpy.testing import assert_allclose
 
 import pytest
 
@@ -99,10 +98,6 @@ def get_arr_from_imager(im, yexp):
     return out
 
 
-_atol = 0.0
-_rtol = 1.0e-6
-
-
 @requires_ds9
 def test_ds9():
     ctor = sherpa.image.ds9_backend.DS9.DS9Win
@@ -111,7 +106,7 @@ def test_ds9():
     im.showArray(data.y)
     data_out = get_arr_from_imager(im, data.y)
     im.xpaset("quit")
-    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+    assert data_out == pytest.approx(data.y)
 
 
 @requires_ds9
@@ -120,7 +115,7 @@ def test_image():
     im.image(data.y)
     data_out = get_arr_from_imager(im, data.y)
     im.xpaset("quit")
-    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+    assert data_out == pytest.approx(data.y)
 
 
 @requires_ds9
@@ -130,7 +125,7 @@ def test_data_image():
     im.image()
     data_out = get_arr_from_imager(im, data.y)
     im.xpaset("quit")
-    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+    assert data_out == pytest.approx(data.y)
 
 
 @requires_ds9
@@ -140,7 +135,7 @@ def test_model_image():
     im.image()
     data_out = get_arr_from_imager(im, data.y)
     im.xpaset("quit")
-    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+    assert data_out == pytest.approx(data.y)
 
 
 @requires_ds9
@@ -155,7 +150,7 @@ def test_ratio_image():
     # reassigns the ratio there to be one.
     expval = np.ones(data.y.shape)
     expval[0, 0] = 0
-    assert_allclose(expval, data_out, atol=_atol, rtol=_rtol)
+    assert data_out == pytest.approx(expval)
 
 
 @requires_ds9
@@ -166,7 +161,7 @@ def test_resid_image():
     data_out = get_arr_from_imager(im, data.y)
     im.xpaset("quit")
     # Return value is all zeros
-    assert_allclose(data.y * 0, data_out, atol=_atol, rtol=_rtol)
+    assert data_out == pytest.approx(np.zeros_like(data.y))
 
 
 @requires_ds9
@@ -196,8 +191,7 @@ def test_connection_with_x_file():
         os.rmdir(dname)
 
     im.xpaset("quit")
-
-    assert_allclose(data.y, data_out, atol=_atol, rtol=_rtol)
+    assert data_out == pytest.approx(data.y)
 
 
 @requires_ds9
@@ -216,8 +210,7 @@ def test_image_getregion(coordsys):
     # This is not ideal.
     from sherpa.image import ds9_backend
 
-    ctor = sherpa.image.ds9_backend.DS9.DS9Win
-    im = ctor(sherpa.image.ds9_backend.DS9._DefTemplate, False)
+    im = ds9_backend.imager
     im.doOpen()
     im.showArray(data.y)
 
@@ -236,5 +229,6 @@ def test_image_getregion(coordsys):
     toks = rval[7:-2].split(',')
     assert len(toks) == 3
 
-    vals = [float(t) for t in toks]
-    assert_allclose(vals, [8.5, 7.0, 0.8])
+    assert float(toks[0]) == pytest.approx(8.5)
+    assert float(toks[1]) == pytest.approx(7.0)
+    assert float(toks[2]) == pytest.approx(0.8)
