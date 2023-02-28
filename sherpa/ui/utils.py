@@ -47,13 +47,13 @@ from sherpa.optmethods import OptMethod
 from sherpa.plot import Plot, MultiPlot, set_backend, get_per_plot_kwargs
 from sherpa.stats import Stat, UserStat
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
-    export_method, send_to_pager
+    is_iterable_not_str, export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.random import RandomType
-from sherpa.utils.types import IdType
+from sherpa.utils.types import IdType, IdTypes
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -72,6 +72,7 @@ _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 
 
 ModelType = Union[Model, str]
+
 T = TypeVar("T")
 
 
@@ -267,7 +268,7 @@ def report_filter_change(idstr: str,
 
 
 def notice_data_range(get_data: Callable[[IdType], Data],
-                      ids: Sequence[IdType],
+                      ids: IdTypes,
                       lo, hi,
                       kwargs) -> None:
     """Filter each dataset and report the change in filter.
@@ -2099,6 +2100,29 @@ class Session(NoNewAttributesAfterInit):
             raise IdentifierErr("badid", id)
 
         return id
+
+    def _get_idlist(self,
+                    idvals: Optional[Union[IdType, IdTypes]]
+                    ) -> list[IdType]:
+        """Return a list of identifiers.
+
+        The return list must contain at least one element, but there
+        is no check that the element is valid (i.e. has
+        data/model/....), or not repeated.
+
+        """
+
+        # What is the best way to ensure that we convert
+        # - "foo" to ["foo"]
+        # - 1 to [1]
+        # - ["foo", 2] is not changed.
+        #
+        if is_iterable_not_str(idvals):
+            out = [self._fix_id(idval) for idval in idvals]
+            if len(out) == 0:
+                raise ArgumentErr("id list is empty")
+
+        return [self._fix_id(idvals)]
 
     def _get_plottype(self, plottype: str) -> str:
         """Return the name to refer to a given plot type.
@@ -5597,7 +5621,7 @@ class Session(NoNewAttributesAfterInit):
             self.notice_id(ids, *vals, **kwargs)
 
     def _notice_expr_id(self,
-                        ids: Union[IdType, Sequence[IdType]],
+                        ids: Union[IdType, IdTypes],
                         expr: Optional[str] = None,
                         **kwargs) -> None:
         for vals in sherpa.utils.parse_expr(expr):
@@ -5851,7 +5875,7 @@ class Session(NoNewAttributesAfterInit):
     # worth creating a copy of the routine just for this.
     #
     def notice_id(self,
-                  ids: Union[IdType, Sequence[IdType]],
+                  ids: Union[IdType, IdTypes],
                   lo=None, hi=None, **kwargs
                   ) -> None:
         """Include data from the fit for a data set.
@@ -5965,7 +5989,7 @@ class Session(NoNewAttributesAfterInit):
     # worth creating a copy of the routine just for this.
     #
     def ignore_id(self,
-                  ids: Union[IdType, Sequence[IdType]],
+                  ids: Union[IdType, IdTypes],
                   lo=None, hi=None, **kwargs
                   ) -> None:
         """Exclude data from the fit for a data set.
@@ -8791,7 +8815,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit_ids(self,
                      id: Optional[IdType],
-                     otherids: Optional[Sequence[IdType]] = None
+                     otherids: Optional[IdTypes] = None
                      ) -> list[IdType]:
         """Return the identifiers that will be used for a fit.
 
@@ -8895,7 +8919,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _prepare_fit(self,
                      id: Optional[IdType],
-                     otherids: Sequence[IdType] = ()
+                     otherids: IdTypes = ()
                      ) -> list[FitStore]:
         """Ensure we have all the requested ids, datasets, and models.
 
@@ -8948,7 +8972,7 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit(self,
                  id: Optional[IdType],
-                 otherids: Sequence[IdType] = (),
+                 otherids: IdTypes = (),
                  estmethod=None, numcores=1
                  ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object for the given identifiers.
@@ -9759,7 +9783,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve discussion of how the simulations are done.
     def plot_pvalue(self, null_model, alt_model, conv_model=None,
                     id: IdType = 1,
-                    otherids: Sequence[IdType] = (),
+                    otherids: IdTypes = (),
                     num=500, bins=25, numcores=None,
                     replot=False, overplot=False, clearwindow=True,
                     **kwargs):
@@ -9869,7 +9893,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id: IdType = 1,
-                        otherids: Sequence[IdType] = (),
+                        otherids: IdTypes = (),
                         num=500, bins=25, numcores=None,
                         recalc=False):
         """Return the data used by plot_pvalue.
@@ -9978,7 +10002,7 @@ class Session(NoNewAttributesAfterInit):
 
     def normal_sample(self, num=1, sigma=1, correlate=True,
                       id: Optional[IdType] = None,
-                      otherids: Sequence[IdType] = (),
+                      otherids: IdTypes = (),
                       numcores=None):
         """Sample the fit statistic by taking the parameter values
         from a normal distribution.
@@ -10050,7 +10074,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: improve the description of factor parameter
     def uniform_sample(self, num=1, factor=4,
                        id: Optional[IdType] = None,
-                       otherids: Sequence[IdType] = (),
+                       otherids: IdTypes = (),
                        numcores=None):
         """Sample the fit statistic by taking the parameter values
         from an uniform distribution.
@@ -10107,7 +10131,7 @@ class Session(NoNewAttributesAfterInit):
 
     def t_sample(self, num=1, dof=None,
                  id: Optional[IdType] = None,
-                 otherids: Sequence[IdType] = (),
+                 otherids: IdTypes = (),
                  numcores=None):
         """Sample the fit statistic by taking the parameter values from
         a Student's t-distribution.
@@ -11827,7 +11851,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: add pointers on what to do with the return values
     def get_draws(self,
                   id: Optional[IdType] = None,
-                  otherids: Sequence[IdType] = (),
+                  otherids: IdTypes = (),
                   niter=1000, covar_matrix=None):
         """Run the pyBLoCXS MCMC algorithm.
 
@@ -11951,6 +11975,50 @@ class Session(NoNewAttributesAfterInit):
     #
     # Plot object access
     #
+
+    def _get_plot_objects(self,
+                          ids: Union[IdType, IdTypes],
+                          getfunc: Callable,
+                          recalc: bool = True,
+                          **kwargs
+                          ) -> MultiPlot:
+        """Access the plot objects.
+
+        Parameters
+        ----------
+        ids : int or str or sequence of int or str or None
+            The dataset identifier or identifiers.
+        getfunc : callable
+            Given the id and recalc parameters, and the contents of
+            kwargs, return a plot object.
+        recalc : bool, optional
+            Should the plot object be recalculated or do we use the
+            previous object?
+        **kwargs
+            Extra arguments to be sent to getfunc
+
+        Returns
+        -------
+        plots : MultiPlot
+           The plot data.
+
+        Notes
+        -----
+        Should recalc be True when ids is a sequence not a scalar?
+
+        """
+
+        plotobj = MultiPlot()
+        first = True
+        for idval in self._get_idlist(ids):
+            plot = getfunc(id=idval, recalc=recalc, **kwargs)
+            plotobj.add(copy.deepcopy(plot))
+
+            if first and hasattr(plot, "title"):
+                plotobj.title = plot.title
+                first = False
+
+        return plotobj
 
     def get_split_plot(self):
         """Return the plot attributes for displays with multiple plots.
@@ -14304,14 +14372,20 @@ class Session(NoNewAttributesAfterInit):
         self._multi_plot(args, rows=rows, cols=cols, **kwargs)
 
     def plot_data(self,
-                  id: Optional[IdType] = None,
+                  id: Optional[Union[IdType, IdsType]] = None,
                   replot=False, overplot=False,
                   clearwindow=True, **kwargs) -> None:
         r"""Plot the data values.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
@@ -14359,6 +14433,17 @@ class Session(NoNewAttributesAfterInit):
         >>> set_xlog("data")
         >>> plot_data("jet")
         >>> plot_data("core", overplot=True)
+
+        Draw both datasets on the same plot, with a linear X axis,
+        both drawn in green but with the opacity of the "core" dataset
+        set to 0.5:
+
+        >>> plot_data(["jet", "core"], xlog=False, color="green", alpha=[1, 0.5])
+
+        Label each data set (the behaviour depends on the selected
+        back end):
+
+        >>> plot_data(["jet", "core"], label=["Data: jet", "Data: core"])
 
         The following example requires that the Matplotlib backend
         is selected, and uses a Matplotlib function to create a
@@ -14411,16 +14496,18 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_data_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_data_plot,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
+
 
     # DOC-NOTE: also in sherpa.astro.utils
     #  - we include a description of the DataPHA handling here
     #    even though its only relevant to sherpa.astro.ui
     #
     def plot_model(self,
-                   id: Optional[IdType] = None,
+                   id: Optional[Union[IdType, IdsType]] = None,
                    replot=False, overplot=False,
                    clearwindow=True, **kwargs) -> None:
         """Plot the model for a data set.
@@ -14429,9 +14516,15 @@ class Session(NoNewAttributesAfterInit):
         any instrument response (e.g. a convolution created by
         `set_psf`).
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
@@ -14480,6 +14573,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_model(1)
         >>> plot_model(2, overplot=True)
 
+        Overlay the two datasets on the same plot, both in black with
+        with data set 2 usniog a dashed line style:
+
+        >>> plot_model([1, 2], color="black", linestyle=["solid", "dashed"])
+
         Create the equivalent of ``plot_fit('jet')``:
 
         >>> plot_data('jet')
@@ -14497,9 +14595,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_model_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_model_plot,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
@@ -14877,7 +14976,7 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def plot_fit(self,
-                 id: Optional[IdType] = None,
+                 id: Optional[Union[IdType, IdsType]] = None,
                  replot=False, overplot=False,
                  clearwindow=True,
                  **kwargs) -> None:
@@ -14886,9 +14985,15 @@ class Session(NoNewAttributesAfterInit):
         This function creates a plot containing the data and the model
         (including any instrument response) for a data set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -14941,6 +15046,11 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit('jet')
         >>> plot_fit('core', overplot=True)
 
+        Overlap the two plots, using the same color but changing the
+        opacity of the "core" data set to 0.5:
+
+        >>> plot_fit(['jet', 'core'], color="black", alpha=[1, 0.5])
+
         Keyword arguments can be given to override the plot preferences;
         for example the following sets the y axis to a log scale, but
         only for this plot:
@@ -14962,12 +15072,15 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_fit_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_fit_plot,
+                                         recalc=not replot)
+        # We know plotobj.plots[0] exists
+        plotobj.title = plotobj.plots[0].dataplot.title
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_resid(self,
-                   id: Optional[IdType] = None,
+                   id: Optional[Union[IdType, IdTypes]] = None,
                    replot=False, overplot=False,
                    clearwindow=True,
                    **kwargs) -> None:
@@ -14976,12 +15089,18 @@ class Session(NoNewAttributesAfterInit):
         This function displays the residuals (data - model) for a data
         set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15047,12 +15166,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_resid_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_resid_plot,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_chisqr(self,
-                    id: Optional[IdType] = None,
+                    id: Optional[Union[IdType, IdTypes]] = None,
                     replot=False, overplot=False,
                     clearwindow=True,
                     **kwargs) -> None:
@@ -15061,9 +15181,15 @@ class Session(NoNewAttributesAfterInit):
         This function displays the square of the residuals (data -
         model) divided by the error, for a data set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15111,12 +15237,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_chisqr_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_chisqr_plot,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_delchi(self,
-                    id: Optional[IdType] = None,
+                    id: Optional[Union[IdType, IdTypes]] = None,
                     replot=False, overplot=False,
                     clearwindow=True,
                     **kwargs) -> None:
@@ -15125,12 +15252,18 @@ class Session(NoNewAttributesAfterInit):
         This function displays the residuals (data - model) divided by
         the error, for a data set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int , str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15192,12 +15325,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_delchi_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_delchi_plot,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_ratio(self,
-                   id: Optional[IdType] = None,
+                   id: Optional[Union[IdType, IdTypes]] = None,
                    replot=False, overplot=False,
                    clearwindow=True,
                    **kwargs) -> None:
@@ -15205,12 +15339,18 @@ class Session(NoNewAttributesAfterInit):
 
         This function displays the ratio data / model for a data set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         .. versionchanged:: 4.12.0
            The Y axis is now always drawn using a linear scale.
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15271,12 +15411,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_ratio_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_ratio_plot,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_psf(self,
-                 id: Optional[IdType] = None,
+                 id: Optional[Union[IdType, IdTypes]] = None,
                  replot=False, overplot=False,
                  clearwindow=True,
                  **kwargs) -> None:
@@ -15285,9 +15426,15 @@ class Session(NoNewAttributesAfterInit):
         The `plot_kernel` function shows the data used to convolve
         the model.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15333,12 +15480,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_psf_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_psf_plot,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_kernel(self,
-                    id: Optional[IdType] = None,
+                    id: Optional[Union[IdType, IdTypes]] = None,
                     replot=False, overplot=False,
                     clearwindow=True,
                     **kwargs) -> None:
@@ -15347,9 +15495,15 @@ class Session(NoNewAttributesAfterInit):
         The `plot_psf` function shows the full PSF, from which the
         kernel is derived.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15397,9 +15551,10 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_kernel_plot(id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_kernel_plot,
+                                         recalc=not replot)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def _jointplot2(self, plot1, plot2,
                     overplot: bool = False,
@@ -15409,9 +15564,9 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        plot1 : sherpa.plot.Plot instance
+        plot1 : a MultiPlot instance
            The plot to appear in the top panel.
-        plot2 : sherpa.plot.Plot instance
+        plot2 : a MultiPlot instance
            The plot to appear in the bottom panel.
         overplot : bool, optional
            If ``True`` then add the data to an existing plot, otherwise
@@ -15420,7 +15575,10 @@ class Session(NoNewAttributesAfterInit):
            Should the existing plot area be cleared before creating this
            new plot (e.g. for multi-panel plots)?
 
+
         """
+
+        # TODO: what happens when sent a MultiPlot?:
 
         # Split up the kwargs so that they are per-plot.
         #
@@ -15447,8 +15605,9 @@ class Session(NoNewAttributesAfterInit):
             #
             p2prefs = get_plot_prefs(plot2)
             oldval = p2prefs['xlog']
-            dprefs = get_plot_prefs(plot1.dataplot)
-            mprefs = get_plot_prefs(plot1.modelplot)
+
+            dprefs = get_plot_prefs(plot1.plots[0].dataplot)
+            mprefs = get_plot_prefs(plot1.plots[0].modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
@@ -15459,7 +15618,7 @@ class Session(NoNewAttributesAfterInit):
             p2prefs['xlog'] = oldval
 
     def plot_fit_resid(self,
-                       id: Optional[IdType] = None,
+                       id: Optional[Union[IdType, IdTypes]] = None,
                        replot=False, overplot=False,
                        clearwindow=True,
                        **kwargs) -> None:
@@ -15467,6 +15626,12 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_resid` - for a data set.
+
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15477,7 +15642,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15535,6 +15700,10 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_fit_resid('jet')
         >>> plot_fit_resid('core', overplot=True)
 
+        Draw the fit and residuals for two datasets:
+
+        >>> plot_fit_resid(['jet', 'core'], color='black')
+
         Additional arguments can be given that are passed to the
         plot backend: the supported arguments match the keywords
         of the dictionary returned by `get_data_plot_prefs`. The
@@ -15546,14 +15715,16 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_resid_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1obj = self._get_plot_objects(id, self.get_fit_plot,
+                                          recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_resid_plot,
+                                          recalc=recalc)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     def plot_fit_ratio(self,
-                       id: Optional[IdType] = None,
+                       id: Optional[Union[IdType, IdTypes]] = None,
                        replot=False, overplot=False,
                        clearwindow=True,
                        **kwargs) -> None:
@@ -15562,6 +15733,12 @@ class Session(NoNewAttributesAfterInit):
         This creates two plots - the first from `plot_fit` and the
         second from `plot_ratio` - for a data set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
 
@@ -15569,7 +15746,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15638,14 +15815,16 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_ratio_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1obj = self._get_plot_objects(id, self.get_fit_plot,
+                                          recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_ratio_plot,
+                                          recalc=recalc)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     def plot_fit_delchi(self,
-                        id: Optional[IdType] = None,
+                        id: Optional[Union[IdType, IdTypes]] = None,
                         replot=False, overplot=False,
                         clearwindow=True,
                         **kwargs) -> None:
@@ -15653,6 +15832,12 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_delchi` - for a data set.
+
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15663,7 +15848,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -15731,11 +15916,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_delchi_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1obj = self._get_plot_objects(id, self.get_fit_plot,
+                                          recalc=recalc)
+        plot2obj = self._get_plot_objects(id, self.get_delchi_plot,
+                                          recalc=recalc)
+        self._jointplot2(plot1obj, plot2obj, overplot=overplot,
+                         clearwindow=clearwindow, **kwargs)
 
     #
     # Statistical plotting routines
@@ -16584,7 +16771,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: needs to support the fast option of int_proj
     def get_int_proj(self, par=None,
                      id: Optional[IdType] = None,
-                     otherids: Optional[Sequence[IdType]] = None,
+                     otherids: Optional[IdTypes] = None,
                      recalc=False,
                      fast=True, min=None, max=None, nloop=20, delv=None, fac=1,
                      log=False, numcores=None):
@@ -16702,7 +16889,7 @@ class Session(NoNewAttributesAfterInit):
     # recalc=True
     def get_int_unc(self, par=None,
                     id: Optional[IdType] = None,
-                    otherids: Optional[Sequence[IdType]] = None,
+                    otherids: Optional[IdTypes] = None,
                     recalc=False,
                     min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                     numcores=None):
@@ -16815,7 +17002,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_reg_proj(self, par0=None, par1=None,
                      id: Optional[IdType] = None,
-                     otherids: Optional[Sequence[IdType]] = None,
+                     otherids: Optional[IdTypes] = None,
                      recalc=False, fast=True, min=None, max=None,
                      nloop=(10, 10), delv=None, fac=4, log=(False, False),
                      sigma=(1, 2, 3), levels=None, numcores=None):
@@ -16947,7 +17134,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_reg_unc(self, par0=None, par1=None,
                     id: Optional[IdType] = None,
-                    otherids: Optional[Sequence[IdType]] = None,
+                    otherids: Optional[IdTypes] = None,
                     recalc=False, min=None, max=None, nloop=(10, 10),
                     delv=None, fac=4, log=(False, False), sigma=(1, 2, 3),
                     levels=None, numcores=None):
@@ -17082,7 +17269,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: same synopsis as int_unc
     def int_proj(self, par,
                  id: Optional[IdType] = None,
-                 otherids: Optional[Sequence[IdType]] = None,
+                 otherids: Optional[IdTypes] = None,
                  replot=False, fast=True,
                  min=None, max=None, nloop=20, delv=None, fac=1, log=False,
                  numcores=None,
@@ -17208,7 +17395,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: same synopsis as int_proj
     def int_unc(self, par,
                 id: Optional[IdType] = None,
-                otherids: Optional[Sequence[IdType]] = None,
+                otherids: Optional[IdTypes] = None,
                 replot=False, min=None,
                 max=None, nloop=20, delv=None, fac=1, log=False,
                 numcores=None,
@@ -17331,7 +17518,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_proj(self, par0, par1,
                  id: Optional[IdType] = None,
-                 otherids: Optional[Sequence[IdType]] = None,
+                 otherids: Optional[IdTypes] = None,
                  replot=False,
                  fast=True, min=None, max=None, nloop=(10, 10), delv=None,
                  fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
@@ -17467,7 +17654,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how is sigma converted into delta_stat
     def reg_unc(self, par0, par1,
                 id: Optional[IdType] = None,
-                otherids: Optional[Sequence[IdType]] = None,
+                otherids: Optional[IdTypes] = None,
                 replot=False,
                 min=None, max=None, nloop=(10, 10), delv=None, fac=4,
                 log=(False, False), sigma=(1, 2, 3), levels=None,
