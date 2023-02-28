@@ -42,6 +42,7 @@ from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
 from sherpa.astro import fake
 from sherpa.astro.data import DataPHA
+from sherpa.plot import sherpa_plot
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -12754,8 +12755,7 @@ class Session(sherpa.ui.utils.Session):
 
         self._jointplot.reset()
 
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa_plot():
             self._jointplot.plottop(plot1, overplot=overplot,
                                     clearwindow=clearwindow, **kwargs)
 
@@ -12772,11 +12772,6 @@ class Session(sherpa.ui.utils.Session):
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
             plot2.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True, **kwargs):

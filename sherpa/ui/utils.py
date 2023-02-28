@@ -34,6 +34,7 @@ from sherpa import get_config
 import sherpa.all
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
+from sherpa.plot import sherpa_plot
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -12725,16 +12726,9 @@ class Session(NoNewAttributesAfterInit):
         sp.reset(nrows, ncols)
         plotmeth = getattr(sp, f"add{plotmeth}")
 
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa_plot():
             while plots:
                 plotmeth(plots.pop(0), **kwargs)
-
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     def _plot(self, plotobj, **kwargs):
         """Display a plot object
@@ -12752,14 +12746,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa_plot():
             plotobj.plot(**kwargs)
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     def _set_plot_item(self, plottype, item, value):
         """Change a plot setting.
@@ -14067,9 +14055,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._jointplot.reset()
 
-        try:
-            sherpa.plot.backend.begin()
-
+        with sherpa_plot():
             # Note: the user preferences are set to both plots
             #
             self._jointplot.plottop(plot1, overplot=overplot,
@@ -14095,11 +14081,6 @@ class Session(NoNewAttributesAfterInit):
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
             plot2.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True, **kwargs):
@@ -14681,14 +14662,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa_plot():
             plotobj.contour(overcontour=overcontour, **kwargs)
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     # DOC-TODO: how to describe optional plot types
     # DOC-TODO: how to list information/examples about the backends?
@@ -15158,17 +15133,10 @@ class Session(NoNewAttributesAfterInit):
         plot2obj = self.get_resid_contour(id, recalc=not replot)
 
         self._splitplot.reset()
-        try:
-            sherpa.plot.backend.begin()
-
+        with sherpa_plot():
             # Note: the user settings are applied to both contours
             self._splitplot.addcontour(plot1obj, overcontour=overcontour, **kwargs)
             self._splitplot.addcontour(plot2obj, overcontour=overcontour, **kwargs)
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     ###########################################################################
     # Projection and uncertainty plots

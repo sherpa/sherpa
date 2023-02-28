@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -32,7 +32,7 @@ Which backend is used?
 When this module is first imported, Sherpa tries to import the
 backends installed with Sherpa in the order listed in the
 ``options.plot_pkg`` setting from the ``sherpa.rc`` startup file.
-The first module that imports successfully is set as the active 
+The first module that imports successfully is set as the active
 backend. The following command prints the name and the location
 on disk of that module::
 
@@ -49,8 +49,33 @@ provides the same interface):
   >>> import sherpa.plot.pylab_backend
   >>> plot.backend = sherpa.plot.pylab_backend
 
+Creating a plot
+---------------
+
+The simplest approach is to use the `sherpa_plot` context manager::
+
+    with sherpa_plot():
+        # Now call the plot/overplot or contor/overcontour methods
+        obj.plot()
+
+This handles setting up the backend, handles any error handling,
+and then ends the session. It is equivalent to::
+
+    from sherpa import plot
+    try:
+        plot.backend.begin()
+        # Now call the plot/overplot or contor/overcontour methods
+        obj.plot()
+    except:
+        plot.backend.exceptions()
+        raise
+    else:
+        plot.backend.end()
+
 """
+
 from configparser import ConfigParser
+from contextlib import contextmanager
 import logging
 import importlib
 
@@ -113,6 +138,7 @@ __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'Confidence1D', 'Confidence2D',
            'IntervalProjection', 'IntervalUncertainty',
            'RegionProjection', 'RegionUncertainty',
+           'sherpa_plot'
            )
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
@@ -221,6 +247,36 @@ def calculate_errors(data, stat, yerrorbars=True):
             warning(msg + "\nzeros or negative values found")
 
         return None
+
+
+@contextmanager
+def sherpa_plot():
+    """Context manager to handle Sherpa plot actions with a backend.
+
+    Handles setting up the backend and then handle any errors and
+    clean up.
+
+    .. versionadded:: 4.15.1
+
+    Examples
+    --------
+
+    Plot the data in the dplot object:
+
+    >>> with sherpa_plot():
+    ...     dplot.plot()
+
+    """
+
+    try:
+        backend.begin()
+        yield
+
+    except:
+        backend.exceptions()
+        raise
+    else:
+        backend.end()
 
 
 class Plot(NoNewAttributesAfterInit):
