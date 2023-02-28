@@ -12727,8 +12727,8 @@ class Session(NoNewAttributesAfterInit):
         plotmeth = getattr(sp, f"add{plotmeth}")
 
         with sherpa_plot():
-            while plots:
-                plotmeth(plots.pop(0), **kwargs)
+            for plot in plots:
+                plotmeth(plot, **kwargs)
 
     def _plot(self, plotobj, **kwargs):
         """Display a plot object
