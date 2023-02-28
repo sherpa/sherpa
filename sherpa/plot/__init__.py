@@ -22,9 +22,45 @@
 
 Classes provide access to common plotting tasks, which is done by the
 plotting backend defined in the ``options.plot_pkg`` setting of the
-Sherpa configuration file. Note that plot objects can be created
-and used even when only the `sherpa.plot.backends.BasicBackend` is
-available.
+Sherpa configuration file. Note that plot objects can be created and
+used even when only the `sherpa.plot.backends.BasicBackend` is
+available, it is just that no graphical display will be created.
+
+Which backend is used?
+----------------------
+
+When this module is first imported, Sherpa tries to import the
+backends installed with Sherpa in the order listed in the
+``options.plot_pkg`` setting from the ``sherpa.rc`` startup file.
+The first module that imports successfully is set as the active
+backend. The following command prints the name of the backend:
+
+   >>> from sherpa import plot
+   >>> print(plot.backend.name)
+
+Change the backend
+------------------
+
+After the initial import, the backend can be changed by loading one of
+the plotting backends shipped with sherpa (or any other module that
+provides the same interface):
+
+  >>> import sherpa.plot.pylab_backend
+  >>> plot.backend = sherpa.plot.pylab_backend
+
+Creating a plot
+---------------
+
+The plot backend acts as a context manager::
+
+    from sherpa.plot import backend
+    with backend:
+        # Now call the plot/overplot or contor/overcontour methods
+        obj.plot()
+
+This handles setting up the backend, handles any error handling,
+and then ends the session.
+
 """
 
 from __future__ import annotations
