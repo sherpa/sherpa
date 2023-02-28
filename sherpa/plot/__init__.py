@@ -3982,7 +3982,7 @@ class MultiPlot:
         self._title = value
 
     def __getattr__(self, attr):
-        if attr not in ["xlabel", "ylabel", "plot_prefs",
+        if attr not in ["title", "xlabel", "ylabel", "plot_prefs",
                         "histo_prefs"]:
             raise AttributeError(f"'{self.__class__.__name__}' "
                                  f"object has no attribute '{attr}'")
@@ -4020,6 +4020,23 @@ class MultiPlot:
         #
         self.plots.append(copy.deepcopy(plot))
 
+    # Preferences are delegated to the first plot, so
+    #   a) they will fail if no plots have been added
+    #   b) the choice of plot_prefs or histo_prefs depents on
+    #      the plot type
+    #
+    @property
+    def histo_prefs(self):
+        if len(self.plots) == 0:
+            raise AttributeError("no plots have been added")
+        return self.plots[0].histo_prefs
+
+    @property
+    def plot_prefs(self):
+        if len(self.plots) == 0:
+            raise AttributeError("no plots have been added")
+        return self.plots[0].plot_prefs
+
     def plot(self,
              overplot: bool = False,
              clearwindow: bool = True,
@@ -4050,6 +4067,7 @@ class MultiPlot:
 
         kwstore = get_per_plot_kwargs(len(self.plots),
                                       kwargs)
+
         for plot, store in zip(self.plots, kwstore):
             plot.plot(overplot=overplot, clearwindow=clearwindow,
                       **store)
@@ -4061,7 +4079,12 @@ class MultiPlot:
             # whether to add in the title or not.
             #
             if not overplot:
-                backend.set_title(self.title)
+                try:
+                    backend.set_title(self.title)
+                except AttributeError:
+                    # The first plot may not have a title attribute
+                    # (e.g. FitPlot).
+                    pass
 
             overplot = True
             clearwindow = False
