@@ -107,29 +107,21 @@ which is required to build the documentation locally),
 examples in the documentation are run automatically.
 This serves two purposes:
 
-  - It ensure that the examples we give execute and give the expected output.
-    It is confusing to a user to see an example in the documentation that does not
-    work because it contains bugs to calls functions that have been removed from sherpa.
-  - This also acts as an additional tests.
+  - it ensure that the examples we give are actually correct and match the code,
+  - and it acts as additional tests of the Sherpa code base.
 
-However, many examples were written because doctestplus was used with Sherpa and do not execute
-as written (e.g. they need implicit set-up that's not spelled out),
-so a number of rst files are explicitly excluded from that run in `pyests.ini`.
-When an rst file is fixed to work top-to-bottom, it should be removed from the
-blacklist in `pytest.ini`.
+The `doctest_norecursedirs` setting in the `pytests.ini` file is used to exclude files which can not be
+tested. This is generally because the examples were written before doctestplus support was added, and so
+they need to be re-worked, or there is too much extra set-up required that would make the examples
+hard-to follow. The file should be removed from this list when it has been updated to allow testing with doctestplus.
 
-doctestplus can also run the examples in the doctrings of individual
-functions, but again many files are still blacklisted for this functionality in
-`pytest.ini`.
-During development, you can run doctestplus on individual files like so::
+During development, you can run doctestplus on individual files like so (the option to use depends on whether it is a Python or reStructuredText file)::
 
    pytest --doctest-plus sherpa/astro/data.py
    pytest --doctest-plus sherpa/data.py
    pytest --doctest-rst docs/quick.rst
    pytest --doctest-rst docs/evaluation/combine.rst
 
-This guarantees that the examples actually work and don't have typos or outdated
-parameters, which might confuse a user.
 
 If you fix examples to pass these tests, remove them from the exclusion list in
 `pytest.ini`! The goal is to eventually pass on all files.
