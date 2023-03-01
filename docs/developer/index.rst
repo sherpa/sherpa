@@ -98,6 +98,45 @@ run allows us to generate a coverage report after that::
 The report is in ``report/index.html``, which links to individual
 files and shows exactly which lines were excuted while running the tests.
 
+Run doctests locally
+--------------------
+If `doctestplus <https://pypi.org/project/pytest-doctestplus/>` is installed
+(and it probably is because it's part of
+`sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`,
+which is required to build the documentation locally),
+examples in the documentation are run automatically.
+This serves two purposes:
+
+  - it ensure that the examples we give are actually correct and match the code,
+  - and it acts as additional tests of the Sherpa code base.
+
+The `doctest_norecursedirs` setting in the `pytests.ini` file is used to exclude files which can not be
+tested. This is generally because the examples were written before doctestplus support was added, and so
+they need to be re-worked, or there is too much extra set-up required that would make the examples
+hard-to follow. The file should be removed from this list when it has been updated to allow testing with doctestplus.
+
+During development, you can run doctestplus on individual files like so (the option to use depends on whether it is a Python or reStructuredText file)::
+
+   pytest --doctest-plus sherpa/astro/data.py
+   pytest --doctest-plus sherpa/data.py
+   pytest --doctest-rst docs/quick.rst
+   pytest --doctest-rst docs/evaluation/combine.rst
+
+
+If you fix examples to pass these tests, remove them from the exclusion list in
+`pytest.ini`! The goal is to eventually pass on all files.
+
+Some doctests (in the documentation or in the docstrings of individual
+functions) load data files. Those datafiles can be found in the
+`sherpa-test-data <https://github.com/sherpa/sherpa-test-data>` directory
+as explained in the description of the :ref:`development build <developer-build>`.
+There is a `conftest.py` file in the `sherpa/docs` directory and in the `sherpa/sherpa`
+directory that sets up a
+pytest fixture to define a variable called `data_dir` which points to this directory.
+That way, we do not need to clutter the example with long directory names, but the
+`sherpa-test-data` directory has to be present as a submodule to successfully pass all
+doctests.
+
 
 How do I ...
 ============
@@ -745,6 +784,7 @@ with:
 A regularly-gridded 2D dataset can be created, but note that the
 arguments must be flattened:
 
+  >>> import numpy as np
   >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
   >>> shp = x0.shape
   >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
@@ -891,12 +931,16 @@ raised. The aim is to provide some context in the message, such as::
   >>> x = np.asarray([1, 2, 3])
   >>> y = np.asarray([1, 2])
   >>> data = Data1D('example', x, y)
+  Traceback (most recent call last):
+  ...
   sherpa.utils.err.DataErr: size mismatch between independent axis and y: 3 vs 2
 
 and::
 
   >>> data = Data1D('example', x, x + 10)
   >>> data.apply_filter(y)
+  Traceback (most recent call last):
+  ...
   sherpa.utils.err.DataErr: size mismatch between data and array: 3 vs 2
 
 For `~sherpa.astro.data.DataPHA` objects, where some length checks
@@ -1088,7 +1132,7 @@ The :py:meth:`sherpa.ui.utils.Session.plot` and
 plots to be created by specifying the plot type as a list of
 argumemts. For example::
 
-    >>> s.plot('data', 'model', 'data', 2, 'model', 2)
+    >>> s.plot('data', 'model', 'data', 2, 'model', 2)  # doctest: +SKIP
 
 will create four plots, in a two-by-two grid, showing the
 data and model values for the default dataset and the
@@ -1145,11 +1189,11 @@ We can view the model plot object::
     >>> print(plot)
     xlo    = [2,3,5,7,8]
     xhi    = [3,5,6,8,9]
-    y      = [ 8.5,20. ,11.5,13.5,14.5]
+    y      = [ 6.,12., 6., 6., 6.]
     xlabel = x
     ylabel = y
     title  = Model
-    histo_prefs = {'yerrorbars': False, 'ecolor': None, ... , 'linecolor': None}
+    histo_prefs = {'xerrorbars': False, 'yerrorbars': False, ..., 'linecolor': None}
 
 
 .. _dataimg_coords:
@@ -1196,6 +1240,7 @@ transform, then they can just be set when creating the
 `~sherpa.astro.data.DataIMG.coord` attribute set to
 ``logical``.
 
+  >>> from sherpa.astro.data import DataIMG
   >>> x0 = np.asarray([1000, 1200, 2000])
   >>> x1 = np.asarray([-500, 500, -500])
   >>> y = np.asarray([10, 200, 30])

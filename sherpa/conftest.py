@@ -647,3 +647,28 @@ def cleanup_ds9_backend():
     #
     from sherpa.image import backend
     backend.close()
+
+@pytest.fixture(autouse=True)
+def add_sherpa_test_data_dir(doctest_namespace):
+    '''Define `data_dir` for doctests
+
+    We make this an autouse=True fixture, because that means that
+    the variable `data_dir` is available in every file that we may
+    want to test without any special markup to that file. There is a
+    risk that this is too magical and could confuse developers
+    in the future, but it seems more important that this keeps any
+    extra markup out of those files and keep them clean.
+    '''
+    doctest_namespace["data_3c273"] = 'sherpa/astro/datastack/tests/data/'
+
+    # We could error out here, but we only want the tests that
+    # use it to fail.
+    #
+    path = get_datadir()
+    if path is None:
+        return None
+
+    if not path.endswith('/'):
+        path += '/'
+
+    doctest_namespace["data_dir"] = path

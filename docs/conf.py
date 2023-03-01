@@ -157,6 +157,7 @@ extensions = [
     # notebooks
     'nbsphinx',
     'sphinx_rtd_theme',
+    'pytest_doctestplus.sphinx.doctestplus',
 ]
 # Imported from sphinx_astropy so we don't have to maintain the list
 # of servers
