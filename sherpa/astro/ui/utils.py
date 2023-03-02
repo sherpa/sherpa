@@ -789,18 +789,25 @@ class Session(sherpa.ui.utils.Session):
         >>> x
         array([ 1.,  2.,  3.,  4.,  5.])
 
-        Create a grid for a PHA data set called 'jet', and
-        for its background component:
+        Create a grid for a PHA data set called 'jet', and for its
+        background component (note that the axis values are in
+        channels, and there are 1024 channels set):
 
-        >>> dataspace1d(0.01, 11, 0.01, id='jet', dstype=DataPHA)
-        >>> dataspace1d(0.01, 11, 0.01, id='jet', bkg_id=1,
-        ...             dstype=DataPHA)
+        >>> dataspace1d(1, 1024, id='jet', dstype=DataPHA)
+        >>> dataspace1d(1, 1024, id='jet', bkg_id=1, dstype=DataPHA)
 
         """
-        # support non-integrated grids with inclusive boundaries
-        # We do NOT want to use an isinstance check since Data1DInt is
-        # derived from Data1D.
-        if dstype in (sherpa.data.Data1D, sherpa.astro.data.DataPHA):
+
+        # The behavior depends on whether we have "bins", so
+        # Data1DInt, or "points" like Data1D (and, for this use case,
+        # DataPHA). Since Data1DInt and DataPHA both subclass DataPHA
+        # we can not just use issubclass for the checks below.
+        #
+        # The upper limit (stop) is meant to be included in the output,
+        # which means care needs to be taken over what is sent to
+        # sherpa.utils.dataspace1d.
+        #
+        if dstype in (Data1D, DataPHA):
             stop += step
 
         xlo, xhi, y = sherpa.utils.dataspace1d(start, stop, step=step,
@@ -808,7 +815,8 @@ class Session(sherpa.ui.utils.Session):
         args = [xlo, xhi, y]
         kwargs = {}
 
-        if dstype is sherpa.astro.data.DataPHA:
+        is_pha = issubclass(dstype, DataPHA)
+        if is_pha:
             channel = numpy.arange(1, len(xlo) + 1, dtype=float)
             args = [channel, y]
             # kwargs['bin_lo'] = xlo
@@ -816,12 +824,17 @@ class Session(sherpa.ui.utils.Session):
         elif dstype is not sherpa.data.Data1DInt:
             args = [xlo, y]
 
-        if bkg_id is not None:
-            self._get_pha_data(id).set_background(dstype('bkg_dataspace1d',
-                                                         *args, **kwargs),
-                                                  bkg_id)
-        else:
-            self.set_data(id, dstype('dataspace1d', *args, **kwargs))
+        if bkg_id is None:
+            data = dstype('dataspace1d', *args, **kwargs)
+            self.set_data(id, data)
+            return
+
+        if not is_pha:
+            raise ArgumentTypeErr("badarg", "dstype", "set to DataPHA")
+
+        data = self._get_pha_data(id)
+        bkg = dstype('bkg_dataspace1d', *args, **kwargs)
+        data.set_background(bkg, bkg_id)
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):

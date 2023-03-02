@@ -3155,8 +3155,8 @@ def test_dataspace1d_not_a_background(clean_astro_ui):
     """What happens if try to make a non-PHA background?"""
 
     ui.dataspace1d(1, 10, dstype=ui.DataPHA)
-    with pytest.raises(AttributeError,
-                       match="^'Data1DInt' object has no attribute 'grouping'$"):
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'dstype' must be set to DataPHA$"):
         ui.dataspace1d(1, 10, bkg_id=1)
 
 

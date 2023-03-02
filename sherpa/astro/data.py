@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -128,7 +128,7 @@ from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
-from sherpa.utils.err import DataErr, ImportErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
 from sherpa.utils import formatting
@@ -2788,6 +2788,10 @@ must be an integer.""")
         external programs, such as XSPEC.
 
         """
+
+        if not isinstance(bkg, DataPHA):
+            raise ArgumentTypeErr("badarg", "bkg", "a PHA data set")
+
         id = self._fix_background_id(id)
         self._backgrounds[id] = bkg
         ids = self.background_ids[:]

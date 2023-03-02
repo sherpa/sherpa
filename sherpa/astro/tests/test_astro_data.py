@@ -30,7 +30,7 @@ from sherpa.astro.data import Data1D, DataARF, DataPHA, DataRMF, DataIMG, DataIM
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.models.basic import Gauss2D
 from sherpa.utils import parse_expr, SherpaFloat
-from sherpa.utils.err import DataErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -3583,8 +3583,8 @@ def test_pha_checks_background_is_pha():
 
     pha = DataPHA("x", [1, 2], [1, 2])
     bkg = Data1D("y", [1, 2], [1, 2])
-    with pytest.raises(AttributeError,
-                       match="^'Data1D' object has no attribute 'grouping'$"):
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'bkg' must be a PHA data set$"):
         pha.set_background(bkg)
 
 
