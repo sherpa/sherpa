@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,7 +19,6 @@
 #
 
 import logging
-import re
 import warnings
 
 import numpy as np
@@ -27,7 +26,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro.ui.utils import Session
-from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
+from sherpa.astro.data import Data1D, DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.models.basic import Gauss2D
 from sherpa.utils import parse_expr, SherpaFloat
@@ -3577,3 +3576,26 @@ def test_len_image_sparse(make_image_sparse):
 
     assert len(data) == len(data.y)
     assert len(data) == 5
+
+
+def test_pha_checks_background_is_pha():
+    """What happens if we send in a non-PHA background?"""
+
+    pha = DataPHA("x", [1, 2], [1, 2])
+    bkg = Data1D("y", [1, 2], [1, 2])
+    with pytest.raises(AttributeError,
+                       match="^'Data1D' object has no attribute 'grouping'$"):
+        pha.set_background(bkg)
+
+
+def test_pha_checks_background_size():
+    """What happens if we send in a background with a different number of channels?
+
+    This is a regression test, as there is an argument that this should error
+    out.
+    """
+
+    pha = DataPHA("x", [1, 2, 3], [1, 2, 3])
+    bkg = DataPHA("y", [1, 2], [1, 2])
+    pha.set_background(bkg)
+    assert pha.background_ids == [1]

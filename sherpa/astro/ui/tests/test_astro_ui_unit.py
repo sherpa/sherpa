@@ -3137,3 +3137,33 @@ def test_set_xxxscal_id(label, clean_astro_ui):
 
     assert got2 / got1 == pytest.approx(2)
     assert got2 == pytest.approx(2.4e-2)
+
+
+@pytest.mark.parametrize("idval", [None, 1, "up"])
+@pytest.mark.parametrize("bkg_id", [1, "up"])
+def test_dataspace1d_is_a_background(idval, bkg_id, clean_astro_ui):
+    """What happens if try to make a PHA background?"""
+
+    ui.dataspace1d(1, 10, id=idval, dstype=ui.DataPHA)
+    ui.dataspace1d(1, 10, id=idval, bkg_id=bkg_id, dstype=ui.DataPHA)
+    expected = [1] if idval is None else [idval]
+    assert ui.list_data_ids() == pytest.approx(expected)
+    assert ui.list_bkg_ids(idval) == pytest.approx([bkg_id])
+
+
+def test_dataspace1d_not_a_background(clean_astro_ui):
+    """What happens if try to make a non-PHA background?"""
+
+    ui.dataspace1d(1, 10, dstype=ui.DataPHA)
+    with pytest.raises(AttributeError,
+                       match="^'Data1DInt' object has no attribute 'grouping'$"):
+        ui.dataspace1d(1, 10, bkg_id=1)
+
+
+def test_set_bkg_not_a_background(clean_astro_ui):
+    """What happens if try to make add a non-PHA background?"""
+
+    ui.dataspace1d(1, 10, dstype=ui.DataPHA)
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'bkg' must be a PHA data set$"):
+        ui.set_bkg(ui.Data1D("x", [1, 2], [1, 2]))
