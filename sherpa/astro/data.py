@@ -2792,6 +2792,23 @@ must be an integer.""")
         if not isinstance(bkg, DataPHA):
             raise ArgumentTypeErr("badarg", "bkg", "a PHA data set")
 
+        # Check that the background matches the source (i.e. self)
+        # dataset.  For this use case we require that the source has
+        # set up it's channel array (ie self.channel can not be None),
+        # as allowing the background dataset to have channels but not
+        # the source makes tracking the state harder than the ability
+        # is likely worth).
+        #
+        if self.channel is None:
+            raise DataErr("The channel field must be set before adding a background")
+
+        if bkg.channel is None:
+            raise DataErr("The channel field of the background must be set")
+
+        if len(self.channel) != len(bkg.channel) or \
+           numpy.any(self.channel != bkg.channel):
+            raise DataErr("The source and background channels differ")
+
         id = self._fix_background_id(id)
         self._backgrounds[id] = bkg
         ids = self.background_ids[:]

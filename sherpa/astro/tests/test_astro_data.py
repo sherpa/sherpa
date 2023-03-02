@@ -806,9 +806,9 @@ def test_unsubtract():
     This test just subtracts and unsubtracts a few times.
     '''
     session = Session()
-    testdata = DataPHA('testdata', np.arange(50, dtype=float) + 1.,
+    testdata = DataPHA('testdata', np.arange(1, 51, dtype=np.int16),
                        np.zeros(50))
-    testbkg = DataPHA('testbkg', np.arange(50, dtype=float) + .5,
+    testbkg = DataPHA('testbkg', np.arange(1, 51, dtype=np.int16),
                       np.zeros(50))
     session.set_data(1, testdata)
     session.set_bkg(1, testbkg)
@@ -3589,13 +3589,30 @@ def test_pha_checks_background_is_pha():
 
 
 def test_pha_checks_background_size():
-    """What happens if we send in a background with a different number of channels?
-
-    This is a regression test, as there is an argument that this should error
-    out.
-    """
+    """What happens if we send in a background with a different number of channels?"""
 
     pha = DataPHA("x", [1, 2, 3], [1, 2, 3])
     bkg = DataPHA("y", [1, 2], [1, 2])
-    pha.set_background(bkg)
-    assert pha.background_ids == [1]
+    with pytest.raises(DataErr,
+                       match="^The source and background channels differ$"):
+        pha.set_background(bkg)
+
+
+def test_pha_checks_background_size_is_set_source():
+    """Ensure the source PHA has channels when adding a background"""
+
+    pha = DataPHA("x", None, None)
+    bkg = DataPHA("y", [1, 2], [1, 2])
+    with pytest.raises(DataErr,
+                       match="^The channel field must be set before adding a background$"):
+        pha.set_background(bkg)
+
+
+def test_pha_checks_background_size_is_set_bkg():
+    """Ensure the bkg PHA has channels when adding a background"""
+
+    pha = DataPHA("x", [1, 2, 3], [1, 0, 1])
+    bkg = DataPHA("y", None, None)
+    with pytest.raises(DataErr,
+                       match="^The channel field of the background must be set$"):
+        pha.set_background(bkg)

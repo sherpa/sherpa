@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2021
+#  Copyright (C) 2017, 2018, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -531,9 +531,9 @@ def test_1209_background(make_data_path):
     This is related to issue #1209
     """
 
-    # We could set up channels and counts, but let's not.
+    # We need to set up the channels array to match the background.
     #
-    d = DataPHA("dummy", None, None)
+    d = DataPHA("dummy", np.arange(1, 1025, dtype=np.int16), None)
     assert d.header["TELESCOP"] == "none"
     assert d.header["INSTRUME"] == "none"
     assert d.header["FILTER"] == "none"
