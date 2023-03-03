@@ -10130,42 +10130,47 @@ class Session(sherpa.ui.utils.Session):
     # TODO: change bkg_ids default to None or some other "less-dangerous" value
     def _add_extra_data_and_models(self, ids, datasets, models, bkg_ids={}):
         for idval, d in zip(ids, datasets):
-            if isinstance(d, sherpa.astro.data.DataPHA):
-                bkg_models = self._background_models.get(idval, {})
-                bkg_srcs = self._background_sources.get(idval, {})
-                if d.subtracted:
-                    if (bkg_models or bkg_srcs):
-                        warning(f'data set {repr(idval)} is background-subtracted; ' +
-                                'background models will be ignored')
+            if not isinstance(d, DataPHA):
+                continue
 
-                elif not (bkg_models or bkg_srcs):
-                    if d.background_ids and self._current_stat.name != 'wstat':
-                        warning(f'data set {repr(idval)} has associated backgrounds, ' +
-                                'but they have not been subtracted, ' +
-                                'nor have background models been set')
+            bkg_models = self._background_models.get(idval, {})
+            bkg_srcs = self._background_sources.get(idval, {})
+            if d.subtracted:
+                if (bkg_models or bkg_srcs):
+                    warning(f'data set {repr(idval)} is background-subtracted; ' +
+                            'background models will be ignored')
 
-                else:
-                    bkg_ids[idval] = []
-                    for bkg_id in d.background_ids:
+                continue
 
-                        if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
-                            raise ModelErr('nobkg', bkg_id, idval)
+            if not (bkg_models or bkg_srcs):
+                if d.background_ids and self._current_stat.name != 'wstat':
+                    warning(f'data set {repr(idval)} has associated backgrounds, ' +
+                            'but they have not been subtracted, ' +
+                            'nor have background models been set')
 
-                        bkg = d.get_background(bkg_id)
-                        datasets.append(bkg)
+                continue
 
-                        bkg_data = d
-                        if len(bkg.response_ids) != 0:
-                            bkg_data = bkg
+            bkg_ids[idval] = []
+            for bkg_id in d.background_ids:
 
-                        bkg_model = bkg_models.get(bkg_id, None)
-                        bkg_src = bkg_srcs.get(bkg_id, None)
-                        if bkg_model is None and bkg_src is not None:
-                            resp = sherpa.astro.instrument.Response1D(bkg_data)
-                            bkg_model = resp(bkg_src)
+                if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
+                    raise ModelErr('nobkg', bkg_id, idval)
 
-                        models.append(bkg_model)
-                        bkg_ids[idval].append(bkg_id)
+                bkg = d.get_background(bkg_id)
+                datasets.append(bkg)
+
+                bkg_data = d
+                if len(bkg.response_ids) != 0:
+                    bkg_data = bkg
+
+                bkg_model = bkg_models.get(bkg_id, None)
+                bkg_src = bkg_srcs.get(bkg_id, None)
+                if bkg_model is None and bkg_src is not None:
+                    resp = sherpa.astro.instrument.Response1D(bkg_data)
+                    bkg_model = resp(bkg_src)
+
+                models.append(bkg_model)
+                bkg_ids[idval].append(bkg_id)
 
     def _prepare_bkg_fit(self, id, otherids=()):
 
