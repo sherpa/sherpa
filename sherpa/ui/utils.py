@@ -8399,24 +8399,25 @@ class Session(NoNewAttributesAfterInit):
 
         output = []
         if len(datasets) > 1:
-            for id, d, m in zip(ids, datasets, models):
+            for idval, d, m in zip(ids, datasets, models):
                 f = sherpa.fit.Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
-                statinfo.name = 'Dataset %s' % (str(id))
-                statinfo.ids = (id,)
+                statinfo.name = f'Dataset {idval}'
+                statinfo.ids = (idval,)
 
                 output.append(statinfo)
 
-        f = self._get_fit_obj(datasets, models, None)
+        f = self._get_fit_obj(datasets, models, estmethod=None)
         statinfo = f.calc_stat_info()
         if len(ids) == 1:
-            statinfo.name = 'Dataset %s' % str(ids)
+            statinfo.name = f'Dataset {ids}'  # TODO: do we want to use ids[0]?
         else:
-            statinfo.name = 'Datasets %s' % str(ids).strip("()")
+            idvals = str(ids).strip("()")
+            statinfo.name = f'Datasets {idvals}'
+
         statinfo.ids = ids
         output.append(statinfo)
-
         return output
 
     def calc_stat_info(self):
