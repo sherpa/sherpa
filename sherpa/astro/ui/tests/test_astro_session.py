@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021, 2022
+#  Copyright (C) 2016, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -3394,7 +3394,7 @@ def test_fit_bkg_no_models():
     s = AstroSession()
     s.load_arrays(1, [1, 2, 3], [1, 2, 3], DataPHA)
     with pytest.raises(IdentifierErr,
-                       match="model stack is empty"):
+                       match="^model stack is empty$"):
         s.fit_bkg()
 
 
@@ -3798,7 +3798,6 @@ def test_show_kernel_multi(session):
     out = StringIO()
     s.show_kernel(outfile=out)
 
-    print(out.getvalue())
     toks = out.getvalue().split("\n\n")
     assert toks[0].startswith("PSF Kernel: 1\npsfmodel.bob\n")
     assert toks[1].startswith("PSF Kernel: twenty\npsfmodel.fred\n")
@@ -3823,3 +3822,264 @@ def test_load_conv_model_instance(session):
     assert isinstance(got, ConvolutionKernel)
     assert got.name == "convolutionkernel.bobby"
     assert got.kernel == ngl
+
+
+def check_fit_results(s, datasets, parnames, parvals, istatval, statval, numpoints, dof):
+    """Check the fit results"""
+
+    fres = s.get_fit_results()
+    assert fres.datasets == datasets
+    assert fres.succeeded
+    assert fres.parnames == parnames
+    assert fres.parvals == pytest.approx(parvals)
+    assert fres.istatval == pytest.approx(istatval)
+    assert fres.statval == pytest.approx(statval)
+    assert fres.numpoints == numpoints
+    assert fres.dof == dof
+
+
+@pytest.mark.parametrize("id1", [1, 2])
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_fit_data1d_mix_data(id1, session):
+    """Check what happens with a mix of datasets with/without data.
+
+    This was suggested by #1721 - I have not done a rigorous check to
+    see if we have something like this already.
+
+    """
+
+    s = session()
+    s._add_model_types(sherpa.models.basic)
+
+    s.set_stat("leastsq")
+    s.set_method("simplex")
+
+    s.load_arrays(1, [1, 2], [1, 2])
+    s.load_arrays(2, [1, 2], [1, 2])
+    s.load_arrays(3, [10, 20], [0.7, 2.1])
+
+    mdl = s.create_model_component("scale1d", "mdl")
+    s.set_source(id1, mdl)
+    s.set_source(3, mdl)
+
+    s.fit()
+    check_fit_results(s, (id1, 3), ("mdl.c0", ),
+                      [1.45], 2.3, 1.49, 4, 3)
+
+
+@pytest.mark.parametrize("id1", [1, 2])
+def test_fit_datapha_mix_data(id1):
+    """Check what happens with a mix of datasets with/without data.
+
+    See also test_fit_data1d_mix_data
+
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.set_stat("leastsq")
+    s.set_method("simplex")
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(2, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(3, [1, 2], [3, 2], DataPHA)
+
+    # We allow ARF-only analysis, so test it. The fit seems to ignore
+    # the bin widths in this case.
+    #
+    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    s.set_arf(1, arf)
+    s.set_arf(2, arf)
+    s.set_arf(3, arf)
+
+    mdl = s.create_model_component("scale1d", "mdl")
+    s.set_source(id1, mdl)
+    s.set_source(3, mdl)
+
+    s.fit()
+    check_fit_results(s, (id1, 3), ("mdl.c0", ),
+                      [2.75], 15, 2.75, 4, 3)
+
+
+@pytest.mark.parametrize("id1", [1, 2])
+def test_fit_datapha_mix_data_with_bkg(id1):
+    """Check what happens with a mix of datasets with/without data.
+
+    See also test_fit_datapha_mix_data and test_fit_datapha_mix_data_only_bkg
+
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.set_stat("leastsq")
+    s.set_method("simplex")
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(2, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(3, [1, 2], [3, 2], DataPHA)
+
+    s.set_bkg(1, DataPHA("b1", [1, 2], [1, 0]))
+    s.set_bkg(2, DataPHA("b2", [1, 2], [1, 0]))
+
+    # We allow ARF-only analysis, so test it. The fit seems to ignore
+    # the bin widths in this case.
+    #
+    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    s.set_arf(1, arf)
+    s.set_arf(2, arf)
+    s.set_arf(3, arf)
+
+    smdl = s.create_model_component("scale1d", "smdl")
+    s.set_source(id1, smdl)
+    s.set_source(3, smdl)
+
+    bmdl = s.create_model_component("scale1d", "bmdl")
+    s.set_bkg_source(id1, bmdl)
+
+    s.fit()
+    check_fit_results(s, (id1, 3), ("smdl.c0", "bmdl.c0"),
+                      [2.5, 0.5], 10, 3, 6, 4)
+
+
+@pytest.mark.parametrize("id1", [1, 2])
+def test_fit_datapha_mix_data_only_bkg(id1):
+    """Check what happens with a mix of datasets with/without data.
+
+    See also test_fit_datapha_mix_data_with_bkg
+
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.set_stat("leastsq")
+    s.set_method("simplex")
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(2, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(3, [1, 2], [3, 2], DataPHA)
+    s.load_arrays(4, [1, 2], [10, 20], DataPHA)
+
+    s.set_bkg(1, DataPHA("b1", [1, 2], [1, 0]))
+    s.set_bkg(2, DataPHA("b2", [1, 2], [1, 0]))
+    s.set_bkg(4, DataPHA("b4", [1, 2], [1, 0]))
+
+    # We allow ARF-only analysis, so test it. The fit seems to ignore
+    # the bin widths in this case.
+    #
+    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    s.set_arf(1, arf)
+    s.set_arf(2, arf)
+    s.set_arf(3, arf)
+
+    # Interesting that we need to do this. Is it a bug?
+    #
+    s.set_arf(1, arf, bkg_id=1)
+    s.set_arf(2, arf, bkg_id=1)
+
+    smdl = s.create_model_component("scale1d", "smdl")
+    s.set_source(id1, smdl)
+    s.set_source(3, smdl)
+
+    bmdl = s.create_model_component("scale1d", "bmdl")
+    s.set_bkg_source(id1, bmdl)
+
+    s.fit_bkg()
+    check_fit_results(s, (1, 2, 3, 4),  # shouldn't this should just be (id1,) ?
+                      ("bmdl.c0", ),
+                      [0.5], 1, 0.5, 2, 1)
+
+
+@pytest.mark.parametrize("id1", [1, 2])
+def test_fit_datapha_mix_data_only_bkg_no_response(id1):
+    """Do we grab the response from the source data?
+
+    See also test_fit_datapha_mix_data_only_bkg - this is essentially
+    the same but does not set the background responses. Should this
+    work or not (ie this is a regression test)?
+
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.set_stat("leastsq")
+    s.set_method("simplex")
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(2, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(3, [1, 2], [3, 2], DataPHA)
+    s.load_arrays(4, [1, 2], [10, 20], DataPHA)
+
+    s.set_bkg(1, DataPHA("b1", [1, 2], [1, 0]))
+    s.set_bkg(2, DataPHA("b2", [1, 2], [1, 0]))
+    s.set_bkg(4, DataPHA("b4", [1, 2], [1, 0]))
+
+    # We allow ARF-only analysis, so test it. The fit seems to ignore
+    # the bin widths in this case.
+    #
+    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    s.set_arf(1, arf)
+    s.set_arf(2, arf)
+    s.set_arf(3, arf)
+
+    smdl = s.create_model_component("scale1d", "smdl")
+    s.set_source(id1, smdl)
+    s.set_source(3, smdl)
+
+    bmdl = s.create_model_component("scale1d", "bmdl")
+    s.set_bkg_source(id1, bmdl)
+
+    with pytest.raises(DataErr,
+                       match=f"^No instrument response found for dataset {id1} background 1$"):
+        s.fit_bkg()
+
+
+def test_fit_datapha_mix_data_with_bkg_sensible():
+    """A more-standard set of backgrounds
+
+    Each source has a single background.
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+
+    s.set_stat("leastsq")
+    s.set_method("simplex")
+
+    s.load_arrays(1, [1, 2], [2, 4], DataPHA)
+    s.load_arrays(2, [1, 2], [5, 3], DataPHA)
+    s.load_arrays(3, [1, 2], [3, 2], DataPHA)
+
+    s.set_bkg(1, DataPHA("b1", [1, 2], [1, 0]))
+    s.set_bkg(2, DataPHA("b2", [1, 2], [0, 1]))
+    s.set_bkg(3, DataPHA("b2", [1, 2], [1, 1]))
+
+    # We allow ARF-only analysis, so test it. The fit seems to ignore
+    # the bin widths in this case.
+    #
+    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    s.set_arf(1, arf)
+    s.set_arf(2, arf)
+    s.set_arf(3, arf)
+
+    smdl = s.create_model_component("scale1d", "smdl")
+    s.set_source(1, smdl)
+    s.set_source(2, smdl)
+    s.set_source(3, smdl)
+
+    bmdl = s.create_model_component("scale1d", "bmdl")
+    s.set_bkg_source(1, bmdl)
+    s.set_bkg_source(2, bmdl)
+    s.set_bkg_source(3, bmdl)
+
+    s.fit()
+    check_fit_results(s, (1, 2, 3), ("smdl.c0", "bmdl.c0"),
+                      [2.5, 2/3], 17, 8 + 1/6, 12, 10)

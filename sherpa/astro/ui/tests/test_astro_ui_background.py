@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,7 +34,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.astro.data import DataARF, DataPHA
-from sherpa.astro.instrument import ARFModelPHA
+from sherpa.astro.instrument import ARFModelPHA, create_delta_rmf
 from sherpa.models.model import ArithmeticConstantModel
 from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
@@ -1365,6 +1365,19 @@ def test_get_bkg_scale(clean_astro_ui):
     assert bscale2 == pytest.approx(0.5 * r(bscales, 2))
 
 
+def check_stat_info(sinfo, ids, bkg_ids, numpoints, dof):
+    """Check the stat-info structure."""
+
+    assert sinfo.ids == ids
+    if bkg_ids is None:
+        assert sinfo.bkg_ids is None
+    else:
+        assert sinfo.bkg_ids == bkg_ids
+
+    assert sinfo.numpoints == numpoints
+    assert sinfo.dof == dof
+
+
 @requires_data
 @requires_fits
 def test_use_source_data(make_data_path, clean_astro_ui, hide_logging):
@@ -1390,38 +1403,22 @@ def test_use_source_data(make_data_path, clean_astro_ui, hide_logging):
     stats = ui.get_stat_info()
     assert len(stats) == 3
 
-    src = stats[0]
-    bgnd = stats[1]
-    comb = stats[2]
-
-    assert src.name == 'Dataset 1'
-    assert bgnd.name == 'Background 1 for Dataset 1'
-    assert comb.name == 'Dataset [1]'
-
-    assert src.ids == (1,)
-    assert bgnd.ids == (1,)
-    assert comb.ids == [1]
-
-    assert src.bkg_ids is None
-    assert bgnd.bkg_ids == (1,)
-    assert comb.bkg_ids is None
-
-    assert src.numpoints == 42
-    assert bgnd.numpoints == 42
-    assert comb.numpoints == 84
-
-    # Note: comb.dof > src.dof + bgnd.dof here
+    # Note: stats[2].dof > stats[0].dof + stats[1].dof here
     #
     # source dataset is fit with powlaw1d + const1d, so has
     # three free parameters.
     # background dataset is fit with const1d, so has 1 free
     # parameter.
-    # the combined dataset is fit with powlae1d+const1d, const1d
+    # the combined dataset is fit with powlaw1d+const1d, const1d
     # so has three free parameters
     #
-    assert src.dof == 39
-    assert bgnd.dof == 41
-    assert comb.dof == 81
+    assert stats[0].name == 'Dataset 1'
+    assert stats[1].name == 'Background 1 for Dataset 1'
+    assert stats[2].name == 'Dataset [1]'
+
+    check_stat_info(stats[0], (1, ), None, 42, 39)
+    check_stat_info(stats[1], (1, ), (1, ), 42, 41)
+    check_stat_info(stats[2], [1], None, 84, 81)
 
 
 @requires_data
@@ -1461,29 +1458,13 @@ def test_use_source_data_manual(make_data_path, clean_astro_ui, hide_logging):
     stats = ui.get_stat_info()
     assert len(stats) == 3
 
-    src = stats[0]
-    bgnd = stats[1]
-    comb = stats[2]
+    assert stats[0].name == 'Dataset 1'
+    assert stats[1].name == 'Background 1 for Dataset 1'
+    assert stats[2].name == 'Dataset [1]'
 
-    assert src.name == 'Dataset 1'
-    assert bgnd.name == 'Background 1 for Dataset 1'
-    assert comb.name == 'Dataset [1]'
-
-    assert src.ids == (1,)
-    assert bgnd.ids == (1,)
-    assert comb.ids == [1]
-
-    assert src.bkg_ids is None
-    assert bgnd.bkg_ids == (1,)
-    assert comb.bkg_ids is None
-
-    assert src.numpoints == 446
-    assert bgnd.numpoints == 446
-    assert comb.numpoints == 892
-
-    assert src.dof == 443
-    assert bgnd.dof == 445
-    assert comb.dof == 889
+    check_stat_info(stats[0], (1, ), None, 446, 443)
+    check_stat_info(stats[1], (1, ), (1, ), 446, 445)
+    check_stat_info(stats[2], [1], None, 892, 889)
 
 
 @requires_group
@@ -1516,29 +1497,13 @@ def test_use_background_data(make_data_path, clean_astro_ui, hide_logging):
     stats = ui.get_stat_info()
     assert len(stats) == 3
 
-    src = stats[0]
-    bgnd = stats[1]
-    comb = stats[2]
+    assert stats[0].name == 'Dataset 1'
+    assert stats[1].name == 'Background 1 for Dataset 1'
+    assert stats[2].name == 'Dataset [1]'
 
-    assert src.name == 'Dataset 1'
-    assert bgnd.name == 'Background 1 for Dataset 1'
-    assert comb.name == 'Dataset [1]'
-
-    assert src.ids == (1,)
-    assert bgnd.ids == (1,)
-    assert comb.ids == [1]
-
-    assert src.bkg_ids is None
-    assert bgnd.bkg_ids == (1,)
-    assert comb.bkg_ids is None
-
-    assert src.numpoints == 42
-    assert bgnd.numpoints == 106
-    assert comb.numpoints == 148
-
-    assert src.dof == 39
-    assert bgnd.dof == 105
-    assert comb.dof == 145
+    check_stat_info(stats[0], (1, ), None, 42, 39)
+    check_stat_info(stats[1], (1, ), (1, ), 106, 105)
+    check_stat_info(stats[2], [1], None, 148, 145)
 
 
 @requires_group
@@ -1579,35 +1544,97 @@ def test_use_background_data_two(make_data_path, clean_astro_ui, hide_logging):
     stats = ui.get_stat_info()
     assert len(stats) == 4
 
-    src = stats[0]
-    bgnd1 = stats[1]
-    bgnd2 = stats[2]
-    comb = stats[3]
+    assert stats[0].name == 'Dataset 1'
+    assert stats[1].name == 'Background 1 for Dataset 1'
+    assert stats[2].name == 'Background 2 for Dataset 1'
+    assert stats[3].name == 'Dataset [1]'
 
-    assert src.name == 'Dataset 1'
-    assert bgnd1.name == 'Background 1 for Dataset 1'
-    assert bgnd2.name == 'Background 2 for Dataset 1'
-    assert comb.name == 'Dataset [1]'
+    check_stat_info(stats[0], (1, ), None, 42, 39)
+    check_stat_info(stats[1], (1, ), (1, ), 106, 105)
+    check_stat_info(stats[2], (1, ), (2, ), 36, 35)
+    check_stat_info(stats[3], [1], None, 184, 181)
 
-    assert src.ids == (1,)
-    assert bgnd1.ids == (1,)
-    assert bgnd2.ids == (1,)
-    assert comb.ids == [1]
 
-    assert src.bkg_ids is None
-    assert bgnd1.bkg_ids == (1,)
-    assert bgnd2.bkg_ids == (2,)
-    assert comb.bkg_ids is None
+def test_get_stat_info_multi_backgrounds(clean_astro_ui):
+    """A complex case to check the ordering. Testing #1721
 
-    assert src.numpoints == 42
-    assert bgnd1.numpoints == 106
-    assert bgnd2.numpoints == 36
-    assert comb.numpoints == 184
+    Three PHA datasets:
+      - first with no background
+      - second with one background
+      - third with two backgrounds
 
-    assert src.dof == 39
-    assert bgnd1.dof == 105
-    assert bgnd2.dof == 35
-    assert comb.dof == 181
+    """
+
+    # Create the data sets
+    #   a - 2 channels, no background
+    #   b - 3 channels, one background
+    #   c - 4 channels, two backgrounds
+    #
+    ui.dataspace1d(1, 2, id="a", dstype=ui.DataPHA)
+    ui.dataspace1d(1, 3, id="b", dstype=ui.DataPHA)
+    ui.dataspace1d(1, 3, id="b", bkg_id=1, dstype=ui.DataPHA)
+    ui.dataspace1d(1, 4, id="c", dstype=ui.DataPHA)
+    ui.dataspace1d(1, 4, id="c", bkg_id="up", dstype=ui.DataPHA)
+    ui.dataspace1d(1, 4, id="c", bkg_id="down", dstype=ui.DataPHA)
+
+    # set some data
+    #
+    ui.set_counts("a", [1, 2])
+    ui.set_counts("b", [1, 2, 1])
+    ui.set_counts("b", [1, 0, 1], bkg_id=1)
+    ui.set_counts("c", [2, 1, 0, 2])
+    ui.set_counts("c", [0, 0, 1, 1], bkg_id="up")
+    ui.set_counts("c", [1, 1, 0, 0], bkg_id="down")
+
+    # Create the responses. Use the same grid and just subset
+    # for the different datasets.
+    #
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.5, 0.8])
+
+    elo = egrid[0:2]
+    ehi = egrid[1:3]
+    ui.set_rmf("a", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    elo = egrid[0:3]
+    ehi = egrid[1:4]
+    ui.set_rmf("b", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi))
+    ui.set_rmf("b", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi), bkg_id=1)
+
+    elo = egrid[0:4]
+    ehi = egrid[1:5]
+    ui.set_rmf("c", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi))
+    ui.set_rmf("c", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi), bkg_id="up")
+    ui.set_rmf("c", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi), bkg_id="down")
+
+    # Very simple model
+    #
+    ui.set_source("a", ui.const1d.smdl)
+    ui.set_source("b", smdl)
+    ui.set_source("c", smdl)
+
+    ui.set_bkg_source("b", ui.const1d.bmdl, bkg_id=1)
+    ui.set_bkg_source("c", bmdl, bkg_id="up")
+    ui.set_bkg_source("c", bmdl, bkg_id="down")
+
+    smdl.c0 = 0.2
+    bmdl.c0 = 0.1
+    stats = ui.get_stat_info()
+    assert len(stats) == 5
+
+    # NOTE: this misses the backgrounds for dataset c, which is wrong
+    # but leave this as a regression test.
+    #
+    assert stats[0].name == 'Dataset a'
+    assert stats[1].name == 'Dataset b'
+    assert stats[2].name == 'Background 1 for Dataset b'
+    assert stats[3].name == 'Dataset c'
+    assert stats[4].name == "Datasets ['a', 'b', 'c']"
+
+    check_stat_info(stats[0], ("a", ), None, 2, 1)
+    check_stat_info(stats[1], ("b", ), None, 3, 1)
+    check_stat_info(stats[2], ("b", ), (1, ), 4, 3)  # NOTE: numpoints should be 3, dof 2
+    check_stat_info(stats[3], ("c", ), None, 4, 2)
+    check_stat_info(stats[4], ["a", "b", "c"], None, 20, 18)
 
 
 @requires_data
