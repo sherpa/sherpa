@@ -32,12 +32,13 @@ import numpy
 
 from sherpa import get_config
 import sherpa.all
+from sherpa.fit import Fit
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    DataErr, IdentifierErr, ModelErr, PlotErr, SessionErr
+    DataErr, IdentifierErr, ModelErr, ParameterErr, PlotErr, SessionErr
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -6023,7 +6024,7 @@ class Session(NoNewAttributesAfterInit):
         """
         # If user mistakenly passes an actual model reference,
         # just return the reference
-        if isinstance(name, sherpa.models.Model):
+        if isinstance(name, Model):
             return name
 
         _check_str_type(name, "name")
@@ -6097,7 +6098,7 @@ class Session(NoNewAttributesAfterInit):
         # If user mistakenly passes an actual model reference,
         # just return (i.e., create_model_component(const1d.c1)
         # is redundant, so just return)
-        if isinstance(typename, sherpa.models.Model) and name is None:
+        if isinstance(typename, Model) and name is None:
             return typename
 
         _check_str_type(typename, "typename")
@@ -6527,7 +6528,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_str(model):
             model = self._eval_model_expression(model)
 
-        self._set_item(id, model, self._models, sherpa.models.Model, 'model',
+        self._set_item(id, model, self._models, Model, 'model',
                        'a model object or model expression string')
         self._runparamprompt(model.pars)
 
@@ -6659,7 +6660,7 @@ class Session(NoNewAttributesAfterInit):
         # mis-matched model. This means we can not just use
         # _set_item but have to do it manually.
         #
-        _check_type(model, sherpa.models.Model, 'source model',
+        _check_type(model, Model, 'source model',
                     'a model object or model expression string')
 
         # Fit(data, model) does the dimensionality validation. Note
@@ -6669,7 +6670,7 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         data = self._data.get(id)
         if data is not None:
-            sherpa.fit.Fit(data, model)
+            Fit(data, model)
 
         self._sources[id] = model
         self._runparamprompt(model.pars)
@@ -6724,7 +6725,7 @@ class Session(NoNewAttributesAfterInit):
     def _check_model(self, model):
         if _is_str(model):
             model = self._eval_model_expression(model)
-        _check_type(model, sherpa.models.Model, 'model',
+        _check_type(model, Model, 'model',
                     'a model object or model expression string')
         return model
 
@@ -8335,8 +8336,8 @@ class Session(NoNewAttributesAfterInit):
                 raise ModelErr(
                     "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
 
-        f = sherpa.fit.Fit(d, m, self._current_stat, self._current_method,
-                           estmethod, self._current_itermethod)
+        f = Fit(d, m, self._current_stat, self._current_method,
+                estmethod, self._current_itermethod)
 
         return f
 
@@ -8400,7 +8401,7 @@ class Session(NoNewAttributesAfterInit):
         output = []
         if len(datasets) > 1:
             for idval, d, m in zip(ids, datasets, models):
-                f = sherpa.fit.Fit(d, m, self._current_stat)
+                f = Fit(d, m, self._current_stat)
 
                 statinfo = f.calc_stat_info()
                 statinfo.name = f'Dataset {idval}'
@@ -8413,8 +8414,7 @@ class Session(NoNewAttributesAfterInit):
         if len(ids) == 1:
             statinfo.name = f'Dataset {ids}'  # TODO: do we want to use ids[0]?
         else:
-            idvals = str(ids).strip("()")
-            statinfo.name = f'Datasets {idvals}'
+            statinfo.name = f'Datasets {ids}'
 
         statinfo.ids = ids
         output.append(statinfo)
@@ -10264,12 +10264,12 @@ class Session(NoNewAttributesAfterInit):
         for arg in args:
             if isinstance(arg, sherpa.models.Parameter):
                 if arg.frozen:
-                    raise sherpa.utils.err.ParameterErr('frozen', arg.fullname)
+                    raise ParameterErr('frozen', arg.fullname)
 
                 parlist.append(arg)
                 continue
 
-            if isinstance(arg, sherpa.models.Model):
+            if isinstance(arg, Model):
                 norig = len(parlist)
                 for par in arg.pars:
                     if not par.frozen:
@@ -10282,7 +10282,7 @@ class Session(NoNewAttributesAfterInit):
                 #
                 if len(parlist) == norig:
                     emsg = f"Model '{arg.name}' has no thawed parameters"
-                    raise sherpa.utils.err.ParameterErr(emsg)
+                    raise ParameterErr(emsg)
 
                 continue
 
