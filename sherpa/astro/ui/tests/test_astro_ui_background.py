@@ -34,7 +34,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.astro.data import DataARF, DataPHA
-from sherpa.astro.instrument import ARFModelPHA, create_delta_rmf
+from sherpa.astro.instrument import ARFModelPHA, create_arf, create_delta_rmf
 from sherpa.models.model import ArithmeticConstantModel
 from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
@@ -1987,3 +1987,45 @@ def test_bkg_analysis_setting_changed(idval, direct, analysis, clean_astro_ui):
 
     assert src.units == analysis
     assert bkg.units == analysis
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one"])
+def test_partially_set_bkg_models(idval, clean_astro_ui):
+    """We do not set a background model for all the backgrounds.
+
+    Regression test what happens.
+    """
+
+    ui.set_stat("leastsq")
+    ui.set_method("simplex")
+
+    idopt = 1 if idval is None else idval
+    ui.load_arrays(idopt, [1, 2, 3], [1, 1, 1], ui.DataPHA)
+    ui.get_data(idopt).name = f"fake-{idval}"
+
+    ui.set_bkg(idopt, DataPHA("up", [1, 2, 3], [0, 1, 1]), bkg_id="up")
+    ui.set_bkg(idopt, DataPHA("down", [1, 2, 3], [1, 0, 0]), bkg_id="down")
+
+    # Fake a response
+    #
+    egrid = np.asarray([0.2, 0.3, 0.4, 0.5])
+
+    ui.set_arf(idopt, create_arf(egrid[:-1], egrid[1:]))
+
+    # Set the source model
+    #
+    ui.set_source(idopt, ui.const1d.mdl)
+
+    # Ony set one of the background models
+    ui.set_bkg_source(idopt, ui.const1d.bmdldn, bkg_id="down")
+
+    emsg = f"^background model up for data set {idopt} has not been set$"
+    with pytest.raises(ModelErr, match=emsg):
+        ui.get_stat_info()
+
+    with pytest.raises(ModelErr, match=emsg):
+        ui.fit()
+
+    emsg = f"^No instrument response found for dataset {idopt} background down$"
+    with pytest.raises(DataErr, match=emsg):
+        ui.fit_bkg()
