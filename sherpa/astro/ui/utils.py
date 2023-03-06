@@ -9485,6 +9485,10 @@ class Session(sherpa.ui.utils.Session):
         whether created automatically or explicitly, with
         ``set_bkg_full_model``.
 
+        .. versionchanged:: 4.15.1
+           The response will now be taken from the source dataset if
+           the background has no response.
+
         Parameters
         ----------
         id : int or str, optional
@@ -9519,36 +9523,36 @@ class Session(sherpa.ui.utils.Session):
         >>> bkg = get_bkg_model()
 
         """
-        id = self._fix_id(id)
-        bkg_id = self._fix_background_id(id, bkg_id)
+        idval = self._fix_id(id)
+        bkg_id = self._fix_background_id(idval, bkg_id)
 
-        mdl = self._background_models.get(id, {}).get(bkg_id)
-
-        if mdl is None:
-            is_source = True
-            src = self._background_sources.get(id, {}).get(bkg_id)
-        else:
-            is_source = False
-            src = mdl
-
-        if src is None:
-            raise ModelErr('nobkg', bkg_id, id)
-
-        if not is_source:
-            return src
-
-        # The background response is set by the DataPHA.set_background
-        # method (copying one over, if it does not exist), which means
-        # that the only way to get to this point is if the user has
-        # explicitly deleted the background response. In this case
-        # we error out.
+        # If we have a model + response, return it.
         #
-        bkg = self.get_bkg(id, bkg_id)
-        if len(bkg.response_ids) == 0:
-            raise DataErr('nobrsp', str(id), str(bkg_id))
+        mdl = self._background_models.get(idval, {}).get(bkg_id)
+        if mdl is not None:
+            return mdl
 
-        resp = sherpa.astro.instrument.Response1D(bkg)
+        # Find the source model and, if present, add a response.
+        #
+        src = self._background_sources.get(idval, {}).get(bkg_id)
+        if src is None:
+            raise ModelErr('nobkg', bkg_id, idval)
+
+        # What do we use for the response? If the background has a
+        # response we use that, otherwise we fall-back to use the
+        # reponse from the source (in general the response should be
+        # set by calls like set_background, but if the response is
+        # added after set_background is called it may be needed).
+        #
+        bkg_data = self.get_bkg(idval, bkg_id)
+        try:
+            resp = sherpa.astro.instrument.Response1D(bkg_data)
+        except DataErr:
+            data = self.get_data(idval)
+            resp = sherpa.astro.instrument.Response1D(data)
+
         return resp(src)
+
 
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
         """Define the convolved background model expression for a PHA data set.

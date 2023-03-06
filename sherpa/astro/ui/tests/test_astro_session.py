@@ -3977,7 +3977,9 @@ def test_fit_datapha_mix_data_only_bkg(id1):
     s.set_arf(2, arf)
     s.set_arf(3, arf)
 
-    # Interesting that we need to do this. Is it a bug?
+    # Interesting that we need to do this. Is it a bug? Perhaps not
+    # technically, but we no longer need to do this, but leave in to
+    # compare to test_fit_datapha_mix_data_only_bkg_no_response.
     #
     s.set_arf(1, arf, bkg_id=1)
     s.set_arf(2, arf, bkg_id=1)
@@ -4036,9 +4038,10 @@ def test_fit_datapha_mix_data_only_bkg_no_response(id1):
     bmdl = s.create_model_component("scale1d", "bmdl")
     s.set_bkg_source(id1, bmdl)
 
-    with pytest.raises(DataErr,
-                       match=f"^No instrument response found for dataset {id1} background 1$"):
-        s.fit_bkg()
+    s.fit_bkg()
+    check_fit_results(s, (1, 2, 3, 4),  # shouldn't this should just be (id1,) ?
+                      ("bmdl.c0", ),
+                      [0.5], 1, 0.5, 2, 1)
 
 
 def test_fit_datapha_mix_data_with_bkg_sensible():

@@ -244,12 +244,10 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     # Now try the "model" model:
     # - fail when only 1 background dataset has a model
     #
-    with pytest.raises(ModelErr) as exc:
-        ui.get_model(id)
-
     iid = 1 if id is None else id
-    estr = "background model 2 for data set {} has not been set".format(iid)
-    assert estr == str(exc.value)
+    estr = f"^background model 2 for data set {iid} has not been set$"
+    with pytest.raises(ModelErr, match=estr):
+        ui.get_model(id)
 
     bmdl = ui.get_bkg_model(id)
     assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
@@ -554,14 +552,19 @@ def test_pha1_instruments_missing(bid, clean_astro_ui):
     bkg = ui.get_bkg(1, bkg_id=bid)
     bkg.delete_response()
 
-    with pytest.raises(DataErr) as exc:
-        ui.get_bkg_model(bkg_id=bid)
+    # We test the pha name field as a simple way to check what
+    # PHA is being used here.
+    #
+    # Uses the source dataset for the response.
+    bmdl = ui.get_bkg_model(bkg_id=bid)
+    assert isinstance(bmdl, ARFModelPHA)
+    assert bmdl.pha.name == "tst0"
 
-    assert str(exc.value) == 'No instrument response found for dataset 1 background {}'.format(bid)
-
+    # Uses the background dataset for the response.
     oid = 1 if bid == 2 else 2
     bmdl = ui.get_bkg_model(bkg_id=oid)
     assert isinstance(bmdl, ARFModelPHA)
+    assert bmdl.pha.name == f"tst{oid}"
 
 
 # Try and pick routines with different pathways through the code
@@ -579,10 +582,9 @@ def test_evaluation_requires_models(func, clean_astro_ui):
     ui.set_source(ui.box1d.smdl)
     ui.set_bkg_source(ui.box1d.bmdl)
 
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match='^background model 2 for data set 1 has not been set$'):
         func()
-
-    assert str(exc.value) == 'background model 2 for data set 1 has not been set'
 
 
 SCALING = np.ones(19)
@@ -1314,10 +1316,9 @@ def test_get_bkg_scale_nodata(clean_astro_ui):
 
     ui.set_data(ui.DataPHA('foo', np.arange(3), np.arange(3)))
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="^data set '1' does not have any associated backgrounds$"):
         ui.get_bkg_scale()
-
-    assert str(exc.value) == "data set '1' does not have any associated backgrounds"
 
 
 def test_get_bkg_scale_invalid(clean_astro_ui):
@@ -1328,10 +1329,9 @@ def test_get_bkg_scale_invalid(clean_astro_ui):
     ascales = (0.8, 0.8)
     ui.set_data(setup_pha1(exps, bscales, ascales))
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError,
+                       match='^Invalid units argument: subtract$'):
         ui.get_bkg_scale(units='subtract')
-
-    assert str(exc.value) == 'Invalid units argument: subtract'
 
 
 def test_get_bkg_scale(clean_astro_ui):
@@ -1936,14 +1936,13 @@ def test_bkg_analysis_setting_no_response(idval, direct, clean_astro_ui):
 
     fake_pha(idval, direct, response=False)
 
+    emsg = '^No instrument response found for dataset ex$'
     if idval is None:
-        with pytest.raises(DataErr) as exc:
+        with pytest.raises(DataErr, match=emsg):
             ui.set_analysis('energy')
     else:
-        with pytest.raises(DataErr) as exc:
+        with pytest.raises(DataErr, match=emsg):
             ui.set_analysis(idval, 'energy')
-
-    assert str(exc.value) == 'No instrument response found for dataset ex'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one"])
@@ -2026,9 +2025,18 @@ def test_partially_set_bkg_models(idval, clean_astro_ui):
     with pytest.raises(ModelErr, match=emsg):
         ui.fit()
 
-    emsg = f"^No instrument response found for dataset {idopt} background down$"
-    with pytest.raises(DataErr, match=emsg):
-        ui.fit_bkg()
+    # Note that fit_bkg will skip the bkg_id=up data set.
+    #
+    ui.fit_bkg()
+    fres = ui.get_fit_results()
+    assert fres.datasets == (idopt, )
+    assert fres.succeeded
+    assert fres.parnames == ("bmdldn.c0", )
+    assert fres.numpoints == 3
+    assert fres.dof == 2
+    assert fres.istatval == pytest.approx(0.83)
+    assert fres.statval == pytest.approx(2 / 3)
+    assert fres.parvals == pytest.approx([3 + 1/3])
 
 
 def test_fit_with_bkg_models_missing(clean_astro_ui):
