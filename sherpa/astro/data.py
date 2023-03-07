@@ -2794,10 +2794,10 @@ must be an integer.""")
 
         # Check that the background matches the source (i.e. self)
         # dataset.  For this use case we require that the source has
-        # set up it's channel array (ie self.channel can not be None),
+        # set up its channel array (ie self.channel cannot be None),
         # as allowing the background dataset to have channels but not
-        # the source makes tracking the state harder than the ability
-        # is likely worth).
+        # the source makes tracking the state harder and there is no
+        # obvious use case for that.
         #
         if self.channel is None:
             raise DataErr("The channel field must be set before adding a background")

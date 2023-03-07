@@ -3142,7 +3142,7 @@ def test_set_xxxscal_id(label, clean_astro_ui):
 @pytest.mark.parametrize("idval", [None, 1, "up"])
 @pytest.mark.parametrize("bkg_id", [1, "up"])
 def test_dataspace1d_is_a_background(idval, bkg_id, clean_astro_ui):
-    """What happens if try to make a PHA background?"""
+    """What happens if we try to make a PHA background?"""
 
     ui.dataspace1d(1, 10, id=idval, dstype=ui.DataPHA)
     ui.dataspace1d(1, 10, id=idval, bkg_id=bkg_id, dstype=ui.DataPHA)
@@ -3152,7 +3152,7 @@ def test_dataspace1d_is_a_background(idval, bkg_id, clean_astro_ui):
 
 
 def test_dataspace1d_not_a_background(clean_astro_ui):
-    """What happens if try to make a non-PHA background?"""
+    """What happens if we try to make a non-PHA background?"""
 
     ui.dataspace1d(1, 10, dstype=ui.DataPHA)
     with pytest.raises(ArgumentTypeErr,
