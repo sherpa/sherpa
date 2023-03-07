@@ -29,7 +29,7 @@ from numpy.testing import assert_allclose
 import pytest
 
 from sherpa.astro.data import DataIMG, DataPHA
-from sherpa.astro.instrument import RMFModelPHA
+from sherpa.astro.instrument import RMFModelPHA, create_arf
 from sherpa.astro import ui
 from sherpa.data import Data1D, Data2D, Data2DInt
 from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, IOErr, StatErr
@@ -1606,3 +1606,82 @@ def test_get_rate_bkg(idval, clean_astro_ui, make_data_path):
     # this dataset.
     #
     assert numpy.all(r1 != r2)
+
+
+@pytest.mark.parametrize("idval", [1, "x"])
+def test_warn_about_bgnd_subtracted_with_model(idval, clean_astro_ui, caplog):
+    """Check we get a warning message.
+
+    We could check fit or get_stat_info.
+    """
+
+    ui.set_stat("leastsq")
+
+    ui.load_arrays(idval, [1, 2], [4, 3], ui.DataPHA)
+
+    egrid = numpy.asarray([1, 2, 3])
+    ui.set_arf(idval, create_arf(egrid[:-1], egrid[1:]))
+
+    ui.set_bkg(idval, ui.DataPHA("b", [1, 2], [1, 1]))
+
+    ui.set_source(idval, ui.const1d.smdl)
+    ui.set_bkg_source(idval, ui.const1d.bmdl)
+
+    ui.subtract(idval)
+
+    # The hide_logging fixture has changed the loglevel so we need to
+    # change it here to make sure we see the warning.
+    #
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger="sherpa"):
+        sinfo = ui.get_stat_info()
+
+    assert len(caplog.records) == 1
+    rec = caplog.record_tuples[0]
+    assert rec[0] == "sherpa.astro.ui.utils"
+    assert rec[1] == logging.WARNING
+    assert rec[2] == f"data set {repr(idval)} is background-subtracted; background models will be ignored"
+
+    assert len(sinfo) == 1
+    assert sinfo[0].name == f"Dataset [{repr(idval)}]"
+    assert sinfo[0].ids == [idval]
+    assert sinfo[0].bkg_ids is None
+    assert sinfo[0].statval == pytest.approx(5.0)
+
+
+@pytest.mark.parametrize("idval", [1, "x"])
+def test_warn_about_bgnd_ot_subtracted_no_model(idval, clean_astro_ui, caplog):
+    """Check we get a warning message.
+
+    We could check fit or get_stat_info.
+    """
+
+    ui.set_stat("leastsq")
+
+    ui.load_arrays(idval, [1, 2], [4, 3], ui.DataPHA)
+
+    egrid = numpy.asarray([1, 2, 3])
+    ui.set_arf(idval, create_arf(egrid[:-1], egrid[1:]))
+
+    ui.set_bkg(idval, ui.DataPHA("b", [1, 2], [1, 1]))
+
+    ui.set_source(idval, ui.const1d.smdl)
+
+    # The hide_logging fixture has changed the loglevel so we need to
+    # change it here to make sure we see the warning.
+    #
+    assert len(caplog.records) == 0
+    with caplog.at_level(logging.INFO, logger="sherpa"):
+        sinfo = ui.get_stat_info()
+
+    assert len(caplog.records) == 1
+    rec = caplog.record_tuples[0]
+    assert rec[0] == "sherpa.astro.ui.utils"
+    assert rec[1] == logging.WARNING
+    assert rec[2] == f"data set {repr(idval)} has associated backgrounds, but they have not been subtracted, nor have background models been set"
+
+    assert len(sinfo) == 1
+    assert sinfo[0].name == f"Dataset [{repr(idval)}]"
+    assert sinfo[0].ids == [idval]
+    assert sinfo[0].bkg_ids is None
+    assert sinfo[0].statval == pytest.approx(13.0)
