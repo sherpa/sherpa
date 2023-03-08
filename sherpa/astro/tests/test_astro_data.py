@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,7 +19,6 @@
 #
 
 import logging
-import re
 import warnings
 
 import numpy as np
@@ -27,11 +26,11 @@ import numpy as np
 import pytest
 
 from sherpa.astro.ui.utils import Session
-from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
+from sherpa.astro.data import Data1D, DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.models.basic import Gauss2D
 from sherpa.utils import parse_expr, SherpaFloat
-from sherpa.utils.err import DataErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -807,9 +806,9 @@ def test_unsubtract():
     This test just subtracts and unsubtracts a few times.
     '''
     session = Session()
-    testdata = DataPHA('testdata', np.arange(50, dtype=float) + 1.,
+    testdata = DataPHA('testdata', np.arange(1, 51, dtype=np.int16),
                        np.zeros(50))
-    testbkg = DataPHA('testbkg', np.arange(50, dtype=float) + .5,
+    testbkg = DataPHA('testbkg', np.arange(1, 51, dtype=np.int16),
                       np.zeros(50))
     session.set_data(1, testdata)
     session.set_bkg(1, testbkg)
@@ -3577,3 +3576,43 @@ def test_len_image_sparse(make_image_sparse):
 
     assert len(data) == len(data.y)
     assert len(data) == 5
+
+
+def test_pha_checks_background_is_pha():
+    """What happens if we send in a non-PHA background?"""
+
+    pha = DataPHA("x", [1, 2], [1, 2])
+    bkg = Data1D("y", [1, 2], [1, 2])
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'bkg' must be a PHA data set$"):
+        pha.set_background(bkg)
+
+
+def test_pha_checks_background_size():
+    """What happens if we send in a background with a different number of channels?"""
+
+    pha = DataPHA("x", [1, 2, 3], [1, 2, 3])
+    bkg = DataPHA("y", [1, 2], [1, 2])
+    with pytest.raises(DataErr,
+                       match="^The source and background channels differ$"):
+        pha.set_background(bkg)
+
+
+def test_pha_checks_background_size_is_set_source():
+    """Ensure the source PHA has channels when adding a background"""
+
+    pha = DataPHA("x", None, None)
+    bkg = DataPHA("y", [1, 2], [1, 2])
+    with pytest.raises(DataErr,
+                       match="^The channel field must be set before adding a background$"):
+        pha.set_background(bkg)
+
+
+def test_pha_checks_background_size_is_set_bkg():
+    """Ensure the bkg PHA has channels when adding a background"""
+
+    pha = DataPHA("x", [1, 2, 3], [1, 0, 1])
+    bkg = DataPHA("y", None, None)
+    with pytest.raises(DataErr,
+                       match="^The channel field of the background must be set$"):
+        pha.set_background(bkg)

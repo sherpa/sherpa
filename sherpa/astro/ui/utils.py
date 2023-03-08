@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -112,10 +112,8 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
     idval = session._fix_id(idval)
     idstr = f"dataset {idval}"
 
-    if bkg_id is None:
-        data = session._get_pha_data(idval)
-    else:
-        data = session.get_bkg(idval, bkg_id)
+    data = session._get_pha_data(idval, bkg_id)
+    if bkg_id is not None:
         idstr += f": background {bkg_id}"
 
     # We could not create ofilter, but that depends on what changefunc
@@ -168,11 +166,7 @@ def _save_errorcol(session, idval, filename, bkg_id,
     idval = session._fix_id(idval)
     _check_str_type(filename, 'filename')
 
-    if bkg_id is None:
-        d = session.get_data(idval)
-    else:
-        d = session.get_bkg(idval, bkg_id)
-
+    d = session._get_data_or_bkg(idval, bkg_id)
     if isinstance(d, DataPHA):
         x = d._get_ebins(group=True)[0]
     else:
@@ -791,18 +785,25 @@ class Session(sherpa.ui.utils.Session):
         >>> x
         array([ 1.,  2.,  3.,  4.,  5.])
 
-        Create a grid for a PHA data set called 'jet', and
-        for its background component:
+        Create a grid for a PHA data set called 'jet', and for its
+        background component (note that the axis values are in
+        channels, and there are 1024 channels set):
 
-        >>> dataspace1d(0.01, 11, 0.01, id='jet', dstype=DataPHA)
-        >>> dataspace1d(0.01, 11, 0.01, id='jet', bkg_id=1,
-        ...             dstype=DataPHA)
+        >>> dataspace1d(1, 1024, id='jet', dstype=DataPHA)
+        >>> dataspace1d(1, 1024, id='jet', bkg_id=1, dstype=DataPHA)
 
         """
-        # support non-integrated grids with inclusive boundaries
-        # We do NOT want to use an isinstance check since Data1DInt is
-        # derived from Data1D.
-        if dstype in (sherpa.data.Data1D, sherpa.astro.data.DataPHA):
+
+        # The behavior depends on whether we have "bins", so
+        # Data1DInt, or "points" like Data1D (and, for this use case,
+        # DataPHA). Since Data1DInt and DataPHA both subclass DataPHA
+        # we can not just use issubclass for the checks below.
+        #
+        # The upper limit (stop) is meant to be included in the output,
+        # which means care needs to be taken over what is sent to
+        # sherpa.utils.dataspace1d.
+        #
+        if dstype in (Data1D, DataPHA):
             stop += step
 
         xlo, xhi, y = sherpa.utils.dataspace1d(start, stop, step=step,
@@ -810,7 +811,8 @@ class Session(sherpa.ui.utils.Session):
         args = [xlo, xhi, y]
         kwargs = {}
 
-        if dstype is sherpa.astro.data.DataPHA:
+        is_pha = issubclass(dstype, DataPHA)
+        if is_pha:
             channel = numpy.arange(1, len(xlo) + 1, dtype=float)
             args = [channel, y]
             # kwargs['bin_lo'] = xlo
@@ -818,12 +820,17 @@ class Session(sherpa.ui.utils.Session):
         elif dstype is not sherpa.data.Data1DInt:
             args = [xlo, y]
 
-        if bkg_id is not None:
-            self._get_pha_data(id).set_background(dstype('bkg_dataspace1d',
-                                                         *args, **kwargs),
-                                                  bkg_id)
-        else:
-            self.set_data(id, dstype('dataspace1d', *args, **kwargs))
+        if bkg_id is None:
+            data = dstype('dataspace1d', *args, **kwargs)
+            self.set_data(id, data)
+            return
+
+        if not is_pha:
+            raise ArgumentTypeErr("badarg", "dstype", "set to DataPHA")
+
+        data = self._get_pha_data(id)
+        bkg = dstype('bkg_dataspace1d', *args, **kwargs)
+        data.set_background(bkg, bkg_id)
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):
@@ -2086,18 +2093,70 @@ class Session(sherpa.ui.utils.Session):
         phasets = self.unpack_pha(arg, use_errors)
         self._load_data(id, phasets)
 
-    def _get_pha_data(self, id):
-        """Ensure the dataset is a PHA"""
-        data = self.get_data(id)
-        if not isinstance(data, sherpa.astro.data.DataPHA):
-            raise ArgumentErr('nopha', self._fix_id(id))
-        return data
+    def _get_pha_data(self, id, bkg_id=None):
+        """Ensure the dataset is a PHA.
+
+        Parameters
+        ----------
+        id : int or str or None
+            The dataset identifier. A value of None means the
+            default identifier is used.
+        bkg_id : int or None
+            If set then pick the background component instead.
+
+        Returns
+        -------
+        data : sherpa.astro.data.DataPHA instance
+
+        """
+
+        idval = self._fix_id(id)
+        data = self.get_data(idval)
+        if not isinstance(data, DataPHA):
+            raise ArgumentErr('nopha', idval)
+
+        if bkg_id is None:
+            return data
+
+        bkg = data.get_background(bkg_id)
+        if bkg is not None:
+            return bkg
+
+        raise IdentifierErr('getitem', 'background data set', bkg_id,
+                            f'in PHA data set {idval} has not been set')
+
+    def _get_data_or_bkg(self, id, bkg_id=None):
+        """Return the given dataset (may be a background).
+
+        Unlike _get_pha_data it does not force the data to
+        be a PHA dataset.
+
+        Parameters
+        ----------
+        id : int or str or None
+            The dataset identifier. A value of None means the
+            default identifier is used.
+        bkg_id : int or None
+            If set then pick the background component instead.
+
+        Returns
+        -------
+        data : sherpa.data.Data instance
+
+        """
+
+        if bkg_id is None:
+            return self.get_data(id)
+
+        return self.get_bkg(id, bkg_id)
 
     def _get_img_data(self, id):
         """Ensure the dataset is an image"""
-        data = self.get_data(id)
+        idval = self._fix_id(id)
+        data = self.get_data(idval)
         if not isinstance(data, sherpa.astro.data.DataIMG):
-            raise ArgumentErr('noimg', self._fix_id(id))
+            raise ArgumentErr('noimg', idval)
+
         return data
 
     # def _read_error(self, filename, *args, **kwargs):
@@ -2417,10 +2476,7 @@ class Session(sherpa.ui.utils.Session):
         if val is None:
             val, id = id, val
 
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_data_or_bkg(id, bkg_id)
         sherpa.ui.utils.set_filter(d, val, ignore=ignore)
 
     # DOC-NOTE: also in sherpa.utils
@@ -2644,10 +2700,7 @@ class Session(sherpa.ui.utils.Session):
         if val is None:
             val, id = id, val
 
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_data_or_bkg(id, bkg_id)
         sherpa.ui.utils.set_dep(d, val)
 
     set_counts = set_dep
@@ -2710,12 +2763,8 @@ class Session(sherpa.ui.utils.Session):
         """
         if val is None:
             val, id = id, val
-        err = None
 
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_data_or_bkg(id, bkg_id)
         sherpa.ui.utils.set_error(d, "staterror", val, fractional=fractional)
 
     # DOC-NOTE: also in sherpa.utils
@@ -2773,12 +2822,8 @@ class Session(sherpa.ui.utils.Session):
         """
         if val is None:
             val, id = id, val
-        err = None
 
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_data_or_bkg(id, bkg_id)
         sherpa.ui.utils.set_error(d, "syserror", val, fractional=fractional)
 
     def set_exposure(self, id, exptime=None, bkg_id=None):
@@ -2843,11 +2888,7 @@ class Session(sherpa.ui.utils.Session):
         if exptime is not None:
             exptime = SherpaFloat(exptime)
 
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        else:
-            d = self._get_pha_data(id)
-
+        d = self._get_pha_data(id, bkg_id)
         d.exposure = exptime
 
     def set_backscal(self, id, backscale=None, bkg_id=None):
@@ -2895,11 +2936,7 @@ class Session(sherpa.ui.utils.Session):
         elif backscale is not None:
             backscale = SherpaFloat(backscale)
 
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        else:
-            d = self._get_pha_data(id)
-
+        d = self._get_pha_data(id, bkg_id)
         d.backscal = backscale
 
     # DOC-TODO: the description needs improving.
@@ -2946,11 +2983,7 @@ class Session(sherpa.ui.utils.Session):
         if area is not None:
             area = SherpaFloat(area)
 
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        else:
-            d = self._get_pha_data(id)
-
+        d = self._get_pha_data(id, bkg_id)
         d.areascal = area
 
     # DOC-NOTE: also in sherpa.utils, where it does not have
@@ -3036,9 +3069,8 @@ class Session(sherpa.ui.utils.Session):
         array([2, 3, 5])
 
         """
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
+
+        d = self._get_data_or_bkg(id, bkg_id)
         return d.get_staterror(filter, self.get_stat().calc_staterror)
 
     # DOC-NOTE: also in sherpa.utils, where it does not have
@@ -3109,14 +3141,11 @@ class Session(sherpa.ui.utils.Session):
         >>> yerr = get_syserror("core", filter=True)
 
         """
-        id = self._fix_id(id)
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-
+        idval = self._fix_id(id)
+        d = self._get_data_or_bkg(idval, bkg_id)
         err = d.get_syserror(filter)
         if err is None:
-            raise DataErr('nosyserr', id)
+            raise DataErr('nosyserr', idval)
 
         return err
 
@@ -3195,9 +3224,7 @@ class Session(sherpa.ui.utils.Session):
         >>> berr2 = get_error('core', bkg_id=2, filter=True)
 
         """
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
+        d = self._get_data_or_bkg(id, bkg_id)
         return d.get_error(filter, self.get_stat().calc_staterror)
 
     # DOC-NOTE: also in sherpa.utils
@@ -3309,10 +3336,7 @@ class Session(sherpa.ui.utils.Session):
         array([  16.5,   48.5,   80.5,  112.5,  144.5])
 
         """
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_data_or_bkg(id, bkg_id)
         return d.get_indep(filter=filter)
 
     def get_axes(self, id=None, bkg_id=None):
@@ -3401,11 +3425,9 @@ class Session(sherpa.ui.utils.Session):
         True
 
         """
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        d = self._get_data_or_bkg(id, bkg_id)
+        if isinstance(d, DataPHA):
             return d._get_ebins(group=False)
 
         if isinstance(d, (sherpa.data.Data2D,
@@ -3497,11 +3519,9 @@ class Session(sherpa.ui.utils.Session):
         (65536,)
 
         """
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        d = self._get_data_or_bkg(id, bkg_id)
+        if isinstance(d, DataPHA):
             old = d._rate
             d._rate = False  # return predicted counts, not rate for PHA
             dep = d.get_y(filter)
@@ -3604,9 +3624,7 @@ class Session(sherpa.ui.utils.Session):
         >>> get_rate(id="grating", bkg_id=2)
 
         """
-        d = self._get_pha_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
+        d = self._get_pha_data(id, bkg_id)
 
         old = d._rate
         d._rate = True     # return count rate for PHA
@@ -3651,11 +3669,7 @@ class Session(sherpa.ui.utils.Session):
         >>> barf = get_spectresp("eclipse", bkg_id=2)
 
         """
-        if bkg_id is None:
-            d = self._get_pha_data(id)
-        else:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_pha_data(id, bkg_id)
         return d.get_specresp(filter)
 
     def get_exposure(self, id=None, bkg_id=None):
@@ -3705,11 +3719,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is None:
-            d = self._get_pha_data(id)
-        else:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_pha_data(id, bkg_id)
         return d.exposure
 
     def get_backscal(self, id=None, bkg_id=None):
@@ -3767,11 +3777,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is None:
-            d = self._get_pha_data(id)
-        else:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_pha_data(id, bkg_id)
         return d.backscal
 
     def get_bkg_scale(self, id=None, bkg_id=1, units='counts',
@@ -3860,12 +3866,13 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        dset = self._get_pha_data(id)
+        idval = self._fix_id(id)
+        dset = self._get_pha_data(idval)
         scale = dset.get_background_scale(bkg_id, units=units,
                                           group=group, filter=filter)
         if scale is None:
             # TODO: need to add bkg_id?
-            raise DataErr('nobkg', self._fix_id(id))
+            raise DataErr('nobkg', idval)
 
         return scale
 
@@ -3921,21 +3928,15 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is None:
-            d = self._get_pha_data(id)
-        else:
-            d = self.get_bkg(id, bkg_id)
-
+        d = self._get_pha_data(id, bkg_id)
         return d.areascal
 
     def _save_type(self, objtype, id, filename, bkg_id=None, **kwargs):
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
-        d = self.get_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
 
+        d = self._get_data_or_bkg(id, bkg_id)
         if isinstance(d, (sherpa.astro.data.DataIMG,
                           sherpa.astro.data.DataIMGInt,
                           sherpa.data.Data2D, sherpa.data.Data2DInt)):
@@ -4458,13 +4459,10 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        _check_str_type(filename, 'filename')
-        id = self._fix_id(id)
 
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        else:
-            d = self.get_data(id)
+        _check_str_type(filename, 'filename')
+        idval = self._fix_id(id)
+        d = self._get_data_or_bkg(idval, bkg_id)
 
         # Leave this check as d.mask is False since d.mask need not be a boolean
         # and we want different errors if mask is True or False (and leave as
@@ -4474,7 +4472,7 @@ class Session(sherpa.ui.utils.Session):
         if d.mask is False:
             raise DataErr('notmask')
         if not numpy.iterable(d.mask):
-            raise DataErr('nomask', id)
+            raise DataErr('nomask', idval)
 
         if isinstance(d, sherpa.astro.data.DataPHA):
             x = d._get_ebins(group=True)[0]
@@ -4562,7 +4560,6 @@ class Session(sherpa.ui.utils.Session):
 
         _save_errorcol(self, id, filename, bkg_id, clobber, ascii,
                        self.get_staterror, 'STAT_ERR')
-
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_syserror(self, id, filename=None, bkg_id=None,
@@ -4792,9 +4789,7 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
-        d = self._get_pha_data(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
+        d = self._get_pha_data(id, bkg_id)
 
         sherpa.astro.io.write_pha(filename, d, ascii=ascii,
                                   clobber=clobber)
@@ -4872,14 +4867,11 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
-        id = self._fix_id(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        else:
-            d = self._get_pha_data(id)
+        idval = self._fix_id(id)
+        d = self._get_pha_data(idval, bkg_id)
 
         if d.grouping is None:
-            raise DataErr('nogrouping', id)
+            raise DataErr('nogrouping', idval)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.grouping],
                                      fields=['CHANNEL', 'GROUPS'], ascii=ascii,
@@ -4957,14 +4949,11 @@ class Session(sherpa.ui.utils.Session):
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
-        id = self._fix_id(id)
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        else:
-            d = self._get_pha_data(id)
+        idval = self._fix_id(id)
+        d = self._get_pha_data(idval, bkg_id)
 
         if d.quality is None:
-            raise DataErr('noquality', id)
+            raise DataErr('noquality', idval)
 
         sherpa.astro.io.write_arrays(filename, [d.channel, d.quality],
                                      fields=['CHANNEL', 'QUALITY'], ascii=ascii,
@@ -5103,7 +5092,6 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
-        id = self._fix_id(id)
         _check_str_type(filename, 'filename')
 
         sherpa.astro.io.write_table(filename, self.get_data(id),
@@ -5184,11 +5172,9 @@ class Session(sherpa.ui.utils.Session):
         ascii = sherpa.utils.bool_cast(ascii)
         if filename is None:
             id, filename = filename, id
+
         _check_str_type(filename, 'filename')
-        if bkg_id is not None:
-            d = self.get_bkg(id, bkg_id)
-        else:
-            d = self.get_data(id)
+        d = self._get_data_or_bkg(id, bkg_id)
 
         # Wouldn't it be better to key off the data class here, as we
         # know the mapping from class to write routine, rather than
@@ -5209,6 +5195,7 @@ class Session(sherpa.ui.utils.Session):
                     # If this errors out then so be it
                     sherpa.io.write_data(filename, d, clobber=clobber)
 
+    # TODO: could add bkg_id parameter
     def pack_pha(self, id=None):
         """Convert a PHA data set into a file structure.
 
@@ -5460,16 +5447,13 @@ class Session(sherpa.ui.utils.Session):
         >>> print(get_model())
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-
+        idval = self._fix_id(id)
+        data = self._get_pha_data(idval, bkg_id)
         arf, rmf = data.get_response(resp_id)
         if arf is None:
             raise IdentifierErr('getitem', 'ARF data set',
                                 data._fix_response_id(resp_id),
-                                'in PHA data set %s has not been set' %
-                                str(self._fix_id(id)))
+                                f'in PHA data set {idval} has not been set')
 
         if isinstance(arf, sherpa.astro.data.DataARF):
             arf = sherpa.astro.instrument.ARF1D(arf, data, rmf)
@@ -5549,9 +5533,7 @@ class Session(sherpa.ui.utils.Session):
             arf = arf._arf
         _check_type(arf, sherpa.astro.data.DataARF, 'arf', 'an ARF data set')
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
+        data = self._get_pha_data(id, bkg_id)
         data.set_arf(arf, resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
@@ -5933,16 +5915,13 @@ class Session(sherpa.ui.utils.Session):
         >>> print(get_model())
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-
+        idval = self._fix_id(id)
+        data = self._get_pha_data(idval, bkg_id)
         arf, rmf = data.get_response(resp_id)
         if rmf is None:
             raise IdentifierErr('getitem', 'RMF data set',
                                 data._fix_response_id(resp_id),
-                                'in PHA data set %s has not been set' %
-                                str(self._fix_id(id)))
+                                f'in PHA data set {idval} has not been set')
 
         if isinstance(rmf, sherpa.astro.data.DataRMF):
             rmf = sherpa.astro.instrument.RMF1D(rmf, data, arf)
@@ -6022,9 +6001,7 @@ class Session(sherpa.ui.utils.Session):
             rmf = rmf._rmf
         _check_type(rmf, sherpa.astro.data.DataRMF, 'rmf', 'an RMF data set')
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
+        data = self._get_pha_data(id, bkg_id)
         data.set_rmf(rmf, resp_id)
         # Set units of source dataset from channel to energy
         if data.units == 'channel':
@@ -6385,13 +6362,14 @@ class Session(sherpa.ui.utils.Session):
         >>> bg = get_bkg('flare', 2)
 
         """
-        data = self._get_pha_data(id)
+        idval = self._fix_id(id)
+        data = self._get_pha_data(idval)
         bkg = data.get_background(bkg_id)
         if bkg is None:
             raise IdentifierErr('getitem', 'background data set',
                                 data._fix_background_id(bkg_id),
-                                'in PHA data set %s has not been set' %
-                                str(self._fix_id(id)))
+                                f'in PHA data set {idval} has not been set')
+
         return bkg
 
     def set_bkg(self, id, bkg=None, bkg_id=None):
@@ -6514,10 +6492,7 @@ class Session(sherpa.ui.utils.Session):
         load_rmf : Load a RMF from a file and add it to a PHA data set.
 
         """
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-
+        data = self._get_pha_data(id, bkg_id)
         return list(data._responses.keys())
 
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
@@ -6829,10 +6804,8 @@ class Session(sherpa.ui.utils.Session):
         """
         idval = self._fix_id(id)
         idstr = f"dataset {idval}"
-        if bkg_id is None:
-            data = self._get_pha_data(idval)
-        else:
-            data = self.get_bkg(idval, bkg_id)
+        data = self._get_pha_data(idval, bkg_id)
+        if bkg_id is not None:
             idstr += f": background {bkg_id}"
 
         ofilter = data.get_filter(delim=':', format='%g')
@@ -7762,10 +7735,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-
+        data = self._get_pha_data(id, bkg_id)
         return data.grouping
 
     def set_quality(self, id, val=None, bkg_id=None):
@@ -7843,10 +7813,7 @@ class Session(sherpa.ui.utils.Session):
         if val is None:
             id, val = val, id
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-
+        data = self._get_pha_data(id, bkg_id)
         data.quality = val
 
     # DOC TODO: Need to document that routines like get_quality return
@@ -7932,10 +7899,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self._get_pha_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-
+        data = self._get_pha_data(id, bkg_id)
         return data.quality
 
     def ungroup(self, id=None, bkg_id=None):
@@ -8014,6 +7978,7 @@ class Session(sherpa.ui.utils.Session):
         False
 
         """
+        data = self._get_pha_data(id, bkg_id)
 
         # This will call the background datasets to be ungrouped
         # as well (when bkg_id is not set).
@@ -9299,13 +9264,9 @@ class Session(sherpa.ui.utils.Session):
         >>> set_full_model(rsp(powlaw1d.pl) + const1d.bgnd)
 
         """
-        id = self._fix_id(id)
-        if bkg_id is not None:
-            pha = self.get_bkg(id, bkg_id)
-        else:
-            pha = self._get_pha_data(id)
-
-        return self._get_response(id, pha)
+        idval = self._fix_id(id)
+        pha = self._get_pha_data(idval, bkg_id)
+        return self._get_response(idval, pha)
 
     def get_pileup_model(self, id=None):
         """Return the pile up model for a data set.
@@ -10905,12 +10866,13 @@ class Session(sherpa.ui.utils.Session):
         if not recalc:
             return plotobj
 
-        id = self._fix_id(id)
-        arf = self._get_pha_data(id).get_arf(resp_id)
+        idval = self._fix_id(id)
+        data = self._get_pha_data(idval)
+        arf = data.get_arf(resp_id)
         if arf is None:
-            raise DataErr('noarf', id)
+            raise DataErr('noarf', idval)
 
-        plotobj.prepare(arf, self._get_pha_data(id))
+        plotobj.prepare(arf, data)
         return plotobj
 
     def get_bkg_fit_plot(self, id=None, bkg_id=None, recalc=True):
@@ -13356,12 +13318,11 @@ class Session(sherpa.ui.utils.Session):
         """
         _, fit = self._get_fit(id, otherids=otherids)
 
+        data = self._get_data_or_bkg(id, bkg_id)
         if bkg_id is None:
-            data = self.get_data(id)
             if model is None:
                 model = self.get_source(id)
         else:
-            data = self.get_bkg(id, bkg_id)
             if model is None:
                 model = self.get_bkg_source(id, bkg_id)
 
@@ -13588,12 +13549,11 @@ class Session(sherpa.ui.utils.Session):
         """
         _, fit = self._get_fit(id, otherids=otherids)
 
+        data = self._get_data_or_bkg(id, bkg_id)
         if bkg_id is None:
-            data = self.get_data(id)
             if model is None:
                 model = self.get_source(id)
         else:
-            data = self.get_bkg(id, bkg_id)
             if model is None:
                 model = self.get_bkg_source(id, bkg_id)
 
@@ -13769,10 +13729,7 @@ class Session(sherpa.ui.utils.Session):
             raise NotImplementedError("sample_flux(Xrays=False) is currently unsupported")
 
         _, fit = self._get_fit(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-        else:
-            data = self.get_data(id)
+        data = self._get_data_or_bkg(id, bkg_id)
 
         if (modelcomponent is not None) and \
            not isinstance(modelcomponent, sherpa.models.model.Model):
@@ -13940,9 +13897,7 @@ class Session(sherpa.ui.utils.Session):
         >>> plot_cdf(ews)
 
         """
-        data = self.get_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
+        data = self._get_data_or_bkg(id, bkg_id)
 
         ####################################################
         if error:
@@ -14122,10 +14077,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is None:
-            data = self.get_data(id)
-        else:
-            data = self.get_bkg(id, bkg_id)
+        data = self._get_data_or_bkg(id, bkg_id)
 
         if model is None:
             if bkg_id is None:
@@ -14242,10 +14194,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is None:
-            data = self.get_data(id)
-        else:
-            data = self.get_bkg(id, bkg_id)
+        data = self._get_data_or_bkg(id, bkg_id)
 
         if model is None:
             if bkg_id is None:
@@ -14345,10 +14294,8 @@ class Session(sherpa.ui.utils.Session):
         >>> calc_data_sum(12, 45, id=3, bkg_id=2)
 
         """
-        data = self.get_data(id)
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
 
+        data = self._get_data_or_bkg(id, bkg_id)
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
 
     # DOC-TODO: better comparison of calc_source_sum and calc_model_sum
@@ -14456,12 +14403,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_model(id, bkg_id)
-        else:
-            data = self.get_data(id)
+        data = self._get_data_or_bkg(id, bkg_id)
+        if bkg_id is None:
             model = self.get_model(id)
+        else:
+            model = self.get_bkg_model(id, bkg_id)
 
         return sherpa.astro.utils.calc_model_sum(data, model, lo, hi)
 
@@ -14801,12 +14747,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_source(id, bkg_id)
-        else:
-            data = self.get_data(id)
+        data = self._get_data_or_bkg(id, bkg_id)
+        if bkg_id is None:
             model = self.get_source(id)
+        else:
+            model = self.get_bkg_source(id, bkg_id)
 
         return sherpa.astro.utils.calc_source_sum(data, model, lo, hi)
 
@@ -14929,12 +14874,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if bkg_id is not None:
-            data = self.get_bkg(id, bkg_id)
-            model = self.get_bkg_source(id, bkg_id)
-        else:
-            data = self.get_data(id)
+        data = self._get_data_or_bkg(id, bkg_id)
+        if bkg_id is None:
             model = self.get_source(id)
+        else:
+            model = self.get_bkg_source(id, bkg_id)
 
         return sherpa.astro.utils.calc_kcorr(data, model, z, obslo, obshi,
                                              restlo, resthi)

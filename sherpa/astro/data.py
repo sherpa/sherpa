@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -128,7 +128,7 @@ from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
-from sherpa.utils.err import DataErr, ImportErr
+from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
     create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
 from sherpa.utils import formatting
@@ -2788,6 +2788,27 @@ must be an integer.""")
         external programs, such as XSPEC.
 
         """
+
+        if not isinstance(bkg, DataPHA):
+            raise ArgumentTypeErr("badarg", "bkg", "a PHA data set")
+
+        # Check that the background matches the source (i.e. self)
+        # dataset.  For this use case we require that the source has
+        # set up its channel array (ie self.channel cannot be None),
+        # as allowing the background dataset to have channels but not
+        # the source makes tracking the state harder and there is no
+        # obvious use case for that.
+        #
+        if self.channel is None:
+            raise DataErr("The channel field must be set before adding a background")
+
+        if bkg.channel is None:
+            raise DataErr("The channel field of the background must be set")
+
+        if len(self.channel) != len(bkg.channel) or \
+           numpy.any(self.channel != bkg.channel):
+            raise DataErr("The source and background channels differ")
+
         id = self._fix_background_id(id)
         self._backgrounds[id] = bkg
         ids = self.background_ids[:]

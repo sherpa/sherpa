@@ -3182,9 +3182,9 @@ def test_1209_background(make_data_path):
     We use a non-Chandra dataset.
     """
 
-    # We could set up channels and counts, but let's not.
+    # We need to set up the channels array to match the background.
     #
-    d = DataPHA("dummy", None, None)
+    d = DataPHA("dummy", np.arange(1, 801, dtype=np.int16), None)
     assert d.header["TELESCOP"] == "none"
     assert d.header["INSTRUME"] == "none"
     assert d.header["FILTER"] == "none"

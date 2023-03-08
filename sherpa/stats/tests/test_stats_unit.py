@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2021, 2022
+#  Copyright (C) 2016, 2017, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -484,38 +484,6 @@ def test_stats_calc_stat_wstat_pha_nobg():
     data, model = setup_single_pha(False, False, background=False)
     with pytest.raises(StatErr):
         statobj.calc_stat(data, model)
-
-
-def test_stats_calc_stat_wstat_diffbins():
-    """wstat statistic fails when src/bg bin sizes do not match"""
-
-    statobj = WStat()
-
-    data, model = setup_single_pha(True, False, background=True)
-
-    # Tweak data to have one-less bin than the background. This
-    # used to be easy but with data validation we need to
-    # create a new object.
-    #
-    data2 = DataPHA("faked",
-                    channel=data.channel[:-1],
-                    counts=data.counts[:-1],
-                    staterror=data.staterror[:-1],
-                    grouping=data.grouping[:-1],
-                    exposure=data.exposure,
-                    backscal=data.backscal,
-                    areascal=data.areascal)
-
-    # We might expect the ARF/RMF calls to fail if we add validation
-    # (to check the ARF/RMF is valid for the PHA dataset).
-    #
-    data2.set_arf(data.get_arf())
-    data2.set_rmf(data.get_rmf())
-    data2.set_background(data.get_background())
-
-    with pytest.raises(DataErr,
-                       match="size mismatch between data and array: 4 vs 5"):
-        statobj.calc_stat(data2, model)
 
 
 # Numeric answers calculated using CIAO 4.8 (sherpa 4.8.0)
