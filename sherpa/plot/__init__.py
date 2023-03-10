@@ -91,6 +91,18 @@ else:
     # that does not have dummy listed
     backend = BasicBackend()
 
+    # Warn the user that non of their requested plot options could
+    # be found (skipping the dummy package).
+    #
+    # TODO: should this not fire if one of the options is dummy?  That
+    # is, if the user has said they are happy for the plot backend to
+    # be "dummy" then we should not be here? The trouble is that
+    # "dummy" is not registered as a PLOT_BACKENDS entry, so
+    # it is not picked up in the loop above.
+    #
+    tried = ", ".join([f"'{n}'" for n in plot_opt if n != "dummy"])
+    warning(f"Failed to import any usable plot backend: tried {tried}")
+
 __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'HistogramPlot', 'DataHistogramPlot',
            'ModelHistogramPlot', 'SourceHistogramPlot',
