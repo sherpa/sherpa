@@ -35,6 +35,7 @@ from sherpa.astro import plot as aplot
 from sherpa.astro import hc
 from sherpa.data import Data1D
 from sherpa.models.basic import Const1D, Gauss1D, Polynom1D, PowLaw1D
+from sherpa import plot as splot
 from sherpa import stats
 from sherpa.utils.err import IOErr, PlotErr
 
@@ -1100,3 +1101,37 @@ def test_1779_grouped_fit(subset, factor):
 
     mplot = ModelPHAHistogram()
     validate_1779_grouped(pha, mplot, subset, factor)
+
+
+def test_data_model_plot_with_backend(override_plot_backend):
+    """Check an actual plot of a histogram.
+
+    The idea is to check we can handle the different backends with a
+    "fit" plot - that is sherpa.astro.ui.plot_fit.
+
+    This was written as the
+    sherpa/astro/ui/tests/test_plot_model_all_backends test failed
+    during the rework-the-plotting-backend work, and this was added to
+    check where the issue happened.
+
+    All we care about is if the plot works and doesn't cause any error
+    (e.g. because of unsupported options with a particular backend).
+
+    """
+
+    pha = example_pha_data()
+    model = PowLaw1D('example-pl')
+    resp = pha.get_full_response()
+    full_model = resp(model)
+
+    dplot = aplot.DataPHAPlot()
+    dplot.prepare(pha)
+
+    mplot = aplot.ModelPHAHistogram()
+    mplot.prepare(pha, full_model)
+
+    fplot = splot.FitPlot()
+    fplot.prepare(dplot, mplot)
+
+    fplot.plot()
+
