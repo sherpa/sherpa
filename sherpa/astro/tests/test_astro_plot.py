@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,9 +28,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
-from sherpa.astro.plot import SourcePlot, \
-    DataPHAPlot, ModelPHAHistogram, OrderPlot, \
-    EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
+from sherpa.astro.plot import _check_hist_bins
 from sherpa.astro import plot as aplot
 from sherpa.astro import hc
 from sherpa.data import Data1D
@@ -164,7 +162,7 @@ def test_sourceplot(caplog, make_basic_datapha):
     m2.fwhm = 4.0
     m2.ampl = 0.1
 
-    sp = SourcePlot()
+    sp = aplot.SourcePlot()
     with caplog.at_level(logging.INFO, logger='sherpa'):
         sp.prepare(data, src)
 
@@ -190,7 +188,7 @@ def test_sourceplot_counts(caplog, make_basic_datapha):
     m2.fwhm = 4.0
     m2.ampl = 0.1
 
-    sp = SourcePlot()
+    sp = aplot.SourcePlot()
     with caplog.at_level(logging.INFO, logger='sherpa'):
         sp.prepare(data, src)
 
@@ -218,7 +216,7 @@ def test_sourceplot_facn(factor, caplog, make_basic_datapha):
     m2.fwhm = 4.0
     m2.ampl = 0.1
 
-    sp = SourcePlot()
+    sp = aplot.SourcePlot()
     with caplog.at_level(logging.INFO, logger='sherpa'):
         sp.prepare(data, src)
 
@@ -243,7 +241,7 @@ def test_sourceplot_channels(caplog, make_basic_datapha):
     m2.fwhm = 4.0
     m2.ampl = 0.1
 
-    sp = SourcePlot()
+    sp = aplot.SourcePlot()
     with caplog.at_level(logging.INFO, logger='sherpa'):
         sp.prepare(data, src)
 
@@ -273,7 +271,7 @@ def test_sourceplot_wavelength(caplog, make_basic_datapha):
     m2.fwhm = 4.0
     m2.ampl = 0.1
 
-    sp = SourcePlot()
+    sp = aplot.SourcePlot()
     with caplog.at_level(logging.INFO, logger='sherpa'):
         sp.prepare(data, src)
 
@@ -299,7 +297,7 @@ def test_sourceplot_wavelength_facn(factor, caplog, make_basic_datapha):
     m2.fwhm = 4.0
     m2.ampl = 0.1
 
-    sp = SourcePlot()
+    sp = aplot.SourcePlot()
     with caplog.at_level(logging.INFO, logger='sherpa'):
         sp.prepare(data, src)
 
@@ -325,7 +323,7 @@ def test_sourceplot_wavelength_counts(caplog, make_basic_datapha):
     m2.fwhm = 4.0
     m2.ampl = 0.1
 
-    sp = SourcePlot()
+    sp = aplot.SourcePlot()
     with caplog.at_level(logging.INFO, logger='sherpa'):
         sp.prepare(data, src)
 
@@ -380,7 +378,7 @@ def test_astro_data_plot_with_stat_simple(make_data_path, stat):
     pha.ignore(None, 0.5)
     pha.ignore(7.0, None)
 
-    dplot = DataPHAPlot()
+    dplot = aplot.DataPHAPlot()
     dplot.prepare(pha, stat=stat)
 
 
@@ -527,7 +525,7 @@ def test_pha_data_with_gaps_977():
     d = DataPHA('x', chans, vals, bin_lo=blo, bin_hi=bhi)
     d.set_analysis('wave')
 
-    p = DataPHAPlot()
+    p = aplot.DataPHAPlot()
     p.prepare(d)
 
     assert p.y == pytest.approx([1, 2, 3, 4, 5])
@@ -568,7 +566,7 @@ def test_pha_model_with_gaps_977():
     mdl.c0 = 0.1
     mdl.c1 = 1.1
 
-    p = ModelPHAHistogram()
+    p = aplot.ModelPHAHistogram()
     p.prepare(d, mdl)
 
     assert p.y == pytest.approx([1.2, 2.3, 3.4, 4.5, 5.6])
@@ -591,8 +589,8 @@ def test_pha_model_with_gaps_977():
 
 
 @pytest.mark.parametrize("energy,cls",
-                         [(True, EnergyFluxHistogram),
-                          (False, PhotonFluxHistogram)])
+                         [(True, aplot.EnergyFluxHistogram),
+                          (False, aplot.PhotonFluxHistogram)])
 def test_str_flux_histogram_empty(energy, cls):
     """Check str of an empty flux histogram"""
 
@@ -621,8 +619,8 @@ def test_str_flux_histogram_empty(energy, cls):
 
 
 @pytest.mark.parametrize("energy,cls",
-                         [(True, EnergyFluxHistogram),
-                          (False, PhotonFluxHistogram)])
+                         [(True, aplot.EnergyFluxHistogram),
+                          (False, aplot.PhotonFluxHistogram)])
 def test_str_flux_histogram_full(energy, cls, old_numpy_printing):
     """Check str of a flux histogram"""
 
@@ -719,7 +717,7 @@ def test_orderplot_checks_colors_explicit_orders(orders):
 
     """
 
-    oplot = OrderPlot()
+    oplot = aplot.OrderPlot()
 
     pha = example_pha_data()
     model = PowLaw1D('example-pl')
@@ -733,7 +731,7 @@ def test_orderplot_checks_colors_explicit_orders(orders):
 def test_orderplot_check_title():
     """Is the title set?"""
 
-    oplot = OrderPlot()
+    oplot = aplot.OrderPlot()
 
     pha = example_pha_data()
     model = PowLaw1D('example-pl')
@@ -752,7 +750,7 @@ def test_orderplot_check_range():
     so do not spend too much time on this test here.
     """
 
-    oplot = OrderPlot()
+    oplot = aplot.OrderPlot()
 
     pha = example_pha_data()
     model = Const1D('example-mdl')
