@@ -761,6 +761,13 @@ class Session(NoNewAttributesAfterInit):
         self._regproj = sherpa.plot.RegionProjection()
         self._regunc = sherpa.plot.RegionUncertainty()
 
+        self._set_plot_types()
+        self._set_contour_types()
+        self._set_image_types()
+
+    def _set_plot_types(self):
+        """Set up the plot types."""
+
         # The keys of _plot_types are used to define:
         # a) the mapping from get_<key>_plot to the plot objects
         #    (that is, there must be a matching get_<key>_plot method)
@@ -809,6 +816,9 @@ class Session(NoNewAttributesAfterInit):
             "compmodel": "model_component"
         }
 
+    def _set_contour_types(self):
+        """Set up the contour types."""
+
         # This is used by the get_<key>_contour calls to access the
         # relevant contour class. The keys define the labels that can be
         # used in calls to contour(), and are also used to determine
@@ -824,6 +834,9 @@ class Session(NoNewAttributesAfterInit):
             "psf": sherpa.plot.PSFContour(),
             "kernel": sherpa.plot.PSFKernelContour()
         }
+
+    def _set_image_types(self):
+        """Set up the image types."""
 
         # This is used by the get_<key>_image calls to access the
         # relevant image class. The keys are not included in any check

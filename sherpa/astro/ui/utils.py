@@ -283,6 +283,11 @@ class Session(sherpa.ui.utils.Session):
 
         self._pyblocxs = sherpa.astro.sim.MCMC()
 
+    clean.__doc__ = sherpa.ui.utils.Session.clean.__doc__
+
+    def _set_plot_types(self):
+        """Set up the plot types."""
+
         # The keys are used by the set_xlog/... calls to identify what
         # plot objects are changed by a given set_xxx(label) call.
         # They are also used by code - normally get_<key>_plot - to
@@ -296,6 +301,8 @@ class Session(sherpa.ui.utils.Session):
         # b) and plots that are only relevant for PHA data, so they
         #    only have a PHA-specific class (e.g. "bkg").
         #
+        super()._set_plot_types()
+
         self._plot_types['data'].append(sherpa.astro.plot.DataPHAPlot())
         self._plot_types['model'].append(sherpa.astro.plot.ModelHistogram())
         self._plot_types["model_component"].append(sherpa.astro.plot.ComponentModelPlot())
@@ -328,8 +335,6 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types_alias["astrodata"] = "data"
         self._plot_types_alias["astrosource"] = "source"
         self._plot_types_alias["astromodel"] = "model"
-
-    clean.__doc__ = sherpa.ui.utils.Session.clean.__doc__
 
     # Add ability to save attributes specific to the astro package.
     # Save XSPEC module settings that need to be restored.
