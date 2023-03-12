@@ -618,6 +618,34 @@ def all_plot_backends(request):
             plt.close(fig="all")
 
 
+@pytest.fixture(params=PLOT_BACKENDS.keys())
+def all_plot_backends_astro_ui(request):
+    """Override the plot backend for the astro ui session.
+
+    Runs the test with the given plot backend and then restores the
+    original value.
+    """
+
+    # Unfortunately can not easily use TemporaryPlottingBackend here
+    #
+    from sherpa.plot import backend
+    old = backend
+
+    from sherpa.astro.ui import set_plot_backend
+    set_plot_backend(request.param)
+
+    yield
+
+    # Backend-specific clean up.
+    if request.param == 'pylab':
+        from matplotlib import pyplot as plt
+        plt.close(fig="all")
+
+    # Restore the original backend.
+    #
+    set_plot_backend(old)
+
+
 @pytest.fixture(params=FUNCTIONAL_PLOT_BACKENDS)
 def plot_backends(request):
     """Override the plot backend for this test (only for functional backends)

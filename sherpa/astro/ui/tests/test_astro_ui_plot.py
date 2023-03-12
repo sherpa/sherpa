@@ -45,7 +45,6 @@ import sherpa.astro.plot
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models import basic
 from sherpa.models.template import create_template_model
-import sherpa.plot
 
 from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ModelErr, PlotErr
 from sherpa.utils.testing import requires_data, requires_fits, \
@@ -2099,7 +2098,7 @@ def test_bug920(units, xlabel, ylabel, xlo, xhi, clean_astro_ui, basic_pha1):
     assert mplot3.y == pytest.approx(mplot1.y)
 
 
-def test_plot_model_all_backends(clean_astro_ui, all_plot_backends):
+def test_plot_model_all_backends(clean_astro_ui, all_plot_backends_astro_ui):
     """Just check we can call plot_model.
 
     This is to check an issue found during development of #1382
@@ -4380,3 +4379,67 @@ def test_1380_plot(coord, make_data_path, clean_astro_ui):
 
     ui.set_coord("logical")
     ui.contour_data()
+
+
+def test_when_reset_backend_settings_clear_nodata(clean_astro_ui, all_plot_backends):
+    """Check settings are reset when the backend is reset.
+
+    We check the linestyle setting.
+
+    Since the data/model prefs can depend on the data (defaulting
+    to Data1D) this tests when no data is loaded.
+
+    """
+
+    def check_start():
+        assert ui.get_data_plot_prefs()["linestyle"] == "None"
+        assert ui.get_model_plot_prefs()["linestyle"] == "-"
+
+    check_start()
+
+    ui.get_data_plot_prefs()["linestyle"] = "-"
+    ui.get_model_plot_prefs()["linestyle"] = "solid"
+
+    assert ui.get_data_plot_prefs()["linestyle"] == "-"
+    assert ui.get_model_plot_prefs()["linestyle"] == "solid"
+
+    # Reset the chosen plot backend.
+    #
+    ui.set_plot_backend(sherpa.plot.backend.name)
+
+    # Check back to the original.
+    #
+    check_start()
+
+
+def test_when_reset_backend_settings_clear_datapha(clean_astro_ui, all_plot_backends):
+    """Check settings are reset when the backend is reset.
+
+    We check the linestyle setting.
+
+    Since the data/model prefs can depend on the data (defaulting
+    to Data1D) this tests when a DataPHA dataset is loaded.
+
+    """
+
+    ui.dataspace1d(1, 10, dstype=ui.DataPHA)
+
+    def check_start():
+        assert ui.get_data_plot_prefs()["linestyle"] == "None"
+        assert ui.get_model_plot_prefs()["linestyle"] == "solid"
+
+    check_start()
+
+    ui.get_data_plot_prefs()["linestyle"] = "-"
+    ui.get_model_plot_prefs()["linestyle"] = "dashed"
+
+    assert ui.get_data_plot_prefs()["linestyle"] == "-"
+    assert ui.get_model_plot_prefs()["linestyle"] == "dashed"
+
+    # Reset the chosen plot backend.
+    #
+    ui.set_plot_backend(sherpa.plot.backend.name)
+
+    # Check back to the original.
+    #
+    check_start()
