@@ -34,6 +34,7 @@ from sherpa import get_config
 import sherpa.all
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
+from sherpa.plot import set_backend
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -857,6 +858,25 @@ class Session(NoNewAttributesAfterInit):
             'model_component': sherpa.image.ComponentModelImage(),
             'source_component': sherpa.image.ComponentSourceImage()
         }
+
+    def set_plot_backend(self, backend):
+        """Change the plot backend.
+
+        This will reset any plot structures, such as that returned by
+        get_data_plot.
+
+        Parameters
+        ----------
+        backend : str
+            The name of the plot backend.
+
+        """
+
+        set_backend(backend)
+
+        # Re-create all the plot objects
+        self._set_plot_types()
+        self._set_contour_types()
 
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.
