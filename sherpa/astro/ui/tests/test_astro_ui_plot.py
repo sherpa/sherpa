@@ -1465,7 +1465,7 @@ def test_pha1_plot_order(clean_astro_ui, basic_pha1):
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", [ui.int_unc, ui.int_proj])
-def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc, all_plot_backends):
+def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc, all_plot_backends_astro_ui):
     plotfunc('pl.gamma')
 
 
@@ -1473,7 +1473,7 @@ def test_pha1_int_plot(clean_astro_ui, basic_pha1, plotfunc, all_plot_backends):
 @requires_data
 @pytest.mark.parametrize("plotfunc", [ui.reg_unc, ui.reg_proj])
 def test_pha1_reg_plot(clean_astro_ui, basic_pha1, plotfunc,
-                       all_plot_backends):
+                       all_plot_backends_astro_ui):
     plotfunc('pl.gamma', 'pl.ampl')
 
 
@@ -1488,7 +1488,7 @@ _img_plotfuncs = [ui.contour_data,
 
 @requires_fits
 @requires_data
-def test_img_contour_function(clean_astro_ui, basic_img, all_plot_backends):
+def test_img_contour_function(clean_astro_ui, basic_img, all_plot_backends_astro_ui):
     # can we call contour; do not try to be exhaustive
     ui.contour("data", "model", "source", "fit")
 
@@ -1527,7 +1527,7 @@ def test_img_contour_function_kwarg(clean_astro_ui, basic_img):
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", _img_plotfuncs)
-def test_img_contour(clean_astro_ui, basic_img, plotfunc, all_plot_backends):
+def test_img_contour(clean_astro_ui, basic_img, plotfunc, all_plot_backends_astro_ui):
     plotfunc()
 
 
@@ -2011,7 +2011,7 @@ def test_get_plot_prefs_allows_bkg_id(ptype, clean_astro_ui):
 
 @requires_fits
 @requires_data
-def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1, all_plot_backends):
+def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1, all_plot_backends_astro_ui):
     """Does get_model_plot register filters correctly?
 
     If there is an ignored range within a model, is it ignored?
@@ -2158,7 +2158,7 @@ def validate_flux_histogram(fhist, energy):
                           (False, ui.plot_photon_flux, ui.get_photon_flux_hist)])
 @pytest.mark.parametrize("correlated", [False, True])
 def test_pha1_plot_foo_flux(energy, plotfunc, getfunc, correlated,
-                            clean_astro_ui, basic_pha1, all_plot_backends):
+                            clean_astro_ui, basic_pha1, all_plot_backends_astro_ui):
     """Can we call plot_energy/photon_flux and then the get_ func (recalc=False)
 
     We extend the basic_pha1 test by including an XSPEC
@@ -2234,7 +2234,7 @@ def test_pha1_plot_foo_flux_recalc(energy, plotfunc, getfunc, clean_astro_ui,
                                             (False, ui.get_photon_flux_hist)])
 @pytest.mark.parametrize("correlated", [False, True])
 def test_pha1_get_foo_flux_hist(energy, getfunc, correlated, clean_astro_ui,
-                                basic_pha1, all_plot_backends):
+                                basic_pha1, all_plot_backends_astro_ui):
     """Can we call get_energy/photon_flux_hist?
 
     See test_pha1_plot_foo_flux.
@@ -3289,7 +3289,7 @@ def test_pha1_bkg_fit_plot_recalc(clean_astro_ui, make_data_path):
 
 @requires_fits
 @requires_data
-def test_pha1_plot_multiple_args(clean_astro_ui, basic_pha1, all_plot_backends):
+def test_pha1_plot_multiple_args(clean_astro_ui, basic_pha1, all_plot_backends_astro_ui):
     """Check plot('bkg', 1, 1, 'bkg', 1, 2)
 
     The dataid is actually 'tst', and the way we check
@@ -4381,7 +4381,7 @@ def test_1380_plot(coord, make_data_path, clean_astro_ui):
     ui.contour_data()
 
 
-def test_when_reset_backend_settings_clear_nodata(clean_astro_ui, all_plot_backends):
+def test_when_reset_backend_settings_clear_nodata(clean_astro_ui, all_plot_backends_astro_ui):
     """Check settings are reset when the backend is reset.
 
     We check the linestyle setting.
@@ -4412,7 +4412,7 @@ def test_when_reset_backend_settings_clear_nodata(clean_astro_ui, all_plot_backe
     check_start()
 
 
-def test_when_reset_backend_settings_clear_datapha(clean_astro_ui, all_plot_backends):
+def test_when_reset_backend_settings_clear_datapha(clean_astro_ui, all_plot_backends_astro_ui):
     """Check settings are reset when the backend is reset.
 
     We check the linestyle setting.
