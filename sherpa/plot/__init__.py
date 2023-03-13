@@ -55,7 +55,7 @@ Creating a plot
 The simplest approach is to use the `sherpa_plot` context manager::
 
     with sherpa_plot():
-        # Now call the plot/overplot or contor/overcontour methods
+        # Now call the plot/overplot or contour/overcontour methods
         obj.plot()
 
 This handles setting up the backend, handles any error handling,
@@ -64,7 +64,7 @@ and then ends the session. It is equivalent to::
     from sherpa import plot
     try:
         plot.backend.begin()
-        # Now call the plot/overplot or contor/overcontour methods
+        # Now call the plot/overplot or contour/overcontour methods
         obj.plot()
     except:
         plot.backend.exceptions()
