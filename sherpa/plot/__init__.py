@@ -45,10 +45,12 @@ from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 # but modules are not discovered by itself. Entrypoints would solve this problem
 # but the current implementation does not have this capability.
 # See docstring of sherpa.plot.backends.MetaBaseBackend for details.
-try:
-    import sherpa.plot.pylab_backend
-except ImportError:
-    pass
+#
+for name in ["pylab"]:
+    try:
+        importlib.import_module(f"sherpa.plot.{name}_backend")
+    except ImportError:
+        pass
 
 config = ConfigParser()
 config.read(get_config())
