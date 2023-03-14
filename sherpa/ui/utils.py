@@ -385,6 +385,97 @@ def plot_objects(plotobjs, clearwindow=True, overplot=False, **kwargs):
             oplot = True
 
 
+def plot_joint_objects(jointplot, plot1s, plot2s, overplot=False, clearwindow=False,
+                       **kwargs):
+    """Handle joint plots (fit and a secondary plot)
+
+    TODO: what should overplot/clearwindow default to?
+    """
+
+    with sherpa_plot():
+
+        jointplot.reset()
+
+        # Plot the first pair separately.
+        #
+        p1 = plot1s.pop(0)
+        p2 = plot2s.pop(0)
+
+        # Ensure we have a consistent scaling for the X axes.
+        #
+        # The existing code (based on matplotlib) seems to select a logarithmic
+        # X axis if any of
+        #     p1.dataplot, p1.modelplot, p2
+        # have xlog set (for example, calling set_xlog('resid')). This may be
+        # "accidental", or it's because the X axes of the two plots are meant
+        # to be the same.
+        #
+        # Note that the plot1s and plot2s arrays are assumed to be copies of
+        # the data structures, so they can be changed without worrying about
+        # accidentally changing the stored data.
+        #
+        xlog = get_plot_prefs(p1.dataplot)['xlog'] or \
+            get_plot_prefs(p1.modelplot)['xlog']
+
+        oldxlog = p2.plot_prefs['xlog']
+
+        # TODO: do we need to worry about this being histo_prefs?
+        #
+        if xlog:
+            p2.plot_prefs['xlog'] = xlog
+
+        jointplot.plottop(p1, overplot=overplot, clearwindow=clearwindow,
+                          **kwargs)
+        jointplot.plotbot(p2, overplot=overplot, clearwindow=clearwindow,
+                          **kwargs)
+
+        for p1, p2 in zip(plot1s, plot2s):
+            if xlog:
+                p2.plot_prefs['xlog'] = xlog
+
+            jointplot.plottop(p1, overplot=True, clearwindow=False, **kwargs)
+            jointplot.plotbot(p2, overplot=True, clearwindow=False, **kwargs)
+
+
+def get_plot_objects(ids, getfunc, recalc=True):
+    """Access the plot objects.
+
+    Parameters
+    ----------
+    ids : int or str or sequence of int or str or None
+        The dataset identifier or identifiers.
+    getfunc : callable
+        Given an id and the recalc parameter returns a plot object.
+    recalc : bool, optional
+        Should the plot object be recalculated or do we use the
+        previous object?
+
+    Returns
+    -------
+    plots : list of Plot objects
+
+    Notes
+    -----
+    Should recalc be True when ids is a sequence not a scalar?
+
+    """
+
+    # If ids is None then we return [None] but getfunc should be able
+    # to handle id=None.
+    #
+    idvals = ids if is_iterable(ids) else [ids]
+
+    # Should we clear the title from the first plot when multiple
+    # plots are present?
+    #
+    plots = []
+    for idval in idvals:
+        plot = getfunc(id=idval, recalc=recalc)
+        plots.append(copy.deepcopy(plot))
+
+    return plots
+
+
 def contour_object(plotobj, **kwargs):
     """Display a plot object
 
@@ -13312,20 +13403,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if is_iterable(id):
-            idvals = id
-        else:
-            idvals = [self._fix_id(id)]
-
-        # Should we clear the title from the first plot when multiple
-        # plots are present?
-        #
-        plots = []
-        for idval in idvals:
-            # TODO: replot should probably be False when idvals is a sequence
-            plot = self.get_data_plot(idval, recalc=not replot)
-            plots.append(copy.deepcopy(plot))
-
+        plots = get_plot_objects(id, self.get_data_plot, recalc=not replot)
         plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
                      **kwargs)
 
@@ -13410,20 +13488,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if is_iterable(id):
-            idvals = id
-        else:
-            idvals = [self._fix_id(id)]
-
-        # Should we clear the title from the first plot when multiple
-        # plots are present?
-        #
-        plots = []
-        for idval in idvals:
-            # TODO: replot should probably be False when idvals is a sequence
-            plot = self.get_model_plot(idval, recalc=not replot)
-            plots.append(copy.deepcopy(plot))
-
+        plots = get_plot_objects(id, self.get_model_plot, recalc=not replot)
         plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
                      **kwargs)
 
@@ -13752,20 +13817,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        if is_iterable(id):
-            idvals = id
-        else:
-            idvals = [self._fix_id(id)]
-
-        # Should we clear the title from the first plot when multiple
-        # plots are present?
-        #
-        plots = []
-        for idval in idvals:
-            # TODO: replot should probably be False when idvals is a sequence
-            plot = self.get_fit_plot(idval, recalc=not replot)
-            plots.append(copy.deepcopy(plot))
-
+        plots = get_plot_objects(id, self.get_fit_plot, recalc=not replot)
         plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
                      **kwargs)
 
@@ -13781,7 +13833,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int or str, or sequence of int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -13847,9 +13899,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_resid_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        plots = get_plot_objects(id, self.get_resid_plot, recalc=not replot)
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     def plot_chisqr(self, id=None, replot=False, overplot=False,
                     clearwindow=True, **kwargs):
@@ -13908,9 +13960,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_chisqr_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        plots = get_plot_objects(id, self.get_chisqr_plot, recalc=not replot)
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     def plot_delchi(self, id=None, replot=False, overplot=False,
                     clearwindow=True, **kwargs):
@@ -13986,9 +14038,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_delchi_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        plots = get_plot_objects(id, self.get_delchi_plot, recalc=not replot)
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     def plot_ratio(self, id=None, replot=False, overplot=False,
                    clearwindow=True, **kwargs):
@@ -14062,9 +14114,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_ratio_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        plots = get_plot_objects(id, self.get_ratio_plot, recalc=not replot)
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     def plot_psf(self, id=None, replot=False, overplot=False,
                  clearwindow=True, **kwargs):
@@ -14121,9 +14173,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_psf_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        plots = get_plot_objects(id, self.get_psf_plot, recalc=not replot)
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     def plot_kernel(self, id=None, replot=False, overplot=False,
                     clearwindow=True, **kwargs):
@@ -14182,9 +14234,9 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_kernel_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        plots = get_plot_objects(id, self.get_kernel_plot, recalc=not replot)
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     def _jointplot2(self, plot1, plot2,
                     overplot=False, clearwindow=True, **kwargs):
@@ -14205,34 +14257,7 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        self._jointplot.reset()
-
-        with sherpa_plot():
-            # Note: the user preferences are set to both plots
-            #
-            self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow, **kwargs)
-
-            # The two plots are intended to have the same scaling
-            # on the X axis (log or linear), and the approach is
-            # to use log if either of the components of the top
-            # plot (i.e. it is assumed that this is a fit plot)
-            # use a log scale.
-            #
-            # This is complicated by the need to access the individual
-            # plot preferences of plot1, and then check for different
-            # types of plot objects.
-            #
-            oldval = plot2.plot_prefs['xlog']
-            dprefs = get_plot_prefs(plot1.dataplot)
-            mprefs = get_plot_prefs(plot1.modelplot)
-
-            if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
-
-            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
-
-            plot2.plot_prefs['xlog'] = oldval
+        raise RuntimeError("THIS SHOULD NOT BE CALLED ANYMORE")
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True, **kwargs):
@@ -14319,11 +14344,12 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_resid_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1s = get_plot_objects(id, self.get_fit_plot, recalc=recalc)
+        plot2s = get_plot_objects(id, self.get_resid_plot, recalc=recalc)
+        plot_joint_objects(self._jointplot, plot1s, plot2s,
+                           overplot=overplot, clearwindow=clearwindow,
+                           **kwargs)
 
     def plot_fit_ratio(self, id=None, replot=False, overplot=False,
                        clearwindow=True, **kwargs):
@@ -14408,11 +14434,12 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_ratio_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1s = get_plot_objects(id, self.get_fit_plot, recalc=recalc)
+        plot2s = get_plot_objects(id, self.get_ratio_plot, recalc=recalc)
+        plot_joint_objects(self._jointplot, plot1s, plot2s,
+                           overplot=overplot, clearwindow=clearwindow,
+                           **kwargs)
 
     def plot_fit_delchi(self, id=None, replot=False, overplot=False,
                         clearwindow=True, **kwargs):
@@ -14498,11 +14525,12 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plot1obj = self.get_fit_plot(id, recalc=not replot)
-        plot2obj = self.get_delchi_plot(id, recalc=not replot)
-        self._jointplot2(plot1obj, plot2obj,
-                         overplot=overplot, clearwindow=clearwindow,
-                         **kwargs)
+        recalc = not replot
+        plot1s = get_plot_objects(id, self.get_fit_plot, recalc=recalc)
+        plot2s = get_plot_objects(id, self.get_delchi_plot, recalc=recalc)
+        plot_joint_objects(self._jointplot, plot1s, plot2s,
+                           overplot=overplot, clearwindow=clearwindow,
+                           **kwargs)
 
     #
     # Statistical plotting routines
