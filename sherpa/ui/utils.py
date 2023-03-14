@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections.abc import Iterable
 from configparser import ConfigParser
 import copy
 import copyreg as copy_reg
@@ -318,6 +319,70 @@ def plot_object(plotobj, **kwargs):
 
     with sherpa_plot():
         plotobj.plot(**kwargs)
+
+
+def is_iterable(val):
+    """Do we consider val to be a container?
+
+    We do not want to treat a string as an iterable.
+
+    """
+    return not isinstance(val, str) and isinstance(val, Iterable)
+
+
+def plot_objects(plotobjs, clearwindow=True, overplot=False, **kwargs):
+    """Display multiple plot objects with shared options.
+
+    The options - given as kwargs - are applied to all the plots
+    for scalar values, and per-plot when the value is an iterable.
+    In the latter case the number of values must match the number
+    of plot objects.
+
+    Parameters
+    ----------
+    plotobjs
+        The plots to display
+    **kwargs
+        The arguments to the plot method of plotobj.
+
+    """
+
+    nplots = len(plotobjs)
+
+    # Allow kwargs to be specified per-plot. This is done by
+    # checking if any value is an iterable (and not a string) and
+    # extracting a single value per plot.
+    #
+    if any(is_iterable(val) for val in kwargs.values()):
+        # Need these {} to be separate which means we can not just say
+        #    kwstore = [{}] * nplots
+        #
+        kwstore = []
+        for i in range(nplots):
+            kwstore.append({})
+
+        for key, val in kwargs.items():
+            if is_iterable(val):
+                if len(val) != nplots:
+                    raise RuntimeError(f"TBD: got {len(val)} expected {nplots}")
+
+                for store, v in zip(kwstore, val):
+                    store[key] = v
+
+            else:
+                for store in kwstore:
+                    store[key] = val
+
+    else:
+        kwstore = [kwargs] * nplots
+
+    cwin = clearwindow
+    oplot = overplot
+    with sherpa_plot():
+        for plotobj, store in zip(plotobjs, kwstore):
+            plotobj.plot(clearwindow=cwin, overplot=oplot, **store)
+            cwin = False
+            oplot = True
 
 
 def contour_object(plotobj, **kwargs):
@@ -13159,7 +13224,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int or str, or sequence of int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
@@ -13247,9 +13312,23 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_data_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        if is_iterable(id):
+            idvals = id
+        else:
+            idvals = [self._fix_id(id)]
+
+        # Should we clear the title from the first plot when multiple
+        # plots are present?
+        #
+        plots = []
+        for idval in idvals:
+            # TODO: replot should probably be False when idvals is a sequence
+            plot = self.get_data_plot(idval, recalc=not replot)
+            plots.append(copy.deepcopy(plot))
+
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
+
 
     # DOC-NOTE: also in sherpa.astro.utils
     #  - we include a description of the DataPHA handling here
@@ -13265,7 +13344,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int or str, or sequence of int or str, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         replot : bool, optional
@@ -13331,9 +13410,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_model_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        if is_iterable(id):
+            idvals = id
+        else:
+            idvals = [self._fix_id(id)]
+
+        # Should we clear the title from the first plot when multiple
+        # plots are present?
+        #
+        plots = []
+        for idval in idvals:
+            # TODO: replot should probably be False when idvals is a sequence
+            plot = self.get_model_plot(idval, recalc=not replot)
+            plots.append(copy.deepcopy(plot))
+
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
@@ -13586,7 +13678,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int or str, or sequence of int or str, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
         replot : bool, optional
@@ -13660,9 +13752,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self.get_fit_plot(id, recalc=not replot)
-        plot_object(plotobj, overplot=overplot, clearwindow=clearwindow,
-                    **kwargs)
+        if is_iterable(id):
+            idvals = id
+        else:
+            idvals = [self._fix_id(id)]
+
+        # Should we clear the title from the first plot when multiple
+        # plots are present?
+        #
+        plots = []
+        for idval in idvals:
+            # TODO: replot should probably be False when idvals is a sequence
+            plot = self.get_fit_plot(idval, recalc=not replot)
+            plots.append(copy.deepcopy(plot))
+
+        plot_objects(plots, overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     def plot_resid(self, id=None, replot=False, overplot=False,
                    clearwindow=True, **kwargs):
