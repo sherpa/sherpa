@@ -369,16 +369,14 @@ These routines are designed to simplify the process but are not
 guaranteed to handle all cases (as the model.dat file syntax is not
 strongly specified).
 
-As an example of their use, the following output is from before
-XSPEC 12.12.0 (released in HEASOFT 6.29) support was added::
+As an example of their use (the output will depend on the current
+Sherpa and XSPEC versions)::
 
-  % ./scripts/check_xspec_update.py ~/local/heasoft-6.29/spectral/manager/model.dat | grep support
-  We do not support grbjet (Add; xsgrbjet)
+  % ./scripts/check_xspec_update.py ~/local/heasoft-6.31/spectral/manager/model.dat | grep support
   We do not support smaug (Add; xsmaug)
-  We do not support vvwdem (Add; vvwDem)
-  We do not support vwdem (Add; vwDem)
-  We do not support wdem (Add; wDem)
-  We do not support zxipab (Mul; zxipab)
+  We do not support polconst (Mul; polconst)
+  We do not support pollin (Mul; pollin)
+  We do not support polpow (Mul; polpow)
   We do not support pileup (Acn; pileup)
 
 .. note::
@@ -387,15 +385,39 @@ XSPEC 12.12.0 (released in HEASOFT 6.29) support was added::
    on the list of models that could be added to
    :py:mod:`sherpa.astro.xspec`
 
-The code needed to add support for the wdem module can be found with::
+Although the ``wdem`` model is included in the XSPEC models, here is
+how the ``add_xspec_model.py`` script can be used for those models
+noted as not being supported::
 
-  % ./scripts/add_xspec_model.py ~/local/heasoft-6.29/spectral/manager/model.dat wdem
+  % ./scripts/add_xspec_model.py ~/local/heasoft-6.31/spectral/manager/model.dat wdem
   # C++ code for sherpa/astro/xspec/src/_xspec.cc
+
+  // Includes
+
+  #include <iostream>
+
+  #include <xsTypes.h>
+  #include <XSFunctions/Utilities/funcType.h>
+
+  #define XSPEC_12_12_0
+  #define XSPEC_12_12_1
+  #define XSPEC_12_13_0
+
+  #include "sherpa/astro/xspec_extension.hh"
 
   // Defines
 
-  extern "C" {
+  void cppModelWrapper(const double* energy, int nFlux, const double* params,
+    int spectrumNumber, double* flux, double* fluxError, const char* initStr,
+    int nPar, void (*cppFunc)(const RealArray&, const RealArray&,
+    int, RealArray&, RealArray&, const string&));
 
+  extern "C" {
+    XSCCall wDem;
+    void C_wDem(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {
+      const size_t nPar = 8;
+      cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, wDem);
+    }
   }
 
   // Wrapper
@@ -403,6 +425,21 @@ The code needed to add support for the wdem module can be found with::
   static PyMethodDef Wrappers[] = {
     XSPECMODELFCT_C_NORM(C_wDem, 8),
     { NULL, NULL, 0, NULL }
+  };
+
+  // Module
+
+  static struct PyModuleDef wrapper_module = {
+    PyModuleDef_HEAD_INIT,
+    "_models",
+    NULL,
+    -1,
+    Wrappers,
+  };
+
+  PyMODINIT_FUNC PyInit__models(void) {
+    import_array();
+    return PyModule_Create(&wrapper_module);
   }
 
 
@@ -416,7 +453,7 @@ The code needed to add support for the wdem module can be found with::
       ----------
       Tmax
       beta
-      p
+      inv_slope
       nH
       abundanc
       Redshift
@@ -427,21 +464,26 @@ The code needed to add support for the wdem module can be found with::
       _calc = _models.C_wDem
 
       def __init__(self, name='wdem'):
-          self.Tmax = Parameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
-          self.beta = Parameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
-          self.p = Parameter(name, 'p', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
-          self.nH = Parameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
-          self.abundanc = Parameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-          self.Redshift = Parameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
-          self.switch = Parameter(name, '_switch', 2, alwaysfrozen=True)
+          self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+          self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+          self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+          self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+          self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+          self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+          self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
           self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-          XSAdditiveModel.__init__(self, name, (self.Tmax,self.beta,self.p,self.nH,self.abundanc,self.Redshift,self.switch,self.norm))
+          XSAdditiveModel.__init__(self, name, (self.Tmax,self.beta,self.inv_slope,self.nH,self.abundanc,self.Redshift,self.switch,self.norm))
 
 
 This code then can then be added to
 ``sherpa/astro/xspec/src/_xspec.cc`` and
 ``sherpa/astro/xspec/__init__.py`` and then refined so that the tests
 pass.
+
+.. note::
+   The outut from ``add_xspec_model.py`` is designed for XSPEC user
+   models, and so contains output that either is not needed or is
+   already included in the ``_xspec.cc`` file.
 
 Updating the code
 ^^^^^^^^^^^^^^^^^
@@ -470,6 +512,12 @@ available.
 	     setting in their ``setup.cfg`` file (as attempts to identify
 	     this value automatically were not successful). This version is
 	     the value used in the checks in ``helpers/xspec_config.py``.
+
+#. Add the new version to ``sherpa/astro/utils/xspec.py``
+
+   The ``models_to_compiled`` routine also contains a ``SUPPORTED_VERSIONS``
+   list which should be kept in sync with the version in
+   ``xspec_config.py``.
 
 #. Attempt to build the XSPEC interface with::
 

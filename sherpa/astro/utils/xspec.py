@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2013, 2014, 2015, 2016, 2020, 2021
+#  Copyright (C) 2012, 2013, 2014, 2015, 2016, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -36,8 +36,10 @@ References
 
 """
 
-from collections import Counter, namedtuple
+from collections import Counter
+from dataclasses import dataclass
 import logging
+import re
 import string
 
 
@@ -45,6 +47,17 @@ __all__ = ("parse_xspec_model_description", "create_xspec_code")
 
 
 warning = logging.getLogger(__name__).warning
+
+
+@dataclass
+class XSPECcode:
+    """The code components needed to compile the XSPEC user model."""
+
+    python: str
+    """The Python code"""
+
+    compiled: str
+    """The C++ code"""
 
 
 class ModelDefinition():
@@ -101,9 +114,14 @@ class ModelDefinition():
         #
         # The use of strings for the language is not ideal; really
         # should use some form of an enumeration.
+        #
+        # Note that FORTRAN function names are converted to lower case
+        # as the name should be case insensitive but I found some
+        # issues when mixed-case was used.
+        #
         if self.funcname.startswith('F_'):
             self.language = 'Fortran - double precision'
-            self.funcname = self.funcname[2:]
+            self.funcname = self.funcname[2:].lower()
         elif self.funcname.startswith('c_'):
             self.language = 'C style'
             self.funcname = self.funcname[2:]
@@ -112,6 +130,7 @@ class ModelDefinition():
             self.funcname = self.funcname[2:]
         else:
             self.language = 'Fortran - single precision'
+            self.funcname = self.funcname.lower()
 
         if initString is not None and self.language.startswith('F'):
             initString = None
@@ -811,18 +830,23 @@ def simple_wrap(modelname, mdl):
     else:
         pstr = f"({','.join(parnames)})"
 
-    # warn about untested models?
-    nflags = len(mdl.flags)
-    if nflags > 0:
-        if mdl.flags[0] == 1:
-            out += f"{t2}warnings.warn('support for models like {mdl.clname.lower()} "
-            out += "(variances are calculated by the model) is untested.')\n"
-
-        if nflags > 1 and mdl.flags[1] == 1:
-            out += "{t2}warnings.warn('support for models like {mdl.clname.lower()} "
-            out += "(recalculated per spectrum) is untested.')\n"
-
     out += f"{t2}XS{modelname}.__init__(self, name, {pstr})\n"
+
+    nflags = len(mdl.flags)
+
+    # If the model needs to be recalculated-per-spectrum turn off the
+    # caching. This needs to be done after the parent class has been
+    # initalized.
+    #
+    if nflags > 1 and mdl.flags[1] == 1:
+        out += f"{t2}self._use_caching = False\n"
+
+    # warn about untested models?
+    #
+    if nflags > 0 and mdl.flags[0] == 1:
+        out += f"{t2}warnings.warn('support for models like xs{mdl.name.lower()} "
+        out += "(variances are calculated by the model) is untested.')\n"
+
     out += "\n"
     return out
 
@@ -936,31 +960,50 @@ def model_to_compiled(mdl):
 
     wrapcode += f'({funcname}, {len(mdl.pars)}),'
 
-    # Do we need to define this model? We assume we can use the same logic
-    # as for the XSPEC model library - we only need to define FORTRAN
-    # code.
-    #
-    # Do we need to include C style?
+    # Do we need to define this model? Originally this was only
+    # for FORTRAN routines but it may be worth just always
+    # declaring it.
     #
     defcode = ''
     if is_fortran:
-        defcode = f'  void {mdl.funcname}'
+        defcode = '  xs'
         if mdl.language == 'Fortran - single precision':
-            # Note add _ (assume this is needed)
-            defcode += '_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);'
+            defcode += "f77"
         elif mdl.language == 'Fortran - double precision':
-            # Note add _ (assume this is needed)
-            defcode += '_(double* ear, int* ne, double* param, int* ifl, double* photar, double* photer);'
+            defcode += "F77"
+        else:
+            raise RuntimeError(f"Internal error: {mdl.language}")
+
+        defcode += f"Call {mdl.funcname}_;"
+
+    elif mdl.language == "C++ style":
+        # Fake up the C++ wrapper as this does not seem to be done for
+        # us (not 100% sure about this but it seems to be necessary).
+        #
+        defcode = f'  XSCCall {mdl.funcname};\n'
+        defcode += f'  void C_{mdl.funcname}'
+        defcode += '(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {\n'
+        defcode += f'    const size_t nPar = {len(mdl.pars)};\n'
+        defcode += f'    cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, {mdl.funcname});\n'
+        defcode += '  }'
+
+    elif mdl.language == "C style":
+        defcode = f"  xsccCall {mdl.funcname};"
+
+    else:
+        raise RuntimeError(f"Internal error: {mdl.language}")
 
     return wrapcode, defcode
 
 
-def models_to_compiled(mdls):
+def models_to_compiled(mdls, name="_models"):
     """Return the C++ code needed to build the module.
 
     Parameters
     ----------
     mdls : list of ModelDefinition
+    name : str, optional
+        The name of the source / compiled model
 
     Returns
     -------
@@ -972,10 +1015,21 @@ def models_to_compiled(mdls):
     ValueError
         The model is unsupported by Sherpa.
 
+    Notes
+    -----
+    Comments are added before each section to make it easier to
+    identify (if post processing is needed). The sections are
+
+        // Includes
+        // Defines
+        // Wrapper
+        // Module
+
     """
 
     defcode = []
     wrapcode = []
+    has_cxx = False
     for mdl in mdls:
         w, d = model_to_compiled(mdl)
 
@@ -983,19 +1037,92 @@ def models_to_compiled(mdls):
         if d != '':
             defcode.append(d)
 
+        has_cxx |= (mdl.language == "C++ style")
+
     defcode = '\n'.join(defcode)
     wrapcode = '\n'.join(wrapcode)
 
-    out = '// Defines\n\n'
+    def marker(label):
+        # Ensure we have a consistent form for these markers
+        return f"// {label}\n\n"
+
+    # What includes are needed?
+    #
+    out = marker("Includes")
+    out += '#include <iostream>\n\n'
+    out += '#include <xsTypes.h>\n'
+    out += '#include <XSFunctions/Utilities/funcType.h>\n\n'
+
+    # The Sherpa/XSPEC interface uses a number of defines to control
+    # behavior. These should not be needed for user models, but set
+    # them up. Note that tey depend on the available XSPEC library,
+    # which means that this can only be run when XSPEC support is
+    # present (and the output will depend on the XSPEC model library
+    # in use).
+    #
+    from sherpa.astro import xspec
+    versionstr = xspec.get_xsversion()
+    match = re.search(r'^(\d+)\.(\d+)\.(\d+)', versionstr)
+    if match is None:
+        raise ValueError(f"Invalid XSPEC version string: {versionstr}")
+
+    # This needs to be kept in sync with helpers/xspec_config.py
+    #
+    SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1),
+                          (12, 13, 0)]
+
+    xspec_version = (int(match[1]), int(match[2]), int(match[3]))
+    for version in SUPPORTED_VERSIONS:
+        if xspec_version >= version:
+            major, minor, micro = version
+            out += f'#define XSPEC_{major}_{minor}_{micro}\n'
+
+    # The Sherpa extension includes.
+    #
+    out += '\n#include "sherpa/astro/xspec_extension.hh"\n\n'
+
+    out += marker("Defines")
+
+    # Do we need to define cppModelWrapper? For XSPEC 12.12.1/12.13.0
+    # we have to.
+    #
+    if has_cxx:
+        out += 'void cppModelWrapper(const double* energy, int nFlux, const double* params,\n'
+        out += '  int spectrumNumber, double* flux, double* fluxError, const char* initStr,\n'
+        out += '  int nPar, void (*cppFunc)(const RealArray&, const RealArray&,\n'
+        out += '  int, RealArray&, RealArray&, const string&));\n'
+        out += '\n'
+
     out += 'extern "C" {\n'
-    out += f'{defcode}\n}}\n\n// Wrapper\n\n'
+    out += f'{defcode}\n'
+    out += '}\n\n'
+
+    out += marker("Wrapper")
     out += 'static PyMethodDef Wrappers[] = {\n'
-    out += f'{wrapcode}'
-    out += '\n  { NULL, NULL, 0, NULL }\n}\n'
+    out += f'{wrapcode}\n'
+    out += '  { NULL, NULL, 0, NULL }\n'
+    out += '};\n\n'
+
+    # Now the Python module
+    #
+    out += marker("Module")
+    out += 'static struct PyModuleDef wrapper_module = {\n'
+    out += '  PyModuleDef_HEAD_INIT,\n'
+    out += f'  "{name}",\n'
+    out += '  NULL,\n'
+    out += '  -1,\n'
+    out += '  Wrappers,\n'
+    out += '};\n\n'
+
+    out += f'PyMODINIT_FUNC PyInit_{name}(void) {{\n'
+    out += '  import_array();\n'
+    out += '  return PyModule_Create(&wrapper_module);\n'
+    out += '}\n'
+
     return out
 
 
-def create_xspec_code(models):
+def create_xspec_code(models, name="_models"):
     """Create the Python classes and C++ code for the models.
 
     Create the code fragments needed to build the XSPEC interface
@@ -1004,12 +1131,13 @@ def create_xspec_code(models):
     Parameters
     ----------
     models : list of ModelDefiniton
+    name : str, optional
+        The name of the module.
 
     Returns
     -------
-    code : namedtuple
-        The code stored in a namedtuple with fields 'python' and
-        'compiled'.
+    code : XSPECcode
+        The code is accessible as the 'python' and 'compiled' fields.
 
     Notes
     -----
@@ -1068,8 +1196,6 @@ def create_xspec_code(models):
     if nmdl == 0:
         raise ValueError("No supported models were found!")
 
-    out = namedtuple('XSPECcode', ['python', 'compiled'])
-
-    out.python = "\n\n".join([model_to_python(mdl) for mdl in mdls])
-    out.compiled = models_to_compiled(mdls)
-    return out
+    python = "\n\n".join([model_to_python(mdl) for mdl in mdls])
+    compiled = models_to_compiled(mdls, name=name)
+    return XSPECcode(python=python, compiled=compiled)
