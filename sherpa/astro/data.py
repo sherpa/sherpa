@@ -1751,7 +1751,7 @@ must be an integer.""")
                             doc="""IDs of defined instrument responses (ARF/RMF pairs).
 
 If set, the identifiers must already exist, and any other responses
-will be removed. The identiers can be integers or strings.
+will be removed. The identifiers can be integers or strings.
 """)
 
     def _get_background_ids(self):
