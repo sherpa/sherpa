@@ -1628,9 +1628,6 @@ def test_warn_about_bgnd_subtracted_with_model(idval, clean_astro_ui, caplog):
 
     ui.subtract(idval)
 
-    # The hide_logging fixture has changed the loglevel so we need to
-    # change it here to make sure we see the warning.
-    #
     assert len(caplog.records) == 0
     sinfo = ui.get_stat_info()
 
@@ -1646,7 +1643,7 @@ def test_warn_about_bgnd_subtracted_with_model(idval, clean_astro_ui, caplog):
 
 
 @pytest.mark.parametrize("idval", [1, "x"])
-def test_warn_about_bgnd_ot_subtracted_no_model(idval, clean_astro_ui, caplog):
+def test_warn_about_bgnd_or_subtracted_no_model(idval, clean_astro_ui, caplog):
     """Check we get a warning message.
 
     We could check fit or get_stat_info.

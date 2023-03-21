@@ -8302,9 +8302,9 @@ class Session(NoNewAttributesAfterInit):
         raise RuntimeError("INTERNAL ERROR - this routine is no-longer used")
 
     def _get_fit_ids(self, id, otherids=None):
-        """Return the identifiers.
+        """Return the identifiers that will be used for a fit.
 
-        This does enforce that the dataset exists, but not that a
+        This does enforce that the dataset exists, but not that
         an associated model is present.
 
         Parameters
@@ -8382,7 +8382,7 @@ class Session(NoNewAttributesAfterInit):
         Parameters
         ----------
         id: int or str or None
-            If None then this simultaneously-fit all data.
+            If `None` then this fits all data simultaneously.
         otherids: sequence of int or str or None, or None
             When id is not None, the other identifiers to use.
 

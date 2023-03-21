@@ -2016,7 +2016,7 @@ def test_partially_set_bkg_models(idval, clean_astro_ui):
     #
     ui.set_source(idopt, ui.const1d.mdl)
 
-    # Ony set one of the background models
+    # Only set one of the background models
     ui.set_bkg_source(idopt, ui.const1d.bmdldn, bkg_id="down")
 
     emsg = f"^background model up for data set {idopt} has not been set$"
