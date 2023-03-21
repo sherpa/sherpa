@@ -10142,7 +10142,7 @@ class Session(sherpa.ui.utils.Session):
         Parameters
         ----------
         id: int or str or None
-            If None then this simultaneously-fit all data.
+            If None then this fits all data.
         otherids: sequence of int or str or None, or None
             When id is not None, the other identifiers to use.
 
@@ -10152,6 +10152,11 @@ class Session(sherpa.ui.utils.Session):
             Each tuple contains the dataset identifier, the data, and
             the model and - for backgrounds - the background
             identifier.
+
+        Raises
+        ------
+        IdentifierErr
+            If there are no datasets with an associated model.
 
         """
 
@@ -10201,6 +10206,30 @@ class Session(sherpa.ui.utils.Session):
         return out
 
     def _prepare_bkg_fit(self, id, otherids=()):
+        """Ensure we have all the requested background ids, datasets, and models.
+
+        Unlike _prepare_fit this is only for background datasets.
+
+        Parameters
+        ----------
+        id: int or str or None
+            If None then this fits all background data.
+        otherids: sequence of int or str or None, or None
+            When id is not None, the other identifiers to use.
+
+        Returns
+        -------
+        store : list of tuples
+            Each tuple contains the dataset identifier, the data, and
+            the model, and background identifier.
+
+        Raises
+        ------
+        IdentifierErr
+            If there are no background datasets with an associated
+            model.
+
+        """
 
         # This replicates some logic from super()._prepare_fit()
         #
@@ -10229,8 +10258,39 @@ class Session(sherpa.ui.utils.Session):
 
         return out
 
-
     def _get_bkg_fit(self, id, otherids=(), estmethod=None, numcores=1):
+        """Create the fit object for the given identifiers.
+
+        Given the identifiers (the id and otherids arguments), find
+        the background data and models and return a Fit object.
+
+        Parameters
+        ----------
+        id : int or str or None
+            The identifier to fit. A value of None means all available
+            background datasets with models.
+        otherids : sequence of int or str
+            Additional identifiers to fit. Ignored when id is None.
+        estmethod : `sherpa.estmethods.EstMethod` or None
+            Passed to the Fit object.
+        numcores : int, optional
+            The number of CPU cores to use (this is used when
+            evaluating the models for multiple data sets).
+
+        Returns
+        -------
+        ids, fit : tuple, `sherpa.fit.Fit` instance
+            The datasets used (it may not include all the values from
+            id and otherids as those background datasets without
+            associated models will be skipped) and the fit object.
+
+        Raises
+        ------
+        IdentifierErr
+            If there are no background datasets with an associated
+            model.
+
+        """
 
         store = self._prepare_bkg_fit(id, otherids)
         return self._get_fit_obj(store, estmethod, numcores=numcores)

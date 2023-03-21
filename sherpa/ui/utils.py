@@ -8304,8 +8304,8 @@ class Session(NoNewAttributesAfterInit):
     def _get_fit_ids(self, id, otherids=None):
         """Return the identifiers that will be used for a fit.
 
-        This does enforce that the dataset exists, but not that
-        an associated model is present.
+        This routine ensures that the dataset exists, but it does not
+        require that an associated model is present.
 
         Parameters
         ----------
@@ -8342,6 +8342,34 @@ class Session(NoNewAttributesAfterInit):
         return out
 
     def _get_fit_obj(self, store, estmethod, numcores=1):
+        """Create the fit object given the data and models.
+
+        Parameters
+        ----------
+        store : list of tuples
+            The data to be fit: the first entry is the identifier, the
+            second the data object, and the third the model object.
+        estmethod : `sherpa.estmethods.EstMethod` or None
+            Passed to the Fit object.
+        numcores : int, optional
+            The number of CPU cores to use (this is used when
+            evaluating the models for multiple data sets).
+
+        Returns
+        -------
+        ids, fit : tuple, `sherpa.fit.Fit` instance
+            The datasets used and the fit object.
+
+        Notes
+        -----
+
+        The data needed is passed around as a list of tuples as it
+        makes it easy to pass in extra information in derived classes.
+        It could be updated to pass around an object that exposes
+        given fields (e.g. idval, dataset, and model) but at the
+        moment it is not needed.
+
+        """
 
         if not self._current_method.name == 'gridsearch':
             for s in store:
@@ -8392,6 +8420,11 @@ class Session(NoNewAttributesAfterInit):
             Each tuple contains the dataset identifier, the data, and
             the model.
 
+        Raises
+        ------
+        IdentifierErr
+            If there are no datasets with an associated model.
+
         """
 
         datastore = self._get_fit_ids(id, otherids)
@@ -8415,11 +8448,59 @@ class Session(NoNewAttributesAfterInit):
         return out
 
     def _get_fit(self, id, otherids=(), estmethod=None, numcores=1):
+        """Create the fit object for the given identifiers.
+
+        Given the identifiers (the id and otherids arguments), find
+        the data and models and return a Fit object.
+
+        Parameters
+        ----------
+        id : int or str or None
+            The identifier to fit. A value of None means all available
+            datasets with models.
+        otherids : sequence of int or str
+            Additional identifiers to fit. Ignored when id is None.
+        estmethod : `sherpa.estmethods.EstMethod` or None
+            Passed to the Fit object.
+        numcores : int, optional
+            The number of CPU cores to use (this is used when
+            evaluating the models for multiple data sets).
+
+        Returns
+        -------
+        ids, fit : tuple, `sherpa.fit.Fit` instance
+            The datasets used (it may not include all the values from
+            id and otherids as those datasets without associated
+            models will be skipped) and the fit object.
+
+        Raises
+        ------
+        IdentifierErr
+            If there are no datasets with an associated model.
+
+        """
 
         store = self._prepare_fit(id, otherids)
         return self._get_fit_obj(store, estmethod, numcores)
 
     def _get_stat_info(self):
+        """Return the stat info structures.
+
+        For each identifier with a dataset and model, calculate the
+        current statistics (stored in a sherpa.fit.StatInfoResults
+        object), and then - when there are multiple such identifiers -
+        a combined result.
+
+        Returns
+        -------
+        stats : list of `sherpa.Fit.StatInfoResults`
+
+        Raises
+        ------
+        IdentifierErr
+            If there are no datasets with an associated model.
+
+        """
 
         store = self._prepare_fit(None)
 
