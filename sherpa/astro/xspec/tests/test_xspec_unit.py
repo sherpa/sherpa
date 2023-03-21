@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,7 +24,6 @@
 import copy
 import logging
 import os
-from tempfile import NamedTemporaryFile, gettempdir
 
 import pytest
 
@@ -368,8 +367,18 @@ def test_abund_change_string():
                            'grsa', 'wilm')
 
 
+def write_elems(path, elems):
+    """Write out the values of the dict to the file.
+
+    This uses the ordering of the keys in the dict.
+    """
+
+    out = "\n".join([f"{elems[elem]}" for elem in elems])
+    path.write_text(out)
+
+
 @requires_xspec
-def test_abund_change_file():
+def test_abund_change_file(tmp_path):
     """Can we change the abundance setting: file
 
     This test hard-codes the number of elements expected in the
@@ -380,15 +389,12 @@ def test_abund_change_file():
 
     elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)}
 
-    tfh = NamedTemporaryFile(mode='w', suffix='.xspec')
-    for n in ELEMENT_NAMES:
-        tfh.write("{}\n".format(elems[n]))
-
-    tfh.flush()
+    outfile = tmp_path / "test.xspec"
+    write_elems(outfile, elems)
 
     oval = xspec.get_xsabund()
     try:
-        xspec.set_xsabund(tfh.name)
+        xspec.set_xsabund(str(outfile))
 
         abund = xspec.get_xsabund()
         out = {n: xspec.get_xsabund(n)
@@ -400,6 +406,57 @@ def test_abund_change_file():
     assert abund == 'file'
     for n in ELEMENT_NAMES:
         assert out[n] == pytest.approx(elems[n])
+
+
+@pytest.mark.parametrize('reset', [False, True])
+@requires_xspec
+def test_abund_change_file_twice(reset, tmp_path):
+    """Can we change the abundance setting: multiple files #1240
+    It's not clear how to trigger the behavior in #1240
+    hence the reset option. Could it depend on XSPEC version?
+    """
+
+    from sherpa.astro import xspec
+
+    # This test relies on the ordering of the dict following the order
+    # that they were added.
+    #
+    elems1 = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)}
+    elems2 = {n: 1 + i * 0.1 for i, n in enumerate(ELEMENT_NAMES)}
+
+    f1 = tmp_path / "v1.xspec"
+    f2 = tmp_path / "v2.xspec"
+
+    def textify(xs):
+        return "\n".join([f"{xs[x]}" for x in xs])
+
+    write_elems(f1, elems1)
+    write_elems(f2, elems2)
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund(str(f1))
+        abund1 = xspec.get_xsabund()
+        out1 = {n: xspec.get_xsabund(n)
+                for n in ELEMENT_NAMES}
+
+        if reset:
+            xspec.set_xsabund('angr')
+            assert xspec.get_xsabund() == 'angr'
+
+        xspec.set_xsabund(str(f2))
+        abund2 = xspec.get_xsabund()
+        out2 = {n: xspec.get_xsabund(n)
+                for n in ELEMENT_NAMES}
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert abund1 == 'file'
+    assert abund2 == 'file'
+    for n in ELEMENT_NAMES:
+        assert out1[n] == pytest.approx(elems1[n])
+        assert out2[n] == pytest.approx(elems2[n])
 
 
 @requires_xspec
@@ -477,7 +534,7 @@ def test_cosmo_change():
 
 
 @requires_xspec
-def test_path_manager_change():
+def test_path_manager_change(tmp_path):
     """Can we change the manager-path setting?
     """
 
@@ -486,8 +543,7 @@ def test_path_manager_change():
     validate_xspec_setting(xspec.get_xspath_manager,
                            xspec.set_xspath_manager,
                            '/dev/null',
-                           gettempdir())
-
+                           str(tmp_path))
 
 # Note that the XSPEC state is used in test_xspec.py, but only
 # to save/restore the state after each test. There is no
