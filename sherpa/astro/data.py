@@ -1677,8 +1677,8 @@ class DataPHA(Data1D):
         else:
             raise DataErr('bad', 'quantity', val)
 
-        for id in self.background_ids:
-            bkg = self.get_background(id)
+        for bkg_id in self.background_ids:
+            bkg = self.get_background(bkg_id)
             if bkg.get_response() != (None, None) or \
                (bkg.bin_lo is not None and bkg.bin_hi is not None):
                 bkg.units = units
@@ -1693,8 +1693,8 @@ class DataPHA(Data1D):
 
     def _set_rate(self, val):
         self._rate = bool_cast(val)
-        for id in self.background_ids:
-            self.get_background(id).rate = val
+        for bkg_id in self.background_ids:
+            self.get_background(bkg_id).rate = val
 
     rate = property(_get_rate, _set_rate,
                     doc="""Is the Y axis displayed as a rate when plotting data?
@@ -1723,8 +1723,8 @@ a rate.""")
             raise DataErr("bad", "plot_fac setting", val)
 
         self._plot_fac = ival
-        for id in self.background_ids:
-            self.get_background(id).plot_fac = ival
+        for bkg_id in self.background_ids:
+            self.get_background(bkg_id).plot_fac = ival
 
     plot_fac = property(_get_plot_fac, _set_plot_fac,
                         doc="""How the X axis is used to create the Y axis when plotting data.
@@ -1740,16 +1740,19 @@ must be an integer.""")
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'response', str(ids))
 
-        keys = self._responses.keys()
-        for id in ids:
-            if id not in keys:
-                raise DataErr('badids', str(id), 'response', str(keys))
+        keys = list(self._responses.keys())
+        for resp_id in ids:
+            if resp_id not in keys:
+                raise DataErr('badids', str(resp_id), 'response', str(keys))
 
         self._response_ids = list(ids)
 
     response_ids = property(_get_response_ids, _set_response_ids,
-                            doc=('IDs of defined instrument responses ' +
-                                 '(ARF/RMF pairs)'))
+                            doc="""IDs of defined instrument responses (ARF/RMF pairs).
+
+If set, the identifiers must already exist, and any other responses
+will be removed. The identifiers can be integers or strings.
+""")
 
     def _get_background_ids(self):
         return self._background_ids
@@ -1758,15 +1761,19 @@ must be an integer.""")
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'background', str(ids))
 
-        keys = self._backgrounds.keys()
-        for id in ids:
-            if id not in keys:
-                raise DataErr('badids', str(id), 'background', str(keys))
+        keys = list(self._backgrounds.keys())
+        for bkg_id in ids:
+            if bkg_id not in keys:
+                raise DataErr('badids', str(bkg_id), 'background', str(keys))
 
         self._background_ids = list(ids)
 
     background_ids = property(_get_background_ids, _set_background_ids,
-                              doc='IDs of defined background data sets')
+                              doc="""IDs of defined background data sets.
+
+If set, the identifiers must already exist, and any other backgrounds
+will be removed. The identifiers can be integers or strings.
+""")
 
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
@@ -2222,13 +2229,10 @@ must be an integer.""")
         if (arf is None) and (rmf is None):
             return
 
-        id = self._fix_response_id(id)
-        self._responses[id] = (arf, rmf)
-        ids = self.response_ids[:]
-        if id not in ids:
-            ids.append(id)
-
-        self.response_ids = ids
+        resp_id = self._fix_response_id(id)
+        self._responses[resp_id] = (arf, rmf)
+        if resp_id not in self.response_ids:
+            self.response_ids.append(resp_id)
 
         # To support simulated data (e.g. issue #1209) we over-write
         # the header TELESCOP/INSTRUME/FILTER settings to match the
@@ -2278,11 +2282,9 @@ must be an integer.""")
         set_response
 
         """
-        id = self._fix_response_id(id)
-        self._responses.pop(id, None)
-        ids = self.response_ids[:]
-        ids.remove(id)
-        self.response_ids = ids
+        resp_id = self._fix_response_id(id)
+        self._responses.pop(resp_id, None)
+        self.response_ids.remove(resp_id)
 
     def get_arf(self, id=None):
         """Return the ARF from the response.
@@ -2644,8 +2646,8 @@ must be an integer.""")
 
         else:
             energylist = []
-            for id in self.response_ids:
-                arf, rmf = self.get_response(id)
+            for resp_id in self.response_ids:
+                arf, rmf = self.get_response(resp_id)
                 lo = None
                 hi = None
 
@@ -2727,9 +2729,26 @@ must be an integer.""")
         return vals
 
     default_background_id = 1
-    """The identifier for the background component when not set."""
+    """The identifier for the background component when not set.
+
+It is an integer or string.
+"""
 
     def _fix_background_id(self, id):
+        """Identify the backround identifier.
+
+        Parameters
+        ----------
+        id : int, str, or None
+            The background identifier, or None. If None then the
+            default_background_id value will be used.
+
+        Returns
+        -------
+        bkg_id : int or str
+            The background identifier.
+
+        """
         if id is not None:
             return id
 
@@ -2755,8 +2774,8 @@ must be an integer.""")
         delete_background, set_background
 
         """
-        id = self._fix_background_id(id)
-        return self._backgrounds.get(id)
+        bkg_id = self._fix_background_id(id)
+        return self._backgrounds.get(bkg_id)
 
     def set_background(self, bkg, id=None):
         """Add or replace a background component.
@@ -2809,12 +2828,10 @@ must be an integer.""")
            numpy.any(self.channel != bkg.channel):
             raise DataErr("The source and background channels differ")
 
-        id = self._fix_background_id(id)
-        self._backgrounds[id] = bkg
-        ids = self.background_ids[:]
-        if id not in ids:
-            ids.append(id)
-        self.background_ids = ids
+        bkg_id = self._fix_background_id(id)
+        self._backgrounds[bkg_id] = bkg
+        if bkg_id not in self.background_ids:
+            self.background_ids.append(bkg_id)
 
         # Copy over data from the source to the background
         # if its not present in the background:
@@ -2884,14 +2901,15 @@ must be an integer.""")
 
         """
 
-        id = self._fix_background_id(id)
-        self._backgrounds.pop(id, None)
+        bkg_id = self._fix_background_id(id)
+        if bkg_id not in self.background_ids:
+            return
+
+        self._backgrounds.pop(bkg_id, None)
         if len(self._backgrounds) == 0:
             self._subtracted = False
-        ids = self.background_ids[:]
-        if id in ids:
-            ids.remove(id)
-        self.background_ids = ids
+
+        self.background_ids.remove(bkg_id)
 
     def get_background_scale(self, bkg_id=1, units='counts',
                              group=True, filter=False):
@@ -3807,9 +3825,9 @@ must be an integer.""")
 
         bdata_list = []
 
-        for key in self.background_ids:
-            bkg = self.get_background(key)
-            bdata = get_bdata_func(key, bkg)
+        for bkg_id in self.background_ids:
+            bkg = self.get_background(bkg_id)
+            bdata = get_bdata_func(bkg_id, bkg)
 
             backscal = bkg.backscal
             if backscal is not None:
@@ -4034,8 +4052,8 @@ must be an integer.""")
         bkg_counts = []
         bkg_scales = []
 
-        for key in self.background_ids:
-            bkg = self.get_background(key)
+        for bkg_id in self.background_ids:
+            bkg = self.get_background(bkg_id)
             berr, bcounts = get_error(bkg)
             if berr is None:
                 # We do not know how to generate an error, so
@@ -4546,8 +4564,8 @@ must be an integer.""")
         if notice_resp and noticed_chans is None:
             noticed_chans = self.get_noticed_channels()
 
-        for id in self.response_ids:
-            arf, rmf = self.get_response(id)
+        for resp_id in self.response_ids:
+            arf, rmf = self.get_response(resp_id)
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
@@ -4569,7 +4587,7 @@ must be an integer.""")
         ignore : bool, optional
             Set to True if the range should be ignored. The default is
             to notice the range.
-        bkg_id : int or sequence of int or None, optional
+        bkg_id : int or str, or sequence of int or str, optional
             If not None then apply the filter to the given background
             dataset or datasets, otherwise change the object and all
             its background datasets.
@@ -4692,17 +4710,25 @@ must be an integer.""")
         #
         filter_background_only = False
         if bkg_id is not None:
-            if not numpy.iterable(bkg_id):
-                bkg_id = [bkg_id]
+            # As bkg_id can be
+            #   - int or str
+            #   - iterable of int or str
+            # it's a bit awkward to identify what is meant.
+            #
+            if not isinstance(bkg_id, str) and numpy.iterable(bkg_id):
+                bkg_ids = bkg_id
+            else:
+                bkg_ids = [bkg_id]
+
             filter_background_only = True
         else:
-            bkg_id = self.background_ids
+            bkg_ids = self.background_ids
 
         # Automatically impose data's filter on background data sets.
         # Units must agree for this to be meaningful, so temporarily
         # make data and background units match.
         #
-        for bid in bkg_id:
+        for bid in bkg_ids:
             bkg = self.get_background(bid)
             old_bkg_units = bkg.units
             try:

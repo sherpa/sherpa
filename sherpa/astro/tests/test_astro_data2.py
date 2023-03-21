@@ -3022,11 +3022,8 @@ def test_pha_xxx_ids_invalid_not_known(attr):
     counts = np.ones_like(chans)
     pha = DataPHA("dummy", chans, counts)
 
-    # The error message could be better (use list to remove the dict_keys)
-    # but it is not a high priority.
-    #
     with pytest.raises(DataErr,
-                       match=re.escape(f"3 is not a valid {attr} id in dict_keys([])")):
+                       match=re.escape(f"3 is not a valid {attr} id in []")):
         setattr(pha, f"{attr}_ids", [3])
 
 
@@ -4205,3 +4202,162 @@ def test_pha_ungroup_background_remove(caplog):
     assert not bkg.grouped
 
     assert len(caplog.record_tuples) == 0
+
+
+def test_pha_check_background_ids_basic():
+    """Check background_ids can be used.
+
+    This is a basic run through to check the behavior.
+    """
+
+    pha = DataPHA("src", [1, 2, 3], [1, 1, 1])
+    b1 = DataPHA("b1", [1, 2, 3], [1, 1, 1])
+    b2 = DataPHA("b2", [1, 2, 3], [1, 1, 1])
+
+    assert len(pha.background_ids) == 0
+
+    pha.set_background(b1)
+    assert pha.background_ids == pytest.approx([1])
+
+    pha.set_background(b2, id="up")
+    assert pha.background_ids == pytest.approx([1, "up"])
+
+    pha.delete_background(1)
+    assert pha.background_ids == pytest.approx(["up"])
+
+    # Check we can delete a background by setting background_ids
+    #
+    pha.background_ids = []
+    assert pha.background_ids == []
+
+    # Does the order matter?
+    #
+    pha.set_background(b2, id="up")
+    pha.set_background(b1)
+    assert pha.background_ids == pytest.approx(["up", 1])
+
+    # Remove one element.
+    #
+    pha.background_ids = [1]
+    assert pha.background_ids == pytest.approx([1])
+
+    # We can do the following, which is technically a no-op but may
+    # change some internal state. This also tests using an
+    # iterable-that-is-not-a-list.
+    #
+    pha.background_ids = {1}
+    assert pha.background_ids == pytest.approx([1])
+
+    # We can change to a currently-unused background as long as we've
+    # used it before.
+    #
+    pha.background_ids = ["up"]
+    assert pha.background_ids == pytest.approx(["up"])
+
+    pha.background_ids = [1, "up"]
+    assert pha.background_ids == pytest.approx([1, "up"])
+
+    # We can not set an unknown background.
+    #
+    with pytest.raises(DataErr,
+                       match=r"^foo is not a valid background id in \['up', 1\]$"):
+        pha.background_ids = ["foo"]
+
+    # And it hasn't changed.
+    #
+    assert pha.background_ids == pytest.approx([1, "up"])
+
+
+def test_pha_check_response_ids_basic():
+    """Check response_ids can be used.
+
+    This is a basic run through to check the behavior.
+    """
+
+    pha = DataPHA("src", [1, 2, 3], [1, 1, 1])
+
+    elo = np.arange(2, 5)
+    ehi = elo + 1
+    rmf1 = create_delta_rmf(elo, ehi, name="rmf1")
+    rmf2 = create_delta_rmf(elo, ehi, name="rmf2")
+
+    pha.set_response(rmf=rmf1)
+    assert pha.response_ids == pytest.approx([1])
+
+    pha.set_response(rmf=rmf2, id="up")
+    assert pha.response_ids == pytest.approx([1, "up"])
+
+    pha.delete_response(1)
+    assert pha.response_ids == pytest.approx(["up"])
+
+    # Check we can delete a response by setting response_ids
+    #
+    pha.response_ids = []
+    assert pha.response_ids == []
+
+    # Does the order matter?
+    #
+    pha.set_response(rmf=rmf2, id="up")
+    pha.set_response(rmf=rmf1)
+    assert pha.response_ids == pytest.approx(["up", 1])
+
+    # Remove one element.
+    #
+    pha.response_ids = [1]
+    assert pha.response_ids == pytest.approx([1])
+
+    # We can do the following, which is technically a no-op but may
+    # change some internal state. This also tests using an
+    # iterable-that-is-not-a-list.
+    #
+    pha.response_ids = {1}
+    assert pha.response_ids == pytest.approx([1])
+
+    # We can change to a currently-unused response as long as we've
+    # used it before.
+    #
+    pha.response_ids = ["up"]
+    assert pha.response_ids == pytest.approx(["up"])
+
+    pha.response_ids = [1, "up"]
+    assert pha.response_ids == pytest.approx([1, "up"])
+
+    # We can not set an unknown response.
+    #
+    with pytest.raises(DataErr,
+                       match=r"^foo is not a valid response id in \['up', 1\]$"):
+        pha.response_ids = ["foo"]
+
+    # And it hasn't changed.
+    #
+    assert pha.response_ids == pytest.approx([1, "up"])
+
+
+def test_pha_delete_missing_background_is_a_noop():
+    """Check this call returns.
+
+    """
+
+    pha = DataPHA("src", [1, 2, 3], [1, 1, 1])
+    bkg = DataPHA("bkg", [1, 2, 3], [1, 1, 1])
+    pha.set_background(bkg)
+    pha.subtract()
+
+    assert pha.subtracted
+    assert pha.background_ids == pytest.approx([1])
+    assert not bkg.subtracted
+    assert bkg.background_ids == []
+
+    # deleting a non-existant background is a no-op:
+    #  - dataset with no backgrounds
+    #  - dataset with a different-background to the requested
+    #
+    bkg.delete_background()
+    pha.delete_background(2)
+
+    # Minimal check that "nothing has happened".
+    #
+    assert pha.subtracted
+    assert pha.background_ids == pytest.approx([1])
+    assert not bkg.subtracted
+    assert bkg.background_ids == []
