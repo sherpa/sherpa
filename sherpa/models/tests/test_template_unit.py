@@ -163,45 +163,18 @@ def test_templatemodel_wrong_parvals_element():
 def test_templatemodel_no_arguments():
     """What happens if we have no parameters?"""
 
-    # We should probably error out, but we currently do not.
-    #
-    empty = TemplateModel("empty")
-    assert len(empty.pars) == 0
-
-    out = str(empty).split("\n")
-    assert out[0] == "empty"
-    assert out[1].startswith("   Param ")
-    assert out[2].startswith("   ----- ")
-    assert len(out) == 3
-
-    # What can evaluating the model do? Oh, this is an interesting error.
-    #
     with pytest.raises(ModelErr,
-                       match="^Interpolation of template parameters "):
-        empty([1, 2, 3])
+                       match="^parvals is empty or not set"):
+        empty = TemplateModel("empty")
 
 
 def test_templatemodel_pars_no_templates():
     """What happens if we have pars but no templates"""
 
-    # We should probably error out, but we currently do not.
-    #
     pars = [Parameter("empty", "bob", 12)]
-    empty = TemplateModel("empty", pars=pars)
-    assert len(empty.pars) == 1
-
-    out = str(empty).split("\n")
-    assert out[0] == "empty"
-    assert out[1].startswith("   Param ")
-    assert out[2].startswith("   ----- ")
-    assert out[3].startswith("   empty.bob ")
-    assert len(out) == 4
-
-    # What can evaluating the model do? Oh, this is an interesting error.
-    #
     with pytest.raises(ModelErr,
-                       match="^Interpolation of template parameters "):
-        empty([1, 2, 3])
+                       match="^parvals is empty or not set"):
+        TemplateModel("empty", pars=pars)
 
 
 def test_templatemodel_templates_not_tablemodel():
@@ -281,7 +254,7 @@ def test_templatemodel_basic_has_pars(iname):
 def test_templatemodel_basic_can_query(iname, pval, pname):
     """Check we can query
 
-    This does not work it interpolation is selected, but perhaps it
+    This does not work if interpolation is selected, but perhaps it
     should, which is why the test is marked xfail.
 
     """

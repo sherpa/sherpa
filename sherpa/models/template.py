@@ -360,14 +360,14 @@ class TemplateModel(ArithmeticModel):
     def __init__(self, name='templatemodel', pars=(), parvals=None,
                  templates=None):
 
-        # TODO: this should probably error out if given no parameters
-        # or templates.
-        #
         self.parvals = parvals if parvals is not None else []
         self.templates = templates if templates is not None else []
 
         if len(self.parvals) != len(self.templates):
             raise ModelErr("Number of parameter values and templates do not match")
+
+        if len(self.parvals) == 0:
+            raise ModelErr("parvals is empty or not set")
 
         self.index = {}
 
