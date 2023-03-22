@@ -20,35 +20,66 @@
 
 # pylint: disable=invalid-name
 
-"""Use data as model templates.
+"""Create models that interpolate between table models.
 
-Allow models to be created from data, where the model data,
-represented as a `sherpa.models.basic.TableModel`, can be associated
-with a set of parameters. The `TemplateModel` class only supports
-access to the parameter values, but the `InterpolatingTemplateModel`
-class adds interpolation of the parameter values (although this is
-class should not be used directly, and the `KNNInterpolator` class
-used instead).
+A `sherpa.models.basic.TableModel` allows an array of values to be
+used as a model, where only the normalization is varied. The
+`TemplateModel` class lets users take a number of table models,
+associate them with one or more parameters, and the
+`InterpolatingTemplateModel` class allows for interpolation between
+these models, and hence parameter values. Users are expected to use
+the `create_template_model` routine to create the template model.
+
+The aim is to allow one or more parameters to have values associated
+with numeric data, and then to vary the model based on the parameter
+values. For example, consider the case of two parameters - Temperature
+and Height - where there's data for a set of these parameters:
+
+=========== ====== ===================
+Temperature Height Data (x,y pairs)
+=========== ====== ===================
+1           10     (1,10), (2,30), ...
+2           10     (1,20), (2,40), ...
+2           15     (1,12), (3,46), ...
+...         ...    ...
+10          50     ...
+=========== ====== ===================
+
+These data values can be converted to `sherpa.models.basic.TableModel`
+instances and then associated with the parameters with
+`create_template_model`. The model can then be evaluated to allow the
+Temperature and Height values to be fit to observed data. For users of
+:term:`XSPEC`, this provides functionality similar to `XSPEC table
+models
+<https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html>`_.
 
 Examples
 ========
 
-A set of three templates are set for the "scale" parameter with values
-of 5, 17, and 25. All templates have the same independent axis (of [5,
-15, 40]) and the scale=5 value is [1, 2, 3], the scale=17 is [3, 7,
-4], and scale=25 is [10, 15, 0].
+The templates used here represent a single parameter, called `alpha`,
+where the values are for the independent axis values of
+[50, 100, 150, 250]:
+
+===== =============
+alpha values
+===== =============
+5     1, 2, 3, 4
+17    3, 7, 4, 8
+25    10, 15, 0, 12
+===== =============
 
 >>> import numpy as np
 >>> from sherpa.models.template import create_template_model
 >>> from sherpa.models.basic import TableModel
->>> parnames = ["scale"]
+>>> parnames = ["alpha"]
 >>> parvals = np.asarray([[5], [17], [25]])
 >>> m1 = TableModel("m1")
 >>> m2 = TableModel("m2")
 >>> m3 = TableModel("m3")
->>> m1.load([5, 15, 40], [1, 2, 3])
->>> m2.load([5, 15, 40], [3, 7, 4])
->>> m3.load([5, 15, 40], [10, 15, 0])
+>>> x = [50, 100, 150, 250]
+>>> m1.load(x, [1, 2, 3, 4])
+>>> m2.load(x, [3, 7, 4, 8])
+>>> m3.load(x, [10, 15, 0, 12])
 >>> tmps = [m1, m2, m3]
 >>> mdl = create_template_model("model", parnames, parvals, tmps)
 
@@ -58,22 +89,22 @@ The model defaults to the first parameter value:
 model
    Param        Type          Value          Min          Max      Units
    -----        ----          -----          ---          ---      -----
-   model.scale  thawed            5            5           25
+   model.alpha  thawed            5            5           25
 
->>> mdl([5, 15, 40])
-array([1., 2., 3.])
+>>> mdl(x)
+array([1., 2., 3., 4.])
 
-If the parameter is changed then the templates are weighted:
+If the parameter is changed then the templates are weighted to create
+the output:
 
->>> mdl.scale = 16
->>> mdl([5, 15, 40])
-array([3.7, 7.8, 3.6])
+>>> mdl.alpha = 16
+>>> mdl(x)
+array([3.7, 7.8, 3.6, 8.4])
 
-As the templates were set up with an x array, the model can be
-interpolated onto a different grid:
+The model can also be interpolated onto a different X axis:
 
->>> mdl([10, 20, 30])
-array([5.75, 6.96, 5.28])
+>>> mdl([70, 120, 200])
+array([5.34, 6.12, 6.  ])
 
 """
 
@@ -97,29 +128,31 @@ interpolators = {}
 
 def create_template_model(modelname, names, parvals, templates,
                           template_interpolator_name='default'):
-    """Create a TemplateModel model class from template input.
+    """Create a TemplateModel model class.
 
     Parameters
     ----------
     modelname : str
         The name of the template model.
     names : sequence of str
-        The order of the parameters.
+        The parameters names.
     parvals : ndarray
         The parameter values, organised as a 2D ndarray of shape
         (nelem, npars), where nelem is the number of parameter values
         and npars the number of parameters (which must match the names
         parameter).
-    templates : sequence of TemplateModel instances
-        The spectrum at a specific parameter vector, corresponding to
-        a row in ``parvals``.
+    templates : sequence of TableModel instances
+        The model for each set of parameters (each row of parvals).
+        It must match the first dimension of parvals.
     template_interpolator_name : str or None, optional
         The interpolator name. If None then there is no interpolation
         between templates.
 
     Returns
     -------
-    model
+    model : TemplateModel instance
+        The template model (may be a subclass of TemplateModel if
+        temlpate_interpolater_name is not None).
 
     """
 
@@ -258,8 +291,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
     """
     def __init__(self, name, template_model, k=None, order=2):
         if k is None:
-            # TODO: what happens if no params? What is .size meant to be?
-            self.k = 2 * template_model.parvals[0].size
+            self.k = 2 * template_model.parvals.shape[1]
         else:
             self.k = k
 
@@ -293,8 +325,6 @@ class KNNInterpolator(InterpolatingTemplateModel):
         return tm
 
 
-# Why do we have this class?
-#
 class Template(KNNInterpolator):
     """The Template class.
 
