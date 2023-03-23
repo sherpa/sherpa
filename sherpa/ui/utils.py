@@ -8316,8 +8316,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        store : list of pairs
-            Each pair is the identifier and data.
+        store : list of dict
+            Each entry contains the idval and data fields.
 
         """
         if id is None:
@@ -8337,7 +8337,7 @@ class Session(NoNewAttributesAfterInit):
         #
         out = []
         for idval in ids:
-            out.append((idval, self.get_data(idval)))
+            out.append({"idval": idval, "data": self.get_data(idval)})
 
         return out
 
@@ -8346,9 +8346,8 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        store : list of tuples
-            The data to be fit: the first entry is the identifier, the
-            second the data object, and the third the model object.
+        store : list of dict
+            Each dict contains idval, data, and model fields.
         estmethod : `sherpa.estmethods.EstMethod` or None
             Passed to the Fit object.
         numcores : int, optional
@@ -8373,18 +8372,18 @@ class Session(NoNewAttributesAfterInit):
 
         if not self._current_method.name == 'gridsearch':
             for s in store:
-                if s[2].is_discrete:
+                if s["model"].is_discrete:
                     raise ModelErr(
                         "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
 
         if len(store) == 1:
-            d = store[0][1]
-            m = store[0][2]
+            d = store[0]["data"]
+            m = store[0]["model"]
         else:
-            datasets = [s[1] for s in store]
+            datasets = [s["data"] for s in store]
             d = DataSimulFit('simulfit data', datasets, numcores)
 
-            models = [s[2] for s in store]
+            models = [s["model"] for s in store]
             m = SimulFitModel('simulfit model', models)
 
         # Ensure the id value is not repeated, but keep the order (so can not
@@ -8392,7 +8391,7 @@ class Session(NoNewAttributesAfterInit):
         #
         idvals = []
         for s in store:
-            idval = s[0]
+            idval = s["idval"]
             if idval not in idvals:
                 idvals.append(idval)
 
@@ -8416,9 +8415,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        store : list of tuples
-            Each tuple contains the dataset identifier, the data, and
-            the model.
+        store : list of dict
+            Each dict contains the keys idval, data, and model.
 
         Raises
         ------
@@ -8432,9 +8430,9 @@ class Session(NoNewAttributesAfterInit):
         # Skip any dataset that has no source model.
         #
         out = []
-        for idval, data in datastore:
+        for store in datastore:
             try:
-                store = (idval, data, self.get_model(idval))
+                store["model"] = self.get_model(store["idval"])
             except IdentifierErr:
                 continue
 
@@ -8514,9 +8512,9 @@ class Session(NoNewAttributesAfterInit):
                 # The store may conain more-than three elements, so do not
                 # deconstruct the tuple in the for loop but individually.
                 #
-                idval = s[0]
-                dataset = s[1]
-                model = s[2]
+                idval = s["idval"]
+                dataset = s["data"]
+                model = s["model"]
                 f = Fit(dataset, model, self._current_stat)
 
                 statinfo = f.calc_stat_info()

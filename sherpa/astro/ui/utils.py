@@ -10148,10 +10148,9 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        store : list of tuples
-            Each tuple contains the dataset identifier, the data, and
-            the model and - for backgrounds - the background
-            identifier.
+        store : list of dict
+            Each dict contains the keys idval, data, model, and bkg_id
+            (for background datasets).
 
         Raises
         ------
@@ -10176,11 +10175,11 @@ class Session(sherpa.ui.utils.Session):
         out = []
         for s in store:
             out.append(s)
-            data = s[1]
+            data = s["data"]
             if not isinstance(data, DataPHA):
                 continue
 
-            idval = s[0]
+            idval = s["idval"]
             bkg_models = self._background_models.get(idval, {})
             bkg_srcs = self._background_sources.get(idval, {})
             if data.subtracted:
@@ -10201,7 +10200,9 @@ class Session(sherpa.ui.utils.Session):
             for bkg_id in data.background_ids:
                 bkg_data = data.get_background(bkg_id)
                 bkg_model = self.get_bkg_model(idval, bkg_id)
-                out.append((idval, bkg_data, bkg_model, bkg_id))
+                bs = {"idval": idval, "data": bkg_data,
+                      "model": bkg_model, "bkg_id": bkg_id}
+                out.append(bs)
 
         return out
 
@@ -10219,9 +10220,9 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        store : list of tuples
-            Each tuple contains the dataset identifier, the data, and
-            the model, and background identifier.
+        store : list of dict
+            Each dict contains the keys idval, data, model, and
+            bkg_id.
 
         Raises
         ------
@@ -10238,10 +10239,12 @@ class Session(sherpa.ui.utils.Session):
         # Skip any background dataset that has no background model.
         #
         out = []
-        for idval, data in datastore:
+        for store in datastore:
+            data = store["data"]
             if not isinstance(data, DataPHA):
                 continue
 
+            idval = store["idval"]
             for bkg_id in data.background_ids:
                 bkg_data = self.get_bkg(idval, bkg_id)
                 try:
@@ -10249,7 +10252,9 @@ class Session(sherpa.ui.utils.Session):
                 except ModelErr:
                     continue
 
-                out.append((idval, bkg_data, bkg_model, bkg_id))
+                bs = {"idval": idval, "data": bkg_data,
+                      "model": bkg_model, "bkg_id": bkg_id}
+                out.append(bs)
 
         # Ensure we have something to fit.
         #
@@ -10504,20 +10509,19 @@ class Session(sherpa.ui.utils.Session):
         output = []
         if len(store) > 1:
             for s in store:
-                idval = s[0]
-                data = s[1]
-                model = s[2]
+                idval = s["idval"]
+                data = s["data"]
+                model = s["model"]
 
                 f = Fit(data, model, self._current_stat)
                 statinfo = f.calc_stat_info()
                 statinfo.ids = (idval, )
 
-                if len(s) == 4:
-                    bkg_id = s[3]
+                try:
+                    bkg_id = s["bkg_id"]
                     statinfo.name = f"Background {bkg_id} for Dataset {idval}"
                     statinfo.bkg_ids = (bkg_id, )
-
-                else:
+                except KeyError:
                     statinfo.name = f"Dataset {idval}"
 
                 output.append(statinfo)
