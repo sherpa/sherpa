@@ -18,9 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from dataclasses import dataclass
 import logging
 import os
 import sys
+from typing import Union
 import warnings
 
 import numpy
@@ -178,6 +180,13 @@ def _save_errorcol(session, idval, filename, bkg_id,
     err = get_err(idval, filter=False, bkg_id=bkg_id)
     session.save_arrays(filename, [x, err], fields=['X', colname],
                         ascii=asciiflag, clobber=clobber)
+
+
+@dataclass
+class BkgFitStore(sherpa.ui.utils.FitStore):
+    """Store per-dataset information for a background fit"""
+
+    bkg_id : Union[int, str]
 
 
 class Session(sherpa.ui.utils.Session):
@@ -10148,9 +10157,8 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        store : list of dict
-            Each dict contains the keys idval, data, model, and bkg_id
-            (for background datasets).
+        store : list of FitStore
+            This may contain BkgFitStore objects.
 
         Raises
         ------
@@ -10175,34 +10183,30 @@ class Session(sherpa.ui.utils.Session):
         out = []
         for s in store:
             out.append(s)
-            data = s["data"]
-            if not isinstance(data, DataPHA):
+            if not isinstance(s.data, DataPHA):
                 continue
 
-            idval = s["idval"]
-            bkg_models = self._background_models.get(idval, {})
-            bkg_srcs = self._background_sources.get(idval, {})
-            if data.subtracted:
+            bkg_models = self._background_models.get(s.idval, {})
+            bkg_srcs = self._background_sources.get(s.idval, {})
+            if s.data.subtracted:
                 if (bkg_models or bkg_srcs):
-                    warning(f'data set {repr(idval)} is background-subtracted; ' +
+                    warning(f'data set {repr(s.idval)} is background-subtracted; ' +
                             'background models will be ignored')
 
                 continue
 
             if not (bkg_models or bkg_srcs):
-                if data.background_ids and self._current_stat.name != 'wstat':
-                    warning(f'data set {repr(idval)} has associated backgrounds, ' +
+                if s.data.background_ids and self._current_stat.name != 'wstat':
+                    warning(f'data set {repr(s.idval)} has associated backgrounds, ' +
                             'but they have not been subtracted, ' +
                             'nor have background models been set')
 
                 continue
 
-            for bkg_id in data.background_ids:
-                bkg_data = data.get_background(bkg_id)
-                bkg_model = self.get_bkg_model(idval, bkg_id)
-                bs = {"idval": idval, "data": bkg_data,
-                      "model": bkg_model, "bkg_id": bkg_id}
-                out.append(bs)
+            for bkg_id in s.data.background_ids:
+                bkg_data = s.data.get_background(bkg_id)
+                bkg_model = self.get_bkg_model(s.idval, bkg_id)
+                out.append(BkgFitStore(s.idval, bkg_data, bkg_model, bkg_id))
 
         return out
 
@@ -10220,9 +10224,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        store : list of dict
-            Each dict contains the keys idval, data, model, and
-            bkg_id.
+        store : list of BkgFitStore
 
         Raises
         ------
@@ -10252,9 +10254,7 @@ class Session(sherpa.ui.utils.Session):
                 except ModelErr:
                     continue
 
-                bs = {"idval": idval, "data": bkg_data,
-                      "model": bkg_model, "bkg_id": bkg_id}
-                out.append(bs)
+                out.append(BkgFitStore(idval, bkg_data, bkg_model, bkg_id))
 
         # Ensure we have something to fit.
         #
@@ -10509,20 +10509,15 @@ class Session(sherpa.ui.utils.Session):
         output = []
         if len(store) > 1:
             for s in store:
-                idval = s["idval"]
-                data = s["data"]
-                model = s["model"]
-
-                f = Fit(data, model, self._current_stat)
+                f = Fit(s.data, s.model, self._current_stat)
                 statinfo = f.calc_stat_info()
-                statinfo.ids = (idval, )
+                statinfo.ids = (s.idval, )
 
                 try:
-                    bkg_id = s["bkg_id"]
-                    statinfo.name = f"Background {bkg_id} for Dataset {idval}"
-                    statinfo.bkg_ids = (bkg_id, )
-                except KeyError:
-                    statinfo.name = f"Dataset {idval}"
+                    statinfo.name = f"Background {s.bkg_id} for Dataset {s.idval}"
+                    statinfo.bkg_ids = (s.bkg_id, )
+                except AttributeError:
+                    statinfo.name = f"Dataset {s.idval}"
 
                 output.append(statinfo)
 

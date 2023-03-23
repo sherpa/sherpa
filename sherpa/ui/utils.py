@@ -21,12 +21,14 @@
 from configparser import ConfigParser
 import copy
 import copyreg as copy_reg
+from dataclasses import dataclass
 import importlib
 import inspect
 import logging
 import os
 import pickle
 import sys
+from typing import Union
 
 import numpy
 
@@ -587,6 +589,15 @@ def set_filter(data, val, ignore=False):
         data.mask = val
     else:
         data.mask = ~val
+
+
+@dataclass
+class FitStore:
+    """Store per-dataset information for a fit"""
+
+    idval : Union[int, str]
+    data : Data
+    model : Model
 
 
 ###############################################################################
@@ -8337,6 +8348,10 @@ class Session(NoNewAttributesAfterInit):
         #
         out = []
         for idval in ids:
+            # It would be nice to create a FitStore but that would
+            # mean making the model argument optional, which defeats
+            # some of the point of having a dataclass.
+            #
             out.append({"idval": idval, "data": self.get_data(idval)})
 
         return out
@@ -8346,8 +8361,8 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        store : list of dict
-            Each dict contains idval, data, and model fields.
+        store : list of FitStore
+            The per-dataset data and model information.
         estmethod : `sherpa.estmethods.EstMethod` or None
             Passed to the Fit object.
         numcores : int, optional
@@ -8372,18 +8387,18 @@ class Session(NoNewAttributesAfterInit):
 
         if not self._current_method.name == 'gridsearch':
             for s in store:
-                if s["model"].is_discrete:
+                if s.model.is_discrete:
                     raise ModelErr(
                         "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
 
         if len(store) == 1:
-            d = store[0]["data"]
-            m = store[0]["model"]
+            d = store[0].data
+            m = store[0].model
         else:
-            datasets = [s["data"] for s in store]
+            datasets = [s.data for s in store]
             d = DataSimulFit('simulfit data', datasets, numcores)
 
-            models = [s["model"] for s in store]
+            models = [s.model for s in store]
             m = SimulFitModel('simulfit model', models)
 
         # Ensure the id value is not repeated, but keep the order (so can not
@@ -8391,7 +8406,7 @@ class Session(NoNewAttributesAfterInit):
         #
         idvals = []
         for s in store:
-            idval = s["idval"]
+            idval = s.idval
             if idval not in idvals:
                 idvals.append(idval)
 
@@ -8415,8 +8430,7 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        store : list of dict
-            Each dict contains the keys idval, data, and model.
+        store : list of FitStore
 
         Raises
         ------
@@ -8431,12 +8445,13 @@ class Session(NoNewAttributesAfterInit):
         #
         out = []
         for store in datastore:
+            idval = store["idval"]
             try:
-                store["model"] = self.get_model(store["idval"])
+                model = self.get_model(idval)
             except IdentifierErr:
                 continue
 
-            out.append(store)
+            out.append(FitStore(idval, store["data"], model))
 
         # Ensure we have something to fit.
         #
@@ -8509,17 +8524,11 @@ class Session(NoNewAttributesAfterInit):
         #
         if len(store) > 1:
             for s in store:
-                # The store may conain more-than three elements, so do not
-                # deconstruct the tuple in the for loop but individually.
-                #
-                idval = s["idval"]
-                dataset = s["data"]
-                model = s["model"]
-                f = Fit(dataset, model, self._current_stat)
+                f = Fit(s.data, s.model, self._current_stat)
 
                 statinfo = f.calc_stat_info()
-                statinfo.name = f'Dataset {idval}'
-                statinfo.ids = (idval, )
+                statinfo.name = f'Dataset {s.idval}'
+                statinfo.ids = (s.idval, )
 
                 output.append(statinfo)
 
