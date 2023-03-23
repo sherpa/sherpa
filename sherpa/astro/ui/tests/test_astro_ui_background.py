@@ -2029,3 +2029,62 @@ def test_partially_set_bkg_models(idval, clean_astro_ui):
     emsg = f"^No instrument response found for dataset {idopt} background down$"
     with pytest.raises(DataErr, match=emsg):
         ui.fit_bkg()
+
+
+def test_fit_with_bkg_models_missing(clean_astro_ui):
+    """Check what happens if a bkg model is missing.
+
+    This is a regression test and should be compared to
+    test_fit_bkg_with_bkg_models_missing.
+    """
+
+    ui.load_arrays(1, [1, 2], [2, 4], ui.DataPHA)
+    ui.set_bkg(1, DataPHA("up", [1, 2], [2, 1]), bkg_id=1)
+    ui.set_bkg(1, DataPHA("down", [1, 2], [2, 1]), bkg_id=2)
+
+    egrid = np.asarray([0.2, 0.3, 0.4])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    ui.set_arf(1, arf)
+    ui.set_arf(1, arf, bkg_id=1)
+    ui.set_arf(1, arf, bkg_id=2)
+
+    ui.set_source(1, ui.const1d.smdl)
+    ui.set_bkg_source(1, ui.const1d.smdl, bkg_id=1)
+
+    with pytest.raises(ModelErr,
+                       match="^background model 2 for data set 1 has not been set"):
+        ui.fit()
+
+
+def test_fit_bkg_with_bkg_models_missing(clean_astro_ui):
+    """Check what happens if a bkg model is missing.
+
+    This is a regression test and should be compared to
+    test_fit_with_bkg_models_missing.
+    """
+
+    ui.set_stat("leastsq")
+
+    ui.load_arrays(1, [1, 2], [2, 4], ui.DataPHA)
+    ui.set_bkg(1, DataPHA("up", [1, 2], [2, 1]), bkg_id=1)
+    ui.set_bkg(1, DataPHA("down", [1, 2], [2, 2]), bkg_id=2)
+
+    egrid = np.asarray([0.2, 0.3, 0.4])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    ui.set_arf(1, arf)
+    ui.set_arf(1, arf, bkg_id=1)
+    ui.set_arf(1, arf, bkg_id=2)
+
+    # Note that we do not set a source model as it is not required
+    # by fit_bkg:
+    #    ui.set_source(1, ui.const1d.smdl)
+    #
+    ui.set_bkg_source(1, ui.const1d.bmdl, bkg_id=1)
+
+    # Unlike ui.fit, this does not complain about a missing model for
+    # bkg_id=2.
+    #
+    ui.fit_bkg()
+    fres = ui.get_fit_results()
+    assert fres.parnames == ("bmdl.c0", )
+    assert fres.parvals == pytest.approx([15])
