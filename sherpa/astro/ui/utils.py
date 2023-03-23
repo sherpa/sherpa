@@ -10234,19 +10234,25 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        # This replicates some logic from super()._prepare_fit()
+        # This replicates some logic from super()._prepare_fit() but
+        # the conditions are not quite the same (the source data does
+        # not need a model here, as long as the background datasets
+        # have models).
         #
-        datastore = self._get_fit_ids(id, otherids)
+        ids = self._get_fit_ids(id, otherids)
 
-        # Skip any background dataset that has no background model.
+        # If an id is given then it must have data but does not have to
+        # have a model (to keep with existing behavior). Only those
+        # background components with a background model are used.
+        #
+        # At this point ids is not empty.
         #
         out = []
-        for store in datastore:
-            data = store["data"]
+        for idval in ids:
+            data = self.get_data(idval)
             if not isinstance(data, DataPHA):
                 continue
 
-            idval = store["idval"]
             for bkg_id in data.background_ids:
                 bkg_data = self.get_bkg(idval, bkg_id)
                 try:

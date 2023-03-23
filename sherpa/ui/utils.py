@@ -8315,8 +8315,7 @@ class Session(NoNewAttributesAfterInit):
     def _get_fit_ids(self, id, otherids=None):
         """Return the identifiers that will be used for a fit.
 
-        This routine ensures that the dataset exists, but it does not
-        require that an associated model is present.
+        This routine does not ensure that the dataset actually exists.
 
         Parameters
         ----------
@@ -8327,34 +8326,29 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        store : list of dict
-            Each entry contains the idval and data fields.
+        idvals : list of int or str
+            The identifiers that may contain data. It will not
+            be empty.
 
         """
+
         if id is None:
             ids = self.list_data_ids()
             if len(ids) == 0:
                 raise IdentifierErr("getitem", "data set", self._default_id, "has not been set")
 
-        else:
-            ids = [id]
-            if otherids is not None:
-                for idval in otherids:
-                    idval = self._fix_id(idval)
-                    if idval not in ids:
-                        ids.append(idval)
+            return ids
 
-        # Check the data exists. At this point ids is not empty.
-        #
-        out = []
-        for idval in ids:
-            # It would be nice to create a FitStore but that would
-            # mean making the model argument optional, which defeats
-            # some of the point of having a dataclass.
-            #
-            out.append({"idval": idval, "data": self.get_data(idval)})
+        ids = [id]
+        if otherids is None:
+            return ids
 
-        return out
+        for idval in otherids:
+            idval = self._fix_id(idval)
+            if idval not in ids:
+                ids.append(idval)
+
+        return ids
 
     def _get_fit_obj(self, store, estmethod, numcores=1):
         """Create the fit object given the data and models.
@@ -8439,19 +8433,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        datastore = self._get_fit_ids(id, otherids)
+        ids = self._get_fit_ids(id, otherids)
 
-        # Skip any dataset that has no source model.
+        # If an id is given then it must have data but does not have to
+        # have a model (to keep with existing behavior).
+        #
+        # At this point ids is not empty.
         #
         out = []
-        for store in datastore:
-            idval = store["idval"]
+        for idval in ids:
+            data = self.get_data(idval)
             try:
                 model = self.get_model(idval)
             except IdentifierErr:
                 continue
 
-            out.append(FitStore(idval, store["data"], model))
+            out.append(FitStore(idval, data, model))
 
         # Ensure we have something to fit.
         #
