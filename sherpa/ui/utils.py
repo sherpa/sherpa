@@ -8308,10 +8308,6 @@ class Session(NoNewAttributesAfterInit):
     # Fitting
     ###########################################################################
 
-    def _add_extra_data_and_models(self, ids, datasets, models):
-        """This is no-longer used."""
-        raise RuntimeError("INTERNAL ERROR - this routine is no-longer used")
-
     def _get_fit_ids(self, id, otherids=None):
         """Return the identifiers that will be used for a fit.
 
