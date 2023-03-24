@@ -29,7 +29,7 @@ from numpy.testing import assert_allclose
 import pytest
 
 from sherpa.astro.data import DataIMG, DataPHA
-from sherpa.astro.instrument import RMFModelPHA
+from sherpa.astro.instrument import RMFModelPHA, create_arf
 from sherpa.astro import ui
 from sherpa.data import Data1D, Data2D, Data2DInt
 from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, IOErr, StatErr
@@ -40,18 +40,20 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 logger = logging.getLogger("sherpa")
 
 
-@pytest.fixture(autouse=True)
-def hide_logging():
-    """hide INFO-level logging in all these tests
+def exact_record(rec, name, level, msg):
+    """Check the caplog record matches: exact message match"""
 
-    This replicates the conftest hide_logging but applies it to
-    all tests.
-    """
+    assert rec.name == name
+    assert rec.levelname == level
+    assert rec.message == msg
 
-    olevel = logger.getEffectiveLevel()
-    logger.setLevel(logging.ERROR)
-    yield
-    logger.setLevel(olevel)
+
+def match_record(rec, name, level, msg):
+    """Check the caplog record matches: use a regexp for the match"""
+
+    assert rec.name == name
+    assert rec.levelname == level
+    assert re.match(msg, rec.message)
 
 
 def identity(x):
@@ -268,8 +270,7 @@ def test_load_data(loader, make_data_path, clean_astro_ui, caplog):
 
     assert ui.list_data_ids() == []
 
-    with SherpaVerbosity('INFO'):
-        loader('foo', infile)
+    loader('foo', infile)
 
     assert ui.list_data_ids() == ['foo']
 
@@ -284,16 +285,14 @@ def test_load_data(loader, make_data_path, clean_astro_ui, caplog):
         "but not used; to use them, re-read with use_errors=True"
     msg7 = f"read background file {bgfile}"
 
-    assert caplog.record_tuples[0] == ('sherpa.astro.io', logging.WARNING, msg1)
-    assert caplog.record_tuples[1] == ('sherpa.astro.io', logging.INFO, msg2)
-    assert caplog.record_tuples[2] == ('sherpa.astro.io', logging.INFO, msg3)
-    assert caplog.record_tuples[3] == ('sherpa.astro.io', logging.INFO, msg4)
-
-    assert caplog.record_tuples[4] == ('sherpa.astro.io', logging.WARNING, msg5)
-    assert caplog.record_tuples[5] == ('sherpa.astro.io', logging.INFO, msg6)
-    assert caplog.record_tuples[6] == ('sherpa.astro.io', logging.INFO, msg7)
-
     assert len(caplog.records) == 7
+    exact_record(caplog.records[0], "sherpa.astro.io", "WARNING", msg1)
+    exact_record(caplog.records[1], "sherpa.astro.io", "INFO", msg2)
+    exact_record(caplog.records[2], "sherpa.astro.io", "INFO", msg3)
+    exact_record(caplog.records[3], "sherpa.astro.io", "INFO", msg4)
+    exact_record(caplog.records[4], "sherpa.astro.io", "WARNING", msg5)
+    exact_record(caplog.records[5], "sherpa.astro.io", "INFO", msg6)
+    exact_record(caplog.records[6], "sherpa.astro.io", "INFO", msg7)
 
 
 # Test table model
@@ -380,27 +379,27 @@ def test_more_ui_string_model_with_rmf(make_data_path):
 @requires_data
 @requires_group
 def test_more_ui_bug38(make_data_path, caplog):
-    ui.load_pha('3c273', make_data_path('3c273.pi'))
-    ui.notice_id('3c273', 0.3, 2)
+    with SherpaVerbosity("ERROR"):
+        ui.load_pha('3c273', make_data_path('3c273.pi'))
 
     assert len(caplog.records) == 0
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        ui.group_counts('3c273', 30)
 
+    ui.notice_id('3c273', 0.3, 2)
     assert len(caplog.records) == 1
-    r = caplog.record_tuples[0]
-    assert r[0] == "sherpa.ui.utils"
-    assert r[1] == logging.INFO
-    assert r[2] == "dataset 3c273: 0.2482:2.0294 -> 0.00146:2.0294 Energy (keV)"
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 "dataset 3c273: 0.00146:14.9504 -> 0.2482:2.0294 Energy (keV)")
 
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        ui.group_counts('3c273', 15)
+    ui.group_counts('3c273', 30)
 
     assert len(caplog.records) == 2
-    r = caplog.record_tuples[1]
-    assert r[0] == "sherpa.ui.utils"
-    assert r[1] == logging.INFO
-    assert r[2] == "dataset 3c273: 0.00146:2.0294 Energy (keV) (unchanged)"
+    exact_record(caplog.records[1], "sherpa.ui.utils", "INFO",
+                 "dataset 3c273: 0.2482:2.0294 -> 0.00146:2.0294 Energy (keV)")
+
+    ui.group_counts('3c273', 15)
+
+    assert len(caplog.records) == 3
+    exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
+                 "dataset 3c273: 0.00146:2.0294 Energy (keV) (unchanged)")
 
 
 @requires_fits
@@ -427,21 +426,20 @@ def test_bug38_filtering_grouping(make_data_path, caplog):
     from sherpa.astro.io import read_pha
     pha = read_pha(make_data_path('3c273.pi'))
 
+    # Just check that the logging that may happen at the UI level does
+    # not happen here.
+    #
+    assert len(caplog.records) == 7
     pha.notice(1, 6)
     pha.ignore(3, 4)
+    assert len(caplog.records) == 7
 
     expected = '0.9928:2.8616,4.0296:6.5700'
     assert pha.get_filter(group=True, format='%.4f') == expected
     assert pha.get_filter(group=False, format='%.4f') == expected
 
-    # Just check that the logging that may happen at the UI level does
-    # not happen here.
-    #
-    assert len(caplog.records) == 0
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        pha.group_width(40)
-
-    assert len(caplog.records) == 0
+    pha.group_width(40)
+    assert len(caplog.records) == 7
 
     expected = '0.5840:2.9200,3.5040:7.0080'
     assert pha.get_filter(group=True, format='%.4f') == expected
@@ -482,15 +480,19 @@ def test_group_reporting_case(clean_astro_ui, caplog):
 
     assert ui.get_filter() == "5:7,9:11,13:15"
 
-    assert len(caplog.records) == 0
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        ui.group_width(3)
+    assert len(caplog.records) == 3
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 "dataset 1: 1:21 -> 5:7 Channel")
+    exact_record(caplog.records[1], "sherpa.ui.utils", "INFO",
+                 "dataset 1: 5:7 -> 5:7,9:11 Channel")
+    exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
+                 "dataset 1: 5:7,9:11 -> 5:7,9:11,13:15 Channel")
 
-    assert len(caplog.records) == 1
-    name, lvl, msg = caplog.record_tuples[0]
-    assert name == 'sherpa.ui.utils'
-    assert lvl == logging.INFO
-    assert msg == "dataset 1: 5:7,9:11,13:15 -> 4:15 Channel"
+    ui.group_width(3)
+
+    assert len(caplog.records) == 4
+    exact_record(caplog.records[3], "sherpa.ui.utils", "INFO",
+                 "dataset 1: 5:7,9:11,13:15 -> 4:15 Channel")
 
     assert ui.get_filter() == "4:15"
 
@@ -512,18 +514,22 @@ def test_group_bins(idval, clean_astro_ui, caplog):
     assert ui.get_dep(idval) == pytest.approx(x)
     assert ui.get_dep(idval, filter=True) == pytest.approx([5, 6, 7, 9, 10, 11, 13, 14, 15])
 
-    assert len(caplog.records) == 0
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        if idval is None:
-            ui.group_bins(3)
-        else:
-            ui.group_bins(idval, 3)
+    assert len(caplog.records) == 3
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 1:21 -> 5:7 Channel")
+    exact_record(caplog.records[1], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 5:7 -> 5:7,9:11 Channel")
+    exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 5:7,9:11 -> 5:7,9:11,13:15 Channel")
 
-    assert len(caplog.records) == 1
-    name, lvl, msg = caplog.record_tuples[0]
-    assert name == 'sherpa.ui.utils'
-    assert lvl == logging.INFO
-    assert msg == f"dataset {idarg}: 5:7,9:11,13:15 -> 1:21 Channel"
+    if idval is None:
+        ui.group_bins(3)
+    else:
+        ui.group_bins(idval, 3)
+
+    assert len(caplog.records) == 4
+    msg = f"dataset {idarg}: 5:7,9:11,13:15 -> 1:21 Channel"
+    exact_record(caplog.records[3], "sherpa.ui.utils", "INFO", msg)
 
     assert ui.get_grouping(idval) == pytest.approx([1, -1, -1, -1, -1, -1, -1] * 3)
     assert ui.get_quality(idval) == pytest.approx([0] * 21)
@@ -552,17 +558,14 @@ def test_group_snr(idval, clean_astro_ui, caplog):
     ui.load_arrays(idarg, x, y, ui.DataPHA)
 
     assert len(caplog.records) == 0
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        if idval is None:
-            ui.group_snr(3)
-        else:
-            ui.group_snr(idval, 3)
+    if idval is None:
+        ui.group_snr(3)
+    else:
+        ui.group_snr(idval, 3)
 
     assert len(caplog.records) == 1
-    name, lvl, msg = caplog.record_tuples[0]
-    assert name == 'sherpa.ui.utils'
-    assert lvl == logging.INFO
-    assert msg == f"dataset {idarg}: 1:6 Channel (unchanged)"
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 1:6 Channel (unchanged)")
 
     assert ui.get_grouping(idval) == pytest.approx([1, -1, -1, 1, -1, -1])
     assert ui.get_quality(idval) == pytest.approx([0] * 6)
@@ -583,17 +586,14 @@ def test_group_adapt(idval, clean_astro_ui, caplog):
     ui.load_arrays(idarg, x, y, ui.DataPHA)
 
     assert len(caplog.records) == 0
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        if idval is None:
-            ui.group_adapt(5)
-        else:
-            ui.group_adapt(idval, 5)
+    if idval is None:
+        ui.group_adapt(5)
+    else:
+        ui.group_adapt(idval, 5)
 
     assert len(caplog.records) == 1
-    name, lvl, msg = caplog.record_tuples[0]
-    assert name == 'sherpa.ui.utils'
-    assert lvl == logging.INFO
-    assert msg == f"dataset {idarg}: 1:6 Channel (unchanged)"
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 1:6 Channel (unchanged)")
 
     assert ui.get_grouping(idval) == pytest.approx([1, 1, 1, -1, 1, 1])
     assert ui.get_quality(idval) == pytest.approx([2] + [0] * 4 + [2])
@@ -614,17 +614,14 @@ def test_group_adapt_snr(idval, clean_astro_ui, caplog):
     ui.load_arrays(idarg, x, y, ui.DataPHA)
 
     assert len(caplog.records) == 0
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        if idval is None:
-            ui.group_adapt_snr(3)
-        else:
-            ui.group_adapt_snr(idval, 3)
+    if idval is None:
+        ui.group_adapt_snr(3)
+    else:
+        ui.group_adapt_snr(idval, 3)
 
     assert len(caplog.records) == 1
-    name, lvl, msg = caplog.record_tuples[0]
-    assert name == 'sherpa.ui.utils'
-    assert lvl == logging.INFO
-    assert msg == f"dataset {idarg}: 1:6 Channel (unchanged)"
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 1:6 Channel (unchanged)")
 
     assert ui.get_grouping(idval) == pytest.approx([1, 1, -1, 1, -1, -1])
     assert ui.get_quality(idval) == pytest.approx([2] + [0] * 2 + [2] * 3)
@@ -1467,13 +1464,19 @@ def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, fstr, bkg_id,
     We also get information from the notice_bad call.
     """
 
-    ui.load_pha('check', make_data_path('3c273.pi'))
+    with SherpaVerbosity("ERROR"):
+        ui.load_pha('check', make_data_path('3c273.pi'))
 
     ui.set_quality('check', 2 * numpy.ones(1024, dtype=numpy.int16), bkg_id=1)
+
+    assert len(caplog.records) == 0
     ui.ignore_bad('check', bkg_id=1)
 
-    with caplog.at_level(logging.INFO, logger='sherpa'):
-        ui.notice_id('check', elo, ehi, bkg_id=bkg_id)
+    assert len(caplog.records) == 1
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 "dataset check: background 1: 0.00146:14.9504 Energy (keV) -> no data")
+
+    ui.notice_id('check', elo, ehi, bkg_id=bkg_id)
 
     # filtering has or hasn't happened
     nsrc = ui.get_dep('check', filter=True).size
@@ -1487,21 +1490,17 @@ def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, fstr, bkg_id,
         assert nback == 0
 
     # did we get a warning message from the background?
-    assert len(caplog.records) == 2
-    name, lvl, msg = caplog.record_tuples[0]
-    assert name == 'sherpa.astro.data'
-    assert lvl == logging.INFO
-    assert msg.startswith('Skipping dataset ')
-    assert msg.endswith('/3c273_bg.pi: mask excludes all data')
+    assert len(caplog.records) == 3
+
+    match_record(caplog.records[1], "sherpa.astro.data", "INFO",
+                 "^Skipping dataset .*/3c273_bg.pi: mask excludes all data$")
 
     # Check the filter output
-    name, lvl, msg = caplog.record_tuples[1]
-    assert name == 'sherpa.ui.utils'
-    assert lvl == logging.INFO
     if bkg_id is None:
-        assert msg == f"dataset check: 0.00146:14.9504 -> {fstr} Energy (keV)"
+        msg = f"dataset check: 0.00146:14.9504 -> {fstr} Energy (keV)"
     else:
-        assert msg == f"dataset check: background 1: no data (unchanged)"
+        msg = f"dataset check: background 1: no data (unchanged)"
+    exact_record(caplog.records[2], "sherpa.ui.utils", "INFO", msg)
 
 
 @pytest.mark.parametrize('dtype', [ui.Data1D, ui.Data1DInt, ui.DataPHA,
@@ -1606,3 +1605,73 @@ def test_get_rate_bkg(idval, clean_astro_ui, make_data_path):
     # this dataset.
     #
     assert numpy.all(r1 != r2)
+
+
+@pytest.mark.parametrize("idval", [1, "x"])
+def test_warn_about_bgnd_subtracted_with_model(idval, clean_astro_ui, caplog):
+    """Check we get a warning message.
+
+    We could check fit or get_stat_info.
+    """
+
+    ui.set_stat("leastsq")
+
+    ui.load_arrays(idval, [1, 2], [4, 3], ui.DataPHA)
+
+    egrid = numpy.asarray([1, 2, 3])
+    ui.set_arf(idval, create_arf(egrid[:-1], egrid[1:]))
+
+    ui.set_bkg(idval, ui.DataPHA("b", [1, 2], [1, 1]))
+
+    ui.set_source(idval, ui.const1d.smdl)
+    ui.set_bkg_source(idval, ui.const1d.bmdl)
+
+    ui.subtract(idval)
+
+    assert len(caplog.records) == 0
+    sinfo = ui.get_stat_info()
+
+    assert len(caplog.records) == 1
+    exact_record(caplog.records[0], "sherpa.astro.ui.utils", "WARNING",
+                 f"data set {repr(idval)} is background-subtracted; background models will be ignored")
+
+    assert len(sinfo) == 1
+    assert sinfo[0].name == f"Dataset [{repr(idval)}]"
+    assert sinfo[0].ids == [idval]
+    assert sinfo[0].bkg_ids is None
+    assert sinfo[0].statval == pytest.approx(5.0)
+
+
+@pytest.mark.parametrize("idval", [1, "x"])
+def test_warn_about_bgnd_or_subtracted_no_model(idval, clean_astro_ui, caplog):
+    """Check we get a warning message.
+
+    We could check fit or get_stat_info.
+    """
+
+    ui.set_stat("leastsq")
+
+    ui.load_arrays(idval, [1, 2], [4, 3], ui.DataPHA)
+
+    egrid = numpy.asarray([1, 2, 3])
+    ui.set_arf(idval, create_arf(egrid[:-1], egrid[1:]))
+
+    ui.set_bkg(idval, ui.DataPHA("b", [1, 2], [1, 1]))
+
+    ui.set_source(idval, ui.const1d.smdl)
+
+    # The hide_logging fixture has changed the loglevel so we need to
+    # change it here to make sure we see the warning.
+    #
+    assert len(caplog.records) == 0
+    sinfo = ui.get_stat_info()
+
+    assert len(caplog.records) == 1
+    exact_record(caplog.records[0], "sherpa.astro.ui.utils", "WARNING",
+                 f"data set {repr(idval)} has associated backgrounds, but they have not been subtracted, nor have background models been set")
+
+    assert len(sinfo) == 1
+    assert sinfo[0].name == f"Dataset [{repr(idval)}]"
+    assert sinfo[0].ids == [idval]
+    assert sinfo[0].bkg_ids is None
+    assert sinfo[0].statval == pytest.approx(13.0)

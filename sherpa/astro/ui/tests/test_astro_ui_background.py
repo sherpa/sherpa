@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,7 +34,7 @@ import pytest
 
 from sherpa.astro import ui
 from sherpa.astro.data import DataARF, DataPHA
-from sherpa.astro.instrument import ARFModelPHA
+from sherpa.astro.instrument import ARFModelPHA, create_arf, create_delta_rmf
 from sherpa.models.model import ArithmeticConstantModel
 from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
@@ -244,12 +244,10 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
     # Now try the "model" model:
     # - fail when only 1 background dataset has a model
     #
-    with pytest.raises(ModelErr) as exc:
-        ui.get_model(id)
-
     iid = 1 if id is None else id
-    estr = "background model 2 for data set {} has not been set".format(iid)
-    assert estr == str(exc.value)
+    estr = f"^background model 2 for data set {iid} has not been set$"
+    with pytest.raises(ModelErr, match=estr):
+        ui.get_model(id)
 
     bmdl = ui.get_bkg_model(id)
     assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
@@ -554,14 +552,19 @@ def test_pha1_instruments_missing(bid, clean_astro_ui):
     bkg = ui.get_bkg(1, bkg_id=bid)
     bkg.delete_response()
 
-    with pytest.raises(DataErr) as exc:
-        ui.get_bkg_model(bkg_id=bid)
+    # We test the pha name field as a simple way to check what
+    # PHA is being used here.
+    #
+    # Uses the source dataset for the response.
+    bmdl = ui.get_bkg_model(bkg_id=bid)
+    assert isinstance(bmdl, ARFModelPHA)
+    assert bmdl.pha.name == "tst0"
 
-    assert str(exc.value) == 'No instrument response found for dataset 1 background {}'.format(bid)
-
+    # Uses the background dataset for the response.
     oid = 1 if bid == 2 else 2
     bmdl = ui.get_bkg_model(bkg_id=oid)
     assert isinstance(bmdl, ARFModelPHA)
+    assert bmdl.pha.name == f"tst{oid}"
 
 
 # Try and pick routines with different pathways through the code
@@ -579,10 +582,9 @@ def test_evaluation_requires_models(func, clean_astro_ui):
     ui.set_source(ui.box1d.smdl)
     ui.set_bkg_source(ui.box1d.bmdl)
 
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match='^background model 2 for data set 1 has not been set$'):
         func()
-
-    assert str(exc.value) == 'background model 2 for data set 1 has not been set'
 
 
 SCALING = np.ones(19)
@@ -1314,10 +1316,9 @@ def test_get_bkg_scale_nodata(clean_astro_ui):
 
     ui.set_data(ui.DataPHA('foo', np.arange(3), np.arange(3)))
 
-    with pytest.raises(DataErr) as exc:
+    with pytest.raises(DataErr,
+                       match="^data set '1' does not have any associated backgrounds$"):
         ui.get_bkg_scale()
-
-    assert str(exc.value) == "data set '1' does not have any associated backgrounds"
 
 
 def test_get_bkg_scale_invalid(clean_astro_ui):
@@ -1328,10 +1329,9 @@ def test_get_bkg_scale_invalid(clean_astro_ui):
     ascales = (0.8, 0.8)
     ui.set_data(setup_pha1(exps, bscales, ascales))
 
-    with pytest.raises(ValueError) as exc:
+    with pytest.raises(ValueError,
+                       match='^Invalid units argument: subtract$'):
         ui.get_bkg_scale(units='subtract')
-
-    assert str(exc.value) == 'Invalid units argument: subtract'
 
 
 def test_get_bkg_scale(clean_astro_ui):
@@ -1365,6 +1365,19 @@ def test_get_bkg_scale(clean_astro_ui):
     assert bscale2 == pytest.approx(0.5 * r(bscales, 2))
 
 
+def check_stat_info(sinfo, ids, bkg_ids, numpoints, dof):
+    """Check the stat-info structure."""
+
+    assert sinfo.ids == ids
+    if bkg_ids is None:
+        assert sinfo.bkg_ids is None
+    else:
+        assert sinfo.bkg_ids == bkg_ids
+
+    assert sinfo.numpoints == numpoints
+    assert sinfo.dof == dof
+
+
 @requires_data
 @requires_fits
 def test_use_source_data(make_data_path, clean_astro_ui, hide_logging):
@@ -1390,38 +1403,22 @@ def test_use_source_data(make_data_path, clean_astro_ui, hide_logging):
     stats = ui.get_stat_info()
     assert len(stats) == 3
 
-    src = stats[0]
-    bgnd = stats[1]
-    comb = stats[2]
-
-    assert src.name == 'Dataset 1'
-    assert bgnd.name == 'Background 1 for Dataset 1'
-    assert comb.name == 'Dataset [1]'
-
-    assert src.ids == (1,)
-    assert bgnd.ids == (1,)
-    assert comb.ids == [1]
-
-    assert src.bkg_ids is None
-    assert bgnd.bkg_ids == (1,)
-    assert comb.bkg_ids is None
-
-    assert src.numpoints == 42
-    assert bgnd.numpoints == 42
-    assert comb.numpoints == 84
-
-    # Note: comb.dof > src.dof + bgnd.dof here
+    # Note: stats[2].dof > stats[0].dof + stats[1].dof here
     #
     # source dataset is fit with powlaw1d + const1d, so has
     # three free parameters.
     # background dataset is fit with const1d, so has 1 free
     # parameter.
-    # the combined dataset is fit with powlae1d+const1d, const1d
+    # the combined dataset is fit with powlaw1d+const1d, const1d
     # so has three free parameters
     #
-    assert src.dof == 39
-    assert bgnd.dof == 41
-    assert comb.dof == 81
+    assert stats[0].name == 'Dataset 1'
+    assert stats[1].name == 'Background 1 for Dataset 1'
+    assert stats[2].name == 'Dataset [1]'
+
+    check_stat_info(stats[0], (1, ), None, 42, 39)
+    check_stat_info(stats[1], (1, ), (1, ), 42, 41)
+    check_stat_info(stats[2], [1], None, 84, 81)
 
 
 @requires_data
@@ -1461,29 +1458,13 @@ def test_use_source_data_manual(make_data_path, clean_astro_ui, hide_logging):
     stats = ui.get_stat_info()
     assert len(stats) == 3
 
-    src = stats[0]
-    bgnd = stats[1]
-    comb = stats[2]
+    assert stats[0].name == 'Dataset 1'
+    assert stats[1].name == 'Background 1 for Dataset 1'
+    assert stats[2].name == 'Dataset [1]'
 
-    assert src.name == 'Dataset 1'
-    assert bgnd.name == 'Background 1 for Dataset 1'
-    assert comb.name == 'Dataset [1]'
-
-    assert src.ids == (1,)
-    assert bgnd.ids == (1,)
-    assert comb.ids == [1]
-
-    assert src.bkg_ids is None
-    assert bgnd.bkg_ids == (1,)
-    assert comb.bkg_ids is None
-
-    assert src.numpoints == 446
-    assert bgnd.numpoints == 446
-    assert comb.numpoints == 892
-
-    assert src.dof == 443
-    assert bgnd.dof == 445
-    assert comb.dof == 889
+    check_stat_info(stats[0], (1, ), None, 446, 443)
+    check_stat_info(stats[1], (1, ), (1, ), 446, 445)
+    check_stat_info(stats[2], [1], None, 892, 889)
 
 
 @requires_group
@@ -1516,29 +1497,13 @@ def test_use_background_data(make_data_path, clean_astro_ui, hide_logging):
     stats = ui.get_stat_info()
     assert len(stats) == 3
 
-    src = stats[0]
-    bgnd = stats[1]
-    comb = stats[2]
+    assert stats[0].name == 'Dataset 1'
+    assert stats[1].name == 'Background 1 for Dataset 1'
+    assert stats[2].name == 'Dataset [1]'
 
-    assert src.name == 'Dataset 1'
-    assert bgnd.name == 'Background 1 for Dataset 1'
-    assert comb.name == 'Dataset [1]'
-
-    assert src.ids == (1,)
-    assert bgnd.ids == (1,)
-    assert comb.ids == [1]
-
-    assert src.bkg_ids is None
-    assert bgnd.bkg_ids == (1,)
-    assert comb.bkg_ids is None
-
-    assert src.numpoints == 42
-    assert bgnd.numpoints == 106
-    assert comb.numpoints == 148
-
-    assert src.dof == 39
-    assert bgnd.dof == 105
-    assert comb.dof == 145
+    check_stat_info(stats[0], (1, ), None, 42, 39)
+    check_stat_info(stats[1], (1, ), (1, ), 106, 105)
+    check_stat_info(stats[2], [1], None, 148, 145)
 
 
 @requires_group
@@ -1579,35 +1544,98 @@ def test_use_background_data_two(make_data_path, clean_astro_ui, hide_logging):
     stats = ui.get_stat_info()
     assert len(stats) == 4
 
-    src = stats[0]
-    bgnd1 = stats[1]
-    bgnd2 = stats[2]
-    comb = stats[3]
+    assert stats[0].name == 'Dataset 1'
+    assert stats[1].name == 'Background 1 for Dataset 1'
+    assert stats[2].name == 'Background 2 for Dataset 1'
+    assert stats[3].name == 'Dataset [1]'
 
-    assert src.name == 'Dataset 1'
-    assert bgnd1.name == 'Background 1 for Dataset 1'
-    assert bgnd2.name == 'Background 2 for Dataset 1'
-    assert comb.name == 'Dataset [1]'
+    check_stat_info(stats[0], (1, ), None, 42, 39)
+    check_stat_info(stats[1], (1, ), (1, ), 106, 105)
+    check_stat_info(stats[2], (1, ), (2, ), 36, 35)
+    check_stat_info(stats[3], [1], None, 184, 181)
 
-    assert src.ids == (1,)
-    assert bgnd1.ids == (1,)
-    assert bgnd2.ids == (1,)
-    assert comb.ids == [1]
 
-    assert src.bkg_ids is None
-    assert bgnd1.bkg_ids == (1,)
-    assert bgnd2.bkg_ids == (2,)
-    assert comb.bkg_ids is None
+def test_get_stat_info_multi_backgrounds(clean_astro_ui):
+    """A complex case to check the ordering. Testing #1721
 
-    assert src.numpoints == 42
-    assert bgnd1.numpoints == 106
-    assert bgnd2.numpoints == 36
-    assert comb.numpoints == 184
+    Three PHA datasets:
+      - first with no background
+      - second with one background
+      - third with two backgrounds
 
-    assert src.dof == 39
-    assert bgnd1.dof == 105
-    assert bgnd2.dof == 35
-    assert comb.dof == 181
+    """
+
+    # Create the data sets
+    #   a - 2 channels, no background
+    #   b - 3 channels, one background
+    #   c - 4 channels, two backgrounds
+    #
+    ui.dataspace1d(1, 2, id="a", dstype=ui.DataPHA)
+    ui.dataspace1d(1, 3, id="b", dstype=ui.DataPHA)
+    ui.dataspace1d(1, 3, id="b", bkg_id=1, dstype=ui.DataPHA)
+    ui.dataspace1d(1, 4, id="c", dstype=ui.DataPHA)
+    ui.dataspace1d(1, 4, id="c", bkg_id="up", dstype=ui.DataPHA)
+    ui.dataspace1d(1, 4, id="c", bkg_id="down", dstype=ui.DataPHA)
+
+    # set some data
+    #
+    ui.set_counts("a", [1, 2])
+    ui.set_counts("b", [1, 2, 1])
+    ui.set_counts("b", [1, 0, 1], bkg_id=1)
+    ui.set_counts("c", [2, 1, 0, 2])
+    ui.set_counts("c", [0, 0, 1, 1], bkg_id="up")
+    ui.set_counts("c", [1, 1, 0, 0], bkg_id="down")
+
+    # Create the responses. Use the same grid and just subset
+    # for the different datasets.
+    #
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.5, 0.8])
+
+    elo = egrid[0:2]
+    ehi = egrid[1:3]
+    ui.set_rmf("a", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi))
+
+    elo = egrid[0:3]
+    ehi = egrid[1:4]
+    ui.set_rmf("b", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi))
+    ui.set_rmf("b", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi), bkg_id=1)
+
+    elo = egrid[0:4]
+    ehi = egrid[1:5]
+    ui.set_rmf("c", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi))
+    ui.set_rmf("c", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi), bkg_id="up")
+    ui.set_rmf("c", create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi), bkg_id="down")
+
+    # Very simple model
+    #
+    ui.set_source("a", ui.const1d.smdl)
+    ui.set_source("b", smdl)
+    ui.set_source("c", smdl)
+
+    ui.set_bkg_source("b", ui.const1d.bmdl, bkg_id=1)
+    ui.set_bkg_source("c", bmdl, bkg_id="up")
+    ui.set_bkg_source("c", bmdl, bkg_id="down")
+
+    smdl.c0 = 0.2
+    bmdl.c0 = 0.1
+    stats = ui.get_stat_info()
+    assert len(stats) == 7
+
+    assert stats[0].name == 'Dataset a'
+    assert stats[1].name == 'Dataset b'
+    assert stats[2].name == 'Background 1 for Dataset b'
+    assert stats[3].name == 'Dataset c'
+    assert stats[4].name == 'Background up for Dataset c'
+    assert stats[5].name == 'Background down for Dataset c'
+    assert stats[6].name == "Datasets ['a', 'b', 'c']"
+
+    check_stat_info(stats[0], ("a", ), None, 2, 1)
+    check_stat_info(stats[1], ("b", ), None, 3, 1)
+    check_stat_info(stats[2], ("b", ), (1, ), 3, 2)
+    check_stat_info(stats[3], ("c", ), None, 4, 2)
+    check_stat_info(stats[4], ("c", ), ("up", ), 4, 3)
+    check_stat_info(stats[5], ("c", ), ("down", ), 4, 3)
+    check_stat_info(stats[6], ["a", "b", "c"], None, 20, 18)
 
 
 @requires_data
@@ -1909,14 +1937,13 @@ def test_bkg_analysis_setting_no_response(idval, direct, clean_astro_ui):
 
     fake_pha(idval, direct, response=False)
 
+    emsg = '^No instrument response found for dataset ex$'
     if idval is None:
-        with pytest.raises(DataErr) as exc:
+        with pytest.raises(DataErr, match=emsg):
             ui.set_analysis('energy')
     else:
-        with pytest.raises(DataErr) as exc:
+        with pytest.raises(DataErr, match=emsg):
             ui.set_analysis(idval, 'energy')
-
-    assert str(exc.value) == 'No instrument response found for dataset ex'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one"])
@@ -1960,3 +1987,113 @@ def test_bkg_analysis_setting_changed(idval, direct, analysis, clean_astro_ui):
 
     assert src.units == analysis
     assert bkg.units == analysis
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one"])
+def test_partially_set_bkg_models(idval, clean_astro_ui):
+    """We do not set a background model for all the backgrounds.
+
+    Regression test what happens.
+    """
+
+    ui.set_stat("leastsq")
+    ui.set_method("simplex")
+
+    idopt = 1 if idval is None else idval
+    ui.load_arrays(idopt, [1, 2, 3], [1, 1, 1], ui.DataPHA)
+    ui.get_data(idopt).name = f"fake-{idval}"
+
+    ui.set_bkg(idopt, DataPHA("up", [1, 2, 3], [0, 1, 1]), bkg_id="up")
+    ui.set_bkg(idopt, DataPHA("down", [1, 2, 3], [1, 0, 0]), bkg_id="down")
+
+    # Fake a response
+    #
+    egrid = np.asarray([0.2, 0.3, 0.4, 0.5])
+
+    ui.set_arf(idopt, create_arf(egrid[:-1], egrid[1:]))
+
+    # Set the source model
+    #
+    ui.set_source(idopt, ui.const1d.mdl)
+
+    # Only set one of the background models
+    ui.set_bkg_source(idopt, ui.const1d.bmdldn, bkg_id="down")
+
+    emsg = f"^background model up for data set {idopt} has not been set$"
+    with pytest.raises(ModelErr, match=emsg):
+        ui.get_stat_info()
+
+    with pytest.raises(ModelErr, match=emsg):
+        ui.fit()
+
+    # Note that fit_bkg will skip the bkg_id=up data set.
+    #
+    ui.fit_bkg()
+    fres = ui.get_fit_results()
+    assert fres.datasets == (idopt, )
+    assert fres.succeeded
+    assert fres.parnames == ("bmdldn.c0", )
+    assert fres.numpoints == 3
+    assert fres.dof == 2
+    assert fres.istatval == pytest.approx(0.83)
+    assert fres.statval == pytest.approx(2 / 3)
+    assert fres.parvals == pytest.approx([3 + 1/3])
+
+
+def test_fit_with_bkg_models_missing(clean_astro_ui):
+    """Check what happens if a bkg model is missing.
+
+    This is a regression test and should be compared to
+    test_fit_bkg_with_bkg_models_missing.
+    """
+
+    ui.load_arrays(1, [1, 2], [2, 4], ui.DataPHA)
+    ui.set_bkg(1, DataPHA("up", [1, 2], [2, 1]), bkg_id=1)
+    ui.set_bkg(1, DataPHA("down", [1, 2], [2, 1]), bkg_id=2)
+
+    egrid = np.asarray([0.2, 0.3, 0.4])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    ui.set_arf(1, arf)
+    ui.set_arf(1, arf, bkg_id=1)
+    ui.set_arf(1, arf, bkg_id=2)
+
+    ui.set_source(1, ui.const1d.smdl)
+    ui.set_bkg_source(1, ui.const1d.smdl, bkg_id=1)
+
+    with pytest.raises(ModelErr,
+                       match="^background model 2 for data set 1 has not been set"):
+        ui.fit()
+
+
+def test_fit_bkg_with_bkg_models_missing(clean_astro_ui):
+    """Check what happens if a bkg model is missing.
+
+    This is a regression test and should be compared to
+    test_fit_with_bkg_models_missing.
+    """
+
+    ui.set_stat("leastsq")
+
+    ui.load_arrays(1, [1, 2], [2, 4], ui.DataPHA)
+    ui.set_bkg(1, DataPHA("up", [1, 2], [2, 1]), bkg_id=1)
+    ui.set_bkg(1, DataPHA("down", [1, 2], [2, 2]), bkg_id=2)
+
+    egrid = np.asarray([0.2, 0.3, 0.4])
+    arf = create_arf(egrid[:-1], egrid[1:])
+    ui.set_arf(1, arf)
+    ui.set_arf(1, arf, bkg_id=1)
+    ui.set_arf(1, arf, bkg_id=2)
+
+    # Note that we do not set a source model as it is not required
+    # by fit_bkg:
+    #    ui.set_source(1, ui.const1d.smdl)
+    #
+    ui.set_bkg_source(1, ui.const1d.bmdl, bkg_id=1)
+
+    # Unlike ui.fit, this does not complain about a missing model for
+    # bkg_id=2.
+    #
+    ui.fit_bkg()
+    fres = ui.get_fit_results()
+    assert fres.parnames == ("bmdl.c0", )
+    assert fres.parvals == pytest.approx([15])

@@ -21,23 +21,27 @@
 from configparser import ConfigParser
 import copy
 import copyreg as copy_reg
+from dataclasses import dataclass
 import importlib
 import inspect
 import logging
 import os
 import pickle
 import sys
+from typing import Union
 
 import numpy
 
 from sherpa import get_config
 import sherpa.all
+from sherpa.data import Data, DataSimulFit
+from sherpa.fit import Fit
 from sherpa.models.basic import TableModel
-from sherpa.models.model import Model
+from sherpa.models.model import Model, SimulFitModel
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
-    DataErr, IdentifierErr, ModelErr, PlotErr, SessionErr
+    DataErr, IdentifierErr, ModelErr, ParameterErr, PlotErr, SessionErr
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -585,6 +589,15 @@ def set_filter(data, val, ignore=False):
         data.mask = val
     else:
         data.mask = ~val
+
+
+@dataclass
+class FitStore:
+    """Store per-dataset information for a fit"""
+
+    idval : Union[int, str]
+    data : Data
+    model : Model
 
 
 ###############################################################################
@@ -6023,7 +6036,7 @@ class Session(NoNewAttributesAfterInit):
         """
         # If user mistakenly passes an actual model reference,
         # just return the reference
-        if isinstance(name, sherpa.models.Model):
+        if isinstance(name, Model):
             return name
 
         _check_str_type(name, "name")
@@ -6097,7 +6110,7 @@ class Session(NoNewAttributesAfterInit):
         # If user mistakenly passes an actual model reference,
         # just return (i.e., create_model_component(const1d.c1)
         # is redundant, so just return)
-        if isinstance(typename, sherpa.models.Model) and name is None:
+        if isinstance(typename, Model) and name is None:
             return typename
 
         _check_str_type(typename, "typename")
@@ -6527,7 +6540,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_str(model):
             model = self._eval_model_expression(model)
 
-        self._set_item(id, model, self._models, sherpa.models.Model, 'model',
+        self._set_item(id, model, self._models, Model, 'model',
                        'a model object or model expression string')
         self._runparamprompt(model.pars)
 
@@ -6659,7 +6672,7 @@ class Session(NoNewAttributesAfterInit):
         # mis-matched model. This means we can not just use
         # _set_item but have to do it manually.
         #
-        _check_type(model, sherpa.models.Model, 'source model',
+        _check_type(model, Model, 'source model',
                     'a model object or model expression string')
 
         # Fit(data, model) does the dimensionality validation. Note
@@ -6669,7 +6682,7 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         data = self._data.get(id)
         if data is not None:
-            sherpa.fit.Fit(data, model)
+            Fit(data, model)
 
         self._sources[id] = model
         self._runparamprompt(model.pars)
@@ -6724,7 +6737,7 @@ class Session(NoNewAttributesAfterInit):
     def _check_model(self, model):
         if _is_str(model):
             model = self._eval_model_expression(model)
-        _check_type(model, sherpa.models.Model, 'model',
+        _check_type(model, Model, 'model',
                     'a model object or model expression string')
         return model
 
@@ -8295,128 +8308,232 @@ class Session(NoNewAttributesAfterInit):
     # Fitting
     ###########################################################################
 
-    def _add_extra_data_and_models(self, ids, datasets, models):
-        pass
+    def _get_fit_ids(self, id, otherids=None):
+        """Return the identifiers that will be used for a fit.
 
-    def _get_fit_ids(self, id, otherids):
-        # If id==None, assume it means, simultaneous fit
-        # to all data sets that have models assigned to
-        # them.  Otherwise, assume that id and otherids
-        # as input list the data sets to be fit.
+        This routine does not ensure that the dataset actually exists.
+
+        Parameters
+        ----------
+        id: int or str or None
+            If None then this will select all data sets.
+        otherids: sequence of int or str or None, or None
+            When id is not None, the other identifiers to use.
+
+        Returns
+        -------
+        idvals : list of int or str
+            The identifiers that may contain data. It will not
+            be empty.
+
+        """
+
         if id is None:
-            all_ids = self.list_data_ids()
-            if (len(all_ids) > 0):
-                id = all_ids[0]
-                del all_ids[0]
-                otherids = tuple(all_ids)
-            if id is None:
-                id = self._fix_id(id)
+            ids = self.list_data_ids()
+            if len(ids) == 0:
+                raise IdentifierErr("getitem", "data set", self._default_id, "has not been set")
+
+            return ids
 
         ids = [id]
-        for nextid in otherids:
-            nextid = self._fix_id(nextid)
-            if nextid not in ids:
-                ids.append(nextid)
+        if otherids is None:
+            return ids
+
+        for idval in otherids:
+            idval = self._fix_id(idval)
+            if idval not in ids:
+                ids.append(idval)
 
         return ids
 
-    def _get_fit_obj(self, datasets, models, estmethod, numcores=1):
+    def _get_fit_obj(self, store, estmethod, numcores=1):
+        """Create the fit object given the data and models.
 
-        datasets = tuple(datasets)
-        models = tuple(models)
-        if len(datasets) == 1:
-            d = datasets[0]
-            m = models[0]
-        else:
-            d = sherpa.data.DataSimulFit('simulfit data', datasets, numcores)
-            m = sherpa.models.SimulFitModel('simulfit model', models)
+        Parameters
+        ----------
+        store : list of FitStore
+            The per-dataset data and model information.
+        estmethod : `sherpa.estmethods.EstMethod` or None
+            Passed to the Fit object.
+        numcores : int, optional
+            The number of CPU cores to use (this is used when
+            evaluating the models for multiple data sets).
+
+        Returns
+        -------
+        ids, fit : tuple, `sherpa.fit.Fit` instance
+            The datasets used and the fit object.
+
+        Notes
+        -----
+
+        The data needed is passed around as a list of tuples as it
+        makes it easy to pass in extra information in derived classes.
+        It could be updated to pass around an object that exposes
+        given fields (e.g. idval, dataset, and model) but at the
+        moment it is not needed.
+
+        """
+
         if not self._current_method.name == 'gridsearch':
-            if m.is_discrete:
-                raise ModelErr(
-                    "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
+            for s in store:
+                if s.model.is_discrete:
+                    raise ModelErr(
+                        "You are trying to fit a model which has a discrete template model component with a continuous optimization method. Since CIAO4.6 this is not possible anymore. Please use gridsearch as the optimization method and make sure that the 'sequence' option is correctly set, or enable interpolation for the templates you are loading (which is the default behavior).")
 
-        f = sherpa.fit.Fit(d, m, self._current_stat, self._current_method,
-                           estmethod, self._current_itermethod)
+        if len(store) == 1:
+            d = store[0].data
+            m = store[0].model
+        else:
+            datasets = [s.data for s in store]
+            d = DataSimulFit('simulfit data', datasets, numcores)
 
-        return f
+            models = [s.model for s in store]
+            m = SimulFitModel('simulfit model', models)
+
+        # Ensure the id value is not repeated, but keep the order (so can not
+        # just convert to a set and back again).
+        #
+        idvals = []
+        for s in store:
+            idval = s.idval
+            if idval not in idvals:
+                idvals.append(idval)
+
+        return tuple(idvals), Fit(d, m, self._current_stat, self._current_method,
+                                  estmethod, self._current_itermethod)
 
     def _prepare_fit(self, id, otherids=()):
         """Ensure we have all the requested ids, datasets, and models.
 
+        This checks whether the dataset is loaded and has an
+        associated source or model. If datasets are explicitly listed
+        then they must contain both data and a model, but when id is
+        None then those data sets which have no model are skipped.
+
+        Parameters
+        ----------
+        id: int or str or None
+            If `None` then this fits all data simultaneously.
+        otherids: sequence of int or str or None, or None
+            When id is not None, the other identifiers to use.
+
+        Returns
+        -------
+        store : list of FitStore
+
+        Raises
+        ------
+        IdentifierErr
+            If there are no datasets with an associated model.
+
         """
 
-        # prep data ids for fitting
         ids = self._get_fit_ids(id, otherids)
 
-        # Which of the requested ids have
-        # - data
-        # - model
-        # - the data and model match dimensionality
+        # If an id is given then it must have data but does not have to
+        # have a model (to keep with existing behavior).
         #
-        # At present we only check the first two here, as the assumption
-        # is that the results are going to be used to create a Fit object
-        # and that will check the last condition.
+        # At this point ids is not empty.
         #
-        datasets = []
-        models = []
-        fit_to_ids = []
-        for i in ids:
-            ds = self.get_data(i)
-            mod = None
-            if i in self._models or i in self._sources:
-                mod = self.get_model(i)
-
-            if mod is None:
+        out = []
+        for idval in ids:
+            data = self.get_data(idval)
+            try:
+                model = self.get_model(idval)
+            except IdentifierErr:
                 continue
 
-            datasets.append(ds)
-            models.append(mod)
-            fit_to_ids.append(i)
+            out.append(FitStore(idval, data, model))
 
-        # If no data sets have models assigned to them, stop now.
-        if len(models) < 1:
+        # Ensure we have something to fit.
+        #
+        if len(out) == 0:
             raise IdentifierErr("nomodels")
 
-        return fit_to_ids, datasets, models
+        return out
 
     def _get_fit(self, id, otherids=(), estmethod=None, numcores=1):
+        """Create the fit object for the given identifiers.
 
-        fit_to_ids, datasets, models = self._prepare_fit(id, otherids)
+        Given the identifiers (the id and otherids arguments), find
+        the data and models and return a Fit object.
 
-        self._add_extra_data_and_models(fit_to_ids, datasets, models)
+        Parameters
+        ----------
+        id : int or str or None
+            The identifier to fit. A value of None means all available
+            datasets with models.
+        otherids : sequence of int or str
+            Additional identifiers to fit. Ignored when id is None.
+        estmethod : `sherpa.estmethods.EstMethod` or None
+            Passed to the Fit object.
+        numcores : int, optional
+            The number of CPU cores to use (this is used when
+            evaluating the models for multiple data sets).
 
-        f = self._get_fit_obj(datasets, models, estmethod, numcores)
+        Returns
+        -------
+        ids, fit : tuple, `sherpa.fit.Fit` instance
+            The datasets used (it may not include all the values from
+            id and otherids as those datasets without associated
+            models will be skipped) and the fit object.
 
-        fit_to_ids = tuple(fit_to_ids)
+        Raises
+        ------
+        IdentifierErr
+            If there are no datasets with an associated model.
 
-        return fit_to_ids, f
+        """
+
+        store = self._prepare_fit(id, otherids)
+        return self._get_fit_obj(store, estmethod, numcores)
 
     def _get_stat_info(self):
+        """Return the stat info structures.
 
-        ids, datasets, models = self._prepare_fit(None)
+        For each identifier with a dataset and model, calculate the
+        current statistics (stored in a sherpa.fit.StatInfoResults
+        object), and then - when there are multiple such identifiers -
+        a combined result.
 
-        self._add_extra_data_and_models(ids, datasets, models)
+        Returns
+        -------
+        stats : list of `sherpa.Fit.StatInfoResults`
+
+        Raises
+        ------
+        IdentifierErr
+            If there are no datasets with an associated model.
+
+        """
+
+        store = self._prepare_fit(None)
 
         output = []
-        if len(datasets) > 1:
-            for id, d, m in zip(ids, datasets, models):
-                f = sherpa.fit.Fit(d, m, self._current_stat)
+
+        # Report the per-dataset statistics before the combined data
+        # (only relevant when there's more than one entry).
+        #
+        if len(store) > 1:
+            for s in store:
+                f = Fit(s.data, s.model, self._current_stat)
 
                 statinfo = f.calc_stat_info()
-                statinfo.name = 'Dataset %s' % (str(id))
-                statinfo.ids = (id,)
+                statinfo.name = f'Dataset {s.idval}'
+                statinfo.ids = (s.idval, )
 
                 output.append(statinfo)
 
-        f = self._get_fit_obj(datasets, models, None)
+        idvals, f = self._get_fit_obj(store, estmethod=None)
         statinfo = f.calc_stat_info()
-        if len(ids) == 1:
-            statinfo.name = 'Dataset %s' % str(ids)
+        statinfo.ids = list(idvals)  # TODO: list or tuple?
+        if len(store) == 1:
+            statinfo.name = f'Dataset {statinfo.ids}'  # TODO: do we want to use ids[0]?
         else:
-            statinfo.name = 'Datasets %s' % str(ids).strip("()")
-        statinfo.ids = ids
-        output.append(statinfo)
+            statinfo.name = f'Datasets {statinfo.ids}'
 
+        output.append(statinfo)
         return output
 
     def calc_stat_info(self):
@@ -10263,12 +10380,12 @@ class Session(NoNewAttributesAfterInit):
         for arg in args:
             if isinstance(arg, sherpa.models.Parameter):
                 if arg.frozen:
-                    raise sherpa.utils.err.ParameterErr('frozen', arg.fullname)
+                    raise ParameterErr('frozen', arg.fullname)
 
                 parlist.append(arg)
                 continue
 
-            if isinstance(arg, sherpa.models.Model):
+            if isinstance(arg, Model):
                 norig = len(parlist)
                 for par in arg.pars:
                     if not par.frozen:
@@ -10281,7 +10398,7 @@ class Session(NoNewAttributesAfterInit):
                 #
                 if len(parlist) == norig:
                     emsg = f"Model '{arg.name}' has no thawed parameters"
-                    raise sherpa.utils.err.ParameterErr(emsg)
+                    raise ParameterErr(emsg)
 
                 continue
 

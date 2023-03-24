@@ -443,10 +443,9 @@ def test_get_method_invalid():
     """Errors out with invalid argument"""
 
     s = Session()
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'name' must be a string$"):
         s.get_method(opt.MonCar)
-
-    assert str(exc.value) == "'name' must be a string"
 
 
 @pytest.mark.parametrize("name,req",
@@ -465,10 +464,9 @@ def test_set_method_invalid():
     """Errors out with invalid argument"""
 
     s = Session()
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'meth' must be a method name or object$"):
         s.set_method(sherpa.models.basic.Const1D)
-
-    assert str(exc.value) == "'meth' must be a method name or object"
 
 
 def test_get_stat_default():
@@ -496,10 +494,9 @@ def test_get_stat_invalid():
     """Errors out with invalid argument"""
 
     s = Session()
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'name' must be a string$"):
         s.get_stat(stats.Cash)
-
-    assert str(exc.value) == "'name' must be a string"
 
 
 @pytest.mark.parametrize("name,req",
@@ -518,10 +515,9 @@ def test_set_stat_invalid():
     """Errors out with invalid argument"""
 
     s = Session()
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'stat' must be a statistic name or object$"):
         s.set_stat(sherpa.models.basic.Const1D)
-
-    assert str(exc.value) == "'stat' must be a statistic name or object"
 
 
 def test_get_default_id():
@@ -541,7 +537,7 @@ def test_get_error_estimator(name, req):
     """Can we get the error estimator?"""
 
     s = Session()
-    func = getattr(s, 'get_{}'.format(name))
+    func = getattr(s, f'get_{name}')
     ans = func()
     assert isinstance(ans, req)
 
@@ -554,7 +550,7 @@ def test_get_error_opt(name):
     """
 
     s = Session()
-    func = getattr(s, 'get_{}_opt'.format(name))
+    func = getattr(s, f'get_{name}_opt')
     ans = func('sigma')
     assert ans == pytest.approx(1.0)
 
@@ -567,12 +563,11 @@ def test_get_error_opt_invalid(name, fullname):
     """We can not ask for an error option that does not exist"""
 
     s = Session()
-    func = getattr(s, 'get_{}_opt'.format(name))
+    func = getattr(s, f'get_{name}_opt')
 
-    with pytest.raises(ArgumentErr) as exc:
+    emsg = f"^'the-real-sigma' is not a valid option for method {fullname}$"
+    with pytest.raises(ArgumentErr, match=emsg):
         func('the-real-sigma')
-
-    assert str(exc.value) == "'the-real-sigma' is not a valid option for method {}".format(fullname)
 
 
 @pytest.mark.parametrize("name", ['covar', 'conf', 'proj'])
@@ -583,8 +578,8 @@ def test_set_error_opt(name):
     """
 
     s = Session()
-    gfunc = getattr(s, 'get_{}_opt'.format(name))
-    sfunc = getattr(s, 'set_{}_opt'.format(name))
+    gfunc = getattr(s, f'get_{name}_opt')
+    sfunc = getattr(s, f'set_{name}_opt')
 
     sfunc('sigma', 1.6)
     ans = gfunc('sigma')
@@ -599,12 +594,11 @@ def test_set_error_opt_invalid(name, fullname):
     """We can not set an error option that does not exist"""
 
     s = Session()
-    func = getattr(s, 'set_{}_opt'.format(name))
+    func = getattr(s, f'set_{name}_opt')
 
-    with pytest.raises(ArgumentErr) as exc:
+    emsg = f"^'the-real-sigma' is not a valid option for method {fullname}$"
+    with pytest.raises(ArgumentErr, match=emsg):
         func('the-real-sigma', 2.4)
-
-    assert str(exc.value) == "'the-real-sigma' is not a valid option for method {}".format(fullname)
 
 
 @pytest.mark.parametrize("name,fullname",
@@ -615,12 +609,11 @@ def test_error_estimate_not_set(name, fullname):
     """Error out if the error estimate is not set"""
 
     s = Session()
-    func = getattr(s, 'get_{}_results'.format(name))
+    func = getattr(s, f'get_{name}_results')
 
-    with pytest.raises(SessionErr) as exc:
+    with pytest.raises(SessionErr,
+                       match=f"^{fullname} has not been performed"):
         func()
-
-    assert str(exc.value) == "{} has not been performed".format(fullname)
 
 
 @pytest.mark.parametrize("name", ['covar', 'conf', 'proj'])
@@ -631,19 +624,17 @@ def test_error_estimate_not_run(name):
     s.set_default_id('bob')
     func = getattr(s, name)
 
-    with pytest.raises(IdentifierErr) as exc:
+    with pytest.raises(IdentifierErr,
+                       match="^data set bob has not been set"):
         func()
-
-    assert str(exc.value) == "data set bob has not been set"
 
 
 def test_set_source_invalid():
 
     s = Session()
-    with pytest.raises(ArgumentErr) as ae:
+    with pytest.raises(ArgumentErr,
+                       match="^invalid model expression: name 'made_up' is not defined$"):
         s.set_source('2 * made_up.foo')
-
-    assert str(ae.value) == "invalid model expression: name 'made_up' is not defined"
 
 
 def test_paramprompt_default():
@@ -905,19 +896,17 @@ def test_paramprompt_single_parameter_check_too_many_commas(caplog):
 def test_add_user_pars_modelname_not_a_string():
 
     s = Session()
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'model name' must be a string$"):
         s.add_user_pars(23, ['x'])
-
-    assert str(exc.value) == "'model name' must be a string"
 
 
 def test_add_user_pars_modelname_not_a_model1():
 
     s = Session()
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'not a model' must be a user model$"):
         s.add_user_pars('not a model', ['x'])
-
-    assert str(exc.value) == "'not a model' must be a user model"
 
 
 def test_add_user_pars_modelname_not_a_model2():
@@ -926,10 +915,9 @@ def test_add_user_pars_modelname_not_a_model2():
     s = Session()
     s._add_model_types(sherpa.models.basic)
     s.create_model_component('scale1d', 'foo')
-    with pytest.raises(ArgumentTypeErr) as exc:
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'foo' must be a user model$"):
         s.add_user_pars('foo', ['x'])
-
-    assert str(exc.value) == "'foo' must be a user model"
 
     # remove the foo symbol from the global table
     s.clean()
@@ -1105,10 +1093,9 @@ def test_set_default_id_check_invalid(value):
 
     s = Session()
 
-    with pytest.raises(IdentifierErr) as err:
+    emsg = f"^identifier '{value}' is a reserved word$"
+    with pytest.raises(IdentifierErr, match=emsg):
         s.set_default_id(value)
-
-    assert str(err.value) == f"identifier '{value}' is a reserved word"
 
 
 class ModelWithDoc(Model):
