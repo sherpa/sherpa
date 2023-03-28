@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -378,7 +378,6 @@ def test_fake_pha_file(make_data_path, clean_astro_ui, reset_seed):
     assert data.counts.sum() < 10000
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 def test_fake_pha_file_as_list(make_data_path, clean_astro_ui, reset_seed):

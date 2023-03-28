@@ -8985,7 +8985,8 @@ class Session(sherpa.ui.utils.Session):
         # if it was, it would have gone through load_arf already above.
         if not (rmf is None and arf is None):
             if numpy.iterable(arf):
-                self.load_multi_arfs(id, arf, range(len(arf)))
+                resp_ids = range(1, len(arf) + 1)
+                self.load_multi_arfs(id, arf, resp_ids=resp_ids)
             elif arf is None:
                # In some cases, arf is None, but rmf is not.
                # For example, XMM/RGS does uses only a single file (the RMF)
@@ -8995,7 +8996,8 @@ class Session(sherpa.ui.utils.Session):
                self.set_arf(id, arf)
 
             if numpy.iterable(rmf):
-                self.load_multi_rmfs(id, rmf, range(len(rmf)))
+                resp_ids = range(1, len(rmf) + 1)
+                self.load_multi_rmfs(id, rmf, resp_ids=resp_ids)
             else:
                 self.set_rmf(id, rmf)
 
