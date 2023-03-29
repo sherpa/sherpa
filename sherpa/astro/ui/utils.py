@@ -18,9 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from dataclasses import dataclass
 import logging
 import os
 import sys
+from typing import Union
 import warnings
 
 import numpy
@@ -37,11 +39,14 @@ from sherpa.data import Data1D, Data1DAsymmetricErrs
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
+from sherpa.fit import Fit
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
+from sherpa.models.model import Model
 from sherpa.astro import fake
 from sherpa.astro.data import DataPHA
+import sherpa.astro.instrument
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -175,6 +180,13 @@ def _save_errorcol(session, idval, filename, bkg_id,
     err = get_err(idval, filter=False, bkg_id=bkg_id)
     session.save_arrays(filename, [x, err], fields=['X', colname],
                         ascii=asciiflag, clobber=clobber)
+
+
+@dataclass
+class BkgFitStore(sherpa.ui.utils.FitStore):
+    """Store per-dataset information for a background fit"""
+
+    bkg_id : Union[int, str]
 
 
 class Session(sherpa.ui.utils.Session):
@@ -3979,10 +3991,10 @@ class Session(sherpa.ui.utils.Session):
         args = None
         fields = None
 
-#        if type(d) in (sherpa.data.Data1DInt, sherpa.astro.data.DataPHA):
+#        if type(d) in (sherpa.data.Data1DInt, DataPHA):
 #            args = [obj.xlo, obj.xhi, obj.y]
 #            fields = ["XLO", "XHI", str(objtype).upper()]
-        if isinstance(d, sherpa.astro.data.DataPHA) and \
+        if isinstance(d, DataPHA) and \
            objtype in ('model', 'source'):
             args = [obj.xlo, obj.xhi, obj.y]
             fields = ["XLO", "XHI", str(objtype).upper()]
@@ -4474,7 +4486,7 @@ class Session(sherpa.ui.utils.Session):
         if not numpy.iterable(d.mask):
             raise DataErr('nomask', idval)
 
-        if isinstance(d, sherpa.astro.data.DataPHA):
+        if isinstance(d, DataPHA):
             x = d._get_ebins(group=True)[0]
         else:
             x = d.get_indep(filter=False)[0]
@@ -6433,7 +6445,7 @@ class Session(sherpa.ui.utils.Session):
         if bkg is None:
             id, bkg = bkg, id
         data = self._get_pha_data(id)
-        _check_type(bkg, sherpa.astro.data.DataPHA, 'bkg', 'a PHA data set')
+        _check_type(bkg, DataPHA, 'bkg', 'a PHA data set')
         data.set_background(bkg, bkg_id)
 
     def list_bkg_ids(self, id=None):
@@ -8929,7 +8941,7 @@ class Session(sherpa.ui.utils.Session):
         if id in self._data:
             d = self._get_pha_data(id)
         else:
-            d = sherpa.astro.data.DataPHA('', None, None)
+            d = DataPHA('', None, None)
             self.set_data(id, d)
 
         if rmf is None and len(d.response_ids) == 0:
@@ -9042,7 +9054,7 @@ class Session(sherpa.ui.utils.Session):
                                           *args, **kwargs)
 
         psf = sherpa.astro.instrument.PSFModel(modelname, kernel)
-        if isinstance(kernel, sherpa.models.Model):
+        if isinstance(kernel, Model):
             self.freeze(kernel)
         self._add_model_component(psf)
         self._psf_models.append(psf)
@@ -9129,7 +9141,7 @@ class Session(sherpa.ui.utils.Session):
             id, model = model, id
 
         data = self.get_data(id)
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             model = self.get_model(id)
 
             if data._responses:
@@ -9184,7 +9196,7 @@ class Session(sherpa.ui.utils.Session):
         model = super()._add_convolution_models(id, data, model, is_source)
 
         # If we don't need to deal with DataPHA issues we can return
-        if not isinstance(data, sherpa.astro.data.DataPHA) or not is_source:
+        if not isinstance(data, DataPHA) or not is_source:
             return model
 
         return sherpa.astro.background.add_response(self, id, data, model)
@@ -9421,7 +9433,7 @@ class Session(sherpa.ui.utils.Session):
             id, model = model, id
         if _is_str(model):
             model = self._eval_model_expression(model)
-        self._set_item(id, model, self._pileup_models, sherpa.models.Model,
+        self._set_item(id, model, self._pileup_models, Model,
                        'model', 'a model object or model expression string')
 
     def get_bkg_source(self, id=None, bkg_id=None):
@@ -9483,6 +9495,10 @@ class Session(sherpa.ui.utils.Session):
         whether created automatically or explicitly, with
         ``set_bkg_full_model``.
 
+        .. versionchanged:: 4.15.1
+           The response will now be taken from the source dataset if
+           the background has no response.
+
         Parameters
         ----------
         id : int or str, optional
@@ -9517,36 +9533,36 @@ class Session(sherpa.ui.utils.Session):
         >>> bkg = get_bkg_model()
 
         """
-        id = self._fix_id(id)
-        bkg_id = self._fix_background_id(id, bkg_id)
+        idval = self._fix_id(id)
+        bkg_id = self._fix_background_id(idval, bkg_id)
 
-        mdl = self._background_models.get(id, {}).get(bkg_id)
-
-        if mdl is None:
-            is_source = True
-            src = self._background_sources.get(id, {}).get(bkg_id)
-        else:
-            is_source = False
-            src = mdl
-
-        if src is None:
-            raise ModelErr('nobkg', bkg_id, id)
-
-        if not is_source:
-            return src
-
-        # The background response is set by the DataPHA.set_background
-        # method (copying one over, if it does not exist), which means
-        # that the only way to get to this point is if the user has
-        # explicitly deleted the background response. In this case
-        # we error out.
+        # If we have a model + response, return it.
         #
-        bkg = self.get_bkg(id, bkg_id)
-        if len(bkg.response_ids) == 0:
-            raise DataErr('nobrsp', str(id), str(bkg_id))
+        mdl = self._background_models.get(idval, {}).get(bkg_id)
+        if mdl is not None:
+            return mdl
 
-        resp = sherpa.astro.instrument.Response1D(bkg)
+        # Find the source model and, if present, add a response.
+        #
+        src = self._background_sources.get(idval, {}).get(bkg_id)
+        if src is None:
+            raise ModelErr('nobkg', bkg_id, idval)
+
+        # What do we use for the response? If the background has a
+        # response we use that, otherwise we fall-back to use the
+        # reponse from the source (in general the response should be
+        # set by calls like set_background, but if the response is
+        # added after set_background is called it may be needed).
+        #
+        bkg_data = self.get_bkg(idval, bkg_id)
+        try:
+            resp = sherpa.astro.instrument.Response1D(bkg_data)
+        except DataErr:
+            data = self.get_data(idval)
+            resp = sherpa.astro.instrument.Response1D(data)
+
         return resp(src)
+
 
     def set_bkg_full_model(self, id, model=None, bkg_id=None):
         """Define the convolved background model expression for a PHA data set.
@@ -9618,7 +9634,7 @@ class Session(sherpa.ui.utils.Session):
 
         if _is_str(model):
             model = self._eval_model_expression(model)
-        _check_type(model, sherpa.models.Model, 'model',
+        _check_type(model, Model, 'model',
                     'a model object or model expression string')
 
         self._background_models.setdefault(id, {})[bkg_id] = model
@@ -9744,7 +9760,7 @@ class Session(sherpa.ui.utils.Session):
 
         if _is_str(model):
             model = self._eval_model_expression(model)
-        _check_type(model, sherpa.models.Model, 'model',
+        _check_type(model, Model, 'model',
                     'a model object or model expression string')
 
         self._background_sources.setdefault(id, {})[bkg_id] = model
@@ -10127,94 +10143,168 @@ class Session(sherpa.ui.utils.Session):
     # Fitting
     ###########################################################################
 
-    # TODO: change bkg_ids default to None or some other "less-dangerous" value
-    def _add_extra_data_and_models(self, ids, datasets, models, bkg_ids={}):
-        for id, d in zip(ids, datasets):
-            if isinstance(d, sherpa.astro.data.DataPHA):
-                bkg_models = self._background_models.get(id, {})
-                bkg_srcs = self._background_sources.get(id, {})
-                if d.subtracted:
-                    if (bkg_models or bkg_srcs):
-                        warning(('data set %r is background-subtracted; ' +
-                                 'background models will be ignored') % id)
-                elif not (bkg_models or bkg_srcs):
-                    if d.background_ids and self._current_stat.name != 'wstat':
-                        warning(('data set %r has associated backgrounds, ' +
-                                 'but they have not been subtracted, ' +
-                                 'nor have background models been set') % id)
-                else:
-                    bkg_ids[id] = []
-                    for bkg_id in d.background_ids:
+    def _prepare_fit(self, id, otherids=()):
+        """Ensure we have all the requested ids, datasets, and models.
 
-                        if not (bkg_id in bkg_models or bkg_id in bkg_srcs):
-                            raise ModelErr('nobkg', bkg_id, id)
+        Background datasets are included if present.
 
-                        bkg = d.get_background(bkg_id)
-                        datasets.append(bkg)
+        Parameters
+        ----------
+        id: int or str or None
+            If None then this fits all data.
+        otherids: sequence of int or str or None, or None
+            When id is not None, the other identifiers to use.
 
-                        bkg_data = d
-                        if len(bkg.response_ids) != 0:
-                            bkg_data = bkg
+        Returns
+        -------
+        store : list of FitStore
+            This may contain BkgFitStore objects.
 
-                        bkg_model = bkg_models.get(bkg_id, None)
-                        bkg_src = bkg_srcs.get(bkg_id, None)
-                        if bkg_model is None and bkg_src is not None:
-                            resp = sherpa.astro.instrument.Response1D(bkg_data)
-                            bkg_model = resp(bkg_src)
-                        models.append(bkg_model)
-                        bkg_ids[id].append(bkg_id)
+        Raises
+        ------
+        IdentifierErr
+            If there are no datasets with an associated model.
+
+        """
+
+        store = super()._prepare_fit(id, otherids)
+
+        # The backgrounds are added after the source data, that is for
+        # a case where 1 and 3 have backgrounds (2 and 1 components
+        # respectively) but 2 does not we return
+        #
+        #     data 1
+        #     data 1 - background 1
+        #     data 1 - background 2
+        #     data 2
+        #     data 3
+        #     data 3 - background 1
+        #
+        out = []
+        for s in store:
+            out.append(s)
+            if not isinstance(s.data, DataPHA):
+                continue
+
+            bkg_models = self._background_models.get(s.idval, {})
+            bkg_srcs = self._background_sources.get(s.idval, {})
+            if s.data.subtracted:
+                if (bkg_models or bkg_srcs):
+                    warning(f'data set {repr(s.idval)} is background-subtracted; ' +
+                            'background models will be ignored')
+
+                continue
+
+            if not (bkg_models or bkg_srcs):
+                if s.data.background_ids and self._current_stat.name != 'wstat':
+                    warning(f'data set {repr(s.idval)} has associated backgrounds, ' +
+                            'but they have not been subtracted, ' +
+                            'nor have background models been set')
+
+                continue
+
+            for bkg_id in s.data.background_ids:
+                bkg_data = s.data.get_background(bkg_id)
+                bkg_model = self.get_bkg_model(s.idval, bkg_id)
+                out.append(BkgFitStore(s.idval, bkg_data, bkg_model, bkg_id))
+
+        return out
 
     def _prepare_bkg_fit(self, id, otherids=()):
+        """Ensure we have all the requested background ids, datasets, and models.
 
-        # prep data ids for fitting
+        Unlike _prepare_fit this is only for background datasets.
+
+        Parameters
+        ----------
+        id: int or str or None
+            If None then this fits all background data.
+        otherids: sequence of int or str or None, or None
+            When id is not None, the other identifiers to use.
+
+        Returns
+        -------
+        store : list of BkgFitStore
+
+        Raises
+        ------
+        IdentifierErr
+            If there are no background datasets with an associated
+            model.
+
+        """
+
+        # This replicates some logic from super()._prepare_fit() but
+        # the conditions are not quite the same (the source data does
+        # not need a model here, as long as the background datasets
+        # have models).
+        #
         ids = self._get_fit_ids(id, otherids)
 
-        # Gather up lists of data objects and models to fit
-        # to them.  Add to lists *only* if there actually is
-        # a model to fit.  E.g., if data sets 1 and 2 exist,
-        # but only data set 1 has a model, then "fit all" is
-        # understood to mean "fit 1".  If both data sets have
-        # models, then "fit all" means "fit 1 and 2 together".
-        datasets = []
-        models = []
-        fit_to_ids = []
-        for i in ids:
+        # If an id is given then it must have data but does not have to
+        # have a model (to keep with existing behavior). Only those
+        # background components with a background model are used.
+        #
+        # At this point ids is not empty.
+        #
+        out = []
+        for idval in ids:
+            data = self.get_data(idval)
+            if not isinstance(data, DataPHA):
+                continue
 
-            # get PHA data and associated background models by id
-            data = self._get_pha_data(i)
-            bkg_models = self._background_models.get(i, {})
-            bkg_sources = self._background_sources.get(i, {})
+            for bkg_id in data.background_ids:
+                bkg_data = self.get_bkg(idval, bkg_id)
+                try:
+                    bkg_model = self.get_bkg_model(idval, bkg_id)
+                except ModelErr:
+                    continue
 
-            for bi in data.background_ids:
-                mod = None
-                ds = self.get_bkg(i, bi)
-                if bi in bkg_models or bi in bkg_sources:
-                    mod = self.get_bkg_model(i, bi)
+                out.append(BkgFitStore(idval, bkg_data, bkg_model, bkg_id))
 
-                if mod is not None:
-                    datasets.append(ds)
-                    models.append(mod)
-
-            fit_to_ids.append(i)
-
-        # If no data sets have models assigned to them, stop now.
-        if len(models) < 1:
+        # Ensure we have something to fit.
+        #
+        if len(out) == 0:
             raise IdentifierErr("nomodels")
 
-        return fit_to_ids, datasets, models
+        return out
 
     def _get_bkg_fit(self, id, otherids=(), estmethod=None, numcores=1):
+        """Create the fit object for the given identifiers.
 
-        fit_to_ids, datasets, models = self._prepare_bkg_fit(id, otherids)
+        Given the identifiers (the id and otherids arguments), find
+        the background data and models and return a Fit object.
 
-        # Do not add backgrounds to backgrounds.
-        # self._add_extra_data_and_models(fit_to_ids, datasets, models)
+        Parameters
+        ----------
+        id : int or str or None
+            The identifier to fit. A value of None means all available
+            background datasets with models.
+        otherids : sequence of int or str
+            Additional identifiers to fit. Ignored when id is None.
+        estmethod : `sherpa.estmethods.EstMethod` or None
+            Passed to the Fit object.
+        numcores : int, optional
+            The number of CPU cores to use (this is used when
+            evaluating the models for multiple data sets).
 
-        fit_to_ids = tuple(fit_to_ids)
+        Returns
+        -------
+        ids, fit : tuple, `sherpa.fit.Fit` instance
+            The datasets used (it may not include all the values from
+            id and otherids as those background datasets without
+            associated models will be skipped) and the fit object.
 
-        f = self._get_fit_obj(datasets, models, estmethod, numcores)
+        Raises
+        ------
+        IdentifierErr
+            If there are no background datasets with an associated
+            model.
 
-        return fit_to_ids, f
+        """
+
+        store = self._prepare_bkg_fit(id, otherids)
+        return self._get_fit_obj(store, estmethod, numcores=numcores)
 
     # also in sherpa.utils
     # DOC-TODO: existing docs suggest that bkg_only can be set, but looking
@@ -10379,8 +10469,8 @@ class Session(sherpa.ui.utils.Session):
         Fit the background for data sets 1 and 2, then do a
         simultaneous fit to the source and background data sets:
 
-        >>> fit_bkg(1,2)
-        >>> fit(1,2)
+        >>> fit_bkg(1, 2)
+        >>> fit(1, 2)
 
         """
         kwargs['bkg_only'] = True
@@ -10388,31 +10478,26 @@ class Session(sherpa.ui.utils.Session):
 
     def _fit(self, id=None, *otherids, **kwargs):
         # pylint: disable=W1113
-        ids = f = None
-        fit_bkg = False
-
-        if 'bkg_only' in kwargs and kwargs.pop('bkg_only'):
-            fit_bkg = True
 
         # validate the kwds to f.fit() so user typos do not
         # result in regular fit
         # valid_keys = sherpa.utils.get_keyword_names(sherpa.fit.Fit.fit)
-        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores')
+        valid_keys = ('outfile', 'clobber', 'filter_nan', 'cache', 'numcores', 'bkg_only')
         for key in kwargs.keys():
             if key not in valid_keys:
-                raise TypeError("unknown keyword argument: '%s'" % key)
+                raise TypeError(f"unknown keyword argument: '{key}'")
 
         numcores = kwargs.get('numcores', 1)
 
-        if fit_bkg:
+        if 'bkg_only' in kwargs and kwargs.pop('bkg_only'):
             ids, f = self._get_bkg_fit(id, otherids, numcores=numcores)
         else:
             ids, f = self._get_fit(id, otherids, numcores=numcores)
 
         if 'filter_nan' in kwargs and kwargs.pop('filter_nan'):
-            for i in ids:
-                self.get_data(i).mask = self.get_data(
-                    i).mask & numpy.isfinite(self.get_data(i).get_x())
+            for idval in ids:
+                data = self.get_data(idval)
+                data.mask &= numpy.isfinite(data.get_x())
 
         res = f.fit(**kwargs)
         res.datasets = ids
@@ -10421,55 +10506,36 @@ class Session(sherpa.ui.utils.Session):
 
     def _get_stat_info(self):
 
-        ids, datasets, models = self._prepare_fit(None)
+        store = self._prepare_fit(None)
 
-        extra_ids = {}
-        self._add_extra_data_and_models(ids, datasets, models, extra_ids)
-
+        # Create the stat info objects for multiple datasets, with the
+        # backgrounds having a different name (and setting the bkg_ids
+        # field).
+        #
         output = []
-        nids = len(ids)
-        if len(datasets) > 1:
-            bkg_datasets = datasets[nids:]
-            bkg_models = models[nids:]
-            jj = 0
-            for id, d, m in zip(ids, datasets[:nids], models[:nids]):
-                f = sherpa.fit.Fit(d, m, self._current_stat)
-
+        if len(store) > 1:
+            for s in store:
+                f = Fit(s.data, s.model, self._current_stat)
                 statinfo = f.calc_stat_info()
-                statinfo.name = 'Dataset %s' % (str(id))
-                statinfo.ids = (id,)
+                statinfo.ids = (s.idval, )
+
+                try:
+                    statinfo.name = f"Background {s.bkg_id} for Dataset {s.idval}"
+                    statinfo.bkg_ids = (s.bkg_id, )
+                except AttributeError:
+                    statinfo.name = f"Dataset {s.idval}"
 
                 output.append(statinfo)
 
-                bkg_ids = extra_ids.get(id, ())
-                nbkg_ids = len(bkg_ids)
-                idx_lo = jj * nbkg_ids
-                idx_hi = idx_lo + nbkg_ids
-                for bkg_id, bkg, bkg_mdl in zip(bkg_ids,
-                                                bkg_datasets[idx_lo:idx_hi],
-                                                bkg_models[idx_lo:idx_hi]):
-
-                    bkg_f = sherpa.fit.Fit(bkg, bkg_mdl, self._current_stat)
-
-                    statinfo = bkg_f.calc_stat_info()
-                    statinfo.name = ("Background %s for Dataset %s" %
-                                     (str(bkg_id), str(id)))
-                    statinfo.ids = (id,)
-                    statinfo.bkg_ids = (bkg_id,)
-
-                    output.append(statinfo)
-
-                jj += 1
-
-        f = self._get_fit_obj(datasets, models, None)
+        idvals, f = self._get_fit_obj(store, estmethod=None)
         statinfo = f.calc_stat_info()
-        if len(ids) == 1:
-            statinfo.name = 'Dataset %s' % str(ids)
+        statinfo.ids = list(idvals)  # TODO: list or tuple?
+        if len(idvals) == 1:
+            statinfo.name = f'Dataset {statinfo.ids}'  # TODO: do we want to use ids[0]?
         else:
-            statinfo.name = 'Datasets %s' % str(ids).strip("()")
-        statinfo.ids = ids
-        output.append(statinfo)
+            statinfo.name = f'Datasets {statinfo.ids}'
 
+        output.append(statinfo)
         return output
 
     ###########################################################################
@@ -10482,7 +10548,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["data"][2]
             if recalc:
                 plotobj.prepare(data, self.get_stat())
@@ -10499,7 +10565,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["model"][2]
             if recalc:
                 plotobj.prepare(data, self.get_model(id), self.get_stat())
@@ -10591,7 +10657,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["source"][2]
             if recalc:
                 plotobj.prepare(data, self.get_source(id), lo=lo, hi=hi)
@@ -10607,7 +10673,7 @@ class Session(sherpa.ui.utils.Session):
             return plotobj
 
         data = self.get_data(id)
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
 
             dataobj = self.get_data_plot(id, recalc=recalc)
 
@@ -10707,7 +10773,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["model_component"][2]
             if recalc:
                 if not has_pha_response(model):
@@ -10735,7 +10801,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             data = self._get_data(id)
 
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             plotobj = self._plot_types["source_component"][2]
             if recalc:
                 plotobj.prepare(data, model, self.get_stat())
@@ -10751,7 +10817,7 @@ class Session(sherpa.ui.utils.Session):
                         recalc=False):
 
         if recalc and conv_model is None and \
-           isinstance(self.get_data(id), sherpa.astro.data.DataPHA):
+           isinstance(self.get_data(id), DataPHA):
             conv_model = self.get_response(id)
 
         return super().get_pvalue_plot(null_model=null_model, alt_model=alt_model,
@@ -11856,7 +11922,7 @@ class Session(sherpa.ui.utils.Session):
         """
 
         data = self.get_data(id)
-        if isinstance(data, sherpa.astro.data.DataPHA):
+        if isinstance(data, DataPHA):
             # Note: lo/hi arguments mean we can not just rely on superclass
             plotobj = self.get_source_plot(id, lo=lo, hi=hi, recalc=not replot)
             self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
@@ -13732,7 +13798,7 @@ class Session(sherpa.ui.utils.Session):
         data = self._get_data_or_bkg(id, bkg_id)
 
         if (modelcomponent is not None) and \
-           not isinstance(modelcomponent, sherpa.models.model.Model):
+           not isinstance(modelcomponent, Model):
             raise ArgumentTypeErr('badarg', 'modelcomponent', 'a model')
 
         # We can not have a "full model" expression so error-out nicely here.
@@ -14085,8 +14151,7 @@ class Session(sherpa.ui.utils.Session):
             else:
                 model = self.get_bkg_source(id, bkg_id)
         else:
-            _check_type(model, sherpa.models.Model, 'model',
-                        'a model object')
+            _check_type(model, Model, 'model', 'a model object')
 
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
 
@@ -14202,8 +14267,7 @@ class Session(sherpa.ui.utils.Session):
             else:
                 model = self.get_bkg_source(id, bkg_id)
         else:
-            _check_type(model, sherpa.models.Model, 'model',
-                        'a model object')
+            _check_type(model, Model, 'model', 'a model object')
 
         return sherpa.astro.utils.calc_energy_flux(data, model, lo, hi)
 
