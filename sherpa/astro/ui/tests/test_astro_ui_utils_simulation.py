@@ -117,10 +117,10 @@ def identity(x, rng=None):
                           (identity, [12, 12, 12])
                           ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_exposure_is_none_data_is_none(method, expected, idval, clean_astro_ui, reset_seed):
+def test_fake_pha_exposure_is_none_data_is_none(method, expected, idval, clean_astro_ui):
     """What happens if the exposure is None in the fake_pha call and the DataPHA?"""
 
-    np.random.seed(7239652)
+    ui.set_rng(np.random.RandomState(7239652))
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -155,10 +155,10 @@ def test_fake_pha_exposure_is_none_data_is_none(method, expected, idval, clean_a
                           (identity, [12, 12, 12])
                           ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_exposure_is_none_data_is_set(method, expected, idval, clean_astro_ui, reset_seed):
+def test_fake_pha_exposure_is_none_data_is_set(method, expected, idval, clean_astro_ui):
     """What happens if the exposure is None in the fake_pha call but is set in DataPHA?"""
 
-    np.random.seed(4596)
+    ui.set_rng(np.random.RandomState(4596))
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -195,7 +195,7 @@ def test_fake_pha_exposure_is_none_data_is_set(method, expected, idval, clean_as
                           ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 @pytest.mark.parametrize("has_bkg", [True, False])
-def test_fake_pha_basic(method, expected, idval, has_bkg, clean_astro_ui, reset_seed):
+def test_fake_pha_basic(method, expected, idval, has_bkg, clean_astro_ui):
     """No background.
 
     See also test_fake_pha_add_background
@@ -206,7 +206,7 @@ def test_fake_pha_basic(method, expected, idval, has_bkg, clean_astro_ui, reset_
     not be used in the simulation.
     """
 
-    np.random.seed(20347)
+    ui.set_rng(np.random.RandomState(20347))
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -260,13 +260,13 @@ def test_fake_pha_basic(method, expected, idval, has_bkg, clean_astro_ui, reset_
                          [(None, [198, 384, 409]),
                           (identity, [200, 400, 400])
                           ])
-def test_fake_pha_basic_arfrmf_set_in_advance(method, expected, clean_astro_ui, reset_seed):
+def test_fake_pha_basic_arfrmf_set_in_advance(method, expected, clean_astro_ui):
     """Similar to test_fake_pha_basic but instead of passing in
     the RMF, we set it before. The result should be the same, so we
     don't have to go through all the parameterization of that test.
     """
 
-    np.random.seed(20348)
+    ui.set_rng(np.random.RandomState(20348))
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -306,7 +306,7 @@ def test_fake_pha_basic_arfrmf_set_in_advance(method, expected, clean_astro_ui, 
                           (identity, [325, 525, 525])
                           ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_add_background(method, expected, idval, clean_astro_ui, reset_seed):
+def test_fake_pha_add_background(method, expected, idval, clean_astro_ui):
     """Check we can add a background component.
 
     See also test_fake_pha_basic.
@@ -314,7 +314,7 @@ def test_fake_pha_add_background(method, expected, idval, clean_astro_ui, reset_
     For simplicity we use perfect responses.
     """
 
-    np.random.seed(20349)
+    ui.set_rng(np.random.RandomState(20349))
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -356,11 +356,11 @@ def test_fake_pha_add_background(method, expected, idval, clean_astro_ui, reset_
                           (identity, [200, 400, 400])
                           ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_no_data(method, expected, idval, clean_astro_ui, reset_seed):
+def test_fake_pha_no_data(method, expected, idval, clean_astro_ui):
     """What happens if there is no data loaded at the id?
     """
 
-    np.random.seed(21347)
+    ui.set_rng(np.random.RandomState(21347))
 
     ebins = np.asarray([1.1, 1.2, 1.4, 1.6])
     elo = ebins[:-1]
@@ -395,14 +395,14 @@ def test_fake_pha_no_data(method, expected, idval, clean_astro_ui, reset_seed):
 
 @requires_fits
 @requires_data
-def test_fake_pha_file(make_data_path, clean_astro_ui, reset_seed):
+def test_fake_pha_file(make_data_path, clean_astro_ui):
     '''Test fake_pha using real input file.
 
     Note that HEG orders -1 and +1 should really be treated spearately,
     but for this test we just need two files to load.
     '''
 
-    np.random.seed(22347)
+    ui.set_rng(np.random.RandomState(22347))
 
     ui.set_source("gauss1d.g1")
     g1 = ui.get_source()
@@ -431,7 +431,7 @@ def test_fake_pha_file(make_data_path, clean_astro_ui, reset_seed):
 
 @requires_fits
 @requires_data
-def test_fake_pha_file_as_list(make_data_path, clean_astro_ui, reset_seed):
+def test_fake_pha_file_as_list(make_data_path, clean_astro_ui):
     '''Test fake_pha using real input file. See #1722
 
     This is test_fake_pha_file with the responses given as a list
@@ -440,7 +440,7 @@ def test_fake_pha_file_as_list(make_data_path, clean_astro_ui, reset_seed):
 
     '''
 
-    np.random.seed(22347)
+    ui.set_rng(np.random.RandomState(22347))
 
     ui.set_source("gauss1d.g1")
     g1 = ui.get_source()
@@ -470,14 +470,14 @@ def test_fake_pha_file_as_list(make_data_path, clean_astro_ui, reset_seed):
 
 @requires_fits
 @requires_data
-def test_fake_pha_multi_file(make_data_path, clean_astro_ui, reset_seed):
+def test_fake_pha_multi_file(make_data_path, clean_astro_ui):
     '''Test fake_pha using multiple real input files.
 
     Note that HEG orders -1 and +1 should really be treated spearately,
     but for this test we just need two files to load.
     '''
 
-    np.random.seed(22349)
+    ui.set_rng(np.random.RandomState(22349))
 
     ui.set_source("gauss1d.g1")
     g1 = ui.get_source()
@@ -510,7 +510,7 @@ def test_fake_pha_multi_file(make_data_path, clean_astro_ui, reset_seed):
                          [(None, [42, 137, 53]),
                           (identity, [50, 151.25, 50])  # TODO: should be [50, 150, 50]
                           ])
-def test_fake_pha_background_model(method, expected, clean_astro_ui, reset_seed):
+def test_fake_pha_background_model(method, expected, clean_astro_ui):
     """Check we can add a background component.
 
     See also test_fake_pha_basic.
@@ -518,7 +518,7 @@ def test_fake_pha_background_model(method, expected, clean_astro_ui, reset_seed)
     For simplicity we use perfect responses.
     """
 
-    np.random.seed(27347)
+    ui.set_rng(np.random.RandomState(27347))
 
     idval = 'qwerty'
     channels = np.arange(1, 4, dtype=np.int16)
@@ -665,14 +665,15 @@ def test_fake_pha_issue_1209(make_data_path, clean_astro_ui, tmp_path):
 
 @requires_fits
 @requires_data
-def test_fake_pha_issue_1568(make_data_path, clean_astro_ui, reset_seed):
+def test_fake_pha_issue_1568(make_data_path, clean_astro_ui):
     """Check issue #1568.
 
     In some cases, in particular XMM/RGS we only have an RMF, but no ARF.
     Make sure faking still works.
     """
     infile = make_data_path("xmmrgs/P0112880201R1S004RSPMAT1003.FTZ")
-    np.random.seed(22347)
+
+    ui.set_rng(np.random.RandomState(22347))
 
     ui.set_source("gauss1d.g1")
     g1 = ui.get_source()
@@ -763,8 +764,7 @@ def check_analysis_settings(expected, bexpected=None,
 def setup_fake_pha_test():
     """Set up for test_fake_pha_xxx
 
-    The test calling this should use the reset_seed fixture as this
-    sets the random seed to a known value.
+    This sets the ui set_rng call with a fixed generator.
 
     """
 
@@ -846,7 +846,7 @@ def setup_fake_pha_test():
     #
     check_analysis_settings(expected=[20, 20, 20])
 
-    np.random.seed(392347)
+    ui.set_rng(np.random.RandomState(392347))
     return (arf_src, rmf_src)
 
 
@@ -854,7 +854,7 @@ def setup_fake_pha_test():
                          [(None, [85, 75, 297]),
                           (identity, [80, 80, 300])
                           ])
-def test_fake_pha_without_bgnd(method, expected, clean_astro_ui, reset_seed):
+def test_fake_pha_without_bgnd(method, expected, clean_astro_ui):
     """Extend test_fake_pha_with_bgnd_model to check with no background"""
 
     arf, rmf = setup_fake_pha_test()
@@ -867,7 +867,7 @@ def test_fake_pha_without_bgnd(method, expected, clean_astro_ui, reset_seed):
                          [(None, [85, 76, 297]),
                           (identity, [80, 80.3, 300.3])  # TODO: should be [80, 80, 300]
                           ])
-def test_fake_pha_with_bgnd_model(method, expected, clean_astro_ui, reset_seed):
+def test_fake_pha_with_bgnd_model(method, expected, clean_astro_ui):
     """Add a test found when investigating #1685
 
     At some point working on #1684 this included the background twice,
@@ -892,7 +892,7 @@ def test_fake_pha_with_bgnd_model(method, expected, clean_astro_ui, reset_seed):
                          [(None, [90, 89, 1196]),
                           (identity, [85, 87.5, 1202.5])
                           ])
-def test_fake_pha_with_bgnd_data(method, expected, clean_astro_ui, reset_seed):
+def test_fake_pha_with_bgnd_data(method, expected, clean_astro_ui):
     """Extend test_fake_pha_with_bgnd_model to check with a dataset."""
 
     bexpected = [10, 15, 5]

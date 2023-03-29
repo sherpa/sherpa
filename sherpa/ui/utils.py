@@ -973,6 +973,53 @@ class Session(NoNewAttributesAfterInit):
             'source_component': sherpa.image.ComponentSourceImage()
         }
 
+        # Reset the generator.
+        #
+        self.set_rng(None)
+
+    def get_rng(self):
+        """Return the RNG generator in use.
+
+        The return can be None, which means the legacy NumPy
+        RandomState generator is in use: see
+        https://numpy.org/doc/stable/reference/random/legacy.html
+
+        .. versionadded:: 4.16.0
+
+        See Also
+        --------
+        set_rng
+
+        """
+
+        return self._rng
+
+    def set_rng(self, rng):
+        """Set the RNG generator.
+
+        .. versionadded:: 4.16.0
+           This replaces the seed argument for certain routines and
+           the need to call np.random.seed directly in others.
+
+        Parameters
+        ----------
+        rng : numpy.random.Generator or None
+            The random-number generator. If None then the
+            legacy NumPy RandomState generator is used.
+
+        See Also
+        --------
+        get_rng
+
+        """
+
+        if rng is not None and not isinstance(rng,
+                                              (numpy.random.Generator,
+                                               numpy.random.RandomState)):
+            raise ArgumentTypeErr("badarg", "rng", "a Generator or None")
+
+        self._rng = rng
+
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.
 
@@ -4159,7 +4206,8 @@ class Session(NoNewAttributesAfterInit):
         """
         data = self.get_data(id)
         model = self.get_model(id)
-        self.set_dep(id, method(data.eval_model(model)))
+        ndep = method(data.eval_model(model), rng=self.get_rng())
+        self.set_dep(id, ndep)
 
     @staticmethod
     def _read_data(readfunc, filename, *args, **kwargs):
@@ -9422,6 +9470,11 @@ class Session(NoNewAttributesAfterInit):
         get_pvalue_results : Return the data calculated by the last plot_pvalue call.
         plot_pvalue : Compute and plot a histogram of likelihood ratios by simulating data.
 
+        Notes
+        -----
+        The random numbers are generated using the generator returned
+        by`get_rng`.
+
         Examples
         --------
 
@@ -9457,7 +9510,8 @@ class Session(NoNewAttributesAfterInit):
                          stat=self._current_stat,
                          method=self._current_method,
                          niter=num,
-                         numcores=numcores)
+                         numcores=numcores,
+                         rng=self.get_rng())
 
         info(results.format())
         self._pvalue_results = results
@@ -11379,6 +11433,9 @@ class Session(NoNewAttributesAfterInit):
         running `get_draws`. The results from `get_draws` is used to
         estimate the parameter distributions.
 
+        The random numbers are generated using the generator returned
+        by`get_rng`.
+
         References
         ----------
 
@@ -11435,9 +11492,8 @@ class Session(NoNewAttributesAfterInit):
 
             covar_matrix = covar_results.extra_output
 
-        stats, accept, params = self._pyblocxs.get_draws(
-            fit, covar_matrix, niter=niter)
-        return (stats, accept, params)
+        return self._pyblocxs.get_draws(fit, covar_matrix,
+                                        niter=niter, rng=self.get_rng())
 
     ###########################################################################
     # Basic plotting

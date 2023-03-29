@@ -158,13 +158,13 @@ def check_draws(stats, accept, params):
 
 @requires_data
 @pytest.mark.parametrize('statname', sorted(RIGHT_STATS - {'wstat'}))
-def test_covar_as_argument(statname, clean_ui, setup_covar, reset_seed):
+def test_covar_as_argument(statname, clean_ui, setup_covar):
     """covariance matrix is sent to get_draws"""
 
     ui.set_stat(statname)
     ui.fit()
 
-    np.random.seed(SEED_VALUE)
+    ui.set_rng(np.random.RandomState(SEED_VALUE))
 
     # This should be the same as
     #
@@ -181,14 +181,14 @@ def test_covar_as_argument(statname, clean_ui, setup_covar, reset_seed):
 
 @requires_data
 @pytest.mark.parametrize('statname', sorted(RIGHT_STATS - {'wstat'}))
-def test_covar_as_none(statname, clean_ui, setup_covar, reset_seed):
+def test_covar_as_none(statname, clean_ui, setup_covar):
     """covariance matrix is not sent to get_draws"""
 
     ui.set_stat(statname)
     ui.fit()
     ui.covar()
 
-    np.random.seed(SEED_VALUE)
+    ui.set_rng(np.random.RandomState(SEED_VALUE))
 
     stats, accept, params = ui.get_draws(niter=10)
     check_draws(stats, accept, params)

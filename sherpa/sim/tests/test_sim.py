@@ -321,7 +321,7 @@ def test_normal_sample_matrix(setup):
     assert out == pytest.approx(EXPECTED_NORMAL2)
 
 
-def test_t_sample_matrix(setup, reset_seed):
+def test_t_sample_matrix(setup):
     ps = sim.StudentTSampleFromScaleMatrix()
     out = ps.get_sample(setup.fit, num=setup.num, dof=setup.dof,
                         rng=setup.rng)

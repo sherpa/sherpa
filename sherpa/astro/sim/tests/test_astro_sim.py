@@ -164,7 +164,7 @@ def test_pragbayes_pcaarf(sampler, setup):
 @requires_data
 @requires_fits
 @pytest.mark.parametrize("sampler", ["pragBayes", "fullbayes"])
-def test_pragbayes_pcaarf_limits(sampler, setup, caplog, reset_seed):
+def test_pragbayes_pcaarf_limits(sampler, setup, caplog):
     """Try and trigger limit issues.
 
     """
@@ -178,7 +178,6 @@ def test_pragbayes_pcaarf_limits(sampler, setup, caplog, reset_seed):
     # reducing the runtime.  This is not a guarantee that this is the
     # "fastest" seed, just that it's one of the better ones I've seen.
     #
-    np.random.seed(0x723c)
     rng = np.random.RandomState(0x723c)
 
     class HackAbs(XSwabs):

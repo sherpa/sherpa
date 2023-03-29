@@ -229,7 +229,7 @@ def test_ui(make_data_path, clean_astro_ui):
     ui.set_model('powlaw1d.p1')
     ui.fit()
 
-    np.random.seed(123)
+    ui.set_rng(np.random.RandomState(123))
     sample = ui.resample_data(1, 10, seed=123)
     for p in ['p1.gamma', 'p1.ampl']:
         assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p], rel=1e-4)

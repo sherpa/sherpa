@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2018, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2018, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -29,7 +30,7 @@ from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 @requires_data
 @requires_fits
 @requires_xspec
-def test_eqwith_err(make_data_path, restore_xspec_settings):
+def test_eqwith_err(make_data_path, restore_xspec_settings, clean_astro_ui):
 
     def check(a0, a1, a2):
         assert a0 == pytest.approx(0.16443033244310976, rel=1e-3)
@@ -56,12 +57,12 @@ def test_eqwith_err(make_data_path, restore_xspec_settings):
 
     ui.fit()
 
-    np.random.seed(12345)
+    ui.set_rng(np.random.RandomState(12345))
     result = ui.eqwidth(p1, p1 + g1, error=True, niter=100)
     check(result[0], result[1], result[2])
     params = result[3]
 
-    np.random.seed(12345)
+    ui.set_rng(np.random.RandomState(12345))
     result = ui.eqwidth(p1, p1 + g1, error=True, params=params, niter=100)
     check(result[0], result[1], result[2])
 
@@ -76,7 +77,7 @@ def test_eqwith_err(make_data_path, restore_xspec_settings):
 @requires_data
 @requires_fits
 @requires_xspec
-def test_eqwith_err1(make_data_path, restore_xspec_settings):
+def test_eqwith_err1(make_data_path, restore_xspec_settings, clean_astro_ui):
 
     def check1(e0, e1, e2):
         assert e0 == pytest.approx(0.028335201547206704, rel=1.0e-3)
@@ -96,12 +97,12 @@ def test_eqwith_err1(make_data_path, restore_xspec_settings):
     ui.freeze(g1.pos, g1.fwhm)
     ui.fit()
 
-    np.random.seed(2345)
+    ui.set_rng(np.random.RandomState(2345))
     e = ui.eqwidth(p1, p1 + g1, error=True, niter=100)
     check1(e[0], e[1], e[2])
     params = e[3]
 
-    np.random.seed(2345)
+    ui.set_rng(np.random.RandomState(2345))
     e = ui.eqwidth(p1, p1 + g1, error=True, params=params, niter=100)
     check1(e[0], e[1], e[2])
 
