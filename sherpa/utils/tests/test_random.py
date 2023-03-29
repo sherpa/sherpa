@@ -36,8 +36,15 @@ def test_poisson_noise_checks_dtype():
 def test_poisson_noise_checks_number_args():
 
     with pytest.raises(TypeError,
-                       match=r"^poisson_noise\(\) takes 1 positional argument but 3 were given$"):
+                       match=r"^poisson_noise\(\) takes from 1 to 2 positional arguments but 3 were given$"):
         poisson_noise(1, 2, 'ham')
+
+
+def test_poisson_noise_checks_rng():
+
+    with pytest.raises(AttributeError,
+                       match="'int' object has no attribute 'poisson'"):
+        poisson_noise(1, rng=123)
 
 
 def test_poisson_noise_scalar_none():
@@ -49,19 +56,20 @@ def test_poisson_noise_scalar_none():
 
 
 @pytest.mark.parametrize("x,expected", [(1000, 956), (4.3, 2)])
-def test_poisson_noise_scalar_rng(x, expected, reset_seed):
+def test_poisson_noise_scalar_rng(x, expected):
     """Send in a scalar, get back a scalar"""
 
-    np.random.seed(43)
-    out = poisson_noise(x)
+    rng = np.random.RandomState(43)
+    out = poisson_noise(x, rng=rng)
     assert type(out) == SherpaFloat
     assert out == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("x", [-1000, 0])
-def test_poisson_noise_scalar_not_positive(x):
+@pytest.mark.parametrize("rng", [None, np.random.RandomState(23)])
+def test_poisson_noise_scalar_not_positive(x, rng):
 
-    out = poisson_noise(x)
+    out = poisson_noise(x, rng=rng)
     assert type(out) == SherpaFloat
     assert out == 0.0
 
@@ -80,11 +88,11 @@ def test_poisson_noise_array_none():
     assert (ans == np.array([0, 1, 3])).all()
 
 
-def test_poisson_noise_array_rng(reset_seed):
+def test_poisson_noise_array_rng():
     """Send in an array, get back an array"""
 
-    np.random.seed(43)
-    out = poisson_noise([12, 4.5, 0.0, 8.2, -1])
+    rng = np.random.RandomState(43)
+    out = poisson_noise([12, 4.5, 0.0, 8.2, -1], rng=rng)
     assert type(out) == np.ndarray
     assert out.dtype.type == SherpaFloat
 

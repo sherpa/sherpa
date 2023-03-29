@@ -107,7 +107,7 @@ def test_fake_pha_incompatible_rmf(idval, clean_astro_ui):
         ui.fake_pha(idval, arf, rmf, 1000.0)
 
 
-def identity(x):
+def identity(x, rng=None):
     """Return the input data"""
     return x
 

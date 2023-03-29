@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2018, 2020, 2021
-#                Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2018, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -69,6 +69,7 @@ def setup(make_data_path):
     yield {'simarf': simarf,
            'pcaarf': pcaarf,
            'niter': 10,
+           'rng': np.random.RandomState(372425),
            'fit': fit}
 
     # Reset the logger
@@ -91,7 +92,9 @@ def test_pragbayes_simarf(setup):
     cov = covar_results.extra_output
 
     niter = setup['niter']
-    stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
+    rng = setup['rng']
+    stats, accept, params = mcmc.get_draws(fit, cov,
+                                           niter=niter, rng=rng)
 
     assert params.shape == (3, niter + 1)
 
@@ -119,8 +122,9 @@ def test_fullbayes_simarf_fails(setup):
     cov = covar_results.extra_output
 
     niter = setup['niter']
+    rng = setup['rng']
     with pytest.raises(TypeError) as exc:
-        mcmc.get_draws(fit, cov, niter=niter)
+        mcmc.get_draws(fit, cov, niter=niter, rng=rng)
 
     assert str(exc.value) == 'Simulation ARF must be PCA for FullBayes not SIM1DAdd'
 
@@ -142,7 +146,9 @@ def test_pragbayes_pcaarf(sampler, setup):
     cov = covar_results.extra_output
 
     niter = setup['niter']
-    stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
+    rng = setup['rng']
+    stats, accept, params = mcmc.get_draws(fit, cov,
+                                           niter=niter, rng=rng)
 
     assert params.shape == (3, niter + 1)
 
@@ -173,6 +179,7 @@ def test_pragbayes_pcaarf_limits(sampler, setup, caplog, reset_seed):
     # "fastest" seed, just that it's one of the better ones I've seen.
     #
     np.random.seed(0x723c)
+    rng = np.random.RandomState(0x723c)
 
     class HackAbs(XSwabs):
         """Restrict hard limits"""
@@ -232,7 +239,8 @@ def test_pragbayes_pcaarf_limits(sampler, setup, caplog, reset_seed):
         # we don't trigger the default warning check.
         #
         with pytest.warns(Warning):
-            stats, accept, params = mcmc.get_draws(fit, cov, niter=niter)
+            stats, accept, params = mcmc.get_draws(fit, cov,
+                                                   niter=niter, rng=rng)
 
     # This is a lower bound, in case there's any messages from
     # the sampling (either before or after displaying the

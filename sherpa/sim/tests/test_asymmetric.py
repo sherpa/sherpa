@@ -106,7 +106,8 @@ def fit_asymmetric_err(bench, data):
 def resample_data(data, bench, results_bench):
     model = fit_asymmetric_err(results_bench, data)
     rdata = ReSampleData(data, model)
-    result = rdata(niter=100, seed=123)
+    result = rdata(niter=100, seed=123,
+                   rng=np.random.RandomState(123))
 
     gamma = result['p1.gamma']
     ampl = result['p1.ampl']
@@ -219,7 +220,7 @@ def test_warning(make_data_path):
 
 @requires_data
 @requires_fits
-def test_ui(make_data_path):
+def test_ui(make_data_path, clean_astro_ui):
 
     infile = make_data_path('gro_delta.txt')
     ui.load_ascii_with_errors(1, infile, delta=True)
@@ -227,12 +228,14 @@ def test_ui(make_data_path):
     ui.set_stat('leastsq')
     ui.set_model('powlaw1d.p1')
     ui.fit()
+
+    np.random.seed(123)
     sample = ui.resample_data(1, 10, seed=123)
     for p in ['p1.gamma', 'p1.ampl']:
         assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p], rel=1e-4)
 
 
-def test_zero_case(reset_seed):
+def test_zero_case():
     """Check what happens when values can be near -1. See #740"""
 
     xs = np.arange(1, 6)
@@ -251,7 +254,8 @@ def test_zero_case(reset_seed):
     # niter explicitly).
     #
     # res = rd.call(niter=10, seed=47)
-    res = rd(niter=10, seed=47)
+    res = rd(niter=10, seed=47,
+             rng=np.random.RandomState(47))
 
     # Technically this depends on random chance, but it is rather
     # unlikely we'd get 10 -1 values here. Relax the -1 value and
@@ -272,14 +276,16 @@ def test_zero_case(reset_seed):
     assert (stats >= bestfit.statval).all()
 
 
-def test_resample_supports_data1d(caplog, reset_seed):
+def test_resample_supports_data1d(caplog):
 
     orig = Data1D("orig", [1, 2, 3], [4, 2, 5], [0.1, 0.2, 0.5])
     model = Const1D("mdl")
     resampler = ReSampleData(orig, model)
 
     with SherpaVerbosity("INFO"):
-        res = resampler(niter=10, seed=123)
+        # seed is unused of rng is set
+        res = resampler(niter=10, seed=None,
+                        rng=np.random.RandomState(123))
 
     assert len(caplog.records) == 1
     lname, lvl, msg = caplog.record_tuples[0]

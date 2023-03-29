@@ -21,11 +21,11 @@
 import logging
 
 import numpy
-import numpy.random
 
 from sherpa.estmethods import Covariance, Confidence
 from sherpa.utils.err import EstErr
 from sherpa.utils import parallel_map, NoNewAttributesAfterInit
+from sherpa.utils import random
 
 warning = logging.getLogger("sherpa").warning
 
@@ -42,7 +42,7 @@ __all__ = ('multivariate_t', 'multivariate_cauchy',
            )
 
 
-def multivariate_t(mean, cov, df, size=None):
+def multivariate_t(mean, cov, df, size=None, rng=None):
     """
     multivariate_t(mean, cov, df[, size])
 
@@ -51,6 +51,9 @@ def multivariate_t(mean, cov, df, size=None):
     freedom.  These parameters are analogous to the mean (average or "center"),
     variance (standard deviation, or "width," squared), and the degrees of
     freedom of the one-dimensional t distribution.
+
+    .. versionchanged:: 4.16.0
+       The rng parameter was added.
 
     Parameters
     ----------
@@ -66,6 +69,9 @@ def multivariate_t(mean, cov, df, size=None):
         generated, and packed in an `m`-by-`n`-by-`k` arrangement.  Because
         each sample is `N`-dimensional, the output shape is ``(m,n,k,N)``.
         If no shape is specified, a single (`N`-D) sample is returned.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        If set, the generator is used to create the random numbers. If
+        not set then the legacy numpy RandomState instance is used.
 
     Returns
     -------
@@ -81,22 +87,21 @@ def multivariate_t(mean, cov, df, size=None):
     """
     df = float(df)
     mean = numpy.asarray(mean)
-    normal = numpy.random.multivariate_normal(
-        numpy.zeros_like(mean), cov, size)
-    # x = numpy.sqrt(numpy.random.chisquare(df)/df)
-    # numpy.divide(normal, x, normal)
-    x = numpy.sqrt(numpy.random.chisquare(df, size) / df)
+
+    normal = random.multivariate_normal(rng, numpy.zeros_like(mean), cov, size=size)
+    x = numpy.sqrt(random.chisquare(rng, df, size=size) / df)
     numpy.divide(normal, x[numpy.newaxis].T, normal)
     numpy.add(mean, normal, normal)
     x = normal
     return x
 
 
-def multivariate_cauchy(mean, cov, size=None):
+# TODO: should this pass the size value through to multivariate_t?
+def multivariate_cauchy(mean, cov, size=None, rng=None):
     """
     This needs to be checked too! A reference to the literature the better
     """
-    return multivariate_t(mean, cov, 1, size=None)
+    return multivariate_t(mean, cov, 1, size=None, rng=rng)
 
 
 class ParameterScale(NoNewAttributesAfterInit):
@@ -296,12 +301,12 @@ class ParameterSample(NoNewAttributesAfterInit):
 
     """
 
-    def get_sample(self, fit, *, num=1):
+    def get_sample(self, fit, *, num=1, rng=None):
         """Return the samples.
 
         .. versionchanged:: 4.16.0
            All arguments but the first one must be passed as a keyword
-           argument.
+           argument. The rng parameter was added.
 
         Parameters
         ----------
@@ -310,6 +315,9 @@ class ParameterSample(NoNewAttributesAfterInit):
             the samples, along with any possible error analysis.
         num : int, optional
             The number of samples to return.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -400,7 +408,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
     but the upper bound is not).
     """
 
-    def get_sample(self, fit, *, factor=4, num=1):
+    def get_sample(self, fit, *, factor=4, num=1, rng=None):
         """Return the parameter samples.
 
         Parameters
@@ -413,6 +421,9 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
             the one-sigma error.
         num : int, optional
             The number of samples to return.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -423,9 +434,12 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
         """
         vals = numpy.array(fit.model.thawedpars)
         scales = self.scale.get_scales(fit)
-        samples = [numpy.random.uniform(val - factor * abs(scale),
-                                        val + factor * abs(scale),
-                                        int(num)) for val, scale in zip(vals, scales)]
+        size = int(num)
+        samples = [random.uniform(rng,
+                                  val - factor * abs(scale),
+                                  val + factor * abs(scale),
+                                  size=size)
+                   for val, scale in zip(vals, scales)]
         return numpy.asarray(samples).T
 
 
@@ -439,7 +453,7 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
     """
 
-    def get_sample(self, fit, *, myscales=None, num=1):
+    def get_sample(self, fit, *, myscales=None, num=1, rng=None):
         """Return the parameter samples.
 
         Parameters
@@ -452,6 +466,9 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
             it is calculated from the fit object.
         num : int, optional
             The number of samples to return.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -462,8 +479,10 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
         """
         vals = numpy.array(fit.model.thawedpars)
         scales = self.scale.get_scales(fit, myscales)
-        samples = [numpy.random.normal(
-            val, scale, int(num)) for val, scale in zip(vals, scales)]
+        size = int(num)
+
+        samples = [random.normal(rng, val, scale, size=size)
+                   for val, scale in zip(vals, scales)]
         return numpy.asarray(samples).T
 
 
@@ -477,7 +496,7 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, mycov=None, num=1):
+    def get_sample(self, fit, *, mycov=None, num=1, rng=None):
         """Return the parameter samples.
 
         Parameters
@@ -490,6 +509,9 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
             calculated from the fit object.
         num : int, optional
             The number of samples to return.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -500,7 +522,7 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         """
         vals = numpy.array(fit.model.thawedpars)
         cov = self.scale.get_scales(fit, mycov)
-        return numpy.random.multivariate_normal(vals, cov, int(num))
+        return random.multivariate_normal(rng, vals, cov, size=int(num))
 
 
 class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
@@ -513,7 +535,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, dof, num=1):
+    def get_sample(self, fit, *, dof, num=1, rng=None):
         """Return the parameter samples.
 
         Parameters
@@ -525,6 +547,9 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
             The degrees of freedom of the distribution.
         num : int, optional
             The number of samples to return.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -535,7 +560,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
         """
         vals = numpy.array(fit.model.thawedpars)
         cov = self.scale.get_scales(fit)
-        return multivariate_t(vals, cov, dof, int(num))
+        return multivariate_t(vals, cov, dof, int(num), rng=rng)
 
 
 class Evaluate():
@@ -602,7 +627,7 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, num=1, numcores=None):
+    def get_sample(self, fit, *, num=1, numcores=None, rng=None):
         """Return the statistic and parameter samples.
 
         Parameters
@@ -616,6 +641,9 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
             Should the calculation be done on multiple CPUs?
             The default (None) is to rely on the parallel.numcores
             setting of the configuration file.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -628,7 +656,7 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
         """
 
         samples = NormalParameterSampleFromScaleMatrix.get_sample(
-            self, fit, num=num)
+            self, fit, num=num, rng=rng)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -642,7 +670,7 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
 
     """
 
-    def get_sample(self, fit, *, num=1, numcores=None):
+    def get_sample(self, fit, *, num=1, numcores=None, rng=None):
         """Return the statistic and parameter samples.
 
         Parameters
@@ -656,6 +684,9 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
             Should the calculation be done on multiple CPUs?
             The default (None) is to rely on the parallel.numcores
             setting of the configuration file.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -667,7 +698,7 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
 
         """
         samples = NormalParameterSampleFromScaleVector.get_sample(
-            self, fit, num=num)
+            self, fit, num=num, rng=rng)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -679,7 +710,7 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
     but the upper bound is not).
     """
 
-    def get_sample(self, fit, *, num=1, factor=4, numcores=None):
+    def get_sample(self, fit, *, num=1, factor=4, numcores=None, rng=None):
         """Return the statistic and parameter samples.
 
         Parameters
@@ -696,6 +727,9 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
             Should the calculation be done on multiple CPUs?
             The default (None) is to rely on the parallel.numcores
             setting of the configuration file.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -707,7 +741,8 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
 
         """
         samples = UniformParameterSampleFromScaleVector.get_sample(self, fit,
-                                                                   factor=factor, num=num)
+                                                                   factor=factor, num=num,
+                                                                   rng=rng)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -721,7 +756,7 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, num=1, dof=2, numcores=None):
+    def get_sample(self, fit, *, num=1, dof=2, numcores=None, rng=None):
         """Return the statistic and parameter samples.
 
         Parameters
@@ -737,6 +772,9 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
             Should the calculation be done on multiple CPUs?
             The default (None) is to rely on the parallel.numcores
             setting of the configuration file.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+            If set, the generator is used to create the random numbers. If
+            not set then the legacy numpy RandomState instance is used.
 
         Returns
         -------
@@ -748,17 +786,21 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
 
         """
         samples = StudentTParameterSampleFromScaleMatrix.get_sample(
-            self, fit, dof=dof, num=num)
+            self, fit, dof=dof, num=num, rng=rng)
         return _sample_stat(fit, samples, numcores)
 
 
-def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None):
+def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None,
+                  rng=None):
     """Sample the fit statistic by taking the parameter values
     from a normal distribution.
 
     For each iteration (sample), change the thawed parameters by
     drawing values from a uni- or multi-variate normal (Gaussian)
     distribution, and calculate the fit statistic.
+
+    .. versionchanged:: 4.16.0
+       The rng parameter was added.
 
     Parameters
     ----------
@@ -776,6 +818,9 @@ def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None):
     numcores : optional
        The number of CPU cores to use. The default is to use all
        the cores on the machine.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        If set, the generator is used to create the random numbers. If
+        not set then the legacy numpy RandomState instance is used.
 
     Returns
     -------
@@ -803,16 +848,19 @@ def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None):
     if correlate:
         sampler = NormalSampleFromScaleMatrix()
 
-    return sampler.get_sample(fit, num=num, numcores=numcores)
+    return sampler.get_sample(fit, num=num, numcores=numcores, rng=rng)
 
 
-def uniform_sample(fit, num=1, factor=4, numcores=None):
+def uniform_sample(fit, num=1, factor=4, numcores=None, rng=None):
     """Sample the fit statistic by taking the parameter values
     from an uniform distribution.
 
     For each iteration (sample), change the thawed parameters by
     drawing values from a uniform distribution, and calculate the
     fit statistic.
+
+    .. versionchanged:: 4.16.0
+       The rng parameter was added.
 
     Parameters
     ----------
@@ -825,6 +873,9 @@ def uniform_sample(fit, num=1, factor=4, numcores=None):
     numcores : optional
        The number of CPU cores to use. The default is to use all
        the cores on the machine.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        If set, the generator is used to create the random numbers. If
+        not set then the legacy numpy RandomState instance is used.
 
     Returns
     -------
@@ -840,16 +891,20 @@ def uniform_sample(fit, num=1, factor=4, numcores=None):
     """
     sampler = UniformSampleFromScaleVector()
     sampler.scale.sigma = 1
-    return sampler.get_sample(fit, num=num, factor=factor, numcores=numcores)
+    return sampler.get_sample(fit, num=num, factor=factor,
+                              numcores=numcores, rng=rng)
 
 
-def t_sample(fit, num=1, dof=2, numcores=None):
+def t_sample(fit, num=1, dof=2, numcores=None, rng=None):
     """Sample the fit statistic by taking the parameter values from
     a Student's t-distribution.
 
     For each iteration (sample), change the thawed parameters
     by drawing values from a Student's t-distribution, and
     calculate the fit statistic.
+
+    .. versionchanged:: 4.16.0
+       The rng parameter was added.
 
     Parameters
     ----------
@@ -863,6 +918,9 @@ def t_sample(fit, num=1, dof=2, numcores=None):
     numcores : optional
        The number of CPU cores to use. The default is to use all
        the cores on the machine.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        If set, the generator is used to create the random numbers. If
+        not set then the legacy numpy RandomState instance is used.
 
     Returns
     -------
@@ -877,4 +935,5 @@ def t_sample(fit, num=1, dof=2, numcores=None):
 
     """
     sampler = StudentTSampleFromScaleMatrix()
-    return sampler.get_sample(fit, num=num, dof=dof, numcores=numcores)
+    return sampler.get_sample(fit, num=num, dof=dof,
+                              numcores=numcores, rng=rng)

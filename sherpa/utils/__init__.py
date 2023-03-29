@@ -1958,8 +1958,9 @@ def histogram1d(x, x_lo, x_hi):
     randomly distributed over [0, 1).
 
     >>> import numpy as np
-    >>> x = np.random.random(1000)
-    >>> edges = np.arange(0, 1.1, 0.1)
+    >>> rng = np.random.default_rng()
+    >>> x = rng.random(1000)
+    >>> edges = np.linspace(0, 1, 11)
     >>> xlo = edges[:-1]
     >>> xhi = edges[1:]
     >>> y = histogram1d(x, xlo, xhi)

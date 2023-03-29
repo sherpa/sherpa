@@ -33,6 +33,7 @@ from sherpa.estmethods import Covariance
 from sherpa import sim
 from sherpa.utils.err import EstErr
 from sherpa.utils.logging import SherpaVerbosity
+from sherpa.utils.parallel import _multi, _ncpus
 
 
 _max = numpy.finfo(numpy.float32).max
@@ -95,9 +96,10 @@ def setup():
     method.config['xtol'] = float(_eps)
     method.config['factor'] = float(100)
 
-    # Set the seed
-    numpy.random.seed(23)
-
+    # The optimizer here does not use a RNG which means we do not have
+    # to worry about setting it here (to match the test data which was
+    # written using the Legacy NumPy random API).
+    #
     fit = Fit(data, model, Chi2DataVar(), method, Covariance())
     results = fit.fit()
 
@@ -113,7 +115,7 @@ def setup():
         assert getattr(results, key) == pytest.approx(_fit_results_bench[key])
 
     fields = ['data', 'model', 'method', 'fit', 'results',
-              'covresults', 'dof', 'mu', 'num']
+              'covresults', 'dof', 'mu', 'num', 'rng']
     out = namedtuple('Results', fields)
 
     out.data = data
@@ -126,6 +128,7 @@ def setup():
     out.mu = numpy.array(results.parvals)
     out.cov = numpy.array(out.covresults.extra_output)
     out.num = 10
+    out.rng = numpy.random.RandomState(23)
     return out
 
 
@@ -185,21 +188,23 @@ EXPECTED_NORMAL2 = numpy.asarray(
      [8.48460130e+03, 1.07379213, 9.12210957, 2.59421385, 2.60187443, 4.71737314e+01]])
 
 
-def test_student_t(setup, reset_seed):
-    out = sim.multivariate_t(setup.mu, setup.cov, setup.dof, setup.num)
+def test_student_t(setup):
+    out = sim.multivariate_t(setup.mu, setup.cov, setup.dof, setup.num,
+                             rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_T[:, 1:])
 
 
-def test_cauchy(setup, reset_seed):
-    out = sim.multivariate_cauchy(setup.mu, setup.cov, setup.num)
+def test_cauchy(setup):
+    out = sim.multivariate_cauchy(setup.mu, setup.cov, setup.num,
+                                  rng=setup.rng)
 
     expected = [1.04452632, 9.58622941, 2.58805112, 2.59422687, 47.01421166]
 
     assert out == pytest.approx(numpy.asarray(expected))
 
 
-def test_parameter_scale_vector_checks_scale_iterable(setup, reset_seed):
+def test_parameter_scale_vector_checks_scale_iterable(setup):
     """Error check"""
 
     with pytest.raises(TypeError,
@@ -208,7 +213,7 @@ def test_parameter_scale_vector_checks_scale_iterable(setup, reset_seed):
 
 
 @pytest.mark.parametrize("scales", [3, numpy.asarray([3])])
-def test_parameter_scale_matrix_checks_scale_iterable(scales, setup, reset_seed):
+def test_parameter_scale_matrix_checks_scale_iterable(scales, setup):
     """Error check"""
 
     with pytest.raises(EstErr,
@@ -216,7 +221,7 @@ def test_parameter_scale_matrix_checks_scale_iterable(scales, setup, reset_seed)
         sim.ParameterScaleMatrix().get_scales(setup.fit, myscales=scales)
 
 
-def test_parameter_scale_matrix_checks_scale_positive_definite(setup, reset_seed):
+def test_parameter_scale_matrix_checks_scale_positive_definite(setup):
     """Error check"""
 
     scales = numpy.arange(-10, 15).reshape(5, 5)
@@ -225,7 +230,7 @@ def test_parameter_scale_matrix_checks_scale_positive_definite(setup, reset_seed
         sim.ParameterScaleMatrix().get_scales(setup.fit, myscales=scales)
 
 
-def test_parameter_scale_vector(setup, reset_seed):
+def test_parameter_scale_vector(setup):
     ps = sim.ParameterScaleVector()
     out = ps.get_scales(setup.fit)
 
@@ -234,7 +239,7 @@ def test_parameter_scale_vector(setup, reset_seed):
     assert out == pytest.approx(numpy.asarray(expected))
 
 
-def test_parameter_scale_matrix(setup, reset_seed):
+def test_parameter_scale_matrix(setup):
     ps = sim.ParameterScaleMatrix()
     out = ps.get_scales(setup.fit)
 
@@ -247,7 +252,7 @@ def test_parameter_scale_matrix(setup, reset_seed):
     assert out == pytest.approx(numpy.asarray(expected))
 
 
-def test_parameter_sample_checks_clip_argument(setup, reset_seed):
+def test_parameter_sample_checks_clip_argument(setup):
     """Error check"""
 
     obj = sim.NormalParameterSampleFromScaleVector()
@@ -257,37 +262,38 @@ def test_parameter_sample_checks_clip_argument(setup, reset_seed):
                  clip="max")
 
 
-def test_uniform_parameter_sample(setup, reset_seed):
+def test_uniform_parameter_sample(setup):
     ps = sim.UniformParameterSampleFromScaleVector()
-    out = ps.get_sample(setup.fit, num=setup.num)
+    out = ps.get_sample(setup.fit, num=setup.num, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_UNIFORM[:, 1:])
 
 
-def test_normal_parameter_sample_vector(setup, reset_seed):
+def test_normal_parameter_sample_vector(setup):
     ps = sim.NormalParameterSampleFromScaleVector()
-    out = ps.get_sample(setup.fit, num=setup.num)
+    out = ps.get_sample(setup.fit, num=setup.num, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL[:, 1:])
 
 
-def test_normal_parameter_sample_matrix(setup, reset_seed):
+def test_normal_parameter_sample_matrix(setup):
     ps = sim.NormalParameterSampleFromScaleMatrix()
-    out = ps.get_sample(setup.fit, num=setup.num)
+    out = ps.get_sample(setup.fit, num=setup.num, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL2[:, 1:])
 
 
-def test_t_parameter_sample_matrix(setup, reset_seed):
+def test_t_parameter_sample_matrix(setup):
     ps = sim.StudentTParameterSampleFromScaleMatrix()
-    out = ps.get_sample(setup.fit, dof=setup.dof, num=setup.num)
+    out = ps.get_sample(setup.fit, dof=setup.dof, num=setup.num,
+                        rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_T[:, 1:])
 
 
-def test_uniform_sample(setup, reset_seed):
+def test_uniform_sample(setup):
     ps = sim.UniformSampleFromScaleVector()
-    out = ps.get_sample(setup.fit, num=setup.num)
+    out = ps.get_sample(setup.fit, num=setup.num, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_UNIFORM)
 
@@ -295,59 +301,74 @@ def test_uniform_sample(setup, reset_seed):
 # This used to have the same name as test_uniform_sample,
 # so it has been renamed.
 #
-def test_uniform_sample2(setup, reset_seed):
-    out = sim.uniform_sample(setup.fit, num=setup.num)
+def test_uniform_sample2(setup):
+    out = sim.uniform_sample(setup.fit, num=setup.num, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_UNIFORM)
 
 
-def test_normal_sample_vector(setup, reset_seed):
+def test_normal_sample_vector(setup):
     ps = sim.NormalSampleFromScaleVector()
-    out = ps.get_sample(setup.fit, num=setup.num)
+    out = ps.get_sample(setup.fit, num=setup.num, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL)
 
 
-def test_normal_sample_matrix(setup, reset_seed):
+def test_normal_sample_matrix(setup):
     ps = sim.NormalSampleFromScaleMatrix()
-    out = ps.get_sample(setup.fit, num=setup.num)
+    out = ps.get_sample(setup.fit, num=setup.num, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL2)
 
 
 def test_t_sample_matrix(setup, reset_seed):
     ps = sim.StudentTSampleFromScaleMatrix()
-    out = ps.get_sample(setup.fit, num=setup.num, dof=setup.dof)
+    out = ps.get_sample(setup.fit, num=setup.num, dof=setup.dof,
+                        rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_T)
 
 
-def test_normal_sample(setup, reset_seed):
-    out = sim.normal_sample(setup.fit, num=setup.num, correlate=False)
+def test_normal_sample(setup):
+    out = sim.normal_sample(setup.fit, num=setup.num,
+                            correlate=False, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL)
 
 
-def test_normal_sample_correlated(setup, reset_seed):
-    out = sim.normal_sample(setup.fit, num=setup.num, correlate=True)
+def test_normal_sample_correlated(setup):
+    out = sim.normal_sample(setup.fit, num=setup.num,
+                            correlate=True, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL2)
 
 
-def test_t_sample(setup, reset_seed):
-    out = sim.t_sample(setup.fit, setup.num, setup.dof)
+def test_t_sample(setup):
+    out = sim.t_sample(setup.fit, setup.num, setup.dof, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_T)
 
 
-def test_lrt(setup, reset_seed):
+RATIOS_ONE = numpy.asarray([2.43733721, 3.52628288, 4.18396336, 1.73659659, 3.70862308, 2.19009678,
+                            0.99262327, 2.47817863, 4.29140984, 8.66538795, 0.75845443, 2.19029536,
+                            1.08725896, 1.58262032, 2.91657742, 0.70781436, 0.79954232, 2.5850919,
+                            2.0543363,  0.4747516,  8.69094441, 2.35362447, 2.23331886, 4.20676696,
+                            3.56214367])
+
+RATIOS_TWO = numpy.asarray([1.74752217e+00, 4.15056013,  3.96667032e+00, 1.45119325e+00,
+                            1.99113224e+00, 4.60875346,  2.61179034e+00, 2.52248040e-01,
+                            2.59828000e+00, 3.45398280,  5.44372792e+00, 5.62797204e+00,
+                            6.80978133e+00, 1.06134553, -1.42108547e-12, 2.07549322e+00,
+                            1.14993770e+00, 5.88951206,  2.61912975e+00, 1.31001158e+00,
+                            4.63278539e-01, 2.21026052,  3.12162630e+00, 1.83602835e+00,
+                            6.28386219e+00])
+
+
+def test_lrt(setup):
     """There is a limited check of the results.
 
     These are regression tests, so will need to be updated if the code
-    or random generator changes. It is actually tricky to test the
-    random numbers as they are going to depend on the number of
-    processes used, and we can not guarantee the number of cores in
-    use (other than forcing it to be 1).
+    or random generator changes.
 
     It looks like each iteration can generate different results
     depending on the platform (linux vs macOS) due to numerical
@@ -367,7 +388,8 @@ def test_lrt(setup, reset_seed):
     """
 
     results = sim.LikelihoodRatioTest.run(setup.fit, setup.fit.model.lhs,
-                                          setup.fit.model, niter=25, numcores=1)
+                                          setup.fit.model, niter=25, numcores=1,
+                                          rng=setup.rng)
 
     assert results.null == pytest.approx(1376.9504116259966)
     assert results.alt == pytest.approx(98.57840260844087)
@@ -377,25 +399,20 @@ def test_lrt(setup, reset_seed):
     assert results.samples.shape == (25, 2)
     assert results.stats.shape == (25, 2)
 
-    ratios = numpy.asarray([2.43733721, 3.52628288, 4.18396336, 1.73659659, 3.70862308, 2.19009678,
-                            0.99262327, 2.47817863, 4.29140984, 8.66538795, 0.75845443, 2.19029536,
-                            1.08725896, 1.58262032, 2.91657742, 0.70781436, 0.79954232, 2.5850919,
-                            2.0543363,  0.4747516,  8.69094441, 2.35362447, 2.23331886, 4.20676696,
-                            3.56214367])
-
-    assert results.ratios[:3] == pytest.approx(ratios[:3])
+    # TODO: do we still need to restrict the elements being checked?
+    assert results.ratios[:3] == pytest.approx(RATIOS_ONE[:3])
 
 
-def test_lrt_multicore(setup, reset_seed):
+def test_lrt_multicore(setup):
     """The multi-core version of test_lrt.
 
-    This is run even if there is no multi-core processing as, at
-    the moment. Note that there is no test of the RNG here as the
-    current design makes this hard, if not impossible, to do.
+    Testing this depends on how many cores were used, as that
+    determines how many separate generators were used.
     """
 
     results = sim.LikelihoodRatioTest.run(setup.fit, setup.fit.model.lhs,
-                                          setup.fit.model, niter=25, numcores=2)
+                                          setup.fit.model, niter=25, numcores=2,
+                                          rng=setup.rng)
 
     assert results.null == pytest.approx(1376.9504116259966)
     assert results.alt == pytest.approx(98.57840260844087)
@@ -407,8 +424,21 @@ def test_lrt_multicore(setup, reset_seed):
     assert results.samples.shape == (25, 2)
     assert results.stats.shape == (25, 2)
 
+    # The result depends on whether multi-processing is enabled and
+    # if there's more than one core available, which we can check with
+    # the _ncpus setting (although it appears that we still need to
+    # check whether multi-processing is enabled or not).
+    #
+    if _multi and _ncpus > 1:
+        expected = RATIOS_TWO
+    else:
+        expected = RATIOS_ONE
 
-def test_mh(setup, reset_seed):
+    # TODO: do we still need to restrict the elements being checked?
+    assert results.ratios[:3] == pytest.approx(expected[:3])
+
+
+def test_mh(setup):
 
     setup.fit.method = NelderMead()
     setup.fit.stat = Cash()
@@ -429,7 +459,8 @@ def test_mh(setup, reset_seed):
     # mcmc.set_sampler_opt('verbose', True)
 
     with SherpaVerbosity("ERROR"):
-        stats, accept, params = mcmc.get_draws(setup.fit, cov, niter=1e2)
+        stats, accept, params = mcmc.get_draws(setup.fit, cov,
+                                               niter=1e2, rng=setup.rng)
 
     assert len(stats) == 101
     assert len(accept) == 101
@@ -444,7 +475,7 @@ def test_mh(setup, reset_seed):
     assert params.mean(axis=1) == pytest.approx(means)
 
 
-def test_metropolisMH(setup, reset_seed):
+def test_metropolisMH(setup):
 
     setup.fit.method = NelderMead()
     setup.fit.stat = CStat()
@@ -457,7 +488,8 @@ def test_metropolisMH(setup, reset_seed):
     # mcmc.set_sampler_opt('verbose', True)
 
     with SherpaVerbosity("ERROR"):
-        stats, accept, params = mcmc.get_draws(setup.fit, cov, niter=1e2)
+        stats, accept, params = mcmc.get_draws(setup.fit, cov,
+                                               niter=1e2, rng=setup.rng)
 
     assert len(stats) == 101
     assert len(accept) == 101
