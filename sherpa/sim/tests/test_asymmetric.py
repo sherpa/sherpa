@@ -232,7 +232,7 @@ def test_ui(make_data_path):
         assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p], rel=1e-4)
 
 
-def test_zero_case():
+def test_zero_case(reset_seed):
     """Check what happens when values can be near -1. See #740"""
 
     xs = np.arange(1, 6)

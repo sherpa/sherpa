@@ -109,14 +109,8 @@ def setup():
         assert float(getattr(results, key)) == pytest.approx(_fit_results_bench[key])
 
     for key in ["parvals"]:
-        try:
-            # used rel and abs tol of 1e-4 with numpy allclose
-            assert getattr(results, key) == pytest.approx(_fit_results_bench[key])
-        except AssertionError:
-            print('parvals bench: ', _fit_results_bench[key])
-            print('parvals fit:   ', getattr(results, key))
-            print('results', results)
-            raise
+        # used rel and abs tol of 1e-4 with numpy allclose
+        assert getattr(results, key) == pytest.approx(_fit_results_bench[key])
 
     fields = ['data', 'model', 'method', 'fit', 'results',
               'covresults', 'dof', 'mu', 'num']
@@ -286,7 +280,7 @@ def test_normal_parameter_sample_matrix(setup, reset_seed):
 
 def test_t_parameter_sample_matrix(setup, reset_seed):
     ps = sim.StudentTParameterSampleFromScaleMatrix()
-    out = ps.get_sample(setup.fit, setup.dof, num=setup.num)
+    out = ps.get_sample(setup.fit, dof=setup.dof, num=setup.num)
 
     assert out == pytest.approx(EXPECTED_T[:, 1:])
 
@@ -323,7 +317,7 @@ def test_normal_sample_matrix(setup, reset_seed):
 
 def test_t_sample_matrix(setup, reset_seed):
     ps = sim.StudentTSampleFromScaleMatrix()
-    out = ps.get_sample(setup.fit, setup.num, setup.dof)
+    out = ps.get_sample(setup.fit, num=setup.num, dof=setup.dof)
 
     assert out == pytest.approx(EXPECTED_T)
 
