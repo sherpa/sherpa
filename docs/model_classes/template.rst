@@ -7,7 +7,7 @@ The sherpa.models.template module
 .. automodule:: sherpa.models.template
 
    .. rubric:: Classes
-               
+
    .. autosummary::
       :toctree: api
 
@@ -15,11 +15,18 @@ The sherpa.models.template module
       InterpolatingTemplateModel
       KNNInterpolator
       Template
-   
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree: api
+
+      add_interpolator
+      create_template_model
+      reset_interpolators
+
 Class Inheritance Diagram
 =========================
 
 .. inheritance-diagram:: TemplateModel InterpolatingTemplateModel KNNInterpolator Template
    :parts: 1
-
-

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2021, 2022
+#  Copyright (C) 2011, 2015, 2016, 2018, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -116,12 +116,18 @@ def setUp():
     grid = numpy.asarray(list(map(numpy.ravel, grid))).T
     coords = numpy.linspace(0.01, 6, 100)
     names = [f"p{i}" for i in range(num)]
+
+    # Since we randomize the parameters use for the gaussian models,
+    # use a fixed seed.
+    #
+    rng = numpy.random.default_rng(9427205)
+
     templates = []
     for ii in range(ntemplates):
         t = TableModel()
-        g1.fwhm = numpy.random.uniform(0.5, 2.0)
-        g1.pos = numpy.random.uniform(1.0, 4.5)
-        g1.ampl = numpy.random.uniform(1.0, 50.)
+        g1.fwhm = rng.uniform(0.5, 2.0)
+        g1.pos = rng.uniform(1.0, 4.5)
+        g1.ampl = rng.uniform(1.0, 50.)
         t.load(coords, g1(coords))
         templates.append(t)
 
@@ -132,5 +138,11 @@ def test_template_model_evaluation(setUp):
     x, model = setUp
     model.thawedpars = [0, 1, 0, 1]
 
-    # We want to evaluate the model, but do not check the result
-    model(x)
+    # Evaluate on a very-restricted grid and check the result (this is
+    # a regression test and so the predicted values may change).
+    #
+    y = model([0.55, 1.25, 3.65, 4.95])
+    assert y == pytest.approx([0.006695045904199339,
+                               0.33558934132320956,
+                               5.274350209830429,
+                               0.024472491880120843])
