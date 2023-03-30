@@ -127,13 +127,13 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
                                         precision=4, suppress_small=False)
 
         output = '\n'.join([
-                'samples = %s' % samples,
-                'stats   = %s' % stats,
-                'ratios  = %s' % ratios,
-                'null    = %s' % repr(self.null),
-                'alt     = %s' % repr(self.alt),
-                'lr      = %s' % repr(self.lr),
-                'ppp     = %s' % repr(self.ppp)
+                f'samples = {samples}',
+                f'stats   = {stats}',
+                f'ratios  = {ratios}',
+                f'null    = {repr(self.null)}',
+                f'alt     = {repr(self.alt)}',
+                f'lr      = {repr(self.lr)}',
+                f'ppp     = {repr(self.ppp)}'
                 ])
 
         return output
@@ -148,13 +148,13 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
 
         """
         s = 'Likelihood Ratio Test\n'
-        s += 'null statistic   =  %s\n' % str(self.null)
-        s += 'alt statistic    =  %s\n' % str(self.alt)
-        s += 'likelihood ratio =  %s\n' % str(self.lr)
+        s += f'null statistic   =  {self.null}\n'
+        s += f'alt statistic    =  {self.alt}\n'
+        s += f'likelihood ratio =  {self.lr}\n'
         if self.ppp == 0.0:
-            s += 'p-value          <  %s' % str(1./len(self.samples))
+            s += f'p-value          <  {1./len(self.samples)}'
         else:
-            s += 'p-value          =  %s' % str(self.ppp)
+            s += f'p-value          =  {self.ppp}'
         return s
 
 

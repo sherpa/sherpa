@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -181,9 +181,8 @@ class ParameterScaleVector(ParameterScale):
                 if lo is not None and hi is not None:
                     scale = numpy.abs(lo)
                 else:
-                    wmsg = "Covariance failed for '{}',".format(par.fullname) + \
-                           " trying Confidence..."
-                    warning(wmsg)
+                    warning("Covariance failed for '%s', trying Confidence...",
+                            par.fullname)
 
                     conf = Confidence()
                     conf.config['sigma'] = self.sigma
@@ -199,10 +198,9 @@ class ParameterScaleVector(ParameterScale):
                                 scale = numpy.abs(t.parmaxes[0])
 
                             else:
-
-                                warning('1 sigma bounds for parameter ' +
-                                        par.fullname +
-                                        ' could not be found, using soft limit minimum')
+                                warning('1 sigma bounds for parameter %s'
+                                        ' could not be found, using soft limit minimum',
+                                        par.fullname)
                                 if 0.0 == numpy.abs(par.min):
                                     scale = 1.0e-16
                                 else:
@@ -215,9 +213,11 @@ class ParameterScaleVector(ParameterScale):
         else:
             if not numpy.iterable(myscales):
                 emsg = "scales option must be iterable of " + \
-                       "length {}".format(len(thawedpars))
+                       f"length {len(thawedpars)}"
                 raise TypeError(emsg)
+
             scales = list(map(abs, myscales))
+
         scales = numpy.asarray(scales).transpose()
         return scales
 
@@ -265,7 +265,7 @@ class ParameterScaleMatrix(ParameterScale):
 
             thawedpars = [par for par in fit.model.pars if not par.frozen]
             npar = len(thawedpars)
-            msg = 'scales must be a numpy array of size ({0},{0})'.format(npar)
+            msg = f'scales must be a numpy array of size ({npar},{npar})'
 
             if not isinstance(myscales, numpy.ndarray):
                 raise EstErr(msg)
@@ -354,7 +354,7 @@ class ParameterSample(NoNewAttributesAfterInit):
             mins = fit.model.thawedparmins
             maxs = fit.model.thawedparmaxes
         else:
-            raise ValueError('invalid clip argument: sent {}'.format(clip))
+            raise ValueError(f'invalid clip argument: sent {clip}')
 
         for pvals, pmin, pmax in zip(samples.T, mins, maxs):
             porig = pvals.copy()

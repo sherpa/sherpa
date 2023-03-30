@@ -166,7 +166,7 @@ here is arbitrarily taken to be 100)::
 
     >>> nburn = 100
     >>> arate = accept[nburn:-1].sum() * 1.0 / (len(accept) - nburn - 1)
-    >>> print("acceptance rate = {}".format(arate))
+    >>> print(f"acceptance rate = {arate}")
 
 The trace of the parameter values can also be displayed; in this
 example a burn-in period has not been removed)::
@@ -240,8 +240,8 @@ def inverse2(x):
     return prior
 
 
-_samplers = dict(metropolismh=MetropolisMH, mh=MH)
-_walkers = dict(metropolismh=Walk, mh=Walk)
+_samplers = {"metropolismh": MetropolisMH, "mh": MH}
+_walkers = {"metropolismh": Walk, "mh": Walk}
 
 
 class MCMC(NoNewAttributesAfterInit):
@@ -349,8 +349,9 @@ class MCMC(NoNewAttributesAfterInit):
         """
         prior = self.priors.get(par.fullname, None)
         if prior is None:
-            raise ValueError("prior function has not been set for '%s'" %
-                             par.fullname)
+            raise ValueError("prior function has not been set for "
+                             f"'{par.fullname}'")
+
         return prior
 
     # ## DOC-TODO: should set_sampler_opt be mentioned here?
@@ -506,7 +507,7 @@ class MCMC(NoNewAttributesAfterInit):
             sampler = str(sampler).lower()
 
             if sampler not in self.__samplers:
-                raise TypeError("Unknown sampler '%s'" % sampler)
+                raise TypeError(f"Unknown sampler '{sampler}'")
 
             self.sampler = self.__samplers.get(sampler)
             self.walker = self.__walkers.get(sampler, Walk)
@@ -516,7 +517,7 @@ class MCMC(NoNewAttributesAfterInit):
             self.walker = self.__walkers.get(sampler, Walk)
 
         else:
-            raise TypeError("Unknown sampler '%s'" % sampler)
+            raise TypeError(f"Unknown sampler '{sampler}'")
 
     def get_sampler(self):
         """Return the current MCMC sampler options.
@@ -680,8 +681,8 @@ class MCMC(NoNewAttributesAfterInit):
 
         """
         if not isinstance(fit.stat, (Cash, CStat, WStat)):
-            raise ValueError("Fit statistic must be cash, cstat or " +
-                             "wstat, not %s" % fit.stat.name)
+            raise ValueError("Fit statistic must be cash, cstat or "
+                             f"wstat, not {fit.stat.name}")
 
         _level = _log.getEffectiveLevel()
         mu = fit.model.thawedpars
@@ -837,7 +838,6 @@ class ReSampleData(NoNewAttributesAfterInit):
         self.data = data
         self.model = model
         NoNewAttributesAfterInit.__init__(self)
-        return
 
     def __call__(self, niter=1000, seed=None):
         return self.call(niter, seed)
