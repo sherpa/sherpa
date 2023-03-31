@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@ import pytest
 
 from sherpa.optmethods import _tstoptfct
 from sherpa.optmethods.optfcts import lmdif, minim, montecarlo, neldermead
-from sherpa.utils import _ncpus
+from sherpa.utils.parallel import _ncpus
 
 
 def init(name, npar):

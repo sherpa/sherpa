@@ -25,7 +25,8 @@ import random
 
 import numpy as np
 
-from sherpa.utils import Knuth_close, _multi, _ncpus, run_tasks, func_counter
+from sherpa.utils import Knuth_close, func_counter
+from sherpa.utils.parallel import _multi, _ncpus, run_tasks
 
 
 __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
@@ -55,33 +56,21 @@ class MyNcores:
             if not callable(func):
                 raise TypeError(f"input func '{repr(func)}' is not callable")
 
-        if numcores is None:
-            numcores = _ncpus
-        num_funcs = len(funcs)
-        numcores = min(numcores, num_funcs)
+        # TODO: the numcores argument is currently unused.
+        #
 
-        # Returns a started SyncManager object which can be used for sharing
-        # objects between processes. The returned manager object corresponds
-        # to a spawned child process and has methods which will create shared
-        # objects and return corresponding proxies.
+        # See sherpa.utils.parallel for the logic used here.
         manager = multiprocessing.Manager()
-
-        # Create FIFO queue and lock shared objects and return proxies to them.
-        # The managers handles a server process that manages shared objects that
-        # each slave process has access to.  Bottom line -- thread-safe.
         out_q = manager.Queue()
         err_q = manager.Queue()
         # lock = manager.Lock()  # unused
-        procs = []
+        procs = [multiprocessing.Process(target=self.my_worker,
+                                         args=(func, ii, out_q, err_q) + args)
+                 for ii, func in enumerate(funcs)]
 
-        for idval, func in enumerate(funcs):
-            myargs = (func, idval, out_q, err_q) + args
-            procs.append(multiprocessing.Process(target=self.my_worker,
-                                                 args=myargs))
+        return run_tasks(procs, err_q, out_q)
 
-        return run_tasks(procs, err_q, out_q, num_funcs)
-
-    def my_worker(self, *args):
+    def my_worker(self, opt, idval, out_q, err_q, *args):
         raise NotImplementedError("my_worker has not been implemented")
 
 

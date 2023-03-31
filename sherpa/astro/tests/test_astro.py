@@ -25,7 +25,7 @@ from numpy import sqrt
 from pytest import approx
 import pytest
 
-from sherpa.utils import _ncpus
+from sherpa.utils.parallel import _ncpus
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_xspec, requires_group
 import sherpa.astro.ui as ui

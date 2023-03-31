@@ -22,7 +22,8 @@
 
 # import autograd.numpy as np
 import numpy as np
-from sherpa.utils import _ncpus
+
+from sherpa.utils.parallel import _ncpus
 from sherpa.optmethods import _saoopt
 from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom

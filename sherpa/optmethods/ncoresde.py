@@ -27,7 +27,7 @@ from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.opt import Opt, SimplexRandom
 # from ncoresnm import ncoresNelderMead
 # from opt import Opt, SimplexRandom
-from sherpa.utils import parallel_map, _ncpus
+from sherpa.utils.parallel import parallel_map, _ncpus
 
 
 class Key2:
