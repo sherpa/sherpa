@@ -25,7 +25,7 @@ import numpy
 import pytest
 
 from sherpa import utils
-from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import IOErr
 
 
@@ -265,30 +265,6 @@ def test_calc_total_error():
     # here).
     ans = numpy.sqrt(stat * stat + sys * sys)
     assert utils.calc_total_error(stat, sys) == pytest.approx(ans)
-
-
-def test_poisson_noise():
-    out = utils.poisson_noise(1000)
-    assert type(out) == SherpaFloat
-    assert out > 0.0
-
-    for x in (-1000, 0):
-        out = utils.poisson_noise(x)
-        assert type(out) == SherpaFloat
-        assert out == 0.0
-
-    out = utils.poisson_noise([1001, 1002, 0.0, 1003, -1004])
-    assert type(out) == numpy.ndarray
-    assert out.dtype.type == SherpaFloat
-
-    ans = numpy.flatnonzero(out > 0.0)
-    assert (ans == numpy.array([0, 1, 3])).all()
-
-    with pytest.raises(ValueError):
-        utils.poisson_noise('ham')
-
-    with pytest.raises(TypeError):
-        utils.poisson_noise(1, 2, 'ham')
 
 
 def test_neville():

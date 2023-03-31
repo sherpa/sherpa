@@ -32,7 +32,6 @@ import sys
 from types import FunctionType, MethodType
 
 import numpy
-import numpy.random
 import numpy.fft
 
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
@@ -40,6 +39,7 @@ import numpy.fft
 from sherpa.utils._utils import hist1d, hist2d
 from sherpa.utils import _utils, _psf
 from sherpa.utils.err import IOErr
+from sherpa.utils.random import poisson_noise
 
 # We re-export the symbols from parallel but this will be removed at
 # some point.
@@ -1750,50 +1750,6 @@ def get_error_estimates(x, sorted=False):
     hval = quantile(xs, (1 + sigfrac) / 2.0)
 
     return (median, lval, hval)
-
-
-def poisson_noise(x):
-    """Draw samples from a Poisson distribution.
-
-    Parameters
-    ----------
-    x : scalar or array
-       The expectation value for the distribution.
-
-    Returns
-    -------
-    out : scalar or array
-       A random realisation of the input array, drawn from
-       the Poisson distribution, as a `SherpaFloat`.
-
-    Notes
-    -----
-    The distribution is calculated by `numpy.poisson.poisson`.
-
-    Examples
-    --------
-    >>> poisson_noise([10, 20, 5])
-    array([ 13.,  21.,   6.])
-
-    """
-
-    x = numpy.asarray(x)
-
-    # Using numpy.where() and indexing doesn't work with 0-d arrays, so
-    # handle them separately
-    if x.shape == ():
-        x = SherpaFloat(x)
-        if x <= 0.0:
-            x = 0.0
-        else:
-            x = numpy.random.poisson(x)
-        return SherpaFloat(x)
-
-    x_out = numpy.zeros(x.shape, SherpaFloat)
-    good = numpy.where(x > 0.0)
-    x_out[good] = numpy.random.poisson(x[good])
-
-    return x_out
 
 
 def multinormal_pdf(x, mu, sigma):
