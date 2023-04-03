@@ -262,8 +262,8 @@ class MyDifEvo(Opt):
         if step is None:
             step = xpar * 1.2 + 1.2
         factor = 10
-        self.polytope = \
-            SimplexRandom(func, npop, xpar, xmin, xmax, step, seed, factor)
+        self.polytope = SimplexRandom(func=func, npop=npop, xpar=xpar,
+                                      xmin=xmin, xmax=xmax, step=step, seed=seed, factor=factor)
         self.local_opt = self.ncores_nm.algo
 
     def __call__(self, maxnfev, ftol):

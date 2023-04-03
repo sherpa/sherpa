@@ -132,7 +132,8 @@ class SimplexBase:
         self.xmin = xmin
         self.xmax = xmax
         self.npar = len(xpar)
-        self.simplex = self.init(npop, xpar, step, seed, factor)
+        self.simplex = self.init(npop=npop, xpar=xpar, step=step,
+                                 seed=seed, factor=factor)
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -145,19 +146,19 @@ class SimplexBase:
 
     def check_convergence(self, ftol, method):
 
-        def are_func_vals_close_enough(tolerance):
+        def are_func_vals_close_enough():
             smallest_fct_val = self.simplex[0, -1]
             largest_fct_val = self.simplex[-1, -1]
             return Knuth_close(smallest_fct_val, largest_fct_val,
-                               tolerance)
+                               ftol)
 
-        def is_fct_stddev_small_enough(tolerance):
+        def is_fct_stddev_small_enough():
             fval_std = np.std([col[-1] for col in self.simplex])
             if fval_std < ftol:
                 return True
             return False
 
-        def is_max_length_small_enough(tolerance):
+        def is_max_length_small_enough():
             """
 
                max  || x  - x  || <= tol max(1.0, || x ||)
@@ -173,23 +174,24 @@ class SimplexBase:
                 xi = self.simplex[ii, :-1]
                 xi_x0 = xi - x0
                 max_xi_x0 = max(max_xi_x0, np.dot(xi_x0, xi_x0))
-            return max_xi_x0 <= tolerance * max(1.0, np.dot(x0, x0))
+            return max_xi_x0 <= ftol * max(1.0, np.dot(x0, x0))
 
         if 0 == method:
-            if is_max_length_small_enough(ftol):
+            if is_max_length_small_enough():
                 return True
         elif 2 == method:
-            if not is_max_length_small_enough(ftol):
+            if not is_max_length_small_enough():
                 return False
-            stddev = is_fct_stddev_small_enough(ftol)
-            fctval = are_func_vals_close_enough(ftol)
+            stddev = is_fct_stddev_small_enough()
+            fctval = are_func_vals_close_enough()
             return stddev and fctval
         else:
-            if not is_max_length_small_enough(ftol):
+            if not is_max_length_small_enough():
                 return False
-            stddev = is_fct_stddev_small_enough(ftol)
-            fctval = are_func_vals_close_enough(ftol)
+            stddev = is_fct_stddev_small_enough()
+            fctval = are_func_vals_close_enough()
             return stddev or fctval
+
         return False
 
         # TODO: what is this code meant to be doing as it is unreachable?
@@ -209,18 +211,31 @@ class SimplexBase:
             simplex[ii][-1] = self.func(simplex[ii][:-1])
         return self.sort_me(simplex)
 
-    def init(self, npop, xpar, step, seed):
+    def init(self, npop, xpar, step, seed, factor):
         raise NotImplementedError("init has not been implemented")
 
     def init_random_simplex(self, xpar, simplex, start, npop, seed, factor):
         random.seed(seed)
+
+        # This could be done before changing the seed, but code may
+        # require the current behavior.
+        #
+        if start >= npop:
+            return simplex
+
+        # Note that factor can be None when there's nothing to do
+        # here, hence the early-return above.
+        #
+        deltas = factor * np.abs(np.asarray(xpar))
         for ii in range(start, npop):
             simplex[ii][:-1] = \
-                np.array([random.uniform(max(self.xmin[jj],
-                                             xpar[jj]-factor*abs(xpar[jj])),
-                                         min(self.xmax[jj],
-                                             xpar[jj]+factor*abs(xpar[jj])))
-                          for jj in range(self.npar)])
+                np.array([random.uniform(max(xmin, xp - delta),
+                                         min(xmax, xp + delta))
+                          for xmin, xmax, xp, delta in zip(self.xmin,
+                                                           self.xmax,
+                                                           xpar,
+                                                           deltas)])
+
         return simplex
 
     def move_vertex(self, centroid, coef):
@@ -259,9 +274,10 @@ class SimplexNoStep(SimplexBase):
             else:
                 tmp[ii] *= 1.05
             simplex[ii+1][:-1] = tmp[:]
-        simplex = \
-            self.init_random_simplex(xpar, simplex, npar1, npop, seed, factor)
 
+        simplex = self.init_random_simplex(xpar, simplex, start=npar1,
+                                           npop=npop, seed=seed,
+                                           factor=factor)
         return self.eval_simplex(npop, simplex)
 
 
@@ -274,9 +290,9 @@ class SimplexStep(SimplexBase):
         for ii in range(self.npar):
             tmp = xpar[ii] + step[ii]
             simplex[ii + 1][:-1] = tmp
-        simplex = \
-            self.init_random_simplex(xpar, simplex, npar1, npop, seed, factor)
 
+        simplex = self.init_random_simplex(xpar, simplex, start=npar1,
+                                           npop=npop, seed=seed, factor=factor)
         return self.eval_simplex(npop, simplex)
 
 
@@ -286,9 +302,10 @@ class SimplexRandom(SimplexBase):
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
         simplex[0][:-1] = np.copy(xpar)
-        simplex = self.init_random_simplex(xpar, simplex, 1, npop, seed,
-                                           factor)
 
+        simplex = self.init_random_simplex(xpar, simplex, start=1,
+                                           npop=npop, seed=seed,
+                                           factor=factor)
         return self.eval_simplex(npop, simplex)
 
 
@@ -1027,14 +1044,17 @@ if '__main__' == __name__:
     xmax = npar * [1000, 1000]
     factor = 10
     seed = 234
-    simp = SimplexNoStep(Rosenbrock, len(x0) + 1, x0, xmin, xmax, None,
-                         seed, factor)
+    simp = SimplexNoStep(func=Rosenbrock, npop=len(x0) + 1, xpar=x0,
+                         xmin=xmin, xmax=xmax, step=None, seed=seed,
+                         factor=factor)
     print('simp =\n', simp.simplex)
 
-    simp = SimplexStep(Rosenbrock, len(x0) + 2, x0, xmin, xmax, x0 + 1.2,
-                       seed, factor)
+    simp = SimplexStep(func=Rosenbrock, npop= len(x0) + 2, xpar=x0,
+                       xmin=xmin, xmax=xmax, step=x0 + 1.2, seed=seed,
+                       factor=factor)
     print('simp =\n', simp.simplex)
 
-    simp = SimplexRandom(Rosenbrock, len(x0) + 5, x0, xmin, xmax, x0 + 1.2,
-                         seed, factor)
+    simp = SimplexRandom(func=Rosenbrock, npop=len(x0) + 5, xpar=x0,
+                         xmin=xmin, xmax=xmax, step=x0 + 1.2,
+                         seed=seed, factor=factor)
     print('simp =\n', simp.simplex)

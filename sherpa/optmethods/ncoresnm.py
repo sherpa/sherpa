@@ -46,10 +46,12 @@ class MyNelderMead(Opt):
 
         # print('MyNelderMead::__call__ xpar =', xpar)
         npar = len(xpar)
-        simplex = SimplexStep(self.func, npar + 1, xpar, self.xmin, self.xmax,
-                              step, None, None)
-        result = \
-            self.optimize(xpar, simplex, maxnfev, tol, finalsimplex, verbose)
+        simplex = SimplexStep(func=self.func, npop=npar + 1,
+                              xpar=xpar, xmin=self.xmin,
+                              xmax=self.xmax, step=step, seed=None,
+                              factor=None)
+        result = self.optimize(xpar, simplex, maxnfev, tol,
+                               finalsimplex, verbose)
         # print('MyNelderMead::__call__ result =', result)
         return result
 
@@ -275,10 +277,12 @@ class NelderMead6(NelderMeadBase):
 
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
-            simplex = SimplexNoStep(self.func, npar + 1, x, self.xmin,
-                                    self.xmax, None, None, None)
-            result = \
-                self.optimize(x, simplex, maxnfev, tol, finalsimplex, verbose)
+            simplex = SimplexNoStep(func=self.func, npop=npar + 1,
+                                    xpar=x, xmin=self.xmin,
+                                    xmax=self.xmax, step=None,
+                                    seed=None, factor=None)
+            result = self.optimize(x, simplex, maxnfev, tol,
+                                   finalsimplex, verbose)
             # print('MyNelderMead6::__call__ result =', result)
             return result
 
@@ -299,10 +303,11 @@ class NelderMead7(NelderMeadBase):
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
             factor = 2
-            simplex = SimplexRandom(self.func, npar + 1, x, self.xmin,
-                                    self.xmax, None, None, factor)
-            result = \
-                self.optimize(x, simplex, maxnfev, tol, finalsimplex, verbose)
+            simplex = SimplexRandom(func=self.func, npop=npar + 1, xpar=x,
+                                    xmin=self.xmin, xmax=self.xmax,
+                                    step=None, seed=None, factor=factor)
+            result = self.optimize(x, simplex, maxnfev, tol,
+                                   finalsimplex, verbose)
             # print('MyNelderMead7::__call__ result =', result)
             return result
 
