@@ -263,3 +263,28 @@ def chisquare(rng, df, size=None):
         return np.random.chisquare(df, size=size)
 
     return rng.chisquare(df, size=size)
+
+
+def choice(rng, xs, n):
+    """Create a subset of elements from xs with no duplication.
+
+    Parameters
+    ----------
+    rng : np.random.Generator, np.random.RandomState, or None, optional
+        If set, the generator is used to create the random numbers. If
+        not set then the legacy numpy RandomState instance is used.
+    xs
+        Sequence of values.
+    n
+        The number of values to select from xs
+
+    Returns
+    -------
+    values : ndarray
+
+    """
+
+    if rng is None:
+        return np.random.choice(xs, n, replace=False)
+
+    return rng.choice(xs, n, replace=False)
