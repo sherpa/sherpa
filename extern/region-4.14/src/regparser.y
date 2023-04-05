@@ -670,7 +670,7 @@ regRegion* regParse( char* buf )
 }
 
 
-void regYYerror( char* msg )
+void regYYerror( const char* msg )
 {
     my_Gregion = NULL;
     return;
