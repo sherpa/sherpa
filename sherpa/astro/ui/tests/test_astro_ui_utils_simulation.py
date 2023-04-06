@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -376,6 +376,45 @@ def test_fake_pha_file(make_data_path, clean_astro_ui, reset_seed):
     # the current behaviour
     assert data.counts.sum() > 5000
     assert data.counts.sum() < 10000
+
+
+@requires_fits
+@requires_data
+def test_fake_pha_file_as_list(make_data_path, clean_astro_ui, reset_seed):
+    '''Test fake_pha using real input file. See #1722
+
+    This is test_fake_pha_file with the responses given as a list
+    as that was found to be problematic. The data should match
+    test_fake_pha_file with the same random seed.
+
+    '''
+
+    np.random.seed(22347)
+
+    ui.set_source("gauss1d.g1")
+    g1 = ui.get_source()
+    g1.pos = 3
+    g1.FWHM = .5
+
+    # TODO: this fails with a No instrument response found
+    ui.fake_pha(None,
+                [make_data_path('3c120_heg_-1.arf.gz')],
+                [make_data_path('3c120_heg_-1.rmf.gz')],
+                1000.)
+    data = ui.get_data()
+
+    # Even with noise, maximum should be close to 3 keV. With the
+    # fixed seed this check could be made exact, but leave as is.
+    #
+    assert np.isclose(data.get_x()[np.argmax(data.counts)], 3., atol=.2)
+
+    # The model is localised around 3 keV so we could check that most
+    # of the data is zero, but that seems excessive. Unlike other tests
+    # we can not just check data.counts.sum() equals a certain value
+    # since the value depends on OS: linux gets 6845 but macOS gets 6842.
+    #
+    total = data.counts.sum()
+    assert 6840 <= total <= 6850
 
 
 @requires_fits
