@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -100,14 +100,22 @@ def _require_key(hdu, name, fix_type=False, dtype=SherpaFloat):
 
 
 def _get_meta_data(hdu):
+    # If the header keywords are not specified correctly then
+    # astropy will error out when we try to access it. Since
+    # this is not an uncommon problem, there is a verify method
+    # that can be used to fix up the data to avoid this: the
+    # "silentfix" option is used so as not to complain too much.
+    #
+    hdu.verify('silentfix')
+
     meta = {}
     for key, val in hdu.header.items():
-
         # empty numpy strings are not recognized by load pickle!
         if isinstance(val, numpy.str_) and val == '':
             val = ''
 
         meta[key] = val
+
     return meta
 
 
