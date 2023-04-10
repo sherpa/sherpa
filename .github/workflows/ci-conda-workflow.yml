@@ -201,7 +201,7 @@ jobs:
         fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
-        conda install -yq pytest-cov
+        conda install -yq pytest-cov attrs
         python setup.py -q test -a "--cov sherpa --cov-report xml"
 
     - name: sherpa_test Tests
@@ -209,7 +209,7 @@ jobs:
       run: |
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
-        conda install -yq pytest-cov
+        conda install -yq pytest-cov attrs
         cd $HOME
         sherpa_test --cov sherpa --cov-report xml
 
