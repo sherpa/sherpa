@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2018, 2019, 2021, 2022
+#  Copyright (C) 2018, 2019, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -123,7 +123,7 @@ def setUp3(hide_logging):
 
 
 @pytest.fixture
-def setUp2(hide_logging, reset_seed):
+def setUp2(hide_logging):
 
     x = numpy.linspace(-5., 5., 100)
     g1, g2 = Gauss1D(), Gauss1D()
@@ -132,9 +132,9 @@ def setUp2(hide_logging, reset_seed):
     g2.fwhm = 4.13
     g2.pos = -1.3
 
-    numpy.random.seed(0)
-    y1 = g1(x) + numpy.random.normal(0.0, 0.05, x.shape)
-    y2 = g2(x) + numpy.random.normal(0.0, 0.05, x.shape)
+    rng = numpy.random.RandomState(0)
+    y1 = g1(x) + rng.normal(0.0, 0.05, x.shape)
+    y2 = g2(x) + rng.normal(0.0, 0.05, x.shape)
 
     d4 = Data1D('4', x, y1)
     d5 = Data1D('5', x, y2)
