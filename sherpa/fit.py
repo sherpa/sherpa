@@ -886,6 +886,9 @@ class IterFit(NoNewAttributesAfterInit):
 class Fit(NoNewAttributesAfterInit):
     """Fit a model to a data set.
 
+    .. versionchanged:: 4.16.0
+       The rng parameter was added.
+
     Parameters
     ----------
     data : `sherpa.data.Data` or `sherpa.data.DataSimulFit`
@@ -905,11 +908,14 @@ class Fit(NoNewAttributesAfterInit):
     itermethod_opts : dict or None, optional
        If set, defines the iterated-fit method and options to use.
        It is passed through to `IterFit`.
+    rng : np.random.Generator, np.random.RandomState, or None, optional
+       If set, the generator is used to create the random numbers. If
+       not set then the legacy numpy RandomState instance is used.
 
     """
 
     def __init__(self, data, model, stat=None, method=None, estmethod=None,
-                 itermethod_opts=None):
+                 itermethod_opts=None, rng=None):
 
         # Ensure the data and model match dimensionality. It is
         # expected that both data and model have a ndim attribute
@@ -925,6 +931,9 @@ class Fit(NoNewAttributesAfterInit):
             itermethod_opts = {'name': 'none'}
         self.data = data
         self.model = model
+
+        # Set up the random generator.
+        self.rng = rng
 
         if stat is None:
             stat = Chi2Gehrels()
@@ -1205,7 +1214,7 @@ class Fit(NoNewAttributesAfterInit):
         d = DataSimulFit('simulfit data', tuple(f.data for f in fits))
         m = SimulFitModel('simulfit model', tuple(f.model for f in fits))
 
-        f = Fit(d, m, self.stat, self.method)
+        f = Fit(d, m, self.stat, self.method, rng=self.rng)
         return f.fit()
 
     @evaluates_model
