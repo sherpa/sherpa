@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,6 +19,7 @@
 #
 
 from io import StringIO
+import time
 
 import numpy
 
@@ -341,6 +342,28 @@ def test_neville2d():
             answer = funcx(xx) * funcy(yy)
             val = utils.neville2d(xx, yy, x, y, fval)
             assert utils.Knuth_close(answer, val, tol)
+
+
+@pytest.mark.parametrize("ntasks", [1, 2, 8])
+def test_parallel_map_on_error(ntasks, caplog):
+    """What happens if one of the processes raises an error?"""
+
+    if utils._multi and ntasks > 1:
+        pytest.xfail("Known to fail when multiprocessing is enabled")
+
+    def func(x):
+        if x == 2:
+            # Assume the other tasks will have completed within 0.1
+            # second, so this failure is at, or near the end, of the
+            # tasks being processed.
+            #
+            time.sleep(0.1)
+            raise ValueError("x can not be 2")
+        return x
+
+    args = [-3, 0, 1, 2, 3, 4]
+    with pytest.raises(ValueError):
+        utils.parallel_map(func, args, numcores=ntasks)
 
 
 @pytest.mark.parametrize("num_tasks, num_segments",
