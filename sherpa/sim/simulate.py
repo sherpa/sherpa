@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2019, 2020, 2021
+#  Copyright (C) 2010, 2016, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -168,10 +168,19 @@ class LikelihoodRatioTestWorker():
         self.null_vals = null_vals
         self.alt_vals = alt_vals
 
+        # Store the original values
+        self.null_thawedpars = self.null_fit.model.thawedpars
+        self.alt_thawedpars = self.alt_fit.model.thawedpars
+
     def __call__(self, proposal):
-        return LikelihoodRatioTest.calculate(self.null_fit, self.alt_fit,
-                                             proposal, self.null_vals,
-                                             self.alt_vals)
+        try:
+            return LikelihoodRatioTest.calculate(self.null_fit, self.alt_fit,
+                                                 proposal, self.null_vals,
+                                                 self.alt_vals)
+        finally:
+            # Ensure the parameters are reset
+            self.alt_fit.model.thawedpars = self.alt_thawedpars
+            self.null_fit.model.thawedpars = self.null_thawedpars
 
 
 class LikelihoodRatioTest(NoNewAttributesAfterInit):
