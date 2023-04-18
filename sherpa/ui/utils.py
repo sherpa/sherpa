@@ -9167,6 +9167,11 @@ class Session(NoNewAttributesAfterInit):
         returned, along with the p-value, used to reject or accept the null
         model.
 
+        .. versionchanged:: 4.15.1
+           The parnames and parvals attributes have been added. They
+           are intended to debug problem cases and so are not
+           displayed by default.
+
         Returns
         -------
         plot : None or a `sherpa.sim.simulate.LikelihoodRatioResults` instance
@@ -9209,6 +9214,15 @@ class Session(NoNewAttributesAfterInit):
         alt
            The fit statistic of the alternate model on the observed data.
 
+        parnames
+           The names of the fitted parameters in the alternate
+           model. This will be larger than the number of parameters
+           returned in the samples field.
+
+        parvals
+           The best-fit parameter values to the alternate model for
+           each simulation, stored as a nsim by len(parnames) array.
+
         Examples
         --------
 
@@ -9222,6 +9236,23 @@ class Session(NoNewAttributesAfterInit):
         >>> print(res.format())
         >>> print(res)
         >>> print(res.ppp)
+
+        Display the ratio values to check they look sensible (such as
+        not dropping to a long range of 0's, although this can also
+        suggest the alternate model is not preferred to the null
+        model):
+
+        >>> plot_trace(res.ratios, name="ratios")
+
+        Look at the cumulative distribution of the ratios:
+
+        >>> plot_cdf(res.ratios, name="ratios")
+
+        The parvals field shows the fitted parameter values for the
+        alternate model at each iteration:
+
+        >>> plot_trace(res.parvals[:, 0], name=res.parnames[0])
+        >>> plot_trace(res.parvals[:, 1], name=res.parnames[1])
 
         """
         return self._pvalue_results
