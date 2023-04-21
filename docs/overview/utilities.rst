@@ -12,6 +12,44 @@ There are a number of utility routines provided by Sherpa that may
 be useful. Unfortunately it is not always obvious whether a routine is for use
 with the Object-Oriented API or the Session API.
 
+Random Numbers
+==============
+
+.. todo::
+
+   Is this the best place for this information?
+
+Sherpa uses random numbers
+
+- in an optimisation routine (`~sherpa.optmethods.optfcts.montecarlo`
+  used by `~sherpa.optmethods.MonCar`);
+- when evaluating a MCMC chain such as `~sherpa.sim.mh.MetropolisMH`;
+- estimating the likelihood ratio of two models
+  (`sherpa.sim.simulate`);
+- when sampling distributions using routines from
+  `sherpa.sim.sample`;
+- and  when simulating data, such as `~sherpa.ui.fake` and
+  `~sherpa.astro.ui.fake_pha`.
+
+The primary way to control the random numbers used by Sherpa is to
+create a `NumPy Random Generator
+<https://numpy.org/doc/stable/reference/random/generator.html>`_ and
+pass it to routines wither with the ``rng`` parameter or, for users of
+the Session class, the `~sherpa.ui.utils.Session.set_rng` method.
+However, for the optimiser code, which uses a C++ implementation
+of the Mersenne Twister random number generator,
+the important value is the ``seed`` argument (although this can be
+derived from the random number generator if the ``seed`` value is
+set to `None`).
+
+.. note::
+
+   Prior to Sherpa 4.15.1 the random numbers were controlled by a
+   combination of the legacy NumPy random-number API, that is,
+   calling `numpy.random.seed()` , and - in a few places, the
+   `Python random module <https://docs.python.org/3/library/random.html>`_,
+   as well as the ``seed`` argument for the optimiser code.
+
 Contolling the verbosity of Sherpa
 ==================================
 
