@@ -35,6 +35,7 @@ from sherpa.sim import ReSampleData
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.astro import ui
 
+
 RESULTS_BENCH_AVG = {
     'rstat': 1.4361549916463103,
     'qval': 0.015715747140941,
@@ -287,13 +288,11 @@ def test_resample_supports_data1d(caplog, reset_seed):
     assert msg == "mdl.c0 : avg = 1.0343987745935705 , std = 0.5208696279243179"
 
 
-def test_resample_fails_unsupported_data(reset_seed):
+def test_resample_fails_unsupported_data():
 
     orig = Data2D("orig", [1, 2, 3], [1, 1, 2], [4, 3, 2])
     model = Const2D("mdl")
 
-    # This does not error out well at the moment.
-    resampler = ReSampleData(orig, model)
-    with pytest.raises(AttributeError,
-                       match="^'Data2D' object has no attribute 'x'$"):
-        resampler(niter=10, seed=123)
+    with pytest.raises(NotImplementedError,
+                       match="^ReSampleData <class 'sherpa.data.Data2D'>$"):
+        ReSampleData(orig, model)

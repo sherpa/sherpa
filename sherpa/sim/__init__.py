@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -773,7 +773,7 @@ class ReSampleData(NoNewAttributesAfterInit):
 
     Parameters
     ----------
-    data : sherpa.data.Data1DAsymmetricErrs instance
+    data : sherpa.data.Data1DAsymmetricErrs or sherpa.data.Data1D instance
        The data.
     model : sherpa.models.model.ArithmeticModel instance
        The model to fit the data. The model parameters are taken
@@ -828,6 +828,12 @@ class ReSampleData(NoNewAttributesAfterInit):
 
     """
     def __init__(self, data, model):
+
+        # Should this error out if data is an instance of Data1DInt?
+        if data.ndim != 1:
+            msg = f"{ReSampleData.__name__} {type(data)}"
+            raise NotImplementedError(msg)
+
         self.data = data
         self.model = model
         NoNewAttributesAfterInit.__init__(self)
@@ -882,20 +888,18 @@ class ReSampleData(NoNewAttributesAfterInit):
             pars[name] = numpy.zeros(niter)
 
         data = self.data
-        y = data.y
         x = data.x
-        if type(data) == Data1DAsymmetricErrs:
+        y = data.y
+        if isinstance(data, Data1DAsymmetricErrs):
             y_l = y - data.elo
             y_h = y + data.ehi
-        elif isinstance(data, (Data1D,)):
+        else:
             y_l = data.staterror
             y_h = data.staterror
-        else:
-            msg = "{0} {1}".format(ReSampleData.__name__, type(data))
-            raise NotImplementedError(msg)
 
         ny = len(y)
 
+        # TODO: we do not properly handle Data1DInt here
         fake_data = Data1D('tmp', x, numpy.zeros(ny))
 
         numpy.random.seed(seed)
@@ -964,7 +968,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         for name in pars_index:
             avg = numpy.average(pars[name])
             std = numpy.std(pars[name])
-            info('{} : avg = {} , std = {}'.format(name, avg, std))
+            info('%s : avg = %s , std = %s', name, avg, std)
             result[name] = pars[name]
 
         return result
