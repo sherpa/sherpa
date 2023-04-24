@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from itertools import chain
 import logging
 
 try:
@@ -122,8 +123,7 @@ class EstMethod(NoNewAttributesAfterInit):
     def __getattr__(self, name):
         if name in self.__dict__.get('config', ()):
             return self.config[name]
-        raise AttributeError("'%s' object has no attribute '%s'" %
-                             (type(self).__name__, name))
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def __setattr__(self, name, val):
         if name in self.__dict__.get('config', ()):
@@ -132,8 +132,7 @@ class EstMethod(NoNewAttributesAfterInit):
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
     def __repr__(self):
-        return ("<%s error-estimation method instance '%s'>" %
-                (type(self).__name__, self.name))
+        return f"<{type(self).__name__} error-estimation method instance '{self.name}'>"
 
     def __str__(self):
         # Put name first always
@@ -148,6 +147,8 @@ class EstMethod(NoNewAttributesAfterInit):
         self.__dict__.update(state)
 
         # obtain config values from object class
+        # TODO: pylint points out there's no name or estfunc set for
+        #       the initialization call
         self.__dict__['config'] = getattr(self.__class__(), 'config', {})
 
         # update new config dict with user defined from old
@@ -325,11 +326,11 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         info = _est_funcs.info_matrix(pars, parmins, parmaxes, parhardmins,
                                       parhardmaxes, sigma, eps, maxiters,
                                       remin, stat_cb)
-    except EstNewMin:
+    except EstNewMin as emin:
         # catch the EstNewMin exception and attach the modified
         # parameter values to the exception obj.  These modified
         # parvals determine the new lower statistic.
-        raise EstNewMin(pars)
+        raise EstNewMin(pars) from emin
 
     # Invert matrix, take its square root and multiply by sigma to get
     # parameter uncertainties; parameter uncertainties are the
@@ -382,16 +383,16 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         eflag = est_success
         ubound = diag[num]
         lbound = -diag[num]
-        if (pars[num] + ubound < parhardmaxes[num]):
+        if pars[num] + ubound < parhardmaxes[num]:
             pass
         else:
             ubound = numpy.nan
             eflag = est_hardmax
-        if (pars[num] + lbound > parhardmins[num]):
+        if pars[num] + lbound > parhardmins[num]:
             pass
         else:
             lbound = numpy.nan
-            if (eflag == est_hardmax):
+            if eflag == est_hardmax:
                 eflag = est_hardminmax
             else:
                 eflag = est_hardmin
@@ -433,11 +434,11 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
                                      sigma, eps, tol, maxiters,
                                      remin, [singleparnum], stat_cb,
                                      fit_cb)
-        except EstNewMin:
+        except EstNewMin as emin:
             # catch the EstNewMin exception and attach the modified
             # parameter values to the exception obj.  These modified
             # parvals determine the new lower statistic.
-            raise EstNewMin(pars)
+            raise EstNewMin(pars) from emin
 
         if lock is not None:
             lock.acquire()
@@ -472,8 +473,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 #################################confidence###################################
 
 
-class ConfArgs():
-
+class ConfArgs:
     """The class ConfArgs is responsible for the arguments to the fit
     call back function."""
 
@@ -503,10 +503,6 @@ class ConfArgs():
         msg += '# while searching for the `lower/upper` confidence level, repectively.\n#'
         return msg
 
-    def __rep__(self):
-        return ("<%s ConfArgs method instance'%s'>" %
-                (type(self).__name__, self.name))
-
     def get_par(self):
         """return the current (worked on) par"""
         return self.xpars[self.ith_par]
@@ -520,7 +516,7 @@ class ConfArgs():
         return self.slimit[dir][self.ith_par]
 
 
-class ConfBlog():
+class ConfBlog:
 
     def __init__(self, blogger, prefix, verbose, lock, debug=False):
         self.blogger = blogger
@@ -529,64 +525,42 @@ class ConfBlog():
         self.lock = lock
         self.debug = debug
 
-    def __str__(self):
-        return 'ConfBlog::__str__( )'
 
-    def __rep__(self):
-        return 'ConfBlog::__rep__( )'
-
-
-class ConfBracket():
+class ConfBracket:
 
     """The class ConfBracket is reponsible for bracketing the root within
     the interval (a,b) where f(a)*f(b) < 0.0"""
 
     neg_pos = (-1, 1)
 
-    class Limit():
+    # Is there any benefit to making these local to ConfBracket?
+    class Limit:
 
         def __init__(self, limit):
             self.limit = limit
 
     class LowerLimit(Limit):
 
-        def __init__(self, limit):
-            ConfBracket.Limit.__init__(self, limit)
-
         def __str__(self):
-            str = 'LowerLimit: limit=%e' % self.limit
-            return str
+            return f'LowerLimit: limit={self.limit:e}'
 
         def is_beyond_limit(self, x):
-            if x < self.limit:
-                return True
-            else:
-                return False
+            return x < self.limit
 
     class UpperLimit(Limit):
 
-        def __init__(self, limit):
-            ConfBracket.Limit.__init__(self, limit)
-
         def __str__(self):
-            str = 'UpperLimit: limit=%e' % self.limit
-            return str
+            return f'UpperLimit: limit={self.limit:e}'
 
         def is_beyond_limit(self, x):
-            if x > self.limit:
-                return True
-            else:
-                return False
+            return x > self.limit
 
     def __init__(self, myargs, trial_points):
         self.myargs = myargs
         self.trial_points = trial_points
         self.fcn = None
 
-    def __repr__(self):
-        return ("<%s Bracket error-estimation method instance '%s'>" %
-                (type(self).__name__, self.name))
-
+    # TODO: rename the dir and iter arguments
     def __call__(self, dir, iter, step_size, open_interval, maxiters, tol,
                  bloginfo):
 
@@ -600,6 +574,8 @@ class ConfBracket():
         return find(dir, iter, step_size, open_interval, maxiters, tol,
                     bloginfo)
 
+    # TODO: rename the dir and iter arguments
+    # TODO: the iter argument gets over-ridden below, so do we need it? (and rename it)
     def find(self, dir, iter, step_size, open_interval, maxiters, tol,
              bloginfo, base=2.0):
 
@@ -615,15 +591,14 @@ class ConfBracket():
 
         conf_step = ConfStep(xxx, fff)
 
-        mymaxiters = maxiters
-        if mymaxiters > 16:
-            mymaxiters = 16
+        mymaxiters = min(maxiters, 16)
 
         plateau = 0
         max_plateau_iter = 5
 
         try:
 
+            # TODO: rename iter argument
             for iter in range(mymaxiters):
 
                 if 0 == iter:
@@ -645,22 +620,25 @@ class ConfBracket():
                     # print 'find(): beyond hard limit: f(%.14e)=%.14e' % (x,f)
                     if abs(f) <= tol:
                         return ConfRootZero(x)
+
                     if f >= 0.0:
                         return ConfRootBracket(self.fcn, self.trial_points,
                                                open_interval)
-                    else:
-                        return ConfRootNone()
 
-                elif slimit[dir].is_beyond_limit(x):
+                    return ConfRootNone()
+
+                if slimit[dir].is_beyond_limit(x):
 
                     f = self.fcn(x, self.myargs())
                     # print 'find(): beyond soft limit: f(%.14e)=%.14e' % (x,f)
                     if abs(f) <= tol:
                         return ConfRootZero(x)
+
                     if f >= 0.0:
                         return ConfRootBracket(self.fcn, self.trial_points,
                                                open_interval)
-                    elif f < fff[-2]:
+
+                    if f < fff[-2]:
                         # if the fit beyond the soft limit is a better fit
                         # then the confidence for the parameter does not exist
                         return ConfRootNone()
@@ -671,7 +649,8 @@ class ConfBracket():
                     # print 'find(): f(%.14e)=%.14e' % (x,f)
                     if abs(f) <= tol:
                         return ConfRootZero(x)
-                    elif f >= 0.0:
+
+                    if f >= 0.0:
                         return ConfRootBracket(self.fcn, self.trial_points,
                                                open_interval)
 
@@ -690,7 +669,7 @@ class ConfBracket():
             return ConfRootNone()
 
 
-class ConfRootNone():
+class ConfRootNone:
 
     """The base class for the root of the confidence interval"""
 
@@ -722,7 +701,7 @@ class ConfRootBracket(ConfRootNone):
 
     def __call__(self, tol, bloginfo):
 
-        def warn_user_about_open_interval(list):
+        def warn_user_about_open_interval(listval):
 
             if bloginfo.lock is not None:
                 bloginfo.lock.acquire()
@@ -732,15 +711,13 @@ class ConfRootBracket(ConfRootNone):
             else:
                 prefix = '%s ' % bloginfo.prefix
 
-            interval = list_to_open_interval(list)
+            interval = list_to_open_interval(listval)
             bloginfo.blogger.info(prefix +
                                   'WARNING: The confidence level lies within '
                                   + interval)
 
             if bloginfo.lock is not None:
                 bloginfo.lock.release()
-
-            return
 
         xxx = self.trial_points[0]
         fff = self.trial_points[1]
@@ -763,36 +740,33 @@ class ConfRootBracket(ConfRootNone):
                 if not self.open_interval:
                     warn_user_about_open_interval([xa, xb])
                     return (xa + xb) / 2.0
-                else:
-                    if xa < xb:
-                        return (xa, xb)
-                    else:
-                        return (xb, xa)
-            else:
-                return None
+
+                if xa < xb:
+                    return (xa, xb)
+
+                return (xb, xa)
+
+            return None
+
         self.root = answer[0][0]
         return self.root
 
     def __str__(self):
-        str = 'root is within the interval ( f(%e)=%e, f(%e)=%e )' \
-              % (self.trial_points[0][-2], self.trial_points[1][-2],
-                  self.trial_points[0][-1], self.trial_points[1][-1], )
-        return str
+        msg = 'root is within the interval ( f(%e)=%e, f(%e)=%e )' \
+            % (self.trial_points[0][-2], self.trial_points[1][-2],
+               self.trial_points[0][-1], self.trial_points[1][-1], )
+        return msg
 
 
 class ConfRootZero(ConfRootNone):
 
     """The class with the root/zero of the confidence interval"""
 
-    def __init__(self, root):
-        ConfRootNone.__init__(self, root)
-
     def __str__(self):
-        str = 'root = %e' % self.root
-        return str
+        return f'root = {self.root:e}'
 
 
-class ConfStep():
+class ConfStep:
 
     def __init__(self, xtrial, ftrial):
         self.xtrial = xtrial
@@ -851,8 +825,8 @@ class ConfStep():
         if xroot is not None and not numpy.isnan(xroot) and \
            self.is_same_dir(dir, self.xtrial[-1], xroot):
             return xroot
-        else:
-            return self.covar(dir, iter, step_size, base)
+
+        return self.covar(dir, iter, step_size, base)
 
     def secant(self, dir, iter, step_size, base):
 
@@ -873,8 +847,8 @@ class ConfStep():
 
         if self.is_same_dir(dir, xa, x):
             return x
-        else:
-            return self.covar(dir, iter, step_size, base)
+
+        return self.covar(dir, iter, step_size, base)
 
 
 def trace_fcn(fcn, bloginfo):
@@ -882,28 +856,26 @@ def trace_fcn(fcn, bloginfo):
     if not bloginfo.debug:
         return fcn
 
-    from itertools import chain
-
     def echo(*args, **kwargs):
         '''compact but more details then debugger'''
         name = fcn.__name__
-        str = '%s%s(%s)' % (bloginfo.prefix, name, ", ".join(
+        msg = '%s%s(%s)' % (bloginfo.prefix, name, ", ".join(
             list(map(repr, chain(args, list(kwargs.values()))))))
-        bloginfo.blogger.info(str)
+        bloginfo.blogger.info(msg)
         return fcn(*args, **kwargs)
 
     def debugger(*args, **kwargs):
-        str = '%s%s( ' % (bloginfo.prefix, fcn.__name__)
+        msg = '%s%s( ' % (bloginfo.prefix, fcn.__name__)
         if len(args) > 1:
-            str += args[0].__str__()
+            msg += str(args[0])
         for arg in args[1:]:
-            str = '%s, %s' % (str, arg)
+            msg = '%s, %s' % (msg, arg)
         for key in kwargs.keys():
             value = kwargs[key]
-            str = '%s, %s=%s' % (str, key, value)
+            msg = '%s, %s=%s' % (msg, key, value)
         val = fcn(*args, **kwargs)
-        str += ' )  %s ' % val
-        bloginfo.blogger.info(str)
+        msg += ' )  %s ' % val
+        bloginfo.blogger.info(msg)
         return val
 
     return debugger
@@ -916,24 +888,22 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
     def get_prefix(index, name, minus_plus):
         '''To print the prefix/indent when verbose is on'''
-        prefix = [[], []]
         blank = 3 * index * ' '
-        for dir in range(2):
-            prefix[dir] = blank + name + ' ' + minus_plus[dir] + ':'
-        return prefix
+        return [f"{blank}{name} {mtext}:" for mtext in minus_plus]
 
     def get_delta_root(arg, dir, par_at_min):
 
         my_neg_pos = ConfBracket.neg_pos[dir]
 
         if is_iterable(arg):
-            return arg
             # return map( lambda x: my_neg_pos * abs( x - par_at_min ), arg )
-        elif arg is not None:
+            return arg
+
+        if arg is not None:
             arg -= par_at_min
             return my_neg_pos * abs(arg)
-        else:
-            return arg
+
+        return arg
 
     def get_step_size(error_scales, upper_scales, index, par):
 
@@ -954,6 +924,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             history[0].append(x)
             history[1].append(fval)
             return fval
+
         return myfunc
 
     def print_status(myblog, verbose, prefix, answer, lock):
@@ -992,6 +963,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             # The parameter must be within the hard limits
             if x < hmin[ith_par] or x > hmax[ith_par]:
                 raise OutOfBoundErr
+
             smin = slimit[0]
             smax = slimit[1]
             orig_ith_xpar = xpars[ith_par]
@@ -1008,12 +980,12 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
         def verbose_fcn(x, *args):
             fval = fcn(x, *args)
-            str = '%s f( %e ) =' % (bloginfo.prefix, x)
+            msg = '%s f( %e ) =' % (bloginfo.prefix, x)
             if fval is None:
-                str = '%s None' % str
+                msg = '%s None' % msg
             else:
-                str = '%s %e' % (str, fval)
-            bloginfo.blogger.info(str)
+                msg = '%s %e' % (msg, fval)
+            bloginfo.blogger.info(msg)
             return fval
         return verbose_fcn
 
@@ -1055,7 +1027,9 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         msg += '%s' % myargs
         sherpablog.info(msg)
 
-    dict = {}
+    # TODO: this dictionary is used to store a value, but the value is
+    # never used. Do we need it?
+    store = {}
 
     def func(counter, singleparnum, lock=None):
 
@@ -1095,7 +1069,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
                    verbose_fitcb(fitcb,
                                  ConfBlog(sherpablog, prefix[1], verbose, lock))]
 
-        for dir in range(2):
+        for dirn in range(2):
 
             #
             # trial_points stores the history of the points for the
@@ -1106,23 +1080,23 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             bracket.trial_points[0].append(pars[myargs.ith_par])
             bracket.trial_points[1].append(- delta_stat)
 
-            myblog = ConfBlog(sherpablog, prefix[dir], verbose, lock,
+            myblog = ConfBlog(sherpablog, prefix[dirn], verbose, lock,
                               debug)
 
             # have to set the callback func otherwise disaster.
-            bracket.fcn = myfitcb[dir]
-            root = bracket(dir, iter, ith_covar_err, open_interval, maxiters,
+            bracket.fcn = myfitcb[dirn]
+            root = bracket(dirn, iter, ith_covar_err, open_interval, maxiters,
                            eps, myblog)
 
             myzero = root(eps, myblog)
 
-            delta_zero = get_delta_root(myzero, dir, pars[myargs.ith_par])
+            delta_zero = get_delta_root(myzero, dirn, pars[myargs.ith_par])
 
-            conf_int[dir].append(delta_zero)
+            conf_int[dirn].append(delta_zero)
 
             status_prefix = get_prefix(counter, par_name, ['lower bound',
                                                            'upper bound'])
-            print_status(myblog.blogger.info, verbose, status_prefix[dir],
+            print_status(myblog.blogger.info, verbose, status_prefix[dirn],
                          delta_zero, lock)
 
         error_flags.append(est_success)
@@ -1130,7 +1104,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         #
         # include the minimum point to seperate the -/+ interval
         #
-        dict[par_name] = trial_points
+        store[par_name] = trial_points
 
         return (conf_int[0][0], conf_int[1][0], error_flags[0],
                 nfev[0], None)
@@ -1143,13 +1117,14 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         upper_limits = []
         eflags = []
         nfits = 0
-        for i in range(len(limit_parnums)):
+        for i, lpar in enumerate(limit_parnums):
             lower_limit, upper_limit, flags, nfit, extra = func(
-                i, limit_parnums[i])
+                i, lpar)
             lower_limits.append(lower_limit)
             upper_limits.append(upper_limit)
             eflags.append(flags)
             nfits += nfit
+
         return (lower_limits, upper_limits, eflags, nfits, None)
 
     return parallel_est(func, limit_parnums, pars, numcores)
