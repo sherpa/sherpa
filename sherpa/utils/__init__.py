@@ -3652,9 +3652,9 @@ def mysgn(arg):
         return 1
 
 
-# Is this ever used? It is checked for as an exception, so really should be
-# derived from an exception, but is never thrown, as far as I can see.
-class OutOfBoundErr:
+class OutOfBoundErr(Exception):
+    """Indicate an out-of-bounds exception in the error analysis"""
+    # Should this just move to sherpa.estmethods?
     pass
 
 
