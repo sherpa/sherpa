@@ -23,6 +23,7 @@ import numpy as np
 
 import pytest
 
+from sherpa.optmethods import GridSearch, LevMar, MonCar, NelderMead
 from sherpa.optmethods.opt import SimplexRandom
 
 
@@ -66,3 +67,47 @@ def test_is_simplexbase_repeatable():
                            [-3.66908476e+00, 6.96971374e+00, 4.23701601e+03],
                            [-6.71378027e-01, 1.07842741e+01, 1.06809687e+04]])
     assert simp.simplex == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("cls,name,altname",
+                         [(GridSearch, "GridSearch", None),
+                          (LevMar, "LevMar", None),
+                          (MonCar, "MonCar", None),
+                          (NelderMead, "NelderMead", "simplex")])
+def test_optmethod_repr(cls, name, altname):
+    """Simple check"""
+
+    m = cls()
+    if altname is None:
+        altname = name.lower()
+
+    assert repr(m) == f"<{name} optimization method instance '{altname}'>"
+
+
+@pytest.mark.parametrize("cls", [GridSearch, LevMar, MonCar, NelderMead])
+def test_optmethod_getattr(cls):
+    """Check the call-through-to-config option works"""
+
+    opt = cls()
+    for key, value in opt.config.items():
+        assert getattr(opt, key) == pytest.approx(value)
+
+
+@pytest.mark.parametrize("cls", [GridSearch, LevMar, MonCar, NelderMead])
+def test_optmethod_setattr(cls):
+    """Check the call-through-to-config option works"""
+
+    opt = cls()
+    # Unlike test_optmethod_getattr, only check one config value
+    oldval = opt.config["ftol"]
+    assert opt.ftol == pytest.approx(oldval)
+
+    newval = 0.01
+    opt.ftol = newval
+    assert opt.config["ftol"] == pytest.approx(newval)
+    assert opt.ftol == pytest.approx(newval)
+
+    # just to check that ftol doesn't happen to match the new value,
+    # which would mean changing newval
+    #
+    assert oldval != pytest.approx(newval)
