@@ -149,24 +149,24 @@ class NoNewAttributesAfterInit():
 
     def __delattr__(self, name):
         if self.__initialized and hasattr(self, name):
-            raise AttributeError(("'%s' object attribute '%s' cannot be " +
-                                  "deleted") % (type(self).__name__, name))
+            raise AttributeError(f"'{type(self).__name__}' object attribute '{name}' "
+                                  "cannot be deleted")
         object.__delattr__(self, name)
 
     def __setattr__(self, name, val):
         if self.__initialized and (not hasattr(self, name)):
-            raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (type(self).__name__, name))
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         if self.__initialized and hasattr(self, name):
-            if callable(getattr(self, name)) and not callable(val):
-                raise AttributeError(("'%s' object attribute '%s' cannot be " +
-                                      "replaced with a non-callable attribute")
-                                     % (type(self).__name__, name))
-            elif not callable(getattr(self, name)) and callable(val):
-                raise AttributeError(("'%s' object attribute '%s' cannot be " +
-                                      "replaced with a callable attribute") %
-                                     (type(self).__name__, name))
+            cname = callable(getattr(self, name))
+            cval = callable(val)
+            if cname and not cval:
+                raise AttributeError(f"'{type(self).__name__}' object attribute '{name}' "
+                                     "cannot be replaced with a non-callable attribute")
+
+            if not cname and cval:
+                raise AttributeError(f"'{type(self).__name__}' object attribute '{name}' "
+                                     "cannot be replaced with a callable attribute")
 
         object.__setattr__(self, name, val)
 
@@ -711,8 +711,8 @@ def sao_arange(start, stop, step=None):
 
     if step is None:
         return _utils.sao_arange(start, stop)
-    else:
-        return _utils.sao_arange(start, stop, step)
+
+    return _utils.sao_arange(start, stop, step)
 
 
 def sao_fcmp(x, y, tol):
@@ -950,8 +950,8 @@ def set_origin(dims, maxindex=None):
 
     if maxindex is None:
         return _psf.set_origin(dims)
-    else:
-        return _psf.set_origin(dims, maxindex)
+
+    return _psf.set_origin(dims, maxindex)
 
 
 def pad_bounding_box(kernel, mask):
@@ -1063,14 +1063,14 @@ def filter_bins(mins, maxes, axislist, integrated=False):
     def locheck(lo, axis):
         if integrated:
             return sao_fcmp(lo, axis, eps) < 0
-        else:
-            return sao_fcmp(lo, axis, eps) <= 0
+
+        return sao_fcmp(lo, axis, eps) <= 0
 
     def hicheck(hi, axis):
         if integrated:
             return sao_fcmp(hi, axis, eps) > 0
-        else:
-            return sao_fcmp(hi, axis, eps) >= 0
+
+        return sao_fcmp(hi, axis, eps) >= 0
 
     for lo, hi, axis in zip(mins, maxes, axislist):
 
@@ -1123,20 +1123,19 @@ def bool_cast(val):
     if type(val) in (tuple, list, numpy.ndarray):
         return numpy.asarray([bool_cast(item) for item in val], bool)
 
-    elif type(val) == str:
+    if type(val) == str:
         # since built in bool() only returns false for empty strings
         vlo = val.lower()
         if vlo in ('false', 'off', 'no', '0', 'f', 'n'):
             return False
 
-        elif vlo in ('true', 'on', 'yes', '1', 't', 'y'):
+        if vlo in ('true', 'on', 'yes', '1', 't', 'y'):
             return True
 
-        raise TypeError("unknown boolean value: '%s'" % str(val))
+        raise TypeError(f"unknown boolean value: '{val}'")
 
-    else:
-        # use built in bool cast
-        return bool(val)
+    # use built in bool cast
+    return bool(val)
 
 
 def export_method(meth, name=None, modname=None):
@@ -1168,7 +1167,7 @@ def export_method(meth, name=None, modname=None):
         name = meth.__name__
 
     if name == meth.__name__:
-        old_name = '_old_' + name
+        old_name = f'_old_{name}'
     else:
         old_name = meth.__name__
 
@@ -1184,20 +1183,22 @@ def export_method(meth, name=None, modname=None):
 
     def tostr(p):
         if p.kind == p.VAR_KEYWORD:
-            return "**{}".format(p.name)
-        elif p.kind == p.VAR_POSITIONAL:
-            return "*{}".format(p.name)
-        else:
-            return p.name
+            return f"**{p.name}"
+
+        if p.kind == p.VAR_POSITIONAL:
+            return f"*{p.name}"
+
+        return p.name
 
     argspec = ",".join([tostr(p) for p in sig.parameters.values()])
-    argspec = "({})".format(argspec)
+    argspec = f"({argspec})"
 
     # Create a wrapper function with no default arguments
     g = {old_name: meth}
     if modname is not None:
         g['__name__'] = modname
-    fdef = 'def %s%s:  return %s%s' % (name, argspec, old_name, argspec)
+
+    fdef = f'def {name}{argspec}:  return {old_name}{argspec}'
     exec(fdef, g)
 
     # Create another new function from the one we just made, this time
@@ -1364,13 +1365,13 @@ def print_fields(names, vals, converters=None):
             pass
 
     width = max(len(n) for n in names)
-    fmt = '%%-%ds = %%s' % width
+    fmt = f'%-{width}s = %s'
     lines = []
     for n in names:
         v = vals[n]
 
         if isinstance(v, numpy.ndarray):
-            v = '%s[%d]' % (converters[v.dtype.type], v.size)
+            v = f'{converters[v.dtype.type]}[{v.size}]'
         else:
             v = str(v)
         lines.append(fmt % (n, v))
@@ -1434,7 +1435,8 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
 
     if len(vals) == 0:
         return ''
-    elif len(vals) == 1:
+
+    if len(vals) == 1:
         return format % vals[0]
 
     if mask is None:
@@ -1688,12 +1690,12 @@ def parse_expr(expr):
             try:
                 lo = float(lo)
             except ValueError:
-                raise TypeError("Invalid lower bound '%s'" % str(lo))
+                raise TypeError(f"Invalid lower bound '{lo}'") from None
         if hi is not None:
             try:
                 hi = float(hi)
             except ValueError:
-                raise TypeError("Invalid upper bound '%s'" % str(hi))
+                raise TypeError(f"Invalid upper bound '{hi}'") from None
 
         res.append((lo, hi))
 
@@ -1951,16 +1953,15 @@ def dataspace1d(start, stop, step=1, numbins=None):
 
     """
     if start >= stop:
-        raise TypeError("input should be start < stop, found start=%s stop=%s" %
-                        (start, stop))
+        raise TypeError(f"input should be start < stop, found start={start} stop={stop}")
 
     if numbins is None:
         if step <= 0:
-            raise TypeError("input should be step > 0, found step=%s" % step)
+            raise TypeError(f"input should be step > 0, found step={step}")
 
         if step >= (stop - start):
             raise TypeError(
-                "input has produced less than 2 bins, found start=%s stop=%s step=%s" % (start, stop, step))
+                f"input has produced less than 2 bins, found start={start} stop={stop} step={step}")
 
     # xx = numpy.arange(start, stop, step, dtype=float)
     # xx = sao_arange(start, stop, step)
@@ -1968,7 +1969,7 @@ def dataspace1d(start, stop, step=1, numbins=None):
     if numbins is not None:
         if numbins <= 1:
             raise TypeError(
-                "input should be numbins > 1, found numbins=%s" % numbins)
+                f"input should be numbins > 1, found numbins={numbins}")
 
         xx = numpy.linspace(start, stop, numbins + 1)
     else:
@@ -1992,8 +1993,7 @@ def dataspace2d(dim):
         raise TypeError("dimensions for dataspace2d must be > 1")
 
     if dim[0] < 1 or dim[1] < 1:
-        raise TypeError("dimensions should be > 0, found dim0 %s dim1 %s"
-                        % (dim[0], dim[1]))
+        raise TypeError(f"dimensions should be > 0, found dim0 {dim[0]} dim1 {dim[1]}")
 
     x0 = numpy.arange(dim[0], dtype=float) + 1.0
     x1 = numpy.arange(dim[1], dtype=float) + 1.0
@@ -2256,8 +2256,7 @@ def interpolate(xout, xin, yin, function=linear_interp):
     """
 
     if not callable(function):
-        raise TypeError("input function '%s' is not callable" %
-                        repr(function))
+        raise TypeError(f"input function '{repr(function)}' is not callable")
 
     return function(xout, xin, yin)
 
@@ -3331,26 +3330,24 @@ class NumDerivCentralPartial(NumDeriv):
             fval /= delta * delta
             return fval
 
-        else:
+        ej = numpy.zeros(len(x), float)
 
-            ej = numpy.zeros(len(x), float)
+        deltai = h * abs(x[ith])
+        if 0.0 == deltai:
+            deltai = h
+        ei[ith] = deltai
 
-            deltai = h * abs(x[ith])
-            if 0.0 == deltai:
-                deltai = h
-            ei[ith] = deltai
+        deltaj = h * abs(x[jth])
+        if 0.0 == deltaj:
+            deltaj = h
+        ej[jth] = deltaj
 
-            deltaj = h * abs(x[jth])
-            if 0.0 == deltaj:
-                deltaj = h
-            ej[jth] = deltaj
-
-            fval = self.func(x + ei + ej)
-            fval -= self.func(x + ei - ej)
-            fval -= self.func(x - ei + ej)
-            fval += self.func(x - ei - ej)
-            fval /= (4.0 * deltai * deltaj)
-            return fval
+        fval = self.func(x + ei + ej)
+        fval -= self.func(x + ei - ej)
+        fval -= self.func(x - ei + ej)
+        fval += self.func(x - ei - ej)
+        fval /= (4.0 * deltai * deltaj)
+        return fval
 
 
 class NoRichardsonExtrapolation:
@@ -3376,10 +3373,6 @@ class RichardsonExtrapolation(NoRichardsonExtrapolation):
     Transactions of the Royal Society of London, Series A 210.
     2. Richardson, L. F. (1927). \" The deferred approach to the limit \".
     Philosophical Transactions of the Royal Society of London, Series A 226:"""
-
-    def __init__(self, sequence, verbose=False):
-        self.sequence = sequence
-        self.verbose = verbose
 
     def __call__(self, x, t, tol, maxiter, h, *args):
 
@@ -3486,16 +3479,16 @@ def is_in(arg, seq):
     for x in seq:
         if arg == x:
             return True
+
     return False
 
 
 def is_iterable(arg):
-    return isinstance(arg, list) or isinstance(arg, tuple) \
-        or isinstance(arg, numpy.ndarray) or numpy.iterable(arg)
+    return isinstance(arg, (list, tuple, numpy.ndarray)) or numpy.iterable(arg)
 
 
 def is_sequence(start, mid, end):
-    return (start < mid) and (mid < end)
+    return start < mid < end
 
 
 def Knuth_close(x, y, tol, myop=operator.__or__):
@@ -3543,7 +3536,7 @@ def Knuth_close(x, y, tol, myop=operator.__or__):
 
 
 def safe_div(num, denom):
-    import sys
+
     dbl_max = sys.float_info.max
     dbl_min = sys.float_info.min
 
@@ -3598,17 +3591,18 @@ def Knuth_boost_close(x, y, tol, myop=operator.__or__):
 def list_to_open_interval(arg):
     if not numpy.iterable(arg):
         return arg
-    str = '(%e, %e)' % (arg[0], arg[1])
-    return str
+
+    return f'({arg[0]:e}, {arg[1]:e})'
 
 
 def mysgn(arg):
     if arg == 0.0:
         return 0
-    elif arg < 0.0:
+
+    if arg < 0.0:
         return -1
-    else:
-        return 1
+
+    return 1
 
 
 class OutOfBoundErr(Exception):
@@ -3636,18 +3630,16 @@ class QuadEquaRealRoot:
                 answer = - c / b
                 return [answer, answer]
 
-            else:
+            #
+            # 0 * x^2 + 0 * x + c = 0
+            #
+            # a == 0, b == 0, so if c == 0 then all numbers work so
+            # returning nan is not right. However if c != 0 then no
+            # roots exist.
+            #
+            return [None, None]
 
-                #
-                # 0 * x^2 + 0 * x + c = 0
-                #
-                # a == 0, b == 0, so if c == 0 then all numbers work so
-                # returning nan is not right. However if c != 0 then no
-                # roots exist.
-                #
-                return [None, None]
-
-        elif 0.0 == b:
+        if 0.0 == b:
 
             #
             # a * x^2 + 0 * x + c = 0
@@ -3656,29 +3648,26 @@ class QuadEquaRealRoot:
 
                 # a * x^2 + 0 * x + 0 = 0
                 return [0.0, 0.0]
-            else:
 
-                # a * x^2 + 0 * x + c = 0
-                if mysgn(a) == mysgn(c):
-                    return [None, None]
-                answer = numpy.sqrt(c / a)
-                return [-answer, answer]
+            # a * x^2 + 0 * x + c = 0
+            if mysgn(a) == mysgn(c):
+                return [None, None]
 
-        elif 0.0 == c:
+            answer = numpy.sqrt(c / a)
+            return [-answer, answer]
+
+        if 0.0 == c:
 
             #
             # a * x^2 + b * x + 0 = 0
             #
             return [0.0, - b / a]
 
-        else:
-
-            discriminant = b * b - 4.0 * a * c
-            # TODO: is this needed?
-            debug("disc={}".format(discriminant))
-            sqrt_disc = numpy.sqrt(discriminant)
-            t = - (b + mysgn(b) * sqrt_disc) / 2.0
-            return [c / t, t / a]
+        discriminant = b * b - 4.0 * a * c
+        debug("disc=%s", discriminant)
+        sqrt_disc = numpy.sqrt(discriminant)
+        t = - (b + mysgn(b) * sqrt_disc) / 2.0
+        return [c / t, t / a]
 
 
 def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
@@ -3745,7 +3734,7 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
 
         if mysgn(fa) == mysgn(fb):
             # TODO: is this a useful message for the user?
-            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         while nfev[0] < maxfev:
@@ -3766,8 +3755,8 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
             else:
                 if abs(fa) <= tol:
                     return [[xa, fa], [[xa, fa], [xb, fb]], nfev[0]]
-                else:
-                    return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+
+                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
         xc = (xa + xb) / 2.0
         fc = myfcn(xc, *args)
@@ -4044,8 +4033,8 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
         x = xl + (xh - xl) * fl / (fl - fh)
         if is_sequence(x0, x, x1):
             return x
-        else:
-            return (x0 + x1) / 2.0
+
+        return (x0 + x1) / 2.0
 
     history = [[], []]
     nfev, myfcn = func_counter_history(fcn, history)
@@ -4063,8 +4052,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
             return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
         if mysgn(fa) == mysgn(fb):
-            # TODO: is this a useful message for the user?
-            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         while nfev[0] < maxfev:
@@ -4198,8 +4186,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
         if mysgn(fa) == mysgn(fb):
-            # TODO: is this a useful message for the user?
-            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         xc = (xa + xb) / 2.0
@@ -4395,8 +4382,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
             return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
         if mysgn(fa) == mysgn(fb):
-            # TODO: is this a useful message for the user?
-            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         xc = xa
@@ -4423,13 +4409,14 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
                                         maxfev=maxfev - nfev[0], tol=tol)
                     tmp[-1] += nfev[0]
                     return tmp
-                elif mysgn(fb) != mysgn(fc):
+
+                if mysgn(fb) != mysgn(fc):
                     tmp = apache_muller(fcn, xb, xc, fb, fc, args=args,
                                         maxfev=maxfev - nfev[0], tol=tol)
                     tmp[-1] += nfev[0]
                     return tmp
-                else:
-                    return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+
+                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
             if abs(prev_step) >= tol_act and abs(fa) > abs(fb):
 
@@ -4525,5 +4512,5 @@ def send_to_pager(txt, filename=None, clobber=False):
     if os.path.isfile(filename) and not clobber:
         raise IOErr('filefound', filename)
 
-    with open(filename, 'w') as fh:
+    with open(filename, 'w', encoding="UTF-8") as fh:
         print(txt, file=fh)
