@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -291,7 +291,7 @@ class FitResults(NoNewAttributesAfterInit):
         if 'itermethodname' not in state:
             self.__dict__['itermethodname'] = 'none'
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.succeeded
 
     def __repr__(self):

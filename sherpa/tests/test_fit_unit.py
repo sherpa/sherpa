@@ -2879,7 +2879,6 @@ def test_fit_results_bool_true():
     assert fres
 
 
-@pytest.mark.xfail
 def test_fit_results_bool_false():
     """Just check we so call bool() on a fit results instance
 
