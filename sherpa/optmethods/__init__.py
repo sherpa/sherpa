@@ -35,6 +35,7 @@ finalsimplex = 9
 step         = None
 iquad        = 1
 verbose      = 0
+reflect      = True
 
 A model is fit by providing the ``fit`` method a callback, the starting
 point (parameter values), and parameter ranges. The callback should
@@ -60,6 +61,7 @@ constant model to a 1D dataset (we do not need to send any extra
 arguments to the callback other than the parameter values in this
 case):
 
+>>> import numpy as np
 >>> from sherpa.data import Data1D
 >>> from sherpa.models.basic import Const1D
 >>> from sherpa.stats import LeastSq

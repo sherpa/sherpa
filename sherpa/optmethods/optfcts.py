@@ -48,6 +48,7 @@ Examples
 Fit a constant model to the array of values in ``y``, using a
 least-square statistic:
 
+>>> import numpy as np
 >>> y = np.asarray([3, 2, 7])
 >>> def cb(pars):
 ...     'Least-squares statistic value from fitting a constant model to y'
