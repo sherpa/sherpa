@@ -31,6 +31,7 @@ from sherpa.stats import Cash, Chi2DataVar, CStat
 from sherpa.optmethods import NelderMead, LevMar
 from sherpa.estmethods import Covariance
 from sherpa import sim
+from sherpa.utils.err import EstErr
 from sherpa.utils.logging import SherpaVerbosity
 
 
@@ -204,6 +205,32 @@ def test_cauchy(setup, reset_seed):
     assert out == pytest.approx(numpy.asarray(expected))
 
 
+def test_parameter_scale_vector_checks_scale_iterable(setup, reset_seed):
+    """Error check"""
+
+    with pytest.raises(TypeError,
+                       match="^scales option must be iterable of length 5$"):
+        sim.ParameterScaleVector().get_scales(setup.fit, myscales=3)
+
+
+@pytest.mark.parametrize("scales", [3, numpy.asarray([3])])
+def test_parameter_scale_matrix_checks_scale_iterable(scales, setup, reset_seed):
+    """Error check"""
+
+    with pytest.raises(EstErr,
+                       match=r"^scales must be a numpy array of size \(5,5\)$"):
+        sim.ParameterScaleMatrix().get_scales(setup.fit, myscales=scales)
+
+
+def test_parameter_scale_matrix_checks_scale_positive_definite(setup, reset_seed):
+    """Error check"""
+
+    scales = numpy.arange(-10, 15).reshape(5, 5)
+    with pytest.raises(TypeError,
+                       match="^The covariance matrix is not positive definite$"):
+        sim.ParameterScaleMatrix().get_scales(setup.fit, myscales=scales)
+
+
 def test_parameter_scale_vector(setup, reset_seed):
     ps = sim.ParameterScaleVector()
     out = ps.get_scales(setup.fit)
@@ -224,6 +251,17 @@ def test_parameter_scale_matrix(setup, reset_seed):
                 [ 3.89927955e-04, -7.64855819e-03, -8.27934918e-05, -8.41924293e-05,   1.51498514e-02]]
 
     assert out == pytest.approx(numpy.asarray(expected))
+
+
+def test_parameter_sample_checks_clip_argument(setup, reset_seed):
+    """Error check"""
+
+    obj = sim.NormalParameterSampleFromScaleVector()
+    with pytest.raises(ValueError,
+                       match="^invalid clip argument: sent max$"):
+        obj.clip(setup.fit, numpy.arange(20).reshape(4, 5),
+                 clip="max")
+
 
 def test_uniform_parameter_sample(setup, reset_seed):
     ps = sim.UniformParameterSampleFromScaleVector()
