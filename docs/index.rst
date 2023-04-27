@@ -37,7 +37,7 @@ range of statistics and robust optimisers.
 Sherpa is released under the
 `GNU General Public License v3.0
 <https://github.com/sherpa/sherpa/blob/master/LICENSE>`_,
-and is compatible with Python versions 3.8 to 3.11.
+and is compatible with Python versions 3.9 to 3.11.
 Information on recent releases and citation information for
 Sherpa is available using the Digital Object Identifier (DOI)
 `10.5281/zenodo.593753 <https://doi.org/10.5281/zenodo.593753>`_.

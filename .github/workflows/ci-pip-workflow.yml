@@ -21,8 +21,8 @@ jobs:
         include:
           - name: Linux Minimum Setup
             os: ubuntu-latest
-            python-version: "3.8"
-            numpy-pkg: 'numpy>=1.20,<1.21'
+            python-version: "3.9"
+            numpy-pkg: 'numpy>=1.21,<1.22'
             install-type: develop
             test-data: none
 
@@ -45,7 +45,7 @@ jobs:
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
-            python-version: "3.8"
+            python-version: "3.9"
             numpy-pkg: 'numpy'
             install-type: develop
             fits-pkg: 'astropy'
