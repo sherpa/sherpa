@@ -105,6 +105,7 @@ jobs:
         TEST: ${{ matrix.test-data }}
       run: |
         git submodule deinit -f .
+        pip install -r test_requirements.txt
         pip install pytest-cov
         sherpa_test --cov=sherpa --cov-report=xml
 
