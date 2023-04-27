@@ -35,7 +35,7 @@ extern "C" {
 
 extern int      regYYparse( void );
 extern int      regYYlex( void );
-void     regYYerror(char* message);
+void     regYYerror(const char* message);
 void     regLEXerror(const char* message);
 extern int               regYYdebug;  /* Declaration to keep gcc happy */
 
