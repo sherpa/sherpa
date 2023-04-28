@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021
+#  Copyright (C) 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -324,7 +324,9 @@ class MyDifEvo(Opt):
 
     def all_strategies(self, key):
         rand, index = self.key2.parse(key)
-        random.seed(rand)
+        # convert from numpy int to int otherwise this will
+        # fail in Python 3.11
+        random.seed(int(rand))
         mypop = self.polytope
         best_trial = self.strategies[0](mypop, index)
         for ii in range(1, len(self.strategies)):
