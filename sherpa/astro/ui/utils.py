@@ -8843,12 +8843,17 @@ class Session(sherpa.ui.utils.Session):
            the data set given by id.
         exposure : number
            The exposure time, in seconds.
+           Set this to `None` to use any exposure that is already set for
+           the data set given by id.
         backscal : number, optional
            The 'BACKSCAL' value for the data set.
         areascal : number, optional
            The 'AREASCAL' value for the data set.
         grouping : array, optional
            The grouping array for the data (see `set_grouping`).
+           Set this to `None` to use any grouping that is already set for
+           the data set given by id; the grouping is only applied if
+           `grouped` is ``True``.
         grouped : bool, optional
            Should the simulated data be grouped (see `group`)?  The
            default is ``False``. This value is only used if the
