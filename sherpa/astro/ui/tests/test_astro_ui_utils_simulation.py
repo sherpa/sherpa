@@ -690,6 +690,76 @@ def test_fake_pha_issue_1568(make_data_path, clean_astro_ui, reset_seed):
     assert data.get_x()[np.argmax(data.counts)] == pytest.approx(1.957132)
 
 
+def check_analysis_settings(expected, bexpected=None,
+                            mexpected=None, mbexpected=None,
+                            swidth=None, bwidth=None):
+    """Check plot results for type=counts then type=rates
+
+    expected - source data
+    bexpected - background data
+    mexpected - source model data
+    mbexpected - source background data
+
+    This is for the tests that use setup_fake_pha_test.
+
+    It checks that the type=rate plots are related to the
+    type=counts plots with the expected ratios (given by
+    the swidth/bwidth arguments).
+
+    """
+
+    if bexpected is None:
+        bexpected = [300, 300, 300]
+
+    if mexpected is None:
+        mexpected = [80, 80, 300]
+
+    if mbexpected is None:
+        mbexpected = [0, 0, 1200]
+
+    if swidth is None:
+        swidth = [20, 40, 100]
+
+    if bwidth is None:
+        bwidth = [100, 200, 500]
+
+    expected = np.asarray(expected)
+    bexpected = np.asarray(bexpected)
+    mexpected = np.asarray(mexpected)
+    mbexpected = np.asarray(mbexpected)
+
+    swidth = np.asarray(swidth)
+    bwidth = np.asarray(bwidth)
+
+    # These values don't change.
+    splot = [2, 1, 0]
+    bsplot = [0, 0, 3]
+
+    ui.set_analysis(1, "energy", type="counts")
+    assert ui.get_data_plot().y == pytest.approx(expected)
+    assert ui.get_bkg_plot().y == pytest.approx(bexpected)
+    assert ui.get_model_plot().y == pytest.approx(mexpected)
+    assert ui.get_bkg_model_plot().y == pytest.approx(mbexpected)
+
+    assert ui.get_source_plot().y == pytest.approx(splot)
+    assert ui.get_bkg_source_plot().y == pytest.approx(bsplot)
+
+    # Correct by "exposure"
+    expected = expected / swidth
+    bexpected = bexpected / bwidth
+    mexpected = mexpected / swidth
+    mbexpected = mbexpected / bwidth
+
+    ui.set_analysis(1, "energy", type="rate")
+    assert ui.get_data_plot().y == pytest.approx(expected)
+    assert ui.get_bkg_plot().y == pytest.approx(bexpected)
+    assert ui.get_model_plot().y == pytest.approx(mexpected)
+    assert ui.get_bkg_model_plot().y == pytest.approx(mbexpected)
+
+    assert ui.get_source_plot().y == pytest.approx(splot)
+    assert ui.get_bkg_source_plot().y == pytest.approx(bsplot)
+
+
 def setup_fake_pha_test():
     """Set up for test_fake_pha_xxx
 
@@ -774,23 +844,7 @@ def setup_fake_pha_test():
     #
     #    = [0, 0, 1200]
     #
-    ui.set_analysis(1, "energy", type="counts")
-    assert ui.get_data_plot().y == pytest.approx([20, 20, 20])
-    assert ui.get_bkg_plot().y == pytest.approx([300, 300, 300])
-    assert ui.get_model_plot().y == pytest.approx([80, 80, 300])
-    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 1200])
-
-    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
-    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
-
-    ui.set_analysis(1, "energy", type="rate")
-    assert ui.get_data_plot().y == pytest.approx([1, 0.5, 0.2])
-    assert ui.get_bkg_plot().y == pytest.approx([3, 1.5, 0.6])
-    assert ui.get_model_plot().y == pytest.approx([4, 2, 3])
-    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 2.4])
-
-    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
-    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+    check_analysis_settings(expected=[20, 20, 20])
 
     np.random.seed(392347)
     return (arf_src, rmf_src)
@@ -803,29 +857,10 @@ def setup_fake_pha_test():
 def test_fake_pha_without_bgnd(method, expected, clean_astro_ui, reset_seed):
     """Extend test_fake_pha_with_bgnd_model to check with no background"""
 
-    bexpected = [300, 300, 300]
-
     arf, rmf = setup_fake_pha_test()
     ui.fake_pha(1, arf, rmf, 100, bkg=None, method=method)
 
-    # Check what's changed and what hasn't
-    ui.set_analysis(1, "energy", type="counts")
-    assert ui.get_data_plot().y == pytest.approx(expected)
-    assert ui.get_bkg_plot().y == pytest.approx(bexpected)
-    assert ui.get_model_plot().y == pytest.approx([80, 80, 300])
-    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 1200])
-
-    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
-    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
-
-    ui.set_analysis(1, "energy", type="rate")
-    assert ui.get_data_plot().y == pytest.approx(expected / np.asarray([20, 40, 100]))
-    assert ui.get_bkg_plot().y == pytest.approx(bexpected / np.asarray([100, 200, 500]))
-    assert ui.get_model_plot().y == pytest.approx([4, 2, 3])
-    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 2.4])
-
-    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
-    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+    check_analysis_settings(expected=expected)
 
 
 @pytest.mark.parametrize("method,expected",
@@ -840,36 +875,17 @@ def test_fake_pha_with_bgnd_model(method, expected, clean_astro_ui, reset_seed):
 
     """
 
-    bexpected = [300, 300, 300]
-
     arf, rmf = setup_fake_pha_test()
     ui.fake_pha(1, arf, rmf, 100, bkg="model", method=method)
 
-    # Check what's changed and what hasn't
-    #
     # The simulated data should match the model plot - that is
     # [80, 80, 300], but the background model gets included twice,
     # with the second time without a response, so it ends up adding
     # signal to the second two bins from 0.1 * [0, 3, 3], which
-    # accounts for the [0, 0.3, 0.3] addition.
+    # accounts for the [0, 0.3, 0.3] addition used above for the
+    # "expected" value when the identity function is used.
     #
-    ui.set_analysis(1, "energy", type="counts")
-    assert ui.get_data_plot().y == pytest.approx(expected)
-    assert ui.get_bkg_plot().y == pytest.approx(bexpected)
-    assert ui.get_model_plot().y == pytest.approx([80, 80, 300])
-    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 1200])
-
-    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
-    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
-
-    ui.set_analysis(1, "energy", type="rate")
-    assert ui.get_data_plot().y == pytest.approx(expected / np.asarray([20, 40, 100]))
-    assert ui.get_bkg_plot().y == pytest.approx(bexpected / np.asarray([100, 200, 500]))
-    assert ui.get_model_plot().y == pytest.approx([4, 2, 3])
-    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 2.4])
-
-    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
-    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+    check_analysis_settings(expected=expected)
 
 
 @pytest.mark.parametrize("method,expected",
@@ -905,23 +921,12 @@ def test_fake_pha_with_bgnd_data(method, expected, clean_astro_ui, reset_seed):
     # Note that this includes the background model as well as the
     # background data.
     #
-    ui.set_analysis(1, "energy", type="counts")
-    assert ui.get_data_plot().y == pytest.approx(expected)
-    assert ui.get_bkg_plot().y == pytest.approx(bexpected)
-    assert ui.get_model_plot().y == pytest.approx([80, 80, 1200])
-    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 2400])
-
-    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
-    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
-
-    ui.set_analysis(1, "energy", type="rate")
-    assert ui.get_data_plot().y == pytest.approx(expected / np.asarray([20, 40, 100]))
-    assert ui.get_bkg_plot().y == pytest.approx(bexpected / np.asarray([80, 160, 400]))
-    assert ui.get_model_plot().y == pytest.approx([4, 2, 12])
-    assert ui.get_bkg_model_plot().y == pytest.approx([0, 0, 6])
-
-    assert ui.get_source_plot().y == pytest.approx([2, 1, 0])
-    assert ui.get_bkg_source_plot().y == pytest.approx([0, 0, 3])
+    check_analysis_settings(expected=expected,
+                            bexpected=bexpected,
+                            mexpected=[80, 80, 1200],
+                            mbexpected=[0, 0, 2400],
+                            swidth=[20, 40, 100],
+                            bwidth=[80, 160, 400])
 
 
 @pytest.mark.parametrize("grouped", [False, True])
