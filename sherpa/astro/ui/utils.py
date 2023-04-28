@@ -8859,14 +8859,15 @@ class Session(sherpa.ui.utils.Session):
            If left empty, then only the source emission is simulated.
            If set to a PHA data object, then the counts from this data
            set are scaled appropriately and added to the simulated
-           source signal. To use background model, set ``bkg="model"`. In that
-           case a background dataset with ``bkg_id=1`` has to be set before
-           calling ``fake_pha``. That background dataset needs to include
-           the data itself (not used in this function), the background model,
-           and the response.
+           source signal. To use background model, set
+           ``bkg="model"``. In that case a background dataset with
+           ``bkg_id=1`` has to be set before calling
+           ``fake_pha``. That background dataset needs to include the
+           data itself (not used in this function), the background
+           model, and the response.
         method : callable or None, optional
            If None, the default, then the data is simulated using the
-           sherpa.utils.poisson_noise routine. If set, it must be a
+           `sherpa.utils.poisson_noise` routine. If set, it must be a
            callable that takes a ndarray of the predicted values and
            returns a ndarray of the same size with the simulated data.
 
