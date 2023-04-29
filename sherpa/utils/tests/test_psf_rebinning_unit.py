@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -46,9 +47,9 @@ We might have a different file for integration tests with more realistic data, a
 to exercise actual images and PSFs with WCS headers.
 """
 
+from dataclasses import dataclass
 from math import sqrt
 
-import attr
 import numpy as np
 
 from pytest import approx, fixture, mark
@@ -64,30 +65,30 @@ from sherpa.models.regrid import EvaluationSpace2D
 DATA_PIXEL_SIZE = 2
 
 
-@attr.s
-class FixtureConfiguration():
-    image_size = attr.ib()
-    psf_size = attr.ib()
-    source_amplitude = attr.ib()
-    source_sigma = attr.ib()
-    psf_sigma = attr.ib()
-    resolution_ratio = attr.ib()
-    psf_amplitude = attr.ib(default=1)
-    image_resolution = attr.ib(default=1)
+@dataclass
+class FixtureConfiguration:
+    image_size: int
+    psf_size: int
+    source_amplitude: float
+    source_sigma: float
+    psf_sigma: float
+    resolution_ratio: float
+    psf_amplitude: float=1
+    image_resolution: float=1
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self.source_position = self.image_size / 2
         self.psf_position = self.psf_size / 2
 
 
-@attr.s
-class FixtureData():
-    image = attr.ib()
-    psf = attr.ib()
-    psf_model = attr.ib()
-    configuration = attr.ib()
+@dataclass
+class FixtureData:
+    image: DataIMG
+    psf: PSFModel
+    psf_model: PSFModel
+    configuration: FixtureConfiguration
 
-    def __attrs_post_init__(self):
+    def __post_init__(self):
         self.data_space = EvaluationSpace2D(*self.image.get_indep(filter=False))
 
 
@@ -255,7 +256,7 @@ def make_image(configuration):
 
     data_image = DataIMG("image", image_x, image_y, image,
                          shape=(configuration.image_size, configuration.image_size),
-                         sky=WcsStub([DATA_PIXEL_SIZE, DATA_PIXEL_SIZE])
+                         sky=WcsStub(DATA_PIXEL_SIZE)
                          )
 
     return data_image
@@ -280,7 +281,7 @@ def make_psf(configuration):
     norm_psf = psf / psf.sum()
 
     cdelt = DATA_PIXEL_SIZE / configuration.resolution_ratio
-    psf_wcs = WcsStub([cdelt, cdelt])
+    psf_wcs = WcsStub(cdelt)
 
     # Create a Sherpa PSF model object using the psf arrays
     sherpa_kernel = DataIMG('kernel_data',
@@ -323,6 +324,12 @@ def psf_fixture(request):
     return ui, sherpa_source, approx_expected_sigma
 
 
-@attr.s
-class WcsStub():
-    cdelt = attr.ib()
+@dataclass
+class WcsStub:
+    # This use to be cdelt which took a list, but that's hard to type
+    # (python 3.8 to 3.11 era) so separate them out. Also, we have
+    # cdeltx == cdelty so can just send in a single argument.
+    cdeltsize: float
+
+    def __post_init__(self):
+        self.cdelt = [self.cdeltsize, self.cdeltsize]
