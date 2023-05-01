@@ -33,9 +33,9 @@ Requirements
 
 Sherpa has the following requirements:
 
-* Python 3.8 to 3.11
+* Python 3.9 to 3.11
 * NumPy (the exact lower limit has not been determined,
-  1.20.0 or later will work, earlier version may work)
+  1.21.0 or later will work, earlier version may work)
 * Linux or OS-X (patches to add Windows support are welcome)
 
 Sherpa can take advantage of the following Python packages
@@ -140,7 +140,7 @@ Prerequisites
 
 The prerequisites for building from source are:
 
-* Python versions: 3.8 to 3.11
+* Python versions: 3.9 to 3.11
 * Python packages: ``setuptools``, ``numpy``
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
   ``bison`` (the aim is to support recent versions of these
