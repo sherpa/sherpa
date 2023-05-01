@@ -439,7 +439,7 @@ def test_lrt_multicore(setup):
     assert results.ratios[:3] == pytest.approx(expected[:3])
 
 
-def test_mh(setup):
+def test_mh(setup, caplog):
 
     setup.fit.method = NelderMead()
     setup.fit.stat = Cash()
@@ -490,6 +490,8 @@ def test_mh(setup):
         stats, accept, params = mcmc.get_draws(setup.fit, cov,
                                                niter=1e2, rng=setup.rng)
 
+    assert len(caplog.records) == 0
+
     assert len(stats) == 101
     assert len(accept) == 101
     assert params.shape == (5, 101)
@@ -503,7 +505,7 @@ def test_mh(setup):
     assert params.mean(axis=1) == pytest.approx(means)
 
 
-def test_metropolisMH(setup):
+def test_metropolisMH(setup, caplog):
 
     setup.fit.method = NelderMead()
     setup.fit.stat = CStat()
@@ -545,6 +547,8 @@ def test_metropolisMH(setup):
     with SherpaVerbosity("ERROR"):
         stats, accept, params = mcmc.get_draws(setup.fit, cov,
                                                niter=1e2, rng=setup.rng)
+
+    assert len(caplog.records) == 0
 
     assert len(stats) == 101
     assert len(accept) == 101

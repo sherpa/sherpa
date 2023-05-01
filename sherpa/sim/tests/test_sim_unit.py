@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2021, 2023
+#  Copyright (C) 2017, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -62,16 +62,15 @@ def make_sim():
     mainly to check the display output.
     """
 
-    # We don't care that the results are meaningless, which does make
-    # the string output a bit annoying to validate.
-    #
     ratios = [0.2, 0.4, 0.3]
     stats = [[2.1, 3], [2.2, 2.8], [4.2, 1.3]]
     samples = [1, 2, 3]  # what should this be?
     pnames = ["a.a", "a.b", "b.a"]
     pvals = [[1, 2, 3], [2, 3, 4], [1.5, 2.5, 3.5]]
-    return sim.LikelihoodRatioResults(ratios, stats, samples, 0.2, 0.4, 12.3, 14.4,
-                                      parnames=pnames, parvals=pvals)
+    return sim.LikelihoodRatioResults(ratios, stats, samples,
+                                      0.2, 0.4, 12.3, 14.4,
+                                      parnames=pnames,
+                                      parvals=pvals)
 
 
 def test_results_repr():
