@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -188,6 +188,19 @@ known_warnings = {
         ],
     VisibleDeprecationWarning:
         [],
+    ImportWarning:
+    [
+        # It is not clear why this happens - seen when testing
+        # https://github.com/sherpa/sherpa/pull/1752 - and the problem appears
+        # to be a setuptools/pip interaction, based on
+        #   https://github.com/pypa/setuptools/issues/2104
+        #   https://github.com/pypa/setuptools/issues/2052
+        #   https://github.com/pypa/setuptools/issues/1383
+        # At present Sherpa forces an old version of setuptoools (<60) so it is
+        # unlikely to be fixed. When the setuptools restriction is removed we can
+        # hopefully remove this.
+        r"VendorImporter.find_spec\(\) not found; falling back to find_module\(\)",
+    ]
 }
 
 if have_astropy:
