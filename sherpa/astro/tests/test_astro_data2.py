@@ -909,11 +909,12 @@ def test_img_can_not_set_coord(make_test_image):
     """
     d = make_test_image
 
-    # This dataset does not have a physical system, but we
-    # do not get a DataErr but an AttributeError.
+    # This dataset does not have a physical system, but we do not get
+    # a DataErr but an AttributeError. The text message depends on
+    # Python version (e.g. 3.9, 3.10, and 3.11 all have different
+    # messages) so we do not check the message, just the class.
     #
-    with pytest.raises(AttributeError,
-                       match="can't set attribute"):
+    with pytest.raises(AttributeError):
         d.coord = "physical"
 
 

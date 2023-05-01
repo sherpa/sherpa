@@ -719,12 +719,10 @@ def test_psf_set_model_to_bool(kernel_func):
     """
 
     m = PSFModel(kernel=kernel_func())
-    with pytest.raises(AttributeError,
-                       # The exact message depends on python version,
-                       # as 3.10 includes the attribute name - here
-                       # 'model' - and 3.9 and earlier does not.
-                       #
-                       match="can't set attribute"):
+    # This used to check the message that was raised, but it changes
+    # with Python versions (3.9, 3.10, 3.11 all had different messages)
+    # and so we now just check the error is raised.
+    with pytest.raises(AttributeError):
         m.model = False
 
 

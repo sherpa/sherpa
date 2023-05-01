@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021, 2022
+#  Copyright (C) 2016, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -94,7 +94,7 @@ def run(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
                 raise
 
     test_suite = SmokeTestSuite(require_failure=require_failure)
-    test_suite.addTest(unittest.makeSuite(DependencyTest))
+    test_suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(DependencyTest))
     runner = unittest.TextTestRunner(verbosity=int(verbosity))
     result = runner.run(test_suite)
 
@@ -241,7 +241,7 @@ class SmokeTestSuite(unittest.TestSuite):
         unittest.TestSuite.__init__(self, *args, **kwargs)
 
         for test_class in self.test_classes:
-            self.addTest(unittest.makeSuite(test_class))
+            self.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(test_class))
 
         self._set_skips()
 
