@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022
+#  Copyright (C) 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -40,8 +40,10 @@ from sherpa.models.basic import Gauss2D
 @requires_group
 @requires_fits
 @requires_data
-def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
+def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging, reset_seed):
     """Check plot_pvalue with PHA data."""
+
+    np.random.seed(123)
 
     fname = make_data_path("qso.pi")
     ui.load_pha(fname)
@@ -66,12 +68,12 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     g1.fwhm = 0.1
     ui.freeze(g1.fwhm)
 
-    # Could we reduce the number of bins to save evaluation time?
-    # We do want a non-default num value when checking the shapes
-    # of the output attributes.
+    # The number of iterations has been reduced so it's less than the
+    # fit time. This leads to using a small value for the number of
+    # bins.
     #
     ui.fit()
-    ui.plot_pvalue(p1, p1 + g1, num=100, bins=20)
+    ui.plot_pvalue(p1, p1 + g1, num=20, bins=8)
 
     tmp = ui.get_pvalue_results()
 
@@ -82,11 +84,13 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     # Have we returned the correct info?
     #
     # Is it worth checking the stored data (aka how randomised is this
-    # output)?
+    # output)? There is randomness, and then, because fits are done,
+    # some possible randomness due to numerical differences between
+    # platforms.
     #
-    assert tmp.samples.shape == (100, 2)
-    assert tmp.stats.shape == (100, 2)
-    assert tmp.ratios.shape == (100, )
+    assert tmp.samples.shape == (20, 2)
+    assert tmp.stats.shape == (20, 2)
+    assert tmp.ratios.shape == (20, )
 
     # Check the plot
     #
@@ -100,10 +104,13 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
 
     # It would be nice to check the values here
     #
-    assert tmp.ratios.shape == (100, )
-    assert tmp.xlo.shape == (21, )
-    assert tmp.xhi.shape == (21, )
-    assert tmp.y.shape == (21, )
+    assert tmp.ratios.shape == (20, )
+    assert tmp.xlo.shape == (9, )
+    assert tmp.xhi.shape == (9, )
+    assert tmp.y.shape == (9, )
+
+    # Hopefully this is repeatable
+    assert tmp.y == pytest.approx([0.4, 0, 0, 0, 0, 0.1, 0.05, 0.25, 0.2])
 
 
 @pytest.fixture
