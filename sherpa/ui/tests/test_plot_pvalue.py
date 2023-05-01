@@ -137,7 +137,7 @@ def test_plot_pvalue_with_wstat(make_data_path, clean_astro_ui, hide_logging, re
     fname = make_data_path("3c273.pi")
     ui.load_pha(fname)
 
-    ui.set_stat('wstat')
+    ui.set_stat("wstat")
     ui.set_method("neldermead")
 
     ui.notice(0.5, 6)
@@ -155,10 +155,34 @@ def test_plot_pvalue_with_wstat(make_data_path, clean_astro_ui, hide_logging, re
     # bins.
     #
     ui.fit()
-    with pytest.raises(TypeError,
-                       match="Sherpa fit statistic must be Cash or CStat for likelihood ratio test"):
-        ui.plot_pvalue(p1, abs1 * p1, num=20, bins=8)
+    ui.plot_pvalue(p1, abs1 * p1, num=20, bins=8)
 
+    LR = 1.353942679847087
+
+    tmp = ui.get_pvalue_results()
+
+    assert tmp.null == pytest.approx(37.216613841917265)
+    assert tmp.alt == pytest.approx(35.86267116207018)
+    assert tmp.lr == pytest.approx(LR)
+
+    assert tmp.samples.shape == (20, 2)
+    assert tmp.stats.shape == (20, 2)
+    assert tmp.ratios.shape == (20, )
+
+    tmp = ui.get_pvalue_plot()
+
+    assert tmp.lr == pytest.approx(LR)
+
+    assert tmp.xlabel == 'Likelihood Ratio'
+    assert tmp.ylabel == 'Frequency'
+    assert tmp.title == 'Likelihood Ratio Distribution'
+
+    assert tmp.ratios.shape == (20, )
+    assert tmp.xlo.shape == (9, )
+    assert tmp.xhi.shape == (9, )
+    assert tmp.y.shape == (9, )
+
+    assert tmp.y == pytest.approx([0.4, 0, 0.05, 0.15, 0.2, 0.05, 0, 0.1, 0.05])
 
 @requires_xspec
 @requires_group
