@@ -103,7 +103,7 @@ Using the Anaconda python distribution
 
 The Chandra X-ray Center provides releases of Sherpa that can be
 installed using
-`Anaconda <https://www.continuum.io/anaconda-overview>`_
+`Anaconda <https://www.anaconda.com/>`_
 from the ``sherpa`` channel. First check
 to see what the latest available version is by using::
 
