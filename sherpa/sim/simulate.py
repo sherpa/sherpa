@@ -29,7 +29,7 @@ from typing import Sequence
 
 import numpy as np
 
-from sherpa.stats import Cash, CStat
+from sherpa.stats import Cash, CStat, WStat
 from sherpa.optmethods import NelderMead
 from sherpa.estmethods import Covariance
 from sherpa.fit import Fit
@@ -207,6 +207,10 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         D = statistic for null model -
             statistic for alternative model
 
+    .. versionchanged:: 4.17.0
+       The run method can now be called when using the WStat
+       statistic.
+
     References
     ----------
 
@@ -270,9 +274,16 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         if method is None:
             method = NelderMead()
 
-        if not isinstance(stat, (Cash, CStat)):
-            raise TypeError("Sherpa fit statistic must be Cash or CStat" +
-                            " for likelihood ratio test")
+        # There should be a better way to determine this (by querying the
+        # stat object in some way). We could use
+        #
+        #   isinstance(stat, sherpa.stats.Likelihood)
+        #
+        # which would seem to be a more-appropriate check.
+        #
+        if not isinstance(stat, (Cash, CStat, WStat)):
+            raise TypeError("Sherpa fit statistic must be Cash, CStat, or "
+                            "WStat for likelihood ratio test")
 
         niter = int(niter)
 

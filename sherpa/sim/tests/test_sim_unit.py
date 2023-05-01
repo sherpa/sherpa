@@ -29,7 +29,7 @@ import pytest
 
 from sherpa import sim
 from sherpa.sim.mh import dmvnorm, dmvt, rmvt
-from sherpa.stats import Chi2DataVar, LeastSq, WStat
+from sherpa.stats import Chi2DataVar, LeastSq
 
 
 # This is part of #397
@@ -95,8 +95,7 @@ def test_results_str():
     assert toks[8] == 'ppp     = 0.4'
 
 
-# Should WStat be allowed or not? See #1745 but for now check it errors out.
-@pytest.mark.parametrize("cls", [LeastSq, Chi2DataVar, WStat])
+@pytest.mark.parametrize("cls", [LeastSq, Chi2DataVar])
 def test_lrt_does_not_like_gaussian(cls):
     """A very basic check that LRT errors out for gaussian.
 
@@ -109,7 +108,7 @@ def test_lrt_does_not_like_gaussian(cls):
     with pytest.raises(TypeError) as exc:
         lrt.run(None, None, None, stat=cls())
 
-    emsg = 'Sherpa fit statistic must be Cash or CStat for likelihood ratio test'
+    emsg = 'Sherpa fit statistic must be Cash, CStat, or WStat for likelihood ratio test'
     assert str(exc.value) == emsg
 
 

@@ -9408,6 +9408,9 @@ class Session(NoNewAttributesAfterInit):
         returned, along with the p-value, used to reject or accept the null
         model.
 
+        .. versionchanged:: 4.17.0
+           The "wstat" statistic can now be used with this routine.
+
         .. versionchanged:: 4.15.1
            The parnames and parvals attributes have been added. They
            are intended to debug problem cases and so are not
@@ -9517,6 +9520,9 @@ class Session(NoNewAttributesAfterInit):
         Handle with Care: Detecting Multiple Model Components with the Likelihood Ratio Test"
         by Protassov et al., 2002, The Astrophysical Journal, 571, 545; <doi:10.1086/339856>
 
+        .. versionchanged:: 4.17.0
+           The "wstat" statistic can now be used with this routine.
+
         Parameters
         ----------
         null_model
@@ -9615,6 +9621,9 @@ class Session(NoNewAttributesAfterInit):
         model using faked data with Poisson noise. Data returned includes the
         likelihood ratio computed using the observed data, and the p-value,
         used to reject or accept the null model.
+
+        .. versionchanged:: 4.17.0
+           The "wstat" statistic can now be used with this routine.
 
         Parameters
         ----------
