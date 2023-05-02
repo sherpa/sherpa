@@ -1608,7 +1608,7 @@ def test_xspec_model_kwarg_cached_not_needed():
     value, since it does not change the model output, but it is tricky
     to do, so we do make each call be different. This is a
     pessimisation (i.e. it potentially slows down model evaluation)
-    and could be changed in the future). It depends on how often the
+    and could be changed in the future. It depends on how often the
     spectrumNumber argument will be added to model calls.
 
     """

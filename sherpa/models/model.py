@@ -131,7 +131,7 @@ Linking parameters
 
 One parameter can be made to reference one or more other parameters, a
 process called "linking". The linked parameter is no-longer considered
-a free parameter in a fit since it's value is derived from the other
+a free parameter in a fit since its value is derived from the other
 parameters. This link can be a simple one-to-one case, such as
 ensuring the fwhm parameter of one model is the same as the other:
 
@@ -476,7 +476,7 @@ def modelCacher1d(func):
 # number of invariants the classes rely on. An example is that
 # instances of Unary/BinaryOpModel classes should not cache-related
 # attributes, but they can do if we change to using super. There is
-# mode discussion of this in
+# more discussion of this in
 # https://www.artima.com/weblogs/viewpost.jsp?thread=237121 which
 # points out that you should either always use super or never do (or,
 # that multiple inheritance is tricky in Python).
@@ -913,7 +913,7 @@ class CompositeModel(Model):
                     # parameter, store a hidden, linked proxy
                     # instead. This is presumably to ensure that we
                     # have the correct number of degrees of freedom
-                    # (as pnew is frozen) while stil sending the
+                    # (as pnew is frozen) while still sending the
                     # correct parameters to the different components.
                     #
                     pnew = Parameter(p.modelname, p.name, 0.0, hidden=True)
