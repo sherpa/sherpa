@@ -620,7 +620,8 @@ def test_mychi_bkg(stat, hide_logging, reset_xspec, setup_bkg_group):
         )
     }
 
-    compare_results(_fit_mychinobkg_results_bench, results, tol=2e-6)
+    # The tolerance was bumped from 2e-6 to 3e-6 to support macOS ARM
+    compare_results(_fit_mychinobkg_results_bench, results, tol=3e-6)
 
 
 @requires_fits
