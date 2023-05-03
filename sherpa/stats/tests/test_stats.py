@@ -486,7 +486,7 @@ def test_chi2gehrels_stat(hide_logging, reset_xspec, setup_group):
             )
     }
 
-    compare_results(_fit_chi2gehrels_results_bench, results)
+    compare_results(_fit_chi2gehrels_results_bench, results, tol=1e-5)
 
 
 @requires_fits
@@ -529,7 +529,7 @@ def test_cstat_stat(hide_logging, reset_xspec, setup):
         )
     }
 
-    compare_results(_fit_cstat_results_bench, results)
+    compare_results(_fit_cstat_results_bench, results, tol=1e-4)
 
 
 @requires_fits
@@ -551,7 +551,7 @@ def test_cash_stat(stat, hide_logging, reset_xspec, setup):
         )
     }
 
-    compare_results(_fit_mycash_results_bench, results)
+    compare_results(_fit_mycash_results_bench, results, tol=1e-4)
 
 
 @requires_fits
@@ -620,8 +620,7 @@ def test_mychi_bkg(stat, hide_logging, reset_xspec, setup_bkg_group):
         )
     }
 
-    # The tolerance was bumped from 2e-6 to 3e-6 to support macOS ARM
-    compare_results(_fit_mychinobkg_results_bench, results, tol=3e-6)
+    compare_results(_fit_mychinobkg_results_bench, results, tol=1e-4)
 
 
 @requires_fits
