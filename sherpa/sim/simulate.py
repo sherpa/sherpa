@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2019, 2020, 2021
+#  Copyright (C) 2010, 2016, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -47,15 +47,21 @@ __all__ = ('LikelihoodRatioTest', 'LikelihoodRatioResults')
 class LikelihoodRatioResults(NoNewAttributesAfterInit):
     """The results of a likelihood ratio comparison simulation.
 
+    .. versionchanged:: 4.15.1
+       The parnames and parvals attributes have been added. They are
+       intended to debug problem cases and so are not displayed by
+       default.
+
     Attributes
     ----------
     ratios : numpy array
        The likelihood ratio for each simulation.
     stats : numpy array
-       The fit statistic for the null and alternative models
-       for each simulation. The shape is (nsim, 2).
+       The fit statistic for the null and alternative models for each
+       simulation. The shape is (nsim, 2).
     samples : numpy array
-       The parameter samples array for each simulation.
+       The parameter samples array for each simulation, with shape
+       (nsim, npar).
     lr : number
        The likelihood ratio of the observed data for the null and
        alternate models.
@@ -66,12 +72,26 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
        The fit statistic of the null model on the observed data.
     alt : number
        The fit statistic of the alternate model on the observed data.
+    parnames : list of str
+       The thawed parameters in the alternate model.
+    parvals : ndarray
+       The parameter values for each iteration for the alternate
+       model, matching the order of parnames. The shape is (nsim,
+       len(parnames)).
+
+    Notes
+    -----
+
+    The parvals field is useful to check that the simulations have not
+    got stuck with certain parameter sets, for instance if the ratio
+    value drops to ~ 0 and stays there. If this is the case then the
+    analysis can be re-run after adjusting the range (the min or max
+    range) of the parameters in question.
 
     """
 
-    _fields = ('ratios', 'stats', 'samples', 'lr', 'ppp', 'null', 'alt')
-
-    def __init__(self, ratios, stats, samples, lr, ppp, null, alt):
+    def __init__(self, ratios, stats, samples, lr, ppp, null, alt,
+                 parnames, parvals):
         self.ratios = numpy.asarray(ratios)
         self.stats = numpy.asarray(stats)
         self.samples = numpy.asarray(samples)
@@ -79,6 +99,12 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
         self.ppp = float(ppp)
         self.null = float(null)
         self.alt = float(alt)
+        self.parnames = parnames
+        self.parvals = numpy.asarray(parvals)
+        if len(self.parnames) != self.parvals.shape[1]:
+            # This is an unlikely error so do not make it a Sherpa error case
+            raise ValueError(f"len(parnames) = {len(self.parnames)}  "
+                             f"parvals.shape = {self.parvals.shape}")
         NoNewAttributesAfterInit.__init__(self)
 
     def __repr__(self):
@@ -142,10 +168,19 @@ class LikelihoodRatioTestWorker():
         self.null_vals = null_vals
         self.alt_vals = alt_vals
 
+        # Store the original values
+        self.null_thawedpars = self.null_fit.model.thawedpars
+        self.alt_thawedpars = self.alt_fit.model.thawedpars
+
     def __call__(self, proposal):
-        return LikelihoodRatioTest.calculate(self.null_fit, self.alt_fit,
-                                             proposal, self.null_vals,
-                                             self.alt_vals)
+        try:
+            return LikelihoodRatioTest.calculate(self.null_fit, self.alt_fit,
+                                                 proposal, self.null_vals,
+                                                 self.alt_vals)
+        finally:
+            # Ensure the parameters are reset
+            self.alt_fit.model.thawedpars = self.alt_thawedpars
+            self.null_fit.model.thawedpars = self.null_thawedpars
 
 
 class LikelihoodRatioTest(NoNewAttributesAfterInit):
@@ -193,7 +228,7 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         debug(nullfr.format())
 
         null_stat = nullfr.statval
-        debug("statistic null = " + repr(null_stat))
+        debug("statistic null = %s", repr(null_stat))
 
         # nullfit and altfit BOTH point to same faked dataset
         assert id(nullfit.data) == id(altfit.data)
@@ -202,7 +237,7 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         # Start the faked fit at the initial alt best-fit values
         # altfit.model.thawedpars = alt_vals
 
-        debug("proposal: " + repr(proposal))
+        debug("proposal: %s", repr(proposal))
         debug("alt model")
         debug(str(altfit.model))
 
@@ -213,12 +248,12 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         debug(str(altfit.model))
 
         alt_stat = altfr.statval
-        debug("statistic alt = " + repr(alt_stat))
+        debug("statistic alt = %s", repr(alt_stat))
 
         LR = -(alt_stat - null_stat)
-        debug("LR = " + repr(LR))
+        debug("LR = %s", repr(LR))
 
-        return [null_stat, alt_stat, LR]
+        return [null_stat, alt_stat, LR, altfit.model.thawedpars]
 
     @staticmethod
     def run(fit, null_comp, alt_comp, conv_mdl=None,
@@ -291,16 +326,27 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
             alt.thawedpars = list(oldaltvals)
             null.thawedpars = list(oldnullvals)
 
-        debug("statistic null = " + repr(null_stat))
-        debug("statistic alt = " + repr(alt_stat))
-        debug("LR = " + repr(LR))
+        debug("statistic null = %s", repr(null_stat))
+        debug("statistic alt = %s", repr(alt_stat))
+        debug("LR = %s", repr(LR))
 
-        statistics = numpy.asarray(statistics)
+        lrs = []
+        stats = []
+        thawedpars = []
+        for statrow in statistics:
+            stats.append(statrow[0:2])
+            lrs.append(statrow[2])
+            thawedpars.append(statrow[3])
 
-        pppvalue = numpy.sum(statistics[:, 2] > LR) / (1.0 * niter)
+        stats = numpy.asarray(stats)
+        lrs = numpy.asarray(lrs)
+        thawedpars = numpy.asarray(thawedpars)
 
-        debug('ppp value = ' + str(pppvalue))
+        pppvalue = numpy.sum(lrs > LR) / (1.0 * niter)
+        debug('ppp value = %s', str(pppvalue))
 
-        return LikelihoodRatioResults(statistics[:, 2], statistics[:, 0:2],
-                                      samples, LR, pppvalue, null_stat,
-                                      alt_stat)
+        return LikelihoodRatioResults(lrs, stats, samples, LR,
+                                      pppvalue, null_stat, alt_stat,
+                                      [p.fullname for p in altfit.model.pars
+                                       if not p.frozen],
+                                      thawedpars)
