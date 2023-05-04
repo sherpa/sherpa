@@ -93,7 +93,7 @@ def test_results_str():
     assert toks[8] == 'ppp     = 0.4'
 
 
-# Shold WStat be allowed or not? See #1745 but for now check it errors out.
+# Should WStat be allowed or not? See #1745 but for now check it errors out.
 @pytest.mark.parametrize("cls", [LeastSq, Chi2DataVar, WStat])
 def test_lrt_does_not_like_gaussian(cls):
     """A very basic check that LRT errors out for gaussian.

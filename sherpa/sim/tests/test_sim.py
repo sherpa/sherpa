@@ -325,10 +325,10 @@ def test_lrt(setup, reset_seed):
     because the values are not reset after each fit - see issue #1746
     - we quickly get rather different ratio values.  At least, that is
     the current hypothesis. So this test is limited to a small number
-    of iterations, where this does difference does not seem to be a
+    of iterations, where this difference does not seem to be a
     problem. To make it easier to write (since the values change as
     niter is changed, which makes it a loop to try and identify a
-    sensible number of iterations), we rnu for 25 iterations but only
+    sensible number of iterations), we run for 25 iterations but only
     check the first 3 numbers, as after that the ratios begin to
     differ.
 
