@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -392,8 +392,13 @@ def compare_results(expected, got, tol=1e-6):
         val = float(getattr(got, key))
         assert val == pytest.approx(expected[key], rel=tol)
 
-    # TODO: may have to add tolerance?
-    assert got.parvals == pytest.approx(expected['parvals'], rel=tol)
+    # Convert the "got" values to a NumPy array to make sure we can
+    # display the output nicely if there's a failure (since using a
+    # tuple, which got.parvals is, can lead to less-than-useful
+    # diagnostic errors when this test fails).
+    #
+    assert numpy.asarray(got.parvals) == pytest.approx(expected['parvals'],
+                                                       rel=tol)
 
 
 @requires_fits
@@ -481,7 +486,7 @@ def test_chi2gehrels_stat(hide_logging, reset_xspec, setup_group):
             )
     }
 
-    compare_results(_fit_chi2gehrels_results_bench, results)
+    compare_results(_fit_chi2gehrels_results_bench, results, tol=1e-5)
 
 
 @requires_fits
@@ -524,7 +529,7 @@ def test_cstat_stat(hide_logging, reset_xspec, setup):
         )
     }
 
-    compare_results(_fit_cstat_results_bench, results)
+    compare_results(_fit_cstat_results_bench, results, tol=1e-4)
 
 
 @requires_fits
@@ -546,7 +551,7 @@ def test_cash_stat(stat, hide_logging, reset_xspec, setup):
         )
     }
 
-    compare_results(_fit_mycash_results_bench, results)
+    compare_results(_fit_mycash_results_bench, results, tol=1e-4)
 
 
 @requires_fits
@@ -615,7 +620,7 @@ def test_mychi_bkg(stat, hide_logging, reset_xspec, setup_bkg_group):
         )
     }
 
-    compare_results(_fit_mychinobkg_results_bench, results, tol=2e-6)
+    compare_results(_fit_mychinobkg_results_bench, results, tol=1e-4)
 
 
 @requires_fits

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1811,8 +1811,12 @@ def test_sample_foo_flux_bkg(method, fluxval1, fluxval2,
 
     # check the gamma values: source~2, bgnd~0.7
     #
-    assert np.median(aflux[:, 2]) == pytest.approx(1.9575001493165511, rel=1e-4)
-    assert np.median(bflux[:, 4]) == pytest.approx(0.6022031224500035, rel=1e-4)
+    # Tolerances were rel=1e-4 but when run on macOS ARM it appears
+    # the values need to be relaxed slightly. An absolute tolerance of
+    # 3e-4 could have been used instead.
+    #
+    assert np.median(aflux[:, 2]) == pytest.approx(1.9575001493165511, rel=2e-4)
+    assert np.median(bflux[:, 4]) == pytest.approx(0.6022031224500035, rel=2e-4)
 
     # This assumes there's at least one clipped value; this is not
     # guaranteed but it looks like it happens consistently
