@@ -3174,9 +3174,9 @@ def test_set_bkg_not_a_background(clean_astro_ui):
 @pytest.mark.parametrize("incoord,outcoord,x0,x1",
                          [("logical", None, 1, 1),
                           ("image", "logical", 1, 1),
-                          ("physical", None, 1, 1),
-                          ("world", None, 1, 1),
-                          ("wcs", "world", 1, 1)])
+                          ("physical", None, 2987.3400878906, 4363.16015625),
+                          ("world", None, 150.03707837630427, 2.644383154504334),
+                          ("wcs", "world", 150.03707837630427, 2.644383154504334)])
 def test_1762_ui(incoord, outcoord, x0, x1, clean_astro_ui, make_data_path):
     """A version of sherpa/astro/ui/tests/test_io_img.py:test_1762"""
 

@@ -151,9 +151,9 @@ def test_image_write_basic(make_data_path, tmp_path):
 @pytest.mark.parametrize("incoord,outcoord,x0,x1",
                          [("logical", None, 1, 1),
                           ("image", "logical", 1, 1),
-                          ("physical", None, 1, 1),
-                          ("world", None, 1, 1),
-                          ("wcs", "world", 1, 1)])
+                          ("physical", None, 2987.3400878906, 4363.16015625),
+                          ("world", None, 150.03707837630427, 2.644383154504334),
+                          ("wcs", "world", 150.03707837630427, 2.644383154504334)])
 def test_1762(incoord, outcoord, x0, x1, make_data_path):
     """What does setting a non-logical coord system do?
 

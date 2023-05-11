@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -346,19 +346,31 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     x0, x1 = reshape_2d_arrays(x0, x1)
 
     data['y'] = data['y'].ravel()
-    data['coord'] = coord
     data['shape'] = axlens
 
+    # Note that we only set the coordinates after creating the
+    # dataset, which assumes that data['x'] and data['y'] are always
+    # in logical units. They may not be, but in this case we need to
+    # drop the logical/physical/world conversion system (or improve it
+    # to be more flexible). This is an attempt to resolve issue #1762,
+    # where sherpa.astro.ui.load_image(infile, coord="physical") did
+    # not behave sensibly (likely due to #1414 which was to address
+    # issue #1380).
+    #
     if issubclass(dstype, DataIMGInt):
         dataset = dstype(filename, x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5,
                          **data)
+        dataset.set_coord(coord)
+
     elif issubclass(dstype, Data2DInt):
-        for name in ['coord', 'eqpos', 'sky', 'header']:
+        for name in ['eqpos', 'sky', 'header']:
             data.pop(name, None)
         dataset = dstype(filename, x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5,
                          **data)
+
     else:
         dataset = dstype(filename, x0, x1, **data)
+        dataset.set_coord(coord)
 
     return dataset
 
