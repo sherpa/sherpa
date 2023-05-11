@@ -4373,12 +4373,10 @@ def test_img_checks_coord_nonsense():
                 coord="nonsense")
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("coord", ["physical", "world", "wcs"])
 def test_img_checks_coord_no_transform(coord):
     """What happens when coord is set to xxx but no transform?"""
 
-    # FAIL: actually raises an AttributeError because of a logical failure in the code
     with pytest.raises(DataErr,
                        match="^data set 'ex' does not contain a .* coordinate system$"):
         DataIMG("ex", [1, 2, 1, 2], [1, 1, 2, 2], [1, 2, 3, 4],

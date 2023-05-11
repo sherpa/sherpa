@@ -4936,6 +4936,7 @@ class DataIMG(Data2D):
     def __init__(self, name, x0, x1, y, shape=None, staterror=None,
                  syserror=None, sky=None, eqpos=None, coord='logical',
                  header=None):
+        self.name = name  # needed by transform checks
         self.sky = sky
         self.eqpos = eqpos
         self._set_coord(coord)
@@ -5036,14 +5037,17 @@ class DataIMG(Data2D):
             self._region = None
 
     def _check_physical_transform(self):
+        """Error out if the physical transform does not exist"""
         if self.sky is None:
             raise DataErr('nocoord', self.name, 'physical')
 
     def _check_world_transform(self):
+        """Error out if the world transform does not exist"""
         if self.eqpos is None:
             raise DataErr('nocoord', self.name, 'world')
 
     def _logical_to_physical(self, x0=None, x1=None):
+        """Convert logical axes to physical"""
         if x0 is None or x1 is None:
             x0, x1 = self.get_indep()
 
@@ -5056,6 +5060,7 @@ class DataIMG(Data2D):
         return (x0, x1)
 
     def _logical_to_world(self, x0=None, x1=None):
+        """Convert logical axes to world"""
         if x0 is None or x1 is None:
             x0, x1 = self.get_indep()
 
@@ -5072,6 +5077,7 @@ class DataIMG(Data2D):
         return (x0, x1)
 
     def _physical_to_logical(self, x0=None, x1=None):
+        """Convert physical axes to logical"""
         if x0 is None or x1 is None:
             x0, x1 = self.get_indep()
 
@@ -5084,6 +5090,7 @@ class DataIMG(Data2D):
         return (x0, x1)
 
     def _physical_to_world(self, x0=None, x1=None):
+        """Convert physical axes to world"""
         if x0 is None or x1 is None:
             x0, x1 = self.get_indep()
 
@@ -5096,6 +5103,7 @@ class DataIMG(Data2D):
         return (x0, x1)
 
     def _world_to_logical(self, x0=None, x1=None):
+        """Convert world axes to logical"""
         if x0 is None or x1 is None:
             x0, x1 = self.get_indep()
 
@@ -5112,6 +5120,7 @@ class DataIMG(Data2D):
         return (x0, x1)
 
     def _world_to_physical(self, x0=None, x1=None):
+        """Convert world axes to physical"""
         if x0 is None or x1 is None:
             x0, x1 = self.get_indep()
 
