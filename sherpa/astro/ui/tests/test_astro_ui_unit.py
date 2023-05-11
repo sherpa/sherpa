@@ -3167,3 +3167,32 @@ def test_set_bkg_not_a_background(clean_astro_ui):
     with pytest.raises(ArgumentTypeErr,
                        match="^'bkg' must be a PHA data set$"):
         ui.set_bkg(ui.Data1D("x", [1, 2], [1, 2]))
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("incoord,outcoord,x0,x1",
+                         [("logical", None, 1, 1),
+                          ("image", "logical", 1, 1),
+                          ("physical", None, 1, 1),
+                          ("world", None, 1, 1),
+                          ("wcs", "world", 1, 1)])
+def test_1762_ui(incoord, outcoord, x0, x1, clean_astro_ui, make_data_path):
+    """A version of sherpa/astro/ui/tests/test_io_img.py:test_1762"""
+
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+    ui.load_image("img", infile, coord=incoord)
+
+    # Not really needed but added in anyway
+    assert ui.list_data_ids() == ["img"]
+
+    got = ui.get_coord("img")
+    if outcoord is None:
+        assert got == incoord
+    else:
+        assert got == outcoord
+
+    # Just check the first element
+    i0, i1 = ui.get_indep("img")
+    assert i0[0] == pytest.approx(x0)
+    assert i1[0] == pytest.approx(x1)

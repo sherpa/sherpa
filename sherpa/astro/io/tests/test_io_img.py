@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -144,3 +144,32 @@ def test_image_write_basic(make_data_path, tmp_path):
     assert outdata.name.endswith("/test.img")
     check_header(outdata)
     check_data(outdata)
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("incoord,outcoord,x0,x1",
+                         [("logical", None, 1, 1),
+                          ("image", "logical", 1, 1),
+                          ("physical", None, 1, 1),
+                          ("world", None, 1, 1),
+                          ("wcs", "world", 1, 1)])
+def test_1762(incoord, outcoord, x0, x1, make_data_path):
+    """What does setting a non-logical coord system do?
+
+    This is a regression test so depends on whether #1762 is
+    fixed or not.
+    """
+
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+    d = io.read_image(infile, coord=incoord)
+
+    if outcoord is None:
+        assert d.coord == incoord
+    else:
+        assert d.coord == outcoord
+
+    # Just check the first element
+    i0, i1 = d.get_indep()
+    assert i0[0] == pytest.approx(x0)
+    assert i1[0] == pytest.approx(x1)
