@@ -98,15 +98,17 @@ import numpy as np
 
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
+from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import SherpaFloat, guess_amplitude, param_apply_limits, bool_cast
-from sherpa.utils.err import ParameterErr
+from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.astro.utils import get_xspec_position
 
 # Note that utils also imports _xspec so it will error out if it is
 # not available.
 #
+from .regrid import XSMultiplicativeRegridder
 from .utils import ModelMeta, version_at_least
 from . import _xspec
 
@@ -1117,9 +1119,19 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     represents the upper edge of the last bin. This means that for
     an input grid of ``n`` points, the returned array will contain
     ``n`` values, but the last element will be zero.
+
+    The ``integrate`` setting is fixed for XSPEC models: it is set to
+    ``True`` for Additive models and ``False`` for Multiplicative
+    models. Convolution models are expected to be used with "additive"
+    models (or a mixture of multiplicative and additive models) and
+    so they are set to ``True``. The integrate setting is not used
+    to determine how to evaluate the models, but it is used by the
+    RegriddanleModel1D class to determine how to rebin the data.
+
     """
 
     version_enabled = True
+    _integrate = True
 
     def __init__(self, name, pars):
 
@@ -1151,6 +1163,24 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 
         super().__init__(name, pars)
 
+    @property
+    def integrate(self):
+        """The integrate setting.
+
+        It can not be changed for XSPEC models.
+        """
+        return self._integrate
+
+    @integrate.setter
+    def integrate(self, newval):
+        # We could raise an error if the setting is changed, but there
+        # are save files created before we made the integrate
+        # un-changeable that would fail for no good reason. So we just
+        # ignore any request to change the setting. It is possible for
+        # the user to change _integrate but that is undefined
+        # behavior.
+        #
+        pass
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
@@ -1179,7 +1209,11 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         #  - it is easier
         #  - it allows for the user to find out what bins are bad,
         #    by directly calling the _calc function of a model
-        out = self._calc(*args, **kwargs)
+        #
+        # At the moment there is no support for kwargs, so strip them
+        # out. These can be added by the regrid support (for instance).
+        # out = self._calc(*args, **kwargs)
+        out = self._calc(*args)
 
         # This check is being skipped in the 4.8.0 release as it
         # has had un-intended consequences. It should be re-evaluated
@@ -1307,6 +1341,9 @@ class XSTableModel(XSModel):
                                   hugeval)
             pars.append(self.norm)
 
+        # The integrate setting is the same as the addmodel parameter.
+        #
+        self._integrate = addmodel
         XSModel.__init__(self, name, pars)
 
     def fold(*args, **kwargs):
@@ -1332,6 +1369,23 @@ class XSTableModel(XSModel):
         return _xspec.tabint(p, *args,
                              filename=self.filename, tabtype=tabtype)
 
+    def regrid(self, *arrays, **kwargs):
+        """Handle regrid evaluation for XSPEC table models.
+
+        Ensure that the grids have low and high bins.
+        """
+
+        # Note that we pass the behavior off to the XSPEC class,
+        # even when we know, for the additive case, we could
+        # pass it to a super class. This way we get the check for
+        # grid size.
+        #
+        if self.addmodel:
+            return XSAdditiveModel.regrid(self, *arrays, **kwargs)
+
+        return XSMultiplicativeModel.regrid(self, *arrays, **kwargs)
+
+
 
 # TODO: we should add the norm parameter in the __init__ call, unless
 # the object contains a norm attribute, to avoid having to repeat this
@@ -1354,6 +1408,17 @@ class XSAdditiveModel(XSModel):
             norm = guess_amplitude(dep, *args)
             param_apply_limits(norm, self.norm, **kwargs)
 
+    def regrid(self, *arrays, **kwargs):
+        """Handle regrid evaluation for XSPEC additive models.
+
+        Ensure that the grids have low and high bins.
+        """
+
+        if len(arrays) == 1:
+            raise ModelErr('needsint')
+
+        return RegriddableModel1D.regrid(self, *arrays, **kwargs)
+
 
 class XSMultiplicativeModel(XSModel):
     """The base class for XSPEC multiplicative models.
@@ -1367,7 +1432,24 @@ class XSMultiplicativeModel(XSModel):
 
     """
 
-    pass
+    def __init__(self, name, pars):
+        self._integrate = False
+        super().__init__(name, pars)
+
+    def regrid(self, *arrays, **kwargs):
+        """Handle regrid evaluation for XSPEC multiplicative models.
+
+        Multiplicative models are handled as integrate=False
+        even though called with lo,hi bins.
+        """
+
+        eval_space = EvaluationSpace1D(*arrays)
+        if not eval_space.is_integrated:
+            raise ModelErr('needsint')
+
+        regridder = XSMultiplicativeRegridder(eval_space, **kwargs)
+        regridder._make_and_validate_grid(arrays)
+        return regridder.apply_to(self)
 
 
 class XSConvolutionKernel(XSModel):
@@ -1445,9 +1527,12 @@ class XSConvolutionKernel(XSModel):
 
     """
 
+    def __init__(self, name, pars):
+        super().__init__(name, pars)
+        self._integrate = True
+
     def __repr__(self):
-        return "<{} kernel instance '{}'>".format(type(self).__name__,
-                                                  self.name)
+        return f"<{type(self).__name__} kernel instance '{self.name}'>"
 
     def __call__(self, model):
         return XSConvolutionModel(model, self)
@@ -1585,10 +1670,30 @@ class XSConvolutionModel(CompositeModel, XSModel):
     def __init__(self, model, wrapper):
         self.model = self.wrapobj(model)
         self.wrapper = wrapper
-        CompositeModel.__init__(self,
-                                "{}({})".format(self.wrapper.name,
-                                                self.model.name),
+        self._integrate = True
+        CompositeModel.__init__(self, f"{self.wrapper.name}({self.model.name})",
                                 (self.wrapper, self.model))
+
+    def regrid(self, *arrays, **kwargs):
+        """Handle regrid evaluation for XSPEC table models.
+
+        Ensure that the grids have low and high bins.
+        """
+
+        # We base the decision on the integrate setting of
+        # the model, falling over to integrate=True if not known.
+        # Perhaps we should the same approach as the regrid
+        # code for BinOp?
+        #
+        try:
+            integrate = self.model.integrate
+        except AttributeError:
+            integrate = True
+
+        if integrate:
+            return XSAdditiveModel.regrid(self, *arrays, **kwargs)
+
+        return XSMultiplicativeModel.regrid(self, *arrays, **kwargs)
 
     # for now this is not cached
     def calc(self, p, *args, **kwargs):

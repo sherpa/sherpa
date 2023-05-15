@@ -685,3 +685,23 @@ def add_sherpa_test_data_dir(doctest_namespace):
         path += '/'
 
     doctest_namespace["data_dir"] = path
+
+@pytest.fixture
+def xsmodel():
+    """fixture that returns an XS<name> model instance.
+
+    The test needs to be marked @requires_xspec when using this
+    fixture.
+
+    """
+
+    from sherpa.astro import xspec
+
+    def func(name, mname=None):
+        cls = getattr(xspec, f"XS{name}")
+        if mname is None:
+            return cls()
+
+        return cls(mname)
+
+    return func
