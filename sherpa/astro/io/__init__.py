@@ -348,6 +348,26 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     data['y'] = data['y'].ravel()
     data['shape'] = axlens
 
+    # We have to be careful with issubclass checks because
+    #
+    #   base class |   sub class
+    #    Data2D        Data2DInt
+    #    Data2D        DataIMG
+    #    DataIMG       DataIMGInt
+    #
+    # Drop the transform fields if the object doesn't support them.
+    #
+    if not issubclass(dstype, DataIMG):
+        for name in ['eqpos', 'sky', 'header']:
+            data.pop(name, None)
+
+    # What are the independent axes?
+    #
+    if issubclass(dstype, (Data2DInt, DataIMGInt)):
+        indep = [x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5]
+    else:
+        indep = [x0, x1]
+
     # Note that we only set the coordinates after creating the
     # dataset, which assumes that data['x'] and data['y'] are always
     # in logical units. They may not be, but in this case we need to
@@ -357,19 +377,9 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     # not behave sensibly (likely due to #1414 which was to address
     # issue #1380).
     #
-    if issubclass(dstype, DataIMGInt):
-        dataset = dstype(filename, x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5,
-                         **data)
-        dataset.set_coord(coord)
+    dataset = dstype(filename, *indep, **data)
 
-    elif issubclass(dstype, Data2DInt):
-        for name in ['eqpos', 'sky', 'header']:
-            data.pop(name, None)
-        dataset = dstype(filename, x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5,
-                         **data)
-
-    else:
-        dataset = dstype(filename, x0, x1, **data)
+    if issubclass(dstype, DataIMG):
         dataset.set_coord(coord)
 
     return dataset

@@ -175,7 +175,6 @@ def test_1762(incoord, outcoord, x0, x1, make_data_path):
     assert i1[0] == pytest.approx(x1)
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 def test_can_read_image_as_data2d(make_data_path):
@@ -183,7 +182,6 @@ def test_can_read_image_as_data2d(make_data_path):
 
     infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
     dimg = io.read_image(infile, dstype=DataIMG)
-    # This fails with TypeError: Data2D.__init__() got an unexpected keyword argument 'sky'
     d2d = io.read_image(infile, dstype=Data2D)
 
     assert d2d.x0 == pytest.approx(dimg.x0)
