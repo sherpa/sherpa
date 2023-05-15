@@ -22,7 +22,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataIMG
+from sherpa.astro.data import DataIMG, Data2D
 from sherpa.astro import io
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -173,3 +173,19 @@ def test_1762(incoord, outcoord, x0, x1, make_data_path):
     i0, i1 = d.get_indep()
     assert i0[0] == pytest.approx(x0)
     assert i1[0] == pytest.approx(x1)
+
+
+@pytest.mark.xfail
+@requires_fits
+@requires_data
+def test_can_read_image_as_data2d(make_data_path):
+    """We should be able to read in an image as a Data2D object"""
+
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+    dimg = io.read_image(infile, dstype=DataIMG)
+    # This fails with TypeError: Data2D.__init__() got an unexpected keyword argument 'sky'
+    d2d = io.read_image(infile, dstype=Data2D)
+
+    assert d2d.x0 == pytest.approx(dimg.x0)
+    assert d2d.x1 == pytest.approx(dimg.x1)
+    assert d2d.y == pytest.approx(dimg.y)
