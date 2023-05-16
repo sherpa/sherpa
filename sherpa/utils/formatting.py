@@ -27,10 +27,7 @@ This is aimed at IPython/Jupiter support but may be useful elsewhere.
 
 import contextlib
 import html
-try:
-    from importlib.resources import files
-except ImportError:
-    from importlib_resources import files
+from importlib.resources import files
 
 import numpy as np
 
