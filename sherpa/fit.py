@@ -413,7 +413,9 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         if parlist is None:
             parlist = [p for p in fit.model.pars if not p.frozen]
 
-        # TODO: Can we not just import them at the top level?
+        # TODO: Can we not just import them at the top level?  It may
+        # cause an import loop.
+        #
         from sherpa.estmethods import est_hardmin, est_hardmax, \
             est_hardminmax
 
@@ -578,13 +580,23 @@ class IterFit(NoNewAttributesAfterInit):
         self._syserror = None
         self._nfev = 0
         self._file = None
+
         # Options to send to iterative fitting method
         self.itermethod_opts = itermethod_opts
         self.iterate = False
         self.funcs = {'sigmarej': self.sigmarej}
         self.current_func = None
-        if itermethod_opts['name'] != 'none':
-            self.current_func = self.funcs[itermethod_opts['name']]
+        try:
+            iname = itermethod_opts['name']
+        except KeyError:
+            raise ValueError("Missing name field in itermethod_opts argument") from None
+
+        if iname != 'none':
+            try:
+                self.current_func = self.funcs[iname]
+            except KeyError:
+                raise ValueError(f"{iname} is not an iterative fitting method") from None
+
             self.iterate = True
 
         # TODO: should this call

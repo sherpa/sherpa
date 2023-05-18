@@ -2866,6 +2866,65 @@ def test_fit_results_str():
                "nfev           = 9"])
 
 
+def test_fit_itermethod_requires_name():
+    """Just check we error out gracefully.
+
+    This is a corner case.
+    """
+
+    data = make_data(Data1D)
+    model = Const1D()
+    with pytest.raises(ValueError,
+                       match="^Missing name field in itermethod_opts argument$"):
+        Fit(data, model, itermethod_opts={"grow": 2})
+
+
+def test_fit_itermethod_requires_known_name():
+    """Just check we error out gracefully.
+
+    This is a corner case.
+    """
+
+    data = make_data(Data1D)
+    model = Const1D()
+    with pytest.raises(ValueError,
+                       match="^not-a-name is not an iterative fitting method$"):
+        Fit(data, model, itermethod_opts={"name": "not-a-name", "grow": 2})
+
+
+def test_fit_results_with_iteration_str():
+    """Just check we so call str() on a fit results instance with an iteration method
+
+    We have not picked a dataset where the
+    """
+
+    data = Data1D("x", [1, 2, 3, 4, 5], [2, 4, 12, 3, 4])
+    data.staterror = [0.8] * 5
+    model = Const1D()
+    iter_opts = {'name': 'sigmarej', 'maxiters': 5, 'hrej': 5, 'lrej': 5, 'grow': 0}
+    fit = Fit(data, model, stat=Chi2(), itermethod_opts=iter_opts)
+    fres = fit.fit()
+    assert fres.succeeded
+
+    check_str(fres,
+              ["datasets       = None",
+               "itermethodname = sigmarej",
+               "methodname     = levmar",
+               "statname       = chi2",
+               "succeeded      = True",
+               "parnames       = ('const1d.c0',)",
+               "parvals        = (3.250000000000316,)",
+               "statval        = 4.296875",
+               "istatval       = 225.0",
+               "dstatval       = 220.703125",
+               "numpoints      = 4",
+               "dof            = 3",
+               "qval           = 0.23114006377865534",
+               "rstat          = 1.4322916666666667",
+               "message        = successful termination",
+               "nfev           = 8"])
+
+
 def test_fit_results_bool_true():
     """Just check we so call bool() on a fit results instance"""
 
