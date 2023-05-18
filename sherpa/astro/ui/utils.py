@@ -1746,6 +1746,11 @@ class Session(sherpa.ui.utils.Session):
                      dstype=DataIMG):
         """Create an image data structure.
 
+        .. versionchanged:: 4.16.0
+           Setting coord to a value other than 'logical' will now
+           correctly change the coordinate setting for `DataIMG`
+           datasets.
+
         Parameters
         ----------
         arg
@@ -1800,6 +1805,11 @@ class Session(sherpa.ui.utils.Session):
                    dstype=DataIMG):
         """Load an image as a data set.
 
+        .. versionchanged:: 4.16.0
+           Setting coord to a value other than 'logical' will now
+           correctly change the coordinate setting for `DataIMG`
+           datasets.
+
         Parameters
         ----------
         id : int or str, optional
@@ -1848,6 +1858,11 @@ class Session(sherpa.ui.utils.Session):
         "img_bg.fits":
 
         >>> load_image('bg', 'img_bg.fits')
+
+        Load in the data from the file 'src.img' and set the
+        coordinate system to the physical system of the file:
+
+        >>> load_image('src.img', coord='physical')
 
         """
         if arg is None:

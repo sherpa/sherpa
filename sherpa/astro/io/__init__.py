@@ -302,6 +302,10 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
 def read_image(arg, coord='logical', dstype=DataIMG):
     """Create an image dataset from a file.
 
+    .. versionchanged:: 4.16.0
+       Setting coord to a value other than 'logical' will now
+       correctly change the coordinate setting for `DataIMG` datasets.
+
     Parameters
     ----------
     arg
