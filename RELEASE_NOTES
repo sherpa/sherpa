@@ -1,5 +1,209 @@
 Release Notes
 
+Sherpa 4.15.1
+=============
+
+This release of Sherpa includes various enhancements, documentation updates, bug fixes, and infrastructure changes.
+
+* enhancements:
+    * further improvements to filtering/grouping including reporting a filter change in the UI
+    * fake_pha can be called with a list of ARF/RMF names
+    * added linewidth option for line and histogram plots
+* documentation changes:
+    * fixed broken URLs
+    * improved documentation for templates, plot_pvalue
+    * added documentation testing with doctestplus
+* Infrastructure changes:
+    * dropped support for Python 3.8
+    * experimental support of Python 3.11
+    * supported versions of Xspec are 12.12.0 - 12.13.0
+* bug fixes:
+    * various updates to notice/ignore and group/ungroup code
+    * fixed issue with show_bkg
+    * fixed issue when binning values into a 1D histogram
+    * fixed cache errors with the TableModel class
+
+Details
+-------
+
+#1396 - XSPEC minimum version is now 12.10.1
+    Bump the minimum-supported version of XSPEC from 12.9.0 to 12.10.1.
+    (superseded by #1609)
+
+#1472 - tests: remove work-around for #1334 from #1336
+    Remove a test work around for our CI tests failing (issue #1334)
+
+#1486 - Improve filtering/grouping behavior
+    Changing the grouping array of a PHA dataset (with set_grouping from the UI layer
+    or by setting the grouping attribute of a DataPHA object) will now re-create the
+    filter, to fix #1160.
+    It is suggested that the filter expression (e.g. as returned by the get_filter
+    routine for uses of the UI layer) is checked to ensure the result is still sensible.
+
+#1502 - Cleanup template code
+    Improve the documentation and testing of the template-model code. There is no
+    significant change in behavior, but some use cases will generate more-appropriate
+    errors than they used to.
+
+#1591 - Document params and return values for root finding functions
+    Add docstrings for root finding functions
+
+#1607 - Fix an issue when binning values into a 1D histogram
+    Fix a problem when binning data into a histogram (issue #1605).
+
+#1609 - XSPEC minimum version is now 12.12.0
+    Bump the minimum supported XSPEC version to version 12.12.0.
+
+#1611 - Post 4.15.0 updates
+    Add the 4.15.0 DOI to the README.md.
+
+#1613 - Allow testing of the documentation
+    Adds the ability to run doctests in py and rst files. Those tests will run
+    automatically, if doctestplus is installed (not on CI in the current setup) and
+    the file is not explicitly blacklisted for doctestplus.
+
+#1621 - Fix a cache error with TableModel
+    Fix cache errors with the TableModel class (#1622), add validation of input
+    values, and minor additions to the documentation.
+
+#1630 - Add support for XSPEC 12.13.0
+    Add explicit support for XSPEC 12.13.0. Sherpa can be built against XSPEC
+    12.13.0 without this PR, but this adds in support for the new cglumin
+    convolution model added in this release.
+
+#1637 - report the filter changes when grouping is changed for the ui
+    Report the filter when data is grouped with UI commands - such as group,
+    group_counts, and set_grouping - to match the notice/ignore behavior added in
+    #1562. The logic for setting the background group flag has been moved from the
+    UI layer to the DataPHA class. Addresses #1632.
+
+#1644 - Deployments via GH Actions
+    Dropped support for RH7 and macOS 10.15
+
+#1656 - CIAOX deployments require force. As they deployed for main already.
+    Based on the current scheme used for the build number, we need to force uploads
+    for CIAOX as they have already been deployed for main. This was already done for
+    the previous GitLab builds.
+
+#1660 - Associated group fixes
+    Clean up of the notice/ignore and group/ungroup code to avoid unnecessary work,
+    move logic from the UI layer into the DataPHA class, and ensure that if the
+    grouping field is set to None that the data is not grouped. Fix #1641, #1657,
+    and #1659
+
+#1662 - Add grouping tests
+    Add a number of tests to check out corner case behavior, primarily for grouping
+    PHA data but there's also a number of routines from the UI code that have missed
+    some tests.
+
+#1664 - Allow save_model/source/resid to work with 2D data (fix #1642)
+    Fix save_model/source/resid calls when used with 2D data sets. Fix #1642
+
+#1665 - Fix an issue with show_bkg (fix #1645)
+    The show_bkg routine could fail when the set of backgrounds is not the same for
+    all datasets (e.g. one has a background and another does not). Fix #1645
+
+#1666 - model-wrapped symbols now reference the actual model (fix #215)
+    Wrapped models, accessible from the UI layer, now reference the wrapped model
+    rather than being devoid of any useful information. Fix #215
+
+#1672 - models: f-string changes
+    Change the models code to use f-strings where appropriate rather than other methods
+    of string interpolation. There is no change in behavior.
+
+#1675 - Bump ds9 to 8.4.1 - Ubuntu 20 and macOS BigSur
+    Bump to the latest DS9 version and update to ubuntu20 version. This resolves #1674
+
+#1676 - update model macro definitions for compiled code
+    Re-work the macro definitions used to build the compiled models and use this to
+    clean up the handling of the XSPEC models, in particular table models. There is
+    no functional change.
+
+#1681 - XSPEC test cleanup
+    Minor clean up to some XSPEC tests to make better use of pytest.
+
+#1689 - Address regression created by #1672
+    Internal change to the Sherpa-specific logging code, to ensure that logged
+    message includes all components. This fixes #1688 which was a regression created
+    when #1672 was recently merged.
+
+#1693 - Test cleanup related to #1334
+    Complete the cleanup related to removing the #1334 workaround which was added in
+    #1336. These two tests were missed from #1472 (which was meant to remove these
+    changes). The two test files have also seen some minor style changes (no change
+    in behavior).
+
+#1696 - Docs: fix #1694
+    Correct a link in the RTD documentation.
+
+#1697 - Ds9 test tweaks
+    Minor cleanup of the DS9 tests (no functional change)
+
+#1698 - Update versioneer to 0.28
+    Update the version of versioneer included in Sherpa from 0.21 to 0.28. Fix #1677.
+
+#1708 -Ensure string id can be used for the background id in the DataPHA notice/ignore call
+    Allow a string identifier to be used for the bkg_id argument to the
+    DataPHA.notice (and ignore) method, fixing #1709 (it does not affect users
+    using the ui layer).
+
+#1711 - plot: add linewidth option
+    Add the linewidth option for line and histogram plots (e.g. plot_data,
+    plot_model, plot_fit) with the matplotlib backend.
+
+#1715 - utils: rework the error-column saving code
+    Internal clean up of the save_*error routines. There is no change in behavior.
+
+#1716 - utils: tweak internal _save_type routine
+    Minor internal change to a routine in the utils code. There is no change in
+    behavior.
+
+#1720 - Fix get_stat_info output for individual components
+    Fix the get_stat_info output for multiple PHA data when the data has a different
+    number of background components (fix #1721). The get_bkg_model routine will now
+    use the source PHA for a response if the background has no response (to match
+    what fit and fit_bkg do, fix #1724).
+
+#1733 - Allow fake_pha to be called with a list of ARF/RMF names of length 1
+    Allow fake_pha to be called with a list of ARF and RMF names that only contains
+    one element. Fix #1722
+
+#1739 - pyfits: be more lenient with FITS files with messed-up headers
+    Allow some FITS files with an invalid header to be used with the AstroPy I/O
+    backend.
+
+#1747 - reduce chance of plot_pvalue getting stuck in a bad parameter space
+    Ensure that each simulation step for the likelihood ratios code, as used by
+    plot_pvalue, starts with the same parameter values to reduce the chance that the
+    results can get stuck in certain areas of parameter space. The ratios field of
+    the LikelihoodRatioResults structure - e.g. the return value of
+    get_pvalue_results() - can be plotted to see if this has happened (e.g. large
+    ranges where the ratio is close to zero.
+
+#1751 - Explicitly require attrs module when testing Sherpa
+    Ensure that the attrs module is available for testing Sherpa.
+
+#1752 - Drop Python 3.8 and Pick up Python 3.11 as a beta
+    move to be NEP-29 compliant with python version
+
+#1753 - Initial support for Python 3.11
+    Basic support of Python 3.11.
+
+#1755 - Tests: replace use of attrs package by dataclass
+    Change a test file to use data classes rather than use the attrs module, which
+    means that attrs is no-longer needed to test Sherpa. There is no functional
+    change in this PR.
+
+#1756 - Fix broken URL in docs
+    Updated URLS which are no longer valid
+
+#1759 - updated plot_pvalue docs
+    Updated docstring for plot_pvalue to include reference to the algorithm
+
+#1760 - Tweak test tolerances mac arm
+    Improve test reliance when running on the macOS ARM platform
+
+
 Sherpa 4.15.0
 =============
 
