@@ -54,7 +54,7 @@ def fake_pha(data, model,
     backgrounds as well as the source spectrum, call this function on the
     source PHA dataset and the background PHA dataset(s) independently.
 
-    .. versionchanged:: 4.15.1
+    .. versionchanged:: 4.16.0
        The method parameter was added.
 
     Parameters

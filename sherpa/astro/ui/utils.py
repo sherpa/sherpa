@@ -8815,7 +8815,7 @@ class Session(sherpa.ui.utils.Session):
         time, along with a Poisson noise term. A background component can
         be included.
 
-        .. versionchanged:: 4.15.1
+        .. versionchanged:: 4.16.0
            The method parameter was added.
 
         .. versionchanged:: 4.15.0
