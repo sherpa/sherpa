@@ -1429,7 +1429,7 @@ class Fit(NoNewAttributesAfterInit):
             # If maximum number of refits has occurred, don't
             # try to reminimize again.
             if (hasattr(self.estmethod, "maxfits") and
-                    not self.refits < (self.estmethod.maxfits - 1)):
+                    not (self.refits < (self.estmethod.maxfits - 1))):
                 self.refits = 0
                 thaw_par(self.current_frozen)
                 self.model.thawedpars = startpars

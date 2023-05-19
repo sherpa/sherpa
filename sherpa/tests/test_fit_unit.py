@@ -2839,7 +2839,7 @@ def check_str(out, expecteds):
 
 
 def test_fit_results_str():
-    """Just check we so call str() on a fit results instance"""
+    """Just check we can call str() on a fit results instance"""
 
     data = make_data(Data1D)
     model = Const1D()
@@ -2893,9 +2893,7 @@ def test_fit_itermethod_requires_known_name():
 
 
 def test_fit_results_with_iteration_str():
-    """Just check we so call str() on a fit results instance with an iteration method
-
-    We have not picked a dataset where the
+    """Just check we can call str() on a fit results instance with an iteration method
     """
 
     data = Data1D("x", [1, 2, 3, 4, 5], [2, 4, 12, 3, 4])
@@ -2926,7 +2924,7 @@ def test_fit_results_with_iteration_str():
 
 
 def test_fit_results_bool_true():
-    """Just check we so call bool() on a fit results instance"""
+    """Just check we can call bool() on a fit results instance"""
 
     # This is the same test as test_fit_results_str which explicitly
     # checks whether .succeeded passes or not.
