@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -348,7 +349,7 @@ class nmNcores(MyNcores):
         MyNcores.__init__(self)
         return
 
-    def my_worker(self, opt, id, out_q, err_q, lock,
+    def my_worker(self, opt, idval, out_q, err_q,
                   fcn, x, xmin, xmax, tol, maxnfev):
         try:
             vals = opt(fcn, x, xmin, xmax, tol, maxnfev)
@@ -356,7 +357,7 @@ class nmNcores(MyNcores):
             err_q.put(e)
             return
         # output the result and task ID to output queue
-        out_q.put((id, vals))
+        out_q.put((idval, vals))
 
 
 class ncoresNelderMead:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021
+#  Copyright (C) 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -53,7 +53,7 @@ class MyNcores:
 
         for func in funcs:
             if not callable(func):
-                raise TypeError("input func '%s' is not callable" % repr(func))
+                raise TypeError(f"input func '{repr(func)}' is not callable")
 
         if numcores is None:
             numcores = _ncpus
@@ -71,16 +71,14 @@ class MyNcores:
         # each slave process has access to.  Bottom line -- thread-safe.
         out_q = manager.Queue()
         err_q = manager.Queue()
-        lock = manager.Lock()
+        # lock = manager.Lock()  # unused
         procs = []
 
-        for id, func in enumerate(funcs):
-            myargs = (func, id, out_q, err_q, lock) + args
-            try:
-                procs.append(multiprocessing.Process(target=self.my_worker,
-                                                     args=myargs))
-            except NotImplementedError as nie:
-                raise nie
+        for idval, func in enumerate(funcs):
+            myargs = (func, idval, out_q, err_q) + args
+            procs.append(multiprocessing.Process(target=self.my_worker,
+                                                 args=myargs))
+
         return run_tasks(procs, err_q, out_q, num_funcs)
 
     def my_worker(self, *args):
@@ -95,7 +93,6 @@ class Opt:
             self.func_counter_bounds_wrappers(func, self.npar, xmin, xmax)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
-        return
 
     def _outside_limits(self, x, xmin, xmax):
         return (np.any(x < xmin) or np.any(x > xmax))
@@ -147,7 +144,6 @@ class SimplexBase:
         self.xmax = xmax
         self.npar = len(xpar)
         self.simplex = self.init(npop, xpar, step, seed, factor)
-        return
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -207,13 +203,16 @@ class SimplexBase:
             return stddev or fctval
         return False
 
+        # TODO: what is this code meant to be doing as it is unreachable?
         num = 2.0 * abs(self.simplex[0, -1] - self.simplex[-1, -1])
         denom = abs(self.simplex[0, -1]) + abs(self.simplex[-1, -1]) + 1.0
-        if (num / denom > ftol):
+        if num / denom > ftol:
             return False
+
         func_vals = [col[-1] for col in self.simplex]
         if np.std(func_vals) > ftol:
             return False
+
         return True
 
     def eval_simplex(self, npop, simplex):
