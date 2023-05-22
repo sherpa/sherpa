@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -70,12 +70,13 @@ Best-fit value: 4.0
 import random
 import numpy
 
-from . import _saoopt
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
 from sherpa.utils import parallel_map, func_counter
 from sherpa.utils._utils import sao_fcmp
+
+from . import _saoopt
 
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
            'minim', 'montecarlo', 'neldermead')
@@ -113,10 +114,9 @@ def _get_saofit_msg(maxfev, ierr):
         1: (False, 'improper input parameters'),
         2: (False, 'initial parameter value is out of bounds'),
         3: (False,
-            ('number of function evaluations has exceeded maxfev=%d' %
-             maxfev))
+            f'number of function evaluations has exceeded maxfev={maxfev}')
         }
-    return key.get(ierr, (False, 'unknown status flag (%d)' % ierr))
+    return key.get(ierr, (False, f'unknown status flag ({ierr})'))
 
 
 def _move_within_limits(x, xmin, xmax):
@@ -143,33 +143,33 @@ def _narrow_limits(myrange, xxx, debug):
             if my_x > my_h:
                 print('x = ', my_x, ' is > upper limit = ', my_h)
 
-    def raise_min_limit(range, xmin, x, debug=False):
-        myxmin = numpy.asarray(list(map(lambda xx: xx - range * numpy.abs(xx), x)), numpy.float_)
+    def raise_min_limit(xrange, xmin, x, debug=False):
+        myxmin = numpy.asarray(list(map(lambda xx: xx - xrange * numpy.abs(xx), x)), numpy.float_)
         if debug:
             print()
-            print('raise_min_limit: myxmin=%s' % myxmin)
-            print('raise_min_limit: x=%s' % x)
+            print(f'raise_min_limit: myxmin={myxmin}')
+            print(f'raise_min_limit: x={x}')
         below = numpy.flatnonzero(myxmin < xmin)
         if below.size > 0:
             myxmin[below] = xmin[below]
         if debug:
-            print('raise_min_limit: myxmin=%s' % myxmin)
-            print('raise_min_limit: x=%s' % x)
+            print(f'raise_min_limit: myxmin={myxmin}')
+            print(f'raise_min_limit: x={x}')
             print()
         return myxmin
 
-    def lower_max_limit(range, x, xmax, debug=False):
-        myxmax = numpy.asarray(list(map(lambda xx: xx + range * numpy.abs(xx), x)), numpy.float_)
+    def lower_max_limit(xrange, x, xmax, debug=False):
+        myxmax = numpy.asarray(list(map(lambda xx: xx + xrange * numpy.abs(xx), x)), numpy.float_)
         if debug:
             print()
-            print('lower_max_limit: x=%s' % x)
-            print('lower_max_limit: myxmax=%s' % myxmax)
+            print(f'lower_max_limit: x={x}')
+            print(f'lower_max_limit: myxmax={myxmax}')
         above = numpy.flatnonzero(myxmax > xmax)
         if above.size > 0:
             myxmax[above] = xmax[above]
         if debug:
-            print('lower_max_limit: x=%s' % x)
-            print('lower_max_limit: myxmax=%s' % myxmax)
+            print(f'lower_max_limit: x={x}')
+            print(f'lower_max_limit: myxmax={myxmax}')
             print()
         return myxmax
 
@@ -178,17 +178,17 @@ def _narrow_limits(myrange, xxx, debug):
     xmax = xxx[2]
 
     if debug:
-        print('narrow_limits: xmin=%s' % xmin)
-        print('narrow_limits: x=%s' % x)
-        print('narrow_limits: xmax=%s' % xmax)
+        print(f'narrow_limits: xmin={xmin}')
+        print(f'narrow_limits: x={x}')
+        print(f'narrow_limits: xmax={xmax}')
     myxmin = raise_min_limit(myrange, xmin, x, debug=False)
     myxmax = lower_max_limit(myrange, x, xmax, debug=False)
 
     if debug:
-        print('range = %d' % myrange)
-        print('narrow_limits: myxmin=%s' % myxmin)
-        print('narrow_limits: x=%s' % x)
-        print('narrow_limits: myxmax=%s\n' % myxmax)
+        print(f'range = {myrange}')
+        print(f'narrow_limits: myxmin={myxmin}')
+        print(f'narrow_limits: x={x}')
+        print(f'narrow_limits: myxmax={myxmax}\n')
 
     double_check_limits(x, myxmin, myxmax)
 
@@ -255,7 +255,7 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     ierr = de[3]
 
     if verbose:
-        print('difevo: f%s=%e in %d nfev' % (x, fval, nfev))
+        print(f'difevo: f{x}={fval:e} in {nfev} nfev')
 
     status, msg = _get_saofit_msg(maxfev, ierr)
     rv = (status, x, fval)
@@ -328,7 +328,7 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
     ierr = de[3]
 
     if verbose:
-        print('difevo_nm: f%s=%e in %d nfev' % (x, fval, nfev))
+        print('difevo_nm: f{x}={fval:e} in {nfev} nfev')
 
     status, msg = _get_saofit_msg(maxfev, ierr)
     rv = (status, x, fval)
@@ -393,7 +393,7 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
     def func(pars):
         aaa = fcn(pars)[0]
         if verbose:
-            print('f%s=%g' % (pars, aaa))
+            print(f'f{pars}={aaa:g}')
         return aaa
 
     def make_sequence(ranges, N):
@@ -424,11 +424,10 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
     else:
         if not numpy.iterable(sequence):
             raise TypeError("sequence option must be iterable")
-        else:
-            for seq in sequence:
-                if npar != len(seq):
-                    msg = "%s must be of length %d" % (seq, npar)
-                    raise TypeError(msg)
+
+        for seq in sequence:
+            if npar != len(seq):
+                raise TypeError(f"{seq} must be of length {npar}")
 
     answer = eval_stat_func(x)
     sequence_results = list(parallel_map(eval_stat_func, sequence, numcores))
@@ -502,12 +501,12 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     key = {
         0: (True, 'successful termination'),
         1: (False,
-            'number of function evaluations has exceeded maxfev=%d' % maxfev),
+            f'number of function evaluations has exceeded maxfev={maxfev}'),
         2: (False, 'information matrix is not +ve semi-definite'),
         3: (False, 'number of parameters is less than 1'),
-        4: (False, 'nloop=%d is less than 1' % nloop)
+        4: (False, f'nloop={nloop} is less than 1')
         }
-    status, msg = key.get(ifault, (False, 'unknown status flag (%d)' % ifault))
+    status, msg = key.get(ifault, (False, f'unknown status flag ({ifault})'))
 
     rv = (status, x, fval, msg, {'info': ifault, 'nfev': neval})
     return rv
@@ -640,7 +639,8 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                 ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
 
         if verbose or debug:
-            print('f_nm%s=%.14e in %d nfev' % (x, nfval, nfev))
+            print(f'f_nm{x}={nfval:.14e} in {nfev} nfev')
+
         ############################# NelderMead #############################
 
         ############################## nmDifEvo #############################
@@ -664,7 +664,8 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                 x = tmp_par
 
         if verbose or debug:
-            print('f_de_nm%s=%.14e in %d nfev' % (x, nfval, nfev))
+            print(f'f_de_nm{x}={nfval:.14e} in {nfev} nfev')
+
         ############################## nmDifEvo #############################
 
         ofval = FUNC_MAX
@@ -683,12 +684,12 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                     nfval = result[2]
                     x = numpy.asarray(result[1], numpy.float_)
                 if verbose or debug:
-                    print('f_de_nm%s=%.14e in %d nfev' %
-                          (x, result[2], result[4].get('nfev')))
+                    print(f'f_de_nm{x}={result[2]:.14e} in {result[4].get("nfev")} nfev')
+
             ############################ nmDifEvo #############################
 
             if debug:
-                print('ofval=%.14e\tnfval=%.14e\n' % (ofval, nfval))
+                print(f'ofval={ofval:.14e}\tnfval={nfval:.14e}\n')
 
             if sao_fcmp(ofval, nfval, ftol) <= 0:
                 return x, nfval, nfev
@@ -954,6 +955,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     def stat_cb0(pars):
         return fcn(pars)[0]
 
+    # TODO: should be able to avoid the redefinition
     #
     # A safeguard just in case the initial simplex is outside the bounds
     #
@@ -1011,7 +1013,9 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         maxfev = 1024 * len(x)
 
     if debug:
-        print('opfcts.py neldermead() finalsimplex=%s\tisscalar=%s\titerable=%d' % (finalsimplex, numpy.isscalar(finalsimplex), numpy.iterable(finalsimplex)))
+        print(f'opfcts.py neldermead() finalsimplex={finalsimplex}'
+              f'\tisscalar={numpy.isscalar(finalsimplex)}'
+              f'\titerable={numpy.iterable(finalsimplex)}')
 
     def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
                 myfcn, debug, ofval=FUNC_MAX):
@@ -1025,7 +1029,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                                             tol, step, xmin, xmax, x, myfcn)
 
         if debug:
-            print('finalsimplex=%s, nfev=%d:\tf%s=%.20e' % (tmpfinal, nf, xx, ff))
+            print(f'finalsimplex={tmpfinal}, nfev={nf}:\tf{xx}={ff:.20e}')
 
         if len(final) >= 3 and ff < 0.995 * ofval and nf < maxfev:
             myfinal = [final[-1]]
@@ -1033,13 +1037,13 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                                          step, xmin, xmax, x, myfcn, debug,
                                          ofval=ff)
             return x, fval, nfev + nf, err
-        else:
-            return xx, ff, nf, er
+
+        return xx, ff, nf, er
 
     x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, finalsimplex,
                                  ftol, step, xmin, xmax, x, stat_cb0, debug)
     if debug:
-        print('f%s=%e in %d nfev' % (x, fval, nfev))
+        print(f'f{x}={fval:e} in {nfev} nfev')
 
     info = 1
     covarerr = None
@@ -1056,7 +1060,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             x = nelmea_x
             fval = minim_fval
         if debug:
-            print('minim: f%s=%e %d nfev, info=%d' % (x, fval, nelmea_nfev, info))
+            print(f'minim: f{x}={fval:e} {nelmea_nfev} nfev, info={info}')
 
     if nfev >= maxfev:
         ier = 3
@@ -1065,10 +1069,10 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         1: (False, 'improper input parameters'),
         2: (False, 'improper values for x, xmin or xmax'),
         3: (False,
-            'number of function evaluations has exceeded %d' % maxfev)
+            f'number of function evaluations has exceeded {maxfev}')
         }
     status, msg = key.get(ier,
-                          (False, 'unknown status flag (%d)' % ier))
+                          (False, f'unknown status flag ({ier})'))
 
     rv = (status, x, fval)
     print_covar_err = False
@@ -1159,7 +1163,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             self.eps = numpy.sqrt(max(epsmch, epsfcn))
             self.h = self.calc_h(pars)
             self.pars = numpy.copy(pars)
-            return
 
         def __call__(self, param):
             wa = self.func(param[1:])

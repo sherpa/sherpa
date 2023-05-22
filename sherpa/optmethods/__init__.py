@@ -144,8 +144,7 @@ class OptMethod(NoNewAttributesAfterInit):
     def __getattr__(self, name):
         if name in self.__dict__.get('config', ()):
             return self.config[name]
-        raise AttributeError("'%s' object has no attribute '%s'" %
-                             (type(self).__name__, name))
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def __setattr__(self, name, val):
         if name in self.__dict__.get('config', ()):
@@ -154,8 +153,7 @@ class OptMethod(NoNewAttributesAfterInit):
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
     def __repr__(self):
-        return ("<%s optimization method instance '%s'>" %
-                (type(self).__name__, self.name))
+        return f"<{type(self).__name__} optimization method instance '{self.name}'>"
 
     # Need to support users who have pickled sessions < CIAO 4.2
     def __setstate__(self, state):
@@ -242,7 +240,7 @@ class OptMethod(NoNewAttributesAfterInit):
         success = output[0]
         msg = output[3]
         if not success:
-            warning('fit failed: %s' % msg)
+            warning('fit failed: %s', msg)
 
         # Ensure that the best-fit parameters are in an array.  (If there's
         # only one, it might be returned as a bare float.)

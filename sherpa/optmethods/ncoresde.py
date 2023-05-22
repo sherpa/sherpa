@@ -37,8 +37,8 @@ class Key2:
 
     def calc(self, arg1, arg2):
         if arg2 > self.max_arg2:
-            str = "arg2 ({}) must be < {}".format(arg2, self.max_arg2)
-            raise ValueError(str)
+            raise ValueError(f"arg2 ({arg2}) must be < {self.max_arg2}")
+
         key = arg1 + 1
         key <<= self.nbit
         key += arg2
@@ -87,6 +87,7 @@ class Strategy0(Strategy):
             n = (n + 1) % self.npar
             if random.uniform(0, 1) > self.xprob:
                 break
+
         return self.calc(trial, pop)
 
 
@@ -101,6 +102,7 @@ class Strategy1(Strategy):
             n = (n + 1) % self.npar
             if random.uniform(0, 1) > self.xprob:
                 break
+
         return self.calc(trial, pop)
 
 
@@ -116,6 +118,7 @@ class Strategy2(Strategy):
             n = (n + 1) % self.npar
             if random.uniform(0, 1) > self.xprob:
                 break
+
         return self.calc(trial, pop)
 
 
@@ -132,6 +135,7 @@ class Strategy3(Strategy):
             n = (n + 1) % self.npar
             if random.uniform(0, 1) > self.xprob:
                 break
+
         return self.calc(trial, pop)
 
 
@@ -148,6 +152,7 @@ class Strategy4(Strategy):
             n = (n + 1) % self.npar
             if random.uniform(0, 1) > self.xprob:
                 break
+
         return self.calc(trial, pop)
 
 
@@ -163,6 +168,7 @@ class Strategy5(Strategy):
                 trial[n] = pop[0][n] + \
                     self.sfactor * (pop[r2][n] - pop[r3][n])
                 n = (n + 1) % self.npar
+
         return self.calc(trial, pop)
 
 
@@ -178,6 +184,7 @@ class Strategy6(Strategy):
                 trial[n] = pop[r1][n] + self.sfactor * \
                     (pop[r2][n] - pop[r3][n])
                 n = (n + 1) % self.npar
+
         return self.calc(trial, pop)
 
 
@@ -193,6 +200,7 @@ class Strategy7(Strategy):
                 trial[n] += self.sfactor * ((pop[0][n] - trial[n]) +
                                             (pop[r1][n] - pop[r2][n]))
                 n = (n + 1) % self.npar
+
         return self.calc(trial, pop)
 
 
@@ -208,6 +216,7 @@ class Strategy8(Strategy):
                 trial[n] = pop[0][n] + \
                     self.sfactor * (pop[r2][n] - pop[r3][n] - pop[r4][n])
                 n = (n + 1) % self.npar
+
         return self.calc(trial, pop)
 
 
@@ -224,6 +233,7 @@ class Strategy9(Strategy):
                     self.sfactor * (pop[r1][n] + pop[r2][n] - pop[r3][n] -
                                     pop[r4][n])
                 n = (n + 1) % self.npar
+
         return self.calc(trial, pop)
 
 

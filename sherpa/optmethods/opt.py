@@ -261,6 +261,7 @@ class SimplexNoStep(SimplexBase):
             simplex[ii+1][:-1] = tmp[:]
         simplex = \
             self.init_random_simplex(xpar, simplex, npar1, npop, seed, factor)
+
         return self.eval_simplex(npop, simplex)
 
 
@@ -275,6 +276,7 @@ class SimplexStep(SimplexBase):
             simplex[ii + 1][:-1] = tmp
         simplex = \
             self.init_random_simplex(xpar, simplex, npar1, npop, seed, factor)
+
         return self.eval_simplex(npop, simplex)
 
 
@@ -286,6 +288,7 @@ class SimplexRandom(SimplexBase):
         simplex[0][:-1] = np.copy(xpar)
         simplex = self.init_random_simplex(xpar, simplex, 1, npop, seed,
                                            factor)
+
         return self.eval_simplex(npop, simplex)
 
 
@@ -998,7 +1001,7 @@ def tst_opt(algorithms, npar):
     x0 = npar * [-2.0]
     tst_algos(SumSquares, x0, xmin, xmax)
 
-    if npar == 6 or npar == 10:
+    if npar in (6, 10):
         xmin = npar * [- npar * npar]
         xmax = npar * [npar * npar]
         x0 = npar * [10]

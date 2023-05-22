@@ -68,11 +68,11 @@ class MyNelderMead(Opt):
                     print('\taccept outside contraction point')
                     # and terminate the iteration
                 return False
-            else:
-                # otherwise, go to step 5 (perform a shrink).
-                return True
 
-        elif reflection_pt[-1] >= simplex[badindex, -1]:
+            # otherwise, go to step 5 (perform a shrink).
+            return True
+
+        if reflection_pt[-1] >= simplex[badindex, -1]:
 
             inside_contraction_pt = simplex.move_vertex(centroid,
                                                         - contraction_coef)
@@ -82,13 +82,12 @@ class MyNelderMead(Opt):
                 if verbose > 2:
                     print('\taccept inside contraction point')
                 return False
-            else:
-                # otherwise, go to step 5 (perform a shrink).
-                return True
 
-        else:
-            print('something is wrong with contract_in_out')
+            # otherwise, go to step 5 (perform a shrink).
             return True
+
+        print('something is wrong with contract_in_out')
+        return True
 
     def optimize(self, xpar, simplex, maxnfev, tol, finalsimplex, verbose):
 
@@ -100,8 +99,7 @@ class MyNelderMead(Opt):
 
             simplex.sort()
             if verbose > 2:
-                msg = 'f%s=%e' % (simplex[0, :-1], simplex[0, -1])
-                print(msg)
+                print(f'f{simplex[0, :-1]}={simplex[0, -1]:e}')
 
             centroid = simplex.calc_centroid()
 
@@ -161,8 +159,8 @@ class NelderMeadBase:
     def get_maxnfev(self, maxnfev, npar):
         if maxnfev is None:
             return 512 * npar
-        else:
-            return maxnfev
+
+        return maxnfev
 
 
 class NelderMead0(NelderMeadBase):
@@ -404,8 +402,9 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
             # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
             if fmin < fval:
                 return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
-            else:
-                return nfev, fval, par
+
+            return nfev, fval, par
+
         except NotImplementedError as nie:
             print(nie)
             raise nie
