@@ -29,7 +29,7 @@ from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom
 # from opt import MyNcores, Opt, SimplexNoStep, SimplexStep, SimplexRandom
 
-__all__ = ('ncoresNelderMead')
+__all__ = ('ncoresNelderMead', )
 
 EPSILON = np.float_(np.finfo(np.float32).eps)
 
@@ -221,7 +221,12 @@ class NelderMead3(NelderMead0):
         return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
-                 step=None, finalsimplex=[0, 1, 1], verbose=0):
+                 step=None, finalsimplex=None, verbose=0):
+
+        # Avoid having a mutable argument
+        if finalsimplex is None:
+            finalsimplex = [0, 1, 1]
+
         x0 = np.asarray(x0)
         n = len(x0)
         if step is None:
@@ -241,7 +246,12 @@ class NelderMead4(NelderMead0):
         return
 
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
-                 step=None, finalsimplex=[0, 1, 1], verbose=0, reflect=True):
+                 step=None, finalsimplex=None, verbose=0, reflect=True):
+
+        # Avoid having a mutable argument
+        if finalsimplex is None:
+            finalsimplex = [0, 1, 1]
+
         x0 = np.asarray(x0)
         n = len(x0)
         if step is None:
@@ -363,6 +373,7 @@ class nmNcores(MyNcores):
 
 class ncoresNelderMead:
 
+    # TODO: using a list as an argument triggers pylint dangerous-default-value check
     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
                              NelderMead3(), NelderMead4(), NelderMead5()]):
         # NelderMead6(), NelderMead7()]):
@@ -409,6 +420,7 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
     reflect the progress of the algorithm: either the function values at the
     vertices are close, or the simplex has become very small. """
 
+    # TODO: using a list as an argument triggers pylint dangerous-default-value check
     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
                              NelderMead3(), NelderMead4(), NelderMead5()]):
         ncoresNelderMead.__init__(self, algo)

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -193,8 +193,11 @@ class OptMethod(NoNewAttributesAfterInit):
                               doc='The default settings for the optimiser.')
 
     def fit(self, statfunc, pars, parmins, parmaxes, statargs=(),
-            statkwargs={}):
+            statkwargs=None):
         """Run the optimiser.
+
+        .. versionchanged:: 4.16.0
+           The statkwargs argument now defaults to None rather than {}.
 
         Parameters
         ----------
@@ -213,7 +216,7 @@ class OptMethod(NoNewAttributesAfterInit):
            must match the length of `pars`.
         statargs : optional
            Additional positional arguments to send to `statfunc`.
-        statkwargs : optional
+        statkwargs : dict, optional
            Additional keyword arguments to send to `statfunc`.
 
         Returns
@@ -227,6 +230,9 @@ class OptMethod(NoNewAttributesAfterInit):
            on the optimiser).
 
         """
+
+        if statkwargs is None:
+            statkwargs = {}
 
         def cb(pars):
             return statfunc(pars, *statargs, **statkwargs)
