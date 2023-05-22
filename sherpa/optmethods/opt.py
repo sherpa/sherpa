@@ -248,10 +248,6 @@ class SimplexBase:
 
 class SimplexNoStep(SimplexBase):
 
-    def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
-                             factor)
-
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -270,10 +266,6 @@ class SimplexNoStep(SimplexBase):
 
 class SimplexStep(SimplexBase):
 
-    def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
-                             factor)
-
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
@@ -287,10 +279,6 @@ class SimplexStep(SimplexBase):
 
 
 class SimplexRandom(SimplexBase):
-
-    def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
-        SimplexBase.__init__(self, func, npop, xpar, xmin, xmax, step, seed,
-                             factor)
 
     def init(self, npop, xpar, step, seed, factor):
         npar1 = self.npar + 1
@@ -877,7 +865,6 @@ def tst_opt(algorithms, npar):
         for algo in algorithms:
             result = algo(func, x0, xmin, xmax)
             myprint(algo.__class__.__name__, func, result)
-        return
 
     xmin = npar * [-32.768]
     xmax = npar * [32.768]
