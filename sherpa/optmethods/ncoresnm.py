@@ -338,16 +338,11 @@ class ncoresNelderMead:
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=ncpus):
-        try:
-            num_algo = len(self.algo)
-            args = (fcn, x, xmin, xmax, tol, maxnfev)
-            nm_ncores = nmNcores()
-            results = nm_ncores.calc(self.algo, numcores, *args)
-            nfev, fmin, par = self.unpack_results(num_algo, results)
-            return nfev, fmin, par
-        except NotImplementedError as nie:
-            print(nie)
-            raise nie
+
+        num_algo = len(self.algo)
+        nm_ncores = nmNcores()
+        results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
+        return self.unpack_results(num_algo, results)
 
     def unpack_results(self, num, results):
         nfev = results[0]
@@ -392,22 +387,17 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
 
     def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
              numcores=ncpus, fval=np.inf, nfev=0):
-        try:
-            num_algo = len(self.algo)
-            args = (fcn, x, xmin, xmax, tol, maxnfev)
-            nm_ncores = nmNcores()
-            results = nm_ncores.calc(self.algo, numcores, *args)
-            tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
-            nfev += tmp_nfev
-            # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
-            if fmin < fval:
-                return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
 
-            return nfev, fval, par
+        num_algo = len(self.algo)
+        nm_ncores = nmNcores()
+        results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
+        tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
+        nfev += tmp_nfev
+        # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
+        if fmin < fval:
+            return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
 
-        except NotImplementedError as nie:
-            print(nie)
-            raise nie
+        return nfev, fval, par
 
 
 if '__main__' == __name__:
