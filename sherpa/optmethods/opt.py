@@ -1032,16 +1032,15 @@ def tst_opt(algorithms, npar):
 
 if '__main__' == __name__:
 
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option("-N", "--npar", dest="npar", default=10,
-                      type=int, help="set npar")
-    (options, args) = parser.parse_args()
-    npar = options.npar
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("-N", "--npar", dest="npar", default=10,
+                        type=int, help="set npar")
+    args = parser.parse_args()
 
-    x0 = np.array(npar * [-1.2, 1.0])
-    xmin = npar * [-1000, -1000]
-    xmax = npar * [1000, 1000]
+    x0 = np.array(args.npar * [-1.2, 1.0])
+    xmin = args.npar * [-1000, -1000]
+    xmax = args.npar * [1000, 1000]
     factor = 10
     seed = 234
     simp = SimplexNoStep(func=Rosenbrock, npop=len(x0) + 1, xpar=x0,

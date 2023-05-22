@@ -409,35 +409,34 @@ if '__main__' == __name__:
 
     from opt import tst_opt, tst_unc_opt
 
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option("-N", "--num", dest="num", default=10,
-                      type=int, help="set num")
-    parser.add_option("-s", "--single", dest="single", default=True,
-                      action="store_false", help="run test using 1 core")
-    parser.add_option("-u", "--unc_opt", dest="unc_opt", default=True,
-                      action="store_false", help="do not run tst_unc_opt")
-    parser.add_option("-o", "--opt", dest="global_func", default=True,
-                      action="store_false", help="do not run tst_opt")
-    (options, args) = parser.parse_args()
-    npar = options.num
+    from argparse import ArgumentParser
+    parser = ArgumentParser()
+    parser.add_argument("-N", "--num", dest="num", default=10,
+                        type=int, help="set num")
+    parser.add_argument("-s", "--single", dest="single", default=True,
+                        action="store_false", help="run test using 1 core")
+    parser.add_argument("-u", "--unc_opt", dest="unc_opt", default=True,
+                        action="store_false", help="do not run tst_unc_opt")
+    parser.add_argument("-o", "--opt", dest="global_func", default=True,
+                        action="store_false", help="do not run tst_opt")
+    args = parser.parse_args()
 
-    if npar % 2 != 0:
+    if args.num % 2 != 0:
         raise ValueError("-N option must be an even number")
 
-    if options.single:
+    if args.single:
         nmcores = ncoresNelderMead()
         # midnight = Midnight()
         algorithms = [nmcores]
-        if options.unc_opt:
-            tst_unc_opt(algorithms, npar)
-        if options.global_func:
-            tst_opt(algorithms, npar)
+        if args.unc_opt:
+            tst_unc_opt(algorithms, args.num)
+        if args.global_func:
+            tst_opt(algorithms, args.num)
     else:
         algorithms = [NelderMead0(), NelderMead1(), NelderMead2(),
                       NelderMead3(), NelderMead4(), NelderMead5(),
                       NelderMead6(), NelderMead7()]
-        if options.unc_opt:
-            tst_unc_opt(algorithms, npar)
-        if options.global_func:
-            tst_opt(algorithms, npar)
+        if args.unc_opt:
+            tst_unc_opt(algorithms, args.num)
+        if args.global_func:
+            tst_opt(algorithms, args.num)

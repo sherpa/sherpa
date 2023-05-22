@@ -464,26 +464,24 @@ if '__main__' == __name__:
     parser.add_argument('-N', action="store", dest="num", default=4, type=int)
 
     options = parser.parse_args()
-    # print('options =', options)
-    npar = options.num
-    if npar % 2 != 0:
+    if options.num % 2 != 0:
         raise ValueError("-N option must be an even number")
 
     if options.difevo:
         algo = [DifEvo()]
         if options.unc_opt:
-            tst_unc_opt(algo, npar)
+            tst_unc_opt(algo, options.num)
         if options.global_func:
-            tst_opt(algo, npar)
+            tst_opt(algo, options.num)
     elif options.combine:
         algo = [ncoresDifEvoNelderMead()]
         if options.unc_opt:
-            tst_unc_opt(algo, npar)
+            tst_unc_opt(algo, options.num)
         if options.global_func:
-            tst_opt(algo, npar)
+            tst_opt(algo, options.num)
     else:
         algo = [ncoresDifEvo()]
         if options.unc_opt:
-            tst_unc_opt(algo, npar)
+            tst_unc_opt(algo, options.num)
         if options.global_func:
-            tst_opt(algo, npar)
+            tst_opt(algo, options.num)
