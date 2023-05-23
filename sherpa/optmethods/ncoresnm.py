@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #
 #  Copyright (C) 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
