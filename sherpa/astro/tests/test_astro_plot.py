@@ -945,7 +945,7 @@ def test_1779_ungrouped_fit(subset, factor):
 @pytest.mark.parametrize("subset", [False, True])
 @pytest.mark.parametrize("factor", [0, 1, 2])
 def test_1779_grouped_model(subset, factor):
-    """This fails for factor > 0 (issue #1779)
+    """This no-longer fails for factor > 0 (issue #1779)
 
     This uses the plot_model() display, which does not group the
     model values.
@@ -959,17 +959,6 @@ def test_1779_grouped_model(subset, factor):
         pha.notice(0.77, 1.125)
 
     mplot = ModelHistogram()
-
-    if subset and factor > 0:
-        # This is #1779. I want the test to pass so we know we have
-        # caught the error we are searching for (as an xfail can just
-        # cover an accidental typo in the test).
-        #
-        with pytest.raises(ValueError,
-                           match=r"operands could not be broadcast together with shapes \(7,\) \(4,\) \(7,\)"):
-            validate_1779(pha, mplot, subset, factor)
-
-        return
 
     validate_1779(pha, mplot, subset, factor)
 

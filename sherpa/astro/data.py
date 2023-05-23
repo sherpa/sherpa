@@ -4225,11 +4225,16 @@ It is an integer or string.
         if self.plot_fac <= 0:
             return val
 
-        scale = self.apply_filter(self.get_x(response_id=response_id),
-                                  self._middle)
-        for ii in range(self.plot_fac):
-            val *= scale
+        # Do we want to use apply_filter or apply_grouping here?
+        # Using just apply_filter leads to #1728.
+        #
+        xvals = self.get_x(response_id=response_id)
+        if filter:
+            xvals = self.apply_filter(xvals, self._middle)
+        elif self.grouped:
+            xvals = self.apply_grouping(xvals, self._middle)
 
+        val *= numpy.power(xvals, self.plot_fac)
         return val
 
     def get_y(self, filter=False, yfunc=None, response_id=None, use_evaluation_space=False):
