@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -29,7 +29,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.plot import SourcePlot, \
-    DataPHAPlot, ModelPHAHistogram, OrderPlot, \
+    DataPHAPlot, ModelPHAHistogram, ModelHistogram, OrderPlot, \
     EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
 from sherpa.astro import plot as aplot
 from sherpa.astro import hc
@@ -677,7 +677,6 @@ _arf = np.asarray([0.8, 0.8, 0.9, 1.0, 1.1, 1.1, 0.7, 0.6, 0.6, 0.6])
 # constant bin width like 0.1 keV the factor of 10 is too easy
 # to confuse for other terms.
 #
-_energies = np.linspace(0.5, 1.5, 11)
 _energies = np.asarray([0.5, 0.65, 0.75, 0.8, 0.9, 1., 1.1, 1.12, 1.3, 1.4, 1.5])
 _energies_lo = _energies[:-1]
 _energies_hi = _energies[1:]
@@ -707,6 +706,14 @@ def example_pha_data():
     d.set_arf(a)
     d.set_rmf(r)
     return d
+
+
+def example_pha_data_with_grouping():
+    """Add a grouping column but do not activate it"""
+    pha = example_pha_data()
+    pha.grouping = [1, 1, -1, 1, 1, -1, 1, -1, 1, 1]
+    assert not pha.grouped  # check existing behavior
+    return pha
 
 
 @pytest.mark.parametrize("orders", [None, [1]])
@@ -782,3 +789,205 @@ def test_check_hist_bins():
                    (xlo[::-1], xhi[::-1]), (xlo[::-1], xhi[::-1])]:
         out1, out2 = _check_hist_bins(x1.copy(), x2.copy())
         assert np.all(out1[1:] == out2[:-1])
+
+
+def validate_1779(pha, mplot, subset, factor):
+    """Check that the model plot does not suffer from #1779
+
+    That is, when factor > 0, does it work.
+    """
+
+    cval = 2
+    model = Const1D('example-mdl')
+    model.c0 = cval
+    rsp = pha.get_full_response()
+    full_model = rsp(model)
+
+    mplot.prepare(pha, full_model)
+
+    # The model is a constant model, normalisation of 2/keV, which is
+    # appplied to a grid with irregular grid sizes and an ARF that is
+    # not flat. The PHA exposure time is 1201, and we don't need to
+    # worry about AREA/BACKSCAL.
+    #
+    # Note that we are calculating the per keV values here, so the
+    # un-even bin widths shuold not be relevant, and a rate, not
+    # counts, so the exposure time should also not come into it.
+    #
+    MODEL_UNGROUPED = cval * _arf
+
+    xgrid = (_energies_lo + _energies_hi) / 2
+    expected = MODEL_UNGROUPED * np.power(xgrid, factor)
+    if subset:
+        # We can not match the ungrouped filter because the first
+        # group covers energy bins 0.65-0.75 and 0.75-0.8. In the
+        # ungrouped case we only pick up the second of these, but the
+        # grouped case gets the first channel too.
+        #
+        if pha.grouped:
+            expected = expected[1:8]
+        else:
+            expected = expected[2:8]
+
+    assert mplot.y == pytest.approx(expected, rel=1e-4)
+
+
+def validate_1779_grouped(pha, mplot, subset, factor):
+    """Check that the model plot does not suffer from #1779
+
+    There is only one test that uses this, unlike validate_1779,
+    but keep it separate to make the parallels and differences
+    more obvious.
+
+    """
+
+    cval = 2
+    model = Const1D('example-mdl')
+    model.c0 = cval
+    rsp = pha.get_full_response()
+    full_model = rsp(model)
+
+    mplot.prepare(pha, full_model)
+
+    # This is similar to validate_1779 but the model is grouped. As
+    # the ARF combination per bin is different it means a little-bit
+    # of work to get the expected answer.
+    #
+    IMODEL_UNGROUPED = cval * _arf * (_energies_hi - _energies_lo)
+    IMODEL_GROUPED = np.asarray([IMODEL_UNGROUPED[0],
+                                 IMODEL_UNGROUPED[1] + IMODEL_UNGROUPED[2],
+                                 IMODEL_UNGROUPED[3],
+                                 IMODEL_UNGROUPED[4] + IMODEL_UNGROUPED[5],
+                                 IMODEL_UNGROUPED[6] + IMODEL_UNGROUPED[7],
+                                 IMODEL_UNGROUPED[8],
+                                 IMODEL_UNGROUPED[9]])
+
+    # The grouping is:
+    #
+    # pha.grouping = [1, 1, -1, 1, 1, -1, 1, -1, 1, 1]
+    #                 0  1   2  3  4   5  6   7  8  9
+    #
+    glo = _energies_lo[[0, 1, 3, 4, 6, 8, 9]]
+    ghi = _energies_hi[[0, 2, 3, 5, 7, 8, 9]]
+    MODEL_GROUPED = IMODEL_GROUPED / (ghi - glo)
+
+    # Note: the following is issue #1784.
+    #
+    # This is what I expected
+    #    xgrid = (glo + ghi) / 2
+    #
+    # This is what is used: note that xgrid from above evaluates to
+    #
+    #    [0.575, 0.725, 0.85, 1, 1.2, 1.35, 1.45]
+    #
+    # so it's some of the grouped bins that differ. This is
+    # because the code is averaging the mid-points of each
+    # bin, not the low and high edges, so we have a group of
+    # channels 0.65-0.75, 0.75-0.8 keV, which I would
+    # think was (0.65 + 0.8) / 2 = 1.45 / 2 = 0.725 keV,
+    # but we actually combine
+    #     ((0.65 + 0.75) / 2 + (0.75 + 0.8) / 2) / 2
+    #   = (1.4 / 2 + 1.55 / 2) / 2
+    #   = 2.95 / 4
+    #   = 0.7375
+    #
+    # The other bin where we see a difference we have
+    # 1.1-1.12, 1.12-1.3, so we compare
+    #
+    #     (1.1 + 1.3) / 2 = 1.2
+    #
+    # to
+    #
+    #     ((1.1 + 1.12) + (1.12 + 1.3)) / 4
+    #     4.64 / 4 = 1.16
+    #
+    xgrid = np.asarray([0.575, 0.7375, 0.85, 1., 1.16, 1.35, 1.45])
+
+    expected = MODEL_GROUPED * np.power(xgrid, factor)
+    if subset:
+        expected = expected[1:5]
+
+    assert mplot.y == pytest.approx(expected, rel=1e-4)
+
+
+@pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("factor", [0, 1, 2])
+def test_1779_ungrouped_model(subset, factor):
+    """This works, even with issue #1779 unfixed
+
+    This checks plot_model
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.set_analysis("energy", factor=factor)
+    if subset:
+        pha.notice(0.77, 1.125)
+
+    validate_1779(pha, ModelHistogram(), subset, factor)
+
+
+@pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("factor", [0, 1, 2])
+def test_1779_ungrouped_fit(subset, factor):
+    """This works, even with issue #1779 unfixed
+
+    This checks plot_fit
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.set_analysis("energy", factor=factor)
+    if subset:
+        pha.notice(0.77, 1.125)
+
+    validate_1779(pha, ModelPHAHistogram(), subset, factor)
+
+
+@pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("factor", [0, 1, 2])
+def test_1779_grouped_model(subset, factor):
+    """This fails for factor > 0 (issue #1779)
+
+    This uses the plot_model() display, which does not group the
+    model values.
+
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis("energy", factor=factor)
+    if subset:
+        pha.notice(0.77, 1.125)
+
+    mplot = ModelHistogram()
+
+    if subset and factor > 0:
+        # This is #1779. I want the test to pass so we know we have
+        # caught the error we are searching for (as an xfail can just
+        # cover an accidental typo in the test).
+        #
+        with pytest.raises(ValueError,
+                           match=r"operands could not be broadcast together with shapes \(7,\) \(4,\) \(7,\)"):
+            validate_1779(pha, mplot, subset, factor)
+
+        return
+
+    validate_1779(pha, mplot, subset, factor)
+
+
+@pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("factor", [0, 1, 2])
+def test_1779_grouped_fit(subset, factor):
+    """This is not affected by #1779.
+
+    This uses the plot_fit() display, which groups the model values.
+
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis("energy", factor=factor)
+    if subset:
+        pha.notice(0.77, 1.125)
+
+    mplot = ModelPHAHistogram()
+    validate_1779_grouped(pha, mplot, subset, factor)
