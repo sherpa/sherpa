@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,16 +18,15 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from functools import wraps
 import logging
 import os
 import signal
 
-from functools import wraps
-
 import numpy as np
+from numpy import arange, array, iterable, sqrt, where, \
+    ones_like, isnan, isinf
 
-from numpy import arange, array, abs, iterable, sqrt, where, \
-    ones_like, isnan, isinf, any
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
@@ -111,6 +110,9 @@ class StatInfoResults(NoNewAttributesAfterInit):
         self.qval = qval
         self.rstat = rstat
 
+        # TODO: should this call
+        # NoNewAttributesAfterInit.__init__(self)
+
     def __repr__(self):
         return '<Statistic information results instance>'
 
@@ -129,24 +131,28 @@ class StatInfoResults(NoNewAttributesAfterInit):
         txt : str
             A multi-line representation of the statistic value or values.
         """
-        s = ''
+        out = []
         if self.ids is not None and self.bkg_ids is None:
             if len(self.ids) == 1:
-                s = 'Dataset               = %s\n' % str(self.ids[0])
+                out.append(f'Dataset               = {self.ids[0]}')
             else:
-                s = 'Datasets              = %s\n' % str(self.ids).strip("()")
+                out.append(f'Datasets              = {self.ids}')
+
         elif self.ids is not None and self.bkg_ids is not None:
-            s = 'Background %s in Dataset = %s\n' % (str(self.bkg_ids[0]),
-                                                     str(self.ids[0]))
-        s += 'Statistic             = %s\n' % self.statname
-        s += 'Fit statistic value   = %g\n' % self.statval
-        s += 'Data points           = %g\n' % self.numpoints
-        s += 'Degrees of freedom    = %g' % self.dof
+            out.append(f'Background {self.bkg_ids[0]} in Dataset = {self.ids[0]}')
+
+        out.extend([f'Statistic             = {self.statname}',
+                    f'Fit statistic value   = {self.statval:g}',
+                    f'Data points           = {self.numpoints:g}',
+                    f'Degrees of freedom    = {self.dof:g}'])
+
         if self.qval is not None:
-            s += '\nProbability [Q-value] = %g' % self.qval
+            out.append(f'Probability [Q-value] = {self.qval:g}')
+
         if self.rstat is not None:
-            s += '\nReduced statistic     = %g' % self.rstat
-        return s
+            out.append(f'Reduced statistic     = {self.rstat:g}')
+
+        return "\n".join(out)
 
 
 def _cleanup_chi2_name(stat, data):
@@ -265,7 +271,7 @@ class FitResults(NoNewAttributesAfterInit):
         self.parvals = tuple(results[1])
         self.istatval = init_stat
         self.statval = results[2]
-        self.dstatval = abs(results[2] - init_stat)
+        self.dstatval = np.abs(results[2] - init_stat)
         self.numpoints = len(_vals)
         self.dof = _dof
         self.qval = _qval
@@ -291,7 +297,7 @@ class FitResults(NoNewAttributesAfterInit):
         if 'itermethodname' not in state:
             self.__dict__['itermethodname'] = 'none'
 
-    def __nonzero__(self):
+    def __bool__(self):
         return self.succeeded
 
     def __repr__(self):
@@ -312,44 +318,50 @@ class FitResults(NoNewAttributesAfterInit):
         txt : str
             A multi-line representation of the fit results.
         """
-        s = ''
+        out = []
         if self.datasets is not None:
             if len(self.datasets) == 1:
-                s = 'Dataset               = %s\n' % str(self.datasets[0])
+                out.append(f'Dataset               = {self.datasets[0]}')
             else:
-                s = 'Datasets              = %s\n' % str(
-                    self.datasets).strip("()")
-        if self.itermethodname is not None and self.itermethodname != 'none':
-            s += 'Iterative Fit Method  = %s\n' % self.itermethodname.capitalize()
-        s += 'Method                = %s\n' % self.methodname
-        s += 'Statistic             = %s\n' % self.statname
-        s += 'Initial fit statistic = %g\n' % self.istatval
-        s += 'Final fit statistic   = %g' % self.statval
-        if self.nfev is not None:
-            s += ' at function evaluation %d' % self.nfev
+                out.append(f'Datasets              = {self.datasets}')
 
-        s += '\nData points           = %g' % self.numpoints
-        s += '\nDegrees of freedom    = %g' % self.dof
+        if self.itermethodname is not None and self.itermethodname != 'none':
+            out.append(f'Iterative Fit Method  = {self.itermethodname.capitalize()}')
+
+        out.extend([f'Method                = {self.methodname}',
+                    f'Statistic             = {self.statname}',
+                    f'Initial fit statistic = {self.istatval:g}'])
+
+        outstr = f'Final fit statistic   = {self.statval:g}'
+        if self.nfev is not None:
+            outstr += f' at function evaluation {self.nfev}'
+
+        out.extend([outstr,
+                    f'Data points           = {self.numpoints:g}',
+                    f'Degrees of freedom    = {self.dof:g}'])
 
         if self.qval is not None:
-            s += '\nProbability [Q-value] = %g' % self.qval
+            out.append(f'Probability [Q-value] = {self.qval:g}')
+
         if self.rstat is not None:
-            s += '\nReduced statistic     = %g' % self.rstat
-        s += '\nChange in statistic   = %g' % self.dstatval
+            out.append(f'Reduced statistic     = {self.rstat:g}')
+
+        out.append(f'Change in statistic   = {self.dstatval:g}')
 
         if self.covar is None:
-            for name, val in zip(self.parnames, self.parvals):
-                s += '\n   %-12s   %-12g' % (name, val)
+            out.extend(f'   {name:<12s}   {val:<12g}'
+                       for name, val in zip(self.parnames, self.parvals))
         else:
             covar_err = sqrt(self.covar.diagonal())
-            for name, val, covarerr in zip(self.parnames, self.parvals,
-                                           covar_err):
-                s += '\n   %-12s   %-12g +/- %-12g' % (name, val, covarerr)
+            out.extend(f'   {name:<12s}   {val:<12g} +/- {covarerr:<12g}'
+                       for name, val, covarerr in zip(self.parnames,
+                                                      self.parvals,
+                                                      covar_err))
 
         if self.param_warnings != "":
-            s += "\n" + self.param_warnings
+            out.append(self.param_warnings)
 
-        return s
+        return "\n".join(out)
 
 
 class ErrorEstResults(NoNewAttributesAfterInit):
@@ -401,11 +413,12 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         if parlist is None:
             parlist = [p for p in fit.model.pars if not p.frozen]
 
+        # TODO: Can we not just import them at the top level?  It may
+        # cause an import loop.
+        #
         from sherpa.estmethods import est_hardmin, est_hardmax, \
             est_hardminmax
 
-        warning_hmin = "hard minimum hit for parameter "
-        warning_hmax = "hard maximum hit for parameter "
         self.datasets = None  # To be set by calling function
         self.methodname = type(fit.estmethod).__name__.lower()
         self.iterfitname = fit._iterfit.itermethod_opts['name']
@@ -423,14 +436,14 @@ class ErrorEstResults(NoNewAttributesAfterInit):
             if (results[2][i] == est_hardmin or
                     results[2][i] == est_hardminmax):
                 self.parmins = self.parmins + (None,)
-                warning(warning_hmin + self.parnames[i])
+                warning("hard minimum hit for parameter %s", self.parnames[i])
             else:
                 self.parmins = self.parmins + (results[0][i],)
 
             if (results[2][i] == est_hardmax or
                     results[2][i] == est_hardminmax):
                 self.parmaxes = self.parmaxes + (None,)
-                warning(warning_hmax + self.parnames[i])
+                warning("hard maximum hit for parameter %s", self.parnames[i])
             else:
                 self.parmaxes = self.parmaxes + (results[1][i],)
 
@@ -446,7 +459,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
             self.__dict__['iterfitname'] = 'none'
 
     def __repr__(self):
-        return '<%s results instance>' % self.methodname
+        return f'<{self.methodname} results instance>'
 
     def __str__(self):
         return print_fields(self._fields, vars(self))
@@ -463,46 +476,47 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         txt : str
             A multi-line representation of the error estimates.
         """
-        s = ""
+
+        out = []
         if self.datasets is not None:
             if len(self.datasets) == 1:
-                s = 'Dataset               = %s\n' % str(self.datasets[0])
+                out.append(f'Dataset               = {self.datasets[0]}')
             else:
-                s = 'Datasets              = %s\n' % str(
-                    self.datasets).strip("()")
-        s += 'Confidence Method     = %s\n' % self.methodname
+                out.append(f'Datasets              = {self.datasets}')
+
+        out.append(f'Confidence Method     = {self.methodname}')
+
         if self.iterfitname is not None or self.iterfitname != 'none':
-            s += 'Iterative Fit Method  = %s\n' % self.iterfitname.capitalize()
-        s += 'Fitting Method        = %s\n' % self.fitname
-        s += 'Statistic             = %s\n' % self.statname
+            out.append(f'Iterative Fit Method  = {self.iterfitname.capitalize()}')
 
-        s += "%s %g-sigma (%2g%%) bounds:" % (self.methodname, self.sigma,
-                                              self.percent)
+        out.extend([f'Fitting Method        = {self.fitname}',
+                    f'Statistic             = {self.statname}',
+                    f"{self.methodname} {self.sigma:g}-sigma ({self.percent:2g}%) bounds:"])
 
-        def myformat(hfmt, str, lowstr, lownum, highstr, highnum):
-            str += hfmt % ('Param', 'Best-Fit', 'Lower Bound', 'Upper Bound')
-            str += hfmt % ('-' * 5, '-' * 8, '-' * 11, '-' * 11)
+        def myformat(hfmt, lowstr, lownum, highstr, highnum):
+            out = hfmt % ('Param', 'Best-Fit', 'Lower Bound', 'Upper Bound')
+            out += hfmt % ('-' * 5, '-' * 8, '-' * 11, '-' * 11)
 
             for name, val, lower, upper in zip(self.parnames, self.parvals,
                                                self.parmins, self.parmaxes):
 
-                str += '\n   %-12s %12g ' % (name, val)
+                out += f'\n   {name:<12s} {val:12g} '
                 if is_iterable(lower):
-                    str += ' '
-                    str += list_to_open_interval(lower)
+                    out += ' '
+                    out += list_to_open_interval(lower)
                 elif lower is None:
-                    str += lowstr % '-----'
+                    out += lowstr % '-----'
                 else:
-                    str += lownum % lower
+                    out += lownum % lower
                 if is_iterable(upper):
-                    str += '  '
-                    str += list_to_open_interval(upper)
+                    out += '  '
+                    out += list_to_open_interval(upper)
                 elif upper is None:
-                    str += highstr % '-----'
+                    out += highstr % '-----'
                 else:
-                    str += highnum % upper
+                    out += highnum % upper
 
-            return str
+            return out
 
         low = map(is_iterable, self.parmins)
         high = map(is_iterable, self.parmaxes)
@@ -534,7 +548,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         else:
             hfmt = '\n   %-12s %12s %12s %12s'
 
-        return myformat(hfmt, s, lowstr, lownum, highstr, highnum)
+        return "\n".join(out) + myformat(hfmt, lowstr, lownum, highstr, highnum)
 
 
 class IterFit(NoNewAttributesAfterInit):
@@ -542,6 +556,7 @@ class IterFit(NoNewAttributesAfterInit):
     def __init__(self, data, model, stat, method, itermethod_opts=None):
         if itermethod_opts is None:
             itermethod_opts = {'name': 'none'}
+
         # Even if there is only a single data set, I will
         # want to treat the data and models I am given as
         # collections of data and models -- so, put data and
@@ -550,9 +565,11 @@ class IterFit(NoNewAttributesAfterInit):
         self.data = data
         if type(data) is not DataSimulFit:
             self.data = DataSimulFit('simulfit data', (data,))
+
         self.model = model
         if type(model) is not SimulFitModel:
             self.model = SimulFitModel('simulfit model', (model,))
+
         self.stat = stat
         self.method = method
         # Data set attributes needed to store fitting values between
@@ -563,14 +580,27 @@ class IterFit(NoNewAttributesAfterInit):
         self._syserror = None
         self._nfev = 0
         self._file = None
+
         # Options to send to iterative fitting method
         self.itermethod_opts = itermethod_opts
         self.iterate = False
         self.funcs = {'sigmarej': self.sigmarej}
         self.current_func = None
-        if itermethod_opts['name'] != 'none':
-            self.current_func = self.funcs[itermethod_opts['name']]
+        try:
+            iname = itermethod_opts['name']
+        except KeyError:
+            raise ValueError("Missing name field in itermethod_opts argument") from None
+
+        if iname != 'none':
+            try:
+                self.current_func = self.funcs[iname]
+            except KeyError:
+                raise ValueError(f"{iname} is not an iterative fitting method") from None
+
             self.iterate = True
+
+        # TODO: should this call
+        # NoNewAttributesAfterInit.__init__(self)
 
     # SIGINT (i.e., typing ctrl-C) can dump the user to the Unix prompt,
     # when signal is sent from G95 compiled code.  What we want is to
@@ -599,10 +629,11 @@ class IterFit(NoNewAttributesAfterInit):
         if outfile is not None:
             if not clobber and os.path.isfile(outfile):
                 raise FitErr('noclobererr', outfile)
-            self._file = open(outfile, 'w')
+
             names = ['# nfev statistic']
-            names.extend(['%s' % par.fullname for par in self.model.pars
-                          if not par.frozen])
+            names.extend(f'{par.fullname}' for par in self.model.pars
+                         if not par.frozen)
+            self._file = open(outfile, 'w', encoding="ascii")
             print(' '.join(names), file=self._file)
 
         def cb(pars):
@@ -613,15 +644,14 @@ class IterFit(NoNewAttributesAfterInit):
             stat = self.stat.calc_stat(self.data, self.model)
 
             if self._file is not None:
-                vals = ['%5e %5e' % (self._nfev, stat[0])]
-                vals.extend(['%5e' % val for val in self.model.thawedpars])
+                vals = [f'{self._nfev:5e} {stat[0]:5e}']
+                vals.extend([f'{val:5e}' for val in self.model.thawedpars])
                 print(' '.join(vals), file=self._file)
 
             self._nfev += 1
             return stat
 
         return cb
-
 
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs=(),
                  statkwargs=None, cache=True):
@@ -665,13 +695,13 @@ class IterFit(NoNewAttributesAfterInit):
         """
         if statkwargs is None:
             statkwargs = {}
+
         # Sigma-rejection can only be used with chi-squared;
         # raise exception if it is attempted with least-squares,
-        # or maximum likelihood
-        if (isinstance(self.stat, Chi2) and
+        # or maximum likelihood.
+        #
+        if not (isinstance(self.stat, Chi2) and
                 type(self.stat) is not LeastSq):
-            pass
-        else:
             raise FitErr('needchi2', 'Sigma-rejection')
 
         # Get maximum number of allowed iterations, high and low
@@ -770,9 +800,7 @@ class IterFit(NoNewAttributesAfterInit):
                             break
                         if residuals[i] <= -lrej or residuals[i] >= hrej:
                             rejected = True
-                            kmin = j - grow
-                            if kmin < 0:
-                                kmin = 0
+                            kmin = max(j - grow, 0)
                             kmax = j + grow
                             if kmax >= filsize:
                                 kmax = filsize - 1
@@ -783,7 +811,7 @@ class IterFit(NoNewAttributesAfterInit):
                         # If we've masked out *all* data,
                         # immediately raise fit error, clean up
                         # on way out.
-                        if not(any(newmask)):
+                        if not np.any(newmask):
                             raise FitErr('nobins')
                         d.mask = newmask
 
@@ -837,14 +865,16 @@ class IterFit(NoNewAttributesAfterInit):
 
     def fit(self, statfunc, pars, parmins, parmaxes,
             statargs=(), statkwargs=None):
+
         if statkwargs is None:
             statkwargs = {}
+
         if not self.iterate:
             return self.method.fit(statfunc, pars, parmins, parmaxes,
                                    statargs, statkwargs)
-        else:
-            return self.current_func(statfunc, pars, parmins, parmaxes,
-                                     statargs, statkwargs)
+
+        return self.current_func(statfunc, pars, parmins, parmaxes,
+                                 statargs, statkwargs)
 
 
 class Fit(NoNewAttributesAfterInit):
@@ -922,8 +952,8 @@ class Fit(NoNewAttributesAfterInit):
 
     def calc_thaw_indices(self):
         self.thaw_indices = \
-            tuple([i for i, par in enumerate(self.model.pars)
-                   if not par.frozen])
+            tuple(i for i, par in enumerate(self.model.pars)
+                  if not par.frozen)
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -934,16 +964,12 @@ class Fit(NoNewAttributesAfterInit):
                                                 {'name': 'none'})
 
     def __str__(self):
-        return (('data      = %s\n' +
-                 'model     = %s\n' +
-                 'stat      = %s\n' +
-                 'method    = %s\n' +
-                 'estmethod = %s') %
-                (self.data.name,
-                 self.model.name,
-                 type(self.stat).__name__,
-                 type(self.method).__name__,
-                 type(self.estmethod).__name__))
+        out = [f'data      = {self.data.name}',
+               f'model     = {self.model.name}',
+               f'stat      = {type(self.stat).__name__}',
+               f'method    = {type(self.method).__name__}',
+               f'estmethod = {type(self.estmethod).__name__}']
+        return "\n".join(out)
 
     def guess(self, **kwargs):
         """Guess parameter values and limits.
@@ -1047,6 +1073,8 @@ class Fit(NoNewAttributesAfterInit):
         return StatInfoResults(name, statval, numpoints, model,
                                dof, qval, rstat)
 
+    # TODO: the numcores argument is currently unused.
+    #
     @evaluates_model
     def fit(self, outfile=None, clobber=False, numcores=1):
         """Fit the model to the data.
@@ -1123,15 +1151,13 @@ class Fit(NoNewAttributesAfterInit):
         for par in self.model.pars:
             if not par.frozen:
                 if sao_fcmp(par.val, par.min, tol) == 0:
-                    param_warnings += ("WARNING: parameter value %s is at its minimum boundary %s\n" %
-                                       (par.fullname, str(par.min)))
+                    param_warnings += f"WARNING: parameter value {par.fullname} is at its minimum boundary {par.min}\n"
                 if sao_fcmp(par.val, par.max, tol) == 0:
-                    param_warnings += ("WARNING: parameter value %s is at its maximum boundary %s\n" %
-                                       (par.fullname, str(par.max)))
+                    param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
 
         if self._iterfit._file is not None:
-            vals = ['%5e %5e' % (self._iterfit._nfev, tmp[2])]
-            vals.extend(['%5e' % val for val in self.model.thawedpars])
+            vals = [f'{self._iterfit._nfev:5e}', f'{tmp[2]:5e}']
+            vals.extend([f'{val:5e}' for val in self.model.thawedpars])
             print(' '.join(vals), file=self._iterfit._file)
             self._iterfit._file.close()
             self._iterfit._file = None
@@ -1249,10 +1275,10 @@ class Fit(NoNewAttributesAfterInit):
 
         def thaw_par(i):
             if i < 0:
-                pass
-            else:
-                self.model.pars[self.thaw_indices[i]].frozen = False
-                self.current_frozen = -1
+                return
+
+            self.model.pars[self.thaw_indices[i]].frozen = False
+            self.current_frozen = -1
 
         # confidence needs to know which parameter it is working on.
         def get_par_name(ii):
@@ -1262,17 +1288,17 @@ class Fit(NoNewAttributesAfterInit):
         # that limits for a given parameter have been found
         def report_progress(i, lower, upper):
             if i < 0:
-                pass
+                return
+
+            name = self.model.pars[self.thaw_indices[i]].fullname
+            if isnan(lower) or isinf(lower):
+                info("%s \tlower bound: -----", name)
             else:
-                name = self.model.pars[self.thaw_indices[i]].fullname
-                if isnan(lower) or isinf(lower):
-                    info("%s \tlower bound: -----" % name)
-                else:
-                    info("%s \tlower bound: %g" % (name, lower))
-                if isnan(upper) or isinf(upper):
-                    info("%s \tupper bound: -----" % name)
-                else:
-                    info("%s \tupper bound: %g" % (name, upper))
+                info("%s \tlower bound: %g", name, lower)
+            if isnan(upper) or isinf(upper):
+                info("%s \tupper bound: -----", name)
+            else:
+                info("%s \tupper bound: %g", name, upper)
 
         # If starting fit statistic is chi-squared or C-stat,
         # can calculate reduced fit statistic -- if it is
@@ -1313,8 +1339,8 @@ class Fit(NoNewAttributesAfterInit):
         if (type(self.estmethod) is not Covariance and
                 type(self.method) is not NelderMead and
                 type(self.method) is not LevMar):
-            warning(self.method.name + " is inappropriate for confidence " +
-                    "limit estimation")
+            warning("%s is inappropriate for confidence limit estimation",
+                    self.method.name)
 
         oldmethod = self.method
         if (hasattr(self.estmethod, "fast") and
@@ -1323,13 +1349,13 @@ class Fit(NoNewAttributesAfterInit):
             if isinstance(self.stat, Likelihood):
                 if type(self.method) is not NelderMead:
                     self.method = methoddict['neldermead']
-                    warning("Setting optimization to " + self.method.name
-                            + " for confidence limit search")
+                    warning("Setting optimization to %s "
+                            "for confidence limit search", self.method.name)
             else:
                 if type(self.method) is not LevMar:
                     self.method = methoddict['levmar']
-                    warning("Setting optimization to " + self.method.name
-                            + " for confidence limit search")
+                    warning("Setting optimization to %s "
+                            "for confidence limit search", self.method.name)
 
         # Now, set up before we call the confidence limit function
         # Keep track of starting values, will need to set parameters
@@ -1403,7 +1429,7 @@ class Fit(NoNewAttributesAfterInit):
             # If maximum number of refits has occurred, don't
             # try to reminimize again.
             if (hasattr(self.estmethod, "maxfits") and
-                    not(self.refits < self.estmethod.maxfits - 1)):
+                    not (self.refits < (self.estmethod.maxfits - 1))):
                 self.refits = 0
                 thaw_par(self.current_frozen)
                 self.model.thawedpars = startpars
@@ -1420,16 +1446,16 @@ class Fit(NoNewAttributesAfterInit):
                 p.frozen = False
             self.current_frozen = -1
 
-            if e.args != ():
+            if e.args:
                 self.model.thawedpars = e.args[0]
 
             self.model.thawedparmins = startsoftmins
             self.model.thawedparmaxes = startsoftmaxs
             results = self.fit()
             self.refits = self.refits + 1
-            warning("New minimum statistic found while computing " +
+            warning("New minimum statistic found while computing "
                     "confidence limits")
-            warning("New best-fit parameters:\n" + results.format())
+            warning("New best-fit parameters:\n%s", results.format())
 
             # Now, recompute errors for new best-fit parameters
             results = self.est_errors(methoddict, parlist)
@@ -1491,11 +1517,11 @@ def html_fitresults(fit):
     if has_covar:
         for pname, pval, perr in zip(fit.parnames, fit.parvals,
                                      sqrt(fit.covar.diagonal())):
-            rows.append((pname, '{:12g}'.format(pval),
-                         '&#177; {:12g}'.format(perr)))
+            rows.append((pname, f'{pval:12g}',
+                         f'&#177; {perr:12g}'))
     else:
         for pname, pval in zip(fit.parnames, fit.parvals):
-            rows.append((pname, '{:12g}'.format(pval)))
+            rows.append((pname, f'{pval:12g}'))
 
     out = formatting.html_table(header, rows, classname='fit',
                                 rowcount=False,
@@ -1538,7 +1564,7 @@ def html_fitresults(fit):
     for lbl, field, is_float in rows:
         val = getattr(fit, field)
         if is_float:
-            val = '{:g}'.format(val)
+            val = f'{val:g}'
 
         meta.append((lbl, val))
 
@@ -1567,18 +1593,17 @@ def html_errresults(errs):
 
         if limit is None:
             return '-----'
-        elif is_iterable(limit):
+
+        if is_iterable(limit):
             return list_to_open_interval(limit)
-        else:
-            return '{:12g}'.format(limit)
+
+        return f'{limit:12g}'
 
     for pname, pval, pmin, pmax in zip(errs.parnames, errs.parvals, errs.parmins, errs.parmaxes):
-        rows.append((pname, '{:12g}'.format(pval),
+        rows.append((pname, f'{pval:12g}',
                      display(pmin), display(pmax)))
 
-    summary = '{} {:g}&#963; ({:2g}%)'.format(errs.methodname,
-                                              errs.sigma,
-                                              errs.percent)
+    summary = f'{errs.methodname} {errs.sigma:g}&#963; ({errs.percent:2g}%)'
     summary += ' bounds'
 
     out = formatting.html_table(header, rows,
@@ -1661,7 +1686,7 @@ def html_statinfo(stats):
     for lbl, field, is_float in rows:
         val = getattr(stats, field)
         if is_float:
-            val = '{:g}'.format(val)
+            val = f'{val:g}'
 
         meta.append((lbl, val))
 

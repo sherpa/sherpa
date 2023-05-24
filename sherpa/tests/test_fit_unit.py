@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021, 2022
+#  Copyright (C) 2016, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -2826,3 +2826,250 @@ def test_fit_ensures_data_and_model_dimensionality_matches(data_class, ddim, mod
     with pytest.raises(DataErr,
                        match=f"Data and model dimensionality do not match: {ddim}D and {mdim}D"):
         Fit(data, model)
+
+
+def check_str(out, expecteds):
+    """Check that out, when split on a newline, matches expecteds"""
+
+    toks = str(out).split("\n")
+    for tok, expected in zip(toks, expecteds):
+        assert tok == expected
+
+    assert len(toks) == len(expecteds)
+
+
+def test_fit_results_str():
+    """Just check we can call str() on a fit results instance"""
+
+    data = make_data(Data1D)
+    model = Const1D()
+    fit = Fit(data, model, stat=Cash())
+    fres = fit.fit()
+    assert fres.succeeded
+
+    check_str(fres,
+              ["datasets       = None",
+               "itermethodname = none",
+               "methodname     = levmar",
+               "statname       = cash",
+               "succeeded      = True",
+               "parnames       = ('const1d.c0',)",
+               "parvals        = (3.33332926058462,)",
+               "statval        = -4.079456086503793",
+               "istatval       = 6.0",
+               "dstatval       = 10.079456086503793",
+               "numpoints      = 3",
+               "dof            = 2",
+               "qval           = None",
+               "rstat          = None",
+               "message        = successful termination",
+               "nfev           = 9"])
+
+
+def test_fit_itermethod_requires_name():
+    """Just check we error out gracefully.
+
+    This is a corner case.
+    """
+
+    data = make_data(Data1D)
+    model = Const1D()
+    with pytest.raises(ValueError,
+                       match="^Missing name field in itermethod_opts argument$"):
+        Fit(data, model, itermethod_opts={"grow": 2})
+
+
+def test_fit_itermethod_requires_known_name():
+    """Just check we error out gracefully.
+
+    This is a corner case.
+    """
+
+    data = make_data(Data1D)
+    model = Const1D()
+    with pytest.raises(ValueError,
+                       match="^not-a-name is not an iterative fitting method$"):
+        Fit(data, model, itermethod_opts={"name": "not-a-name", "grow": 2})
+
+
+def test_fit_results_with_iteration_str():
+    """Just check we can call str() on a fit results instance with an iteration method
+    """
+
+    data = Data1D("x", [1, 2, 3, 4, 5], [2, 4, 12, 3, 4])
+    data.staterror = [0.8] * 5
+    model = Const1D()
+    iter_opts = {'name': 'sigmarej', 'maxiters': 5, 'hrej': 5, 'lrej': 5, 'grow': 0}
+    fit = Fit(data, model, stat=Chi2(), itermethod_opts=iter_opts)
+    fres = fit.fit()
+    assert fres.succeeded
+
+    check_str(fres,
+              ["datasets       = None",
+               "itermethodname = sigmarej",
+               "methodname     = levmar",
+               "statname       = chi2",
+               "succeeded      = True",
+               "parnames       = ('const1d.c0',)",
+               "parvals        = (3.250000000000316,)",
+               "statval        = 4.296875",
+               "istatval       = 225.0",
+               "dstatval       = 220.703125",
+               "numpoints      = 4",
+               "dof            = 3",
+               "qval           = 0.23114006377865534",
+               "rstat          = 1.4322916666666667",
+               "message        = successful termination",
+               "nfev           = 8"])
+
+
+def test_fit_results_bool_true():
+    """Just check we can call bool() on a fit results instance"""
+
+    # This is the same test as test_fit_results_str which explicitly
+    # checks whether .succeeded passes or not.
+    #
+    data = make_data(Data1D)
+    model = Const1D()
+    fit = Fit(data, model, stat=Cash())
+    fres = fit.fit()
+    assert fres
+
+
+def test_fit_results_bool_false():
+    """Just check we so call bool() on a fit results instance
+
+    The "negation" of test_fit_results_bool_true()
+    """
+
+    data = make_data(Data1D)
+    model = Const1D()
+    fit = Fit(data, model, stat=Cash())
+    fres = fit.fit()
+
+    # Hacky way to test falsiness
+    fres.succeeded = False
+    assert not fres
+
+
+def test_fit_simulfit_single():
+    """Basic test of simulfit.
+
+    It's not obvious this functionality is used.
+    """
+
+    data = make_data(Data1D)
+    model = Const1D()
+    fit = Fit(data, model, stat=Cash())
+
+    # This just calls fit.fit() which is what test_fit_results_str
+    # does/checks.
+    #
+    fres = fit.simulfit()
+    assert fres
+    assert fres.parvals == pytest.approx([3.3333292605846])
+
+
+def test_fit_simulfit_multiple_models():
+    """Basic test of simulfit.
+
+    It's not obvious this functionality is used.
+    """
+
+    data1 = make_data(Data1D)
+    model1 = Const1D("m1")
+    fit1 = Fit(data1, model1, stat=Cash())
+
+    # Duplicate the data but shifted by one, so fitting the same
+    # model type (but a separate model) will get two parameter
+    # values returned.
+    #
+    data2 = make_data(Data1D)
+    data2.set_dep(data2.get_dep() + 1)
+    model2 = Const1D("m2")
+    fit2 = Fit(data2, model2, stat=Cash())
+
+    # This just calls fit.fit() which is what test_fit_results_str
+    # does/checks.
+    #
+    fres = fit1.simulfit(fit2)
+    assert fres
+    v0 = 3.3333292605846
+    assert fres.parnames == ("m1.c0", "m2.c0")
+    assert fres.parvals == pytest.approx([v0, v0 + 1])
+
+
+def test_fit_simulfit_multiple_single_model():
+    """Basic test of simulfit.
+
+    Like test_fit_simulfit_multiple_models but fit the same
+    model to the two "shifted" datasets.
+
+    """
+
+    data1 = make_data(Data1D)
+    model1 = Const1D("mx")
+    fit1 = Fit(data1, model1, stat=Cash())
+
+    # Duplicate the data but shifted by one.
+    #
+    data2 = make_data(Data1D)
+    data2.set_dep(data2.get_dep() + 1)
+    fit2 = Fit(data2, model1, stat=Cash())
+
+    # This just calls fit.fit() which is what test_fit_results_str
+    # does/checks.
+    #
+    fres = fit1.simulfit(fit2)
+    assert fres.parnames == ("mx.c0", )
+    assert fres.parvals == pytest.approx([3.8333336041446615])
+
+
+def test_esterrorresults_str():
+    """Basic check of str call."""
+
+    data = make_data(Data1D)
+    mdl = Const1D("mx")
+    fit = Fit(data, mdl, stat=Cash())
+    fit.fit()
+
+    errs = fit.est_errors()
+    check_str(errs,
+              ["datasets    = None",
+               "methodname  = covariance",
+               "iterfitname = none",
+               "fitname     = levmar",
+               "statname    = cash",
+               "sigma       = 1",
+               "percent     = 68.26894921370858",
+               "parnames    = ('mx.c0',)",
+               "parvals     = (3.33332926058462,)",
+               "parmins     = (-1.0524866849982824,)",
+               "parmaxes    = (1.0524866849982824,)",
+               "nfits       = 0"])
+
+
+def test_fit_outfile_simple_check(tmp_path):
+
+    outfile = tmp_path / "sherpa.save"
+
+    data = make_data(Data1D)
+    mdl = Const1D("mx")
+    fit = Fit(data, mdl, stat=Cash())
+    fit.fit(outfile=outfile)
+
+    out = outfile.read_text()
+    check_str(out,
+              ["# nfev statistic mx.c0",
+               "0.000000e+00 6.000000e+00 1.000000e+00",
+               "1.000000e+00 6.000000e+00 1.000000e+00",
+               "2.000000e+00 5.995167e+00 1.000345e+00",
+               "3.000000e+00 -3.230695e+00 2.454143e+00",
+               "4.000000e+00 -3.232515e+00 2.454991e+00",
+               "5.000000e+00 -4.073187e+00 3.250567e+00",
+               "6.000000e+00 -4.073357e+00 3.251690e+00",
+               "7.000000e+00 -4.079456e+00 3.333285e+00",
+               "8.000000e+00 -4.079455e+00 3.334435e+00",
+               "9.000000e+00 -4.079456e+00 3.333329e+00",
+               "1.000000e+01 -4.079456e+00 3.333329e+00",
+               ""])
