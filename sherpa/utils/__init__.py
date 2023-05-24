@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,7 +19,7 @@
 #
 
 """
-Objects and utilities used by multiple Sherpa subpackages
+Objects and utilities used by multiple Sherpa subpackages.
 """
 
 from configparser import ConfigParser, NoSectionError
@@ -267,7 +267,7 @@ def calc_mlr(delta_dof, delta_stat):
     statistics of each fit; as with all statistics, it is sampled
     from a probability distribution p(T). The test significance is
     defined as the integral of p(T) from the observed value of T to
-    infinity. Thesignificance quantifies the probability that one
+    infinity. The significance quantifies the probability that one
     would select the more complex model when in fact the null hypothesis
     is correct. See also `calc_ftest`.
 
@@ -749,7 +749,7 @@ def sao_fcmp(x, y, tol):
     >>> sao_fcmp(1, [0.9, 1, 1.1], 0.01)
     array([ 1,  0, -1], dtype=int32)
 
-    >>> utils.sao_fcmp([1.2, 2.3], [1.22, 2.29], 0.01)
+    >>> sao_fcmp([1.2, 2.3], [1.22, 2.29], 0.01)
     array([-1,  0], dtype=int32)
     """
 
@@ -849,6 +849,7 @@ def neville(xout, xin, yin):
     Examples
     --------
 
+    >>> import numpy as np
     >>> x = [1.2, 3.4, 4.5, 5.2]
     >>> y = [12.2, 14.4, 16.8, 15.5]
     >>> xgrid = np.linspace(2, 5, 5)
@@ -1053,7 +1054,7 @@ def filter_bins(mins, maxes, axislist, integrated=False):
     >>> filter_bins([None, 2], [4, None], [xlo, xhi], integrated=True)
     array([False,  True,  True,  False, False])
     >>> filter_bins([None, 1.5], [3.5, None], [xlo, xhi], integrated=True)
-    array([True,  True,  True,  False, False])
+    array([ True,  True,  True, False, False])
 
     """
 
@@ -2086,6 +2087,7 @@ def histogram1d(x, x_lo, x_hi):
     A simple example, calculating the histogram of 1000 values
     randomly distributed over [0, 1).
 
+    >>> import numpy as np
     >>> x = np.random.random(1000)
     >>> edges = np.arange(0, 1.1, 0.1)
     >>> xlo = edges[:-1]
@@ -2207,8 +2209,9 @@ def linear_interp(xout, xin, yin):
 
     Examples
     --------
-    >>> x = [1.2, 3.4, 4.5, 5.2]
-    >>> y = [12.2, 14.4, 16.8, 15.5]
+    >>> import numpy as np
+    >>> x = np.asarray([1.2, 3.4, 4.5, 5.2])
+    >>> y = np.asarray([12.2, 14.4, 16.8, 15.5])
     >>> xgrid = np.linspace(2, 5, 5)
     >>> ygrid = linear_interp(xgrid, x, y)
     """
@@ -2246,8 +2249,9 @@ def nearest_interp(xout, xin, yin):
 
     Examples
     --------
-    >>> x = [1.2, 3.4, 4.5, 5.2]
-    >>> y = [12.2, 14.4, 16.8, 15.5]
+    >>> import numpy as np
+    >>> x = np.asarray([1.2, 3.4, 4.5, 5.2])
+    >>> y = np.asarray([12.2, 14.4, 16.8, 15.5])
     >>> xgrid = np.linspace(2, 5, 5)
     >>> ygrid = nearest_interp(xgrid, x, y)
     """
@@ -2289,8 +2293,9 @@ def interpolate(xout, xin, yin, function=linear_interp):
     Use linear interpolation to calculate the Y values for the
     ``xgrid`` array:
 
-    >>> x = [1.2, 3.4, 4.5, 5.2]
-    >>> y = [12.2, 14.4, 16.8, 15.5]
+    >>> import numpy as np
+    >>> x = np.asarray([1.2, 3.4, 4.5, 5.2])
+    >>> y = np.asarray([12.2, 14.4, 16.8, 15.5])
     >>> xgrid = np.linspace(2, 5, 5)
     >>> ygrid = interpolate(xgrid, x, y)
 
@@ -3030,6 +3035,7 @@ def parallel_map(function, sequence, numcores=None):
     on a separate core and return the results (unless the machine only
     has a single core or the parallel.numcores setting is set to 1).
 
+    >>> import numpy as np
     >>> args = [np.arange(5), np.arange(3), np.arange(7)]
     >>> parallel_map(np.sum, args)
     [10, 3, 21]
@@ -3152,9 +3158,11 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     on a separate core and return the results (unless the machine only
     has a single core or the parallel.numcores setting is set to 1).
 
+    >>> import numpy as np
     >>> funcs = [np.sum, np.std]
     >>> datasets = [np.arange(3), np.arange(4)]
     >>> parallel_map_funcs(funcs, datasets, numcores=2)
+    [0, 1, 2, 0.0, 0.0, 0.0, 0.0]
 
     """
     if not numpy.iterable(funcs):
@@ -3652,9 +3660,9 @@ def mysgn(arg):
         return 1
 
 
-# Is this ever used? It is checked for as an exception, so really should be
-# derived from an exception, but is never thrown, as far as I can see.
-class OutOfBoundErr:
+class OutOfBoundErr(Exception):
+    """Indicate an out-of-bounds exception in the error analysis"""
+    # Should this just move to sherpa.estmethods?
     pass
 
 
