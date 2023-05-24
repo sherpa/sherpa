@@ -277,7 +277,6 @@ def test_estmethod_str_confidence():
 def test_estmethod_str_projection():
     """Simple check."""
     m = Projection()
-    print(str(m))
     check_output(str(m),
                  ["name        = projection",
                   "sigma       = 1",
