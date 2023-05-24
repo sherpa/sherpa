@@ -102,7 +102,7 @@ __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
            'incbet', 'interpolate', 'is_binary_file', 'Knuth_close',
            'lgam', 'linear_interp', 'nearest_interp',
            'neville', 'neville2d',
-           'new_muller', 'normalize', 'numpy_convolve',
+           'new_muller', 'normalize',
            'pad_bounding_box', 'parallel_map', 'parallel_map_funcs',
            'param_apply_limits', 'parse_expr', 'poisson_noise',
            'print_fields', 'rebin',
@@ -1939,55 +1939,6 @@ def multit_pdf(x, mu, sigma, dof):
     #
     term = 1.0 + 1.0 / n * ((xmu * invsigma) * xmu.T)
     return float(coeff * numpy.power(term, -np / 2.0))
-
-
-def _convolve(a, b):
-    if len(a) != len(b):
-        raise TypeError("Input arrays are not equal in length, a: %s b: %s" %
-                        (len(a), len(b)))
-
-    imag = numpy.fft.fft(a) * numpy.fft.fft(b)
-    return numpy.asarray(numpy.fft.ifft(imag), dtype=SherpaFloat)
-
-
-# TODO:
-#   x1 = np.asarray([0, 0, 0, 1, 2, 3, 3, 3, 2, 1, 0, 0, 0], np.float32)
-#   x2 = np.asarray([1, 2, 1], np.float32)
-#   utils.numpy_convolve(x1, x2)
-#
-# results in a warning - e.g.
-# /home/djburke/local/u35/ciao-4.10/ots/lib/python3.5/site-packages/numpy-1.12.1-py3.5-linux-x86_64.egg/numpy/core/numeric.py:531: ComplexWarning: Casting complex values to real discards the imaginary part
-#
-# and it does not appear this routine is used by anything in Sherpa.
-#
-def numpy_convolve(a, b):
-    """Convolve two 1D arrays together using NumPy's FFT.
-
-    Parameters
-    ----------
-    a : ndarray
-       The first 1D array to convolve.
-    b : ndarray
-       The second 1D array to convolve. It does not need to have the
-       same size as `a`.
-
-    Returns
-    -------
-    c : ndarray
-       The convolved array. It's length matches the longer of the
-       input arrays.
-
-    """
-    if a.ndim > 1 or b.ndim > 1:
-        raise TypeError("numpy_convolution is 1D only")
-
-    c = numpy.concatenate((a, numpy.zeros(len(b))))
-    d = numpy.concatenate((b, numpy.zeros(len(a))))
-
-    if len(a) > len(b):
-        return _convolve(c, d)[:len(a)]
-
-    return _convolve(c, d)[:len(b)]
 
 
 def dataspace1d(start, stop, step=1, numbins=None):
