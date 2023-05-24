@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2020  Smithsonian Astrophysical Observatory
+# Copyright (C) 2020, 2023
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,7 +27,7 @@ This is aimed at IPython/Jupiter support but may be useful elsewhere.
 
 import contextlib
 import html
-import pkg_resources
+from importlib.resources import files
 
 import numpy as np
 
@@ -35,8 +36,9 @@ import numpy as np
 DISPLAY_WIDTH = 80
 
 # The CSS file for the Notebook HTML code
-CSS_FILE_PATH = "/".join(("static", "css", "style.css"))
-CSS_STYLE = pkg_resources.resource_string("sherpa", CSS_FILE_PATH).decode("utf8")
+#
+CSS_FILE_PATH = files("sherpa").joinpath("static", "css", "style.css")
+CSS_STYLE = CSS_FILE_PATH.read_text(encoding="utf-8")
 
 
 @contextlib.contextmanager
