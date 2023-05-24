@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -302,6 +302,10 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
 def read_image(arg, coord='logical', dstype=DataIMG):
     """Create an image dataset from a file.
 
+    .. versionchanged:: 4.16.0
+       Setting coord to a value other than 'logical' will now
+       correctly change the coordinate setting for `DataIMG` datasets.
+
     Parameters
     ----------
     arg
@@ -346,19 +350,41 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     x0, x1 = reshape_2d_arrays(x0, x1)
 
     data['y'] = data['y'].ravel()
-    data['coord'] = coord
     data['shape'] = axlens
 
-    if issubclass(dstype, DataIMGInt):
-        dataset = dstype(filename, x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5,
-                         **data)
-    elif issubclass(dstype, Data2DInt):
-        for name in ['coord', 'eqpos', 'sky', 'header']:
+    # We have to be careful with issubclass checks because
+    #
+    #   base class |   sub class
+    #    Data2D        Data2DInt
+    #    Data2D        DataIMG
+    #    DataIMG       DataIMGInt
+    #
+    # Drop the transform fields if the object doesn't support them.
+    #
+    if not issubclass(dstype, DataIMG):
+        for name in ['eqpos', 'sky', 'header']:
             data.pop(name, None)
-        dataset = dstype(filename, x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5,
-                         **data)
+
+    # What are the independent axes?
+    #
+    if issubclass(dstype, (Data2DInt, DataIMGInt)):
+        indep = [x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5]
     else:
-        dataset = dstype(filename, x0, x1, **data)
+        indep = [x0, x1]
+
+    # Note that we only set the coordinates after creating the
+    # dataset, which assumes that data['x'] and data['y'] are always
+    # in logical units. They may not be, but in this case we need to
+    # drop the logical/physical/world conversion system (or improve it
+    # to be more flexible). This is an attempt to resolve issue #1762,
+    # where sherpa.astro.ui.load_image(infile, coord="physical") did
+    # not behave sensibly (likely due to #1414 which was to address
+    # issue #1380).
+    #
+    dataset = dstype(filename, *indep, **data)
+
+    if issubclass(dstype, DataIMG):
+        dataset.set_coord(coord)
 
     return dataset
 

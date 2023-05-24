@@ -35,7 +35,7 @@ from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
     send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
-from sherpa.data import Data1D, Data1DAsymmetricErrs
+from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
@@ -45,7 +45,7 @@ from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model
 from sherpa.astro import fake
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataIMG, DataIMGInt, DataPHA
 import sherpa.astro.instrument
 
 warning = logging.getLogger(__name__).warning
@@ -67,7 +67,7 @@ def _get_image_filter(data):
 
     Parameters
     ----------
-    data : sherpa.astro.data.DataIMG instance
+    data : DataIMG instance
 
     Returns
     -------
@@ -845,7 +845,7 @@ class Session(sherpa.ui.utils.Session):
         data.set_background(bkg, bkg_id)
 
     # DOC-NOTE: also in sherpa.utils
-    def dataspace2d(self, dims, id=None, dstype=sherpa.astro.data.DataIMG):
+    def dataspace2d(self, dims, id=None, dstype=DataIMG):
         """Create the independent axis for a 2D data set.
 
         Create an "empty" two-dimensional data set by defining the
@@ -888,8 +888,7 @@ class Session(sherpa.ui.utils.Session):
         x0, x1, y, shape = sherpa.utils.dataspace2d(dims)
 
         dataset = None
-        if issubclass(dstype, (sherpa.astro.data.DataIMGInt,
-                               sherpa.data.Data2DInt)):
+        if issubclass(dstype, (DataIMGInt, Data2DInt)):
             dataset = dstype('dataspace2d', x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5,
                              y, shape)
         else:
@@ -1123,7 +1122,7 @@ class Session(sherpa.ui.utils.Session):
         the dependent value (``y``):
 
         >>> d = unpack_table('fields.fits', ncols=3,
-        ...                  dstype=sherpa.astro.data.Data2D)
+        ...                  dstype=Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
@@ -1228,7 +1227,7 @@ class Session(sherpa.ui.utils.Session):
         the dependent value (``y``):
 
         >>> load_table('fields.fits', ncols=3,
-        ...            dstype=sherpa.astro.data.Data2D)
+        ...            dstype=Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
@@ -1317,7 +1316,7 @@ class Session(sherpa.ui.utils.Session):
         the dependent value (``y``):
 
         >>> d = unpack_ascii('fields.dat', ncols=3,
-        ...                  dstype=sherpa.astro.data.Data2D)
+        ...                  dstype=Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
@@ -1431,7 +1430,7 @@ class Session(sherpa.ui.utils.Session):
         the dependent value (``y``):
 
         >>> load_ascii('fields.txt', ncols=3,
-        ...            dstype=sherpa.astro.data.Data2D)
+        ...            dstype=Data2D)
 
         When using the Crates I/O library, the file name can include
         CIAO Data Model syntax, such as column selection. This can
@@ -1744,8 +1743,13 @@ class Session(sherpa.ui.utils.Session):
         self._load_data(id, datasets)
 
     def unpack_image(self, arg, coord='logical',
-                     dstype=sherpa.astro.data.DataIMG):
+                     dstype=DataIMG):
         """Create an image data structure.
+
+        .. versionchanged:: 4.16.0
+           Setting coord to a value other than 'logical' will now
+           correctly change the coordinate setting for `DataIMG`
+           datasets.
 
         Parameters
         ----------
@@ -1798,8 +1802,13 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
     def load_image(self, id, arg=None, coord='logical',
-                   dstype=sherpa.astro.data.DataIMG):
+                   dstype=DataIMG):
         """Load an image as a data set.
+
+        .. versionchanged:: 4.16.0
+           Setting coord to a value other than 'logical' will now
+           correctly change the coordinate setting for `DataIMG`
+           datasets.
 
         Parameters
         ----------
@@ -1850,6 +1859,11 @@ class Session(sherpa.ui.utils.Session):
 
         >>> load_image('bg', 'img_bg.fits')
 
+        Load in the data from the file 'src.img' and set the
+        coordinate system to the physical system of the file:
+
+        >>> load_image('src.img', coord='physical')
+
         """
         if arg is None:
             id, arg = arg, id
@@ -1877,7 +1891,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        pha : a `sherpa.astro.data.DataPHA` instance
+        pha : a `DataPHA` instance
 
         See Also
         --------
@@ -1930,7 +1944,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        pha : a `sherpa.astro.data.DataPHA` instance
+        pha : a `DataPHA` instance
 
         See Also
         --------
@@ -2118,7 +2132,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        data : sherpa.astro.data.DataPHA instance
+        data : DataPHA instance
 
         """
 
@@ -2166,7 +2180,7 @@ class Session(sherpa.ui.utils.Session):
         """Ensure the dataset is an image"""
         idval = self._fix_id(id)
         data = self.get_data(idval)
-        if not isinstance(data, sherpa.astro.data.DataIMG):
+        if not isinstance(data, DataIMG):
             raise ArgumentErr('noimg', idval)
 
         return data
@@ -3442,8 +3456,7 @@ class Session(sherpa.ui.utils.Session):
         if isinstance(d, DataPHA):
             return d._get_ebins(group=False)
 
-        if isinstance(d, (sherpa.data.Data2D,
-                          sherpa.astro.data.DataIMG)):
+        if isinstance(d, (Data2D, DataIMG)):
             return d.get_axes()
 
         return d.get_indep()
@@ -3949,9 +3962,7 @@ class Session(sherpa.ui.utils.Session):
         _check_str_type(filename, 'filename')
 
         d = self._get_data_or_bkg(id, bkg_id)
-        if isinstance(d, (sherpa.astro.data.DataIMG,
-                          sherpa.astro.data.DataIMGInt,
-                          sherpa.data.Data2D, sherpa.data.Data2DInt)):
+        if isinstance(d, (DataIMG, DataIMGInt, Data2D, Data2DInt)):
 
             backup = d.y
             if objtype == 'delchi':
@@ -6351,7 +6362,7 @@ class Session(sherpa.ui.utils.Session):
 
         Returns
         -------
-        data : a sherpa.astro.data.DataPHA object
+        data : a DataPHA object
 
         Raises
         ------
@@ -7009,8 +7020,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in self.list_data_ids():
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG, 'img',
-                        'a image data set')
+            _check_type(d, DataIMG, 'img', 'a image data set')
 
             ofilter = _get_image_filter(d)
             d.notice2d(val, False)
@@ -7090,8 +7100,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in self.list_data_ids():
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG, 'img',
-                        'a image data set')
+            _check_type(d, DataIMG, 'img', 'a image data set')
 
             ofilter = _get_image_filter(d)
             d.notice2d(val, True)
@@ -7173,8 +7182,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in ids:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG,
-                        'img', 'a image data set')
+            _check_type(d, DataIMG, 'img', 'a image data set')
 
             ofilter = _get_image_filter(d)
             d.notice2d(val, False)
@@ -7249,8 +7257,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in ids:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG,
-                        'img', 'a image data set')
+            _check_type(d, DataIMG, 'img', 'a image data set')
 
             ofilter = _get_image_filter(d)
             d.notice2d(val, True)
@@ -7318,8 +7325,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in ids:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG,
-                        'img', 'a image data set')
+            _check_type(d, DataIMG, 'img', 'a image data set')
 
             coord = d.coord
             if coord == 'logical':
@@ -7393,8 +7399,7 @@ class Session(sherpa.ui.utils.Session):
         for idval in ids:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
-            _check_type(d, sherpa.astro.data.DataIMG,
-                        'img', 'a image data set')
+            _check_type(d, DataIMG, 'img', 'a image data set')
 
             coord = d.coord
             if coord == 'logical':
@@ -9210,7 +9215,7 @@ class Session(sherpa.ui.utils.Session):
         ---------
         id : int or str
             The identifier (this is required to be valid).
-        pha : sherpa.astro.data.DataPHA
+        pha : DataPHA
             The dataset
 
         Returns

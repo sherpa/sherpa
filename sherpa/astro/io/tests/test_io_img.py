@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,7 +22,7 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataIMG
+from sherpa.astro.data import DataIMG, Data2D
 from sherpa.astro import io
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -144,3 +144,46 @@ def test_image_write_basic(make_data_path, tmp_path):
     assert outdata.name.endswith("/test.img")
     check_header(outdata)
     check_data(outdata)
+
+
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("incoord,outcoord,x0,x1",
+                         [("logical", None, 1, 1),
+                          ("image", "logical", 1, 1),
+                          ("physical", None, 2987.3400878906, 4363.16015625),
+                          ("world", None, 150.03707837630427, 2.644383154504334),
+                          ("wcs", "world", 150.03707837630427, 2.644383154504334)])
+def test_1762(incoord, outcoord, x0, x1, make_data_path):
+    """What does setting a non-logical coord system do?
+
+    This is a regression test so depends on whether #1762 is
+    fixed or not.
+    """
+
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+    d = io.read_image(infile, coord=incoord)
+
+    if outcoord is None:
+        assert d.coord == incoord
+    else:
+        assert d.coord == outcoord
+
+    # Just check the first element
+    i0, i1 = d.get_indep()
+    assert i0[0] == pytest.approx(x0)
+    assert i1[0] == pytest.approx(x1)
+
+
+@requires_fits
+@requires_data
+def test_can_read_image_as_data2d(make_data_path):
+    """We should be able to read in an image as a Data2D object"""
+
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+    dimg = io.read_image(infile, dstype=DataIMG)
+    d2d = io.read_image(infile, dstype=Data2D)
+
+    assert d2d.x0 == pytest.approx(dimg.x0)
+    assert d2d.x1 == pytest.approx(dimg.x1)
+    assert d2d.y == pytest.approx(dimg.y)

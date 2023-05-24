@@ -4362,3 +4362,22 @@ def test_pha_delete_missing_background_is_a_noop():
     assert pha.background_ids == pytest.approx([1])
     assert not bkg.subtracted
     assert bkg.background_ids == []
+
+
+def test_img_checks_coord_nonsense():
+    """What happens when coord is set to a nonsense value?"""
+
+    with pytest.raises(DataErr,
+                       match="^unknown coordinates: 'nonsense'"):
+        DataIMG("ex", [1, 2, 1, 2], [1, 1, 2, 2], [1, 2, 3, 4],
+                coord="nonsense")
+
+
+@pytest.mark.parametrize("coord", ["physical", "world", "wcs"])
+def test_img_checks_coord_no_transform(coord):
+    """What happens when coord is set to xxx but no transform?"""
+
+    with pytest.raises(DataErr,
+                       match="^data set 'ex' does not contain a .* coordinate system$"):
+        DataIMG("ex", [1, 2, 1, 2], [1, 1, 2, 2], [1, 2, 3, 4],
+                coord=coord)
