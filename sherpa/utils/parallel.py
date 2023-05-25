@@ -41,10 +41,24 @@ except NoSectionError:
     pass
 
 _ncpus = None
+"""The number of CPU cores to use when running jobs in parallel.
+
+This is taken from the parallel.numcores setting from the Sherpa
+configuration file (returned by `sherpa.get_config()`), where the
+default setting of ``None`` will use all available cores.
+"""
+
 if not _ncpu_val.startswith('NONE'):
     _ncpus = int(_ncpu_val)
 
 _multi = False
+"""Can jobs be run in parallel?
+
+The ability to run jobs in parallel depends on whether the Python
+`multiprocessing` module can be configured to use the
+multiprocessing.multiprocessing_start_method setting from the
+Sherpa configuration file (returned by `sherpa.get_config()`).
+"""
 
 try:
     import multiprocessing

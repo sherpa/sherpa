@@ -6,6 +6,10 @@ The sherpa.utils module
 
 .. automodule:: sherpa.utils
 
+.. versionchanged:: 4.16.0
+   The `parallel_map` function should now be taken from the
+   :py:mod:`sherpa.utils.parallel` module.
+
    .. rubric:: Functions
 
    .. autosummary::
