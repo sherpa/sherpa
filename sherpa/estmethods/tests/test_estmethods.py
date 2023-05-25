@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2018, 2021
+#  Copyright (C) 2007, 2018, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,11 +18,13 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import re
+
 import numpy
 
 import pytest
 
-from sherpa.estmethods import Covariance, Projection
+from sherpa.estmethods import Confidence, Covariance, Projection
 
 
 # Test data arrays -- together this makes a line best fit with a
@@ -209,3 +211,83 @@ def test_projection(parallel):
     #
     assert results[0] == pytest.approx(standard_elo)
     assert results[1] == pytest.approx(standard_ehi)
+
+
+@pytest.mark.parametrize("cls,name",
+                         [(Covariance, "Covariance"),
+                          (Confidence, "Confidence"),
+                          (Projection, "Projection")])
+def test_estmethod_repr(cls, name):
+    """Simple check"""
+    m = cls()
+    assert repr(m) == f"<{name} error-estimation method instance '{name.lower()}'>"
+
+
+def check_output(out, expecteds):
+    """Check out (str) matches expecteds after splitting newlines
+
+    There's a special check for the numcores line, as the answer
+    depends on the number of cores present, so we drop that part
+    of the check.
+
+    """
+    toks = out.split("\n")
+    for tok, expected in zip(toks, expecteds):
+
+        if expected is None:
+            assert re.match(r"^numcores     ?= \d+$", tok)
+        else:
+            assert tok == expected
+
+    assert len(toks) == len(expecteds)
+
+
+def test_estmethod_str_covariance():
+    """Simple check."""
+    m = Covariance()
+    check_output(str(m),
+                 ["name        = covariance",
+                  "sigma       = 1",
+                  "eps         = 0.01",
+                  "maxiters    = 200",
+                  "soft_limits = False"])
+
+
+def test_estmethod_str_confidence():
+    """Simple check."""
+    m = Confidence()
+    check_output(str(m),
+                 ["name         = confidence",
+                  "sigma        = 1",
+                  "eps          = 0.01",
+                  "maxiters     = 200",
+                  "soft_limits  = False",
+                  "remin        = 0.01",
+                  "fast         = False",
+                  "parallel     = True",
+                  None,  # special-case numcores line
+                  "maxfits      = 5",
+                  "max_rstat    = 3",
+                  "tol          = 0.2",
+                  "verbose      = False",
+                  "openinterval = False"
+                  ])
+
+
+def test_estmethod_str_projection():
+    """Simple check."""
+    m = Projection()
+    check_output(str(m),
+                 ["name        = projection",
+                  "sigma       = 1",
+                  "eps         = 0.01",
+                  "maxiters    = 200",
+                  "soft_limits = False",
+                  "remin       = 0.01",
+                  "fast        = False",
+                  "parallel    = True",
+                  None,  # special-case numcores line
+                  "maxfits     = 5",
+                  "max_rstat   = 3",
+                  "tol         = 0.2"
+                  ])
