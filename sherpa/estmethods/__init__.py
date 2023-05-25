@@ -741,10 +741,7 @@ class ConfRootBracket(ConfRootNone):
                     warn_user_about_open_interval([xa, xb])
                     return (xa + xb) / 2.0
 
-                if xa < xb:
-                    return (xa, xb)
-
-                return (xb, xa)
+                return min(xa, xb), max(xa, xb)
 
             return None
 
