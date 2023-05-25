@@ -7,10 +7,10 @@ The sherpa.utils module
 .. automodule:: sherpa.utils
 
    .. rubric:: Functions
-               
+
    .. autosummary::
       :toctree: api
-               
+
       Knuth_close
       _guess_ampl_scale
       apache_muller
@@ -61,7 +61,6 @@ The sherpa.utils module
       neville2d
       new_muller
       normalize
-      numpy_convolve
       pad_bounding_box
       parallel_map
       param_apply_limits
@@ -75,9 +74,9 @@ The sherpa.utils module
       set_origin
       sum_intervals
       zeroin
-      
+
    .. rubric:: Classes
-               
+
    .. autosummary::
       :toctree: api
 
