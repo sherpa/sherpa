@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021, 2022
+#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,7 +33,7 @@ is, to combine filters such as selecting the range a to b (``notice``)
 and hiding the range c to d (``ignore``). This is used with the
 `DataSpace1D` and `DataSpace2D` classes to handle
 evaluating models on different grids to the data, and then converting
-back to the data space, whether by rebinnig or interpolation.
+back to the data space, whether by rebinning or interpolation.
 
 Design
 ------
@@ -1509,6 +1509,22 @@ class DataSimulFit(NoNewAttributesAfterInit):
 
 
 class Data1D(Data):
+    '''Dateset for 1D data.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    x : array-like
+        Coordinates of the independent variable
+    y : array-like
+        The values of the dependent observable. If this is a numpy masked
+        array, the mask will used to initialize a mask.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
+    '''
     _fields = ("name", "x", "y", "staterror", "syserror")
     ndim = 1
 
@@ -1807,8 +1823,25 @@ class Data1DAsymmetricErrs(Data1D):
 
 
 class Data1DInt(Data1D):
-    """
-    1-D integrated data set
+    """1-D integrated data set.
+
+    This class is designed to handle non-consequtive bins.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    xlo : array-like
+        lower bounds of the bins of the independent coordinates
+    xhi : array-like
+        Upper bound of the bins of the independent coordinates
+    y : array-like
+        The values of the dependent observable. If this is a numpy masked
+        array, the mask will used to initialize a mask.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
     """
     _fields = ("name", "xlo", "xhi", "y", "staterror", "syserror")
 
@@ -1986,6 +2019,64 @@ class Data1DInt(Data1D):
 
 
 class Data2D(Data):
+    '''2D data set
+
+    This class represents a 2D data set. It is desigend to work with flattened
+    arrays for coordinates and independent variables, which makes it easy to
+    deal with filters and sparse or irregularly-placed grids.
+
+    Of course, the same structure can also be used for regularly-gridded data,
+    it just has to be passed in as a flattened array. However, in this case
+    the more specialized `~sherpa.astro.data.DataIMG` class might be more appropriate.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    x0 : array-like
+        Independent coordinate values for the first dimension
+    x1 : array-like
+        Independent coordinate values for the second dimension
+    y : array-like
+        The values of the dependent observable. If this is a numpy masked
+        array, the mask will used to initialize a mask.
+    shape : tuple
+        Shape of the data grid for regularly gridded data (optional). This is
+        used return the data as an image e.g. for display,
+        but it not needed for fitting and modelling.
+        For irregularly gridded data, shape must be `None`.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
+
+    Examples
+    --------
+    An irregularly-gridded 2D dataset, with points at (-200, -200),
+    (-200, 0), (0, 0), (200, -100), and (200, 150) can be created
+    with:
+
+        >>> irreg2d = Data2D("irregular2d",
+        ...                  [-200, -200, 0, 200, 200],
+        ...                  [-200, 0, 0, -100, 150],
+        ...                  [12, 15, 23, 45, -2])
+
+    A regularly-gridded 2D dataset can be created, but the
+    arguments must be flattened::
+
+        >>> import numpy as np
+        >>> x1, x0 = np.mgrid[20:30:2, 5:20:2]
+        >>> datashape = x0.shape
+        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+        >>> x0 = x0.flatten()
+        >>> x1 = x1.flatten()
+        >>> y = y.flatten()
+        >>> reg2d = Data2D("regular2d", x0, x1, y, shape=datashape)
+
+    .. note::
+        Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
+        regularly-gridded data more easily.
+    '''
     _fields = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
     ndim = 2
 
@@ -2161,9 +2252,74 @@ class Data2D(Data):
 
 
 class Data2DInt(Data2D):
-    """
-    2-D integrated data set
-    """
+    '''2-D integrated data set
+
+    This class represents a 2D data set. It is desigend to work with flattened
+    arrays for coordinates and independent variables, which makes it easy to
+    deal with filters and sparse or irregularly-placed grids.
+
+    Of course, the same structure can also be used for regularly-gridded data,
+    it just has to be passed in as a flattened array.  However, in this case
+    the more specialiazed `~sherpa.astro.data.DataIMGInt` class might be more appropriate.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    x0lo : array-like
+        Lower bounds of the bins in the first dimension of the independent coordinate
+    x1lo : array-like
+        Lower bound of the bins in the second dimension of the independent coordinate
+    x0hi : array-like
+        Upper bound of the bins in the first dimension of the independent coordinate
+    x1hi : array-like
+        Upper bound of the bins in the second dimension of the independent coordinate
+    y : array-like
+        The values of the dependent observable. If this is a numpy masked
+        array, the mask will used to initialize a mask.
+    shape : tuple
+        Shape of the data grid for regularly gridded data (optional). This is
+        used return the data as an image e.g. for display,
+        but it not needed for fitting and modelling.
+        For irregularly gridded data, shape must be `None`.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
+
+    Examples
+    --------
+    Create an irregularly-gridded 2D dataset that has measurements in three areas
+    of different size. The first is in a box of size 10 centered on
+    (-15, -20), the second is a small rectangle centered on (0, 0), and the third
+    another rectangle. The measured data values in these areas are 12, 15 and 23.
+
+        >>> x0lo = [-20, -1, 10]
+        >>> x1lo = [-25, -1, -10]
+        >>> x0hi = [-10, 1, 15]
+        >>> x1hi = [-10, 1, -8]
+        >>> y = [12, 15, 23]
+        >>> three_rect = Data2DInt("irregular2d_binned", x0lo=x0lo, x1lo=x1lo,
+        ...                        x0hi=x0hi, x1hi=x1hi, y=y)
+
+    The regular version of this might represent a binned image, here with
+    square pixels. In this example, we create ``x1, x0`` arrays that represent
+    the pixel center, but need to pass in the pixel edges to make the data object::
+
+        >>> import numpy as np
+        >>> x1, x0 = np.mgrid[20:30, 5:20]
+        >>> datashape = x0.shape
+        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+        >>> x0 = x0.flatten()
+        >>> x1 = x1.flatten()
+        >>> y = y.flatten()
+        >>> image = Data2DInt("binned_image", x0lo=x0 - 0.5, x1lo=x1 - 0.5,
+        ...                   x0hi=x0 + 0.5, x1hi=x1 + 0.5, y=y, shape=datashape)
+
+    .. note::
+        Sherpa provides the `~sherpa.astro.data.DataIMGInt` class to make it easier
+        to work with regularly-gridded data.
+    '''
     _fields = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "staterror", "syserror")
     _extra_fields = ("shape", )
 
