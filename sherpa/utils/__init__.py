@@ -29,8 +29,7 @@ import os
 import pydoc
 import string
 import sys
-from types import FunctionType as function
-from types import MethodType as instancemethod
+from types import FunctionType, MethodType
 
 import numpy
 import numpy.random
@@ -1125,7 +1124,7 @@ def export_method(meth, name=None, modname=None):
 
     """
 
-    if type(meth) is not instancemethod:
+    if not isinstance(meth, MethodType):
         return meth
 
     if name is None:
@@ -1156,23 +1155,22 @@ def export_method(meth, name=None, modname=None):
         return p.name
 
     argspec = ",".join([tostr(p) for p in sig.parameters.values()])
-    argspec = f"({argspec})"
 
     # Create a wrapper function with no default arguments
     g = {old_name: meth}
     if modname is not None:
         g['__name__'] = modname
 
-    fdef = f'def {name}{argspec}:  return {old_name}{argspec}'
+    fdef = f'def {name}({argspec}):  return {old_name}({argspec})'
     exec(fdef, g)
 
     # Create another new function from the one we just made, this time
     # adding the default arguments and doc string from the original method
     new_meth = g[name]
 
-    new_meth = function(new_meth.__code__, new_meth.__globals__,
-                        new_meth.__name__, defaults,
-                        new_meth.__closure__)
+    new_meth = FunctionType(new_meth.__code__, new_meth.__globals__,
+                            new_meth.__name__, defaults,
+                            new_meth.__closure__)
     new_meth.__doc__ = doc
 
     return new_meth
