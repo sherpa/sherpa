@@ -1146,7 +1146,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
        The number of calls to ``function`` to run in parallel. When
        set to ``None``, all the available CPUs on the machine - as
        set either by the 'numcores' setting of the 'parallel' section
-       of Sherpa's preferences or by multiprocessing.cpu_count - are
+       of Sherpa's preferences or by `multiprocessing.cpu_count` - are
        used.
 
     Returns

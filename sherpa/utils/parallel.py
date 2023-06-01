@@ -90,7 +90,7 @@ __all__ = ("_multi", "_ncpus",
            "run_tasks")
 
 
-# Can this be relpaced by itertools.batched once Python 3.12 is the
+# Can this be replaced by itertools.batched once Python 3.12 is the
 # minimum supported version? The fact that it may group elements
 # differently should not be a problem for downstream users.
 #
@@ -215,7 +215,7 @@ def run_tasks(procs, err_q, out_q, num=None):
 
     Notes
     -----
-    Each process sends it's output - a pair with index and a list of
+    Each process sends its output - a pair with index and a list of
     results - to the out_q queue, and any error encounteded to the
     err_q queue. There should be len(procs) messages sent to the out_q
     queue for a successful run.
@@ -366,7 +366,7 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     Parameters
     ----------
     funcs : a list or tuple of functions
-       An ordered iteratble sequence of functions which accepts an element
+       An ordered iterable sequence of functions which accepts an element
        of the datasets and returns a value.  The number of elements in
        funcs must match the number of elements of the datasets.
     datasets : a list or tuple of array_like
@@ -449,7 +449,7 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     manager = multiprocessing.Manager()
 
     # Create FIFO queue and lock shared objects and return proxies to them.
-    # The managers handles a server process that manages shared objects that
+    # The manager handles a server process that manages shared objects that
     # each slave process has access to.  Bottom line -- thread-safe.
     out_q = manager.Queue()
     err_q = manager.Queue()
