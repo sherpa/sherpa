@@ -521,6 +521,20 @@ def test_dataspace1d_numbins_is_at_least_one(nbins, emsg):
         dataspace1d(1, 10, numbins=nbins)
 
 
+def test_dataspace2d_dim_not_iterable():
+    """Check error handling"""
+
+    with pytest.raises(TypeError, match="^dim must be an array of dimensions$"):
+        dataspace2d(23)
+
+
+def test_dataspace2d_dim_must_have_multiple_elements():
+    """Check error handling"""
+
+    with pytest.raises(TypeError, match="^dimensions for dataspace2d must be > 1$"):
+        dataspace2d([23])
+
+
 @pytest.mark.parametrize("grid,emsg",
                          [([0, 0], "dimensions should be > 0, found dim0 0 dim1 0"),
                           ([0, 1], "dimensions should be > 0, found dim0 0 dim1 1"),
