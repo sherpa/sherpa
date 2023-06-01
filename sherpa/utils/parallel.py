@@ -22,7 +22,7 @@
 Routines for running code in parallel.
 """
 
-from configparser import ConfigParser, NoSectionError
+from configparser import ConfigParser
 import logging
 
 import numpy as np
@@ -34,12 +34,6 @@ warning = logging.getLogger("sherpa").warning
 config = ConfigParser()
 config.read(get_config())
 
-_ncpu_val = "NONE"
-try:
-    _ncpu_val = config.get('parallel', 'numcores').strip().upper()
-except NoSectionError:
-    pass
-
 _ncpus = None
 """The number of CPU cores to use when running jobs in parallel.
 
@@ -48,6 +42,7 @@ configuration file (returned by `sherpa.get_config()`), where the
 default setting of ``None`` will use all available cores.
 """
 
+_ncpu_val = config.get('parallel', 'numcores', fallback="NONE").upper()
 if not _ncpu_val.startswith('NONE'):
     _ncpus = int(_ncpu_val)
 
@@ -82,7 +77,7 @@ except Exception as e:
     _ncpus = 1
     _multi = False
 
-del _ncpu_val, config, get_config, ConfigParser, NoSectionError
+del _ncpu_val, config, get_config, ConfigParser
 
 
 __all__ = ("_multi", "_ncpus",
