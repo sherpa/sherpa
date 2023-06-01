@@ -21,6 +21,7 @@
 from itertools import chain
 import logging
 
+# Is there ever a case where multiprocessing can fail here?
 try:
     import multiprocessing
 except ImportError:
@@ -31,7 +32,7 @@ import numpy
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
     is_iterable, list_to_open_interval, mysgn, quad_coef, \
     demuller, zeroin, OutOfBoundErr, func_counter
-from sherpa.utils.parallel import _multi, _ncpus, process_tasks
+from sherpa.utils.parallel import multi, ncpus, process_tasks
 
 import sherpa.estmethods._est_funcs
 
@@ -196,7 +197,7 @@ class Confidence(EstMethod):
     _added_config = {'remin': 0.01,
                      'fast': False,
                      'parallel': True,
-                     'numcores': _ncpus,
+                     'numcores': ncpus,
                      'maxfits': 5,
                      'max_rstat': 3,
                      'tol': 0.2,
@@ -264,7 +265,7 @@ class Projection(EstMethod):
     _added_config = {'remin': 0.01,
                      'fast': False,
                      'parallel': True,
-                     'numcores': _ncpus,
+                     'numcores': ncpus,
                      'maxfits': 5,
                      'max_rstat': 3,
                      'tol': 0.2}
@@ -452,7 +453,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         return (singlebounds[0][0], singlebounds[1][0], singlebounds[2][0],
                 singlebounds[3], None)
 
-    if numsearched < 2 or not _multi or numcores < 2:
+    if numsearched < 2 or not multi or numcores < 2:
         do_parallel = False
 
     if not do_parallel:
@@ -1107,7 +1108,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         return (conf_int[0][0], conf_int[1][0], error_flags[0],
                 nfev[0], None)
 
-    if len(limit_parnums) < 2 or not _multi or numcores < 2:
+    if len(limit_parnums) < 2 or not multi or numcores < 2:
         do_parallel = False
 
     if not do_parallel:
@@ -1130,7 +1131,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 #################################confidence###################################
 
 
-def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
+def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
     """Run a function on a sequence of inputs in parallel.
 
     A specialized version of sherpa.utils.parallel.parallel_map.

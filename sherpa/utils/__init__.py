@@ -44,7 +44,7 @@ from sherpa.utils.err import IOErr
 # We re-export the symbols from parallel but this will be removed at
 # some point.
 #
-from sherpa.utils.parallel import _multi, _ncpus, \
+from sherpa.utils.parallel import multi as _multi, ncpus as _ncpus, \
     parallel_map, parallel_map_funcs, run_tasks
 
 

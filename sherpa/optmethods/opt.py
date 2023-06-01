@@ -26,7 +26,7 @@ import random
 import numpy as np
 
 from sherpa.utils import Knuth_close, func_counter
-from sherpa.utils.parallel import _multi, _ncpus, run_tasks
+from sherpa.utils.parallel import multi, run_tasks
 
 
 __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
@@ -47,7 +47,7 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
 class MyNcores:
 
     def __init__(self):
-        if _multi is False:
+        if multi is False:
             raise TypeError("multicores not available")
 
     def calc(self, funcs, numcores, *args, **kwargs):

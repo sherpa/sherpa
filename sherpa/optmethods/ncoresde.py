@@ -27,7 +27,7 @@ from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.opt import Opt, SimplexRandom
 # from ncoresnm import ncoresNelderMead
 # from opt import Opt, SimplexRandom
-from sherpa.utils.parallel import parallel_map, _ncpus
+from sherpa.utils.parallel import parallel_map, ncpus
 
 
 class Key2:
@@ -366,7 +366,7 @@ class ncoresMyDifEvo(MyDifEvo):
                           step, seed)
         return
 
-    def __call__(self, tol, maxnfev, numcores=_ncpus):
+    def __call__(self, tol, maxnfev, numcores=ncpus):
         nfev = 0
         random.seed(self.seed)
         mypop = self.polytope

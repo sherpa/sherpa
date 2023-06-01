@@ -21,7 +21,7 @@ import pytest
 
 from sherpa.optmethods import _tstoptfct
 from sherpa.optmethods.optfcts import lmdif, minim, montecarlo, neldermead
-from sherpa.utils.parallel import _ncpus
+from sherpa.utils.parallel import ncpus
 
 
 def init(name, npar):
@@ -42,8 +42,8 @@ def tst_opt(opt, fct, npar, reltol=1.0e-3, abstol=1.0e-3):
     x0, xmin, xmax, fmin = init(fct.__name__, npar)
     status, x, fval, msg, xtra = opt(fct, x0, xmin, xmax)
     assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
-    if opt == lmdif and _ncpus > 1:
-        status, x, fval, msg, xtra = opt(fct, x0, xmin, xmax, numcores=_ncpus)
+    if opt == lmdif and ncpus > 1:
+        status, x, fval, msg, xtra = opt(fct, x0, xmin, xmax, numcores=ncpus)
         assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
         assert xtra.get('num_parallel_map') != 0
 

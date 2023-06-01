@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,10 +25,10 @@ from numpy import sqrt
 from pytest import approx
 import pytest
 
-from sherpa.utils.parallel import _ncpus
+from sherpa.utils.parallel import ncpus
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_xspec, requires_group
-import sherpa.astro.ui as ui
+from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 
 try:
@@ -92,7 +92,7 @@ def check_thread(run_thread, thread, parallel, cmpfunc, parnames):
     # compare the results
     cmpfunc(fit_results, *parvals, covarerr)
 
-    if not parallel or _ncpus < 2:
+    if not parallel or ncpus < 2:
         assert fit_results.extra_output['num_parallel_map'] == 0
     else:
         assert fit_results.extra_output['num_parallel_map'] > 0

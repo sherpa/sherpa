@@ -23,7 +23,7 @@
 # import autograd.numpy as np
 import numpy as np
 
-from sherpa.utils.parallel import _ncpus
+from sherpa.utils.parallel import ncpus
 from sherpa.optmethods import _saoopt
 from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom
@@ -370,7 +370,7 @@ class ncoresNelderMead:
         return
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=_ncpus):
+                 numcores=ncpus):
         try:
             num_algo = len(self.algo)
             args = (fcn, x, xmin, xmax, tol, maxnfev)
@@ -415,12 +415,12 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
         return
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=_ncpus):
+                 numcores=ncpus):
 
         return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
 
     def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-             numcores=_ncpus, fval=np.inf, nfev=0):
+             numcores=ncpus, fval=np.inf, nfev=0):
         try:
             num_algo = len(self.algo)
             args = (fcn, x, xmin, xmax, tol, maxnfev)

@@ -29,7 +29,7 @@ from sherpa.models.basic import Gauss1D
 from sherpa.optmethods import LevMar
 from sherpa.stats import LeastSq
 from sherpa.fit import Fit, DataSimulFit, SimulFitModel
-from sherpa.utils.parallel import parallel_map, parallel_map_funcs
+from sherpa.utils.parallel import parallel_map, parallel_map_funcs, ncpus, multi
 
 
 @pytest.mark.parametrize("ntasks", [1, 2, 8])
@@ -120,3 +120,16 @@ def test_parallel_map_funcs2():
 
     result = tst(2, sg, stat, opt)
     cmp_results(result)
+
+
+def test_can_get_multi():
+    """We don't do much with the value, just check it acts as a bool"""
+
+    assert (multi is False) or (multi is True)
+
+
+def test_can_get_ncpus():
+    """We don't do much with the value, just check it acts as an int"""
+
+    assert ncpus >= 0
+    assert int(ncpus) == ncpus

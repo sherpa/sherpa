@@ -24,6 +24,7 @@ Routines for running code in parallel.
 
 from configparser import ConfigParser
 import logging
+from typing import Final
 
 import numpy as np
 
@@ -35,25 +36,12 @@ config = ConfigParser()
 config.read(get_config())
 
 _ncpus = None
-"""The number of CPU cores to use when running jobs in parallel.
-
-This is taken from the parallel.numcores setting from the Sherpa
-configuration file (returned by `sherpa.get_config()`), where the
-default setting of ``None`` will use all available cores.
-"""
 
 _ncpu_val = config.get('parallel', 'numcores', fallback="NONE").upper()
 if not _ncpu_val.startswith('NONE'):
     _ncpus = int(_ncpu_val)
 
 _multi = False
-"""Can jobs be run in parallel?
-
-The ability to run jobs in parallel depends on whether the Python
-`multiprocessing` module can be configured to use the
-multiprocessing.multiprocessing_start_method setting from the
-Sherpa configuration file (returned by `sherpa.get_config()`).
-"""
 
 try:
     import multiprocessing
@@ -80,7 +68,25 @@ except Exception as e:
 del _ncpu_val, config, get_config, ConfigParser
 
 
-__all__ = ("_multi", "_ncpus",
+multi: Final[bool] = _multi
+"""Can jobs be run in parallel?
+
+The ability to run jobs in parallel depends on whether the Python
+`multiprocessing` module can be configured to use the
+multiprocessing.multiprocessing_start_method setting from the
+Sherpa configuration file (returned by `sherpa.get_config()`).
+"""
+
+ncpus: Final[int] = _ncpus
+"""The number of CPU cores to use when running jobs in parallel.
+
+This is taken from the parallel.numcores setting from the Sherpa
+configuration file (returned by `sherpa.get_config()`), where the
+default setting of ``None`` will use all available cores.
+"""
+
+
+__all__ = ("multi", "ncpus",
            "parallel_map", "parallel_map_funcs",
            "run_tasks")
 

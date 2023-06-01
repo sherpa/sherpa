@@ -15,8 +15,8 @@ The sherpa.utils.parallel module
    .. autosummary::
       :toctree: api
 
-      _multi
-      _ncpus
+      multi
+      ncpus
 
    .. rubric:: Functions
 
