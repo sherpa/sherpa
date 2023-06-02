@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022
+#  Copyright (C) 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,14 +34,17 @@ from sherpa.utils.testing import requires_data, \
 
 from sherpa.astro import ui
 from sherpa.models.basic import Gauss2D
+from sherpa.utils.err import StatErr
 
 
 @requires_xspec
 @requires_group
 @requires_fits
 @requires_data
-def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
+def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging, reset_seed):
     """Check plot_pvalue with PHA data."""
+
+    np.random.seed(123)
 
     fname = make_data_path("qso.pi")
     ui.load_pha(fname)
@@ -49,6 +52,7 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     ui.set_stat('cstat')
     ui.set_method("neldermead")
 
+    # Why are we grouping to so high-a-value with CStat?
     ui.group_counts(10)
     ui.notice(0.3, 8)
 
@@ -62,37 +66,40 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     g1.ampl = 1.8e-5
 
     g1.pos = 3.
-    ui.freeze(g1.pos)
     g1.fwhm = 0.1
-    ui.freeze(g1.fwhm)
+    ui.freeze(g1.pos, g1.fwhm)
 
-    # Could we reduce the number of bins to save evaluation time?
-    # We do want a non-default num value when checking the shapes
-    # of the output attributes.
+    # The number of iterations has been reduced so it's less than the
+    # fit time. This leads to using a small value for the number of
+    # bins.
     #
     ui.fit()
-    ui.plot_pvalue(p1, p1 + g1, num=100, bins=20)
+    ui.plot_pvalue(p1, p1 + g1, num=20, bins=8)
+
+    LR = 2.679487496941789
 
     tmp = ui.get_pvalue_results()
 
     assert tmp.null == pytest.approx(210.34566845619273)
     assert tmp.alt == pytest.approx(207.66618095925094)
-    assert tmp.lr == pytest.approx(2.679487496941789)
+    assert tmp.lr == pytest.approx(LR)
 
     # Have we returned the correct info?
     #
     # Is it worth checking the stored data (aka how randomised is this
-    # output)?
+    # output)? There is randomness, and then, because fits are done,
+    # some possible randomness due to numerical differences between
+    # platforms.
     #
-    assert tmp.samples.shape == (100, 2)
-    assert tmp.stats.shape == (100, 2)
-    assert tmp.ratios.shape == (100, )
+    assert tmp.samples.shape == (20, 2)
+    assert tmp.stats.shape == (20, 2)
+    assert tmp.ratios.shape == (20, )
 
     # Check the plot
     #
     tmp = ui.get_pvalue_plot()
 
-    assert tmp.lr == pytest.approx(2.679487496941789)
+    assert tmp.lr == pytest.approx(LR)
 
     assert tmp.xlabel == 'Likelihood Ratio'
     assert tmp.ylabel == 'Frequency'
@@ -100,10 +107,129 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
 
     # It would be nice to check the values here
     #
-    assert tmp.ratios.shape == (100, )
-    assert tmp.xlo.shape == (21, )
-    assert tmp.xhi.shape == (21, )
-    assert tmp.y.shape == (21, )
+    assert tmp.ratios.shape == (20, )
+    assert tmp.xlo.shape == (9, )
+    assert tmp.xhi.shape == (9, )
+    assert tmp.y.shape == (9, )
+
+    # Hopefully this is repeatable
+    assert tmp.y == pytest.approx([0.4, 0, 0, 0, 0, 0.1, 0.05, 0.25, 0.2])
+
+
+@requires_xspec
+@requires_group
+@requires_fits
+@requires_data
+def test_plot_pvalue_with_wstat(make_data_path, clean_astro_ui, hide_logging, reset_seed):
+    """Check plot_pvalue with PHA data and wstat
+
+    This is known to fail: #1745
+
+    Similar to test_plot_value but uses a different dataset.
+    As we don't know what the results should be we treat the failure
+    as the "correct" value so that when it gets fixed the test will
+    point out it needs to be updated.
+
+    """
+
+    np.random.seed(123)
+
+    fname = make_data_path("3c273.pi")
+    ui.load_pha(fname)
+
+    ui.set_stat("wstat")
+    ui.set_method("neldermead")
+
+    ui.notice(0.5, 6)
+
+    ui.set_source("xsphabs.abs1 * xspowerlaw.p1")
+
+    # move the fit close to the best fit to save a small amount
+    # of time.
+    abs1.nh = 0.05
+    p1.phoindex = 2.05
+    p1.norm = 2.1e-4
+
+    # The number of iterations has been reduced so it's less than the
+    # fit time. This leads to using a small value for the number of
+    # bins.
+    #
+    ui.fit()
+    ui.plot_pvalue(p1, abs1 * p1, num=20, bins=8)
+
+    LR = 1.353942679847087
+
+    tmp = ui.get_pvalue_results()
+
+    assert tmp.null == pytest.approx(37.216613841917265)
+    assert tmp.alt == pytest.approx(35.86267116207018)
+    assert tmp.lr == pytest.approx(LR)
+
+    assert tmp.samples.shape == (20, 2)
+    assert tmp.stats.shape == (20, 2)
+    assert tmp.ratios.shape == (20, )
+
+    tmp = ui.get_pvalue_plot()
+
+    assert tmp.lr == pytest.approx(LR)
+
+    assert tmp.xlabel == 'Likelihood Ratio'
+    assert tmp.ylabel == 'Frequency'
+    assert tmp.title == 'Likelihood Ratio Distribution'
+
+    assert tmp.ratios.shape == (20, )
+    assert tmp.xlo.shape == (9, )
+    assert tmp.xhi.shape == (9, )
+    assert tmp.y.shape == (9, )
+
+    assert tmp.y == pytest.approx([0.4, 0, 0.05, 0.15, 0.2, 0.05, 0, 0.1, 0.05])
+
+@requires_xspec
+@requires_group
+@requires_fits
+@requires_data
+def test_plot_pvalue_with_bkg(make_data_path, clean_astro_ui, hide_logging, reset_seed):
+    """Check plot_pvalue with PHA data.
+
+    This is known to fail: #1377
+
+    Similar to test_plot_value but uses a different dataset.
+    As we don't know what the results should be we treat the failure
+    as the "correct" value so that when it gets fixed the test will
+    point out it needs to be updated.
+
+    """
+
+    np.random.seed(123)
+
+    fname = make_data_path("3c273.pi")
+    ui.load_pha(fname)
+
+    ui.set_stat('cstat')
+    ui.set_method("neldermead")
+
+    ui.notice(0.5, 6)
+
+    ui.set_source("xsphabs.abs1 * xspowerlaw.p1")
+    ui.set_bkg_source("const1d.bmdl")
+
+    # move the fit close to the best fit to save a small amount
+    # of time.
+    abs1.nh = 0.05
+    p1.phoindex = 2.05
+    p1.norm = 2.1e-4
+
+    bmdl.c0.min = 0
+    bmdl.c0 = 3.8e-6
+
+    # The number of iterations has been reduced so it's less than the
+    # fit time. This leads to using a small value for the number of
+    # bins.
+    #
+    ui.fit()
+    with pytest.raises(StatErr,
+                       match=r"size mismatch between number of data sets \(2\) and model expressions \(1\)"):
+        ui.plot_pvalue(p1, abs1 * p1, num=20, bins=8)
 
 
 @pytest.fixture

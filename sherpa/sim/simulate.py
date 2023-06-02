@@ -28,16 +28,16 @@ import logging
 
 import numpy
 
-from sherpa.stats import Cash, CStat
+from sherpa.stats import Cash, CStat, WStat
 from sherpa.optmethods import NelderMead
 from sherpa.estmethods import Covariance
 from sherpa.utils import parallel_map, poisson_noise, NoNewAttributesAfterInit
 from sherpa.fit import Fit
 from sherpa.sim.sample import NormalParameterSampleFromScaleMatrix
 
+# TODO: this should probaly use __name__ rather than "sherpa"
 logger = logging.getLogger("sherpa")
 debug = logger.debug
-info = logger.info
 
 _tol = numpy.finfo(float).eps
 
@@ -264,9 +264,16 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         if method is None:
             method = NelderMead()
 
-        if not isinstance(stat, (Cash, CStat)):
-            raise TypeError("Sherpa fit statistic must be Cash or CStat" +
-                            " for likelihood ratio test")
+        # There should be a better way to determine this (by querying the
+        # stat object in some way). We could use
+        #
+        #   isinstance(stat, sherpa.stats.Likelihood)
+        #
+        # which would seem to be a more-appropriate check.
+        #
+        if not isinstance(stat, (Cash, CStat, WStat)):
+            raise TypeError("Sherpa fit statistic must be Cash, CStat, or "
+                            "WStat for likelihood ratio test")
 
         niter = int(niter)
 
