@@ -27,7 +27,7 @@ import pytest
 from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataARF, DataPHA
-from sherpa.astro.instrument import create_delta_rmf
+from sherpa.astro.instrument import Response1D, create_delta_rmf
 from sherpa.astro.plot import SourcePlot, \
     DataPHAPlot, ModelPHAHistogram, OrderPlot, \
     EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
@@ -782,3 +782,123 @@ def test_check_hist_bins():
                    (xlo[::-1], xhi[::-1]), (xlo[::-1], xhi[::-1])]:
         out1, out2 = _check_hist_bins(x1.copy(), x2.copy())
         assert np.all(out1[1:] == out2[:-1])
+
+
+def test_pha_plot_with_wstat_data(caplog):
+    """Can we create a PHA data plot with WSTAT.
+
+    For PHA data, WSTAT "silently" includes the background, which
+    complicates visualization: do we subtract the background from
+    the data, add the background to the model, or something else?
+
+    At the moment we subtract the background.
+    """
+
+    # Want a non-uniform grid to compare with const1d
+    egrid = np.asarray([0.2, 0.3, 0.5, 0.8, 1.0])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([0.9, 1.1, 0.8, 1.0])
+
+    chans = np.linspace(1, 4, 4, dtype=np.int16)
+    counts = np.asarray([1, 2, 3, 4], dtype=np.int16)
+
+    arf = DataARF('tst-arf', elo, ehi, specresp)
+    data = DataPHA('tst-data', chans, counts, backscal=0.1)
+    data.set_arf(arf)
+
+    bkg = DataPHA('tst-data', chans, counts, backscal=0.5)
+    data.set_background(bkg)
+
+    data.set_analysis('energy')
+
+    assert not data.subtracted
+
+    # Create the plot
+    plt = DataPHAPlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        plt.prepare(data, stats.WStat())
+
+    assert not data.subtracted
+
+    assert len(caplog.records) == 1
+    log_name, log_level, message = caplog.record_tuples[0]
+    assert log_name == 'sherpa.plot'
+    assert log_level == logging.WARNING
+    assert message == 'The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with wstat'
+
+    assert plt.xlabel == 'Energy (keV)'
+    assert plt.ylabel == 'Counts/keV'
+
+    assert plt.xlo == pytest.approx(elo)
+    assert plt.xhi == pytest.approx(ehi)
+
+    # this is (counts - bgscale)/bin-width - and
+    # as bgscale = counts/5 thanks to the choice of
+    # backscal - this becomes
+    # 4 * counts / (5 * bin-width)
+    #
+    assert plt.y == pytest.approx([8, 8, 8, 16])
+
+    # Check the error which (as there are no zero-count
+    # bins) is just sqrt(counts) / bin-width
+    #
+    dy = np.sqrt([1, 2, 3, 4]) / (ehi - elo)
+    assert plt.yerr == pytest.approx(dy)
+
+
+def test_pha_plot_with_wstat_model(caplog):
+    """Can we create a PHA model plot with WSTAT.
+
+    For PHA data, WSTAT "silently" includes the background, which
+    complicates visualization: do we subtract the background from
+    the data, add the background to the model, or something else?
+
+    At the moment we subtract the background.
+    """
+
+    # Want a non-uniform grid to compare with const1d
+    egrid = np.asarray([0.2, 0.3, 0.5, 0.8, 1.0])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([0.9, 1.1, 0.8, 1.0])
+
+    chans = np.linspace(1, 4, 4, dtype=np.int16)
+    counts = np.asarray([1, 2, 3, 4], dtype=np.int16)
+
+    arf = DataARF('tst-arf', elo, ehi, specresp)
+    data = DataPHA('tst-data', chans, counts, backscal=0.1)
+    data.set_arf(arf)
+
+    bkg = DataPHA('tst-data', chans, counts, backscal=0.5)
+    data.set_background(bkg)
+
+    data.set_analysis('energy')
+
+    mdl = Const1D()
+    mdl.c0 = 2
+
+    rsp = Response1D(data)
+    fullmodel = rsp(mdl)
+
+    # Just check we can evaluate the model
+    yexp = 2 * (ehi - elo) * specresp
+    y = fullmodel([])
+    assert y == pytest.approx(yexp)
+
+    # Create the plot
+    plt = ModelPHAHistogram()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        plt.prepare(data, fullmodel, stats.WStat())
+
+    assert len(caplog.records) == 0
+
+    assert plt.xlabel == 'Energy (keV)'
+    assert plt.ylabel == 'Counts/keV'
+
+    assert plt.xlo == pytest.approx(elo)
+    assert plt.xhi == pytest.approx(ehi)
+
+    # this is specresp * model (as the bin-width is
+    # normalised out)
+    assert plt.y == pytest.approx(2 * specresp)

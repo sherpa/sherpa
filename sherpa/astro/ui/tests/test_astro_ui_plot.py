@@ -4348,3 +4348,115 @@ def test_1380_plot(coord, make_data_path, clean_astro_ui):
 
     ui.set_coord("logical")
     ui.contour_data()
+
+
+def test_pha_plot_with_wstat_data(caplog, clean_astro_ui):
+    """sherpa/astro/tests/test_astro_plot.py::test_pha_plot_with_wstat_data"""
+
+    # Want a non-uniform grid to compare with const1d, so the
+    # model evaluation differs per bin.
+    egrid = np.asarray([0.2, 0.3, 0.5, 0.8, 1.0])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([0.9, 1.1, 0.8, 1.0])
+
+    chans = np.linspace(1, 4, 4, dtype=np.int16)
+    counts = np.asarray([1, 2, 3, 4], dtype=np.int16)
+
+    arf = ui.create_arf(elo, ehi, specresp)
+    data = DataPHA('tst-data', chans, counts, backscal=0.1)
+
+    ui.set_data(data)
+    ui.set_arf(arf)
+
+    bkg = DataPHA('tst-data', chans, counts, backscal=0.5)
+    ui.set_bkg(bkg)
+
+    # Unlike the low-level version we don't need to set analysis=energy
+    # ui.set_analysis('energy')
+
+    ui.set_stat('wstat')
+
+    assert not data.subtracted
+
+    # Create the plot
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.plot_data()
+
+    assert not data.subtracted
+
+    assert len(caplog.records) == 1
+    log_name, log_level, message = caplog.record_tuples[0]
+    assert log_name == 'sherpa.plot'
+    assert log_level == logging.WARNING
+    assert message == 'The displayed errorbars have been supplied with the data or calculated using chi2xspecvar; the errors are not used in fits with wstat'
+
+    plt = ui.get_data_plot(recalc=False)
+
+    assert plt.xlabel == 'Energy (keV)'
+    assert plt.ylabel == 'Counts/keV'
+
+    assert plt.xlo == pytest.approx(elo)
+    assert plt.xhi == pytest.approx(ehi)
+
+    # this is (counts - bgscale)/bin-width - and
+    # as bgscale = counts/5 thanks to the choice of
+    # backscal - this becomes
+    # 4 * counts / (5 * bin-width)
+    #
+    assert plt.y == pytest.approx([8, 8, 8, 16])
+
+    # Check the error which (as there are no zero-count
+    # bins) is just sqrt(counts) / bin-width
+    #
+    dy = np.sqrt([1, 2, 3, 4]) / (ehi - elo)
+    assert plt.yerr == pytest.approx(dy)
+
+
+def test_pha_plot_with_wstat_model(caplog):
+    """sherpa/astro/tests/test_astro_plot.py::test_pha_plot_with_wstat_model"""
+
+    # Want a non-uniform grid to compare with const1d, so the
+    # model evaluation differs per bin.
+    egrid = np.asarray([0.2, 0.3, 0.5, 0.8, 1.0])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([0.9, 1.1, 0.8, 1.0])
+
+    chans = np.linspace(1, 4, 4, dtype=np.int16)
+    counts = np.asarray([1, 2, 3, 4], dtype=np.int16)
+
+    data = DataPHA('tst-data', chans, counts, backscal=0.1)
+    ui.set_data(data)
+
+    arf = create_arf(elo, ehi, specresp)
+    ui.set_arf(arf)
+
+    bkg = DataPHA('tst-data', chans, counts, backscal=0.5)
+    ui.set_bkg(bkg)
+
+    # Unlike the low-level version we don't need to set analysis=energy
+    # data.set_analysis('energy')
+
+    ui.set_stat('wstat')
+
+    ui.set_source(ui.const1d.mdl)
+    mdl.c0 = 2
+
+    # Create the plot
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        ui.plot_model()
+
+    assert len(caplog.records) == 0
+
+    plt = ui.get_model_plot(recalc=False)
+
+    assert plt.xlabel == 'Energy (keV)'
+    assert plt.ylabel == 'Counts/keV'
+
+    assert plt.xlo == pytest.approx(elo)
+    assert plt.xhi == pytest.approx(ehi)
+
+    # this is specresp * model (as the bin-width is
+    # normalised out)
+    assert plt.y == pytest.approx(2 * specresp)

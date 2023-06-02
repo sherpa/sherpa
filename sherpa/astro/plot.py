@@ -30,6 +30,7 @@ from numpy import iterable, array2string, asarray
 from sherpa.astro.data import DataPHA
 from sherpa import plot as shplot
 from sherpa.astro.utils import bounds_check
+from sherpa.stats import WStat
 from sherpa.utils.err import PlotErr, IOErr
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
@@ -134,7 +135,17 @@ def to_latex(txt):
 
 
 class DataPHAPlot(shplot.DataHistogramPlot):
-    """Plot a PHA dataset."""
+    """Plot a PHA dataset.
+
+    Notes
+    -----
+    There is special handling of data when using sherpa.stats.WStat as
+    the statistic, whereby we always subtract the background so that
+    we can compare to the model. An alternative would be to add the
+    background counts to the model, but that is a lot harder to
+    implement.
+
+    """
 
     histo_prefs = shplot.get_data_hist_prefs()
 
@@ -144,8 +155,22 @@ class DataPHAPlot(shplot.DataHistogramPlot):
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
         #
+        if isinstance(stat, WStat) and data.background_ids != [] and not data.subtracted:
+            # When using the WStat statistic we want to show the
+            # subtracted data. How are the error-bars handled in
+            # this case?
+            #
+            try:
+                data.subtract()
+                vals = data.to_plot()
+            finally:
+                data.unsubtract()
+
+        else:
+            vals = data.to_plot()
+
         (_, self.y, self.yerr, self.xerr, self.xlabel,
-         self.ylabel) = data.to_plot()
+         self.ylabel) = vals
 
         if stat is not None:
             yerrorbars = self.histo_prefs.get('yerrorbars', True)
