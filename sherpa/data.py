@@ -2039,10 +2039,10 @@ class Data2D(Data):
         Independent coordinate values for the second dimension
     y : array-like
         The values of the dependent observable. If this is a numpy masked
-        array, the mask will used to initialize a mask.
+        array, the mask will be used to initialize a mask.
     shape : tuple
         Shape of the data grid for regularly gridded data (optional). This is
-        used return the data as an image e.g. for display,
+        used to return the data as an image e.g. for display,
         but it not needed for fitting and modelling.
         For irregularly gridded data, shape must be `None`.
     staterror : array-like
@@ -2276,7 +2276,7 @@ class Data2DInt(Data2D):
         Upper bound of the bins in the second dimension of the independent coordinate
     y : array-like
         The values of the dependent observable. If this is a numpy masked
-        array, the mask will used to initialize a mask.
+        array, the mask will be used to initialize a mask.
     shape : tuple
         Shape of the data grid for regularly gridded data (optional). This is
         used return the data as an image e.g. for display,
