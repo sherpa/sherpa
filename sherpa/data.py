@@ -1825,7 +1825,7 @@ class Data1DAsymmetricErrs(Data1D):
 class Data1DInt(Data1D):
     """1-D integrated data set.
 
-    This class is designed to handle non-consequtive bins.
+    This class is designed to handle non-consecutive bins.
 
     Parameters
     ----------

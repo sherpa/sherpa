@@ -185,7 +185,7 @@ def _notice_resp(chans, arf, rmf):
 
         # If the response is mis-matched, determine which energy bins in the
         # RMF correspond to energy bins in the ARF and which are noticed.
-        # Propagate the noticed RMF energy bins to the ARF energy  bins.
+        # Propagate the noticed RMF energy bins to the ARF energy bins.
         elif len(rmf.energ_lo) < len(arf.energ_lo):
             arf_mask = None
             if bin_mask is not None:
@@ -4895,7 +4895,7 @@ class DataIMG(Data2D):
     '''Image data set
 
     This class builds on `sherpa.data.Data2D` to add support for
-    region filters and the ability describe the data in different coordinate
+    region filters and the ability to describe the data in different coordinate
     systems, such as the "logical" coordinates (pixels of the image),
     the "physical" coordinates (e.g. detector coordinates), and the "world"
     coordinates (e.g. Ra/Dec on the sky).
@@ -5508,7 +5508,7 @@ class DataIMGInt(DataIMG):
     in ``image`` and no WCS system to convert it to anything else. On the other hand,
     in FITS standard terminology, the "logical" coordinate system is the
     "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
-    actually start at -2. This behvior works for now, but might be revisited.
+    actually start at -2. This behavior works for now, but might be revisited.
     '''
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
