@@ -3306,6 +3306,58 @@ def test_calc_data_sum_of_bkg():
     assert s.calc_data_sum(2, 3, bkg_id=1) == 3
 
 
+def test_check_get_source_and_model_with_background():
+    """Check the background is not included in get_source but is for get_model
+
+    See issue #1686
+    """
+
+    s = AstroSession()
+    s._add_model_types(sherpa.models.basic)
+    s.load_arrays(1, [1, 2, 3], [4, 5, 6], DataPHA)
+    s.set_bkg(DataPHA("x", [1, 2, 3], [9, 2, 1]))
+
+    s.set_exposure(100)
+    s.set_exposure(200, bkg_id=1)
+
+    s.set_backscal(2)
+    s.set_backscal(8, bkg_id=1)
+
+    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    # Need a response for get_model.
+    #
+    s.set_rmf(rmf)
+    s.set_rmf(rmf, bkg_id=1)
+
+    g1 = s.create_model_component("gauss1d", "g1")
+    g1.ampl = 10000
+
+    g2 = s.create_model_component("polynom1d", "g2")
+    g2.c1 = 2
+
+    s.set_source(g1)
+    s.set_bkg_source(g2)
+
+    assert s.get_source().name == "gauss1d.g1"
+    assert s.get_bkg_source().name == "polynom1d.g2"
+
+    # Note: DJB has repeatedly got concerned about how to scale the
+    # background to match the source region. As noted in #888 the
+    # source expressions (g1 and g2 in this case) evaluate to rates,
+    # so there is no need to account for the difference in the
+    # exposure times for the source and background datasets. However,
+    # there *is* a need to account for the aperture differences, since
+    # the models are not normalized by area. Hence the inclusion of
+    # the backscal ratio (i.e. 2 / 8) in the model expression.
+    #
+    assert s.get_model().name == "apply_rmf((100.0 * (gauss1d.g1 + (0.25 * polynom1d.g2))))"
+    assert s.get_bkg_model().name == "apply_rmf((200.0 * polynom1d.g2))"
+
+
 def test_calc_model_sum_of_bkg():
     """Check we recognize the background"""
 

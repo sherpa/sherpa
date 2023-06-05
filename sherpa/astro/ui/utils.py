@@ -8811,13 +8811,17 @@ class Session(sherpa.ui.utils.Session):
             d.unsubtract()
 
     def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
-                 grouping=None, grouped=False, quality=None, bkg=None):
+                 grouping=None, grouped=False, quality=None, bkg=None,
+                 method=None):
         """Simulate a PHA data set from a model.
 
         The function creates a simulated PHA data set based on a source
         model, instrument response (given as an ARF and RMF), and exposure
         time, along with a Poisson noise term. A background component can
         be included.
+
+        .. versionchanged:: 4.16.0
+           The method parameter was added.
 
         .. versionchanged:: 4.15.0
            The arf argument can now be set to `None` when the data
@@ -8844,12 +8848,17 @@ class Session(sherpa.ui.utils.Session):
            the data set given by id.
         exposure : number
            The exposure time, in seconds.
+           Set this to `None` to use any exposure that is already set for
+           the data set given by id.
         backscal : number, optional
            The 'BACKSCAL' value for the data set.
         areascal : number, optional
            The 'AREASCAL' value for the data set.
         grouping : array, optional
            The grouping array for the data (see `set_grouping`).
+           Set this to `None` to use any grouping that is already set for
+           the data set given by id; the grouping is only applied if
+           `grouped` is ``True``.
         grouped : bool, optional
            Should the simulated data be grouped (see `group`)?  The
            default is ``False``. This value is only used if the
@@ -8860,11 +8869,17 @@ class Session(sherpa.ui.utils.Session):
            If left empty, then only the source emission is simulated.
            If set to a PHA data object, then the counts from this data
            set are scaled appropriately and added to the simulated
-           source signal. To use background model, set ``bkg="model"`. In that
-           case a background dataset with ``bkg_id=1`` has to be set before
-           calling ``fake_pha``. That background dataset needs to include
-           the data itself (not used in this function), the background model,
-           and the response.
+           source signal. To use background model, set
+           ``bkg="model"``. In that case a background dataset with
+           ``bkg_id=1`` has to be set before calling
+           ``fake_pha``. That background dataset needs to include the
+           data itself (not used in this function), the background
+           model, and the response.
+        method : callable or None, optional
+           If None, the default, then the data is simulated using the
+           `sherpa.utils.poisson_noise` routine. If set, it must be a
+           callable that takes a ndarray of the predicted values and
+           returns a ndarray of the same size with the simulated data.
 
         Raises
         ------
@@ -9044,7 +9059,7 @@ class Session(sherpa.ui.utils.Session):
         m = self.get_model(id)
 
         fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None,
-                      id=str(id), bkg_models=bkg_models)
+                      id=str(id), bkg_models=bkg_models, method=method)
         d.name = 'faked'
 
     ###########################################################################

@@ -133,7 +133,7 @@ can be set to indicate to sherpa that the model is not a naked source
 model, but includes all required instrumental effects. In this
 way, :py:func:`~sherpa.astro.fake.fake_pha` can be used with arbitrarily
 complex models which may include such components as the instrumental
-backgound (which should not be folded through the ARF) or arbitary
+background (which should not be folded through the ARF) or arbitrary
 other components::
 
   >>> fake_pha(data, model=inst_bkg + my_arf(my_rmf(srcmodel)), is_source=False)  # doctest: +SKIP
@@ -153,7 +153,7 @@ Sample background from a PHA file
 
 One way to include background is to sample it from a
 :py:class:`~sherpa.astro.data.DataPHA` object. To do so, a background need to be
-loaded into the dataset before running the simluation and, if not done
+loaded into the dataset before running the simulation and, if not done
 before, the scale of the background scaling has to be set::
 
   >>> data.set_background(read_pha('sherpa-test-data/sherpatest/9774_bg.pi'))
@@ -169,7 +169,7 @@ is a Poisson distribution again). This works best if the background is
 well exposed and has a large number or counts.
 
 Why do we need to set the ``add_bkgs=True`` argument and do not simply
-use all available backgrounds? The reason for that is it is often
+use all available backgrounds? Often is is
 useful to read in a file with ``data = read_pha('9774.pi')``, which
 might automatically read in the background as well. Using the
 `add_bkgs` to switch the background on or off in the simulation
@@ -192,7 +192,7 @@ have. To avoid this problem, a background model may be used instead::
   >>> fake_pha(data, mdl, add_bkgs=True, bkg_models={'1': bkgmdl})
 
 The keys in the `bkg_models` dictionary are the identifiers of the
-backgrounds. Above, we loaded a background with the default identifyer
+backgrounds. Above, we loaded a background with the default identifier
 (which is ``1``).
 
 
