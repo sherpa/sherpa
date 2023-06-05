@@ -22,7 +22,6 @@
 Objects and utilities used by multiple Sherpa subpackages.
 """
 
-from configparser import ConfigParser, NoSectionError
 import inspect
 import logging
 import operator
@@ -30,62 +29,27 @@ import os
 import pydoc
 import string
 import sys
-from types import FunctionType as function
-from types import MethodType as instancemethod
+from types import FunctionType, MethodType
 
 import numpy
 import numpy.random
 import numpy.fft
 
-from sherpa import get_config
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
 from sherpa.utils._utils import hist1d, hist2d
 from sherpa.utils import _utils, _psf
 from sherpa.utils.err import IOErr
 
+# We re-export the symbols from parallel but this will be removed at
+# some point.
+#
+from sherpa.utils.parallel import multi as _multi, ncpus as _ncpus, \
+    parallel_map, parallel_map_funcs, run_tasks
+
 
 warning = logging.getLogger("sherpa").warning
 debug = logging.getLogger("sherpa").debug
-
-config = ConfigParser()
-config.read(get_config())
-
-_ncpu_val = "NONE"
-try:
-    _ncpu_val = config.get('parallel', 'numcores').strip().upper()
-except NoSectionError:
-    pass
-
-_ncpus = None
-if not _ncpu_val.startswith('NONE'):
-    _ncpus = int(_ncpu_val)
-
-_multi = False
-
-try:
-    import multiprocessing
-
-    multiprocessing_start_method = config.get('multiprocessing', 'multiprocessing_start_method', fallback='fork')
-
-    if multiprocessing_start_method not in ('fork', 'spawn', 'default'):
-        raise ValueError('multiprocessing_start method must be one of "fork", "spawn", or "default"')
-
-    if multiprocessing_start_method != 'default':
-        multiprocessing.set_start_method(multiprocessing_start_method, force=True)
-
-    _multi = True
-
-    if _ncpus is None:
-        _ncpus = multiprocessing.cpu_count()
-except Exception as e:
-    warning("parallel processing is unavailable,\n" +
-            "multiprocessing module failed with \n'%s'" % str(e))
-    _ncpus = 1
-    _multi = False
-
-del _ncpu_val, config, get_config, ConfigParser, NoSectionError
-
 
 __all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
@@ -149,24 +113,24 @@ class NoNewAttributesAfterInit():
 
     def __delattr__(self, name):
         if self.__initialized and hasattr(self, name):
-            raise AttributeError(("'%s' object attribute '%s' cannot be " +
-                                  "deleted") % (type(self).__name__, name))
+            raise AttributeError(f"'{type(self).__name__}' object attribute '{name}' "
+                                  "cannot be deleted")
         object.__delattr__(self, name)
 
     def __setattr__(self, name, val):
         if self.__initialized and (not hasattr(self, name)):
-            raise AttributeError("'%s' object has no attribute '%s'" %
-                                 (type(self).__name__, name))
+            raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
         if self.__initialized and hasattr(self, name):
-            if callable(getattr(self, name)) and not callable(val):
-                raise AttributeError(("'%s' object attribute '%s' cannot be " +
-                                      "replaced with a non-callable attribute")
-                                     % (type(self).__name__, name))
-            elif not callable(getattr(self, name)) and callable(val):
-                raise AttributeError(("'%s' object attribute '%s' cannot be " +
-                                      "replaced with a callable attribute") %
-                                     (type(self).__name__, name))
+            cname = callable(getattr(self, name))
+            cval = callable(val)
+            if cname and not cval:
+                raise AttributeError(f"'{type(self).__name__}' object attribute '{name}' "
+                                     "cannot be replaced with a non-callable attribute")
+
+            if not cname and cval:
+                raise AttributeError(f"'{type(self).__name__}' object attribute '{name}' "
+                                     "cannot be replaced with a callable attribute")
 
         object.__setattr__(self, name, val)
 
@@ -711,8 +675,8 @@ def sao_arange(start, stop, step=None):
 
     if step is None:
         return _utils.sao_arange(start, stop)
-    else:
-        return _utils.sao_arange(start, stop, step)
+
+    return _utils.sao_arange(start, stop, step)
 
 
 def sao_fcmp(x, y, tol):
@@ -950,8 +914,8 @@ def set_origin(dims, maxindex=None):
 
     if maxindex is None:
         return _psf.set_origin(dims)
-    else:
-        return _psf.set_origin(dims, maxindex)
+
+    return _psf.set_origin(dims, maxindex)
 
 
 def pad_bounding_box(kernel, mask):
@@ -1063,14 +1027,14 @@ def filter_bins(mins, maxes, axislist, integrated=False):
     def locheck(lo, axis):
         if integrated:
             return sao_fcmp(lo, axis, eps) < 0
-        else:
-            return sao_fcmp(lo, axis, eps) <= 0
+
+        return sao_fcmp(lo, axis, eps) <= 0
 
     def hicheck(hi, axis):
         if integrated:
             return sao_fcmp(hi, axis, eps) > 0
-        else:
-            return sao_fcmp(hi, axis, eps) >= 0
+
+        return sao_fcmp(hi, axis, eps) >= 0
 
     for lo, hi, axis in zip(mins, maxes, axislist):
 
@@ -1123,20 +1087,19 @@ def bool_cast(val):
     if type(val) in (tuple, list, numpy.ndarray):
         return numpy.asarray([bool_cast(item) for item in val], bool)
 
-    elif type(val) == str:
+    if type(val) == str:
         # since built in bool() only returns false for empty strings
         vlo = val.lower()
         if vlo in ('false', 'off', 'no', '0', 'f', 'n'):
             return False
 
-        elif vlo in ('true', 'on', 'yes', '1', 't', 'y'):
+        if vlo in ('true', 'on', 'yes', '1', 't', 'y'):
             return True
 
-        raise TypeError("unknown boolean value: '%s'" % str(val))
+        raise TypeError(f"unknown boolean value: '{val}'")
 
-    else:
-        # use built in bool cast
-        return bool(val)
+    # use built in bool cast
+    return bool(val)
 
 
 def export_method(meth, name=None, modname=None):
@@ -1161,14 +1124,14 @@ def export_method(meth, name=None, modname=None):
 
     """
 
-    if type(meth) is not instancemethod:
+    if not isinstance(meth, MethodType):
         return meth
 
     if name is None:
         name = meth.__name__
 
     if name == meth.__name__:
-        old_name = '_old_' + name
+        old_name = f'_old_{name}'
     else:
         old_name = meth.__name__
 
@@ -1184,29 +1147,30 @@ def export_method(meth, name=None, modname=None):
 
     def tostr(p):
         if p.kind == p.VAR_KEYWORD:
-            return "**{}".format(p.name)
-        elif p.kind == p.VAR_POSITIONAL:
-            return "*{}".format(p.name)
-        else:
-            return p.name
+            return f"**{p.name}"
+
+        if p.kind == p.VAR_POSITIONAL:
+            return f"*{p.name}"
+
+        return p.name
 
     argspec = ",".join([tostr(p) for p in sig.parameters.values()])
-    argspec = "({})".format(argspec)
 
     # Create a wrapper function with no default arguments
     g = {old_name: meth}
     if modname is not None:
         g['__name__'] = modname
-    fdef = 'def %s%s:  return %s%s' % (name, argspec, old_name, argspec)
+
+    fdef = f'def {name}({argspec}):  return {old_name}({argspec})'
     exec(fdef, g)
 
     # Create another new function from the one we just made, this time
     # adding the default arguments and doc string from the original method
     new_meth = g[name]
 
-    new_meth = function(new_meth.__code__, new_meth.__globals__,
-                        new_meth.__name__, defaults,
-                        new_meth.__closure__)
+    new_meth = FunctionType(new_meth.__code__, new_meth.__globals__,
+                            new_meth.__name__, defaults,
+                            new_meth.__closure__)
     new_meth.__doc__ = doc
 
     return new_meth
@@ -1364,13 +1328,13 @@ def print_fields(names, vals, converters=None):
             pass
 
     width = max(len(n) for n in names)
-    fmt = '%%-%ds = %%s' % width
+    fmt = f'%-{width}s = %s'
     lines = []
     for n in names:
         v = vals[n]
 
         if isinstance(v, numpy.ndarray):
-            v = '%s[%d]' % (converters[v.dtype.type], v.size)
+            v = f'{converters[v.dtype.type]}[{v.size}]'
         else:
             v = str(v)
         lines.append(fmt % (n, v))
@@ -1434,7 +1398,8 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
 
     if len(vals) == 0:
         return ''
-    elif len(vals) == 1:
+
+    if len(vals) == 1:
         return format % vals[0]
 
     if mask is None:
@@ -1688,12 +1653,12 @@ def parse_expr(expr):
             try:
                 lo = float(lo)
             except ValueError:
-                raise TypeError("Invalid lower bound '%s'" % str(lo))
+                raise TypeError(f"Invalid lower bound '{lo}'") from None
         if hi is not None:
             try:
                 hi = float(hi)
             except ValueError:
-                raise TypeError("Invalid upper bound '%s'" % str(hi))
+                raise TypeError(f"Invalid upper bound '{hi}'") from None
 
         res.append((lo, hi))
 
@@ -1951,16 +1916,15 @@ def dataspace1d(start, stop, step=1, numbins=None):
 
     """
     if start >= stop:
-        raise TypeError("input should be start < stop, found start=%s stop=%s" %
-                        (start, stop))
+        raise TypeError(f"input should be start < stop, found start={start} stop={stop}")
 
     if numbins is None:
         if step <= 0:
-            raise TypeError("input should be step > 0, found step=%s" % step)
+            raise TypeError(f"input should be step > 0, found step={step}")
 
         if step >= (stop - start):
             raise TypeError(
-                "input has produced less than 2 bins, found start=%s stop=%s step=%s" % (start, stop, step))
+                f"input has produced less than 2 bins, found start={start} stop={stop} step={step}")
 
     # xx = numpy.arange(start, stop, step, dtype=float)
     # xx = sao_arange(start, stop, step)
@@ -1968,7 +1932,7 @@ def dataspace1d(start, stop, step=1, numbins=None):
     if numbins is not None:
         if numbins <= 1:
             raise TypeError(
-                "input should be numbins > 1, found numbins=%s" % numbins)
+                f"input should be numbins > 1, found numbins={numbins}")
 
         xx = numpy.linspace(start, stop, numbins + 1)
     else:
@@ -1992,8 +1956,7 @@ def dataspace2d(dim):
         raise TypeError("dimensions for dataspace2d must be > 1")
 
     if dim[0] < 1 or dim[1] < 1:
-        raise TypeError("dimensions should be > 0, found dim0 %s dim1 %s"
-                        % (dim[0], dim[1]))
+        raise TypeError(f"dimensions should be > 0, found dim0 {dim[0]} dim1 {dim[1]}")
 
     x0 = numpy.arange(dim[0], dtype=float) + 1.0
     x1 = numpy.arange(dim[1], dtype=float) + 1.0
@@ -2256,8 +2219,7 @@ def interpolate(xout, xin, yin, function=linear_interp):
     """
 
     if not callable(function):
-        raise TypeError("input function '%s' is not callable" %
-                        repr(function))
+        raise TypeError(f"input function '{repr(function)}' is not callable")
 
     return function(xout, xin, yin)
 
@@ -2859,306 +2821,6 @@ def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
             'min': rad / _guess_ampl_scale, 'max': rad * _guess_ampl_scale}
 
 
-def split_array(arr, m):
-    """Split array ``arr`` into ``m`` roughly equal chunks
-    >>> split_array(range(27), 6)
-    [[0, 1, 2, 3, 4],
-     [5, 6, 7, 8],
-     [9, 10, 11, 12, 13],
-     [14, 15, 16, 17],
-     [18, 19, 20, 21, 22],
-     [23, 24, 25, 26]]
-
-    >>> import numpy
-    >>> split_array(numpy.arange(25), 6)
-    [array([0, 1, 2, 3]),
-     array([4, 5, 6, 7]),
-     array([ 8,  9, 10, 11, 12]),
-     array([13, 14, 15, 16]),
-     array([17, 18, 19, 20]),
-     array([21, 22, 23, 24])]
-
-    >>> split_array(numpy.arange(30).reshape(5,-1), 3)
-    [array([[ 0,  1,  2,  3,  4,  5],
-           [ 6,  7,  8,  9, 10, 11]]),
-    array([[12, 13, 14, 15, 16, 17]]),
-    array([[18, 19, 20, 21, 22, 23],
-          [24, 25, 26, 27, 28, 29]])]
-
-    Author: Tom Aldcroft
-      split_array() - originated from Python users working group
-    """
-    n = len(arr)
-    idx = [int(round(i * n / float(m))) for i in range(m + 1)]
-    return [arr[idx[i]:idx[i + 1]] for i in range(m)]
-
-
-def worker(f, ii, chunk, out_q, err_q, lock):
-
-    try:
-        vals = map(f, chunk)
-    except Exception as e:
-        err_q.put(e)
-        return
-
-    # output the result and task ID to output queue
-    out_q.put((ii, list(vals)))
-
-
-def run_tasks(procs, err_q, out_q, num):
-
-    die = (lambda vals: [val.terminate() for val in vals
-                         if val.exitcode is None])
-
-    try:
-        for proc in procs:
-            proc.start()
-
-        for proc in procs:
-            proc.join()
-
-    except KeyboardInterrupt as e:
-        # kill all slave processes on ctrl-C
-        die(procs)
-        raise e
-
-    if not err_q.empty():
-        die(procs)
-        raise err_q.get()
-
-    results = [None] * num
-    while not out_q.empty():
-        idx, result = out_q.get()
-        results[idx] = result
-
-    # return list(numpy.concatenate(results))
-    # Remove extra dimension added by split
-    vals = []
-    for r in results:
-        vals.extend(r)
-    return vals
-
-
-def parallel_map(function, sequence, numcores=None):
-    """Run a function on a sequence of inputs in parallel.
-
-    A parallelized version of the native Python map function that
-    utilizes the Python multiprocessing module to divide and
-    conquer sequence.
-
-    Parameters
-    ----------
-    function : function
-       This function accepts a single argument (an element of
-       ``sequence``) and returns a value.
-    sequence : array_like
-       The data to be passed to ``function``.
-    numcores : int or None, optional
-       The number of calls to ``function`` to run in parallel. When
-       set to ``None``, all the available CPUs on the machine - as
-       set either by the 'numcores' setting of the 'parallel' section
-       of Sherpa's preferences or by multiprocessing.cpu_count - are
-       used.
-
-    Returns
-    -------
-    ans : array
-       The return values from the calls, in the same order as the
-       ``sequence`` array.
-
-    Notes
-    -----
-    A tuple or dictionary should be used to pass multiple values to
-    the function.
-
-    The input list is split into ``numcores`` chunks, and then each
-    chunk is run in parallel. There is no guarantee to the ordering
-    of the tasks.
-
-    Examples
-    --------
-
-    In the following examples a simple set of computations are used;
-    in reality the function is expected to be run on computations
-    that take a significant amount of time to run.
-
-    Run the computation (summing up each element of the input array)
-    on a separate core and return the results (unless the machine only
-    has a single core or the parallel.numcores setting is set to 1).
-
-    >>> import numpy as np
-    >>> args = [np.arange(5), np.arange(3), np.arange(7)]
-    >>> parallel_map(np.sum, args)
-    [10, 3, 21]
-
-    Use two jobs to evaluate the results: one job will sum up two arrays
-    while the other will only sum one array since there are 3 jobs to
-    run.
-
-    >>> parallel_map(np.sum, args, numcores=2)
-    [10, 3, 21]
-
-    An example of sending in multiple arguments to a function (``comp``)
-    via a dictionary (although in this case there is only one task to
-    execute):
-
-    >>> parallel_map(comp, [{'idx1': 23, 'idx2': 47}])
-
-    Here the ``tcomp`` function accepts a single parameter which it
-    can deconstruct to extract the two values it needs:
-
-    >>> parallel_map(tcomp, [(23, 47), (2, 20), (5, 10)])
-
-    """
-    if not callable(function):
-        raise TypeError("input function '%s' is not callable" %
-                        repr(function))
-
-    if not numpy.iterable(sequence):
-        raise TypeError("input '%s' is not iterable" %
-                        repr(sequence))
-
-    size = len(sequence)
-
-    if not _multi or size == 1 or (numcores is not None and numcores < 2):
-        return list(map(function, sequence))
-
-    if numcores is None:
-        numcores = _ncpus
-
-    # Returns a started SyncManager object which can be used for sharing
-    # objects between processes. The returned manager object corresponds
-    # to a spawned child process and has methods which will create shared
-    # objects and return corresponding proxies.
-    manager = multiprocessing.Manager()
-
-    # Create FIFO queue and lock shared objects and return proxies to them.
-    # The managers handles a server process that manages shared objects that
-    # each slave process has access to.  Bottom line -- thread-safe.
-    out_q = manager.Queue()
-    err_q = manager.Queue()
-    lock = manager.Lock()
-
-    # if sequence is less than numcores, only use len sequence number of
-    # processes
-    if size < numcores:
-        numcores = size
-
-    # group sequence into numcores-worth of chunks
-    sequence = split_array(sequence, numcores)
-
-    procs = [multiprocessing.Process(target=worker,
-                                     args=(function, ii, chunk, out_q, err_q, lock))
-             for ii, chunk in enumerate(sequence)]
-
-    return run_tasks(procs, err_q, out_q, numcores)
-
-
-def parallel_map_funcs(funcs, datasets, numcores=None):
-    """Run a sequence of function on a sequence of inputs in parallel.
-
-    Sherpa's parallel_map runs a single function to an iterable set of
-    sequence.  parallel_map_funcs is generalized parallelized version
-    of sherpa's parallel_map function since each element of the ordered
-    iterable funcs shall operate on the each element of the datasets.
-
-    Parameters
-    ----------
-    funcs : a list or tuple of functions
-       An ordered iteratble sequence of functions which accepts an element
-       of the datasets and returns a value.  The number of elements in
-       funcs must match the number of elements of the datasets.
-    datasets : a list or tuple of array_like
-       The data to be passed to ``func``. The number of elements in
-       datasets must match the number of elements of funcs.
-    numcores : int or None, optional
-       The number of calls to ``funcs`` to run in parallel. When
-       set to ``None``, all the available CPUs on the machine - as
-       set either by the 'numcores' setting of the 'parallel' section
-       of Sherpa's preferences or by multiprocessing.cpu_count - are
-       used.
-
-    Returns
-    -------
-    ans : array
-       The return values from the calls, in the same order as the
-       ``sequence`` array.
-
-    Notes
-    -----
-    Due to the overhead involved in passing the functions and datasets
-    to the different cores, the functions should be very time consuming
-    to compute (of order 0.1-1s).  This is similar to the ``parallel_map``
-    function.
-
-    An ordered iterable (i.e. tuple or list) should be used to pass multiple
-    values to the multiple functions. The lengths of the iterable funcs and
-    datasets must be equal. The corresponding funcs and datasets are passed
-    to the different cores to distribute the work in parallel. There is no
-    guarantee to the ordering of the tasks.
-
-    Examples
-    --------
-
-    In the following examples a simple set of computations, sum and std
-    deviations, are used; in reality the function is expected to be run
-    on computations that take a significant amount of time to run.
-
-    Run the computation (summing up each element of the first input array
-    and calculate the standard deviation of the second input array)
-    on a separate core and return the results (unless the machine only
-    has a single core or the parallel.numcores setting is set to 1).
-
-    >>> import numpy as np
-    >>> funcs = [np.sum, np.std]
-    >>> datasets = [np.arange(3), np.arange(4)]
-    >>> parallel_map_funcs(funcs, datasets, numcores=2)
-    [0, 1, 2, 0.0, 0.0, 0.0, 0.0]
-
-    """
-    if not numpy.iterable(funcs):
-        raise TypeError("input '%s' is not iterable" % repr(funcs))
-
-    if not numpy.iterable(datasets):
-        raise TypeError("input '%s' is not iterable" % repr(datasets))
-
-    for func in funcs:
-        if not callable(func):
-            raise TypeError("input func '%s' is not callable" % repr(func))
-
-    funcs_size = len(funcs)
-    datasets_size = len(datasets)
-    if funcs_size != datasets_size:
-        msg = "input funcs (%d) and datsets (%d) size must be same" % \
-            (funcs_size, datasets_size)
-        raise TypeError(msg)
-
-    if not _multi or datasets_size == 1 or \
-            (numcores is not None and numcores < 2):
-        return list(map(funcs[0], datasets))
-
-    if numcores is None:
-        numcores = _ncpus
-
-    # Returns a started SyncManager object which can be used for sharing
-    # objects between processes. The returned manager object corresponds
-    # to a spawned child process and has methods which will create shared
-    # objects and return corresponding proxies.
-    manager = multiprocessing.Manager()
-
-    # Create FIFO queue and lock shared objects and return proxies to them.
-    # The managers handles a server process that manages shared objects that
-    # each slave process has access to.  Bottom line -- thread-safe.
-    out_q = manager.Queue()
-    err_q = manager.Queue()
-    lock = manager.Lock()
-
-    procs = [multiprocessing.Process(target=worker,
-                                     args=(funcs[ii], ii, chunk, out_q, err_q, lock))
-             for ii, chunk in enumerate(datasets)]
-    return run_tasks(procs, err_q, out_q, numcores)
-
-
 ################################# Neville2d ###################################
 
 
@@ -3331,26 +2993,24 @@ class NumDerivCentralPartial(NumDeriv):
             fval /= delta * delta
             return fval
 
-        else:
+        ej = numpy.zeros(len(x), float)
 
-            ej = numpy.zeros(len(x), float)
+        deltai = h * abs(x[ith])
+        if 0.0 == deltai:
+            deltai = h
+        ei[ith] = deltai
 
-            deltai = h * abs(x[ith])
-            if 0.0 == deltai:
-                deltai = h
-            ei[ith] = deltai
+        deltaj = h * abs(x[jth])
+        if 0.0 == deltaj:
+            deltaj = h
+        ej[jth] = deltaj
 
-            deltaj = h * abs(x[jth])
-            if 0.0 == deltaj:
-                deltaj = h
-            ej[jth] = deltaj
-
-            fval = self.func(x + ei + ej)
-            fval -= self.func(x + ei - ej)
-            fval -= self.func(x - ei + ej)
-            fval += self.func(x - ei - ej)
-            fval /= (4.0 * deltai * deltaj)
-            return fval
+        fval = self.func(x + ei + ej)
+        fval -= self.func(x + ei - ej)
+        fval -= self.func(x - ei + ej)
+        fval += self.func(x - ei - ej)
+        fval /= (4.0 * deltai * deltaj)
+        return fval
 
 
 class NoRichardsonExtrapolation:
@@ -3376,10 +3036,6 @@ class RichardsonExtrapolation(NoRichardsonExtrapolation):
     Transactions of the Royal Society of London, Series A 210.
     2. Richardson, L. F. (1927). \" The deferred approach to the limit \".
     Philosophical Transactions of the Royal Society of London, Series A 226:"""
-
-    def __init__(self, sequence, verbose=False):
-        self.sequence = sequence
-        self.verbose = verbose
 
     def __call__(self, x, t, tol, maxiter, h, *args):
 
@@ -3486,16 +3142,16 @@ def is_in(arg, seq):
     for x in seq:
         if arg == x:
             return True
+
     return False
 
 
 def is_iterable(arg):
-    return isinstance(arg, list) or isinstance(arg, tuple) \
-        or isinstance(arg, numpy.ndarray) or numpy.iterable(arg)
+    return isinstance(arg, (list, tuple, numpy.ndarray)) or numpy.iterable(arg)
 
 
 def is_sequence(start, mid, end):
-    return (start < mid) and (mid < end)
+    return start < mid < end
 
 
 def Knuth_close(x, y, tol, myop=operator.__or__):
@@ -3543,7 +3199,7 @@ def Knuth_close(x, y, tol, myop=operator.__or__):
 
 
 def safe_div(num, denom):
-    import sys
+
     dbl_max = sys.float_info.max
     dbl_min = sys.float_info.min
 
@@ -3598,17 +3254,18 @@ def Knuth_boost_close(x, y, tol, myop=operator.__or__):
 def list_to_open_interval(arg):
     if not numpy.iterable(arg):
         return arg
-    str = '(%e, %e)' % (arg[0], arg[1])
-    return str
+
+    return f'({arg[0]:e}, {arg[1]:e})'
 
 
 def mysgn(arg):
     if arg == 0.0:
         return 0
-    elif arg < 0.0:
+
+    if arg < 0.0:
         return -1
-    else:
-        return 1
+
+    return 1
 
 
 class OutOfBoundErr(Exception):
@@ -3636,18 +3293,16 @@ class QuadEquaRealRoot:
                 answer = - c / b
                 return [answer, answer]
 
-            else:
+            #
+            # 0 * x^2 + 0 * x + c = 0
+            #
+            # a == 0, b == 0, so if c == 0 then all numbers work so
+            # returning nan is not right. However if c != 0 then no
+            # roots exist.
+            #
+            return [None, None]
 
-                #
-                # 0 * x^2 + 0 * x + c = 0
-                #
-                # a == 0, b == 0, so if c == 0 then all numbers work so
-                # returning nan is not right. However if c != 0 then no
-                # roots exist.
-                #
-                return [None, None]
-
-        elif 0.0 == b:
+        if 0.0 == b:
 
             #
             # a * x^2 + 0 * x + c = 0
@@ -3656,29 +3311,26 @@ class QuadEquaRealRoot:
 
                 # a * x^2 + 0 * x + 0 = 0
                 return [0.0, 0.0]
-            else:
 
-                # a * x^2 + 0 * x + c = 0
-                if mysgn(a) == mysgn(c):
-                    return [None, None]
-                answer = numpy.sqrt(c / a)
-                return [-answer, answer]
+            # a * x^2 + 0 * x + c = 0
+            if mysgn(a) == mysgn(c):
+                return [None, None]
 
-        elif 0.0 == c:
+            answer = numpy.sqrt(c / a)
+            return [-answer, answer]
+
+        if 0.0 == c:
 
             #
             # a * x^2 + b * x + 0 = 0
             #
             return [0.0, - b / a]
 
-        else:
-
-            discriminant = b * b - 4.0 * a * c
-            # TODO: is this needed?
-            debug("disc={}".format(discriminant))
-            sqrt_disc = numpy.sqrt(discriminant)
-            t = - (b + mysgn(b) * sqrt_disc) / 2.0
-            return [c / t, t / a]
+        discriminant = b * b - 4.0 * a * c
+        debug("disc=%s", discriminant)
+        sqrt_disc = numpy.sqrt(discriminant)
+        t = - (b + mysgn(b) * sqrt_disc) / 2.0
+        return [c / t, t / a]
 
 
 def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
@@ -3745,7 +3397,7 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
 
         if mysgn(fa) == mysgn(fb):
             # TODO: is this a useful message for the user?
-            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         while nfev[0] < maxfev:
@@ -3766,8 +3418,8 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
             else:
                 if abs(fa) <= tol:
                     return [[xa, fa], [[xa, fa], [xb, fb]], nfev[0]]
-                else:
-                    return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+
+                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
         xc = (xa + xb) / 2.0
         fc = myfcn(xc, *args)
@@ -4044,8 +3696,8 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
         x = xl + (xh - xl) * fl / (fl - fh)
         if is_sequence(x0, x, x1):
             return x
-        else:
-            return (x0 + x1) / 2.0
+
+        return (x0 + x1) / 2.0
 
     history = [[], []]
     nfev, myfcn = func_counter_history(fcn, history)
@@ -4063,8 +3715,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
             return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
         if mysgn(fa) == mysgn(fb):
-            # TODO: is this a useful message for the user?
-            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         while nfev[0] < maxfev:
@@ -4198,8 +3849,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
         if mysgn(fa) == mysgn(fb):
-            # TODO: is this a useful message for the user?
-            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         xc = (xa + xb) / 2.0
@@ -4395,8 +4045,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
             return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
         if mysgn(fa) == mysgn(fb):
-            # TODO: is this a useful message for the user?
-            warning(__name__ + ': ' + fcn.__name__ + ' fa * fb < 0 is not met')
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         xc = xa
@@ -4423,13 +4072,14 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
                                         maxfev=maxfev - nfev[0], tol=tol)
                     tmp[-1] += nfev[0]
                     return tmp
-                elif mysgn(fb) != mysgn(fc):
+
+                if mysgn(fb) != mysgn(fc):
                     tmp = apache_muller(fcn, xb, xc, fb, fc, args=args,
                                         maxfev=maxfev - nfev[0], tol=tol)
                     tmp[-1] += nfev[0]
                     return tmp
-                else:
-                    return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+
+                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
             if abs(prev_step) >= tol_act and abs(fa) > abs(fb):
 
@@ -4525,5 +4175,5 @@ def send_to_pager(txt, filename=None, clobber=False):
     if os.path.isfile(filename) and not clobber:
         raise IOErr('filefound', filename)
 
-    with open(filename, 'w') as fh:
+    with open(filename, 'w', encoding="UTF-8") as fh:
         print(txt, file=fh)

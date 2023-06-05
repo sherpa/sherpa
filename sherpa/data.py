@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021, 2022
+#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -125,7 +125,8 @@ from sherpa.models.regrid import EvaluationSpace1D, IntegratedAxis, PointAxis
 from sherpa.utils.err import DataErr
 from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
     print_fields, create_expr, create_expr_integrated, calc_total_error, bool_cast, \
-    filter_bins, parallel_map_funcs
+    filter_bins
+from sherpa.utils.parallel import parallel_map_funcs
 from sherpa.utils import formatting
 
 warning = logging.getLogger(__name__).warning

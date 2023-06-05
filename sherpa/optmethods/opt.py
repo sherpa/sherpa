@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021
+#  Copyright (C) 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,7 +25,8 @@ import random
 
 import numpy as np
 
-from sherpa.utils import Knuth_close, _multi, _ncpus, run_tasks, func_counter
+from sherpa.utils import Knuth_close, func_counter
+from sherpa.utils.parallel import multi, run_tasks
 
 
 __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
@@ -46,44 +47,30 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
 class MyNcores:
 
     def __init__(self):
-        if _multi is False:
+        if multi is False:
             raise TypeError("multicores not available")
 
     def calc(self, funcs, numcores, *args, **kwargs):
 
         for func in funcs:
             if not callable(func):
-                raise TypeError("input func '%s' is not callable" % repr(func))
+                raise TypeError(f"input func '{repr(func)}' is not callable")
 
-        if numcores is None:
-            numcores = _ncpus
-        num_funcs = len(funcs)
-        numcores = min(numcores, num_funcs)
+        # TODO: the numcores argument is currently unused.
+        #
 
-        # Returns a started SyncManager object which can be used for sharing
-        # objects between processes. The returned manager object corresponds
-        # to a spawned child process and has methods which will create shared
-        # objects and return corresponding proxies.
+        # See sherpa.utils.parallel for the logic used here.
         manager = multiprocessing.Manager()
-
-        # Create FIFO queue and lock shared objects and return proxies to them.
-        # The managers handles a server process that manages shared objects that
-        # each slave process has access to.  Bottom line -- thread-safe.
         out_q = manager.Queue()
         err_q = manager.Queue()
-        lock = manager.Lock()
-        procs = []
+        # lock = manager.Lock()  # unused
+        procs = [multiprocessing.Process(target=self.my_worker,
+                                         args=(func, ii, out_q, err_q) + args)
+                 for ii, func in enumerate(funcs)]
 
-        for id, func in enumerate(funcs):
-            myargs = (func, id, out_q, err_q, lock) + args
-            try:
-                procs.append(multiprocessing.Process(target=self.my_worker,
-                                                     args=myargs))
-            except NotImplementedError as nie:
-                raise nie
-        return run_tasks(procs, err_q, out_q, num_funcs)
+        return run_tasks(procs, err_q, out_q)
 
-    def my_worker(self, *args):
+    def my_worker(self, opt, idval, out_q, err_q, *args):
         raise NotImplementedError("my_worker has not been implemented")
 
 
@@ -95,7 +82,6 @@ class Opt:
             self.func_counter_bounds_wrappers(func, self.npar, xmin, xmax)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
-        return
 
     def _outside_limits(self, x, xmin, xmax):
         return (np.any(x < xmin) or np.any(x > xmax))
@@ -147,7 +133,6 @@ class SimplexBase:
         self.xmax = xmax
         self.npar = len(xpar)
         self.simplex = self.init(npop, xpar, step, seed, factor)
-        return
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -207,13 +192,16 @@ class SimplexBase:
             return stddev or fctval
         return False
 
+        # TODO: what is this code meant to be doing as it is unreachable?
         num = 2.0 * abs(self.simplex[0, -1] - self.simplex[-1, -1])
         denom = abs(self.simplex[0, -1]) + abs(self.simplex[-1, -1]) + 1.0
-        if (num / denom > ftol):
+        if num / denom > ftol:
             return False
+
         func_vals = [col[-1] for col in self.simplex]
         if np.std(func_vals) > ftol:
             return False
+
         return True
 
     def eval_simplex(self, npop, simplex):

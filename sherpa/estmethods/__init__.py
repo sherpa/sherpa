@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -21,6 +21,7 @@
 from itertools import chain
 import logging
 
+# Is there ever a case where multiprocessing can fail here?
 try:
     import multiprocessing
 except ImportError:
@@ -30,7 +31,8 @@ import numpy
 
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
     is_iterable, list_to_open_interval, mysgn, quad_coef, \
-    demuller, zeroin, OutOfBoundErr, func_counter, _multi, _ncpus
+    demuller, zeroin, OutOfBoundErr, func_counter
+from sherpa.utils.parallel import multi, ncpus, process_tasks
 
 import sherpa.estmethods._est_funcs
 
@@ -195,7 +197,7 @@ class Confidence(EstMethod):
     _added_config = {'remin': 0.01,
                      'fast': False,
                      'parallel': True,
-                     'numcores': _ncpus,
+                     'numcores': ncpus,
                      'maxfits': 5,
                      'max_rstat': 3,
                      'tol': 0.2,
@@ -263,7 +265,7 @@ class Projection(EstMethod):
     _added_config = {'remin': 0.01,
                      'fast': False,
                      'parallel': True,
-                     'numcores': _ncpus,
+                     'numcores': ncpus,
                      'maxfits': 5,
                      'max_rstat': 3,
                      'tol': 0.2}
@@ -451,7 +453,7 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         return (singlebounds[0][0], singlebounds[1][0], singlebounds[2][0],
                 singlebounds[3], None)
 
-    if numsearched < 2 or not _multi or numcores < 2:
+    if numsearched < 2 or not multi or numcores < 2:
         do_parallel = False
 
     if not do_parallel:
@@ -1106,7 +1108,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         return (conf_int[0][0], conf_int[1][0], error_flags[0],
                 nfev[0], None)
 
-    if len(limit_parnums) < 2 or not _multi or numcores < 2:
+    if len(limit_parnums) < 2 or not multi or numcores < 2:
         do_parallel = False
 
     if not do_parallel:
@@ -1129,11 +1131,32 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 #################################confidence###################################
 
 
-def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
+def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
+    """Run a function on a sequence of inputs in parallel.
 
-    tasks = []
+    A specialized version of sherpa.utils.parallel.parallel_map.
 
-    def worker(out_q, err_q, parids, parnums, parvals, lock):
+    Parameters
+    ----------
+    estfunc : function
+       This function accepts three arguments and returns a value.
+    limit_parnums : sequence
+    pars : sequence
+       The current parameter values
+    numcores : int, optional
+       The number of calls to ``function`` to run in parallel. When
+       set to ``None``, all the available CPUs on the machine - as
+       set either by the 'numcores' setting of the 'parallel' section
+       of Sherpa's preferences or by `multiprocessing.cpu_count` - are
+       used.
+
+    Returns
+    -------
+    ans : array
+
+    """
+
+    def worker(out_q, err_q, parids, parnums, lock):
         results = []
         for parid, singleparnum in zip(parids, parnums):
             try:
@@ -1146,20 +1169,24 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
                 # The exception class will be instaniated re-raised with the
                 # parameter values attached.  C++ Python exceptions are not
                 # picklable for use in the queue.
-                err_q.put(EstNewMin(parvals))
+                err_q.put(EstNewMin(pars))
                 return
             except Exception as e:
-                # err_q.put( e.__class__() )
                 err_q.put(e)
                 return
 
         out_q.put(results)
 
-    # The multiprocessing manager provides references to process-safe
-    # shared objects like Queue and Lock
+    # See sherpa.utils.parallel for a discussion of how multiprocessing is
+    # being used to run code in parallel.
+    #
     manager = multiprocessing.Manager()
     out_q = manager.Queue()
     err_q = manager.Queue()
+
+    # Unlike sherpa.utils.parallel.parallel_map, these routines do use a lock
+    # for serializing screen output.
+    #
     lock = manager.Lock()
 
     size = len(limit_parnums)
@@ -1175,32 +1202,34 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=_ncpus):
     parids = numpy.array_split(parids, numcores)
 
     tasks = [multiprocessing.Process(target=worker,
-                                     args=(out_q, err_q, parid, parnum, pars, lock))
+                                     args=(out_q, err_q, parid, parnum, lock))
              for parid, parnum in zip(parids, limit_parnums)]
 
     return run_tasks(tasks, out_q, err_q, size)
 
 
 def run_tasks(tasks, out_q, err_q, size):
+    """Run the processes, exiting early if necessary, and return the results.
 
-    die = (lambda tasks: [task.terminate() for task in tasks
-                          if task.exitcode is None])
+    A specialized version of sherpa.utils.parallel.run_tasks (note the
+    different order of the queues).
 
-    try:
-        for task in tasks:
-            task.start()
+    Parameters
+    ----------
+    procs : list of multiprocessing.Process tasks
+        The processes to run.
+    out_q, err_q : manager.Queue
+        The success and error and channels used by the processes.
+    size : int
+        The number of results being returned (can be larger than len(procs)).
 
-        for task in tasks:
-            task.join()
+    Returns
+    -------
+    result : tuple
 
-    except KeyboardInterrupt as e:
-        # kill all slave processes on ctrl-C
-        die(tasks)
-        raise e
+    """
 
-    if not err_q.empty():
-        die(tasks)
-        raise err_q.get()
+    process_tasks(tasks, err_q)
 
     lower_limits = size * [None]
     upper_limits = size * [None]

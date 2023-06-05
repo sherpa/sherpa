@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +22,8 @@
 
 # import autograd.numpy as np
 import numpy as np
-from sherpa.utils import _ncpus
+
+from sherpa.utils.parallel import ncpus
 from sherpa.optmethods import _saoopt
 from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom
@@ -348,7 +350,7 @@ class nmNcores(MyNcores):
         MyNcores.__init__(self)
         return
 
-    def my_worker(self, opt, id, out_q, err_q, lock,
+    def my_worker(self, opt, idval, out_q, err_q,
                   fcn, x, xmin, xmax, tol, maxnfev):
         try:
             vals = opt(fcn, x, xmin, xmax, tol, maxnfev)
@@ -356,7 +358,7 @@ class nmNcores(MyNcores):
             err_q.put(e)
             return
         # output the result and task ID to output queue
-        out_q.put((id, vals))
+        out_q.put((idval, vals))
 
 
 class ncoresNelderMead:
@@ -368,7 +370,7 @@ class ncoresNelderMead:
         return
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=_ncpus):
+                 numcores=ncpus):
         try:
             num_algo = len(self.algo)
             args = (fcn, x, xmin, xmax, tol, maxnfev)
@@ -413,12 +415,12 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
         return
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-                 numcores=_ncpus):
+                 numcores=ncpus):
 
         return self.calc(fcn, x, xmin, xmax, tol, maxnfev, numcores)
 
     def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
-             numcores=_ncpus, fval=np.inf, nfev=0):
+             numcores=ncpus, fval=np.inf, nfev=0):
         try:
             num_algo = len(self.algo)
             args = (fcn, x, xmin, xmax, tol, maxnfev)

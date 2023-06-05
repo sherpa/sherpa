@@ -50,6 +50,7 @@ Reference/API
    sherpa
    err
    logging
+   parallel
    utils
    testing
    io

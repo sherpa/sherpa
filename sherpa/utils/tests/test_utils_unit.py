@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,7 +24,8 @@ from numpy.testing import assert_almost_equal, assert_array_equal, \
 import pytest
 
 from sherpa.utils import _utils, is_binary_file, pad_bounding_box, \
-    get_fwhm, histogram1d, histogram2d
+    get_fwhm, histogram1d, histogram2d, dataspace1d, dataspace2d, \
+    interpolate, bool_cast
 from sherpa.utils.testing import requires_data
 
 
@@ -479,3 +480,89 @@ def test_hist1d_basic(invals, expected):
 
     ans = _utils.hist1d(invals, [0.5, 1.5, 3.1, 6], [1.5, 3.1, 6, 7])
     assert ans == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("start,stop", [(10, 10), (-4, -4),
+                                        (20, 10), (-3, -4)])
+def test_dataspace1d_start_less_than_stop(start, stop):
+    """Check error handling"""
+
+    with pytest.raises(TypeError,
+                       match=f"^input should be start < stop, found start={start} stop={stop}$"):
+        dataspace1d(start, stop)
+
+
+@pytest.mark.parametrize("step,emsg",
+                         [(0, "input should be step > 0, found step=0"),
+                          (-1, "input should be step > 0, found step=-1")])
+def test_dataspace1d_step_is_positive(step, emsg):
+    """Check error handling"""
+
+    with pytest.raises(TypeError, match=f"^{emsg}$"):
+        dataspace1d(1, 10, step=step)
+
+
+def test_dataspace1d_has_more_than_one_bin():
+    """Check error handling"""
+
+    with pytest.raises(TypeError,
+                       match="^input has produced less than 2 bins, found start=1 stop=10 step=10$"):
+        dataspace1d(1, 10, step=10)
+
+
+@pytest.mark.parametrize("nbins,emsg",
+                         [(1, "input should be numbins > 1, found numbins=1"),
+                          (0, "input should be numbins > 1, found numbins=0"),
+                          (-1, "input should be numbins > 1, found numbins=-1")])
+def test_dataspace1d_numbins_is_at_least_one(nbins, emsg):
+    """Check error handling"""
+
+    with pytest.raises(TypeError, match=f"^{emsg}$"):
+        dataspace1d(1, 10, numbins=nbins)
+
+
+def test_dataspace2d_dim_not_iterable():
+    """Check error handling"""
+
+    with pytest.raises(TypeError, match="^dim must be an array of dimensions$"):
+        dataspace2d(23)
+
+
+def test_dataspace2d_dim_must_have_multiple_elements():
+    """Check error handling"""
+
+    with pytest.raises(TypeError, match="^dimensions for dataspace2d must be > 1$"):
+        dataspace2d([23])
+
+
+@pytest.mark.parametrize("grid,emsg",
+                         [([0, 0], "dimensions should be > 0, found dim0 0 dim1 0"),
+                          ([0, 1], "dimensions should be > 0, found dim0 0 dim1 1"),
+                          ([1, 0], "dimensions should be > 0, found dim0 1 dim1 0")])
+def test_dataspace2d_dim_not_zero(grid, emsg):
+    """Check error handling"""
+
+    with pytest.raises(TypeError, match=f"^{emsg}$"):
+        dataspace2d(grid)
+
+
+def test_interpolate_sent_a_callable():
+    """Check error handling"""
+
+    with pytest.raises(TypeError, match="^input function 'True' is not callable$"):
+        interpolate([1.5, 2.5], [1, 2, 3], [2, 4, 3], function=True)
+
+
+@pytest.mark.parametrize("arg,badval",
+                         [("truthy", None),
+                          ("falsey", None),
+                          ("ya", None),
+                          ("nah", None),
+                          ("2", None),
+                          ([1, 0, "1", "0", "bob"], "bob")])
+def test_bool_cast_invalid(arg, badval):
+    """Check error handling"""
+
+    emsg = arg if badval is None else badval
+    with pytest.raises(TypeError, match=f"^unknown boolean value: '{emsg}'$"):
+        bool_cast(arg)
