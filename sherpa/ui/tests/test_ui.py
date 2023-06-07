@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2012, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,7 +19,6 @@
 #
 
 from collections import namedtuple
-import logging
 
 import numpy as np
 
@@ -34,6 +33,7 @@ from sherpa.models.basic import PowLaw1D
 from sherpa.models.parameter import hugeval
 from sherpa.stats import LeastSq
 from sherpa.utils.err import ArgumentErr, IdentifierErr, PSFErr, StatErr, SessionErr
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa import ui
 
 # As the user model is called UserModel, refer to the Sherpa version
@@ -41,17 +41,12 @@ from sherpa import ui
 import sherpa.models.basic
 
 
-logger = logging.getLogger("sherpa")
-
-
 @pytest.fixture(autouse=True)
 def hide_logging():
     "hide INFO-level logging in all these tests"
 
-    olevel = logger.getEffectiveLevel()
-    logger.setLevel(logging.ERROR)
-    yield
-    logger.setLevel(olevel)
+    with SherpaVerbosity("ERROR"):
+        yield
 
 
 class UserModel(ArithmeticModel):
@@ -92,7 +87,6 @@ RIGHT_STATS = {'cash', 'cstat', 'wstat'}
 @pytest.fixture
 def setup_covar(make_data_path):
 
-    print("A")
     ui.load_data(make_data_path('sim.poisson.1.dat'))
     ui.set_model(PowLaw1D("p1"))
 
@@ -131,44 +125,72 @@ def test_no_covar(stat, clean_ui, setup_covar):
         ui.get_draws()
 
 
-# Test get_draws returns a valid response when the covariance matrix is provided
-# Note the accuracy of the returned values is not assessed here
-@requires_data
-@pytest.mark.parametrize('stat', sorted(RIGHT_STATS - {'wstat'}))
-def test_covar_as_argument(stat, clean_ui, setup_covar):
+SEED_VALUE = 12347
 
-    ui.set_stat(stat)
+
+def check_draws(stats, accept, params):
+    """Check the test_covar_as_none/argument output
+
+    Ideally we'd be able to check that test_covar_as_none and
+    test_covar_as_argument return the same answers, but
+
+      a) numerical differences, since we only give the covar matrix
+         to 8 dp
+      b) the fits, and hence parameter choices, depend on the chosen
+         statistic, leading to subtly different values
+
+    So, all we check is
+
+      - the shapes are as expected
+      - the accept flag is as expected, as this happens to be the
+        same (but doesn't have to be).
+
+    """
+
+    assert stats.size == 11
+    assert accept.size == 11
+    assert params.shape == (2, 11)
+
+    # this depends on SEED_VALUE
+    assert accept == pytest.approx([0, 1, 0, 1, 1, 1, 1, 0, 0, 0, 1])
+
+
+@requires_data
+@pytest.mark.parametrize('statname', sorted(RIGHT_STATS - {'wstat'}))
+def test_covar_as_argument(statname, clean_ui, setup_covar, reset_seed):
+    """covariance matrix is sent to get_draws"""
+
+    ui.set_stat(statname)
     ui.fit()
 
+    np.random.seed(SEED_VALUE)
+
+    # This should be the same as
+    #
+    #     ui.covar()
+    #     matrix = ui.get_covar_results().extra()
+    #
+    # but we don't check this as we don't want to have run covar to
+    # match expected use of get_draws.
+    #
     matrix = [[0.00064075, 0.01122127], [0.01122127, 0.20153251]]
-    niter = 10
-    stat, accept, params = ui.get_draws(niter=niter, covar_matrix=matrix)
-
-    n = niter + 1
-    assert stat.size == n
-    assert accept.size == n
-    assert params.shape == (2, n)
-    assert np.any(accept)
+    stats, accept, params = ui.get_draws(niter=10, covar_matrix=matrix)
+    check_draws(stats, accept, params)
 
 
-# Test get_draws returns a valid response when the covariance matrix is not provided
-# Note the accuracy of the returned values is not assessed here
 @requires_data
-@pytest.mark.parametrize('stat', sorted(RIGHT_STATS - {'wstat'}))
-def test_covar_as_none(stat, clean_ui, setup_covar):
+@pytest.mark.parametrize('statname', sorted(RIGHT_STATS - {'wstat'}))
+def test_covar_as_none(statname, clean_ui, setup_covar, reset_seed):
+    """covariance matrix is not sent to get_draws"""
 
-    ui.set_stat(stat)
+    ui.set_stat(statname)
     ui.fit()
     ui.covar()
 
-    niter = 10
-    stat, accept, params = ui.get_draws(niter=niter)
+    np.random.seed(SEED_VALUE)
 
-    n = niter + 1
-    assert stat.size == n
-    assert accept.size == n
-    assert params.shape == (2, n)
-    assert np.any(accept)
+    stats, accept, params = ui.get_draws(niter=10)
+    check_draws(stats, accept, params)
 
 
 def identity(x):
