@@ -136,7 +136,7 @@ def check_draws(stats, accept, params):
 
       a) numerical differences, since we only give the covar matrix
          to 8 dp
-      b) the fits, and hence parameter choices, depent on the chosen
+      b) the fits, and hence parameter choices, depend on the chosen
          statistic, leading to subtly different values
 
     So, all we check is
