@@ -4192,52 +4192,59 @@ It is an integer or string.
             areascal = self._check_scale(self.areascal, filter=filter)
             val /= areascal
 
-        if self.grouped or self.rate:
-
+        # Should this be a user-callable method?
+        #
+        def get_bin_edges():
             if self.units != 'channel':
-                elo, ehi = self._get_ebins(response_id, group=False)
+                xlo, xhi = self._get_ebins(response_id, group=False)
             else:
-                elo, ehi = (self.channel, self.channel + 1.)
+                xlo, xhi = (self.channel, self.channel + 1.)
 
             if filter:
                 # If we apply a filter, make sure that
                 # ebins are ungrouped before applying
                 # the filter.
-                elo = self.apply_filter(elo, self._min)
-                ehi = self.apply_filter(ehi, self._max)
+                xlo = self.apply_filter(xlo, self._min)
+                xhi = self.apply_filter(xhi, self._max)
             elif self.grouped:
-                elo = self.apply_grouping(elo, self._min)
-                ehi = self.apply_grouping(ehi, self._max)
+                xlo = self.apply_grouping(xlo, self._min)
+                xhi = self.apply_grouping(xhi, self._max)
 
-            if self.units == 'energy':
-                ebin = ehi - elo
-            elif self.units == 'wavelength':
-                ebin = hc / elo - hc / ehi
-            elif self.units == 'channel':
-                ebin = ehi - elo
+            return xlo, xhi
+
+        if self.grouped or self.rate:
+            xlo, xhi = get_bin_edges()
+            if self.units == 'wavelength':
+                dx = hc / xlo - hc / xhi
             else:
-                raise DataErr("bad", "quantity", self.units)
+                dx = xhi - xlo
 
-            val /= numpy.abs(ebin)
+            val /= numpy.abs(dx)
 
         # The final step is to multiply by the X axis self.plot_fac
         # times.
         if self.plot_fac <= 0:
             return val
 
-        # Do we want to use apply_filter or apply_grouping here?
-        # Using just apply_filter leads to #1728.
+        # Get the bin edges so we can calculate the center of
+        # each bin. This used to use
         #
-        xvals = self.get_x(response_id=response_id)
-        if filter:
-            xvals = self.apply_filter(xvals, self._middle)
-        elif self.grouped:
-            xvals = self.apply_grouping(xvals, self._middle)
-
-        val *= numpy.power(xvals, self.plot_fac)
+        # xvals = self.get_x(response_id=response_id)
+        # if filter:
+        #     xvals = self.apply_filter(xvals, self._middle)
+        # elif self.grouped:
+        #     xvals = self.apply_grouping(xvals, self._middle)
+        #
+        # but this uses the center of each channel and then
+        # averages them, which doesn't quite match the following.
+        #
+        xlo, xhi = get_bin_edges()
+        xmid = (xlo + xhi) / 2
+        val *= numpy.power(xmid, self.plot_fac)
         return val
 
-    def get_y(self, filter=False, yfunc=None, response_id=None, use_evaluation_space=False):
+    def get_y(self, filter=False, yfunc=None, response_id=None,
+              use_evaluation_space=False):
         vallist = Data.get_y(self, yfunc=yfunc)
         filter = bool_cast(filter)
 

@@ -871,37 +871,10 @@ def validate_1779_grouped(pha, mplot, subset, factor):
     ghi = _energies_hi[[0, 2, 3, 5, 7, 8, 9]]
     MODEL_GROUPED = IMODEL_GROUPED / (ghi - glo)
 
-    # Note: the following is issue #1784.
+    # Prior to #1784 being fixed xgrid was different (it averaged the
+    # center of grouped bins).
     #
-    # This is what I expected
-    #    xgrid = (glo + ghi) / 2
-    #
-    # This is what is used: note that xgrid from above evaluates to
-    #
-    #    [0.575, 0.725, 0.85, 1, 1.2, 1.35, 1.45]
-    #
-    # so it's some of the grouped bins that differ. This is
-    # because the code is averaging the mid-points of each
-    # bin, not the low and high edges, so we have a group of
-    # channels 0.65-0.75, 0.75-0.8 keV, which I would
-    # think was (0.65 + 0.8) / 2 = 1.45 / 2 = 0.725 keV,
-    # but we actually combine
-    #     ((0.65 + 0.75) / 2 + (0.75 + 0.8) / 2) / 2
-    #   = (1.4 / 2 + 1.55 / 2) / 2
-    #   = 2.95 / 4
-    #   = 0.7375
-    #
-    # The other bin where we see a difference we have
-    # 1.1-1.12, 1.12-1.3, so we compare
-    #
-    #     (1.1 + 1.3) / 2 = 1.2
-    #
-    # to
-    #
-    #     ((1.1 + 1.12) + (1.12 + 1.3)) / 4
-    #     4.64 / 4 = 1.16
-    #
-    xgrid = np.asarray([0.575, 0.7375, 0.85, 1., 1.16, 1.35, 1.45])
+    xgrid = (glo + ghi) / 2
 
     expected = MODEL_GROUPED * np.power(xgrid, factor)
     if subset:
