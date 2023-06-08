@@ -39,7 +39,7 @@ from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
-    Scale1D, Integrate1D
+    Scale1D, Integrate1D, Const2D, Gauss2D, Scale2D
 from sherpa.utils.err import ModelErr, ParameterErr
 
 
@@ -70,6 +70,9 @@ class RenamedPars(Sin):
         self.period = Parameter(name, 'period', 1, 1e-10, 10, tinyval)
         self.offset = Parameter(name, 'offset', 0, 0, hard_min=0)
         self.ampl = Parameter(name, 'ampl', 1, 1e-05, hard_min=0, aliases=['norm'])
+        # We explicitly do not use the superclass here (Sin) as we
+        # want our own parameters.
+        #
         ArithmeticModel.__init__(self, name,
                                  (self.period, self.offset, self.ampl))
 
@@ -92,7 +95,7 @@ class ParameterCase(ArithmeticModel):
             validate_warning(warn)
 
         self._basemodel = Sin()
-        ArithmeticModel.__init__(self, name, pars)
+        super().__init__(name, pars)
 
     def calc(self, *args, **kwargs):
         for par in self.pars:
@@ -111,7 +114,32 @@ class ShowableModel(ArithmeticModel):
         self.accent = Parameter(name, 'accent', 2, min=0, max=10, frozen=True)
         self.norm = Parameter(name, 'norm', 100, min=0, max=1e4)
 
-        ArithmeticModel.__init__(self, name, (self.notseen, self.p1, self.accent, self.norm))
+        super().__init__(name, (self.notseen, self.p1, self.accent, self.norm))
+
+
+class ReportKeywordsModel(ArithmeticModel):
+    """Store the keywords sent to the model evaluation"""
+
+    def __init__(self, name="reportable"):
+        self.index = Parameter(name, 'index', 2, min=0, max=10)
+        self.ampl = Parameter(name, 'ampl', 10, min=-100, max=100)
+        self._keyword_store = []
+        super().__init__(name, (self.index, self.ampl))
+
+    @modelCacher1d
+    def calc(self, p, *args, xhi=None, **kwargs):
+        x = args[0]
+
+        # store the index value along with the keyword arguments
+        self._keyword_store.append((p[0], kwargs))
+        if xhi is None and len(args) == 1:
+            return p[1] * numpy.ones_like(x)
+
+        if xhi is None:
+            assert len(args) == 2
+            xhi = args[1]
+
+        return p[1] * (numpy.asarray(xhi) - numpy.asarray(x))
 
 
 def setup_model():
@@ -1096,7 +1124,12 @@ def test_cache_integrate_fall_through_integrate_true():
     pars = []
     data = [numpy.asarray(pars).tobytes(),
             b'1', # integrated
-            x.tobytes()]
+            x.tobytes(),
+            # The integrate setting is included twice because we can
+            # not guarantee it has been sent in with a keyword
+            # argument.
+            b'integrate',
+            numpy.asarray(True).tobytes()]
 
     token = b''.join(data)
     digest = hashfunc(token).digest()
@@ -1123,7 +1156,12 @@ def test_cache_integrate_fall_through_integrate_false():
     pars = []
     data = [numpy.asarray(pars).tobytes(),
             b'0', # not integrated
-            x.tobytes()]
+            x.tobytes(),
+            # The integrate setting is included twice because we can
+            # not guarantee it has been sent in with a keyword
+            # argument.
+            b'integrate',
+            numpy.asarray(False).tobytes()]
 
     token = b''.join(data)
     digest = hashfunc(token).digest()
@@ -1382,3 +1420,213 @@ def test_model_thaw_alwaysfrozen():
 
     mdl.thaw()
     assert mdl.thawedpars == [1.0, 1.0, 1.0]
+
+
+# just pick some of the models we are already using
+@pytest.mark.parametrize("cls", [Sin, Const1D, Box1D, LogParabola, Polynom1D, Scale1D])
+def test_model1d_existing_keywords(cls):
+    """Check we can send keyword arguments to existing models"""
+
+    mdl = cls()
+
+    # Important to turn off the cache otherwise the call to create
+    # y2 never gets made.
+    mdl._use_caching = False
+
+    x = [1.1, 1.6, 3.2]
+    y1 = mdl(x)
+    y2 = mdl(x, made_up_argument=False)
+    assert y2 == pytest.approx(y1)
+
+
+@pytest.mark.parametrize("cls", [Const2D, Gauss2D, Scale2D])
+def test_model2d_existing_keywords(cls):
+    """Check we can send keyword arguments to existing models"""
+
+    mdl = cls()
+
+    # Important to turn off the cache otherwise the call to create
+    # y2 never gets made.
+    mdl._use_caching = False
+
+    x0 = [1.1, 1.6, 3.2]
+    x1 = [-2.1, 0.4, 3.4]
+    y1 = mdl(x0, x1)
+    y2 = mdl(x0, x1, made_up_argument=False)
+    assert y2 == pytest.approx(y1)
+
+
+@pytest.mark.parametrize("kwargs", [None, {},
+                                    {"foo": 23},
+                                    {"aA": True, "fooFoo": [1, 2]}])
+def test_model_simple_keywords(kwargs):
+    """Check we can send keyword arguments to a simple model"""
+
+    mdl = ReportKeywordsModel()
+    store = mdl._keyword_store
+    assert len(store) == 0
+    if kwargs is None:
+        y = mdl([1, 1.5, 3])
+        kwargs = {}
+    else:
+        y = mdl([1, 1.5, 3], **kwargs)
+
+    assert y == pytest.approx([10, 10, 10])
+    assert len(store) == 1
+    assert len(store[0]) == 2
+    assert store[0][0] == pytest.approx(2)
+    assert store[0][1] == kwargs
+
+
+@pytest.mark.parametrize("kwargs", [None, {},
+                                    {"foo": 23},
+                                    {"aA": True, "fooFoo": [1, 2]}])
+def test_model_unop_keywords(kwargs):
+    """Check we can send keyword arguments to a UnOp model"""
+
+    base = ReportKeywordsModel()
+    mdl = -base
+    store = base._keyword_store
+    assert len(store) == 0
+    if kwargs is None:
+        y = mdl([1, 1.5, 3])
+        kwargs = {}
+    else:
+        y = mdl([1, 1.5, 3], **kwargs)
+
+    assert y == pytest.approx([-10, -10, -10])
+    assert len(store) == 1
+    assert len(store[0]) == 2
+    assert store[0][0] == pytest.approx(2)
+    assert store[0][1] == kwargs
+
+
+@pytest.mark.parametrize("kwargs", [None, {},
+                                    {"foo": 23},
+                                    {"aA": True, "fooFoo": [1, 2]}])
+def test_model_binop_keywords(kwargs):
+    """Check we can send keyword arguments to a BinOp model"""
+
+    # Make this a "complicated" expression with at least one
+    # non-marked-up model. We also ensure that cacheing is off, in
+    # case a model gets evaluated multiple times (should not be
+    # relevant here).
+    #
+    base1 = ReportKeywordsModel()
+    base2 = Scale1D()
+    base3 = ReportKeywordsModel()
+    mdl = base1 + base2 + base3
+
+    for cpt in [base1, base2, base3]:
+        cpt._use_caching = False
+
+    base1.index = 5
+    base1.ampl = 4
+
+    base2.c0 = 12
+
+    base3.index = 7
+    base3.ampl = -2
+
+    store1 = base1._keyword_store
+    store3 = base3._keyword_store
+    assert len(store1) == 0
+    assert len(store3) == 0
+    if kwargs is None:
+        y = mdl([1, 1.5, 3])
+        kwargs = {}
+    else:
+        y = mdl([1, 1.5, 3], **kwargs)
+
+    assert y == pytest.approx([14, 14, 14])
+    assert len(store1) == 1
+    assert len(store3) == 1
+    assert len(store1[0]) == 2
+    assert len(store3[0]) == 2
+    assert store1[0][0] == pytest.approx(5)
+    assert store1[0][1] == kwargs
+    assert store3[0][0] == pytest.approx(7)
+    assert store3[0][1] == kwargs
+
+
+def test_model_keyword_cache():
+    """Check what happens with the cache and keywords"""
+
+    mdl = ReportKeywordsModel()
+
+    store = mdl._keyword_store
+    assert len(store) == 0
+
+    x = [1, 3, 4]
+
+    # We do not care about the returned value, we just
+    # want to see what happens with the model.
+    #
+    mdl(x, user_arg=1)
+    assert len(store) == 1
+    assert store[0][1] == {"user_arg": 1}
+
+    mdl(x, user_arg=1)
+    assert len(store) == 1
+    assert store[0][1] == {"user_arg": 1}
+
+    mdl(x, user_arg=2)
+    assert len(store) == 2
+    assert store[1][1] == {"user_arg": 2}
+
+    # Explicit check what happens when we turn off the cache
+    mdl._use_caching = False
+    store.clear()
+    mdl(x, user_arg=3)
+    assert len(store) == 1
+    assert store[0][1] == {"user_arg": 3}
+
+    mdl(x, user_arg=4)
+    assert len(store) == 2
+    assert store[1][1] == {"user_arg": 4}
+
+
+def test_model1d_cache_xhi_positional():
+    """Do we cache the model when xhi argument is not named?"""
+
+    xlo = [1, 2, 3]
+    xhi = [2, 2.5, 5]
+    mdl = ReportKeywordsModel()
+    y1 = mdl(xlo, xhi)
+
+    store = mdl._keyword_store
+    assert len(store) == 1
+
+    y2 = mdl(xlo, xhi)
+    assert len(store) == 1
+    assert y2 == pytest.approx(y1)
+    assert y1 == pytest.approx(10, 5, 20)
+
+    # Now change xhi so we can see if it is used in the cache?
+    xhi = [x + 1 for x in xlo]
+    y3 = mdl(xlo, xhi)
+    assert len(store) == 2
+    assert y3 == pytest.approx(10, 10, 10)
+
+
+def test_model1d_cache_xhi_named():
+    """Do we cache the model when xhi argument is named?"""
+
+    xlo = [1, 2, 3]
+    xhi = [2, 2.5, 5]
+    mdl = ReportKeywordsModel()
+    y1 = mdl(xlo, xhi=xhi)
+
+    store = mdl._keyword_store
+    assert len(store) == 1
+
+    y2 = mdl(xlo, xhi=xhi)
+    assert len(store) == 1
+    assert y2 == pytest.approx(y1)
+    assert y1 == pytest.approx(10, 5, 20)
+
+    # Now change xhi so we can see if it is used in the cache?
+    xhi = [x + 1 for x in xlo]
+    y3 = mdl(xlo, xhi=xhi)
+    assert len(store) == 2
+    assert y3 == pytest.approx(10, 10, 10)

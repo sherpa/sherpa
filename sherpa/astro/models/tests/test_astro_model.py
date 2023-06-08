@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,52 +26,106 @@ import sherpa.astro.models as models
 from sherpa.utils import SherpaFloat
 from sherpa.models.model import ArithmeticModel, RegriddableModel2D, \
     RegriddableModel1D, boolean_to_byte
-from sherpa.models.basic import Const
+from sherpa.models import basic
 
 
-EXCLUDED_MODEL_CLASSES = (ArithmeticModel, RegriddableModel1D,
-                          RegriddableModel2D, Const)
+# See sherpa/models/tests/test_basic.py
+#
+EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D,
+                   RegriddableModel2D)
 
 
-def test_create_and_evaluate():
+TESTABLE = []
+for name in dir(models):
+    cls = getattr(models, name)
+    if not isinstance(cls, type) or \
+       not issubclass(cls, ArithmeticModel) or \
+       cls in EXCLUDED_MODELS:
+        continue
+
+    TESTABLE.append((name, cls))
+
+
+def test_expected_number():
+    assert len(TESTABLE) == 21
+
+
+@pytest.mark.parametrize("name,cls", TESTABLE)
+def test_create_and_evaluate(name, cls):
+
+    # This has a very different interface than the others
+    if name == 'JDPileup':
+        return
 
     x = np.arange(1.0, 5.0)
-    count = 0
 
-    for cls in dir(models):
-        clsobj = getattr(models, cls)
+    m = cls()
+    assert type(m).__name__.lower() == m.name
 
-        if not isinstance(clsobj, type) or \
-           not issubclass(clsobj, ArithmeticModel) or \
-           clsobj in EXCLUDED_MODEL_CLASSES:
-            continue
+    if m.name == 'linebroad':
+        # for some reason with the default params and this x grid
+        # the model will fail
+        m.vsini = 1e6
 
-        # This has a very different interface than the others
-        if cls == 'JDPileup':
-            continue
+    if m.ndim == 2:
+        pt_out = m(x, x)
+        int_out = m(x, x, x, x)
+    else:
+        pt_out = m(x)
+        int_out = m(x, x)
 
-        m = clsobj()
-        assert type(m).__name__.lower() == m.name
-        count += 1
+    for out in (pt_out, int_out):
+        assert out.dtype.type is SherpaFloat
+        assert out.shape == x.shape
 
-        if m.name == 'linebroad':
-            m.vsini = 1e6
 
-        try:
-            if m.name.count('2d') or m.name == 'hubblereynolds':
-                pt_out = m(x, x)
-                int_out = m(x, x, x, x)
-            else:
-                pt_out = m(x)
-                int_out = m(x, x)
-        except ValueError:
-            assert False, "evaluation of model '{}' failed".format(cls)
+@pytest.mark.parametrize("cls", [models.Atten,
+                                 models.BBody,
+                                 models.BBodyFreq,
+                                 models.BPL1D,
+                                 models.Beta1D,
+                                 models.Edge,
+                                 models.LineBroad,
+                                 models.Lorentz1D,
+                                 models.NormBeta1D,
+                                 models.PseudoVoigt1D,
+                                 models.Schechter,
+                                 models.Voigt1D])
+def test_send_keyword_1d(cls):
+    """What happens if we use an un-supported keyword?"""
 
-        for out in (pt_out, int_out):
-            assert out.dtype.type is SherpaFloat
-            assert out.shape == (4, )
+    mdl = cls()
+    mdl._use_caching = False
 
-    assert count == 20
+    if cls == models.LineBroad:
+        mdl.vsini = 1e6
+
+    # Not guaranteed to produce interesting results
+    x = [10, 12, 13, 15]
+    y1 = mdl(x)
+    y2 = mdl(x, not_an_argument=True)
+    assert y2 == pytest.approx(y1)
+
+
+@pytest.mark.parametrize("cls", [models.Beta2D,
+                                 models.DeVaucouleurs2D,
+                                 models.Disk2D,
+                                 models.HubbleReynolds,
+                                 models.Lorentz2D,
+                                 models.Sersic2D,
+                                 models.Shell2D])
+def test_send_keyword_2d(cls):
+    """What happens if we use an un-supported keyword?"""
+
+    mdl = cls()
+    mdl._use_caching = False
+
+    # Not guaranteed to produce interesting results
+    x0 =  [10, 12, 13, 15]
+    x1 =  [5, 7, 12, 13]
+    y1 = mdl(x0, x1)
+    y2 = mdl(x0, x1, not_an_argument=True)
+    assert y2 == pytest.approx(y1)
 
 
 @pytest.mark.parametrize("test_input, expected", [

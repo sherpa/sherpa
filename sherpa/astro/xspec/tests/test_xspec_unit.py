@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1378,3 +1378,265 @@ def test_xsparameter_limits(base):
 
     assert p.max == pytest.approx(8)
     assert p.hard_max == pytest.approx(8)
+
+
+@requires_xspec
+@pytest.mark.parametrize("clsname", ["XSpowerlaw", "XSphabs"])
+def test_model_can_send_spectrumnumber_indiv(clsname):
+    """Check we can send spectrumNumber to individual models.
+
+    All we do is check that the model can be called, and just for
+    additive/multiplicative models that are not expected to use
+    the spectrumNumber argument.
+    """
+
+    from sherpa.astro import xspec
+
+    mdl = getattr(xspec, clsname)("tmp")
+    egrid = np.arange(0.3, 0.4, 0.01)
+    # This fails
+    mdl(egrid[:-1], egrid[1:], spectrumNumber=2)
+
+
+@requires_xspec
+def test_model_can_send_spectrumnumber_indiv_con():
+    """Check we can send spectrumNumber to individual models: convolution
+
+    All we do is check that the model can be called.
+    """
+
+    from sherpa.astro import xspec
+
+    base = xspec.XSpowerlaw("tmp")
+    con = xspec.XScflux("tmp2")
+    mdl = con(base)
+    egrid = np.arange(0.3, 0.4, 0.01)
+
+    # Does this send the argument to the wrapped model? There's no way
+    # to know when calling the actual XSPEC models.
+    #
+    mdl(egrid[:-1], egrid[1:], spectrumNumber=2)
+
+
+@requires_xspec
+def test_model_can_send_spectrumnumber_combine():
+    """Check the spectrumNumber is sent through.
+
+    Mock XSPEC model classes are used to check that we send through
+    the spectrumNumber when combining models. This uses the
+    "old-style" of declaring the model (explicit setting of _calc).
+
+    Due to the way we have to write these tests (with xspec not
+    imported at the top-level) this is not a unit test as we test
+    a number of features.
+    """
+
+    from sherpa.astro import xspec
+    from sherpa.models import Parameter
+
+    # We use the first parameter to identify what model is being
+    # called (relying on the test to change the index value of the
+    # model components).
+    #
+    args = []
+    def test(cls, pars, lo, hi, spectrumNumber=5):
+        args.append((spectrumNumber, pars[0]))
+        return pars[1] * np.ones_like(lo)
+
+    def testcon(cls, pars, fluxes, lo, hi, spectrumNumber=9):
+        args.append((spectrumNumber, "con"))
+        return fluxes + pars[1]
+
+    class TestSpectrumNumber(xspec.XSAdditiveModel):
+        _calc = test
+
+        def __init__(self, name="test"):
+            self.index = Parameter(name, "index", 1, 0, 2)
+            self.norm = Parameter(name, "norm", 1, 0, 1)
+            super().__init__(name, (self.index, self.norm))
+
+    class TestConvSpectrumNumber(xspec.XSConvolutionKernel):
+        _calc = testcon
+
+        def __init__(self, name="test"):
+            self.index = Parameter(name, "index", 1, 0, 2)
+            self.con = Parameter(name, "con", 1, 0, 100)
+            super().__init__(name, (self.index, self.con))
+
+    m1 = TestSpectrumNumber("x1")
+    m1.index = 1
+    m1.norm = 0.2
+    m2 = TestSpectrumNumber("2")
+    m2.index = 2
+    m2.norm = 0.4
+
+    comb = m1 + m2
+
+    # As we evaluate the models multiple times with the same
+    # arguments we need to ensure the models are not cached.
+    #
+    m1._use_caching = False
+    m2._use_caching = False
+    # comb._use_caching = False  no cache for composite models
+
+    egrid = np.arange(1, 4)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    assert len(args) == 0
+    y1 = m1(elo, ehi)
+    assert y1 == pytest.approx([0.2, 0.2])
+    assert len(args) == 1
+    print(args)
+    assert args[0][0] == 5
+    assert args[0][1] == pytest.approx(1)
+
+    args.clear()
+    y2 = m2(elo, ehi, spectrumNumber=1)
+    assert y2 == pytest.approx([0.4, 0.4])
+    assert len(args) == 1
+    assert args[0][0] == 1
+    assert args[0][1] == pytest.approx(2)
+
+    args.clear()
+    y = comb(elo, ehi, spectrumNumber=3)
+    assert y == pytest.approx([0.6, 0.6])
+
+    # The order of evaluation should be guaranteed (i.e we can test
+    # that [0][1] is 1).
+    #
+    assert len(args) == 2
+    assert args[0][0] == 3
+    assert args[0][1] == pytest.approx(1)
+    assert args[1][0] == 3
+    assert args[1][1] == pytest.approx(2)
+
+    # Try with a convolution model.
+    #
+    con = TestConvSpectrumNumber("x")
+    con.con = 10
+    cmdl = con(comb)
+
+    args.clear()
+    ycon = cmdl(elo, ehi, spectrumNumber=6)
+    assert ycon == pytest.approx([10.6, 10.6])
+
+    # NOTE: these are not the answers we want, but test them so we know
+    #       when they change.
+    #
+    assert len(args) == 3
+    assert args[0][0] == 5  # should be 6
+    assert args[0][1] == pytest.approx(1)
+    assert args[1][0] == 5  # should be 6
+    assert args[1][1] == pytest.approx(2)
+    assert args[2][0] == 9  # should be 6
+    assert args[2][1] == "con"
+
+
+@requires_xspec
+def test_model_can_send_spectrumnumber_combine_non_xspec():
+    """Check the spectrumNumber is sent through with non-XSPEC models.
+
+    An extension of test_model_can_send_spectrumnumber_combine()
+    """
+
+    from sherpa.astro import xspec
+    from sherpa.models import Parameter
+    from sherpa.models.basic import Scale1D
+
+    args = []
+    def test(cls, pars, lo, hi, spectrumNumber=5):
+        args.append((spectrumNumber, pars[0]))
+        return pars[1] * np.ones_like(lo)
+
+    class TestSpectrumNumber2(xspec.XSAdditiveModel):
+        _calc = test
+
+        def __init__(self, name="test"):
+            self.index = Parameter(name, "index", 1, 0, 2)
+            self.norm = Parameter(name, "norm", 1, 0, 1)
+            super().__init__(name, (self.index, self.norm))
+
+    m1 = TestSpectrumNumber2("m1")
+    m1.norm = 0.5
+    m1.index = 2
+
+    m2 = Scale1D("m2")
+    m2.c0 = 1.5
+
+    m1._use_caching = False
+    m2._use_caching = False
+
+    # These should evaluate to the same thing.
+    #
+    comb12 = m1 + m2
+    comb21 = m2 + m1
+
+    elo = np.asarray([0.5, 1, 2])
+    ehi = np.asarray([1, 2, 4])
+
+    assert len(args) == 0
+    y12 = comb12(elo, ehi)
+    assert len(args) == 1
+    assert args[0][0] == 5
+    assert args[0][1] == pytest.approx(2)
+
+    args.clear()
+
+    y21 = comb21(elo, ehi, spectrumNumber=4)
+    assert len(args) == 1
+    assert args[0][0] == 4
+    assert args[0][1] == pytest.approx(2)
+
+    assert y21 == pytest.approx(y12)
+    assert y12 == pytest.approx([2, 2, 2])
+
+
+@requires_xspec
+def test_xspec_model_kwarg_cached_not_needed():
+    """Does the cache recognize when a kwarg has changed?
+
+    This is for a XSPEC model that is known to not depend on the
+    spectrumNumber/ifl argument (i.e. the definition in model.dat has
+    a second 0 after the model type, in this case saying "add 0 0" or
+    "add 0" as the 0 is inferred).
+
+    At the moment Sherpa does not wrap any of the models (smaug,
+    polcost, pollin, polpow, pileup) which have a 1 instead of a 0.
+
+    Technically we could make the cache ignore the spectrumNumber
+    value, since it does not change the model output, but it is tricky
+    to do, so we do make each call be different. This is a
+    pessimisation (i.e. it potentially slows down model evaluation)
+    and could be changed in the future. It depends on how often the
+    spectrumNumber argument will be added to model calls.
+
+    """
+
+    from sherpa.astro import xspec
+
+    mdl = xspec.XSpowerlaw()
+
+    # check the cache is working
+    assert mdl._cache_ctr['hits'] == 0
+    assert mdl._cache_ctr['misses'] == 0
+
+    egrid = np.arange(0.2, 0.6, 0.1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    y1 = mdl(elo, ehi)
+    assert mdl._cache_ctr['hits'] == 0
+    assert mdl._cache_ctr['misses'] == 1
+
+    y2 = mdl(elo, ehi, spectrumNumber=2)
+    assert mdl._cache_ctr['hits'] == 0
+    assert mdl._cache_ctr['misses'] == 2
+
+    assert y2 == pytest.approx(y1)
+
+    y3 = mdl(elo, ehi, spectrumNumber=1)
+    assert mdl._cache_ctr['hits'] == 0
+    assert mdl._cache_ctr['misses'] == 3
+
+    assert y3 == pytest.approx(y1)

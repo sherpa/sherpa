@@ -20,34 +20,35 @@
 
 """Allow models to be defined and combined.
 
-A single model is defined by the parameters of the model - represented
-as sherpa.models.model.Parameter instances - and the function that
+A single model is defined by the parameters of the model - stored
+as `sherpa.models.model.Parameter` instances - and the function that
 takes the parameter values along with an array of grid values. The
 main classes are:
 
-* Model which is the base class and defines most of the interfaces.
+* `Model` which is the base class and defines most of the interfaces.
 
-* ArithmeticConstantModel and ArithmeticFunctionModel for representing
+* `ArithmeticConstantModel` and `ArithmeticFunctionModel` for representing
   a constant value or a function.
 
-* ArithmeticModel is the main base class for deriving user models since
+* `ArithmeticModel` is the main base class for deriving user models since
   it supports combining models (e.g. by addition or multiplication) and
   a cache to reduce evaluation time at the expense of memory use.
 
-* RegriddableModel builds on ArithmeticModel to allow a model to be
+* `RegriddableModel` builds on ArithmeticModel to allow a model to be
   evaluated on a different grid to that requested: most model classes
-  are derived from the 1D and 2D variants of RegriddableModel.
+  are derived from the 1D (`RegriddableModel1D`) and 2D
+  (`RegriddableModel2D`) variants of RegriddableModel.
 
-* CompositeModel which is used to represent a model expression, that
+* `CompositeModel` which is used to represent a model expression, that
   is combined models, such as `m1 * (m2 + m3)`
 
-  * UnaryOpModel for model expressions such as `- m1`.
+  * `UnaryOpModel` for model expressions such as `-m1`.
 
-  * BinaryOpModel for model expressions such as `m1 + m2`.
+  * `BinaryOpModel` for model expressions such as `m1 + m2`.
 
-  * NestedModel for applying one model to another.
+  * `NestedModel` for applying one model to another.
 
-* SimulFitModel for fitting multiple models and datasets.
+* `SimulFitModel` for fitting multiple models and datasets.
 
 Creating a model
 ================
@@ -92,7 +93,7 @@ be inspected with print or the pars attribute:
     >>> print(m2.pars)
     (<Parameter 'fwhm' of model 'gmdl'>, <Parameter 'pos' of model 'gmdl'>, <Parameter 'ampl' of model 'gmdl'>)
 
-The parameters are instances of the sherpa.models.parameter.Parameter
+The parameters are instances of the `sherpa.models.parameter.Parameter`
 class:
 
     >>> print(m2.fwhm)
@@ -129,8 +130,8 @@ Linking parameters
 ------------------
 
 One parameter can be made to reference one or more other parameters, a
-process called "linking". The lniked is no-longer considered a free
-parameter in a fit since it's value is derived from the other
+process called "linking". The linked parameter is no-longer considered
+a free parameter in a fit since its value is derived from the other
 parameters. This link can be a simple one-to-one case, such as
 ensuring the fwhm parameter of one model is the same as the other:
 
@@ -169,7 +170,7 @@ to indicate the expression:
 Model evaluation
 ================
 
-With a sherpa.data.Data instance a model can be evaluated with the
+With a `sherpa.data.Data` instance a model can be evaluated with the
 eval_model method of the object. For example:
 
     >>> import numpy as np
@@ -211,9 +212,10 @@ overlap, but they do not need to be consecutive.
 The behavior of a model when given low and high edges depends on
 whether the model is written to support this mode - that is,
 integrating the model across the bin - and the setting of the
-integrate flag of the model. The Gauss1D model does support an
-integrated mode, so switching the integrate flag will change the model
-output:
+integrate flag of the model. For example, the
+`sherpa.models.basic.Gauss1D` model will, by default, integrate the
+model across each bin when given the bin edges, but if the flag is set
+to `False` then just the first array (here ``xlo``) is used:
 
     >>> print(mdl.integrate)
     True
@@ -221,13 +223,9 @@ output:
     >>> y2 = mdl(xlo, xhi)
     >>> print(y2)
     [48.63274737 49.65462477 49.91343163 50.         49.65462477]
-
-The behavior when the integrate flag is False depends on the model but
-it normally just uses the low edge, as shown for the Gauss1D case:
-
     >>> y3 = mdl(xlo)
-    >>> print(y2 == y3)
-    [ True  True  True  True  True]
+    >>> y2 == y3
+    array([ True,  True,  True,  True,  True])
 
 Direct access
 -------------
@@ -247,7 +245,7 @@ The parameter order matches the pars attribute of the model:
 Model expressions
 =================
 
-The CompositeModel class is the base class for creating model
+The `CompositeModel` class is the base class for creating model
 expressions - that is the overall model that is combined of one or
 more model objects along with possible numeric terms, such as a
 model containing two gaussians and a polynomial:
@@ -267,9 +265,9 @@ component:
     >>> x = np.arange(-10, 40, 2)
     >>> y = mdl(x)
 
-This model is written so that the amplitude of the `l2` component is
-half the `l1` component by linking the two `ampl` parameters and then
-including a scaling factor in the model expression for `l2`. An
+This model is written so that the amplitude of the ``l2`` component is
+half the ``l1`` component by linking the two ``ampl`` parameters and then
+including a scaling factor in the model expression for ``l2``. An
 alternative would have been to include this scaling factor in the link
 expression:
 
@@ -278,7 +276,7 @@ expression:
 Model cache
 ===========
 
-The ArithmeticModel class and modelCacher1d decorator provide basic
+The `ArithmeticModel` class and `modelCacher1d` decorator provide basic
 support for caching one-dimensional model evaluations - that is, to
 avoid re-calculating the model. The idea is to save the results of the
 latest calls to a model and return the values from the cache,
@@ -286,22 +284,22 @@ hopefully saving time at the expense of using more memory. This is
 most effective when the same model is used with multiple datasets
 which all have the same grid.
 
-The _use_caching attribute of the model is used to determine whether
+The `_use_caching` attribute of the model is used to determine whether
 the cache is used, but this setting can be over-ridden by the startup
 method, which is automatically called by the fit and est_errors
-methods of a sherpa.fit.Fit object.
+methods of a `sherpa.fit.Fit` object.
 
-The cache_clear and cache_status methods of ArithmeticModel and
-CompositeModel allow you to clear the cache and display to the
-standard output the cache status of each model component.
+The `cache_clear` and `cache_status` methods of the `ArithmeticModel`
+and `CompositeModel` classes allow you to clear the cache and display
+to the standard output the cache status of each model component.
 
 Example
 =======
 
 The following class implements a simple scale model which has a single
-parameter (`scale`) which defaults to 1. It can be used for both
+parameter (``scale``) which defaults to 1. It can be used for both
 non-integrated and integrated datasets of any dimensionality (see
-sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
+`sherpa.models.basic.Scale1D` and `sherpa.models.basic.Scale2D`)::
 
     class ScaleND(ArithmeticModel):
         '''A constant value per element.'''
@@ -312,8 +310,8 @@ sherpa.models.basic.Scale1D and sherpa.models.basic.Scale2D)::
             pars = (self.scale, )
             ArithmeticModel.__init__(self, name, pars)
 
-        def calc(self, *args, **kwargs):
-            return self.scale.val * np.ones(len(args[0]))
+        def calc(self, p, *args, **kwargs):
+            return p[0] * np.ones_like(args[0])
 
 """
 
@@ -377,7 +375,14 @@ def modelCacher1d(func):
     Apply to the `calc` method of a 1D model to allow the model
     evaluation to be cached. The decision is based on the
     `_use_caching` attribute of the cache along with the `integrate`
-    setting, the evaluation grid, and parameter values.
+    setting, the evaluation grid, parameter values, and the keywords
+    sent to the model.
+
+    Notes
+    -----
+    The keywords are included in the hash calculation even if they are
+    not relevant for the model (as there's no easy way to find this
+    out).
 
     Example
     -------
@@ -387,75 +392,95 @@ def modelCacher1d(func):
         def MyModel(ArithmeticModel):
             ...
             @modelCacher1d
-            def calc(self, *args, **kwargs):
+            def calc(self, p, *args, **kwargs):
                 ...
 
     """
 
     @functools.wraps(func)
     def cache_model(cls, pars, xlo, *args, **kwargs):
-        use_caching = cls._use_caching
-        cache = cls._cache
-        cache_ctr = cls._cache_ctr
-        queue = cls._queue
-
         # Counts all accesses, even those that do not use the cache.
+        cache_ctr = cls._cache_ctr
         cache_ctr['check'] += 1
 
-        digest = ''
-        if use_caching:
+        # Short-cut if the cache is not being used.
+        #
+        if not cls._use_caching:
+            return func(cls, pars, xlo, *args, **kwargs)
 
-            # Up until Sherpa 4.12.2 we used the kwargs to define the
-            # integrate setting, with
-            # boolean_to_byte(kwargs.get('integrate', False)) but
-            # unfortunately this is used in code like
+        # Up until Sherpa 4.12.2 we used the kwargs to define the
+        # integrate setting, with
+        # boolean_to_byte(kwargs.get('integrate', False)) but
+        # unfortunately this is used in code like
+        #
+        #    @modelCacher1d
+        #    def calc(..):
+        #        kwargs['integrate'] = self.integrate
+        #        return somefunc(... **kwargs)
+        #
+        # and the decorator is applied to calc, which is not
+        # called with a integrate kwarg, rather than the call to
+        # somefunc, which was sent an integrate setting.
+        #
+        try:
+            integrate = cls.integrate
+        except AttributeError:
+            # Rely on the integrate kwarg as there's no
+            # model setting.
             #
-            #    @modelCacher1d
-            #    def calc(..):
-            #        kwargs['integrate'] = self.integrate
-            #        return somefunc(... **kwargs)
-            #
-            # and the decorator is applied to calc, which is not
-            # called with a integrate kwarg, rather than the call to
-            # somefunc, which was sent an integrate setting.
-            #
-            try:
-                integrate = cls.integrate
-            except AttributeError:
-                # Rely on the integrate kwarg as there's no
-                # model setting.
-                #
-                integrate = kwargs.get('integrate', False)
+            integrate = kwargs.get('integrate', False)
 
-            data = [numpy.array(pars).tobytes(),
-                    boolean_to_byte(integrate),
-                    numpy.asarray(xlo).tobytes()]
-            if args:
-                data.append(numpy.asarray(args[0]).tobytes())
+        data = [numpy.array(pars).tobytes(),
+                boolean_to_byte(integrate),
+                numpy.asarray(xlo).tobytes()]
+        if args:
+            data.append(numpy.asarray(args[0]).tobytes())
 
-            token = b''.join(data)
-            digest = hashfunc(token).digest()
-            if digest in cache:
-                cache_ctr['hits'] += 1
-                return cache[digest].copy()
+        # Add any keyword arguments to the list. This will
+        # include the xhi named argument if given. Can the
+        # value field fail here?
+        #
+        for k, v in kwargs.items():
+            data.extend([k.encode(), numpy.asarray(v).tobytes()])
 
+        # Is the value cached?
+        #
+        token = b''.join(data)
+        digest = hashfunc(token).digest()
+        cache = cls._cache
+        if digest in cache:
+            cache_ctr['hits'] += 1
+            return cache[digest].copy()
+
+        # Evaluate the model.
+        #
         vals = func(cls, pars, xlo, *args, **kwargs)
 
-        if use_caching:
-            # remove first item in queue and remove from cache
-            key = queue.pop(0)
-            cache.pop(key, None)
+        # remove first item in queue and remove from cache
+        queue = cls._queue
+        key = queue.pop(0)
+        cache.pop(key, None)
 
-            # append newest model values to queue
-            queue.append(digest)
-            cache[digest] = vals.copy()
+        # append newest model values to queue
+        queue.append(digest)
+        cache[digest] = vals.copy()
 
-            cache_ctr['misses'] += 1
+        cache_ctr['misses'] += 1
 
         return vals
 
     return cache_model
 
+# It is tempting to convert the explicit class names below into calls
+# to super(), but this is problematic since it ends up breaking a
+# number of invariants the classes rely on. An example is that
+# instances of Unary/BinaryOpModel classes should not cache-related
+# attributes, but they can do if we change to using super. There is
+# more discussion of this in
+# https://www.artima.com/weblogs/viewpost.jsp?thread=237121 which
+# points out that you should either always use super or never do (or,
+# that multiple inheritance is tricky in Python).
+#
 
 class Model(NoNewAttributesAfterInit):
     """The base class for Sherpa models.
@@ -568,27 +593,32 @@ class Model(NoNewAttributesAfterInit):
     def __setattr__(self, name, val):
         lname = name.lower()
         par = getattr(self, lname, None)
-        if (par is not None) and isinstance(par, Parameter):
-            # When setting an attribute that is a Parameter, set the parameter's
-            # value instead.
+        if isinstance(par, Parameter):
+            # When setting an attribute that is a Parameter, set the
+            # parameter's value instead.
             par.val = val
-        else:
-            NoNewAttributesAfterInit.__setattr__(self, name, val)
-            if isinstance(val, Parameter):
-                vname = val.name.lower()
+            return
 
-                # Check the parameter names match - as this is a
-                # 'development' error then just make this an assert.
-                # Ideally it should be exact but support lower case
-                # comparison only
-                assert lname == vname, (name, val.name, self.name)
+        NoNewAttributesAfterInit.__setattr__(self, name, val)
+        if not isinstance(val, Parameter):
+            return
 
-                # Update parameter index
-                self._par_index[vname] = val
-                if val.aliases:
-                    # Update index of aliases, if necessary
-                    for alias in val.aliases:
-                        self._par_index[alias] = val
+        vname = val.name.lower()
+
+        # Check the parameter names match - as this is a
+        # 'development' error then just make this an assert.
+        # Ideally it should be exact but support lower case
+        # comparison only
+        assert lname == vname, (name, val.name, self.name)
+
+        # Update parameter index
+        self._par_index[vname] = val
+        if not val.aliases:
+            return
+
+        # Update index of aliases, if necessary
+        for alias in val.aliases:
+            self._par_index[alias] = val
 
     def startup(self, cache=False):
         """Called before a model may be evaluated multiple times.
@@ -617,6 +647,8 @@ class Model(NoNewAttributesAfterInit):
             and the number depends on the dimensionality of the
             model and whether it is being evaluated over an
             integrated grid or at a point (or points).
+        **kwargs
+            Any model-specific values that are not parameters.
         """
         raise NotImplementedError
 
@@ -841,21 +873,21 @@ class CompositeModel(Model):
     Composite models can be iterated through to find their
     components:
 
-       >>> l1 = Gauss1D('l1')
-       >>> l2 = Gauss1D('l2')
-       >>> b = Polynom1D('b')
-       >>> mdl = l1 + (0.5 * l2) + b
-       >>> mdl
-       <BinaryOpModel model instance '((l1 + (0.5 * l2)) + polynom1d)'>
-       >>> for cpt in mdl:
-       ...     print(type(c))
-       ...
-       <class 'BinaryOpModel'>
-       <class 'sherpa.models.basic.Gauss1D'>
-       <class 'BinaryOpModel'>
-       <class 'ArithmeticConstantModel'>
-       <class 'sherpa.models.basic.Gauss1D'>
-       <class 'sherpa.models.basic.Polynom1D'>
+    >>> l1 = Gauss1D('l1')
+    >>> l2 = Gauss1D('l2')
+    >>> b = Polynom1D('b')
+    >>> mdl = l1 + (0.5 * l2) + b
+    >>> mdl
+    <BinaryOpModel model instance '((l1 + (0.5 * l2)) + polynom1d)'>
+    >>> for cpt in mdl:
+    ...     print(type(c))
+    ...
+    <class 'BinaryOpModel'>
+    <class 'sherpa.models.basic.Gauss1D'>
+    <class 'BinaryOpModel'>
+    <class 'ArithmeticConstantModel'>
+    <class 'sherpa.models.basic.Gauss1D'>
+    <class 'sherpa.models.basic.Polynom1D'>
 
     """
 
@@ -877,11 +909,17 @@ class CompositeModel(Model):
 
             for p in part.pars:
                 if p in allpars:
-                    # If we already have a reference to this parameter, store
-                    # a hidden, linked proxy instead
+                    # If we already have a reference to this
+                    # parameter, store a hidden, linked proxy
+                    # instead. This is presumably to ensure that we
+                    # have the correct number of degrees of freedom
+                    # (as pnew is frozen) while still sending the
+                    # correct parameters to the different components.
+                    #
                     pnew = Parameter(p.modelname, p.name, 0.0, hidden=True)
                     pnew.link = p
                     p = pnew
+
                 allpars.append(p)
 
         Model.__init__(self, name, allpars)
@@ -990,6 +1028,8 @@ class SimulFitModel(CompositeModel):
     def __iter__(self):
         return iter(self.parts)
 
+    # Why is this not defined in CompositeModel?
+    #
     def startup(self, cache=False):
         for part in self:
             part.startup(cache)
@@ -1060,6 +1100,7 @@ class ArithmeticConstantModel(Model):
         pass
 
     def calc(self, p, *args, **kwargs):
+        # Shouldn't this return p[0]?
         return self.val
 
     def teardown(self):
@@ -1158,11 +1199,13 @@ class ArithmeticModel(Model):
     def startup(self, cache=False):
         self.cache_clear()
         self._use_caching = cache
-        if int(self.cache) > 0:
-            self._queue = [''] * int(self.cache)
-            frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
-            if len(frozen) > 0 and frozen.all():
-                self._use_caching = cache
+        if int(self.cache) <= 0:
+            return
+
+        self._queue = [''] * int(self.cache)
+        frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
+        if len(frozen) > 0 and frozen.all():
+            self._use_caching = cache
 
     def teardown(self):
         self._use_caching = False
@@ -1172,7 +1215,18 @@ class ArithmeticModel(Model):
 
 
 class RegriddableModel(ArithmeticModel):
+    """Support models that can be evaluated on a different grid.
+
+    """
+
     def regrid(self, *args, **kwargs):
+        """Allow a model to be evaluated on a different grid than requested.
+
+        The return value is a new instance of the model, set up to
+        evaluate the model on the supplied axes which will be
+        regridded onto the requested grid.
+
+        """
         raise NotImplementedError
 
 
@@ -1338,6 +1392,8 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         CompositeModel.teardown(self)
 
     def calc(self, p, *args, **kwargs):
+        # Note that the kwargs are sent to both model components.
+        #
         nlhs = len(self.lhs.pars)
         lhs = self.lhs.calc(p[:nlhs], *args, **kwargs)
         rhs = self.rhs.calc(p[nlhs:], *args, **kwargs)
@@ -1566,7 +1622,9 @@ def _wrapobj(obj, wrapper):
     # the full list of classes are needed to be accessible
     # when called.
     #
-    if isinstance(obj, (ArithmeticModel, ArithmeticConstantModel, ArithmeticFunctionModel)):
+    if isinstance(obj, (ArithmeticModel,
+                        ArithmeticConstantModel,
+                        ArithmeticFunctionModel)):
         return obj
 
     return wrapper(obj)
@@ -1580,8 +1638,8 @@ def modelcomponents_to_list(model):
         for p in model.parts:
             modellist.extend(modelcomponents_to_list(p))
         return modellist
-    else:
-        return [model]
+
+    return [model]
 
 
 def html_model(mdl):

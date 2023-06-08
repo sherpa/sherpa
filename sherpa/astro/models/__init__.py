@@ -1,6 +1,7 @@
 # coding: utf-8
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2019, 2021, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -20,6 +21,7 @@
 
 import numpy
 
+from sherpa.models.basic import clean_kwargs1d, clean_kwargs2d
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, modelCacher1d
 from sherpa.astro.utils import apply_pileup
@@ -93,6 +95,7 @@ class Atten(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
+        kwargs = clean_kwargs1d(self, kwargs)
         # atten should act like xsphabs, never integrate.
         kwargs['integrate'] = False
         return _modelfcts.atten(*args, **kwargs)
@@ -174,7 +177,7 @@ class BBody(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.bbody(*args, **kwargs)
 
 
@@ -231,7 +234,7 @@ class BBodyFreq(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.bbodyfreq(*args, **kwargs)
 
 
@@ -301,7 +304,7 @@ class Beta1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.beta1d(*args, **kwargs)
 
 
@@ -361,7 +364,7 @@ class BPL1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.bpl1d(*args, **kwargs)
 
 
@@ -426,7 +429,7 @@ class Dered(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.dered(*args, **kwargs)
 
 
@@ -477,7 +480,7 @@ class Edge(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.edge(*args, **kwargs)
 
 
@@ -542,7 +545,7 @@ class LineBroad(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.linebroad(*args, **kwargs)
 
 
@@ -610,7 +613,7 @@ class Lorentz1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.lorentz1d(*args, **kwargs)
 
 
@@ -726,7 +729,7 @@ class Voigt1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.wofz(*args, **kwargs)
 
 
@@ -813,7 +816,7 @@ class PseudoVoigt1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
 
         pars = args[0]
         xargs = args[1:]
@@ -892,7 +895,7 @@ class NormBeta1D(RegriddableModel1D):
 
     @modelCacher1d
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.nbeta1d(*args, **kwargs)
 
 
@@ -939,6 +942,7 @@ class Schechter(RegriddableModel1D):
     def calc(self, *args, **kwargs):
         if not self.integrate:
             raise ModelErr('alwaysint', self.name)
+        kwargs = clean_kwargs1d(self, kwargs)
         return _modelfcts.schechter(*args, **kwargs)
 
 
@@ -1030,7 +1034,7 @@ class Beta2D(RegriddableModel2D):
         param_apply_limits(rad, self.r0, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.beta2d(*args, **kwargs)
 
 
@@ -1112,7 +1116,7 @@ class DeVaucouleurs2D(RegriddableModel2D):
         param_apply_limits(rad, self.r0, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.devau(*args, **kwargs)
 
 
@@ -1198,7 +1202,7 @@ class HubbleReynolds(RegriddableModel2D):
         param_apply_limits(rad, self.r0, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.hr(*args, **kwargs)
 
 
@@ -1272,7 +1276,7 @@ class Lorentz2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.lorentz2d(*args, **kwargs)
 
 
@@ -1489,7 +1493,7 @@ class Sersic2D(RegriddableModel2D):
         param_apply_limits(rad, self.r0, **kwargs)
 
     def calc(self, *args, **kwargs):
-        kwargs['integrate'] = bool_cast(self.integrate)
+        kwargs = clean_kwargs2d(self, kwargs)
         return _modelfcts.sersic(*args, **kwargs)
 
 

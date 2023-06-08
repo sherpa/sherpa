@@ -461,8 +461,11 @@ static void create_output(int nbins, T &a, T &b) {
       template <typename RealArray>
       class PyArgTuple3 : public PyArgTupleBase {
       public:
-        PyArgTuple3( PyObject* args, npy_intp NumPars, RealArray& pars,
-                     DoubleArray& xlo, DoubleArray& xhi ) :
+        PyArgTuple3( PyObject* args, PyObject *kwargs,
+		     npy_intp NumPars, RealArray& pars,
+                     DoubleArray& xlo, DoubleArray& xhi,
+		     int& spectrumNumber
+		     ) :
           PyArgTupleBase( ) {
           //
           // The grid arrays could be cast to FloatArray here, saving
@@ -474,13 +477,18 @@ static void create_output(int nbins, T &a, T &b) {
           //
           // [*] although these checks are currently commented out
           //
-          if ( !PyArg_ParseTuple( args, (char*)"O&O&|O&",
-                                  (converter)convert_to_contig_array< RealArray >,
-                                  &pars,
-                                  (converter)convert_to_contig_array< DoubleArray >,
-                                  &xlo,
-                                  (converter)convert_to_contig_array< DoubleArray >,
-                                  &xhi ) )
+	  static char *kwlist[] = {(char*)"pars", (char*)"xlo", (char*)"xhi",
+	                           (char*)"spectrumNumber", NULL};
+
+          if ( !PyArg_ParseTupleAndKeywords( args, kwargs, (char*)"O&O&|O&i",
+					     kwlist,
+					     (converter)convert_to_contig_array< RealArray >,
+					     &pars,
+					     (converter)convert_to_contig_array< DoubleArray >,
+					     &xlo,
+					     (converter)convert_to_contig_array< DoubleArray >,
+					     &xhi,
+					     &spectrumNumber) )
             throw NoError("Error Parsing args");
 
           npy_intp npars = pars.get_size();
@@ -496,8 +504,10 @@ static void create_output(int nbins, T &a, T &b) {
       template <typename RealArray>
       class PyArgTuple4 : public PyArgTupleBase {
       public:
-        PyArgTuple4( PyObject* args, npy_intp NumPars, RealArray& pars,
-                     RealArray& fluxes, DoubleArray& xlo, DoubleArray& xhi ) :
+        PyArgTuple4( PyObject* args, PyObject *kwargs,
+		     npy_intp NumPars, RealArray& pars,
+                     RealArray& fluxes, DoubleArray& xlo, DoubleArray& xhi,
+		     int& spectrumNumber) :
           PyArgTupleBase( ) {
           //
           // The arguments are parsed as
@@ -506,15 +516,20 @@ static void create_output(int nbins, T &a, T &b) {
           // where fluxes is the spectrum that is to be convolved
           // by the model.
           //
-          if ( !PyArg_ParseTuple( args, (char*)"O&O&O&|O&",
-                                  (converter)convert_to_contig_array< RealArray >,
-                                  &pars,
-                                  (converter)convert_to_contig_array< RealArray >,
-                                  &fluxes,
-                                  (converter)convert_to_contig_array< DoubleArray >,
-                                  &xlo,
-                                  (converter)convert_to_contig_array< DoubleArray >,
-                                  &xhi ) )
+	  static char *kwlist[] = {(char*)"pars", (char*) "fluxes", (char*)"xlo", (char*)"xhi",
+	                           (char*)"spectrumNumber", NULL};
+
+          if ( !PyArg_ParseTupleAndKeywords( args, kwargs, (char*)"O&O&O&|O&i",
+					     kwlist,
+					     (converter)convert_to_contig_array< RealArray >,
+					     &pars,
+					     (converter)convert_to_contig_array< RealArray >,
+					     &fluxes,
+					     (converter)convert_to_contig_array< DoubleArray >,
+					     &xlo,
+					     (converter)convert_to_contig_array< DoubleArray >,
+					     &xhi,
+					     &spectrumNumber) )
             throw NoError("Error Parsing args");
 
           npy_intp npars = pars.get_size();
@@ -533,14 +548,14 @@ static void create_output(int nbins, T &a, T &b) {
 
         virtual ~xspecModelFctBase( ) { }
 
-        xspecModelFctBase( PyObject* arg, npy_intp numpars, bool hasnorm )
-          : args(arg), ifl(1), NumPars(numpars), HasNorm(hasnorm) { }
+        xspecModelFctBase( PyObject* arg, PyObject* kwargs, npy_intp numpars, bool hasnorm )
+          : args(arg), kwargs(kwargs), ifl(1), NumPars(numpars), HasNorm(hasnorm) { }
 
         virtual void call_xspec( RealArray& result ) { }
 
         void eval( RealArray& result ) {
 
-          PyArgTuple3<RealArray>( args, NumPars, pars, xlo, xhi );
+          PyArgTuple3<RealArray>( args, kwargs, NumPars, pars, xlo, xhi, ifl );
 
           //
           // The grid to send to XSPEC (double precision).
@@ -576,6 +591,7 @@ static void create_output(int nbins, T &a, T &b) {
       protected:
 
         PyObject* args;
+	PyObject* kwargs;
         int ifl, ngrid, npts;
         std::vector<SherpaFloat> ear;
         RealArray pars, error;
@@ -592,8 +608,8 @@ static void create_output(int nbins, T &a, T &b) {
       class xspecModelFctC : public xspecModelFctBase<Real, RealArray>  {
       public:
 
-        xspecModelFctC( PyObject* args, npy_intp NumPars, bool HasNorm )
-          : xspecModelFctBase<Real, RealArray>( args, NumPars, HasNorm ) { }
+        xspecModelFctC( PyObject* args, PyObject *kwargs, npy_intp NumPars, bool HasNorm )
+          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars, HasNorm ) { }
 
         void call_xspec( RealArray& result ) {
           XSpecFunc( &this->ear[0], this->npts, &this->pars[0], this->ifl,
@@ -607,8 +623,8 @@ static void create_output(int nbins, T &a, T &b) {
       class xspecModelFctF : public xspecModelFctBase<Real, RealArray>  {
       public:
 
-        xspecModelFctF( PyObject* args, npy_intp NumPars, bool HasNorm )
-          : xspecModelFctBase<Real, RealArray>( args, NumPars, HasNorm ) { }
+        xspecModelFctF( PyObject* args, PyObject *kwargs, npy_intp NumPars, bool HasNorm )
+          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars, HasNorm ) { }
 
         void call_xspec( RealArray& result ) {
           // convert to 32-byte float
@@ -626,8 +642,8 @@ static void create_output(int nbins, T &a, T &b) {
       class xspecModelFctFD : public xspecModelFctBase<Real, RealArray>  {
       public:
 
-        xspecModelFctFD( PyObject* args, npy_intp NumPars, bool HasNorm )
-          : xspecModelFctBase<Real, RealArray>( args, NumPars, HasNorm ) { }
+        xspecModelFctFD( PyObject* args, PyObject *kwargs, npy_intp NumPars, bool HasNorm )
+          : xspecModelFctBase<Real, RealArray>( args, kwargs, NumPars, HasNorm ) { }
 
         void call_xspec( RealArray& result ) {
           XSpecFunc( &this->ear[0], this->npts, &this->pars[0], this->ifl,
@@ -644,14 +660,14 @@ static void create_output(int nbins, T &a, T &b) {
 
         virtual ~xspecModelFctConBase( ) { }
 
-        xspecModelFctConBase( PyObject* arg, npy_intp numpars )
-          : args(arg), ifl(1), NumPars(numpars) { }
+        xspecModelFctConBase( PyObject* arg, PyObject *kwargs, npy_intp numpars )
+          : args(arg), kwargs(kwargs), ifl(1), NumPars(numpars) { }
 
         virtual void call_xspec( RealArray& result ) { }
 
         void eval( RealArray& result ) {
 
-          PyArgTuple4<RealArray>( args, NumPars, pars, fluxes, xlo, xhi );
+          PyArgTuple4<RealArray>( args, kwargs, NumPars, pars, fluxes, xlo, xhi, ifl );
 
           // XSpec traditionally refers to the input energy grid as ear.
           // std::vector<SherpaFloat> ear;
@@ -691,6 +707,7 @@ static void create_output(int nbins, T &a, T &b) {
       protected:
 
         PyObject* args;
+        PyObject* kwargs;
         int ifl, ngrid, npts;;
         std::vector<SherpaFloat> ear;
         RealArray pars, error;
@@ -708,8 +725,8 @@ static void create_output(int nbins, T &a, T &b) {
       class xspecModelFctConC : public xspecModelFctConBase<Real, RealArray>  {
       public:
 
-        xspecModelFctConC( PyObject* arg, npy_intp numpars )
-          : xspecModelFctConBase<Real, RealArray>( arg, numpars ) { }
+        xspecModelFctConC( PyObject* arg, PyObject *kwargs, npy_intp numpars )
+          : xspecModelFctConBase<Real, RealArray>( arg, kwargs, numpars ) { }
 
         void call_xspec( RealArray& result ) {
           XSpecFunc( &this->ear[0], this->npts, &this->pars[0], this->ifl,
@@ -723,8 +740,8 @@ static void create_output(int nbins, T &a, T &b) {
       class xspecModelFctConF : public xspecModelFctConBase<Real, RealArray>  {
       public:
 
-        xspecModelFctConF( PyObject* args, npy_intp NumPars )
-          : xspecModelFctConBase<Real, RealArray>( args, NumPars ) { }
+        xspecModelFctConF( PyObject* args, PyObject* kwargs, npy_intp NumPars )
+          : xspecModelFctConBase<Real, RealArray>( args, kwargs, NumPars ) { }
 
         void call_xspec( RealArray& result ) {
           // convert to 32-byte float
@@ -831,10 +848,10 @@ static void create_output(int nbins, T &a, T &b) {
 
 
 template <npy_intp NumPars, bool HasNorm, xsf77Call XSpecFunc>
-PyObject* xspecmodelfct( PyObject* self, PyObject* args ) {
+PyObject* xspecmodelfct( PyObject* self, PyObject* args, PyObject* kwargs ) {
 
   xspecModelFctF<float, FloatArray, XSpecFunc> xspec_model =
-    xspecModelFctF<float, FloatArray, XSpecFunc>( args, NumPars, HasNorm );
+    xspecModelFctF<float, FloatArray, XSpecFunc>( args, kwargs, NumPars, HasNorm );
   try {
     FloatArray result;
     xspec_model.eval( result );
@@ -857,10 +874,10 @@ PyObject* xspecmodelfct( PyObject* self, PyObject* args ) {
 }
 
 template <npy_intp NumPars, bool HasNorm, xsF77Call XSpecFunc>
-PyObject* xspecmodelfct_dbl( PyObject* self, PyObject* args ) {
+PyObject* xspecmodelfct_dbl( PyObject* self, PyObject* args, PyObject *kwargs ) {
 
   xspecModelFctFD<double, DoubleArray, XSpecFunc> xspec_model =
-    xspecModelFctFD<double, DoubleArray, XSpecFunc>( args, NumPars, HasNorm );
+    xspecModelFctFD<double, DoubleArray, XSpecFunc>( args, kwargs, NumPars, HasNorm );
   try {
     DoubleArray result;
     xspec_model.eval( result );
@@ -883,10 +900,10 @@ PyObject* xspecmodelfct_dbl( PyObject* self, PyObject* args ) {
 }
 
 template <npy_intp NumPars, bool HasNorm, xsccCall XSpecFunc>
-PyObject* xspecmodelfct_C( PyObject* self, PyObject* args ) {
+PyObject* xspecmodelfct_C( PyObject* self, PyObject* args, PyObject *kwargs ) {
 
   xspecModelFctC<double, DoubleArray, XSpecFunc> xspec_model =
-    xspecModelFctC<double, DoubleArray, XSpecFunc>( args, NumPars, HasNorm );
+    xspecModelFctC<double, DoubleArray, XSpecFunc>( args, kwargs, NumPars, HasNorm );
   try {
     DoubleArray result;
     xspec_model.eval( result );
@@ -912,10 +929,10 @@ PyObject* xspecmodelfct_C( PyObject* self, PyObject* args ) {
 //
 // This template does not support non-contiguous grids.
 template <npy_intp NumPars, xsccCall XSpecFunc>
-PyObject* xspecmodelfct_con( PyObject* self, PyObject* args ) {
+PyObject* xspecmodelfct_con( PyObject* self, PyObject* args, PyObject* kwargs ) {
 
   xspecModelFctConC<double, DoubleArray, XSpecFunc> xspec_model =
-    xspecModelFctConC<double, DoubleArray, XSpecFunc>( args, NumPars );
+    xspecModelFctConC<double, DoubleArray, XSpecFunc>( args, kwargs, NumPars );
   try {
     DoubleArray result;
     xspec_model.eval(result);
@@ -940,10 +957,10 @@ PyObject* xspecmodelfct_con( PyObject* self, PyObject* args ) {
 // version as it for the additive and multiplicative models).
 //
 template <npy_intp NumPars, xsf77Call XSpecFunc>
-PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args ) {
+PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args, PyObject* kwargs ) {
 
   xspecModelFctConF<float, FloatArray, XSpecFunc> xspec_model =
-    xspecModelFctConF<float, FloatArray, XSpecFunc>( args, NumPars );
+    xspecModelFctConF<float, FloatArray, XSpecFunc>( args, kwargs, NumPars );
   try {
     FloatArray result;
     xspec_model.eval( result );
@@ -1049,26 +1066,25 @@ PyObject* xspectablemodel( PyObject* self, PyObject* args, PyObject *kwds )
 // Fortran models
 //
 #define XSPECMODELFCT(name, npars) \
-   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, false, name##_ >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, false, name##_ >))
 #define XSPECMODELFCT_NORM(name, npars) \
-   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, true, name##_ >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct< npars, true, name##_ >))
 
 #define XSPECMODELFCT_CON_F77(name, npars) \
-   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, name##_ >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con_f77< npars, name##_ >))
 
 // C/C++ models
 //
 #define XSPECMODELFCT_DBL(name, npars) \
-   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_dbl< npars, false, name##_ >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_dbl< npars, false, name##_ >))
 
 #define XSPECMODELFCT_C(name, npars) \
-   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, false, name >))
-
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, false, name >))
 #define XSPECMODELFCT_C_NORM(name, npars) \
-   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, true, name >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_C< npars, true, name >))
 
 #define XSPECMODELFCT_CON(name, npars) \
-   FCTSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con< npars, name >))
+   KWSPEC(name, (sherpa::astro::xspec::xspecmodelfct_con< npars, name >))
 
 
 #endif /* __sherpa_astro_xspec_extension_hh__ */
