@@ -60,7 +60,7 @@ def test_is_simplexbase_repeatable():
     # After the first line, which is the x0 array + function value,
     # the next three rows have 2 random numbers and then the function
     # value at that coordinate, and then sorted on the last column.
-    # So this tests how repeatable the RNG us.
+    # So this tests how repeatable the RNG is.
     #
     expected = np.asarray([[-1.2, 1.0, 24.2],
                            [4.21466190e-01, -1.72015071e+00, 3.60493288e+02],

@@ -20,7 +20,7 @@
 
 """This code used to be in sherpa.optmethods.opt.
 
-It was presumably to make testing the optimisers easier, but was never
+It was apparently meant to make testing the optimisers easier, but was never
 included in the Sherpa tests. Much of this code could be run by
 executing the code directly (by way of a "if __name__ == '__main__':"
 block):
