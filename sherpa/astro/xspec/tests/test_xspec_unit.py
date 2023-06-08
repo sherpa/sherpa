@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,7 +24,6 @@
 import copy
 import logging
 import os
-from tempfile import NamedTemporaryFile, gettempdir
 
 import pytest
 
@@ -275,6 +274,49 @@ def test_abund_element():
     assert fe == pytest.approx(2.69e-05)
 
 
+@requires_xspec
+def test_abund_get_invalid_element(caplog):
+    """Check what happens if sent the wrong element name"""
+
+    from sherpa.astro import xspec
+
+    # TODO: TypeError is not the best error type here.
+    with pytest.raises(TypeError, match="^could not find element 'O3'$"):
+        xspec.get_xsabund("O3")
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_abund_set_invalid_name(caplog):
+    """Check what happens if sent an unknown table
+
+    It is unlikely that the name "foo-foo" will become valid.
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError, match="^Cannot read file 'foo-foo'.  It may not exist or contains invalid data$"):
+        xspec.set_xsabund("foo-foo")
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_xsect_set_invalid_name(caplog):
+    """Check what happens if sent an unknown table
+
+    It is unlikely that the name "foo-foo" will become valid.
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError, match="^could not set XSPEC photoelectric cross-section to 'foo-foo'$"):
+        xspec.set_xsxsect("foo-foo")
+
+    assert len(caplog.records) == 0
+
+
 def validate_xspec_setting(getfunc, setfunc, newval, altval):
     """Check we can change an XSPEC setting.
 
@@ -369,7 +411,7 @@ def test_abund_change_string():
 
 
 @requires_xspec
-def test_abund_change_file():
+def test_abund_change_file(tmp_path):
     """Can we change the abundance setting: file
 
     This test hard-codes the number of elements expected in the
@@ -380,15 +422,14 @@ def test_abund_change_file():
 
     elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)}
 
-    tfh = NamedTemporaryFile(mode='w', suffix='.xspec')
-    for n in ELEMENT_NAMES:
-        tfh.write("{}\n".format(elems[n]))
-
-    tfh.flush()
+    tmpname = tmp_path / "abunds.xspec"
+    with open(tmpname, "w") as tfh:
+        for v in elems.values():
+            tfh.write(f"{v}\n")
 
     oval = xspec.get_xsabund()
     try:
-        xspec.set_xsabund(tfh.name)
+        xspec.set_xsabund(str(tmpname))
 
         abund = xspec.get_xsabund()
         out = {n: xspec.get_xsabund(n)
@@ -400,6 +441,39 @@ def test_abund_change_file():
     assert abund == 'file'
     for n in ELEMENT_NAMES:
         assert out[n] == pytest.approx(elems[n])
+
+
+@requires_xspec
+def test_abund_change_file_subset(tmp_path):
+    """What happens if send in too-few elements?"""
+
+    from sherpa.astro import xspec
+
+    elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)
+             if i < 10}
+
+    tmpname = tmp_path / "abunds.xspec"
+    with open(tmpname, "w") as tfh:
+        for v in elems.values():
+            tfh.write(f"{v}\n")
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund(str(tmpname))
+
+        abund = xspec.get_xsabund()
+        out = {n: xspec.get_xsabund(n)
+               for n in ELEMENT_NAMES}
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert abund == 'file'
+    for i, n in enumerate(ELEMENT_NAMES):
+        if i < 10:
+            assert out[n] == pytest.approx(elems[n])
+        else:
+            assert out[n] == pytest.approx(0)
 
 
 @requires_xspec
@@ -477,7 +551,7 @@ def test_cosmo_change():
 
 
 @requires_xspec
-def test_path_manager_change():
+def test_path_manager_change(tmp_path):
     """Can we change the manager-path setting?
     """
 
@@ -486,7 +560,7 @@ def test_path_manager_change():
     validate_xspec_setting(xspec.get_xspath_manager,
                            xspec.set_xspath_manager,
                            '/dev/null',
-                           gettempdir())
+                           str(tmp_path))
 
 
 # Note that the XSPEC state is used in test_xspec.py, but only
@@ -792,7 +866,7 @@ def test_xspec_model_requires_bins_very_low_level(clsname):
 @requires_fits
 @requires_data
 @requires_xspec
-def test_xspec_tablemodel_requires_bin_edges(make_data_path, clean_astro_ui):
+def test_xspec_tablemodel_requires_bin_edges(make_data_path):
     """Check we can not call a table model with a single grid.
 
     This used to be supported in Sherpa 4.13 and before.
@@ -811,7 +885,7 @@ def test_xspec_tablemodel_requires_bin_edges(make_data_path, clean_astro_ui):
 @requires_fits
 @requires_data
 @requires_xspec
-def test_xspec_tablemodel_requires_bin_edges_low_level(make_data_path, clean_astro_ui):
+def test_xspec_tablemodel_requires_bin_edges_low_level(make_data_path):
     """Check we can not call a table model with a single grid (calc).
 
     This used to be supported in Sherpa 4.13 and before.
