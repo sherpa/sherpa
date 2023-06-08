@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -35,6 +35,7 @@ finalsimplex = 9
 step         = None
 iquad        = 1
 verbose      = 0
+reflect      = True
 
 A model is fit by providing the ``fit`` method a callback, the starting
 point (parameter values), and parameter ranges. The callback should
@@ -60,6 +61,7 @@ constant model to a 1D dataset (we do not need to send any extra
 arguments to the callback other than the parameter values in this
 case):
 
+>>> import numpy as np
 >>> from sherpa.data import Data1D
 >>> from sherpa.models.basic import Const1D
 >>> from sherpa.stats import LeastSq
@@ -144,8 +146,7 @@ class OptMethod(NoNewAttributesAfterInit):
     def __getattr__(self, name):
         if name in self.__dict__.get('config', ()):
             return self.config[name]
-        raise AttributeError("'%s' object has no attribute '%s'" %
-                             (type(self).__name__, name))
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
     def __setattr__(self, name, val):
         if name in self.__dict__.get('config', ()):
@@ -154,8 +155,7 @@ class OptMethod(NoNewAttributesAfterInit):
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
     def __repr__(self):
-        return ("<%s optimization method instance '%s'>" %
-                (type(self).__name__, self.name))
+        return f"<{type(self).__name__} optimization method instance '{self.name}'>"
 
     # Need to support users who have pickled sessions < CIAO 4.2
     def __setstate__(self, state):
@@ -193,8 +193,11 @@ class OptMethod(NoNewAttributesAfterInit):
                               doc='The default settings for the optimiser.')
 
     def fit(self, statfunc, pars, parmins, parmaxes, statargs=(),
-            statkwargs={}):
+            statkwargs=None):
         """Run the optimiser.
+
+        .. versionchanged:: 4.16.0
+           The statkwargs argument now defaults to None rather than {}.
 
         Parameters
         ----------
@@ -213,7 +216,7 @@ class OptMethod(NoNewAttributesAfterInit):
            must match the length of `pars`.
         statargs : optional
            Additional positional arguments to send to `statfunc`.
-        statkwargs : optional
+        statkwargs : dict, optional
            Additional keyword arguments to send to `statfunc`.
 
         Returns
@@ -228,6 +231,9 @@ class OptMethod(NoNewAttributesAfterInit):
 
         """
 
+        if statkwargs is None:
+            statkwargs = {}
+
         def cb(pars):
             return statfunc(pars, *statargs, **statkwargs)
 
@@ -236,7 +242,7 @@ class OptMethod(NoNewAttributesAfterInit):
         success = output[0]
         msg = output[3]
         if not success:
-            warning('fit failed: %s' % msg)
+            warning('fit failed: %s', msg)
 
         # Ensure that the best-fit parameters are in an array.  (If there's
         # only one, it might be returned as a bare float.)

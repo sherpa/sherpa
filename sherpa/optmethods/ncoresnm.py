@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 #
 #  Copyright (C) 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
@@ -20,16 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-# import autograd.numpy as np
 import numpy as np
 
 from sherpa.utils.parallel import ncpus
 from sherpa.optmethods import _saoopt
 from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom
-# from opt import MyNcores, Opt, SimplexNoStep, SimplexStep, SimplexRandom
 
-__all__ = ('ncoresNelderMead')
+__all__ = ('ncoresNelderMead', )
 
 EPSILON = np.float_(np.finfo(np.float32).eps)
 
@@ -48,10 +44,12 @@ class MyNelderMead(Opt):
 
         # print('MyNelderMead::__call__ xpar =', xpar)
         npar = len(xpar)
-        simplex = SimplexStep(self.func, npar + 1, xpar, self.xmin, self.xmax,
-                              step, None, None)
-        result = \
-            self.optimize(xpar, simplex, maxnfev, tol, finalsimplex, verbose)
+        simplex = SimplexStep(func=self.func, npop=npar + 1,
+                              xpar=xpar, xmin=self.xmin,
+                              xmax=self.xmax, step=step, seed=None,
+                              factor=None)
+        result = self.optimize(xpar, simplex, maxnfev, tol,
+                               finalsimplex, verbose)
         # print('MyNelderMead::__call__ result =', result)
         return result
 
@@ -70,11 +68,11 @@ class MyNelderMead(Opt):
                     print('\taccept outside contraction point')
                     # and terminate the iteration
                 return False
-            else:
-                # otherwise, go to step 5 (perform a shrink).
-                return True
 
-        elif reflection_pt[-1] >= simplex[badindex, -1]:
+            # otherwise, go to step 5 (perform a shrink).
+            return True
+
+        if reflection_pt[-1] >= simplex[badindex, -1]:
 
             inside_contraction_pt = simplex.move_vertex(centroid,
                                                         - contraction_coef)
@@ -84,13 +82,12 @@ class MyNelderMead(Opt):
                 if verbose > 2:
                     print('\taccept inside contraction point')
                 return False
-            else:
-                # otherwise, go to step 5 (perform a shrink).
-                return True
 
-        else:
-            print('something is wrong with contract_in_out')
+            # otherwise, go to step 5 (perform a shrink).
             return True
+
+        print('something is wrong with contract_in_out')
+        return True
 
     def optimize(self, xpar, simplex, maxnfev, tol, finalsimplex, verbose):
 
@@ -102,8 +99,7 @@ class MyNelderMead(Opt):
 
             simplex.sort()
             if verbose > 2:
-                msg = 'f%s=%e' % (simplex[0, :-1], simplex[0, -1])
-                print(msg)
+                print(f'f{simplex[0, :-1]}={simplex[0, -1]:e}')
 
             centroid = simplex.calc_centroid()
 
@@ -148,9 +144,12 @@ class NelderMeadBase:
         self.nfev = 0
         self.fmin = np.inf
         self.par = np.nan
+
+        # TODO: this should either be configurable or something that is
+        # only changed when needed. See issue #1238
+        #
         np.seterr(over='ignore', divide='ignore', under='ignore',
                   invalid='ignore')
-        return
 
     def __call__(self, fcn, xpar, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
@@ -160,15 +159,11 @@ class NelderMeadBase:
     def get_maxnfev(self, maxnfev, npar):
         if maxnfev is None:
             return 512 * npar
-        else:
-            return maxnfev
+
+        return maxnfev
 
 
 class NelderMead0(NelderMeadBase):
-
-    def __init__(self):
-        NelderMeadBase.__init__(self)
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None, step=None,
                  finalsimplex=1, verbose=0):
@@ -196,19 +191,11 @@ class NelderMead0(NelderMeadBase):
 
 class NelderMead1(NelderMead0):
 
-    def __init__(self):
-        NelderMead0.__init__(self)
-        return
-
     def calc_step(self, x):
         return x + 1.2
 
 
 class NelderMead2(NelderMead0):
-
-    def __init__(self):
-        NelderMead0.__init__(self)
-        return
 
     def calc_step(self, x):
         return abs(x)
@@ -216,12 +203,13 @@ class NelderMead2(NelderMead0):
 
 class NelderMead3(NelderMead0):
 
-    def __init__(self):
-        NelderMead0.__init__(self)
-        return
-
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
-                 step=None, finalsimplex=[0, 1, 1], verbose=0):
+                 step=None, finalsimplex=None, verbose=0):
+
+        # Avoid having a mutable argument
+        if finalsimplex is None:
+            finalsimplex = [0, 1, 1]
+
         x0 = np.asarray(x0)
         n = len(x0)
         if step is None:
@@ -236,12 +224,13 @@ class NelderMead3(NelderMead0):
 
 class NelderMead4(NelderMead0):
 
-    def __init__(self):
-        NelderMead0.__init__(self)
-        return
-
     def __call__(self, fcn, x0, xmin, xmax, tol=EPSILON,  maxnfev=None,
-                 step=None, finalsimplex=[0, 1, 1], verbose=0, reflect=True):
+                 step=None, finalsimplex=None, verbose=0, reflect=True):
+
+        # Avoid having a mutable argument
+        if finalsimplex is None:
+            finalsimplex = [0, 1, 1]
+
         x0 = np.asarray(x0)
         n = len(x0)
         if step is None:
@@ -263,10 +252,6 @@ class NelderMead4(NelderMead0):
 
 class NelderMead5(NelderMead0):
 
-    def __init__(self):
-        NelderMead0.__init__(self)
-        return
-
     def __call__(self, fcn, x0, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0, reflect=True):
         init = 0
@@ -285,24 +270,19 @@ class NelderMead5(NelderMead0):
 
 class NelderMead6(NelderMeadBase):
 
+    # TODO: do we really need this internal class?
     class MyNelderMead6(MyNelderMead):
-
-        def __init__(self, fcn, xmin, xmax):
-            MyNelderMead.__init__(self, fcn, xmin, xmax)
-            return
 
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
-            simplex = SimplexNoStep(self.func, npar + 1, x, self.xmin,
-                                    self.xmax, None, None, None)
-            result = \
-                self.optimize(x, simplex, maxnfev, tol, finalsimplex, verbose)
+            simplex = SimplexNoStep(func=self.func, npop=npar + 1,
+                                    xpar=x, xmin=self.xmin,
+                                    xmax=self.xmax, step=None,
+                                    seed=None, factor=None)
+            result = self.optimize(x, simplex, maxnfev, tol,
+                                   finalsimplex, verbose)
             # print('MyNelderMead6::__call__ result =', result)
             return result
-
-    def __init__(self):
-        NelderMeadBase.__init__(self)
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
@@ -315,25 +295,19 @@ class NelderMead6(NelderMeadBase):
 
 class NelderMead7(NelderMeadBase):
 
+    # TODO: do we really need this internal class?
     class MyNelderMead7(MyNelderMead):
-
-        def __init__(self, fcn, xmin, xmax):
-            MyNelderMead.__init__(self, fcn, xmin, xmax)
-            return
 
         def __call__(self, x, maxnfev, tol, step, finalsimplex, verbose):
             npar = len(x)
             factor = 2
-            simplex = SimplexRandom(self.func, npar + 1, x, self.xmin,
-                                    self.xmax, None, None, factor)
-            result = \
-                self.optimize(x, simplex, maxnfev, tol, finalsimplex, verbose)
+            simplex = SimplexRandom(func=self.func, npop=npar + 1, xpar=x,
+                                    xmin=self.xmin, xmax=self.xmax,
+                                    step=None, seed=None, factor=factor)
+            result = self.optimize(x, simplex, maxnfev, tol,
+                                   finalsimplex, verbose)
             # print('MyNelderMead7::__call__ result =', result)
             return result
-
-    def __init__(self):
-        NelderMeadBase.__init__(self)
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
@@ -345,10 +319,6 @@ class NelderMead7(NelderMeadBase):
 
 
 class nmNcores(MyNcores):
-
-    def __init__self(self):
-        MyNcores.__init__(self)
-        return
 
     def my_worker(self, opt, idval, out_q, err_q,
                   fcn, x, xmin, xmax, tol, maxnfev):
@@ -363,24 +333,19 @@ class nmNcores(MyNcores):
 
 class ncoresNelderMead:
 
+    # TODO: using a list as an argument triggers pylint dangerous-default-value check
     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
                              NelderMead3(), NelderMead4(), NelderMead5()]):
         # NelderMead6(), NelderMead7()]):
         self.algo = algo
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=ncpus):
-        try:
-            num_algo = len(self.algo)
-            args = (fcn, x, xmin, xmax, tol, maxnfev)
-            nm_ncores = nmNcores()
-            results = nm_ncores.calc(self.algo, numcores, *args)
-            nfev, fmin, par = self.unpack_results(num_algo, results)
-            return nfev, fmin, par
-        except NotImplementedError as nie:
-            print(nie)
-            raise nie
+
+        num_algo = len(self.algo)
+        nm_ncores = nmNcores()
+        results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
+        return self.unpack_results(num_algo, results)
 
     def unpack_results(self, num, results):
         nfev = results[0]
@@ -409,10 +374,14 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
     reflect the progress of the algorithm: either the function values at the
     vertices are close, or the simplex has become very small. """
 
+    # TODO: using a list as an argument triggers pylint dangerous-default-value check
+    #
+    # algo is the same as used in ncoresNelderMead but leave as is in case
+    # there is a need to have a different set of classes.
+    #
     def __init__(self, algo=[NelderMead0(), NelderMead1(), NelderMead2(),
                              NelderMead3(), NelderMead4(), NelderMead5()]):
         ncoresNelderMead.__init__(self, algo)
-        return
 
     def __call__(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
                  numcores=ncpus):
@@ -421,65 +390,14 @@ class ncoresNelderMeadRecursive(ncoresNelderMead):
 
     def calc(self, fcn, x, xmin, xmax, tol=EPSILON, maxnfev=None,
              numcores=ncpus, fval=np.inf, nfev=0):
-        try:
-            num_algo = len(self.algo)
-            args = (fcn, x, xmin, xmax, tol, maxnfev)
-            nm_ncores = nmNcores()
-            results = nm_ncores.calc(self.algo, numcores, *args)
-            tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
-            nfev += tmp_nfev
-            # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
-            if fmin < fval:
-                return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
-            else:
-                return nfev, fval, par
-        except NotImplementedError as nie:
-            print(nie)
-            raise nie
 
+        num_algo = len(self.algo)
+        nm_ncores = nmNcores()
+        results = nm_ncores.calc(self.algo, numcores, fcn, x, xmin, xmax, tol, maxnfev)
+        tmp_nfev, fmin, par = self.unpack_results(num_algo, results)
+        nfev += tmp_nfev
+        # print('ncoresNelderMead::calc f', par, ' = ', fmin, '@', nfev)
+        if fmin < fval:
+            return self.calc(fcn, par, xmin, xmax, tol, maxnfev, numcores, fmin, nfev)
 
-# from iminuit import minimize, Minuit
-# class Midnight:
-#     def __init__(self):
-#         pass
-#     def __call__(self, func, x0, xmin, xmax):
-#         m = minimize(func, x0)
-#         return  m.nfev, m.fun, m.x
-
-
-if '__main__' == __name__:
-
-    from opt import tst_opt, tst_unc_opt
-
-    from optparse import OptionParser
-    parser = OptionParser()
-    parser.add_option("-N", "--num", dest="num", default=10,
-                      type=int, help="set num")
-    parser.add_option("-s", "--single", dest="single", default=True,
-                      action="store_false", help="run test using 1 core")
-    parser.add_option("-u", "--unc_opt", dest="unc_opt", default=True,
-                      action="store_false", help="do not run tst_unc_opt")
-    parser.add_option("-o", "--opt", dest="global_func", default=True,
-                      action="store_false", help="do not run tst_opt")
-    (options, args) = parser.parse_args()
-    npar = options.num
-
-    if npar % 2 != 0:
-        raise ValueError("-N option must be an even number")
-
-    if options.single:
-        nmcores = ncoresNelderMead()
-        # midnight = Midnight()
-        algorithms = [nmcores]
-        if options.unc_opt:
-            tst_unc_opt(algorithms, npar)
-        if options.global_func:
-            tst_opt(algorithms, npar)
-    else:
-        algorithms = [NelderMead0(), NelderMead1(), NelderMead2(),
-                      NelderMead3(), NelderMead4(), NelderMead5(),
-                      NelderMead6(), NelderMead7()]
-        if options.unc_opt:
-            tst_unc_opt(algorithms, npar)
-        if options.global_func:
-            tst_opt(algorithms, npar)
+        return nfev, fval, par
