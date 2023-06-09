@@ -141,11 +141,14 @@ Prerequisites
 The prerequisites for building from source are:
 
 * Python versions: 3.9 to 3.11
-* Python packages: ``setuptools``, ``numpy``
+* Python packages: ``setuptools``, ``numpy`` (these should be
+  automatically installed by ``pip``)
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
-  ``bison`` (the aim is to support recent versions of these
-  tools; please report problems to the
-  `Sherpa issue tracker <https://github.com/sherpa/sherpa/issues/>`_).
+  ``bison``, ``ar`` (which may be provided by the ``binutils`` package)
+
+The aim is to support recent versions of these tools and libraries;
+please report problems to the
+`Sherpa issue tracker <https://github.com/sherpa/sherpa/issues/>`_.
 
 It is *highly* recommended that `matplotlib` and `astropy` be installed
 before building Sherpa, to avoid skipping a number of tests in the
