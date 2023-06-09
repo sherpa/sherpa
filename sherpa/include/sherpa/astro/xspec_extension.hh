@@ -79,19 +79,10 @@ namespace sherpa { namespace astro { namespace xspec {
 typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
 typedef float FloatArrayType;
 
-// Try and support the use of std::transform while still building
-// against C++-98 compilers.
-//
-#if __cplusplus > 199711L
+// Assume std::transform is available on any system we support
 #define CONVERTARRAY(orig, out, npts)					\
         std::transform(std::begin(orig), std::end(orig), std::begin(out), \
                        [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
-#else
-#define CONVERTARRAY(orig, out, npts)					\
-	for (int i = 0; i < npts; i++) { \
-          out[i] = static_cast<FloatArrayType>(orig[i]); \
-        }
-#endif
 
 
 // XSpec models can be called from Sherpa using either
