@@ -23,6 +23,9 @@
 #include <iostream>
 #include <fstream>
 
+// xsfortran is only needed to support FNINIT as there's (as of XSPEC 12.13.0)
+// no version of this functionality in FunctionUtility.
+//
 #include <XSFunctions/Utilities/xsFortran.h>
 #include <XSFunctions/Utilities/FunctionUtility.h>
 #include <XSUtil/Utils/IosHolder.h>
