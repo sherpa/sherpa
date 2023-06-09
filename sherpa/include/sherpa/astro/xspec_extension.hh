@@ -80,7 +80,7 @@ typedef sherpa::Array< float, NPY_FLOAT > FloatArray;
 typedef float FloatArrayType;
 
 // Assume std::transform is available on any system we support
-#define CONVERTARRAY(orig, out, npts)					\
+#define CONVERTARRAY(orig, out)					\
         std::transform(std::begin(orig), std::end(orig), std::begin(out), \
                        [](const double val) -> FloatArrayType { return static_cast<FloatArrayType>(val); });
 
@@ -620,7 +620,7 @@ static void create_output(int nbins, T &a, T &b) {
         void call_xspec( RealArray& result ) {
           // convert to 32-byte float
           std::vector<float> fear(this->ngrid);
-          CONVERTARRAY(this->ear, fear, this->ngrid);
+          CONVERTARRAY(this->ear, fear);
           XSpecFunc( &fear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0] );
           return;
@@ -737,7 +737,7 @@ static void create_output(int nbins, T &a, T &b) {
         void call_xspec( RealArray& result ) {
           // convert to 32-byte float
           std::vector<float> fear(this->ngrid);
-          CONVERTARRAY(this->ear, fear, this->ngrid);
+          CONVERTARRAY(this->ear, fear);
           XSpecFunc( &fear[0], this->npts, &this->pars[0], this->ifl,
                      &result[0], &this->error[0] );
           return;
@@ -773,7 +773,7 @@ static void create_output(int nbins, T &a, T &b) {
 
           // convert to 32-byte float
           std::vector<FloatArrayType> fear(ngrid);
-          CONVERTARRAY(ear, fear, ngrid);
+          CONVERTARRAY(ear, fear);
 
           // Number of bins to send to XSPEC
           nout = ngrid;
