@@ -21,6 +21,101 @@ external code.
    (0,0) vs (1,1) sort of thing?"
    
 
+Overview
+========
+
+A single model is defined by the parameters of the model - stored
+as `sherpa.models.parameter.Parameter` instances - and the function that
+takes the parameter values along with an array of grid values to calculate
+values of the model. This is packaged together in a class for each model,
+and instances of this class can then be used to fit data.
+
+Sherpa provides several base classes in `sherpa.models.model`; the most
+commonly used ones are:
+
+* `~sherpa.models.model.ArithmeticModel` is the main base class for deriving user models since
+  it supports combining models (e.g. by addition or multiplication) and
+  a cache to reduce evaluation time at the expense of memory use.
+  (`~sherpa.models.model.ArithmeticConstantModel` and `ArithmeticFunctionModel` are less general
+  than `~sherpa.models.model.ArithmeticModel` and can be used to represent
+ a constant value or a function.)
+
+* `~sherpa.models.model.RegriddableModel1D` and
+  `~sherpa.models.model.RegriddableModel2D` which build on
+  `~sherpa.models.model.ArithmeticModel` to allow a model to be
+  evaluated on a different grid to that requested.
+
+To define a new model, a new class inherits from one of these base classes and
+implements an ``__init__`` method that defines the model parameters
+and a ``calc`` method that, given the parameter values and the coordinates
+at which the model is to be evaluated, returns the model values.
+
+Calculating the model values
+============================
+
+Many Sherpa models are set up to work with both integrated and non-integrated data,
+some might even work with data of different dimensionality. Because of that, the input
+to the ``calc`` method can take several forms:
+
+ - For `~sherpa.data.Data1D` data, the input is ``calc(pars, x, **kwargs)``
+ - For `~sherpa.data.Data1DInt` data, the input is ``calc(pars, xlo, xhi, **kwargs)``, where
+   ``xlo`` and ``xhi`` are the lower and upper bounds of the bins in the independent coordinate.
+ - For `~sherpa.data.Data2D` data, the input is ``calc(pars, x0, x1, **kwargs)``. ``x0`` and ``x1``
+   are flattened arrays for the two independent coordinates, so they are one-dimensional.
+ - For `~sherpa.data.Data2DInt` data, the input is ``calc(pars, x0lo, x1lo, x0hi, x1hi, **kwargs)``.
+   Here, ``x0lo`` and ``x0hi`` are the lower and upper bounds of the bins in the first coordinate of
+   the independent variable, and ``x1lo`` and ``x1hi`` are the lower and upper bounds of the bins in
+   the second coordinate.
+ - For `~sherpa.data.astro.DataPHA` data, the input is ``calc(pars, xlo, xhi, **kwargs)``,
+   where x could be given in either energy or wavelength units, depending on the setting
+   of ``set_analysis``.
+
+Sherpa provides other data classes and users can implement their own data classes, that might follow
+different conventions, but the cases listed above cover the typical use of Sherpa.
+
+In all cases, ``**kwargs`` are keywords that the model might accept (this feature is not used
+by most Sherpa models) and ``pars`` is a list of parameter values, in the same order as they are
+listed in the model instances::
+
+    >>> from sherpa.models.basic import Gauss1D
+    >>> mdl = Gauss1D(name='mygauss')
+    >>> print([p.fullname for p in mdl.pars])
+    ['mygauss.fwhm', 'mygauss.pos', 'mygauss.ampl']
+
+Often, in Sherpa, we want models to work with both integrated and non-integrated datasets, and thus
+``calc`` is defined to accept a flexible number of arguments with
+``def calc(self, pars, x, *args, **kwargs)`` and the code in ``calc`` can branch::
+
+    >>> from sherpa.models import model
+    >>> class LinearModel(model.RegriddableModel1D):
+    ...     def __init__(self, name='linemodel'):
+    ...         self.slope = model.Parameter(name, 'slope', 1, min=-10, hard_min=-1e20, max=10, hard_max=1e20)
+    ...         super().__init__(name, (self.slope, ))
+    ...
+    ...     def calc(self, pars, x, *args, **kwargs):
+    ...         if len(args) == 0:
+    ...             return x * pars[0]
+    ...         elif len(args) == 1:
+    ...             xlo, xhi = x, args[0]
+    ...             return (xlo + xhi) / 2 * pars[0]
+    ...         else:
+    ...             raise ValueError('This model only works in 1 dimension')
+
+For a linear model, the integrated value over the bin is just the linear model evaluated in
+the middle of the bin, but in general, the implementation can be more complex.
+
+We can now evaluate this model for points or for bins::
+
+    >>> import numpy as np
+    >>> linear = LinearModel()
+    >>> linear.calc([2], np.array([1.3, 3.4]))
+    array([2.6, 6.8])
+    >>> linear.calc([2.], np.array([0, 2, 3]), np.array([2, 3, 5]))
+    array([2., 5., 8.])
+
+In the examples below, we will set up full data classes and fits and not just pass
+the numbers directly into the ``calc`` method.
+
 A one-dimensional model
 =======================
 
@@ -28,7 +123,7 @@ An example is the
 `AstroPy trapezoidal model <https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Trapezoid1D.html>`_,
 which has four parameters: the amplitude of the central region, the center
 and width of this region, and the slope. The following model class,
-which was not written for efficiancy or robustness, implements this
+which was not written for efficiency or robustness, implements this
 interface:
 
 .. literalinclude:: ../code/trap.py
