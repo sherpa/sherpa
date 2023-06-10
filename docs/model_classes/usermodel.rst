@@ -84,7 +84,7 @@ listed in the model instances::
 
 Often, in Sherpa, we want models to work with both integrated and non-integrated datasets, and thus
 ``calc`` is defined to accept a flexible number of arguments with
-``def calc(self, pars, x, *args, **kwargs)`` and the code in ``calc`` can branch::
+``def calc(self, pars, *args, **kwargs)`` and the code in ``calc`` can branch::
 
     >>> from sherpa.models import model
     >>> class LinearModel(model.RegriddableModel1D):
@@ -92,11 +92,11 @@ Often, in Sherpa, we want models to work with both integrated and non-integrated
     ...         self.slope = model.Parameter(name, 'slope', 1, min=-10, hard_min=-1e20, max=10, hard_max=1e20)
     ...         super().__init__(name, (self.slope, ))
     ...
-    ...     def calc(self, pars, x, *args, **kwargs):
-    ...         if len(args) == 0:
-    ...             return x * pars[0]
-    ...         elif len(args) == 1:
-    ...             xlo, xhi = x, args[0]
+    ...     def calc(self, pars, *args, **kwargs):
+    ...         if len(args) == 1:
+    ...             return args[0] * pars[0]
+    ...         elif len(args) == 2:
+    ...             xlo, xhi = args
     ...             return (xlo + xhi) / 2 * pars[0]
     ...         else:
     ...             raise ValueError('This model only works in 1 dimension')
@@ -119,14 +119,96 @@ the numbers directly into the ``calc`` method.
 A one-dimensional model
 =======================
 
-An example is the
+An example is a function similar to the
 `AstroPy trapezoidal model <https://docs.astropy.org/en/stable/api/astropy.modeling.functional_models.Trapezoid1D.html>`_,
 which has four parameters: the amplitude of the central region, the center
 and width of this region, and the slope. The following model class,
 which was not written for efficiency or robustness, implements this
-interface:
+interface::
 
-.. literalinclude:: ../code/trap.py
+    >>> def _trap1d(pars, x):
+    ...     """Evaluate the Trapezoid.
+    ...
+    ...     Parameters
+    ...     ----------
+    ...     pars: sequence of 4 numbers
+    ...         The order is amplitude, center, width, and slope.
+    ...         These numbers are assumed to be valid (e.g. width
+    ...         is 0 or greater).
+    ...     x: sequence of numbers
+    ...         The grid on which to evaluate the model. It is expected
+    ...         to be a floating-point type.
+    ...
+    ...     Returns
+    ...     -------
+    ...     y: sequence of numbers
+    ...         The model evaluated on the input grid.
+    ...     """
+    ...
+    ...     (amplitude, center, width, slope) = pars
+    ...
+    ...     # There are five segments:
+    ...     #    xlo = center - width/2
+    ...     #    xhi = center + width/2
+    ...     #    x0  = xlo - amplitude/slope
+    ...     #    x1  = xhi + amplitude/slope
+    ...     #
+    ...     #    flat   xlo <= x < xhi
+    ...     #    slope  x0 <= x < xlo
+    ...     #           xhi <= x < x1
+    ...     #    zero   x < x0
+    ...     #           x >= x1
+    ...     #
+    ...     hwidth = width / 2.0
+    ...     dx = amplitude / slope
+    ...     xlo = center - hwidth
+    ...     xhi = center + hwidth
+    ...     x0 = xlo - dx
+    ...     x1 = xhi + dx
+    ...
+    ...     out = np.zeros(x.size)
+    ...     out[(x >= xlo) & (x < xhi)] = amplitude
+    ...
+    ...     idx = np.where((x >= x0) & (x < xlo))
+    ...     out[idx] = slope * x[idx] - slope * x0
+    ...
+    ...     idx = np.where((x >= xhi) & (x < x1))
+    ...     out[idx] = - slope * x[idx] + slope * x1
+    ...
+    ...     return out
+
+    >>> class Trap1D(model.RegriddableModel1D):
+    ...     """A one-dimensional trapezoid.
+    ...
+    ...     The model parameters are:
+    ...
+    ...     ampl
+    ...        The amplitude of the central (flat) segment (zero or greater).
+    ...     center
+    ...        The center of the central segment.
+    ...     width
+    ...        The width of the central segment (zero or greater).
+    ...     slope
+    ...         The gradient of the slopes (zero or greater).
+    ...     """
+    ...
+    ...     def __init__(self, name='trap1d'):
+    ...         self.ampl = model.Parameter(name, 'ampl', 1, min=0, hard_min=0)
+    ...         self.center = model.Parameter(name, 'center', 1)
+    ...         self.width = model.Parameter(name, 'width', 1, min=0, hard_min=0)
+    ...         self.slope = model.Parameter(name, 'slope', 1, min=0, hard_min=0)
+    ...         super().__init__(name,
+    ...                          (self.ampl, self.center, self.width, self.slope))
+    ...
+    ...     def calc(self, pars, x, *args, **kwargs):
+    ...         """Evaluate the model"""
+    ...
+    ...         # If given an integrated data set, use the center of the bin
+    ...         if len(args) == 1:
+    ...             x = (x + args[0]) / 2
+    ...
+    ...         return _trap1d(pars, x)
+
 
 This can be used in the same manner as the
 :py:class:`~sherpa.models.basic.Gauss1D` model
@@ -151,8 +233,7 @@ Now create a Sherpa data object::
     >>> d = Data1D('example', x, y)
 
 Set up the user model::
-  
-    >>> from trap import Trap1D
+
     >>> t = Trap1D()
     >>> print(t)
     trap1d
@@ -201,11 +282,49 @@ It also shows one way of embedding models from a different system,
 in this case the
 `two-dimemensional polynomial model 
 <https://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Polynomial2D.html>`_
-from the AstroPy package.
+from the AstroPy package::
 
-.. literalinclude:: ../code/poly.py
+.. doctest-requires:: astropy
 
-Repeating the 2D fit by first setting up the data to fit::
+    >>> from astropy.modeling.polynomial import Polynomial2D
+    >>> class WrapPoly2D(model.RegriddableModel2D):
+    ...     """A two-dimensional polynomial from AstroPy, restricted to degree=2.
+    ...
+    ...     The model parameters (with the same meaning as the underlying
+    ...     AstroPy model) are:
+    ...
+    ...     c0_0
+    ...     c1_0
+    ...     c2_0
+    ...     c0_1
+    ...     c0_2
+    ...     c1_1
+    ...     """
+    ...     def __init__(self, name='wrappoly2d'):
+    ...         self._actual = Polynomial2D(degree=2)
+    ...         self.c0_0 = model.Parameter(name, 'c0_0', 0)
+    ...         self.c1_0 = model.Parameter(name, 'c1_0', 0)
+    ...         self.c2_0 = model.Parameter(name, 'c2_0', 0)
+    ...         self.c0_1 = model.Parameter(name, 'c0_1', 0)
+    ...         self.c0_2 = model.Parameter(name, 'c0_2', 0)
+    ...         self.c1_1 = model.Parameter(name, 'c1_1', 0)
+    ...
+    ...         super().__init__(name,
+    ...                          (self.c0_0, self.c1_0, self.c2_0,
+    ...                           self.c0_1, self.c0_2, self.c1_1))
+    ...
+    ...     def calc(self, pars, x0, x1, *args, **kwargs):
+    ...         """Evaluate the model"""
+    ...
+    ...         # This does not support 2D integrated data sets
+    ...         mdl = self._actual
+    ...         for n in ['c0_0', 'c1_0', 'c2_0', 'c0_1', 'c0_2', 'c1_1']:
+    ...             pval = getattr(self, n).val
+    ...             getattr(mdl, n).value = pval
+    ...
+    ...         return mdl(x0, x1)
+
+Repeating the 2D fit by first setting up the data to fit:
 
     >>> np.random.seed(0)
     >>> y2, x2 = np.mgrid[:128, :128]
@@ -219,14 +338,17 @@ Put this data into a Sherpa data object::
     >>> x1axis = y2.ravel()
     >>> d2 = Data2D('img', x0axis, x1axis, z.ravel(), shape=(128,128))
 
-Create an instance of the user model::
+Create an instance of the user model:
   
-    >>> from poly import WrapPoly2D
+.. doctest-requires:: astropy
+
     >>> wp2 = WrapPoly2D('wp2')
     >>> wp2.c1_0.frozen = True
     >>> wp2.c0_1.frozen = True
 
-Finally, perform the fit::
+Finally, perform the fit:
+
+.. doctest-requires:: astropy
   
     >>> f2 = Fit(d2, wp2, stat=LeastSq(), method=LevMar())
     >>> res2 = f2.fit()
