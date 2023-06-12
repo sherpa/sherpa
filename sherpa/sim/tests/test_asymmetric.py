@@ -294,5 +294,5 @@ def test_resample_fails_unsupported_data():
     model = Const2D("mdl")
 
     with pytest.raises(NotImplementedError,
-                       match="^ReSampleData <class 'sherpa.data.Data2D'>$"):
+                       match="^ReSampleData is only implemented for 1D data, got <class 'sherpa.data.Data2D'> instead.$"):
         ReSampleData(orig, model)

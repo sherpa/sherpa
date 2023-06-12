@@ -831,7 +831,7 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         # Should this error out if data is an instance of Data1DInt?
         if data.ndim != 1:
-            msg = f"{ReSampleData.__name__} {type(data)}"
+            msg = f"{ReSampleData.__name__} is only implemented for 1D data, got {type(data)} instead."
             raise NotImplementedError(msg)
 
         self.data = data
