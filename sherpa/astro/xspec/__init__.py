@@ -1201,6 +1201,14 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
             warnings.warn(emsg, FutureWarning)
             # raise TypeError(emsg)
 
+        # The XSPEC code does not recognize the integrate flag.
+        # In fact, should we remove all keywords here?
+        #
+        try:
+            del kwargs["integrate"]
+        except KeyError:
+            pass
+
         # Ensure output is finite (Keith Arnaud mentioned that XSPEC
         # does this as a check). This is done at this level (Python)
         # rather than in the C++ interface since:

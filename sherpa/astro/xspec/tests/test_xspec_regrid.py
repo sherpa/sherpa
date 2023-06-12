@@ -38,16 +38,6 @@ from sherpa.utils.testing import requires_data, requires_fits, \
     requires_xspec
 
 
-# To make sure we track current behavior, we check that routines fail
-# in the expected way rather than just marking them as xfail.  This
-# way, when support is finally unlocked, we should find out from the
-# tests (rather that just going from xfail to xpass which is easy to
-# miss). It also lets us check why a test fails (in case the failure
-# mode changes due to other parts of Sherpa).
-#
-IntegrateError = "'integrate' is an invalid keyword argument for this function"
-
-
 @requires_xspec
 @pytest.mark.parametrize("mname", ["wabs", "powerlaw"])
 def test_regrid_name(mname, xsmodel):
@@ -82,7 +72,10 @@ def test_regrid_name_combined():
 @requires_xspec
 @pytest.mark.parametrize("mname", ["wabs", "powerlaw"])
 def test_regrid_does_not_require_bins(mname, xsmodel):
-    """The regrid method does not require lo,hi bins but running it does"""
+    """The regrid method does not require lo,hi bins but running it does
+
+    Actually, we can call it with a single grid.
+    """
 
     ebase = [0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9]
 
@@ -91,12 +84,7 @@ def test_regrid_does_not_require_bins(mname, xsmodel):
 
     emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
     with pytest.warns(FutureWarning, match=emsg):
-        with pytest.raises(TypeError) as exc:
-            regrid([0.4, 0.5, 0.6])
-
-    # assert str(exc.value) == 'calc() requires pars,lo,hi arguments, sent 2 arguments'
-    # assert str(exc.value).endswith('() takes no keyword arguments')
-    assert str(exc.value) == IntegrateError
+        regrid([0.4, 0.5, 0.6])
 
 
 @requires_data
@@ -123,7 +111,7 @@ def test_regrid_table_requires_bins(make_data_path):
 
 
 @requires_xspec
-@pytest.mark.parametrize("mname", ["wabs", "powerlaw"])
+@pytest.mark.parametrize("mname", [pytest.param("wabs", marks=pytest.mark.xfail), "powerlaw"])  # XFAIL: values do not match even with a large tolerance
 def test_regrid_identity(mname, xsmodel):
     """Check regrid returns the same data when grids are equal"""
 
@@ -139,14 +127,12 @@ def test_regrid_identity(mname, xsmodel):
     # WHY HAS THIS CHANGED?
     if mname == "wabs":
         with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
-            with pytest.raises(TypeError, match=IntegrateError):
-                y2 = 100 * regrid(elo, ehi)
-
-    else:
-        with pytest.raises(TypeError, match=IntegrateError):
             y2 = 100 * regrid(elo, ehi)
 
-    # assert y2 == pytest.approx(y1)
+    else:
+        y2 = 100 * regrid(elo, ehi)
+
+    assert y2 == pytest.approx(y1)
 
 
 @requires_xspec
@@ -171,10 +157,9 @@ def test_regrid_identity_combined():
 
     # scale y values to make them closer to unity
     y1 = mdl(elo, ehi)
-    with pytest.raises(TypeError, match=IntegrateError):
-        y2 = regrid(elo, ehi)
+    y2 = regrid(elo, ehi)
 
-    # assert y2 == pytest.approx(y1)
+    assert y2 == pytest.approx(y1)
 
 
 @requires_xspec
@@ -193,10 +178,9 @@ def test_additive():
     mdl.norm = 100
 
     y1 = mdl(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
-        y2 = regrid(egrid[:-1], egrid[1:])
+    y2 = regrid(egrid[:-1], egrid[1:])
 
-    # assert y2 == pytest.approx(y1)
+    assert y2 == pytest.approx(y1)
 
 
 # ideally we would test all three cases
@@ -237,10 +221,9 @@ def test_additive_overlap(egrid, yexp):
 
     # will change regrid too
     mdl.norm = 100
-    with pytest.raises(TypeError, match=IntegrateError):
-        y2 = regrid(egrid[:-1], egrid[1:])
+    y2 = regrid(egrid[:-1], egrid[1:])
 
-    # assert y2 == pytest.approx(yexp)
+    assert y2 == pytest.approx(yexp)
 
 
 # To make it easy to compare the multiplicative tests we want
@@ -258,6 +241,7 @@ def test_additive_overlap(egrid, yexp):
 #   0.275-0.325
 #
 
+@pytest.mark.xfail  # XFAIL values are wrong
 @requires_xspec
 def test_multiplicative():
     """Simple test of a multiplicative model"""
@@ -274,10 +258,9 @@ def test_multiplicative():
 
     y1 = mdl(egrid[:-1], egrid[1:])
     with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
-        with pytest.raises(TypeError, match=IntegrateError):
-            y2 = regrid(egrid[:-1], egrid[1:])
+        y2 = regrid(egrid[:-1], egrid[1:])
 
-    # assert y2 == pytest.approx(y1, rel=0.04)
+    assert y2 == pytest.approx(y1, rel=0.04)
 
 
 # The expected values have been calculated based on akima interpolation
@@ -294,8 +277,8 @@ ans2_high = np.asarray([0.7984249, 0.84757835, 0.8698429, 0, 0, 0])
 @requires_xspec
 @pytest.mark.parametrize("egrid,yexp",
                          [(overlap_none, ans_none),
-                          pytest.param(overlap2_low, ans2_low, marks=pytest.mark.xfail),  # XFAIL: raises TypeError
-                          pytest.param(overlap2_high, ans2_high, marks=pytest.mark.xfail)
+                          pytest.param(overlap2_low, ans2_low, marks=pytest.mark.xfail),  # XFAIL: values do not match
+                          pytest.param(overlap2_high, ans2_high, marks=pytest.mark.xfail)  # XFAIL: values do not match
                          ])
 def test_multiplicative_overlap(egrid, yexp):
     """Simple test of a multiplicative model
@@ -344,15 +327,14 @@ def test_combined(name1, par1, val1, name2, par2, val2, xsmodel):
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
     y1 = mdl(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
-        y2 = regrid(egrid[:-1], egrid[1:])
+    y2 = regrid(egrid[:-1], egrid[1:])
 
-    # assert y2 == pytest.approx(y1, rel=0.04)
+    assert y2 == pytest.approx(y1, rel=0.04)
 
 
 @requires_xspec
 @pytest.mark.parametrize("name,par,val",
-                         [('wabs', 'nh', 0.05),
+                         [pytest.param('wabs', 'nh', 0.05, marks=pytest.mark.xfail),  # XFAIL: values are wrong
                           ('powerlaw', 'norm', 100)])
 def test_combined_arithmetic_left(name, par, val, xsmodel):
     """Simple test of an additive model * multiplicative model"""
@@ -371,19 +353,17 @@ def test_combined_arithmetic_left(name, par, val, xsmodel):
     # WHY HAS THIS CHANGED?
     if name == 'wabs':
         with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
-            with pytest.raises(TypeError, match=IntegrateError):
-                y1 = regrid(egrid[:-1], egrid[1:])
-
-    else:
-        with pytest.raises(TypeError, match=IntegrateError):
             y1 = regrid(egrid[:-1], egrid[1:])
 
-    # assert y1 == pytest.approx(yexp, rel=0.04)
+    else:
+        y1 = regrid(egrid[:-1], egrid[1:])
+
+    assert y1 == pytest.approx(yexp, rel=0.04)
 
 
 @requires_xspec
 @pytest.mark.parametrize("name,par,val",
-                         [('wabs', 'nh', 0.05),
+                         [pytest.param('wabs', 'nh', 0.05, marks=pytest.mark.xfail),  # XFAIL: values are wrong
                           ('powerlaw', 'norm', 100)])
 def test_combined_arithmetic_right(name, par, val, xsmodel):
     """Simple test of an additive model * multiplicative model"""
@@ -402,14 +382,12 @@ def test_combined_arithmetic_right(name, par, val, xsmodel):
     # WHY HAS THIS CHANGED?
     if name == 'wabs':
         with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
-            with pytest.raises(TypeError, match=IntegrateError):
-                y1 = regrid(egrid[:-1], egrid[1:])
-
-    else:
-        with pytest.raises(TypeError, match=IntegrateError):
             y1 = regrid(egrid[:-1], egrid[1:])
 
-    # assert y1 == pytest.approx(yexp, rel=0.04)
+    else:
+        y1 = regrid(egrid[:-1], egrid[1:])
+
+    assert y1 == pytest.approx(yexp, rel=0.04)
 
 
 @requires_xspec
@@ -431,13 +409,14 @@ def test_multi_combined_additive():
     m2 = xspec.XSgaussian('m2')
 
     mdl = (2 * m1) / (3 + m2)
+    assert mdl.integrate
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
+    assert regrid.integrate
 
     expected = mdl(elo, ehi)
-    with pytest.raises(TypeError, match=IntegrateError):
-        got = regrid(elo, ehi)
+    got = regrid(elo, ehi)
 
-    # assert got == pytest.approx(expected)
+    assert got == pytest.approx(expected)
 
 
 @requires_xspec
@@ -459,16 +438,18 @@ def test_multi_combined_multiplicative():
     m2 = xspec.XSconstant('m2')
 
     mdl = (2 * m1) / (3 + m2)
+    assert not mdl.integrate
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
+    assert regrid.integrate  # TODO: should this be set to False?
 
     expected = mdl(elo, ehi)
     with pytest.warns(FutureWarning, match=" requires pars,lo,hi arguments, sent 2 arguments"):
-        with pytest.raises(TypeError, match=IntegrateError):
-            got = regrid(elo, ehi)
+        got = regrid(elo, ehi)
 
-    # assert got == pytest.approx(expected)
+    assert got == pytest.approx(expected)
 
 
+@pytest.mark.xfail  # XFAIL: values are wrong
 @requires_xspec
 @pytest.mark.parametrize('sherpa_first', [True, False])
 def test_sherpa_mul_xspec_add(sherpa_first):
@@ -500,8 +481,7 @@ def test_sherpa_mul_xspec_add(sherpa_first):
 
     # Note the tolerance is different to test_sherpa_add_xspec_mul
     assert comb(eg1, eg2) == pytest.approx(yexp)
-    with pytest.raises(TypeError, match=IntegrateError):
-        assert rcomb(eg1, eg2) == pytest.approx(yexp, rel=0.006)
+    assert rcomb(eg1, eg2) == pytest.approx(yexp, rel=0.006)
 
 
 @requires_xspec
@@ -536,8 +516,7 @@ def test_sherpa_add_xspec_mul(sherpa_first):
 
     # Note the tolerance is different to test_sherpa_mul_xspec_add
     assert comb(eg1, eg2) == pytest.approx(yexp)
-    with pytest.raises(TypeError, match=IntegrateError):
-        assert rcomb(eg1, eg2) == pytest.approx(yexp, rel=0.07)
+    assert rcomb(eg1, eg2) == pytest.approx(yexp, rel=0.07)
 
 
 @requires_data
