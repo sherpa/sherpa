@@ -1048,6 +1048,9 @@ class SimulFitModel(CompositeModel):
 class ArithmeticConstantModel(Model):
     """Represent a constant value, or values.
 
+    .. versionchanged:: 4.16.0
+       Models now have an `integrate` value, set to False.
+
     Parameters
     ----------
     val : number or sequence
@@ -1061,6 +1064,14 @@ class ArithmeticConstantModel(Model):
     val : number
 
     """
+
+    @property
+    def integrate(self):
+        """The model is not integrated across the independent axis.
+
+        It can not be changed for ArithmeticConstant models.
+        """
+        return False
 
     def __init__(self, val, name=None):
         val = SherpaFloat(val)
@@ -1502,7 +1513,10 @@ class FilterModel(CompositeModel, ArithmeticModel):
     def calc(self, p, *args, **kwargs):
         return self.model.calc(p, *args, **kwargs)[self.filter]
 
-
+# TODO: should this gain an integrate setting? It depends on the
+# function, so there's no way for the code to set it to a sensible
+# value.
+#
 class ArithmeticFunctionModel(Model):
     """Represent a callable function.
 

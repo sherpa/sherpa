@@ -299,17 +299,17 @@ def test_unop_integrate(flag):
 def test_aconstant_integrate():
     """Do we have an integrate setting?
 
-    test_unop_integrate_unset and others use an
-    ArithmeticConstantModel (implicitly) because at the time of
-    writing it doesn't have an integrate setting. Make this a
-    regression test (it is not a priori a problem if it does change
-    behavior, we just want to know we have a test).
-
+    This is a regression test
     """
 
     mdl = ArithmeticConstantModel(3.2)
+    assert mdl.integrate is False
+
+    # Check we can't change it
     with pytest.raises(AttributeError):
-        mdl.integrate
+        mdl.integrate = True
+
+    assert mdl.integrate is False
 
 
 def test_unop_integrate_unset():
@@ -358,7 +358,7 @@ def test_binop_integrate_unset():
     """Is the integrate flag not set for a binary op model"""
 
     # The ArithmeticConstantModel, which the binary-op model casts
-    # the constant terms, has no integrate setting.
+    # the constant terms, has integrate=False
     #
     mdl = BinaryOpModel(4, 4, np.add, '+')
     with pytest.raises(AttributeError):
