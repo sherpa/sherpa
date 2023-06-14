@@ -8955,16 +8955,14 @@ class Session(NoNewAttributesAfterInit):
             try:
                 model.guess(*self.get_data(idval).to_guess(), **kwargs)
             except NotImplementedError:
-                # TODO: change to warning() from info()
-                info('WARNING: No guess found for %s', model.name)
+                warning('No guess found for %s', model.name)
             return
 
         ids, f = self._get_fit(idval)
         try:
             f.guess(**kwargs)
         except NotImplementedError:
-            # TODO: change to warning() from info()
-            info('WARNING: No guess found for %s', self.get_model(idval).name)
+            warning('No guess found for %s', self.get_model(idval).name)
 
     def calc_stat(self, id=None, *otherids):
         """Calculate the fit statistic for a data set.
