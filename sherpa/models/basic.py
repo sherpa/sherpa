@@ -153,9 +153,9 @@ class Box1D(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.box1d(*args, **kwargs)
+        return _modelfcts.box1d(p, *args, **kwargs)
 
 
 class Const(ArithmeticModel):
@@ -208,9 +208,9 @@ class Const1D(RegriddableModel1D, Const):
         Const.__init__(self, name)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.const1d(*args, **kwargs)
+        return _modelfcts.const1d(p, *args, **kwargs)
 
 
 class Cos(RegriddableModel1D):
@@ -251,9 +251,9 @@ class Cos(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.cos(*args, **kwargs)
+        return _modelfcts.cos(p, *args, **kwargs)
 
 
 class Delta1D(RegriddableModel1D):
@@ -307,9 +307,9 @@ class Delta1D(RegriddableModel1D):
         param_apply_limits(pos, self.pos, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.delta1d(*args, **kwargs)
+        return _modelfcts.delta1d(p, *args, **kwargs)
 
 
 class Erf(RegriddableModel1D):
@@ -360,9 +360,9 @@ class Erf(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.erf(*args, **kwargs)
+        return _modelfcts.erf(p, *args, **kwargs)
 
 
 class Erfc(RegriddableModel1D):
@@ -413,9 +413,9 @@ class Erfc(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.erfc(*args, **kwargs)
+        return _modelfcts.erfc(p, *args, **kwargs)
 
 
 class Exp(RegriddableModel1D):
@@ -452,9 +452,9 @@ class Exp(RegriddableModel1D):
                                  (self.offset, self.coeff, self.ampl))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.exp(*args, **kwargs)
+        return _modelfcts.exp(p, *args, **kwargs)
 
 
 class Exp10(RegriddableModel1D):
@@ -491,9 +491,9 @@ class Exp10(RegriddableModel1D):
                                  (self.offset, self.coeff, self.ampl))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.exp10(*args, **kwargs)
+        return _modelfcts.exp10(p, *args, **kwargs)
 
 
 class Gauss1D(RegriddableModel1D):
@@ -580,9 +580,9 @@ class Gauss1D(RegriddableModel1D):
         param_apply_limits(fwhm, self.fwhm, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.gauss1d(*args, **kwargs)
+        return _modelfcts.gauss1d(p, *args, **kwargs)
 
 
 class Log(RegriddableModel1D):
@@ -619,9 +619,9 @@ class Log(RegriddableModel1D):
                                  (self.offset, self.coeff, self.ampl))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.log(*args, **kwargs)
+        return _modelfcts.log(p, *args, **kwargs)
 
 
 class Log10(RegriddableModel1D):
@@ -658,9 +658,9 @@ class Log10(RegriddableModel1D):
                                  (self.offset, self.coeff, self.ampl))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.log10(*args, **kwargs)
+        return _modelfcts.log10(p, *args, **kwargs)
 
 
 class LogParabola(RegriddableModel1D):
@@ -708,9 +708,9 @@ class LogParabola(RegriddableModel1D):
                                               self.c2, self.ampl))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.logparabola(*args, **kwargs)
+        return _modelfcts.logparabola(p, *args, **kwargs)
 
 
 _gfactor = numpy.sqrt(numpy.pi / (4 * numpy.log(2)))
@@ -774,9 +774,9 @@ class NormGauss1D(RegriddableModel1D):
         param_apply_limits(ampl, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.ngauss1d(*args, **kwargs)
+        return _modelfcts.ngauss1d(p, *args, **kwargs)
 
 
 class Poisson(RegriddableModel1D):
@@ -823,9 +823,9 @@ class Poisson(RegriddableModel1D):
         param_apply_limits(pos, self.mean, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.poisson(*args, **kwargs)
+        return _modelfcts.poisson(p, *args, **kwargs)
 
 
 class Polynom1D(RegriddableModel1D):
@@ -939,9 +939,9 @@ class Polynom1D(RegriddableModel1D):
         param_apply_limits(off, self.offset, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.poly1d(*args, **kwargs)
+        return _modelfcts.poly1d(p, *args, **kwargs)
 
 
 class PowLaw1D(RegriddableModel1D):
@@ -987,7 +987,7 @@ class PowLaw1D(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, pars, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
         if kwargs['integrate']:
             # avoid numerical issues with C pow() function close to zero,
@@ -995,11 +995,11 @@ class PowLaw1D(RegriddableModel1D):
             # pow(X, 1.0 - gamma).  So gamma values close to 1.0 +- 1.e-10
             # should be be 1.0 to avoid errors propagating in the calculated
             # model.
-            if sao_fcmp(pars[0], 1.0, 1.e-10) == 0:
+            if sao_fcmp(p[0], 1.0, 1.e-10) == 0:
                 # pars { gamma, ref, ampl }
-                pars[0] = 1.0
+                p[0] = 1.0
 
-        return _modelfcts.powlaw(pars, *args, **kwargs)
+        return _modelfcts.powlaw(p, *args, **kwargs)
 
 
 class Scale1D(Const1D):
@@ -1074,9 +1074,9 @@ class Sin(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.sin(*args, **kwargs)
+        return _modelfcts.sin(p, *args, **kwargs)
 
 
 class Sqrt(RegriddableModel1D):
@@ -1109,9 +1109,9 @@ class Sqrt(RegriddableModel1D):
         ArithmeticModel.__init__(self, name, (self.offset, self.ampl))
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.sqrt(*args, **kwargs)
+        return _modelfcts.sqrt(p, *args, **kwargs)
 
 
 class StepHi1D(RegriddableModel1D):
@@ -1158,9 +1158,9 @@ class StepHi1D(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.stephi1d(*args, **kwargs)
+        return _modelfcts.stephi1d(p, *args, **kwargs)
 
 
 class StepLo1D(RegriddableModel1D):
@@ -1207,9 +1207,9 @@ class StepLo1D(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.steplo1d(*args, **kwargs)
+        return _modelfcts.steplo1d(p, *args, **kwargs)
 
 
 class Tan(RegriddableModel1D):
@@ -1250,9 +1250,9 @@ class Tan(RegriddableModel1D):
         param_apply_limits(norm, self.ampl, **kwargs)
 
     @modelCacher1d
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs1d(self, kwargs)
-        return _modelfcts.tan(*args, **kwargs)
+        return _modelfcts.tan(p, *args, **kwargs)
 
 
 class Box2D(RegriddableModel2D):
@@ -1319,9 +1319,9 @@ class Box2D(RegriddableModel2D):
         param_apply_limits(yhi, self.yhi, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.box2d(*args, **kwargs)
+        return _modelfcts.box2d(p, *args, **kwargs)
 
 
 class Const2D(RegriddableModel2D, Const):
@@ -1353,9 +1353,9 @@ class Const2D(RegriddableModel2D, Const):
         Const.__init__(self, name)
         self.cache = 0
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.const2d(*args, **kwargs)
+        return _modelfcts.const2d(p, *args, **kwargs)
 
 
 class Scale2D(Const2D):
@@ -1451,9 +1451,9 @@ class Delta2D(RegriddableModel2D):
         param_apply_limits(ypos, self.ypos, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.delta2d(*args, **kwargs)
+        return _modelfcts.delta2d(p, *args, **kwargs)
 
 
 class Gauss2D(RegriddableModel2D):
@@ -1541,9 +1541,9 @@ class Gauss2D(RegriddableModel2D):
         param_apply_limits(norm, self.ampl, **kwargs)
         param_apply_limits(fwhm, self.fwhm, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.gauss2d(*args, **kwargs)
+        return _modelfcts.gauss2d(p, *args, **kwargs)
 
 
 class SigmaGauss2D(Gauss2D):
@@ -1622,9 +1622,9 @@ class SigmaGauss2D(Gauss2D):
         param_apply_limits(fwhm, self.sigma_b, **kwargs)
         param_apply_limits(norm, self.ampl, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.sigmagauss2d(*args, **kwargs)
+        return _modelfcts.sigmagauss2d(p, *args, **kwargs)
 
 
 class NormGauss2D(RegriddableModel2D):
@@ -1722,9 +1722,9 @@ class NormGauss2D(RegriddableModel2D):
                 ampl[key] *= norm
         param_apply_limits(ampl, self.ampl, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.ngauss2d(*args, **kwargs)
+        return _modelfcts.ngauss2d(p, *args, **kwargs)
 
 
 class Polynom2D(RegriddableModel2D):
@@ -1832,9 +1832,9 @@ class Polynom2D(RegriddableModel2D):
         param_apply_limits(c22, self.cx2y1, **kwargs)
         param_apply_limits(c22, self.cx2y2, **kwargs)
 
-    def calc(self, *args, **kwargs):
+    def calc(self, p, *args, **kwargs):
         kwargs = clean_kwargs2d(self, kwargs)
-        return _modelfcts.poly2d(*args, **kwargs)
+        return _modelfcts.poly2d(p, *args, **kwargs)
 
 
 class TableModel(ArithmeticModel):
@@ -2230,7 +2230,7 @@ class Integrator1D(CompositeModel, RegriddableModel1D):
         self.otherkwargs = otherkwargs
         self._errflag = 0
         CompositeModel.__init__(self,
-                                ('integrate1d(%s)' % self.model.name),
+                                f'integrate1d({self.model.name})',
                                 (self.model,))
 
     def startup(self, cache=False):
