@@ -27,7 +27,7 @@ import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, BinaryOpModel, \
     CompositeModel, ArithmeticConstantModel, ArithmeticFunctionModel, \
-    RegridWrappedModel, UnaryOpModel
+    RegriddableModel1D, RegridWrappedModel, UnaryOpModel
 from sherpa.models.basic import Box1D, Const1D, Gauss1D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
@@ -1444,3 +1444,72 @@ def test_deep_binop_bins(integrate, yexp, yexp2):
 
     yr = regrid(xgrid[:-1], xgrid[1:])
     assert yr == pytest.approx(yexp2)
+
+
+class SimpleModel(RegriddableModel1D):
+    """A model which uses the middle of integrated bins"""
+
+    def __init__(self, name='simplemodel'):
+        self.scale = Parameter(name, "scale", 0, min=-5, max=5)
+        RegriddableModel1D.__init__(self, name, (self.scale, ))
+
+    def calc(self, p, xlo, xhi=None, **kwargs):
+        "This ignores the integrate setting"
+        x = np.asarray(xlo)
+        if xhi is not None:
+            x = x + np.asarray(xhi)
+            x /= 2
+
+        return p[0] * x
+
+
+def get_non_integrated_model_on_integrated_axis_1d(integrated):
+
+    mdl = SimpleModel()
+    mdl.scale = 2
+    assert mdl.integrate is True  # regression test
+
+    mdl.integrate = integrated
+
+    eval_grid = [0.5, 1, 1.5, 2, 2.5, 3]
+    rmdl = mdl.regrid(eval_grid[:-1], eval_grid[1:])
+
+    # These bins do not fill the space (ie there are gaps between
+    # bins).
+    #
+    req_lo = [0.6, 0.8, 1.0, 1.4, 2.0, 2.6]
+    req_hi = [0.8, 1.0, 1.2, 2.0, 2.4, 2.8]
+
+    # We expect 2 * (xlo + xhi) / 2, = xlo + xh, so
+    #
+    #   [ 1.4, 1.8, 2.2, 3.4, 4.4, 5.4]
+    #
+    # at least when "non integrated".
+    #
+    return rmdl(req_lo, req_hi)
+
+
+@pytest.mark.xfail
+def test_non_integrated_model_on_integrated_axis_1d_false():
+    """Check what happens with a 'multiplicative' model given an integrated axis."""
+
+    # The relative tolerance is guessed here as the test currently
+    # fails quite badly for the first bin.
+    #
+    got = get_non_integrated_model_on_integrated_axis_1d(False)
+
+    expected = [1.4, 1.8, 2.2, 3.4, 4.4, 5.4]
+    assert got == pytest.approx(expected, rel=0.1)
+
+
+@pytest.mark.xfail
+def test_non_integrated_model_on_integrated_axis_1d_true():
+    """Check what happens with a 'multiplicative' model given an integrated axis."""
+
+    # The relative tolerance is guessed here as the test currently
+    # fails quite badly (as there's uncertainty over the behavior).
+    #
+    got = get_non_integrated_model_on_integrated_axis_1d(True)
+
+    expected = [1.4, 1.8, 2.2, 3.4, 4.4, 5.4]
+    assert got == pytest.approx(expected, rel=0.1)
