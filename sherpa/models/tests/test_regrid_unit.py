@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1194,3 +1194,69 @@ def test_evaluationspace1d_zeros_like_point():
 def test_evaluationspace1d_zeros_like_integrated():
 
     assert EvaluationSpace1D([3, 2, -1], [2, 1, -3]).zeros_like() == pytest.approx([0, 0, 0])
+
+
+@pytest.mark.parametrize("flag,mdl",
+                         [(False, Box1D() * Const1D() * Gauss1D()),
+                          (False, Box1D() * Const1D() * (1 + Gauss1D())),
+                          (False, 1 / (1 + Const1D())),
+                          (False, 1 / (Box1D() * Gauss1D())),
+                          (False, 1 / (1 + Box1D() * Gauss1D())),
+                          (False, ((Box1D() + Const1D()) / (Box1D() + Gauss1D()))),
+                          (False, (Const1D() / (Box1D() + Gauss1D()) + Box1D())),
+                          (False, (1 / (1 - (-Const1D())))),
+                          (False, ((-Box1D()) / ((-Const1D()) - (-Gauss1D())))),
+                          (True, Box1D() * Gauss1D()),
+                          (True, Box1D() / (Const1D() + Gauss1D())),
+                          (True, Const1D() / (1 + Box1D() * Gauss1D())),
+                          (True, (Box1D() + Const1D() / (Box1D() + Gauss1D())))
+                          ])
+@pytest.mark.parametrize("args", [([1, 2, 3], ), ([1, 2, 4], [2, 3, 5])])
+def test_recursion_1802(flag, mdl, args):
+    """Can we create moderately-complex models to regrid?
+
+    Test cases from #1802. It is unlikely that the axis choice (point
+    or integrated) makes a difference, but add a test just in case.
+
+    """
+
+    # This test could be marked XFAIL but I want to make it obvious
+    # once it gets fixed.
+    #
+    if flag:
+        rmdl = mdl.regrid(*args)
+        # basic check to see if we have got a regrid model
+        assert isinstance(rmdl, RegridWrappedModel)
+        assert rmdl.name == f"regrid1d({mdl.name})"
+        return
+
+    with pytest.raises(RecursionError):
+        mdl.regrid(*args)
+
+
+def test_unop_regrid():
+    """Can we regrid a unary op model?"""
+
+    mdl = Gauss1D()
+    mdl.pos = 100
+    mdl.ampl = 10
+
+    egrid = [80, 90, 95, 107, 115]
+    expected = -mdl(egrid)
+
+    nmdl = -mdl
+    with pytest.raises(AttributeError):
+        rgrid = nmdl.regrid(np.arange(70, 120, 2))
+
+    # assert rgrid(egrid) == pytest.approx(expected)
+
+
+def test_unop_binop_combo():
+    """What happens if a binop is given two unops: can we regrid?"""
+
+    mdl1 = Box1D()
+    mdl2 = Gauss1D()
+    mdl = (-mdl1 - (-mdl2))
+    with pytest.raises(ModelErr,
+                       match="Neither component supports regrid method"):
+        mdl.regrid([1, 2, 3])
