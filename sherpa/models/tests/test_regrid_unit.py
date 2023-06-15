@@ -1204,8 +1204,8 @@ def test_evaluationspace1d_zeros_like_integrated():
                           (1 / (1 + Box1D() * Gauss1D())),
                           (((Box1D() + Const1D()) / (Box1D() + Gauss1D()))),
                           ((Const1D() / (Box1D() + Gauss1D()) + Box1D())),
-                          pytest.param(1 / (1 - (-Const1D())), marks=pytest.mark.xfail),  # XFAIL: no regrid method found
-                          pytest.param((-Box1D()) / ((-Const1D()) - (-Gauss1D())), marks=pytest.mark.xfail),  # XFAIL: no regrid method found
+                          (1 / (1 - (-Const1D()))),
+                          ((-Box1D()) / ((-Const1D()) - (-Gauss1D()))),
                           (Box1D() * Gauss1D()),
                           (Box1D() / (Const1D() + Gauss1D())),
                           (Const1D() / (1 + Box1D() * Gauss1D())),
@@ -1237,10 +1237,8 @@ def test_unop_regrid():
     expected = -mdl(egrid)
 
     nmdl = -mdl
-    with pytest.raises(AttributeError):
-        rgrid = nmdl.regrid(np.arange(70, 120, 2))
-
-    # assert rgrid(egrid) == pytest.approx(expected)
+    rgrid = nmdl.regrid(np.arange(70, 120, 2))
+    assert rgrid(egrid) == pytest.approx(expected)
 
 
 def test_unop_binop_combo():
@@ -1249,6 +1247,15 @@ def test_unop_binop_combo():
     mdl1 = Box1D()
     mdl2 = Gauss1D()
     mdl = (-mdl1 - (-mdl2))
-    with pytest.raises(ModelErr,
-                       match="Neither component supports regrid method"):
-        mdl.regrid([1, 2, 3])
+    rmdl = mdl.regrid(np.arange(0.5, 3, 0.25))
+
+    egrid = [1.2, 2]
+    got = rmdl(egrid)
+
+    # We are interpolating, so the values should not be exact,
+    # except that because of the way the regrid work we actually
+    # do not interpolate - see #1728 - so we can use approx without
+    # a tolerance here.
+    #
+    expected = mdl2(egrid) - mdl1(egrid)
+    assert got == pytest.approx(expected)

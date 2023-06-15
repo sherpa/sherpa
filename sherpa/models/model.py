@@ -1272,8 +1272,11 @@ class RegriddableModel2D(RegriddableModel):
         return regridder.apply_to(self)
 
 
-class UnaryOpModel(CompositeModel, ArithmeticModel):
+class UnaryOpModel(CompositeModel, RegriddableModel):
     """Apply an operator to a model expression.
+
+    ..versionchanged:: 4.16.0
+        The regrid method was added.
 
     Parameters
     ----------
@@ -1315,6 +1318,35 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.opstr = opstr
         CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
+
+    def regrid(self, *args, **kwargs):
+
+        # Similar to BinaryOpModel
+        #
+        def find_regrid(parts):
+            for part in parts:
+                # Some models, such as ArithmeticConstantModel, do not
+                # have a regrid method.
+                #
+                if not hasattr(part, "regrid"):
+                    continue
+
+                if hasattr(part, "parts"):
+                    # Search through the parts of this model
+                    try:
+                        return find_regrid(part.parts)
+                    except ModelErr:
+                        continue
+
+                return part
+
+            raise ModelErr('The component does not support the regrid method')
+
+        # The full model expression must be used as need to pass in
+        # self as the class.
+        #
+        part = find_regrid(self.parts)
+        return part.__class__.regrid(self, *args, **kwargs)
 
     def calc(self, p, *args, **kwargs):
         return self.op(self.arg.calc(p, *args, **kwargs))
@@ -1388,7 +1420,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                 if not hasattr(part, "regrid"):
                     continue
 
-                if isinstance(part, BinaryOpModel):
+                if hasattr(part, "parts"):
                     # Search through the parts of this model
                     try:
                         return find_regrid(part.parts)
