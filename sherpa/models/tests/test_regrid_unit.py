@@ -1204,6 +1204,8 @@ def test_evaluationspace1d_zeros_like_integrated():
                           (False, 1 / (1 + Box1D() * Gauss1D())),
                           (False, ((Box1D() + Const1D()) / (Box1D() + Gauss1D()))),
                           (False, (Const1D() / (Box1D() + Gauss1D()) + Box1D())),
+                          (False, (1 / (1 - (-Const1D())))),
+                          (False, ((-Box1D()) / ((-Const1D()) - (-Gauss1D())))),
                           (True, Box1D() * Gauss1D()),
                           (True, Box1D() / (Const1D() + Gauss1D())),
                           (True, Const1D() / (1 + Box1D() * Gauss1D())),
@@ -1230,3 +1232,31 @@ def test_recursion_1802(flag, mdl, args):
 
     with pytest.raises(RecursionError):
         mdl.regrid(*args)
+
+
+def test_unop_regrid():
+    """Can we regrid a unary op model?"""
+
+    mdl = Gauss1D()
+    mdl.pos = 100
+    mdl.ampl = 10
+
+    egrid = [80, 90, 95, 107, 115]
+    expected = -mdl(egrid)
+
+    nmdl = -mdl
+    with pytest.raises(AttributeError):
+        rgrid = nmdl.regrid(np.arange(70, 120, 2))
+
+    # assert rgrid(egrid) == pytest.approx(expected)
+
+
+def test_unop_binop_combo():
+    """What happens if a binop is given two unops: can we regrid?"""
+
+    mdl1 = Box1D()
+    mdl2 = Gauss1D()
+    mdl = (-mdl1 - (-mdl2))
+    with pytest.raises(ModelErr,
+                       match="Neither component supports regrid method"):
+        mdl.regrid([1, 2, 3])
