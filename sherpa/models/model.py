@@ -1373,13 +1373,37 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                                 (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
-        for part in self.parts:
-            # ArithmeticConstantModel does not support regrid by design
-            if not hasattr(part, 'regrid'):
-                continue
-            # The full model expression must be used
-            return part.__class__.regrid(self, *args, **kwargs)
-        raise ModelErr('Neither component supports regrid method')
+
+        # Recurse through all the parts looking for the "base" models
+        # which we can use to find the regrid class to use. An
+        # alternative would be to key off the ndim value of the model,
+        # but that would then enshrine the RegriddableModel1D/2D
+        # classes and not allow them to be sub-classed or over-ridden.
+        #
+        def find_regrid(parts):
+            for part in parts:
+                # Some models, such as ArithmeticConstantModel, do not
+                # have a regrid method.
+                #
+                if not hasattr(part, "regrid"):
+                    continue
+
+                if isinstance(part, BinaryOpModel):
+                    # Search through the parts of this model
+                    try:
+                        return find_regrid(part.parts)
+                    except ModelErr:
+                        continue
+
+                return part
+
+            raise ModelErr('Neither component supports regrid method')
+
+        # The full model expression must be used as need to pass in
+        # self as the class.
+        #
+        part = find_regrid(self.parts)
+        return part.__class__.regrid(self, *args, **kwargs)
 
     def startup(self, cache=False):
         self.lhs.startup(cache)
