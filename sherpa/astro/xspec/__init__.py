@@ -1117,9 +1117,19 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     represents the upper edge of the last bin. This means that for
     an input grid of ``n`` points, the returned array will contain
     ``n`` values, but the last element will be zero.
+
+    The ``integrate`` setting is fixed for XSPEC models: it is set to
+    ``True`` for Additive models and ``False`` for Multiplicative
+    models. Convolution models are expected to be used with "additive"
+    models (or a mixture of multiplicative and additive models) and
+    so they are set to ``True``. The integrate setting is not used
+    to determine how to evaluate the models, but it is used by the
+    RegriddableModel1D class to determine how to rebin the data.
+
     """
 
     version_enabled = True
+    _integrate = True
 
     def __init__(self, name, pars):
 
@@ -1151,6 +1161,24 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 
         super().__init__(name, pars)
 
+    @property
+    def integrate(self):
+        """The integrate setting.
+
+        It can not be changed for XSPEC models.
+        """
+        return self._integrate
+
+    @integrate.setter
+    def integrate(self, newval):
+        # We could raise an error if the setting is changed, but there
+        # are save files created before we made the integrate
+        # un-changeable that would fail for no good reason. So we just
+        # ignore any request to change the setting. It is possible for
+        # the user to change _integrate but that is undefined
+        # behavior.
+        #
+        pass
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
@@ -1172,6 +1200,14 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
             emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
             warnings.warn(emsg, FutureWarning)
             # raise TypeError(emsg)
+
+        # The XSPEC code does not recognize the integrate flag.
+        # In fact, should we remove all keywords here?
+        #
+        try:
+            del kwargs["integrate"]
+        except KeyError:
+            pass
 
         # Ensure output is finite (Keith Arnaud mentioned that XSPEC
         # does this as a check). This is done at this level (Python)
@@ -1307,6 +1343,9 @@ class XSTableModel(XSModel):
                                   hugeval)
             pars.append(self.norm)
 
+        # The integrate setting is the same as the addmodel parameter.
+        #
+        self._integrate = addmodel
         XSModel.__init__(self, name, pars)
 
     def fold(*args, **kwargs):
@@ -1367,7 +1406,7 @@ class XSMultiplicativeModel(XSModel):
 
     """
 
-    pass
+    _integrate = False
 
 
 class XSConvolutionKernel(XSModel):
@@ -1446,8 +1485,7 @@ class XSConvolutionKernel(XSModel):
     """
 
     def __repr__(self):
-        return "<{} kernel instance '{}'>".format(type(self).__name__,
-                                                  self.name)
+        return f"<{type(self).__name__} kernel instance '{self.name}'>"
 
     def __call__(self, model):
         return XSConvolutionModel(model, self)
@@ -1585,9 +1623,7 @@ class XSConvolutionModel(CompositeModel, XSModel):
     def __init__(self, model, wrapper):
         self.model = self.wrapobj(model)
         self.wrapper = wrapper
-        CompositeModel.__init__(self,
-                                "{}({})".format(self.wrapper.name,
-                                                self.model.name),
+        CompositeModel.__init__(self, f"{self.wrapper.name}({self.model.name})",
                                 (self.wrapper, self.model))
 
     # for now this is not cached

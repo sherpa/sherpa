@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,6 +22,7 @@
 
 from functools import reduce
 import operator
+import re
 
 import numpy as np
 
@@ -28,7 +30,8 @@ import pytest
 
 from sherpa.astro.ui.utils import Session
 from sherpa.models import basic
-from sherpa.models.model import ArithmeticConstantModel, BinaryOpModel, UnaryOpModel
+from sherpa.models.model import ArithmeticConstantModel, \
+    ArithmeticFunctionModel, BinaryOpModel, UnaryOpModel
 from sherpa.utils.err import ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
@@ -201,10 +204,9 @@ def test_combine_models_1d_2d():
     m1 = basic.Box1D()
     m2 = basic.Box2D()
 
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match=re.escape("Models do not match: 1D (box1d) and 2D (box2d)")):
         m1 + m2
-
-    assert str(exc.value) == 'Models do not match: 1D (box1d) and 2D (box2d)'
 
 
 @pytest.mark.parametrize("val", [2, [1, 3, 4]])
@@ -223,10 +225,9 @@ def test_arithmeticconstantmodel(val):
 def test_arithmeticconstantmodel_dimerr():
 
     x = np.ones(6).reshape(2, 3)
-    with pytest.raises(ModelErr) as exc:
+    with pytest.raises(ModelErr,
+                       match="The constant must be a scalar or 1D, not 2D"):
         ArithmeticConstantModel(x)
-
-    assert str(exc.value) == 'The constant must be a scalar or 1D, not 2D'
 
 
 @requires_xspec
@@ -281,3 +282,126 @@ def test_load_table_model(make_data_path):
     s.load_table_model('tbl', make_data_path('double.dat'))
     tbl = s.get_model_component('tbl')
     assert tbl.ndim is None
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_unop_integrate(flag):
+    """Is the integrate flag carried over"""
+
+    mdl = basic.Const1D()
+    mdl.integrate = flag
+
+    umdl = -mdl
+    assert umdl.integrate == flag
+
+
+def test_aconstant_integrate():
+    """Do we have an integrate setting?
+
+    This is a regression test
+    """
+
+    mdl = ArithmeticConstantModel(3.2)
+    assert mdl.integrate is False
+
+    # Check we can't change it
+    with pytest.raises(AttributeError):
+        mdl.integrate = True
+
+    assert mdl.integrate is False
+
+
+def test_unop_integrate_unset():
+    """Is the integrate flag set for an unary op model"""
+
+    # UnaryOpModel converts the constant to an
+    # ArithmeticConstantModel.
+    #
+    mdl = UnaryOpModel(4, np.negative, "-")
+
+    assert not mdl.integrate
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_binop_integrate_same(flag):
+    """Is the integrate flag carried over when the same"""
+
+    mdl1 = basic.Const1D()
+    mdl1.integrate = flag
+
+    mdl2 = basic.Const1D()
+    mdl2.integrate = flag
+
+    mdl = mdl1 + mdl2
+    assert mdl.integrate == flag
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_binop_integrate_different(flag):
+    """Is the integrate flag carried over when different"""
+
+    mdl1 = basic.Const1D()
+    mdl1.integrate = flag
+
+    mdl2 = basic.Const1D()
+    mdl2.integrate = not flag
+
+    mdl = mdl1 + mdl2
+    assert mdl.integrate  # NOTE: this is always True
+
+
+def test_binop_integrate_unset():
+    """Is the integrate flag set for a binary op model"""
+
+    # The ArithmeticConstantModel, which the binary-op model casts
+    # the constant terms, has integrate=False
+    #
+    mdl = BinaryOpModel(4, 4, np.add, '+')
+    assert not mdl.integrate
+
+
+@pytest.mark.parametrize("m1,m2,iflag", [(1, basic.Const1D(), True),
+                                         (basic.Const1D(), 1, True),
+                                         (1, basic.Scale1D(), False),
+                                         (basic.Scale1D(), 1, False)])
+def test_binop_arithmeticmodel_integrate(m1, m2, iflag):
+    """Do we have an integrate setting?
+
+    This is a regression test.
+    """
+
+    mdl = m1 + m2
+    assert mdl.integrate is iflag
+
+
+AMODEL = ArithmeticFunctionModel(np.sin)
+
+
+@pytest.mark.parametrize("m1,m2,iflag", [(AMODEL, basic.Const1D(), True),
+                                         (basic.Const1D(), AMODEL, True),
+                                         (AMODEL, basic.Scale1D(), False),
+                                         (basic.Scale1D(), AMODEL, False)])
+def test_binop_arithmeticfunction_integrate(m1, m2, iflag):
+    """What's the integrate setting when ArithmeticFunctionModel is present?
+
+    This is a regression test.
+    """
+
+    mdl = m1 + m2
+    assert mdl.integrate is iflag
+
+
+@pytest.mark.parametrize("m1,m2", [(AMODEL, 2),
+                                   (2, AMODEL)])
+def test_binop_arithmeticfunction_works(m1, m2):
+    """Check we can evaluate a function model in a binop"""
+
+    grid = np.asarray([-0.2, -0.1, 0.1, 0.3])
+
+    # There's no support for creating these models easily.
+    #
+    mdl = BinaryOpModel(m1, m2, np.multiply, '*')
+    y = mdl(grid)
+
+    expected = 2 * np.sin(grid)
+    assert y == pytest.approx(expected)

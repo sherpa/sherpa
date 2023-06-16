@@ -24,7 +24,6 @@
 import copy
 import logging
 import os
-from tempfile import NamedTemporaryFile, gettempdir
 
 import pytest
 
@@ -369,7 +368,7 @@ def test_abund_change_string():
 
 
 @requires_xspec
-def test_abund_change_file():
+def test_abund_change_file(tmp_path):
     """Can we change the abundance setting: file
 
     This test hard-codes the number of elements expected in the
@@ -380,15 +379,16 @@ def test_abund_change_file():
 
     elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)}
 
-    tfh = NamedTemporaryFile(mode='w', suffix='.xspec')
+    out = ""
     for n in ELEMENT_NAMES:
-        tfh.write("{}\n".format(elems[n]))
+        out += f"{elems[n]}\n"
 
-    tfh.flush()
+    tempfile = tmp_path / "abundances.xspec"
+    tempfile.write_text(out)
 
     oval = xspec.get_xsabund()
     try:
-        xspec.set_xsabund(tfh.name)
+        xspec.set_xsabund(str(tempfile))
 
         abund = xspec.get_xsabund()
         out = {n: xspec.get_xsabund(n)
@@ -477,7 +477,7 @@ def test_cosmo_change():
 
 
 @requires_xspec
-def test_path_manager_change():
+def test_path_manager_change(tmp_path):
     """Can we change the manager-path setting?
     """
 
@@ -486,7 +486,7 @@ def test_path_manager_change():
     validate_xspec_setting(xspec.get_xspath_manager,
                            xspec.set_xspath_manager,
                            '/dev/null',
-                           gettempdir())
+                           str(tmp_path))
 
 
 # Note that the XSPEC state is used in test_xspec.py, but only
@@ -722,15 +722,13 @@ def test_read_xstable_model(make_data_path):
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_xspec_model_requires_bins(clsname):
+def test_xspec_model_requires_bins(clsname, xsmodel):
     """Ensure you can not call with a single grid for the energies.
 
     You used to be able to do this (in Sherpa 4.13 and earlier).
     """
 
-    from sherpa.astro import xspec
-
-    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    mdl = xsmodel(clsname)
 
     emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
     with pytest.warns(FutureWarning, match=emsg):
@@ -739,15 +737,13 @@ def test_xspec_model_requires_bins(clsname):
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_xspec_model_requires_bins_low_level(clsname):
+def test_xspec_model_requires_bins_low_level(clsname, xsmodel):
     """Ensure you can not call with a single grid for the energies (calc).
 
     You used to be able to do this (in Sherpa 4.13 and earlier).
     """
 
-    from sherpa.astro import xspec
-
-    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    mdl = xsmodel(clsname)
 
     emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
     with pytest.warns(FutureWarning, match=emsg):
@@ -756,15 +752,13 @@ def test_xspec_model_requires_bins_low_level(clsname):
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_xspec_model_requires_bins_very_low_level(clsname):
+def test_xspec_model_requires_bins_very_low_level(clsname, xsmodel):
     """Check we can use a single grid for direct access (_calc).
 
     This is the flip side to test-xspec_model_requires_bins_low_level
     """
 
-    from sherpa.astro import xspec
-
-    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    mdl = xsmodel(clsname)
 
     # pick a range which does not evaluate to 0 for wabs
     egrid = np.arange(0.5, 1.0, 0.1)
@@ -908,7 +902,7 @@ def test_create_xspec_multiplicative_model(make_data_path):
     assert tbl.name == 'bar'
     assert isinstance(tbl, xspec.XSTableModel)
     assert not tbl.addmodel
-    assert tbl.integrate
+    assert not tbl.integrate
 
     # Apparently we lose the case of the parameter names;
     # should investigate
@@ -1068,96 +1062,62 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
 
 
 @requires_xspec
-@pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_integrate_setting(clsname):
-    """Can we change the integrate setting?
+@pytest.mark.parametrize("clsname,iflag",
+                         [("powerlaw", True),
+                          ("wabs", False)])
+def test_integrate_is_fixed(clsname, iflag, xsmodel, caplog):
+    """Check we can not change the integrate setting"""
 
-    It's not obvious what the integrate setting is meant to do for
-    XSPEC models, so let's check what we can do with it.
+    mdl = xsmodel(clsname)
+    assert mdl.integrate is iflag
 
-    """
+    # Check we can set it to itself
+    mdl.integrate = iflag
 
-    from sherpa.astro import xspec
-
-    egrid = np.arange(0.1, 1.0, 0.1)
-    elo = egrid[:-1]
-    ehi = egrid[1:]
-
-    mdl = getattr(xspec, 'XS{}'.format(clsname))()
-    assert mdl.integrate
-
-    y1 = mdl(elo, ehi)
-
-    mdl.integrate = False
-    assert not mdl.integrate
-
-    y2 = mdl(elo, ehi)
-
-    # Assume the integrate setting is ignored. To ensure we
-    # can test small values use the log of the data, and
-    # as we can have zero values (from xswabs) replace them
-    # with a sentinel value
+    # We can try to change it, but we can not.
     #
-    y1[y1 <= 0] = 1e-10
-    y2[y2 <= 0] = 1e-10
+    mdl.integrate = not iflag
+    assert mdl.integrate is iflag
 
-    y1 = np.log10(y1)
-    y2 = np.log10(y2)
-    assert y2 == pytest.approx(y1)
+    # Do we have any warning about the attempt to change the integrate
+    # flag?
+    #
+    assert len(caplog.records) == 0
 
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_integrate_setting_con(clsname):
-    """Can we change the integrate setting of convolution models.
+def test_integrate_is_fixed_convolution(clsname, xsmodel, caplog):
+    """Convolution models
 
-    This is test_integrate_setting after wrapping the model by a
-    convolution model. At present the convolution model does not have
-    an integrate setting.
-
-    Note that the convolved model doesn't make much sense physically -
-    at least when it's xscflux(xswabs) - but we just care about the
-    evaluation process here.
-
+    We want to check both the kernel and the model. For now
+    we assume the model is always integrated.
     """
 
-    from sherpa.astro import xspec
-
-    egrid = np.arange(0.1, 1.0, 0.1)
-    elo = egrid[:-1]
-    ehi = egrid[1:]
-
-    conv = xspec.XScflux()
+    conv = xsmodel("cflux")
     assert conv.integrate
 
-    omdl = getattr(xspec, 'XS{}'.format(clsname))()
-    assert omdl.integrate
+    # Check we can set it to itself
+    conv.integrate = True
 
-    # Convolution models do not have an integrate setting
-    mdl = conv(omdl)
-    with pytest.raises(AttributeError):
-        mdl.integrate
+    conv.integrate = False
 
-    y1 = mdl(elo, ehi)
+    assert conv.integrate
 
-    # as mdl does not have an integrate setting, just change
-    # omdl
-    omdl.integrate = False
-    assert not omdl.integrate
+    mdl = xsmodel(clsname)
+    cmdl = conv(mdl)
+    assert cmdl.integrate
 
-    y2 = mdl(elo, ehi)
+    # Check we can set it to itself
+    cmdl.integrate = True
 
-    # Assume the integrate setting is ignored. To ensure we
-    # can test small values use the log of the data, and
-    # as we can have zero values (from xswabs) replace them
-    # with a sentinel value
+    cmdl.integrate = False
+    assert cmdl.integrate
+
+    # Do we have any warning about the attempt to change the integrate
+    # flag?
     #
-    y1[y1 <= 0] = 1e-10
-    y2[y2 <= 0] = 1e-10
-
-    y1 = np.log10(y1)
-    y2 = np.log10(y2)
-    assert y2 == pytest.approx(y1)
+    assert len(caplog.records) == 0
 
 
 @requires_xspec
@@ -1180,7 +1140,7 @@ def test_xsparameter_within_limit(val):
 @requires_xspec
 @pytest.mark.parametrize("val", [1, 8])
 def test_xsparameter_at_limit(val):
-    """What happens if we pass outside soft but within hard range?
+    """What happens if we pass outside soft but at hard limit?
 
     """
 

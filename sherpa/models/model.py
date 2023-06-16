@@ -1048,6 +1048,9 @@ class SimulFitModel(CompositeModel):
 class ArithmeticConstantModel(Model):
     """Represent a constant value, or values.
 
+    .. versionchanged:: 4.16.0
+       Models now have an `integrate` value, set to False.
+
     Parameters
     ----------
     val : number or sequence
@@ -1061,6 +1064,14 @@ class ArithmeticConstantModel(Model):
     val : number
 
     """
+
+    @property
+    def integrate(self):
+        """The model is not integrated across the independent axis.
+
+        It can not be changed for ArithmeticConstant models.
+        """
+        return False
 
     def __init__(self, val, name=None):
         val = SherpaFloat(val)
@@ -1129,9 +1140,17 @@ class ArithmeticModel(Model):
     cache = 5
     """The maximum size of the cache."""
 
-    def __init__(self, name, pars=()):
-        self.integrate = True
+    integrate = True
+    """Is the model integrated across the independent axis?
 
+    If True and the model supports it, the model will be integrated
+    across the low and high edges of the bins when evaluated with low
+    and high bin edges. This setting is ignored if the model is
+    evaluated on a set of points.
+
+    """
+
+    def __init__(self, name, pars=()):
         # Model caching ability
         self.cache = 5  # repeat the class definition
         self._use_caching = True  # FIXME: reduce number of variables?
@@ -1272,8 +1291,11 @@ class RegriddableModel2D(RegriddableModel):
         return regridder.apply_to(self)
 
 
-class UnaryOpModel(CompositeModel, ArithmeticModel):
+class UnaryOpModel(CompositeModel, RegriddableModel):
     """Apply an operator to a model expression.
+
+    ..versionchanged:: 4.16.0
+        The regrid method was added.
 
     Parameters
     ----------
@@ -1313,8 +1335,45 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
+
+        # Can we set the integrate flag?
+        #
+        try:
+            self.integrate = self.arg.integrate
+        except AttributeError:
+            pass
+
         CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
+
+    def regrid(self, *args, **kwargs):
+
+        # Similar to BinaryOpModel
+        #
+        def find_regrid(parts):
+            for part in parts:
+                # Some models, such as ArithmeticConstantModel, do not
+                # have a regrid method.
+                #
+                if not hasattr(part, "regrid"):
+                    continue
+
+                if hasattr(part, "parts"):
+                    # Search through the parts of this model
+                    try:
+                        return find_regrid(part.parts)
+                    except ModelErr:
+                        continue
+
+                return part
+
+            raise ModelErr('The component does not support the regrid method')
+
+        # The full model expression must be used as need to pass in
+        # self as the class.
+        #
+        part = find_regrid(self.parts)
+        return part.__class__.regrid(self, *args, **kwargs)
 
     def calc(self, p, *args, **kwargs):
         return self.op(self.arg.calc(p, *args, **kwargs))
@@ -1368,18 +1427,68 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.op = op
         self.opstr = opstr
 
-        CompositeModel.__init__(self,
-                                f'({self.lhs.name} {opstr} {self.rhs.name})',
+        # Can we set the integrate flag?
+        #
+        try:
+            lintegrate = self.lhs.integrate
+        except AttributeError:
+            lintegrate = None
+
+        try:
+            rintegrate = self.rhs.integrate
+        except AttributeError:
+            rintegrate = None
+
+        # If neither side has an integrate setting then the result
+        # will end up being True, as this is the default value for
+        # ArithmeticModel, which is a superclass of BinaryOpModel.
+        # This is not ideal, but is not likely to happen often.
+        #
+        if lintegrate is not None and rintegrate is not None:
+            # Set to True unless both False
+            self.integrate = lintegrate or rintegrate
+        elif lintegrate is not None:
+            # Copy the left side
+            self.integrate = lintegrate
+        elif rintegrate is not None:
+            # Copy the left side
+            self.integrate = rintegrate
+
+        CompositeModel.__init__(self, f"({self.lhs.name} {opstr} {self.rhs.name})",
                                 (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
-        for part in self.parts:
-            # ArithmeticConstantModel does not support regrid by design
-            if not hasattr(part, 'regrid'):
-                continue
-            # The full model expression must be used
-            return part.__class__.regrid(self, *args, **kwargs)
-        raise ModelErr('Neither component supports regrid method')
+
+        # Recurse through all the parts looking for the "base" models
+        # which we can use to find the regrid class to use. An
+        # alternative would be to key off the ndim value of the model,
+        # but that would then enshrine the RegriddableModel1D/2D
+        # classes and not allow them to be sub-classed or over-ridden.
+        #
+        def find_regrid(parts):
+            for part in parts:
+                # Some models, such as ArithmeticConstantModel, do not
+                # have a regrid method.
+                #
+                if not hasattr(part, "regrid"):
+                    continue
+
+                if hasattr(part, "parts"):
+                    # Search through the parts of this model
+                    try:
+                        return find_regrid(part.parts)
+                    except ModelErr:
+                        continue
+
+                return part
+
+            raise ModelErr('Neither component supports regrid method')
+
+        # The full model expression must be used as need to pass in
+        # self as the class.
+        #
+        part = find_regrid(self.parts)
+        return part.__class__.regrid(self, *args, **kwargs)
 
     def startup(self, cache=False):
         self.lhs.startup(cache)
@@ -1446,7 +1555,10 @@ class FilterModel(CompositeModel, ArithmeticModel):
     def calc(self, p, *args, **kwargs):
         return self.model.calc(p, *args, **kwargs)[self.filter]
 
-
+# TODO: should this gain an integrate setting? It depends on the
+# function, so there's no way for the code to set it to a sensible
+# value.
+#
 class ArithmeticFunctionModel(Model):
     """Represent a callable function.
 
