@@ -1269,7 +1269,7 @@ def test_fit_output_multi(clean_ui, caplog):
     assert lname == "sherpa.ui.utils"
     assert lvl == logging.INFO
     check_str(msg,
-              ["Datasets              = (1, 2)",
+              ["Datasets              = 1, 2",
                "Method                = levmar",
                "Statistic             = cash",
                "Initial fit statistic = 12",

@@ -136,7 +136,10 @@ class StatInfoResults(NoNewAttributesAfterInit):
             if len(self.ids) == 1:
                 out.append(f'Dataset               = {self.ids[0]}')
             else:
-                out.append(f'Datasets              = {self.ids}')
+                # Do we remove brackets around a tuple or list?
+                # idstr = str(self.ids).strip("()[]")
+                idstr = str(self.ids).strip("()")
+                out.append(f'Datasets              = {idstr}')
 
         elif self.ids is not None and self.bkg_ids is not None:
             out.append(f'Background {self.bkg_ids[0]} in Dataset = {self.ids[0]}')
@@ -323,7 +326,10 @@ class FitResults(NoNewAttributesAfterInit):
             if len(self.datasets) == 1:
                 out.append(f'Dataset               = {self.datasets[0]}')
             else:
-                out.append(f'Datasets              = {self.datasets}')
+                # Do we remove brackets around a tuple or list?
+                # idstr = str(self.datasets).strip("()[]")
+                idstr = str(self.datasets).strip("()")
+                out.append(f'Datasets              = {idstr}')
 
         if self.itermethodname is not None and self.itermethodname != 'none':
             out.append(f'Iterative Fit Method  = {self.itermethodname.capitalize()}')
