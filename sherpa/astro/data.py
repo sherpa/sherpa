@@ -4899,8 +4899,8 @@ class DataIMG(Data2D):
     systems, such as the "logical" coordinates (pixels of the image),
     the "physical" coordinates (e.g. detector coordinates), and the "world"
     coordinates (e.g. Ra/Dec on the sky).
-    Unlike `sherpa.data.Data2D`, this class does not support sparse data or data
-    with a non-rectangular shape.
+    While this class can also be used for sparse data, much of the functionality
+    added over its parent class will not be useful in that case.
 
     Parameters
     ----------
@@ -5439,12 +5439,13 @@ class DataIMGInt(DataIMG):
     data, i.e. the values of the dependent observable are given between bin edges
     as opposed to at bin centers.
 
-    Compared to `sherpa.data.Data2DInt`, this class does not support sparse data or data
-    on non-rectangular grids, but it adds support for region filters and
-    the ability describe the data in different coordinate
+    This class builds on `sherpa.data.Data2DInt` to add support for
+    region filters and the ability to describe the data in different coordinate
     systems, such as the "logical" coordinates (pixels of the image),
     the "physical" coordinates (e.g. detector coordinates), and the "world"
     coordinates (e.g. Ra/Dec on the sky).
+    While this class can also be used for sparse data, much of the functionality
+    added over its parent class will not be useful in that case.
 
     Parameters
     ----------
