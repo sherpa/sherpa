@@ -36,14 +36,14 @@ commonly used ones are:
 * `~sherpa.models.model.ArithmeticModel` is the main base class for deriving user models since
   it supports combining models (e.g. by addition or multiplication) and
   a cache to reduce evaluation time at the expense of memory use.
-  (`~sherpa.models.model.ArithmeticConstantModel` and `ArithmeticFunctionModel` are less general
+* `~sherpa.models.model.ArithmeticConstantModel` and
+  `~sherpa.models.modelArithmeticFunctionModel` are less general
   than `~sherpa.models.model.ArithmeticModel` and can be used to represent
- a constant value or a function.)
-
+  a constant value or a function.
 * `~sherpa.models.model.RegriddableModel1D` and
   `~sherpa.models.model.RegriddableModel2D` which build on
   `~sherpa.models.model.ArithmeticModel` to allow a model to be
-  evaluated on a different grid to that requested.
+  evaluated on a separate grid and then re-binned or interpolated onto the requested grid.
 
 To define a new model, a new class inherits from one of these base classes and
 implements an ``__init__`` method that defines the model parameters
@@ -66,7 +66,7 @@ to the ``calc`` method can take several forms:
    Here, ``x0lo`` and ``x0hi`` are the lower and upper bounds of the bins in the first coordinate of
    the independent variable, and ``x1lo`` and ``x1hi`` are the lower and upper bounds of the bins in
    the second coordinate.
- - For `~sherpa.data.astro.DataPHA` data, the input is ``calc(pars, xlo, xhi, **kwargs)``,
+ - For `~sherpa.astro.data.DataPHA` data, the input is ``calc(pars, xlo, xhi, **kwargs)``,
    where x could be given in either energy or wavelength units, depending on the setting
    of ``set_analysis``.
 
@@ -83,8 +83,13 @@ listed in the model instances::
     ['mygauss.fwhm', 'mygauss.pos', 'mygauss.ampl']
 
 Often, in Sherpa, we want models to work with both integrated and non-integrated datasets, and thus
-``calc`` is defined to accept a flexible number of arguments with
-``def calc(self, pars, *args, **kwargs)`` and the code in ``calc`` can branch::
+``calc`` is defined to accept a flexible number of arguments. In the most general form,
+you can use ``def calc(self, pars, *args, **kwargs)`` and the code in ``calc`` can branch
+depending on how long ``*args``. For a 1D model, you can also say
+``def calc(self, pars, x, xhi=None, **kwargs)`` and then ``xhi`` will be `None` for non-integrated
+data; the same works similarly for 2D data.
+
+Here is an example for a 1D model::
 
     >>> from sherpa.models import model
     >>> class LinearModel(model.RegriddableModel1D):
@@ -115,6 +120,22 @@ We can now evaluate this model for points or for bins::
 
 In the examples below, we will set up full data classes and fits and not just pass
 the numbers directly into the ``calc`` method.
+
+Dimensionality of the data and the model
+========================================
+Most models only work for either 1D or 2D data, or some other specific dimension and,
+for example, adding a 1D model expression to a 2D model does not make sense and won't work. Sherpa
+performs some checks on that using the `~sherpa.models.model.Model.ndim` attribute of a model.
+In the example code above, we do not need to set
+`~sherpa.models.model.Model.ndim`, because it is inherited from
+`sherpa.models.model.RegriddableModel1D`::
+
+    >>> linear.ndim
+    1
+
+However, if a new user model inherits from one of the more general classes such as
+`~sherpa.models.model.ArithmeticModel`, then the `~sherpa.models.model.Model.ndim`
+attribute should be set.
 
 A one-dimensional model
 =======================
@@ -282,7 +303,7 @@ It also shows one way of embedding models from a different system,
 in this case the
 `two-dimemensional polynomial model 
 <https://docs.astropy.org/en/stable/api/astropy.modeling.polynomial.Polynomial2D.html>`_
-from the AstroPy package::
+from the AstroPy package:
 
 .. doctest-requires:: astropy
 
