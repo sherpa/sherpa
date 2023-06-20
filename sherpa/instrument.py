@@ -357,9 +357,17 @@ class PSFKernel(Kernel):
             # and Python 3.8 - causes a TypeError with the message
             # "only integer scalar arrays can be converted to a scalar index"
             # to be thrown here if sent directly to set_origin. So
-            # we convert to a Python integer type.
+            # we convert to a Python integer type. In NumPy 1.25 it became
+            # a deprecation error to call int on an array with ndim > 0.
             #
-            origin = set_origin(kshape, int(brightPixel))
+            # assume there is only one element in brightPixel if not
+            # a scalar
+            #
+            if not numpy.isscalar(brightPixel):
+                loc = brightPixel[0]
+            else:
+                loc = brightPixel
+            origin = set_origin(kshape, int(loc))
 
         if self.origin is None:
             self.origin = origin
