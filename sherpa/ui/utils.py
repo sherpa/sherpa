@@ -6846,11 +6846,11 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        model : str or a sherpa.models.model.Model object
+        model : `str` or a `sherpa.models.model.Model` object
 
         Returns
         -------
-        model : sherpa.models.model.Model instance
+        model : `sherpa.models.model.Model` instance
 
         Raises
         ------
