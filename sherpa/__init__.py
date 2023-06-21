@@ -183,6 +183,42 @@ def _get_citation_hardcoded(version):
         cite[version] = dict(**kwargs)
         cite[version]['version'] = version
 
+    add(version='4.15.1', title='sherpa/sherpa: Sherpa 4.15.1',
+        date=todate(2023, 5, 18),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Marie-Terrell',
+                 'dtnguyen2', 'Hans Moritz Günther', 'Aneta Siemiginowska',
+                 'Jamie Budynkiewicz', 'Harlan Cheer', 'Tom Aldcroft',
+                 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner',
+                 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber',
+                 'nplee', 'Todd'],
+        idval='7948720')
+    add(version='4.15.0', title='sherpa/sherpa: Sherpa 4.15.0',
+        date=todate(2022, 10, 11),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'dtnguyen2',
+                 'Hans Moritz Günther', 'Marie-Terrell', 'Aneta Siemiginowska',
+                 'Jamie Budynkiewicz', 'Harlan Cheer', 'Tom Aldcroft',
+                 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner',
+                 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber',
+                 'nplee', 'Todd'],
+        idval='7186379')
+    add(version='4.14.1', title='sherpa/sherpa: Sherpa 4.14.1',
+        date=todate(2022, 5, 20),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'dtnguyen2',
+                 'Hans Moritz Günther', 'Marie-Terrell', 'Aneta Siemiginowska',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Christoph Deil',
+                 'Harlan Cheer', 'Brigitta Sipőcz', 'Johannes Buchner',
+                 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber',
+                 'nplee', 'Todd'],
+        idval='6567264')
+    add(version='4.14.0', title='sherpa/sherpa: Sherpa 4.14.0',
+        date=todate(2021, 10, 7),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'dtnguyen2',
+                 'Hans Moritz Günther', 'Marie-Terrell', 'Aneta Siemiginowska',
+                 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Christoph Deil',
+                 'Brigitta Sipőcz', 'Johannes Buchner', 'Iva Laginja',
+                 'Katrin Leinweber', 'nplee', 'Todd'],
+        idval='5554957')
+
     add(version='4.13.1', title='sherpa/sherpa: Sherpa 4.13.1',
         date=todate(2021, 5, 18),
         authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'dtnguyen2',
