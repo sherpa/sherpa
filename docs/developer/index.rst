@@ -389,7 +389,7 @@ XSPEC 12.12.0 (released in HEASOFT 6.29) support was added::
 
 The code needed to add support for the wdem module can be found with::
 
-  % ./scripts/check_xspec_update.py ~/local/heasoft-6.29/spectral/manager/model.dat wdem
+  % ./scripts/add_xspec_model.py ~/local/heasoft-6.29/spectral/manager/model.dat wdem
   # C++ code for sherpa/astro/xspec/src/_xspec.cc
 
   // Defines
@@ -691,7 +691,7 @@ available.
 	:py:class:`sherpa.astro.xspec.utils.ModelMeta` metaclass performs
 	a runtime check to ensure that the model can be used.
 
-        For example (from when XSPEC 12.9.0 was still supported):
+        For example (from when XSPEC 12.9.0 was still supported)::
 
             __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
 
