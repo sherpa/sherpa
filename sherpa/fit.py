@@ -1284,8 +1284,13 @@ class Fit(NoNewAttributesAfterInit):
         def get_par_name(ii):
             return self.model.pars[self.thaw_indices[ii]].fullname
 
-        # Call from a parameter estimation method, to report
-        # that limits for a given parameter have been found
+        # Call from a parameter estimation method, to report that
+        # limits for a given parameter have been found At present (mid
+        # 2023) it looks like lower/upper are both single-element
+        # ndarrays, hence the need to convert to a scalar by accessing
+        # the first element (otherwise there's a deprecation warning
+        # from NumPy 1.25).
+        #
         def report_progress(i, lower, upper):
             if i < 0:
                 return
@@ -1294,11 +1299,11 @@ class Fit(NoNewAttributesAfterInit):
             if isnan(lower) or isinf(lower):
                 info("%s \tlower bound: -----", name)
             else:
-                info("%s \tlower bound: %g", name, lower)
+                info("%s \tlower bound: %g", name, lower[0])
             if isnan(upper) or isinf(upper):
                 info("%s \tupper bound: -----", name)
             else:
-                info("%s \tupper bound: %g", name, upper)
+                info("%s \tupper bound: %g", name, upper[0])
 
         # If starting fit statistic is chi-squared or C-stat,
         # can calculate reduced fit statistic -- if it is
