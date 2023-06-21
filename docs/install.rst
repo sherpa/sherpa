@@ -434,9 +434,14 @@ With these installed, the documentation can be built with the
 
     python setup.py build_sphinx
 
-This can be done **without** building Sherpa (either an installation
-or development version), since Mock objects are used to represent
-compiled and optional components.
+Note that this uses the installed version of sherpa, so if you want to make
+sure the current repository version is used, you will need to install it with e.g.::
+
+    pip install -e .
+
+before changing to the docs directory. Only very specific modules are mocked out
+because they are hard to build and are not needed for the documentation build
+(currently ds9 and XSPEC).
 
 The documentation should be placed in ``build/sphinx/html/index.html``,
 although this may depend on what version of Sphinx is used.
