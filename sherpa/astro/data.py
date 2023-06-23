@@ -4946,6 +4946,13 @@ class DataIMG(Data2D):
         >>> x1 = x1.flatten()
         >>> y = y.flatten()
         >>> image = DataIMG("bimage", x0=x0, x1=x1, y=y, shape=datashape)
+
+    Note that in this example, we end up with a "logical" coordinate system
+    in ``image`` and no WCS system to convert it to anything else. On the other hand,
+    in FITS standard terminology, the "logical" coordinate system is the
+    "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
+    actually start at 20 and 5, respectively.
+    This behavior works for now, but might be revisited.
     '''
 
     _extra_fields = ("sky", "eqpos", "coord")
