@@ -289,8 +289,8 @@ main_doc = 'index'
 
 # General information about the project.
 project = 'Sherpa'
-copyright = '2019-2022, Chandra X-ray Center, Smithsonian Astrophysical Observatory.'
 author = 'Chandra X-ray Center, Smithsonian Astrophysical Observatory'
+copyright = f"2019–{datetime.datetime.utcnow().year}, " + author
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
