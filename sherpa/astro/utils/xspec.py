@@ -41,6 +41,7 @@ from dataclasses import dataclass
 import logging
 import re
 import string
+from typing import Callable, Optional, Union
 
 
 __all__ = ("parse_xspec_model_description", "create_xspec_code")
@@ -60,7 +61,7 @@ class XSPECcode:
     """The C++ code"""
 
 
-class ModelDefinition():
+class ModelDefinition:
     """Represent the model definition from an XSPEC model file.
 
     Parameters
@@ -94,11 +95,13 @@ class ModelDefinition():
 
     """
 
-    modeltype = None
-    language = None
+    modeltype: str
+    language: str
 
-    def __init__(self, name, clname, funcname, flags, elo, ehi, pars,
-                 initString=None):
+    def __init__(self, name: str, clname: str, funcname: str,
+                 flags: list[int], elo: float, ehi: float,
+                 pars: list["ParameterDefinition"],
+                 initString: Optional[str] = None) -> None:
         assert self.modeltype is not None, \
             "ModelDefinition should not be directly created."
         self.name = name
@@ -137,10 +140,10 @@ class ModelDefinition():
 
         self.initString = initString
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{self.modeltype}:{self.name}:{self.funcname}:{len(self.pars)} pars>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         pars = "\n".join([str(p) for p in self.pars])
         return f"{self.modeltype}.{self.name} " +  \
             f"function={self.funcname}\n{self.language}\n{pars}"
@@ -223,7 +226,7 @@ class AmxModelDefinition(ModelDefinition):
     modeltype = "Amx: apparently a combination of mixing and pile-up models"
 
 
-class ParameterDefinition():
+class ParameterDefinition:
     """Represent an XSPEC parameter.
 
     Parameters
@@ -237,7 +240,7 @@ class ParameterDefinition():
     softmin, softmax, hardmin, hardmax : float or None
         The minimum and maximum values for the parameter (using the
         XSPEC definition of soft and hard, not Sherpa).
-    delta : floar or None, optional
+    delta : float or None, optional
         The delta parameter. At present this is only used to determine
         if the parameter is frozen by default (delta < 0).
 
@@ -255,11 +258,16 @@ class ParameterDefinition():
 
     """
 
-    paramtype = None
+    paramtype: str
 
-    def __init__(self, name, default, units=None,
-                 softmin=None, softmax=None,
-                 hardmin=None, hardmax=None, delta=None):
+    def __init__(self, name: str, default: Union[float, int],
+                 units: Optional[str] = None,
+                 *,
+                 softmin: Optional[float] = None,
+                 softmax: Optional[float] = None,
+                 hardmin: Optional[float] = None,
+                 hardmax: Optional[float] = None,
+                 delta: Optional[float] = None) -> None:
         assert self.paramtype is not None, \
             'ParameterDefinition should not be directly created'
 
@@ -273,10 +281,10 @@ class ParameterDefinition():
         self.hardmax = hardmax
         self.delta = None if delta is None else abs(delta)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} = {self.default}"
 
-    def param_string(self):
+    def param_string(self) -> str:
         out = f"XSParameter(name, '{self.name}', {self.default}"
 
         for (pval, pname) in [(self.softmin, "min"),
@@ -312,7 +320,7 @@ class ScaleParameterDefinition(ParameterDefinition):
 
     paramtype = "Scale"
 
-    def __str__(self):
+    def __str__(self) -> str:
         out = super().__str__()
         if self.units is not None:
             out += " units={}".format(self.units)
@@ -328,8 +336,11 @@ class BasicParameterDefinition(ParameterDefinition):
 
     paramtype = "Basic"
 
-    def __init__(self, name, default, units, softmin, softmax,
-                 hardmin, hardmax, delta):
+    def __init__(self, name: str, default: float, units: Optional[str],
+                 *,
+                 softmin: float, softmax: float,
+                 hardmin: Optional[float], hardmax: Optional[float],
+                 delta: float) -> None:
 
         self.name = name
 
@@ -361,7 +372,7 @@ class BasicParameterDefinition(ParameterDefinition):
             self.frozen = False
             self.delta = delta
 
-    def __str__(self):
+    def __str__(self) -> str:
         out = f"{self.name} = {self.default} ({self.softmin} to {self.softmax})"
         if self.units is not None:
             out += f" units={self.units}"
@@ -369,7 +380,7 @@ class BasicParameterDefinition(ParameterDefinition):
             out += " frozen"
         return out
 
-    def param_string(self):
+    def param_string(self) -> str:
 
         # We need to decide between
         #   XSParameter
@@ -395,7 +406,7 @@ class BasicParameterDefinition(ParameterDefinition):
         return out
 
 
-def read_model_definition(fh, namefunc):
+def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelDefinition]:
     """Parse the next model definition.
 
     The code attempts to handle the wide variety of model definitions
@@ -459,7 +470,7 @@ def read_model_definition(fh, namefunc):
 
     flags = [int(t) for t in toks[6:]]
 
-    pars = []
+    pars: list[ParameterDefinition] = []
     while len(pars) < npars:
         pline = fh.readline().strip()
 
@@ -470,6 +481,9 @@ def read_model_definition(fh, namefunc):
             raise ValueError(f'model={name} missing {nmiss} parameters')
 
         pars.append(process_parameter_definition(pline, model=name))
+
+    # Need to define this type for mypy, so make it optional
+    factory: Optional[type[ModelDefinition]] = None
 
     if modeltype == "add":
         nstr = 'norm " " 1.0 0.0 0.0 1.0e24 1.0e24 0.1'
@@ -510,7 +524,7 @@ def read_model_definition(fh, namefunc):
                    initString=initString)
 
 
-def mpop(array, defval=None):
+def mpop(array: list[str]) -> Optional[float]:
     """Pop first element from array (converting to float),
     returning defval if empty.
     """
@@ -518,10 +532,10 @@ def mpop(array, defval=None):
     try:
         return float(array.pop(0))
     except IndexError:
-        return defval
+        return None
 
 
-def pop(array):
+def pop(array: list[str]) -> float:
     """Pop first element from array (converting to float).
 
     Raises
@@ -533,7 +547,7 @@ def pop(array):
     return float(array.pop(0))
 
 
-def process_parameter_definition(pline, model):
+def process_parameter_definition(pline: str, model: str) -> ParameterDefinition:
     """Process a parameter description.
 
     Parameters
@@ -605,19 +619,20 @@ def process_parameter_definition(pline, model):
         #
         ntoks = len(toks)
         if ntoks == 1:
-            default = int(toks[0])
-            return SwitchParameterDefinition(name, default)
+            idefault = int(toks[0])
+            return SwitchParameterDefinition(name, idefault)
 
         if ntoks == 6:
-            default = int(toks.pop(0))
+            idefault = int(toks.pop(0))
             hardmin = float(toks.pop(0))
             softmin = float(toks.pop(0))
             softmax = float(toks.pop(0))
             hardmax = float(toks.pop(0))
             delta   = float(toks.pop(0))
-            return SwitchParameterDefinition(name, default, None,
-                                             softmin, softmax,
-                                             hardmin, hardmax, delta)
+            return SwitchParameterDefinition(name, idefault, None,
+                                             softmin=softmin, softmax=softmax,
+                                             hardmin=hardmin, hardmax=hardmax,
+                                             delta=delta)
 
         if ntoks > 6:
             # ignore units for now
@@ -626,10 +641,11 @@ def process_parameter_definition(pline, model):
             softmax = float(toks.pop())
             softmin = float(toks.pop())
             hardmin = float(toks.pop())
-            default = int(toks.pop())
-            return SwitchParameterDefinition(name, default, None,
-                                             softmin, softmax,
-                                             hardmin, hardmax, delta)
+            idefault = int(toks.pop())
+            return SwitchParameterDefinition(name, idefault, None,
+                                             softmin=softmin, softmax=softmax,
+                                             hardmin=hardmin, hardmax=hardmax,
+                                             delta=delta)
 
         if toks[0].startswith('"'):
             # assume something like '$model " " val'
@@ -639,12 +655,14 @@ def process_parameter_definition(pline, model):
             val = toks.pop()
             if val.endswith('.'):
                 val = val[:-1]
-            default = int(val)
-            return SwitchParameterDefinition(name, default)
+            idefault = int(val)
+            return SwitchParameterDefinition(name, idefault)
 
         raise NotImplementedError("(switch) model={} pline=\n{}".format(model, pline))
 
     # Handle units
+    units: Optional[str] = None
+
     val = toks.pop(0)
     if val.startswith('"'):
         units = val[1:]
@@ -653,7 +671,7 @@ def process_parameter_definition(pline, model):
 
         else:
             flag = True
-            units = [units]
+            unit_list = [units]
             while flag:
                 try:
                     val = toks.pop(0)
@@ -664,9 +682,9 @@ def process_parameter_definition(pline, model):
                     val = val[:-1]
                     flag = False
 
-                units.append(val)
+                unit_list.append(val)
 
-            units = ' '.join(units).strip()
+            units = ' '.join(unit_list).strip()
 
     else:
         units = val
@@ -678,15 +696,19 @@ def process_parameter_definition(pline, model):
         # scale parameter
         default = float(toks.pop(0))
 
-        hardmin = mpop(toks)
-        softmin = mpop(toks)
-        softmax = mpop(toks)
-        hardmax = mpop(toks)
-        delta   = mpop(toks)
+        # Create new variables otherwise mypy doesn't like the fact
+        # that these are maybe's.
+        #
+        s_hardmin = mpop(toks)
+        s_softmin = mpop(toks)
+        s_softmax = mpop(toks)
+        s_hardmax = mpop(toks)
+        s_delta   = mpop(toks)
 
         return ScaleParameterDefinition(name, default, units,
-                                        softmin, softmax,
-                                        hardmin, hardmax, delta)
+                                        softmin=s_softmin, softmax=s_softmax,
+                                        hardmin=s_hardmin, hardmax=s_hardmax,
+                                        delta=s_delta)
 
     if len(toks) != 6:
         raise ValueError("Expected 6 values after units; model={}\n{}".format(model, pline))
@@ -699,16 +721,18 @@ def process_parameter_definition(pline, model):
     delta = pop(toks)
 
     return BasicParameterDefinition(name, default, units,
-                                    softmin, softmax,
-                                    hardmin, hardmax, delta)
+                                    softmin=softmin, softmax=softmax,
+                                    hardmin=hardmin, hardmax=hardmax,
+                                    delta=delta)
 
 
-def add_xs_prefix(inval):
+def add_xs_prefix(inval: str) -> str:
     """Returns XS prepended to inval"""
     return f"XS{inval}"
 
 
-def parse_xspec_model_description(modelfile, namefunc=add_xs_prefix):
+def parse_xspec_model_description(modelfile,
+                                  namefunc: Callable[[str], str] = add_xs_prefix) -> list[ModelDefinition]:
     """Given an XSPEC model file - e.g. the lmodel.dat file -
     return information about the models it contains.
 
@@ -717,7 +741,7 @@ def parse_xspec_model_description(modelfile, namefunc=add_xs_prefix):
     modelfile : str or os.PathLike or file-like
         The name of the model file (often called model.dat or
         lmodel.dat) or a file-like object containing the file
-    namefunc : callable or None, optional
+    namefunc : callable, optional
         The routine used to convert an XSPEC model name, such as
         "apec", into the Sherpa class name. The default function
         prepends 'XS' to the name.
@@ -779,7 +803,7 @@ def parse_xspec_model_description(modelfile, namefunc=add_xs_prefix):
     return out
 
 
-def simple_wrap(modelname, mdl):
+def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     """Create the Python class wrapping this model.
 
     This creates the "starting point" for the user (it can be used
@@ -851,7 +875,7 @@ def simple_wrap(modelname, mdl):
     return out
 
 
-def additive_wrap(mdl):
+def additive_wrap(mdl: ModelDefinition) -> str:
     """Return a string representing the Python code used to wrap
     up access to an Additive user model.
     """
@@ -859,7 +883,7 @@ def additive_wrap(mdl):
     return simple_wrap('AdditiveModel', mdl)
 
 
-def multiplicative_wrap(mdl):
+def multiplicative_wrap(mdl: ModelDefinition) -> str:
     """Return a string representing the Python code used to wrap
     up access to an Multiplicative user model.
     """
@@ -867,7 +891,7 @@ def multiplicative_wrap(mdl):
     return simple_wrap('MultiplicativeModel', mdl)
 
 
-def convolution_wrap(mdl):
+def convolution_wrap(mdl: ModelDefinition) -> str:
     """Return a string representing the Python code used to wrap
     up access to a Convolution user model.
     """
@@ -875,7 +899,7 @@ def convolution_wrap(mdl):
     return simple_wrap('ConvolutionKernel', mdl)
 
 
-def model_to_python(mdl):
+def model_to_python(mdl: ModelDefinition) -> str:
     """Return a string representing the Python code used to wrap
     up access to the given user model.
 
@@ -908,7 +932,7 @@ def model_to_python(mdl):
         raise ValueError("No wrapper for model={} type={}".format(mdl.name, mdl.modeltype))
 
 
-def model_to_compiled(mdl):
+def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
     """Return a string representing the C++ code needed to build the module.
 
     Parameters
@@ -996,7 +1020,8 @@ def model_to_compiled(mdl):
     return wrapcode, defcode
 
 
-def models_to_compiled(mdls, name="_models"):
+def models_to_compiled(mdls: list[ModelDefinition],
+                       name: str = "_models") -> str:
     """Return the C++ code needed to build the module.
 
     Parameters
@@ -1027,20 +1052,20 @@ def models_to_compiled(mdls, name="_models"):
 
     """
 
-    defcode = []
-    wrapcode = []
+    defcode_list = []
+    wrapcode_list = []
     has_cxx = False
     for mdl in mdls:
         w, d = model_to_compiled(mdl)
 
-        wrapcode.append(w)
+        wrapcode_list.append(w)
         if d != '':
-            defcode.append(d)
+            defcode_list.append(d)
 
         has_cxx |= (mdl.language == "C++ style")
 
-    defcode = '\n'.join(defcode)
-    wrapcode = '\n'.join(wrapcode)
+    defcode = '\n'.join(defcode_list)
+    wrapcode = '\n'.join(wrapcode_list)
 
     def marker(label):
         # Ensure we have a consistent form for these markers
@@ -1122,7 +1147,8 @@ def models_to_compiled(mdls, name="_models"):
     return out
 
 
-def create_xspec_code(models, name="_models"):
+def create_xspec_code(models: list[ModelDefinition],
+                      name: str = "_models") -> XSPECcode:
     """Create the Python classes and C++ code for the models.
 
     Create the code fragments needed to build the XSPEC interface
