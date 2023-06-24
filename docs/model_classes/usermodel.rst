@@ -145,7 +145,12 @@ An example is a function similar to the
 which has four parameters: the amplitude of the central region, the center
 and width of this region, and the slope. The following model class,
 which was not written for efficiency or robustness, implements this
-interface::
+interface:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> def _trap1d(pars, x):
     ...     """Evaluate the Trapezoid.
@@ -235,7 +240,12 @@ This can be used in the same manner as the
 :py:class:`~sherpa.models.basic.Gauss1D` model
 in the :ref:`quick guide to Sherpa<quick-gauss1d>`.
 
-First, create the data to fit::
+First, create the data to fit:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
@@ -248,13 +258,15 @@ First, create the data to fit::
     >>> y = ampl_true * np.exp(-0.5 * (x - pos_true)**2 / sigma_true**2)
     >>> y += np.random.normal(0., err_true, x.shape)
 
-Now create a Sherpa data object::
+Now create a Sherpa data object and set up the user model:
   
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
+
     >>> from sherpa.data import Data1D
     >>> d = Data1D('example', x, y)
-
-Set up the user model::
-
     >>> t = Trap1D()
     >>> print(t)
     trap1d
@@ -265,7 +277,12 @@ Set up the user model::
        trap1d.width thawed            1            0  3.40282e+38           
        trap1d.slope thawed            1            0  3.40282e+38           
 
-Finally, perform the fit::
+Finally, perform the fit:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
   
     >>> from sherpa.fit import Fit
     >>> from sherpa.stats import LeastSq
@@ -276,7 +293,11 @@ Finally, perform the fit::
 
 Rather than use a :py:class:`~sherpa.plot.ModelPlot` object,
 the ``overplot`` argument can be set to allow multiple values
-in the same plot::
+in the same plot:
+
+.. plot::
+   :context:
+   :include-source:
 
     >>> from sherpa import plot
     >>> dplot = plot.DataPlot()
@@ -286,7 +307,6 @@ in the same plot::
     >>> mplot.prepare(d, t)
     >>> mplot.plot(overplot=True)
 
-.. image:: ../_static/model_classes/usermodel/data1d_trap_fit.png
 
 .. _example-usermodel-2d:
 
