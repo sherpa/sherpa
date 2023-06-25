@@ -202,7 +202,7 @@ interface:
     ...     out[idx] = - slope * x[idx] + slope * x1
     ...
     ...     return out
-
+    >>> from sherpa.models import model
     >>> class Trap1D(model.RegriddableModel1D):
     ...     """A one-dimensional trapezoid.
     ...
