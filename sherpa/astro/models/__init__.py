@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2021, 2022
+#  Copyright (C) 2007, 2016, 2018, 2019, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -621,7 +621,7 @@ class Voigt1D(RegriddableModel1D):
     """One dimensional Voigt profile.
 
     The Voigt profile is a convolution between a Gaussian distribution
-    a Cauchy-Lorentz distribution [1]_, [2]_. It is often used in
+    a Cauchy-Lorentz distribution [Voigt_1912]_, [wiki_voigt]_. It is often used in
     analyzing spectroscopy data.
 
     .. versionadded:: 4.12.2
@@ -643,11 +643,11 @@ class Voigt1D(RegriddableModel1D):
 
     Notes
     -----
-    Following [2]_, the Voigt profile can be written as::
+    Following [wiki_voigt]_, the Voigt profile can be written as::
 
         f(x) = ampl * Re[w(z)] / (sqrt(2 * PI) * sigma)
 
-    where Re[w(z)] is the real part of the Faddeeva function [3]_
+    where Re[w(z)] is the real part of the Faddeeva function [wiki_faddeeva]_
     and sigma and gamma are parameters of the Gaussian and
     Lorentzian model respectively::
 
@@ -661,7 +661,7 @@ class Voigt1D(RegriddableModel1D):
 
         fwhm_l = fwhm_g / sqrt(2 * log(2))
 
-    An approximation for the FWHM of the profile, taken from [2]_,
+    An approximation for the FWHM of the profile, taken from [wiki_voigt]_,
     is
 
         0.5346 fwhm_l + sqrt(0.2166 fwhm_l^2 + fwhm_g^2)
@@ -669,11 +669,11 @@ class Voigt1D(RegriddableModel1D):
     References
     ----------
 
-    .. [1] http://publikationen.badw.de/de/003395768
+    .. [Voigt_1912] http://publikationen.badw.de/de/003395768
 
-    .. [2] https://en.wikipedia.org/wiki/Voigt_profile
+    .. [wiki_voigt] https://en.wikipedia.org/wiki/Voigt_profile
 
-    .. [3] https://en.wikipedia.org/wiki/Faddeeva_function
+    .. [wiki_faddeeva] https://en.wikipedia.org/wiki/Faddeeva_function
 
     Examples
     --------
