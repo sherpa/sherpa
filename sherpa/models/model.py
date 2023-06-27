@@ -1055,11 +1055,6 @@ class ArithmeticConstantModel(Model):
     name : str or None, optional
         The display name. If not set the value is used when the value
         is a scalar, otherwise it indicates an array of elements.
-
-    Attributes
-    ----------
-    val : number
-
     """
 
     def __init__(self, val, name=None):

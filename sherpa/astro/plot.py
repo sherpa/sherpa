@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -137,6 +137,7 @@ class DataPHAPlot(shplot.DataHistogramPlot):
     """Plot a PHA dataset."""
 
     histo_prefs = shplot.get_data_hist_prefs()
+    "The preferences for the plot."
 
     def prepare(self, data, stat=None):
 
@@ -177,6 +178,7 @@ class ModelPHAHistogram(shplot.HistogramPlot):
     """
 
     histo_prefs = shplot.backend.get_model_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         super().__init__()
@@ -266,8 +268,6 @@ class SourcePlot(shplot.HistogramPlot):
 
     Attributes
     ----------
-    histo_prefs : dict
-       The preferences for the plot.
     xlo, xhi : array_like
        The lower and upper edges for each bin (the independent variable).
     y : array_like
@@ -278,6 +278,7 @@ class SourcePlot(shplot.HistogramPlot):
     """
 
     histo_prefs = shplot.backend.get_model_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         self.units = None
@@ -364,6 +365,7 @@ class SourcePlot(shplot.HistogramPlot):
 class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
 
     histo_prefs = shplot.backend.get_component_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         ModelHistogram.__init__(self)
@@ -386,6 +388,7 @@ class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
 class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
 
     histo_prefs = shplot.backend.get_component_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         SourcePlot.__init__(self)
@@ -410,8 +413,6 @@ class ARFPlot(shplot.HistogramPlot):
 
     Attributes
     ----------
-    histo_prefs : dict
-       The preferences for the plot.
     xlo, xhi : array_like
        The lower and upper edges of each bin.
     y : array_like
@@ -422,6 +423,7 @@ class ARFPlot(shplot.HistogramPlot):
     """
 
     histo_prefs = shplot.backend.get_model_histo_defaults()
+    "The preferences for the plot."
 
     def prepare(self, arf, data=None):
         """Fill the fields given the ARF.
