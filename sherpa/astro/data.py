@@ -185,7 +185,7 @@ def _notice_resp(chans, arf, rmf):
 
         # If the response is mis-matched, determine which energy bins in the
         # RMF correspond to energy bins in the ARF and which are noticed.
-        # Propogate the noticed RMF energy bins to the ARF energy  bins.
+        # Propagate the noticed RMF energy bins to the ARF energy bins.
         elif len(rmf.energ_lo) < len(arf.energ_lo):
             arf_mask = None
             if bin_mask is not None:
@@ -4892,7 +4892,68 @@ It is an integer or string.
 
 
 class DataIMG(Data2D):
-    "Image data set, including functions for coordinate transformations"
+    '''Image data set
+
+    This class builds on `sherpa.data.Data2D` to add support for
+    region filters and the ability to describe the data in different coordinate
+    systems, such as the "logical" coordinates (pixels of the image),
+    the "physical" coordinates (e.g. detector coordinates), and the "world"
+    coordinates (e.g. Ra/Dec on the sky).
+    While this class can also be used for sparse data, much of the functionality
+    added over its parent class will not be useful in that case.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    x0 : array-like
+        Independent coordinate values for the first dimension
+    x1 : array-like
+        Independent coordinate values for the second dimension
+    y : array-like
+        The values of the dependent observable.
+    shape : tuple
+        Shape of the data grid (optional). This is
+        used return the data as an image e.g. for display,
+        but it not needed for fitting and modelling.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
+    sky : `sherpa.astro.io.wcs.WCS`
+        The optional WCS object that converts to the physical coordinate system.
+    eqpos : `sherpa.astro.io.wcs.WCS`
+        The optional WCS object that converts to the world coordinate system.
+    coord : string
+        The coordinate system of the data. This can be one of 'logical',
+        'physical', or 'world'.
+        'image' is an alias for 'logical' and 'wcs' is an alias for 'world'.
+    header : dict
+        The FITS header associated with the data to store meta data.
+
+    Examples
+    --------
+    In this example, we create an image data set, but do not specify the
+    coordinate system. This means that the coordinates are expressed in
+    the logical coordinates of the image, i.e. in pixels::
+
+        >>> from sherpa.astro.data import DataIMG
+        >>> import numpy as np
+        >>> x1, x0 = np.mgrid[20:30, 5:20]
+        >>> datashape = x0.shape
+        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+        >>> x0 = x0.flatten()
+        >>> x1 = x1.flatten()
+        >>> y = y.flatten()
+        >>> image = DataIMG("bimage", x0=x0, x1=x1, y=y, shape=datashape)
+
+    Note that in this example, we end up with a "logical" coordinate system
+    in ``image`` and no WCS system to convert it to anything else. On the other hand,
+    in FITS standard terminology, the "logical" coordinate system is the
+    "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
+    actually start at 20 and 5, respectively.
+    This behavior works for now, but might be revisited.
+    '''
 
     _extra_fields = ("sky", "eqpos", "coord")
 
@@ -5379,6 +5440,84 @@ class DataIMG(Data2D):
 
 
 class DataIMGInt(DataIMG):
+    '''Binned image data set
+
+    This class is very similar to `sherpa.data.DataIMG`, but it stores integrated
+    data, i.e. the values of the dependent observable are given between bin edges
+    as opposed to at bin centers.
+
+    This class builds on `sherpa.data.Data2DInt` to add support for
+    region filters and the ability to describe the data in different coordinate
+    systems, such as the "logical" coordinates (pixels of the image),
+    the "physical" coordinates (e.g. detector coordinates), and the "world"
+    coordinates (e.g. Ra/Dec on the sky).
+    While this class can also be used for sparse data, much of the functionality
+    added over its parent class will not be useful in that case.
+
+    Parameters
+    ----------
+    name : string
+        name of this dataset
+    x0lo : array-like
+        Lower bounds of the bins in the first dimension of the independent coordinate
+    x1lo : array-like
+        Lower bound of the bins in the second dimension of the independent coordinate
+    x0hi : array-like
+        Upper bound of the bins in the first dimension of the independent coordinate
+    x1hi : array-like
+        Upper bound of the bins in the second dimension of the independent coordinate
+    y : array-like
+        The values of the dependent observable.
+    shape : tuple
+        Shape of the data grid (optional). This is
+        used return the data as an image e.g. for display,
+        but it not needed for fitting and modelling.
+    staterror : array-like
+        the statistical error associated with the data
+    syserror : array-like
+        the systematic error associated with the data
+    sky : `sherpa.astro.io.wcs.WCS`
+        The optional WCS object that converts to the physical coordinate system.
+    eqpos : `sherpa.astro.io.wcs.WCS`
+        The optional WCS object that converts to the world coordinate system.
+    coord : string
+        The coordinate system of the data. This can be one of 'logical',
+        'physical', or 'world'.
+        'image' is an alias for 'logical' and 'wcs' is an alias for 'world'.
+    header : dict
+        The FITS header associated with the data to store meta data.
+
+    Example
+    -------
+    In this example, we first generate a 1000 (x,y) points from a 2D Gaussian.
+    This could be, e.g., photons observed from a star. In x direction, the center
+    of the Gaussian is at 1.2 and in y direction at 0.0. We then use
+    `~numpy.histogram2d` to bin the data into a 2D histogram. Note that numpy's
+    convention for the ordering of the axis is not the same as Sherpa's.
+    We want to use the bin edges when we create the `DataIMGInt` object, but numpy
+    gives us just one set of edges. We therefore first pick either the upper or lower
+    edges (``x0edges[:-1]`` or ``x0edges[1:]``) and then repeat them to match
+    the number of bins in the flattened data array::
+
+        >>> import numpy as np
+        >>> x = np.random.normal(size=1000, loc=1.2)
+        >>> y = np.random.normal(size=1000)
+        >>> xrange = np.arange(-2, 4.1, 0.5)
+        >>> yrange = np.arange(-2, 2.1, 0.5)
+        >>> hist, x0edges, x1edges = np.histogram2d(y, x, bins=(yrange, xrange))
+        >>> x0lo, x1lo = np.meshgrid(x0edges[:-1], x1edges[:-1])
+        >>> x0hi, x1hi = np.meshgrid(x0edges[1:], x1edges[1:])
+        >>> image = DataIMGInt("binned_image",
+        ...                    x0lo=x0lo.flatten(), x1lo=x1lo.flatten(),
+        ...                    x0hi=x0hi.flatten(), x1hi=x1hi.flatten(),
+        ...                    y=hist.flatten(), shape=hist.shape)
+
+    Note that in this example, we end up with a "logical" coordinate system
+    in ``image`` and no WCS system to convert it to anything else. On the other hand,
+    in FITS standard terminology, the "logical" coordinate system is the
+    "image", counting pixels starting at 1, while here the ``x0lo``` and ``x1lo``
+    actually start at -2. This behavior works for now, but might be revisited.
+    '''
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,
