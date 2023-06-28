@@ -304,7 +304,7 @@ options offered as keyword arguments for the existing backends. As an example,
 the `~sherpa.plot.pylab_backend.PylabErrorArea` backend changes the way that
 x-errors are visualized in plots from simple error bars to a shaded area.
 
-.. literalinclude:: ../../sherpa/plot/pylab_backend_area.py
+.. literalinclude:: ../../sherpa/plot/pylab_area_backend.py
    :language: python
    :lines: 38-96
 

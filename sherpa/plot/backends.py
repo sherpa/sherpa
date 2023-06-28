@@ -49,7 +49,7 @@ backend_indep_kwargs = {
                   '-.', '', "None"],
     'marker': [None, '', "None", ".", "o", "+", "s"]
 }
-'''List of kwyword argument ans possible values allowed in all backends'''
+'''List of keyword argument and possible values allowed in all backends'''
 
 
 kwargs_doc = {'xerr': ['float or array-like, shape(N,) or shape(2, N)',
@@ -140,7 +140,7 @@ uses the backend-specific default.'''],
               'label': ['string', 'Lable this dataset for use in a legend'],
               'levels': ['array-like', 'Levels at which to draw the contours']
               }
-'''documentation for keyword arguments used by several functions
+'''Documentation for keyword arguments used by several functions
 
 These can be inserted into the docstrings automatically using the
 `sherpa.plot.backend_utils.add_kwargs_to_doc` decorator.

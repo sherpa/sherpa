@@ -330,4 +330,4 @@ Reference/API
    basebackends
    backend_utils
    pylab_backend
-   pylab_backend_area
+   pylab_area_backend

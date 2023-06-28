@@ -1,10 +1,10 @@
 *****************************************
-The sherpa.plot.pylab_backend_area module
+The sherpa.plot.pylab_area_backend module
 *****************************************
 
-.. currentmodule:: sherpa.plot.pylab_backend_area
+.. currentmodule:: sherpa.plot.pylab_area_backend
 
-.. automodule:: sherpa.plot.pylab_backend_area
+.. automodule:: sherpa.plot.pylab_area_backend
 
    .. rubric:: Classes
 

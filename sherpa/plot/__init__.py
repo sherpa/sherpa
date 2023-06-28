@@ -23,7 +23,7 @@
 Classes provide access to common plotting tasks, which is done by the
 plotting backend defined in the ``options.plot_pkg`` setting of the
 Sherpa configuration file. Note that plot objects can be created
-and used even when the only the `sherpa.plot.backendsBasicBackend` is
+and used even when only the `sherpa.plot.backendsBasicBackend` is
 available.
 """
 from configparser import ConfigParser
@@ -46,7 +46,7 @@ from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 # but the current implementation does not have this capability.
 # See docstring of sherpa.plot.backends.MetaBaseBackend for details.
 #
-for name in ["pylab"]:
+for name in ["pylab", "pylab_area"]:
     try:
         importlib.import_module(f"sherpa.plot.{name}_backend")
     except ImportError:
@@ -78,7 +78,7 @@ where xxx is some backend.
 # might contain e.g. matplotlib specific defaults that are not applicable when other
 # backends are used.
 # Thus, we currently initialize them with the BasicBackend that has only the
-# backend-indenpendent (i.e. those that works for any backend) defaults set.
+# backend-independent (i.e. those that works for any backend) defaults set.
 
 
 plot_opt = config.get('options', 'plot_pkg', fallback='dummy')
@@ -88,22 +88,16 @@ for plottry in plot_opt:
     if plottry in PLOT_BACKENDS:
         backend = PLOT_BACKENDS[plottry]()
         break
+    else:
+        warning(f"Plotting backend '{plottry}' not found or dependencies missing. Trying next option.")
 else:
     # None of the options in the rc file work, e.g. because it's an old file
-    # that does not have dummy listed
     backend = BasicBackend()
 
-    # Warn the user that non of their requested plot options could
-    # be found (skipping the dummy package).
-    #
-    # TODO: should this not fire if one of the options is dummy?  That
-    # is, if the user has said they are happy for the plot backend to
-    # be "dummy" then we should not be here? The trouble is that
-    # "dummy" is not registered as a PLOT_BACKENDS entry, so
-    # it is not picked up in the loop above.
-    #
-    tried = ", ".join([f"'{n}'" for n in plot_opt if n != "dummy"])
-    warning(f"Failed to import any usable plot backend: tried {tried}")
+    warning(f"Tried the following backends listed in {get_config()}: \n" +
+            f"{plot_opt}\n" +
+            "None of these imported correctly, so using the 'BasicBackend'.\n" +
+            f"List of backends that have loaded and would be available: {[k for k in PLOT_BACKENDS]}")
 
 __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'HistogramPlot', 'DataHistogramPlot',
