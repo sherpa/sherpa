@@ -14032,7 +14032,7 @@ class Session(sherpa.ui.utils.Session):
                                        covar_matrix=covar_matrix)
                 else:
                     sampler = NormalParameterSampleFromScaleMatrix()
-                    tmp = sampler.get_sample(fit, covar_matrix, niter + 1)
+                    tmp = sampler.get_sample(fit, mycov=covar_matrix, num=niter + 1)
                     params = tmp.transpose()
 
             else:

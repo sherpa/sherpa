@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2019, 2020, 2021
+#  Copyright (C) 2011, 2016, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -242,7 +242,7 @@ class Walk():
                 try:
                     proposed_params = self._sampler.draw(current_params)
                 except CovarError:
-                    error("Covariance matrix failed! " + str(proposed_params))
+                    error("Covariance matrix failed! %s", str(proposed_params))
                     # automatically reject if the covar is malformed
                     self._sampler.reject()
                     continue
@@ -543,8 +543,8 @@ class MetropolisMH(MH):
 
         self.p_M = p_M
 
-        debug("X ~ uniform(0,1) <= %.2f --> Metropolis" % float(p_M))
-        debug("X ~ uniform(0,1) >  %.2f --> Metropolis-Hastings" % float(p_M))
+        debug("X ~ uniform(0,1) <= %.2f --> Metropolis", float(p_M))
+        debug("X ~ uniform(0,1) >  %.2f --> Metropolis-Hastings", float(p_M))
 
         return MH.init(self, log, inv, defaultprior, priorshape, priors,
                        originalscale, scale, sigma_m)
@@ -584,5 +584,5 @@ class MetropolisMH(MH):
     def tear_down(self):
         num = float(self.num_metropolis + self.num_mh)
         if num > 0:
-            debug("p_M: %g, Metropolis: %g%%" % (self.p_M, 100 * self.num_metropolis / num))
-            debug("p_M: %g, Metropolis-Hastings: %g%%" % (self.p_M, 100 * self.num_mh / num))
+            debug("p_M: %g, Metropolis: %g%%", self.p_M, 100 * self.num_metropolis / num)
+            debug("p_M: %g, Metropolis-Hastings: %g%%", self.p_M, 100 * self.num_mh / num)
