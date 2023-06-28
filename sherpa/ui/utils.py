@@ -1027,7 +1027,8 @@ class Session(NoNewAttributesAfterInit):
 
         fout = open(filename, 'wb')
         try:
-            pickle.dump(self, fout, 2)  # Use newer binary protocol
+            # Use the default version rather than fix a version
+            pickle.dump(self, fout)
         finally:
             fout.close()
 
@@ -9265,14 +9266,14 @@ class Session(NoNewAttributesAfterInit):
         """Compute and plot a histogram of likelihood ratios by simulating data.
 
         Compare the likelihood of the null model to an alternative model
-        by running a number of simulations to calibrate the likelihood ratio test statistics. 
+        by running a number of simulations to calibrate the likelihood ratio test statistics.
         The distribution of the simulated likelihood ratios is plotted and compared to the likelihoods
         of the two models fit to the observed data. The fit
         statistic must be set to a likelihood-based method, such
-        as "cash" or "cstat". Screen output is created as well as the plot; these values 
+        as "cash" or "cstat". Screen output is created as well as the plot; these values
         can be retrieved with `get_pvalue_results`.
 
-        The algorithm is based on the description in Sec.5.2 in "Statistics, 
+        The algorithm is based on the description in Sec.5.2 in "Statistics,
         Handle with Care: Detecting Multiple Model Components with the Likelihood Ratio Test"
         by Protassov et al., 2002, The Astrophysical Journal, 571, 545; <doi:10.1086/339856>
 
