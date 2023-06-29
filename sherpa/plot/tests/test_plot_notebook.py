@@ -21,7 +21,7 @@
 """Very-basic tests of the HTML representation of objects.
 
 The testing depends on the backend, but for now this is all
-kept with each test (i.e. the checks runin a test depend
+kept with each test (i.e. the checks running for a test depend
 on the backend).
 
 """
@@ -34,11 +34,25 @@ from sherpa.fit import Fit
 from sherpa.models.basic import Const1D, Gauss2D, Polynom1D
 from sherpa.stats import Chi2
 
+# This not the most elegant solution, but it makes sense to
+# have an independent check here and not rely on what is
+# done in the sherpa.plot.__init__ module, so that the tests
+# stay independent of that particular implementation.
+try:
+    from sherpa.plot.pylab_backend import PylabBackend
+    HAS_PYLAB = True
+except ModuleNotFoundError:
+    HAS_PYLAB = False
+
 
 def check_empty(r, summary, nsummary=0):
     """Is this an 'empty' response?"""
 
-    if plot.backend.name == 'pylab':
+    # If not HAS_PYLAB, then the symbol PylabBackend is not defined
+    # and test collection will fail. So, we short-circuit that
+    # such that PylabBackend will only  be needed it
+    # HAS_PYLAB is True.
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert r is None
         return
 
@@ -51,7 +65,7 @@ def check_full(r, summary, label, title, nsummary=0):
 
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert f"<summary>{summary}</summary>" in r
         assert "<svg " in r
         return
@@ -205,7 +219,7 @@ def test_fit(all_plot_backends):
     # different to previous checks
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert "<summary>FitPlot</summary>" in r
         assert "<svg " in r
         return
@@ -244,7 +258,7 @@ def test_fitcontour(all_plot_backends):
     # different to previous checks
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert "<summary>FitContour</summary>" in r
         assert "<svg " in r
         return
@@ -278,7 +292,7 @@ def test_intproj(old_numpy_printing, all_plot_backends):
     r = p._repr_html_()
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert "<summary>IntervalProjection</summary>" in r
         assert "<svg " in r
         return
@@ -313,7 +327,7 @@ def test_regproj(old_numpy_printing, all_plot_backends):
     r = p._repr_html_()
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert "<summary>RegionProjection</summary>" in r
         assert "<svg " in r
         return

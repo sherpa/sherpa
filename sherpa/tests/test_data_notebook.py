@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -27,6 +27,16 @@ import numpy as np
 from sherpa import data
 from sherpa import plot
 
+# This not the most elegant solution, but it makes sense to
+# have an independent check here and not rely on what is
+# done in the sherpa.plot.__init__ module, so that the tests
+# stay independent of that particular implementation.
+try:
+    from sherpa.plot.pylab_backend import PylabBackend
+    HAS_PYLAB = True
+except ModuleNotFoundError:
+    HAS_PYLAB = False
+
 
 def test_data1d(old_numpy_printing, all_plot_backends):
     d = data.Data1D("x x",
@@ -35,7 +45,11 @@ def test_data1d(old_numpy_printing, all_plot_backends):
     r = d._repr_html_()
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    # If not HAS_PYLAB, then the symbol PylabBackend is not defined
+    # and test collection will fail. So, we short-circuit that
+    # such that PylabBackend will only  be needed it
+    # HAS_PYLAB is True.
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert '<div class="sherpa-text-fallback">&lt;sherpa.plot.DataPlot object at ' in r
 
         assert '<summary>Data1D Plot</summary>' in r
@@ -63,7 +77,7 @@ def test_data1d_errs(old_numpy_printing, all_plot_backends):
     r = d._repr_html_()
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert '<div class="sherpa-text-fallback">&lt;sherpa.plot.DataPlot object at ' in r
 
         assert '<summary>Data1D Plot</summary>' in r
@@ -93,7 +107,7 @@ def test_data1dint(old_numpy_printing, all_plot_backends):
     r = d._repr_html_()
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert '<div class="sherpa-text-fallback">&lt;sherpa.plot.DataHistogramPlot object at ' in r
 
         assert '<summary>Data1DInt Plot</summary>' in r

@@ -226,6 +226,7 @@ by "what is the input data type":
   set, for line plots with linestyle set, and for errorbars with ``xerr`` or
   ``yerr`` set to `True`); accepts (x, y) data with optional error bars in each
   dimension. Data can be scalar (for a single marker), or array-like.
+  Note that ``x`` and ``y`` can also be `None`, which should create an empty plot.
 - `~sherpa.plot.backend.BaseBackend.histo` (similar to plot, but with
   "histogram-style" lines); accepts (xlo, xhi, y) data with optional xerr, yerr.
 - `~sherpa.plot.backend.BaseBackend.contour` for (x0, x1, z) data
@@ -306,17 +307,17 @@ x-errors are visualized in plots from simple error bars to a shaded area.
 
 .. literalinclude:: ../../sherpa/plot/pylab_area_backend.py
    :language: python
-   :lines: 38-96
+   :lines: 38-99
 
 .. todo::
 
    Put code example in here that uses it?
 
-Testing backends and ploting code
+Testing backends and plotting code
 ----------------------------------
 Currently, Sherpa does not employ pixel-level tests that compare a generated
 image pixel-by-pixel to a reference image. While testing like that guarantees
-that any and all changes are found, they are susceptable to failing for
+that any and all changes are found, they are susceptible to failing for
 reasons unrelated to Sherpa, such as minor changes in the default of
 :term:`matplotlib`.
 
@@ -348,7 +349,7 @@ Instead, the plotting tests in Sherpa fall into the following categories:
     `sherpa.plot.backends.IndepOnlyBackend`: `plot_backends`. This is useful if a test
     makes use of options that are not on the Backend-independent list and needs to avoid the
     extra warning that `sherpa.plot.backends.IndepOnlyBackend` would emit.
-  - Tests for a specific backend usung code such as ``assert plt.gca().xlabel == "text")``.
+  - Tests for a specific backend using code such as ``assert plt.gca().xlabel == "text")``.
     These tests can either use the "require" decorators from `sherpa.utils.testing` or, if parts
     of the test are useful for other backends as well, but skip specific statements if the wrong
     backend is active::

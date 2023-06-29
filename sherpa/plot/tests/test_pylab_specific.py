@@ -50,9 +50,9 @@ def test_PylabErrorArea():
     # When we have more tests, it might be better to check it matplotlib is
     # available at the module level, but for now this is easier.
     mpl = pytest.importorskip("matplotlib")
-    from sherpa.plot import pylab_backend_area
+    from sherpa.plot import pylab_area_backend
 
-    newback = pylab_backend_area.PylabErrorArea()
+    newback = pylab_area_backend.PylabErrorArea()
     with plot.TemporaryPlottingBackend(newback):
         plot2 = plot.DataPlot()
         plot2.prepare(d2)

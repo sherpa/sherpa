@@ -71,6 +71,9 @@ class PylabErrorArea(PylabBackend):
              label=None,
              linewidth=None,
              capsize=None,
+             # derives from PylabBackend, which has "barsabove", so plot might be called with
+             # that parameter from e.g. histogram. So, we allow that parameter, but ignore it.
+             barsabove=False,
              ):
 
         axes = self.setup_axes(overplot, clearwindow)
@@ -79,11 +82,12 @@ class PylabErrorArea(PylabBackend):
         if not overplot:
             self.setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
-        if yerrorbars:
+        if yerrorbars and yerr is not None:
             axes.fill_between(x, y - yerr, y + yerr, alpha=.2,
                               linewidth=0, color=ecolor)
-
-        objs = axes.plot(x, y,
+        if x is None or y is None:
+            return None
+        return axes.plot(x, y,
                          color=color,
                          alpha=alpha,
                          linestyle=linestyle,
@@ -93,4 +97,3 @@ class PylabErrorArea(PylabBackend):
                          markersize=markersize,
                          markerfacecolor=markerfacecolor,
                          label=label)
-        return objs

@@ -33,6 +33,16 @@ from sherpa import plot
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.utils.testing import requires_data, requires_fits
 
+# This not the most elegant solution, but it makes sense to
+# have an independent check here and not rely on what is
+# done in the sherpa.plot.__init__ module, so that the tests
+# stay independent of that particular implementation.
+try:
+    from sherpa.plot.pylab_backend import PylabBackend
+    HAS_PYLAB = True
+except ModuleNotFoundError:
+    HAS_PYLAB = False
+
 
 TEST_HEADER = {}
 TEST_HEADER['OBJECT'] = 'The best object'
@@ -47,7 +57,11 @@ def check(r, summary, name, label, nmeta):
     """Very limited checks of the structure"""
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    # If not HAS_PYLAB, then the symbol PylabBackend is not defined
+    # and test collection will fail. So, we short-circuit that
+    # such that PylabBackend will only  be needed it
+    # HAS_PYLAB is True.
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert f'<summary>{summary} Plot</summary>' in r
         assert '<svg ' in r
 
@@ -243,7 +257,7 @@ def test_img(header, old_numpy_printing, all_plot_backends):
     # structure doesn't quite match the other cases
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert '<summary>DataIMG Plot</summary>' in r
         assert '<svg ' in r
 
@@ -272,7 +286,7 @@ def test_img_real(coord, make_data_path, old_numpy_printing, all_plot_backends):
 
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert '<summary>DataIMG Plot</summary>' in r
 
     assert '<summary>Coordinates: physical (3)</summary>' in r
@@ -310,7 +324,7 @@ def test_img_real_filtered(coord, region, make_data_path,
 
     assert r is not None
 
-    if plot.backend.name == 'pylab':
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert '<summary>DataIMG Plot</summary>' in r
 
     assert '<summary>Coordinates: physical (3)</summary>' in r
