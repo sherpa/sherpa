@@ -156,7 +156,7 @@ class MetaBaseBackend(type):
     if defined the ``"name"`` attribute of that class as key.
     If the key is already in use, a warning is issued.
 
-    This simple metaclass mimics the behaviour of entrypoints to some degree:
+    This simple metaclass mimics the behavior of entrypoints to some degree:
     It is a registry of classes that provide a certain functionality.
     However, classes are only added to this registry when they are imported,
     so we need a manual import statement somewhere. `Entrypoints
@@ -221,6 +221,12 @@ class BaseBackend(metaclass=MetaBaseBackend):
     This translates the color 'k' to tuple of RGB values and alpha values
     to a number between 0 and 256.
     '''
+
+    def __enter__(self):
+        return None
+
+    def __exit__(self, type, value, traceback):
+        return False
 
     @property
     def name(self):
@@ -368,33 +374,6 @@ class BaseBackend(metaclass=MetaBaseBackend):
         initialize_plot
 
         """
-        pass
-
-    def begin(self):
-        '''Called from the UI before an interactive plot is started.
-
-        .. warning::
-           This backend is a non-functional dummy. The documentation is provided
-           as a template only.
-        '''
-        pass
-
-    def exceptions(self):
-        '''Called from the UI if any exceptions occur during plotting.
-
-        .. warning::
-           This backend is a non-functional dummy. The documentation is provided
-           as a template only.
-        '''
-        pass
-
-    def end(self):
-        '''Called from the UI after an interactive plot is done.
-
-        .. warning::
-           This backend is a non-functional dummy. The documentation is provided
-           as a template only.
-        '''
         pass
 
     @add_kwargs_to_doc(kwargs_doc)

@@ -166,13 +166,9 @@ class PylabBackend(BasicBackend):
         """
         axes.set_xscale('log' if xlog else 'linear')
         axes.set_yscale('log' if ylog else 'linear')
-
-        if title:
-            axes.set_title(title)
-        if xlabel:
-            axes.set_xlabel(xlabel)
-        if ylabel:
-            axes.set_ylabel(ylabel)
+        axes.set_title(title)
+        axes.set_xlabel(xlabel)
+        axes.set_ylabel(ylabel)
 
     def find_zorder(self, axes):
         """Try to come up with a good zorder value
@@ -353,7 +349,6 @@ class PylabBackend(BasicBackend):
             The line to change
         linecolor, linestyle, linewidth : optional
             The attribute value or None.
-
         """
         def setf(label, newval):
             if newval is None:

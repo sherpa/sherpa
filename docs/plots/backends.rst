@@ -181,7 +181,7 @@ In some cases, the Sherpa plotting commands create several visualization
 elements at the same time (lines, symbols, error bars, axes, labels). This makes
 using Sherpa classes convenient, but it also means that the plotting functions
 do not offer options to customize each and every part. In general, the plotting
-functions pass color, linestyle etc. to the elements that describes the data
+functions pass color, line style etc. to the elements that describes the data
 (line, marker) and generate labels or axes grids using default settings. Backend
 specific code can be used to change the properties of the current figure after
 the Sherpa plotting.
@@ -199,7 +199,7 @@ use it and why it was designed this way. See `sherpa.plot.backends.BaseBackend`
 for a complete listing of the calling signature for each function.
 The `~sherpa.plot.backends.BasicBackend` backend extends
 `~sherpa.plot.backends.BaseBackend` by raising a warning message for
-plotting functions (plot, image, histrogram etc.) that are not implemented.
+plotting functions (plot, image, histogram etc.) that are not implemented.
 It is the base for any real functional backend, which will override those
 methods, but offer useful user feedback for any method not provided.
 This future-proofs any backend derived from this class: When sherpa adds new
@@ -222,8 +222,8 @@ The plotting functions are not separated by "how things look on paper" (thus "pl
 a long method that is responsible for points, lines, and errorbars), but
 by "what is the input data type":
 
-- `~sherpa.plot.backend.BaseBackend.plot` (for scatter plots with markerstyle
-  set, for line plots with linestyle set, and for errorbars with ``xerr`` or
+- `~sherpa.plot.backend.BaseBackend.plot` (for scatter plots with marker style
+  set, for line plots with line style set, and for errorbars with ``xerr`` or
   ``yerr`` set to `True`); accepts (x, y) data with optional error bars in each
   dimension. Data can be scalar (for a single marker), or array-like.
   Note that ``x`` and ``y`` can also be `None`, which should create an empty plot.
@@ -275,8 +275,13 @@ Interaction with interactive plots in the UI
 .. todo::
    Add details
 
-Each backend has additional functions that are called before, during and after
-interactive plots (begin, exception, and end), and for the setup of
+Each backend also acts as a context manager: Interactive plots
+are done within a with block like this:
+
+    >>> with sherpa.backend():
+    ...     plotobj.plot()
+has additional functions that are called before and after
+interactive plots (``begin`` and ``end``), and for the setup of
 multi-panel plots.
 
 Other methods
@@ -286,11 +291,11 @@ Backends need to have a few more methods:
 
 - ``as_html_XXX`` (where XXX is a plot type) that are used for interactive
   display in the notebook with ``_repr_html_``.  These functions take a plot
-  object and return an html representation as a string.
+  object and return a html representation as a string.
 - ``get_XXX_plot/hist_prefs`` (where XXX is a plot type) which returns a
   dictionary of preferences that is used for displaying this plot.
 - `~sherpa.plot.backend.BasicBackend.get_latex_for_string` to format latex in strings.
-- ``colorlist(n)`` generates a list of n distinct color. In backends that only have a
+- ``colorlist(n)`` generates a list of n distinct colors. In backends that only have a
   limited number of colors available, the list might repeat.
 
 
@@ -338,7 +343,7 @@ Instead, the plotting tests in Sherpa fall into the following categories:
     category, since most code needs to work for all backends. However, running every
     plotting test with every possible backend can make the runtime for the tests long.
     In practice, we thus do not run every test that we could for all backends.
-    To run a test for all backends, add the ``all_plot_backends``
+    To run a test for all backends, add the `sherpa.conftest.all_plot_backends`
     `pytest fixture <https://docs.pytest.org/en/stable/explanation/fixtures.html>`_::
 
       def test_this_plotting_feature(all_plot_backends):
@@ -354,15 +359,13 @@ Instead, the plotting tests in Sherpa fall into the following categories:
     of the test are useful for other backends as well, but skip specific statements if the wrong
     backend is active::
 
-      def test_something_that_also_uses_matplotlib(all_plot_backends):
-          ... set up data ...
-          pl = DataStuffPlot()
-          pl.prepare(data)
-          out = plt.plot(color='k')
-
-          assert out.x == [1, 2, 3]
-
-          if plot.backend.name == 'pylab':
-              assert f'<summary>{summary} Plot</summary>' in r
-          else:
-              assert f'<summary>{summary} Data (' in r
+    >>> import numpy as np
+    >>> from sherpa import plot
+    >>> from sherpa.data import Data1D
+    >>> def test_something_that_also_uses_matplotlib(all_plot_backends):
+    ...     d = Data1D('x', np.asarray([2, 4, 10]), np.asarray([2, 4, 0]))
+    ...     r = d._repr_html_()
+    ...     if plot.backend.name == 'pylab':
+    ...         assert f'<summary>{summary} Plot</summary>' in r
+    ...     else:
+    ...         assert f'<summary>{summary} Data (' in r

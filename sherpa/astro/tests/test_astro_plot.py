@@ -1133,5 +1133,5 @@ def test_data_model_plot_with_backend(all_plot_backends):
     fplot = splot.FitPlot()
     fplot.prepare(dplot, mplot)
 
-    fplot.plot()
-
+    with splot.backend:
+        fplot.plot()

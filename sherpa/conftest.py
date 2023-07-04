@@ -613,7 +613,7 @@ def all_plot_backends(request):
     """
     with TemporaryPlottingBackend(request.param):
         yield
-        if request.param == 'pylab':
+        if request.param in ('pylab', 'PylabErrorArea'):
             from matplotlib import pyplot as plt
             plt.close(fig="all")
 
