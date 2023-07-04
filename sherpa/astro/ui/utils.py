@@ -9920,11 +9920,11 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        1. http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
+        1. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelAtable.html
 
-        2. http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
+        2. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelMtable.html
 
-        3. http://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
+        3. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
 
         4. `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
@@ -14904,19 +14904,19 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        1. `"The K correction", Hogg, D.W., et al. <http://arxiv.org/abs/astro-ph/0210394>`_
+        1. `"The K correction", Hogg, D.W., et al. <https://arxiv.org/abs/astro-ph/0210394>`_
 
         2. `Appendix B of Jones et al. 1998, ApJ, vol 495,
-           p. 100-114 <http://adsabs.harvard.edu/abs/1998ApJ...495..100J>`_
+           p. 100-114 <https://adsabs.harvard.edu/abs/1998ApJ...495..100J>`_
 
         3. `"K and evolutionary corrections from UV to IR",
            Poggianti, B.M., A&AS, 1997, vol 122, p. 399-407.
-           <http://adsabs.harvard.edu/abs/1997A%26AS..122..399P>`_
+           <https://adsabs.harvard.edu/abs/1997A%26AS..122..399P>`_
 
         4. `"Galactic evolution and cosmology - Probing the
            cosmological deceleration parameter", Yoshii, Y. &
            Takahara, F., ApJ, 1988, vol 326, p. 1-18.
-           <http://adsabs.harvard.edu/abs/1988ApJ...326....1Y>`_
+           <https://adsabs.harvard.edu/abs/1988ApJ...326....1Y>`_
 
         Examples
         --------

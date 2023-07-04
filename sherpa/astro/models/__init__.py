@@ -669,7 +669,7 @@ class Voigt1D(RegriddableModel1D):
     References
     ----------
 
-    .. [Voigt_1912] http://publikationen.badw.de/de/003395768
+    .. [Voigt_1912] https://publikationen.badw.de/de/003395768
 
     .. [wiki_voigt] https://en.wikipedia.org/wiki/Voigt_profile
 

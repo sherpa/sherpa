@@ -2792,11 +2792,11 @@ class Session(NoNewAttributesAfterInit):
         1. `Cash, W. "Parameter estimation in astronomy through
            application of the likelihood ratio", ApJ, vol 228,
            p. 939-947 (1979).
-           <http://adsabs.harvard.edu/abs/1979ApJ...228..939C>`_
+           <https://adsabs.harvard.edu/abs/1979ApJ...228..939C>`_
 
         2. `Gehrels, N. "Confidence limits for small numbers of
            events in astrophysical data", ApJ, vol 303, p. 336-346 (1986).
-           <http://adsabs.harvard.edu/abs/1986ApJ...303..336G>`_
+           <https://adsabs.harvard.edu/abs/1986ApJ...303..336G>`_
 
         3. https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
 
@@ -11370,7 +11370,7 @@ class Session(NoNewAttributesAfterInit):
         `"Analysis of Energy Spectra with Low Photon Counts via
         Bayesian Posterior Simulation", van Dyk, D.A., Connors, A.,
         Kashyap, V.L., & Siemiginowska, A.  2001, Ap.J., 548, 224
-        <http://adsabs.harvard.edu/abs/2001ApJ...548..224V>`_
+        <https://adsabs.harvard.edu/abs/2001ApJ...548..224V>`_
 
         Examples
         --------
