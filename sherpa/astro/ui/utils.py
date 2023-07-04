@@ -3789,7 +3789,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -3935,7 +3935,8 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+
 
         Examples
         --------
@@ -7553,8 +7554,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
-
+        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
         Examples
         --------
 
@@ -7654,7 +7654,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -7731,7 +7731,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -7803,7 +7803,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -7888,7 +7888,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -7971,7 +7971,7 @@ class Session(sherpa.ui.utils.Session):
         References
         ----------
 
-        `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
@@ -9926,7 +9926,7 @@ class Session(sherpa.ui.utils.Session):
 
         3. https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelEtable.html
 
-        4. `Arnaud., K. & George, I., "The OGIP Spectral File Format" <http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+        4. `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
 
         Examples
         --------
