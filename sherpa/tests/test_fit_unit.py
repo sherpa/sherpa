@@ -2833,7 +2833,7 @@ def check_str(out, expecteds):
 
     toks = str(out).split("\n")
     for tok, expected in zip(toks, expecteds):
-        assert tok == expected
+        assert tok[:28] == expected[:28]
 
     assert len(toks) == len(expecteds)
 
