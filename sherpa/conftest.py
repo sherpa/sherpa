@@ -117,6 +117,11 @@ known_warnings = {
             r'np.asscalar\(a\) is deprecated since NumPy v1.16, use a.item\(\) instead',
             r"Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working",
 
+            # NumPy 1.25 warnings that are raised by (mid-2023) crates code.
+            # Hopefully this can be removed by December 2023.
+            #
+            r"Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. \(Deprecated NumPy 1.25.\)",
+
         ],
     UserWarning:
         [
