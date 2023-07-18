@@ -23,7 +23,8 @@ import numpy as np
 import pytest
 
 from sherpa.utils import SherpaFloat
-from sherpa.utils.random import poisson_noise
+from sherpa.utils.random import poisson_noise, \
+    standard_normal, chisquare, choice
 
 
 def test_poisson_noise_checks_dtype():
@@ -97,3 +98,68 @@ def test_poisson_noise_array_rng():
     assert out.dtype.type == SherpaFloat
 
     assert out == pytest.approx([7, 2, 0, 8, 0])
+
+
+def test_standard_normal_rng_is_none():
+    """Coverage shows this was not tested, so check it
+
+    It is not obvious if this is a real coverage failure,
+    or just an issue with how the tests are run, but may
+    as well add the check.
+    """
+
+    SEED = 1234
+    SIZE = 5
+    try:
+        np.random.seed(SEED)
+        rng = np.random.RandomState(SEED)
+        a = standard_normal(rng=None, size=SIZE)
+        b = standard_normal(rng=rng, size=SIZE)
+    finally:
+        np.random.seed()
+
+    assert a == pytest.approx(b)
+
+
+def test_chisquare_rng_is_none():
+    """Coverage shows this was not tested, so check it
+
+    It is not obvious if this is a real coverage failure,
+    or just an issue with how the tests are run, but may
+    as well add the check.
+    """
+
+    SEED = 1234
+    SIZE = 5
+    DF = 2
+    try:
+        np.random.seed(SEED)
+        rng = np.random.RandomState(SEED)
+        a = chisquare(rng=None, df=DF, size=SIZE)
+        b = chisquare(rng=rng, df=DF, size=SIZE)
+    finally:
+        np.random.seed()
+
+    assert a == pytest.approx(b)
+
+
+def test_choice_rng_is_none():
+    """Coverage shows this was not tested, so check it
+
+    It is not obvious if this is a real coverage failure,
+    or just an issue with how the tests are run, but may
+    as well add the check.
+    """
+
+    SEED = 1234
+    SIZE = 3
+    VALS = [1, "xx", 45, " X "]
+    try:
+        np.random.seed(SEED)
+        rng = np.random.RandomState(SEED)
+        a = choice(rng=None, xs=VALS, n=SIZE)
+        b = choice(rng=rng, xs=VALS, n=SIZE)
+    finally:
+        np.random.seed()
+
+    assert a == pytest.approx(b)
