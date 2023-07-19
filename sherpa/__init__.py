@@ -19,7 +19,6 @@
 #
 
 """
-
 Modeling and fitting package for scientific data analysis
 
 Sherpa is a modeling and fitting package for scientific data analysis.
@@ -867,51 +866,96 @@ def _smoke_cli(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=F
     smoke(verbosity=verbosity, require_failure=require_failure, fits=fits, xspec=xspec, ds9=ds9)
 
 
-def _install_test_deps():
+def _install_test_deps() -> list[str]:
+    """Check the needed modules for running the tests are installed.
+
+    Since pytest has historically had issues with being able to use
+    packages installed during this check, the list of such modules is
+    returned so it can be passed to pytest.main().
+
+    Returns
+    -------
+    plugins : list of module
+        The pytest modules that were added by this call
+        (may be empty).
+
+    """
+
     def install(package_name):
         try:
             subprocess.call([sys.executable, '-m', 'pip', 'install', package_name],
                             stdout=sys.stdout, stderr=sys.stderr)
         except:
             print("""Cannot import pip or install packages with it.
-            You need pytest, and possibly pytest-cov, in order to run the tests.
+
+            You need pytest in order to run the tests.
             If you downloaded the source code, please run 'pip install -r test_requirements.txt'
             from the source directory first.
             """)
             raise
 
-    deps = ['pytest>=5.0,!=5.2.3']  # List of packages to be installed
-    pytest_plugins = []  # List of pytest plugins to be installed
+    # packages are stored as a dictinary with keys
+    #   name:  package name, as used by pip
+    #   check: module to check it is installed
+    #          (defaults to name if not given)
+    #   constraint: the constaint to use with pip
+    #               (defaults to name if not given)
+    #
+    # So we can have
+    #
+    #  {'name': 'pycheck'}
+    #  {'name': 'pycheck', 'constraint': 'pytest>=5.0,!=5.2.3'}
+    #  {'name': 'pytest-doctestplus',
+    #   'check': 'pytest_doctestplus.output_checker'}
+    #
+    # Note that for pytest plugins, the module name is assumed to be
+    # the name field with hypens replaced by underscores. If necessary
+    # this could be updated to be another field in the package
+    # dictonary.
+    #
+    # The reason for the "check" field is that mid 2023 it was found
+    # that
+    #
+    #    importlib.import_module("pytest_doctestplus")
+    #
+    # would work even when not installed, hence the need to import a
+    # module within the package as a check. This has been left in even
+    # though the current list of required plugins is empty.
+    #
+    deps: list[dict[str, str]] = [{'name': 'pytest',
+                                   'constraint': 'pytest>=5.0,!=5.2.3'}]
+    pytest_plugins: list[dict[str, str]] = []
 
-    # If the plugins are installed "now", pytest won't load them because they are not registered as python packages
-    # by the time this code runs. So we need to keep track of the plugins and explicitly pass them to `pytest.main()`.
-    # Note that explicitly passing plugins that were already registered would result in an error, hence this
-    # complexity seems to be required.
+    def get(dep: dict[str, str]) -> tuple[str, str, str]:
+        name = dep['name']
+        constraint = dep.get('constraint', name)
+        check = dep.get('check', name)
+        return name, constraint, check
+
     installed_plugins = []
-
     for dep in deps:
+        name, constraint, check = get(dep)
         try:
-            importlib.import_module(dep)
+            importlib.import_module(check)
         except ImportError:
-            install(dep)
+            install(constraint)
 
-    for plugin_name in pytest_plugins:
-        module = plugin_name.replace("-", "_")
+    for dep in pytest_plugins:
+        name, constraint, check = get(dep)
         try:
-            importlib.import_module(module)
+            importlib.import_module(check)
         except ImportError:
-            install(plugin_name)
-            installed_plugins.append(module)
+            install(constraint)
+            installed_plugins.append(name.replace('-', '_'))
 
     return installed_plugins
 
 
-def clitest():
+def clitest() -> None:
     """The sherpa_test endpoint."""
 
     plugins = _install_test_deps()
     import pytest
-    import os
 
     # Add in command-line arguments to allow configuring the Sherpa tests
     args = [os.path.dirname(__file__), '-rs'] + sys.argv[1:]
