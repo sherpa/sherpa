@@ -661,6 +661,7 @@ def cleanup_ds9_backend():
     from sherpa.image import backend
     backend.close()
 
+
 @pytest.fixture(autouse=True)
 def add_sherpa_test_data_dir(doctest_namespace):
     '''Define `data_dir` for doctests
@@ -685,3 +686,116 @@ def add_sherpa_test_data_dir(doctest_namespace):
         path += '/'
 
     doctest_namespace["data_dir"] = path
+
+
+# Try to come up with a regexp for a numeric literal.  This is
+# informed by pytest-doctestlpus but this is a lot easier as we only
+# care about a single value.
+#
+eterm = r"(?:e[+-]?\d+)"
+term = "|".join([fr"[+-]?\d+\.\d*{eterm}?",
+                 fr"[+-]?\.\d+{eterm}?"
+                 fr"[+-]?\d+{eterm}"])
+PATTERN = re.compile(f"(.*)(?<![\d+-])({term})")
+
+
+class NumberChecker:
+    """Allow a string to be compared, allowing for tolerances.
+
+    This is written to match the re.Pattern interface as used by
+    check_str_fixture (match routine and pattern attribute). It is a
+    limited version of
+    pytest_doctestplus.output_checker.OutputChecker.
+
+    It only checks a single number value in the text. This could be
+    updated to be closer to doctestplus if found to be useful.
+
+    """
+
+    def __init__(self, expected, rtol=1e-4, atol=None):
+        self.pattern = expected
+
+        lhs, value, rhs = self.split(expected)
+        self.lhs = lhs
+        self.number = value
+        self.rhs = rhs
+
+        self.rtol = rtol
+        self.atol = atol
+
+    def split(self, text):
+        """Split a string on a number
+
+        Parameters
+        ----------
+        text : str
+            The string containing a single number.
+        """
+
+        match = PATTERN.match(text)
+        if match is None:
+            raise ValueError(f"No number found in '{text}'")
+
+        lhs = match[1]
+        number = float(match[2])
+        rhs = text[match.end():]
+
+        return lhs, number, rhs
+
+    def match(self, got):
+        """This abuses the match API"""
+        lhs, value, rhs = self.split(got)
+        assert lhs == self.lhs
+        assert rhs == self.rhs
+        assert value == pytest.approx(self.number,
+                                      rel=self.rtol, abs=self.atol)
+        return True
+
+
+@pytest.fixture
+def check_number():
+    """Convert a string containing a number into a NumberChecker"""
+    return NumberChecker
+
+
+def check_str_fixture(out, expecteds):
+    """Check that out, when split on a newline, matches expecteds.
+
+    It would be nice to use use doctestplus - that is
+    pytest_doctestplus.output_checker.OutputChecker - for the checking
+    (to avoid the need to mark up expected text as a regexp) but this
+    is problematic at the moment, so it is not done. For now we
+    require users to explictly mark up those lines which we want to
+    check with numeric constraints. Maybe we should do this for all
+    lines (at least, those not already done as regexps) but let's see
+    how this works.
+
+    Parameters
+    ----------
+    out : str
+        The output to check
+    expecteds : list of str or Pattern
+        The expected output, split on new-line.
+
+    """
+
+    toks = str(out).split("\n")
+    for tok, expected in zip(toks, expecteds):
+        try:
+            assert expected.match(tok), (expected.pattern, tok)
+        except AttributeError:
+            assert tok == expected
+
+    assert len(toks) == len(expecteds)
+
+
+@pytest.fixture
+def check_str():
+    """Returns the check_str_fixture routine.
+
+    See check_str_fixture for documentation. This is a bit of a hack
+    to treat a fixture as a way of importing check_str_fixture.
+
+    """
+
+    return check_str_fixture
