@@ -235,7 +235,7 @@ def plot_wrapper(func):
         kwargs
            The keyword arguments to the function.
         """
-        shplot.backend.initialize_backend()
+
         for dataset in self.filter_datasets():
             shplot.backend.initialize_plot(dataset, self.ids)
             func(dataset['id'], *args, **kwargs)
