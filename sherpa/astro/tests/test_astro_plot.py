@@ -142,8 +142,11 @@ def make_basic_datapha():
     chans = np.arange(10)
     los = 0.1 + 0.1 * chans
     his = 0.1 + los
-    return DataPHA('', chans, np.ones(10),
-                   bin_lo=los, bin_hi=his)
+    r = create_delta_rmf(los, his, e_min=los, e_max=his,
+                         offset=1, name='example-rmf')
+    d = DataPHA("", chans, np.ones(10), exposure=10)
+    d.set_rmf(r)
+    return d
 
 
 def test_sourceplot(caplog, make_basic_datapha):
