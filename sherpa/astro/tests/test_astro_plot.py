@@ -39,7 +39,7 @@ from sherpa import stats
 from sherpa.utils.err import IOErr, PlotErr
 
 
-def check_sourceplot_energy(sp, factor=0):
+def check_sourceplot_energy(sp, factor=0, rate=True):
     """Check for test_sourceplot/test_sourceplot_channel
 
     Note that the rate setting does not change these tests.
@@ -48,20 +48,28 @@ def check_sourceplot_energy(sp, factor=0):
     assert sp.xlabel == 'Energy (keV)'
 
     # the following depends on the backend
-    # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
     if factor == 0:
-        assert sp.ylabel.startswith('f(E)  Photons/sec/cm')
-        assert sp.ylabel.endswith('/keV ')
+        if rate:
+            assert sp.ylabel.startswith('f(E)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('f(E)  Photons/cm')
+        assert sp.ylabel.endswith('/keV')
     elif factor == 1:
-        assert sp.ylabel.startswith('E f(E)  Photons/sec/cm')
+        if rate:
+            assert sp.ylabel.startswith('E f(E)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('E f(E)  Photons/cm')
         assert sp.ylabel.find('/keV ') == -1
     elif factor == 2:
         # This says E^2 f(E) ... but the exact format depends on
         # the back end
         assert sp.ylabel.startswith('E')
         assert sp.ylabel.find('^2') != -1
-        assert sp.ylabel.find(' f(E)  Photons/sec/cm') != -1
-        assert sp.ylabel.find('/keV ') == -1
+        if rate:
+            assert sp.ylabel.find(' f(E)  Photons/sec/cm') != -1
+        else:
+            assert sp.ylabel.find(' f(E)  Photons/cm') != -1
+        assert sp.ylabel.find('/keV') == -1
     else:
         raise RuntimeError("unsupported factor")
 
@@ -78,15 +86,20 @@ def check_sourceplot_energy(sp, factor=0):
                        9997.23070803, 9996.76346026, 9996.2304594, 9995.62486769,
                        9994.9395488, 9994.16712626, 9993.30005567])
 
+    xmid = (bins[:-1] + bins[1:]) / 2
     if factor == 1:
-        yexp *= 0.1
+        yexp *= xmid
     elif factor == 2:
-        yexp *= 0.01
+        yexp *= xmid * xmid
+
+    if not rate:
+        # Correct by the exposure time
+        yexp *= 10
 
     assert sp.y == pytest.approx(yexp)
 
 
-def check_sourceplot_wavelength(sp, factor=0):
+def check_sourceplot_wavelength(sp, factor=0, rate=True):
     """Check for test_sourceplot_wavelength.
 
     See check_sourceplot_energy.
@@ -95,18 +108,27 @@ def check_sourceplot_wavelength(sp, factor=0):
     assert sp.xlabel == 'Wavelength (Angstrom)'
 
     if factor == 0:
-        assert sp.ylabel.startswith('f(lambda)  Photons/sec/cm')
-        assert sp.ylabel.endswith('/Angstrom ')
+        if rate:
+            assert sp.ylabel.startswith('f(lambda)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('f(lambda)  Photons/cm')
+        assert sp.ylabel.endswith('/Angstrom')
     elif factor == 1:
-        assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
+        if rate:
+            assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('lambda f(lambda)  Photons/cm')
         assert sp.ylabel.find('/Angstrom ') == -1
     elif factor == 2:
         # This says lambda^2 f(lambda) ... but the exact format depends on
         # the back end
         assert sp.ylabel.startswith('lambda')
         assert sp.ylabel.find('^2') != -1
-        assert sp.ylabel.find(' f(lambda)  Photons/sec/cm') != -1
-        assert sp.ylabel.find('/Angstrom ') == -1
+        if rate:
+            assert sp.ylabel.find(' f(lambda)  Photons/sec/cm') != -1
+        else:
+            assert sp.ylabel.find(' f(lambda)  Photons/cm') != -1
+        assert sp.ylabel.find('/Angstrom') == -1
     else:
         raise RuntimeError("unsupported factor")
 
@@ -128,10 +150,15 @@ def check_sourceplot_wavelength(sp, factor=0):
                        9999.99999864, 9999.99949354, 9999.97224156,
                        9999.55447151])
 
+    xmid = (lbins[:-1] + lbins[1:]) / 2
     if factor == 1:
-        yexp *= (lbins[:-1] - lbins[1:])
+        yexp *= xmid
     elif factor == 2:
-        yexp *= (lbins[:-1] - lbins[1:])**2
+        yexp *= xmid * xmid
+
+    if not rate:
+        # Correct by the exposure time
+        yexp *= 10
 
     assert sp.y == pytest.approx(yexp)
 
@@ -198,7 +225,7 @@ def test_sourceplot_counts(caplog, make_basic_datapha):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_energy(sp)
+    check_sourceplot_energy(sp, rate=False)
 
 
 @pytest.mark.parametrize("factor", [1, 2])
@@ -333,7 +360,7 @@ def test_sourceplot_wavelength_counts(caplog, make_basic_datapha):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_wavelength(sp)
+    check_sourceplot_wavelength(sp, rate=False)
 
 
 # Low-level test of the DataPlot prepare method for PHA style analysis
@@ -502,7 +529,7 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     assert plot.xlabel == 'Wavelength (Angstrom)'
     assert plot.ylabel.startswith('f(lambda)  Photons/sec/cm')
     assert plot.ylabel.find('^2') != -1
-    assert plot.ylabel.endswith('/Angstrom ')
+    assert plot.ylabel.endswith('/Angstrom')
     assert plot.title == 'Source Model of my-name.pi'
 
     # data is inverted

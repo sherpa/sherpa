@@ -299,6 +299,11 @@ class SourcePlot(shplot.HistogramPlot):
                     " source model,\nusing energy.")
             self.units = "energy"
 
+        # Note that there is some effort required to match other PHA plots,
+        # e.g. model plots, for:
+        #  - plot counts vs rates
+        #  - what factor to scale the Y axis by
+        #
         self.xlabel = data.get_xlabel()
         self.title = f'Source Model of {data.name}'
         self.xlo, self.xhi = data._get_indep(filter=False)
@@ -324,27 +329,48 @@ class SourcePlot(shplot.HistogramPlot):
             quant = 'Angstrom'
             (self.xlo, self.xhi) = (self.xhi, self.xlo)
 
-        sqr = to_latex('^2')
-        xwidth = abs(self.xhi - self.xlo)
-        if data.plot_fac == 0:
-            self.y /= xwidth
+        # The y values are in photon/cm^2/s and we want
+        #
+        # - to divide by the bin width to get per keV/A
+        # - to convert to counts when (not data.rate)
+        # - to handle the factor value
+        #
+        # This is similar to DataPHA._fix_y_units but does not have to
+        # worry about grouping data, and so is simpler.
+        #
+        self.y /= abs(self.xhi - self.xlo)
+
+        if not data.rate and data.exposure:
+            self.y *= data.exposure
+            tlabel = ""
+        else:
+            tlabel = "/sec"
+
+        # We treat plot_fac < 0 as 0.
+        #
+        if data.plot_fac <= 0:
             pre = f'f({prefix_quant})'
-            post = f'/{quant} '
+            post = f'/{quant}'
 
         elif data.plot_fac == 1:
             pre = f'{prefix_quant} f({prefix_quant})'
             post = ''
 
-        elif data.plot_fac == 2:
-            self.y *= xwidth
-            pre = f'{prefix_quant}{sqr} f({prefix_quant})'
-            post = f' {quant} '
+        elif data.plot_fac > 1:
+            pterm = to_latex(f'^{data.plot_fac}')
+            pre = f'{prefix_quant}{pterm} f({prefix_quant})'
+            post = f' {quant}'
+            if data.plot_fac > 2:
+                pterm = to_latex(f'^{data.plot_fac - 1}')
+                post += pterm
 
-        else:
-            raise PlotErr('plotfac', 'Source', data.plot_fac)
+        scale = (self.xhi + self.xlo) / 2
+        for ii in range(data.plot_fac):
+            self.y *= scale
 
+        sqr = to_latex('^2')
         self.xlabel = f'{self.units.capitalize()} ({quant})'
-        self.ylabel = f'{pre}  Photons/sec/cm{sqr}{post}'
+        self.ylabel = f'{pre}  Photons{tlabel}/cm{sqr}{post}'
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         xlo = self.xlo
