@@ -28,7 +28,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
-from sherpa.astro.plot import SourcePlot, \
+from sherpa.astro.plot import SourcePlot, ComponentSourcePlot, \
     DataPHAPlot, ModelPHAHistogram, ModelHistogram, OrderPlot, \
     EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
 from sherpa.astro import plot as aplot
@@ -202,6 +202,35 @@ def test_sourceplot(caplog, make_basic_datapha):
     check_sourceplot_energy(sp)
 
 
+def test_sourceplot_filtered(caplog, make_basic_datapha):
+    """Filtering only changes the mask attribute"""
+    
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src, lo=0.35, hi=0.87)
+
+    # The filtering should probably be this, but let's test the
+    # current behavior:
+    #
+    # expected = [False] * 2 + [True] * 6 + [False] * 2
+    expected = [False] * 3 + [True] * 5 + [False] * 2
+    assert sp.mask == pytest.approx(expected)
+    assert len(caplog.records) == 0
+    check_sourceplot_energy(sp)
+
+
 def test_sourceplot_counts(caplog, make_basic_datapha):
     """test_sourceplot but when rate=False is chosen"""
 
@@ -311,6 +340,34 @@ def test_sourceplot_wavelength(caplog, make_basic_datapha):
     check_sourceplot_wavelength(sp)
 
 
+def test_sourceplot_wavelength_filtered(caplog, make_basic_datapha):
+    """Filtering only changes the mask attribute"""
+    
+    data = make_basic_datapha
+    data.units = "wave"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src, lo=13, hi=40)
+
+    # Given the filtering for energy didn't quite match, DJB is
+    # slightly surprised this works.
+    #
+    expected = [False] * 2 + [True] * 6 + [False] * 2
+    assert sp.mask == pytest.approx(expected)
+    assert len(caplog.records) == 0
+    check_sourceplot_wavelength(sp)
+
+
 @pytest.mark.parametrize("factor", [1, 2])
 def test_sourceplot_wavelength_facn(factor, caplog, make_basic_datapha):
     """Change plot factor for test_sourceplot_wavelength"""
@@ -361,6 +418,66 @@ def test_sourceplot_wavelength_counts(caplog, make_basic_datapha):
 
     assert len(caplog.records) == 0
     check_sourceplot_wavelength(sp, rate=False)
+
+
+def test_sourceplot_filtered_stringification(make_basic_datapha):
+    """The str output of a sourceplot matches the masked version.
+
+    There is no actual check of the values, as these are assumed
+    to be checked elsewhere.
+
+    """
+
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp1 = SourcePlot()
+    sp2 = SourcePlot()
+    sp1.prepare(data, src)
+    sp2.prepare(data, src, lo=0.35, hi=0.87)
+    assert str(sp1) == str(sp2)
+
+
+def test_sourceplot_component_stringification(make_basic_datapha):
+    """The str output of a sourceplot is essentially the same as the component.
+
+    We know the title is different, so check that and then fudge the title.
+    The other values are assumed to be checked in a different test.
+
+    """
+
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp1 = SourcePlot()
+    sp2 = ComponentSourcePlot()
+    sp1.prepare(data, src)
+    sp2.prepare(data, src)
+
+    mstr = "Source model component: (((100.0 * bgnd) * (1.0 - abs1)) * 10000.0)"
+    assert sp2.title == mstr
+
+    sp1.title = ""
+    sp2.title = ""
+    assert str(sp1) == str(sp2)
 
 
 # Low-level test of the DataPlot prepare method for PHA style analysis
