@@ -14,18 +14,42 @@ if [ "x$CONDA_PREFIX" = "x" ]; then
     exit 1;
 fi
 
-fftw_version=`conda list fftw --json | grep version | awk '{print $2;}' - | tr -d \"`
+# What conda-like system are we using?
+#
+function find_conda_exe {
+    local name
+    local output
+    output=""
+    for name in conda mamba micromamba ; do
+	if command -v $name >/dev/null 2>&1; then
+	    output=$name
+	    break
+	fi
+    done
+    echo "$output"
+}
+
+EXE=$(find_conda_exe)
+if [ "$EXE" = "" ]; then
+    echo "ERROR: unable to find conda, mamba, or micromamba"
+    exit 1
+fi
+
+fftw_version=`$EXE list fftw --json | grep version | awk '{print $2;}' - | tr -d \"`
 if [ "x$fftw_version" != "x" ]; then
     echo "Found FFTW version: $fftw_version";
 fi
 
-xspec_version=`conda list xspec-modelsonly --json | grep version | awk '{print $2;}' - | tr -d \"`
+xspec_version=`$EXE list xspec-modelsonly --json | grep version | awk '{print $2;}' - | tr -d \"`
 if [ "x$xspec_version" != "x" ]; then
     echo "Found XSPEC version: $xspec_version";
 fi
 
 if [ "x" = "x$fftw_version" ] && [ "x" = "x$xspec_version" ]; then
-    echo "Did not find FFTW or xspec-modelsonly; no conda change needed";
+    echo "Did not find FFTW or xspec-modelsonly; no change needed";
+    # Treat this as an error because we assume one of the packages has
+    # been installed, otherwise why call this script?
+    #
     exit 1;
 fi
 
