@@ -264,7 +264,7 @@ class ModelHistogram(ModelPHAHistogram):
 
 
 class SourcePlot(shplot.HistogramPlot):
-    """Create 1D plots of unconcolved model values.
+    """Create PHA plots of unconvolved model values.
 
     Attributes
     ----------
@@ -309,7 +309,7 @@ class SourcePlot(shplot.HistogramPlot):
 
         # The source model is assumed to not contain an instrument model,
         # and so it evaluates the expected number of photons/cm^2/s in
-        # each bin (or it can be thought of as a 1 second exposure).
+        # each bin.
         #
         self.y = src(self.xlo, self.xhi)
         prefix_quant = 'E'
@@ -324,27 +324,27 @@ class SourcePlot(shplot.HistogramPlot):
             quant = 'Angstrom'
             (self.xlo, self.xhi) = (self.xhi, self.xlo)
 
-        xmid = abs(self.xhi - self.xlo)
-
         sqr = to_latex('^2')
-
-        self.xlabel = f'{self.units.capitalize()} ({quant})'
-        self.ylabel = f'%s  Photons/sec/cm{sqr}%s'
-
+        xwidth = abs(self.xhi - self.xlo)
         if data.plot_fac == 0:
-            self.y /= xmid
-            self.ylabel = self.ylabel % (f'f({prefix_quant})',
-                                         f'/{quant} ')
+            self.y /= xwidth
+            pre = f'f({prefix_quant})'
+            post = f'/{quant} '
 
         elif data.plot_fac == 1:
-            self.ylabel = self.ylabel % (f'{prefix_quant} f({prefix_quant})', '')
+            pre = f'{prefix_quant} f({prefix_quant})'
+            post = ''
 
         elif data.plot_fac == 2:
-            self.y *= xmid
-            self.ylabel = self.ylabel % (f'{prefix_quant}{sqr} f({prefix_quant})',
-                                         f' {quant} ')
+            self.y *= xwidth
+            pre = f'{prefix_quant}{sqr} f({prefix_quant})'
+            post = f' {quant} '
+
         else:
             raise PlotErr('plotfac', 'Source', data.plot_fac)
+
+        self.xlabel = f'{self.units.capitalize()} ({quant})'
+        self.ylabel = f'{pre}  Photons/sec/cm{sqr}{post}'
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         xlo = self.xlo
