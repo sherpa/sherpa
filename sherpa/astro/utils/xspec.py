@@ -865,6 +865,10 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     if nflags > 1 and mdl.flags[1] == 1:
         out += f"{t2}self._use_caching = False\n"
 
+        # Still warn the user that this is not tested.
+        out += f"{t2}warnings.warn('support for models like xs{mdl.name.lower()} "
+        out += "(recalculated per spectrum) is untested.')\n"
+
     # warn about untested models?
     #
     if nflags > 0 and mdl.flags[0] == 1:
@@ -1208,12 +1212,15 @@ def create_xspec_code(models: list[ModelDefinition],
             continue
 
         nflags = len(mdl.flags)
+        requires_warnings = False
         if nflags > 0:
             if mdl.flags[0] == 1:
                 warning(f"{mdl.name} calculates model variances; this is untested/unsupported in Sherpa")
+                requires_warnings = True
 
             if nflags > 1 and mdl.flags[1] == 1:
                 warning(f"{mdl.name} needs to be re-calculated per spectrum; this is untested.")
+                requires_warnings = True
 
         langs.add(mdl.language)
         mdls.append(mdl)
@@ -1222,6 +1229,11 @@ def create_xspec_code(models: list[ModelDefinition],
     if nmdl == 0:
         raise ValueError("No supported models were found!")
 
-    python = "\n\n".join([model_to_python(mdl) for mdl in mdls])
+    if requires_warnings:
+        python = "import warnings\n"
+    else:
+        python = ""
+
+    python += "\n\n".join([model_to_python(mdl) for mdl in mdls])
     compiled = models_to_compiled(mdls, name=name)
     return XSPECcode(python=python, compiled=compiled)

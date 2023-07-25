@@ -622,7 +622,8 @@ xs   ""    10    1 2  20 30  0.01
 
     converted = xspec.create_xspec_code(parsed)
 
-    expected = '''
+    expected = '''import warnings
+
 class XSabcd(XSAdditiveModel):
     """XSPEC AdditiveModel: abcd
 
@@ -639,6 +640,7 @@ class XSabcd(XSAdditiveModel):
         self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
         XSAdditiveModel.__init__(self, name, (self.xs,self.norm))
         self._use_caching = False
+        warnings.warn('support for models like xsabcd (recalculated per spectrum) is untested.')
 
 '''
 
@@ -692,7 +694,8 @@ xs   ""    10    1 2  20 30  0.01
 
     converted = xspec.create_xspec_code(parsed)
 
-    expected = '''
+    expected = '''import warnings
+
 class XSabcd(XSAdditiveModel):
     """XSPEC AdditiveModel: abcd
 
