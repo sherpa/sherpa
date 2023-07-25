@@ -87,7 +87,7 @@ class ModelDefinition:
     See Also
     --------
     AddModelDefinition, MulModelDefinition, ConModelDefinition,
-    MixModelDefintion, AcnModelDefinition, AmxModelDefinition
+    MixModelDefinition, AcnModelDefinition, AmxModelDefinition
 
     Notes
     -----
