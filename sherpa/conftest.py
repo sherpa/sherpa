@@ -689,8 +689,8 @@ def add_sherpa_test_data_dir(doctest_namespace):
 
 
 # Try to come up with a regexp for a numeric literal.  This is
-# informed by pytest-doctestlpus but this is a lot easier as we only
-# care about a single value.
+# informed by pytest-doctestplus but this is a lot easier as we only
+# care about a single number.
 #
 eterm = r"(?:e[+-]?\d+)"
 term = "|".join([fr"[+-]?\d+\.\d*{eterm}?",
@@ -702,19 +702,14 @@ PATTERN = re.compile(f"(.*)(?<![\d+-])({term})")
 class NumberChecker:
     """Allow a string to be compared, allowing for tolerances.
 
-    This is written to match the re.Pattern interface as used by
-    check_str_fixture (match routine and pattern attribute). It is a
-    limited version of
-    pytest_doctestplus.output_checker.OutputChecker.
-
-    It only checks a single number value in the text. This could be
-    updated to be closer to doctestplus if found to be useful.
+    It is a limited version of
+    pytest_doctestplus.output_checker.OutputChecker: it only checks a
+    single number value in the text. This could be updated to be
+    closer to doctestplus if found to be useful.
 
     """
 
     def __init__(self, expected, rtol=1e-4, atol=None):
-        self.pattern = expected
-
         lhs, value, rhs = self.split(expected)
         self.lhs = lhs
         self.number = value
@@ -734,7 +729,10 @@ class NumberChecker:
 
         match = PATTERN.match(text)
         if match is None:
-            raise ValueError(f"No number found in '{text}'")
+            # Make sure that we note a case where the regexp has
+            # failed to find a number.
+            #
+            raise ValueError(f"Error in test - no number found in '{text}'")
 
         lhs = match[1]
         number = float(match[2])
@@ -742,20 +740,13 @@ class NumberChecker:
 
         return lhs, number, rhs
 
-    def match(self, got):
-        """This abuses the match API"""
+    def check(self, got):
+        """check that got matches the expected text"""
         lhs, value, rhs = self.split(got)
         assert lhs == self.lhs
         assert rhs == self.rhs
         assert value == pytest.approx(self.number,
                                       rel=self.rtol, abs=self.atol)
-        return True
-
-
-@pytest.fixture
-def check_number():
-    """Convert a string containing a number into a NumberChecker"""
-    return NumberChecker
 
 
 def check_str_fixture(out, expecteds):
@@ -766,24 +757,41 @@ def check_str_fixture(out, expecteds):
     (to avoid the need to mark up expected text as a regexp) but this
     is problematic at the moment, so it is not done. For now we
     require users to explictly mark up those lines which we want to
-    check with numeric constraints. Maybe we should do this for all
-    lines (at least, those not already done as regexps) but let's see
-    how this works.
+    check with numeric constraints by adding the text (taken from
+    doctestplus)
+
+        "# doctest: +FLOAT_CMP"
+
+    to the end of each line that needs it.
 
     Parameters
     ----------
     out : str
-        The output to check
+        The output to check (each line is compared to the expecteds
+        array).
     expecteds : list of str or Pattern
-        The expected output, split on new-line.
+        The expected output, split on new-line. Each line is one of: a
+        Pattern, a string ending in "# doctest: +FLOAT_CMP", or a
+        string (which is just checked for equality).
 
     """
 
     toks = str(out).split("\n")
     for tok, expected in zip(toks, expecteds):
+        # expected is one of:
+        #  - a pattern
+        #  - a string ending in #doctest: +FLOAT_CMP
+        #  - a normal string
+        #
         try:
             assert expected.match(tok), (expected.pattern, tok)
         except AttributeError:
+            idx = expected.find("# doctest: +FLOAT_CMP")
+            if idx > -1:
+                pat = NumberChecker(expected[:idx].rstrip())
+                pat.check(tok)
+                continue
+
             assert tok == expected
 
     assert len(toks) == len(expecteds)
