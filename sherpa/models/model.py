@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2016 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -140,32 +140,33 @@ ensuring the fwhm parameter of one model is the same as the other:
 It can be more complex, such as ensuring the position of one line
 is a fixed distance from another:
 
-    >>> l2.pos = l1.pos + 23.4
+    >>> m2.pos = m1.pos + 23.4
 
 It can even include multiple parameters:
 
-    >>> l3.ampl = (l1.ampl + l2.ampl) / 2
+    >>> m3 = Gauss1D("m3")
+    >>> m3.ampl = (m1.ampl + m2.ampl) / 2
 
 Requesting the parameter value will return the evaluated expression,
 and the expression is stored in the link attribute:
 
-    >>> l1.ampl = 10
-    >>> l2.ampl = 12
-    >>> l3.ampl.val
+    >>> m1.ampl = 10
+    >>> m2.ampl = 12
+    >>> m3.ampl.val
     11.0
-    >>> l3.ampl.link
-    <BinaryOpParameter '((l1.ampl + l2.ampl) / 2)'>
+    >>> m3.ampl.link
+    <BinaryOpParameter '((gauss1d.ampl + gmdl.ampl) / 2)'>
 
 The string representation of the model changes for linked parameters
 to indicate the expression:
 
-    >>> print(l3)
-    l3
+    >>> print(m3)
+    m3
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       l3.fwhm      thawed           10  1.17549e-38  3.40282e+38
-       l3.pos       thawed            0 -3.40282e+38  3.40282e+38
-       l3.ampl      linked           11 expr: ((l1.ampl + l2.ampl) / 2)
+       m3.fwhm      thawed           10  1.17549e-38  3.40282e+38
+       m3.pos       thawed            0 -3.40282e+38  3.40282e+38
+       m3.ampl      linked           11 expr: ((gauss1d.ampl + gmdl.ampl) / 2)
 
 Model evaluation
 ================
@@ -349,6 +350,15 @@ __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'ArithmeticConstantModel', 'ArithmeticModel', 'RegriddableModel1D', 'RegriddableModel2D',
            'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
+
+
+# These tests refer to other variables which are just not worth
+# setting up (or would require too much work to create any useful
+# state, such as the cache statis lines).
+#
+__doctest_skip__ = ['ArithmeticModel.cache_status',
+                    'CompositeModel.cache_status',
+                    'SimulFitModel']
 
 
 def boolean_to_byte(boolean_value):
@@ -874,19 +884,20 @@ class CompositeModel(Model):
     Composite models can be iterated through to find their
     components:
 
+    >>> from sherpa.models.basic import Gauss1D, Polynom1D
     >>> l1 = Gauss1D('l1')
     >>> l2 = Gauss1D('l2')
     >>> b = Polynom1D('b')
     >>> mdl = l1 + (0.5 * l2) + b
     >>> mdl
-    <BinaryOpModel model instance '((l1 + (0.5 * l2)) + polynom1d)'>
+    <BinaryOpModel model instance '((l1 + (0.5 * l2)) + b)'>
     >>> for cpt in mdl:
-    ...     print(type(c))
+    ...     print(type(cpt))
     ...
-    <class 'BinaryOpModel'>
+    <class 'sherpa.models.model.BinaryOpModel'>
     <class 'sherpa.models.basic.Gauss1D'>
-    <class 'BinaryOpModel'>
-    <class 'ArithmeticConstantModel'>
+    <class 'sherpa.models.model.BinaryOpModel'>
+    <class 'sherpa.models.model.ArithmeticConstantModel'>
     <class 'sherpa.models.basic.Gauss1D'>
     <class 'sherpa.models.basic.Polynom1D'>
 
@@ -1015,6 +1026,7 @@ class SimulFitModel(CompositeModel):
     Examples
     --------
 
+    >>> from sherpa.models.basic import Gauss1D, Polynom1D
     >>> m1 = Polynom1D('m1')
     >>> m2 = Gauss1D('g1')
     >>> mall = SimulFitModel('comp', (m1, m1 + m2))
@@ -1242,6 +1254,7 @@ class RegriddableModel1D(RegriddableModel):
         --------
         >>> import numpy as np
         >>> from sherpa.models.basic import Box1D
+        >>> from sherpa.utils import linear_interp
         >>> mybox = Box1D()
         >>> request_space = np.arange(1, 10, 0.1)
         >>> regrid_model = mybox.regrid(request_space, interp=linear_interp)
@@ -1296,7 +1309,8 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     Examples
     --------
 
-    >>> m1 = Gauss1d()
+    >>> from sherpa.models.basic import Gauss1D
+    >>> m1 = Gauss1D()
     >>> m2 = UnaryOpModel(m1, numpy.negative, '-')
 
     """
@@ -1348,7 +1362,8 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
     Examples
     --------
 
-    >>> m1 = Gauss1d()
+    >>> from sherpa.models.basic import Gauss1D, Polynom1D
+    >>> m1 = Gauss1D()
     >>> m2 = Polynom1D()
     >>> m = BinaryOpModel(m1, m2, numpy.add, '+')
 
