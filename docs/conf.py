@@ -12,9 +12,12 @@
 # look at sherpa.utils which provides docstrings for the code in
 # sherpa.utils._utils).
 #
-# The documentation can be built
-#   a) from the top level with 'python setup.py build_sphinx'
-#   b) from the docs/ directory with 'sphinx-build -b html . build/html'
+# The documentation can be built with (assuming the requirements from
+# https://sherpa.readthedocs.io/en/latest/install.html#building-the-documentation
+# are available):
+#
+#   cd docs
+#   make html
 #
 import datetime
 import glob
@@ -84,7 +87,7 @@ sys.modules['sherpa.astro.xspec._xspec'] = XSPECMock()
 # Since this is a change from the previous way of building the docs
 # it warrants a check and a useful error message.
 try:
-    version = metadata.version('sherpa')
+    sherpa_release = metadata.version('sherpa')
 except metadata.PackageNotFoundError:
     print(
         "Sherpa needs to be installed to build the documentation. "
@@ -93,13 +96,11 @@ except metadata.PackageNotFoundError:
     sys.exit(1)
 
 
-
 import sherpa
 
 # For now include the '+...' part of the version string
 # in the full version, but drop the ".dirty" suffix.
 #
-sherpa_release = sherpa._version.get_versions()['version']
 if on_rtd and sherpa_release.endswith('.dirty'):
     sherpa_release = sherpa_release[:-6]
 
