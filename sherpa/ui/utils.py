@@ -2467,8 +2467,7 @@ class Session(NoNewAttributesAfterInit):
         This is a chi-square statistic where the variance is computed
         from model amplitudes derived in the previous iteration of the
         fit. This 'Iterative Weighting' ([1]) attempts to remove
-        biased estimates of model parameters which is
-        `inherent in chi-square statistics <http://iraf.net/irafhelp.php?val=sfit>`_,
+        biased estimates of model parameters.
 
         The variance in bin i is estimated to be::
 
@@ -9262,14 +9261,14 @@ class Session(NoNewAttributesAfterInit):
         """Compute and plot a histogram of likelihood ratios by simulating data.
 
         Compare the likelihood of the null model to an alternative model
-        by running a number of simulations to calibrate the likelihood ratio test statistics. 
+        by running a number of simulations to calibrate the likelihood ratio test statistics.
         The distribution of the simulated likelihood ratios is plotted and compared to the likelihoods
         of the two models fit to the observed data. The fit
         statistic must be set to a likelihood-based method, such
-        as "cash" or "cstat". Screen output is created as well as the plot; these values 
+        as "cash" or "cstat". Screen output is created as well as the plot; these values
         can be retrieved with `get_pvalue_results`.
 
-        The algorithm is based on the description in Sec.5.2 in "Statistics, 
+        The algorithm is based on the description in Sec.5.2 in "Statistics,
         Handle with Care: Detecting Multiple Model Components with the Likelihood Ratio Test"
         by Protassov et al., 2002, The Astrophysical Journal, 571, 545; <doi:10.1086/339856>
 
