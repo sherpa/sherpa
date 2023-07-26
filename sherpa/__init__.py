@@ -894,11 +894,11 @@ def _install_test_deps() -> list[str]:
             """)
             raise
 
-    # packages are stored as a dictinary with keys
+    # packages are stored as a dictionary with keys
     #   name:  package name, as used by pip
     #   check: module to check it is installed
     #          (defaults to name if not given)
-    #   constraint: the constaint to use with pip
+    #   constraint: the constraint to use with pip
     #               (defaults to name if not given)
     #
     # So we can have
@@ -909,9 +909,9 @@ def _install_test_deps() -> list[str]:
     #   'check': 'pytest_doctestplus.output_checker'}
     #
     # Note that for pytest plugins, the module name is assumed to be
-    # the name field with hypens replaced by underscores. If necessary
+    # the name field with hyphens replaced by underscores. If necessary
     # this could be updated to be another field in the package
-    # dictonary.
+    # dictionary.
     #
     # The reason for the "check" field is that mid 2023 it was found
     # that
