@@ -2488,7 +2488,7 @@ class Session(NoNewAttributesAfterInit):
         caution.
 
         The ``sigmarej`` scheme is based on the
-        `IRAF ``sfit`` function <http://iraf.net/irafhelp.php?val=sfit>`_,
+        `IRAF ``sfit`` function <https://iraf.readthedocs.io/en/latest/tasks/noao/imred/specred/sfit.html>`_,
         where after a fit data points are excluded if the value
         of ``(data-model)/error)`` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
@@ -2500,7 +2500,7 @@ class Session(NoNewAttributesAfterInit):
 
         1. `"Multiparameter linear least-squares fitting to Poisson
            data one count at a time", Wheaton et al. 1995, ApJ 438, 322
-           <http://adsabs.harvard.edu/abs/1995ApJ...438..322W>`_
+           <https://adsabs.harvard.edu/abs/1995ApJ...438..322W>`_
 
         Examples
         --------

@@ -7647,7 +7647,7 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `val` parameters,
         respectively.
 
-        The meaning of the grouping column is taken from [1], which says
+        The meaning of the grouping column is taken from the OGIP standard, which says
         that +1 indicates the start of a bin, -1 if the channel is part
         of group, and 0 if the data grouping is undefined for all channels.
 
