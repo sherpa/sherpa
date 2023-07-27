@@ -421,7 +421,7 @@ and the ``pytest-xvfb`` package.
 Building the documentation
 --------------------------
 
-Building the documentation requires the Sherpa source code and several
+Building the documentation requires a Sherpa installation and several
 additional packages:
 
 * `Sphinx <https://sphinx.pocoo.org/>`_, version 1.8 or later
@@ -432,25 +432,28 @@ additional packages:
   for including Jupyter notebooks
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
-With these installed, the documentation can be built with the
-``build_sphinx`` target::
-
-    python setup.py build_sphinx
-
-This can be done **without** building Sherpa (either an installation
-or development version), since Mock objects are used to represent
-compiled and optional components.
-
-The documentation should be placed in ``build/sphinx/html/index.html``,
-although this may depend on what version of Sphinx is used.
-
-It is also possible to build the documentation from within the ``docs/``
-directory::
+With these installed, the documentation can be built by saying::
 
     cd docs
     make html
 
-This places the documentation in ``_build/html/index.html``.
+Note that this uses the installed version of sherpa, so if you want to make
+sure the current repository version is used, you will need to install it with e.g.::
+
+    pip install -e .
+
+before changing to the docs directory. Only very specific modules are mocked out
+because they are hard to build and are not needed for the documentation build
+(currently ds9 and XSPEC).
+
+The documentation should be placed in ``docs/_build/html/index.html``.
+
+.. note::
+
+   Prior to Sherpa 4.16.0 the documentation was built directly from the
+   source - using mock objects to handle compiled code - rather than
+   using a Sherpa installation. As of 4.16.0, mock objects are only
+   handled for the XSPEC and DS9 modules.
 
 Testing the Sherpa installation
 ===============================
