@@ -141,6 +141,9 @@ extensions = [
 # of servers
 # intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
+# Settings for matplotlib sphinx extension
+plot_html_show_source_link = False
+
 # notebook support
 # - for now never execute a notebook
 #
