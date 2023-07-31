@@ -108,10 +108,6 @@ def test_pha3_read_implicit(make_data_path, clean_astro_ui):
 def test_hrci_imaging_mode_spectrum(make_data_path, clean_astro_ui):
     """This is a follow-on test based on issue #1830"""
 
-    from sherpa.astro import io
-    if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
-        pytest.xfail()  # issue #1830
-
     infile = make_data_path("chandra_hrci/hrcf24564_000N030_r0001" +
                             "_pha3.fits.gz")
     ui.load_pha(infile)

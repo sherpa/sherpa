@@ -1307,9 +1307,6 @@ def test_read_hrci_rmf(make_data_path):
     Can the pyfits backend read in the HRC-I RMF?
     """
 
-    if backend_is("pyfits"):
-        pytest.xfail()  # issue #1830
-
     rmffile = make_data_path("chandra_hrci/hrcf24564_000N030_r0001" +
                              "_rmf3.fits.gz")
     rmf = io.read_rmf(rmffile)
