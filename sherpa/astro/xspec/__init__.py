@@ -3188,7 +3188,7 @@ class XScemekl(XSAdditiveModel):
 
     def __init__(self, name='cemekl'):
         self.alpha = XSParameter(name, 'alpha', 1.0, 0.01, 10, 0.01, 20, frozen=True)
-        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.01, 1.e2, 0.01, 1e2, units='keV')
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.02725, 1.e2, 0.02725, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
@@ -3239,7 +3239,7 @@ class XScevmkl(XSAdditiveModel):
 
     def __init__(self, name='cevmkl'):
         self.alpha = XSParameter(name, 'alpha', 1.0, 0.01, 10, 0.01, 20, frozen=True)
-        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.01, 1.e2, 0.01, 1e2, units='keV')
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.02725, 1.e2, 0.02725, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.He = XSParameter(name, 'He', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.C = XSParameter(name, 'C', 1.0, 0., 10., 0.0, 10, frozen=True)
@@ -10137,7 +10137,7 @@ class XSgabs(XSMultiplicativeModel):
     Sigma
         The line width (sigma), in keV.
     Strength
-        The line depth. The optical depth at the line center is
+        The line depth, in keV. The optical depth at the line center is
         Strength / (sqrt(2 pi) * Sigma).
 
     References
@@ -10152,7 +10152,7 @@ class XSgabs(XSMultiplicativeModel):
     def __init__(self, name='gabs'):
         self.LineE = XSParameter(name, 'LineE', 1.0, 0., 1.e6, 0.0, 1e6, units='keV')
         self.Sigma = XSParameter(name, 'Sigma', 0.01, 0., 10., 0.0, 20, units='keV')
-        self.Strength = XSParameter(name, 'Strength', 1.0, 0., 1.e6, 0.0, 1e6, aliases=["Tau"])
+        self.Strength = XSParameter(name, 'Strength', 1.0, 0., 1.e6, 0.0, 1e6, units='keV', aliases=["Tau"])
 
         XSMultiplicativeModel.__init__(self, name, (self.LineE, self.Sigma, self.Strength))
 
@@ -13630,11 +13630,11 @@ class XSbwcycl(XSAdditiveModel):
     def __init__(self, name='bwcycl'):
         self.Radius = XSParameter(name, 'Radius', 10, 5, 20, 5, 20, units='km', frozen=True)
         self.Mass = XSParameter(name, 'Mass', 1.4, 1, 3, 1, 3, units='Solar', frozen=True)
-        self.csi = XSParameter(name, 'csi', 1.5, 0.01, 20, 0.01, 20)
-        self.delta = XSParameter(name, 'delta', 1.8, 0.01, 20, 0.01, 20)
+        self.csi = XSParameter(name, 'csi', 3, 0.01, 20, 0.01, 20)
+        self.delta = XSParameter(name, 'delta', 1.0, 0.01, 20, 0.01, 20)
         self.B = XSParameter(name, 'B', 4, 0.01, 100, 0.01, 100, units='1e12G')
         self.Mdot = XSParameter(name, 'Mdot', 1, 1e-6, 1e6, 1e-6, 1e6, units='1e17g/s')
-        self.Te = XSParameter(name, 'Te', 5, 0.1, 100, 0.1, 100, units='keV')
+        self.Te = XSParameter(name, 'Te', 5, 1.3, 100, 1.3, 100, units='keV')
         self.r0 = XSParameter(name, 'r0', 44, 10, 1000, 10, 1000, units='m')
         self.D = XSParameter(name, 'D', 5, 1, 20, 1, 20, units='kpc', frozen=True)
         self.BBnorm = XSParameter(name, 'BBnorm', 0.0, 0, 100, 0, 100, frozen=True)
