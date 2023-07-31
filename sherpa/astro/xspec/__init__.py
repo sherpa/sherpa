@@ -20,7 +20,7 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.13.0, 12.12.1, and 12.12.0 of XSPEC [1]_,
+Sherpa supports versions 12.13.1, 12.13.0, 12.12.1, and 12.12.0 of XSPEC [1]_,
 and can be built against the model library or the full application.
 There is no guarantee of support for older or newer versions of XSPEC.
 
