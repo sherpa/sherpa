@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2019, 2020, 2021
+#  Copyright (C) 2011, 2016, 2017, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,14 +19,17 @@
 #
 
 import logging
+
 import numpy as np
+
 from sherpa.fit import Fit
 from sherpa.estmethods import Covariance
 from sherpa.sim.mh import MetropolisMH, rmvt, CovarError, Walk, LimitError
+
 read_table_blocks = None
 try:
     from sherpa.astro.io import read_table_blocks
-except:
+except ImportError:
     read_table_blocks = None
 
 logger = logging.getLogger("sherpa")
@@ -50,7 +53,10 @@ class ARFSIMFactory():
             if 'EMETHOD' in hdr[key]:
                 emethod = hdr[key]['EMETHOD'].strip().upper()
 
-        if emethod is not None and emethod.startswith('PCA1DADD'):
+        if emethod is None:
+            raise TypeError(f"Unknown simulation ARF '{filename}'")
+
+        if emethod.startswith('PCA1DADD'):
             bias = cols[2]['BIAS']
             component = cols[3]['COMPONENT']
             fvariance = cols[3]['FVARIANCE']
@@ -58,13 +64,13 @@ class ARFSIMFactory():
             eigenvec = cols[3]['EIGENVEC']
             return PCA1DAdd(bias, component, fvariance, eigenval, eigenvec)
 
-        elif emethod is not None and emethod.startswith('SIM1DADD'):
+        if emethod.startswith('SIM1DADD'):
             bias = cols[2]['BIAS']
             component = cols[3]['COMPONENT']
             simcomp = cols[3]['SIMCOMP']
             return SIM1DAdd(bias, component, simcomp)
 
-        raise TypeError("Unknown simulation ARF '%s'" % filename)
+        raise TypeError(f"Unknown simulation ARF '{filename}'")
 
 
 class PCA1DAdd():
@@ -232,8 +238,8 @@ class WalkWithSubIters(Walk):
                     try:
                         proposed_params = self._sampler.draw(current_params)
                     except CovarError:
-                        info("Draw rejected: covariance matrix failed: " +
-                             "{}".format(current_params))
+                        info("Draw rejected: covariance matrix failed: %s",
+                             current_params)
                         # automatically reject if the covar is malformed
                         self._sampler.reject()
                         continue
@@ -242,7 +248,7 @@ class WalkWithSubIters(Walk):
                     try:
                         proposed_stat = self._sampler.calc_stat(proposed_params)
                     except LimitError:
-                        info("Draw rejected: parameter boundary exception: " +
+                        info("Draw rejected: parameter boundary exception: %s",
                              str(proposed_params))
 
                         # automatically reject the proposal if outside
@@ -373,6 +379,7 @@ class PragBayes(MetropolisMH):
     def tear_down(self):
         MetropolisMH.tear_down(self)
 
+        # TODO: what is this meant to do?
         self._fit
 
         # Restore ARF to original state

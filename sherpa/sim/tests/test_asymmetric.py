@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
 import warnings
 
 import numpy as np
@@ -24,13 +26,15 @@ import numpy as np
 import pytest
 
 from sherpa.fit import Fit
-from sherpa.data import Data1DAsymmetricErrs
+from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D
 from sherpa.optmethods import LevMar
 from sherpa.utils.testing import requires_data, requires_fits
-from sherpa.models import Const1D, PowLaw1D
+from sherpa.models import Const1D, Const2D, PowLaw1D
 from sherpa.stats import Chi2Gehrels
 from sherpa.sim import ReSampleData
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.astro import ui
+
 
 RESULTS_BENCH_AVG = {
     'rstat': 1.4361549916463103,
@@ -228,7 +232,7 @@ def test_ui(make_data_path):
         assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p], rel=1e-4)
 
 
-def test_zero_case():
+def test_zero_case(reset_seed):
     """Check what happens when values can be near -1. See #740"""
 
     xs = np.arange(1, 6)
@@ -266,3 +270,30 @@ def test_zero_case():
     assert samples.shape == (10, 5)
     assert stats.shape == (10, )
     assert (stats >= bestfit.statval).all()
+
+
+def test_resample_supports_data1d(caplog, reset_seed, check_str):
+
+    orig = Data1D("orig", [1, 2, 3], [4, 2, 5], [0.1, 0.2, 0.5])
+    model = Const1D("mdl")
+    resampler = ReSampleData(orig, model)
+
+    with SherpaVerbosity("INFO"):
+        res = resampler(niter=10, seed=123)
+
+    assert len(caplog.records) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa"
+    assert lvl == logging.INFO
+    check_str(msg,
+              ["mdl.c0 : avg = 1.0343987745935705 , std = 0.5208696279243179  # doctest: +FLOAT_CMP"])
+
+
+def test_resample_fails_unsupported_data():
+
+    orig = Data2D("orig", [1, 2, 3], [1, 1, 2], [4, 3, 2])
+    model = Const2D("mdl")
+
+    with pytest.raises(NotImplementedError,
+                       match="^ReSampleData is only implemented for 1D data, got <class 'sherpa.data.Data2D'> instead.$"):
+        ReSampleData(orig, model)

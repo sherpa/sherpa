@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021, 2022
+#  Copyright (C) 2017, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -183,8 +183,8 @@ def test_guess_warns_no_guess_names_model(caplog, clean_ui):
     assert len(caplog.records) == 1
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == "sherpa.ui.utils"
-    assert lvl == logging.INFO
-    assert msg == "WARNING: No guess found for dummy"
+    assert lvl == logging.WARNING
+    assert msg == "No guess found for dummy"
 
 
 def test_guess_warns_no_guess_no_argument(caplog, clean_ui):
@@ -200,8 +200,8 @@ def test_guess_warns_no_guess_no_argument(caplog, clean_ui):
     assert len(caplog.records) == 1
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == "sherpa.ui.utils"
-    assert lvl == logging.INFO
-    assert msg == "WARNING: No guess found for (dummy + dummy)"
+    assert lvl == logging.WARNING
+    assert msg == "No guess found for (dummy + dummy)"
 
 
 class Parameter2(Parameter):
@@ -1187,3 +1187,122 @@ def test_set_filter_masked_wrong(clean_ui):
     with pytest.raises(DataErr,
                        match="size mismatch between data and filter: 3 vs 2"):
         ui.set_filter(np.asarray([True, False]))
+
+
+def test_fit_output_single(clean_ui, caplog, check_str):
+    """This is essentially the test from #1804 but for a single dataset"""
+
+    ui.load_arrays(1, [1, 2, 3], [12, 10, 4])
+    ui.set_source(ui.const1d.mdl)
+    ui.set_stat("cash")
+
+    assert len(caplog.records) == 0
+    ui.fit()
+    assert len(caplog.records) == 1
+
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    check_str(msg,
+              ["Dataset               = 1",
+               "Method                = levmar",
+               "Statistic             = cash",
+               "Initial fit statistic = 6",
+               "Final fit statistic   = -60.2932 at function evaluation 11",
+               "Data points           = 3",
+               "Degrees of freedom    = 2",
+               "Change in statistic   = 66.2932",
+               "   mdl.c0         8.66665      +/- 1.70862     "])
+
+
+def test_calc_stat_info_output_single(clean_ui, caplog, check_str):
+    """This is essentially the test from #1804 but for a single dataset
+    and converted to check calc_stat
+
+    """
+
+    ui.load_arrays(1, [1, 2, 3], [12, 10, 4])
+    ui.set_source(ui.const1d.mdl)
+    ui.set_stat("cash")
+
+    assert len(caplog.records) == 0
+    ui.fit()
+    assert len(caplog.records) == 1
+    ui.calc_stat_info()
+    assert len(caplog.records) == 2
+
+    lname, lvl, msg = caplog.record_tuples[1]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    check_str(msg,
+              ["Dataset               = 1",
+               "Statistic             = cash",
+               "Fit statistic value   = -60.2932",
+               "Data points           = 3",
+               "Degrees of freedom    = 2"])
+
+
+def test_fit_output_multi(clean_ui, caplog, check_str):
+    """This is essentially the test from #1804"""
+
+    ui.load_arrays(1, [1, 2, 3], [12, 10, 4])
+    ui.load_arrays(2, [1, 2, 3], [7, 8, 6])
+    ui.set_source(ui.const1d.mdl)
+    ui.set_source(2, mdl)
+    ui.set_stat("cash")
+
+    assert len(caplog.records) == 0
+    ui.fit()
+    assert len(caplog.records) == 1
+
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    check_str(msg,
+              ["Datasets              = 1, 2",
+               "Method                = levmar",
+               "Statistic             = cash",
+               "Initial fit statistic = 12",
+               "Final fit statistic   = -99.4885 at function evaluation 11",
+               "Data points           = 6",
+               "Degrees of freedom    = 5",
+               "Change in statistic   = 111.488",
+               "   mdl.c0         7.83332      +/- 1.14642     "])
+
+
+def test_calc_stat_info_output_multi(clean_ui, caplog, check_str):
+    """This is essentially the test from #1804 but for calc_stat_info"""
+
+    ui.load_arrays(1, [1, 2, 3], [12, 10, 4])
+    ui.load_arrays(2, [1, 2, 3], [7, 8, 6])
+    ui.set_source(ui.const1d.mdl)
+    ui.set_source(2, mdl)
+    ui.set_stat("cash")
+
+    assert len(caplog.records) == 0
+    ui.fit()
+    assert len(caplog.records) == 1
+    ui.calc_stat_info()
+    assert len(caplog.records) == 2
+
+    lname, lvl, msg = caplog.record_tuples[1]
+    assert lname == "sherpa.ui.utils"
+    assert lvl == logging.INFO
+    check_str(msg,
+              ["Dataset               = 1",
+               "Statistic             = cash",
+               "Fit statistic value   = -60.0362",
+               "Data points           = 3",
+               "Degrees of freedom    = 2",
+               "",
+               "Dataset               = 2",
+               "Statistic             = cash",
+               "Fit statistic value   = -39.4523",
+               "Data points           = 3",
+               "Degrees of freedom    = 2",
+               "",
+               "Datasets              = [1, 2]",
+               "Statistic             = cash",
+               "Fit statistic value   = -99.4885",
+               "Data points           = 6",
+               "Degrees of freedom    = 5"])

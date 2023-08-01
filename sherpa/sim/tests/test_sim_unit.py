@@ -23,9 +23,12 @@ See sherpa/astro/sim/tests_astro_sim_unit.py for the astro-specific
 version of this.
 """
 
+import numpy as np
+
 import pytest
 
 from sherpa import sim
+from sherpa.sim.mh import dmvnorm, dmvt, rmvt
 from sherpa.stats import Chi2DataVar, LeastSq, WStat
 
 
@@ -109,3 +112,44 @@ def test_lrt_does_not_like_gaussian(cls):
 
     emsg = 'Sherpa fit statistic must be Cash or CStat for likelihood ratio test'
     assert str(exc.value) == emsg
+
+
+def test_lrt_checks_argument_size():
+    """Check we error out"""
+
+    with pytest.raises(ValueError,
+                       match=r"^len\(parnames\) = 3  parvals.shape = \(2, 2\)$"):
+        # These values don't make much sense as all we care about are
+        # the last two.
+        sim.LikelihoodRatioResults([2, 1.5],
+                                   [[14, 12], [13, 12.2]],
+                                   [[4], [3]],
+                                   1.87, 0.05, 11.9, 12.1,
+                                   ["a.x", "b.y", "b.z"],
+                                   [[12, 13], [14, 15]])
+
+
+def test_rmvt_checks_dof():
+    """Error check"""
+
+    with pytest.raises(ValueError,
+                       match="^The degrees of freedom must be > 0$"):
+        rmvt(14.3, [[0.1, 0.05], [0.07, 0.08]], 0)
+
+
+def test_dmvt_checks_symmetry():
+    """Error check"""
+
+    sigma = np.asarray([[0.1, 0.05], [0.07, 0.08]])
+    with pytest.raises(ValueError,
+                       match="^Error: sigma is not symmetric$"):
+        dmvt(14.3, 2.3, sigma, 1)
+
+
+def test_dmvnorm_checks_symmetry():
+    """Error check"""
+
+    sigma = np.asarray([[0.1, 0.05], [0.07, 0.08]])
+    with pytest.raises(ValueError,
+                       match="^Error: sigma is not symmetric$"):
+        dmvnorm(14.3, 2.3, sigma)

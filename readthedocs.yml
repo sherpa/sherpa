@@ -3,12 +3,28 @@
 
 version: 2
 
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "mambaforge-4.10"
+  jobs:
+    pre_install:
+      - git update-index --assume-unchanged docs/conf.py docs/environment.yml
+
+conda:
+  environment: docs/environment.yml
+
 sphinx:
   builder: html
   configuration: docs/conf.py
   fail_on_warning: true
 
-conda:
-  environment: docs/environment.yml
+# Install regular dependencies.
+# Then, install special pinning for RTD - currently none
+python:
+  install:
+    - method: pip
+      path: .
 
-# As using conda, can get away with no python settings
+# Don't build any extra formats
+formats: []

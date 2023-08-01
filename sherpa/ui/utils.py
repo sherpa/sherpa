@@ -1027,7 +1027,8 @@ class Session(NoNewAttributesAfterInit):
 
         fout = open(filename, 'wb')
         try:
-            pickle.dump(self, fout, 2)  # Use newer binary protocol
+            # Use the default version rather than fix a version
+            pickle.dump(self, fout)
         finally:
             fout.close()
 
@@ -6648,11 +6649,10 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        if _is_str(model):
-            model = self._eval_model_expression(model)
 
-        self._set_item(id, model, self._models, Model, 'model',
-                       'a model object or model expression string')
+        model = self._check_model(model)
+        idval = self._fix_id(id)
+        self._models[idval] = model
         self._runparamprompt(model.pars)
 
     # DOC-TODO: the .cache value appears to default to 5
@@ -6774,35 +6774,26 @@ class Session(NoNewAttributesAfterInit):
         """
         if model is None:
             id, model = model, id
-        if _is_str(model):
-            model = self._eval_model_expression(model)
 
-        # Check data and model dimensionality matches (catch here
-        # as it is the most likely place a mistake could happen, even
-        # though there are still ways a user could end up with a
-        # mis-matched model. This means we can not just use
-        # _set_item but have to do it manually.
-        #
-        _check_type(model, Model, 'source model',
-                    'a model object or model expression string')
+        model = self._check_model(model)
+        idval = self._fix_id(id)
 
         # Fit(data, model) does the dimensionality validation. Note
         # that we assume that any convolution-style model (e.g. a PSF
         # or a PHA response) does not change the dimensionality check.
         #
-        id = self._fix_id(id)
-        data = self._data.get(id)
+        data = self._data.get(idval)
         if data is not None:
             Fit(data, model)
 
-        self._sources[id] = model
+        self._sources[idval] = model
         self._runparamprompt(model.pars)
 
         # Delete any previous model set with set_full_model()
-        mdl = self._models.pop(id, None)
+        mdl = self._models.pop(idval, None)
         if mdl is not None:
-            warning("Clearing convolved model\n'%s'\nfor dataset %s" %
-                    (mdl.name, str(id)))
+            warning("Clearing convolved model\n'%s'\nfor dataset %s",
+                    mdl.name, idval)
 
     set_source = set_model
 
@@ -6846,6 +6837,26 @@ class Session(NoNewAttributesAfterInit):
         self._sources.pop(id, None)
 
     def _check_model(self, model):
+        """Return a Model instance.
+
+        Converts a string to the model instance if necessary.
+
+        Parameters
+        ----------
+        model : `str` or a `sherpa.models.model.Model` object
+
+        Returns
+        -------
+        model : `sherpa.models.model.Model` instance
+
+        Raises
+        ------
+        ArgumentTypeError
+            The argument is not a string or a model
+        ArgumentErr
+            The argument is a string but does not reference a model
+
+        """
         if _is_str(model):
             model = self._eval_model_expression(model)
         _check_type(model, Model, 'model',
@@ -8933,21 +8944,22 @@ class Session(NoNewAttributesAfterInit):
         if model is None:
             id, model = model, id
 
+        idval = self._fix_id(id)
         kwargs = {'limits': limits, 'values': values}
 
         if model is not None:
             model = self._check_model(model)
             try:
-                model.guess(*self.get_data(id).to_guess(), **kwargs)
+                model.guess(*self.get_data(idval).to_guess(), **kwargs)
             except NotImplementedError:
-                info(f'WARNING: No guess found for {model.name}')
+                warning('No guess found for %s', model.name)
             return
 
-        ids, f = self._get_fit(self._fix_id(id))
+        ids, f = self._get_fit(idval)
         try:
             f.guess(**kwargs)
         except NotImplementedError:
-            info(f'WARNING: No guess found for {self.get_model(id).name}')
+            warning('No guess found for %s', self.get_model(idval).name)
 
     def calc_stat(self, id=None, *otherids):
         """Calculate the fit statistic for a data set.

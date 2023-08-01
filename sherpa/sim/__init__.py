@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -166,7 +166,7 @@ here is arbitrarily taken to be 100)::
 
     >>> nburn = 100
     >>> arate = accept[nburn:-1].sum() * 1.0 / (len(accept) - nburn - 1)
-    >>> print("acceptance rate = {}".format(arate))
+    >>> print(f"acceptance rate = {arate}")
 
 The trace of the parameter values can also be displayed; in this
 example a burn-in period has not been removed)::
@@ -240,8 +240,8 @@ def inverse2(x):
     return prior
 
 
-_samplers = dict(metropolismh=MetropolisMH, mh=MH)
-_walkers = dict(metropolismh=Walk, mh=Walk)
+_samplers = {"metropolismh": MetropolisMH, "mh": MH}
+_walkers = {"metropolismh": Walk, "mh": Walk}
 
 
 class MCMC(NoNewAttributesAfterInit):
@@ -349,8 +349,9 @@ class MCMC(NoNewAttributesAfterInit):
         """
         prior = self.priors.get(par.fullname, None)
         if prior is None:
-            raise ValueError("prior function has not been set for '%s'" %
-                             par.fullname)
+            raise ValueError("prior function has not been set for "
+                             f"'{par.fullname}'")
+
         return prior
 
     # ## DOC-TODO: should set_sampler_opt be mentioned here?
@@ -506,7 +507,7 @@ class MCMC(NoNewAttributesAfterInit):
             sampler = str(sampler).lower()
 
             if sampler not in self.__samplers:
-                raise TypeError("Unknown sampler '%s'" % sampler)
+                raise TypeError(f"Unknown sampler '{sampler}'")
 
             self.sampler = self.__samplers.get(sampler)
             self.walker = self.__walkers.get(sampler, Walk)
@@ -516,7 +517,7 @@ class MCMC(NoNewAttributesAfterInit):
             self.walker = self.__walkers.get(sampler, Walk)
 
         else:
-            raise TypeError("Unknown sampler '%s'" % sampler)
+            raise TypeError(f"Unknown sampler '{sampler}'")
 
     def get_sampler(self):
         """Return the current MCMC sampler options.
@@ -680,8 +681,8 @@ class MCMC(NoNewAttributesAfterInit):
 
         """
         if not isinstance(fit.stat, (Cash, CStat, WStat)):
-            raise ValueError("Fit statistic must be cash, cstat or " +
-                             "wstat, not %s" % fit.stat.name)
+            raise ValueError("Fit statistic must be cash, cstat or "
+                             f"wstat, not {fit.stat.name}")
 
         _level = _log.getEffectiveLevel()
         mu = fit.model.thawedpars
@@ -773,7 +774,7 @@ class ReSampleData(NoNewAttributesAfterInit):
 
     Parameters
     ----------
-    data : sherpa.data.Data1DAsymmetricErrs instance
+    data : sherpa.data.Data1DAsymmetricErrs or sherpa.data.Data1D instance
        The data.
     model : sherpa.models.model.ArithmeticModel instance
        The model to fit the data. The model parameters are taken
@@ -828,10 +829,15 @@ class ReSampleData(NoNewAttributesAfterInit):
 
     """
     def __init__(self, data, model):
+
+        # Should this error out if data is an instance of Data1DInt?
+        if data.ndim != 1:
+            msg = f"{ReSampleData.__name__} is only implemented for 1D data, got {type(data)} instead."
+            raise NotImplementedError(msg)
+
         self.data = data
         self.model = model
         NoNewAttributesAfterInit.__init__(self)
-        return
 
     def __call__(self, niter=1000, seed=None):
         return self.call(niter, seed)
@@ -882,20 +888,18 @@ class ReSampleData(NoNewAttributesAfterInit):
             pars[name] = numpy.zeros(niter)
 
         data = self.data
-        y = data.y
         x = data.x
-        if type(data) == Data1DAsymmetricErrs:
+        y = data.y
+        if isinstance(data, Data1DAsymmetricErrs):
             y_l = y - data.elo
             y_h = y + data.ehi
-        elif isinstance(data, (Data1D,)):
+        else:
             y_l = data.staterror
             y_h = data.staterror
-        else:
-            msg = "{0} {1}".format(ReSampleData.__name__, type(data))
-            raise NotImplementedError(msg)
 
         ny = len(y)
 
+        # TODO: we do not properly handle Data1DInt here
         fake_data = Data1D('tmp', x, numpy.zeros(ny))
 
         numpy.random.seed(seed)
@@ -964,7 +968,7 @@ class ReSampleData(NoNewAttributesAfterInit):
         for name in pars_index:
             avg = numpy.average(pars[name])
             std = numpy.std(pars[name])
-            info('{} : avg = {} , std = {}'.format(name, avg, std))
+            info('%s : avg = %s , std = %s', name, avg, std)
             result[name] = pars[name]
 
         return result

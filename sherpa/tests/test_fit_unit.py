@@ -2828,17 +2828,7 @@ def test_fit_ensures_data_and_model_dimensionality_matches(data_class, ddim, mod
         Fit(data, model)
 
 
-def check_str(out, expecteds):
-    """Check that out, when split on a newline, matches expecteds"""
-
-    toks = str(out).split("\n")
-    for tok, expected in zip(toks, expecteds):
-        assert tok == expected
-
-    assert len(toks) == len(expecteds)
-
-
-def test_fit_results_str():
+def test_fit_results_str(check_str):
     """Just check we can call str() on a fit results instance"""
 
     data = make_data(Data1D)
@@ -2854,10 +2844,10 @@ def test_fit_results_str():
                "statname       = cash",
                "succeeded      = True",
                "parnames       = ('const1d.c0',)",
-               "parvals        = (3.33332926058462,)",
-               "statval        = -4.079456086503793",
+               "parvals        = (3.33332926058462,)  # doctest: +FLOAT_CMP",
+               "statval        = -4.079456086503793   # doctest: +FLOAT_CMP",
                "istatval       = 6.0",
-               "dstatval       = 10.079456086503793",
+               "dstatval       = 10.079456086503793   # doctest: +FLOAT_CMP",
                "numpoints      = 3",
                "dof            = 2",
                "qval           = None",
@@ -2892,7 +2882,7 @@ def test_fit_itermethod_requires_known_name():
         Fit(data, model, itermethod_opts={"name": "not-a-name", "grow": 2})
 
 
-def test_fit_results_with_iteration_str():
+def test_fit_results_with_iteration_str(check_str):
     """Just check we can call str() on a fit results instance with an iteration method
     """
 
@@ -2911,14 +2901,14 @@ def test_fit_results_with_iteration_str():
                "statname       = chi2",
                "succeeded      = True",
                "parnames       = ('const1d.c0',)",
-               "parvals        = (3.250000000000316,)",
-               "statval        = 4.296875",
+               "parvals        = (3.250000000000316,)  # doctest: +FLOAT_CMP",
+               "statval        = 4.296875              # doctest: +FLOAT_CMP",
                "istatval       = 225.0",
-               "dstatval       = 220.703125",
+               "dstatval       = 220.703125            # doctest: +FLOAT_CMP",
                "numpoints      = 4",
                "dof            = 3",
-               "qval           = 0.23114006377865534",
-               "rstat          = 1.4322916666666667",
+               "qval           = 0.23114006377865534   # doctest: +FLOAT_CMP",
+               "rstat          = 1.4322916666666667    # doctest: +FLOAT_CMP",
                "message        = successful termination",
                "nfev           = 8"])
 
@@ -3025,7 +3015,7 @@ def test_fit_simulfit_multiple_single_model():
     assert fres.parvals == pytest.approx([3.8333336041446615])
 
 
-def test_esterrorresults_str():
+def test_esterrorresults_str(check_str):
     """Basic check of str call."""
 
     data = make_data(Data1D)
@@ -3043,13 +3033,13 @@ def test_esterrorresults_str():
                "sigma       = 1",
                "percent     = 68.26894921370858",
                "parnames    = ('mx.c0',)",
-               "parvals     = (3.33332926058462,)",
-               "parmins     = (-1.0524866849982824,)",
-               "parmaxes    = (1.0524866849982824,)",
+               "parvals     = (3.33332926058462,)     # doctest: +FLOAT_CMP",
+               "parmins     = (-1.0524866849982824,)  # doctest: +FLOAT_CMP",
+               "parmaxes    = (1.0524866849982824,)   # doctest: +FLOAT_CMP",
                "nfits       = 0"])
 
 
-def test_fit_outfile_simple_check(tmp_path):
+def test_fit_outfile_simple_check(tmp_path, check_str):
 
     outfile = tmp_path / "sherpa.save"
 
