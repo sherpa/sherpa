@@ -18,15 +18,23 @@
 '''Make sure we tests the test fixtures.'''
 import pytest
 
-def test_check_str(check_str):
+def test_check_str_fails(check_str):
     '''The tests that use check_str make sure that it passes,
-    but what if it were to pass everything? 
+    but what if it were to pass everything?
     So, add a test here to make sure it actually fails when it should.'''
-    with pytest.raises(AssertionError):
-        check_str('foo = 1.23456', 'foo = 1.230000')
+    with pytest.raises(AssertionError, match="^assert 'foo = "):
+        check_str('foo = 1.23456', ['foo = 1.230000'])
 
-    with pytest.raises(AssertionError):
-        check_str('foo = 1.23456', 'foo = 1.230000   # doctest: +FLOAT_CMP')
 
-    with pytest.raises(AssertionError):
-        check_str('1.23456', '1.230000   # doctest: +FLOAT_CMP')
+def test_check_str_fails_with_float_cmp(check_str):
+    # The match value may need updating if pytest.approx changes it's
+    # assertion error.
+    with pytest.raises(AssertionError, match="^assert 1.23456 "):
+        check_str('foo = 1.23456', ['foo = 1.230000   # doctest: +FLOAT_CMP'])
+
+
+def test_check_str_fails_with_float_cmp_number_only(check_str):
+    # The match value may need updating if pytest.approx changes it's
+    # assertion error.
+    with pytest.raises(AssertionError, match="^assert 1.23456 "):
+        check_str('1.23456', ['1.230000   # doctest: +FLOAT_CMP  '])

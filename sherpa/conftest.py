@@ -696,7 +696,7 @@ eterm = r"(?:e[+-]?\d+)"
 term = "|".join([fr"[+-]?\d+\.\d*{eterm}?",
                  fr"[+-]?\.\d+{eterm}?"
                  fr"[+-]?\d+{eterm}"])
-PATTERN = re.compile(f"(.*)(?<![\d+-])({term})")
+PATTERN = re.compile(fr"(.*)(?<![\d+-])({term})")
 
 
 class NumberChecker:
