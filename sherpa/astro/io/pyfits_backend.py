@@ -67,7 +67,8 @@ except ImportError:
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
-           'set_table_data', 'set_image_data', 'set_pha_data')
+           'set_table_data', 'set_image_data', 'set_pha_data',
+           'set_arf_data')
 
 
 def _has_hdu(hdulist, name):
@@ -930,6 +931,8 @@ def get_pha_data(arg, make_copy=False, use_background=False):
 
             data['counts'] = try_sfloat("COUNTS")
             data['staterror'] = _try_col(hdu, 'STAT_ERR')
+
+            # The following assumes that EXPOSURE is set
             if data['counts'] is None:
                 data['counts'] = req_sfloat("RATE") * data['exposure']
                 if data['staterror'] is not None:
@@ -953,9 +956,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             datasets.append(data)
 
         else:
-            data = {}
             # Type 2 PHA file support
-
             specnum = _try_col_or_key(hdu, 'SPEC_NUM')
             num = len(specnum)
 
@@ -1188,8 +1189,29 @@ def _create_header(header):
     return hdrlist
 
 
+def set_arf_data(filename, data, col_names, header=None,
+                 ascii=False, clobber=False, packup=False):
+    """Create an ARF"""
+
+    if header is None:
+        raise ArgumentTypeErr("badarg", "header", "set")
+
+    # Currently we can use the same logic as set_table_data
+    return set_table_data(filename, data, col_names, header=header,
+                          ascii=ascii, clobber=clobber, packup=packup)
+
+
 def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
+    """Create a PHA dataset/file
+
+    The header argument must be set as this routine does no validation
+    of its contents.
+
+    """
+
+    if header is None:
+        raise ArgumentTypeErr("badarg", "header", "set")
 
     # Currently we can use the same logic as set_table_data
     return set_table_data(filename, data, col_names, header=header,
@@ -1204,7 +1226,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
 
     if ascii:
         set_arrays(filename, [data['pixels'].ravel()],
-                   ascii=ascii, clobber=clobber)
+                   ascii=True, clobber=clobber)
         return
 
     hdrlist = _create_header(header)

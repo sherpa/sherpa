@@ -476,7 +476,7 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     assert cr.name == "SPECTRUM"
     assert cr.get_colnames() == ["CHANNEL", "COUNTS"]
 
-    # undortunately crates auto-converts int32 to int64
+    # unfortunately crates auto-converts int32 to int64
     # (this is actually the underlying cxcdm module).
     #
     c0 = cr.get_column(0)
@@ -519,9 +519,11 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     for key in ["BACKFILE", "CORRFILE", "RESPFILE", "ANCRFILE"]:
         assert cr.get_key_value(key) == "none"
 
-    # keywords we should have but currently don't
-    for key in ["EXPOSURE"]:
-        assert cr.get_key_value(key) is None
+    # The EXPOSURE keyword should be an attribute now, and removed
+    # from the header, but we do not guarantee or require that, so
+    # check whether it exists in the header.
+    #
+    assert cr.get_key_value("EXPOSURE") is None
 
 
 def check_write_pha_fits_basic_roundtrip_pyfits(path):
@@ -574,9 +576,11 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert "TLMIN2" not in hdu.header
         assert "TLMAX2" not in hdu.header
 
-        # keywords we should have but currently don't
-        for key in ["EXPOSURE"]:
-            assert key not in hdu.header
+        # The EXPOSURE keyword should be an attribute now, and removed
+        # from the header, but we do not guarantee or require that, so
+        # check whether it exists in the header.
+        #
+        assert "EXPOSURE" not in hdu.header
 
     finally:
         hdus.close()
@@ -586,7 +590,8 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
 def test_write_pha_fits_basic_roundtrip(tmp_path):
     """A very-basic PHA output
 
-    No ancillary information and no header.
+    No ancillary information and no extra header information.
+
     """
 
     chans = np.arange(1, 5, dtype=np.int16)

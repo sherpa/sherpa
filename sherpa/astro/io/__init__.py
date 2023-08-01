@@ -61,10 +61,11 @@ from typing import Any, Optional
 import numpy
 
 import sherpa.io
-from sherpa.utils.err import DataErr, IOErr
+from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA, DataRosatRMF
+from sherpa.astro.instrument import ARF1D
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa import get_config
 
@@ -113,6 +114,7 @@ info = logging.getLogger(__name__).info
 __all__ = ('backend',
            'read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
            'read_pha', 'write_image', 'write_pha', 'write_table',
+           'write_arf',
            'pack_table', 'pack_image', 'pack_pha', 'read_table_blocks')
 
 
@@ -1063,6 +1065,97 @@ def _pack_pha(dataset):
     return data, header
 
 
+def _pack_arf(dataset):
+    """Extract FITS column and header information.
+
+    There is currently no support for Type II ARF files.
+
+    Notes
+    -----
+    The `ARF Data Extension header page
+    <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_
+    lists the following keywords as either required or
+    we-really-want-them:
+
+        EXTNAME = 'SPECRESP'
+        TELESCOP - the "telescope" (ie mission/satellite name).
+        INSTRUME - the instrument/detector.
+        FILTER - the instrument filter in use (if any)
+        HDUCLASS = 'OGIP' - file format is OGIP standard.
+        HDUCLAS1 = 'RESPONSE' - extension contains response data.
+        HDUCLAS2 = 'SPECRESP' - extension contains an ARF.
+        HDUVERS = '1.1.0' - version of the file format.
+
+    We do not add the ARFVERSN, HDUVERS1, or HDUVERS2 keywords which
+    are marked as obsolete.
+
+    """
+
+    # The UI layer wraps up a DataARF into ARF1D quite often, so
+    # support both types as input.
+    #
+    if not isinstance(dataset, (DataARF, ARF1D)):
+        raise IOErr("data set is not an ARF")
+
+    # Check we have data. Should we allow missing columns?
+    #
+    for col in ["energ_lo", "energ_hi", "specresp"]:
+        cdata = getattr(dataset, col)
+        if cdata is None:
+            raise ArgumentErr("bad", "ARF",
+                              f"{col.upper()} column is missing")
+
+    # The default keywords; these wil be over-ridden by
+    # anything set by the input.
+    #
+    default_header = {
+        "EXTNAME": "SPECRESP",
+        # "HDUNAME": "SPECRESP",    # do we want this or not?
+        "HDUCLASS": "OGIP",
+        "HDUCLAS1": "RESPONSE",
+        "HDUCLAS2": "SPECRESP",
+        "HDUVERS": "1.1.0",
+        "TELESCOP": "none",
+        "INSTRUME": "none",
+        "FILTER": "none",
+    }
+
+    # Header Keys
+    header = {}
+    if hasattr(dataset, "header"):
+        header = dataset.header.copy()
+
+    # Merge the keywords
+    #
+    header = {**default_header, **header}
+
+    # The exposure time is not an OGIP-mandated value but
+    # is used by CIAO, so copy it across if set.
+    #
+    if dataset.exposure is not None:
+        header["EXPOSURE"] = dataset.exposure
+
+    # The column ordering for the ouput file is determined by the
+    # order the keys are added to the data dict. Ensure the
+    # data type meets the FITS standard (Real4).
+    #
+    data = {}
+    data["ENERG_LO"] = dataset.energ_lo.astype(numpy.float32)
+    data["ENERG_HI"] = dataset.energ_hi.astype(numpy.float32)
+    data["SPECRESP"] = dataset.specresp.astype(numpy.float32)
+
+    # Chandra files can have BIN_LO/HI values, so copy
+    # across if both set.
+    #
+    blo = dataset.bin_lo
+    bhi = dataset.bin_hi
+    if blo is not None and bhi is not None:
+        data["BIN_LO"] = blo
+        data["BIN_HI"] = bhi
+
+    return data, header
+
+
 def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
     """Write out a collection of arrays.
 
@@ -1161,6 +1254,36 @@ def write_pha(filename, dataset, ascii=True, clobber=False):
     data, hdr = _pack_pha(dataset)
     col_names = list(data.keys())
     backend.set_pha_data(filename, data, col_names, header=hdr,
+                         ascii=ascii, clobber=clobber)
+
+
+def write_arf(filename, dataset, ascii=True, clobber=False):
+    """Write out an ARF.
+
+    This does not handle Type II files.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    filename : str
+       The name of the file.
+    dataset
+       The data to write out.
+    ascii : bool, optional
+       If `True` use an ASCII format, otherwise a binary format.
+    clobber : bool, optional
+       If `True` then the output file will be over-written if it
+       already exists, otherwise an error is raised.
+
+    See Also
+    --------
+    read_arf
+
+    """
+    data, hdr = _pack_arf(dataset)
+    names = list(data.keys())
+    backend.set_arf_data(filename, data, names, header=hdr,
                          ascii=ascii, clobber=clobber)
 
 

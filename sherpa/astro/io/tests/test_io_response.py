@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,9 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""Check that we can read in PHA response files.
+"""Check that we can read in and write out PHA response files.
 
-We don't have "write" routines for these.
 """
 
 import numpy as np
@@ -29,6 +28,7 @@ import pytest
 
 from sherpa.astro import io
 from sherpa.astro.data import DataARF, DataRMF
+from sherpa.data import Data1DInt
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -172,3 +172,67 @@ def test_read_rmf(make_data_path):
     assert (rmf.e_min[1:] == rmf.e_max[:-1]).all()
     assert rmf.e_min[0] == pytest.approx(0.01329296827316)
     assert rmf.e_max[-1] == pytest.approx(14.678317070)
+
+
+TEST_ARF_ELO_SUM = 6042.19
+TEST_ARF_EHI_SUM = 6052.97
+TEST_ARF_SPECRESP_SUM = 251968.38017
+
+@requires_data
+@requires_fits
+def test_write_arf_fits(make_data_path, tmp_path):
+    """Check we can write out an ARF as a FITS file.
+
+    We check we can read-back the ARF we have written.
+    We use a different ARF to that used in test_read_arf.
+    """
+
+    infile = make_data_path("9774.arf")
+    orig = io.read_arf(infile)
+
+    outpath = tmp_path / "out.arf"
+    outfile = str(outpath)
+    io.write_arf(outfile, orig, ascii=False)
+
+    new = io.read_arf(outfile)
+    assert isinstance(new, DataARF)
+    assert new.exposure == pytest.approx(75141.23109910)
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    assert "HDUNAME" not in hdr
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "SPECRESP"
+    assert hdr["HDUVERS"] == "1.1.0"
+    assert hdr["TELESCOP"] == "CHANDRA"
+    assert hdr["INSTRUME"] == "ACIS"
+    assert hdr["FILTER"] == "NONE"
+
+    assert new.energ_lo.sum() == pytest.approx(TEST_ARF_ELO_SUM)
+    assert new.energ_hi.sum() == pytest.approx(TEST_ARF_EHI_SUM)
+    assert new.specresp.sum() == pytest.approx(TEST_ARF_SPECRESP_SUM)
+
+
+@requires_data
+@requires_fits
+def test_write_arf_ascii(make_data_path, tmp_path):
+    """Check we can write out an ARF as an ASCII file.
+
+    We check we can read-back the ARF we have written.
+    We use a different ARF to that used in test_read_arf.
+    """
+
+    infile = make_data_path("9774.arf")
+    orig = io.read_arf(infile)
+
+    outpath = tmp_path / "out.arf"
+    outfile = str(outpath)
+    io.write_arf(outfile, orig, ascii=True)
+
+    new = io.read_ascii(outfile, ncols=3, dstype=Data1DInt,
+                        colkeys=["ENERG_LO", "ENERG_HI", "SPECRESP"])
+
+    assert new.xlo.sum() == pytest.approx(TEST_ARF_ELO_SUM)
+    assert new.xhi.sum() == pytest.approx(TEST_ARF_EHI_SUM)
+    assert new.y.sum() == pytest.approx(TEST_ARF_SPECRESP_SUM)

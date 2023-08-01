@@ -21,6 +21,7 @@ The sherpa.astro.io module
       read_pha
       write_image
       write_pha
+      write_arf
       write_table
       pack_table
       pack_image

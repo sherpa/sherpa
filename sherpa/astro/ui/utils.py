@@ -4776,7 +4776,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        load_pha : Load a PHA data set.
+        load_pha, save_arf
 
         Notes
         -----
@@ -4814,6 +4814,98 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_pha_data(id, bkg_id)
 
         sherpa.astro.io.write_pha(filename, d, ascii=ascii,
+                                  clobber=clobber)
+
+    def save_arf(self, id, filename=None, resp_id=None, bkg_id=None,
+                 ascii=False, clobber=False):
+        """Save an ARF data set to a file.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is determined by the `ascii` argument.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set if the background ARF should be written out rather
+           than the source ARF.
+        ascii : bool, optional
+           If ``False`` then the data is written as a FITS
+           format binary table. The default is ``True``. The
+           exact format of the output file depends on the
+           I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           If `outfile` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain an ARF.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is ``False``.
+
+        See Also
+        --------
+        load_arf, save_pha
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
+        Examples
+        --------
+
+        Write out the ARF data from the default data set to the
+        file 'src.arf':
+
+        >>> save_arf('src.arf')
+
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
+
+        >>> save_arf('jet', 'out.arf', clobber=True)
+
+        Write the data out as an ASCII file:
+
+        >>> save_arf('pi.arf', ascii=True)
+
+        """
+        clobber = sherpa.utils.bool_cast(clobber)
+        ascii = sherpa.utils.bool_cast(ascii)
+        if filename is None:
+            id, filename = filename, id
+        _check_str_type(filename, 'filename')
+        d = self._get_pha_data(id, bkg_id)
+
+        arf = d.get_arf(id=resp_id)
+        if arf is None:
+            if bkg_id is not None:
+                emsg = f"background '{bkg_id} of "
+            else:
+                emsg = ""
+
+            resp_id = 1 if resp_id is None else resp_id
+            emsg += f"data set '{id}' (response {resp_id}) does not contain an ARF"
+            raise ArgumentErr(emsg)
+
+        sherpa.astro.io.write_arf(filename, arf, ascii=ascii,
                                   clobber=clobber)
 
     def save_grouping(self, id, filename=None, bkg_id=None,
