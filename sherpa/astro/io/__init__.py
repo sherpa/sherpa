@@ -64,8 +64,9 @@ import sherpa.io
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
-from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, DataPHA, DataRosatRMF
-from sherpa.astro.instrument import ARF1D
+from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
+    DataPHA, DataRosatRMF
+from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa import get_config
 
@@ -114,7 +115,7 @@ info = logging.getLogger(__name__).info
 __all__ = ('backend',
            'read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
            'read_pha', 'write_image', 'write_pha', 'write_table',
-           'write_arf',
+           'write_arf', 'write_rmf',
            'pack_table', 'pack_image', 'pack_pha', 'read_table_blocks')
 
 
@@ -1121,9 +1122,7 @@ def _pack_arf(dataset):
     }
 
     # Header Keys
-    header = {}
-    if hasattr(dataset, "header"):
-        header = dataset.header.copy()
+    header = dataset.header
 
     # Merge the keywords
     #
@@ -1154,6 +1153,374 @@ def _pack_arf(dataset):
         data["BIN_HI"] = bhi
 
     return data, header
+
+
+def _make_int_array(rows, ncols):
+    """Convert a list of rows into a 2D array of "width" ncols.
+
+    The conversion is to a type determined by the maximum value in
+    rows (it selects between 2-byte and 4-byte integers).
+
+    Parameters
+    ----------
+    rows : list of 1D arrays
+        The values to convert. Expected to be integers (>= 0).
+    ncols : int
+        The size of each row in the output. There must be no row
+        with more elements.
+
+    Returns
+    -------
+    out : ndarray of size (nrows, ncols)
+
+    """
+
+    nrows = len(rows)
+    maxval = 0
+    for row in rows:
+        if len(row) == 0:
+            continue
+
+        maxval = max(maxval, row.max())
+
+    dtype = numpy.int32 if maxval > 32767 else numpy.int16
+    out = numpy.zeros((nrows, ncols), dtype=dtype)
+    for idx, row in enumerate(rows):
+        if len(row) == 0:
+            continue
+
+        out[idx, 0:len(row)] = row
+
+    return out
+
+
+def _make_float32_array(rows, ncols):
+    """Convert a list of rows into a 2D array of "width" ncols.
+
+    The output has type numpy.float32.
+
+    Parameters
+    ----------
+    rows : list of 1D arrays
+        The values to convert. Expected to have type float32.
+    ncols : int
+        The size of each row in the output. There must be no row
+        with more elements.
+
+    Returns
+    -------
+    out : ndarray of size (nrows, ncols)
+
+    """
+
+    nrows = len(rows)
+    out = numpy.zeros((nrows, ncols), dtype=numpy.float32)
+    for idx, row in enumerate(rows):
+        out[idx, 0:len(row)] = row
+
+    return out
+
+
+def _make_int_vlf(rows):
+    """Convert a list of rows into a VLF.
+
+    The conversion is to a type determined by the maximum value in
+    rows (it selects between 2-byte and 4-byte integers).
+
+    Parameters
+    ----------
+    rows : list of 1D arrays
+        The values to convert. Expected to be integers (>= 0).
+
+    Returns
+    -------
+    out : ndarray of dtype object
+
+    """
+
+    nrows = len(rows)
+    maxval = 0
+    for row in rows:
+        if len(row) == 0:
+            continue
+
+        maxval = max(maxval, row.max())
+
+    dtype = numpy.int32 if maxval > 32767 else numpy.int16
+    out = []
+    for row in rows:
+        out.append(numpy.asarray(row, dtype=dtype))
+
+    return numpy.asarray(out, dtype=object)
+
+
+def _reconstruct_rmf(rmf):
+    """Recreate the structure needed to write out as a FITS file.
+
+    This does not guarantee to create byte-identical data in a round
+    trip, but it should create equivalent data (e.g. the choice of
+    whether a column shuold be a Variable Length Field may differ, as
+    can the data types).
+
+    Parameters
+    ----------
+    rmf : DataRMF or RMF1D instance
+
+    Returns
+    -------
+    out : dict
+        The re-constructed data and header values.
+
+    Notes
+    -----
+    The F_CHAN, N_CHAN, and MATRIX columns are stored as either
+      - 1D arrays (unlikely for MATRIX); N_GRP = 1 for all rows
+      - 2D arrays when N_GRP is a constant for all rows
+      - 2D arrays when N_GRP <= 4 (so some rows will have 0's in
+        when N_GRP for that row is less than the max N_GRP)
+      - 2D array with dtype=object indicates a VLF (each row
+        should be the correct type though)
+
+    """
+
+    n_grp = []
+    f_chan = []
+    n_chan = []
+    matrix= []
+
+    # Used to reconstruct the original data
+    idx = 0
+    start = 0
+
+    # Header keyword
+    numelt = 0
+
+    # How big is the matrix?
+    matrix_size = set()
+
+    for ng in rmf.n_grp:
+        n_grp.append(ng)
+
+        f_chan.append([])
+        n_chan.append([])
+        matrix.append([])
+
+        # Short-cut when no data
+        if ng == 0:
+            matrix_size.add(0)
+
+            # Convert from [] to numpy empty list
+            f_chan[-1] = numpy.asarray([], dtype=numpy.int32)
+            n_chan[-1] = numpy.asarray([], dtype=numpy.int32)
+            matrix[-1] = numpy.asarray([], dtype=numpy.float32)
+            continue
+
+        # Grab the next ng elements from rmf.f_chan/n_chan
+        # and the corresponding rmf.matrix elements. Fortunately
+        # we can ignore F_CHAN when extracting data from matrix.
+        #
+        for _ in range(ng):
+            # ensure this is an integer and not a floating-point number
+            # which can happen when rmf.n_chan is stored as Unt64.
+            #
+            end = start + rmf.n_chan[idx].astype(numpy.int32)
+            mdata = rmf.matrix[start:end]
+
+            f_chan[-1].append(rmf.f_chan[idx])
+            n_chan[-1].append(rmf.n_chan[idx])
+            matrix[-1].extend(mdata)
+
+            idx += 1
+            start = end
+
+        # Ensure F_CHAN/N_CHAN is either 2- or 4-byte integer by
+        # converting to 4-byte integer here, which can later be
+        # downcast.
+        #
+        f_chan[-1] = numpy.asarray(f_chan[-1], dtype=numpy.int32)
+        n_chan[-1] = numpy.asarray(n_chan[-1], dtype=numpy.int32)
+
+        # Ensure the matrix is Real-4
+        matrix[-1] = numpy.asarray(matrix[-1], dtype=numpy.float32)
+        matrix_size.add(matrix[-1].size)
+
+        numelt += sum(n_chan[-1])
+
+    # N_GRP should be 2-byte integer.
+    #
+    n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
+    numgrp = n_grp.sum()
+
+    # Can we convert F_CHAN/N_CHAN to fixed-length if either:
+    #  - N_GRP is the same for all rows
+    #  - max(N_GRP) < 4
+    #
+    if len(set(n_grp)) == 1 or n_grp.max() < 4:
+        ny = n_grp.max()
+        f_chan = _make_int_array(f_chan, ny)
+        n_chan = _make_int_array(n_chan, ny)
+    else:
+        f_chan = _make_int_vlf(f_chan)
+        n_chan = _make_int_vlf(n_chan)
+
+    # We can convert the matrix to fixed size if each row in matrix
+    # has the same size.
+    #
+    if len(matrix_size) == 1:
+        ny = matrix_size.pop()
+        matrix = _make_float32_array(matrix, ny)
+    else:
+        matrix = numpy.asarray(matrix, dtype=object)
+
+    return {"N_GRP": n_grp,
+            "F_CHAN": f_chan,
+            "N_CHAN": n_chan,
+            "MATRIX": matrix,
+            "NUMGRP": numgrp,
+            "NUMELT": numelt}
+
+
+def _pack_rmf(dataset):
+    """Extract FITS column and header information.
+
+    Unlike the other pack routines this returns data for
+    multiple blocks. At present this ignores the ORDER column
+    in the MATRIX block.
+
+    Notes
+    -----
+    The `RMF Data Extension header page
+    <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_
+    lists the following keywords as either required or
+    we-really-want-them. First for the MATRIX block:
+
+        EXTNAME = 'MATRIX' or 'SPECRESP MATRIX'
+        TELESCOP - the "telescope" (ie mission/satellite name).
+        INSTRUME - the instrument/detector.
+        FILTER - the instrument filter in use (if any)
+        CHANTYPE - PI or PHA
+        DETCHANS - the total number of raw detector PHA channels
+        HDUCLASS = 'OGIP' - file format is OGIP standard.
+        HDUCLAS1 = 'RESPONSE' - extension contains response data.
+        HDUCLAS2 = 'RSP_MATRIX' - extension contains a response matrix.
+        HDUVERS = '1.3.0' - version of the file format.
+        TLMIN# - the first channel in the response.
+
+    These are optional but mechanical so can be added:
+
+        NUMGRP - sum(N_GRP)
+        NUMELT - sum(N_CHAN)
+
+    These are optional:
+
+        LO_THRES - minimum probability threshold
+        HDUCLAS3 - 'REDIST', 'DETECTOR', 'FULL'
+
+    For the EBOUNDS extension we have:
+
+        EXTNAME  = 'EBOUNDS'
+        TELESCOP
+        INSTRUME
+        FILTER
+        CHANTYPE
+        DETCHANS
+        HDUCLASS = 'OGIP'
+        HDUCLAS1 = 'RESPONSE'
+        HDUCLAS2 = 'EBOUNDS'
+        HDUVERS = '1.2.0'
+
+    We do not add the RMFVERSN, HDUVERS1, or HDUVERS2 keywords which
+    are marked as obsolete.
+
+    """
+
+    # The UI layer wraps up a DataRMF into RMF1D quite often, so
+    # support both types as input.
+    #
+    if not isinstance(dataset, (DataRMF, RMF1D)):
+        raise IOErr("data set is not an RMF")
+
+    rmfdata = _reconstruct_rmf(dataset)
+
+    # The default keywords; these wil be over-ridden by
+    # anything set by the input.
+    #
+    default_matrix_header = {
+        "EXTNAME": "MATRIX",
+        "HDUCLASS": "OGIP",
+        "HDUCLAS1": "RESPONSE",
+        "HDUCLAS2": "RSP_MATRIX",
+        "HDUVERS": "1.3.0",
+        "TELESCOP": "none",
+        "INSTRUME": "none",
+        "FILTER": "none",
+        "CHANTYPE": "PI",
+        "DETCHANS": "none",
+        "NUMGRP": 0,
+        "NUMELT": 0
+    }
+
+    default_ebounds_header = {
+        "EXTNAME": "EBOUNDS",
+        "HDUCLASS": "OGIP",
+        "HDUCLAS1": "RESPONSE",
+        "HDUCLAS2": "EBOUNDS",
+        "HDUVERS": "1.2.0",
+        "TELESCOP": "none",
+        "INSTRUME": "none",
+        "FILTER": "none",
+        "CHANTYPE": "PI",
+        "DETCHANS": "none"
+    }
+
+    # Header Keys
+    header = dataset.header
+
+    # Merge the keywords (at least for the MATRIX block).
+    #
+    matrix_header = {**default_matrix_header, **header}
+    ebounds_header = {**default_ebounds_header}
+
+    matrix_header["NUMGRP"] = rmfdata["NUMGRP"]
+    matrix_header["NUMELT"] = rmfdata["NUMELT"]
+    matrix_header["DETCHANS"] = dataset.detchans
+
+    # Copy values over.
+    #
+    for copykey in ["TELESCOP", "INSTRUME", "FILTER", "CHANTYPE",
+                    "DETCHANS"]:
+        ebounds_header[copykey] = matrix_header[copykey]
+
+    # The column ordering for the ouput file is determined by the
+    # order the keys are added to the data dict.
+    #
+    # To allow the backend convert to Variable-Length fields, we
+    # have F_CHAN/N_CHAN/MATRIX either be a 2D ndarray (so fixed
+    # output) OR a list of rows (use VLF). It's not ideal: we could
+    # wrap up in a local VLF type just to indicate this to the
+    # backend.
+    #
+    matrix_data = {
+        "ENERG_LO": dataset.energ_lo,
+        "ENERG_HI": dataset.energ_hi,
+        "N_GRP": rmfdata["N_GRP"],
+        "F_CHAN": rmfdata["F_CHAN"],
+        "N_CHAN": rmfdata["N_CHAN"],
+        "MATRIX": rmfdata["MATRIX"],
+        "OFFSET": dataset.offset  # copy over this value
+    }
+
+    # TODO: is this correct?
+    nchan = dataset.offset + dataset.detchans - 1
+    dchan = numpy.int32 if nchan > 32767 else numpy.int16
+    ebounds_data = {
+        "CHANNEL": numpy.arange(dataset.offset, nchan + 1, dtype=dchan),
+        "E_MIN": dataset.e_min.astype(numpy.float32),
+        "E_MAX": dataset.e_max.astype(numpy.float32)
+        }
+
+    return [(matrix_data, matrix_header),
+            (ebounds_data, ebounds_header)]
 
 
 def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
@@ -1285,6 +1652,31 @@ def write_arf(filename, dataset, ascii=True, clobber=False):
     names = list(data.keys())
     backend.set_arf_data(filename, data, names, header=hdr,
                          ascii=ascii, clobber=clobber)
+
+
+def write_rmf(filename, dataset, clobber=False):
+    """Write out a RMF.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    filename : str
+       The name of the file.
+    dataset
+       The data to write out.
+    clobber : bool, optional
+       If `True` then the output file will be over-written if it
+       already exists, otherwise an error is raised.
+
+    See Also
+    --------
+    read_rmf
+
+    """
+
+    blocks = _pack_rmf(dataset)
+    backend.set_rmf_data(filename, blocks, clobber=clobber)
 
 
 def pack_table(dataset):

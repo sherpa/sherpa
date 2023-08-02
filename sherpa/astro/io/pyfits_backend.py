@@ -68,7 +68,7 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
            'set_table_data', 'set_image_data', 'set_pha_data',
-           'set_arf_data')
+           'set_arf_data', 'set_rmf_data')
 
 
 def _has_hdu(hdulist, name):
@@ -1159,14 +1159,7 @@ def set_table_data(filename, data, col_names, header=None,
     # on validation done by the code calling set_table_data.
     #
     if header is not None:
-        for key, value in header.items():
-            if key in hdu.header:
-                continue
-
-            if value is None:
-                continue
-
-            hdu.header[key] = value
+        _update_header(hdu, header)
 
     if packup:
         return hdu
@@ -1187,6 +1180,32 @@ def _create_header(header):
         _add_keyword(hdrlist, key, value)
 
     return hdrlist
+
+
+def _update_header(hdu, header):
+    """Update the header of the HDU.
+
+    Unlike the dict update method, this is left biased, in that
+    it prefers the keys in the existing header (this is so that
+    structural keywords are not over-written by invalid data from
+    a previous FITS file), and to drop elements which are set
+    to None.
+
+    Parameters
+    ----------
+    hdu : HDU
+    header : dict[str, Any]
+
+    """
+
+    for key, value in header.items():
+        if key in hdu.header:
+            continue
+
+        if value is None:
+            continue
+
+        hdu.header[key] = value
 
 
 def set_arf_data(filename, data, col_names, header=None,
@@ -1216,6 +1235,128 @@ def set_pha_data(filename, data, col_names, header=None,
     # Currently we can use the same logic as set_table_data
     return set_table_data(filename, data, col_names, header=header,
                           ascii=ascii, clobber=clobber, packup=packup)
+
+
+def set_rmf_data(filename, blocks, clobber=False):
+    """Save the RMF data to disk.
+
+    Unlike the other save_*_data calls this does not support the ascii
+    or packup arguments. It also relies on the caller to have set up
+    the headers and columns correctly apart for variable-length fields,
+    which are limited to F_CHAN, N_CHAN, and MATRIX.
+
+    """
+
+    check_clobber(filename, clobber)
+
+    # For now assume only two blocks:
+    #    MATRIX
+    #    EBOUNDS
+    #
+    matrix_data, matrix_header = blocks[0]
+    ebounds_data, ebounds_header = blocks[1]
+
+    # Extract the data:
+    #   MATRIX:
+    #     ENERG_LO
+    #     ENERG_HI
+    #     N_GRP
+    #     F_CHAN
+    #     N_CHAN
+    #     MATRIX
+    #
+    #   EBOUNDS:
+    #     CHANNEL
+    #     E_MIN
+    #     E_MAX
+    #
+    # We may need to convert F_CHAN/N_CHAN/MATRIX to Variable-Length
+    # Fields. This is only needed if the ndarray type is object.
+    #
+    # It looks like we can not use the go-via-a-table approach
+    # here, as that does not support Variable Length Fields.
+    #
+    def get_format(val):
+        """We only bother with formats we expect"""
+        if numpy.issubdtype(val, numpy.integer):
+            if isinstance(val, numpy.int16):
+                return "I"
+
+            # default to Int32. AstroPy does support Int64/K but
+            # this should not be needed here.
+            return "J"
+
+        if not numpy.issubdtype(val, numpy.floating):
+            raise ValueError(f"Unexpected value '{val}' with type {val.dtype}")
+
+        if isinstance(val,numpy.float32):
+            return "E"
+
+        # This should not be reached
+        return "D"
+
+    def get_full_format(name, vals):
+        if vals.dtype == object:
+            # We need to get the format from the first non-empty row.
+            bformat = None
+            ny = 0
+            for v in vals:
+                nv = len(v)
+                ny = max(ny, nv)
+                if nv == 0:
+                    continue
+
+                if bformat is not None:
+                    continue
+
+                bformat = get_format(v[0])
+                break
+
+            if bformat is None:
+                # This should not happen
+                raise ValueError(f"Unable to find data for column '{name}'")
+
+            return f"P{bformat}({ny})"
+
+        bformat = get_format(vals[0][0])
+        ny = vals.shape[1]
+        return f"{ny}{bformat}"
+
+    def arraycol(name):
+        vals = matrix_data[name]
+        formatval = get_full_format(name, vals)
+        return fits.Column(name=name, format=formatval, array=vals)
+
+    n_grp = matrix_data["N_GRP"]
+    col1 = fits.Column(name="ENERG_LO", format="E",
+                       array=matrix_data["ENERG_LO"], unit="keV")
+    col2 = fits.Column(name="ENERG_HI", format="E",
+                       array=matrix_data["ENERG_HI"], unit="keV")
+    col3 = fits.Column(name="N_GRP", format=get_format(n_grp[0]),
+                       array=n_grp)
+    col4 = arraycol("F_CHAN")
+    col5 = arraycol("N_CHAN")
+    col6 = arraycol("MATRIX")
+    cols = [col1, col2, col3, col4, col5, col6]
+    matrix_hdu = fits.BinTableHDU.from_columns(cols)
+    _update_header(matrix_hdu, matrix_header)
+
+    # Ensure the TLMIN4 value (for F_CHAN) is set.
+    matrix_hdu.header["TLMIN4"] = matrix_data["OFFSET"]
+
+    channel = ebounds_data["CHANNEL"]
+    col1 = fits.Column(name="CHANNEL", format=get_format(channel[0]),
+                       array=channel)
+    col2 = fits.Column(name="E_MIN", format="E",
+                       array=ebounds_data["E_MIN"], unit="keV")
+    col3 = fits.Column(name="E_MAX", format="E",
+                       array=ebounds_data["E_MAX"], unit="keV")
+    ebounds_hdu = fits.BinTableHDU.from_columns([col1, col2, col3])
+    _update_header(ebounds_hdu, ebounds_header)
+
+    primary_hdu = fits.PrimaryHDU()
+    hdulist = fits.HDUList([primary_hdu, matrix_hdu, ebounds_hdu])
+    hdulist.writeto(filename, overwrite=True)
 
 
 def set_image_data(filename, data, header, ascii=False, clobber=False,

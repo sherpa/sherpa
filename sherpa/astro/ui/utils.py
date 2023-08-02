@@ -4776,7 +4776,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        load_pha, save_arf
+        load_pha, save_arf, save_rmf
 
         Notes
         -----
@@ -4857,7 +4857,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        load_arf, save_pha
+        load_arf, save_pha, save_rmf
 
         Notes
         -----
@@ -4907,6 +4907,87 @@ class Session(sherpa.ui.utils.Session):
 
         sherpa.astro.io.write_arf(filename, arf, ascii=ascii,
                                   clobber=clobber)
+
+    def save_rmf(self, id, filename=None, resp_id=None, bkg_id=None,
+                 clobber=False):
+        """Save an RMF data set to a file.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The identifier for the data set to use. If not given then
+           the default identifier is used, as returned by
+           `get_default_id`.
+        filename : str
+           The name of the file to write the array to. The format
+           is always FITS.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set if the background ARF should be written out rather
+           than the source ARF.
+        clobber : bool, optional
+           If `outfile` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a RMF.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is ``False``.
+
+        See Also
+        --------
+        load_arf, save_arf, save_pha
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments, then
+        they are interpreted as the `id` and `filename` parameters,
+        respectively. The remaining parameters are expected to be
+        given as named arguments.
+
+        Examples
+        --------
+
+        Write out the RMF data from the default data set to the
+        file 'src.rmf':
+
+        >>> save_rmf('src.rmf')
+
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
+
+        >>> save_rmf('jet', 'out.rmf', clobber=True)
+
+        """
+        clobber = sherpa.utils.bool_cast(clobber)
+        if filename is None:
+            id, filename = filename, id
+        _check_str_type(filename, 'filename')
+        d = self._get_pha_data(id, bkg_id)
+
+        rmf = d.get_rmf(id=resp_id)
+        if rmf is None:
+            if bkg_id is not None:
+                emsg = f"background '{bkg_id} of "
+            else:
+                emsg = ""
+
+            resp_id = 1 if resp_id is None else resp_id
+            emsg += f"data set '{id}' (response {resp_id}) does not contain a RMF"
+            raise ArgumentErr(emsg)
+
+        sherpa.astro.io.write_rmf(filename, rmf, clobber=clobber)
 
     def save_grouping(self, id, filename=None, bkg_id=None,
                       ascii=True, clobber=False):

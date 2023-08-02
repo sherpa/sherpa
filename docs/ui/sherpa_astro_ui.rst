@@ -332,6 +332,7 @@ burden...
       save_pha
       save_quality
       save_resid
+      save_rmf
       save_source
       save_staterror
       save_syserror

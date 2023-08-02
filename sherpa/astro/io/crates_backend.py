@@ -24,6 +24,7 @@ import os.path
 import numpy
 
 import pycrates
+import cxcdm  # work around missing TLMIN support in crates CIAO 4.15
 
 from sherpa.astro.utils import resp_init
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
@@ -46,7 +47,7 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
            'set_table_data', 'set_image_data', 'set_pha_data',
-           'set_arf_data')
+           'set_arf_data', 'set_rmf_data')
 
 
 string_types = (str, )
@@ -1112,10 +1113,10 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
     img = pycrates.IMAGECrate()
 
     # Write Image Header Keys
-    for key in header.keys():
-        if header[key] is None:
+    for key, value in header.items():
+        if value is None:
             continue
-        _set_key(img, key, header[key])
+        _set_key(img, key, value)
 
     # Write Image WCS Header Keys
     if data['eqpos'] is not None:
@@ -1205,7 +1206,7 @@ def set_table_data(filename, data, col_names, header=None,
 
 def set_arf_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
-    """Create a PHA dataset/file"""
+    """Create an ARF"""
 
     if header is None:
         raise ArgumentTypeErr("badarg", "header", "set")
@@ -1257,6 +1258,127 @@ def set_pha_data(filename, data, col_names, header=None,
 
         # pycrates.write_pha(phadataset, filename)
         phadataset.write(filename, clobber=True)
+
+
+def _update_header(cr, header):
+    """Update the header of the crate.
+
+    Unlike the dict update method, this is left biased, in that
+    it prefers the keys in the existing header (this is so that
+    structural keywords are not over-written by invalid data from
+    a previous FITS file), and to drop elements which are set
+    to None.
+
+    Parameters
+    ----------
+    cr : Crate
+    header : dict[str, Any]
+
+    """
+
+    for key, value in header.items():
+        if cr.key_exists(key):
+            continue
+
+        if value is None:
+            continue
+
+        # Do we need to worry about keys like TTYPE1 which crates
+        # hides from us?
+        _set_key(cr, key, value)
+
+
+def set_rmf_data(filename, blocks, clobber=False):
+    """Save the RMF data to disk.
+
+    Unlike the other save_*_data calls this does not support the ascii
+    or packup arguments. It also relies on the caller to have set up
+    the headers and columns correctly apart for variable-length fields,
+    which are limited to F_CHAN, N_CHAN, and MATRIX.
+
+    """
+
+    check_clobber(filename, clobber)
+
+    # For now assume only two blocks:
+    #    MATRIX
+    #    EBOUNDS
+    #
+    matrix_data, matrix_header = blocks[0]
+    ebounds_data, ebounds_header = blocks[1]
+
+    # Extract the data:
+    #   MATRIX:
+    #     ENERG_LO
+    #     ENERG_HI
+    #     N_GRP
+    #     F_CHAN
+    #     N_CHAN
+    #     MATRIX
+    #
+    #   EBOUNDS:
+    #     CHANNEL
+    #     E_MIN
+    #     E_MAX
+    #
+    # We may need to convert F_CHAN/N_CHAN/MATRIX to Variable-Length
+    # Fields. This is only needed if the ndarray type is object.
+    # Fortunately Crates will convert a n ndarray of objects to a
+    # Variable-Length array, so we do not need to do anything special
+    # here.
+    #
+    def mkcol(name, vals, units=None):
+        col = pycrates.CrateData()
+        col.name = name
+        col.values = vals
+        col.unit = units
+        return col
+
+    # Does RMFCrateDataset offer us anything above creating a
+    # CrateDataset manually?
+    #
+    ds = pycrates.RMFCrateDataset()
+    matrix_cr = ds.get_crate("MATRIX")
+    ebounds_cr = ds.get_crate("EBOUNDS")
+
+    matrix_cr.add_column(mkcol("ENERG_LO", matrix_data["ENERG_LO"], units="keV"))
+    matrix_cr.add_column(mkcol("ENERG_HI", matrix_data["ENERG_HI"], units="keV"))
+    matrix_cr.add_column(mkcol("N_GRP", matrix_data["N_GRP"]))
+    matrix_cr.add_column(mkcol("F_CHAN", matrix_data["F_CHAN"]))
+    matrix_cr.add_column(mkcol("N_CHAN", matrix_data["N_CHAN"]))
+    matrix_cr.add_column(mkcol("MATRIX", matrix_data["MATRIX"]))
+
+    # Crates does not have a good API for setting the subspace of an
+    # item. So we manually add the correct TLMIN value after the
+    # file has been written out with the cxcdm module.
+    #
+    # matrix_cr.F_CHAN._set_tlmin(matrix_data["OFFSET"])
+
+    ebounds_cr.add_column(mkcol("CHANNEL", ebounds_data["CHANNEL"]))
+    ebounds_cr.add_column(mkcol("E_MIN", ebounds_data["E_MIN"], units="keV"))
+    ebounds_cr.add_column(mkcol("E_MAX", ebounds_data["E_MAX"], units="keV"))
+
+    # Update the headers after adding the columns.
+    #
+    _update_header(matrix_cr, matrix_header)
+    _update_header(ebounds_cr, ebounds_header)
+
+    ds.write(filename, clobber=True)
+
+    # Add the TLMIN value for the F_CHAN column
+    ds = cxcdm.dmDatasetOpen(filename, update=True)
+    bl = cxcdm.dmBlockOpen("MATRIX", ds, update=True)
+    col = cxcdm.dmTableOpenColumn(bl, "F_CHAN")
+
+    # The lo and hi vals must have the same type, so force them to be
+    # int (so we do not have to worry about whether this should be
+    # Int16 or Int32). The OFFSET value should be an int, but let's
+    # convert it too to make sure.
+    #
+    lval, hval = cxcdm.dmDescriptorGetRange(col)
+    cxcdm.dmDescriptorSetRange(col, int(matrix_data["OFFSET"]), int(hval))
+    cxcdm.dmBlockClose(bl)
+    cxcdm.dmDatasetClose(ds)
 
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):

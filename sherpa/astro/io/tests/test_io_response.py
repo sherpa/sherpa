@@ -22,6 +22,8 @@
 
 """
 
+import warnings
+
 import numpy as np
 
 import pytest
@@ -236,3 +238,557 @@ def test_write_arf_ascii(make_data_path, tmp_path):
     assert new.xlo.sum() == pytest.approx(TEST_ARF_ELO_SUM)
     assert new.xhi.sum() == pytest.approx(TEST_ARF_EHI_SUM)
     assert new.y.sum() == pytest.approx(TEST_ARF_SPECRESP_SUM)
+
+
+@requires_data
+@requires_fits
+def test_write_rmf_fits_chandra_acis(make_data_path, tmp_path):
+    """Check we can write out an RMF as a FITS file.
+
+    We check we can read-back the RMF we have written.
+    We use a different RMF to that used in test_read_rmf.
+    """
+
+    NCHAN = 1024
+    NENERGY = 1078
+    NUMGRP = 1481
+    NUMELT = 438482
+
+    infile = make_data_path("9774.rmf")
+    orig = io.read_rmf(infile)
+
+    # Delete some keywords we want to check
+    del orig.header["NUMELT"]
+    del orig.header["NUMGRP"]
+    store = [key for key in orig.header if key.startswith("HDU")]
+    for key in store:
+        del orig.header[key]
+
+    outpath = tmp_path / "out.rmf"
+    outfile = str(outpath)
+    io.write_rmf(outfile, orig)
+
+    new = io.read_rmf(outfile)
+    assert isinstance(new, DataRMF)
+    assert new.detchans == NCHAN
+    assert new.offset == 1
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    assert "HDUNAME" not in hdr
+    assert "DETCHANS" not in hdr
+
+    assert hdr["NUMGRP"] == NUMGRP
+    assert hdr["NUMELT"] == NUMELT
+
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "RSP_MATRIX"
+    assert "HDUCLAS3" not in hdr
+    assert "HDUVERS1" not in hdr
+    assert "HDUVERS2" not in hdr
+    assert hdr["HDUVERS"] == "1.3.0"
+    assert hdr["RMFVERSN"] == "1992a"
+
+    assert hdr["TELESCOP"] == "CHANDRA"
+    assert hdr["INSTRUME"] == "ACIS"
+    assert hdr["FILTER"] == "NONE"
+
+    assert hdr["CHANTYPE"] == "PI"
+    assert np.log10(hdr["LO_THRES"]) == pytest.approx(-5)
+
+    assert len(new.energ_lo) == NENERGY
+    assert len(new.energ_hi) == NENERGY
+    assert len(new.n_grp) == NENERGY
+
+    assert len(new.f_chan) == NUMGRP
+    assert len(new.n_chan) == NUMGRP
+
+    assert len(new.matrix) == NUMELT
+
+    assert len(new.e_min) == NCHAN
+    assert len(new.e_max) == NCHAN
+
+    assert new.n_grp.dtype == np.uint64
+
+    for field in ["f_chan", "n_chan"]:
+        attr = getattr(new, field)
+        if backend_is("crates"):
+            assert attr.dtype == np.uint32
+        elif backend_is("pyfits"):
+            assert attr.dtype == np.uint64
+        else:
+            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+
+    for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
+        attr = getattr(new, field)
+        assert attr.dtype == np.float64
+
+    assert (new.energ_lo[1:] == new.energ_hi[:-1]).all()
+    assert new.energ_lo[0] == pytest.approx(0.21999999880791)
+    assert new.energ_hi[-1] == pytest.approx(11)
+
+    assert new.n_grp.sum() == NUMGRP
+    assert new.n_grp.max() == 3
+    assert new.n_grp.min() == 1
+
+    assert new.f_chan.sum() == 266767
+    assert new.n_chan.sum() == NUMELT
+
+    # Technically this should be NENERGY, since each row sums to 1 and
+    # there's no missing rows, but we check the actual value.
+    #
+    assert new.matrix.sum() == pytest.approx(1078.000087318186)
+
+    # e_min/max come from the EBOUNDS block
+    #
+    assert (new.e_min[1:] == new.e_max[:-1]).all()
+    assert new.e_min[0] == pytest.approx(0.0014600000577047467)
+    assert new.e_max[-1] == pytest.approx(14.950400352478027)
+
+
+@requires_data
+@requires_fits
+def test_write_rmf_fits_asca_sis(make_data_path, tmp_path):
+    """Check we can write out an RMF as a FITS file.
+
+    Use the ASCA SIS as it has a different structure to
+    the ACIS RMF - for instance, empty rows and each row only
+    has one group (but it is not stored as an array, but a VLF).
+
+    """
+
+    NCHAN = 1024
+    NENERGY = 1180
+    NUMGRP = 1171
+    NUMELT = 505483
+
+    infile = make_data_path("sis0.rmf")
+    orig = io.read_rmf(infile)
+
+    # Unlike the ACIS case, this does not have NUMELT/GRP and
+    # leave in the HDU keys to check they don't get over-written.
+    #
+    assert "NUMELT" not in orig.header
+    assert "NUMGRP" not in orig.header
+    assert "HDUVERS" not in orig.header
+
+    outpath = tmp_path / "out.rmf"
+    outfile = str(outpath)
+    io.write_rmf(outfile, orig)
+
+    new = io.read_rmf(outfile)
+    assert isinstance(new, DataRMF)
+    assert new.detchans == NCHAN
+    assert new.offset == 1
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    assert "HDUNAME" not in hdr
+    assert "DETCHANS" not in hdr
+
+    assert hdr["NUMGRP"] == NUMGRP
+    assert hdr["NUMELT"] == NUMELT
+
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "RSP_MATRIX"
+    assert hdr["HDUCLAS3"] == "SPECRESP MATRIX"
+    assert hdr["HDUVERS1"] == "1.0.0"
+    assert hdr["HDUVERS2"] == "1.1.0"
+    assert hdr["HDUVERS"] == "1.3.0"
+    assert hdr["RMFVERSN"] == "1992a"
+
+    assert hdr["TELESCOP"] == "ASCA"
+    assert hdr["INSTRUME"] == "SIS0"
+    assert hdr["FILTER"] == "NONE"
+
+    assert hdr["CHANTYPE"] == "PI"
+    assert np.log10(hdr["LO_THRES"]) == pytest.approx(-7)
+
+    assert len(new.energ_lo) == NENERGY
+    assert len(new.energ_hi) == NENERGY
+    assert len(new.n_grp) == NENERGY
+
+    assert len(new.f_chan) == NUMGRP
+    assert len(new.n_chan) == NUMGRP
+
+    assert len(new.matrix) == NUMELT
+
+    assert len(new.e_min) == NCHAN
+    assert len(new.e_max) == NCHAN
+
+    assert new.n_grp.dtype == np.uint64
+
+    for field in ["f_chan", "n_chan"]:
+        attr = getattr(new, field)
+        if backend_is("crates"):
+            assert attr.dtype == np.uint32
+        elif backend_is("pyfits"):
+            assert attr.dtype == np.uint64
+        else:
+            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+
+    for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
+        attr = getattr(new, field)
+        assert attr.dtype == np.float64
+
+    assert (new.energ_lo[1:] == new.energ_hi[:-1]).all()
+    assert new.energ_lo[0] == pytest.approx(0.20000000298023224)
+    assert new.energ_hi[-1] == pytest.approx(12)
+
+    assert new.n_grp.sum() == NUMGRP
+    assert new.n_grp.max() == 1
+    assert new.n_grp.min() == 0
+
+    assert new.f_chan.sum() == 30446
+    assert new.n_chan.sum() == NUMELT
+
+    # Note that this is significantly less than NENERGY.
+    #
+    assert new.matrix.sum() == pytest.approx(552.932040504181)
+
+    # e_min/max come from the EBOUNDS block
+    #
+    assert (new.e_min[1:] == new.e_max[:-1]).all()
+    assert new.e_min[0] == pytest.approx(0.0)
+    assert new.e_max[-1] == pytest.approx(14.240230560302734)
+
+
+@requires_data
+@requires_fits
+def test_write_rmf_fits_swift_xrt(make_data_path, tmp_path):
+    """Check we can write out an RMF as a FITS file.
+
+    Use the Swift XRT as it has F/N_CHAN as fixed-length, not VLF,
+    data.
+
+    """
+
+    NCHAN = 1024
+    NENERGY = 2400
+    NUMGRP = 2400
+    NUMELT = NUMGRP * NCHAN
+
+    infile = make_data_path("swxpc0to12s6_20130101v014.rmf.gz")
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("always")
+        orig = io.read_rmf(infile)
+
+    assert len(ws) == 1
+    msg = ws[0].message
+    assert isinstance(msg, UserWarning)
+    msg = str(msg)
+    assert msg.startswith("The minimum ENERG_LO in the RMF '")
+    assert msg.endswith(".rmf.gz' was 0 and has been replaced by 1e-10")
+
+    assert "NUMELT" not in orig.header
+    assert "NUMGRP" not in orig.header
+    assert orig.header["HDUVERS"] == "1.3.0"
+    assert orig.offset == 0
+
+    outpath = tmp_path / "out.rmf"
+    outfile = str(outpath)
+    io.write_rmf(outfile, orig)
+
+    # Note that we get no warning from this read as the min value has
+    # been replaced by 1e-10.
+    #
+    with warnings.catch_warnings(record=True) as ws2:
+        warnings.simplefilter("always")
+        new = io.read_rmf(outfile)
+
+    assert len(ws2) == 0
+
+    assert isinstance(new, DataRMF)
+    assert new.detchans == NCHAN
+    assert new.offset == 0
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    assert "HDUNAME" not in hdr
+    assert "DETCHANS" not in hdr
+
+    assert hdr["NUMGRP"] == NUMGRP
+    assert hdr["NUMELT"] == NUMELT
+
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "RSP_MATRIX"
+    assert "HDUVERS1" not in hdr
+    assert "HDUVERS2" not in hdr
+    assert "HDUVERS3" not in hdr
+    assert hdr["HDUVERS"] == "1.3.0"
+    assert "RMFVERSN" not in hdr
+
+    assert hdr["TELESCOP"] == "SWIFT"
+    assert hdr["INSTRUME"] == "XRT"
+    assert hdr["FILTER"] == "none"
+
+    assert hdr["CHANTYPE"] == "PI"
+    assert hdr["LO_THRES"] == 0
+
+    assert len(new.energ_lo) == NENERGY
+    assert len(new.energ_hi) == NENERGY
+    assert len(new.n_grp) == NENERGY
+
+    assert len(new.f_chan) == NUMGRP
+    assert len(new.n_chan) == NUMGRP
+
+    assert len(new.matrix) == NUMELT
+
+    assert len(new.e_min) == NCHAN
+    assert len(new.e_max) == NCHAN
+
+    assert new.n_grp.dtype == np.uint64
+
+    for field in ["f_chan", "n_chan"]:
+        attr = getattr(new, field)
+        if backend_is("crates"):
+            assert attr.dtype == np.uint32
+        elif backend_is("pyfits"):
+            assert attr.dtype == np.uint64
+        else:
+            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+
+    for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
+        attr = getattr(new, field)
+        assert attr.dtype == np.float64
+
+    assert (new.energ_lo[1:] == new.energ_hi[:-1]).all()
+    assert new.energ_lo[0] == pytest.approx(1e-10)  # 0 has been replaced
+    assert new.energ_hi[-1] == pytest.approx(12)
+
+    assert new.n_grp.sum() == NUMGRP
+    assert new.n_grp.max() == 1
+    assert new.n_grp.min() == 1
+
+    assert new.f_chan.sum() == 0
+    assert new.n_chan.sum() == NUMELT
+
+    # Note that this is significantly less than NENERGY.
+    #
+    assert new.matrix.sum() == pytest.approx(1133.8128197300257)
+
+    # e_min/max come from the EBOUNDS block
+    #
+    assert (new.e_min[1:] == new.e_max[:-1]).all()
+    assert new.e_min[0] == pytest.approx(0.0)
+    assert new.e_max[-1] == pytest.approx(10.239999771118164)
+
+
+@requires_data
+@requires_fits
+def test_write_rmf_fits_rosat_pspc(make_data_path, tmp_path):
+    """Check we can write out an RMF as a FITS file.
+
+    Use the ROSAT PSPCC as it has it's own DataRosatRMF class.  It's
+    also a RSP rather than a RMF (ie includes the ARF, I believe).
+
+    """
+
+    NCHAN = 256
+    NENERGY = 729
+    NUMGRP = 719
+    NUMELT = 115269
+
+    infile = make_data_path("pspcc_gain1_256.rsp")
+    orig = io.read_rmf(infile)
+
+    assert "NUMELT" not in orig.header
+    assert "NUMGRP" not in orig.header
+    assert "HDUVERS" not in orig.header
+    assert orig.header["HDUVERS2"] == "1.2.0"
+    assert orig.header["HDUCLAS3"] == "FULL"
+
+    outpath = tmp_path / "out.rmf"
+    outfile = str(outpath)
+    io.write_rmf(outfile, orig)
+
+    new = io.read_rmf(outfile)
+    assert isinstance(new, DataRMF)
+    assert new.detchans == NCHAN
+    assert new.offset == 1
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    assert "HDUNAME" not in hdr
+    assert "DETCHANS" not in hdr
+
+    assert hdr["NUMGRP"] == NUMGRP
+    assert hdr["NUMELT"] == NUMELT
+
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "RSP_MATRIX"
+    assert hdr["HDUCLAS3"] == "FULL"
+    assert "HDUVERS1" not in hdr
+    assert hdr["HDUVERS2"] == "1.2.0"
+    assert "HDUVERS3" not in hdr
+    assert hdr["HDUVERS"] == "1.3.0"
+    assert hdr["RMFVERSN"] == "1992a"
+
+    assert hdr["TELESCOP"] == "ROSAT"
+    assert hdr["INSTRUME"] == "PSPCC"
+    assert hdr["FILTER"] == "NONE"
+
+    assert hdr["CHANTYPE"] == "PI"
+    assert hdr["LO_THRES"] == 0
+
+    assert len(new.energ_lo) == NENERGY
+    assert len(new.energ_hi) == NENERGY
+    assert len(new.n_grp) == NENERGY
+
+    assert len(new.f_chan) == NUMGRP
+    assert len(new.n_chan) == NUMGRP
+
+    assert len(new.matrix) == NUMELT
+
+    assert len(new.e_min) == NCHAN
+    assert len(new.e_max) == NCHAN
+
+    assert new.n_grp.dtype == np.uint64
+
+    for field in ["f_chan", "n_chan"]:
+        attr = getattr(new, field)
+        if backend_is("crates"):
+            assert attr.dtype == np.uint32
+        elif backend_is("pyfits"):
+            assert attr.dtype == np.uint64
+        else:
+            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+
+    for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
+        attr = getattr(new, field)
+        assert attr.dtype == np.float64
+
+    assert (new.energ_lo[1:] == new.energ_hi[:-1]).all()
+    assert new.energ_lo[0] == pytest.approx(0.054607998579740524)
+    assert new.energ_hi[-1] == pytest.approx(3.009999990463257)
+
+    assert new.n_grp.sum() == NUMGRP
+    assert new.n_grp.max() == 1
+    assert new.n_grp.min() == 0
+
+    assert new.f_chan.sum() == 7732
+    assert new.n_chan.sum() == NUMELT
+
+    assert new.matrix.sum() == pytest.approx(42994.35767966656)
+
+    # e_min/max come from the EBOUNDS block
+    #
+    assert (new.e_min[1:] == new.e_max[:-1]).all()
+    assert new.e_min[0] == pytest.approx(0.01495600026100874)
+    assert new.e_max[-1] == pytest.approx(2.552633047103882)
+
+
+@requires_data
+@requires_fits
+def test_write_rmf_fits_xmm_rgs(make_data_path, tmp_path):
+    """Check we can write out an RMF as a FITS file.
+
+    Try out a grating RMF. Use XMM as smaller than Chandra.
+
+    """
+
+    NCHAN = 3600
+    NENERGY = 4000
+    NUMGRP = 82878
+    NUMELT = 8475822
+
+    infile = make_data_path("xmmrgs/P0112880201R1S004RSPMAT1003.FTZ")
+    orig = io.read_rmf(infile)
+
+    assert "NUMELT" not in orig.header
+    assert "NUMGRP" not in orig.header
+    assert orig.header["HDUVERS"] == "1.3.0"
+    assert orig.header["HDUVERS1"] == "1.1.0"
+    assert orig.header["HDUVERS2"] == "1.2.0"
+    assert "HDUVERS3" not in orig.header
+    assert orig.header["HDUCLAS3"] == "FULL"
+
+    # Just to check, as this is different to other RMNFs
+    assert (orig.e_min[:-1] == orig.e_max[1:]).all()
+    assert orig.e_min[-1] == pytest.approx(0.30996060371398926)
+    assert orig.e_max[0] == pytest.approx(3.0996062755584717)
+
+    outpath = tmp_path / "out.rmf"
+    outfile = str(outpath)
+    io.write_rmf(outfile, orig)
+
+    new = io.read_rmf(outfile)
+    assert isinstance(new, DataRMF)
+    assert new.detchans == NCHAN
+    assert new.offset == 1
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    assert "HDUNAME" not in hdr
+    assert "DETCHANS" not in hdr
+
+    assert hdr["NUMGRP"] == NUMGRP
+    assert hdr["NUMELT"] == NUMELT
+
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "RSP_MATRIX"
+    assert hdr["HDUCLAS3"] == "FULL"
+    assert hdr["HDUVERS1"] == "1.1.0"
+    assert hdr["HDUVERS2"] == "1.2.0"
+    assert "HDUVERS3" not in hdr
+    assert hdr["HDUVERS"] == "1.3.0"
+    assert hdr["RMFVERSN"] == "1992a"
+
+    assert hdr["TELESCOP"] == "XMM"
+    assert hdr["INSTRUME"] == "RGS1"
+    assert hdr["FILTER"] == "NONE"
+
+    assert hdr["CHANTYPE"] == "PI"
+    assert np.log10(hdr["LO_THRES"]) == pytest.approx(-7.0)
+
+    assert len(new.energ_lo) == NENERGY
+    assert len(new.energ_hi) == NENERGY
+    assert len(new.n_grp) == NENERGY
+
+    assert len(new.f_chan) == NUMGRP
+    assert len(new.n_chan) == NUMGRP
+
+    assert len(new.matrix) == NUMELT
+
+    assert len(new.e_min) == NCHAN
+    assert len(new.e_max) == NCHAN
+
+    assert new.n_grp.dtype == np.uint64
+
+    for field in ["f_chan", "n_chan"]:
+        attr = getattr(new, field)
+        if backend_is("crates"):
+            assert attr.dtype == np.uint32
+        elif backend_is("pyfits"):
+            assert attr.dtype == np.uint64
+        else:
+            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+
+    for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
+        attr = getattr(new, field)
+        assert attr.dtype == np.float64
+
+    assert (new.energ_lo[1:] == new.energ_hi[:-1]).all()
+    assert new.energ_lo[0] == pytest.approx(0.30000001192092896)
+    assert new.energ_hi[-1] == pytest.approx(2.7998998165130615)
+
+    assert new.n_grp.sum() == NUMGRP
+    assert new.n_grp.max() == 48
+    assert new.n_grp.min() == 12
+
+    assert new.f_chan.sum() == 173869713
+    assert new.n_chan.sum() == NUMELT
+
+    assert new.matrix.sum() == pytest.approx(102430.35533461263)
+
+    # e_min/max come from the EBOUNDS block; note the ordering
+    # which is unlike the other cases (i.e. descending)
+    #
+    assert (new.e_min[:-1] == new.e_max[1:]).all()
+    assert new.e_min[-1] == pytest.approx(0.30996060371398926)
+    assert new.e_max[0] == pytest.approx(3.0996062755584717)
