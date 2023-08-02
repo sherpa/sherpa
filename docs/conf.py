@@ -124,6 +124,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'sphinx.ext.viewcode',
     'sphinx.ext.todo',
+    'matplotlib.sphinxext.plot_directive',
     # Use napoleon over numpydoc for now since it stops a large number
     # of warning messages (about missing links) that I don't have time
     # to investigate.
@@ -140,6 +141,9 @@ extensions = [
 # Imported from sphinx_astropy so we don't have to maintain the list
 # of servers
 # intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+
+# Settings for matplotlib sphinx extension
+plot_html_show_source_link = False
 
 # notebook support
 # - for now never execute a notebook
