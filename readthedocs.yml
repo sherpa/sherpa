@@ -17,7 +17,7 @@ conda:
 sphinx:
   builder: html
   configuration: docs/conf.py
-  fail_on_warning: false
+  fail_on_warning: true
 
 # Install regular dependencies.
 # Then, install special pinning for RTD - currently none
