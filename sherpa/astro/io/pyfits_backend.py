@@ -1016,7 +1016,7 @@ def _create_columns(col_names, data):
     return collist, cols, coldefs
 
 
-def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
+def set_table_data(filename, data, col_names, header=None,
                    ascii=False, clobber=False, packup=False):
 
     if not packup and not clobber and os.path.isfile(filename):
