@@ -1016,11 +1016,20 @@ def _create_columns(col_names, data):
     return collist, cols, coldefs
 
 
+def check_clobber(filename, clobber):
+    """Error out if the file exists and clobber is not set."""
+
+    if clobber or not os.path.isfile(filename):
+        return
+
+    raise IOErr("filefound", filename)
+
+
 def set_table_data(filename, data, col_names, header=None,
                    ascii=False, clobber=False, packup=False):
 
-    if not packup and not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
     col_names = list(col_names)
 
@@ -1061,8 +1070,8 @@ def _create_header(header):
 def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
 
-    if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
     hdrlist = _create_header(header)
 
@@ -1084,8 +1093,8 @@ def set_pha_data(filename, data, col_names, header=None,
 def set_image_data(filename, data, header, ascii=False, clobber=False,
                    packup=False):
 
-    if not packup and not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
     if ascii:
         set_arrays(filename, [data['pixels'].ravel()],
@@ -1147,8 +1156,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
-    if not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+    check_clobber(filename, clobber)
 
     if not numpy.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')
