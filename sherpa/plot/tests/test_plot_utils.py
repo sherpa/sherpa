@@ -130,7 +130,6 @@ def test_histogram_line_integers_single_gap():
     assert yh[good] == pytest.approx([12, 12, 3, 3, 15, 15])
 
 
-@pytest.mark.xfail    
 def test_histogram_line_floats_single_gap():
     """Test based on issue #1838
 

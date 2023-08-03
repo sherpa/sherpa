@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,13 +34,17 @@ def intersperse(a, b):
     Parameters
     ----------
     a, b : array
-        Two arrys to interleave. The numbe of elements in the two arrays cannot
+        Two arrys to interleave. The number of elements in the two arrays cannot
         differ by more than one.
 
     Returns
     -------
     out : array
         array that interleaves the input arrays
+
+    Notes
+    -----
+    It is assumed that the two arrays have compatible data types.
 
     Example
     -------
@@ -63,7 +67,7 @@ def intersperse(a, b):
 
 
 def histogram_line(xlo, xhi, y):
-    '''Manually create x, y arrays for draw histrogram line
+    '''Manually create x, y arrays to replicate a histogram
 
     Draw the data as a histogram, manually creating the lines
     from the low to high edge of each bin. In the case on non-consequtive
@@ -91,24 +95,37 @@ def histogram_line(xlo, xhi, y):
     '''
     if (len(xlo) != len(xhi)) or (len(y) != len(xlo)):
         raise ValueError('All input arrays have to have the same length.')
+
     # Deal with reversed order. Can happen when converting from energy
     # to wavelength, or if input PHA is not ordered in increasing energy.
     # But if both are happening at the same time, need to switch twice, which
     # is a no-op. So, we get to use the elusive Python XOR operator.
     if (xlo[0] > xhi[0]) ^ (xhi[0] > xhi[-1]):
         xlo, xhi = xhi, xlo
+
+    # Combine the edges and replicate the y array. This used to use
+    # intersperse() but that had an issue when xhi was floating-point
+    # but xlo was an integer (issue #1838) so use this approach
+    # instead, which requires the arrays to match. Using vstack
+    # means we rely on NumPy to do any type coversions.
+    #
+    x = np.vstack((xlo, xhi)).T.flatten()
+    y2 = np.vstack((y, y)).T.flatten()
+
+    # Where are the edges?
     idxs, = np.where(xhi[:-1] != xlo[1:])
-    x = intersperse(xlo, xhi)
+    nedges = idxs.size
+    if nedges == 0:
+        return x, y2
 
-    y2 = intersperse(y, y)
+    # nan values need to be added where the edges are in the
+    # duplicated array
+    nanidxs = 2 * (idxs + 1)
+    nans = [np.nan] * nedges
 
-    if idxs.size > 0:
-        idxs = 2 * (idxs + 1)
-        nans = [np.nan] * idxs.size
-
-        # ensure the arrays are floats so we can add nan values
-        #
-        x = np.insert(x.astype(np.float64), idxs, nans)
-        y2 = np.insert(y2.astype(np.float64), idxs, nans)
+    # ensure the arrays are floats so we can add nan values
+    #
+    x = np.insert(x.astype(np.float64), nanidxs, nans)
+    y2 = np.insert(y2.astype(np.float64), nanidxs, nans)
 
     return x, y2
