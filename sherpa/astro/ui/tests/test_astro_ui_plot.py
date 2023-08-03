@@ -1983,6 +1983,41 @@ def test_plot_defaults(funcname, expected):
     assert prefs == expected
 
 
+@pytest.mark.parametrize("ptype", ["data", "model", "source", "resid"])
+def test_get_plot_prefs_fails_bkg_id_when_not_expected(ptype, clean_astro_ui):
+    """Some calls allow bkg_id to be passed through. These do not."""
+
+    ui.load_arrays("x", [1, 2, 3], [1, 2, 3], DataPHA)
+
+    # Check this works. We do not check on the structure of the dict so we
+    # do not have to have to care about the plot backend.
+    #
+    p = ui.get_plot_prefs(ptype, "x")
+    assert isinstance(p, dict)
+
+    # This fails.
+    #
+    with pytest.raises(TypeError,
+                       match=" got an unexpected keyword argument 'bkg_id'$"):
+        ui.get_plot_prefs(ptype, "x", bkg_id=1)
+
+
+@pytest.mark.parametrize("ptype", ["bkg", "bkg_model", "bkg_source", "bkg_resid"])
+def test_get_plot_prefs_allows_bkg_id(ptype, clean_astro_ui):
+    """Some calls allow bkg_id to be passed through"""
+
+    ui.load_arrays("x", [1, 2, 3], [1, 2, 3], DataPHA)
+
+    # Check this works. We do not check on the structure of the dict so we
+    # do not have to have to care about the plot backend.
+    #
+    p1 = ui.get_plot_prefs(ptype, "x")
+    assert isinstance(p1, dict)
+
+    p2 = ui.get_plot_prefs(ptype, "x", bkg_id=1)
+    assert isinstance(p2, dict)
+
+
 @requires_fits
 @requires_data
 def test_pha1_get_model_plot_filtered(clean_astro_ui, basic_pha1):
