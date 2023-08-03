@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1293,7 +1293,7 @@ def test_pack_pha_invalid_counts():
                   np.asarray([1, 2], dtype=np.int16),
                   np.asarray([complex(1), complex(2)]))
 
-    with pytest.raises(DataErr) as err:
+    emsg = "The PHA dataset 'dummy' contains an unsupported COUNTS column"
+    with pytest.raises(DataErr,
+                       match=f"^{emsg}$"):
         io.pack_pha(pha)
-
-    assert str(err.value) == "The PHA dataset 'dummy' contains an unsupported COUNTS column"

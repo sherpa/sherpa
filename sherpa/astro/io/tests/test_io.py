@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2020, 2021
+#  Copyright (C) 2016, 2017, 2018, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,7 +18,6 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from tempfile import NamedTemporaryFile
 import struct
 
 import numpy as np
@@ -45,23 +44,22 @@ def test_mod_fits(make_data_path):
 
 
 @requires_fits
-def test_warnings_are_gone_arrays():
+@pytest.mark.parametrize("flag", [True, False])
+def test_warnings_are_gone_arrays(tmp_path, flag):
     ui.load_arrays(1, [1, 2, 3], [4, 5, 6])
     #  We now have logic in conftest.py to catch white-listed warnings and fail on unexpected ones.
     #  We just need to make any warnings bubble up, here and in the following test.
-    with NamedTemporaryFile() as f:
-        ui.save_data(1, f.name, ascii=True, clobber=True)
-    with NamedTemporaryFile() as f:
-        ui.save_data(1, f.name, ascii=False, clobber=True)
+    outpath = tmp_path / "test.dat"
+    ui.save_data(1, str(outpath), ascii=flag, clobber=True)
 
 
 @requires_fits
 @requires_data
-def test_warnings_are_gone_pha(make_data_path):
+def test_warnings_are_gone_pha(make_data_path, tmp_path):
     pha = make_data_path("3c273.pi")
     ui.load_pha(pha)
-    with NamedTemporaryFile() as f:
-        ui.save_data(1, f.name, ascii=False, clobber=True)
+    outpath = tmp_path / "test.pi"
+    ui.save_data(1, str(outpath), ascii=False, clobber=True)
 
 
 def assert_staterr(use_errors):
@@ -270,7 +268,7 @@ def fake_rmf(outfile):
 
 
 @requires_fits
-def test_read_ideal_rmf():
+def test_read_ideal_rmf(tmp_path):
     """Can a RMF similar to issue #862 be read in?
 
     The MATRIX column in this file is a scalar rather than array,
@@ -281,9 +279,10 @@ def test_read_ideal_rmf():
     elo = ebins[:-1]
     ehi = ebins[1:]
 
-    with NamedTemporaryFile() as f:
-        fake_rmf(f.name)
-        r = io.read_rmf(f.name)
+    outpath = tmp_path / "test.rmf"
+    outfile = str(outpath)
+    fake_rmf(outfile)
+    r = io.read_rmf(outfile)
 
     # Can we read in the data
     #
@@ -367,9 +366,6 @@ def test_fits_file_missing_column(make_data_path):
 
     infile = make_data_path("1838_rprofile_rmid.fits")
 
-    with pytest.raises(IOErr) as err:
-        io.read_table(infile, colkeys=["ra", "Foo"])
-
     # The error message depends on the backend
     # - crates lists the available columns
     # - pyfits lists the filename
@@ -378,26 +374,26 @@ def test_fits_file_missing_column(make_data_path):
     # whereas pyfits converts it to a capital. The test could have used
     # "FOO" as the column name to ignore this but let's keep this.
     #
-    assert str(err.value).startswith("Required column 'FOO' not found in ") or \
-        str(err.value).startswith("Required column 'Foo' not found in ")
+    emsg = "^Required column 'F(oo|OO)' not found in "
+    with pytest.raises(IOErr, match=emsg):
+        io.read_table(infile, colkeys=["ra", "Foo"])
 
 
 def test_read_arrays_no_data():
     """This can run even with the dummy backend"""
-    with pytest.raises(IOErr) as err:
-        io.read_arrays()
 
-    assert str(err.value) == "no arrays found to be loaded"
+    emsg = "^no arrays found to be loaded$"
+    with pytest.raises(IOErr, match=emsg):
+        io.read_arrays()
 
 
 @requires_fits
 def test_read_arrays_no_data_but_dstype():
     """This is a slightly-different error path than read_arrays()"""
 
-    with pytest.raises(IOErr) as err:
+    with pytest.raises(IOErr,
+                       match="^no arrays found to be loaded$"):
         io.read_arrays(Data2DInt)
-
-    assert str(err.value) == "no arrays found to be loaded"
 
 
 @requires_fits
@@ -406,19 +402,17 @@ def test_read_arrays_no_data_but_dstype():
                           (Data2DInt, 'Data2DInt', 5)])
 def test_read_arrays_not_enough_data(dstype, dname, nargs):
 
-    with pytest.raises(TypeError) as err:
+    emsg = f"^data set '{dname}' takes at least {nargs} args$"
+    with pytest.raises(TypeError, match=emsg):
         io.read_arrays([1, 2, 3], dstype)
-
-    assert str(err.value) == f"data set '{dname}' takes at least {nargs} args"
 
 
 @requires_fits
 def test_read_arrays_not_an_array_type():
 
-    with pytest.raises(IOErr) as err:
+    emsg = "^'foo' must be a Numpy array, list, or tuple$"
+    with pytest.raises(IOErr, match=emsg):
         io.read_arrays("foo")
-
-    assert str(err.value) == "'foo' must be a Numpy array, list, or tuple"
 
 
 @requires_fits
@@ -463,30 +457,27 @@ def test_read_arrays_data1d_combined():
 def test_write_arrays_no_data(arg, tmp_path):
 
     tmpfile = tmp_path / 'test.dat'
-    with pytest.raises(IOErr) as err:
+    emsg = r"^please supply array\(s\) to write to file$"
+    with pytest.raises(IOErr, match=emsg):
         io.write_arrays(str(tmpfile), arg, clobber=True)
-
-    assert str(err.value) == "please supply array(s) to write to file"
 
 
 @requires_fits
 def test_write_arrays_wrong_lengths(tmp_path):
 
     tmpfile = tmp_path / 'test.dat'
-    with pytest.raises(IOErr) as err:
+    emsg = "^not all arrays are of equal length$"
+    with pytest.raises(IOErr, match=emsg):
         io.write_arrays(str(tmpfile), ([1, 2], [1, 2, 3]), clobber=True)
-
-    assert str(err.value) == "not all arrays are of equal length"
 
 
 @requires_fits
 def test_write_arrays_wrong_field_length(tmp_path):
 
     tmpfile = tmp_path / 'test.dat'
-    with pytest.raises(IOErr) as err:
+    emsg = "^Expected 2 columns but found 3$"
+    with pytest.raises(IOErr, match=emsg):
         io.write_arrays(str(tmpfile), ([1, 2], [1, 2]), fields=['a', 'b', 'c'], clobber=True)
-
-    assert str(err.value) == "Expected 2 columns but found 3"
 
 
 @requires_fits
@@ -495,12 +486,9 @@ def test_write_arrays_clobber(tmp_path):
     outfile = tmp_path / 'test.dat'
     outfile.write_text('x')
 
-    with pytest.raises(IOErr) as err:
+    emsg = "^file '.*test.dat' exists and clobber is not set$"
+    with pytest.raises(IOErr, match=emsg):
         io.write_arrays(str(outfile), None, clobber=False)
-
-    emsg = str(err.value)
-    assert emsg.startswith("file '")
-    assert emsg.endswith("test.dat' exists and clobber is not set")
 
 
 @requires_data
