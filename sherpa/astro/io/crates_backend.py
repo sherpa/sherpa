@@ -25,9 +25,9 @@ import numpy
 
 import pycrates
 
-from sherpa.utils.err import IOErr
-from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.astro.utils import resp_init
+from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
+from sherpa.utils.err import ArgumentTypeErr, IOErr
 
 
 warning = logging.getLogger(__name__).warning
@@ -1098,12 +1098,20 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 # Write/Pack Functions #
 #
 
+def check_clobber(filename, clobber):
+    """Error out if the file exists and clobber is not set."""
+
+    if clobber or not os.path.isfile(filename):
+        return
+
+    raise IOErr("filefound", filename)
+
 
 def set_image_data(filename, data, header, ascii=False, clobber=False,
                    packup=False):
 
-    if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr('filefound', filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
     img = pycrates.IMAGECrate()
 
@@ -1175,14 +1183,19 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
 def set_table_data(filename, data, col_names, header=None,
                    ascii=False, clobber=False, packup=False):
 
-    if not packup and not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
     tbl = pycrates.TABLECrate()
-
+    hdr = {} if header is None else header
     try:
         for name in col_names:
             _set_column(tbl, name, data[name])
+
+        for key, value in hdr.items():
+            if value is None:
+                continue
+            _set_key(tbl, key, value)
 
     finally:
         if packup:
@@ -1191,15 +1204,17 @@ def set_table_data(filename, data, col_names, header=None,
         if ascii and '[' not in filename and ']' not in filename:
             filename += "[opt kernel=text/simple]"
 
-        # pycrates.write_file(tbl, filename)
         tbl.write(filename, clobber=True)
 
 
 def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
 
-    if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+    if header is None:
+        raise ArgumentTypeErr("badarg", "header", "set")
+
+    if not packup:
+        check_clobber(filename, clobber)
 
     phadataset = pycrates.phacratedataset.PHACrateDataset()
 
@@ -1237,8 +1252,7 @@ def set_pha_data(filename, data, col_names, header=None,
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
-    if os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+    check_clobber(filename, clobber)
 
     if not numpy.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')
