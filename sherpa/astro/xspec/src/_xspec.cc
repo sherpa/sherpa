@@ -23,89 +23,42 @@
 #include <iostream>
 #include <fstream>
 
-// The symbols listed in XSPEC version 12.9.1
-// at https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixExternal.html
-// are given below. Note that this is the C/FORTRAN interface, not the
-// more-featureful FunctionUtility module.
+// xsfortran is only needed to support FNINIT as there's (as of XSPEC 12.13.0)
+// no version of this functionality in FunctionUtility.
 //
-// Functions which are used below:
-// FNINIT	Initializes data directory locations needed by the models. See below for a fuller description.
-// FGABND	Get an element abundance.
-// FGCHAT	Get current chatter level setting for model functions' output verbosity.
-// FPCHAT	Set the chatter level. Default is 10, higher chatter levels produce more output.
-// FGMSTR	Get a model string value (see XSPEC xset command).
-// FPMSTR	Set a model string value.
-// FGDATD	Get the model .dat files path.
-// FPDATD	Set the model .dat files path.
-// FGMODF	Get the model ion data path.
-// FPSLFL	Load values of a file solar abundance table (see abund command).
-// FGSOLR	Get the solar abundance table setting.
-// FPSOLR	Set the solar abundance table.
-// FGXSCT	Get the cross section table setting.
-// FPXSCT	Set the cross section table.
-// csmgh0	Get the cosmology H$_0$ setting (see the cosmo command).
-// csmph0	Set H$_0$.
-// csmgl0	Get $\Lambda_0$.
-// csmpl0	Set $\Lambda_0$.
-// csmgq0	Get q$_0$.
-// csmpq0	Put q$_0$.
-// xs_getVersion (or xgvers)	Retrieve XSPEC's version string.
-//
-// Functions which are not wrapped as their functionality is available:
-// RFLABD	Read abundance data from a file, then load and set this to be the current abundance table. (Essentially this combines a file read with the FPSLFL and FPSOLR functions.)
-//
-// Functions not wrapped as not felt to be that useful:
-// fzsq	Computes the luminosity distance, (c/H$_0$)*fzsq. The function is valid for small values of q$_0$*z for the case of no cosmological constant and uses the approximation of Pen (1999 ApJS 120, 49) for the case of a cosmological constant and a flat Universe. The function is not valid for non-zero cosmological constant if the Universe is not flat.
-//
-// Functions not wrapped since they are not useful as is (they need
-// functionality from 12.9.1 to set the XFLT keywords):
-// DGFILT	Get a particular XFLT keyword value from a data file.
-// DGNFLT	Get the number of XFLT keywords in a data file.
-//
-// Other symbols in xsFortran.h are:
-// DGQFLT       Does a XFLT keyword exist?
-// PDBVAL       Set a database value
-//
-// Symbols in 12.9.1/HEASOFT 6.22 but not in 12.9.0/HEASOFT 6.19
-// FGABNZ
-// FGTABN
-// FGTABZ
-// FGELTI
-// FGNELT
-// FGABFL
-// FPABFL
-// FGAPTH
-// FPAPTH
-// csmpall
-// DPFILT
-// DCLFLT
-// GDBVAL
-// CDBASE
-// FGATDV
-// FPATDV
-//
-// These seem unlikely to be useful for Sherpa
-// xs_getChat
-// xs_write
-// xs_read
-//
-// These are numeric functions which we should have available elsewhere
-// xs_erf
-// xs_erfc
-// gammap
-// gammq
-//
-// TODO:: switch to C++ FuntionUtility interface rather than use xsFortran.h
-//
+#include <XSFunctions/Utilities/xsFortran.h>
+#include <XSFunctions/Utilities/FunctionUtility.h>
+#include <XSUtil/Utils/IosHolder.h>
+#include <XSUtil/Utils/XSutility.h>
+
 // funcWrappers: C_<model> are declared here; the other models are defined in
 // functionMap.h
 //
-#include <XSFunctions/Utilities/xsFortran.h>
 #include <XSFunctions/funcWrappers.h>
 #include <XSFunctions/functionMap.h>
 
-// TODO: is this defined in an XSPEC header file?
-#define ABUND_SIZE (30) // number of elements in Solar Abundance table
+
+// A simple range iterator for integer-like types since we don't have boost.
+// We don't really need it to be templated as it's only used with size_t,
+// and similarly start is always set to 0, but leave this for now.
+//
+template <typename T>
+class irange
+{
+private:
+  T lastval;
+  T current;
+
+public:
+  irange(T end, T start=0): lastval(end),current(start) {}
+
+  bool operator!=(const irange&) const { return current < lastval; }
+  void operator++() { ++current; }
+  T operator*() const { return current; }
+
+  const irange& begin() const { return *this; }
+  const irange& end() const { return *this; }
+};
 
 
 // The XSPEC initialization used to be done lazily - that is, only
@@ -133,258 +86,139 @@ static int _sherpa_init_xspec_library()
     return EXIT_FAILURE;
   }
 
-  // Stream buffer for redirected stdout
-  std::streambuf* cout_sbuf = NULL;
-  std::ofstream fout;
+  // Redirect the stdout channel for the duration of the FNINIT call.
+  // The replacement is set to ostringstream so that we can find out
+  // what was sent to it in case of emergency (but would need code
+  // changes to do this). This used to be done by manually replacing
+  // the std::cout buffer.
+  //
+  // Note that only FNINIT needs this, as the FunctionUtility calls do
+  // not create string output (at least for 12.12.x/12.13.0).
+  //
+  std::ostream* outStream = IosHolder::outHolder();
+  std::ostringstream tmpStream;
+  IosHolder::setStreams(IosHolder::inHolder(),
+			&tmpStream,
+			IosHolder::errHolder());
 
   try {
-
-    // Redirect std::cout during call to FNINIT; this causes
-    // us to swallow annoying messages about having set the
-    // XSPEC abundance and cross section by default.
-
-    // We have to do it this way because XSPEC code sends message
-    // to XSPEC stream buffers, that in turn talk to std::cin,
-    // std::cout, and std::cerr.  When we are not given a toggle
-    // to turn off output to output streams, we can instead redirect
-    // the stream itself.
-
-    // In this case, the only stream we want to redirect is stdout.
-
-    // If creating any stream buffer fails for any reason,
-    // make sure we can still use original std::cout stream buffer.
-
-    // Note:  since we are *not* redirecting std::cerr, any error
-    // messages are still seen; if, for example, HEADAS is not set,
-    // user will still see error message printed to stderr (i.e., to
-    // screen by default).  We still want such error messages to be
-    // seen!  So do *not* redirect std::cerr.
-    //
-    // Unfortunately it appears that XSPEC does not use stderr for its
-    // error messages, but stdout, so the following code will hide
-    // any error messages from FNINIT (XSPEC versions 12.8.2 and 12.9.0).
-    // Perhaps the screen output could be saved, rather than redirected
-    // to /dev/null, and checked for the string '***Error: ', which
-    // appears to be used in the error messages from XSPEC.
-
-    cout_sbuf = std::cout.rdbuf();
-    fout.open("/dev/null");
-    if (cout_sbuf != NULL && fout.is_open())
-      std::cout.rdbuf(fout.rdbuf()); // temporary redirect stdout to /dev/null
-
     // Initialize XSPEC model library
     FNINIT();
 
-    // Get back original std::cout
-    if (cout_sbuf != NULL) {
-      std::cout.clear();
-      std::cout.rdbuf(cout_sbuf);
-    }
-    fout.clear();
-    fout.close();
-
-    // We used to set the chatter to 0 but this misses useful info
-    // (like XSPEC can't find the data files) that would be reported
-    // by XSPEC, so use the default XSPEC setting. It does not appear
-    // that this value is read in from ~/.xspec/Xspec.init so set
-    // it here so we have repeatable behavior.
-    //
-    FPCHAT( 10 );
-
-    // Set cosmology initial values to XSPEC initial values
-    csmph0( 70.0 );
-    csmpq0( 0.0 );
-    csmpl0( 0.73 );
-
   } catch(...) {
-
-    // Get back original std::cout
-    if (cout_sbuf != NULL) {
-      std::cout.clear();
-      std::cout.rdbuf(cout_sbuf);
-    }
-    fout.clear();
-    fout.close();
+    IosHolder::setStreams(IosHolder::inHolder(),
+			  outStream,
+			  IosHolder::errHolder());
 
     // Raise appropriate error message that XSPEC initialization failed.
     PyErr_SetString( PyExc_ImportError,
 		     (char*)"XSPEC initialization failed; "
 		     "check HEADAS environment variable" );
     return EXIT_FAILURE;
-
   }
+
+  IosHolder::setStreams(IosHolder::inHolder(),
+			outStream,
+			IosHolder::errHolder());
+
+  // We used to set the chatter to 0 but this misses useful info
+  // (like XSPEC can't find the data files) that would be reported
+  // by XSPEC, so use the default XSPEC setting. It does not appear
+  // that this value is read in from ~/.xspec/Xspec.init so set
+  // it here so we have repeatable behavior.
+  //
+  FunctionUtility::xwriteChatter( 10 );
+
+  // Set cosmology initial values to XSPEC initial values
+  FunctionUtility::setH0( 70.0 );
+  FunctionUtility::setq0( 0.0 );
+  FunctionUtility::setlambda0( 0.73 );
 
   init = true;
   return EXIT_SUCCESS;
 
 }
 
-static PyObject* get_version( PyObject *self )
-{
-
-  char version[256];
-  int retval;
-
-  try {
-
-    retval = xs_getVersion(version, 256);
-
-  } catch(...) {
-
-    PyErr_SetString( PyExc_LookupError,
-		     (char*)"could not get XSPEC version string" );
-    return NULL;
-
-  }
-
-  if( retval < 0 ) {
-    PyErr_SetString( PyExc_LookupError,
-		     (char*)"XSPEC version string was truncated" );
-    return NULL;
-  }
-
-  return Py_BuildValue( (char*)"s", version );
-
-}
-
 static PyObject* get_chatter( PyObject *self )
 {
-
-  int chatter = 0;
-
-  try {
-
-    chatter = FGCHAT();
-
-  } catch(...) {
-
-    PyErr_SetString( PyExc_LookupError,
-		     (char*)"could not get XSPEC chatter level" );
-    return NULL;
-
-  }
-
-  return Py_BuildValue( (char*)"i", chatter );
-
+  return Py_BuildValue( (char*)"i", FunctionUtility::xwriteChatter() );
 }
 
 
-static PyObject* get_abund( PyObject *self, PyObject *args )
+static PyObject* get_abund_name( PyObject *self, PyObject *args )
 {
-
-  char* abund = NULL;
   char* element = NULL;
-  PyObject *retval = NULL;
-
-  if ( !PyArg_ParseTuple( args, (char*)"|s", &element ) )
+  char *name = NULL;
+  if ( !PyArg_ParseTuple( args, (char*)"s|z", &element, &name ) )
     return NULL;
 
-  try {
+  const size_t nelem = FunctionUtility::NELEMS();
+  for (const auto idx: irange<size_t>(nelem)) {
+    if (FunctionUtility::elements(idx) != element) {
+      continue;
+    }
 
-    abund = FGSOLR();
+    const size_t z = idx + 1;
 
-  } catch(...) {
+    float abundVal;
+    if (name == NULL) {
+      abundVal = FunctionUtility::getAbundance(z);
+    } else {
+      try {
+	abundVal = FunctionUtility::getAbundance(string(name), z);
+      } catch (FunctionUtility::NoInitializer&) {
+	// Fortunately this error does not lead to stderr output
+	return PyErr_Format( PyExc_ValueError,
+			     "Unknown abundance table '%s'", name );
+      }
+    }
 
-    PyErr_SetString( PyExc_LookupError,
-		     (char*)"could not get XSPEC solar abundance" );
-    return NULL;
-
+    return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
   }
 
-  if( !element ) {
+  return PyErr_Format( PyExc_ValueError,
+		       (char*)"could not find element '%s'", element);
+}
 
-    retval = (PyObject*) Py_BuildValue( (char*)"s", abund );
 
+static PyObject* get_abund_z( PyObject *self, PyObject *args )
+{
+  char *name = NULL;
+  int zarg = 0;
+  if ( !PyArg_ParseTuple( args, (char*)"i|z", &zarg, &name ) )
+    return NULL;
+
+  size_t z = static_cast<size_t>(zarg);
+  if (z < 1 || z > FunctionUtility::NELEMS()) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"Unsupported atomic number: %d", zarg );
+  }
+
+  float abundVal;
+  if (name == NULL) {
+    abundVal = FunctionUtility::getAbundance(z);
   } else {
-
-    float abundVal = 0.0;
-    std::streambuf *cerr_sbuf = NULL;
-    std::ostringstream fout;
-
     try {
-
-      cerr_sbuf = std::cerr.rdbuf();
-
-      if (cerr_sbuf != NULL)
-	std::cerr.rdbuf(fout.rdbuf());
-
-      abundVal = FGABND(element);
-
-      // Get back original std::cerr
-      if (cerr_sbuf != NULL)
-	std::cerr.rdbuf(cerr_sbuf);
-
-
-    } catch(...) {
-
-      // Get back original std::cerr
-      if (cerr_sbuf != NULL)
-	std::cerr.rdbuf(cerr_sbuf);
-
-      PyErr_Format( PyExc_ValueError,
-		    (char*)"could not get XSPEC abundance for '%s'",
-		  element);
-      return NULL;
-
+      abundVal = FunctionUtility::getAbundance(string(name), z);
+    } catch (FunctionUtility::NoInitializer&) {
+      // Fortunately this error does not lead to stderr output
+      return PyErr_Format( PyExc_ValueError,
+			   "Unknown abundance table '%s'", name );
     }
-
-    if( fout.str().size() > 0 ) {
-      PyErr_Format( PyExc_TypeError,
-		    (char*)"could not find element '%s'", element);
-      return NULL;
-    }
-
-    retval = (PyObject*) Py_BuildValue( (char*)"f", abundVal );
   }
 
-  return retval;
+  return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
 }
 
 
 static PyObject* get_cosmo( PyObject *self )
 {
-
-  float h0;
-  float l0;
-  float q0;
-
-  try {
-
-    h0 = csmgh0();
-    l0 = csmgl0();
-    q0 = csmgq0();
-
-  } catch(...) {
-
-    PyErr_SetString( PyExc_LookupError,
-		     (char*)"could not get XSPEC cosmology settings" );
-    return NULL;
-
-  }
+  // Assume these can not throw errors
+  float h0 = FunctionUtility::getH0();
+  float l0 = FunctionUtility::getlambda0();
+  float q0 = FunctionUtility::getq0();
 
   return Py_BuildValue( (char*)"fff", h0, q0, l0 );
-
-}
-
-
-static PyObject* get_cross( PyObject *self )
-{
-
-  char* cross = NULL;
-
-  try {
-
-    cross = FGXSCT();
-
-  } catch(...) {
-
-    PyErr_SetString( PyExc_LookupError,
-		     (char*)"could not get XSPEC cross-section" );
-    return NULL;
-
-  }
-
-  return Py_BuildValue( (char*)"s", cross );
 
 }
 
@@ -397,95 +231,136 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"i", &chatter ) )
     return NULL;
 
-  try {
-
-    FPCHAT( chatter );
-
-  } catch(...) {
-
-    PyErr_Format( PyExc_ValueError,
-                  (char*)"could not set XSPEC chatter level to %d",
-                  chatter);
-    return NULL;
-
-  }
-
+  FunctionUtility::xwriteChatter(chatter);
   Py_RETURN_NONE;
 
 }
 
+// Ideally XSPEC would check this, but it doesn't appear to. This has
+// been added to make sure that get_xsabund(<element>) will not fail,
+// although we also have code there to catch that eventuality.
+//
+static bool abundances_can_be_set_to_file = false;
 
+
+// This is used in two places, so it has been moved into a
+// separate routine. The code assumes that vals is the
+// correct size by the time we get here.
+//
+static void set_abundances_from_vector(const std::vector<float> vals) {
+  FunctionUtility::abundanceVectors("file", vals);
+  FunctionUtility::ABUND("file");
+
+  // Now we have loaded data we can let the user use the "file" label.
+  // This label handles both "read-from-a-file" and "sent in an array"
+  // cases.
+  //
+  if (!abundances_can_be_set_to_file) {
+    abundances_can_be_set_to_file = true;
+  }
+}
+
+
+// Based on xsFortran::FPSOLR
+//
 static PyObject* set_abund( PyObject *self, PyObject *args )
 {
 
   char* table = NULL;
-  int status = 0;
-
   if ( !PyArg_ParseTuple( args, (char*)"s", &table ) )
     return NULL;
 
+  string tableName = string(table);
+  tableName = XSutility::lowerCase(tableName);
+
+  // Make sure we can't select the file option if we have not loaded
+  // any data.
+  //
+  if (tableName == "file") {
+    if (!abundances_can_be_set_to_file) {
+      PyErr_SetString( PyExc_ValueError,
+		       (char*)"Abundances have not been read in from a file/vector" );
+      return NULL;
+    }
+
+    FunctionUtility::ABUND(tableName);
+    Py_RETURN_NONE;
+  }
+
+  if (FunctionUtility::checkAbund(tableName)) {
+    FunctionUtility::ABUND(tableName);
+    Py_RETURN_NONE;
+  }
+
+  // If we've got here then try to read the data from a file. This follows
+  // the XSPEC code - it is very-similar to FunctionUtility::readNewAbundances
+  // but is this supported in 12.12.0 (it is in 12.12.1)?
+  //
+  const size_t nelems = FunctionUtility::NELEMS();
+  std::vector<float> vals(nelems, 0);
+  size_t count(0);
+
+  std::ifstream fileStream(table);
+
   try {
+    float element;
+    fileStream.exceptions(std::ios_base::failbit);
 
-    FPSOLR( table, &status );
-
-  } catch(...) {
-
-    status = 1;
-
+    while (count < nelems && fileStream >> element) {
+      vals[count] = element;
+      ++count;
+    }
   }
+  catch ( std::exception& ) {
 
-  // if abundance table name fails, try it as a filename
-  if( status ) {
-
-    std::ifstream fileStream(table);
-    std::vector<float> vals(ABUND_SIZE, 0);
-    size_t count(0);
-
-    try {
-
-      float element;
-      fileStream.exceptions(std::ios_base::failbit);
-
-      while (count < ABUND_SIZE && fileStream >> element) {
-	vals[count] = element;
-	++count;
-      }
-
-      status = 0;
-    }
-    catch ( std::exception& ) {
-
-      if( !fileStream.eof() ) {
-      	PyErr_Format( PyExc_ValueError,
-                      (char*)"Cannot read file '%s'.  It may not exist or contains invalid data",
-                      table);
-	return NULL;
-      }
-
-      status = 1;
-    }
-
-    try {
-
-      FPSOLR((char*)"file", &status);
-      FPSLFL( &vals[0], ABUND_SIZE, &status );
-
-    } catch(...) {
-
-      status = 1;
-
+    // We do not error out if it was an eofbit failure, as we assume
+    // this just means that the file contains < NELEMS elements, and
+    // the missing elements will be set to 0 abundance. We could try
+    // and explicitly handle this case from the exception, but let's
+    // follow XSPEC and check the eof status.
+    //
+    if (!fileStream.eof()) {
+      return PyErr_Format( PyExc_ValueError,
+			   (char*)"Cannot read file '%s'.  It may not exist or contains invalid data",
+			   table);
     }
   }
 
-  if ( 0 != status ) {
-    PyErr_Format( PyExc_ValueError,
-		  (char*)"could not set XSPEC abundance to %s",
-                  table );
-    return NULL;
-  }
-
+  set_abundances_from_vector(vals);
   Py_RETURN_NONE;
+}
 
+
+// Handle a vector of abundances. It must be the right size.
+// To match set_abund when given a file name we set the
+// abundances to "file". This means that a user can not
+// load up a set of abundances and *NOT* use them; they
+// would have to reset the abundance table after loading.
+//
+static PyObject* set_abund_vector( PyObject *self, PyObject *args )
+{
+  sherpa::astro::xspec::FloatArray vector;
+  if ( !PyArg_ParseTuple( args, (char*)"O&",
+			  (converter)sherpa::convert_to_contig_array< sherpa::astro::xspec::FloatArray >,
+			  &vector ) )
+    return NULL;
+
+  size_t nelem = FunctionUtility::NELEMS();
+  size_t nvector = static_cast<size_t>(vector.get_size());
+
+  if ( nvector != nelem ) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"Array must contain %d elements, not %d",
+			 nelem, nvector );
+  }
+
+  std::vector<float> vals(nelem);
+  for (const auto idx: irange<size_t>(nelem)) {
+    vals[idx] = vector[idx];
+  }
+
+  set_abundances_from_vector(vals);
+  Py_RETURN_NONE;
 }
 
 
@@ -499,22 +374,9 @@ static PyObject* set_cosmo( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"fff", &h0, &q0, &l0 ) )
     return NULL;
 
-  try {
-
-    csmph0( h0 );
-    csmpl0( l0 );
-    csmpq0( q0 );
-
-  } catch(...) {
-
-    PyErr_Format( PyExc_ValueError,
-                  (char*)"could not set XSPEC cosmology settings to "
-                  "H0=%g q0=%g Lambda0=%g",
-                  h0, l0, q0);
-    return NULL;
-
-  }
-
+  FunctionUtility::setH0(h0);
+  FunctionUtility::setq0(q0);
+  FunctionUtility::setlambda0(l0);
   Py_RETURN_NONE;
 
 }
@@ -524,61 +386,63 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
 {
 
   char* csection = NULL;
-  int status = 0;
 
   if ( !PyArg_ParseTuple( args, (char*)"s", &csection ) )
     return NULL;
 
-  try {
+  string tableName = string(csection);
+  tableName = XSutility::lowerCase(tableName);
 
-    FPXSCT( csection, &status );
+  // On failure, checkXsect catches a YellowAlert which creates output
+  // to the error channel, so we over-ride it for this call.
+  //
+  std::ostream* errStream = IosHolder::errHolder();
+  std::ostringstream tmpStream;
+  IosHolder::setStreams(IosHolder::inHolder(),
+			IosHolder::outHolder(),
+			&tmpStream);
+  const bool known = FunctionUtility::checkXsect(tableName);
+  IosHolder::setStreams(IosHolder::inHolder(),
+			IosHolder::outHolder(),
+			errStream);
 
-  } catch(...) {
-
-    status = 1;
-
+  if (!known) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"could not set XSPEC photoelectric "
+			 "cross-section to '%s'",
+			 csection);
   }
 
-  if ( 0 != status ) {
-    PyErr_Format( PyExc_ValueError,
-                  (char*)"could not set XSPEC photoelectric "
-                  "cross-section to '%s'",
-                  csection);
-    return NULL;
-  }
-
+  FunctionUtility::XSECT(tableName);
   Py_RETURN_NONE;
 
 }
 
+
+static PyObject* clear_xset( PyObject *self )
+{
+  FunctionUtility::eraseModelStringDataBase();
+  Py_RETURN_NONE;
+}
 
 static PyObject* set_xset( PyObject *self, PyObject *args )
 {
 
   char* str_name = NULL;
   char* str_value = NULL;
-  int status = 0;
 
   if ( !PyArg_ParseTuple( args, (char*)"ss", &str_name, &str_value ) )
     return NULL;
 
-  try {
-
-    FPMSTR( str_name, str_value );
-
-  } catch(...) {
-
-    status = 1;
-
+  // Support the initalize option to follow XSPEC, but it is expected
+  // that users will use the clear_xset routine directly.
+  //
+  string name = XSutility::upperCase(string(str_name));
+  if (name == "INITIALIZE") {
+    FunctionUtility::eraseModelStringDataBase();
+  } else {
+    FunctionUtility::setModelString(name, string(str_value));
   }
-
-  if ( 0 != status ) {
-    PyErr_Format( PyExc_ValueError,
-		  (char*)"could not set XSPEC model strings '%s: %s'",
-		  str_name, str_value);
-    return NULL;
-  }
-
   Py_RETURN_NONE;
 
 }
@@ -587,104 +451,280 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 {
 
   char* str_name = NULL;
-  char* str_value = NULL;
 
-  if ( !PyArg_ParseTuple( args, (char*)"s", &str_name ) )
+  if ( !PyArg_ParseTuple( args, (char*)"|s", &str_name ) )
     return NULL;
 
-  try {
+  // If no argument is given then we return a dictonary
+  // of all items.
+  //
+  if ( str_name == NULL ) {
 
-    str_value = FGMSTR( str_name );
+    PyObject *d = PyDict_New();
+    for (const auto& item : FunctionUtility::modelStringDataBase()) {
+      PyObject *value = PyUnicode_FromString(item.second.c_str());
+      PyDict_SetItemString(d, item.first.c_str(), value);
+      Py_DECREF(value);
+    }
 
-  } catch(...) {
-
-    PyErr_Format( PyExc_KeyError,
-		  (char*)"could not get XSPEC model string '%s'",
-		  str_name);
-    return NULL;
-
+    return d;
   }
 
-  return Py_BuildValue( (char*)"s", str_value );
+  // If the key does not exist treat it as an error.
+  //
+  static string value;
+  value = FunctionUtility::getModelString(string(str_name));
+  if (value == FunctionUtility::NOT_A_KEY()) {
+    PyErr_SetString( PyExc_KeyError, str_name );
+    return NULL;
+  }
+
+  return Py_BuildValue( (char*)"s", value.c_str() );
 
 }
 
-// Perhaps this should be expanded to some of the other routines
-// that return a string, rather than just the paths?
+
+static PyObject *emptyDict() { return PyDict_New(); }
+
+// This only works because Real is a typedef for double.
 //
-static PyObject* get_xspec_path( const char *label, char *getfunc() )
-{
+static PyObject *mapToDict(const std::map<string, double> &map) {
+  PyObject *d = PyDict_New();
 
-  char* str_value = NULL;
-  try {
-    str_value = getfunc();
-  } catch(...) {
-
-    std::ostringstream emsg;
-    emsg << "could not get XSPEC " << label << " path";
-    PyErr_SetString( PyExc_LookupError,
-                     emsg.str().c_str() );
-    return NULL;
-
+  // C++11 iteration.
+  //
+  for (const auto& item : map) {
+    PyObject *value = PyFloat_FromDouble(item.second);
+    PyDict_SetItemString(d, item.first.c_str(), value);
+    Py_DECREF(value);
   }
 
-  return Py_BuildValue( (char*)"s", str_value );
-
+  return d;
 }
 
-static PyObject* get_manager_data_path( PyObject *self )
+
+// XFLT functions
+//
+//      static int getNumberXFLT(int ifl);
+//      // This will throw a silent YellowAlert if map corresponding to ifl doesn't exist.
+//      static const std::map<string, Real>& getAllXFLT(int ifl);
+//      static bool inXFLT(int ifl, int i);
+//      static bool inXFLT(int ifl, string skey);
+//      static double getXFLT(int ifl, int i);
+//      static double getXFLT(int ifl, string skey);
+//      static void loadXFLT(int ifl, const std::map<string, Real>& values);
+//      static void clearXFLT();
+//
+// We use a dictionary interface - that is we set and get dictionaries
+// rather than have commands work on individual keys. That is,
+// checks like inXFLT have to be done by the user on the data returned
+// by these routines.
+//
+static PyObject* clearXFLT( PyObject *self )
 {
-  return get_xspec_path("manager", FGDATD);
+  FunctionUtility::clearXFLT();
+  Py_RETURN_NONE;
 }
 
-static PyObject* get_model_data_path( PyObject *self )
+static PyObject* getAllXFLT( PyObject *self, PyObject *args )
 {
-  return get_xspec_path("model", FGMODF);
+  int spectrumNumber = 1;
+
+  if ( !PyArg_ParseTuple( args, (char*)"i", &spectrumNumber ) )
+    return NULL;
+
+  // Check that we have data, to avoid a YellowAlert when calling
+  // getAllXFLT.
+  //
+  if (FunctionUtility::getNumberXFLT(spectrumNumber) > 0) {
+    const std::map<string, Real> xflt = FunctionUtility::getAllXFLT(spectrumNumber);
+    return mapToDict(xflt);
+  } else {
+    return emptyDict();
+  }
 }
 
-static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
+static PyObject* loadXFLT( PyObject *self, PyObject *args )
 {
+  PyObject *xflt_dict = NULL;
+  int spectrumNumber = 1;
 
+  if ( !PyArg_ParseTuple( args, (char*)"iO!",
+			  &spectrumNumber,
+                          &PyDict_Type, &xflt_dict
+			  ) )
+    return NULL;
+
+  std::map<string, Real> xflt;
+
+  PyObject *key, *value;
+  Py_ssize_t pos = 0;
+
+  while (PyDict_Next(xflt_dict, &pos, &key, &value)) {
+
+    const char *k = PyUnicode_AsUTF8(key);
+    if (k == NULL) {
+	PyErr_SetString( PyExc_ValueError,
+			 (char*)"keys must be strings" );
+	return NULL;
+    }
+
+    double v = PyFloat_AsDouble(value);
+    if (v == -1 && PyErr_Occurred()) {
+	PyErr_SetString( PyExc_ValueError,
+			 (char*)"values must be numbers" );
+	return NULL;
+    }
+
+    xflt[k] = v;
+  }
+
+  // We do not check if xflt is empty.
+  FunctionUtility::loadXFLT(spectrumNumber, xflt);
+  Py_RETURN_NONE;
+}
+
+
+// This is easy to provide access to, but is it worth it?
+//
+//   static double getDbValue(const string keyword);
+//   static void loadDbValue(const string keyword, const double value);
+//   static void clearDb();
+//   static string getDbKeywords();
+//   static const std::map<string,double>& getAllDbValues();
+//
+// Follow the XFLT approach and just provide an access via
+// dictionaries, although in  this case we do support a way
+// to set a single value.
+//
+static PyObject* clearDb( PyObject *self )
+{
+  FunctionUtility::clearDb();
+  Py_RETURN_NONE;
+}
+
+static PyObject* getAllDb( PyObject *self )
+{
+  const std::map<string, double> db = FunctionUtility::getAllDbValues();
+  return mapToDict(db);
+}
+
+static PyObject* loadDbValue( PyObject *self, PyObject *args )
+{
+  char* key = NULL;
+  double value = 0;
+
+  if ( !PyArg_ParseTuple( args, (char*)"sd", &key, &value ) )
+    return NULL;
+
+  FunctionUtility::loadDbValue(string(key), value);
+  Py_RETURN_NONE;
+}
+
+
+// Provide access to the element table. This returns
+// a dictionary where the key is the name and the value
+// the atomic number (so 'He' maps to 2).
+//
+static PyObject* get_elements( PyObject *self ) {
+  PyObject *d = PyDict_New();
+
+  for (const auto i: irange<size_t>(FunctionUtility::NELEMS())) {
+    PyObject *key = PyUnicode_FromString(FunctionUtility::elements(i).c_str());
+    PyObject *value = PyLong_FromSize_t(i + 1);
+    PyDict_SetItem(d, key, value);
+    Py_DECREF(value);
+    Py_DECREF(key);
+  }
+
+  return d;
+}
+
+
+template <const std::string& get()>
+static PyObject* get_xspec_string( PyObject *self ) {
+  return Py_BuildValue( (char*)"s", get().c_str() );
+}
+
+template <void set(const std::string& value)>
+static PyObject* set_xspec_string( PyObject *self, PyObject *args ) {
   char* path = NULL;
-
   if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
     return NULL;
 
-  try {
-
-    FPDATD( path );
-
-  } catch(...) {
-
-    std::ostringstream emsg;
-    emsg << "could not set XSPEC manager path to '" << path << "'";
-    PyErr_SetString( PyExc_ValueError,
-                     emsg.str().c_str() );
-    return NULL;
-  }
-
+  set(string(path));
   Py_RETURN_NONE;
-
 }
 
+#define NOARGSPEC(name, func) \
+  { (char *)#name, (PyCFunction)func, METH_NOARGS, NULL }
+
+
 static PyMethodDef XSpecMethods[] = {
-  { (char*)"get_xsversion", (PyCFunction)get_version, METH_NOARGS, NULL },
-  { (char*)"get_xschatter", (PyCFunction)get_chatter, METH_NOARGS, NULL },
+  // Utility routines
+  //
+  NOARGSPEC(get_xsversion, get_xspec_string<XSutility::xs_version>),
+  NOARGSPEC(get_xschatter, get_chatter),
   FCTSPEC(set_xschatter, set_chatter),
-  FCTSPEC(get_xsabund, get_abund),
+
+  NOARGSPEC(get_xsabund_table, get_xspec_string<FunctionUtility::ABUND>),
+  FCTSPEC(get_xsabund_name, get_abund_name),
+  FCTSPEC(get_xsabund_z, get_abund_z),
   FCTSPEC(set_xsabund, set_abund),
+  FCTSPEC(set_xsabund_vector, set_abund_vector),
+
+  NOARGSPEC(get_xscosmo, get_cosmo),
   FCTSPEC(set_xscosmo, set_cosmo),
-  { (char*)"get_xscosmo", (PyCFunction)get_cosmo, METH_NOARGS, NULL },
-  { (char*)"get_xsxsect", (PyCFunction)get_cross, METH_NOARGS, NULL },
+
+  NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),
   FCTSPEC(set_xsxsect, set_cross),
+
+  NOARGSPEC(clear_xsxset, clear_xset),
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
-  { (char*)"get_xspath_manager",
-    (PyCFunction)get_manager_data_path, METH_NOARGS, NULL },
-  { (char*)"get_xspath_model",
-    (PyCFunction)get_model_data_path, METH_NOARGS, NULL },
-  FCTSPEC(set_xspath_manager, set_manager_data_path),
 
+  // The set commands are not wrapped yet as it's not clear how well
+  // the system handles these changes (e.g. it doesn't seem to update
+  // the stored abundances if you change one or both of the abundance
+  // settings). The cross-section file should also be accessible in a
+  // similar manner, but the XSPEC API does not provide access to this
+  // (at least for XSPEC 12.12.1).
+  //
+  // Also, abundPath is essentially managerPath, but we provide access
+  // to it as it could be changed (but not by any routine we currently
+  // provide access to).
+  //
+  NOARGSPEC(get_abundance_file, get_xspec_string<FunctionUtility::abundanceFile>),
+  NOARGSPEC(get_xspath_abundance, get_xspec_string<FunctionUtility::abundPath>),
+  // FCTSPEC(set_abundance_file, set_xspec_string<FunctionUtility::abundanceFile>),
+  // FCTSPEC(set_xspath_abundance, set_xspec_string<FunctionUtility::abundPath>),
+
+  // XFLT commands
+  NOARGSPEC(clear_xflt, clearXFLT),
+  FCTSPEC(get_xflt, getAllXFLT),
+  FCTSPEC(set_xflt, loadXFLT),
+
+  // DB commands
+  NOARGSPEC(clear_db, clearDb),
+  NOARGSPEC(get_db, getAllDb),
+  FCTSPEC(set_db, loadDbValue),
+
+  NOARGSPEC(get_xsversion_atomdb, get_xspec_string<FunctionUtility::atomdbVersion>),
+  NOARGSPEC(get_xsversion_nei, get_xspec_string<FunctionUtility::neiVersion>),
+  FCTSPEC(set_xsversion_atomdb, set_xspec_string<FunctionUtility::atomdbVersion>),
+  FCTSPEC(set_xsversion_nei, set_xspec_string<FunctionUtility::neiVersion>),
+
+  // element access
+  //
+  NOARGSPEC(get_xselements, get_elements),
+
+  NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
+  NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
+  FCTSPEC(set_xspath_manager, set_xspec_string<FunctionUtility::managerPath>),
+  FCTSPEC(set_xspath_model, set_xspec_string<FunctionUtility::modelDataPath>),
+
+  // Models
+  //
   XSPECMODELFCT_NORM( agnsed, 16 ),
   XSPECMODELFCT_NORM( qsosed, 7 ),
 
