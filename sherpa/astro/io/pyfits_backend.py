@@ -78,23 +78,27 @@ def _has_hdu(hdulist, name):
     return True
 
 
-def _try_key(hdu, name, fix_type=False, dtype=SherpaFloat):
+def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
 
     try:
         key = hdu.header[name]
     except KeyError:
         return None
 
+    # TODO: should this comparison be case insensitive, so that
+    # NONE and None are also matched?
+    #
     if str(key).find('none') != -1:
         return None
 
-    if fix_type:
-        key = dtype(key)
-    return key
+    if not fix_type:
+        return key
+
+    return dtype(key)
 
 
-def _require_key(hdu, name, fix_type=False, dtype=SherpaFloat):
-    key = _try_key(hdu, name, fix_type, dtype)
+def _require_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
+    key = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
     if key is None:
         raise IOErr('nokeyword', hdu._file.name, name)
     return key
@@ -121,21 +125,21 @@ def _get_meta_data(hdu):
 
 
 # Note: it is not really WCS specific, but leave the name alone for now.
-def _get_wcs_key(hdu, key0, key1, fix_type=False, dtype=SherpaFloat):
+def _get_wcs_key(hdu, key0, key1):
     """Return the pair of keyword values as an array of values of
     the requested datatype. If either key is missing then return
     ().
     """
 
-    val1 = _try_key(hdu, key0, fix_type, dtype)
+    val1 = _try_key(hdu, key0)
     if val1 is None:
         return ()
 
-    val2 = _try_key(hdu, key1, fix_type, dtype)
+    val2 = _try_key(hdu, key1)
     if val2 is None:
         return ()
 
-    return numpy.array([val1, val2], dtype)
+    return numpy.array([val1, val2], dtype=SherpaFloat)
 
 
 def _add_keyword(hdrlist, name, val):
@@ -150,7 +154,7 @@ def _add_keyword(hdrlist, name, val):
         hdrlist.append(fits.Card(name, val))
 
 
-def _try_col(hdu, name, dtype=SherpaFloat, fix_type=False):
+def _try_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
     try:
         col = hdu.data.field(name)
     except KeyError:
@@ -167,7 +171,7 @@ def _try_col(hdu, name, dtype=SherpaFloat, fix_type=False):
     return col
 
 
-def _try_tbl_col(hdu, name, dtype=SherpaFloat, fix_type=False):
+def _try_tbl_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
     try:
         col = hdu.data.field(name)
     except KeyError:
@@ -184,7 +188,7 @@ def _try_tbl_col(hdu, name, dtype=SherpaFloat, fix_type=False):
     return numpy.column_stack(col)
 
 
-def _try_vec(hdu, name, size=2, dtype=SherpaFloat, fix_type=False):
+def _try_vec(hdu, name, *, size=2, dtype=SherpaFloat, fix_type=False):
     try:
         col = hdu.data.field(name)
     except KeyError:
@@ -196,47 +200,46 @@ def _try_vec(hdu, name, size=2, dtype=SherpaFloat, fix_type=False):
         col = numpy.asarray(col)
 
     if fix_type:
-        col = col.astype(dtype)
-
-    if col is None:
-        return numpy.array([None] * size)
+        return col.astype(dtype)
 
     return col
 
 
-def _require_col(hdu, name, dtype=SherpaFloat, fix_type=False):
-    col = _try_col(hdu, name, dtype, fix_type)
+def _require_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
+    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
     if col is None:
         raise IOErr('reqcol', name, hdu._file.name)
     return col
 
 
-def _require_tbl_col(hdu, name, dtype=SherpaFloat, fix_type=False):
-    col = _try_tbl_col(hdu, name, dtype, fix_type)
+def _require_tbl_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
+    col = _try_tbl_col(hdu, name, dtype=dtype, fix_type=fix_type)
     if len(col) > 0 and col[0] is None:
         raise IOErr('reqcol', name, hdu._file.name)
     return col
 
 
-def _require_vec(hdu, name, size=2, dtype=SherpaFloat, fix_type=False):
-    col = _try_vec(hdu, name, size, dtype, fix_type)
+def _require_vec(hdu, name, *, size=2, dtype=SherpaFloat, fix_type=False):
+    col = _try_vec(hdu, name, size=size, dtype=dtype, fix_type=fix_type)
     if numpy.equal(col, None).any():
         raise IOErr('reqcol', name, hdu._file.name)
     return col
 
 
-def _try_col_or_key(hdu, name, dtype=SherpaFloat, fix_type=False):
-    col = _try_col(hdu, name, dtype, fix_type)
+def _try_col_or_key(hdu, name, *, dtype=SherpaFloat, fix_type=False):
+    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
     if col is not None:
         return col
-    return _try_key(hdu, name, fix_type, dtype)
+    return _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
 
 
-def _try_vec_or_key(hdu, name, size, dtype=SherpaFloat, fix_type=False):
-    col = _try_col(hdu, name, dtype, fix_type)
+def _try_vec_or_key(hdu, name, size, *, dtype=SherpaFloat, fix_type=False):
+    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
     if col is not None:
         return col
-    return numpy.array([_try_key(hdu, name, fix_type, dtype)] * size)
+
+    got = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
+    return numpy.array([got] * size)
 
 
 # Read Functions
@@ -422,6 +425,8 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
             hdrkeys = hdu.header.keys()
 
         for key in hdrkeys:
+            # TODO: should this set require_type=true or remove dtype,
+            # as currently it does not change the value to str.
             hdr[key] = _require_key(hdu, key, dtype=str)
 
     finally:
@@ -691,7 +696,8 @@ def _read_rmf_data(arg):
 
         # Beginning of non-Chandra RMF support
         fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
-        tlmin = _try_key(hdu, f"TLMIN{fchan_col}", True, SherpaUInt)
+        tlmin = _try_key(hdu, f"TLMIN{fchan_col}", fix_type=True,
+                         dtype=SherpaUInt)
 
         if tlmin is not None:
             data['offset'] = tlmin
@@ -711,7 +717,8 @@ def _read_rmf_data(arg):
 
             # Beginning of non-Chandra RMF support
             chan_col = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, f"TLMIN{chan_col}", True, SherpaUInt)
+            tlmin = _try_key(hdu, f"TLMIN{chan_col}", fix_type=True,
+                             dtype=SherpaUInt)
             if tlmin is not None:
                 data['offset'] = tlmin
 
@@ -878,44 +885,67 @@ def get_pha_data(arg, make_copy=False, use_background=False):
         if _try_col(hdu, 'SPEC_NUM') is None:
             data = {}
 
+            # Create local versions of the "try" routines.
+            #
+            def try_any_sfloat(key):
+                "Get col/key and return a SherpaFloat"
+                return _try_col_or_key(hdu, key, fix_type=True)
+
+            def try_sfloat(key):
+                "Get col and return a SherpaFloat"
+                return _try_col(hdu, key, fix_type=True)
+
+            def try_sint(key):
+                """Get col and return a SherpaInt
+
+                Or, it looks like it should do this, but at the moment
+                it does not force the data type.
+
+                """
+                # return _try_col(hdu, key, fix_type=True, dtype=SherpaInt)
+                return _try_col(hdu, key, dtype=SherpaInt)
+
+            def req_sfloat(key):
+                "Get col and return a SherpaFloat"
+                return _require_col(hdu, key, fix_type=True)
+
             # Keywords
-            data['exposure'] = _try_key(hdu, 'EXPOSURE', True, SherpaFloat)
+            data['exposure'] = _try_key(hdu, 'EXPOSURE', fix_type=True)
             # data['poisserr'] = _try_key(hdu, 'POISSERR', True, bool)
             data['backfile'] = _try_key(hdu, 'BACKFILE')
             data['arffile'] = _try_key(hdu, 'ANCRFILE')
             data['rmffile'] = _try_key(hdu, 'RESPFILE')
 
             # Keywords or columns
-            data['backscal'] = _try_col_or_key(hdu, 'BACKSCAL', fix_type=True)
-            data['backscup'] = _try_col_or_key(hdu, 'BACKSCUP', fix_type=True)
-            data['backscdn'] = _try_col_or_key(hdu, 'BACKSCDN', fix_type=True)
-            data['areascal'] = _try_col_or_key(hdu, 'AREASCAL', fix_type=True)
+            data['backscal'] = try_any_sfloat('BACKSCAL')
+            data['backscup'] = try_any_sfloat('BACKSCUP')
+            data['backscdn'] = try_any_sfloat('BACKSCDN')
+            data['areascal'] = try_any_sfloat('AREASCAL')
 
             # Columns
-            data['channel'] = _require_col(hdu, 'CHANNEL', fix_type=True)
+            data['channel'] = req_sfloat("CHANNEL")
 
             # Make sure channel numbers not indices
             chan = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, f"TLMIN{chan}", True, SherpaUInt)
+            tlmin = _try_key(hdu, f"TLMIN{chan}", fix_type=True,
+                             dtype=SherpaUInt)
             if int(data['channel'][0]) == 0 or tlmin == 0:
                 data['channel'] = data['channel'] + 1
 
-            data['counts'] = _try_col(hdu, 'COUNTS', fix_type=True)
+            data['counts'] = try_sfloat("COUNTS")
             data['staterror'] = _try_col(hdu, 'STAT_ERR')
             if data['counts'] is None:
-                data['counts'] = _require_col(hdu, 'RATE',
-                                              fix_type=True) * data['exposure']
+                data['counts'] = req_sfloat("RATE") * data['exposure']
                 if data['staterror'] is not None:
                     data['staterror'] = data['staterror'] * data['exposure']
+
             data['syserror'] = _try_col(hdu, 'SYS_ERR')
-            data['background_up'] = _try_col(hdu, 'BACKGROUND_UP',
-                                             fix_type=True)
-            data['background_down'] = _try_col(hdu, 'BACKGROUND_DOWN',
-                                               fix_type=True)
-            data['bin_lo'] = _try_col(hdu, 'BIN_LO', fix_type=True)
-            data['bin_hi'] = _try_col(hdu, 'BIN_HI', fix_type=True)
-            data['grouping'] = _try_col(hdu, 'GROUPING', SherpaInt)
-            data['quality'] = _try_col(hdu, 'QUALITY', SherpaInt)
+            data['background_up'] = try_sfloat('BACKGROUND_UP')
+            data['background_down'] = try_sfloat('BACKGROUND_DOWN')
+            data['bin_lo'] = try_sfloat('BIN_LO')
+            data['bin_hi'] = try_sfloat('BIN_HI')
+            data['grouping'] = try_sint('GROUPING')
+            data['quality'] = try_sint('QUALITY')
             data['header'] = _get_meta_data(hdu)
             for key in keys:
                 data['header'].pop(key, None)
@@ -933,25 +963,52 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             specnum = _try_col_or_key(hdu, 'SPEC_NUM')
             num = len(specnum)
 
+            # Create local versions of the "try" routines set for this
+            # size=num value.
+            #
+            def try_any_sfloat(key):
+                "Get col/key and return a SherpaFloat"
+                return _try_vec_or_key(hdu, key, size=num, fix_type=True)
+
+            def try_sfloat(key):
+                "Get col and return a SherpaFloat"
+                return _try_vec(hdu, key, size=num, fix_type=True)
+
+            def try_sint(key):
+                """Get col and return a SherpaInt
+
+                Or, it looks like it should do this, but at the moment
+                it does not force the data type.
+
+                """
+                # return _try_vec(hdu, key, size=num, fix_type=True, dtype=SherpaInt)
+                return _try_vec(hdu, key, size=num, dtype=SherpaInt)
+
+            def req_sfloat(key):
+                "Get col and return a SherpaFloat"
+                return _require_vec(hdu, key, size=num, fix_type=True)
+
             # Keywords
-            exposure = _try_key(hdu, 'EXPOSURE', True, SherpaFloat)
+            exposure = _try_key(hdu, 'EXPOSURE', fix_type=True)
             # poisserr = _try_key(hdu, 'POISSERR', True, bool)
             backfile = _try_key(hdu, 'BACKFILE')
             arffile = _try_key(hdu, 'ANCRFILE')
             rmffile = _try_key(hdu, 'RESPFILE')
 
             # Keywords or columns
-            backscal = _try_vec_or_key(hdu, 'BACKSCAL', num, fix_type=True)
-            backscup = _try_vec_or_key(hdu, 'BACKSCUP', num, fix_type=True)
-            backscdn = _try_vec_or_key(hdu, 'BACKSCDN', num, fix_type=True)
-            areascal = _try_vec_or_key(hdu, 'AREASCAL', num, fix_type=True)
+            backscal = try_any_sfloat('BACKSCAL')
+            backscup = try_any_sfloat('BACKSCUP')
+            backscdn = try_any_sfloat('BACKSCDN')
+            areascal = try_any_sfloat('AREASCAL')
 
             # Columns
-            channel = _require_vec(hdu, 'CHANNEL', num, fix_type=True)
+            # Why does this convert to SherpaFloat?
+            channel = req_sfloat('CHANNEL')
 
             # Make sure channel numbers not indices
             chan = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, f"TLMIN{chan}", True, SherpaUInt)
+            tlmin = _try_key(hdu, f"TLMIN{chan}", fix_type=True,
+                             dtype=SherpaUInt)
 
             for ii in range(num):
                 if int(channel[ii][0]) == 0:
@@ -960,27 +1017,26 @@ def get_pha_data(arg, make_copy=False, use_background=False):
             # if ((tlmin is not None) and tlmin == 0) or int(channel[0]) == 0:
             #     channel += 1
 
-            counts = _try_vec(hdu, 'COUNTS', num, fix_type=True)
-            staterror = _try_vec(hdu, 'STAT_ERR', num)
+            # Why does this convert to SherpaFloat?
+            counts = try_sfloat("COUNTS")
+            staterror = _try_vec(hdu, 'STAT_ERR', size=num)
             if numpy.equal(counts, None).any():  # _try_vec can return an array of Nones
-                counts = _require_vec(hdu, 'RATE', num,
-                                      fix_type=True) * exposure
+                counts = req_sfloat("RATE") * exposure
                 if not numpy.equal(staterror, None).any():
                     staterror *= exposure
 
-            syserror = _try_vec(hdu, 'SYS_ERR', num)
-            background_up = _try_vec(hdu, 'BACKGROUND_UP', num, fix_type=True)
-            background_down = _try_vec(hdu, 'BACKGROUND_DOWN', num,
-                                       fix_type=True)
-            bin_lo = _try_vec(hdu, 'BIN_LO', num, fix_type=True)
-            bin_hi = _try_vec(hdu, 'BIN_HI', num, fix_type=True)
-            grouping = _try_vec(hdu, 'GROUPING', num, SherpaInt)
-            quality = _try_vec(hdu, 'QUALITY', num, SherpaInt)
+            syserror = _try_vec(hdu, 'SYS_ERR', size=num)
+            background_up = try_sfloat('BACKGROUND_UP')
+            background_down = try_sfloat('BACKGROUND_DOWN')
+            bin_lo = try_sfloat('BIN_LO')
+            bin_hi = try_sfloat('BIN_HI')
+            grouping = try_sint('GROUPING')
+            quality = try_sint('QUALITY')
 
-            orders = _try_vec(hdu, 'TG_M', num, SherpaInt)
-            parts = _try_vec(hdu, 'TG_PART', num, SherpaInt)
-            specnums = _try_vec(hdu, 'SPEC_NUM', num, SherpaInt)
-            srcids = _try_vec(hdu, 'TG_SRCID', num, SherpaInt)
+            orders = try_sint('TG_M')
+            parts = try_sint('TG_PART')
+            specnums = try_sint('SPEC_NUM')
+            srcids = try_sint('TG_SRCID')
 
             # Iterate over all rows of channels, counts, errors, etc
             # Populate a list of dictionaries containing
@@ -1096,6 +1152,25 @@ def set_table_data(filename, data, col_names, header=None,
     if hdu.name == '':
         tbl.name = 'HISTOGRAM'
 
+    # Add in the header. We should special case the HISTORY/COMMENT
+    # keywords but at the moment we do nothing.
+    #
+    # There is the issue of conflicts between the existing and sent-in
+    # header - fortunately we can just drop those keys from the sent-in
+    # header, and also just whether the sent-in header keys (e.g. if
+    # TUNIT1 and TLMIN1 are set are they valid)? For the latter we rely
+    # on validation done by the code calling set_table_data.
+    #
+    if header is not None:
+        for key, value in header.items():
+            if key in hdu.header:
+                continue
+
+            if value is None:
+                continue
+
+            hdu.header[key] = value
+
     if packup:
         return hdu
 
@@ -1120,22 +1195,9 @@ def _create_header(header):
 def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
 
-    if not packup:
-        check_clobber(filename, clobber)
-
-    tbl = _create_table(col_names, data)
-    if ascii:
-        tbl.write(filename, format='ascii.commented_header',
-                  overwrite=clobber)
-        return
-
-    hdu = fits.table_to_hdu(tbl)
-    hdu.header.extend(_create_header(header))
-
-    if packup:
-        return hdu
-
-    hdu.writeto(filename, overwrite=True)
+    # Currently we can use the same logic as set_table_data
+    return set_table_data(filename, data, col_names, header=header,
+                          ascii=ascii, clobber=clobber, packup=packup)
 
 
 def set_image_data(filename, data, header, ascii=False, clobber=False,
