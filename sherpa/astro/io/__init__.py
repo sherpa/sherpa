@@ -19,10 +19,11 @@
 #
 """Provide Astronomy-specific I/O routines for Sherpa.
 
-This module contains read and write routines for handling FITS [1]_
-and ASCII format data. The actual support is provided by
-the selected I/O backend package (currently Crates, provided
-by CIAO, or the FITS support in the AstroPy package, if installed).
+This module contains read and write routines for handling `FITS
+<https://en.wikipedia.org/wiki/FITS>`_ and ASCII format data. The
+actual support is provided by the selected I/O backend package
+(currently Crates, provided by CIAO, or the FITS support in the
+AstroPy package, if installed).
 
 Which backend is used?
 ----------------------
@@ -45,11 +46,6 @@ interface):
 
   >>> import sherpa.astro.io.pyfits_backend
   >>> io.backend = sherpa.astro.io.pyfits_backend
-
-References
-----------
-
-.. [1] Flexible Image Transport System, https://en.wikipedia.org/wiki/FITS
 
 """
 
@@ -707,8 +703,10 @@ def _pack_pha(dataset):
 
     Notes
     -----
-    The PHA Data Extension header page [1]_ lists the following
-    keywords as either required or we-really-want-them:
+    The `PHA Data Extension header page
+    <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node6.html>`_
+    lists the following keywords as either required or
+    we-really-want-them:
 
         EXTNAME = "SPECTRUM"
         TELESCOP - the "telescope" (i.e. mission/satellite name).
@@ -753,11 +751,6 @@ def _pack_pha(dataset):
     required (here we assume the CHANNEL column is first) and they are
     strongly recommended otherwise.
 
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node6.html
-
     """
 
     # The logic here repeats some of the checks that probably should
@@ -777,6 +770,7 @@ def _pack_pha(dataset):
     #
     default_header = {
         "EXTNAME": "SPECTRUM",
+        # "HDUNAME": "SPECTRUM",  - this is a CIAO-specific keyword
         "HDUCLASS": "OGIP",
         "HDUCLAS1": "SPECTRUM",
         "HDUCLAS2": "TOTAL",
@@ -809,8 +803,11 @@ def _pack_pha(dataset):
     #
     header = {**default_header, **header}
 
-    # Over-write the header value (if set)
-    header["EXPOSURE"] = getattr(dataset, "exposure", "none")
+    # Over-write the header value (if set). This value should really
+    # exist (OGIP standards) but may not, particularly for testing.
+    #
+    if dataset.exposure is not None:
+        header["EXPOSURE"] = dataset.exposure
 
     _set_keyword(header, "RESPFILE", rmf)
     _set_keyword(header, "ANCRFILE", arf)
@@ -1045,8 +1042,8 @@ def write_pha(filename, dataset, ascii=True, clobber=False):
     """
     data, hdr = _pack_pha(dataset)
     col_names = list(data.keys())
-    backend.set_pha_data(filename, data, col_names, hdr, ascii=ascii,
-                         clobber=clobber)
+    backend.set_pha_data(filename, data, col_names, header=hdr,
+                         ascii=ascii, clobber=clobber)
 
 
 def pack_table(dataset):
@@ -1129,7 +1126,8 @@ def pack_pha(dataset):
     """
     data, hdr = _pack_pha(dataset)
     col_names = list(data.keys())
-    return backend.set_pha_data('', data, col_names, hdr, packup=True)
+    return backend.set_pha_data('', data, col_names, header=hdr,
+                                packup=True)
 
 
 def read_table_blocks(arg, make_copy=False):
