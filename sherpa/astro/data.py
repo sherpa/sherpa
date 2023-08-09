@@ -4216,7 +4216,7 @@ It is an integer or string.
             xlo, xhi = get_bin_edges()
             if self.units == 'wavelength':
                 dx = hc / xlo - hc / xhi
-            else:
+            else:  # Could be "energy" or "channel"
                 dx = xhi - xlo
 
             val /= numpy.abs(dx)
