@@ -29,6 +29,8 @@ from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import ARF1D, RMF1D
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_xspec
 
 
 FILE_NAME = 'acisf01575_001N001_r0085_pha3.fits'
@@ -131,3 +133,96 @@ def test_hrci_imaging_mode_spectrum(make_data_path, clean_astro_ui):
 
     ui.subtract()
     assert ui.calc_stat() == pytest.approx(39.611346193696164)
+
+
+def check_fit_stats():
+    """Do we get the expected results?"""
+
+    ui.set_method("levmar")
+    ui.set_stat("chi2xspecvar")
+    ui.set_xsabund("angr")
+    ui.set_xsxsect("vern")
+
+    gal = ui.create_model_component("xsphabs", "gal")
+    pl = ui.create_model_component("powlaw1d", "pl")
+    ui.set_source(gal * pl)
+
+    ui.notice(0.5, 6)
+    ui.group_counts(15, tabStops=~ui.get_data().get_mask())
+
+    ui.subtract()
+    ui.fit()
+
+    # This is a regression test, as all we care about is that the
+    # results match for the direct route and after saving the files
+    # and loading them in. Therefore it's okay for these values to
+    # change.
+    #
+    # The test could be changed to just fit a power law, which would
+    # mean no need for the requires_xspec decorator, but given we need
+    # I/O and the data files anyway it doesn't really improve things
+    # if we did that.
+    #
+    # This test produces different results on macOS to Linux, hence
+    # the relaxed tolerances.
+    #
+    assert pl.gamma.val == pytest.approx(1.6870563856336693, rel=1e-5)
+    assert pl.ampl.val == pytest.approx(3.831373278007354e-05, rel=2e-5)
+    assert gal.nH.val == pytest.approx(0.24914805790330877, rel=3e-5)
+    assert ui.calc_stat() == pytest.approx(41.454087606314054, rel=1e-5)
+
+
+@requires_xspec
+@requires_fits
+@requires_data
+def test_pha3_original_check(make_data_path, clean_astro_ui):
+    """Check we get the expected fit statistic with the PHA3 file.
+
+    See also test_pha3_roundtrip_check.
+    """
+
+    fname = make_data_path(FILE_NAME)
+    ui.load_pha(fname)
+
+    check_fit_stats()
+
+
+@requires_xspec
+@requires_fits
+@requires_data
+def test_pha3_roundtrip_check(make_data_path, clean_astro_ui, tmp_path):
+    """Check we get the expected fit statistic with the PHA3 file.
+
+    See also test_pha3_original_check. This version writes out the
+    PHA, background PHA, ARF, and RMF and then reads those back in and
+    fits with those.
+
+    """
+
+    fname = make_data_path(FILE_NAME)
+    ui.load_pha(fname)
+
+    src = str(tmp_path / "src.pi")
+    bkg = str(tmp_path / "bkg.pi")
+    arf = str(tmp_path / "arf")
+    rmf = str(tmp_path / "rmf")
+
+    # This will write out invalid names for the ARF and RMF files (as
+    # it refers to the versions from the original file which do not
+    # exist in the temporary directory) but that's okay and we do not
+    # want to check the screen output to validate this behavior as
+    # this is not the point of this test.
+    #
+    ui.save_pha(1, src)
+    ui.save_pha(1, bkg, bkg_id=1)
+    ui.save_arf(1, arf)
+    ui.save_rmf(1, rmf)
+
+    ui.clean()
+
+    ui.load_pha(src)
+    ui.load_bkg(bkg)
+    ui.load_rmf(rmf)
+    ui.load_arf(arf)
+
+    check_fit_stats()
