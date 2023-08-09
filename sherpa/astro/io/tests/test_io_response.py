@@ -37,15 +37,6 @@ def backend_is(name):
     return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
 
 
-def check_hduname(hdr, expected):
-    """crates removes the HDUNAME setting but pyfits keeps it"""
-
-    if backend_is("crates"):
-        assert "HDUNAME" not in hdr
-    else:
-        assert hdr["HDUNAME"] == expected
-
-
 @requires_data
 @requires_fits
 def test_read_arf(make_data_path):
@@ -59,8 +50,7 @@ def test_read_arf(make_data_path):
     assert np.log10(arf.ethresh) == pytest.approx(-10)
 
     hdr = arf.header
-    check_hduname(hdr, "SPECRESP")
-
+    assert "HDUNAME" not in hdr
     assert hdr["CONTENT"] == "SPECRESP"
     assert hdr["HDUCLASS"] == "OGIP"
     assert hdr["HDUCLAS1"] == "RESPONSE"
@@ -120,7 +110,6 @@ def test_read_rmf(make_data_path):
 
     hdr = rmf.header
     assert "HDUNAME" not in hdr
-
     assert hdr["HDUCLASS"] == "OGIP"
     assert hdr["HDUCLAS1"] == "RESPONSE"
     assert hdr["HDUCLAS2"] == "RSP_MATRIX"

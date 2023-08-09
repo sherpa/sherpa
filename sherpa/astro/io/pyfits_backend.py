@@ -577,15 +577,11 @@ def get_image_data(arg, make_copy=False):
 
         data['sky'] = sky
         data['eqpos'] = eqpos
+
         data['header'] = _get_meta_data(img)
-
-        keys = ['MTYPE1', 'MFORM1', 'CTYPE1P', 'CTYPE2P', 'WCSNAMEP',
-                'CDELT1P', 'CDELT2P', 'CRPIX1P', 'CRPIX2P',
-                'CRVAL1P', 'CRVAL2P', 'MTYPE2', 'MFORM2', 'CTYPE1', 'CTYPE2',
-                'CDELT1', 'CDELT2', 'CRPIX1', 'CRPIX2', 'CRVAL1', 'CRVAL2',
-                'CUNIT1', 'CUNIT2', 'EQUINOX']
-
-        for key in keys:
+        for key in ['CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
+                    'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
+                    'EQUINOX']:
             data['header'].pop(key, None)
 
     finally:

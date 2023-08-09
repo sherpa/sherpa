@@ -54,7 +54,9 @@ import importlib
 import logging
 import os
 import os.path
+import re
 import sys
+from typing import Any, Optional
 
 import numpy
 
@@ -70,18 +72,19 @@ config = ConfigParser()
 config.read(get_config())
 
 # What should we use for the default package?
-io_opt = config.get('options', 'io_pkg', fallback='dummy')
-io_opt = [o.strip().lower() + '_backend' for o in io_opt.split()]
+io_opt = [o.strip().lower() + '_backend' for o in
+          config.get('options', 'io_pkg', fallback='dummy').split()]
 
-ogip_emin = config.get('ogip', 'minimum_energy', fallback='1.0e-10')
+ogip_emin_str = config.get('ogip', 'minimum_energy', fallback='1.0e-10')
 
-if ogip_emin.upper() == 'NONE':
+ogip_emin : Optional[float]
+if ogip_emin_str.upper() == 'NONE':
     ogip_emin = None
 else:
     emsg = "Invalid value for [ogip] minimum_energy config value; " + \
            "it must be None or a float > 0"
     try:
-        ogip_emin = float(ogip_emin)
+        ogip_emin = float(ogip_emin_str)
     except ValueError as ve:
         raise ValueError(emsg) from ve
 
@@ -339,6 +342,7 @@ def read_image(arg, coord='logical', dstype=DataIMG):
 
     """
     data, filename = backend.get_image_data(arg)
+    data['header'] = _remove_structural_keywords(data['header'])
     axlens = data['y'].shape
 
     x0 = numpy.arange(axlens[1], dtype=SherpaFloat) + 1.
@@ -401,6 +405,7 @@ def read_arf(arg):
 
     """
     data, filename = backend.get_arf_data(arg)
+    data['header'] = _remove_structural_keywords(data['header'])
 
     # It is unlikely that the backend will set this, but allow
     # it to override the config setting.
@@ -427,6 +432,7 @@ def read_rmf(arg):
 
     """
     data, filename = backend.get_rmf_data(arg)
+    data['header'] = _remove_structural_keywords(data['header'])
 
     # It is unlikely that the backend will set this, but allow
     # it to override the config setting.
@@ -526,6 +532,8 @@ def read_pha(arg, use_errors=False, use_background=False):
     phasets = []
     output_once = True
     for data in datasets:
+        data['header'] = _remove_structural_keywords(data['header'])
+
         if not use_errors:
             if data['staterror'] is not None or data['syserror'] is not None:
                 if data['staterror'] is None:
@@ -671,9 +679,12 @@ def _pack_image(dataset):
         raise IOErr('notimage', dataset.name)
 
     data = {}
-    header = {}
-    if hasattr(dataset, 'header') and isinstance(dataset.header, dict):
-        header = dataset.header.copy()
+
+    # Data2D does not have a header
+    try:
+        header = dataset.header
+    except AttributeError:
+        header = {}
 
     data['pixels'] = numpy.asarray(dataset.get_img())
     data['sky'] = getattr(dataset, 'sky', None)
@@ -696,6 +707,115 @@ def _set_keyword(header, label, value):
         name = name.split('/')[-1]
 
     header[label] = name
+
+
+# This is to match NAXIS1 and the like, but we do not make it
+# very prescriptive (ie enforce the FITS keyword standards).
+#
+NUMBERED_KEYWORD_PAT = re.compile(r"^([^\d]+)(\d+)$")
+
+
+def _is_structural_keyword(key: str) -> bool:
+    """Do we think this is a "structural" keyword?
+
+    Parameters
+    ----------
+    key : str
+       The keyword (need not be upper case).
+
+    Returns
+    -------
+    flag : bool
+       Is this considered a structural keyword.
+
+    Notes
+    -----
+    The decision of what is a structural header and what isn't is
+    rather ad-hoc and may need to be updated over time. The current
+    code is based in part on the `HEASARC keyword list
+    <https://heasarc.gsfc.nasa.gov/docs/fcg/standard_dict>`_.
+
+    This does not strip out the OGIP keywords like HDUCLAS1 or
+    HDUVERS.
+
+    It does not remove secondary WCS keywords, like CTYPE1P.
+
+    """
+
+    ukey = key.upper()
+    if ukey in ["BITPIX", "BLANK", "BLOCKED", "BSCALE", "BUNIT",
+                "BZERO", "DATAMAX", "DATAMIN", "END", "EXTEND",
+                "EXTLEVEL", "EXTNAME", "EXTVER", "GCOUNT", "GROUPS",
+                "NAXIS", "PCOUNT", "SIMPLE", "TFIELDS", "THEAP",
+                "XTENSION",
+                # other common ones
+                "CHECKSUM", "DATASUM", "CHECKVER",
+                # HEASARC
+                "TSORTKEY",
+                # CIAO specific
+                "HDUNAME"
+                ]:
+        return True
+
+    # Keywords which end in 1, 2, ..
+    match = NUMBERED_KEYWORD_PAT.match(ukey)
+    if match is None:
+        return False
+
+    # The pattern is not completely robust so catch a case when
+    # it does not restrict to an integer > 0.
+    #
+    if match[2].startswith("0"):
+        return False
+
+    return match[1] in ["CDELT", "CROTA", "CRPIX", "CRVAL", "CTYPE", "CUNIT",
+                        "NAXIS", "PSCAL", "PTYPE", "PZERO", "TBCOL",
+                        "TDIM", "TDISP", "TFORM", "TNULL", "TSCAL",
+                        "TTYPE", "TUNIT", "TZERO",
+                        "TCTYP", "TCUNI", "TCRPX", "TCRVL", "TCDLT",
+                        # HEASARC
+                        "TDMAX", "TDMIN", "TLMAX", "TLMIN",
+                        # CIAO Data-Model keywords
+                        "DSTYP", "DSVAL", "DSFORM", "DSUNIT", "TDBIN",
+                        "MTYPE", "MFORM",
+                        ]
+
+
+def _remove_structural_keywords(header: dict[str, Any]) -> dict[str, Any]:
+    """Remove FITS keywords relating to file structure.
+
+    The aim is to allow writing out a header that was taken from a
+    file and not copy along "unwanted" values, since the data may
+    no-longer be relevant. Not all FITS header keys may be passed
+    along by a particular backend (e.g. crates).
+
+    Parameters
+    ----------
+    header : dict[str, Any]
+       The input header
+
+    Returns
+    -------
+    nheader : dict[str, Any]
+       Header with unwanted keywords returned (including those
+       set to None).
+
+    Notes
+    -----
+    The tricky part is knowing what is unwanted, since copying
+    along a WCS transform for a column may be useful, or may
+    break things.
+
+    """
+
+    out = {}
+    for key, value in header.items():
+        if value is None or _is_structural_keyword(key):
+            continue
+
+        out[key] = value
+
+    return out
 
 
 def _pack_pha(dataset):
@@ -795,9 +915,7 @@ def _pack_pha(dataset):
     }
 
     # Header Keys
-    header = {}
-    if hasattr(dataset, "header"):
-        header = dataset.header.copy()
+    header = dataset.header
 
     # Merge the keywords
     #
