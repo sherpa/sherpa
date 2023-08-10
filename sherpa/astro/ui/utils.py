@@ -4897,7 +4897,7 @@ class Session(sherpa.ui.utils.Session):
         arf = d.get_arf(id=resp_id)
         if arf is None:
             if bkg_id is not None:
-                emsg = f"background '{bkg_id} of "
+                emsg = f"background '{bkg_id}' of "
             else:
                 emsg = ""
 
@@ -4979,7 +4979,7 @@ class Session(sherpa.ui.utils.Session):
         rmf = d.get_rmf(id=resp_id)
         if rmf is None:
             if bkg_id is not None:
-                emsg = f"background '{bkg_id} of "
+                emsg = f"background '{bkg_id}' of "
             else:
                 emsg = ""
 

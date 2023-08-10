@@ -29,6 +29,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import ARF1D, RMF1D
+from sherpa.utils.err import ArgumentErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_xspec
 
@@ -226,3 +227,36 @@ def test_pha3_roundtrip_check(make_data_path, clean_astro_ui, tmp_path):
     ui.load_arf(arf)
 
     check_fit_stats()
+
+
+@requires_fits
+@pytest.mark.parametrize("rsptype", ["arf", "rmf"])
+@pytest.mark.parametrize("bkg", [None, 1])
+def test_save_response_no_arf(rsptype, bkg, clean_astro_ui, tmp_path):
+    """Check error handling"""
+
+    # Create PHA with no responses
+    ui.load_arrays("pha", [1, 2, 3], [4, 0, 2], DataPHA)
+
+    # Create a background component
+    ui.set_bkg("pha", DataPHA("x", [1, 2, 3], [1, 0, 0]))
+
+    if bkg is None:
+        emsg = ""
+    else:
+        emsg = "background '1' of "
+
+    emsg += r"data set 'pha' \(response 1\) does not contain a"
+    if rsptype == "arf":
+        emsg += "n "
+    else:
+        emsg += " "
+
+    emsg += rsptype.upper()
+
+    savefunc = getattr(ui, f"save_{rsptype}")
+    outpath = tmp_path / "should-not-exist"
+    with pytest.raises(ArgumentErr, match=f"^{emsg}$"):
+        savefunc("pha", str(outpath), bkg_id=bkg)
+
+    assert not outpath.exists()
