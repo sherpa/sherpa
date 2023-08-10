@@ -19,6 +19,7 @@
 #
 
 from collections import namedtuple
+import logging
 
 import numpy as np
 
@@ -293,7 +294,7 @@ def test_ui_set_full_model_checks_dimensions_match(clean_ui, setup_ui_2d):
 
 # Bug 12644
 @requires_data
-def test_ui_source_methods_with_full_model(clean_ui, setup_ui_full):
+def test_ui_source_methods_with_full_model(clean_ui, setup_ui_full, caplog):
 
     ui.load_data('full', setup_ui_full.ascii)
     ui.set_full_model('full', 'powlaw1d.p1')
@@ -311,8 +312,21 @@ def test_ui_source_methods_with_full_model(clean_ui, setup_ui_full):
                        match="Convolved model\n'powlaw1d.p1'\n is set for dataset full. You should use get_model_plot instead."):
         ui.get_source_plot('full')
 
-    # Test Case 2
-    ui.set_source('full', 'powlaw1d.p2')
+    # Test Case 2.
+    #
+    # The hide_logging fixture hides the logging output, so we need
+    # to re-enable it for this call.
+    #
+    assert len (caplog.records) == 0
+    with SherpaVerbosity("INFO"):
+        ui.set_source('full', 'powlaw1d.p2')
+
+    assert len (caplog.records) == 1
+    logname, loglvl, logmsg = caplog.record_tuples[0]
+    assert logname == "sherpa.ui.utils"
+    assert loglvl == logging.WARNING
+    assert logmsg == "Clearing convolved model\n'powlaw1d.p1'\nfor dataset full"
+
     ui.get_source('full')
 
     # Test Case 3

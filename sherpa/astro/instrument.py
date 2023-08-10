@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015, 2023
 #  Smithsonian Astrophysical Observator
 #
 #
@@ -25,12 +25,12 @@ The models in this module include support for instrument models that
 describe how X-ray photons are converted to measurable properties,
 such as Pulse-Height Amplitudes (PHA) or Pulse-Invariant channels.
 These 'responses' are assumed to follow OGIP standards, such as
-[1]_.
+[OGIP92-002]_.
 
 References
 ----------
 
-.. [1] OGIP Calibration Memo CAL/GEN/92-002, "The Calibration Requirements
+.. [OGIP92-002] OGIP Calibration Memo CAL/GEN/92-002, "The Calibration Requirements
        for Spectral Analysis (Definition of RMF and ARF file formats)",
        Ian M. George1, Keith A. Arnaud, Bill Pence, Laddawan Ruamsuwan and
        Michael F. Corcoran,

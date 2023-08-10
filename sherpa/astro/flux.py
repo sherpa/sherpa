@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2019, 2020, 2021
+#  Copyright (C) 2009, 2015, 2016, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -255,10 +255,11 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
 
     if correlated:
         sampler = NormalParameterSampleFromScaleMatrix()
+        samples = sampler.get_sample(fit, mycov=scales, num=num)
     else:
         sampler = NormalParameterSampleFromScaleVector()
+        samples = sampler.get_sample(fit, myscales=scales, num=num)
 
-    samples = sampler.get_sample(fit, scales, num=num)
     clipped = sampler.clip(fit, samples, clip=clip)
     return samples, clipped
 

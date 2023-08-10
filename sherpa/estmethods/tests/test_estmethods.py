@@ -223,71 +223,52 @@ def test_estmethod_repr(cls, name):
     assert repr(m) == f"<{name} error-estimation method instance '{name.lower()}'>"
 
 
-def check_output(out, expecteds):
-    """Check out (str) matches expecteds after splitting newlines
-
-    There's a special check for the numcores line, as the answer
-    depends on the number of cores present, so we drop that part
-    of the check.
-
-    """
-    toks = out.split("\n")
-    for tok, expected in zip(toks, expecteds):
-
-        if expected is None:
-            assert re.match(r"^numcores     ?= \d+$", tok)
-        else:
-            assert tok == expected
-
-    assert len(toks) == len(expecteds)
-
-
-def test_estmethod_str_covariance():
+def test_estmethod_str_covariance(check_str):
     """Simple check."""
     m = Covariance()
-    check_output(str(m),
-                 ["name        = covariance",
-                  "sigma       = 1",
-                  "eps         = 0.01",
-                  "maxiters    = 200",
-                  "soft_limits = False"])
+    check_str(str(m),
+              ["name        = covariance",
+               "sigma       = 1",
+               "eps         = 0.01",
+               "maxiters    = 200",
+               "soft_limits = False"])
 
 
-def test_estmethod_str_confidence():
+def test_estmethod_str_confidence(check_str):
     """Simple check."""
     m = Confidence()
-    check_output(str(m),
-                 ["name         = confidence",
-                  "sigma        = 1",
-                  "eps          = 0.01",
-                  "maxiters     = 200",
-                  "soft_limits  = False",
-                  "remin        = 0.01",
-                  "fast         = False",
-                  "parallel     = True",
-                  None,  # special-case numcores line
-                  "maxfits      = 5",
-                  "max_rstat    = 3",
-                  "tol          = 0.2",
-                  "verbose      = False",
-                  "openinterval = False"
-                  ])
+    check_str(str(m),
+              ["name         = confidence",
+               "sigma        = 1",
+               "eps          = 0.01",
+               "maxiters     = 200",
+               "soft_limits  = False",
+               "remin        = 0.01",
+               "fast         = False",
+               "parallel     = True",
+               re.compile(r"^numcores     ?= \d+$"),
+               "maxfits      = 5",
+               "max_rstat    = 3",
+               "tol          = 0.2",
+               "verbose      = False",
+               "openinterval = False"
+               ])
 
 
-def test_estmethod_str_projection():
+def test_estmethod_str_projection(check_str):
     """Simple check."""
     m = Projection()
-    check_output(str(m),
-                 ["name        = projection",
-                  "sigma       = 1",
-                  "eps         = 0.01",
-                  "maxiters    = 200",
-                  "soft_limits = False",
-                  "remin       = 0.01",
-                  "fast        = False",
-                  "parallel    = True",
-                  None,  # special-case numcores line
-                  "maxfits     = 5",
-                  "max_rstat   = 3",
-                  "tol         = 0.2"
-                  ])
+    check_str(str(m),
+              ["name        = projection",
+               "sigma       = 1",
+               "eps         = 0.01",
+               "maxiters    = 200",
+               "soft_limits = False",
+               "remin       = 0.01",
+               "fast        = False",
+               "parallel    = True",
+               re.compile(r"^numcores     ?= \d+$"),
+               "maxfits     = 5",
+               "max_rstat   = 3",
+               "tol         = 0.2"
+               ])

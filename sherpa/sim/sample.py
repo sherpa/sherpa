@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -181,9 +181,8 @@ class ParameterScaleVector(ParameterScale):
                 if lo is not None and hi is not None:
                     scale = numpy.abs(lo)
                 else:
-                    wmsg = "Covariance failed for '{}',".format(par.fullname) + \
-                           " trying Confidence..."
-                    warning(wmsg)
+                    warning("Covariance failed for '%s', trying Confidence...",
+                            par.fullname)
 
                     conf = Confidence()
                     conf.config['sigma'] = self.sigma
@@ -199,10 +198,9 @@ class ParameterScaleVector(ParameterScale):
                                 scale = numpy.abs(t.parmaxes[0])
 
                             else:
-
-                                warning('1 sigma bounds for parameter ' +
-                                        par.fullname +
-                                        ' could not be found, using soft limit minimum')
+                                warning('1 sigma bounds for parameter %s'
+                                        ' could not be found, using soft limit minimum',
+                                        par.fullname)
                                 if 0.0 == numpy.abs(par.min):
                                     scale = 1.0e-16
                                 else:
@@ -215,9 +213,11 @@ class ParameterScaleVector(ParameterScale):
         else:
             if not numpy.iterable(myscales):
                 emsg = "scales option must be iterable of " + \
-                       "length {}".format(len(thawedpars))
+                       f"length {len(thawedpars)}"
                 raise TypeError(emsg)
+
             scales = list(map(abs, myscales))
+
         scales = numpy.asarray(scales).transpose()
         return scales
 
@@ -265,7 +265,7 @@ class ParameterScaleMatrix(ParameterScale):
 
             thawedpars = [par for par in fit.model.pars if not par.frozen]
             npar = len(thawedpars)
-            msg = 'scales must be a numpy array of size ({0},{0})'.format(npar)
+            msg = f'scales must be a numpy array of size ({npar},{npar})'
 
             if not isinstance(myscales, numpy.ndarray):
                 raise EstErr(msg)
@@ -296,8 +296,12 @@ class ParameterSample(NoNewAttributesAfterInit):
 
     """
 
-    def get_sample(self, fit, num=1):
+    def get_sample(self, fit, *, num=1):
         """Return the samples.
+
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument.
 
         Parameters
         ----------
@@ -354,7 +358,7 @@ class ParameterSample(NoNewAttributesAfterInit):
             mins = fit.model.thawedparmins
             maxs = fit.model.thawedparmaxes
         else:
-            raise ValueError('invalid clip argument: sent {}'.format(clip))
+            raise ValueError(f'invalid clip argument: sent {clip}')
 
         for pvals, pmin, pmax in zip(samples.T, mins, maxs):
             porig = pvals.copy()
@@ -396,7 +400,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
     but the upper bound is not).
     """
 
-    def get_sample(self, fit, factor=4, num=1):
+    def get_sample(self, fit, *, factor=4, num=1):
         """Return the parameter samples.
 
         Parameters
@@ -435,7 +439,7 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
     """
 
-    def get_sample(self, fit, myscales=None, num=1):
+    def get_sample(self, fit, *, myscales=None, num=1):
         """Return the parameter samples.
 
         Parameters
@@ -473,7 +477,7 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, mycov=None, num=1):
+    def get_sample(self, fit, *, mycov=None, num=1):
         """Return the parameter samples.
 
         Parameters
@@ -509,7 +513,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, dof, num=1):
+    def get_sample(self, fit, *, dof, num=1):
         """Return the parameter samples.
 
         Parameters
@@ -598,7 +602,7 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, num=1, numcores=None):
+    def get_sample(self, fit, *, num=1, numcores=None):
         """Return the statistic and parameter samples.
 
         Parameters
@@ -638,7 +642,7 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
 
     """
 
-    def get_sample(self, fit, num=1, numcores=None):
+    def get_sample(self, fit, *, num=1, numcores=None):
         """Return the statistic and parameter samples.
 
         Parameters
@@ -675,7 +679,7 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
     but the upper bound is not).
     """
 
-    def get_sample(self, fit, num=1, factor=4, numcores=None):
+    def get_sample(self, fit, *, num=1, factor=4, numcores=None):
         """Return the statistic and parameter samples.
 
         Parameters
@@ -717,7 +721,7 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, num=1, dof=2, numcores=None):
+    def get_sample(self, fit, *, num=1, dof=2, numcores=None):
         """Return the statistic and parameter samples.
 
         Parameters
@@ -744,7 +748,7 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
 
         """
         samples = StudentTParameterSampleFromScaleMatrix.get_sample(
-            self, fit, dof, num)
+            self, fit, dof=dof, num=num)
         return _sample_stat(fit, samples, numcores)
 
 
@@ -798,7 +802,8 @@ def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None):
     sampler.scale.sigma = sigma
     if correlate:
         sampler = NormalSampleFromScaleMatrix()
-    return sampler.get_sample(fit, num, numcores)
+
+    return sampler.get_sample(fit, num=num, numcores=numcores)
 
 
 def uniform_sample(fit, num=1, factor=4, numcores=None):
@@ -835,7 +840,7 @@ def uniform_sample(fit, num=1, factor=4, numcores=None):
     """
     sampler = UniformSampleFromScaleVector()
     sampler.scale.sigma = 1
-    return sampler.get_sample(fit, num, factor, numcores)
+    return sampler.get_sample(fit, num=num, factor=factor, numcores=numcores)
 
 
 def t_sample(fit, num=1, dof=2, numcores=None):
@@ -872,4 +877,4 @@ def t_sample(fit, num=1, dof=2, numcores=None):
 
     """
     sampler = StudentTSampleFromScaleMatrix()
-    return sampler.get_sample(fit, num, dof, numcores)
+    return sampler.get_sample(fit, num=num, dof=dof, numcores=numcores)

@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -47,8 +48,8 @@ class FullBayes(PragBayes):
             self.simarf = ARFSIMFactory()(simarf)
 
         if not isinstance(self.simarf, PCA1DAdd):
-            raise TypeError("Simulation ARF must be PCA for FullBayes" +
-                            " not %s" % type(self.simarf).__name__)
+            raise TypeError("Simulation ARF must be PCA for FullBayes"
+                            f" not {type(self.simarf).__name__}")
 
         self.accept_arfs = [0]
         self.p_M_arf = p_M_arf

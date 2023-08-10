@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2011, 2015, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2015, 2017, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -53,12 +54,12 @@ from sherpa.astro.sim import fullbayes
 
 
 _samplers = __samplers.copy()
-_samplers.update(dict(pragbayes=pragbayes.PragBayes,
-                      fullbayes=fullbayes.FullBayes))
+_samplers.update({"pragbayes": pragbayes.PragBayes,
+                  "fullbayes": fullbayes.FullBayes})
 
 _walkers = __walkers.copy()
-_walkers.update(dict(pragbayes=pragbayes.WalkWithSubIters,
-                     fullbayes=pragbayes.WalkWithSubIters))
+_walkers.update({"pragbayes": pragbayes.WalkWithSubIters,
+                 "fullbayes": pragbayes.WalkWithSubIters})
 
 
 class MCMC(_MCMC):

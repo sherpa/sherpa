@@ -24,6 +24,7 @@
 import copy
 import logging
 import os
+import re
 from tempfile import NamedTemporaryFile, gettempdir
 
 import pytest
@@ -972,7 +973,27 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
                        -1])
 
     y = tbl(elo, ehi)
-    assert y == pytest.approx(yexp)
+
+    # The final element is -1 prior to 12.13.1 but 1 in 12.13.1,
+    # (probably because of an issue we reported), so let's drop that
+    # element for the check.
+    #
+    assert y[:-1] == pytest.approx(yexp[:-1])
+
+    # Check the final value. Should we provide a nice way to
+    # extrct the Sherpa version?
+    #
+    from sherpa.astro.xspec import get_xsversion
+    version = get_xsversion()
+    match = re.search(r'^(\d+)\.(\d+)\.(\d+)', version)
+    if match is None:
+        raise ValueError(f"Invalid XSPEC version string: {version}")
+
+    v = (int(match[1]), int(match[2]), int(match[3]))
+    if v < (12, 13, 1):
+        assert y[-1] == pytest.approx(-1.0)
+    else:
+        assert y[-1] == pytest.approx(1.0)
 
 
 @requires_xspec

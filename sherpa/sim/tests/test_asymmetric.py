@@ -232,7 +232,7 @@ def test_ui(make_data_path):
         assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p], rel=1e-4)
 
 
-def test_zero_case():
+def test_zero_case(reset_seed):
     """Check what happens when values can be near -1. See #740"""
 
     xs = np.arange(1, 6)
@@ -272,7 +272,7 @@ def test_zero_case():
     assert (stats >= bestfit.statval).all()
 
 
-def test_resample_supports_data1d(caplog, reset_seed):
+def test_resample_supports_data1d(caplog, reset_seed, check_str):
 
     orig = Data1D("orig", [1, 2, 3], [4, 2, 5], [0.1, 0.2, 0.5])
     model = Const1D("mdl")
@@ -285,7 +285,8 @@ def test_resample_supports_data1d(caplog, reset_seed):
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == "sherpa"
     assert lvl == logging.INFO
-    assert msg == "mdl.c0 : avg = 1.0343987745935705 , std = 0.5208696279243179"
+    check_str(msg,
+              ["mdl.c0 : avg = 1.0343987745935705 , std = 0.5208696279243179  # doctest: +FLOAT_CMP"])
 
 
 def test_resample_fails_unsupported_data():
