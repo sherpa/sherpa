@@ -29,8 +29,9 @@ import numpy as np
 import pytest
 
 from sherpa.astro import io
-from sherpa.astro.data import DataARF, DataRMF
+from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.data import Data1DInt
+from sherpa.utils.err import ArgumentErr, IOErr
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -792,3 +793,38 @@ def test_write_rmf_fits_xmm_rgs(make_data_path, tmp_path):
     assert (new.e_min[:-1] == new.e_max[1:]).all()
     assert new.e_min[-1] == pytest.approx(0.30996060371398926)
     assert new.e_max[0] == pytest.approx(3.0996062755584717)
+
+
+@pytest.mark.parametrize("rsptype", ["arf", "rmf"])
+def test_write_response_sent_invalid_data(rsptype, tmp_path):
+    """Check we error out. It is not a complete check."""
+
+    pha = DataPHA("ex", [1, 2], [1, 2])
+    savefunc = getattr(io, f"write_{rsptype}")
+    outpath = tmp_path / "no.fits"
+
+    emsg = "data set is not a"
+    if rsptype == "arf":
+        emsg += "n ARF"
+    else:
+        emsg += " RMF"
+
+    with pytest.raises(IOErr, match=f"^{emsg}$"):
+        savefunc(str(outpath), pha)
+
+    assert not outpath.exists()
+
+
+# At the moment there's no equivalent check for the RMF.
+def test_write_arf_missing_cols(tmp_path):
+    """Limited check."""
+
+    empty = DataARF("empty", np.asarray([1, 2]),
+                    np.asarray([2, 3]), None)
+    outpath = tmp_path / "no.arf"
+
+    with pytest.raises(ArgumentErr,
+                       match="^Invalid ARF: 'SPECRESP column is missing'$"):
+        io.write_arf(str(outpath), empty)
+
+    assert not outpath.exists()

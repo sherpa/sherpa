@@ -1438,7 +1438,7 @@ def _pack_rmf(dataset):
     # support both types as input.
     #
     if not isinstance(dataset, (DataRMF, RMF1D)):
-        raise IOErr("data set is not an RMF")
+        raise IOErr("data set is not a RMF")
 
     rmfdata = _reconstruct_rmf(dataset)
 
