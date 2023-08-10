@@ -216,6 +216,9 @@ def test_write_arf_fits(make_data_path, tmp_path):
     assert new.energ_hi.sum() == pytest.approx(TEST_ARF_EHI_SUM)
     assert new.specresp.sum() == pytest.approx(TEST_ARF_SPECRESP_SUM)
 
+    assert new.bin_lo is None
+    assert new.bin_hi is None
+
 
 @requires_data
 @requires_fits
@@ -239,6 +242,72 @@ def test_write_arf_ascii(make_data_path, tmp_path):
     assert new.xlo.sum() == pytest.approx(TEST_ARF_ELO_SUM)
     assert new.xhi.sum() == pytest.approx(TEST_ARF_EHI_SUM)
     assert new.y.sum() == pytest.approx(TEST_ARF_SPECRESP_SUM)
+
+
+@requires_data
+@requires_fits
+def test_write_arf_fits_chandra_acis_hetg(make_data_path, tmp_path):
+    """Check we can write out an ARF with BIN_LO/HI as a FITS file.
+    """
+
+    infile = make_data_path("3c120_meg_-1.arf.gz")
+    orig = io.read_arf(infile)
+    assert orig.exposure > 10
+    assert orig.bin_lo is not None
+    assert orig.bin_hi.size == orig.specresp.size
+
+    outpath = tmp_path / "out.arf"
+    outfile = str(outpath)
+    io.write_arf(outfile, orig, ascii=False)
+
+    new = io.read_arf(outfile)
+    assert isinstance(new, DataARF)
+    assert new.exposure == pytest.approx(orig.exposure)
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    assert "HDUNAME" not in hdr
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "SPECRESP"
+    assert hdr["HDUVERS"] == "1.1.0"
+    assert hdr["TELESCOP"] == "CHANDRA"
+    assert hdr["INSTRUME"] == "ACIS"
+    assert hdr["GRATING"] == "HETG"
+    assert hdr["FILTER"] == ""
+    assert hdr["TG_SRCID"] == 0
+    assert hdr["TG_M"] == -1
+    assert hdr["TG_PART"] == 2
+    assert hdr["OBJECT"] == "3C 120"
+    assert hdr["OBS_ID"] == "16221"  # note a string
+
+    assert new.energ_lo == pytest.approx(orig.energ_lo)
+    assert new.energ_hi == pytest.approx(orig.energ_hi)
+    assert new.specresp == pytest.approx(orig.specresp)
+
+    assert new.bin_lo == pytest.approx(orig.bin_lo)
+    assert new.bin_hi == pytest.approx(orig.bin_hi)
+
+
+@requires_data
+@requires_fits
+def test_write_arf_ascii_chandra_acis_hetg(make_data_path, tmp_path):
+    """Check we can write out an ARF with BIN_LO/HI as an ASCII file.
+    """
+
+    infile = make_data_path("3c120_meg_-1.arf.gz")
+    orig = io.read_arf(infile)
+
+    outpath = tmp_path / "out.arf"
+    outfile = str(outpath)
+    io.write_arf(outfile, orig, ascii=True)
+
+    new = io.read_ascii(outfile, ncols=3, dstype=Data1DInt,
+                        colkeys=["BIN_LO", "BIN_HI", "SPECRESP"])
+
+    assert new.xlo == pytest.approx(orig.bin_lo)
+    assert new.xhi == pytest.approx(orig.bin_hi)
+    assert new.y == pytest.approx(orig.specresp)
 
 
 @requires_data
