@@ -30,6 +30,7 @@ import pytest
 
 from sherpa.astro import io
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.data import Data1DInt
 from sherpa.utils.err import ArgumentErr, IOErr
 from sherpa.utils.testing import requires_data, requires_fits
@@ -104,7 +105,6 @@ def test_read_rmf(make_data_path):
 
     infile = make_data_path("s0_mar24.rmf")
     rmf = io.read_rmf(infile)
-    print(rmf)
     assert isinstance(rmf, DataRMF)
     assert rmf.name.endswith("/s0_mar24.rmf")
     assert rmf.detchans == 512
@@ -897,3 +897,105 @@ def test_write_arf_missing_cols(tmp_path):
         io.write_arf(str(outpath), empty)
 
     assert not outpath.exists()
+
+
+@requires_fits
+def test_write_fake_arf(tmp_path):
+    """Check we can write out an ARF we create.
+
+    Just check the FITS path.
+    """
+
+    ebins = np.arange(0.1, 1.2, 0.1)
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    y = np.arange(10, 30, 2)
+    arf = create_arf(elo, ehi, y)
+
+    outpath = tmp_path / "arf.faked"
+    outfile = str(outpath)
+    io.write_arf(outfile, arf, ascii=False)
+
+    new = io.read_arf(outfile)
+    assert isinstance(new, DataARF)
+    assert new.exposure is None
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    assert "HDUNAME" not in hdr
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "SPECRESP"
+    assert hdr["HDUVERS"] == "1.1.0"
+    assert hdr["TELESCOP"] == "none"
+    assert hdr["INSTRUME"] == "none"
+    assert hdr["FILTER"] == "none"
+
+    # We may add keywords, which will mean this needs updating.  It
+    # also relies on the removal of "structural" keywords to make this
+    # match between different backends.
+    #
+    assert len(hdr) == 7
+
+    assert new.energ_lo == pytest.approx(elo)
+    assert new.energ_hi == pytest.approx(ehi)
+    assert new.specresp == pytest.approx(y)
+
+    assert new.bin_lo is None
+    assert new.bin_hi is None
+
+
+# Is offset=10 valid? As far as I can see there's no reason to not
+# allow this - from reading the OGIP documentation - even if no-one
+# uses it.
+#
+@requires_fits
+@pytest.mark.parametrize("offset", [0, 1, 10])
+def test_write_fake_perfect_rmf(offset, tmp_path):
+    """Check we can write out a RMF we create."""
+
+    ebins = np.arange(0.1, 1.2, 0.1)
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    rmf = create_delta_rmf(elo, ehi, offset=offset, e_min=elo, e_max=ehi)
+
+    outpath = tmp_path / "rmf.faked"
+    outfile = str(outpath)
+    io.write_rmf(outfile, rmf)
+
+    new = io.read_rmf(outfile)
+    assert isinstance(new, DataRMF)
+    assert new.detchans == 10
+    assert new.offset == offset
+    assert np.log10(new.ethresh) == pytest.approx(-10)
+
+    hdr = new.header
+    print(hdr)
+    assert "HDUNAME" not in hdr
+    assert hdr["HDUCLASS"] == "OGIP"
+    assert hdr["HDUCLAS1"] == "RESPONSE"
+    assert hdr["HDUCLAS2"] == "RSP_MATRIX"
+    assert hdr["HDUVERS"] == "1.3.0"
+    assert hdr["TELESCOP"] == "none"
+    assert hdr["INSTRUME"] == "none"
+    assert hdr["FILTER"] == "none"
+    assert hdr["CHANTYPE"] == "PI"
+    assert hdr["NUMGRP"] == 10
+    assert hdr["NUMELT"] == 10
+
+    # We may add keywords, which will mean this needs updating.  It
+    # also relies on the removal of "structural" keywords to make this
+    # match between different backends.
+    #
+    assert len(hdr) == 10
+
+    assert new.energ_lo == pytest.approx(elo)
+    assert new.energ_hi == pytest.approx(ehi)
+    assert new.n_grp == pytest.approx([1] * 10)
+    assert new.f_chan == pytest.approx(np.arange(1, 11))
+    assert new.n_chan == pytest.approx([1] * 10)
+
+    assert new.matrix == pytest.approx([1] * 10)
+
+    assert new.e_min == pytest.approx(elo)
+    assert new.e_max == pytest.approx(ehi)
