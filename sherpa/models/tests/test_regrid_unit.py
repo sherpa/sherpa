@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,7 +26,8 @@ from numpy.testing import assert_allclose
 import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
-    ArithmeticFunctionModel, RegridWrappedModel
+    ArithmeticConstantModel, ArithmeticFunctionModel, RegridWrappedModel, \
+    UnaryOpModel, BinaryOpModel
 from sherpa.models.basic import Box1D, Const1D, Gauss1D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
@@ -1194,3 +1195,141 @@ def test_evaluationspace1d_zeros_like_point():
 def test_evaluationspace1d_zeros_like_integrated():
 
     assert EvaluationSpace1D([3, 2, -1], [2, 1, -3]).zeros_like() == pytest.approx([0, 0, 0])
+
+
+@pytest.mark.parametrize("mdl",
+                         [(Box1D() * Const1D() * Gauss1D()),
+                          (Box1D() * Const1D() * (1 + Gauss1D())),
+                          (1 / (1 + Const1D())),
+                          (1 / (Box1D() * Gauss1D())),
+                          (1 / (1 + Box1D() * Gauss1D())),
+                          (((Box1D() + Const1D()) / (Box1D() + Gauss1D()))),
+                          ((Const1D() / (Box1D() + Gauss1D()) + Box1D())),
+                          (1 / (1 - (-Const1D()))),
+                          ((-Box1D()) / ((-Const1D()) - (-Gauss1D()))),
+                          (Box1D() * Gauss1D()),
+                          (Box1D() / (Const1D() + Gauss1D())),
+                          (Const1D() / (1 + Box1D() * Gauss1D())),
+                          ((Box1D() + Const1D() / (Box1D() + Gauss1D())))
+                          ])
+@pytest.mark.parametrize("args", [([1, 2, 3], ), ([1, 2, 4], [2, 3, 5])])
+def test_recursion_1802(mdl, args):
+    """Can we create moderately-complex models to regrid?
+
+    Test cases from #1802. It is unlikely that the axis choice (point
+    or integrated) makes a difference, but add a test just in case.
+
+    """
+
+    rmdl = mdl.regrid(*args)
+    # basic check to see if we have got a regrid model
+    assert isinstance(rmdl, RegridWrappedModel)
+    assert rmdl.name == f"regrid1d({mdl.name})"
+
+
+def test_unop_regrid():
+    """Can we regrid a unary op model?"""
+
+    mdl = Gauss1D()
+    mdl.pos = 100
+    mdl.ampl = 10
+
+    egrid = [80, 90, 95, 107, 115]
+    expected = -mdl(egrid)
+
+    nmdl = -mdl
+    rgrid = nmdl.regrid(np.arange(70, 120, 2))
+    assert rgrid(egrid) == pytest.approx(expected)
+
+
+def test_unop_no_regrid():
+    """Corner case.
+
+    It's not easy to create this. This was suggested during
+    developmemnt as an untested code path. That code has been
+    re-written but the check has been left in.
+
+    """
+
+    mdl = ArithmeticConstantModel(23)
+    egrid = [80, 90, 95, 107, 115]
+
+    # We need to create the UnaryOpModel by hand as
+    # ArithmeticConstantModel is not derived from ArithmeticModel.
+    #
+    nmdl = UnaryOpModel(mdl, np.negative, "-23")
+    assert nmdl(egrid) == pytest.approx(-23)
+
+    with pytest.raises(ModelErr,
+                       match=r"^The model '-23\(23.0\)' does not support the regrid method$"):
+        nmdl.regrid(np.arange(70, 120, 2))
+
+
+def test_unop_of_unop_regrid():
+    """Corner case."""
+
+    mdl = Gauss1D()
+    mdl.pos = 100
+    mdl.fwhm = 8
+    mdl.ampl = 100
+    egrid = [80, 90, 95, 107, 115]
+
+    combined = abs(-mdl)
+    expected = mdl(egrid)
+    assert combined(egrid) == pytest.approx(expected)
+
+    nmdl = combined.regrid(np.arange(70, 120, 2))
+    assert nmdl(egrid) == pytest.approx(expected)
+
+
+def test_unop_of_unop_no_regrid():
+    """Corner case.
+
+    It's not easy to create this. This was suggested during
+    developmemnt as an untested code path. That code has been
+    re-written but the check has been left in.
+
+    """
+
+    mdl = ArithmeticConstantModel(-44)
+    combined = abs(UnaryOpModel(mdl, np.negative, "-(44)"))
+    with pytest.raises(ModelErr,
+                       match=r"^The model 'abs\(-\(44\)\(-44.0\)\)' does not support the regrid method$"):
+        combined.regrid(np.arange(70, 120, 2))
+
+
+def test_unop_of_binop_no_regrid():
+    """Corner case.
+
+    It's not easy to create this. This was suggested during
+    developmemnt as an untested code path. That code has been
+    re-written but the check has been left in.
+
+    """
+
+    smdl = ArithmeticConstantModel(-44)
+    cmdl = BinaryOpModel(smdl, smdl, np.add, "<>")
+    combined = abs(cmdl)
+    with pytest.raises(ModelErr,
+                       match=r"^The model 'abs\(\(-44.0 <> -44.0\)\)' does not support the regrid method$"):
+        combined.regrid(np.arange(70, 120, 2))
+
+
+def test_unop_binop_combo():
+    """What happens if a binop is given two unops: can we regrid?"""
+
+    mdl1 = Box1D()
+    mdl2 = Gauss1D()
+    mdl = (-mdl1 - (-mdl2))
+    rmdl = mdl.regrid(np.arange(0.5, 3, 0.25))
+
+    egrid = [1.2, 2]
+    got = rmdl(egrid)
+
+    # We are interpolating, so the values should not be exact,
+    # except that because of the way the regrid work we actually
+    # do not interpolate - see #1728 - so we can use approx without
+    # a tolerance here.
+    #
+    expected = mdl2(egrid) - mdl1(egrid)
+    assert got == pytest.approx(expected)
