@@ -851,7 +851,175 @@ class Model(NoNewAttributesAfterInit):
                 continue
 
 
-class CompositeModel(Model):
+# TODO: what benefit does this provide versus just using the number?
+# I guess it does simplify any attempt to parse the components of
+# a model expression.
+#
+class ArithmeticConstantModel(Model):
+    """Represent a constant value, or values.
+
+    Parameters
+    ----------
+    val : number or sequence
+        The number, or numbers, to store.
+    name : str or None, optional
+        The display name. If not set the value is used when the value
+        is a scalar, otherwise it indicates an array of elements.
+    """
+
+    def __init__(self, val, name=None):
+        val = SherpaFloat(val)
+        if name is None:
+            if numpy.isscalar(val):
+                name = str(val)
+            else:
+                nstr = ','.join([str(s) for s in val.shape])
+                name = f'{val.dtype.name}[{nstr}]'
+
+        self.name = name
+        self.val = val
+
+        # val has to be a scalar or 1D array, even if used with a 2D
+        # model, due to the way model evaluation works, so as we
+        # can't easily define the dimensionality of this model, we
+        # remove any dimensionality checking for this class.
+        #
+        self.ndim = None
+
+        super().__init__(self.name)
+
+    def _get_val(self):
+        return self._val
+
+    def _set_val(self, val):
+        val = SherpaFloat(val)
+        if val.ndim > 1:
+            raise ModelErr('The constant must be a scalar or 1D, not 2D')
+
+        self._val = val
+
+    val = property(_get_val, _set_val,
+                   doc='The constant value (scalar or 1D).')
+
+    def startup(self, cache=False):
+        pass
+
+    def calc(self, p, *args, **kwargs):
+        # Shouldn't this return p[0]?
+        return self.val
+
+    def teardown(self):
+        pass
+
+
+def _make_unop(op, opstr):
+    def func(self):
+        return UnaryOpModel(self, op, opstr)
+    return func
+
+
+def _make_binop(op, opstr):
+    def func(self, rhs):
+        return BinaryOpModel(self, rhs, op, opstr)
+
+    def rfunc(self, lhs):
+        return BinaryOpModel(lhs, self, op, opstr)
+
+    return (func, rfunc)
+
+
+class ArithmeticModel(Model):
+    """Support combining model expressions and caching results."""
+
+    cache = 5
+    """The maximum size of the cache."""
+
+    def __init__(self, name, pars=()):
+        self.integrate = True
+
+        # Model caching ability
+        self.cache = 5  # repeat the class definition
+        self._use_caching = True  # FIXME: reduce number of variables?
+        self.cache_clear()
+        super().__init__(name, pars)
+
+    def cache_clear(self):
+        """Clear the cache."""
+        # It is not obvious what to set the queue length to
+        self._queue = ['']
+        self._cache = {}
+        self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
+
+    def cache_status(self):
+        """Display the cache status.
+
+        Information on the cache - the number of "hits", "misses", and
+        "requests" - is displayed at the INFO logging level.
+
+        Example
+        -------
+
+        >>> pl.cache_status()
+         powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
+
+        """
+        c = self._cache_ctr
+        info(f" {self.name:25s}  size: {len(self._queue):4d}  " +
+             f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
+             f"check: {c['check']:5d}")
+
+    # Unary operations
+    __neg__ = _make_unop(numpy.negative, '-')
+    __abs__ = _make_unop(numpy.absolute, 'abs')
+
+    # Binary operations
+    __add__, __radd__ = _make_binop(numpy.add, '+')
+    __sub__, __rsub__ = _make_binop(numpy.subtract, '-')
+    __mul__, __rmul__ = _make_binop(numpy.multiply, '*')
+    __div__, __rdiv__ = _make_binop(numpy.divide, '/')
+    __floordiv__, __rfloordiv__ = _make_binop(numpy.floor_divide, '//')
+    __truediv__, __rtruediv__ = _make_binop(numpy.true_divide, '/')
+    __mod__, __rmod__ = _make_binop(numpy.remainder, '%')
+    __pow__, __rpow__ = _make_binop(numpy.power, '**')
+
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+        if '_use_caching' not in state:
+            self.__dict__['_use_caching'] = True
+
+        if '_queue' not in state:
+            self.__dict__['_queue'] = ['']
+
+        if '_cache' not in state:
+            self.__dict__['_cache'] = {}
+            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'check': 0}
+
+        if 'cache' not in state:
+            self.__dict__['cache'] = 5
+
+    def __getitem__(self, filter):
+        return FilterModel(self, filter)
+
+    def startup(self, cache=False):
+        self.cache_clear()
+        self._use_caching = cache
+        if int(self.cache) <= 0:
+            return
+
+        self._queue = [''] * int(self.cache)
+        frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
+        if len(frozen) > 0 and frozen.all():
+            self._use_caching = cache
+
+    def teardown(self):
+        self._use_caching = False
+
+    def apply(self, outer, *otherargs, **otherkwargs):
+        return NestedModel(outer, self, *otherargs, **otherkwargs)
+
+
+class CompositeModel(ArithmeticModel):
     """Represent a model with composite parts.
 
     This is the base class for representing expressions that combine
@@ -922,7 +1090,7 @@ class CompositeModel(Model):
 
                 allpars.append(p)
 
-        Model.__init__(self, name, allpars)
+        super().__init__(name, allpars)
 
         for part in self.parts:
             try:
@@ -1033,180 +1201,12 @@ class SimulFitModel(CompositeModel):
     def startup(self, cache=False):
         for part in self:
             part.startup(cache)
-        CompositeModel.startup(self, cache)
+        super().startup(cache)
 
     def teardown(self):
         for part in self:
             part.teardown()
-        CompositeModel.teardown(self)
-
-
-# TODO: what benefit does this provide versus just using the number?
-# I guess it does simplify any attempt to parse the components of
-# a model expression.
-#
-class ArithmeticConstantModel(Model):
-    """Represent a constant value, or values.
-
-    Parameters
-    ----------
-    val : number or sequence
-        The number, or numbers, to store.
-    name : str or None, optional
-        The display name. If not set the value is used when the value
-        is a scalar, otherwise it indicates an array of elements.
-    """
-
-    def __init__(self, val, name=None):
-        val = SherpaFloat(val)
-        if name is None:
-            if numpy.isscalar(val):
-                name = str(val)
-            else:
-                nstr = ','.join([str(s) for s in val.shape])
-                name = f'{val.dtype.name}[{nstr}]'
-
-        self.name = name
-        self.val = val
-
-        # val has to be a scalar or 1D array, even if used with a 2D
-        # model, due to the way model evaluation works, so as we
-        # can't easily define the dimensionality of this model, we
-        # remove any dimensionality checking for this class.
-        #
-        self.ndim = None
-
-        Model.__init__(self, self.name)
-
-    def _get_val(self):
-        return self._val
-
-    def _set_val(self, val):
-        val = SherpaFloat(val)
-        if val.ndim > 1:
-            raise ModelErr('The constant must be a scalar or 1D, not 2D')
-
-        self._val = val
-
-    val = property(_get_val, _set_val,
-                   doc='The constant value (scalar or 1D).')
-
-    def startup(self, cache=False):
-        pass
-
-    def calc(self, p, *args, **kwargs):
-        # Shouldn't this return p[0]?
-        return self.val
-
-    def teardown(self):
-        pass
-
-
-def _make_unop(op, opstr):
-    def func(self):
-        return UnaryOpModel(self, op, opstr)
-    return func
-
-
-def _make_binop(op, opstr):
-    def func(self, rhs):
-        return BinaryOpModel(self, rhs, op, opstr)
-
-    def rfunc(self, lhs):
-        return BinaryOpModel(lhs, self, op, opstr)
-
-    return (func, rfunc)
-
-
-class ArithmeticModel(Model):
-    """Support combining model expressions and caching results."""
-
-    cache = 5
-    """The maximum size of the cache."""
-
-    def __init__(self, name, pars=()):
-        self.integrate = True
-
-        # Model caching ability
-        self.cache = 5  # repeat the class definition
-        self._use_caching = True  # FIXME: reduce number of variables?
-        self.cache_clear()
-        Model.__init__(self, name, pars)
-
-    def cache_clear(self):
-        """Clear the cache."""
-        # It is not obvious what to set the queue length to
-        self._queue = ['']
-        self._cache = {}
-        self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
-
-    def cache_status(self):
-        """Display the cache status.
-
-        Information on the cache - the number of "hits", "misses", and
-        "requests" - is displayed at the INFO logging level.
-
-        Example
-        -------
-
-        >>> pl.cache_status()
-         powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
-
-        """
-        c = self._cache_ctr
-        info(f" {self.name:25s}  size: {len(self._queue):4d}  " +
-             f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
-             f"check: {c['check']:5d}")
-
-    # Unary operations
-    __neg__ = _make_unop(numpy.negative, '-')
-    __abs__ = _make_unop(numpy.absolute, 'abs')
-
-    # Binary operations
-    __add__, __radd__ = _make_binop(numpy.add, '+')
-    __sub__, __rsub__ = _make_binop(numpy.subtract, '-')
-    __mul__, __rmul__ = _make_binop(numpy.multiply, '*')
-    __div__, __rdiv__ = _make_binop(numpy.divide, '/')
-    __floordiv__, __rfloordiv__ = _make_binop(numpy.floor_divide, '//')
-    __truediv__, __rtruediv__ = _make_binop(numpy.true_divide, '/')
-    __mod__, __rmod__ = _make_binop(numpy.remainder, '%')
-    __pow__, __rpow__ = _make_binop(numpy.power, '**')
-
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-
-        if '_use_caching' not in state:
-            self.__dict__['_use_caching'] = True
-
-        if '_queue' not in state:
-            self.__dict__['_queue'] = ['']
-
-        if '_cache' not in state:
-            self.__dict__['_cache'] = {}
-            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'check': 0}
-
-        if 'cache' not in state:
-            self.__dict__['cache'] = 5
-
-    def __getitem__(self, filter):
-        return FilterModel(self, filter)
-
-    def startup(self, cache=False):
-        self.cache_clear()
-        self._use_caching = cache
-        if int(self.cache) <= 0:
-            return
-
-        self._queue = [''] * int(self.cache)
-        frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
-        if len(frozen) > 0 and frozen.all():
-            self._use_caching = cache
-
-    def teardown(self):
-        self._use_caching = False
-
-    def apply(self, outer, *otherargs, **otherkwargs):
-        return NestedModel(outer, self, *otherargs, **otherkwargs)
+        super().teardown()
 
 
 class RegriddableModel(ArithmeticModel):
@@ -1267,7 +1267,54 @@ class RegriddableModel2D(RegriddableModel):
         return regridder.apply_to(self)
 
 
-class UnaryOpModel(CompositeModel, RegriddableModel):
+# This does not extend from RegriddableModel. Is that wrong?
+#
+class RegriddableCompositeModel(CompositeModel):
+    """Extend the composite model with regrid-like support.
+
+    ..versionadded:: 4.16.0
+
+    """
+
+    def get_regrid_class(self) -> RegriddableModel:
+        """The class to use to regrid the composite model.
+
+        Raises
+        ------
+        ModelErr - when no component supports regrid.
+        """
+        raise ModelErr(f"The model '{self.name}' does not support the regrid method")
+
+    def __init__(self, name, parts):
+        super().__init__(name, parts)
+
+        # Do we have a regrid method? We just use the first one
+        # we find.
+        #
+        for part in parts:
+            # It is important to check get_regrid_class before
+            # regrid to avoid an infinite loop (issue #1802).
+            #
+            try:
+                regrid_class = part.get_regrid_class()
+            except AttributeError:
+                if not hasattr(part, "regrid"):
+                    continue
+
+                regrid_class = part.__class__
+            except ModelErr:
+                continue
+
+            self.get_regrid_class = lambda: regrid_class
+            return
+
+    def regrid(self, *args, **kwargs):
+        """If no component can be regridded this will fail."""
+
+        return self.get_regrid_class().regrid(self, *args, **kwargs)
+
+
+class UnaryOpModel(RegriddableCompositeModel):
     """Apply an operator to a model expression.
 
     ..versionchanged:: 4.16.0
@@ -1311,43 +1358,15 @@ class UnaryOpModel(CompositeModel, RegriddableModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
-        CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
-                                (self.arg,))
 
-    def regrid(self, *args, **kwargs):
-
-        # Similar to BinaryOpModel
-        #
-        def find_regrid(parts):
-            for part in parts:
-                # Some models, such as ArithmeticConstantModel, do not
-                # have a regrid method.
-                #
-                if not hasattr(part, "regrid"):
-                    continue
-
-                if hasattr(part, "parts"):
-                    # Search through the parts of this model
-                    try:
-                        return find_regrid(part.parts)
-                    except ModelErr:
-                        continue
-
-                return part
-
-            raise ModelErr('The component does not support the regrid method')
-
-        # The full model expression must be used as need to pass in
-        # self as the class.
-        #
-        part = find_regrid(self.parts)
-        return part.__class__.regrid(self, *args, **kwargs)
+        super().__init__(f'{opstr}({self.arg.name})',
+                         (self.arg,))
 
     def calc(self, p, *args, **kwargs):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
-class BinaryOpModel(CompositeModel, RegriddableModel):
+class BinaryOpModel(RegriddableCompositeModel):
     """Combine two model expressions.
 
     Parameters
@@ -1395,52 +1414,18 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.op = op
         self.opstr = opstr
 
-        CompositeModel.__init__(self,
-                                f'({self.lhs.name} {opstr} {self.rhs.name})',
-                                (self.lhs, self.rhs))
-
-    def regrid(self, *args, **kwargs):
-
-        # Recurse through all the parts looking for the "base" models
-        # which we can use to find the regrid class to use. An
-        # alternative would be to key off the ndim value of the model,
-        # but that would then enshrine the RegriddableModel1D/2D
-        # classes and not allow them to be sub-classed or over-ridden.
-        #
-        def find_regrid(parts):
-            for part in parts:
-                # Some models, such as ArithmeticConstantModel, do not
-                # have a regrid method.
-                #
-                if not hasattr(part, "regrid"):
-                    continue
-
-                if hasattr(part, "parts"):
-                    # Search through the parts of this model
-                    try:
-                        return find_regrid(part.parts)
-                    except ModelErr:
-                        continue
-
-                return part
-
-            raise ModelErr('Neither component supports regrid method')
-
-        # The full model expression must be used as need to pass in
-        # self as the class.
-        #
-        part = find_regrid(self.parts)
-        return part.__class__.regrid(self, *args, **kwargs)
+        super().__init__(f'({self.lhs.name} {opstr} {self.rhs.name})',
+                         (self.lhs, self.rhs))
 
     def startup(self, cache=False):
         self.lhs.startup(cache)
         self.rhs.startup(cache)
-        CompositeModel.startup(self, cache)
+        super().startup(cache)
 
     def teardown(self):
         self.lhs.teardown()
         self.rhs.teardown()
-        CompositeModel.teardown(self)
+        super().teardown()
 
     def calc(self, p, *args, **kwargs):
         # Note that the kwargs are sent to both model components.
@@ -1461,7 +1446,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
 # We only have 1 test that checks this class, and it is an existence
 # test (check that it works), not that it is used anywhere.
 #
-class FilterModel(CompositeModel, ArithmeticModel):
+class FilterModel(CompositeModel):
 
     def __init__(self, model, filter):
         self.model = model
@@ -1472,9 +1457,8 @@ class FilterModel(CompositeModel, ArithmeticModel):
         else:
             filter_str = self._make_filter_str(filter)
 
-        CompositeModel.__init__(self,
-                                f'({self.model.name})[{filter_str}]',
-                                (self.model,))
+        super().__init__(f'({self.model.name})[{filter_str}]',
+                         (self.model,))
 
     @staticmethod
     def _make_filter_str(filter):
@@ -1520,7 +1504,7 @@ class ArithmeticFunctionModel(Model):
         if not callable(func):
             raise ModelErr('noncall', type(self).__name__, type(func).__name__)
         self.func = func
-        Model.__init__(self, func.__name__)
+        super().__init__(func.__name__)
 
     def calc(self, p, *args, **kwargs):
         return self.func(*args, **kwargs)
@@ -1532,7 +1516,7 @@ class ArithmeticFunctionModel(Model):
         pass
 
 
-class NestedModel(CompositeModel, ArithmeticModel):
+class NestedModel(CompositeModel):
     """Apply a model to the results of a model.
 
     Parameters
@@ -1568,18 +1552,18 @@ class NestedModel(CompositeModel, ArithmeticModel):
         self.inner = self.wrapobj(inner)
         self.otherargs = otherargs
         self.otherkwargs = otherkwargs
-        CompositeModel.__init__(self, f'{self.outer.name}({self.inner.name})',
-                                (self.outer, self.inner))
+        super().__init__(f'{self.outer.name}({self.inner.name})',
+                         (self.outer, self.inner))
 
     def startup(self, cache=False):
         self.inner.startup(cache)
         self.outer.startup(cache)
-        CompositeModel.startup(self, cache)
+        super().startup(cache)
 
     def teardown(self):
         self.inner.teardown()
         self.outer.teardown()
-        CompositeModel.teardown(self)
+        super().teardown()
 
     def calc(self, p, *args, **kwargs):
         nouter = len(self.outer.pars)
@@ -1590,13 +1574,13 @@ class NestedModel(CompositeModel, ArithmeticModel):
 
 # TODO: can we remove this as it is now unused?
 #
-class MultigridSumModel(CompositeModel, ArithmeticModel):
+class MultigridSumModel(CompositeModel):
 
     def __init__(self, models):
         self.models = tuple(models)
         arg = ','.join([m.name for m in models])
         name = f'{type(self).__name__}({arg})'
-        CompositeModel.__init__(self, name, self.models)
+        super().__init__(name, self.models)
 
     def calc(self, p, arglist):
         vals = []
@@ -1608,7 +1592,7 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
         return sum(vals)
 
 
-class RegridWrappedModel(CompositeModel, ArithmeticModel):
+class RegridWrappedModel(CompositeModel):
 
     def __init__(self, model, wrapper):
         self.model = self.wrapobj(model)
@@ -1617,9 +1601,8 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
         if hasattr(model, 'integrate'):
             self.wrapper.integrate = model.integrate
 
-        CompositeModel.__init__(self,
-                                f"{self.wrapper.name}({self.model.name})",
-                                (self.model, ))
+        super().__init__(f"{self.wrapper.name}({self.model.name})",
+                         (self.model, ))
 
     def calc(self, p, *args, **kwargs):
         return self.wrapper.calc(p, self.model.calc, *args, **kwargs)

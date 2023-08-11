@@ -1021,25 +1021,25 @@ def test_evaluate_cache_arithmeticconstant():
 
 
 def test_evaluate_cache_unaryop():
-    """UnaryOp has no cache"""
+    """UnaryOp has a cache"""
 
     mdl = Polynom1D()
     assert hasattr(mdl, '_use_caching')
 
     fmdl = -mdl
     assert isinstance(fmdl, UnaryOpModel)
-    assert not hasattr(fmdl, '_use_caching')
+    assert hasattr(fmdl, '_use_caching')
 
 
 def test_evaluate_cache_binaryop():
-    """BinaryOp has no cache"""
+    """BinaryOp has a cache"""
 
     mdl = Polynom1D()
     assert hasattr(mdl, '_use_caching')
 
     fmdl = mdl + 2
     assert isinstance(fmdl, BinaryOpModel)
-    assert not hasattr(fmdl, '_use_caching')
+    assert hasattr(fmdl, '_use_caching')
 
 
 def test_evaluate_cache_regrid1d():
@@ -1051,7 +1051,7 @@ def test_evaluate_cache_regrid1d():
     rmdl = mdl.regrid(x)
 
     assert isinstance(rmdl, RegridWrappedModel)
-    assert not hasattr(rmdl, '_use_caching')
+    assert hasattr(rmdl, '_use_caching')
 
 
 class DoNotUseModel(Model):

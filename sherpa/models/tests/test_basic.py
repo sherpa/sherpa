@@ -25,7 +25,7 @@ import pytest
 import sherpa.models.basic as basic
 from sherpa.models.parameter import hugeval
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D, \
-    RegriddableModel2D
+    RegriddableModel2D, CompositeModel
 from sherpa.utils import SherpaFloat
 
 
@@ -34,7 +34,7 @@ def userfunc(pars, x, *args, **kwargs):
 
 
 EXCLUDED_MODELS = (ArithmeticModel, RegriddableModel1D, RegriddableModel2D,
-                   basic.Const)
+                   CompositeModel, basic.Const)
 
 TESTABLE = []
 for name in dir(basic):

@@ -26,7 +26,8 @@ from numpy.testing import assert_allclose
 import pytest
 
 from sherpa.models.model import Model, ArithmeticModel, CompositeModel, \
-    ArithmeticFunctionModel, RegridWrappedModel
+    ArithmeticConstantModel, ArithmeticFunctionModel, RegridWrappedModel, \
+    UnaryOpModel, BinaryOpModel
 from sherpa.models.basic import Box1D, Const1D, Gauss1D, \
     PowLaw1D, StepLo1D
 from sherpa.models.parameter import Parameter
@@ -1239,6 +1240,79 @@ def test_unop_regrid():
     nmdl = -mdl
     rgrid = nmdl.regrid(np.arange(70, 120, 2))
     assert rgrid(egrid) == pytest.approx(expected)
+
+
+def test_unop_no_regrid():
+    """Corner case.
+
+    It's not easy to create this. This was suggested during
+    developmemnt as an untested code path. That code has been
+    re-written but the check has been left in.
+
+    """
+
+    mdl = ArithmeticConstantModel(23)
+    egrid = [80, 90, 95, 107, 115]
+
+    # We need to create the UnaryOpModel by hand as
+    # ArithmeticConstantModel is not derived from ArithmeticModel.
+    #
+    nmdl = UnaryOpModel(mdl, np.negative, "-23")
+    assert nmdl(egrid) == pytest.approx(-23)
+
+    with pytest.raises(ModelErr,
+                       match=r"^The model '-23\(23.0\)' does not support the regrid method$"):
+        nmdl.regrid(np.arange(70, 120, 2))
+
+
+def test_unop_of_unop_regrid():
+    """Corner case."""
+
+    mdl = Gauss1D()
+    mdl.pos = 100
+    mdl.fwhm = 8
+    mdl.ampl = 100
+    egrid = [80, 90, 95, 107, 115]
+
+    combined = abs(-mdl)
+    expected = mdl(egrid)
+    assert combined(egrid) == pytest.approx(expected)
+
+    nmdl = combined.regrid(np.arange(70, 120, 2))
+    assert nmdl(egrid) == pytest.approx(expected)
+
+
+def test_unop_of_unop_no_regrid():
+    """Corner case.
+
+    It's not easy to create this. This was suggested during
+    developmemnt as an untested code path. That code has been
+    re-written but the check has been left in.
+
+    """
+
+    mdl = ArithmeticConstantModel(-44)
+    combined = abs(UnaryOpModel(mdl, np.negative, "-(44)"))
+    with pytest.raises(ModelErr,
+                       match=r"^The model 'abs\(-\(44\)\(-44.0\)\)' does not support the regrid method$"):
+        combined.regrid(np.arange(70, 120, 2))
+
+
+def test_unop_of_binop_no_regrid():
+    """Corner case.
+
+    It's not easy to create this. This was suggested during
+    developmemnt as an untested code path. That code has been
+    re-written but the check has been left in.
+
+    """
+
+    smdl = ArithmeticConstantModel(-44)
+    cmdl = BinaryOpModel(smdl, smdl, np.add, "<>")
+    combined = abs(cmdl)
+    with pytest.raises(ModelErr,
+                       match=r"^The model 'abs\(\(-44.0 <> -44.0\)\)' does not support the regrid method$"):
+        combined.regrid(np.arange(70, 120, 2))
 
 
 def test_unop_binop_combo():
