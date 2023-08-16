@@ -9882,9 +9882,14 @@ class Session(sherpa.ui.utils.Session):
         table model component. These models may have multiple model
         parameters.
 
+        .. versionchanged:: 4.16.0
+           Parameters with negative DELTA values are now made frozen,
+           to match XSPEC. Support for models which use the ESCALE
+           keyword has been added.
+
         .. versionchanged:: 4.14.0
-           The etable argument has been added to allow exponential table
-           models to be used.
+           The etable argument has been added to allow exponential
+           table models to be used.
 
         Parameters
         ----------
@@ -9901,6 +9906,8 @@ class Session(sherpa.ui.utils.Session):
         ------
         sherpa.utils.err.ImportErr
            If XSPEC support is not enabled.
+        sherpa.utils.err.IOErr
+           If the XSPEC table model is not supported by Sherpa.
 
         See Also
         --------
@@ -9913,9 +9920,13 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        NASA's HEASARC site contains a link to community-provided
-        XSPEC table models:
-        https://heasarc.gsfc.nasa.gov/xanadu/xspec/newmodels.html
+        There is no support for table models that provide multiple
+        spectra per parameter: that is, those with the NXFLTEXP keyword
+        set.
+
+        NASA's HEASARC site contains a link to `community-provided
+        XSPEC table models
+        <https://heasarc.gsfc.nasa.gov/xanadu/xspec/newmodels.html>`_.
 
         References
         ----------

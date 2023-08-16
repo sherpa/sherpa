@@ -1698,12 +1698,9 @@ def test_table_mod_negative_delta_1850(addmodel, redshift, escale, make_data_pat
         idx += 1
 
     if escale:
-        # At the moment ESCALE is not recognized
-        #
-        # assert parnames[idx] == "Escale"
-        # assert tbl.escale.frozen
-        # idx += 1
-        assert "Escale" not in parnames
+        assert parnames[idx] == "Escale"
+        assert tbl.escale.frozen
+        idx += 1
 
     if addmodel:
         assert parnames[idx] == "norm"
@@ -1778,7 +1775,6 @@ def test_table_mod_add_redshift(make_data_path):
     assert tbl(elo, ehi) / de == pytest.approx(expected, rel=2e-6)
 
 
-@pytest.mark.xfail  # issue #1852
 @requires_xspec
 @requires_data
 @requires_fits
@@ -1882,7 +1878,6 @@ def test_table_mod_mul_redshift(make_data_path):
     assert tbl(elo, ehi) == pytest.approx(expected, rel=2e-6)
 
 
-@pytest.mark.xfail  # issue #1852
 @requires_xspec
 @requires_data
 @requires_fits
