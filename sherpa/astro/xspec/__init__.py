@@ -1204,6 +1204,10 @@ class XSTableModel(XSModel):
     way to access this functionality. A simpler interface is provided
     by `read_xstable_model` and `sherpa.astro.ui.load_xstable_model`.
 
+    .. versionchanged:: 4.16.0
+       Parameters with negative DELTA values are now made frozen, to
+       match XSPEC.
+
     .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
        models to be used.
@@ -1225,6 +1229,7 @@ class XSTableModel(XSModel):
     delta : sequence
         The delta value for each parameter. This corresponds to the
         "DELTA" column from the "PARAMETER" block of the input file.
+        A negative value marks a parameter as being frozen.
     mins, maxes, hardmins, hardmaxes : sequence
         The valid range of each parameter. These correspond to the
         "BOTTOM", "TOP", "MINIMUM", and "MAXIMUM" columns from the
@@ -1285,10 +1290,17 @@ class XSTableModel(XSModel):
             parname = parname.strip().lower().translate(tbl)
             par = XSBaseParameter(name, parname, initvals[ii],
                                   mins[ii], maxes[ii],
-                                  hardmins[ii], hardmaxes[ii], frozen=isfrozen)
+                                  hardmins[ii], hardmaxes[ii],
+                                  frozen=isfrozen)
             self.__dict__[parname] = par
             pars.append(par)
             nint -= 1
+
+            # If delta < 0 then the parameter is also frozen. This is
+            # handled separately to the isfrozen check.
+            #
+            if delta[ii] < 0:
+                par.freeze()
 
         self.filename = filename
         self.addmodel = addmodel

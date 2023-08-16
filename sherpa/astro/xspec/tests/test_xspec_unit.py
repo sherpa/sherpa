@@ -1686,7 +1686,7 @@ def test_table_mod_negative_delta_1850(addmodel, redshift, escale, make_data_pat
     tbl = xspec.read_xstable_model('tbl', infile)
 
     # issue #1850; is the parameter recognized as frozen
-    assert not tbl.lscale.frozen
+    assert tbl.lscale.frozen
 
     parnames = [p.name for p in tbl.pars]
     assert parnames[0] == "lscale"
