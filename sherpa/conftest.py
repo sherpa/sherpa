@@ -812,3 +812,27 @@ def check_str():
     """
 
     return check_str_fixture
+
+
+@pytest.fixture
+def xsmodel():
+    """fixture that returns an XS<name> model instance.
+
+    The test needs to be marked @requires_xspec when using this
+    fixture.
+
+    """
+
+    try:
+        from sherpa.astro import xspec
+    except ImportError:
+        raise RuntimeError("Test needs the requires_xspec decorator")
+
+    def func(name, mname=None):
+        cls = getattr(xspec, f"XS{name}")
+        if mname is None:
+            return cls()
+
+        return cls(mname)
+
+    return func
