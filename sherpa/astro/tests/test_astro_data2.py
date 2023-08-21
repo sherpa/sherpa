@@ -4381,3 +4381,35 @@ def test_img_checks_coord_no_transform(coord):
                        match="^data set 'ex' does not contain a .* coordinate system$"):
         DataIMG("ex", [1, 2, 1, 2], [1, 1, 2, 2], [1, 2, 3, 4],
                 coord=coord)
+
+
+@pytest.mark.parametrize("asarray", [True, pytest.param(False, marks=pytest.mark.xfail)])  # XFAIL: TypeError: grpBinWidth() Could not parse input arguments, ...
+def test_group_xxx_tabtops_not_ndarray(asarray):
+    """What happens if tabStops is not a ndarray?"""
+
+    pha = DataPHA("test", [1, 2, 3, 4, 5], [2, 3, 4, 5, 6])
+    tabstops = [1, 1, 0, 0, 1]
+    if asarray:
+        tabstops = np.asarray(tabstops)
+
+    # This should only group channels 3 and 4.
+    pha.group_width(2, tabStops=tabstops)
+
+    assert pha.get_y() == pytest.approx([2, 3, 4.5, 6])
+    assert pha.mask is True
+    assert pha.get_mask() is None
+
+
+@pytest.mark.parametrize("asarray", [True, pytest.param(False, marks=pytest.mark.xfail)])  # XFAIL: TypeError: grpBinWidth() Could not parse input arguments, ...
+@pytest.mark.parametrize("nelem", [4, 6])
+def test_group_xxx_tabtops_wrong_size(asarray, nelem):
+    """What happens if tabStops is not a ndarray?"""
+
+    pha = DataPHA("test", [1, 2, 3, 4, 5], [2, 3, 4, 5, 6])
+    tabstops = [0] * nelem
+    if asarray:
+        tabstops = np.asarray(tabstops)
+
+    emsg = r"^grpBinWidth\(\) The number of tab stops and number of channels specified in the argument list have different sizes$"
+    with pytest.raises(ValueError, match=emsg):
+        pha.group_width(2, tabStops=tabstops)
