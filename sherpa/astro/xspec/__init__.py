@@ -101,7 +101,7 @@ from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import SherpaFloat, guess_amplitude, param_apply_limits, bool_cast
-from sherpa.utils.err import ParameterErr
+from sherpa.utils.err import IOErr, ParameterErr
 from sherpa.astro.utils import get_xspec_position
 
 # Note that utils also imports _xspec so it will error out if it is
@@ -771,6 +771,11 @@ def read_xstable_model(modelname, filename, etable=False):
     XSPEC additive (atable, [1]_), multiplicative (mtable, [2]_), and
     exponential (etable, [3]_) table models are supported.
 
+    .. versionchanged:: 4.16.0
+       Parameters with negative DELTA values are now made frozen, to
+       match XSPEC. Support for models which use the ESCALE keyword
+       has been added.
+
     .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
        models to be used.
@@ -789,6 +794,11 @@ def read_xstable_model(modelname, filename, etable=False):
     Returns
     -------
     tablemodel : XSTableModel instance
+
+    Notes
+    -----
+    There is no support for table models that provide multiple spectra
+    per parameter: that is, those with the NXFLTEXP keyword set.
 
     References
     ----------
@@ -822,16 +832,47 @@ def read_xstable_model(modelname, filename, etable=False):
     read_tbl = sherpa.astro.io.backend.get_table_data
     read_hdr = sherpa.astro.io.backend.get_header_data
 
+    # Not all keywords are going to be present, so check what are.
+    #
     blkname = 'PRIMARY'
-    hdrkeys = ['HDUCLAS1', 'REDSHIFT', 'ADDMODEL']
-    hdr = read_hdr(filename, blockname=blkname, hdrkeys=hdrkeys)
+    hdr = read_hdr(filename, blockname=blkname, hdrkeys=None)
 
-    addmodel = bool_cast(hdr[hdrkeys[2]])
-    addredshift = bool_cast(hdr[hdrkeys[1]])
+    try:
+        hduclas1 = hdr["HDUCLAS1"].upper()
+    except KeyError:
+        raise IOErr("nokeyword", filename, "HDUCLAS1")
 
-    # TODO: change Exception to something more useful
-    if str(hdr[hdrkeys[0]]).upper() != 'XSPEC TABLE MODEL':
+    if hduclas1 != 'XSPEC TABLE MODEL':
+        # TODO: change Exception to something more useful
         raise Exception("Not an XSPEC table model")
+
+    try:
+        addredshift = bool_cast(hdr["REDSHIFT"])
+    except KeyError:
+        raise IOErr("nokeyword", filename, "REDSHIFT")
+
+    try:
+        addmodel = bool_cast(hdr["ADDMODEL"])
+    except KeyError:
+        raise IOErr("nokeyword", filename, "ADDMODEL")
+
+    # ESCALE may not exist in the header, as it is relatively new.
+    #
+    try:
+        addescale = bool_cast(hdr["ESCALE"])
+    except KeyError:
+        addescale = False
+
+    # We want to error out if NXFLTEXP is set (and more than 1). If
+    # set to 1 we ignore it.
+    #
+    try:
+        nxfltexp = int(hdr["NXFLTEXP"])
+    except KeyError:
+        nxfltexp = 1
+
+    if nxfltexp > 1:
+        raise IOErr(f"No support for NXFLTEXP={nxfltexp} in {filename}")
 
     blkname = 'PARAMETERS'
     colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
@@ -841,10 +882,11 @@ def read_xstable_model(modelname, filename, etable=False):
     (colnames, cols,
      name, hdr) = read_tbl(filename, colkeys=colkeys, hdrkeys=hdrkeys,
                            blockname=blkname, fix_type=False)
-    nint = int(hdr[hdrkeys[0]])
+    nint = int(hdr["NINTPARM"])
     return XSTableModel(filename, modelname, *cols,
                         nint=nint, addmodel=addmodel,
-                        addredshift=addredshift, etable=etable)
+                        addredshift=addredshift,
+                        addescale=addescale, etable=etable)
 
 
 # The model classes are added to __all__ at the end of the file
@@ -1204,6 +1246,11 @@ class XSTableModel(XSModel):
     way to access this functionality. A simpler interface is provided
     by `read_xstable_model` and `sherpa.astro.ui.load_xstable_model`.
 
+    .. versionchanged:: 4.16.0
+       Parameters with negative DELTA values are now made frozen, to
+       match XSPEC. Support for models which use the ESCALE keyword
+       has been added.
+
     .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
        models to be used.
@@ -1225,6 +1272,7 @@ class XSTableModel(XSModel):
     delta : sequence
         The delta value for each parameter. This corresponds to the
         "DELTA" column from the "PARAMETER" block of the input file.
+        A negative value marks a parameter as being frozen.
     mins, maxes, hardmins, hardmaxes : sequence
         The valid range of each parameter. These correspond to the
         "BOTTOM", "TOP", "MINIMUM", and "MAXIMUM" columns from the
@@ -1242,9 +1290,18 @@ class XSTableModel(XSModel):
         If `True` then a redshift parameter is added to the parameters.
         It should be set to the value of the "REDSHIFT" keyword of the
         primary header of the input file.
+    addescale : bool
+        If `True` then an Escale parameter is added to the parameters.
+        It should be set to the value of the "ESCALE" keyword of the
+        primary header of the input file.
     etable : bool
         When addmodel is False this defines whether the file is a
         mtable model (`False`, the default) or an etable model (`True`).
+
+    Notes
+    -----
+    There is no support for table models that provide multiple spectra
+    per parameter: that is, those with the NXFLTEXP keyword set.
 
     References
     ----------
@@ -1257,7 +1314,8 @@ class XSTableModel(XSModel):
     def __init__(self, filename, name='xstbl', parnames=(),
                  initvals=(), delta=(), mins=(), maxes=(), hardmins=(),
                  hardmaxes=(), nint=0,
-                 addmodel=False, addredshift=False, etable=False):
+                 addmodel=False, addredshift=False, addescale=False,
+                 etable=False):
 
         # make translation table to turn reserved characters into '_'
         bad = string.punctuation + string.whitespace
@@ -1285,19 +1343,38 @@ class XSTableModel(XSModel):
             parname = parname.strip().lower().translate(tbl)
             par = XSBaseParameter(name, parname, initvals[ii],
                                   mins[ii], maxes[ii],
-                                  hardmins[ii], hardmaxes[ii], frozen=isfrozen)
+                                  hardmins[ii], hardmaxes[ii],
+                                  frozen=isfrozen)
             self.__dict__[parname] = par
             pars.append(par)
             nint -= 1
+
+            # If delta < 0 then the parameter is also frozen. This is
+            # handled separately to the isfrozen check.
+            #
+            if delta[ii] < 0:
+                par.freeze()
 
         self.filename = filename
         self.addmodel = addmodel
         self.etable = etable
 
+        # Order appears to be
+        #   - z
+        #   - Escale
+        #   - norm
+        # (for those models that support the relevant value)
+        #
         if addredshift:
             self.redshift = XSBaseParameter(name, 'redshift', 0., 0., 5.,
                                             0.0, 5, frozen=True)
             pars.append(self.redshift)
+
+        if addescale:
+            # Should this just use Parameter?
+            self.Escale = XSParameter(name, 'Escale', 1, 0, 1e20,
+                                      0, 1e24, frozen=True, units="keV")
+            pars.append(self.Escale)
 
         if addmodel:
             # Normalization parameters are not true XSPEC parameters and
