@@ -3475,8 +3475,28 @@ It is an integer or string.
         # significantly harder to orchestrate so this approach has
         # been taken.
         #
+        # We also want to ensure that it is the correct size. If a
+        # user tries to call with tabStops=~self.mask, which is the
+        # "obvious" thing to do, then the call will fail if the data
+        # is already grouped, since mask will have less values in it
+        # then required. However, we can identify this case and
+        # convert the mask into a "per-channel" array (in the same way
+        # that get_mask does it).
+        #
         try:
-            kwargs["tabStops"] = numpy.asarray(kwargs["tabStops"])
+            ts = numpy.asarray(kwargs["tabStops"])
+
+            # We only expand the array if it has the correct size
+            # (expand_grouped_mask does not enforce length checks for
+            # Sherpa ~ 4.15).
+            #
+            nts = len(ts)
+            nchan = len(self.channel)
+            if self.grouped and nts != nchan and \
+               numpy.iterable(self.mask) and len(self.mask) == nts:
+                ts = expand_grouped_mask(ts, self.grouping)
+
+            kwargs["tabStops"] = ts
         except KeyError:
             pass
 

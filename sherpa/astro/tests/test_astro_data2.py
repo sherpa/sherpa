@@ -4415,7 +4415,6 @@ def test_group_xxx_tabtops_wrong_size(asarray, nelem):
         pha.group_width(2, tabStops=tabstops)
 
 
-@pytest.mark.xfail  # XFAIL: ValueError: grpNumCounts() The tabStops and countsArray have differing length
 def test_group_xxx_tabstops_already_grouped():
     """Check what happens if tabStops is sent ~pha.mask when already grouped."""
 
