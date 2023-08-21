@@ -4413,3 +4413,28 @@ def test_group_xxx_tabtops_wrong_size(asarray, nelem):
     emsg = r"^grpBinWidth\(\) The number of tab stops and number of channels specified in the argument list have different sizes$"
     with pytest.raises(ValueError, match=emsg):
         pha.group_width(2, tabStops=tabstops)
+
+
+@pytest.mark.xfail  # XFAIL: ValueError: grpNumCounts() The tabStops and countsArray have differing length
+def test_group_xxx_tabstops_already_grouped():
+    """Check what happens if tabStops is sent ~pha.mask when already grouped."""
+
+    pha = DataPHA("grp", [1, 2, 3, 4, 5, 6], [12, 2, 9, 2, 4, 5])
+    pha.mask = [1, 0, 1, 1, 1, 0]
+    assert pha.get_y(filter=True) == pytest.approx([12, 9, 2, 4])
+
+    pha.grouping = [1, 1, 1, -1, 1, 1]
+    pha.grouped = True
+    assert pha.get_y(filter=True) == pytest.approx([12, 5.5, 4])
+
+    tstops = ~pha.mask
+    assert tstops == pytest.approx([False, True, False, False, True])
+
+    # Apply the mask as the tabStops (after inversion) where
+    # len(tstops) < nchannel but does match the number of groups.
+    #
+    pha.group_counts(8, tabStops=tstops)
+
+    assert pha.grouping == pytest.approx([1, 0, 1, 1, -1, 0])
+    assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0])
+    assert pha.get_y(filter=True) == pytest.approx([12, 9, 3])
