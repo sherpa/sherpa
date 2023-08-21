@@ -1007,6 +1007,16 @@ def test_ismabs_parameter_name_clashes():
     scheme to address this is updated (it is technically not needed, but is
     left in as a check that any future auto-generated XSPEC model
     handles these parameter names).
+
+    As of XSPEC 12.13.0 (ish), the model.dat file now lists the
+    underscore version for all the parameters (e.g. He_II, C_I,
+    Ca_III), which changes this test somewhat. Note that as we don't
+    autogenerate the interface we have to decide on a naming scheme
+    (we don't go to the effort of making it depend on the XSPEC
+    version), and so we have decided to go with the XSPEC 12.13.1 /
+    HEASOFT 6.32 names. We have aliased the old names, so we can check
+    they work too.
+
     """
 
     from sherpa.astro import xspec
@@ -1014,12 +1024,12 @@ def test_ismabs_parameter_name_clashes():
     mdl = xspec.XSismabs()
     assert len(mdl.pars) == 31
 
-    # List of expected names taken from XSPEC 12.9.1 model.dat file.
+    # List of expected names taken from XSPEC 12.13.1 model.dat file.
     #
-    names = ["H", "HeII"]
-    for el in ["C", "N", "O", "Ne", "Mg", "Si_", "S_", "Ar", "Ca"]:
+    names = ["H", "He_II"]
+    for el in ["C", "N", "O", "Ne", "Mg", "Si", "S", "Ar", "Ca"]:
         for i in ["I", "II", "III"]:
-            names.append(el + i)
+            names.append(f"{el}_{i}")
     names.extend(["Fe", "redshift"])
     assert len(names) == 31  # this tests the test, not the module!
 
@@ -1029,6 +1039,30 @@ def test_ismabs_parameter_name_clashes():
         # Just check that there is no link between any of the parameters,
         # as would be the case if they were called SiI and SII (for example).
         assert par.link is None
+
+    # Check that the aliases work and raise a deprecation warning.
+    #
+    # Note that we include Si and S in the list, just so that we can
+    # keep the ordering with the names array, but we skip these as
+    # they do not have an alias (hence the name begins with SKIP).
+    #
+    aliases = ["HeII"]
+    for el in ["C", "N", "O", "Ne", "Mg", "SKIP-Si", "SKIP-S", "Ar", "Ca"]:
+        for i in ["I", "II", "III"]:
+            aliases.append(f"{el}{i}")
+
+    for name, alias in zip(names[1:], aliases):
+        if alias.startswith("SKIP"):
+            continue
+
+        assert alias != name  # safety check
+
+        emsg = f"^Parameter name {alias.lower()} is deprecated for " + \
+            f"model XSismabs, use {name} instead$"
+        with pytest.warns(DeprecationWarning, match=emsg):
+            par = getattr(mdl, alias)
+
+        assert par.name == name
 
     # It would be nice to be able to say the following, but at present
     # not sure how to enable this.
