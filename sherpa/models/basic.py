@@ -108,6 +108,11 @@ class Box1D(RegriddableModel1D):
     inclusive), where it is set to the ``ampl`` parameter. Outside
     this range the model is zero.
 
+    .. versionchanged:: 4.16.0
+       The default value for the xhi parameter has been changed from 0
+       to 1, and the range of ampl now matches xlow and xhi rather
+       than being set to -1 to 1.
+
     Attributes
     ----------
     xlow
@@ -119,7 +124,7 @@ class Box1D(RegriddableModel1D):
 
     See Also
     --------
-    Box2D, Const1D, Delta1D, StepLo1D, StepHi1D
+    Box2D, Const1D, Delta1D, Scale1D, StepLo1D, StepHi1D
 
     Notes
     -----
@@ -137,12 +142,13 @@ class Box1D(RegriddableModel1D):
 
     This behavior is different to how the amplitude is handled in
     other models, such as ``Const1D``.
+
     """
 
     def __init__(self, name='box1d'):
         self.xlow = Parameter(name, 'xlow', 0)
-        self.xhi = Parameter(name, 'xhi', 0)
-        self.ampl = Parameter(name, 'ampl', 1, -1, 1)
+        self.xhi = Parameter(name, 'xhi', 1)
+        self.ampl = Parameter(name, 'ampl', 1)
         ArithmeticModel.__init__(self, name, (self.xlow, self.xhi, self.ampl))
 
     def guess(self, dep, *args, **kwargs):
