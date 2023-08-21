@@ -4383,7 +4383,7 @@ def test_img_checks_coord_no_transform(coord):
                 coord=coord)
 
 
-@pytest.mark.parametrize("asarray", [True, pytest.param(False, marks=pytest.mark.xfail)])  # XFAIL: TypeError: grpBinWidth() Could not parse input arguments, ...
+@pytest.mark.parametrize("asarray", [True, False])
 def test_group_xxx_tabtops_not_ndarray(asarray):
     """What happens if tabStops is not a ndarray?"""
 
@@ -4400,7 +4400,7 @@ def test_group_xxx_tabtops_not_ndarray(asarray):
     assert pha.get_mask() is None
 
 
-@pytest.mark.parametrize("asarray", [True, pytest.param(False, marks=pytest.mark.xfail)])  # XFAIL: TypeError: grpBinWidth() Could not parse input arguments, ...
+@pytest.mark.parametrize("asarray", [True, False])
 @pytest.mark.parametrize("nelem", [4, 6])
 def test_group_xxx_tabtops_wrong_size(asarray, nelem):
     """What happens if tabStops is not a ndarray?"""

@@ -3467,6 +3467,19 @@ It is an integer or string.
             if kwargs[key] is None:
                 kwargs.pop(key)
 
+        # If tabstops is given then we want to ensure it is an
+        # ndarray.  Really this should be done on args as well, in
+        # case the array is sent in as a positional argument, but we
+        # always send it in as a keyword argument. An alternative is
+        # to do the conversion in the C++ code, but that is
+        # significantly harder to orchestrate so this approach has
+        # been taken.
+        #
+        try:
+            kwargs["tabStops"] = numpy.asarray(kwargs["tabStops"])
+        except KeyError:
+            pass
+
         self.grouping, self.quality = group_func(*args, **kwargs)
         self.group()
         self._original_groups = False
