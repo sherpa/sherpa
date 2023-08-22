@@ -3483,12 +3483,15 @@ It is an integer or string.
         # convert the mask into a "per-channel" array (in the same way
         # that get_mask does it).
         #
-        try:
+        if "tabStops" in kwargs:
             ts = numpy.asarray(kwargs["tabStops"])
 
             # We only expand the array if it has the correct size
             # (expand_grouped_mask does not enforce length checks for
             # Sherpa ~ 4.15).
+            #
+            # TODO: this probably doesn't work if we have quality_filter
+            # set.
             #
             nts = len(ts)
             nchan = len(self.channel)
@@ -3497,8 +3500,17 @@ It is an integer or string.
                 ts = expand_grouped_mask(ts, self.grouping)
 
             kwargs["tabStops"] = ts
-        except KeyError:
-            pass
+
+        else:
+            # If there is a mask, and it is an array, invert it for
+            # the tabStops. Note that
+            #
+            # a) use get_mask to ensure we have a value for each channel
+            # b) get_mask can return None or an array.
+            #
+            mask = self.get_mask()
+            if numpy.iterable(mask):
+                kwargs["tabStops"] = ~mask
 
         self.grouping, self.quality = group_func(*args, **kwargs)
         self.group()

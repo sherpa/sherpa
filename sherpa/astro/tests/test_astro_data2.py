@@ -472,20 +472,22 @@ def test_416_a():
     mask = [False, False, False, True, True, True, False, False, False, False]
     assert pha.mask == pytest.approx(mask)
 
+    # With tabStops not set we use ~mask (as this is in channel space).
+    #
     pha.group_counts(3)
 
     # We have a simplified mask
-    mask = [True, True]
+    mask = [False] * 3 + [True] * 2 + [False] * 4
     assert pha.mask == pytest.approx(mask)
 
     # the "full" mask can be retrieved with get_mask
-    mask = [True] * 10
+    mask = [False] * 3 + [True] * 3 + [False] * 4
     assert pha.get_mask() == pytest.approx(mask)
 
-    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
+    grouping = [0, 0, 0, 1, -1, 1, 0, 0, 0, 0]
     assert pha.grouping == pytest.approx(grouping)
 
-    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
+    quality = [0, 0, 0, 0, 0, 2, 0, 0, 0, 0]
     assert pha.quality == pytest.approx(quality)
 
     dep = pha.get_dep(filter=True)
@@ -872,8 +874,6 @@ def test_img_get_img_model_filter_some2(make_test_image):
 
     # check
     assert img.mask.sum() == 11
-
-    print(np.where(img.mask))
 
     ival, mval = img.get_img(image_callable_filtered2)
 
@@ -1835,11 +1835,14 @@ def test_pha_change_quality_values():
     assert pha.get_dep(filter=True) == pytest.approx([6])
     assert pha.get_filter() == '1:7'
 
+    # With no tabStops set it uses ~pha.get_mask() which in this case
+    # is [False] * 5 + [True] * 2,
+    #
     pha.group_counts(4)
-    assert pha.quality == pytest.approx([0, 0, 0, 0, 0, 0, 2])
+    assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0, 0])
 
     # Should quality filter be reset?
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False, False])
+    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
     assert pha.get_dep(filter=True) == pytest.approx([4, 2])
     assert pha.get_filter() == '1:7'
 
@@ -1943,25 +1946,30 @@ def test_pha_ignore_bad_group_quality(caplog):
     assert pha.get_filter(format="%.1f") == "3.0:7.0"
     assert pha.get_noticed_channels() == pytest.approx(np.arange(3, 7))
 
+    omask = [False] * 2 + [True] * 4 + [False] * 4
+    assert pha.mask == pytest.approx(omask)
+    assert pha.get_mask() == pytest.approx(omask)
+
     # Only filtering
     assert pha.get_dep(filter=False) == pytest.approx(y)
     assert pha.get_dep(filter=True) == pytest.approx(y[2:6])
 
+    # tabStops is not set, so uses the current mask
     pha.group_counts(3)
-    assert pha.get_filter(format="%.1f") == "1.0:11.0"
-    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 11))
+    assert pha.get_filter(format="%.1f") == "3.0:7.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(3, 7))
 
     # Grouped and filtered
     assert pha.get_dep(filter=False) == pytest.approx(y)
-    assert pha.get_dep(filter=True) == pytest.approx([3, 2])
+    assert pha.get_dep(filter=True) == pytest.approx([3, 1])
 
-    assert pha.mask == pytest.approx([True] * 2)
-    assert pha.get_mask() == pytest.approx([True] * 10)
+    assert pha.mask == pytest.approx([False] * 2 + [True] * 2 + [False] * 4)
+    assert pha.get_mask() == pytest.approx(omask)
 
-    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
+    grouping = [0, 0, 1, -1, -1,  1, 0, 0, 0, 0]
     assert pha.grouping == pytest.approx(grouping)
 
-    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
+    quality = [0, 0, 0, 0, 0, 2, 0, 0, 0, 0]
     assert pha.quality == pytest.approx(quality)
     assert pha.quality_filter is None
 
@@ -1991,16 +1999,16 @@ def test_pha_ignore_bad_group_quality(caplog):
     assert type(pha.mask) is bool
     assert pha.mask
 
-    # However, get_mask reflects the quality filter, so is 5 True
-    # followed by 5 False.
+    # However, get_mask reflects the quality filter, so is all True
+    # except for the 6th element.
     #
-    mask = [True] * 5 + [False] * 5
-    assert pha.get_mask() == pytest.approx(mask)
+    single_bad = [True] * 5 + [False] + [True] * 4
+    assert pha.get_mask() == pytest.approx(single_bad)
 
     # What about the quality fields?
     #
     assert pha.quality == pytest.approx(quality)
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 5)
+    assert pha.quality_filter == pytest.approx(single_bad)
 
     # Saying all that though, the filter expression does not
     # know we are ignoring channels 6-10.
@@ -2008,13 +2016,13 @@ def test_pha_ignore_bad_group_quality(caplog):
     # TODO: This is likely a bug.
     #
     assert pha.get_filter(format="%.1f") == "1.0:11.0"
-    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 6))
+    assert pha.get_noticed_channels() == pytest.approx([1, 2, 3, 4, 5, 7, 8, 9, 10])
 
     # Grouped and quality-filtered (even though get_filter
     # returns 1:11 here).
     #
     assert pha.get_dep(filter=False) == pytest.approx(y)
-    assert pha.get_dep(filter=True) == pytest.approx([3])
+    assert pha.get_dep(filter=True) == pytest.approx([0, 0, 3, 0, 0, 1, 0])
 
     # check there have been no more messages.
     #

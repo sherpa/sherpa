@@ -1127,8 +1127,8 @@ def test_grouping_filter(analysis, make_data_path):
     pha = read_pha(make_data_path('3c273.pi'))
 
     assert pha.get_analysis() == 'energy'
-    pha.ignore(None, 1)
-    pha.ignore(7, None)
+    pha.ignore(hi=1)
+    pha.ignore(lo=7)
 
     pha.set_analysis(analysis)
 
@@ -1138,11 +1138,28 @@ def test_grouping_filter(analysis, make_data_path):
     assert pha.get_dep(filter=True) == pytest.approx(dep)
 
     # The group mapping for group_width of 50 is listed in
-    # test_grouping_filtering_binning.
+    # test_grouping_filtering_binning. However, as of 4.16.0 the
+    # group_width call will now use the inverse of the current mask as
+    # the tabStops array. As of 4.16, this only groups over the range
+    # pha.counts[71:450].
     #
     pha.group_width(50)
+    dep = np.array([136, 129, 61, 48, 35, 35, 19, 11])
+    assert pha.get_dep(filter=True) == pytest.approx(dep)
+
+    qual = np.zeros(1024, dtype=int)
+    qual[421:450] = 2
+    assert pha.quality == pytest.approx(qual)
+
+    # Prior to 4.16.0 the call would have acted like follows
+    #
+    pha.group_width(50, tabStops=[0] * 1024)
     dep = np.array([213, 136,  79,  47,  47,  29,  27, 18])
     assert pha.get_dep(filter=True) == pytest.approx(dep)
+    
+    qual = np.zeros(1024, dtype=int)
+    qual[1000:1024] = 2
+    assert pha.quality == pytest.approx(qual)
 
 
 @requires_data
@@ -1160,11 +1177,15 @@ def test_grouping_filtering_binning(analysis, make_data_path):
 
     pha = read_pha(make_data_path('3c273.pi'))
 
-    pha.ignore(None, 1)
-    pha.ignore(7, None)
+    pha.ignore(hi=1)
+    pha.ignore(lo=7)
 
+    # As of 4.16.0, the tabStops defaults to the inverse of
+    # pha.get_mask, so to avoid changing this test from the original
+    # results we need to override the setting.
+    #
     pha.set_analysis(analysis)
-    pha.group_width(50)
+    pha.group_width(50, tabStops=np.zeros(1024, dtype=np.int8))
 
     # We expect 1, 49 * -1, repeated and then the last bin.
     #
@@ -1228,6 +1249,58 @@ def test_grouping_filtering_binning(analysis, make_data_path):
     #
     expected = np.zeros(1024, dtype=bool)
     expected[50:450] = True
+    assert (pha.get_mask() == expected).all()
+
+
+@requires_data
+@requires_fits
+@requires_group
+@pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
+def test_grouping_filtering_binning_416(analysis, make_data_path):
+    """Low-level testing of test_grouping_filtering without tabStops override
+
+    In 4.16 the behavior of the grpoup_xxx call changed to include
+    the existing mask as a tabStops array (after  inversion) which
+    changes the results of this test, so we now have two versions
+
+      test_grouping_filtering_binning
+      test_grouping_filtering_binning_416
+
+    where the former keeps the pre-4.16 behavior (by setting tabStops
+    to [0] * 1024) and this one, which checks the new behavior.
+
+    """
+
+    from sherpa.astro.io import read_pha
+
+    pha = read_pha(make_data_path('3c273.pi'))
+
+    pha.ignore(hi=1)
+    pha.ignore(lo=7)
+
+    # As of 4.16.0, the tabStops defaults to the inverse of
+    # pha.get_mask, so to avoid changing this test from the original
+    # results we need to override the setting.
+    #
+    pha.set_analysis(analysis)
+    pha.group_width(50)
+
+    # The valid channel range is (starting at 0), 71 to 449
+    # (inclusive), which is 379 channels, which means 8 50-channel
+    # groups (the last partly filled).
+    #
+    gbin = [1] + [-1] * 49
+    gend = [1] + [-1] * 28
+    expected = np.concatenate(([0] * 71, np.tile(gbin, 7),
+                               gend, [0] * 574))
+    assert (pha.grouping == expected).all()
+
+    expected = np.zeros(653, dtype=bool)
+    expected[71:79] = True
+    assert (pha.mask == expected).all()
+
+    expected = np.zeros(1024, dtype=bool)
+    expected[71:450] = True
     assert (pha.get_mask() == expected).all()
 
 
