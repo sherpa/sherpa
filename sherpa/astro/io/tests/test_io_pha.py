@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1297,3 +1297,49 @@ def test_pack_pha_invalid_counts():
         io.pack_pha(pha)
 
     assert str(err.value) == "The PHA dataset 'dummy' contains an unsupported COUNTS column"
+
+
+@requires_data
+@requires_fits
+def test_read_hrci_rmf(make_data_path):
+    """Check out issue #1830
+
+    Can the pyfits backend read in the HRC-I RMF?
+    """
+
+    if backend_is("pyfits"):
+        pytest.xfail()  # issue #1830
+
+    rmffile = make_data_path("chandra_hrci/hrcf24564_000N030_r0001" +
+                             "_rmf3.fits.gz")
+    rmf = io.read_rmf(rmffile)
+
+    NROWS = 16921
+    NGRP = 16960
+    NMATRIX = 8525597
+    NCHAN = 1024
+
+    assert len(rmf.energ_lo) == NROWS
+    assert rmf.energ_lo[0] == pytest.approx(0.06)
+    assert rmf.energ_hi[-1] == pytest.approx(9.9902925491)
+
+    assert len(rmf.n_grp) == NROWS
+    assert rmf.n_grp.sum() == NGRP
+
+    assert len(rmf.f_chan) == NGRP
+    assert len(rmf.n_chan) == NGRP
+    assert rmf.n_chan.sum() == NMATRIX
+
+    # The value checks are taken from a crates run and so
+    # act as a regression test.
+    #
+    assert len(rmf.matrix) == NMATRIX
+    assert rmf.matrix[0] == pytest.approx(0.00013532221782952547)
+    assert rmf.matrix[-100] == pytest.approx(0.00029959273524582386)
+
+    assert rmf.detchans == NCHAN
+    assert len(rmf.e_min) == NCHAN
+    assert len(rmf.e_max) == NCHAN
+
+    assert rmf.e_min[0] == pytest.approx(0.06)
+    assert rmf.e_max[-1] == pytest.approx(10)
