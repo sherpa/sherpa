@@ -1681,15 +1681,18 @@ def test_table_mod_negative_delta_1850(addmodel, redshift, escale, make_data_pat
     parnames = [p.name for p in tbl.pars]
     assert parnames[0] == "lscale"
 
+    # Ordering taken from XSPEC 12.13.1a (unreleased at the time of
+    # writing of the test).
+    #
     idx = 1
-    if redshift:
-        assert parnames[idx] == "redshift"
-        assert tbl.redshift.frozen
-        idx += 1
-
     if escale:
         assert parnames[idx] == "Escale"
         assert tbl.escale.frozen
+        idx += 1
+
+    if redshift:
+        assert parnames[idx] == "redshift"
+        assert tbl.redshift.frozen
         idx += 1
 
     if addmodel:
@@ -1800,7 +1803,6 @@ def test_table_mod_add_escale(make_data_path):
     assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_E2, rel=2e-6)
 
 
-@pytest.mark.xfail
 @requires_xspec
 @requires_data
 @requires_fits
@@ -1935,7 +1937,6 @@ def test_table_mod_mul_escale(make_data_path):
     assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_E2, rel=2e-6)
 
 
-@pytest.mark.xfail
 @requires_xspec
 @requires_data
 @requires_fits
