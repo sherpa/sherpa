@@ -1727,6 +1727,23 @@ def test_table_mod_add(make_data_path):
     assert tbl(elo, ehi) == pytest.approx(expected)
 
 
+# Values taken from XSPEC 12.13.1 with
+#
+#    dummyrsp 0.2 2.6 24 linear
+#    mo atable{smod1xx.tmod}
+#    newpar xxxxxx
+#    iplot model
+#    wdata
+#
+# Note that this gives photon/cm^2/s/keV and model evaluation
+# gives photon/cm^2/s.
+#
+ADD_TABLE_BASIC = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + \
+    [140] * 5 + [375, 20, 0, 0, 0, 0]
+ADD_TABLE_Z1 = [0, 82.5, 15, 57.5, 100, 120, 140, 140, 197.5] + [0] * 15
+ADD_TABLE_E2 = [0] * 8 + [37.5] * 2 + [75] * 2 + [7.5] * 8 + [50] * 4
+
+
 @requires_xspec
 @requires_data
 @requires_fits
@@ -1749,20 +1766,10 @@ def test_table_mod_add_redshift(make_data_path):
     ehi = egrid[1:]
     de = 0.1
 
-    # Values taken from XSPEC 12.13.1 with
-    #
-    #    dummyrsp 0.2 2.6 24 linear
-    #    mo atable{smod101.tmod}
-    #    iplot model
-    #    wdata
-    #
-    expected = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + [140] * 5 + \
-        [375, 20, 0, 0, 0, 0]
-    assert tbl(elo, ehi) / de == pytest.approx(expected)
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_BASIC)
 
     tbl.redshift = 1
-    expected = [0, 82.5, 15, 57.5, 100, 120, 140, 140, 197.5] + [0] * 15
-    assert tbl(elo, ehi) / de == pytest.approx(expected, rel=2e-6)
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_Z1, rel=2e-6)
 
 
 @requires_xspec
@@ -1787,20 +1794,47 @@ def test_table_mod_add_escale(make_data_path):
     ehi = egrid[1:]
     de = 0.1
 
-    # Values taken from XSPEC 12.13.1 with
-    #
-    #    dummyrsp 0.2 2.6 24 linear
-    #    mo atable{smod101.tmod}
-    #    iplot model
-    #    wdata
-    #
-    expected = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + [140] * 5 + \
-        [375, 20, 0, 0, 0, 0]
-    assert tbl(elo, ehi) / de == pytest.approx(expected)
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_BASIC)
 
     tbl.escale = 2
-    expected = [0] * 8 + [37.5] * 2 + [75] * 2 + [7.5] * 8 + [50] * 4
-    assert tbl(elo, ehi) / de == pytest.approx(expected, rel=2e-6)
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_E2, rel=2e-6)
+
+
+@pytest.mark.xfail
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_add_escale_redshift(make_data_path):
+    """Check the additive model is behaving as expected with escale+redshift.
+
+    Note, prior to XSPEC 12.13.1a XSPEC had the escale and redshift
+    parameters the wrong way round.
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod111.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    assert tbl.escale.val == pytest.approx(1)
+    assert tbl.redshift.val == pytest.approx(0)
+
+    egrid = np.linspace(0.2, 2.6, 25)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    de = 0.1
+
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_BASIC)
+
+    tbl.redshift = 1
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_Z1, rel=2e-6)
+
+    tbl.redshift = 0
+    tbl.escale = 2
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_E2, rel=2e-6)
 
 
 @requires_xspec
@@ -1830,6 +1864,23 @@ def test_table_mod_mul(make_data_path):
     assert tbl(elo, ehi) == pytest.approx(expected)
 
 
+# Values taken from XSPEC 12.13.1 with
+#
+#    dummyrsp 0.2 2.6 24 linear
+#    mo mtable{smod0xx.tmod}
+#    newpar xxxxx
+#    iplot model
+#    wdata
+#
+# As this is multiplicative there is no need to worry about
+# the bin width.
+#
+MUL_TABLE_BASIC = [0, 0, 0, 7.5, 15] + [6] * 4 + [40] * 4 + \
+    [70] * 5 + [37.5, 2, 5, 5, 5, 5]
+MUL_TABLE_Z1 = [0, 13.2, 6, 23, 40, 50 + 10/3, 70, 70, 19.75] + [5] * 15
+MUL_TABLE_E2 = [0] * 8 + [7.5] * 2 + [15] * 2 + [6] * 8 + [40] * 4
+
+
 @requires_xspec
 @requires_data
 @requires_fits
@@ -1851,21 +1902,10 @@ def test_table_mod_mul_redshift(make_data_path):
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    # Values taken from XSPEC 12.13.1 with
-    #
-    #    dummyrsp 0.2 2.6 24 linear
-    #    mo mtable{smod001.tmod} * powerlaw
-    #    newpar 3 0
-    #    iplot model
-    #    wdata
-    #
-    expected = [0, 0, 0, 7.5, 15] + [6] * 4 + [40] * 4 + [70] * 5 + \
-        [37.5, 2, 5, 5, 5, 5]
-    assert tbl(elo, ehi) == pytest.approx(expected)
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_BASIC)
 
     tbl.redshift = 1
-    expected = [0, 13.2, 6, 23, 40, 50 + 10/3, 70, 70, 19.75] + [5] * 15
-    assert tbl(elo, ehi) == pytest.approx(expected, rel=2e-6)
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_Z1, rel=2e-6)
 
 
 @requires_xspec
@@ -1889,18 +1929,43 @@ def test_table_mod_mul_escale(make_data_path):
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    # Values taken from XSPEC 12.13.1 with
-    #
-    #    dummyrsp 0.2 2.6 24 linear
-    #    mo mtable{smod001.tmod} * powerlaw
-    #    newpar 3 0
-    #    iplot model
-    #    wdata
-    #
-    expected = [0, 0, 0, 7.5, 15] + [6] * 4 + [40] * 4 + [70] * 5 + \
-        [37.5, 2, 5, 5, 5, 5]
-    assert tbl(elo, ehi) == pytest.approx(expected)
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_BASIC)
 
     tbl.escale = 2
-    expected = [0] * 8 + [7.5] * 2 + [15] * 2 + [6] * 8 + [40] * 4
-    assert tbl(elo, ehi) == pytest.approx(expected, rel=2e-6)
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_E2, rel=2e-6)
+
+
+@pytest.mark.xfail
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_mul_escale_redshift(make_data_path):
+    """Check the multiplicative model is behaving as expected with escale+redshift.
+
+    Note, prior to XSPEC 12.13.1a XSPEC had the escale and redshift
+    parameters the wrong way round.
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod011.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    assert tbl.escale.val == pytest.approx(1.0)
+    assert tbl.redshift.val == pytest.approx(0)
+
+    egrid = np.linspace(0.2, 2.6, 25)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_BASIC)
+
+    tbl.redshift = 1
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_Z1, rel=2e-6)
+
+    tbl.redshift = 0
+    tbl.escale = 2
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_E2, rel=2e-6)
