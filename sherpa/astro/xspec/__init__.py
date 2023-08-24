@@ -1370,8 +1370,8 @@ class XSTableModel(XSModel):
         #
         if addescale:
             # Should this just use Parameter?
-            self.Escale = XSParameter(name, 'Escale', 1, 0, 1e20,
-                                      0, 1e24, frozen=True, units="keV")
+            self.Escale = XSParameter(name, 'Escale', 1, 1e-5, 100,
+                                      1e-5, 100, frozen=True)
             pars.append(self.Escale)
 
         if addredshift:
