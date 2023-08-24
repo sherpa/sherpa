@@ -774,7 +774,10 @@ def read_xstable_model(modelname, filename, etable=False):
     .. versionchanged:: 4.16.0
        Parameters with negative DELTA values are now made frozen, to
        match XSPEC. Support for models which use the ESCALE keyword
-       has been added.
+       has been added.  The hard_max and hard_min values of the
+       redshift parameter (for those models that support it) can now
+       be changed. This should be done with care as it could cause
+       memory corruption or a crash.
 
     .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
@@ -1241,15 +1244,20 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 class XSTableModel(XSModel):
     """Interface to XSPEC table models.
 
-    XSPEC supports loading in user-supplied data files for use
-    as a table model [1]_. This class provides a low-level
-    way to access this functionality. A simpler interface is provided
-    by `read_xstable_model` and `sherpa.astro.ui.load_xstable_model`.
+    XSPEC supports loading in user-supplied data files for use as a
+    `table model
+    <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html>`_. This
+    class provides a low-level way to access this functionality. A
+    simpler interface is provided by `read_xstable_model` and
+    `sherpa.astro.ui.load_xstable_model`.
 
     .. versionchanged:: 4.16.0
-       Parameters with negative DELTA values are now made frozen, to
-       match XSPEC. Support for models which use the ESCALE keyword
-       has been added.
+       The hard_max and hard_min values of the redshift parameter (for
+       those models that support it) can now be changed. This should
+       be done with care as it could cause memory corruption or a
+       crash.  Parameters with negative DELTA values are now made
+       frozen, to match XSPEC. Support for models which use the ESCALE
+       keyword has been added.
 
     .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
@@ -1259,7 +1267,9 @@ class XSTableModel(XSModel):
     ----------
     filename : str
         The name of the FITS file containing the data for the XSPEC
-        table model; the format is described in [2]_.
+        table model; the format is described in `Arnaud, Keith A, The
+        File Format for XSPEC Table Models
+        <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html>`_.
     name : str
         The name to use for the instance of the table model.
     parnames : sequence
@@ -1302,12 +1312,6 @@ class XSTableModel(XSModel):
     -----
     There is no support for table models that provide multiple spectra
     per parameter: that is, those with the NXFLTEXP keyword set.
-
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
-    .. [2] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
 
     """
 
@@ -1366,8 +1370,16 @@ class XSTableModel(XSModel):
         # (for those models that support the relevant value)
         #
         if addredshift:
-            self.redshift = XSBaseParameter(name, 'redshift', 0., 0., 5.,
-                                            0.0, 5, frozen=True)
+            # We use XSParameter rather than XSBaseParameter since it
+            # is less likely to cause a crash if the parameter ranges
+            # are set outside the XSPEC defaults of 0 to 5. A user has
+            # been using this feature for a while and it was broken by
+            # switching to XSBaseParameter (see #1814). We use
+            # XSParameter rather than Parameter so we can change the
+            # hard limits if needed.
+            #
+            self.redshift = XSParameter(name, 'redshift', 0., 0., 5.,
+                                        0.0, 5, frozen=True)
             pars.append(self.redshift)
 
         if addescale:
