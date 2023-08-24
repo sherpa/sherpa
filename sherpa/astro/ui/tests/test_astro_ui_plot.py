@@ -1016,7 +1016,7 @@ def check_bkg_source(plotfunc, idval, isfit=True):
     # once we have multiple backends.
     #
     assert plot.xlabel == 'Energy (keV)'
-    assert plot.ylabel == 'f(E)  Photons/sec/cm$^2$/keV '
+    assert plot.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
     assert plot.title == 'Source Model of example-bkg'
 
     assert np.all(plot.y >= 0)

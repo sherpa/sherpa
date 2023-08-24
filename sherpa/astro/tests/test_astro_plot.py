@@ -28,7 +28,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
-from sherpa.astro.plot import SourcePlot, \
+from sherpa.astro.plot import SourcePlot, ComponentSourcePlot, \
     DataPHAPlot, ModelPHAHistogram, ModelHistogram, OrderPlot, \
     EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
 from sherpa.astro import plot as aplot
@@ -39,7 +39,7 @@ from sherpa import stats
 from sherpa.utils.err import IOErr, PlotErr
 
 
-def check_sourceplot_energy(sp, factor=0):
+def check_sourceplot_energy(sp, factor=0, rate=True):
     """Check for test_sourceplot/test_sourceplot_channel
 
     Note that the rate setting does not change these tests.
@@ -48,20 +48,28 @@ def check_sourceplot_energy(sp, factor=0):
     assert sp.xlabel == 'Energy (keV)'
 
     # the following depends on the backend
-    # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
     if factor == 0:
-        assert sp.ylabel.startswith('f(E)  Photons/sec/cm')
-        assert sp.ylabel.endswith('/keV ')
+        if rate:
+            assert sp.ylabel.startswith('f(E)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('f(E)  Photons/cm')
+        assert sp.ylabel.endswith('/keV')
     elif factor == 1:
-        assert sp.ylabel.startswith('E f(E)  Photons/sec/cm')
+        if rate:
+            assert sp.ylabel.startswith('E f(E)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('E f(E)  Photons/cm')
         assert sp.ylabel.find('/keV ') == -1
     elif factor == 2:
         # This says E^2 f(E) ... but the exact format depends on
         # the back end
         assert sp.ylabel.startswith('E')
         assert sp.ylabel.find('^2') != -1
-        assert sp.ylabel.find(' f(E)  Photons/sec/cm') != -1
-        assert sp.ylabel.find('/keV ') == -1
+        if rate:
+            assert sp.ylabel.find(' f(E)  Photons/sec/cm') != -1
+        else:
+            assert sp.ylabel.find(' f(E)  Photons/cm') != -1
+        assert sp.ylabel.find('/keV') == -1
     else:
         raise RuntimeError("unsupported factor")
 
@@ -78,15 +86,20 @@ def check_sourceplot_energy(sp, factor=0):
                        9997.23070803, 9996.76346026, 9996.2304594, 9995.62486769,
                        9994.9395488, 9994.16712626, 9993.30005567])
 
+    xmid = (bins[:-1] + bins[1:]) / 2
     if factor == 1:
-        yexp *= 0.1
+        yexp *= xmid
     elif factor == 2:
-        yexp *= 0.01
+        yexp *= xmid * xmid
+
+    if not rate:
+        # Correct by the exposure time
+        yexp *= 10
 
     assert sp.y == pytest.approx(yexp)
 
 
-def check_sourceplot_wavelength(sp, factor=0):
+def check_sourceplot_wavelength(sp, factor=0, rate=True):
     """Check for test_sourceplot_wavelength.
 
     See check_sourceplot_energy.
@@ -95,18 +108,27 @@ def check_sourceplot_wavelength(sp, factor=0):
     assert sp.xlabel == 'Wavelength (Angstrom)'
 
     if factor == 0:
-        assert sp.ylabel.startswith('f(lambda)  Photons/sec/cm')
-        assert sp.ylabel.endswith('/Angstrom ')
+        if rate:
+            assert sp.ylabel.startswith('f(lambda)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('f(lambda)  Photons/cm')
+        assert sp.ylabel.endswith('/Angstrom')
     elif factor == 1:
-        assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
+        if rate:
+            assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('lambda f(lambda)  Photons/cm')
         assert sp.ylabel.find('/Angstrom ') == -1
     elif factor == 2:
         # This says lambda^2 f(lambda) ... but the exact format depends on
         # the back end
         assert sp.ylabel.startswith('lambda')
         assert sp.ylabel.find('^2') != -1
-        assert sp.ylabel.find(' f(lambda)  Photons/sec/cm') != -1
-        assert sp.ylabel.find('/Angstrom ') == -1
+        if rate:
+            assert sp.ylabel.find(' f(lambda)  Photons/sec/cm') != -1
+        else:
+            assert sp.ylabel.find(' f(lambda)  Photons/cm') != -1
+        assert sp.ylabel.find('/Angstrom') == -1
     else:
         raise RuntimeError("unsupported factor")
 
@@ -128,10 +150,15 @@ def check_sourceplot_wavelength(sp, factor=0):
                        9999.99999864, 9999.99949354, 9999.97224156,
                        9999.55447151])
 
+    xmid = (lbins[:-1] + lbins[1:]) / 2
     if factor == 1:
-        yexp *= (lbins[:-1] - lbins[1:])
+        yexp *= xmid
     elif factor == 2:
-        yexp *= (lbins[:-1] - lbins[1:])**2
+        yexp *= xmid * xmid
+
+    if not rate:
+        # Correct by the exposure time
+        yexp *= 10
 
     assert sp.y == pytest.approx(yexp)
 
@@ -142,8 +169,11 @@ def make_basic_datapha():
     chans = np.arange(10)
     los = 0.1 + 0.1 * chans
     his = 0.1 + los
-    return DataPHA('', chans, np.ones(10),
-                   bin_lo=los, bin_hi=his)
+    r = create_delta_rmf(los, his, e_min=los, e_max=his,
+                         offset=1, name='example-rmf')
+    d = DataPHA("", chans, np.ones(10), exposure=10)
+    d.set_rmf(r)
+    return d
 
 
 def test_sourceplot(caplog, make_basic_datapha):
@@ -172,6 +202,35 @@ def test_sourceplot(caplog, make_basic_datapha):
     check_sourceplot_energy(sp)
 
 
+def test_sourceplot_filtered(caplog, make_basic_datapha):
+    """Filtering only changes the mask attribute"""
+    
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src, lo=0.35, hi=0.87)
+
+    # The filtering should probably be this, but let's test the
+    # current behavior:
+    #
+    # expected = [False] * 2 + [True] * 6 + [False] * 2
+    expected = [False] * 3 + [True] * 5 + [False] * 2
+    assert sp.mask == pytest.approx(expected)
+    assert len(caplog.records) == 0
+    check_sourceplot_energy(sp)
+
+
 def test_sourceplot_counts(caplog, make_basic_datapha):
     """test_sourceplot but when rate=False is chosen"""
 
@@ -195,7 +254,7 @@ def test_sourceplot_counts(caplog, make_basic_datapha):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_energy(sp)
+    check_sourceplot_energy(sp, rate=False)
 
 
 @pytest.mark.parametrize("factor", [1, 2])
@@ -281,6 +340,34 @@ def test_sourceplot_wavelength(caplog, make_basic_datapha):
     check_sourceplot_wavelength(sp)
 
 
+def test_sourceplot_wavelength_filtered(caplog, make_basic_datapha):
+    """Filtering only changes the mask attribute"""
+    
+    data = make_basic_datapha
+    data.units = "wave"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src, lo=13, hi=40)
+
+    # Given the filtering for energy didn't quite match, DJB is
+    # slightly surprised this works.
+    #
+    expected = [False] * 2 + [True] * 6 + [False] * 2
+    assert sp.mask == pytest.approx(expected)
+    assert len(caplog.records) == 0
+    check_sourceplot_wavelength(sp)
+
+
 @pytest.mark.parametrize("factor", [1, 2])
 def test_sourceplot_wavelength_facn(factor, caplog, make_basic_datapha):
     """Change plot factor for test_sourceplot_wavelength"""
@@ -330,7 +417,67 @@ def test_sourceplot_wavelength_counts(caplog, make_basic_datapha):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_wavelength(sp)
+    check_sourceplot_wavelength(sp, rate=False)
+
+
+def test_sourceplot_filtered_stringification(make_basic_datapha):
+    """The str output of a sourceplot matches the masked version.
+
+    There is no actual check of the values, as these are assumed
+    to be checked elsewhere.
+
+    """
+
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp1 = SourcePlot()
+    sp2 = SourcePlot()
+    sp1.prepare(data, src)
+    sp2.prepare(data, src, lo=0.35, hi=0.87)
+    assert str(sp1) == str(sp2)
+
+
+def test_sourceplot_component_stringification(make_basic_datapha):
+    """The str output of a sourceplot is essentially the same as the component.
+
+    We know the title is different, so check that and then fudge the title.
+    The other values are assumed to be checked in a different test.
+
+    """
+
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp1 = SourcePlot()
+    sp2 = ComponentSourcePlot()
+    sp1.prepare(data, src)
+    sp2.prepare(data, src)
+
+    mstr = "Source model component: (((100.0 * bgnd) * (1.0 - abs1)) * 10000.0)"
+    assert sp2.title == mstr
+
+    sp1.title = ""
+    sp2.title = ""
+    assert str(sp1) == str(sp2)
 
 
 # Low-level test of the DataPlot prepare method for PHA style analysis
@@ -499,7 +646,7 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     assert plot.xlabel == 'Wavelength (Angstrom)'
     assert plot.ylabel.startswith('f(lambda)  Photons/sec/cm')
     assert plot.ylabel.find('^2') != -1
-    assert plot.ylabel.endswith('/Angstrom ')
+    assert plot.ylabel.endswith('/Angstrom')
     assert plot.title == 'Source Model of my-name.pi'
 
     # data is inverted
