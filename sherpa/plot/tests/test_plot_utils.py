@@ -133,8 +133,7 @@ def test_histogram_line_integers_single_gap():
 def test_histogram_line_floats_single_gap():
     """Test based on issue #1838
 
-    This is just a regression test to document the current behavior
-    (apart from the fact this fails because of #1838).
+    This is just a regression test to document the current behavior.
     """
 
     x1 = np.asarray([1, 2, 3])
