@@ -19,51 +19,11 @@
 #
 '''Helper functions for plotting
 
-This module contains a few helper functions for reformatting arrays in ways
-that facilitate easier plotting.
 '''
 
 import numpy as np
 
-__all__ = ('intersperse', 'histogram_line')
-
-
-def intersperse(a, b):
-    '''Interleave two arrays a and b
-
-    Parameters
-    ----------
-    a, b : array
-        Two arrys to interleave. The number of elements in the two arrays cannot
-        differ by more than one.
-
-    Returns
-    -------
-    out : array
-        array that interleaves the input arrays
-
-    Notes
-    -----
-    It is assumed that the two arrays have compatible data types.
-
-    Example
-    -------
-
-    >>> import numpy as np
-    >>> a = np.arange(5)
-    >>> b = np.arange(10, 14)
-    >>> intersperse(a, b)
-    array([ 0, 10,  1, 11,  2, 12,  3, 13,  4])
-
-    Notes
-    -----
-    See https://stackoverflow.com/questions/5347065/interweaving-two-numpy-arrays#5347492
-    for interleaving arrays.
-    '''
-    out = np.empty((a.size + b.size, ), dtype=a.dtype)
-    out[0::2] = a
-    out[1::2] = b
-    return out
+__all__ = ('histogram_line', )
 
 
 def histogram_line(xlo, xhi, y):
@@ -103,11 +63,9 @@ def histogram_line(xlo, xhi, y):
     if (xlo[0] > xhi[0]) ^ (xhi[0] > xhi[-1]):
         xlo, xhi = xhi, xlo
 
-    # Combine the edges and replicate the y array. This used to use
-    # intersperse() but that had an issue when xhi was floating-point
-    # but xlo was an integer (issue #1838) so use this approach
-    # instead, which requires the arrays to match. Using vstack
-    # means we rely on NumPy to do any type coversions.
+    # Combine the edges and replicate the y array. This ensures that x
+    # has the "correct" type (e.g. if xlo is int but xhi is float the
+    # result will be float), which was the cause of issue #1838.
     #
     x = np.vstack((xlo, xhi)).T.flatten()
     y2 = np.vstack((y, y)).T.flatten()
