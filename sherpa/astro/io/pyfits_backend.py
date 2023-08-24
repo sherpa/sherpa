@@ -746,7 +746,7 @@ def get_rmf_data(arg, make_copy=False):
     data, filename = _read_rmf_data(arg)
 
     # This could be taken from the NUMELT keyword, but this is not
-    # a required value and it s not obvious how trustworthy it is.
+    # a required value and it is not obvious how trustworthy it is.
     #
     # Since N_CHAN can be a VLF we can not just use sum().
     #
@@ -758,7 +758,7 @@ def get_rmf_data(arg, make_copy=False):
             # assumed to be a scalar
             numelt += row
 
-    # Remove un-wanted data
+    # Remove unwanted data
     #  - rows where N_GRP=0
     #  - for each row, any excess data (beyond the sum(N_CHAN) for that row)
     #
@@ -845,7 +845,7 @@ def get_rmf_data(arg, make_copy=False):
     data['n_chan'] = numpy.asarray(xn_chan, SherpaUInt)
 
     # Not all fields are "flattened" by this routine. In
-    # particular we need to keep knowledge of thise rows
+    # particular we need to keep knowledge of these rows
     # with 0 groups.
     #
     data['n_grp'] = numpy.asarray(data['n_grp'], SherpaUInt)
