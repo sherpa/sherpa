@@ -11,5 +11,4 @@ The sherpa.plot.utils module
    .. autosummary::
       :toctree: api
 
-      intersperse
       histogram_line
