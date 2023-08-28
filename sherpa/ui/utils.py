@@ -980,9 +980,11 @@ class Session(NoNewAttributesAfterInit):
     def get_rng(self):
         """Return the RNG generator in use.
 
-        The return can be None, which means the legacy NumPy
-        RandomState generator is in use: see
-        https://numpy.org/doc/stable/reference/random/legacy.html
+        The return can be None, which means that the routines in
+        `numpy.random` are used, and so can are affected by calls to
+        `numpy.random.seed`.  See
+        https://numpy.org/doc/stable/reference/random/legacy.html for
+        more information.
 
         .. versionadded:: 4.16.0
 
@@ -999,13 +1001,14 @@ class Session(NoNewAttributesAfterInit):
 
         .. versionadded:: 4.16.0
            This replaces the seed argument for certain routines and
-           the need to call np.random.seed directly in others.
+           the need to explictly call `numpy.random.seed` in others.
 
         Parameters
         ----------
-        rng : numpy.random.Generator or None
-            The random-number generator. If None then the
-            legacy NumPy RandomState generator is used.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None
+           Determines how random numbers are created. If set to None
+           then the routines in `numpy.random` are used, and so can be
+           controlled by calling `numpy.random.seed`.
 
         See Also
         --------
@@ -9463,13 +9466,12 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
-        plot_pvalue : Compute and plot a histogram of likelihood ratios by simulating data.
+        get_pvalue_results, plot_pvalue, set_rng
 
         Notes
         -----
         The random numbers are generated using the generator returned
-        by`get_rng`.
+        by `get_rng`.
 
         Examples
         --------
@@ -11409,15 +11411,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate the confidence intervals using the covariance method.
-        fit : Fit a model to one or more data sets.
-        plot_cdf : Plot the cumulative density function of an array.
-        plot_pdf : Plot the probability density function of an array.
-        plot_scatter : Create a scatter plot.
-        plot_trace : Create a trace plot of row number versus value.
-        set_prior : Set the prior function to use with a parameter.
-        set_sampler : Set the MCMC sampler.
-        get_sampler : Return information about the current MCMC sampler.
+        covar, fit, get_sampler, plot_cdf, plot_pdf, plot_scatter,
+        plot_trace, set_prior, set_rng, set_sampler
 
         Notes
         -----
@@ -11430,7 +11425,7 @@ class Session(NoNewAttributesAfterInit):
         estimate the parameter distributions.
 
         The random numbers are generated using the generator returned
-        by`get_rng`.
+        by `get_rng`.
 
         References
         ----------

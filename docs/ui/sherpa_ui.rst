@@ -121,6 +121,7 @@ hidden away. This needs better explanation...
       get_resid_contour
       get_resid_image
       get_resid_plot
+      get_rng
       get_sampler
       get_sampler_name
       get_sampler_opt
@@ -243,6 +244,7 @@ hidden away. This needs better explanation...
       set_prior
       set_proj_opt
       set_psf
+      set_rng
       set_sampler
       set_sampler_opt
       set_source

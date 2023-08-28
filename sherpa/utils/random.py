@@ -34,6 +34,11 @@ import numpy as np
 SherpaFloat = np.float_
 
 
+__all__ = ("chisquare", "choice", "integers",
+           "multivariate_normal", "normal", "poisson_noise",
+           "random", "standard_normal", "uniform")
+
+
 def poisson_noise(x, rng=None):
     """Draw samples from a Poisson distribution.
 
@@ -42,9 +47,9 @@ def poisson_noise(x, rng=None):
     ----------
     x : scalar or array
        The expectation value for the distribution.
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.poisson` routine is used.
 
     Returns
     -------
@@ -54,18 +59,24 @@ def poisson_noise(x, rng=None):
 
     Notes
     -----
-    The distribution is calculated by the NumPy poisson generator
-    and all values zero or less are replaced by zero.
+    All input vaules less than zero are replaced by zero.
 
     Examples
     --------
 
+    When the rng parameter is left as None then the legacy Numpy
+    random API is used:
+
+    >>> np.random.seed(17389)
     >>> poisson_noise([10, 20, 5])
-    array([ 13.,  21.,   6.])
+    array([ 7.,  20.,   6.])
+
+    Note that the seed used by the legacy Numpy is not guaranteed to
+    match the behavior of the numpy generators:
 
     >>> rng = np.random.default_rng(17389)
-    >>> poisson_noise([1, 2, 2, 3], rng=rng)
-    array([2., 2., 5., 3.])
+    >>> poisson_noise([10, 20, 5], rng=rng)
+    array([12., 31., 7.])
 
     """
 
@@ -80,7 +91,7 @@ def poisson_noise(x, rng=None):
         if x <= 0.0:
             x = 0.0
         else:
-            x = x = simulate(x)
+            x = simulate(x)
 
         return SherpaFloat(x)
 
@@ -95,9 +106,9 @@ def random(rng):
 
     Parameters
     ----------
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.random_sample` routine is used.
 
     Returns
     -------
@@ -116,13 +127,13 @@ def uniform(rng, low, high, size=None):
 
     Parameters
     ----------
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.uniform` routine is used.
     low, high
-        The range [low, high].
+       The range [low, high].
     size
-        The shape and size of the return.
+       The shape and size of the return.
 
     Returns
     -------
@@ -141,11 +152,11 @@ def integers(rng, high):
 
     Parameters
     ----------
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.randint` routine is used.
     high
-        The upper limit (not inclusive).
+       The upper limit (not inclusive).
 
     Returns
     -------
@@ -160,8 +171,10 @@ def integers(rng, high):
     # method for Generator and RandomState.
     #
     try:
+        # Try Generator first
         return rng.integers(high)
     except AttributeError:
+        # Assume RandmoState
         return rng.randint(high)
 
 
@@ -170,15 +183,15 @@ def normal(rng, loc=0, scale=1, size=None):
 
     Parameters
     ----------
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.normal` routine is used.
     loc : number, optional
-        The location of the normal.
+       The location of the normal.
     scale : number, optional
-        The scale of the normal.
+       The scale of the normal.
     size : optional
-        The shape and number of elements to create.
+       The shape and number of elements to create.
 
     Returns
     -------
@@ -197,11 +210,11 @@ def standard_normal(rng, size=None):
 
     Parameters
     ----------
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.standard_normal` routine is used.
     size : optional
-        The shape and number of elements to create.
+       The shape and number of elements to create.
 
     Returns
     -------
@@ -220,13 +233,13 @@ def multivariate_normal(rng, mean, cov, size=None):
 
     Parameters
     ----------
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.multivariate_normal` routine is used.
     mean, cov
-        The mean and covariance matrix.
+       The mean and covariance matrix.
     size : optional
-        The shape and number of elements to create.
+       The shape and number of elements to create.
 
     Returns
     -------
@@ -245,13 +258,13 @@ def chisquare(rng, df, size=None):
 
     Parameters
     ----------
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.chisquare` routine is used.
     df
-        The degrees of freedom.
+       The degrees of freedom.
     size : optional
-        The shape and number of elements to create.
+       The shape and number of elements to create.
 
     Returns
     -------
@@ -270,13 +283,13 @@ def choice(rng, xs, n):
 
     Parameters
     ----------
-    rng : np.random.Generator, np.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None
+       Determines how the random numbers are created. If set to
+       None then the `numpy.random.choice` routine is used.
     xs
-        Sequence of values.
+       Sequence of values.
     n
-        The number of values to select from xs
+       The number of values to select from xs.
 
     Returns
     -------

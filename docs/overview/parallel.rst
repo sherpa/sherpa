@@ -25,4 +25,5 @@ The sherpa.utils.parallel module
 
       parallel_map
       parallel_map_funcs
+      parallel_map_rng
       run_tasks

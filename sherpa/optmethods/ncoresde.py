@@ -356,7 +356,7 @@ class ncoresMyDifEvo(MyDifEvo):
         while nfev < maxnfev:
 
             # all_strategies has been set up so that each strategy has
-            # it's own generator, so it's okay to use parallel_map here,
+            # its own generator, so it's okay to use parallel_map here,
             # and not have to think about parallel_map_rng.
             #
             keys = self.calc_key(range(self.npop))

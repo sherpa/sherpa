@@ -167,21 +167,22 @@ def worker_rng(func, idx, chunk, out_q, err_q, rng):
     Parameters
     ----------
     func : callable
-        The function. It accepts two arguments, the first being an
-        element of chunk and the second the rng argument.
+       The function. It accepts two arguments, the first being an
+       element of chunk and the second the rng argument.
     idx : int
-        The identifier for this worker.
+       The identifier for this worker.
     chunk : sequence
-        The elements to be passed to func.
+       The elements to be passed to func.
     out_q, err_q : manager.Queue
-        The success channel - which will be sent (idx, retval) on
-        success - and the error channel, which will be sent any
-        exception.
-    rng : np.random.Generator, np.randomRandomState, or None, optional
-       If set, the generator is used to create the random numbers. If
-       not set then the legacy numpy RandomState instance is
-       used. Each parallel worker is sent a separate RNG, to ensure
-       that the sequences are different (when using multiple cores).
+       The success channel - which will be sent (idx, retval) on
+       success - and the error channel, which will be sent any
+       exception.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+       Determines how random numbers are created. If set to None then
+       the routines in `numpy.random` are used, and so can be
+       controlled by calling `numpy.random.seed`. It is up to the
+       caller to ensure that the generator will work correctly if
+       called in parallel.
 
     """
 
@@ -283,8 +284,9 @@ def parallel_map(function, sequence, numcores=None):
     """Run a function on a sequence of inputs in parallel.
 
     A parallelized version of the native Python map function that
-    utilizes the Python multiprocessing module to divide and
-    conquer sequence.
+    utilizes the Python multiprocessing module to divide and conquer
+    sequence. If ``function`` uses random numbers then
+    `parallel_map_rng` should be used instead.
 
     Parameters
     ----------
@@ -305,6 +307,10 @@ def parallel_map(function, sequence, numcores=None):
     ans : array
        The return values from the calls, in the same order as the
        ``sequence`` array.
+
+    See Also
+    --------
+    parallel_map_rng
 
     Notes
     -----
@@ -503,16 +509,18 @@ def parallel_map_rng(function, sequence, numcores=None, rng=None):
     """Run a function on a sequence of inputs in parallel with a RNG.
 
     Similar to parallel_map, but the function takes two arguments,
-    with the second one being rng, the random generator to use. This
+    with the second one being ``rng``, the random generator to use. This
     is for those functions which need random numbers, and this routine
     takes care to create a separate generator for each process run in
     parallel.
+
+    .. versionadded:: 4.16.0
 
     Parameters
     ----------
     function : function
        This function accepts two arguments - the first being an
-       element of ``sequence`` and second called rng - and returns a
+       element of ``sequence`` and second called ``rng`` - and returns a
        value.
     sequence : array_like
        The data to be passed to ``function`` as the first argument.
@@ -522,11 +530,12 @@ def parallel_map_rng(function, sequence, numcores=None, rng=None):
        set either by the 'numcores' setting of the 'parallel' section
        of Sherpa's preferences or by multiprocessing.cpu_count - are
        used.
-    rng : np.random.Generator, np.randomRandomState, or None, optional
-       If set, the generator is used to create the random numbers. If
-       not set then the legacy numpy RandomState instance is
-       used. Each parallel worker is sent a separate RNG, to ensure
-       that the sequences are different (when using multiple cores).
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+       Controls how random numbers are generated. When code is run in
+       parallel, each worker is sent a separate generator, to ensure
+       that the sequences are different, and the rng parameter is used
+       to create the seed number passed to `numpy.random.SeedSequence`
+       for this case.
 
     Returns
     -------
@@ -534,14 +543,19 @@ def parallel_map_rng(function, sequence, numcores=None, rng=None):
        The return values from the calls, in the same order as the
        ``sequence`` array.
 
+    See Also
+    --------
+    parallel_map
+
     Notes
     -----
-    The input rng argument is used to create a seed number, which is
-    passed to the np.random.SeedSequence object to create a separate
-    generator for each worked. The generator used for these is always
-    created by a call to `np.random.default_rng`, even when the rng
-    argument is None (indicating that the legacy API is being used),
-    or a different generator that that used by `default_rng`.
+    The input ``rng`` argument is used to create a seed number, which
+    is passed to the `numpy.random.SeedSequence` object to create a
+    separate generator for each worker. The generator used for these
+    is always created by a call to `numpy.random.default_rng`, even when
+    the ``rng`` argument is None (indicating that the legacy random API is
+    being used), or a different generator that that used by
+    ``default_rng``.
 
     """
     if not callable(function):
