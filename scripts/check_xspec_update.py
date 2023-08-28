@@ -68,7 +68,7 @@ def compare_xspec_models(models, hard=True):
         try:
             xscls = getattr(xspec, mdl.clname)
         except AttributeError:
-            print(f"We do not support {mdl.name} ({mdl.modeltype}; {mdl.funcname})\n")
+            print(f"We do not support {mdl.name} ({mdl.modeltype}; {mdl.language}; {mdl.funcname})\n")
             continue
 
         seen.add(mdl.clname)
@@ -96,9 +96,14 @@ def compare_xspec_models(models, hard=True):
         #
         reports = []
 
+        # parse_xspec_user_model has removed the "language-type" flags
+        # on the function name, so we need to restore them.
+        #
         funcname = mdl.funcname
         if mdl.language == 'C++ style':
             funcname = f'C_{funcname}'
+        elif mdl.language == "Fortran - double precision":
+            funcname = f"F_{funcname}"
 
         if xs._calc.__name__ != funcname:
             reports.append(f"function name change: {xs._calc.__name__} to {funcname}")

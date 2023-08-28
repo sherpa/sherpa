@@ -693,7 +693,7 @@ def test_fake_pha_issue_1568(make_data_path, clean_astro_ui):
 
 def check_analysis_settings(expected, bexpected=None,
                             mexpected=None, mbexpected=None,
-                            swidth=None, bwidth=None):
+                            swidth=None, bwidth=None, btime=None):
     """Check plot results for type=counts then type=rates
 
     expected - source data
@@ -732,9 +732,11 @@ def check_analysis_settings(expected, bexpected=None,
     swidth = np.asarray(swidth)
     bwidth = np.asarray(bwidth)
 
-    # These values don't change.
-    splot = [2, 1, 0]
-    bsplot = [0, 0, 3]
+    # These values didn't used to change but see issue #1825
+    splot = np.asarray([2, 1, 0])
+    bsplot = np.asarray([0, 0, 3])
+    stime = 100
+    btime = 500 if btime is None else btime
 
     ui.set_analysis(1, "energy", type="counts")
     assert ui.get_data_plot().y == pytest.approx(expected)
@@ -742,8 +744,8 @@ def check_analysis_settings(expected, bexpected=None,
     assert ui.get_model_plot().y == pytest.approx(mexpected)
     assert ui.get_bkg_model_plot().y == pytest.approx(mbexpected)
 
-    assert ui.get_source_plot().y == pytest.approx(splot)
-    assert ui.get_bkg_source_plot().y == pytest.approx(bsplot)
+    assert ui.get_source_plot().y == pytest.approx(splot * stime)
+    assert ui.get_bkg_source_plot().y == pytest.approx(bsplot * btime)
 
     # Correct by "exposure"
     expected = expected / swidth
@@ -926,7 +928,8 @@ def test_fake_pha_with_bgnd_data(method, expected, clean_astro_ui):
                             mexpected=[80, 80, 1200],
                             mbexpected=[0, 0, 2400],
                             swidth=[20, 40, 100],
-                            bwidth=[80, 160, 400])
+                            bwidth=[80, 160, 400],
+                            btime=400)
 
 
 @pytest.mark.parametrize("grouped", [False, True])

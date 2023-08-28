@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -225,7 +225,9 @@ def calculate_errors(data, stat, yerrorbars=True):
 
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
+
     plot_prefs = backend.get_plot_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         """
@@ -318,7 +320,9 @@ class Plot(NoNewAttributesAfterInit):
 
 class Contour(NoNewAttributesAfterInit):
     "Base class for contour plots"
+
     contour_prefs = backend.get_contour_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         """
@@ -351,7 +355,9 @@ class Contour(NoNewAttributesAfterInit):
 
 class Point(NoNewAttributesAfterInit):
     "Base class for point plots"
+
     point_prefs = backend.get_point_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         """
@@ -397,7 +403,9 @@ class Point(NoNewAttributesAfterInit):
 
 class Histogram(NoNewAttributesAfterInit):
     "Base class for histogram plots"
+
     histo_prefs = backend.get_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         """
@@ -572,6 +580,7 @@ class DataHistogramPlot(HistogramPlot):
     """Create 1D histogram plots of data values."""
 
     histo_prefs = get_data_hist_prefs()
+    "The preferences for the plot."
 
     def __init__(self):
         self.xerr = None
@@ -961,12 +970,10 @@ class SplitPlot(Plot, Contour):
        Number of rows of plots. The default is 2.
     cols : int
        Number of columns of plots. The default is 1.
-    plot_prefs : dict
-       The preferences for the plots. This depends on the plot
-       backend.
-
     """
+
     plot_prefs = backend.get_split_plot_defaults()
+    "The preferences for the plot."
 
     def __init__(self, rows=2, cols=1):
         self.reset(rows, cols)
@@ -1124,8 +1131,6 @@ class DataPlot(Plot):
 
     Attributes
     ----------
-    plot_prefs : dict
-       The preferences for the plot.
     x : array_like
        The X value for each point (the independent variable).
     y : array_like
@@ -1164,6 +1169,7 @@ class DataPlot(Plot):
     """
 
     plot_prefs = backend.get_data_plot_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         self.x = None
@@ -1357,8 +1363,6 @@ class DataContour(Contour):
 
     Attributes
     ----------
-    contour_prefs : dict
-       The preferences for the plot.
     x0, x1 : array_like
        The coordinates of each point (the independent variables), as
        one-dimensional arrays.
@@ -1373,6 +1377,7 @@ class DataContour(Contour):
     """
 
     contour_prefs = backend.get_data_contour_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         self.x0 = None
@@ -1449,8 +1454,6 @@ class ModelPlot(Plot):
 
     Attributes
     ----------
-    plot_prefs : dict
-       The preferences for the plot.
     x : array_like
        The X value for each point (the independent variable).
     y : array_like
@@ -1491,6 +1494,7 @@ class ModelPlot(Plot):
     """
 
     plot_prefs = backend.get_model_plot_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         self.x = None
@@ -1597,6 +1601,7 @@ class ModelPlot(Plot):
 class ComponentModelPlot(ModelPlot):
 
     plot_prefs = backend.get_component_plot_defaults()
+    "The preferences for the plot."
 
     def prepare(self, data, model, stat=None):
         ModelPlot.prepare(self, data, model, stat)
@@ -1607,6 +1612,7 @@ class ComponentModelHistogramPlot(ModelHistogramPlot):
 
     # Is this the correct setting?
     plot_prefs = backend.get_component_plot_defaults()
+    "The preferences for the plot."
 
     def prepare(self, data, model, stat=None):
         super().prepare(data, model, stat)
@@ -1628,8 +1634,6 @@ class SourcePlot(ModelPlot):
 
     Attributes
     ----------
-    plot_prefs : dict
-       The preferences for the plot.
     x : array_like
        The X value for each point (the independent variable).
     y : array_like
@@ -1724,7 +1728,9 @@ class PSFPlot(DataPlot):
 
 class ModelContour(Contour):
     "Derived class for creating 2D model contours"
+
     contour_prefs = backend.get_model_contour_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         self.x0 = None
@@ -1806,11 +1812,6 @@ class FitPlot(Plot):
 
     Attributes
     ----------
-    plot_prefs : dict
-       The preferences for the plot. Note that the display for the
-       data and model plots are controlled by the preferences for
-       the dataplot and modelplot objects, so this is currently
-       unused.
     dataplot
        The Sherpa plot object used to display the data.
     modelplot
@@ -1837,6 +1838,11 @@ class FitPlot(Plot):
     """
 
     plot_prefs = backend.get_fit_plot_defaults()
+    """The preferences for the plot. Note that the display for the
+    data and model plots are controlled by the preferences for
+    the dataplot and modelplot objects, so this is currently
+    unused.
+    """
 
     def __init__(self):
         self.dataplot = None
@@ -1918,7 +1924,9 @@ class FitPlot(Plot):
 
 class FitContour(Contour):
     "Derived class for creating 2D combination data and model contours"
+
     contour_prefs = backend.get_fit_contour_defaults()
+    "The preferences for the plot"
 
     def __init__(self):
         self.datacontour = None
@@ -1961,8 +1969,6 @@ class DelchiPlot(ModelPlot):
 
     Attributes
     ----------
-    plot_prefs : dict
-       The preferences for the plot.
     x : array_like
        The X value for each point.
     y : array_like
@@ -1982,6 +1988,7 @@ class DelchiPlot(ModelPlot):
     """
 
     plot_prefs = backend.get_resid_plot_defaults()
+    "The preferences for the plot"
 
     def _calc_delchi(self, ylist, staterr):
         return (ylist[0] - ylist[1]) / staterr
@@ -2015,8 +2022,6 @@ class ChisqrPlot(ModelPlot):
 
     Attributes
     ----------
-    plot_prefs : dict
-       The preferences for the plot.
     x : array_like
        The X value for each point.
     y : array_like
@@ -2030,6 +2035,7 @@ class ChisqrPlot(ModelPlot):
 
     """
     plot_prefs = backend.get_model_plot_defaults()
+    "The preferences for the plot"
 
     def _calc_chisqr(self, ylist, staterr):
         dy = ylist[0] - ylist[1]
@@ -2061,8 +2067,6 @@ class ResidPlot(ModelPlot):
 
     Attributes
     ----------
-    plot_prefs : dict
-       The preferences for the plot.
     x : array_like
        The X value for each point.
     y : array_like
@@ -2082,6 +2086,7 @@ class ResidPlot(ModelPlot):
     """
 
     plot_prefs = backend.get_resid_plot_defaults()
+    "The preferences for the plot"
 
     def _calc_resid(self, ylist):
         return ylist[0] - ylist[1]
@@ -2125,7 +2130,9 @@ class ResidPlot(ModelPlot):
 
 class ResidContour(ModelContour):
     "Derived class for creating 2D residual contours (data-model)"
+
     contour_prefs = backend.get_resid_contour_defaults()
+    "The preferences for the plot"
 
     def _calc_resid(self, ylist):
         return ylist[0] - ylist[1]
@@ -2152,8 +2159,6 @@ class RatioPlot(ModelPlot):
 
     Attributes
     ----------
-    plot_prefs : dict
-       The preferences for the plot.
     x : array_like
        The X value for each point.
     y : array_like
@@ -2173,6 +2178,7 @@ class RatioPlot(ModelPlot):
     """
 
     plot_prefs = backend.get_ratio_plot_defaults()
+    "The preferences for the plot"
 
     def _calc_ratio(self, ylist):
         data = numpy.array(ylist[0])
@@ -2217,6 +2223,7 @@ class RatioPlot(ModelPlot):
 class RatioContour(ModelContour):
     "Derived class for creating 2D ratio contours (data divided by model)"
     contour_prefs = backend.get_ratio_contour_defaults()
+    "The preferences for the plot"
 
     def _calc_ratio(self, ylist):
         data = numpy.array(ylist[0])
@@ -2244,6 +2251,7 @@ class RatioContour(ModelContour):
 class Confidence1D(DataPlot):
 
     plot_prefs = backend.get_confid_plot_defaults()
+    "The preferences for the plot"
 
     def __init__(self):
         self.min = None

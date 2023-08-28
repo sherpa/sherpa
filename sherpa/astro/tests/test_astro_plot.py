@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,8 +28,8 @@ from sherpa.utils.testing import requires_data, requires_fits
 
 from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
-from sherpa.astro.plot import SourcePlot, \
-    DataPHAPlot, ModelPHAHistogram, OrderPlot, \
+from sherpa.astro.plot import SourcePlot, ComponentSourcePlot, \
+    DataPHAPlot, ModelPHAHistogram, ModelHistogram, OrderPlot, \
     EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
 from sherpa.astro import plot as aplot
 from sherpa.astro import hc
@@ -39,7 +39,7 @@ from sherpa import stats
 from sherpa.utils.err import IOErr, PlotErr
 
 
-def check_sourceplot_energy(sp, factor=0):
+def check_sourceplot_energy(sp, factor=0, rate=True):
     """Check for test_sourceplot/test_sourceplot_channel
 
     Note that the rate setting does not change these tests.
@@ -48,20 +48,28 @@ def check_sourceplot_energy(sp, factor=0):
     assert sp.xlabel == 'Energy (keV)'
 
     # the following depends on the backend
-    # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
     if factor == 0:
-        assert sp.ylabel.startswith('f(E)  Photons/sec/cm')
-        assert sp.ylabel.endswith('/keV ')
+        if rate:
+            assert sp.ylabel.startswith('f(E)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('f(E)  Photons/cm')
+        assert sp.ylabel.endswith('/keV')
     elif factor == 1:
-        assert sp.ylabel.startswith('E f(E)  Photons/sec/cm')
+        if rate:
+            assert sp.ylabel.startswith('E f(E)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('E f(E)  Photons/cm')
         assert sp.ylabel.find('/keV ') == -1
     elif factor == 2:
         # This says E^2 f(E) ... but the exact format depends on
         # the back end
         assert sp.ylabel.startswith('E')
         assert sp.ylabel.find('^2') != -1
-        assert sp.ylabel.find(' f(E)  Photons/sec/cm') != -1
-        assert sp.ylabel.find('/keV ') == -1
+        if rate:
+            assert sp.ylabel.find(' f(E)  Photons/sec/cm') != -1
+        else:
+            assert sp.ylabel.find(' f(E)  Photons/cm') != -1
+        assert sp.ylabel.find('/keV') == -1
     else:
         raise RuntimeError("unsupported factor")
 
@@ -78,15 +86,20 @@ def check_sourceplot_energy(sp, factor=0):
                        9997.23070803, 9996.76346026, 9996.2304594, 9995.62486769,
                        9994.9395488, 9994.16712626, 9993.30005567])
 
+    xmid = (bins[:-1] + bins[1:]) / 2
     if factor == 1:
-        yexp *= 0.1
+        yexp *= xmid
     elif factor == 2:
-        yexp *= 0.01
+        yexp *= xmid * xmid
+
+    if not rate:
+        # Correct by the exposure time
+        yexp *= 10
 
     assert sp.y == pytest.approx(yexp)
 
 
-def check_sourceplot_wavelength(sp, factor=0):
+def check_sourceplot_wavelength(sp, factor=0, rate=True):
     """Check for test_sourceplot_wavelength.
 
     See check_sourceplot_energy.
@@ -95,18 +108,27 @@ def check_sourceplot_wavelength(sp, factor=0):
     assert sp.xlabel == 'Wavelength (Angstrom)'
 
     if factor == 0:
-        assert sp.ylabel.startswith('f(lambda)  Photons/sec/cm')
-        assert sp.ylabel.endswith('/Angstrom ')
+        if rate:
+            assert sp.ylabel.startswith('f(lambda)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('f(lambda)  Photons/cm')
+        assert sp.ylabel.endswith('/Angstrom')
     elif factor == 1:
-        assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
+        if rate:
+            assert sp.ylabel.startswith('lambda f(lambda)  Photons/sec/cm')
+        else:
+            assert sp.ylabel.startswith('lambda f(lambda)  Photons/cm')
         assert sp.ylabel.find('/Angstrom ') == -1
     elif factor == 2:
         # This says lambda^2 f(lambda) ... but the exact format depends on
         # the back end
         assert sp.ylabel.startswith('lambda')
         assert sp.ylabel.find('^2') != -1
-        assert sp.ylabel.find(' f(lambda)  Photons/sec/cm') != -1
-        assert sp.ylabel.find('/Angstrom ') == -1
+        if rate:
+            assert sp.ylabel.find(' f(lambda)  Photons/sec/cm') != -1
+        else:
+            assert sp.ylabel.find(' f(lambda)  Photons/cm') != -1
+        assert sp.ylabel.find('/Angstrom') == -1
     else:
         raise RuntimeError("unsupported factor")
 
@@ -128,10 +150,15 @@ def check_sourceplot_wavelength(sp, factor=0):
                        9999.99999864, 9999.99949354, 9999.97224156,
                        9999.55447151])
 
+    xmid = (lbins[:-1] + lbins[1:]) / 2
     if factor == 1:
-        yexp *= (lbins[:-1] - lbins[1:])
+        yexp *= xmid
     elif factor == 2:
-        yexp *= (lbins[:-1] - lbins[1:])**2
+        yexp *= xmid * xmid
+
+    if not rate:
+        # Correct by the exposure time
+        yexp *= 10
 
     assert sp.y == pytest.approx(yexp)
 
@@ -142,8 +169,11 @@ def make_basic_datapha():
     chans = np.arange(10)
     los = 0.1 + 0.1 * chans
     his = 0.1 + los
-    return DataPHA('', chans, np.ones(10),
-                   bin_lo=los, bin_hi=his)
+    r = create_delta_rmf(los, his, e_min=los, e_max=his,
+                         offset=1, name='example-rmf')
+    d = DataPHA("", chans, np.ones(10), exposure=10)
+    d.set_rmf(r)
+    return d
 
 
 def test_sourceplot(caplog, make_basic_datapha):
@@ -172,6 +202,35 @@ def test_sourceplot(caplog, make_basic_datapha):
     check_sourceplot_energy(sp)
 
 
+def test_sourceplot_filtered(caplog, make_basic_datapha):
+    """Filtering only changes the mask attribute"""
+    
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src, lo=0.35, hi=0.87)
+
+    # The filtering should probably be this, but let's test the
+    # current behavior:
+    #
+    # expected = [False] * 2 + [True] * 6 + [False] * 2
+    expected = [False] * 3 + [True] * 5 + [False] * 2
+    assert sp.mask == pytest.approx(expected)
+    assert len(caplog.records) == 0
+    check_sourceplot_energy(sp)
+
+
 def test_sourceplot_counts(caplog, make_basic_datapha):
     """test_sourceplot but when rate=False is chosen"""
 
@@ -195,7 +254,7 @@ def test_sourceplot_counts(caplog, make_basic_datapha):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_energy(sp)
+    check_sourceplot_energy(sp, rate=False)
 
 
 @pytest.mark.parametrize("factor", [1, 2])
@@ -281,6 +340,34 @@ def test_sourceplot_wavelength(caplog, make_basic_datapha):
     check_sourceplot_wavelength(sp)
 
 
+def test_sourceplot_wavelength_filtered(caplog, make_basic_datapha):
+    """Filtering only changes the mask attribute"""
+    
+    data = make_basic_datapha
+    data.units = "wave"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp = SourcePlot()
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        sp.prepare(data, src, lo=13, hi=40)
+
+    # Given the filtering for energy didn't quite match, DJB is
+    # slightly surprised this works.
+    #
+    expected = [False] * 2 + [True] * 6 + [False] * 2
+    assert sp.mask == pytest.approx(expected)
+    assert len(caplog.records) == 0
+    check_sourceplot_wavelength(sp)
+
+
 @pytest.mark.parametrize("factor", [1, 2])
 def test_sourceplot_wavelength_facn(factor, caplog, make_basic_datapha):
     """Change plot factor for test_sourceplot_wavelength"""
@@ -330,7 +417,67 @@ def test_sourceplot_wavelength_counts(caplog, make_basic_datapha):
         sp.prepare(data, src)
 
     assert len(caplog.records) == 0
-    check_sourceplot_wavelength(sp)
+    check_sourceplot_wavelength(sp, rate=False)
+
+
+def test_sourceplot_filtered_stringification(make_basic_datapha):
+    """The str output of a sourceplot matches the masked version.
+
+    There is no actual check of the values, as these are assumed
+    to be checked elsewhere.
+
+    """
+
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp1 = SourcePlot()
+    sp2 = SourcePlot()
+    sp1.prepare(data, src)
+    sp2.prepare(data, src, lo=0.35, hi=0.87)
+    assert str(sp1) == str(sp2)
+
+
+def test_sourceplot_component_stringification(make_basic_datapha):
+    """The str output of a sourceplot is essentially the same as the component.
+
+    We know the title is different, so check that and then fudge the title.
+    The other values are assumed to be checked in a different test.
+
+    """
+
+    data = make_basic_datapha
+    data.units = "energy"
+
+    m1 = Const1D('bgnd')
+    m2 = Gauss1D('abs1')
+    src = 100 * m1 * (1 - m2) * 10000
+
+    m1.c0 = 0.01
+    m2.pos = 5.0
+    m2.fwhm = 4.0
+    m2.ampl = 0.1
+
+    sp1 = SourcePlot()
+    sp2 = ComponentSourcePlot()
+    sp1.prepare(data, src)
+    sp2.prepare(data, src)
+
+    mstr = "Source model component: (((100.0 * bgnd) * (1.0 - abs1)) * 10000.0)"
+    assert sp2.title == mstr
+
+    sp1.title = ""
+    sp2.title = ""
+    assert str(sp1) == str(sp2)
 
 
 # Low-level test of the DataPlot prepare method for PHA style analysis
@@ -499,7 +646,7 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     assert plot.xlabel == 'Wavelength (Angstrom)'
     assert plot.ylabel.startswith('f(lambda)  Photons/sec/cm')
     assert plot.ylabel.find('^2') != -1
-    assert plot.ylabel.endswith('/Angstrom ')
+    assert plot.ylabel.endswith('/Angstrom')
     assert plot.title == 'Source Model of my-name.pi'
 
     # data is inverted
@@ -677,7 +824,6 @@ _arf = np.asarray([0.8, 0.8, 0.9, 1.0, 1.1, 1.1, 0.7, 0.6, 0.6, 0.6])
 # constant bin width like 0.1 keV the factor of 10 is too easy
 # to confuse for other terms.
 #
-_energies = np.linspace(0.5, 1.5, 11)
 _energies = np.asarray([0.5, 0.65, 0.75, 0.8, 0.9, 1., 1.1, 1.12, 1.3, 1.4, 1.5])
 _energies_lo = _energies[:-1]
 _energies_hi = _energies[1:]
@@ -707,6 +853,14 @@ def example_pha_data():
     d.set_arf(a)
     d.set_rmf(r)
     return d
+
+
+def example_pha_data_with_grouping():
+    """Add a grouping column but do not activate it"""
+    pha = example_pha_data()
+    pha.grouping = [1, 1, -1, 1, 1, -1, 1, -1, 1, 1]
+    assert not pha.grouped  # check existing behavior
+    return pha
 
 
 @pytest.mark.parametrize("orders", [None, [1]])
@@ -782,3 +936,167 @@ def test_check_hist_bins():
                    (xlo[::-1], xhi[::-1]), (xlo[::-1], xhi[::-1])]:
         out1, out2 = _check_hist_bins(x1.copy(), x2.copy())
         assert np.all(out1[1:] == out2[:-1])
+
+
+def validate_1779(pha, mplot, subset, factor):
+    """Check that the model plot does not suffer from #1779
+
+    That is, when factor > 0, does it work.
+    """
+
+    cval = 2
+    model = Const1D('example-mdl')
+    model.c0 = cval
+    rsp = pha.get_full_response()
+    full_model = rsp(model)
+
+    mplot.prepare(pha, full_model)
+
+    # The model is a constant model, normalisation of 2/keV, which is
+    # appplied to a grid with irregular grid sizes and an ARF that is
+    # not flat. The PHA exposure time is 1201, and we don't need to
+    # worry about AREA/BACKSCAL.
+    #
+    # Note that we are calculating the per keV values here, so the
+    # un-even bin widths shuold not be relevant, and a rate, not
+    # counts, so the exposure time should also not come into it.
+    #
+    MODEL_UNGROUPED = cval * _arf
+
+    xgrid = (_energies_lo + _energies_hi) / 2
+    expected = MODEL_UNGROUPED * np.power(xgrid, factor)
+    if subset:
+        # We can not match the ungrouped filter because the first
+        # group covers energy bins 0.65-0.75 and 0.75-0.8. In the
+        # ungrouped case we only pick up the second of these, but the
+        # grouped case gets the first channel too.
+        #
+        if pha.grouped:
+            expected = expected[1:8]
+        else:
+            expected = expected[2:8]
+
+    assert mplot.y == pytest.approx(expected, rel=1e-4)
+
+
+def validate_1779_grouped(pha, mplot, subset, factor):
+    """Check that the model plot does not suffer from #1779
+
+    There is only one test that uses this, unlike validate_1779,
+    but keep it separate to make the parallels and differences
+    more obvious.
+
+    """
+
+    cval = 2
+    model = Const1D('example-mdl')
+    model.c0 = cval
+    rsp = pha.get_full_response()
+    full_model = rsp(model)
+
+    mplot.prepare(pha, full_model)
+
+    # This is similar to validate_1779 but the model is grouped. As
+    # the ARF combination per bin is different it means a little-bit
+    # of work to get the expected answer.
+    #
+    IMODEL_UNGROUPED = cval * _arf * (_energies_hi - _energies_lo)
+    IMODEL_GROUPED = np.asarray([IMODEL_UNGROUPED[0],
+                                 IMODEL_UNGROUPED[1] + IMODEL_UNGROUPED[2],
+                                 IMODEL_UNGROUPED[3],
+                                 IMODEL_UNGROUPED[4] + IMODEL_UNGROUPED[5],
+                                 IMODEL_UNGROUPED[6] + IMODEL_UNGROUPED[7],
+                                 IMODEL_UNGROUPED[8],
+                                 IMODEL_UNGROUPED[9]])
+
+    # The grouping is:
+    #
+    # pha.grouping = [1, 1, -1, 1, 1, -1, 1, -1, 1, 1]
+    #                 0  1   2  3  4   5  6   7  8  9
+    #
+    glo = _energies_lo[[0, 1, 3, 4, 6, 8, 9]]
+    ghi = _energies_hi[[0, 2, 3, 5, 7, 8, 9]]
+    MODEL_GROUPED = IMODEL_GROUPED / (ghi - glo)
+
+    # Prior to #1784 being fixed xgrid was different (it averaged the
+    # center of grouped bins).
+    #
+    xgrid = (glo + ghi) / 2
+
+    expected = MODEL_GROUPED * np.power(xgrid, factor)
+    if subset:
+        expected = expected[1:5]
+
+    assert mplot.y == pytest.approx(expected, rel=1e-4)
+
+
+@pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("factor", [0, 1, 2])
+def test_1779_ungrouped_model(subset, factor):
+    """This works, even with issue #1779 unfixed
+
+    This checks plot_model
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.set_analysis("energy", factor=factor)
+    if subset:
+        pha.notice(0.77, 1.125)
+
+    validate_1779(pha, ModelHistogram(), subset, factor)
+
+
+@pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("factor", [0, 1, 2])
+def test_1779_ungrouped_fit(subset, factor):
+    """This works, even with issue #1779 unfixed
+
+    This checks plot_fit
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.set_analysis("energy", factor=factor)
+    if subset:
+        pha.notice(0.77, 1.125)
+
+    validate_1779(pha, ModelPHAHistogram(), subset, factor)
+
+
+@pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("factor", [0, 1, 2])
+def test_1779_grouped_model(subset, factor):
+    """This no-longer fails for factor > 0 (issue #1779)
+
+    This uses the plot_model() display, which does not group the
+    model values.
+
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis("energy", factor=factor)
+    if subset:
+        pha.notice(0.77, 1.125)
+
+    mplot = ModelHistogram()
+
+    validate_1779(pha, mplot, subset, factor)
+
+
+@pytest.mark.parametrize("subset", [False, True])
+@pytest.mark.parametrize("factor", [0, 1, 2])
+def test_1779_grouped_fit(subset, factor):
+    """This is not affected by #1779.
+
+    This uses the plot_fit() display, which groups the model values.
+
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis("energy", factor=factor)
+    if subset:
+        pha.notice(0.77, 1.125)
+
+    mplot = ModelPHAHistogram()
+    validate_1779_grouped(pha, mplot, subset, factor)

@@ -335,9 +335,10 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.13.0, 12.12.1, and 12.12.0. It may build against
-newer versions, but if it does it will not provide access to any new
-models in the release. The following sections of the `XSPEC manual
+:term:`XSPEC` versions 12.13.1, 12.13.0, 12.12.1, and 12.12.0.  It may
+build against newer versions, but if it does it will not provide
+access to any new models in the release. The following sections of the
+`XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
 should be reviewed: `Appendix F: Using the XSPEC Models Library in
 Other Programs
@@ -385,11 +386,15 @@ XSPEC 12.12.0 (released in HEASOFT 6.29) support was added::
    There can be other output due to parameter-value changes
    which are also important to review but this is just focussing
    on the list of models that could be added to
-   :py:mod:`sherpa.astro.xspec`
+   :py:mod:`sherpa.astro.xspec`.
+
+   The screen output may differ slightly from that shown above, such
+   as including the interface used by the model (e.g. C, C++,
+   FORTRAN).
 
 The code needed to add support for the wdem module can be found with::
 
-  % ./scripts/check_xspec_update.py ~/local/heasoft-6.29/spectral/manager/model.dat wdem
+  % ./scripts/add_xspec_model.py ~/local/heasoft-6.29/spectral/manager/model.dat wdem
   # C++ code for sherpa/astro/xspec/src/_xspec.cc
 
   // Defines
@@ -691,7 +696,7 @@ available.
 	:py:class:`sherpa.astro.xspec.utils.ModelMeta` metaclass performs
 	a runtime check to ensure that the model can be used.
 
-        For example (from when XSPEC 12.9.0 was still supported):
+        For example (from when XSPEC 12.9.0 was still supported)::
 
             __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
 

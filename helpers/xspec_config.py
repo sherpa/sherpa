@@ -29,7 +29,7 @@ from .extensions import build_ext
 # "c" in "12.12.0c" as that is not helpful to track here.
 #
 SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1),
-                      (12, 13, 0)]
+                      (12, 13, 0), (12, 13, 1)]
 
 
 # We could use packaging.versions.Version here, but for our needs we

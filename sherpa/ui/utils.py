@@ -2241,14 +2241,14 @@ class Session(NoNewAttributesAfterInit):
            The Levenberg-Marquardt method is an interface to the
            MINPACK subroutine lmdif to find the local minimum of
            nonlinear least squares functions of several variables by a
-           modification of the Levenberg-Marquardt algorithm [1]_.
+           modification of the Levenberg-Marquardt algorithm [1].
 
         ``moncar``
-           The implementation of the moncar method is based on [2]_.
+           The implementation of the moncar method is based on [2].
 
         ``neldermead``
            The implementation of the Nelder Mead Simplex direct search
-           is based on [3]_.
+           is based on [3].
 
         ``simplex``
            This is another name for ``neldermead``.
@@ -2256,17 +2256,17 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        .. [1] J.J. More, "The Levenberg Marquardt algorithm:
+        1. J.J. More, "The Levenberg Marquardt algorithm:
            implementation and theory," in Lecture Notes in Mathematics
            630: Numerical Analysis, G.A. Watson (Ed.), Springer-Verlag:
            Berlin, 1978, pp.105-116.
 
-        .. [2] Storn, R. and Price, K. "Differential Evolution: A
+        2. Storn, R. and Price, K. "Differential Evolution: A
            Simple and Efficient Adaptive Scheme for Global Optimization
            over Continuous Spaces." J. Global Optimization 11, 341-359,
            1997.
 
-        .. [3] Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
+        3. Jeffrey C. Lagarias, James A. Reeds, Margaret H. Wright,
            Paul E. Wright "Convergence Properties of the Nelder-Mead
            Simplex Algorithm in Low Dimensions", SIAM Journal on
            Optimization,Vol. 9, No. 1 (1998), pages 112-147.
@@ -2514,9 +2514,8 @@ class Session(NoNewAttributesAfterInit):
 
         This is a chi-square statistic where the variance is computed
         from model amplitudes derived in the previous iteration of the
-        fit. This 'Iterative Weighting' ([1]_) attempts to remove
-        biased estimates of model parameters which is inherent in
-        chi-square statistics ([2]_).
+        fit. This 'Iterative Weighting' ([1]) attempts to remove
+        biased estimates of model parameters.
 
         The variance in bin i is estimated to be::
 
@@ -2535,8 +2534,9 @@ class Session(NoNewAttributesAfterInit):
         bin is small (< 5), although the user should proceed with
         caution.
 
-        The ``sigmarej`` scheme is based on the IRAF ``sfit`` function
-        [2]_, where after a fit data points are excluded if the value
+        The ``sigmarej`` scheme is based on the
+        `IRAF ``sfit`` function <https://iraf.readthedocs.io/en/latest/tasks/noao/imred/specred/sfit.html>`_,
+        where after a fit data points are excluded if the value
         of ``(data-model)/error)`` exceeds a threshold, and the data
         re-fit. This removal of data points continues until the fit
         has converged. The error removal can be asymmetric, since
@@ -2545,12 +2545,9 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        .. [1] "Multiparameter linear least-squares fitting to Poisson
-               data one count at a time", Wheaton et al. 1995, ApJ 438,
-               322
-               http://adsabs.harvard.edu/abs/1995ApJ...438..322W
-
-        .. [2] http://iraf.net/irafhelp.php?val=sfit
+        1. `"Multiparameter linear least-squares fitting to Poisson
+           data one count at a time", Wheaton et al. 1995, ApJ 438, 322
+           <https://adsabs.harvard.edu/abs/1995ApJ...438..322W>`_
 
         Examples
         --------
@@ -2793,7 +2790,7 @@ class Session(NoNewAttributesAfterInit):
         The available statistics include:
 
         cash
-           A maximum likelihood function [1]_.
+           A maximum likelihood function [1].
 
         chi2
            Chi-squared statistic using the supplied error values.
@@ -2807,7 +2804,7 @@ class Session(NoNewAttributesAfterInit):
            the error for that bin is 0.
 
         chi2gehrels
-           Chi-squared with gehrels method [2]_. This is the default method.
+           Chi-squared with gehrels method [2]. This is the default method.
 
         chi2modvar
            Chi-squared with model amplitude variance.
@@ -2823,14 +2820,14 @@ class Session(NoNewAttributesAfterInit):
 
         cstat
            A maximum likelihood function (the XSPEC implementation of
-           the Cash function) [3]_. This does *not* include support
+           the Cash function) [3]. This does *not* include support
            for including the background.
 
         wstat
            A maximum likelihood function which includes the background
            data as part of the fit (i.e. for when it is not being
            explicitly modelled) (the XSPEC implementation of the Cash
-           function) [3]_.
+           function) [3].
 
         leastsq
            The least-squares statisic (the error is not used in this
@@ -2839,17 +2836,16 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        .. [1] Cash, W. "Parameter estimation in astronomy through
-               application of the likelihood ratio", ApJ, vol 228,
-               p. 939-947 (1979).
-               http://adsabs.harvard.edu/abs/1979ApJ...228..939C
+        1. `Cash, W. "Parameter estimation in astronomy through
+           application of the likelihood ratio", ApJ, vol 228,
+           p. 939-947 (1979).
+           <https://adsabs.harvard.edu/abs/1979ApJ...228..939C>`_
 
-        .. [2] Gehrels, N. "Confidence limits for small numbers of
-               events in astrophysical data", ApJ, vol 303,
-               p. 336-346 (1986).
-               http://adsabs.harvard.edu/abs/1986ApJ...303..336G
+        2. `Gehrels, N. "Confidence limits for small numbers of
+           events in astrophysical data", ApJ, vol 303, p. 336-346 (1986).
+           <https://adsabs.harvard.edu/abs/1986ApJ...303..336G>`_
 
-        .. [3] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
+        3. https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixStatistics.html
 
         Examples
         --------
@@ -10824,8 +10820,8 @@ class Session(NoNewAttributesAfterInit):
         near the minimum, the gradient of the function is zero or
         negligible, respectively. So the leading term of the expansion
         is quadratic.  The best root finding algorithm for a curve
-        which is approximately parabolic is Muller's method [1]_.
-        Muller's method is a generalization of the secant method [2]_:
+        which is approximately parabolic is Muller's method [1].
+        Muller's method is a generalization of the secant method [2]:
         the secant method is an iterative root finding method that
         approximates the function by a straight line through two
         points, whereas Muller's method is an iterative root finding
@@ -10861,12 +10857,12 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        .. [1] Muller, David E., "A Method for Solving Algebraic
-               Equations Using an Automatic Computer," MTAC, 10
-               (1956), 208-215.
+        1. Muller, David E., "A Method for Solving Algebraic
+           Equations Using an Automatic Computer," MTAC, 10
+           (1956), 208-215.
 
-        .. [2] Numerical Recipes in Fortran, 2nd edition, 1986, Press
-               et al., p. 347
+        2. Numerical Recipes in Fortran, 2nd edition, 1986, Press
+           et al., p. 347
 
         Examples
         --------
@@ -11380,7 +11376,7 @@ class Session(NoNewAttributesAfterInit):
         values include the statistic value, parameter values, and an
         acceptance flag indicating whether the row represents a jump from the
         current location or not. For more information see the
-        `sherpa.sim` module and [1]_.
+        `sherpa.sim` module and the reference given below.
 
         Parameters
         ----------
@@ -11439,11 +11435,10 @@ class Session(NoNewAttributesAfterInit):
         References
         ----------
 
-        .. [1] "Analysis of Energy Spectra with Low Photon Counts via
-               Bayesian Posterior Simulation", van Dyk, D.A., Connors,
-               A., Kashyap, V.L., & Siemiginowska, A.  2001, Ap.J.,
-               548, 224
-               http://adsabs.harvard.edu/abs/2001ApJ...548..224V
+        `"Analysis of Energy Spectra with Low Photon Counts via
+        Bayesian Posterior Simulation", van Dyk, D.A., Connors, A.,
+        Kashyap, V.L., & Siemiginowska, A.  2001, Ap.J., 548, 224
+        <https://adsabs.harvard.edu/abs/2001ApJ...548..224V>`_
 
         Examples
         --------

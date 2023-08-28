@@ -1189,17 +1189,7 @@ def test_set_filter_masked_wrong(clean_ui):
         ui.set_filter(np.asarray([True, False]))
 
 
-def check_str(out, expecteds):
-    """Check that out, when split on a newline, matches expecteds"""
-
-    toks = str(out).split("\n")
-    for tok, expected in zip(toks, expecteds):
-        assert tok == expected
-
-    assert len(toks) == len(expecteds)
-
-
-def test_fit_output_single(clean_ui, caplog):
+def test_fit_output_single(clean_ui, caplog, check_str):
     """This is essentially the test from #1804 but for a single dataset"""
 
     ui.load_arrays(1, [1, 2, 3], [12, 10, 4])
@@ -1225,7 +1215,7 @@ def test_fit_output_single(clean_ui, caplog):
                "   mdl.c0         8.66665      +/- 1.70862     "])
 
 
-def test_calc_stat_info_output_single(clean_ui, caplog):
+def test_calc_stat_info_output_single(clean_ui, caplog, check_str):
     """This is essentially the test from #1804 but for a single dataset
     and converted to check calc_stat
 
@@ -1252,7 +1242,7 @@ def test_calc_stat_info_output_single(clean_ui, caplog):
                "Degrees of freedom    = 2"])
 
 
-def test_fit_output_multi(clean_ui, caplog):
+def test_fit_output_multi(clean_ui, caplog, check_str):
     """This is essentially the test from #1804"""
 
     ui.load_arrays(1, [1, 2, 3], [12, 10, 4])
@@ -1280,7 +1270,7 @@ def test_fit_output_multi(clean_ui, caplog):
                "   mdl.c0         7.83332      +/- 1.14642     "])
 
 
-def test_calc_stat_info_output_multi(clean_ui, caplog):
+def test_calc_stat_info_output_multi(clean_ui, caplog, check_str):
     """This is essentially the test from #1804 but for calc_stat_info"""
 
     ui.load_arrays(1, [1, 2, 3], [12, 10, 4])

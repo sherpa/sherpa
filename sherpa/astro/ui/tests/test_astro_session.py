@@ -2527,17 +2527,7 @@ def test_save_delchi_data2d(session, emsg, idval, tmp_path):
             s.save_delchi(idval, str(out))
 
 
-def check_output(expected, got):
-    """Expected is broken down by lines, got is not"""
-
-    toks = got.split("\n")
-    for i, estr in enumerate(expected):
-        assert toks[i] == estr
-
-    assert len(toks) == len(expected)
-
-
-def check_save_ascii2d(session, expected, out, savefunc, idval, kwargs):
+def check_save_ascii2d(session, expected, out, savefunc, idval, kwargs, check_str):
     """Checking the output is tricky.
 
     If crates is in use with the AstroSession backend then the call
@@ -2567,14 +2557,14 @@ def check_save_ascii2d(session, expected, out, savefunc, idval, kwargs):
     else:
         savefunc(idval, str(out), **kwargs)
 
-    check_output(expected, out.read_text())
+    check_str(out.read_text(), expected)
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
                          [(Session, {"comment": "!! "}, ["!! SOURCE", "7 11", ""]),
                           (AstroSession, {"ascii": True}, ["7", "11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
-def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):
+def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io, check_str):
     """Basic check it works
 
     The output depends on the backend which is a bit distressing, and
@@ -2594,14 +2584,14 @@ def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, sk
     s.set_source(idval, mdl)
 
     out = tmp_path / "created.dat"
-    check_save_ascii2d(session, expected, out, s.save_source, idval, kwargs)
+    check_save_ascii2d(session, expected, out, s.save_source, idval, kwargs, check_str)
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
                          [(Session, {"comment": ""}, ["MODEL", "7 11", ""]),
                           (AstroSession, {"ascii": True}, ["7", "11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
-def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):
+def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io, check_str):
     """Basic check it works
 
     The output depends on the backend which is a bit distressing, and
@@ -2621,14 +2611,14 @@ def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, ski
     s.set_source(idval, mdl)
 
     out = tmp_path / "created.dat"
-    check_save_ascii2d(session, expected, out, s.save_model, idval, kwargs)
+    check_save_ascii2d(session, expected, out, s.save_model, idval, kwargs, check_str)
 
 
 @pytest.mark.parametrize("session,kwargs,expected",
                          [(Session, {}, ["#RESID", "-7 -11", ""]),
                           (AstroSession, {"ascii": True}, ["-7", "-11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
-def test_save_resid_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io):
+def test_save_resid_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io, check_str):
     """Basic check it works
 
     The output depends on the backend which is a bit distressing.
@@ -2645,7 +2635,7 @@ def test_save_resid_ascii_data2d(session, kwargs, expected, idval, tmp_path, ski
     s.set_source(idval, mdl)
 
     out = tmp_path / "created.dat"
-    check_save_ascii2d(session, expected, out, s.save_resid, idval, kwargs)
+    check_save_ascii2d(session, expected, out, s.save_resid, idval, kwargs, check_str)
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])

@@ -356,13 +356,12 @@ def parallel_map(function, sequence, numcores=None):
     if not np.iterable(sequence):
         raise TypeError(f"input '{repr(sequence)}' is not iterable")
 
-    size = len(sequence)
-
-    if not _multi or size == 1 or (numcores is not None and numcores < 2):
-        return list(map(function, sequence))
-
     if numcores is None:
         numcores = _ncpus
+
+    size = len(sequence)
+    if not _multi or size == 1 or numcores < 2:
+        return list(map(function, sequence))
 
     # Returns a started SyncManager object which can be used for sharing
     # objects between processes. The returned manager object corresponds

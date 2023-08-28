@@ -252,7 +252,20 @@ by the actual path to the HEADAS installation, and the versions of
 the libraries - such as ``CCfits_2.6`` - may need to be changed to
 match the contents of the XSPEC installation.
 
-1. If the full XSPEC 12.13.0 system has been built then use::
+1. If the full XSPEC 12.13.1 system has been built then use::
+
+       with-xspec = True
+       xspec_version = 12.13.1
+       xspec_lib_dirs = $HEADAS/lib
+       xspec_include_dirs = $HEADAS/include
+       xspec_libraries = XSFunctions XSUtil XS hdsp_6.32
+       ccfits_libraries = CCfits_2.6
+       wcslib_libraries = wcs-7.7
+
+   where the version numbers were taken from version 6.32 of HEASOFT and
+   may need updating with a newer release.
+
+2. If the full XSPEC 12.13.0 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.13.0
@@ -262,10 +275,7 @@ match the contents of the XSPEC installation.
        ccfits_libraries = CCfits_2.6
        wcslib_libraries = wcs-7.7
 
-   where the version numbers were taken from version 6.31 of HEASOFT and
-   may need updating with a newer release.
-
-2. If the full XSPEC 12.12.1 system has been built then use::
+3. If the full XSPEC 12.12.1 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.12.1
@@ -275,10 +285,7 @@ match the contents of the XSPEC installation.
        ccfits_libraries = CCfits_2.6
        wcslib_libraries = wcs-7.7
 
-   where the version numbers were taken from version 6.30.1 of HEASOFT and
-   may need updating with a newer release.
-
-3. If the full XSPEC 12.12.0 system has been built then use::
+4. If the full XSPEC 12.12.0 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.12.0
@@ -287,9 +294,6 @@ match the contents of the XSPEC installation.
        xspec_libraries = XSFunctions XSUtil XS hdsp_6.29
        ccfits_libraries = CCfits_2.6
        wcslib_libraries = wcs-7.3.1
-
-   where the version numbers were taken from version 6.29 of HEASOFT and
-   may need updating with a newer release.
 
 4. If the model-only build of XSPEC - created with the
    ``--enable-xs-models-only`` flag when building HEASOFT - has been
@@ -421,7 +425,7 @@ and the ``pytest-xvfb`` package.
 Building the documentation
 --------------------------
 
-Building the documentation requires the Sherpa source code and several
+Building the documentation requires a Sherpa installation and several
 additional packages:
 
 * `Sphinx <https://sphinx.pocoo.org/>`_, version 1.8 or later
@@ -432,25 +436,28 @@ additional packages:
   for including Jupyter notebooks
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
-With these installed, the documentation can be built with the
-``build_sphinx`` target::
-
-    python setup.py build_sphinx
-
-This can be done **without** building Sherpa (either an installation
-or development version), since Mock objects are used to represent
-compiled and optional components.
-
-The documentation should be placed in ``build/sphinx/html/index.html``,
-although this may depend on what version of Sphinx is used.
-
-It is also possible to build the documentation from within the ``docs/``
-directory::
+With these installed, the documentation can be built by saying::
 
     cd docs
     make html
 
-This places the documentation in ``_build/html/index.html``.
+Note that this uses the installed version of sherpa, so if you want to make
+sure the current repository version is used, you will need to install it with e.g.::
+
+    pip install -e .
+
+before changing to the docs directory. Only very specific modules are mocked out
+because they are hard to build and are not needed for the documentation build
+(currently ds9 and XSPEC).
+
+The documentation should be placed in ``docs/_build/html/index.html``.
+
+.. note::
+
+   Prior to Sherpa 4.16.0 the documentation was built directly from the
+   source - using mock objects to handle compiled code - rather than
+   using a Sherpa installation. As of 4.16.0, mock objects are only
+   handled for the XSPEC and DS9 modules.
 
 Testing the Sherpa installation
 ===============================

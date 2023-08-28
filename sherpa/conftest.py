@@ -117,6 +117,11 @@ known_warnings = {
             r'np.asscalar\(a\) is deprecated since NumPy v1.16, use a.item\(\) instead',
             r"Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working",
 
+            # NumPy 1.25 warnings that are raised by (mid-2023) crates code.
+            # Hopefully this can be removed by December 2023.
+            #
+            r"Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. \(Deprecated NumPy 1.25.\)",
+
         ],
     UserWarning:
         [
@@ -645,6 +650,7 @@ def cleanup_ds9_backend():
     from sherpa.image import backend
     backend.close()
 
+
 @pytest.fixture(autouse=True)
 def add_sherpa_test_data_dir(doctest_namespace):
     '''Define `data_dir` for doctests
@@ -669,3 +675,148 @@ def add_sherpa_test_data_dir(doctest_namespace):
         path += '/'
 
     doctest_namespace["data_dir"] = path
+
+
+# Try to come up with a regexp for a numeric literal.  This is
+# informed by pytest-doctestplus but this is a lot easier as we only
+# care about a single number.
+#
+eterm = r"(?:e[+-]?\d+)"
+term = "|".join([fr"[+-]?\d+\.\d*{eterm}?",
+                 fr"[+-]?\.\d+{eterm}?"
+                 fr"[+-]?\d+{eterm}"])
+PATTERN = re.compile(fr"(.*)(?<![\d+-])({term})")
+
+
+class NumberChecker:
+    """Allow a string to be compared, allowing for tolerances.
+
+    It is a limited version of
+    pytest_doctestplus.output_checker.OutputChecker: it only checks a
+    single number value in the text. This could be updated to be
+    closer to doctestplus if found to be useful.
+
+    """
+
+    def __init__(self, expected, rtol=1e-4, atol=None):
+        lhs, value, rhs = self.split(expected)
+        self.lhs = lhs
+        self.number = value
+        self.rhs = rhs
+
+        self.rtol = rtol
+        self.atol = atol
+
+    def split(self, text):
+        """Split a string on a number
+
+        Parameters
+        ----------
+        text : str
+            The string containing a single number.
+        """
+
+        match = PATTERN.match(text)
+        if match is None:
+            # Make sure that we note a case where the regexp has
+            # failed to find a number.
+            #
+            raise ValueError(f"Error in test - no number found in '{text}'")
+
+        lhs = match[1]
+        number = float(match[2])
+        rhs = text[match.end():]
+
+        return lhs, number, rhs
+
+    def check(self, got):
+        """check that got matches the expected text"""
+        lhs, value, rhs = self.split(got)
+        assert lhs == self.lhs
+        assert rhs == self.rhs
+        assert value == pytest.approx(self.number,
+                                      rel=self.rtol, abs=self.atol)
+
+
+def check_str_fixture(out, expecteds):
+    """Check that out, when split on a newline, matches expecteds.
+
+    It would be nice to use use doctestplus - that is
+    pytest_doctestplus.output_checker.OutputChecker - for the checking
+    (to avoid the need to mark up expected text as a regexp) but this
+    is problematic at the moment, so it is not done. For now we
+    require users to explictly mark up those lines which we want to
+    check with numeric constraints by adding the text (taken from
+    doctestplus)
+
+        "# doctest: +FLOAT_CMP"
+
+    to the end of each line that needs it.
+
+    Parameters
+    ----------
+    out : str
+        The output to check (each line is compared to the expecteds
+        array).
+    expecteds : list of str or Pattern
+        The expected output, split on new-line. Each line is one of: a
+        Pattern, a string ending in "# doctest: +FLOAT_CMP", or a
+        string (which is just checked for equality).
+
+    """
+
+    toks = str(out).split("\n")
+    for tok, expected in zip(toks, expecteds):
+        # expected is one of:
+        #  - a pattern
+        #  - a string ending in #doctest: +FLOAT_CMP
+        #  - a normal string
+        #
+        try:
+            assert expected.match(tok), (expected.pattern, tok)
+        except AttributeError:
+            idx = expected.find("# doctest: +FLOAT_CMP")
+            if idx > -1:
+                pat = NumberChecker(expected[:idx].rstrip())
+                pat.check(tok)
+                continue
+
+            assert tok == expected
+
+    assert len(toks) == len(expecteds)
+
+
+@pytest.fixture
+def check_str():
+    """Returns the check_str_fixture routine.
+
+    See check_str_fixture for documentation. This is a bit of a hack
+    to treat a fixture as a way of importing check_str_fixture.
+
+    """
+
+    return check_str_fixture
+
+
+@pytest.fixture
+def xsmodel():
+    """fixture that returns an XS<name> model instance.
+
+    The test needs to be marked @requires_xspec when using this
+    fixture.
+
+    """
+
+    try:
+        from sherpa.astro import xspec
+    except ImportError:
+        raise RuntimeError("Test needs the requires_xspec decorator")
+
+    def func(name, mname=None):
+        cls = getattr(xspec, f"XS{name}")
+        if mname is None:
+            return cls()
+
+        return cls(mname)
+
+    return func

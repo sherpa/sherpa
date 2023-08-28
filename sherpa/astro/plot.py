@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021, 2022
+#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -137,6 +137,7 @@ class DataPHAPlot(shplot.DataHistogramPlot):
     """Plot a PHA dataset."""
 
     histo_prefs = shplot.get_data_hist_prefs()
+    "The preferences for the plot."
 
     def prepare(self, data, stat=None):
 
@@ -177,6 +178,7 @@ class ModelPHAHistogram(shplot.HistogramPlot):
     """
 
     histo_prefs = shplot.backend.get_model_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         super().__init__()
@@ -262,12 +264,10 @@ class ModelHistogram(ModelPHAHistogram):
 
 
 class SourcePlot(shplot.HistogramPlot):
-    """Create 1D plots of unconcolved model values.
+    """Create PHA plots of unconvolved model values.
 
     Attributes
     ----------
-    histo_prefs : dict
-       The preferences for the plot.
     xlo, xhi : array_like
        The lower and upper edges for each bin (the independent variable).
     y : array_like
@@ -278,6 +278,7 @@ class SourcePlot(shplot.HistogramPlot):
     """
 
     histo_prefs = shplot.backend.get_model_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         self.units = None
@@ -298,6 +299,11 @@ class SourcePlot(shplot.HistogramPlot):
                     " source model,\nusing energy.")
             self.units = "energy"
 
+        # Note that there is some effort required to match other PHA plots,
+        # e.g. model plots, for:
+        #  - plot counts vs rates
+        #  - what factor to scale the Y axis by
+        #
         self.xlabel = data.get_xlabel()
         self.title = f'Source Model of {data.name}'
         self.xlo, self.xhi = data._get_indep(filter=False)
@@ -308,7 +314,7 @@ class SourcePlot(shplot.HistogramPlot):
 
         # The source model is assumed to not contain an instrument model,
         # and so it evaluates the expected number of photons/cm^2/s in
-        # each bin (or it can be thought of as a 1 second exposure).
+        # each bin.
         #
         self.y = src(self.xlo, self.xhi)
         prefix_quant = 'E'
@@ -323,27 +329,48 @@ class SourcePlot(shplot.HistogramPlot):
             quant = 'Angstrom'
             (self.xlo, self.xhi) = (self.xhi, self.xlo)
 
-        xmid = abs(self.xhi - self.xlo)
+        # The y values are in photon/cm^2/s and we want
+        #
+        # - to divide by the bin width to get per keV/A
+        # - to convert to counts when (not data.rate)
+        # - to handle the factor value
+        #
+        # This is similar to DataPHA._fix_y_units but does not have to
+        # worry about grouping data, and so is simpler.
+        #
+        self.y /= abs(self.xhi - self.xlo)
 
-        sqr = to_latex('^2')
+        if not data.rate and data.exposure:
+            self.y *= data.exposure
+            tlabel = ""
+        else:
+            tlabel = "/sec"
 
-        self.xlabel = f'{self.units.capitalize()} ({quant})'
-        self.ylabel = f'%s  Photons/sec/cm{sqr}%s'
-
-        if data.plot_fac == 0:
-            self.y /= xmid
-            self.ylabel = self.ylabel % (f'f({prefix_quant})',
-                                         f'/{quant} ')
+        # We treat plot_fac < 0 as 0.
+        #
+        if data.plot_fac <= 0:
+            pre = f'f({prefix_quant})'
+            post = f'/{quant}'
 
         elif data.plot_fac == 1:
-            self.ylabel = self.ylabel % (f'{prefix_quant} f({prefix_quant})', '')
+            pre = f'{prefix_quant} f({prefix_quant})'
+            post = ''
 
-        elif data.plot_fac == 2:
-            self.y *= xmid
-            self.ylabel = self.ylabel % (f'{prefix_quant}{sqr} f({prefix_quant})',
-                                         f' {quant} ')
-        else:
-            raise PlotErr('plotfac', 'Source', data.plot_fac)
+        elif data.plot_fac > 1:
+            pterm = to_latex(f'^{data.plot_fac}')
+            pre = f'{prefix_quant}{pterm} f({prefix_quant})'
+            post = f' {quant}'
+            if data.plot_fac > 2:
+                pterm = to_latex(f'^{data.plot_fac - 1}')
+                post += pterm
+
+        scale = (self.xhi + self.xlo) / 2
+        for ii in range(data.plot_fac):
+            self.y *= scale
+
+        sqr = to_latex('^2')
+        self.xlabel = f'{self.units.capitalize()} ({quant})'
+        self.ylabel = f'{pre}  Photons{tlabel}/cm{sqr}{post}'
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         xlo = self.xlo
@@ -364,6 +391,7 @@ class SourcePlot(shplot.HistogramPlot):
 class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
 
     histo_prefs = shplot.backend.get_component_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         ModelHistogram.__init__(self)
@@ -386,6 +414,7 @@ class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
 class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
 
     histo_prefs = shplot.backend.get_component_histo_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         SourcePlot.__init__(self)
@@ -410,8 +439,6 @@ class ARFPlot(shplot.HistogramPlot):
 
     Attributes
     ----------
-    histo_prefs : dict
-       The preferences for the plot.
     xlo, xhi : array_like
        The lower and upper edges of each bin.
     y : array_like
@@ -422,6 +449,7 @@ class ARFPlot(shplot.HistogramPlot):
     """
 
     histo_prefs = shplot.backend.get_model_histo_defaults()
+    "The preferences for the plot."
 
     def prepare(self, arf, data=None):
         """Fill the fields given the ARF.

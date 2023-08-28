@@ -24,7 +24,7 @@
 import copy
 import logging
 import os
-from tempfile import NamedTemporaryFile, gettempdir
+import re
 
 import pytest
 
@@ -369,7 +369,7 @@ def test_abund_change_string():
 
 
 @requires_xspec
-def test_abund_change_file():
+def test_abund_change_file(tmp_path):
     """Can we change the abundance setting: file
 
     This test hard-codes the number of elements expected in the
@@ -380,15 +380,16 @@ def test_abund_change_file():
 
     elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)}
 
-    tfh = NamedTemporaryFile(mode='w', suffix='.xspec')
+    out = ""
     for n in ELEMENT_NAMES:
-        tfh.write("{}\n".format(elems[n]))
+        out += f"{elems[n]}\n"
 
-    tfh.flush()
+    tempfile = tmp_path / "abundances.xspec"
+    tempfile.write_text(out)
 
     oval = xspec.get_xsabund()
     try:
-        xspec.set_xsabund(tfh.name)
+        xspec.set_xsabund(str(tempfile))
 
         abund = xspec.get_xsabund()
         out = {n: xspec.get_xsabund(n)
@@ -477,7 +478,7 @@ def test_cosmo_change():
 
 
 @requires_xspec
-def test_path_manager_change():
+def test_path_manager_change(tmp_path):
     """Can we change the manager-path setting?
     """
 
@@ -486,7 +487,7 @@ def test_path_manager_change():
     validate_xspec_setting(xspec.get_xspath_manager,
                            xspec.set_xspath_manager,
                            '/dev/null',
-                           gettempdir())
+                           str(tmp_path))
 
 
 # Note that the XSPEC state is used in test_xspec.py, but only
@@ -722,15 +723,13 @@ def test_read_xstable_model(make_data_path):
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_xspec_model_requires_bins(clsname):
+def test_xspec_model_requires_bins(clsname, xsmodel):
     """Ensure you can not call with a single grid for the energies.
 
     You used to be able to do this (in Sherpa 4.13 and earlier).
     """
 
-    from sherpa.astro import xspec
-
-    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    mdl = xsmodel(clsname)
 
     emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
     with pytest.warns(FutureWarning, match=emsg):
@@ -739,15 +738,13 @@ def test_xspec_model_requires_bins(clsname):
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_xspec_model_requires_bins_low_level(clsname):
+def test_xspec_model_requires_bins_low_level(clsname, xsmodel):
     """Ensure you can not call with a single grid for the energies (calc).
 
     You used to be able to do this (in Sherpa 4.13 and earlier).
     """
 
-    from sherpa.astro import xspec
-
-    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    mdl = xsmodel(clsname)
 
     emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
     with pytest.warns(FutureWarning, match=emsg):
@@ -756,15 +753,13 @@ def test_xspec_model_requires_bins_low_level(clsname):
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_xspec_model_requires_bins_very_low_level(clsname):
+def test_xspec_model_requires_bins_very_low_level(clsname, xsmodel):
     """Check we can use a single grid for direct access (_calc).
 
     This is the flip side to test-xspec_model_requires_bins_low_level
     """
 
-    from sherpa.astro import xspec
-
-    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    mdl = xsmodel(clsname)
 
     # pick a range which does not evaluate to 0 for wabs
     egrid = np.arange(0.5, 1.0, 0.1)
@@ -972,7 +967,27 @@ def test_evaluate_xspec_multiplicative_model(make_data_path):
                        -1])
 
     y = tbl(elo, ehi)
-    assert y == pytest.approx(yexp)
+
+    # The final element is -1 prior to 12.13.1 but 1 in 12.13.1,
+    # (probably because of an issue we reported), so let's drop that
+    # element for the check.
+    #
+    assert y[:-1] == pytest.approx(yexp[:-1])
+
+    # Check the final value. Should we provide a nice way to
+    # extrct the Sherpa version?
+    #
+    from sherpa.astro.xspec import get_xsversion
+    version = get_xsversion()
+    match = re.search(r'^(\d+)\.(\d+)\.(\d+)', version)
+    if match is None:
+        raise ValueError(f"Invalid XSPEC version string: {version}")
+
+    v = (int(match[1]), int(match[2]), int(match[3]))
+    if v < (12, 13, 1):
+        assert y[-1] == pytest.approx(-1.0)
+    else:
+        assert y[-1] == pytest.approx(1.0)
 
 
 @requires_xspec
@@ -1069,7 +1084,7 @@ def test_xstbl_link_parameter_evaluation(make_data_path):
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_integrate_setting(clsname):
+def test_integrate_setting(clsname, xsmodel):
     """Can we change the integrate setting?
 
     It's not obvious what the integrate setting is meant to do for
@@ -1077,13 +1092,11 @@ def test_integrate_setting(clsname):
 
     """
 
-    from sherpa.astro import xspec
-
     egrid = np.arange(0.1, 1.0, 0.1)
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    mdl = getattr(xspec, 'XS{}'.format(clsname))()
+    mdl = xsmodel(clsname)
     assert mdl.integrate
 
     y1 = mdl(elo, ehi)
@@ -1108,7 +1121,7 @@ def test_integrate_setting(clsname):
 
 @requires_xspec
 @pytest.mark.parametrize("clsname", ["powerlaw", "wabs"])
-def test_integrate_setting_con(clsname):
+def test_integrate_setting_con(clsname, xsmodel):
     """Can we change the integrate setting of convolution models.
 
     This is test_integrate_setting after wrapping the model by a
@@ -1121,16 +1134,14 @@ def test_integrate_setting_con(clsname):
 
     """
 
-    from sherpa.astro import xspec
-
     egrid = np.arange(0.1, 1.0, 0.1)
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    conv = xspec.XScflux()
+    conv = xsmodel("cflux")
     assert conv.integrate
 
-    omdl = getattr(xspec, 'XS{}'.format(clsname))()
+    omdl = xsmodel(clsname)
     assert omdl.integrate
 
     # Convolution models do not have an integrate setting
@@ -1180,7 +1191,7 @@ def test_xsparameter_within_limit(val):
 @requires_xspec
 @pytest.mark.parametrize("val", [1, 8])
 def test_xsparameter_at_limit(val):
-    """What happens if we pass outside soft but within hard range?
+    """What happens if we pass outside soft but at hard limit?
 
     """
 
@@ -1640,3 +1651,256 @@ def test_xspec_model_kwarg_cached_not_needed():
     assert mdl._cache_ctr['misses'] == 3
 
     assert y3 == pytest.approx(y1)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("addmodel", [0, 1])
+@pytest.mark.parametrize("redshift", [0, 1])
+@pytest.mark.parametrize("escale", [0, 1])
+def test_table_mod_negative_delta_1850(addmodel, redshift, escale, make_data_path):
+    """Is delta<0 recognized as freezing a parameter?
+
+    The tables in xspec_table_models are numbered in such a way that
+    we can loop through them all, and hence check some other things at
+    the same time (to avoid having to read things in multiple times).
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = f"smod{addmodel}{redshift}{escale}.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    # issue #1850; is the parameter recognized as frozen
+    assert tbl.lscale.frozen
+
+    parnames = [p.name for p in tbl.pars]
+    assert parnames[0] == "lscale"
+
+    idx = 1
+    if redshift:
+        assert parnames[idx] == "redshift"
+        assert tbl.redshift.frozen
+        idx += 1
+
+    if escale:
+        assert parnames[idx] == "Escale"
+        assert tbl.escale.frozen
+        idx += 1
+
+    if addmodel:
+        assert parnames[idx] == "norm"
+        assert not tbl.norm.frozen
+        idx += 1
+
+    assert len(parnames) == idx
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_add(make_data_path):
+    """Check the additive model is behaving as expected. No z/escale
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod100.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    egrid = np.asarray([0.2, 0.3, 0.5, 0.7, 1.1, 1.6, 2.0, 2.2, 2.5])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    expected = [0, 0, 22.5, 6, 54, 56, 39.5, 0]
+    assert tbl(elo, ehi) == pytest.approx(expected)
+
+    tbl.lscale = 0
+    expected = [0, 0, 15, 12, 52, 48, 15, 0]
+    assert tbl(elo, ehi) == pytest.approx(expected)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_add_redshift(make_data_path):
+    """Check the additive model is behaving as expected with redshift. No escale.
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod110.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    assert tbl.redshift.val == pytest.approx(0)
+
+    egrid = np.linspace(0.2, 2.6, 25)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    de = 0.1
+
+    # Values taken from XSPEC 12.13.1 with
+    #
+    #    dummyrsp 0.2 2.6 24 linear
+    #    mo atable{smod101.tmod}
+    #    iplot model
+    #    wdata
+    #
+    expected = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + [140] * 5 + \
+        [375, 20, 0, 0, 0, 0]
+    assert tbl(elo, ehi) / de == pytest.approx(expected)
+
+    tbl.redshift = 1
+    expected = [0, 82.5, 15, 57.5, 100, 120, 140, 140, 197.5] + [0] * 15
+    assert tbl(elo, ehi) / de == pytest.approx(expected, rel=2e-6)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_add_escale(make_data_path):
+    """Check the additive model is behaving as expected with escale. No z.
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod101.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    assert tbl.escale.val == pytest.approx(1.0)
+
+    egrid = np.linspace(0.2, 2.6, 25)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    de = 0.1
+
+    # Values taken from XSPEC 12.13.1 with
+    #
+    #    dummyrsp 0.2 2.6 24 linear
+    #    mo atable{smod101.tmod}
+    #    iplot model
+    #    wdata
+    #
+    expected = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + [140] * 5 + \
+        [375, 20, 0, 0, 0, 0]
+    assert tbl(elo, ehi) / de == pytest.approx(expected)
+
+    tbl.escale = 2
+    expected = [0] * 8 + [37.5] * 2 + [75] * 2 + [7.5] * 8 + [50] * 4
+    assert tbl(elo, ehi) / de == pytest.approx(expected, rel=2e-6)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_mul(make_data_path):
+    """Check the multiplicative model is behaving as expected. No z/escale
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod000.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    egrid = np.asarray([0.2, 0.3, 0.5, 0.7, 1.1, 1.6, 2.0, 2.2, 2.5])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    expected = [0, 0, 11.25, 6, 45, 70, 19.75, 5]
+    assert tbl(elo, ehi) == pytest.approx(expected)
+
+    tbl.lscale = 0
+    expected = [0, 0, 7.5, 12, 40 + 10/3, 60, 7.5, 5]
+    assert tbl(elo, ehi) == pytest.approx(expected)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_mul_redshift(make_data_path):
+    """Check the multiplicative model is behaving as expected with redshift. No escale.
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod010.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    assert tbl.redshift.val == pytest.approx(0)
+
+    egrid = np.linspace(0.2, 2.6, 25)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    # Values taken from XSPEC 12.13.1 with
+    #
+    #    dummyrsp 0.2 2.6 24 linear
+    #    mo mtable{smod001.tmod} * powerlaw
+    #    newpar 3 0
+    #    iplot model
+    #    wdata
+    #
+    expected = [0, 0, 0, 7.5, 15] + [6] * 4 + [40] * 4 + [70] * 5 + \
+        [37.5, 2, 5, 5, 5, 5]
+    assert tbl(elo, ehi) == pytest.approx(expected)
+
+    tbl.redshift = 1
+    expected = [0, 13.2, 6, 23, 40, 50 + 10/3, 70, 70, 19.75] + [5] * 15
+    assert tbl(elo, ehi) == pytest.approx(expected, rel=2e-6)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_mul_escale(make_data_path):
+    """Check the multiplicative model is behaving as expected with escale. No z.
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod001.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    assert tbl.escale.val == pytest.approx(1.0)
+
+    egrid = np.linspace(0.2, 2.6, 25)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    # Values taken from XSPEC 12.13.1 with
+    #
+    #    dummyrsp 0.2 2.6 24 linear
+    #    mo mtable{smod001.tmod} * powerlaw
+    #    newpar 3 0
+    #    iplot model
+    #    wdata
+    #
+    expected = [0, 0, 0, 7.5, 15] + [6] * 4 + [40] * 4 + [70] * 5 + \
+        [37.5, 2, 5, 5, 5, 5]
+    assert tbl(elo, ehi) == pytest.approx(expected)
+
+    tbl.escale = 2
+    expected = [0] * 8 + [7.5] * 2 + [15] * 2 + [6] * 8 + [40] * 4
+    assert tbl(elo, ehi) == pytest.approx(expected, rel=2e-6)

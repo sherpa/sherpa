@@ -20,7 +20,7 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.13.0, 12.12.1, and 12.12.0 of XSPEC [1]_,
+Sherpa supports versions 12.13.1, 12.13.0, 12.12.1, and 12.12.0 of XSPEC [1]_,
 and can be built against the model library or the full application.
 There is no guarantee of support for older or newer versions of XSPEC.
 
@@ -101,7 +101,7 @@ from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
 from sherpa.models.parameter import hugeval
 
 from sherpa.utils import SherpaFloat, guess_amplitude, param_apply_limits, bool_cast
-from sherpa.utils.err import ParameterErr
+from sherpa.utils.err import IOErr, ParameterErr
 from sherpa.astro.utils import get_xspec_position
 
 # Note that utils also imports _xspec so it will error out if it is
@@ -771,6 +771,14 @@ def read_xstable_model(modelname, filename, etable=False):
     XSPEC additive (atable, [1]_), multiplicative (mtable, [2]_), and
     exponential (etable, [3]_) table models are supported.
 
+    .. versionchanged:: 4.16.0
+       Parameters with negative DELTA values are now made frozen, to
+       match XSPEC. Support for models which use the ESCALE keyword
+       has been added.  The hard_max and hard_min values of the
+       redshift parameter (for those models that support it) can now
+       be changed. This should be done with care as it could cause
+       memory corruption or a crash.
+
     .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
        models to be used.
@@ -789,6 +797,11 @@ def read_xstable_model(modelname, filename, etable=False):
     Returns
     -------
     tablemodel : XSTableModel instance
+
+    Notes
+    -----
+    There is no support for table models that provide multiple spectra
+    per parameter: that is, those with the NXFLTEXP keyword set.
 
     References
     ----------
@@ -822,16 +835,47 @@ def read_xstable_model(modelname, filename, etable=False):
     read_tbl = sherpa.astro.io.backend.get_table_data
     read_hdr = sherpa.astro.io.backend.get_header_data
 
+    # Not all keywords are going to be present, so check what are.
+    #
     blkname = 'PRIMARY'
-    hdrkeys = ['HDUCLAS1', 'REDSHIFT', 'ADDMODEL']
-    hdr = read_hdr(filename, blockname=blkname, hdrkeys=hdrkeys)
+    hdr = read_hdr(filename, blockname=blkname, hdrkeys=None)
 
-    addmodel = bool_cast(hdr[hdrkeys[2]])
-    addredshift = bool_cast(hdr[hdrkeys[1]])
+    try:
+        hduclas1 = hdr["HDUCLAS1"].upper()
+    except KeyError:
+        raise IOErr("nokeyword", filename, "HDUCLAS1")
 
-    # TODO: change Exception to something more useful
-    if str(hdr[hdrkeys[0]]).upper() != 'XSPEC TABLE MODEL':
+    if hduclas1 != 'XSPEC TABLE MODEL':
+        # TODO: change Exception to something more useful
         raise Exception("Not an XSPEC table model")
+
+    try:
+        addredshift = bool_cast(hdr["REDSHIFT"])
+    except KeyError:
+        raise IOErr("nokeyword", filename, "REDSHIFT")
+
+    try:
+        addmodel = bool_cast(hdr["ADDMODEL"])
+    except KeyError:
+        raise IOErr("nokeyword", filename, "ADDMODEL")
+
+    # ESCALE may not exist in the header, as it is relatively new.
+    #
+    try:
+        addescale = bool_cast(hdr["ESCALE"])
+    except KeyError:
+        addescale = False
+
+    # We want to error out if NXFLTEXP is set (and more than 1). If
+    # set to 1 we ignore it.
+    #
+    try:
+        nxfltexp = int(hdr["NXFLTEXP"])
+    except KeyError:
+        nxfltexp = 1
+
+    if nxfltexp > 1:
+        raise IOErr(f"No support for NXFLTEXP={nxfltexp} in {filename}")
 
     blkname = 'PARAMETERS'
     colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
@@ -841,10 +885,11 @@ def read_xstable_model(modelname, filename, etable=False):
     (colnames, cols,
      name, hdr) = read_tbl(filename, colkeys=colkeys, hdrkeys=hdrkeys,
                            blockname=blkname, fix_type=False)
-    nint = int(hdr[hdrkeys[0]])
+    nint = int(hdr["NINTPARM"])
     return XSTableModel(filename, modelname, *cols,
                         nint=nint, addmodel=addmodel,
-                        addredshift=addredshift, etable=etable)
+                        addredshift=addredshift,
+                        addescale=addescale, etable=etable)
 
 
 # The model classes are added to __all__ at the end of the file
@@ -1199,10 +1244,20 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 class XSTableModel(XSModel):
     """Interface to XSPEC table models.
 
-    XSPEC supports loading in user-supplied data files for use
-    as a table model [1]_. This class provides a low-level
-    way to access this functionality. A simpler interface is provided
-    by `read_xstable_model` and `sherpa.astro.ui.load_xstable_model`.
+    XSPEC supports loading in user-supplied data files for use as a
+    `table model
+    <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html>`_. This
+    class provides a low-level way to access this functionality. A
+    simpler interface is provided by `read_xstable_model` and
+    `sherpa.astro.ui.load_xstable_model`.
+
+    .. versionchanged:: 4.16.0
+       The hard_max and hard_min values of the redshift parameter (for
+       those models that support it) can now be changed. This should
+       be done with care as it could cause memory corruption or a
+       crash.  Parameters with negative DELTA values are now made
+       frozen, to match XSPEC. Support for models which use the ESCALE
+       keyword has been added.
 
     .. versionchanged:: 4.14.0
        The etable argument has been added to allow exponential table
@@ -1212,7 +1267,9 @@ class XSTableModel(XSModel):
     ----------
     filename : str
         The name of the FITS file containing the data for the XSPEC
-        table model; the format is described in [2]_.
+        table model; the format is described in `Arnaud, Keith A, The
+        File Format for XSPEC Table Models
+        <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html>`_.
     name : str
         The name to use for the instance of the table model.
     parnames : sequence
@@ -1225,6 +1282,7 @@ class XSTableModel(XSModel):
     delta : sequence
         The delta value for each parameter. This corresponds to the
         "DELTA" column from the "PARAMETER" block of the input file.
+        A negative value marks a parameter as being frozen.
     mins, maxes, hardmins, hardmaxes : sequence
         The valid range of each parameter. These correspond to the
         "BOTTOM", "TOP", "MINIMUM", and "MAXIMUM" columns from the
@@ -1242,22 +1300,26 @@ class XSTableModel(XSModel):
         If `True` then a redshift parameter is added to the parameters.
         It should be set to the value of the "REDSHIFT" keyword of the
         primary header of the input file.
+    addescale : bool
+        If `True` then an Escale parameter is added to the parameters.
+        It should be set to the value of the "ESCALE" keyword of the
+        primary header of the input file.
     etable : bool
         When addmodel is False this defines whether the file is a
         mtable model (`False`, the default) or an etable model (`True`).
 
-    References
-    ----------
-
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
-    .. [2] https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/general/ogip_92_009/ogip_92_009.html
+    Notes
+    -----
+    There is no support for table models that provide multiple spectra
+    per parameter: that is, those with the NXFLTEXP keyword set.
 
     """
 
     def __init__(self, filename, name='xstbl', parnames=(),
                  initvals=(), delta=(), mins=(), maxes=(), hardmins=(),
                  hardmaxes=(), nint=0,
-                 addmodel=False, addredshift=False, etable=False):
+                 addmodel=False, addredshift=False, addescale=False,
+                 etable=False):
 
         # make translation table to turn reserved characters into '_'
         bad = string.punctuation + string.whitespace
@@ -1285,19 +1347,46 @@ class XSTableModel(XSModel):
             parname = parname.strip().lower().translate(tbl)
             par = XSBaseParameter(name, parname, initvals[ii],
                                   mins[ii], maxes[ii],
-                                  hardmins[ii], hardmaxes[ii], frozen=isfrozen)
+                                  hardmins[ii], hardmaxes[ii],
+                                  frozen=isfrozen)
             self.__dict__[parname] = par
             pars.append(par)
             nint -= 1
+
+            # If delta < 0 then the parameter is also frozen. This is
+            # handled separately to the isfrozen check.
+            #
+            if delta[ii] < 0:
+                par.freeze()
 
         self.filename = filename
         self.addmodel = addmodel
         self.etable = etable
 
+        # Order appears to be
+        #   - z
+        #   - Escale
+        #   - norm
+        # (for those models that support the relevant value)
+        #
         if addredshift:
-            self.redshift = XSBaseParameter(name, 'redshift', 0., 0., 5.,
-                                            0.0, 5, frozen=True)
+            # We use XSParameter rather than XSBaseParameter since it
+            # is less likely to cause a crash if the parameter ranges
+            # are set outside the XSPEC defaults of 0 to 5. A user has
+            # been using this feature for a while and it was broken by
+            # switching to XSBaseParameter (see #1814). We use
+            # XSParameter rather than Parameter so we can change the
+            # hard limits if needed.
+            #
+            self.redshift = XSParameter(name, 'redshift', 0., 0., 5.,
+                                        0.0, 5, frozen=True)
             pars.append(self.redshift)
+
+        if addescale:
+            # Should this just use Parameter?
+            self.Escale = XSParameter(name, 'Escale', 1, 0, 1e20,
+                                      0, 1e24, frozen=True, units="keV")
+            pars.append(self.Escale)
 
         if addmodel:
             # Normalization parameters are not true XSPEC parameters and
@@ -3188,7 +3277,7 @@ class XScemekl(XSAdditiveModel):
 
     def __init__(self, name='cemekl'):
         self.alpha = XSParameter(name, 'alpha', 1.0, 0.01, 10, 0.01, 20, frozen=True)
-        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.01, 1.e2, 0.01, 1e2, units='keV')
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.02725, 1.e2, 0.02725, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
@@ -3239,7 +3328,7 @@ class XScevmkl(XSAdditiveModel):
 
     def __init__(self, name='cevmkl'):
         self.alpha = XSParameter(name, 'alpha', 1.0, 0.01, 10, 0.01, 20, frozen=True)
-        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.01, 1.e2, 0.01, 1e2, units='keV')
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.02725, 1.e2, 0.02725, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.He = XSParameter(name, 'He', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.C = XSParameter(name, 'C', 1.0, 0., 10., 0.0, 10, frozen=True)
@@ -4640,7 +4729,7 @@ class XSgaussian(XSAdditiveModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGaussian.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGauss.html
 
     """
 
@@ -9658,7 +9747,7 @@ class XSzgauss(XSAdditiveModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGaussian.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGauss.html
 
     """
 
@@ -10137,7 +10226,7 @@ class XSgabs(XSMultiplicativeModel):
     Sigma
         The line width (sigma), in keV.
     Strength
-        The line depth. The optical depth at the line center is
+        The line depth, in keV. The optical depth at the line center is
         Strength / (sqrt(2 pi) * Sigma).
 
     References
@@ -10152,7 +10241,7 @@ class XSgabs(XSMultiplicativeModel):
     def __init__(self, name='gabs'):
         self.LineE = XSParameter(name, 'LineE', 1.0, 0., 1.e6, 0.0, 1e6, units='keV')
         self.Sigma = XSParameter(name, 'Sigma', 0.01, 0., 10., 0.0, 20, units='keV')
-        self.Strength = XSParameter(name, 'Strength', 1.0, 0., 1.e6, 0.0, 1e6, aliases=["Tau"])
+        self.Strength = XSParameter(name, 'Strength', 1.0, 0., 1.e6, 0.0, 1e6, units='keV', aliases=["Tau"])
 
         XSMultiplicativeModel.__init__(self, name, (self.LineE, self.Sigma, self.Strength))
 
@@ -13630,11 +13719,11 @@ class XSbwcycl(XSAdditiveModel):
     def __init__(self, name='bwcycl'):
         self.Radius = XSParameter(name, 'Radius', 10, 5, 20, 5, 20, units='km', frozen=True)
         self.Mass = XSParameter(name, 'Mass', 1.4, 1, 3, 1, 3, units='Solar', frozen=True)
-        self.csi = XSParameter(name, 'csi', 1.5, 0.01, 20, 0.01, 20)
-        self.delta = XSParameter(name, 'delta', 1.8, 0.01, 20, 0.01, 20)
+        self.csi = XSParameter(name, 'csi', 3, 0.01, 20, 0.01, 20)
+        self.delta = XSParameter(name, 'delta', 1.0, 0.01, 20, 0.01, 20)
         self.B = XSParameter(name, 'B', 4, 0.01, 100, 0.01, 100, units='1e12G')
         self.Mdot = XSParameter(name, 'Mdot', 1, 1e-6, 1e6, 1e-6, 1e6, units='1e17g/s')
-        self.Te = XSParameter(name, 'Te', 5, 0.1, 100, 0.1, 100, units='keV')
+        self.Te = XSParameter(name, 'Te', 5, 1.3, 100, 1.3, 100, units='keV')
         self.r0 = XSParameter(name, 'r0', 44, 10, 1000, 10, 1000, units='m')
         self.D = XSParameter(name, 'D', 5, 1, 20, 1, 20, units='kpc', frozen=True)
         self.BBnorm = XSParameter(name, 'BBnorm', 0.0, 0, 100, 0, 100, frozen=True)

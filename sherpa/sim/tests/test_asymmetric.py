@@ -276,7 +276,7 @@ def test_zero_case():
     assert (stats >= bestfit.statval).all()
 
 
-def test_resample_supports_data1d(caplog):
+def test_resample_supports_data1d(caplog, check_str):
 
     orig = Data1D("orig", [1, 2, 3], [4, 2, 5], [0.1, 0.2, 0.5])
     model = Const1D("mdl")
@@ -291,7 +291,8 @@ def test_resample_supports_data1d(caplog):
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == "sherpa"
     assert lvl == logging.INFO
-    assert msg == "mdl.c0 : avg = 1.0343987745935705 , std = 0.5208696279243179"
+    check_str(msg,
+              ["mdl.c0 : avg = 1.0343987745935705 , std = 0.5208696279243179  # doctest: +FLOAT_CMP"])
 
 
 def test_resample_fails_unsupported_data():
