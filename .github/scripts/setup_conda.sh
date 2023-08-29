@@ -3,13 +3,13 @@
 if [ "`uname -s`" == "Darwin" ] ; then
     compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
 
-    #Download the macOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
-    mkdir -p ${GITHUB_WORKSPACE}/10.9SDK
-    wget https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -O MacOSX10.9.sdk.tar.xz
+    #Download the macOS 10.14 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
+    mkdir -p ${GITHUB_WORKSPACE}/10.14SDK
+    wget https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.14.sdk.tar.xz -O MacOSX10.14.sdk.tar.xz
     if [[ $? -ne 0 ]]; then
-      echo "macOS 10.9 SDK download failed"
+      echo "macOS 10.14 SDK download failed"
     fi
-    tar -C ${GITHUB_WORKSPACE}/10.9SDK -xf MacOSX10.9.sdk.tar.xz
+    tar -C ${GITHUB_WORKSPACE}/10.14SDK -xf MacOSX10.14.sdk.tar.xz
     #End of Conda compilers section
 else
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
