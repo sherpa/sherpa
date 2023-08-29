@@ -132,10 +132,8 @@ def test_read_pha_fails_arf(make_data_path):
         assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(ARFFILE)
-    with pytest.raises(etype) as excinfo:
+    with pytest.raises(etype, match=emsg):
         io.read_pha(infile)
-
-    assert emsg in str(excinfo.value)
 
 
 @requires_data
@@ -153,10 +151,8 @@ def test_read_pha_fails_rmf(make_data_path):
         assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(RMFFILE)
-    with pytest.raises(etype) as excinfo:
+    with pytest.raises(etype, match=emsg):
         io.read_pha(infile)
-
-    assert emsg in str(excinfo.value)
 
 
 def validate_replacement_warning(ws, rtype, label):
@@ -223,10 +219,8 @@ def test_read_arf_fails_pha(make_data_path):
         assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(PHAFILE)
-    with pytest.raises(IOErr) as excinfo:
+    with pytest.raises(IOErr, match=emsg):
         io.read_arf(infile)
-
-    assert emsg in str(excinfo.value)
 
 
 @requires_data
@@ -242,10 +236,8 @@ def test_read_arf_fails_rmf(make_data_path):
         assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(RMFFILE)
-    with pytest.raises(IOErr) as excinfo:
+    with pytest.raises(IOErr, match=emsg):
         io.read_arf(infile)
-
-    assert emsg in str(excinfo.value)
 
 
 @requires_data
@@ -321,10 +313,8 @@ def test_read_rmf_fails_pha(make_data_path):
         assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(PHAFILE)
-    with pytest.raises(etype) as excinfo:
+    with pytest.raises(etype, match=emsg):
         io.read_rmf(infile)
-
-    assert emsg in str(excinfo.value)
 
 
 @requires_data
@@ -333,7 +323,7 @@ def test_read_rmf_fails_arf(make_data_path):
     """Just check in we can't read in a ARF as a RMF."""
 
     if backend_is("pyfits"):
-        emsg = " does not have a 'DETCHANS' keyword"
+        emsg = " does not appear to be an RMF"
         etype = IOErr
     elif backend_is("crates"):
         emsg = " does not contain a Response Matrix."
@@ -342,10 +332,8 @@ def test_read_rmf_fails_arf(make_data_path):
         assert False, f"Internal error: unknown backend {io.backend}"
 
     infile = make_data_path(ARFFILE)
-    with pytest.raises(etype) as excinfo:
+    with pytest.raises(etype, match=emsg):
         io.read_rmf(infile)
-
-    assert emsg in str(excinfo.value)
 
 
 @requires_data

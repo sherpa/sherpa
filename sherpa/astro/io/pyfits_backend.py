@@ -47,10 +47,10 @@ from astropy.io import fits
 from astropy.io.fits.column import _VLF
 from astropy.table import Table
 
+from sherpa.io import get_ascii_data, write_arrays
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
-from sherpa.io import get_ascii_data, write_arrays
 
 
 warning = logging.getLogger(__name__).warning
@@ -61,7 +61,7 @@ try:
     from sherpa.astro.io.wcs import WCS
     transformstatus = True
 except ImportError:
-    warning('failed to import WCS module; WCS routines will not be ' +
+    warning('failed to import WCS module; WCS routines will not be '
             'available')
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -590,6 +590,21 @@ def get_image_data(arg, make_copy=False):
     return data, filename
 
 
+def _is_ogip_block(hdu, bltype1, bltype2=None):
+    """Does the block contain the expected HDUCLAS1 or HDUCLAS2 values?
+
+    If given, we need both HDUCLAS1 and 2 to be set correctly.
+    """
+
+    if _try_key(hdu, 'HDUCLAS1') != bltype1:
+        return False
+
+    if bltype2 is None:
+        return True
+
+    return  _try_key(hdu, 'HDUCLAS2') == bltype2
+
+
 def _is_ogip_type(hdus, bltype, bltype2=None):
     """Return True if hdus[1] exists and has
     the given type (as determined by the HDUCLAS1 or HDUCLAS2
@@ -598,12 +613,12 @@ def _is_ogip_type(hdus, bltype, bltype2=None):
     bltype is for HDUCLAS1.
     """
 
-    bnum = 1
-    if bltype2 is None:
-        bltype2 = bltype
-    return _has_hdu(hdus, bnum) and \
-        (_try_key(hdus[bnum], 'HDUCLAS1') == bltype or
-         _try_key(hdus[bnum], 'HDUCLAS2') == bltype2)
+    try:
+        hdu = hdus[1]
+    except IndexError:
+        return False
+
+    return _is_ogip_block(hdu, bltype, bltype2)
 
 
 def get_arf_data(arg, make_copy=False):
@@ -619,7 +634,7 @@ def get_arf_data(arg, make_copy=False):
             hdu = arf['SPECRESP']
         elif _has_hdu(arf, 'AXAF_ARF'):
             hdu = arf['AXAF_ARF']
-        elif _is_ogip_type(arf, 'SPECRESP'):
+        elif _is_ogip_type(arf, 'RESPONSE', 'SPECRESP'):
             hdu = arf[1]
         else:
             raise IOErr('notrsp', filename, 'an ARF')
@@ -669,7 +684,7 @@ def _read_rmf_data(arg):
             hdu = rmf['SPECRESP MATRIX']
         elif _has_hdu(rmf, 'AXAF_RMF'):
             hdu = rmf['AXAF_RMF']
-        elif _is_ogip_type(rmf, 'RESPONSE', bltype2='RSP_MATRIX'):
+        elif _is_ogip_type(rmf, 'RESPONSE', 'RSP_MATRIX'):
             hdu = rmf[1]
         else:
             raise IOErr('notrsp', filename, 'an RMF')
@@ -700,10 +715,11 @@ def _read_rmf_data(arg):
         else:
             # QUS: should this actually be an error, rather than just
             #      something that is logged to screen?
-            error("Failed to locate TLMIN keyword for F_CHAN" +
-                  f" column in RMF file '{filename}'; " +
-                  'Update the offset value in the RMF data set to' +
-                  ' appropriate TLMIN value prior to fitting')
+            error("Failed to locate TLMIN keyword for F_CHAN "
+                  "column in RMF file '%s'; "
+                  "Update the offset value in the RMF data set to "
+                  "the appropriate TLMIN value prior to fitting",
+                  filename)
 
         if _has_hdu(rmf, 'EBOUNDS'):
             # This should probably error out if E_MIN/MAX are not present.
