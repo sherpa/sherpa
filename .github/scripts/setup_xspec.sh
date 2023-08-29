@@ -21,6 +21,9 @@ xspec_include_path=${xspec_root}/include/
 
 case "${XSPECVER}" in
   12.13.0*)
+      xspec_version_string="12.13.1"
+      ;;
+  12.13.0*)
       xspec_version_string="12.13.0"
       ;;
   12.12.1*)
