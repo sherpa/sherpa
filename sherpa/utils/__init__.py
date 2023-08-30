@@ -92,7 +92,7 @@ dividing and multiplying the value by ``_guess_ampl_scale``.
 # Default numeric types (these match the typedefs in extension.hh)
 SherpaInt = numpy.intp
 SherpaUInt = numpy.uintp
-SherpaFloat = numpy.float_
+SherpaFloat = numpy.float64
 
 ###############################################################################
 
@@ -3039,7 +3039,7 @@ class RichardsonExtrapolation(NoRichardsonExtrapolation):
 
     def __call__(self, x, t, tol, maxiter, h, *args):
 
-        richardson = numpy.zeros((maxiter, maxiter), dtype=numpy.float_)
+        richardson = numpy.zeros((maxiter, maxiter), dtype=numpy.float64)
         richardson[0, 0] = self.sequence(x, h, *args)
 
         t_sqr = t * t
@@ -3074,7 +3074,7 @@ def hessian(func, par, extrapolation, algorithm, maxiter, h, tol, t):
     num_dif = algorithm(func, func(par))
     deriv = extrapolation(num_dif)
     npar = len(par)
-    Hessian = numpy.zeros((npar, npar), dtype=numpy.float_)
+    Hessian = numpy.zeros((npar, npar), dtype=numpy.float64)
     for ii in range(npar):
         for jj in range(ii + 1):
             answer = deriv(par, t, tol, maxiter, h, ii, jj)

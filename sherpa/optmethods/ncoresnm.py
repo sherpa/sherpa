@@ -27,7 +27,7 @@ from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
 
 __all__ = ('ncoresNelderMead', )
 
-EPSILON = np.float_(np.finfo(np.float32).eps)
+EPSILON = np.float64(np.finfo(np.float32).eps)
 
 
 class MyNelderMead(Opt):
