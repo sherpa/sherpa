@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021
+#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -239,7 +239,7 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
 
     for key in colkeys:
         if key not in names:
-            raise IOErr('reqcol', key, numpy.asarray(names, numpy.string_))
+            raise IOErr('reqcol', key, names)
         kwargs.append(args[names.index(key)])
 
     _check_args(len(kwargs), dstype)
