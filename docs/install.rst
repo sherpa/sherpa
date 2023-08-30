@@ -505,8 +505,10 @@ The
 contains the ``sherpatest`` package, which provides a number of
 data files in ASCII and :term:`FITS` formats. This is
 only useful when developing Sherpa, since the package is large.
-Example: Installing the 4.14.1 data via pip::
+A version of the test data is released for each `version of Sherpa <https://doi.org/10.5281/zenodo.593753>`_.
 
-   pip install https://github.com/sherpa/sherpa-test-data/archive/4.14.1.zip
+As an example, the 4.15.1 version of the test data can be installed with pip::
 
-And will then automatically be picked up by the ``sherpa_test`` script.
+   pip install https://github.com/sherpa/sherpa-test-data/archive/4.15.1.zip
+
+The test data will be automatically picked up by the Python tests and the ``sherpa_test`` script.
