@@ -9,7 +9,6 @@ on:
   pull_request:
 
 env:
-  sherpa_channel: sherpa
   xspec_channel: "xspec/label/test"
   CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.14SDK/MacOSX10.14.sdk
 

@@ -14,7 +14,7 @@ your environment and set up.
 
    ::
 
-     conda install -c sherpa sherpa
+     conda install -c https://cxc.cfa.harvard.edu/conda/sherpa -c conda-forge sherpa
 
 #. Install Sherpa using pip
 
@@ -98,22 +98,21 @@ Installing a pre-compiled version of Sherpa
 Additional useful Python packages include ``astropy``, ``matplotlib``,
 and ``ipython-notebook``.
 
-Using the Anaconda python distribution
+Using the Conda python distribution
 --------------------------------------
 
 The Chandra X-ray Center provides releases of Sherpa that can be
 installed using
-`Anaconda <https://www.anaconda.com/>`_
-from the ``sherpa`` channel. First check
-to see what the latest available version is by using::
+`Miniforge <https://github.com/conda-forge/miniforge>`_.
+First check to see what the latest available version is by using::
 
-    conda install -c sherpa sherpa --dry-run
+    conda install -c https://cxc.cfa.harvard.edu/conda/sherpa -c conda-forge sherpa --dry-run
 
 and then, if there is a version available and there are no
 significant upgrades to the dependencies, Sherpa can be installed
 using::
 
-    conda install -c sherpa sherpa
+    conda install -c https://cxc.cfa.harvard.edu/conda/sherpa -c conda-forge sherpa
 
 It is **strongly** suggested that Sherpa is installed into a named
 `conda environment <https://conda.pydata.org/docs/using/envs.html>`_
@@ -501,8 +500,15 @@ Sherpa was configured when built)::
    and ``--runzenodo`` arguments from the
    :ref:`development build <developer-build>` section.
 
-The ``sherpa`` Anaconda channel contains the ``sherpatest`` package, which
-provides a number of data files in ASCII and :term:`FITS` formats. This is
-only useful when developing Sherpa, since the package is large. It
-will automatically be picked up by the ``sherpa_test`` script
-once it is installed.
+The
+`Sherpa test data suite <https://github.com/sherpa/sherpa-test-data>`_
+contains the ``sherpatest`` package, which provides a number of
+data files in ASCII and :term:`FITS` formats. This is
+only useful when developing Sherpa, since the package is large.
+A version of the test data is released for each `version of Sherpa <https://doi.org/10.5281/zenodo.593753>`_.
+
+As an example, the 4.15.1 version of the test data can be installed with pip::
+
+   pip install https://github.com/sherpa/sherpa-test-data/archive/4.15.1.zip
+
+The test data will be automatically picked up by the Python tests and the ``sherpa_test`` script.
