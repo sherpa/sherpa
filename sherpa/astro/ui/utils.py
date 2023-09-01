@@ -6564,6 +6564,18 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `quantity` parameters,
         respectively.
 
+        Sherpa does not match XSPEC when the `quantity` setting is set
+        to "channel", particularly when the data is grouped. Sherpa
+        retains the original CHANNEL values from the PHA dataset, so
+        calls to `ignore` and `notice` will use the same values even
+        if the grouping changes (although the results of these calls
+        may change depending on how the group edges match the selected
+        ranges), whereas XSPEC counts each group as a single channel.
+        This is also noticeable in calls to `plot_data`, `plot_model`,
+        and plot_fit`, where Sherpa will display each group with its
+        width in the number of PI or PHA channels, rather than having
+        a width of 1 as in XSPEC.
+
         Examples
         --------
 
@@ -6580,13 +6592,13 @@ class Session(sherpa.ui.utils.Session):
         Set data set 1 to use channel units. Plots will use a Y
         axis of count/bin rather than the default count/s/bin.
 
-        >>> set_analysis(1, 'bin', 'counts')
+        >>> set_analysis(1, 'bin', type='counts')
 
         Set data set 1 to use energy units. Plots of this data set
         will display keV on the X axis and counts keV (i.e.
         counts/keV * keV^2) in the Y axis.
 
-        >>> set_analysis(1, 'energy', 'counts', 2)
+        >>> set_analysis(1, 'energy', type='counts', factor=2)
 
         """
         if quantity is None:
