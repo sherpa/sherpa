@@ -982,7 +982,8 @@ class Session(NoNewAttributesAfterInit):
 
         The return can be None, which means that the routines in
         `numpy.random` are used, and so can are affected by calls to
-        `numpy.random.seed`.  See
+        `numpy.random.seed`, otherwise the supplied generator is used
+        to create random numbers. See
         https://numpy.org/doc/stable/reference/random/legacy.html for
         more information.
 
@@ -1019,6 +1020,8 @@ class Session(NoNewAttributesAfterInit):
         if rng is not None and not isinstance(rng,
                                               (numpy.random.Generator,
                                                numpy.random.RandomState)):
+            # Do not include RandomState in the error message as it is
+            # really meant for testing/old code.
             raise ArgumentTypeErr("badarg", "rng", "a Generator or None")
 
         self._rng = rng
@@ -9470,8 +9473,8 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The random numbers are generated using the generator returned
-        by `get_rng`.
+        The `set_rng` routine is used to control how the random
+        numbers are generated.
 
         Examples
         --------
@@ -11424,8 +11427,8 @@ class Session(NoNewAttributesAfterInit):
         running `get_draws`. The results from `get_draws` is used to
         estimate the parameter distributions.
 
-        The random numbers are generated using the generator returned
-        by `get_rng`.
+        The `set_rng` routine is used to control how the random
+        numbers are generated.
 
         References
         ----------

@@ -171,8 +171,9 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
         column in the returned arrays indicates if the row had any
         clipped parameters (even when clip is set to 'none').
     rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -296,8 +297,9 @@ def _sample_flux_get_samples(fit, src, correlated, num, clip='hard', rng=None):
         column in the returned arrays indicates if the row had any
         clipped parameters (even when clip is set to 'none').
     rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -440,8 +442,9 @@ def sample_flux(fit, data, src,
         column in the returned arrays indicates if the row had any
         clipped parameters (even when clip is set to 'none').
     rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Returns
     -------

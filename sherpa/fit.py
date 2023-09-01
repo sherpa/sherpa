@@ -909,8 +909,9 @@ class Fit(NoNewAttributesAfterInit):
        If set, defines the iterated-fit method and options to use.
        It is passed through to `IterFit`.
     rng : np.random.Generator, np.random.RandomState, or None, optional
-       If set, the generator is used to create the random numbers. If
-       not set then the legacy numpy RandomState instance is used.
+       Determines how random numbers are created. If set to None then
+       the routines from `numpy.random` are used, and so can be
+       controlled by calling `numpy.random.seed`.
 
     """
 

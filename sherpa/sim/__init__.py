@@ -669,9 +669,9 @@ class MCMC(NoNewAttributesAfterInit):
         niter : int, optional
            The number of draws to use. The default is ``1000``.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random
-            numbers. If not set then the legacy numpy RandomState
-            instance is used with the seed parameter.
+           Determines how random numbers are created. If set to None then
+           the routines from `numpy.random` are used, and so can be
+           controlled by calling `numpy.random.seed`.
 
         Returns
         -------
@@ -865,13 +865,13 @@ class ReSampleData(NoNewAttributesAfterInit):
         Parameters
         ----------
         niter : int
-            The number of iterations.
+           The number of iterations.
         seed : int or None, optional
-            The seed value (only used if rng is None).
+           The seed value (only used if rng is None).
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random
-            numbers. If not set then the legacy numpy RandomState
-            instance is used with the seed parameter.
+           Determines how random numbers are created. If set to None then
+           the routines from `numpy.random` are used, and so can be
+           controlled by calling `numpy.random.seed`.
 
         Returns
         -------

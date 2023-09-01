@@ -98,8 +98,9 @@ def rmvt(mu, sigma, dof, rng=None):
     dof : int
        The degrees of freedom.
     rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+       Determines how random numbers are created. If set to None then
+       the routines from `numpy.random` are used, and so can be
+       controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -330,7 +331,19 @@ class Sampler():
 
 
 class MH(Sampler):
-    """ The Metropolis Hastings Sampler """
+    """The Metropolis Hastings Sampler
+
+    .. versionchanged:: 4.16.0
+       The rng parameter was added.
+
+    Random number generation is controlled by the ``rng`` argument.
+    If set to None (the default) then the routines from `numpy.random`
+    are used, and so can be controlled by calling `numpy.random.seed`,
+    otherwise it takes a `numpy.random.Generator` object (or a
+    `numpy.random.RandomState` object which should only be used for
+    testing or checking against old code).
+
+    """
 
     def __init__(self, fcn, sigma, mu, dof, *args, rng=None):
         self.fcn = fcn

@@ -43,8 +43,7 @@ __all__ = ('multivariate_t', 'multivariate_cauchy',
 
 
 def multivariate_t(mean, cov, df, size=None, rng=None):
-    """
-    multivariate_t(mean, cov, df[, size])
+    """multivariate_t(mean, cov, df[, size])
 
     Draw random deviates from a multivariate Student's T distribution Such a
     distribution is specified by its mean covariance matrix, and degrees of
@@ -70,8 +69,9 @@ def multivariate_t(mean, cov, df, size=None, rng=None):
         each sample is `N`-dimensional, the output shape is ``(m,n,k,N)``.
         If no shape is specified, a single (`N`-D) sample is returned.
     rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -84,6 +84,7 @@ def multivariate_t(mean, cov, df, size=None, rng=None):
 
     Is this right?  This needs to be checked!  A reference to the literature
     the better
+
     """
     df = float(df)
     mean = numpy.asarray(mean)
@@ -100,6 +101,10 @@ def multivariate_t(mean, cov, df, size=None, rng=None):
 def multivariate_cauchy(mean, cov, size=None, rng=None):
     """
     This needs to be checked too! A reference to the literature the better
+
+    .. versionchanged:: 4.16.0
+       The rng parameter was added.
+
     """
     return multivariate_t(mean, cov, 1, size=None, rng=rng)
 
@@ -311,19 +316,20 @@ class ParameterSample(NoNewAttributesAfterInit):
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
         samples : 2D numpy array
-            The array is num by npar size, where npar is the number of
-            free parameters in the fit argument.
+           The array is num by npar size, where npar is the number of
+           free parameters in the fit argument.
 
         """
         raise NotImplementedError
@@ -411,25 +417,30 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
     def get_sample(self, fit, *, factor=4, num=1, rng=None):
         """Return the parameter samples.
 
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument. The rng parameter was added.
+
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         factor : number, optional
-            The half-width of the uniform distribution is factor times
-            the one-sigma error.
+           The half-width of the uniform distribution is factor times
+           the one-sigma error.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
         samples : 2D numpy array
-            The array is num by npar size, where npar is the number of
-            free parameters in the fit argument.
+           The array is num by npar size, where npar is the number of
+           free parameters in the fit argument.
 
         """
         vals = numpy.array(fit.model.thawedpars)
@@ -456,19 +467,24 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
     def get_sample(self, fit, *, myscales=None, num=1, rng=None):
         """Return the parameter samples.
 
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument. The rng parameter was added.
+
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         myscales : 1D numpy array or None, optional
-            The error values (one sigma values) to use. If None then
-            it is calculated from the fit object.
+           The error values (one sigma values) to use. If None then
+           it is calculated from the fit object.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
@@ -499,19 +515,24 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
     def get_sample(self, fit, *, mycov=None, num=1, rng=None):
         """Return the parameter samples.
 
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument. The rng parameter was added.
+
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         mycov : 2D numpy array or None, optional
-            The covariance matrix to use. If None then it is
-            calculated from the fit object.
+           The covariance matrix to use. If None then it is
+           calculated from the fit object.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
@@ -538,24 +559,29 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
     def get_sample(self, fit, *, dof, num=1, rng=None):
         """Return the parameter samples.
 
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument. The rng parameter was added.
+
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         dof : int
-            The degrees of freedom of the distribution.
+           The degrees of freedom of the distribution.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
         samples : 2D numpy array
-            The array is num by npar size, where npar is the number of
-            free parameters in the fit argument.
+           The array is num by npar size, where npar is the number of
+           free parameters in the fit argument.
 
         """
         vals = numpy.array(fit.model.thawedpars)
@@ -630,20 +656,25 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
     def get_sample(self, fit, *, num=1, numcores=None, rng=None):
         """Return the statistic and parameter samples.
 
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument. The rng parameter was added.
+
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         numcores : int or None, optional
-            Should the calculation be done on multiple CPUs?
-            The default (None) is to rely on the parallel.numcores
-            setting of the configuration file.
+           Should the calculation be done on multiple CPUs?
+           The default (None) is to rely on the parallel.numcores
+           setting of the configuration file.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
@@ -673,20 +704,25 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
     def get_sample(self, fit, *, num=1, numcores=None, rng=None):
         """Return the statistic and parameter samples.
 
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument. The rng parameter was added.
+
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         numcores : int or None, optional
-            Should the calculation be done on multiple CPUs?
-            The default (None) is to rely on the parallel.numcores
-            setting of the configuration file.
+           Should the calculation be done on multiple CPUs?
+           The default (None) is to rely on the parallel.numcores
+           setting of the configuration file.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
@@ -713,31 +749,36 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
     def get_sample(self, fit, *, num=1, factor=4, numcores=None, rng=None):
         """Return the statistic and parameter samples.
 
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument. The rng parameter was added.
+
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         factor : number, optional
-            The half-width of the uniform distribution is factor times
-            the one-sigma error.
+           The half-width of the uniform distribution is factor times
+           the one-sigma error.
         numcores : int or None, optional
-            Should the calculation be done on multiple CPUs?
-            The default (None) is to rely on the parallel.numcores
-            setting of the configuration file.
+           Should the calculation be done on multiple CPUs?
+           The default (None) is to rely on the parallel.numcores
+           setting of the configuration file.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
         samples : 2D numpy array
-            The array is num by (npar + 1) size, where npar is the
-            number of free parameters in the fit argument. The first
-            element in each row is the statistic value, and the
-            remaining are the parameter values.
+           The array is num by (npar + 1) size, where npar is the
+           number of free parameters in the fit argument. The first
+           element in each row is the statistic value, and the
+           remaining are the parameter values.
 
         """
         samples = UniformParameterSampleFromScaleVector.get_sample(self, fit,
@@ -759,22 +800,27 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
     def get_sample(self, fit, *, num=1, dof=2, numcores=None, rng=None):
         """Return the statistic and parameter samples.
 
+        .. versionchanged:: 4.16.0
+           All arguments but the first one must be passed as a keyword
+           argument. The rng parameter was added.
+
         Parameters
         ----------
         fit : sherpa.fit.Fit instance
-            This defines the thawed parameters that are used to generate
-            the samples, along with any possible error analysis.
+           This defines the thawed parameters that are used to generate
+           the samples, along with any possible error analysis.
         num : int, optional
-            The number of samples to return.
+           The number of samples to return.
         dof : int
-            The degrees of freedom of the distribution.
+           The degrees of freedom of the distribution.
         numcores : int or None, optional
-            Should the calculation be done on multiple CPUs?
-            The default (None) is to rely on the parallel.numcores
-            setting of the configuration file.
+           Should the calculation be done on multiple CPUs?
+           The default (None) is to rely on the parallel.numcores
+           setting of the configuration file.
         rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-            If set, the generator is used to create the random numbers. If
-            not set then the legacy numpy RandomState instance is used.
+           Determines how random numbers are created. If set to None
+           then the routines from `numpy.random` are used, and so can
+           be controlled by calling `numpy.random.seed`.
 
         Returns
         -------
@@ -819,8 +865,9 @@ def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None,
        The number of CPU cores to use. The default is to use all
        the cores on the machine.
     rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+       Determines how random numbers are created. If set to None then
+       the routines from `numpy.random` are used, and so can be
+       controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -874,8 +921,9 @@ def uniform_sample(fit, num=1, factor=4, numcores=None, rng=None):
        The number of CPU cores to use. The default is to use all
        the cores on the machine.
     rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+       Determines how random numbers are created. If set to None then
+       the routines from `numpy.random` are used, and so can be
+       controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -919,8 +967,9 @@ def t_sample(fit, num=1, dof=2, numcores=None, rng=None):
        The number of CPU cores to use. The default is to use all
        the cores on the machine.
     rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+       Determines how random numbers are created. If set to None then
+       the routines from `numpy.random` are used, and so can be
+       controlled by calling `numpy.random.seed`.
 
     Returns
     -------

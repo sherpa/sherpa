@@ -94,9 +94,10 @@ def fake_pha(data, model,
         then sherpa.utils.poisson_noise is used, otherwise the function
         must accept a single ndarray, returning a ndarray of the same shape,
         and an optional rng argument.
-    rng : numpy.random.Generator or None, optional
-        If set, the generator is used to create the random numbers. If
-        not set then the legacy numpy RandomState instance is used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Examples
     --------

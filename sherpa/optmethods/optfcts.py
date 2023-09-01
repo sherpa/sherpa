@@ -577,8 +577,9 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     numcores : int
        The number of CPU cores to use. The default is `1`.
     rng : np.random.Generator, np.random.RandomState, or None, optional
-       If set, the generator is used to create the random numbers. If
-       not set then the legacy numpy RandomState instance is used.
+       Determines how the random numbers are created. If set to None
+       then the routines from `numpy.random` are used, and so can be
+       controlled by calling `numpy.random.seed`.
 
     References
     ----------
