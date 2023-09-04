@@ -118,15 +118,15 @@ class PylabBackend(BasicBackend):
         '''
         return plt.cm.inferno(numpy.linspace(0, 1, n))
 
-    def end(self):
-        '''Called from the UI after an interactive plot is done.'''
-        self.set_window_redraw(True)
-        if plt.isinteractive():
-            plt.draw()
-
     def clear_window(self):
         """Clear default pyplot figure."""
         plt.clf()
+
+    def __exit__(self, exec_type, value, traceback):
+        self.set_window_redraw(True)
+        if plt.isinteractive():
+            plt.draw()
+        return False
 
     def set_window_redraw(self, redraw):
         if redraw:

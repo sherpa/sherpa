@@ -36,6 +36,17 @@ on disk of that module::
    >>> from sherpa import plot
    >>> print(plot.backend.name)
 
+.. warning::
+    Of course, you could be tempted to write::
+
+      >>> from sherpa.plot import backend
+      >>> print(backend.name)
+
+    However, ``backend`` is now a reference to the backend that
+    was active when the import was done. If the backend is changed
+    later, ``backend`` will still refer to the old backend. Thus,
+    always use ``plot.backend`` to access the active backend.
+
 Change the backend
 ------------------
 
@@ -229,7 +240,10 @@ by "what is the input data type":
   Note that ``x`` and ``y`` can also be `None`, which should create an empty plot.
 - `~sherpa.plot.backend.BaseBackend.histo` (similar to plot, but with
   "histogram-style" lines); accepts (xlo, xhi, y) data with optional xerr, yerr.
-- `~sherpa.plot.backend.BaseBackend.contour` for (x0, x1, z) data
+- `~sherpa.plot.backend.BaseBackend.contour` for (x0, x1, z) data.
+
+If called with empty data, a plotting function shall at a minimum create an
+empty plot.
 
 Annotations
 -----------
@@ -268,21 +282,20 @@ Creating plots and panels, clearing and overplotting
 Each of the plotting functions above accepts
 the following arguments: title, xlabel, ylabel, xlog, ylog, overplot, clearwindow
 
-Multi-panels plot can be set with clear_window, set_subplot, set_jointplot
+Multi-panels plot can be set with ``set_subplot`` and ``set_jointplot``.
+See `sherpa.plot.backends.BaseBackend` for a listing of the calling signature.
+
 
 Interaction with interactive plots in the UI
 --------------------------------------------
-.. todo::
-   Add details
-
-Each backend also acts as a context manager: Interactive plots
-are done within a with block like this:
+Each backend also acts as a context manager: All plotting commands
+in the UI are wrapped in a ``with`` statement like this::
 
     >>> with sherpa.backend():
     ...     plotobj.plot()
-has additional functions that are called before and after
-interactive plots (``begin`` and ``end``), and for the setup of
-multi-panel plots.
+
+That allows the backend to execute any finishing code after the plots are done,
+e.g. to save the plot to disk or to display it in a window.
 
 Other methods
 --------------
