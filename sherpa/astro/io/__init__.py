@@ -651,7 +651,8 @@ def _pack_table(dataset):
     Returns
     -------
     data : dict
-        The dictionary containing the columns to write out.
+        The dictionary containing the columns to write out, with
+        the column names being converted to upper case.
 
     """
     data = {}
@@ -663,7 +664,8 @@ def _pack_table(dataset):
         if val is None:
             continue
 
-        data[name] = val
+        # Convert to upper-case names
+        data[name.upper()] = val
 
     return data
 
@@ -708,7 +710,7 @@ def _pack_pha(dataset):
     The PHA Data Extension header page [1]_ lists the following
     keywords as either required or we-really-want-them:
 
-        EXTNAME (= SPECTRUM) - the name (i.e. type) of the extension
+        EXTNAME = "SPECTRUM"
         TELESCOP - the "telescope" (i.e. mission/satellite name).
         INSTRUME - the instrument/detector.
         FILTER - the instrument filter in use (if any)
@@ -718,9 +720,9 @@ def _pack_pha(dataset):
         CORRSCAL - the correction scaling factor.
         RESPFILE - the name of the corresponding (default) redistribution matrix file (RMF; see George et al. 1992a).
         ANCRFILE - the name of the corresponding (default) ancillary response file (ARF; see George et al. 1992a).
-        HDUCLASS - should contain the string "OGIP" to indicate that this is an OGIP style file.
-        HDUCLAS1 - should contain the string "SPECTRUM" to indicate this is a spectrum.
-        HDUVERS - the version number of the format (this document describes version 1.2.1)
+        HDUCLASS = "OGIP"
+        HDUCLAS1 = "SPECTRUM"
+        HDUVERS = "1.2.1"
         POISSERR - whether Poissonian errors are appropriate to the data (see below).
         CHANTYPE - whether the channels used in the file have been corrected in any way (see below).
         DETCHANS - the total number of detector channels available.
@@ -774,6 +776,7 @@ def _pack_pha(dataset):
     # anything set by the input.
     #
     default_header = {
+        "EXTNAME": "SPECTRUM",
         "HDUCLASS": "OGIP",
         "HDUCLAS1": "SPECTRUM",
         "HDUCLAS2": "TOTAL",
@@ -795,7 +798,6 @@ def _pack_pha(dataset):
         "RESPFILE": "none",
         "ANCRFILE": "none",
         "BACKFILE": "none"
-
     }
 
     # Header Keys

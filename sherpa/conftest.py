@@ -23,7 +23,11 @@ import re
 import logging
 
 import numpy as np
-from numpy import VisibleDeprecationWarning
+try:
+    from numpy.exceptions import VisibleDeprecationWarning
+except ImportError:
+    # Must be Earlier than NumPy 1.25
+    from numpy import VisibleDeprecationWarning
 
 import pytest
 

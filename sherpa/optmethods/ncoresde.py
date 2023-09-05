@@ -64,7 +64,7 @@ class Strategy:
         arg[-1] = self.func(arg[:-1])
         tmp = numpy.empty(self.npar + 2)
         tmp[1:] = arg[:]
-        if numpy.finfo(numpy.float_).max == arg[-1]:
+        if numpy.finfo(numpy.float64).max == arg[-1]:
             tmp[0] = 0
         else:
             tmp[0] = 1

@@ -4729,7 +4729,7 @@ class XSgaussian(XSAdditiveModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGaussian.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGauss.html
 
     """
 
@@ -9747,7 +9747,7 @@ class XSzgauss(XSAdditiveModel):
     References
     ----------
 
-    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGaussian.html
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGauss.html
 
     """
 

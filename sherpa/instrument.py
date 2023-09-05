@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -619,10 +619,11 @@ they do not match.
             setattr(self, name, None)
             return
 
-        if type(vals) in (str, numpy.string_):
+        # TODO: do we still expect to get bytes here?
+        if isinstance(vals, (str, numpy.bytes_)):
             raise PSFErr('nostr')
 
-        if type(vals) not in (list, tuple, numpy.ndarray):
+        if not isinstance(vals, (list, tuple, numpy.ndarray)):
             vals = [vals]
 
         nvals = len(vals)

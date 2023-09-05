@@ -5397,7 +5397,8 @@ class Session(NoNewAttributesAfterInit):
         if len(self._data) == 0:
             raise IdentifierErr("nodatasets")
 
-        if lo is not None and type(lo) in (str, numpy.string_):
+        # TODO: do we still expect to get bytes here?
+        if lo is not None and isinstance(lo, (str, numpy.bytes_)):
             return self._notice_expr(lo, **kwargs)
 
         # Jump through the data sets in "order".
@@ -5616,7 +5617,8 @@ class Session(NoNewAttributesAfterInit):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        if lo is not None and type(lo) in (str, numpy.string_):
+        # TODO: do we still expect to get bytes here?
+        if lo is not None and isinstance(lo, (str, numpy.bytes_)):
             return self._notice_expr_id(ids, lo, **kwargs)
 
         # Unlike notice() we do not sort the id list as this

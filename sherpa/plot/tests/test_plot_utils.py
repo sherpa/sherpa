@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 import numpy as np
+
+import pytest
 
 from sherpa.plot.utils import histogram_line
 
@@ -53,3 +55,104 @@ def test_histrogram_line():
         assert np.all(np.ma.masked_invalid(y2) ==
                       np.ma.masked_invalid([0.,  0.,  2.5,  2.5, np.nan,  5.,
                                             5., 7.5, 7.5, 10., 10.]))
+
+
+def test_histogram_line_integers_no_gap():
+    """Test based on issue #1838
+
+    This is just a regression test to document the current behavior.
+    """
+
+    x1 = np.asarray([10, 20, 30])
+    x2 = np.asarray([20, 30, 40])
+    y = np.asarray([12, 3, 15])
+
+    # based on https://github.com/numpy/numpy/issues/17325
+    assert np.issubdtype(x1.dtype, np.integer)
+    assert np.issubdtype(x2.dtype, np.integer)
+    assert np.issubdtype(y.dtype, np.integer)
+
+    xh, yh = histogram_line(x1, x2, y)
+    assert np.issubdtype(xh.dtype, np.integer)
+    assert np.issubdtype(yh.dtype, np.integer)
+
+    assert xh == pytest.approx([10, 20, 20, 30, 30, 40])
+    assert yh == pytest.approx([12, 12, 3, 3, 15, 15])
+    
+
+def test_histogram_line_floats_no_gap():
+    """Test based on issue #1838
+
+    This is just a regression test to document the current behavior.
+    """
+
+    x1 = np.asarray([1, 2.5, 3])
+    x2 = np.asarray([2.5, 3, 4])
+    y = np.asarray([12, 3, 15])
+
+    # based on https://github.com/numpy/numpy/issues/17325
+    assert np.issubdtype(x1.dtype, np.floating)
+    assert np.issubdtype(x2.dtype, np.floating)
+    assert np.issubdtype(y.dtype, np.integer)
+
+    xh, yh = histogram_line(x1, x2, y)
+    assert np.issubdtype(xh.dtype, np.floating)
+    assert np.issubdtype(yh.dtype, np.integer)
+
+    assert xh == pytest.approx([1, 2.5, 2.5, 3, 3, 4])
+    assert yh == pytest.approx([12, 12, 3, 3, 15, 15])
+    
+
+def test_histogram_line_integers_single_gap():
+    """Test based on issue #1838
+
+    This is just a regression test to document the current behavior.
+    """
+
+    x1 = np.asarray([10, 20, 30])
+    x2 = np.asarray([20, 25, 40])
+    y = np.asarray([12, 3, 15])
+
+    # based on https://github.com/numpy/numpy/issues/17325
+    assert np.issubdtype(x1.dtype, np.integer)
+    assert np.issubdtype(x2.dtype, np.integer)
+    assert np.issubdtype(y.dtype, np.integer)
+
+    xh, yh = histogram_line(x1, x2, y)
+    assert np.issubdtype(xh.dtype, np.floating)
+    assert np.issubdtype(yh.dtype, np.floating)
+
+    good = np.isfinite(xh)
+    assert good == pytest.approx(np.isfinite(yh))
+    assert good == pytest.approx([1, 1, 1, 1, 0, 1, 1])
+
+    assert xh[good] == pytest.approx([10, 20, 20, 25, 30, 40])
+    assert yh[good] == pytest.approx([12, 12, 3, 3, 15, 15])
+
+
+def test_histogram_line_floats_single_gap():
+    """Test based on issue #1838
+
+    This is just a regression test to document the current behavior.
+    """
+
+    x1 = np.asarray([1, 2, 3])
+    x2 = np.asarray([2, 2.5, 4])
+    y = np.asarray([12, 3, 15])
+
+    # based on https://github.com/numpy/numpy/issues/17325
+    assert np.issubdtype(x1.dtype, np.integer)
+    assert np.issubdtype(x2.dtype, np.floating)
+    assert np.issubdtype(y.dtype, np.integer)
+
+    xh, yh = histogram_line(x1, x2, y)
+    assert np.issubdtype(xh.dtype, np.floating)
+    assert np.issubdtype(yh.dtype, np.floating)
+
+    good = np.isfinite(xh)
+    assert good == pytest.approx(np.isfinite(yh))
+    assert good == pytest.approx([1, 1, 1, 1, 0, 1, 1])
+
+    assert xh[good] == pytest.approx([1, 2, 2, 2.5, 3, 4])
+    assert yh[good] == pytest.approx([12, 12, 3, 3, 15, 15])
+    

@@ -45,6 +45,7 @@ import numpy
 
 from astropy.io import fits
 from astropy.io.fits.column import _VLF
+from astropy.table import Table
 
 from sherpa.utils.err import IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
@@ -1042,50 +1043,68 @@ def get_pha_data(arg, make_copy=False, use_background=False):
 
 # Write Functions
 
-def _create_columns(col_names, data):
+def _create_table(names, data):
+    """Create a Table.
 
-    collist = []
-    cols = []
-    coldefs = []
-    for name in col_names:
+    The idea is that by going via a Table we let the AstroPy
+    code deal with all the conversions (e.g. to get the FITS
+    data types on columns correct).
+
+    Parameters
+    ----------
+    names : list of str
+        The order of the column names (must exist in data).
+    data : dict[str, ndarray or None]
+        Any None values are dropped.
+
+    Returns
+    -------
+    tbl : Table
+
+    """
+
+    store = []
+    colnames = []
+    for name in names:
         coldata = data[name]
         if coldata is None:
             continue
 
-        col = fits.Column(name=name.upper(), array=coldata,
-                          format=coldata.dtype.name.upper())
-        cols.append(coldata)
-        coldefs.append(name.upper())
-        collist.append(col)
+        store.append(coldata)
+        colnames.append(name)
 
-    return collist, cols, coldefs
+    return Table(names=colnames, data=store)
 
 
-def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
-                   ascii=False, clobber=False, packup=False):
+def check_clobber(filename, clobber):
+    """Error out if the file exists and clobber is not set."""
 
-    if not packup and not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
-
-    col_names = list(col_names)
-
-    # The code used to create a header containing the
-    # exposure, backscal, and areascal keywords, but this has
-    # since been commented out, and the code has now been
-    # removed.
-
-    collist, cols, coldefs = _create_columns(col_names, data)
-
-    if ascii:
-        set_arrays(filename, cols, coldefs, ascii=ascii,
-                   clobber=clobber)
+    if clobber or not os.path.isfile(filename):
         return
 
-    tbl = fits.BinTableHDU.from_columns(fits.ColDefs(collist))
-    tbl.name = 'HISTOGRAM'
+    raise IOErr("filefound", filename)
+
+
+def set_table_data(filename, data, col_names, header=None,
+                   ascii=False, clobber=False, packup=False):
+
+    if not packup:
+        check_clobber(filename, clobber)
+
+    tbl = _create_table(col_names, data)
+    if ascii:
+        tbl.write(filename, format='ascii.commented_header',
+                  overwrite=clobber)
+        return
+
+    hdu = fits.table_to_hdu(tbl)
+    if hdu.name == '':
+        tbl.name = 'HISTOGRAM'
+
     if packup:
-        return tbl
-    tbl.writeto(filename, overwrite=True)
+        return hdu
+
+    hdu.writeto(filename, overwrite=True)
 
 
 def _create_header(header):
@@ -1094,11 +1113,11 @@ def _create_header(header):
     """
 
     hdrlist = fits.Header()
-    for key in header.keys():
-        if header[key] is None:
+    for key, value in header.items():
+        if value is None:
             continue
 
-        _add_keyword(hdrlist, key, header[key])
+        _add_keyword(hdrlist, key, value)
 
     return hdrlist
 
@@ -1106,31 +1125,29 @@ def _create_header(header):
 def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
 
-    if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
-    hdrlist = _create_header(header)
-
-    collist, cols, coldefs = _create_columns(col_names, data)
-
+    tbl = _create_table(col_names, data)
     if ascii:
-        set_arrays(filename, cols, coldefs, ascii=ascii,
-                   clobber=clobber)
+        tbl.write(filename, format='ascii.commented_header',
+                  overwrite=clobber)
         return
 
-    pha = fits.BinTableHDU.from_columns(fits.ColDefs(collist),
-                                        header=fits.Header(hdrlist))
-    pha.name = 'SPECTRUM'
+    hdu = fits.table_to_hdu(tbl)
+    hdu.header.extend(_create_header(header))
+
     if packup:
-        return pha
-    pha.writeto(filename, overwrite=True)
+        return hdu
+
+    hdu.writeto(filename, overwrite=True)
 
 
 def set_image_data(filename, data, header, ascii=False, clobber=False,
                    packup=False):
 
-    if not packup and not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
     if ascii:
         set_arrays(filename, [data['pixels'].ravel()],
@@ -1192,8 +1209,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
-    if not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+    check_clobber(filename, clobber)
 
     if not numpy.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')
@@ -1208,23 +1224,29 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         if len(arg) != size:
             raise IOErr('arraysnoteq')
 
-    if not ascii and fields is None:
-        fields = [f'col{ii + 1}' for ii in range(len(args))]
-
     if fields is not None and len(args) != len(fields):
         raise IOErr("wrongnumcols", len(args), len(fields))
 
     if ascii:
-        write_arrays(filename, args, fields, clobber=clobber)
+        # Historically, the serialization doesn't quite match the
+        # AstroPy Table version, so stay with write_arrays. We do
+        # change the form for the comment line (used when fields is
+        # set) to be "# <col1> .." rather than "#<col1> ..." to match
+        # the AstroPy table output used for other "ASCII table" forms
+        # in this module.
+        #
+        # The fields setting can be None here, which means that
+        # write_arrays will not write out a header line.
+        #
+        write_arrays(filename, args, fields,
+                     comment="# ", clobber=clobber)
         return
 
-    cols = []
-    for val, name in zip(args, fields):
-        col = fits.Column(name=name.upper(),
-                          format=val.dtype.name.upper(),
-                          array=val)
-        cols.append(col)
+    if fields is None:
+        fields = [f'COL{ii + 1}' for ii in range(len(args))]
 
-    tbl = fits.BinTableHDU.from_columns(fits.ColDefs(cols))
-    tbl.name = 'TABLE'
-    tbl.writeto(filename, overwrite=True)
+    data = dict(zip(fields, args))
+    tbl = _create_table(fields, data)
+    hdu = fits.table_to_hdu(tbl)
+    hdu.name = 'TABLE'
+    hdu.writeto(filename, overwrite=True)
