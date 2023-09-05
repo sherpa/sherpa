@@ -729,16 +729,9 @@ def get_rmf_data(arg, make_copy=False):
 
     Notes
     -----
-    The RMF format is described in [1]_.
-
-    References
-    ----------
-
-    .. [1] OGIP Calibration Memo CAL/GEN/92-002, "The Calibration
-           Requirements for Spectral Analysis (Definition of RMF and
-           ARF file formats)", Ian M. George1, Keith A. Arnaud,
-           Bill Pence, Laddawan Ruamsuwan and Michael F. Corcoran,
-           https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+    For more information on the RMF format see the `OGIP Calibration
+    Memo CAL/GEN/92-002
+    <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
 
     """
 
@@ -845,11 +838,13 @@ def get_rmf_data(arg, make_copy=False):
     data['f_chan'] = numpy.asarray(xf_chan, SherpaUInt)
     data['n_chan'] = numpy.asarray(xn_chan, SherpaUInt)
 
-    # Not all fields are "flattened" by this routine. In
-    # particular we need to keep knowledge of these rows
-    # with 0 groups.
+    # Not all fields are "flattened" by this routine. In particular we
+    # need to keep knowledge of these rows with 0 groups. This is why
+    # we set the n_grp entry to data['n_grp'] rather than the n_grp
+    # variable (which has the 0 elements removed).
     #
     data['n_grp'] = numpy.asarray(data['n_grp'], SherpaUInt)
+
     data['energ_lo'] = numpy.asarray(data['energ_lo'], SherpaFloat)
     data['energ_hi'] = numpy.asarray(data['energ_hi'], SherpaFloat)
 
