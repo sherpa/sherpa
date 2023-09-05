@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022
+#  Copyright (C) 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -466,27 +466,7 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
     outfile = tmp_path / "test.pha"
     outfile = str(outfile)  # our IO routines don't recognize paths
 
-    # This is a bit ugly as I want to capture/hide the Astro deprecation
-    # warning, but it's only valid when we are using AstroPy.
-    #
-    if backend_is("pyfits"):
-        from astropy.utils.exceptions import AstropyDeprecationWarning
-        with pytest.warns(AstropyDeprecationWarning) as ws:
-            io.write_pha(outfile, indata, ascii=False, clobber=False)
-
-        # Skip the known "deprecation" error, but flag up any other
-        # errors. This is probably excessive (e.g. the message may change
-        # textually) but for now see how this goes. I did not want to
-        # add this to the generic list of known warnings as I do not like
-        # making these affect all tests.
-        #
-        expected = "The following keywords are now recognized as special column-related attributes and should be set via the Column objects: TCDLTn, TCRPXn, TCRVLn, TCTYPn, TCUNIn. In future, these values will be dropped from manually specified headers automatically and replaced with values generated based on the Column objects."
-        if len(ws) > 0:
-            assert len(ws) == 1, len(ws)
-            assert str(ws[0].message) == expected
-
-    else:
-        io.write_pha(outfile, indata, ascii=False, clobber=False)
+    io.write_pha(outfile, indata, ascii=False, clobber=False)
 
     outdata = io.read_pha(outfile, use_errors=True)
     assert isinstance(outdata, DataPHA)
@@ -576,9 +556,9 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert len(hdu.columns) == 2
 
         assert hdu.columns[0].name == "CHANNEL"
-        assert hdu.columns[0].format == "INT32"
+        assert hdu.columns[0].format == "J"
         assert hdu.columns[1].name == "COUNTS"
-        assert hdu.columns[1].format == "INT32"
+        assert hdu.columns[1].format == "J"
 
         assert hdu.header["HDUCLASS"] == "OGIP"
         assert hdu.header["HDUCLAS1"] == "SPECTRUM"
@@ -755,13 +735,13 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         assert len(hdu.columns) == 5
 
         assert hdu.columns[0].name == "CHANNEL"
-        assert hdu.columns[0].format == "INT32"
+        assert hdu.columns[0].format == "J"
         assert hdu.columns[1].name == "COUNTS"
-        assert hdu.columns[1].format == "D"
+        assert hdu.columns[1].format == "E"
         assert hdu.columns[2].name == "GROUPING"
-        assert hdu.columns[2].format == "INT16"
+        assert hdu.columns[2].format == "I"
         assert hdu.columns[3].name == "QUALITY"
-        assert hdu.columns[3].format == "INT16"
+        assert hdu.columns[3].format == "I"
         assert hdu.columns[4].name == "AREASCAL"
         assert hdu.columns[4].format == "D"
 
@@ -1063,9 +1043,9 @@ def check_csc_pha_roundtrip_pyfits(path):
         assert len(hdu.columns) == 2
 
         assert hdu.columns[0].name == "CHANNEL"
-        assert hdu.columns[0].format == "INT32"
+        assert hdu.columns[0].format == "J"
         assert hdu.columns[1].name == "COUNTS"
-        assert hdu.columns[1].format == "D"
+        assert hdu.columns[1].format == "E"
 
         assert hdu.header["HDUCLASS"] == "OGIP"
         assert hdu.header["HDUCLAS1"] == "SPECTRUM"
@@ -1293,7 +1273,7 @@ def test_pack_pha_invalid_counts():
                   np.asarray([1, 2], dtype=np.int16),
                   np.asarray([complex(1), complex(2)]))
 
-    with pytest.raises(DataErr) as err:
+    emsg = "The PHA dataset 'dummy' contains an unsupported COUNTS column"
+    with pytest.raises(DataErr,
+                       match=f"^{emsg}$"):
         io.pack_pha(pha)
-
-    assert str(err.value) == "The PHA dataset 'dummy' contains an unsupported COUNTS column"

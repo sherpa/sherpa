@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021, 2022
+#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1172,7 +1172,7 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
     img.write(filename, clobber=True)
 
 
-def set_table_data(filename, data, col_names, hdr=None, hdrnames=None,
+def set_table_data(filename, data, col_names, header=None,
                    ascii=False, clobber=False, packup=False):
 
     if not packup and not clobber and os.path.isfile(filename):

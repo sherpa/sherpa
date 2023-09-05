@@ -731,7 +731,7 @@ def check_output(out, colnames, rows):
         assert lines[1] == f"# {cols}"
         lines = lines[2:]
     elif backend_is("pyfits"):
-        assert lines[0] == f"#{cols}"
+        assert lines[0] == f"# {cols}"
         lines = lines[1:]
     else:
         raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.__name__}")

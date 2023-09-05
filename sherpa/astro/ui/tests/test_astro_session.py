@@ -3170,18 +3170,16 @@ def check_text_output(path, header, coldata):
     path is the pathlib object representing the file
     """
 
-    # This requires knowledge of requires_fits, but we don't make it
-    # possible to access this so we hard code the knowledge here. If
-    # we ever get another I/O backend we need to revisit this. It also
-    # assumes that if crates is available then it is in use, which
-    # is technically incorrect but should pass for our tests.
+    # Use the same logic as test_astro_ui_unit.py.
     #
-    if has_package_from_list("pycrates"):
+    from sherpa.astro import io
+    name = io.backend.__name__
+    if name == "sherpa.astro.io.crates_backend":
         expected = f"#TEXT/SIMPLE\n# {header}\n"
-    elif has_package_from_list("astropy.io.fits"):
-        expected = f"#{header}\n"
+    elif name == "sherpa.astro.io.pyfits_backend":
+        expected = f"# {header}\n"
     else:
-        assert False, "Unknown I/O backend"
+        assert False, f"Unknown I/O backend: {name}"
 
     expected += coldata
     assert path.read_text() == expected
