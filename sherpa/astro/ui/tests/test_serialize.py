@@ -24,6 +24,7 @@ corresponding functions in sherpa.astro.ui.utils.
 
 from io import StringIO
 import re
+import warnings
 
 import numpy
 from numpy.testing import assert_array_equal
@@ -1380,6 +1381,10 @@ g1.ampl.units   = ""
 g1.ampl.frozen  = False
 
 
+
+######### Associate PSF models with the datasets
+
+set_psf(1, p0)
 
 ######### Set Source, Pileup and Background Models
 
@@ -3329,7 +3334,6 @@ def test_restore_img_filter_model(make_data_path):
     assert cnew == pytest.approx(corig)
 
 
-@pytest.mark.xfail
 @requires_data
 @requires_fits
 def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
@@ -3380,6 +3384,14 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
     with pytest.warns(UserWarning, match=wmsg):
         restore()
 
+    sdata = ui.get_source_image().y
+    mdata = ui.get_model_image().y
+    assert sdata.max() == pytest.approx(100)
+    assert mdata.max() == pytest.approx(maxval)
+    assert mdata.sum() == pytest.approx(sdata.sum())
+
+    assert ui.get_filter() == ''
+
     # There appears to be odd behavior with pytest and whether the
     # warnings are "cleared" here or not (however it is done, I have
     # stuck with pytest.warns above but similar issues are seen if we
@@ -3387,14 +3399,6 @@ def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
     # so conftest.capture_all_warnings doesn't error out.
     #
     recwarn.clear()
-
-    sdata = ui.get_source_image().y
-    mdata = ui.get_model_image().y
-    assert sdata.max() == pytest.approx(100)
-    assert mdata.max() == pytest.approx(maxval)  # XFAIL: this returns 100
-    assert mdata.sum() == pytest.approx(sdata.sum())
-
-    assert ui.get_filter() == ''
 
 
 @requires_data

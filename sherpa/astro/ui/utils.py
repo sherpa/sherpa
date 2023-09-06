@@ -15506,6 +15506,9 @@ class Session(sherpa.ui.utils.Session):
 
          3. some settings and values may not be recorded.
 
+        .. versionchanged:: 4.16.0
+           Any set_psf calls are now included in the output file.
+
         Parameters
         ----------
         outfile : str or file-like, optional

@@ -820,26 +820,17 @@ def _save_model_components(state, fh=None):
             _handle_usermodel(mod, modelname, fh)
 
         elif typename == "psfmodel":
-            cmd = 'load_psf("%s", "%s")' % (mod._name, mod.kernel.name)
+            cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
             _output(cmd, fh)
-            try:
-                psfmod = state.get_psf(id)
-                cmd_id = _id_to_str(id)
-                cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
-                _output(cmd, fh)
-            except:
-                pass
 
         elif typename == "tablemodel":
             # Create table model with load_table_model
-            cmd = 'load_table_model("%s", "%s")' % (
-                modelname, mod.filename)
+            cmd = f'load_table_model("{modelname}", "{mod.filename}")'
             _output(cmd, fh)
 
         else:
             # Normal case:  create an instance of the model.
-            cmd = 'create_model_component("{}", "{}")'.format(
-                typename, modelname)
+            cmd = f'create_model_component("{typename}", "{modelname}")'
             _output(cmd, fh)
 
         # QUS: should this be included in the above checks?
@@ -849,12 +840,11 @@ def _save_model_components(state, fh=None):
         #
         if typename == "convolutionkernel":
             # Create general convolution kernel with load_conv
-            cmd = 'load_conv("%s", "%s")' % (
-                modelname, mod.kernel.name)
+            cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
             _output(cmd, fh)
 
         if hasattr(mod, "integrate"):
-            cmd = "%s.integrate = %s" % (modelname, mod.integrate)
+            cmd = f"{modelname}.integrate = {mod.integrate}"
             _output(cmd, fh)
             _output_nl(fh)
 
@@ -873,12 +863,11 @@ def _save_model_components(state, fh=None):
         if typename == "psfmodel":
             spacer = False
             if hasattr(mod, "size") and mod.size is not None:
-                cmd = "%s.size = %s" % (modelname, repr(mod.size))
-                _output(cmd, fh)
+                _output(f"{modelname}.size = {mod.size}", fh)
                 spacer = True
+
             if hasattr(mod, "center") and mod.center is not None:
-                cmd = "%s.center = %s" % (modelname, repr(mod.center))
-                _output(cmd, fh)
+                _output(f"{modelname}.center = {mod.center}", fh)
                 spacer = True
 
             if spacer:
@@ -887,6 +876,17 @@ def _save_model_components(state, fh=None):
     # If there were any links made between parameters, send those
     # link commands to outfile now; else, linkstr is just an empty string
     _output(linkstr, fh)
+
+    # Now associate any PSF models with their appropriate datasets.
+    # This is done after creating all the models and datasets.
+    #
+    if len(state._psf) == 0:
+        return
+
+    _output_banner("Associate PSF models with the datasets", fh)
+    for idval, psfmod in state._psf.items():
+        cmd_id = _id_to_str(idval)
+        _output(f"set_psf({cmd_id}, {psfmod._name})", fh)
 
 
 def _save_models(state, fh=None):
