@@ -52,16 +52,12 @@ def _output(msg, fh=None):
 
     Parameters
     ----------
-    msg : None or str
-       The message to output. If ``None`` then the routine
-       returns immediately (with no output).
+    msg : str
+       The message to output.
     fh : None or a file handle
        The file handle to write the message to. If fh is ``None``
        then the standard output is used.
     """
-
-    if msg is None:
-        return
 
     if fh is None:
         fh = sys.stdout
@@ -124,9 +120,9 @@ def _id_to_str(id):
     """
 
     if isinstance(id, string_types):
-        return '"{}"'.format(id)
-    else:
-        return str(id)
+        return f'"{id}"'
+
+    return str(id)
 
 
 def _save_entries(store, tostatement, fh=None):
@@ -199,9 +195,9 @@ def _save_response(label, respfile, id, rid, bid=None, fh=None):
     id = _id_to_str(id)
     rid = _id_to_str(rid)
 
-    cmd = 'load_{}({}, "{}", resp_id={}'.format(label, id, respfile, rid)
+    cmd = f'load_{label}({id}, "{respfile}", resp_id={rid}'
     if bid is not None:
-        cmd += ", bkg_id={}".format(_id_to_str(bid))
+        cmd += f", bkg_id={_id_to_str(bid)}"
 
     cmd += ")"
     _output(cmd, fh)
@@ -278,7 +274,7 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
 
     # This is an internal routine, so just protect against accidents
     if label not in ['grouping', 'quality']:
-        raise ValueError("Invalid label={}".format(label))
+        raise ValueError(f"Invalid label={label}")
 
     if bid is None:
         data = state.get_data(id)
@@ -298,7 +294,7 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
     #      field of get_data/get_bkg the same as state.get_grouping
     #      or state.get_quality?
     #
-    func = getattr(state, 'get_{}'.format(label))
+    func = getattr(state, f'get_{label}')
     vals = func(id, bkg_id=bid)
 
     # The OGIP standard is for quality and grouping to be 2-byte
@@ -307,11 +303,11 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
     # - then force that type here.
     vals = vals.astype(numpy.int16)
 
-    cmd = "set_{}({}, ".format(label, _id_to_str(id)) + \
+    cmd = f"set_{label}({_id_to_str(id)}, " + \
           "val=numpy.array(" + repr(vals.tolist()) + \
-          ", numpy.{})".format(vals.dtype)
+          f", numpy.{vals.dtype})"
     if bid is not None:
-        cmd += ", bkg_id={}".format(_id_to_str(bid))
+        cmd += f", bkg_id={_id_to_str(bid)}"
 
     cmd += ")"
     _output(cmd, fh)
@@ -369,17 +365,16 @@ def _handle_filter(state, id, fh):
     fvals = d.get_filter()
     ndims = len(d.get_dims())
     if ndims == 1:
-        cmd = 'notice_id({}, "{}")'.format(cmd_id, fvals)
+        cmd = f'notice_id({cmd_id}, "{fvals}")'
         _output(cmd, fh)
     elif ndims == 2:
         # Only output the filter if it does anything
         if fvals != '':
-            cmd = 'notice2d_id({}, "{}")'.format(cmd_id, fvals)
+            cmd = f'notice2d_id({cmd_id}, "{fvals}")'
             _output(cmd, fh)
     else:
         # just in case
-        _output('print("Set notice range of id={} to {}")'.format(cmd_id,
-                                                                  fvals),
+        _output(f'print("Set notice range of id={cmd_id} to {fvals}")',
                 fh)
 
     try:
@@ -466,8 +461,8 @@ def _save_data(state, fh=None):
 
             # End check for original groups and quality flags
             if state.get_data(id).grouped:
-                cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
-                    cmd_id, cmd_id)
+                cmd = f"if get_data({cmd_id}).grouping is not None " + \
+                    f"and not get_data({cmd_id}).grouped:"
                 _output(cmd, fh)
                 _output_banner("Group Data", fh, indent=1)
                 _output(f"    group({cmd_id})", fh)
@@ -494,8 +489,8 @@ def _save_data(state, fh=None):
             for bid in bids:
                 cmd_bkg_id = _id_to_str(bid)
 
-                cmd = 'load_bkg(%s, "%s", bkg_id=%s)' % (
-                    cmd_id, state.get_bkg(id, bid).name, cmd_bkg_id)
+                bname = state.get_bkg(id, bid).name
+                cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
                 _output(cmd, fh)
 
                 # Group data if applicable
@@ -509,8 +504,8 @@ def _save_data(state, fh=None):
 
                     # End check for original groups and quality flags
                     if state.get_bkg(id, bid).grouped:
-                        cmd = "if get_bkg(%s, %s).grouping is not None and not get_bkg(%s, %s).grouped:" % (
-                            cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
+                        cmd = f"if get_bkg({cmd_id}, {cmd_bkg_id}).grouping is not None " + \
+                            f"and not get_bkg({cmd_id}, {cmd_bkg_id}).grouped:"
                         _output(cmd, fh)
                         _output_banner("Group Background", fh, indent=1)
                         _output(f"    group({cmd_id}, {cmd_bkg_id})", fh)
@@ -576,12 +571,11 @@ def _print_par(par):
 
     linkstr = ""
     if par.link is not None:
-        linkstr = "\nlink(%s, %s)\n" % (
-            par.fullname, par.link.fullname)
+        linkstr = f"\nlink({par.fullname}, {par.link.fullname})\n"
 
     unitstr = ""
     if isinstance(par.units, string_types):
-        unitstr = '"%s"' % par.units
+        unitstr = f'"{par.units}"'
 
     # Do we have to worry about XSPEC parameters which have changed their
     # hard min/max ranges?
@@ -731,25 +725,24 @@ def _handle_usermodel(mod, modelname, fh=None):
     # in case getsource can return None, have check here
     if pycode is None:
         msg = "Unable to save Python code for user model " + \
-              "'{}' function {}".format(modelname, mod.calc.name)
+              f"'{modelname}' function {mod.calc.name}"
         warning(msg)
-        _output('print("{}")'.format(msg), fh)
-        _output("def {}(*args):".format(mod.calc.name), fh)
+        _output(f'print("{msg}")', fh)
+        _output(f"def {mod.calc.name}(*args):", fh)
         _output("    raise NotImplementedError('User model was " +
                 "not saved by save_all().'", fh)
         _output_nl(fh)
         return
 
-    msg = "Found user model '{}'; ".format(modelname) + \
+    msg = f"Found user model '{modelname}'; " + \
           "please check it is saved correctly."
     warning(msg)
 
     # Ensure the message is also seen if the script is run.
-    _output('print("{}")'.format(msg), fh)
+    _output(f'print("{msg}")', fh)
 
     _output(_reindent(pycode), fh)
-    cmd = 'load_user_model({}, "{}")'.format(
-        mod.calc.__name__, modelname)
+    cmd = f'load_user_model({mod.calc.__name__}, "{modelname}")'
     _output(cmd, fh)
 
     # Work out the add_user_pars call; this is explicit, i.e.
@@ -770,14 +763,14 @@ def _handle_usermodel(mod, modelname, fh=None):
     parfrozen = [p.frozen for p in mod.pars]
 
     spaces = '              '
-    _output('add_user_pars("{}",'.format(modelname), fh)
-    _output("{}parnames={},".format(spaces, parnames), fh)
-    _output("{}parvals={},".format(spaces, parvals), fh)
-    _output("{}parmins={},".format(spaces, parmins), fh)
-    _output("{}parmaxs={},".format(spaces, parmaxs), fh)
-    _output("{}parunits={},".format(spaces, parunits), fh)
-    _output("{}parfrozen={}".format(spaces, parfrozen), fh)
-    _output("{})\n".format(spaces), fh)
+    _output(f'add_user_pars("{modelname}",', fh)
+    _output(f"{spaces}parnames={parnames},", fh)
+    _output(f"{spaces}parvals={parvals},", fh)
+    _output(f"{spaces}parmins={parmins},", fh)
+    _output(f"{spaces}parmaxs={parmaxs},", fh)
+    _output(f"{spaces}parunits={parunits},", fh)
+    _output(f"{spaces}parfrozen={parfrozen}", fh)
+    _output(f"{spaces})\n", fh)
 
 
 def _save_model_components(state, fh=None):
@@ -878,13 +871,17 @@ def _save_model_components(state, fh=None):
         # If the model is a PSFModel, could have special
         # attributes "size" and "center" -- if so, record them.
         if typename == "psfmodel":
-            if hasattr(mod, "size"):
+            spacer = False
+            if hasattr(mod, "size") and mod.size is not None:
                 cmd = "%s.size = %s" % (modelname, repr(mod.size))
                 _output(cmd, fh)
-                _output_nl(fh)
-            if hasattr(mod, "center"):
+                spacer = True
+            if hasattr(mod, "center") and mod.center is not None:
                 cmd = "%s.center = %s" % (modelname, repr(mod.center))
                 _output(cmd, fh)
+                spacer = True
+
+            if spacer:
                 _output_nl(fh)
 
     # If there were any links made between parameters, send those
@@ -937,17 +934,14 @@ def _save_models(state, fh=None):
                         is_pha = False
 
                     if is_pha and repr(the_source) == repr(the_full_model):
-                        cmd = "set_full_model(%s, %s)" % (
-                            cmd_id, the_full_model.name)
+                        cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
                     else:
-                        cmd = "set_source(%s, %s)" % (
-                            cmd_id, the_source.name)
+                        cmd = f"set_source({cmd_id}, {the_source.name})"
                 else:
-                    cmd = "set_source(%s, %s)" % (cmd_id, the_source.name)
+                    cmd = f"set_source({cmd_id}, {the_source.name})"
 
             elif have_full_model:
-                cmd = "set_full_model(%s, %s)" % (
-                    cmd_id, the_full_model.name)
+                cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
 
             else:
                 cmd = ""
@@ -959,8 +953,8 @@ def _save_models(state, fh=None):
 
         # If any pileup models, try to set them.  If not, just pass.
         try:
-            cmd = "set_pileup_model(%s, %s)" % (
-                cmd_id, state.get_pileup_model(id).name)
+            pname = state.get_pileup_model(id).name
+            cmd = f"set_pileup_model({cmd_id}, {pname})"
             _output(cmd, fh)
         except:
             pass
@@ -994,18 +988,14 @@ def _save_models(state, fh=None):
                     # only one to support backgrounds
                     if have_full_model:
                         if repr(the_bkg_source) == repr(the_bkg_full_model):
-                            cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                                cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+                            cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
                         else:
-                            cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                                cmd_id, the_bkg_source.name, cmd_bkg_id)
+                            cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
                     else:
-                        cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_source.name, cmd_bkg_id)
+                        cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
 
                 elif have_full_model:
-                    cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                        cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+                    cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
 
                 else:
                     cmd = ""
@@ -1035,19 +1025,17 @@ def _save_xspec(fh=None):
     _output_banner("XSPEC Module Settings", fh)
     xspec_state = sherpa.astro.xspec.get_xsstate()
 
-    cmd = "set_xschatter(%d)" % xspec_state["chatter"]
-    _output(cmd, fh)
-    cmd = 'set_xsabund("%s")' % xspec_state["abund"]
-    _output(cmd, fh)
-    cmd = "set_xscosmo(%g, %g, %g)" % (xspec_state["cosmo"][0],
-                                       xspec_state["cosmo"][1],
-                                       xspec_state["cosmo"][2])
-    _output(cmd, fh)
-    cmd = 'set_xsxsect("%s")' % xspec_state["xsect"]
-    _output(cmd, fh)
+    chatter =  xspec_state["chatter"]
+    abund = xspec_state["abund"]
+    xsect = xspec_state["xsect"]
+    cs = xspec_state["cosmo"]
+    _output(f"set_xschatter({chatter})", fh)
+    _output(f'set_xsabund("{abund}")', fh)
+    _output(f"set_xscosmo({cs[0]:g}, {cs[1]:g}, {cs[2]:g})", fh)
+    _output(f'set_xsxsect("{xsect}")', fh)
 
     def tostatement(key, val):
-        return 'set_xsxset("{}", "{}")'.format(key, val)
+        return f'set_xsxset("{key}", "{val}")'
 
     _save_entries(xspec_state["modelstrings"], tostatement, fh)
 
@@ -1087,14 +1075,14 @@ def _save_dataset(state, id):
         # save the data to an external file).
         #
         if isinstance(dset, DataPHA):
-            msg = "Unable to re-create PHA data set '{}'".format(id)
+            msg = f"Unable to re-create PHA data set '{id}'"
             warning(msg)
-            return 'print("{}")'.format(msg)
+            return f'print("{msg}")'
 
-        elif isinstance(dset, DataIMG):
-            msg = "Unable to re-create image data set '{}'".format(id)
+        if isinstance(dset, DataIMG):
+            msg = "Unable to re-create image data set '{id}'"
             warning(msg)
-            return 'print("{}")'.format(msg)
+            return f'print("{msg}")'
 
         # Fall back to load_arrays. As using isinstance,
         # need to order the checks, since Data1DInt is
@@ -1102,64 +1090,63 @@ def _save_dataset(state, id):
         #
         xs = dset.get_indep()
         ys = dset.get_dep()
-        stat = dset.get_staterror()
-        sys = dset.get_syserror()
+        staterr = dset.get_staterror()
+        syserr = dset.get_syserror()
 
-        need_sys = sys is not None
+        need_sys = syserr is not None
         if need_sys:
-            sys = "{}".format(sys.tolist())
+            syserr = f"{syserr.tolist()}"
         else:
-            sys = "None"
+            syserr = "None"
 
-        need_stat = stat is not None or need_sys
-        if stat is not None:
-            stat = "{}".format(stat.tolist())
+        need_stat = staterr is not None or need_sys
+        if staterr is not None:
+            staterr = f"{staterr.tolist()}"
         else:
-            stat = "None"
+            staterr = "None"
 
-        ys = "{}".format(ys.tolist())
+        ys = f"{ys.tolist()}"
 
-        out = 'load_arrays({},\n'.format(idstr)
+        out = f'load_arrays({idstr},\n'
         if isinstance(dset, Data1DInt):
-            out += '            {},\n'.format(xs[0].tolist())
-            out += '            {},\n'.format(xs[1].tolist())
-            out += '            {},\n'.format(ys)
+            out += f'            {xs[0].tolist()},\n'
+            out += f'            {xs[1].tolist()},\n'
+            out += f'            {ys},\n'
             if need_stat:
-                out += '            {},\n'.format(stat)
+                out += f'            {staterr},\n'
             if need_sys:
-                out += '            {},\n'.format(sys)
+                out += f'            {syserr},\n'
             out += '            Data1DInt)'
 
         elif isinstance(dset, Data1D):
-            out += '            {},\n'.format(xs[0].tolist())
-            out += '            {},\n'.format(ys)
+            out += f'            {xs[0].tolist()},\n'
+            out += f'            {ys},\n'
             if need_stat:
-                out += '            {},\n'.format(stat)
+                out += f'            {staterr},\n'
             if need_sys:
-                out += '            {},\n'.format(sys)
+                out += f'            {syserr},\n'
             out += '            Data1D)'
 
         elif isinstance(dset, Data2DInt):
-            msg = "Unable to re-create Data2DInt data set '{}'".format(id)
+            msg = f"Unable to re-create Data2DInt data set '{id}'"
             warning(msg)
-            out = 'print("{}")'.format(msg)
+            out = f'print("{msg}")'
 
         elif isinstance(dset, Data2D):
-            out += '            {},\n'.format(xs[0].tolist())
-            out += '            {},\n'.format(xs[1].tolist())
-            out += '            {},\n'.format(ys)
-            out += '            {},\n'.format(dset.shape)
+            out += f'            {xs[0].tolist()},\n'
+            out += f'            {xs[1].tolist()},\n'
+            out += f'            {ys},\n'
+            out += f'            {dset.shape},\n'
             if need_stat:
-                out += '            {},\n'.format(stat)
+                out += f'            {staterr},\n'
             if need_sys:
-                out += '            {},\n'.format(sys)
+                out += f'            {syserr},\n'
             out += '            Data2D)'
 
         else:
-            msg = "Unable to re-create {} data set '{}'".format(dset.__class__,
-                                                                id)
+            msg = f"Unable to re-create {dset.__class__} data set '{id}'"
             warning(msg)
-            out = 'print("{}")'.format(msg)
+            out = f'print("{msg}")'
 
         return out
 
@@ -1173,7 +1160,7 @@ def _save_dataset(state, id):
     else:
         dtype = 'data'
 
-    return 'load_{}({}, "{}")'.format(dtype, idstr, dset.name)
+    return f'load_{dtype}({idstr}, "{dset.name}")'
 
 
 def save_all(state, fh=None):

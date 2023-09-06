@@ -1320,7 +1320,6 @@ set_method_opt("verbose", 0)
 
 load_psf("p0", "@@/psf_0.0_00_bin1.img")
 p0.size = (26, 26)
-
 p0.center = (13, 13)
 
 create_model_component("gauss2d", "g1")
