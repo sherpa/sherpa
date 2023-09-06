@@ -1031,6 +1031,129 @@ set_source(1, (gauss2d.gmdl + scale2d.bmdl))
 
 """
 
+# An image file with no filter, model and PSF
+# See issue #1873
+#
+# This is currently wrong, since it does not include the "set the psf"
+# code, but it's unclear what this should be, so just describe the
+# existing output (the test that uses this fails because the
+# reconstuction is not correct).
+#
+_canonical_img_no_filter_model_psf = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_image(1, "@@/img.fits")
+
+######### Set Image Coordinates
+
+set_coord(1, 'logical')
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+
+######### Filter Data
+
+
+
+######### Set Statistic
+
+set_stat("cstat")
+
+
+######### Set Fitting Method
+
+set_method("neldermead")
+
+set_method_opt("finalsimplex", 9)
+set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("initsimplex", 0)
+set_method_opt("iquad", 1)
+set_method_opt("maxfev", None)
+set_method_opt("reflect", True)
+set_method_opt("step", None)
+set_method_opt("verbose", 0)
+
+
+######### Set Model Components and Parameters
+
+load_psf("p0", "@@/psf_0.0_00_bin1.img")
+p0.size = (26, 26)
+
+p0.center = (13, 13)
+
+create_model_component("gauss2d", "g1")
+g1.integrate = True
+
+g1.fwhm.default_val = 5.0
+g1.fwhm.default_min = 1.1754943508222875e-38
+g1.fwhm.default_max = 3.4028234663852886e+38
+g1.fwhm.val     = 5.0
+g1.fwhm.min     = 1.1754943508222875e-38
+g1.fwhm.max     = 3.4028234663852886e+38
+g1.fwhm.units   = ""
+g1.fwhm.frozen  = False
+
+g1.xpos.default_val = 49.0
+g1.xpos.default_min = -3.4028234663852886e+38
+g1.xpos.default_max = 3.4028234663852886e+38
+g1.xpos.val     = 49.0
+g1.xpos.min     = -3.4028234663852886e+38
+g1.xpos.max     = 3.4028234663852886e+38
+g1.xpos.units   = ""
+g1.xpos.frozen  = False
+
+g1.ypos.default_val = 52.0
+g1.ypos.default_min = -3.4028234663852886e+38
+g1.ypos.default_max = 3.4028234663852886e+38
+g1.ypos.val     = 52.0
+g1.ypos.min     = -3.4028234663852886e+38
+g1.ypos.max     = 3.4028234663852886e+38
+g1.ypos.units   = ""
+g1.ypos.frozen  = False
+
+g1.ellip.default_val = 0.40000000000000002
+g1.ellip.default_min = 0.0
+g1.ellip.default_max = 0.999
+g1.ellip.val     = 0.40000000000000002
+g1.ellip.min     = 0.0
+g1.ellip.max     = 0.999
+g1.ellip.units   = ""
+g1.ellip.frozen  = True
+
+g1.theta.default_val = 1.2
+g1.theta.default_min = -6.2831853071795862
+g1.theta.default_max = 6.2831853071795862
+g1.theta.val     = 1.2
+g1.theta.min     = -6.2831853071795862
+g1.theta.max     = 6.2831853071795862
+g1.theta.units   = "radians"
+g1.theta.frozen  = True
+
+g1.ampl.default_val = 100.0
+g1.ampl.default_min = -3.4028234663852886e+38
+g1.ampl.default_max = 3.4028234663852886e+38
+g1.ampl.val     = 100.0
+g1.ampl.min     = -3.4028234663852886e+38
+g1.ampl.max     = 3.4028234663852886e+38
+g1.ampl.units   = ""
+g1.ampl.frozen  = False
+
+
+
+######### Set Source, Pileup and Background Models
+
+set_source(1, gauss2d.g1)
+
+"""
+
 # Set an XSPEC parameter beyond the default hard limits: min
 _canonical_xspec_hard_limit_min = """import numpy
 from sherpa.astro.ui import *
@@ -1163,6 +1286,7 @@ set_xsxsect("bcmc")
     _canonical_usermodel += _canonical_extra
     _canonical_img_no_filter_no_model += _canonical_extra
     _canonical_img_filter_model += _canonical_extra
+    _canonical_img_no_filter_model_psf += _canonical_extra
     _canonical_xspec_hard_limit_min += _canonical_extra
     _canonical_xspec_hard_limit_max += _canonical_extra
 
@@ -1709,6 +1833,74 @@ def test_restore_img_filter_model(make_data_path, clean_astro_ui):
     assert fnew == forig
     assert snew == pytest.approx(sorig)
     assert cnew == pytest.approx(corig)
+
+
+@pytest.mark.xfail
+@requires_data
+@requires_fits
+def test_restore_img_no_filter_model_psf(make_data_path, recwarn):
+    """Can we save a PSF setup? See issue #1873"""
+
+    # This is not a great image to fit any data to!
+    ui.load_image(make_data_path('img.fits'))
+    ui.load_psf("p0", make_data_path("psf_0.0_00_bin1.img"))
+
+    ui.set_stat('cstat')
+    ui.set_method('simplex')
+
+    ui.set_source(ui.gauss2d.g1)
+    g1.fwhm = 5
+    g1.xpos = 49
+    g1.ypos = 52
+    g1.ellip = 0.4
+    g1.theta = 1.2
+    g1.ampl = 100
+
+    sdata = ui.get_source_image().y
+    mdata = ui.get_model_image().y
+    assert mdata == pytest.approx(sdata)
+
+    # Check we get the warning message (so we can also check when the
+    # script is loaded).
+    #
+    wmsg = "Data Image does not have a pixel size. Sherpa will assume the pixel size is the same as the PSF"
+    with pytest.warns(UserWarning, match=wmsg):
+        ui.set_psf(p0)
+
+    # This is just to check that the data is different in the expected
+    # manner, e.g. the source has been convolved by the PSF so the
+    # peak is different, but the overall signal is essentially the
+    # same (since the edge effects can be neglected here).
+    #
+    maxval = 77.30269712891258
+    sdata = ui.get_source_image().y
+    mdata = ui.get_model_image().y
+    assert sdata.max() == pytest.approx(100)
+    assert mdata.max() == pytest.approx(maxval)
+    assert mdata.sum() == pytest.approx(sdata.sum())  # the tolerance may need to be tweaked
+
+    assert ui.get_filter() == ''
+
+    compare(add_datadir_path(_canonical_img_no_filter_model_psf))
+
+    with pytest.warns(UserWarning, match=wmsg):
+        restore()
+
+    # There appears to be odd behavior with pytest and whether the
+    # warnings are "cleared" here or not (however it is done, I have
+    # stuck with pytest.warns above but similar issues are seen if we
+    # use warnings.catch_warnings), so let's just clear the warnings
+    # so conftest.capture_all_warnings doesn't error out.
+    #
+    recwarn.clear()
+
+    sdata = ui.get_source_image().y
+    mdata = ui.get_model_image().y
+    assert sdata.max() == pytest.approx(100)
+    assert mdata.max() == pytest.approx(maxval)  # XFAIL: this returns 100
+    assert mdata.sum() == pytest.approx(sdata.sum())
+
+    assert ui.get_filter() == ''
 
 
 @requires_xspec
