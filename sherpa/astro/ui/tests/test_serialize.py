@@ -214,7 +214,7 @@ load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
-set_analysis(1, 'energy', "rate", 0)
+set_analysis(1, quantity="energy", type="rate", factor=0)
 if not get_data(1).subtracted:
     ######### Subtract Background Data
     subtract(1)
@@ -384,7 +384,7 @@ load_rmf("grp", "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
-set_analysis("grp", 'energy', "rate", 0)
+set_analysis("grp", quantity="energy", type="rate", factor=0)
 if not get_data("grp").subtracted:
     ######### Subtract Background Data
     subtract("grp")
@@ -507,7 +507,7 @@ load_rmf("bgrp", "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
-set_analysis("bgrp", 'energy', "rate", 0)
+set_analysis("bgrp", quantity="energy", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -728,7 +728,7 @@ load_pha("x", "@@/source1.pi")
 
 ######### Set Energy or Wave Units
 
-set_analysis("x", 'channel', "counts", 0)
+set_analysis("x", quantity="channel", type="counts", factor=0)
 
 ######### Filter Data
 
@@ -796,7 +796,7 @@ load_rmf(1, "@@/3c273.rmf", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
-set_analysis(1, 'energy', "rate", 0)
+set_analysis(1, quantity="energy", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -1507,7 +1507,7 @@ print("Unable to re-create PHA data set '1'")
 
 ######### Set Energy or Wave Units
 
-set_analysis(1, 'channel', "rate", 0)
+set_analysis(1, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -1525,7 +1525,7 @@ print("Unable to re-create PHA data set '2'")
 
 ######### Set Energy or Wave Units
 
-set_analysis(2, 'channel', "rate", 0)
+set_analysis(2, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2062,7 +2062,7 @@ load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1, bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(1, 'wavelength', "rate", 0)
+set_analysis(1, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2132,7 +2132,7 @@ load_bkg(1, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(1, 'wavelength', "rate", 0)
+set_analysis(1, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2162,7 +2162,7 @@ load_bkg(10, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(10, 'wavelength', "rate", 0)
+set_analysis(10, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2192,7 +2192,7 @@ load_bkg(11, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(11, 'wavelength', "rate", 0)
+set_analysis(11, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2222,7 +2222,7 @@ load_bkg(12, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(12, 'wavelength', "rate", 0)
+set_analysis(12, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2252,7 +2252,7 @@ load_bkg(2, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(2, 'wavelength', "rate", 0)
+set_analysis(2, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2282,7 +2282,7 @@ load_bkg(3, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(3, 'wavelength', "rate", 0)
+set_analysis(3, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2312,7 +2312,7 @@ load_bkg(4, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(4, 'wavelength', "rate", 0)
+set_analysis(4, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2342,7 +2342,7 @@ load_bkg(5, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(5, 'wavelength', "rate", 0)
+set_analysis(5, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2372,7 +2372,7 @@ load_bkg(6, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(6, 'wavelength', "rate", 0)
+set_analysis(6, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2402,7 +2402,7 @@ load_bkg(7, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(7, 'wavelength', "rate", 0)
+set_analysis(7, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2432,7 +2432,7 @@ load_bkg(8, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(8, 'wavelength', "rate", 0)
+set_analysis(8, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2462,7 +2462,7 @@ load_bkg(9, "@@/3c120_pha2", bkg_id=2)
 
 ######### Set Energy or Wave Units
 
-set_analysis(9, 'wavelength', "rate", 0)
+set_analysis(9, quantity="wavelength", type="rate", factor=0)
 
 ######### Filter Data
 
@@ -2620,7 +2620,7 @@ load_rmf("csc", "@@/acisf01575_001N001_r0085_rmf3.fits", resp_id=1, bkg_id=1)
 
 ######### Set Energy or Wave Units
 
-set_analysis("csc", 'energy', "rate", 0)
+set_analysis("csc", quantity="energy", type="rate", factor=0)
 
 ######### Filter Data
 

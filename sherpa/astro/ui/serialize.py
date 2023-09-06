@@ -502,16 +502,13 @@ def _save_data(state, fh=None):
             _output(
                 "\n######### Set Energy or Wave Units\n", fh)
             units = state.get_data(id).units
-            rate = state.get_data(id).rate
-            if rate:
-                rate = '"rate"'
+            if state.get_data(id).rate:
+                rate = "rate"
             else:
-                rate = '"counts"'
+                rate = "counts"
             factor = state.get_data(id).plot_fac
-            cmd = "set_analysis(%s, %s, %s, %s)" % (cmd_id,
-                                                    repr(units),
-                                                    rate,
-                                                    repr(factor))
+            cmd = f'set_analysis({cmd_id}, quantity="{units}", ' + \
+                f'type="{rate}", factor={factor})'
             _output(cmd, fh)
         except:
             pass
@@ -519,12 +516,11 @@ def _save_data(state, fh=None):
         # Subtract background data if applicable
         try:
             if state.get_data(id).subtracted:
-                cmd = "if not get_data(%s).subtracted:" % cmd_id
+                cmd = f"if not get_data({cmd_id}).subtracted:"
                 _output(cmd, fh)
                 _output(
                     "    ######### Subtract Background Data", fh)
-                cmd = "    subtract(%s)" % cmd_id
-                _output(cmd, fh)
+                _output(f"    subtract({cmd_id})", fh)
         except:
             pass
 
