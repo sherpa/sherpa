@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2015, 2016, 2019, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2019, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -364,26 +365,12 @@ def _handle_filter(state, id, fh):
         bkg_id = _id_to_str(bid)
         fvals = state.get_bkg(id, bkg_id=bid).get_filter()
 
-        if ndims == 1:
-            _output('notice_id({}, None, None, bkg_id={})'.format(cmd_id,
-                                                                  bkg_id),
-                    fh)
-            cmd = 'notice_id({}, "{}", bkg_id={})'.format(cmd_id,
-                                                          fvals, bkg_id)
-            _output(cmd, fh)
-        elif ndims == 2:
-            _output('notice2d_id({}, None, None, bkg_id={})'.format(cmd_id,
-                                                                    bkg_id),
-                    fh)
-            cmd = 'notice2d_id({}, "{}", bkg_id={})'.format(cmd_id,
-                                                            fvals, bkg_id)
-            _output(cmd, fh)
-        else:
-            # just in case
-            msg = "Set notice range of id={} bkg_id={} to {}".format(cmd_id,
-                                                                     fvals,
-                                                                     bkg_id)
-            _output('print("{}")'.format(msg), fh)
+        # We know this is a PHA dataset so we do not have to worry
+        # about things like 2D data.
+        #
+        _output(f'notice_id({cmd_id}, bkg_id={bkg_id})', fh)
+        cmd = f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})'
+        _output(cmd, fh)
 
 
 def _save_data(state, fh=None):

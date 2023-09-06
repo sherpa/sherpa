@@ -512,7 +512,7 @@ set_analysis("bgrp", 'energy', "rate", 0)
 ######### Filter Data
 
 notice_id("bgrp", "0.467200011015:6.570000171661")
-notice_id("bgrp", None, None, bkg_id=1)
+notice_id("bgrp", bkg_id=1)
 notice_id("bgrp", "1.605999946594:8.760000228882", bkg_id=1)
 
 
@@ -801,7 +801,7 @@ set_analysis(1, 'energy', "rate", 0)
 ######### Filter Data
 
 notice_id(1, "0.992799997330:6.570000171661")
-notice_id(1, None, None, bkg_id=1)
+notice_id(1, bkg_id=1)
 notice_id(1, "0.001460000058:14.950400352478", bkg_id=1)
 
 
@@ -2067,9 +2067,9 @@ set_analysis(1, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(1, "2.000000000000:12.000000000000")
-notice_id(1, None, None, bkg_id=1)
+notice_id(1, bkg_id=1)
 notice_id(1, "2.000000000000:12.000000000000", bkg_id=1)
-notice_id(1, None, None, bkg_id=2)
+notice_id(1, bkg_id=2)
 notice_id(1, "2.000000000000:12.000000000000", bkg_id=2)
 
 
@@ -2137,9 +2137,9 @@ set_analysis(1, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(1, "2.000000000000:4.000000000000")
-notice_id(1, None, None, bkg_id=1)
+notice_id(1, bkg_id=1)
 notice_id(1, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(1, None, None, bkg_id=2)
+notice_id(1, bkg_id=2)
 notice_id(1, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(10, "@@/3c120_pha2")
 
@@ -2167,9 +2167,9 @@ set_analysis(10, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(10, "2.000000000000:4.000000000000")
-notice_id(10, None, None, bkg_id=1)
+notice_id(10, bkg_id=1)
 notice_id(10, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(10, None, None, bkg_id=2)
+notice_id(10, bkg_id=2)
 notice_id(10, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(11, "@@/3c120_pha2")
 
@@ -2197,9 +2197,9 @@ set_analysis(11, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(11, "2.000000000000:4.000000000000")
-notice_id(11, None, None, bkg_id=1)
+notice_id(11, bkg_id=1)
 notice_id(11, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(11, None, None, bkg_id=2)
+notice_id(11, bkg_id=2)
 notice_id(11, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(12, "@@/3c120_pha2")
 
@@ -2227,9 +2227,9 @@ set_analysis(12, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(12, "2.000000000000:4.000000000000")
-notice_id(12, None, None, bkg_id=1)
+notice_id(12, bkg_id=1)
 notice_id(12, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(12, None, None, bkg_id=2)
+notice_id(12, bkg_id=2)
 notice_id(12, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(2, "@@/3c120_pha2")
 
@@ -2257,9 +2257,9 @@ set_analysis(2, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(2, "2.000000000000:4.000000000000")
-notice_id(2, None, None, bkg_id=1)
+notice_id(2, bkg_id=1)
 notice_id(2, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(2, None, None, bkg_id=2)
+notice_id(2, bkg_id=2)
 notice_id(2, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(3, "@@/3c120_pha2")
 
@@ -2287,9 +2287,9 @@ set_analysis(3, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(3, "2.000000000000:4.000000000000")
-notice_id(3, None, None, bkg_id=1)
+notice_id(3, bkg_id=1)
 notice_id(3, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(3, None, None, bkg_id=2)
+notice_id(3, bkg_id=2)
 notice_id(3, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(4, "@@/3c120_pha2")
 
@@ -2317,9 +2317,9 @@ set_analysis(4, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(4, "2.000000000000:4.000000000000")
-notice_id(4, None, None, bkg_id=1)
+notice_id(4, bkg_id=1)
 notice_id(4, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(4, None, None, bkg_id=2)
+notice_id(4, bkg_id=2)
 notice_id(4, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(5, "@@/3c120_pha2")
 
@@ -2347,9 +2347,9 @@ set_analysis(5, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(5, "2.000000000000:4.000000000000")
-notice_id(5, None, None, bkg_id=1)
+notice_id(5, bkg_id=1)
 notice_id(5, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(5, None, None, bkg_id=2)
+notice_id(5, bkg_id=2)
 notice_id(5, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(6, "@@/3c120_pha2")
 
@@ -2377,9 +2377,9 @@ set_analysis(6, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(6, "2.000000000000:4.000000000000")
-notice_id(6, None, None, bkg_id=1)
+notice_id(6, bkg_id=1)
 notice_id(6, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(6, None, None, bkg_id=2)
+notice_id(6, bkg_id=2)
 notice_id(6, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(7, "@@/3c120_pha2")
 
@@ -2407,9 +2407,9 @@ set_analysis(7, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(7, "2.000000000000:4.000000000000")
-notice_id(7, None, None, bkg_id=1)
+notice_id(7, bkg_id=1)
 notice_id(7, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(7, None, None, bkg_id=2)
+notice_id(7, bkg_id=2)
 notice_id(7, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(8, "@@/3c120_pha2")
 
@@ -2437,9 +2437,9 @@ set_analysis(8, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(8, "2.000000000000:4.000000000000")
-notice_id(8, None, None, bkg_id=1)
+notice_id(8, bkg_id=1)
 notice_id(8, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(8, None, None, bkg_id=2)
+notice_id(8, bkg_id=2)
 notice_id(8, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(9, "@@/3c120_pha2")
 
@@ -2467,9 +2467,9 @@ set_analysis(9, 'wavelength', "rate", 0)
 ######### Filter Data
 
 notice_id(9, "2.000000000000:4.000000000000")
-notice_id(9, None, None, bkg_id=1)
+notice_id(9, bkg_id=1)
 notice_id(9, "2.000000000000:4.000000000000", bkg_id=1)
-notice_id(9, None, None, bkg_id=2)
+notice_id(9, bkg_id=2)
 notice_id(9, "2.000000000000:4.000000000000", bkg_id=2)
 
 
@@ -2625,7 +2625,7 @@ set_analysis("csc", 'energy', "rate", 0)
 ######### Filter Data
 
 notice_id("csc", "0.496399998665:7.007999897003")
-notice_id("csc", None, None, bkg_id=1)
+notice_id("csc", bkg_id=1)
 notice_id("csc", "0.394199997187:8.000800132751", bkg_id=1)
 
 
