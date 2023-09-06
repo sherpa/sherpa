@@ -69,6 +69,45 @@ def _output(msg, fh=None):
     fh.write(msg + '\n')
 
 
+def _output_nl(fh=None):
+    """Add a new-line.
+
+    Parameters
+    ----------
+    fh : None or a file handle
+       The file handle to write the message to. If fh is ``None``
+       then the standard output is used.
+
+    """
+
+    _output("", fh)
+
+
+def _output_banner(msg, fh=None, indent=0):
+    """Display the banner message.
+
+    Parameters
+    ----------
+    msg : str
+       The label to output.
+    fh : None or a file handle
+       The file handle to write the message to. If fh is ``None``
+       then the standard output is used.
+    indent : int, optional
+       How many times to indent the comment (if set the leading and
+       trailing newlines aren't added).
+
+    """
+
+    if indent == 0:
+        _output_nl(fh)
+
+    space = ' ' * (indent * 4)
+    _output(f"{space}######### {msg}", fh)
+    if indent == 0:
+        _output_nl(fh)
+
+
 def _id_to_str(id):
     """Convert a data set identifier to a string value.
 
@@ -133,7 +172,6 @@ def _save_intro(fh=None):
 
     # QUS: should numpy only be loaded if it is needed?
     _output("import numpy", fh)
-
     _output("from sherpa.astro.ui import *", fh)
 
 
@@ -253,7 +291,7 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
     if vals is None:
         return
 
-    _output("\n######### {} {} flags\n".format(lbl, label), fh)
+    _output_banner(f"{lbl} {label} flags", fh)
 
     # QUS: can we not use the vals variable here rather than
     #      reassign it? i.e. isn't the "quality" (or "grouping"
@@ -326,7 +364,7 @@ def _handle_filter(state, id, fh):
     """
 
     cmd_id = _id_to_str(id)
-    _output("\n######### Filter Data\n", fh)
+    _output_banner("Filter Data", fh)
     d = state.get_data(id)
     fvals = d.get_filter()
     ndims = len(d.get_dims())
@@ -393,7 +431,7 @@ def _save_data(state, fh=None):
     to be serialized it is included in the script.
     """
 
-    _output("\n######### Load Data Sets\n", fh)
+    _output_banner("Load Data Sets", fh)
 
     cmd_id = ""
     cmd_bkg_id = ""
@@ -412,9 +450,8 @@ def _save_data(state, fh=None):
         # If can't be done, just pass to next
         try:
             # TODO: add a test of the following
-            _output("\n######### Set Image Coordinates\n", fh)
-            cmd = 'set_coord({}, {})'.format(_id_to_str(id),
-                                             repr(state.get_coord(id)))
+            _output_banner("Set Image Coordinates", fh)
+            cmd = f"set_coord({_id_to_str(id)}, '{state.get_coord(id)}')"
             _output(cmd, fh)
         except:
             pass
@@ -432,16 +469,14 @@ def _save_data(state, fh=None):
                 cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
                     cmd_id, cmd_id)
                 _output(cmd, fh)
-                _output("    ######### Group Data", fh)
-                cmd = "    group(%s)" % cmd_id
-                _output(cmd, fh)
+                _output_banner("Group Data", fh, indent=1)
+                _output(f"    group({cmd_id})", fh)
         except:
             pass
 
         # Add responses and ARFs, if any
         try:
-            _output(
-                "\n######### Data Spectral Responses\n", fh)
+            _output_banner("Data Spectral Responses", fh)
             rids = state.list_response_ids(id)
 
             for rid in rids:
@@ -453,8 +488,7 @@ def _save_data(state, fh=None):
 
         # Check if this data set has associated backgrounds
         try:
-            _output(
-                "\n######### Load Background Data Sets\n", fh)
+            _output_banner("Load Background Data Sets", fh)
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
@@ -478,16 +512,13 @@ def _save_data(state, fh=None):
                         cmd = "if get_bkg(%s, %s).grouping is not None and not get_bkg(%s, %s).grouped:" % (
                             cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
                         _output(cmd, fh)
-                        _output(
-                            "    ######### Group Background", fh)
-                        cmd = "    group(%s, %s)" % (cmd_id, cmd_bkg_id)
-                        _output(cmd, fh)
+                        _output_banner("Group Background", fh, indent=1)
+                        _output(f"    group({cmd_id}, {cmd_bkg_id})", fh)
                 except:
                     pass
 
                 # Load background response, ARFs if any
-                _output(
-                    "\n######### Background Spectral Responses\n", fh)
+                _output_banner("Background Spectral Responses", fh)
                 rids = state.list_response_ids(id, bid)
                 for rid in rids:
                     _save_arf_response(state, id, rid, bid, fh=fh)
@@ -498,9 +529,8 @@ def _save_data(state, fh=None):
 
         # Set energy units if applicable
         # If can't be done, just pass to next
+        _output_banner("Set Energy or Wave Units", fh)
         try:
-            _output(
-                "\n######### Set Energy or Wave Units\n", fh)
             units = state.get_data(id).units
             if state.get_data(id).rate:
                 rate = "rate"
@@ -518,8 +548,7 @@ def _save_data(state, fh=None):
             if state.get_data(id).subtracted:
                 cmd = f"if not get_data({cmd_id}).subtracted:"
                 _output(cmd, fh)
-                _output(
-                    "    ######### Subtract Background Data", fh)
+                _output_banner("Subtract Background Data", fh, indent=1)
                 _output(f"    subtract({cmd_id})", fh)
         except:
             pass
@@ -593,10 +622,9 @@ def _save_statistic(state, fh=None):
        otherwise the information is added to the file handle.
     """
 
-    _output("\n######### Set Statistic\n", fh)
-    cmd = 'set_stat("%s")' % state.get_stat_name()
-    _output(cmd, fh)
-    _output("", fh)
+    _output_banner("Set Statistic", fh)
+    _output(f'set_stat("{state.get_stat_name()}")', fh)
+    _output_nl(fh)
 
 
 def _save_fit_method(state, fh=None):
@@ -612,10 +640,9 @@ def _save_fit_method(state, fh=None):
 
     # Save fitting method
 
-    _output("\n######### Set Fitting Method\n", fh)
-    cmd = 'set_method("%s")' % state.get_method_name()
-    _output(cmd, fh)
-    _output("", fh)
+    _output_banner("Set Fitting Method", fh)
+    _output(f'set_method("{state.get_method_name()}")', fh)
+    _output_nl(fh)
 
     def tostatement(key, val):
         # TODO: Using .format() returns more decimal places, which
@@ -625,7 +652,7 @@ def _save_fit_method(state, fh=None):
         return 'set_method_opt("%s", %s)' % (key, val)
 
     _save_entries(state.get_method_opt(), tostatement, fh)
-    _output("", fh)
+    _output_nl(fh)
 
 
 def _save_iter_method(state, fh=None):
@@ -642,11 +669,11 @@ def _save_iter_method(state, fh=None):
     if state.get_iter_method_name() == 'none':
         return
 
-    _output("\n######### Set Iterative Fitting Method\n", fh)
+    _output_banner("Set Iterative Fitting Method", fh)
     meth = state.get_iter_method_name()
     cmd = f'set_iter_method("{meth}")'
     _output(cmd, fh)
-    _output("", fh)
+    _output_nl(fh)
 
     def tostatement(key, val):
         # There was a discussion here about the use of
@@ -656,7 +683,7 @@ def _save_iter_method(state, fh=None):
         return f'set_iter_method_opt("{key}", {val})'
 
     _save_entries(state.get_iter_method_opt(), tostatement, fh)
-    _output("", fh)
+    _output_nl(fh)
 
 
 # Is there something in the standard libraries that does this?
@@ -710,7 +737,7 @@ def _handle_usermodel(mod, modelname, fh=None):
         _output("def {}(*args):".format(mod.calc.name), fh)
         _output("    raise NotImplementedError('User model was " +
                 "not saved by save_all().'", fh)
-        _output("", fh)
+        _output_nl(fh)
         return
 
     msg = "Found user model '{}'; ".format(modelname) + \
@@ -770,7 +797,7 @@ def _save_model_components(state, fh=None):
     # To recreate attributes, print out dictionary as ordered pairs,
     # for each parameter
 
-    _output("\n######### Set Model Components and Parameters\n", fh)
+    _output_banner("Set Model Components and Parameters", fh)
     all_model_components = state.list_model_components()
     all_model_components.reverse()
 
@@ -836,7 +863,7 @@ def _save_model_components(state, fh=None):
         if hasattr(mod, "integrate"):
             cmd = "%s.integrate = %s" % (modelname, mod.integrate)
             _output(cmd, fh)
-            _output("", fh)
+            _output_nl(fh)
 
         # Write out the parameters in the order they are stored in
         # the model. The original version of the code iterated
@@ -854,11 +881,11 @@ def _save_model_components(state, fh=None):
             if hasattr(mod, "size"):
                 cmd = "%s.size = %s" % (modelname, repr(mod.size))
                 _output(cmd, fh)
-                _output("", fh)
+                _output_nl(fh)
             if hasattr(mod, "center"):
                 cmd = "%s.center = %s" % (modelname, repr(mod.center))
                 _output(cmd, fh)
-                _output("", fh)
+                _output_nl(fh)
 
     # If there were any links made between parameters, send those
     # link commands to outfile now; else, linkstr is just an empty string
@@ -878,7 +905,7 @@ def _save_models(state, fh=None):
 
     # Save all source, pileup and background models
 
-    _output("\n######### Set Source, Pileup and Background Models\n", fh)
+    _output_banner("Set Source, Pileup and Background Models", fh)
     for id in state.list_data_ids():
         cmd_id = _id_to_str(id)
 
@@ -926,7 +953,7 @@ def _save_models(state, fh=None):
                 cmd = ""
 
             _output(cmd, fh)
-            _output("", fh)
+            _output_nl(fh)
         except:
             pass
 
@@ -984,7 +1011,7 @@ def _save_models(state, fh=None):
                     cmd = ""
 
                 _output(cmd, fh)
-                _output("", fh)
+                _output_nl(fh)
 
         except:
             pass
@@ -1005,7 +1032,7 @@ def _save_xspec(fh=None):
 
     # TODO: should this make sure that the XSPEC module is in use?
     #       i.e. only write these out if an XSPEC model is being used?
-    _output("\n######### XSPEC Module Settings\n", fh)
+    _output_banner("XSPEC Module Settings", fh)
     xspec_state = sherpa.astro.xspec.get_xsstate()
 
     cmd = "set_xschatter(%d)" % xspec_state["chatter"]
@@ -1207,7 +1234,7 @@ def save_all(state, fh=None):
 
     _save_intro(fh)
     _save_data(state, fh)
-    _output("", fh)
+    _output_nl(fh)
     _save_statistic(state, fh)
     _save_fit_method(state, fh)
     _save_iter_method(state, fh)
