@@ -641,23 +641,22 @@ def get_arf_data(arg, make_copy=False):
     return data, filename
 
 
-def get_rmf_data(arg, make_copy=False):
-    """arg is a filename or a HDUList object.
+def _read_col(hdu, name):
+    """A specialized form of _require_col
 
-    Notes
-    -----
-    The RMF format is described in [1]_.
-
-    References
-    ----------
-
-    .. [1] OGIP Calibration Memo CAL/GEN/92-002, "The Calibration
-           Requirements for Spectral Analysis (Definition of RMF and
-           ARF file formats)", Ian M. George1, Keith A. Arnaud,
-           Bill Pence, Laddawan Ruamsuwan and Michael F. Corcoran,
-           https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+    There is no attempt to convert from a variable-length field
+    to any other form.
 
     """
+
+    try:
+        return hdu.data[name]
+    except KeyError:
+        raise IOErr("reqcol", name, hdu._file.name)
+
+
+def _read_rmf_data(arg):
+    """Read in the data from the RMF."""
 
     rmf, filename = _get_file_contents(arg, exptype="BinTableHDU",
                                        nobinary=True)
@@ -674,26 +673,18 @@ def get_rmf_data(arg, make_copy=False):
         else:
             raise IOErr('notrsp', filename, 'an RMF')
 
+        # The comments note the type we want the column to be, but
+        # this conversion needs to be done after cleaning up the
+        # data.
+        #
         data = {}
-
         data['detchans'] = SherpaUInt(_require_key(hdu, 'DETCHANS'))
-        data['energ_lo'] = _require_col(hdu, 'ENERG_LO', fix_type=True)
-        data['energ_hi'] = _require_col(hdu, 'ENERG_HI', fix_type=True)
-        data['n_grp'] = _require_col(hdu, 'N_GRP', fix_type=True,
-                                     dtype=SherpaUInt)
-        data['f_chan'] = _require_vec(hdu, 'F_CHAN', fix_type=True,
-                                      dtype=SherpaUInt)
-        data['n_chan'] = _require_vec(hdu, 'N_CHAN', fix_type=True,
-                                      dtype=SherpaUInt)
-
-        # Read MATRIX as-is -- we will flatten it below, because
-        # we need to remove all rows corresponding to n_grp[row] == 0
-        #
-        # TODO: I would expect this to error out if MATRIX is not available
-        #
-        data['matrix'] = None
-        if 'MATRIX' in hdu.columns.names:
-            data['matrix'] = hdu.data.field('MATRIX')
+        data['energ_lo'] = _read_col(hdu, 'ENERG_LO')  # SherpaFloat
+        data['energ_hi'] = _read_col(hdu, 'ENERG_HI')  # SherpaFloat
+        data['n_grp'] = _read_col(hdu, 'N_GRP')        # SherpaUInt
+        data['f_chan'] = _read_col(hdu, 'F_CHAN')      # SherpaUInt
+        data['n_chan'] = _read_col(hdu, 'N_CHAN')      # SherpaUInt
+        data['matrix'] = _read_col(hdu, "MATRIX")
 
         data['header'] = _get_meta_data(hdu)
         data['header'].pop('DETCHANS', None)
@@ -713,6 +704,7 @@ def get_rmf_data(arg, make_copy=False):
                   ' appropriate TLMIN value prior to fitting')
 
         if _has_hdu(rmf, 'EBOUNDS'):
+            # This should probably error out if E_MIN/MAX are not present.
             hdu = rmf['EBOUNDS']
             data['e_min'] = _try_col(hdu, 'E_MIN', fix_type=True)
             data['e_max'] = _try_col(hdu, 'E_MAX', fix_type=True)
@@ -729,33 +721,73 @@ def get_rmf_data(arg, make_copy=False):
     finally:
         rmf.close()
 
-    # Remove any rows from the MATRIX and F_CHAN/N_CHAN where N_GRP is 0,
-    # since they do not add any data. This is to match the Crates backend.
+    return data, filename
+
+
+def get_rmf_data(arg, make_copy=False):
+    """arg is a filename or a HDUList object.
+
+    Notes
+    -----
+    For more information on the RMF format see the `OGIP Calibration
+    Memo CAL/GEN/92-002
+    <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
+
+    """
+
+    # Read in the columns from the MATRIX and EBOUNDS extensions.
+    #
+    data, filename = _read_rmf_data(arg)
+
+    # This could be taken from the NUMELT keyword, but this is not
+    # a required value and it is not obvious how trustworthy it is.
+    #
+    # Since N_CHAN can be a VLF we can not just use sum().
+    #
+    numelt = 0
+    for row in data["n_chan"]:
+        try:
+            numelt += sum(row)
+        except TypeError:
+            # assumed to be a scalar
+            numelt += row
+
+    # Remove unwanted data
+    #  - rows where N_GRP=0
+    #  - for each row, any excess data (beyond the sum(N_CHAN) for that row)
+    #
+    # The columns may be 1D or 2D vectors, or variable-field arrays,
+    # where each row is an object containing a number of elements.
+    #
     # Note that crates uses the sherpa.astro.utils.resp_init routine,
     # but it's not clear why, so it is not used here for now.
     #
     good = data['n_grp'] > 0
-    data['matrix'] = data['matrix'][good]
 
-    if isinstance(data['matrix'], _VLF):
-        data['matrix'] = numpy.concatenate([numpy.asarray(row) for
-                                            row in data['matrix']])
+    matrix = data['matrix'][good]
+    n_grp = data['n_grp'][good]
+    n_chan = data['n_chan'][good]
+    f_chan = data['f_chan'][good]
+
+    # Flatten the array. There are four cases here:
+    #
+    # a) a variable-length field with no "padding"
+    # b) a variable-length field with padding
+    # c) a rectangular matrix is given, with no "padding"
+    # d) a rectangular matrix is given, but a row can contain
+    #    unused data
+    #
+    if numelt == matrix.size:
+        if isinstance(matrix, _VLF):
+            # case a
+            matrix = numpy.concatenate([numpy.asarray(row)
+                                        for row in matrix])
+        else:
+            # case c
+            matrix = matrix.flatten()
 
     else:
-        # Flatten the array. There are two cases here:
-        # a) the full matrix is given (that is, n_grp is 1 and n_chan
-        #    = number of channels for each row)
-        # b) a rectangular matrix is given, but a row can contain
-        #    unused data (outside the f_chan range)
-        #
-        # Case a can be handled easily, but it's probably not worth
-        # having a special case for this.
-        #
-        matrix = data['matrix']
-        n_grp = data['n_grp'][good]
-        f_chan = data['f_chan'][good]
-        n_chan = data['n_chan'][good]
-
+        # cases b or d; assume we can use the same logic
         rowdata = []
         for mrow, ng, ncs in zip(matrix, n_grp, n_chan):
             # Need a RMF which ng>1 to test this with.
@@ -781,32 +813,40 @@ def get_rmf_data(arg, make_copy=False):
                 rowdata.append(rdata)
                 start = end
 
-        data['matrix'] = numpy.concatenate(rowdata)
+        matrix = numpy.concatenate(rowdata)
 
-    data['matrix'] = data['matrix'].astype(SherpaFloat)
+    data['matrix'] = matrix.astype(SherpaFloat)
 
     # Flatten f_chan and n_chan vectors into 1D arrays as crates does
-    # according to group
+    # according to group. This is not always needed, but annoying to
+    # check for so we always do it.
     #
-    if data['f_chan'].ndim > 1 and data['n_chan'].ndim > 1:
-        f_chan = []
-        n_chan = []
-        for grp, fch, nch, in zip(data['n_grp'], data['f_chan'],
-                                  data['n_chan']):
-            for i in range(grp):
-                f_chan.append(fch[i])
-                n_chan.append(nch[i])
+    xf_chan = []
+    xn_chan = []
+    for grp, fch, nch, in zip(n_grp, f_chan, n_chan):
+        if numpy.isscalar(fch):
+            # The assumption is that grp==1 here
+            xf_chan.append(fch)
+            xn_chan.append(nch)
+        else:
+            # The arrays may contain extra elements (which
+            # should be 0).
+            #
+            xf_chan.extend(fch[:grp])
+            xn_chan.extend(nch[:grp])
 
-        # This automatically filters out rows where N_GRP is 0.
-        #
-        data['f_chan'] = numpy.asarray(f_chan, SherpaUInt)
-        data['n_chan'] = numpy.asarray(n_chan, SherpaUInt)
-    else:
-        if len(data['n_grp']) == len(data['f_chan']):
-            # filter out groups with zeroes.
-            good = data['n_grp'] > 0
-            data['f_chan'] = data['f_chan'][good]
-            data['n_chan'] = data['n_chan'][good]
+    data['f_chan'] = numpy.asarray(xf_chan, SherpaUInt)
+    data['n_chan'] = numpy.asarray(xn_chan, SherpaUInt)
+
+    # Not all fields are "flattened" by this routine. In particular we
+    # need to keep knowledge of these rows with 0 groups. This is why
+    # we set the n_grp entry to data['n_grp'] rather than the n_grp
+    # variable (which has the 0 elements removed).
+    #
+    data['n_grp'] = numpy.asarray(data['n_grp'], SherpaUInt)
+
+    data['energ_lo'] = numpy.asarray(data['energ_lo'], SherpaFloat)
+    data['energ_hi'] = numpy.asarray(data['energ_hi'], SherpaFloat)
 
     return data, filename
 
