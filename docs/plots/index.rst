@@ -308,8 +308,8 @@ line position (which corresponds to `mdl.pars[2]`):
     WARNING: hard maximum hit for parameter line.ampl
     >>> iproj.plot()
 
-Customizing plotting further
-============================
+More plot customization
+=======================
 
 .. toctree::
    :maxdepth: 2

@@ -23,7 +23,7 @@
 Classes provide access to common plotting tasks, which is done by the
 plotting backend defined in the ``options.plot_pkg`` setting of the
 Sherpa configuration file. Note that plot objects can be created
-and used even when only the `sherpa.plot.backendsBasicBackend` is
+and used even when only the `sherpa.plot.backends.BasicBackend` is
 available.
 """
 from configparser import ConfigParser
@@ -88,8 +88,7 @@ for plottry in plot_opt:
     if plottry in PLOT_BACKENDS:
         backend = PLOT_BACKENDS[plottry]()
         break
-    else:
-        warning(f"Plotting backend '{plottry}' not found or dependencies missing. Trying next option.")
+    warning(f"Plotting backend '{plottry}' not found or dependencies missing. Trying next option.")
 else:
     # None of the options in the rc file work, e.g. because it's an old file
     backend = BasicBackend()
@@ -173,7 +172,6 @@ def set_backend(name):
                 )
 
 
-# TODO: make real example
 class TemporaryPlottingBackend(contextlib.AbstractContextManager):
     '''Set the Sherpa plotting backend as a context, e.g. for a single plot
 
@@ -188,9 +186,15 @@ class TemporaryPlottingBackend(contextlib.AbstractContextManager):
     Example
     -------
 
-    >>> from sherpa.plot.backends import TemporaryPlottingBackend
+    >>> from sherpa.plot import TemporaryPlottingBackend
+    >>> from sherpa.data import Data1D
     >>> with TemporaryPlottingBackend('pylab'):
-    ...     plotting code here...
+    ...     x1 = [100, 200, 600, 1200]
+    ...     y1 = [2000, 2100, 1400, 3050]
+    ...     d1 = Data1D('oned', x1, y1)
+    ...     plot1 = plot.DataPlot()
+    ...     plot1.prepare(d1)
+    ...     plot1.plot()
 
     '''
 

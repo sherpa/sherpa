@@ -92,8 +92,8 @@ class PylabBackend(BasicBackend):
 
     Example:
 
-       >> > translate_dict = {'markerfacecolor': {'k': (0., 0., 0.)},
-                              'alpha': lambda a: 256 * a}
+       >>> translate_dict = {'markerfacecolor': {'k': (0., 0., 0.)},
+       ...                   'alpha': lambda a: 256 * a}
 
     This translates the color 'k' to tuple of RGB values and alpha values
     to a number between 0 and 256.

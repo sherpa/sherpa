@@ -216,7 +216,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
     Example:
 
     >>> translate_dict = {'markerfacecolor': {'k': (0., 0., 0.)},
-                          'alpha': lambda a: 256 * a}
+    ...                   'alpha': lambda a: 256 * a}
 
     This translates the color 'k' to tuple of RGB values and alpha values
     to a number between 0 and 256.
@@ -926,7 +926,7 @@ class IndepOnlyBackend(BasicBackend):
             self.translate_dict[k] = _check(k, v)
 
     def __getattribute__(self, __name: str):
-        '''Override attribute acces
+        '''Override attribute access
 
         When looking up a method, get the method of the base class,
         inspect its signature and return a function that tests if
@@ -953,5 +953,5 @@ class IndepOnlyBackend(BasicBackend):
                                         'which is not part of the named keyword arguments.')
                 return attr(*args, **kwargs)
             return checked_func
-        else:
-            return attr
+
+        return attr

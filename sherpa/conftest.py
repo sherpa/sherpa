@@ -54,11 +54,11 @@ FUNCTIONAL_PLOT_BACKENDS = []
 '''Unfortunately, there is no metadata that tell us which plotting backends are
 dummys and which ones actually produce useful plots. That's because
 "one man's dummy might be another man's usecase", e.g. a backend might be a
-dummy for image, but not for histrogram.
+dummy for image, but not for a histogram.
 
 The goal of this list is to be able to run a large number of plottting tests
 with any installed, functional backend. These tests mostly execute
-`plot`, `histrogram`, `vline`, `hline`, etc, but not image, 3D plots etc.
+`plot`, `histogram`, `vline`, `hline`, etc, but not image, 3D plots etc.
 So, a better name might be BACKENDS_FUNCTIONAL_FOR_1D_PLOT, but this can be
 refined when we actually have more plotting backends and more multi-D plot tests.
 

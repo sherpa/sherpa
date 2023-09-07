@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2022
+#  Copyright (C) 2022, 2023
 #  MIT
 #
 #
@@ -56,7 +56,7 @@ def translate_args(func):
     will be passed through unchanged so that the user can also make use of any other
     color specification that the backend allows.
 
-    >>> class Plotter():
+    >>> class Plotter:
     ...     translate_args = {'color': {'r': (1,0,0), 'b': (0,0,1)}}
     ...
     ...     @translate_args

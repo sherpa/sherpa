@@ -3,7 +3,8 @@ Plotting backend details
 ************************
 
 .. warning::
-   The plotting backend API is currently re-designed and details might change in the near future.
+   The plotting backend API is currently re-designed and should currently be considered
+   experimental.
 
 Plotting in Sherpa is done through *plotting backends*.
 The term *backend* is used in two related ways in Sherpa. First, a *backend* is an
@@ -21,7 +22,7 @@ Instead of utilizing Sherpa classes and commands to plot data, users can
 alternatively just access the data in the Sherpa data objects (e.g. the x and y
 values of a dataset) and perform plotting operations directly with any plotting
 backend that is available to them. This method may be less convenient, but it
-works for ploting backends not (yet) supported by Sherpa.
+works for plotting backends not (yet) supported by Sherpa.
 
 Which backend is used?
 ======================
@@ -69,11 +70,12 @@ provides the same interface)::
   >>> from sherpa.plot import set_backend
   >>> set_backend('pylab')
 
-Sherpa also provides a decorator to change the backend for just one plot::
+Sherpa also provides a context manager to change the backend for just one plot::
 
   >>> from sherpa.plot import TemporaryPlottingBackend
   >>> with TemporarypPlottingBackend('pylab'):
-  ...     plotting code here...
+  ...     x = [1,2,3,4]
+  ...     # do some plotting with x
 
 The list of available plotting backend names and the classes that implement them is::
 
@@ -90,7 +92,7 @@ Backend-independent plotting options
 Sherpa defines a number of plotting options that can be used with any backend,
 thus code that limits itself to those options can run independent of which
 backend is set up in Sherpa. All default settings and most examples use only
-backend-inpdependent plotting options. The resulting plots will not look
+backend-independent plotting options. The resulting plots will not look
 identical in each backend, e.g. thickness of a line or the font type of an
 annotation might differ, but they will convey the same information. For example,
 "a blue dotted line" will generally appear blue and dotted, even though the
@@ -112,7 +114,7 @@ The following settings are accepted for all Sherpa plotting backends:
 Colors
 ------
 
-Colors are used for the color of lines, symbols, errorbars etc.
+Colors are used for the color of lines, symbols, error bars etc.
 
 - ``'b'`` (blue)
 - ``'r'`` (red)
@@ -172,7 +174,7 @@ the backend-independent list, Sherpa will translate ``'k'`` to a form that bokeh
 does understand (``'black'`` in this case).
 
 Backends may also accept additional keywords to specify more plotting properties
-such as the transparency of an element or an URL that is opened when clicking on
+such as the transparency of an element or a URL that is opened when clicking on
 an element. Those can simply be passed to the Sherpa plotting command, which
 will pass them through to the plotting backend:
 
@@ -230,11 +232,11 @@ does not support 2D data. In that case, the backend would typically issue a
 warning.
 
 The plotting functions are not separated by "how things look on paper" (thus "plot" is
-a long method that is responsible for points, lines, and errorbars), but
+a long method that is responsible for points, lines, and error bars), but
 by "what is the input data type":
 
 - `~sherpa.plot.backend.BaseBackend.plot` (for scatter plots with marker style
-  set, for line plots with line style set, and for errorbars with ``xerr`` or
+  set, for line plots with line style set, and for error bars with ``xerr`` or
   ``yerr`` set to `True`); accepts (x, y) data with optional error bars in each
   dimension. Data can be scalar (for a single marker), or array-like.
   Note that ``x`` and ``y`` can also be `None`, which should create an empty plot.
@@ -351,16 +353,19 @@ Instead, the plotting tests in Sherpa fall into the following categories:
     `sherpa.plot.backends.IndepOnlyBackend` does not perform any plotting,
     but it does raise a warning when plotting options that are not on the list of
     backend-independent parameters are used. Users will never use this backend,
-    but running our tests with it ensures that we don't hardcode matplotlib-specific
-    defaults into any of our objects. In principle, most plotting tests fall into this
+    but running our tests with it ensures that we don't hardcode
+    defaults specific to matplotlib into any of our objects.
+    In principle, most plotting tests fall into this
     category, since most code needs to work for all backends. However, running every
     plotting test with every possible backend can make the runtime for the tests long.
     In practice, we thus do not run every test that we could for all backends.
     To run a test for all backends, add the `sherpa.conftest.all_plot_backends`
     `pytest fixture <https://docs.pytest.org/en/stable/explanation/fixtures.html>`_::
 
-      def test_this_plotting_feature(all_plot_backends):
-          ... test code here ...
+        >>> def test_this_plotting_feature(all_plot_backends):
+        ...     x = [1,2,3,4]
+        ...     y = [2,3,4,5]
+        ...     # plot x and y in some way in your test.
 
     This fixture will execute the test several times with different active backends.
     Alternatively, sherpa also has a fixture that runs all backends *except* for the
