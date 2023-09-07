@@ -33,6 +33,7 @@ import pytest
 
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_arf, create_delta_rmf
+from sherpa.astro import io
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.instrument import ConvolutionKernel
@@ -43,8 +44,7 @@ from sherpa.ui.utils import Session
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, PlotErr, SessionErr
 from sherpa.utils.logging import SherpaVerbosity
-from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
-    has_package_from_list
+from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
 @pytest.fixture
@@ -56,11 +56,10 @@ def skip_if_no_io(request):
     if request.getfixturevalue("session") == Session:
         return
 
-    # This requires knowledge of requires_fits, but we don't make it
-    # possible to access this so we hard code the knowledge here. If
-    # we ever get another I/O backend we need to revisit this.
+    # If the I/O backend is not the dummy backend then we assume that
+    # we can return.
     #
-    if has_package_from_list("astropy.io.fits", "pycrates"):
+    if io.backend.__name__ != "sherpa.astro.io.dummy_backend":
         return
 
     pytest.skip(reason="FITS backend required")
@@ -2540,7 +2539,7 @@ def check_save_ascii2d(session, expected, out, savefunc, idval, kwargs, check_st
 
     """
 
-    if session == AstroSession and has_package_from_list("pycrates"):
+    if session == AstroSession and io.backend.__name__ == "sherpa.astro.io.crates_backend":
         if idval is None:
             with pytest.raises(IOErr,
                                match="writing images in ASCII is not supported"):
