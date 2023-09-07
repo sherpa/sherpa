@@ -359,23 +359,46 @@ def _handle_filter(state, id, fh):
     in the Sherpa session object (state).
     """
 
-    cmd_id = _id_to_str(id)
     _output_banner("Filter Data", fh)
+
+    cmd_id = _id_to_str(id)
     d = state.get_data(id)
-    fvals = d.get_filter()
     ndims = len(d.get_dims())
-    if ndims == 1:
-        cmd = f'notice_id({cmd_id}, "{fvals}")'
-        _output(cmd, fh)
-    elif ndims == 2:
-        # Only output the filter if it does anything
-        if fvals != '':
-            cmd = f'notice2d_id({cmd_id}, "{fvals}")'
-            _output(cmd, fh)
+
+    # We have mask being
+    #  - True or an array of Trues
+    #    => no filter is needed
+    #
+    #  - False or an array of Falses
+    #    => everything is filtered out
+    #
+    #  - array of True and False
+    #    => want to filter the data
+    #
+    # We only report a filter if it actually excludes some data.  The
+    # following relies on numpy.all/any behaving the same when given
+    # boolval as [boolval], so we do not have to explicitly check if
+    # the mask is a boolean.
+    #
+    if numpy.all(d.mask):
+        pass
+
+    elif numpy.any(d.mask):
+        if ndims == 2:
+            func = "notice2d"
+        else:
+            func = "notice"
+
+        fvals = d.get_filter()
+        _output(f'{func}_id({cmd_id}, "{fvals}")', fh)
+
     else:
-        # just in case
-        _output(f'print("Set notice range of id={cmd_id} to {fvals}")',
-                fh)
+        if ndims == 2:
+            func = "ignore2d"
+        else:
+            func = "ignore"
+
+        _output(f'{func}_id({cmd_id})', fh)
 
     try:
         bids = state.list_bkg_ids(id)
@@ -396,14 +419,24 @@ def _handle_filter(state, id, fh):
     #       background one.
     for bid in bids:
         bkg_id = _id_to_str(bid)
-        fvals = state.get_bkg(id, bkg_id=bid).get_filter()
+        b = state.get_bkg(id, bkg_id=bid)
 
         # We know this is a PHA dataset so we do not have to worry
         # about things like 2D data.
         #
-        _output(f'notice_id({cmd_id}, bkg_id={bkg_id})', fh)
-        cmd = f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})'
-        _output(cmd, fh)
+        if numpy.all(b.mask):
+            pass
+
+        elif numpy.any(b.mask):
+            # We need to clear any existing background filter set by
+            # the source.
+            #
+            _output(f'notice_id({cmd_id}, bkg_id={bkg_id})', fh)
+            fvals = b.get_filter()
+            _output(f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})', fh)
+
+        else:
+            _output(f'ignore_id({cmd_id}, bkg_id={bkg_id})', fh)
 
 
 def _save_data(state, fh=None):
@@ -508,7 +541,7 @@ def _save_data(state, fh=None):
                             f"and not get_bkg({cmd_id}, {cmd_bkg_id}).grouped:"
                         _output(cmd, fh)
                         _output_banner("Group Background", fh, indent=1)
-                        _output(f"    group({cmd_id}, {cmd_bkg_id})", fh)
+                        _output(f"    group({cmd_id}, bkg_id={cmd_bkg_id})", fh)
                 except:
                     pass
 
@@ -1080,7 +1113,7 @@ def _save_dataset(state, id):
             return f'print("{msg}")'
 
         if isinstance(dset, DataIMG):
-            msg = "Unable to re-create image data set '{id}'"
+            msg = f"Unable to re-create image data set '{id}'"
             warning(msg)
             return f'print("{msg}")'
 

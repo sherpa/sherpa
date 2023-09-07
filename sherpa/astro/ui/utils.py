@@ -15507,7 +15507,9 @@ class Session(sherpa.ui.utils.Session):
          3. some settings and values may not be recorded.
 
         .. versionchanged:: 4.16.0
-           Any set_psf calls are now included in the output file.
+           Any set_psf calls are now included in the output file. The
+           filter is no-longer included if it does not exclude any
+           data.
 
         Parameters
         ----------
@@ -15543,14 +15545,14 @@ class Session(sherpa.ui.utils.Session):
         include:
 
         - data created by calls to `load_arrays`, or changed from the
-          version on disk - e.g. by calls to `sherpa.astro.ui.set_counts`.
+          version on disk - e.g. by calls to `set_counts`,
 
         - any optional keywords to comands such as `load_data`
-          or `load_pha`
+          or `load_pha`,
 
-        - user models may not be restored correctly
+        - user models may not be restored correctly,
 
-        - only a subset of Sherpa commands are saved.
+        - and only a subset of Sherpa commands are saved.
 
         Examples
         --------
