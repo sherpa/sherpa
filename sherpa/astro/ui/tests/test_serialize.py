@@ -1495,7 +1495,10 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-print("Unable to re-create PHA data set '1'")
+load_arrays(1,
+            [1, 2, 3],
+            [2, 5, 2],
+            DataPHA)
 
 ######### Set Image Coordinates
 
@@ -1512,7 +1515,10 @@ set_analysis(1, quantity="channel", type="rate", factor=0)
 
 ######### Filter Data
 
-print("Unable to re-create PHA data set '2'")
+load_arrays(2,
+            [1, 2, 3],
+            [3, 4, 1],
+            DataPHA)
 
 ######### Set Image Coordinates
 
@@ -1635,7 +1641,11 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_data(1, "dataspace1d")
+load_arrays(1,
+            [1.0, 3.0, 5.0, 7.0, 9.0],
+            [3.0, 5.0, 7.0, 9.0, 11.0],
+            [2.0, 5.0, 6.0, 0.0, 2.0],
+            Data1DInt)
 
 ######### Set Image Coordinates
 
@@ -1688,7 +1698,12 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_image(1, "dataspace2d")
+load_arrays(1,
+            [1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0, 4.0, 1.0, 2.0, 3.0, 4.0],
+            [1.0, 1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 3.0],
+            [1.0, 2.0, 1.0, 0.0, 2.0, 3.0, 5.0, 2.0, 1.0, 0.0, 1.0, 1.0],
+            (3, 4),
+            DataIMG)
 
 ######### Set Image Coordinates
 
@@ -1711,6 +1726,188 @@ notice2d_id(1, "Field()&!Box(1.4,2.5,1.2,1.4)")
 ######### Set Statistic
 
 set_stat("cash")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)
+
+
+######### Set Model Components and Parameters
+
+
+
+######### Set Source, Pileup and Background Models
+
+
+
+"""
+
+_canonical_load_arrays_simple = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_arrays("f",
+            [-50, -20],
+            [-20000.0, 300000.0],
+            Data1D)
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+
+######### Filter Data
+
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)
+
+
+######### Set Model Components and Parameters
+
+
+
+######### Set Source, Pileup and Background Models
+
+
+
+"""
+
+_canonical_load_arrays_pha = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_arrays(1,
+            [1, 2, 3, 4, 5],
+            [12, 2, 1, 0, 1],
+            DataPHA)
+set_exposure(1, 100)
+set_backscal(1, 0.002)
+set_areascal(1, 0.001)
+
+######### Set Image Coordinates
+
+
+######### Data grouping flags
+
+set_grouping(1, val=numpy.array([1, 1, -1, 0, 1], numpy.int16))
+
+######### Data quality flags
+
+set_quality(1, val=numpy.array([0, 0, 0, 0, 2], numpy.int16))
+if get_data(1).grouping is not None and not get_data(1).grouped:
+    ######### Group Data
+    group(1)
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+set_analysis(1, quantity="channel", type="rate", factor=0)
+
+######### Filter Data
+
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)
+
+
+######### Set Model Components and Parameters
+
+
+
+######### Set Source, Pileup and Background Models
+
+
+
+"""
+
+_canonical_load_arrays_data2d = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_arrays(1,
+            [1, 1, 2],
+            [1, 2, 2],
+            [3, 4, 5],
+            Data2D)
+set_staterror(1, [0.1, 0.1, 0.2])
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+
+######### Set Energy or Wave Units
+
+
+######### Filter Data
+
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
 
 
 ######### Set Fitting Method
@@ -1928,7 +2125,7 @@ from sherpa.astro.ui import *
 
 ######### Load Data Sets
 
-load_data(1, "@@/data1.dat")
+load_data(1, "@@/data1.dat", ncols=3)
 
 ######### Set Image Coordinates
 
@@ -2756,6 +2953,9 @@ set_xsxsect("bcmc")
     _canonical_pileup_model += _canonical_extra
     _canonical_dataspace1d_int += _canonical_extra
     _canonical_dataspace2d_img += _canonical_extra
+    _canonical_load_arrays_simple += _canonical_extra
+    _canonical_load_arrays_pha += _canonical_extra
+    _canonical_load_arrays_data2d += _canonical_extra
     _canonical_xspec_hard_limit_min += _canonical_extra
     _canonical_xspec_hard_limit_max += _canonical_extra
     _canonical_link_par += _canonical_extra
@@ -3452,7 +3652,6 @@ def test_restore_xstable_model(make_data_path):
     # assert tbl.fract.frozen()
 
 
-@pytest.mark.xfail
 def test_restore_pileup_model():
     """Note: this is not a realistic pileup-model case.
 
@@ -3468,20 +3667,15 @@ def test_restore_pileup_model():
 
     compare(_canonical_pileup_model)
 
-    # check we get the expected error
-    #
-    with pytest.raises(IdentifierErr,
-                       match="^data set 1 has not been set$"):
-        restore()
+    restore()
 
-    mod1 = ui.get_pileup_model(1)  # XFAIL because restore failed
+    mod1 = ui.get_pileup_model(1)
     mod2 = ui.get_pileup_model(2)
     assert mod1.name == "jdpileup.pmod"
     assert mod2.name == "jdpileup.pmod"
     assert isinstance(mod1, JDPileup)
 
 
-@pytest.mark.xfail
 def test_restore_dataspace1d_int():
     """Can we restore a dataspace1d case?"""
 
@@ -3496,17 +3690,12 @@ def test_restore_dataspace1d_int():
 
     compare(_canonical_dataspace1d_int)
 
-    # check we get the expected error
-    #
-    with pytest.raises(FileNotFoundError,
-                       match="No such file or directory: 'dataspace1d'"):
-        restore()
+    restore()
 
-    assert ui.get_filter() == fstr  # XFAIL because restore failed
+    assert ui.get_filter() == fstr
     assert ui.get_dep(filter=True) == pytest.approx(expected)
 
 
-@pytest.mark.xfail
 def test_restore_dataspace2d_img():
     """Can we restore a dataspace2d case?"""
 
@@ -3523,14 +3712,82 @@ def test_restore_dataspace2d_img():
 
     compare(_canonical_dataspace2d_img)
 
-    # check we get the expected error
-    # (the error depends on the backend so hard to do an exact check)
-    #
-    with pytest.raises((IOErr, OSError)):
-        restore()
+    restore()
 
-    assert ui.get_filter() == fstr  # XFAIL because restore failed
+    assert ui.get_filter() == fstr
     assert ui.get_dep(filter=True) == pytest.approx(expected)
+
+
+def test_restore_load_arrays_simple():
+    """Can we re-create a load_arrays/Data1D case
+
+    The test_restore_dataspace1d_int call has checked we
+    can restore a Data1DInt case.
+    """
+
+    ui.load_arrays("f", [-50, -20], [-2e4, 3e5])
+
+    compare(_canonical_load_arrays_simple)
+
+    restore()
+
+    assert ui.list_data_ids() == ["f"]
+    assert len(ui.get_indep("f")) == 1
+    assert ui.get_indep("f")[0] == pytest.approx([-50, -20])
+    assert ui.get_dep("f") == pytest.approx([-2e4, 3e5])
+
+
+def test_restore_load_arrays_pha():
+    """Can we re-create a load_arrays/DataPHA case?"""
+
+    dset = ui.DataPHA("ex", [1, 2, 3, 4, 5], [12, 2, 1, 0, 1])
+    dset.exposure = 100
+    dset.backscal = 0.002
+    dset.areascal = 0.001
+
+    ui.set_data(dset)
+    ui.group_counts(3, tabStops=numpy.asarray([0, 0, 0, 1, 0]))
+
+    compare(_canonical_load_arrays_pha)
+
+    restore()
+
+    pha = ui.get_data()
+    assert isinstance(pha, ui.DataPHA)
+    assert pha.exposure == pytest.approx(100)
+    assert pha.backscal == pytest.approx(0.002)
+    assert pha.areascal == pytest.approx(0.001)
+
+    assert pha.grouping == pytest.approx([1, 1, -1, 0, 1])
+    assert pha.quality == pytest.approx([0, 0, 0, 0, 2])
+
+    # This is corrected by thebin width and the areascal values
+    assert ui.get_dep() == pytest.approx([12000, 1500, 0, 1000])
+
+    assert pha.counts == pytest.approx([12, 2, 1, 0, 1])
+
+
+def test_restore_load_arrays_data2d():
+    """Can we re-create a load_arrays/Data2D case
+
+    Note that test_restore_dataspace2d_img is a basic DataIMG test.
+
+    """
+
+    dset = ui.Data2D("ex", [1, 1, 2], [1, 2, 2], [3, 4, 5], None, [0.1, 0.1, 0.2])
+    ui.set_data(dset)
+
+    assert ui.get_dep() == pytest.approx([3, 4, 5])
+    assert ui.get_staterror() == pytest.approx([0.1, 0.1, 0.2])
+
+    compare(_canonical_load_arrays_data2d)
+
+    restore()
+
+    assert isinstance(ui.get_data(), ui.Data2D)
+    assert ui.get_data().shape is None
+    assert ui.get_dep() == pytest.approx([3, 4, 5])
+    assert ui.get_staterror() == pytest.approx([0.1, 0.1, 0.2])
 
 
 @requires_xspec
@@ -3737,8 +3994,7 @@ def test_pha_full_model(make_data_path):
 def test_load_data(make_data_path):
     """Check load_data path for Data1D case with staterror"""
 
-    # Unfortunately there are several places where we care about the
-    # backend.
+    # Unfortunately we need to care about the backend here.
     #
     from sherpa.astro import io
 
@@ -3780,15 +4036,11 @@ def test_load_data(make_data_path):
     assert x[0] == pytest.approx(expected_x)
     assert ui.get_dep() == pytest.approx(expected_y)
 
-    # The current behavior depends on the backend, since the saved
-    # state just uses load_data(infile), and crated and pyfits
-    # interpret that differently. See issue #1876. For now test the
-    # known behavior, even though it's not ideal.
+    # The code has been adjusted to also read in the staterror
+    # column, so issue #1876 doesn't hold here, but this is really
+    # a work around.
     #
-    if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
-        assert ui.get_staterror() == pytest.approx(numpy.sqrt(expected_y))
-    else:
-        assert ui.get_staterror() == pytest.approx(expected_dy)
+    assert ui.get_staterror() == pytest.approx(expected_dy)
 
     with pytest.raises(DataErr,
                        match="data set '1' does not specify systematic errors"):
@@ -4037,7 +4289,6 @@ def test_filter1d_excluded2():
         ui.get_dep(filter=True)
 
 
-@pytest.mark.xfail
 def test_filter2d_excluded1():
     """Check what happens if all data filtered out.
 
@@ -4052,19 +4303,16 @@ def test_filter2d_excluded1():
     ui.ignore2d()
     assert ui.get_data().mask is False
 
-    # record why the restoration fails
-    with pytest.raises(IdentifierErr, match="^data set 1 has not been set$"):
-        restore()
+    restore()
 
     with pytest.raises(DataErr, match="^mask excludes all data$"):
-        ui.get_dep(filter=True)  # XFAIL data is not restored so this fails
+        ui.get_dep(filter=True)
 
     assert ui.get_data().shape[0] == 2
     assert ui.get_data().shape[1] == 3
     assert len(ui.get_data().shape) == 2
 
 
-@pytest.mark.xfail
 def test_filter2d_excluded2():
     """Check what happens if all data filtered out.
 
@@ -4079,9 +4327,96 @@ def test_filter2d_excluded2():
     ui.ignore2d("Field()")
     assert ui.get_data().mask is not False
 
-    # record why the restoration fails
-    with pytest.raises(IdentifierErr, match="^data set 1 has not been set$"):
-        restore()
+    restore()
 
     with pytest.raises(DataErr, match="^mask excludes all data$"):
-        ui.get_dep(filter=True)  # XFAIL data is not restored so this fails
+        ui.get_dep(filter=True)
+
+
+def test_fake_image_wcs():
+    """Can we restore an image with WCS?"""
+
+    try:
+        from sherpa.astro.io.wcs import WCS
+    except ImportError:
+        pytest.skip("sherpa.astro.io.wcs.WCS is not available")
+
+    # nx=2, ny=3
+    #
+    x1, x0 = numpy.mgrid[1:4, 1:3]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = numpy.arange(6) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.01, 0.01])
+    data = ui.DataIMG("faked", x0, x1, y,
+                      shape=(2, 3), sky=sky, eqpos=eqpos)
+
+    ui.set_data(data)
+
+    restore()
+
+    assert ui.get_coord() == "logical"
+
+    sky = ui.get_data().sky
+    eqpos = ui.get_data().eqpos
+    assert isinstance(sky, WCS)
+    assert isinstance(eqpos, WCS)
+
+    assert sky.name == "physical"
+    assert eqpos.name == "world"
+    assert sky.type == "LINEAR"
+    assert eqpos.type == "WCS"
+
+    assert sky.crval == pytest.approx([100, 200])
+    assert eqpos.cdelt == pytest.approx([-0.01, 0.01])
+
+    g0, g1 = ui.get_indep()
+    assert g0 == pytest.approx(x0)
+    assert g1 == pytest.approx(x1)
+
+
+def test_fake_image_wcs_coord():
+    """Can we restore an image with WCS when coord has been changed?
+
+    We also add a spatial filter to check that we aren't messing
+    up x0/y0.
+    """
+
+    try:
+        from sherpa.astro.io.wcs import WCS
+    except ImportError:
+        pytest.skip("sherpa.astro.io.wcs.WCS is not available")
+
+    # nx=3, ny=2
+    #
+    x1, x0 = numpy.mgrid[1:3, 1:4]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = numpy.arange(6) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
+    data = ui.DataIMG("faked", x0, x1, y,
+                      shape=(2, 3), sky=sky, eqpos=eqpos)
+
+    ui.set_data(data)
+    ui.set_coord("physical")
+
+    ui.ignore2d("circle(110, 210, 6)")
+
+    def check():
+
+        assert ui.get_coord() == "physical"
+        assert ui.get_filter() == "Field()&!Circle(110,210,6)"
+        assert ui.get_dep(filter=True) == pytest.approx([10, 20, 30, 40, 60])
+        a0, a1 = ui.get_indep()
+        assert a0 == pytest.approx([100, 110, 120] * 2)
+        assert a1 == pytest.approx([200, 200, 200, 210, 210, 210])
+
+    check()
+
+    restore()
+
+    check()

@@ -27,6 +27,7 @@ routines in this module are subject to change.
 
 import inspect
 import logging
+import os
 import sys
 
 import numpy
@@ -36,6 +37,7 @@ from sherpa.utils.err import ArgumentErr
 
 from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.astro.data import DataIMG, DataPHA
+from sherpa.astro import io
 
 logger = logging.getLogger(__name__)
 warning = logger.warning
@@ -47,7 +49,7 @@ string_types = (str, )
 #
 
 
-def _output(msg, fh=None):
+def _output(msg, fh):
     """Display the message.
 
     Parameters
@@ -471,8 +473,7 @@ def _save_data(state, fh=None):
         # used?  Store them with data object?
         cmd_id = _id_to_str(id)
 
-        cmd = _save_dataset(state, id)
-        _output(cmd, fh)
+        _save_dataset(state, fh, id)
 
         # Set physical or WCS coordinates here if applicable
         # If can't be done, just pass to next
@@ -1073,7 +1074,118 @@ def _save_xspec(fh=None):
     _save_entries(xspec_state["modelstrings"], tostatement, fh)
 
 
-def _save_dataset(state, id):
+def _save_dataset_file(fh, idstr, dset):
+    """The data can be read in from a file."""
+
+    # TODO: this does not handle options like selecting the columns
+    #       from a file, or the number of columns.
+    #
+    ncols = None
+    if isinstance(dset, DataPHA):
+        dtype = 'pha'
+    elif isinstance(dset, DataIMG):
+        dtype = 'image'
+    else:
+        dtype = 'data'
+
+        # Can we estimate what ncols should be? This is a heuristic as
+        # it does not cover all cases.
+        #
+        if dset.staterror is not None:
+            # assume we read in independent axis/es, dependent axis,
+            # and then staterror.
+            ncols = len(dset.get_indep()) + 2
+
+    out = f'load_{dtype}({idstr}, "{dset.name}"'
+    if ncols is not None:
+        out += f", ncols={ncols}"
+
+    out += ")"
+    _output(out, fh)
+
+
+# Ensure we only import WCS once if needed. This needs to be cleared
+# for each run.
+#
+_loaded_wcs = {}
+
+
+def _output_wcs_import(fh):
+    """Import the WCS symbol if not done already.
+
+    Parameters
+    ----------
+    fh : None or a file handle
+       The file handle to write the message to. If fh is ``None``
+       then the standard output is used.
+
+    """
+    if len(_loaded_wcs) > 0:
+        return
+
+    _output("from sherpa.astro.io.wcs import WCS", fh)
+    _output_nl(fh)
+
+    # hack for a global variable
+    _loaded_wcs["set"] = True
+
+
+def _output_add_wcs(idstr, label, wcs, fh):
+    """Copy over the WCS"""
+
+    _output(f"get_data({idstr}).{label} = WCS('{wcs.name}', '{wcs.type}',", fh)
+    _output(f"    crval={wcs.crval.tolist()},", fh)
+    _output(f"    crpix={wcs.crpix.tolist()},", fh)
+    if wcs.type == "LINEAR":
+        _output(f"    cdelt={wcs.cdelt.tolist()})", fh)
+    else:
+        _output(f"    cdelt={wcs.cdelt.tolist()},", fh)
+        _output(f"    crota={wcs.crota}, epoch={wcs.epoch}, equinox={wcs.equinox})", fh)
+
+
+def _save_dataset_pha(fh, idstr, pha):
+    """Try to recreate the PHA"""
+
+    spacer = "            "
+    _output(f'load_arrays({idstr},', fh)
+    _output(f"{spacer}{pha.channel.tolist()},", fh)
+    _output(f"{spacer}{pha.counts.tolist()},", fh)
+    _output(f"{spacer}DataPHA)", fh)
+
+    def setval(key):
+        val = getattr(pha, key)
+        if val is None:
+            return
+
+        _output(f"set_{key}({idstr}, {val})", fh)
+
+    def setarray(key):
+        val = getattr(pha, key)
+        if val is None:
+            return
+
+        _output(f"set_{key}({idstr}, {val.tolist()})", fh)
+
+    setval("exposure")
+    setval("backscal")
+    setval("areascal")
+
+    setarray("staterror")
+    setarray("syserror")
+
+    # These are set later so do not need to be set here.
+    #
+    # setarray("quality")
+    # setarray("grouping")
+
+    if pha.bin_lo is not None and pha.bin_hi is not None:
+        # no use restoring only one of these
+        #
+        _output(f"get_data({idstr}).bin_lo = {pha.bin_lo.tolist()}", fh)
+        _output(f"get_data({idstr}).bin_hi = {pha.bin_hi.tolist()}", fh)
+
+
+def _save_dataset(state, fh, id):
     """Given a dataset identifier, return the text needed to
     re-create it.
 
@@ -1092,108 +1204,142 @@ def _save_dataset(state, id):
     idstr = _id_to_str(id)
     dset = state.get_data(id)
 
-    # For now assume that a missing name indicates the data
-    # was created by the user, otherwise it's a file name.
-    # The checks and error messages do not cover all situations,
-    # but hopefully the common ones.
+    # If the name of the object is a file then we assume that the data
+    # was read in from that location, otherwise we recreate the data
+    # (i.e. do not read it in).  This will fail if the data was read
+    # in with a relative path name and the directory has since been
+    # changed, or the on-disk file has been removed.
     #
     # This logic should be moved into the DataXXX objects, since
     # this is more extensible, and also the data object can
     # retain knowledge of where the data came from.
     #
-    if dset.name.strip() == '':
-        # Do not attempt to recreate all data sets at this
-        # time. They could be serialized, but leave for a
-        # later time (it may also make sense to actually
-        # save the data to an external file).
-        #
-        if isinstance(dset, DataPHA):
-            msg = f"Unable to re-create PHA data set '{id}'"
-            warning(msg)
-            return f'print("{msg}")'
-
-        if isinstance(dset, DataIMG):
-            msg = f"Unable to re-create image data set '{id}'"
-            warning(msg)
-            return f'print("{msg}")'
-
-        # Fall back to load_arrays. As using isinstance,
-        # need to order the checks, since Data1DInt is
-        # a subclass of Data1D.
-        #
-        xs = dset.get_indep()
-        ys = dset.get_dep()
-        staterr = dset.get_staterror()
-        syserr = dset.get_syserror()
-
-        need_sys = syserr is not None
-        if need_sys:
-            syserr = f"{syserr.tolist()}"
-        else:
-            syserr = "None"
-
-        need_stat = staterr is not None or need_sys
-        if staterr is not None:
-            staterr = f"{staterr.tolist()}"
-        else:
-            staterr = "None"
-
-        ys = f"{ys.tolist()}"
-
-        out = f'load_arrays({idstr},\n'
-        if isinstance(dset, Data1DInt):
-            out += f'            {xs[0].tolist()},\n'
-            out += f'            {xs[1].tolist()},\n'
-            out += f'            {ys},\n'
-            if need_stat:
-                out += f'            {staterr},\n'
-            if need_sys:
-                out += f'            {syserr},\n'
-            out += '            Data1DInt)'
-
-        elif isinstance(dset, Data1D):
-            out += f'            {xs[0].tolist()},\n'
-            out += f'            {ys},\n'
-            if need_stat:
-                out += f'            {staterr},\n'
-            if need_sys:
-                out += f'            {syserr},\n'
-            out += '            Data1D)'
-
-        elif isinstance(dset, Data2DInt):
-            msg = f"Unable to re-create Data2DInt data set '{id}'"
-            warning(msg)
-            out = f'print("{msg}")'
-
-        elif isinstance(dset, Data2D):
-            out += f'            {xs[0].tolist()},\n'
-            out += f'            {xs[1].tolist()},\n'
-            out += f'            {ys},\n'
-            out += f'            {dset.shape},\n'
-            if need_stat:
-                out += f'            {staterr},\n'
-            if need_sys:
-                out += f'            {syserr},\n'
-            out += '            Data2D)'
-
-        else:
-            msg = f"Unable to re-create {dset.__class__} data set '{id}'"
-            warning(msg)
-            out = f'print("{msg}")'
-
-        return out
-
-    # TODO: this does not handle options like selecting the columns
-    #       from a file, or the number of columns.
+    # Checking for a valid file name is complicated:
     #
-    if isinstance(dset, DataPHA):
-        dtype = 'pha'
-    elif isinstance(dset, DataIMG):
-        dtype = 'image'
-    else:
-        dtype = 'data'
+    # - crates
+    #
+    #   The backend can add in "VFS" syntax, such as "[opt
+    #   colnames=none]" to a file name. Hence the different code paths
+    #   below depending on the backend. The code could try to manually
+    #   remove any VFS syntax, but it's simpler to just try and read
+    #   in the file using crates (this automatically checks for .gz
+    #   versions of the file).
+    #
+    # - pyfits
+    #
+    #   The backend will read in gzip-enabled files so we need to
+    #   check for .gz as well as the file name when calling isfile.
+    #
+    infile = dset.name
+    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        import pycrates
+        try:
+            pycrates.read_file(infile)
+            exists = True
+        except OSError:
+            exists = False
 
-    return f'load_{dtype}({idstr}, "{dset.name}")'
+    else:
+        exists = os.path.isfile(infile)
+        if not exists and not infile.endswith(".gz"):
+            exists = os.path.isfile(f"{infile}.gz")
+
+    if exists:
+        _save_dataset_file(fh, idstr, dset)
+        return
+
+    # We could use dataspace1d/2d but easiest to just use load_arrays.
+    # The isinstance checks have to pick the more-specific classes
+    # first (e.g. DataPHA and Data1DInt before Data1D, DataIMG before
+    # Data2D).
+    #
+    # Note that for DataIMG classes we use the "hidden"
+    # _orig_indep_axis attribute rather than get_indep(), since the
+    # latter will change when the coord system is not logical, and
+    # using this would cause downstream problems. See PR #1414 for
+    # more details. This should also be done for DataIMGInt, but this
+    # class is poorly tested, documented, or used.
+    #
+    if isinstance(dset, DataIMG):
+        # This assumes that orig[0] == "logical"
+        orig = dset._orig_indep_axis
+        xs = (orig[1], orig[2])
+    else:
+        xs = dset.get_indep()
+
+    ys = f"{dset.get_dep().tolist()}"
+
+    spacer = "            "
+
+    if isinstance(dset, DataPHA):
+        _save_dataset_pha(fh, idstr, dset)
+        return
+
+    if isinstance(dset, Data1DInt):
+        _output(f'load_arrays({idstr},', fh)
+        _output(f"{spacer}{xs[0].tolist()},", fh)
+        _output(f"{spacer}{xs[1].tolist()},", fh)
+        _output(f"{spacer}{ys},", fh)
+        _output(f"{spacer}Data1DInt)", fh)
+
+    elif isinstance(dset, Data1D):
+        _output(f'load_arrays({idstr},', fh)
+        _output(f"{spacer}{xs[0].tolist()},", fh)
+        _output(f"{spacer}{ys},", fh)
+        _output(f"{spacer}Data1D)", fh)
+
+    elif isinstance(dset, DataIMG):
+
+        # Note that we set transforms outside the load_arrays call
+        if dset.sky is not None or dset.eqpos is not None:
+            _output_wcs_import(fh)
+
+        # This does not save the header information in the file
+        _output(f'load_arrays({idstr},', fh)
+        _output(f"{spacer}{xs[0].tolist()},", fh)
+        _output(f"{spacer}{xs[1].tolist()},", fh)
+        _output(f"{spacer}{ys},", fh)
+        if dset.shape is not None:
+            _output(f"{spacer}{tuple(dset.shape)},", fh)
+
+        _output(f"{spacer}DataIMG)", fh)
+
+        # Note that we set transforms outside the load_arrays call
+        if dset.sky is not None:
+            _output_add_wcs(idstr, "sky", dset.sky, fh)
+
+        if dset.eqpos is not None:
+            _output_add_wcs(idstr, "eqpos", dset.eqpos, fh)
+
+    elif isinstance(dset, Data2DInt):
+        msg = f"Unable to re-create Data2DInt data set '{id}'"
+        warning(msg)
+        _output(f'print("{msg}")', fh)
+
+    elif isinstance(dset, Data2D):
+        _output(f'load_arrays({idstr},', fh)
+        _output(f"{spacer}{xs[0].tolist()},", fh)
+        _output(f"{spacer}{xs[1].tolist()},", fh)
+        _output(f"{spacer}{ys},", fh)
+        if dset.shape is not None:
+            _output(f"{spacer}{tuple(dset.shape)},", fh)
+
+        _output(f"{spacer}Data2D)", fh)
+
+    else:
+        msg = f"Unable to re-create {dset.__class__} data set '{id}'"
+        warning(msg)
+        _output(f'print("{msg}")', fh)
+        return
+
+    staterr = dset.get_staterror()
+    syserr = dset.get_syserror()
+
+    if staterr is not None:
+        _output(f"set_staterror({idstr}, {staterr.tolist()})", fh)
+
+    if syserr is not None:
+        _output(f"set_syserror({idstr}, {syserr.tolist()})", fh)
 
 
 def save_all(state, fh=None):
@@ -1251,6 +1397,11 @@ def save_all(state, fh=None):
     >>> save_all(store)
 
     """
+
+    # If we just built up the output and then combined it, rather than
+    # creating it as we go, we could avoid this global variable.
+    #
+    _loaded_wcs.clear()
 
     _save_intro(fh)
     _save_data(state, fh)
