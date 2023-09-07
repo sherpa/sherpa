@@ -757,7 +757,7 @@ def get_rmf_data(arg, make_copy=False):
     #  - for each row, any excess data (beyond the sum(N_CHAN) for that row)
     #
     # The columns may be 1D or 2D vectors, or variable-field arrays,
-    # where each row is an object containing a number of elements).
+    # where each row is an object containing a number of elements.
     #
     # Note that crates uses the sherpa.astro.utils.resp_init routine,
     # but it's not clear why, so it is not used here for now.
