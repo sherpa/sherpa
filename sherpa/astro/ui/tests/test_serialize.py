@@ -89,13 +89,6 @@ set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
 
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
 """
 
 # Change a few settings for statistic/method
@@ -120,13 +113,6 @@ set_method_opt("maxfev", 5000)
 set_method_opt("reflect", True)
 set_method_opt("step", None)
 set_method_opt("verbose", 1)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
 
 """
 
@@ -161,13 +147,6 @@ set_iter_method_opt("grow", 1)
 set_iter_method_opt("hrej", 3)
 set_iter_method_opt("lrej", 3)
 set_iter_method_opt("maxiters", 5)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
 
 """
 
@@ -321,8 +300,6 @@ gal.nH.frozen  = False
 
 set_source(1, (xsphabs.gal * (powlaw1d.pl + xsapec.src)))
 
-
-
 """
 
 _canonical_pha_grouped = """import numpy
@@ -448,8 +425,6 @@ ggal.nH.frozen  = True
 ######### Set Source, Pileup and Background Models
 
 set_source("grp", (xsphabs.ggal * powlaw1d.gpl))
-
-
 
 """
 
@@ -733,15 +708,6 @@ set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
 
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
-
 """
 
 _canonical_pha_full_model = """import numpy
@@ -930,8 +896,6 @@ con.offset.frozen  = True
 
 set_full_model(1, (apply_rmf(apply_arf((38564.6089269 * powlaw1d.pl))) + polynom1d.con))
 
-
-
 """
 
 # The serialization of the user model is not ideal, but check that
@@ -1075,15 +1039,6 @@ set_method_opt("maxfev", None)
 set_method_opt("reflect", True)
 set_method_opt("step", None)
 set_method_opt("verbose", 0)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
 
 """
 
@@ -1355,9 +1310,6 @@ tbl.ampl.units   = ""
 tbl.ampl.frozen  = True
 
 
-
-######### Set Source, Pileup and Background Models
-
 """
 
 _canonical_xstable_model = """import numpy
@@ -1406,9 +1358,6 @@ tbl.fract.max     = 1.0
 tbl.fract.units   = ""
 tbl.fract.frozen  = True
 
-
-
-######### Set Source, Pileup and Background Models
 
 """
 
@@ -1538,11 +1487,7 @@ pmod.nterms.frozen  = True
 
 ######### Set Source, Pileup and Background Models
 
-
-
 set_pileup_model(1, jdpileup.pmod)
-
-
 set_pileup_model(2, jdpileup.pmod)
 """
 
@@ -1579,15 +1524,6 @@ set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
 
 """
 
@@ -1630,15 +1566,6 @@ set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
 
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
-
 """
 
 _canonical_load_arrays_simple = """import numpy
@@ -1669,15 +1596,6 @@ set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
 
 """
 
@@ -1734,15 +1652,6 @@ set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
 
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
-
 """
 
 _canonical_load_arrays_data2d = """import numpy
@@ -1775,15 +1684,6 @@ set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
 
 """
 
@@ -1836,9 +1736,6 @@ mdl.norm.units   = ""
 mdl.norm.frozen  = False
 
 
-
-######### Set Source, Pileup and Background Models
-
 """
 
 # Set an XSPEC parameter beyond the default hard limits: max
@@ -1889,9 +1786,6 @@ mdl.norm.max     = 100.0
 mdl.norm.units   = ""
 mdl.norm.frozen  = False
 
-
-
-######### Set Source, Pileup and Background Models
 
 """
 
@@ -1959,9 +1853,6 @@ m1.c0.frozen  = False
 
 link(m2.c0, (m1.c0 + sep.c0))
 
-
-######### Set Source, Pileup and Background Models
-
 """
 
 _canonical_load_data = """import numpy
@@ -1989,15 +1880,6 @@ set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
 
 """
 
@@ -2030,15 +1912,6 @@ set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
 
 """
 
@@ -2099,19 +1972,6 @@ set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
-
-
-
-
 
 """
 
@@ -2463,85 +2323,6 @@ set_method_opt("maxfev", None)
 set_method_opt("numcores", 1)
 set_method_opt("verbose", 0)
 set_method_opt("xtol", 1.19209289551e-07)
-
-
-######### Set Model Components and Parameters
-
-
-
-######### Set Source, Pileup and Background Models
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 """
 

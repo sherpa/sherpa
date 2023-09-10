@@ -891,17 +891,16 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
 
     """
 
-    # Have to call elements in list in reverse order (item at end of
-    # list was model first created), so that we get links right, if any
-
-    # To recreate attributes, print out dictionary as ordered pairs,
-    # for each parameter
-
-    _output_banner(out, "Set Model Components and Parameters")
-    all_model_components = state.list_model_components()
-    all_model_components.reverse()
-
     found_xspec = False
+
+    # Try to be careful about the ordering of the components here.
+    #
+    all_model_components = state.list_model_components()
+    if len(all_model_components) == 0:
+        return found_xspec
+
+    all_model_components.reverse()
+    _output_banner(out, "Set Model Components and Parameters")
 
     # If there are any links between parameters, store link commands here
     # Then, *after* processing all models in the for loop below, send
@@ -991,19 +990,33 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
     # If there were any links made between parameters, send those
     # link commands to outfile now; else, linkstr is just an empty string
     _output(out, linkstr)
+    return found_xspec
 
-    # Now associate any PSF models with their appropriate datasets.
+
+def _save_psf_components(out: OutType, state: SessionType) -> None:
+    """Save the PSF components.
+
+    This must be done after setting up the data and model components.
+
+    Parameters
+    ----------
+    out : dict
+       The output state
+    state
+
+    """
+
     # This is done after creating all the models and datasets.
     #
     if len(state._psf) == 0:
-        return found_xspec
+        return
 
+    # Associate any PSF models with their appropriate datasets.
+    #
     _output_banner(out, "Associate PSF models with the datasets")
     for idval, psfmod in state._psf.items():
         cmd_id = _id_to_str(idval)
         _output(out, f"set_psf({cmd_id}, {psfmod._name})")
-
-    return found_xspec
 
 
 def _save_models(out: OutType, state: SessionType) -> None:
@@ -1016,10 +1029,14 @@ def _save_models(out: OutType, state: SessionType) -> None:
     state
     """
 
-    # Save all source, pileup and background models
+    ids = state.list_data_ids()
+    if len(ids) == 0:
+        return
 
     _output_banner(out, "Set Source, Pileup and Background Models")
-    for id in state.list_data_ids():
+    nlines = len(out["main"])
+
+    for id in ids:
         cmd_id = _id_to_str(id)
 
         # If a data set has a source model associated with it,
@@ -1060,18 +1077,10 @@ def _save_models(out: OutType, state: SessionType) -> None:
                 cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
 
             else:
-                cmd = ""
+                continue
 
             _output(out, cmd)
             _output_nl(out)
-        except:
-            pass
-
-        # If any pileup models, try to set them.  If not, just pass.
-        try:
-            pname = state.get_pileup_model(id).name
-            cmd = f"set_pileup_model({cmd_id}, {pname})"
-            _output(out, cmd)
         except:
             pass
 
@@ -1081,7 +1090,6 @@ def _save_models(out: OutType, state: SessionType) -> None:
         # different from whole background model.
         try:
             bids = state.list_bkg_ids(id)
-            cmd_bkg_id = ""
             for bid in bids:
                 cmd_bkg_id = _id_to_str(bid)
 
@@ -1114,13 +1122,30 @@ def _save_models(out: OutType, state: SessionType) -> None:
                     cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
 
                 else:
-                    cmd = ""
+                    continue
 
                 _output(out, cmd)
                 _output_nl(out)
 
         except:
             pass
+
+    # separate out the pileup models from the source models
+    #
+    for id in ids:
+        try:
+            pname = state.get_pileup_model(id).name
+        except:
+            continue
+
+        cmd_id = _id_to_str(id)
+        cmd = f"set_pileup_model({cmd_id}, {pname})"
+        _output(out, cmd)
+
+    # Do want to remove the initial banner?
+    #
+    if len(out["main"]) == nlines:
+        _remove_banner(out)
 
 
 def _save_xspec(out: OutType) -> None:
@@ -1486,6 +1511,7 @@ def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
     _save_fit_method(out, state)
     _save_iter_method(out, state)
     req_xspec = _save_model_components(out, state)
+    _save_psf_components(out, state)
     _save_models(out, state)
     if req_xspec:
         _save_xspec(out)
