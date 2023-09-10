@@ -105,12 +105,12 @@ def _output_banner(out: OutType, msg: str, indent: int = 0) -> None:
 
     Parameters
     ----------
-    msg : str
-       The label to output.
     out : dict
        The output state
+    msg : str
+       The label to output.
     indent : int, optional
-       How many times to indent the comment (if set the leading and
+       How many times to indent the banner (if set the leading and
        trailing newlines aren't added).
 
     """
@@ -121,6 +121,30 @@ def _output_banner(out: OutType, msg: str, indent: int = 0) -> None:
     _output(out, f"######### {msg}", indent=indent)
     if indent == 0:
         _output_nl(out)
+
+
+def _remove_banner(out: OutType, indent: int = 0) -> None:
+    """Remove the banner message.
+
+    There's no check that the banner was the last message added.
+    This is not the best way to handle this.
+
+    Parameters
+    ----------
+    out : dict
+       The output state
+    indent : int, optional
+       How many times the banner was intended.
+
+    """
+
+    out["main"].pop()
+    if indent != 0:
+        return
+
+    # remove the newlines
+    out["main"].pop()
+    out["main"].pop()
 
 
 def _id_to_str(id: IdType) -> str:
@@ -387,6 +411,7 @@ def _handle_filter(out: OutType,
     """
 
     _output_banner(out, "Filter Data")
+    written = False
 
     cmd_id = _id_to_str(id)
     d = state.get_data(id)
@@ -418,6 +443,7 @@ def _handle_filter(out: OutType,
 
         fvals = d.get_filter()
         _output(out, f'{func}_id({cmd_id}, "{fvals}")')
+        written = True
 
     else:
         if ndims == 2:
@@ -426,11 +452,15 @@ def _handle_filter(out: OutType,
             func = "ignore"
 
         _output(out, f'{func}_id({cmd_id})')
+        written = True
 
     try:
         bids = state.list_bkg_ids(id)
     except ArgumentErr:
         # Not a PHA data set
+        if not written:
+            _remove_banner(out)
+
         return
 
     # Only set the noticed range if the data set does not have
@@ -440,6 +470,9 @@ def _handle_filter(out: OutType,
     # probably beyond the use case of the serialization.
     #
     if d.subtracted:
+        if not written:
+            _remove_banner(out)
+
         return
 
     # NOTE: have to clear out the source filter before applying the
@@ -461,9 +494,14 @@ def _handle_filter(out: OutType,
             _output(out, f'notice_id({cmd_id}, bkg_id={bkg_id})')
             fvals = b.get_filter()
             _output(out, f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})')
+            written = True
 
         else:
             _output(out, f'ignore_id({cmd_id}, bkg_id={bkg_id})')
+            written = True
+
+    if not written:
+        _remove_banner(out)
 
 
 def _save_data(out: OutType, state: SessionType) -> None:
@@ -485,12 +523,19 @@ def _save_data(out: OutType, state: SessionType) -> None:
     to be serialized it is included in the script.
     """
 
+    ids = state.list_data_ids()
+    if len(ids) == 0:
+        return
+
+    # Try to only output a banned if the section contains a
+    # command/setting.
+    #
     _output_banner(out, "Load Data Sets")
 
     cmd_id = ""
     cmd_bkg_id = ""
 
-    for id in state.list_data_ids():
+    for id in ids:
         # But if id is a string, then quote as a string
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
@@ -502,9 +547,10 @@ def _save_data(out: OutType, state: SessionType) -> None:
         # Set physical or WCS coordinates here if applicable
         # If can't be done, just pass to next
         try:
-            # TODO: add a test of the following
+            # If get_coord fails then we'll error out
+            coord = state.get_coord(id)
             _output_banner(out, "Set Image Coordinates")
-            cmd = f"set_coord({_id_to_str(id)}, '{state.get_coord(id)}')"
+            cmd = f"set_coord({_id_to_str(id)}, '{coord}')"
             _output(out, cmd)
         except:
             pass
@@ -529,8 +575,8 @@ def _save_data(out: OutType, state: SessionType) -> None:
 
         # Add responses and ARFs, if any
         try:
-            _output_banner(out, "Data Spectral Responses")
             rids = state.list_response_ids(id)
+            _output_banner(out, "Data Spectral Responses")
 
             for rid in rids:
                 _save_arf_response(out, state, id, rid)
@@ -541,9 +587,8 @@ def _save_data(out: OutType, state: SessionType) -> None:
 
         # Check if this data set has associated backgrounds
         try:
-            _output_banner(out, "Load Background Data Sets")
             bids = state.list_bkg_ids(id)
-            cmd_bkg_id = ""
+            _output_banner(out, "Load Background Data Sets")
             for bid in bids:
                 cmd_bkg_id = _id_to_str(bid)
 
@@ -571,8 +616,8 @@ def _save_data(out: OutType, state: SessionType) -> None:
                     pass
 
                 # Load background response, ARFs if any
-                _output_banner(out, "Background Spectral Responses")
                 rids = state.list_response_ids(id, bid)
+                _output_banner(out, "Background Spectral Responses")
                 for rid in rids:
                     _save_arf_response(out, state, id, rid, bid)
                     _save_rmf_response(out, state, id, rid, bid)
@@ -582,7 +627,6 @@ def _save_data(out: OutType, state: SessionType) -> None:
 
         # Set energy units if applicable
         # If can't be done, just pass to next
-        _output_banner(out, "Set Energy or Wave Units")
         try:
             units = state.get_data(id).units
             if state.get_data(id).rate:
@@ -590,6 +634,7 @@ def _save_data(out: OutType, state: SessionType) -> None:
             else:
                 rate = "counts"
             factor = state.get_data(id).plot_fac
+            _output_banner(out, "Set Energy or Wave Units")
             cmd = f'set_analysis({cmd_id}, quantity="{units}", ' + \
                 f'type="{rate}", factor={factor})'
             _output(out, cmd)

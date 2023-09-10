@@ -3343,7 +3343,7 @@ def test_save_all_empty_stdout(caplog, capfd):
     assert err == ""
 
     # do not check the full output
-    assert out.startswith("import numpy\nfrom sherpa.astro.ui import *\n\n#")
+    assert out.startswith("import numpy\nfrom sherpa.astro.ui import *\n\n")
 
 
 def test_calc_data_sum_of_bkg():

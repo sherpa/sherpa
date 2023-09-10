@@ -70,9 +70,6 @@ has_xspec = has_package_from_list("sherpa.astro.xspec")
 _canonical_empty = """import numpy
 from sherpa.astro.ui import *
 
-######### Load Data Sets
-
-
 
 ######### Set Statistic
 
@@ -105,9 +102,6 @@ set_method_opt("xtol", 1.19209289551e-07)
 _canonical_empty_stats = """import numpy
 from sherpa.astro.ui import *
 
-######### Load Data Sets
-
-
 
 ######### Set Statistic
 
@@ -138,9 +132,6 @@ set_method_opt("verbose", 1)
 
 _canonical_empty_iterstat = """import numpy
 from sherpa.astro.ui import *
-
-######### Load Data Sets
-
 
 
 ######### Set Statistic
@@ -189,9 +180,6 @@ from sherpa.astro.ui import *
 ######### Load Data Sets
 
 load_pha(1, "@@/3c273.pi")
-
-######### Set Image Coordinates
-
 if get_data(1).grouping is not None and not get_data(1).grouped:
     ######### Group Data
     group(1)
@@ -344,9 +332,6 @@ from sherpa.astro.ui import *
 
 load_pha("grp", "@@/3c273.pi")
 
-######### Set Image Coordinates
-
-
 ######### Data grouping flags
 
 set_grouping("grp", val=numpy.array([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, 1, -1, 1, 1, -1, -1, 1, -1, 1, -1, 1, -1, 1, -1, 1, -1, -1, 1, -1, 1, -1, -1, 1, -1, -1, 1, -1, -1, 1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, -1, 1, -1, 1, -1, -1, -1, 1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0], numpy.int16))
@@ -474,9 +459,6 @@ from sherpa.astro.ui import *
 ######### Load Data Sets
 
 load_pha("bgrp", "@@/3c273.pi")
-
-######### Set Image Coordinates
-
 if get_data("bgrp").grouping is not None and not get_data("bgrp").grouped:
     ######### Group Data
     group("bgrp")
@@ -718,9 +700,6 @@ from sherpa.astro.ui import *
 
 load_pha("x", "@@/source1.pi")
 
-######### Set Image Coordinates
-
-
 ######### Data Spectral Responses
 
 
@@ -771,9 +750,6 @@ from sherpa.astro.ui import *
 ######### Load Data Sets
 
 load_pha(1, "@@/3c273.pi")
-
-######### Set Image Coordinates
-
 if get_data(1).grouping is not None and not get_data(1).grouped:
     ######### Group Data
     group(1)
@@ -974,21 +950,6 @@ load_arrays(3,
             [4, 8, 12, 4],
             Data1D)
 
-######### Set Image Coordinates
-
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
-
-######### Filter Data
-
-
 
 ######### Set Statistic
 
@@ -1096,18 +1057,6 @@ load_image(1, "@@/img.fits")
 
 set_coord(1, 'logical')
 
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
-
-######### Filter Data
-
-
 
 ######### Set Statistic
 
@@ -1150,15 +1099,6 @@ load_image(1, "@@/img.fits")
 ######### Set Image Coordinates
 
 set_coord(1, 'logical')
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
 
 ######### Filter Data
 
@@ -1282,18 +1222,6 @@ load_image(1, "@@/img.fits")
 
 set_coord(1, 'logical')
 
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
-
-######### Filter Data
-
-
 
 ######### Set Statistic
 
@@ -1392,9 +1320,6 @@ set_source(1, gauss2d.g1)
 _canonical_table_model = """import numpy
 from sherpa.astro.ui import *
 
-######### Load Data Sets
-
-
 
 ######### Set Statistic
 
@@ -1437,9 +1362,6 @@ tbl.ampl.frozen  = True
 
 _canonical_xstable_model = """import numpy
 from sherpa.astro.ui import *
-
-######### Load Data Sets
-
 
 
 ######### Set Statistic
@@ -1500,9 +1422,6 @@ load_arrays(1,
             [2, 5, 2],
             DataPHA)
 
-######### Set Image Coordinates
-
-
 ######### Data Spectral Responses
 
 
@@ -1512,16 +1431,10 @@ load_arrays(1,
 ######### Set Energy or Wave Units
 
 set_analysis(1, quantity="channel", type="rate", factor=0)
-
-######### Filter Data
-
 load_arrays(2,
             [1, 2, 3],
             [3, 4, 1],
             DataPHA)
-
-######### Set Image Coordinates
-
 
 ######### Data Spectral Responses
 
@@ -1532,9 +1445,6 @@ load_arrays(2,
 ######### Set Energy or Wave Units
 
 set_analysis(2, quantity="channel", type="rate", factor=0)
-
-######### Filter Data
-
 
 
 ######### Set Statistic
@@ -1647,18 +1557,6 @@ load_arrays(1,
             [2.0, 5.0, 6.0, 0.0, 2.0],
             Data1DInt)
 
-######### Set Image Coordinates
-
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
-
 ######### Filter Data
 
 notice_id(1, "1.0000:7.0000,9.0000:11.0000")
@@ -1709,15 +1607,6 @@ load_arrays(1,
 
 set_coord(1, 'logical')
 
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
-
 ######### Filter Data
 
 notice2d_id(1, "Field()&!Box(1.4,2.5,1.2,1.4)")
@@ -1762,21 +1651,6 @@ load_arrays("f",
             [-20000.0, 300000.0],
             Data1D)
 
-######### Set Image Coordinates
-
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
-
-######### Filter Data
-
-
 
 ######### Set Statistic
 
@@ -1820,9 +1694,6 @@ set_exposure(1, 100)
 set_backscal(1, 0.002)
 set_areascal(1, 0.001)
 
-######### Set Image Coordinates
-
-
 ######### Data grouping flags
 
 set_grouping(1, val=numpy.array([1, 1, -1, 0, 1], numpy.int16))
@@ -1843,9 +1714,6 @@ if get_data(1).grouping is not None and not get_data(1).grouped:
 ######### Set Energy or Wave Units
 
 set_analysis(1, quantity="channel", type="rate", factor=0)
-
-######### Filter Data
-
 
 
 ######### Set Statistic
@@ -1889,21 +1757,6 @@ load_arrays(1,
             Data2D)
 set_staterror(1, [0.1, 0.1, 0.2])
 
-######### Set Image Coordinates
-
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
-
-######### Filter Data
-
-
 
 ######### Set Statistic
 
@@ -1937,9 +1790,6 @@ set_method_opt("xtol", 1.19209289551e-07)
 # Set an XSPEC parameter beyond the default hard limits: min
 _canonical_xspec_hard_limit_min = """import numpy
 from sherpa.astro.ui import *
-
-######### Load Data Sets
-
 
 
 ######### Set Statistic
@@ -1995,9 +1845,6 @@ mdl.norm.frozen  = False
 _canonical_xspec_hard_limit_max = """import numpy
 from sherpa.astro.ui import *
 
-######### Load Data Sets
-
-
 
 ######### Set Statistic
 
@@ -2050,9 +1897,6 @@ mdl.norm.frozen  = False
 
 _canonical_link_par = """import numpy
 from sherpa.astro.ui import *
-
-######### Load Data Sets
-
 
 
 ######### Set Statistic
@@ -2127,21 +1971,6 @@ from sherpa.astro.ui import *
 
 load_data(1, "@@/data1.dat", ncols=3)
 
-######### Set Image Coordinates
-
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
-
-######### Filter Data
-
-
 
 ######### Set Statistic
 
@@ -2178,18 +2007,6 @@ from sherpa.astro.ui import *
 ######### Load Data Sets
 
 load_data(1, "@@/double.dat")
-
-######### Set Image Coordinates
-
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
-######### Set Energy or Wave Units
-
 
 ######### Filter Data
 
@@ -2231,9 +2048,6 @@ from sherpa.astro.ui import *
 ######### Load Data Sets
 
 load_pha(1, "@@/3c120_meg_1.pha")
-
-######### Set Image Coordinates
-
 
 ######### Data Spectral Responses
 
@@ -2308,9 +2122,6 @@ from sherpa.astro.ui import *
 
 load_pha(1, "@@/3c120_pha2")
 
-######### Set Image Coordinates
-
-
 ######### Data Spectral Responses
 
 
@@ -2337,9 +2148,6 @@ notice_id(1, "2.000000000000:4.000000000000", bkg_id=1)
 notice_id(1, bkg_id=2)
 notice_id(1, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(10, "@@/3c120_pha2")
-
-######### Set Image Coordinates
-
 
 ######### Data Spectral Responses
 
@@ -2368,9 +2176,6 @@ notice_id(10, bkg_id=2)
 notice_id(10, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(11, "@@/3c120_pha2")
 
-######### Set Image Coordinates
-
-
 ######### Data Spectral Responses
 
 
@@ -2397,9 +2202,6 @@ notice_id(11, "2.000000000000:4.000000000000", bkg_id=1)
 notice_id(11, bkg_id=2)
 notice_id(11, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(12, "@@/3c120_pha2")
-
-######### Set Image Coordinates
-
 
 ######### Data Spectral Responses
 
@@ -2428,9 +2230,6 @@ notice_id(12, bkg_id=2)
 notice_id(12, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(2, "@@/3c120_pha2")
 
-######### Set Image Coordinates
-
-
 ######### Data Spectral Responses
 
 
@@ -2457,9 +2256,6 @@ notice_id(2, "2.000000000000:4.000000000000", bkg_id=1)
 notice_id(2, bkg_id=2)
 notice_id(2, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(3, "@@/3c120_pha2")
-
-######### Set Image Coordinates
-
 
 ######### Data Spectral Responses
 
@@ -2488,9 +2284,6 @@ notice_id(3, bkg_id=2)
 notice_id(3, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(4, "@@/3c120_pha2")
 
-######### Set Image Coordinates
-
-
 ######### Data Spectral Responses
 
 
@@ -2517,9 +2310,6 @@ notice_id(4, "2.000000000000:4.000000000000", bkg_id=1)
 notice_id(4, bkg_id=2)
 notice_id(4, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(5, "@@/3c120_pha2")
-
-######### Set Image Coordinates
-
 
 ######### Data Spectral Responses
 
@@ -2548,9 +2338,6 @@ notice_id(5, bkg_id=2)
 notice_id(5, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(6, "@@/3c120_pha2")
 
-######### Set Image Coordinates
-
-
 ######### Data Spectral Responses
 
 
@@ -2577,9 +2364,6 @@ notice_id(6, "2.000000000000:4.000000000000", bkg_id=1)
 notice_id(6, bkg_id=2)
 notice_id(6, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(7, "@@/3c120_pha2")
-
-######### Set Image Coordinates
-
 
 ######### Data Spectral Responses
 
@@ -2608,9 +2392,6 @@ notice_id(7, bkg_id=2)
 notice_id(7, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(8, "@@/3c120_pha2")
 
-######### Set Image Coordinates
-
-
 ######### Data Spectral Responses
 
 
@@ -2637,9 +2418,6 @@ notice_id(8, "2.000000000000:4.000000000000", bkg_id=1)
 notice_id(8, bkg_id=2)
 notice_id(8, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(9, "@@/3c120_pha2")
-
-######### Set Image Coordinates
-
 
 ######### Data Spectral Responses
 
@@ -2773,9 +2551,6 @@ from sherpa.astro.ui import *
 ######### Load Data Sets
 
 load_pha("csc", "@@/acisf01575_001N001_r0085_pha3.fits.gz")
-
-######### Set Image Coordinates
-
 
 ######### Data grouping flags
 
