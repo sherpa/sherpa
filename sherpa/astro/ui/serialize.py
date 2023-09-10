@@ -29,6 +29,7 @@ import inspect
 import logging
 import os
 import sys
+from types import ModuleType
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
     TextIO, TypedDict, Union
 
@@ -40,6 +41,13 @@ from sherpa.astro.io.wcs import WCS
 if TYPE_CHECKING:
     # Avoid an import cycle
     from sherpa.astro.ui.utils import Session
+
+xspec: Optional[ModuleType]
+try:
+    from sherpa.astro import xspec
+except ImportError:
+    xspec = None
+
 from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.models.basic import UserModel
 # from sherpa.models.parameter import Parameter
@@ -822,7 +830,7 @@ def _handle_usermodel(out: OutType,
     _output(out, f"{spaces})\n")
 
 
-def _save_model_components(out: OutType, state: SessionType) -> None:
+def _save_model_components(out: OutType, state: SessionType) -> bool:
     """Save the model components.
 
     Parameters
@@ -830,6 +838,12 @@ def _save_model_components(out: OutType, state: SessionType) -> None:
     out : dict
        The output state
     state
+
+    Returns
+    -------
+    xspec_state : bool
+       True if any XSPEC models are found.
+
     """
 
     # Have to call elements in list in reverse order (item at end of
@@ -842,16 +856,18 @@ def _save_model_components(out: OutType, state: SessionType) -> None:
     all_model_components = state.list_model_components()
     all_model_components.reverse()
 
+    found_xspec = False
+
     # If there are any links between parameters, store link commands here
     # Then, *after* processing all models in the for loop below, send
     # link commands to outfile -- *all* models need to be created before
     # *any* links between parameters can be established.
     linkstr = ""
-    for mod in all_model_components:
+    for modval in all_model_components:
 
         # get actual model instance from the name we are given
         # then get model type, and name of this instance.
-        mod = eval(mod)
+        mod = eval(modval)
         typename = mod.type
         modelname = mod.name.split(".")[1]
 
@@ -880,6 +896,12 @@ def _save_model_components(out: OutType, state: SessionType) -> None:
             # Normal case:  create an instance of the model.
             cmd = f'create_model_component("{typename}", "{modelname}")'
             _output(out, cmd)
+
+            # Is this an XSPEC model? We only care if it's the first
+            # one we find.
+            #
+            if not found_xspec and xspec is not None:
+                found_xspec = isinstance(mod, xspec.XSModel)
 
         # QUS: should this be included in the above checks?
         #      @DougBurke doesn't think so, as the "normal
@@ -929,12 +951,14 @@ def _save_model_components(out: OutType, state: SessionType) -> None:
     # This is done after creating all the models and datasets.
     #
     if len(state._psf) == 0:
-        return
+        return found_xspec
 
     _output_banner(out, "Associate PSF models with the datasets")
     for idval, psfmod in state._psf.items():
         cmd_id = _id_to_str(idval)
         _output(out, f"set_psf({cmd_id}, {psfmod._name})")
+
+    return found_xspec
 
 
 def _save_models(out: OutType, state: SessionType) -> None:
@@ -1055,7 +1079,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
 
 
 def _save_xspec(out: OutType) -> None:
-    """Save the XSPEC settings, if the module is loaded.
+    """Save the XSPEC settings.
 
     Parameters
     ----------
@@ -1063,13 +1087,13 @@ def _save_xspec(out: OutType) -> None:
        The output state
     """
 
-    if not hasattr(sherpa.astro, "xspec"):
+    # This case shpuld not happen, but just in case.
+    #
+    if xspec is None:
         return
 
-    # TODO: should this make sure that the XSPEC module is in use?
-    #       i.e. only write these out if an XSPEC model is being used?
     _output_banner(out, "XSPEC Module Settings")
-    xspec_state = sherpa.astro.xspec.get_xsstate()
+    xspec_state = xspec.get_xsstate()
 
     chatter =  xspec_state["chatter"]
     abund = xspec_state["abund"]
@@ -1416,9 +1440,10 @@ def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
     _save_statistic(out, state)
     _save_fit_method(out, state)
     _save_iter_method(out, state)
-    _save_model_components(out, state)
+    req_xspec = _save_model_components(out, state)
     _save_models(out, state)
-    _save_xspec(out)
+    if req_xspec:
+        _save_xspec(out)
 
     if fh is None:
         fh = sys.stdout

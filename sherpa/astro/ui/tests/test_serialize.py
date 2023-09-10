@@ -2937,32 +2937,11 @@ set_xscosmo(70, 0, 0.73)
 set_xsxsect("bcmc")
 """
 
-    _canonical_empty += _canonical_extra
-    _canonical_empty_stats += _canonical_extra
-    _canonical_empty_iterstat += _canonical_extra
     _canonical_pha_basic += _canonical_extra
     _canonical_pha_grouped += _canonical_extra
-    _canonical_pha_no_response += _canonical_extra
-    _canonical_pha_full_model += _canonical_extra
-    _canonical_usermodel += _canonical_extra
-    _canonical_img_no_filter_no_model += _canonical_extra
-    _canonical_img_filter_model += _canonical_extra
-    _canonical_img_no_filter_model_psf += _canonical_extra
-    _canonical_table_model += _canonical_extra
     _canonical_xstable_model += _canonical_extra
-    _canonical_pileup_model += _canonical_extra
-    _canonical_dataspace1d_int += _canonical_extra
-    _canonical_dataspace2d_img += _canonical_extra
-    _canonical_load_arrays_simple += _canonical_extra
-    _canonical_load_arrays_pha += _canonical_extra
-    _canonical_load_arrays_data2d += _canonical_extra
     _canonical_xspec_hard_limit_min += _canonical_extra
     _canonical_xspec_hard_limit_max += _canonical_extra
-    _canonical_link_par += _canonical_extra
-    _canonical_load_data += _canonical_extra
-    _canonical_load_data_basic += _canonical_extra
-    _canonical_pha_multiple_backgrounds += _canonical_extra
-    _canonical_pha2 += _canonical_extra
     _canonical_pha_csc += _canonical_extra
 
     del _canonical_extra
