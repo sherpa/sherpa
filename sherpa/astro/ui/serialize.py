@@ -29,15 +29,23 @@ import inspect
 import logging
 import os
 import sys
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
+    TextIO, TypedDict, Union
 
 import numpy
 
+from sherpa.astro.data import DataIMG, DataPHA
+from sherpa.astro import io
+from sherpa.astro.io.wcs import WCS
+if TYPE_CHECKING:
+    # Avoid an import cycle
+    from sherpa.astro.ui.utils import Session
+from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
+from sherpa.models.basic import UserModel
+# from sherpa.models.parameter import Parameter
 import sherpa.utils
 from sherpa.utils.err import ArgumentErr
 
-from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
-from sherpa.astro.data import DataIMG, DataPHA
-from sherpa.astro import io
 
 logger = logging.getLogger(__name__)
 warning = logger.warning
@@ -48,49 +56,51 @@ string_types = (str, )
 #       the objects (or modules) being serialized.
 #
 
+OutType = TypedDict("OutType", {"imports": set[str], "main": list[str]})
+IdType = Union[int, str]
+MaybeIdType = Optional[IdType]
 
-def _output(msg, fh):
-    """Display the message.
+# Typing the state argument is awkward since it causes an import
+# error, so for runtime we default to Any and only when run under a
+# type checker do we use the actual type.
+#
+if TYPE_CHECKING:
+    SessionType = Session
+else:
+    SessionType = Any
 
-    Parameters
-    ----------
-    msg : str
-       The message to output.
-    fh : None or a file handle
-       The file handle to write the message to. If fh is ``None``
-       then the standard output is used.
-    """
-
-    if fh is None:
-        fh = sys.stdout
-
-    fh.write(msg + '\n')
-
-
-def _output_nl(fh=None):
-    """Add a new-line.
-
-    Parameters
-    ----------
-    fh : None or a file handle
-       The file handle to write the message to. If fh is ``None``
-       then the standard output is used.
-
-    """
-
-    _output("", fh)
+# The par parameter is hard to type as it's Union[Parameter,
+# XSBaseParameter] but the latter is only defined if XSPEC support is
+# enabled. One way around this is to create a Protocol for defining
+# the parameter interface rather than have it be based on a class.
+#
+# For now we use Any to skip this, at the expense of not type checking
+# the module propery
+#
+# ParameterType = Parameter
+ParameterType = Any
 
 
-def _output_banner(msg, fh=None, indent=0):
+def _output(out: OutType, msg: str, indent: int = 0) -> None:
+    """Output the line"""
+    space = ' ' * (indent * 4)
+    out["main"].append(f"{space}{msg}")
+
+
+def _output_nl(out: OutType) -> None:
+    """Add a new-line."""
+    _output(out, "")
+
+
+def _output_banner(out: OutType, msg: str, indent: int = 0) -> None:
     """Display the banner message.
 
     Parameters
     ----------
     msg : str
        The label to output.
-    fh : None or a file handle
-       The file handle to write the message to. If fh is ``None``
-       then the standard output is used.
+    out : dict
+       The output state
     indent : int, optional
        How many times to indent the comment (if set the leading and
        trailing newlines aren't added).
@@ -98,15 +108,14 @@ def _output_banner(msg, fh=None, indent=0):
     """
 
     if indent == 0:
-        _output_nl(fh)
+        _output_nl(out)
 
-    space = ' ' * (indent * 4)
-    _output(f"{space}######### {msg}", fh)
+    _output(out, f"######### {msg}", indent=indent)
     if indent == 0:
-        _output_nl(fh)
+        _output_nl(out)
 
 
-def _id_to_str(id):
+def _id_to_str(id: IdType) -> str:
     """Convert a data set identifier to a string value.
 
     Parameters
@@ -127,7 +136,9 @@ def _id_to_str(id):
     return str(id)
 
 
-def _save_entries(store, tostatement, fh=None):
+def _save_entries(out: OutType,
+                  store: Mapping[str, Any],
+                  tostatement: Callable[[str, Any], str]) -> None:
     """Iterate through entries in the store and serialize them.
 
     Write out the key, value pairs in store in lexical order,
@@ -137,6 +148,8 @@ def _save_entries(store, tostatement, fh=None):
 
     Parameters
     ----------
+    out : dict
+       The output state
     store
        A container with keys. The elements of the container are
        passed to tocommand to create the string that is then
@@ -146,38 +159,27 @@ def _save_entries(store, tostatement, fh=None):
        from store, and returns a string. The reason for the name
        is that it is expected that the returned string will be
        a Python statement to restore this setting.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     keys = list(store)
     keys.sort()
     for key in keys:
         cmd = tostatement(key, store[key])
-        _output(cmd, fh)
+        _output(out, cmd)
 
 
-def _save_intro(fh=None):
-    """The set-up for the serialized file (imports).
-
-    Parameters
-    ----------
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
-    """
-
-    # QUS: should numpy only be loaded if it is needed?
-    _output("import numpy", fh)
-    _output("from sherpa.astro.ui import *", fh)
-
-
-def _save_response(label, respfile, id, rid, bid=None, fh=None):
+def _save_response(out: OutType,
+                   label: str,
+                   respfile: str,
+                   id: IdType,
+                   rid: IdType,
+                   bid: MaybeIdType = None) -> None:
     """Save the ARF or RMF
 
     Parameters
     ----------
+    out : dict
+       The output state
     label : str
        Either ``arf`` or ``rmf``.
     respfile : str
@@ -189,9 +191,6 @@ def _save_response(label, respfile, id, rid, bid=None, fh=None):
     bid
        If not ``None`` then this indicates that this is the ARF for
        a background dataset, and which such data set to use.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     id = _id_to_str(id)
@@ -202,14 +201,20 @@ def _save_response(label, respfile, id, rid, bid=None, fh=None):
         cmd += f", bkg_id={_id_to_str(bid)}"
 
     cmd += ")"
-    _output(cmd, fh)
+    _output(out, cmd)
 
 
-def _save_arf_response(state, id, rid, bid=None, fh=None):
+def _save_arf_response(out: OutType,
+                       state: SessionType,
+                       id: IdType,
+                       rid: IdType,
+                       bid: MaybeIdType = None) -> None:
     """Save the ARF.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
     id : id or str
        The Sherpa data set identifier.
@@ -218,9 +223,6 @@ def _save_arf_response(state, id, rid, bid=None, fh=None):
     bid
        If not ``None`` then this indicates that this is the ARF for
        a background dataset, and which such data set to use.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     try:
@@ -228,15 +230,21 @@ def _save_arf_response(state, id, rid, bid=None, fh=None):
     except:
         return
 
-    _save_response('arf', respfile, id, rid, bid=bid, fh=fh)
+    _save_response(out, 'arf', respfile, id, rid, bid=bid)
 
 
-def _save_rmf_response(state, id, rid, bid=None, fh=None):
+def _save_rmf_response(out: OutType,
+                       state: SessionType,
+                       id: IdType,
+                       rid: IdType,
+                       bid: MaybeIdType = None) -> None:
     """Save the RMF.
 
     Parameters
     ----------
-    state
+    out : dict
+       The output state
+    state : Session
     id : id or str
        The Sherpa data set identifier.
     rid
@@ -244,9 +252,6 @@ def _save_rmf_response(state, id, rid, bid=None, fh=None):
     bid
        If not ``None`` then this indicates that this is the RMF for
        a background dataset, and which such data set to use.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     try:
@@ -254,14 +259,20 @@ def _save_rmf_response(state, id, rid, bid=None, fh=None):
     except:
         return
 
-    _save_response('rmf', respfile, id, rid, bid=bid, fh=fh)
+    _save_response(out, 'rmf', respfile, id, rid, bid=bid)
 
 
-def _save_pha_array(state, label, id, bid=None, fh=None):
+def _save_pha_array(out: OutType,
+                    state: SessionType,
+                    label: str,
+                    id: IdType,
+                    bid: MaybeIdType = None) -> None:
     """Save a grouping or quality array for a PHA data set.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
     label : "grouping" or "quality"
     id : id or str
@@ -269,9 +280,6 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     # This is an internal routine, so just protect against accidents
@@ -289,7 +297,7 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
     if vals is None:
         return
 
-    _output_banner(f"{lbl} {label} flags", fh)
+    _output_banner(out, f"{lbl} {label} flags")
 
     # QUS: can we not use the vals variable here rather than
     #      reassign it? i.e. isn't the "quality" (or "grouping"
@@ -312,14 +320,19 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
         cmd += f", bkg_id={_id_to_str(bid)}"
 
     cmd += ")"
-    _output(cmd, fh)
+    _output(out, cmd)
 
 
-def _save_pha_grouping(state, id, bid=None, fh=None):
+def _save_pha_grouping(out: OutType,
+                       state: SessionType,
+                       id: IdType,
+                       bid: MaybeIdType = None) -> None:
     """Save the grouping column values for a PHA data set.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
     id : id or str
        The Sherpa data set identifier.
@@ -331,29 +344,33 @@ def _save_pha_grouping(state, id, bid=None, fh=None):
        otherwise the information is added to the file handle.
     """
 
-    _save_pha_array(state, "grouping", id, bid=bid, fh=fh)
+    _save_pha_array(out, state, "grouping", id, bid=bid)
 
 
-def _save_pha_quality(state, id, bid=None, fh=None):
+def _save_pha_quality(out: OutType,
+                      state: SessionType,
+                      id: IdType,
+                      bid: MaybeIdType = None) -> None:
     """Save the quality column values for a PHA data set.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
     id : id or str
        The Sherpa data set identifier.
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    _save_pha_array(state, "quality", id, bid=bid, fh=fh)
+    _save_pha_array(out, state, "quality", id, bid=bid)
 
 
-def _handle_filter(state, id, fh):
+def _handle_filter(out: OutType,
+                   state: SessionType,
+                   id: IdType) -> None:
     """Set any filter expressions for source and background
     components for data set id.
 
@@ -361,7 +378,7 @@ def _handle_filter(state, id, fh):
     in the Sherpa session object (state).
     """
 
-    _output_banner("Filter Data", fh)
+    _output_banner(out, "Filter Data")
 
     cmd_id = _id_to_str(id)
     d = state.get_data(id)
@@ -392,7 +409,7 @@ def _handle_filter(state, id, fh):
             func = "notice"
 
         fvals = d.get_filter()
-        _output(f'{func}_id({cmd_id}, "{fvals}")', fh)
+        _output(out, f'{func}_id({cmd_id}, "{fvals}")')
 
     else:
         if ndims == 2:
@@ -400,7 +417,7 @@ def _handle_filter(state, id, fh):
         else:
             func = "ignore"
 
-        _output(f'{func}_id({cmd_id})', fh)
+        _output(out, f'{func}_id({cmd_id})')
 
     try:
         bids = state.list_bkg_ids(id)
@@ -433,15 +450,15 @@ def _handle_filter(state, id, fh):
             # We need to clear any existing background filter set by
             # the source.
             #
-            _output(f'notice_id({cmd_id}, bkg_id={bkg_id})', fh)
+            _output(out, f'notice_id({cmd_id}, bkg_id={bkg_id})')
             fvals = b.get_filter()
-            _output(f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})', fh)
+            _output(out, f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})')
 
         else:
-            _output(f'ignore_id({cmd_id}, bkg_id={bkg_id})', fh)
+            _output(out, f'ignore_id({cmd_id}, bkg_id={bkg_id})')
 
 
-def _save_data(state, fh=None):
+def _save_data(out: OutType, state: SessionType) -> None:
     """Save the data.
 
     This can just be references to files, or serialization of
@@ -449,10 +466,9 @@ def _save_data(state, fh=None):
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
 
     Notes
     -----
@@ -461,7 +477,7 @@ def _save_data(state, fh=None):
     to be serialized it is included in the script.
     """
 
-    _output_banner("Load Data Sets", fh)
+    _output_banner(out, "Load Data Sets")
 
     cmd_id = ""
     cmd_bkg_id = ""
@@ -473,15 +489,15 @@ def _save_data(state, fh=None):
         # used?  Store them with data object?
         cmd_id = _id_to_str(id)
 
-        _save_dataset(state, fh, id)
+        _save_dataset(out, state, id)
 
         # Set physical or WCS coordinates here if applicable
         # If can't be done, just pass to next
         try:
             # TODO: add a test of the following
-            _output_banner("Set Image Coordinates", fh)
+            _output_banner(out, "Set Image Coordinates")
             cmd = f"set_coord({_id_to_str(id)}, '{state.get_coord(id)}')"
-            _output(cmd, fh)
+            _output(out, cmd)
         except:
             pass
 
@@ -490,34 +506,34 @@ def _save_data(state, fh=None):
             # Only store group flags and quality flags if they were changed
             # from flags in the file
             if not state.get_data(id)._original_groups:
-                _save_pha_grouping(state, id, fh=fh)
-                _save_pha_quality(state, id, fh=fh)
+                _save_pha_grouping(out, state, id)
+                _save_pha_quality(out, state, id)
 
             # End check for original groups and quality flags
             if state.get_data(id).grouped:
                 cmd = f"if get_data({cmd_id}).grouping is not None " + \
                     f"and not get_data({cmd_id}).grouped:"
-                _output(cmd, fh)
-                _output_banner("Group Data", fh, indent=1)
-                _output(f"    group({cmd_id})", fh)
+                _output(out, cmd)
+                _output_banner(out, "Group Data", indent=1)
+                _output(out, f"group({cmd_id})", indent=1)
         except:
             pass
 
         # Add responses and ARFs, if any
         try:
-            _output_banner("Data Spectral Responses", fh)
+            _output_banner(out, "Data Spectral Responses")
             rids = state.list_response_ids(id)
 
             for rid in rids:
-                _save_arf_response(state, id, rid, fh=fh)
-                _save_rmf_response(state, id, rid, fh=fh)
+                _save_arf_response(out, state, id, rid)
+                _save_rmf_response(out, state, id, rid)
 
         except:
             pass
 
         # Check if this data set has associated backgrounds
         try:
-            _output_banner("Load Background Data Sets", fh)
+            _output_banner(out, "Load Background Data Sets")
             bids = state.list_bkg_ids(id)
             cmd_bkg_id = ""
             for bid in bids:
@@ -525,7 +541,7 @@ def _save_data(state, fh=None):
 
                 bname = state.get_bkg(id, bid).name
                 cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
-                _output(cmd, fh)
+                _output(out, cmd)
 
                 # Group data if applicable
                 try:
@@ -533,32 +549,32 @@ def _save_data(state, fh=None):
                     # changed from flags in the file
                     if not state.get_bkg(id, bid)._original_groups:
                         if state.get_bkg(id, bid).grouping is not None:
-                            _save_pha_grouping(state, id, bid, fh=fh)
-                            _save_pha_quality(state, id, bid, fh=fh)
+                            _save_pha_grouping(out, state, id, bid)
+                            _save_pha_quality(out, state, id, bid)
 
                     # End check for original groups and quality flags
                     if state.get_bkg(id, bid).grouped:
                         cmd = f"if get_bkg({cmd_id}, {cmd_bkg_id}).grouping is not None " + \
                             f"and not get_bkg({cmd_id}, {cmd_bkg_id}).grouped:"
-                        _output(cmd, fh)
-                        _output_banner("Group Background", fh, indent=1)
-                        _output(f"    group({cmd_id}, bkg_id={cmd_bkg_id})", fh)
+                        _output(out, cmd)
+                        _output_banner(out, "Group Background", indent=1)
+                        _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})", indent=1)
                 except:
                     pass
 
                 # Load background response, ARFs if any
-                _output_banner("Background Spectral Responses", fh)
+                _output_banner(out, "Background Spectral Responses")
                 rids = state.list_response_ids(id, bid)
                 for rid in rids:
-                    _save_arf_response(state, id, rid, bid, fh=fh)
-                    _save_rmf_response(state, id, rid, bid, fh=fh)
+                    _save_arf_response(out, state, id, rid, bid)
+                    _save_rmf_response(out, state, id, rid, bid)
 
         except:
             pass
 
         # Set energy units if applicable
         # If can't be done, just pass to next
-        _output_banner("Set Energy or Wave Units", fh)
+        _output_banner(out, "Set Energy or Wave Units")
         try:
             units = state.get_data(id).units
             if state.get_data(id).rate:
@@ -568,7 +584,7 @@ def _save_data(state, fh=None):
             factor = state.get_data(id).plot_fac
             cmd = f'set_analysis({cmd_id}, quantity="{units}", ' + \
                 f'type="{rate}", factor={factor})'
-            _output(cmd, fh)
+            _output(out, cmd)
         except:
             pass
 
@@ -576,16 +592,16 @@ def _save_data(state, fh=None):
         try:
             if state.get_data(id).subtracted:
                 cmd = f"if not get_data({cmd_id}).subtracted:"
-                _output(cmd, fh)
-                _output_banner("Subtract Background Data", fh, indent=1)
-                _output(f"    subtract({cmd_id})", fh)
+                _output(out, cmd)
+                _output_banner(out, "Subtract Background Data", indent=1)
+                _output(out, f"subtract({cmd_id})", indent=1)
         except:
             pass
 
-        _handle_filter(state, id, fh)
+        _handle_filter(out, state, id)
 
 
-def _print_par(par):
+def _print_par(par: ParameterType) -> tuple[str, str]:
     """Convert a Sherpa parameter to a string.
 
     Note that we have to be careful with XSParameter parameters,
@@ -593,7 +609,7 @@ def _print_par(par):
 
     Parameters
     ----------
-    par
+    par : Parameter
        The Sherpa parameter object to serialize.
 
     Returns
@@ -639,38 +655,36 @@ def _print_par(par):
     return (parstr, linkstr)
 
 
-def _save_statistic(state, fh=None):
+def _save_statistic(out: OutType, state: SessionType) -> None:
     """Save the statistic settings.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    _output_banner("Set Statistic", fh)
-    _output(f'set_stat("{state.get_stat_name()}")', fh)
-    _output_nl(fh)
+    _output_banner(out, "Set Statistic")
+    _output(out, f'set_stat("{state.get_stat_name()}")')
+    _output_nl(out)
 
 
-def _save_fit_method(state, fh=None):
+def _save_fit_method(out: OutType, state: SessionType) -> None:
     """Save the fit method settings.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     # Save fitting method
 
-    _output_banner("Set Fitting Method", fh)
-    _output(f'set_method("{state.get_method_name()}")', fh)
-    _output_nl(fh)
+    _output_banner(out, "Set Fitting Method")
+    _output(out, f'set_method("{state.get_method_name()}")')
+    _output_nl(out)
 
     def tostatement(key, val):
         # TODO: Using .format() returns more decimal places, which
@@ -679,29 +693,28 @@ def _save_fit_method(state, fh=None):
         # return 'set_method_opt("{}", {})'.format(key, val)
         return 'set_method_opt("%s", %s)' % (key, val)
 
-    _save_entries(state.get_method_opt(), tostatement, fh)
-    _output_nl(fh)
+    _save_entries(out, state.get_method_opt(), tostatement)
+    _output_nl(out)
 
 
-def _save_iter_method(state, fh=None):
+def _save_iter_method(out: OutType, state: SessionType) -> None:
     """Save the iterated-fit method settings, if any.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     if state.get_iter_method_name() == 'none':
         return
 
-    _output_banner("Set Iterative Fitting Method", fh)
+    _output_banner(out, "Set Iterative Fitting Method")
     meth = state.get_iter_method_name()
     cmd = f'set_iter_method("{meth}")'
-    _output(cmd, fh)
-    _output_nl(fh)
+    _output(out, cmd)
+    _output_nl(out)
 
     def tostatement(key, val):
         # There was a discussion here about the use of
@@ -710,12 +723,12 @@ def _save_iter_method(state, fh=None):
         # so it makes no difference.
         return f'set_iter_method_opt("{key}", {val})'
 
-    _save_entries(state.get_iter_method_opt(), tostatement, fh)
-    _output_nl(fh)
+    _save_entries(out, state.get_iter_method_opt(), tostatement)
+    _output_nl(out)
 
 
 # Is there something in the standard libraries that does this?
-def _reindent(code):
+def _reindent(code: str) -> str:
     """Try to remove leading spaces. Somewhat hacky."""
 
     # Assume the first line is 'def func()'
@@ -749,7 +762,9 @@ def _reindent(code):
 # but probably better to tell the user about each one
 # than only the first.
 #
-def _handle_usermodel(mod, modelname, fh=None):
+def _handle_usermodel(out: OutType,
+                      mod: UserModel,
+                      modelname: str) -> None:
 
     try:
         pycode = inspect.getsource(mod.calc)
@@ -759,13 +774,13 @@ def _handle_usermodel(mod, modelname, fh=None):
     # in case getsource can return None, have check here
     if pycode is None:
         msg = "Unable to save Python code for user model " + \
-              f"'{modelname}' function {mod.calc.name}"
+              f"'{modelname}' function {mod.calc.__name__}"
         warning(msg)
-        _output(f'print("{msg}")', fh)
-        _output(f"def {mod.calc.name}(*args):", fh)
-        _output("    raise NotImplementedError('User model was " +
-                "not saved by save_all().'", fh)
-        _output_nl(fh)
+        _output(out, f'print("{msg}")')
+        _output(out, f"def {mod.calc.__name__}(*args):")
+        _output(out, "raise NotImplementedError('User model was "
+                "not saved by save_all().'", indent=1)
+        _output_nl(out)
         return
 
     msg = f"Found user model '{modelname}'; " + \
@@ -773,11 +788,11 @@ def _handle_usermodel(mod, modelname, fh=None):
     warning(msg)
 
     # Ensure the message is also seen if the script is run.
-    _output(f'print("{msg}")', fh)
+    _output(out, f'print("{msg}")')
 
-    _output(_reindent(pycode), fh)
+    _output(out, _reindent(pycode))
     cmd = f'load_user_model({mod.calc.__name__}, "{modelname}")'
-    _output(cmd, fh)
+    _output(out, cmd)
 
     # Work out the add_user_pars call; this is explicit, i.e.
     # it does not include logic to work out what arguments
@@ -797,25 +812,24 @@ def _handle_usermodel(mod, modelname, fh=None):
     parfrozen = [p.frozen for p in mod.pars]
 
     spaces = '              '
-    _output(f'add_user_pars("{modelname}",', fh)
-    _output(f"{spaces}parnames={parnames},", fh)
-    _output(f"{spaces}parvals={parvals},", fh)
-    _output(f"{spaces}parmins={parmins},", fh)
-    _output(f"{spaces}parmaxs={parmaxs},", fh)
-    _output(f"{spaces}parunits={parunits},", fh)
-    _output(f"{spaces}parfrozen={parfrozen}", fh)
-    _output(f"{spaces})\n", fh)
+    _output(out, f'add_user_pars("{modelname}",')
+    _output(out, f"{spaces}parnames={parnames},")
+    _output(out, f"{spaces}parvals={parvals},")
+    _output(out, f"{spaces}parmins={parmins},")
+    _output(out, f"{spaces}parmaxs={parmaxs},")
+    _output(out, f"{spaces}parunits={parunits},")
+    _output(out, f"{spaces}parfrozen={parfrozen}")
+    _output(out, f"{spaces})\n")
 
 
-def _save_model_components(state, fh=None):
+def _save_model_components(out: OutType, state: SessionType) -> None:
     """Save the model components.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     # Have to call elements in list in reverse order (item at end of
@@ -824,7 +838,7 @@ def _save_model_components(state, fh=None):
     # To recreate attributes, print out dictionary as ordered pairs,
     # for each parameter
 
-    _output_banner("Set Model Components and Parameters", fh)
+    _output_banner(out, "Set Model Components and Parameters")
     all_model_components = state.list_model_components()
     all_model_components.reverse()
 
@@ -851,21 +865,21 @@ def _save_model_components(state, fh=None):
         # tabel models;
 
         if typename == "usermodel":
-            _handle_usermodel(mod, modelname, fh)
+            _handle_usermodel(out, mod, modelname)
 
         elif typename == "psfmodel":
             cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
-            _output(cmd, fh)
+            _output(out, cmd)
 
         elif typename == "tablemodel":
             # Create table model with load_table_model
             cmd = f'load_table_model("{modelname}", "{mod.filename}")'
-            _output(cmd, fh)
+            _output(out, cmd)
 
         else:
             # Normal case:  create an instance of the model.
             cmd = f'create_model_component("{typename}", "{modelname}")'
-            _output(cmd, fh)
+            _output(out, cmd)
 
         # QUS: should this be included in the above checks?
         #      @DougBurke doesn't think so, as the "normal
@@ -875,12 +889,12 @@ def _save_model_components(state, fh=None):
         if typename == "convolutionkernel":
             # Create general convolution kernel with load_conv
             cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
-            _output(cmd, fh)
+            _output(out, cmd)
 
         if hasattr(mod, "integrate"):
             cmd = f"{modelname}.integrate = {mod.integrate}"
-            _output(cmd, fh)
-            _output_nl(fh)
+            _output(out, cmd)
+            _output_nl(out)
 
         # Write out the parameters in the order they are stored in
         # the model. The original version of the code iterated
@@ -889,7 +903,7 @@ def _save_model_components(state, fh=None):
         #
         for par in mod.pars:
             par_attributes, par_linkstr = _print_par(par)
-            _output(par_attributes, fh)
+            _output(out, par_attributes)
             linkstr = linkstr + par_linkstr
 
         # If the model is a PSFModel, could have special
@@ -897,19 +911,19 @@ def _save_model_components(state, fh=None):
         if typename == "psfmodel":
             spacer = False
             if hasattr(mod, "size") and mod.size is not None:
-                _output(f"{modelname}.size = {mod.size}", fh)
+                _output(out, f"{modelname}.size = {mod.size}")
                 spacer = True
 
             if hasattr(mod, "center") and mod.center is not None:
-                _output(f"{modelname}.center = {mod.center}", fh)
+                _output(out, f"{modelname}.center = {mod.center}")
                 spacer = True
 
             if spacer:
-                _output_nl(fh)
+                _output_nl(out)
 
     # If there were any links made between parameters, send those
     # link commands to outfile now; else, linkstr is just an empty string
-    _output(linkstr, fh)
+    _output(out, linkstr)
 
     # Now associate any PSF models with their appropriate datasets.
     # This is done after creating all the models and datasets.
@@ -917,26 +931,25 @@ def _save_model_components(state, fh=None):
     if len(state._psf) == 0:
         return
 
-    _output_banner("Associate PSF models with the datasets", fh)
+    _output_banner(out, "Associate PSF models with the datasets")
     for idval, psfmod in state._psf.items():
         cmd_id = _id_to_str(idval)
-        _output(f"set_psf({cmd_id}, {psfmod._name})", fh)
+        _output(out, f"set_psf({cmd_id}, {psfmod._name})")
 
 
-def _save_models(state, fh=None):
+def _save_models(out: OutType, state: SessionType) -> None:
     """Save the source, pileup, and background models.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     # Save all source, pileup and background models
 
-    _output_banner("Set Source, Pileup and Background Models", fh)
+    _output_banner(out, "Set Source, Pileup and Background Models")
     for id in state.list_data_ids():
         cmd_id = _id_to_str(id)
 
@@ -980,8 +993,8 @@ def _save_models(state, fh=None):
             else:
                 cmd = ""
 
-            _output(cmd, fh)
-            _output_nl(fh)
+            _output(out, cmd)
+            _output_nl(out)
         except:
             pass
 
@@ -989,7 +1002,7 @@ def _save_models(state, fh=None):
         try:
             pname = state.get_pileup_model(id).name
             cmd = f"set_pileup_model({cmd_id}, {pname})"
-            _output(cmd, fh)
+            _output(out, cmd)
         except:
             pass
 
@@ -1034,21 +1047,20 @@ def _save_models(state, fh=None):
                 else:
                     cmd = ""
 
-                _output(cmd, fh)
-                _output_nl(fh)
+                _output(out, cmd)
+                _output_nl(out)
 
         except:
             pass
 
 
-def _save_xspec(fh=None):
+def _save_xspec(out: OutType) -> None:
     """Save the XSPEC settings, if the module is loaded.
 
     Parameters
     ----------
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
+    out : dict
+       The output state
     """
 
     if not hasattr(sherpa.astro, "xspec"):
@@ -1056,25 +1068,25 @@ def _save_xspec(fh=None):
 
     # TODO: should this make sure that the XSPEC module is in use?
     #       i.e. only write these out if an XSPEC model is being used?
-    _output_banner("XSPEC Module Settings", fh)
+    _output_banner(out, "XSPEC Module Settings")
     xspec_state = sherpa.astro.xspec.get_xsstate()
 
     chatter =  xspec_state["chatter"]
     abund = xspec_state["abund"]
     xsect = xspec_state["xsect"]
     cs = xspec_state["cosmo"]
-    _output(f"set_xschatter({chatter})", fh)
-    _output(f'set_xsabund("{abund}")', fh)
-    _output(f"set_xscosmo({cs[0]:g}, {cs[1]:g}, {cs[2]:g})", fh)
-    _output(f'set_xsxsect("{xsect}")', fh)
+    _output(out, f"set_xschatter({chatter})")
+    _output(out, f'set_xsabund("{abund}")')
+    _output(out, f"set_xscosmo({cs[0]:g}, {cs[1]:g}, {cs[2]:g})")
+    _output(out, f'set_xsxsect("{xsect}")')
 
     def tostatement(key, val):
         return f'set_xsxset("{key}", "{val}")'
 
-    _save_entries(xspec_state["modelstrings"], tostatement, fh)
+    _save_entries(out, xspec_state["modelstrings"], tostatement)
 
 
-def _save_dataset_file(fh, idstr, dset):
+def _save_dataset_file(out: OutType, idstr: str, dset: Data) -> None:
     """The data can be read in from a file."""
 
     # TODO: this does not handle options like selecting the columns
@@ -1096,21 +1108,15 @@ def _save_dataset_file(fh, idstr, dset):
             # and then staterror.
             ncols = len(dset.get_indep()) + 2
 
-    out = f'load_{dtype}({idstr}, "{dset.name}"'
+    cmd = f'load_{dtype}({idstr}, "{dset.name}"'
     if ncols is not None:
-        out += f", ncols={ncols}"
+        cmd += f", ncols={ncols}"
 
-    out += ")"
-    _output(out, fh)
-
-
-# Ensure we only import WCS once if needed. This needs to be cleared
-# for each run.
-#
-_loaded_wcs = {}
+    cmd += ")"
+    _output(out, cmd)
 
 
-def _output_wcs_import(fh):
+def _output_wcs_import(out: OutType) -> None:
     """Import the WCS symbol if not done already.
 
     Parameters
@@ -1120,51 +1126,48 @@ def _output_wcs_import(fh):
        then the standard output is used.
 
     """
-    if len(_loaded_wcs) > 0:
-        return
 
-    _output("from sherpa.astro.io.wcs import WCS", fh)
-    _output_nl(fh)
-
-    # hack for a global variable
-    _loaded_wcs["set"] = True
+    out["imports"].add("from sherpa.astro.io.wcs import WCS")
 
 
-def _output_add_wcs(idstr, label, wcs, fh):
+def _output_add_wcs(out: OutType,
+                    idstr: str,
+                    label: str,
+                    wcs: WCS) -> None:
     """Copy over the WCS"""
 
-    _output(f"get_data({idstr}).{label} = WCS('{wcs.name}', '{wcs.type}',", fh)
-    _output(f"    crval={wcs.crval.tolist()},", fh)
-    _output(f"    crpix={wcs.crpix.tolist()},", fh)
+    _output(out, f"get_data({idstr}).{label} = WCS('{wcs.name}', '{wcs.type}',")
+    _output(out, f"crval={wcs.crval.tolist()},", indent=1)
+    _output(out, f"crpix={wcs.crpix.tolist()},", indent=1)
     if wcs.type == "LINEAR":
-        _output(f"    cdelt={wcs.cdelt.tolist()})", fh)
+        _output(out, f"cdelt={wcs.cdelt.tolist()})", indent=1)
     else:
-        _output(f"    cdelt={wcs.cdelt.tolist()},", fh)
-        _output(f"    crota={wcs.crota}, epoch={wcs.epoch}, equinox={wcs.equinox})", fh)
+        _output(out, f"cdelt={wcs.cdelt.tolist()},", indent=1)
+        _output(out, f"crota={wcs.crota}, epoch={wcs.epoch}, equinox={wcs.equinox})", indent=1)
 
 
-def _save_dataset_pha(fh, idstr, pha):
+def _save_dataset_pha(out: OutType, idstr: str, pha: DataPHA) -> None:
     """Try to recreate the PHA"""
 
     spacer = "            "
-    _output(f'load_arrays({idstr},', fh)
-    _output(f"{spacer}{pha.channel.tolist()},", fh)
-    _output(f"{spacer}{pha.counts.tolist()},", fh)
-    _output(f"{spacer}DataPHA)", fh)
+    _output(out, f'load_arrays({idstr},')
+    _output(out, f"{spacer}{pha.channel.tolist()},")
+    _output(out, f"{spacer}{pha.counts.tolist()},")
+    _output(out, f"{spacer}DataPHA)")
 
     def setval(key):
         val = getattr(pha, key)
         if val is None:
             return
 
-        _output(f"set_{key}({idstr}, {val})", fh)
+        _output(out, f"set_{key}({idstr}, {val})")
 
     def setarray(key):
         val = getattr(pha, key)
         if val is None:
             return
 
-        _output(f"set_{key}({idstr}, {val.tolist()})", fh)
+        _output(out, f"set_{key}({idstr}, {val.tolist()})")
 
     setval("exposure")
     setval("backscal")
@@ -1181,11 +1184,11 @@ def _save_dataset_pha(fh, idstr, pha):
     if pha.bin_lo is not None and pha.bin_hi is not None:
         # no use restoring only one of these
         #
-        _output(f"get_data({idstr}).bin_lo = {pha.bin_lo.tolist()}", fh)
-        _output(f"get_data({idstr}).bin_hi = {pha.bin_hi.tolist()}", fh)
+        _output(out, f"get_data({idstr}).bin_lo = {pha.bin_lo.tolist()}")
+        _output(out, f"get_data({idstr}).bin_hi = {pha.bin_hi.tolist()}")
 
 
-def _save_dataset(state, fh, id):
+def _save_dataset(out: OutType, state: SessionType, id: IdType) -> None:
     """Given a dataset identifier, return the text needed to
     re-create it.
 
@@ -1231,8 +1234,10 @@ def _save_dataset(state, fh, id):
     #   check for .gz as well as the file name when calling isfile.
     #
     infile = dset.name
+    if TYPE_CHECKING:
+        assert io.backend is not None
     if io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        import pycrates
+        import pycrates  # type: ignore
         try:
             pycrates.read_file(infile)
             exists = True
@@ -1245,7 +1250,7 @@ def _save_dataset(state, fh, id):
             exists = os.path.isfile(f"{infile}.gz")
 
     if exists:
-        _save_dataset_file(fh, idstr, dset)
+        _save_dataset_file(out, idstr, dset)
         return
 
     # We could use dataspace1d/2d but easiest to just use load_arrays.
@@ -1260,6 +1265,10 @@ def _save_dataset(state, fh, id):
     # more details. This should also be done for DataIMGInt, but this
     # class is poorly tested, documented, or used.
     #
+    if isinstance(dset, DataPHA):
+        _save_dataset_pha(out, idstr, dset)
+        return
+
     if isinstance(dset, DataIMG):
         # This assumes that orig[0] == "logical"
         orig = dset._orig_indep_axis
@@ -1271,78 +1280,74 @@ def _save_dataset(state, fh, id):
 
     spacer = "            "
 
-    if isinstance(dset, DataPHA):
-        _save_dataset_pha(fh, idstr, dset)
-        return
-
     if isinstance(dset, Data1DInt):
-        _output(f'load_arrays({idstr},', fh)
-        _output(f"{spacer}{xs[0].tolist()},", fh)
-        _output(f"{spacer}{xs[1].tolist()},", fh)
-        _output(f"{spacer}{ys},", fh)
-        _output(f"{spacer}Data1DInt)", fh)
+        _output(out, f'load_arrays({idstr},')
+        _output(out, f"{spacer}{xs[0].tolist()},")
+        _output(out, f"{spacer}{xs[1].tolist()},")
+        _output(out, f"{spacer}{ys},")
+        _output(out, f"{spacer}Data1DInt)")
 
     elif isinstance(dset, Data1D):
-        _output(f'load_arrays({idstr},', fh)
-        _output(f"{spacer}{xs[0].tolist()},", fh)
-        _output(f"{spacer}{ys},", fh)
-        _output(f"{spacer}Data1D)", fh)
+        _output(out, f'load_arrays({idstr},')
+        _output(out, f"{spacer}{xs[0].tolist()},")
+        _output(out, f"{spacer}{ys},")
+        _output(out, f"{spacer}Data1D)")
 
     elif isinstance(dset, DataIMG):
 
         # Note that we set transforms outside the load_arrays call
         if dset.sky is not None or dset.eqpos is not None:
-            _output_wcs_import(fh)
+            _output_wcs_import(out)
 
         # This does not save the header information in the file
-        _output(f'load_arrays({idstr},', fh)
-        _output(f"{spacer}{xs[0].tolist()},", fh)
-        _output(f"{spacer}{xs[1].tolist()},", fh)
-        _output(f"{spacer}{ys},", fh)
+        _output(out, f'load_arrays({idstr},')
+        _output(out, f"{spacer}{xs[0].tolist()},")
+        _output(out, f"{spacer}{xs[1].tolist()},")
+        _output(out, f"{spacer}{ys},")
         if dset.shape is not None:
-            _output(f"{spacer}{tuple(dset.shape)},", fh)
+            _output(out, f"{spacer}{tuple(dset.shape)},")
 
-        _output(f"{spacer}DataIMG)", fh)
+        _output(out, f"{spacer}DataIMG)")
 
         # Note that we set transforms outside the load_arrays call
         if dset.sky is not None:
-            _output_add_wcs(idstr, "sky", dset.sky, fh)
+            _output_add_wcs(out, idstr, "sky", dset.sky)
 
         if dset.eqpos is not None:
-            _output_add_wcs(idstr, "eqpos", dset.eqpos, fh)
+            _output_add_wcs(out, idstr, "eqpos", dset.eqpos)
 
     elif isinstance(dset, Data2DInt):
         msg = f"Unable to re-create Data2DInt data set '{id}'"
         warning(msg)
-        _output(f'print("{msg}")', fh)
+        _output(out, f'print("{msg}")')
 
     elif isinstance(dset, Data2D):
-        _output(f'load_arrays({idstr},', fh)
-        _output(f"{spacer}{xs[0].tolist()},", fh)
-        _output(f"{spacer}{xs[1].tolist()},", fh)
-        _output(f"{spacer}{ys},", fh)
+        _output(out, f'load_arrays({idstr},')
+        _output(out, f"{spacer}{xs[0].tolist()},")
+        _output(out, f"{spacer}{xs[1].tolist()},")
+        _output(out, f"{spacer}{ys},")
         if dset.shape is not None:
-            _output(f"{spacer}{tuple(dset.shape)},", fh)
+            _output(out, f"{spacer}{tuple(dset.shape)},")
 
-        _output(f"{spacer}Data2D)", fh)
+        _output(out, f"{spacer}Data2D)")
 
     else:
         msg = f"Unable to re-create {dset.__class__} data set '{id}'"
         warning(msg)
-        _output(f'print("{msg}")', fh)
+        _output(out, f'print("{msg}")')
         return
 
     staterr = dset.get_staterror()
     syserr = dset.get_syserror()
 
     if staterr is not None:
-        _output(f"set_staterror({idstr}, {staterr.tolist()})", fh)
+        _output(out, f"set_staterror({idstr}, {staterr.tolist()})")
 
     if syserr is not None:
-        _output(f"set_syserror({idstr}, {syserr.tolist()})", fh)
+        _output(out, f"set_syserror({idstr}, {syserr.tolist()})")
 
 
-def save_all(state, fh=None):
+def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
     """Save the information about the current session to a file handle.
 
     This differs to the `save` command in that the output is human
@@ -1356,6 +1361,7 @@ def save_all(state, fh=None):
 
     Parameters
     ----------
+    state : sherpa.astro.ui.utils.Session
     fh : file_like, optional
        If not given the results are displayed to standard out,
        otherwise they are written to this file handle.
@@ -1398,17 +1404,38 @@ def save_all(state, fh=None):
 
     """
 
-    # If we just built up the output and then combined it, rather than
-    # creating it as we go, we could avoid this global variable.
+    # Record the various elements of the output.
     #
-    _loaded_wcs.clear()
+    out: OutType
+    out = { "imports": set(),
+            "main": []
+           }
 
-    _save_intro(fh)
-    _save_data(state, fh)
-    _output_nl(fh)
-    _save_statistic(state, fh)
-    _save_fit_method(state, fh)
-    _save_iter_method(state, fh)
-    _save_model_components(state, fh)
-    _save_models(state, fh)
-    _save_xspec(fh)
+    _save_data(out, state)
+    _output_nl(out)
+    _save_statistic(out, state)
+    _save_fit_method(out, state)
+    _save_iter_method(out, state)
+    _save_model_components(out, state)
+    _save_models(out, state)
+    _save_xspec(out)
+
+    if fh is None:
+        fh = sys.stdout
+
+    write = lambda msg: fh.write(f"{msg}\n")
+
+    # Hard code the required imports.
+    #
+    write("import numpy")
+    write("from sherpa.astro.ui import *")
+
+    # Add additional imports.
+    #
+    for iline in out["imports"]:
+        write(iline)
+
+    # Write out the contents.
+    #
+    for txt in out["main"]:
+        write(txt)
