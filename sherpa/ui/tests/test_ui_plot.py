@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022
+#  Copyright (C) 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -40,7 +40,7 @@ from sherpa.data import Data1D, Data1DInt, Data2D
 from sherpa.models import basic
 import sherpa.plot
 from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentTypeErr, IdentifierErr, PlotErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr, PlotErr
 from sherpa.utils.testing import requires_plotting, requires_pylab
 
 
@@ -816,6 +816,75 @@ def test_prefs_change_session_objects_fit(clean_ui):
     assert plotobj.modelplot is ui.get_model_plot(id=12, recalc=False)
 
 
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["data", "kernel", "model" ,"psf", "ratio", "resid", "source"])
+def test_get_plot_prefs_returns_something(session, ptype):
+    """Check this returns something.
+
+    We do not require a plotting backend so the returned dictionary
+    can be empty.
+
+    """
+
+    s = session()
+    p = s.get_plot_prefs(ptype)
+    assert isinstance(p, dict)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_plot_prefs_does_not_like_fit(session):
+    """Check this errors out.
+
+    We could support "fit" but the plot_prefs settings are currently
+    unused so it is likely to be confusing to users, so we error out.
+
+    """
+
+    # This is a different error to test_get_plot_prefs_fails
+    s = session()
+    with pytest.raises(ArgumentErr,
+                       match="^Use 'data' or 'model' instead of 'fit'$"):
+        s.get_plot_prefs("fit")
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["", "not-a-plot", None, 1])
+def test_get_plot_prefs_fails(session, ptype):
+    """Check this call fails."""
+
+    s = session()
+    with pytest.raises(PlotErr,
+                       match=r"^Plot type '.*' not found in \['data', "):
+        s.get_plot_prefs(ptype)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_plot_prefs_recognizes_datatype(session):
+    """Check that get_plot_prefs recognizes the data type."""
+
+    s = session()
+    s.dataspace1d(1, 5, id=1)
+    s.dataspace1d(1, 5, id=2, dstype=Data1D)
+
+    # The idea is that we add a key for id=1, which should be the
+    # "histogram type" which will not be present for the "line type"
+    # plot used for id=2. This is an attempt to be agnostic of the
+    # plotting backend, including having no backend (when the default
+    # preferences may be empty).
+    #
+    key = "NOT_AN_EXPECTED_VALID_KEY"
+    p1 = s.get_plot_prefs("data", 1)
+    assert key not in p1  # if this fails the key name needs to be changed
+    p1[key] = 23
+
+    # check it's remembered
+    assert key in s.get_plot_prefs("data", 1)
+
+    # check it isn't in p2
+    p2 = s.get_plot_prefs("data", 2)
+    assert key not in p2
+
+
 @pytest.mark.parametrize("plotfunc", [ui.plot_cdf, ui.plot_pdf])
 def test_plot_xdf(plotfunc):
     """Very basic check we can call plot_cdf/pdf
@@ -1345,14 +1414,56 @@ def test_contour_xxx(plotfunc, title, pcls, session):
 
 @requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-@pytest.mark.parametrize("ptype", ["data", "model"])
-def test_get_xxx_contour_prefs_pylab(ptype, session):
+@pytest.mark.parametrize("ctype", ["data", "model"])
+def test_get_xxx_contour_prefs_pylab(ctype, session):
 
     s = session()
-    p = getattr(s, "get_{}_contour_prefs".format(ptype))()
+    p = getattr(s, f"get_{ctype}_contour_prefs")()
     assert isinstance(p, dict)
     assert p == {'xlog': False, 'ylog': False,
                  'alpha': None, 'linewidths': None, 'colors': None}
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ctype", ["data", "kernel", "model" ,"psf", "ratio", "resid", "source"])
+def test_get_contour_prefs_returns_something(session, ctype):
+    """Check this returns something.
+
+    We do not require a plotting backend so the returned dictionary
+    can be empty.
+
+    """
+
+    s = session()
+    p = s.get_contour_prefs(ctype)
+    assert isinstance(p, dict)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_get_contour_prefs_does_not_like_fit(session):
+    """Check this errors out.
+
+    We could support "fit" but the contour_prefs settings are currently
+    unused so it is likely to be confusing to users, so we error out.
+
+    """
+
+    # This is a different error to test_get_contour_prefs_fails
+    s = session()
+    with pytest.raises(ArgumentErr,
+                       match="^Use 'data' or 'model' instead of 'fit'$"):
+        s.get_contour_prefs("fit")
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ctype", ["", "not-a-plot", None, 1])
+def test_get_contour_prefs_fails(session, ctype):
+    """Check this call fails."""
+
+    s = session()
+    with pytest.raises(PlotErr,
+                       match=r"^Plot type '.*' not found in \['data', "):
+        s.get_contour_prefs(ctype)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
