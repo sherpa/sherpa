@@ -2030,6 +2030,548 @@ set_method_opt("xtol", 1.19209289551e-07)
 
 """
 
+_canonical_pha_multiple_backgrounds = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha(1, "@@/3c120_meg_1.pha")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+load_arf(1, "@@/3c120_meg_1.arf", resp_id=1)
+load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1)
+
+######### Load Background Data Sets
+
+load_bkg(1, "@@/3c120_meg_1.pha", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_arf(1, "@@/3c120_meg_1.arf", resp_id=1, bkg_id=1)
+load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1, bkg_id=1)
+load_bkg(1, "@@/3c120_meg_1.pha", bkg_id=2)
+
+######### Background Spectral Responses
+
+load_arf(1, "@@/3c120_meg_1.arf", resp_id=1, bkg_id=2)
+load_rmf(1, "@@/3c120_meg_1.rmf", resp_id=1, bkg_id=2)
+
+######### Set Energy or Wave Units
+
+set_analysis(1, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(1, "2.000000000000:12.000000000000")
+notice_id(1, None, None, bkg_id=1)
+notice_id(1, "2.000000000000:12.000000000000", bkg_id=1)
+notice_id(1, None, None, bkg_id=2)
+notice_id(1, "2.000000000000:12.000000000000", bkg_id=2)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)
+
+
+######### Set Model Components and Parameters
+
+
+
+######### Set Source, Pileup and Background Models
+
+
+
+
+
+
+
+"""
+
+_canonical_pha2 = """import numpy
+from sherpa.astro.ui import *
+
+######### Load Data Sets
+
+load_pha(1, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(1, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(1, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(1, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(1, "2.000000000000:4.000000000000")
+notice_id(1, None, None, bkg_id=1)
+notice_id(1, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(1, None, None, bkg_id=2)
+notice_id(1, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(10, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(10, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(10, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(10, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(10, "2.000000000000:4.000000000000")
+notice_id(10, None, None, bkg_id=1)
+notice_id(10, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(10, None, None, bkg_id=2)
+notice_id(10, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(11, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(11, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(11, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(11, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(11, "2.000000000000:4.000000000000")
+notice_id(11, None, None, bkg_id=1)
+notice_id(11, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(11, None, None, bkg_id=2)
+notice_id(11, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(12, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(12, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(12, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(12, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(12, "2.000000000000:4.000000000000")
+notice_id(12, None, None, bkg_id=1)
+notice_id(12, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(12, None, None, bkg_id=2)
+notice_id(12, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(2, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(2, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(2, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(2, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(2, "2.000000000000:4.000000000000")
+notice_id(2, None, None, bkg_id=1)
+notice_id(2, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(2, None, None, bkg_id=2)
+notice_id(2, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(3, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(3, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(3, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(3, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(3, "2.000000000000:4.000000000000")
+notice_id(3, None, None, bkg_id=1)
+notice_id(3, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(3, None, None, bkg_id=2)
+notice_id(3, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(4, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(4, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(4, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(4, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(4, "2.000000000000:4.000000000000")
+notice_id(4, None, None, bkg_id=1)
+notice_id(4, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(4, None, None, bkg_id=2)
+notice_id(4, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(5, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(5, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(5, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(5, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(5, "2.000000000000:4.000000000000")
+notice_id(5, None, None, bkg_id=1)
+notice_id(5, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(5, None, None, bkg_id=2)
+notice_id(5, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(6, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(6, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(6, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(6, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(6, "2.000000000000:4.000000000000")
+notice_id(6, None, None, bkg_id=1)
+notice_id(6, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(6, None, None, bkg_id=2)
+notice_id(6, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(7, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(7, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(7, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(7, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(7, "2.000000000000:4.000000000000")
+notice_id(7, None, None, bkg_id=1)
+notice_id(7, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(7, None, None, bkg_id=2)
+notice_id(7, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(8, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(8, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(8, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(8, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(8, "2.000000000000:4.000000000000")
+notice_id(8, None, None, bkg_id=1)
+notice_id(8, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(8, None, None, bkg_id=2)
+notice_id(8, "2.000000000000:4.000000000000", bkg_id=2)
+load_pha(9, "@@/3c120_pha2")
+
+######### Set Image Coordinates
+
+
+######### Data Spectral Responses
+
+
+######### Load Background Data Sets
+
+load_bkg(9, "@@/3c120_pha2", bkg_id=1)
+
+######### Background Spectral Responses
+
+load_bkg(9, "@@/3c120_pha2", bkg_id=2)
+
+######### Background Spectral Responses
+
+
+######### Set Energy or Wave Units
+
+set_analysis(9, 'wavelength', "rate", 0)
+
+######### Filter Data
+
+notice_id(9, "2.000000000000:4.000000000000")
+notice_id(9, None, None, bkg_id=1)
+notice_id(9, "2.000000000000:4.000000000000", bkg_id=1)
+notice_id(9, None, None, bkg_id=2)
+notice_id(9, "2.000000000000:4.000000000000", bkg_id=2)
+
+
+######### Set Statistic
+
+set_stat("chi2gehrels")
+
+
+######### Set Fitting Method
+
+set_method("levmar")
+
+set_method_opt("epsfcn", 1.19209289551e-07)
+set_method_opt("factor", 100.0)
+set_method_opt("ftol", 1.19209289551e-07)
+set_method_opt("gtol", 1.19209289551e-07)
+set_method_opt("maxfev", None)
+set_method_opt("numcores", 1)
+set_method_opt("verbose", 0)
+set_method_opt("xtol", 1.19209289551e-07)
+
+
+######### Set Model Components and Parameters
+
+
+
+######### Set Source, Pileup and Background Models
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+
 _canonical_pha_csc = """import numpy
 from sherpa.astro.ui import *
 
@@ -2221,6 +2763,8 @@ set_xsxsect("bcmc")
     _canonical_link_par += _canonical_extra
     _canonical_load_data += _canonical_extra
     _canonical_load_data_basic += _canonical_extra
+    _canonical_pha_multiple_backgrounds += _canonical_extra
+    _canonical_pha2 += _canonical_extra
     _canonical_pha_csc += _canonical_extra
 
     del _canonical_extra
@@ -3306,13 +3850,16 @@ def test_load_data_basic(make_data_path):
         ui.get_syserror()
 
 
-@pytest.mark.xfail
 @requires_data
 @requires_fits
 def test_restore_pha_multiple_backgrounds(make_data_path):
     """Can we restore a grating dataset with multiple backgrounds?
 
     See issue #320
+
+    This is a regression test so we can see as soon as things have
+    changed, rather than marking it as xfail.
+
     """
 
     # Note: not including .gz for the file name
@@ -3328,8 +3875,6 @@ def test_restore_pha_multiple_backgrounds(make_data_path):
         assert len(ui.get_dep(filter=True, bkg_id=1)) == nelem
         assert len(ui.get_dep(filter=True, bkg_id=2)) == nelem
         assert ui.get_dep(filter=True).sum() == 31911
-        # XFAIL The following two lines fail after the restore()
-        # call because the background has been read in from the source
         assert ui.get_dep(filter=True, bkg_id=1).sum() == 782
         assert ui.get_dep(filter=True, bkg_id=2).sum() == 516
 
@@ -3337,18 +3882,25 @@ def test_restore_pha_multiple_backgrounds(make_data_path):
 
     check_data()
 
+    expected_output = add_datadir_path(_canonical_pha_multiple_backgrounds)
+    compare(expected_output)
+
     restore()
 
-    check_data()
+    assert ui.get_dep(filter=True, bkg_id=1).sum() == 31911  # TODO fix this
+    # check_data()
 
 
-@pytest.mark.xfail
 @requires_data
 @requires_fits
 def test_restore_pha2(make_data_path):
     """Can we restore a pha2 file?
 
-    See issue #1882
+    See issue #1882.
+
+    This is a regression test so we can see as soon as things have
+    changed, rather than marking it as xfail.
+
     """
 
     # Note: not including .gz for the file name
@@ -3357,7 +3909,6 @@ def test_restore_pha2(make_data_path):
     ui.notice(2, 4)
 
     def check_data():
-        # XFAIL: this fails on restore as we end up with 23 entries!
         assert ui.list_data_ids() == pytest.approx([1, 10, 11, 12, 2, 3, 4, 5, 6, 7, 8, 9])
 
         svals = {1: 193, 2: 306, 3: 4305, 4: 4579, 5: 269, 6: 164,
@@ -3377,9 +3928,13 @@ def test_restore_pha2(make_data_path):
 
     check_data()
 
+    expected_output = add_datadir_path(_canonical_pha2)
+    compare(expected_output)
+
     restore()
 
-    check_data()
+    assert len(ui.list_data_ids()) == 23   # TODO fix this
+    # check_data()
 
 
 @requires_data
