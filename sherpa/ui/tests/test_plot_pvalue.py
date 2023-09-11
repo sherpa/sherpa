@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022
+#  Copyright (C) 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -43,6 +43,9 @@ from sherpa.models.basic import Gauss2D
 def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     """Check plot_pvalue with PHA data."""
 
+    # Set the seed
+    ui.set_rng(np.random.RandomState(123))
+
     fname = make_data_path("qso.pi")
     ui.load_pha(fname)
 
@@ -52,7 +55,7 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     ui.group_counts(10)
     ui.notice(0.3, 8)
 
-    ui.set_model("xsphabs.abs1*(xspowerlaw.p1 +gauss1d.g1)")
+    ui.set_model(ui.xsphabs.abs1 * (ui.xspowerlaw.p1 + ui.gauss1d.g1))
 
     # move the fit close to the best fit to save a small amount
     # of time.
@@ -66,12 +69,13 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     g1.fwhm = 0.1
     ui.freeze(g1.fwhm)
 
-    # Could we reduce the number of bins to save evaluation time?
-    # We do want a non-default num value when checking the shapes
-    # of the output attributes.
+    # Pick a small number of bins to try to reduce the runtime of the
+    # test whist still exercising the code.
     #
+    NUM = 20
+    NBINS = 8
     ui.fit()
-    ui.plot_pvalue(p1, p1 + g1, num=100, bins=20)
+    ui.plot_pvalue(p1, p1 + g1, num=NUM, bins=NBINS)
 
     tmp = ui.get_pvalue_results()
 
@@ -84,26 +88,29 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     # Is it worth checking the stored data (aka how randomised is this
     # output)?
     #
-    assert tmp.samples.shape == (100, 2)
-    assert tmp.stats.shape == (100, 2)
-    assert tmp.ratios.shape == (100, )
+    assert tmp.samples.shape == (NUM, 2)
+    assert tmp.stats.shape == (NUM, 2)
+    assert tmp.ratios.shape == (NUM, )
 
     # Check the plot
     #
     tmp = ui.get_pvalue_plot()
 
-    assert tmp.lr == pytest.approx(2.679487496941789)
+    LR = 2.679487496941789
+    assert tmp.lr == pytest.approx(LR)
 
     assert tmp.xlabel == 'Likelihood Ratio'
     assert tmp.ylabel == 'Frequency'
     assert tmp.title == 'Likelihood Ratio Distribution'
 
-    # It would be nice to check the values here
+    assert tmp.ratios.shape == (NUM, )
+    assert tmp.xlo.shape == (NBINS + 1, )
+    assert tmp.xhi.shape == (NBINS + 1, )
+    assert tmp.y.shape == (NBINS + 1, )
+
+    # Hopefully this check is repeatable.
     #
-    assert tmp.ratios.shape == (100, )
-    assert tmp.xlo.shape == (21, )
-    assert tmp.xhi.shape == (21, )
-    assert tmp.y.shape == (21, )
+    assert tmp.y == pytest.approx([0.35, 0.35, 0, 0, 0.2, 0.05, 0, 0, 0.05])
 
 
 @pytest.fixture
