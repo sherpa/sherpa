@@ -25,7 +25,6 @@
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import ARF1D, RMF1D
