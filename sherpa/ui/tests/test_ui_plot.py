@@ -41,7 +41,7 @@ from sherpa.models import basic
 import sherpa.plot
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr, PlotErr
-from sherpa.utils.testing import requires_plotting, requires_pylab
+from sherpa.utils.testing import requires_pylab
 
 
 _data_x = [10, 20, 40, 90]
