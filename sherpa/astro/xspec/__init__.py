@@ -10396,7 +10396,7 @@ class XSismabs(XSMultiplicativeModel):
         # Historically Sherpa added the underscore to differentiate
         # between SiI and SII (e.g. Si_I and S_II) and now XSPEC has
         # changed to use this naming scheme. This means there are no
-        # aliases for the Si and S pararameters.
+        # aliases for the Si and S parameters.
         #
         self.Si_I = XSParameter(name, 'Si_I', 3.35, 0.0, 1e5, 0, 1e6,
                                 units='10^16')
