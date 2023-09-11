@@ -5451,7 +5451,8 @@ class Session(NoNewAttributesAfterInit):
         if len(self._data) == 0:
             raise IdentifierErr("nodatasets")
 
-        if lo is not None and type(lo) in (str, numpy.string_):
+        # TODO: do we still expect to get bytes here?
+        if lo is not None and isinstance(lo, (str, numpy.bytes_)):
             return self._notice_expr(lo, **kwargs)
 
         # Jump through the data sets in "order".
@@ -5670,7 +5671,8 @@ class Session(NoNewAttributesAfterInit):
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        if lo is not None and type(lo) in (str, numpy.string_):
+        # TODO: do we still expect to get bytes here?
+        if lo is not None and isinstance(lo, (str, numpy.bytes_)):
             return self._notice_expr_id(ids, lo, **kwargs)
 
         # Unlike notice() we do not sort the id list as this
@@ -11561,6 +11563,75 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: discussion of preferences needs better handling
     # of how it interacts with the chosen plot backend.
     #
+    def get_plot_prefs(self, plottype, id=None, **kwargs):
+        """Return the preferences for the given plot type.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        plottype : str
+           The type of plt, such as "data", "model", or "resid". The
+           "fit" argument is not supported.
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           data plots. This dictionary will be empty if no plot
+           backend is available.
+
+        See Also
+        --------
+        get_data_plot_prefs, get_model_plot_prefs,
+        set_xlinear, set_xlog, set_ylinear, set_ylog
+
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of ``None`` means to use the default value for that
+        attribute, or not to use that setting.
+
+        The "fit" argument can not be used, even though there is a
+        get_fit_plot call. Either use the "data" or "model" arguments
+        to access the desired plot type, or use get_fit_plot() and
+        access the dataplot and modelplot attributes directly.
+
+        Examples
+        --------
+
+        After these commands, any data plot will use a green symbol
+        and not display Y error bars.
+
+        >>> prefs = get_plot_prefs("data")
+        >>> prefs['color'] = 'green'
+        >>> prefs['yerrorbars'] = False
+
+        """
+
+        # By accepting kwargs we can send in the bkg_id argument from
+        # the astro version without needing to override this call.
+        #
+        # This relies on each key in _plot_types having a
+        # corresponding get_<key>_plot() call.
+        #
+        ptype = self._get_plottype(plottype)
+
+        # To also catch the astro layer we do not check exactly, just
+        # that fit is an argument. Technically we could adjust the
+        # error message to include 'bkg'/'bkg_model' but this is
+        # excessive.
+        #
+        if ptype.find("fit") > -1:
+            raise ArgumentErr(f"Use 'data' or 'model' instead of '{plottype}'")
+
+        get = getattr(self, f"get_{ptype}_plot")
+        plotobj = get(id, recalc=False, **kwargs)
+        return get_plot_prefs(plotobj)
+
     def get_data_plot_prefs(self, id=None):
         """Return the preferences for plot_data.
 
@@ -11585,11 +11656,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        plot_data : Plot the data values.
-        set_xlinear : New plots will display a linear X axis.
-        set_xlog : New plots will display a logarithmically-scaled X axis.
-        set_ylinear : New plots will display a linear Y axis.
-        set_ylog : New plots will display a logarithmically-scaled Y axis.
+        get_plot_prefs, plot_data, set_xlinear, set_xlog, set_ylinear,
+        set_ylog
 
         Notes
         -----
@@ -11967,11 +12035,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        plot_model : Plot the model for a data set.
-        set_xlinear : New plots will display a linear X axis.
-        set_xlog : New plots will display a logarithmically-scaled X axis.
-        set_ylinear : New plots will display a linear Y axis.
-        set_ylog : New plots will display a logarithmically-scaled Y axis.
+        get_plot_prefs, plot_model, set_xlinearm set_xlog, set_ylinear,
+        set_ylog
 
         Notes
         -----
@@ -12362,6 +12427,66 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
+    def get_contour_prefs(self, contourtype, id=None):
+        """Return the preferences for the given contour type.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        contourtype : str
+           The contour type, such as "data", "model", or "resid". The
+           "fit" argument is not supported.
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        prefs : dict
+           Changing the values of this dictionary will change any new
+           contour plots. This dictionary will be empty if no plot
+           backend is available.
+
+        See Also
+        --------
+        get_data_contour_prefs, get_model_contour_prefs
+
+        Notes
+        -----
+        The meaning of the fields depend on the chosen plot backend.
+        A value of ``None`` means to use the default value for that
+        attribute, or not to use that setting.
+
+        The "fit" argument can not be used, even though there is a
+        get_fit_contour call. Either use the "data" or "model" arguments
+        to access the desired plot type, or use get_fit_contour() and
+        access the datacontour and modelcontour attributes directly.
+
+        Examples
+        --------
+
+        Change the contours of the model to be drawn partly opaque (with
+        the matplotlib backend):
+
+        >>> prefs = get_contour_prefs("data")
+        >>> prefs['alpha'] = 0.7
+        >>> contour_data()
+        >>> contour_model(overcontour=True)
+
+        """
+
+        # This is an identity check but will throw an error if the
+        # argument is invalid. It requires that each contour type has
+        # a get_<contourtype>_contour() call.
+        #
+        ctype = self._get_contourtype(contourtype)
+        if ctype == "fit":
+            raise ArgumentErr("Use 'data' or 'model' instead of 'fit'")
+
+        get = getattr(self, f"get_{ctype}_contour")
+        return get(id, recalc=False).contour_prefs
+
     def get_data_contour_prefs(self):
         """Return the preferences for contour_data.
 
@@ -12373,7 +12498,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        contour_data : Contour the values of an image data set.
+        contour_data, get_contour_prefs
 
         Notes
         -----
@@ -12521,7 +12646,7 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        contour_model : Contour the values of the model, including any PSF.
+        contour_model, get_contour_prefs
 
         Notes
         -----

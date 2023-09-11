@@ -89,6 +89,7 @@ burden...
       get_conf_opt
       get_conf_results
       get_confidence_results
+      get_contour_prefs
       get_coord
       get_counts
       get_covar
@@ -146,6 +147,7 @@ burden...
       get_pdf_plot
       get_photon_flux_hist
       get_pileup_model
+      get_plot_prefs
       get_prior
       get_proj
       get_proj_opt

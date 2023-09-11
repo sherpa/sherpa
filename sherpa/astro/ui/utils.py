@@ -8961,17 +8961,19 @@ class Session(sherpa.ui.utils.Session):
         if rmf is None and len(d.response_ids) == 0:
             raise DataErr('normffake', id)
 
-        if type(rmf) in (str, numpy.string_):
-            if os.path.isfile(rmf):
-                rmf = self.unpack_rmf(rmf)
-            else:
+        # TODO: do we still expect to get bytes here?
+        if isinstance(rmf, (str, numpy.bytes_)):
+            if not os.path.isfile(rmf):
                 raise IOErr("filenotfound", rmf)
 
-        if type(arf) in (str, numpy.string_):
-            if os.path.isfile(arf):
-                arf = self.unpack_arf(arf)
-            else:
+            rmf = self.unpack_rmf(rmf)
+
+        # TODO: do we still expect to get bytes here?
+        if isinstance(arf, (str, numpy.bytes_)):
+            if not os.path.isfile(arf):
                 raise IOErr("filenotfound", arf)
+
+            arf = self.unpack_arf(arf)
 
         if not (rmf is None and arf is None):
             for resp_id in d.response_ids:

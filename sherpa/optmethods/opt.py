@@ -111,7 +111,7 @@ class Opt:
 
         def func_bounds_wrapper(x, *args):
             if self._outside_limits(x, xmin, xmax):
-                return np.finfo(np.float_).max
+                return np.finfo(np.float64).max
             return func(x, *args)
 
         return func_bounds_wrapper

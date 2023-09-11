@@ -86,20 +86,20 @@ __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
 #
 # Use FLT_EPSILON as default tolerance
 #
-EPSILON = numpy.float_(numpy.finfo(numpy.float32).eps)
+EPSILON = numpy.float64(numpy.finfo(numpy.float32).eps)
 
 #
 # Maximum callback function value, used to indicate that the optimizer
 # has exceeded parameter boundaries.  All the optimizers expect double
-# precision arguments, so we use numpy.float_ instead of SherpaFloat.
+# precision arguments, so we use numpy.float64 instead of SherpaFloat.
 #
-FUNC_MAX = numpy.finfo(numpy.float_).max
+FUNC_MAX = numpy.finfo(numpy.float64).max
 
 
 def _check_args(x0, xmin, xmax):
-    x = numpy.array(x0, numpy.float_)  # Make a copy
-    xmin = numpy.asarray(xmin, numpy.float_)
-    xmax = numpy.asarray(xmax, numpy.float_)
+    x = numpy.array(x0, numpy.float64)  # Make a copy
+    xmin = numpy.asarray(xmin, numpy.float64)
+    xmax = numpy.asarray(xmax, numpy.float64)
 
     if (x.shape != xmin.shape) or (x.shape != xmax.shape):
         raise TypeError('input array sizes do not match')
@@ -145,7 +145,7 @@ def _narrow_limits(myrange, xxx, debug):
                 print('x = ', my_x, ' is > upper limit = ', my_h)
 
     def raise_min_limit(xrange, xmin, x, debug=False):
-        myxmin = numpy.asarray(list(map(lambda xx: xx - xrange * numpy.abs(xx), x)), numpy.float_)
+        myxmin = numpy.asarray(list(map(lambda xx: xx - xrange * numpy.abs(xx), x)), numpy.float64)
         if debug:
             print()
             print(f'raise_min_limit: myxmin={myxmin}')
@@ -160,7 +160,7 @@ def _narrow_limits(myrange, xxx, debug):
         return myxmin
 
     def lower_max_limit(xrange, x, xmax, debug=False):
-        myxmax = numpy.asarray(list(map(lambda xx: xx + xrange * numpy.abs(xx), x)), numpy.float_)
+        myxmax = numpy.asarray(list(map(lambda xx: xx + xrange * numpy.abs(xx), x)), numpy.float64)
         if debug:
             print()
             print(f'lower_max_limit: x={x}')
@@ -210,7 +210,7 @@ def _outside_limits(x, xmin, xmax):
 
 
 def _same_par(a, b):
-    b = numpy.array(b, numpy.float_)
+    b = numpy.array(b, numpy.float64)
     same = numpy.flatnonzero(a < b)
     if same.size == 0:
         return 1
@@ -481,7 +481,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 
     if step is None:
         order = 'F' if numpy.isfortran(x) else 'C'
-        step = 0.4*numpy.ones(x.shape, numpy.float_, order)
+        step = 0.4*numpy.ones(x.shape, numpy.float64, order)
     if simp is None:
         simp = 1.0e-2 * ftol
     if maxfev is None:
@@ -645,7 +645,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         if 1 == numcores:
             result = neldermead(myfcn, x, xmin, xmax, maxfev=mymaxfev,
                                 ftol=ftol, finalsimplex=9, step=mystep)
-            x = numpy.asarray(result[1], numpy.float_)
+            x = numpy.asarray(result[1], numpy.float64)
             nfval = result[2]
             nfev = result[4].get('nfev')
         else:
@@ -665,7 +665,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             result = difevo_nm(myfcn, x, xmin, xmax, ftol, mymaxfev, verbose,
                                seed, pop, xprob, weight)
             nfev += result[4].get('nfev')
-            x = numpy.asarray(result[1], numpy.float_)
+            x = numpy.asarray(result[1], numpy.float64)
             nfval = result[2]
         else:
             ncores_de = ncoresDifEvo()
@@ -699,7 +699,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                 nfev += result[4].get('nfev')
                 if result[2] < nfval:
                     nfval = result[2]
-                    x = numpy.asarray(result[1], numpy.float_)
+                    x = numpy.asarray(result[1], numpy.float64)
                 if verbose or debug:
                     print(f'f_de_nm{x}={result[2]:.14e} in {result[4].get("nfev")} nfev')
 
@@ -729,7 +729,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                                 maxfev=min(512*len(x), maxfev - nfev),
                                 ftol=ftol, finalsimplex=9, step=mystep)
 
-            x = numpy.asarray(result[1], numpy.float_)
+            x = numpy.asarray(result[1], numpy.float64)
             fval = result[2]
             nfev += result[4].get('nfev')
         else:
@@ -965,9 +965,9 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     order = 'F' if numpy.isfortran(x) else 'C'
     if step is None or (numpy.iterable(step) and len(step) != len(x)):
-        step = 1.2 * numpy.ones(x.shape, numpy.float_, order)
+        step = 1.2 * numpy.ones(x.shape, numpy.float64, order)
     elif numpy.isscalar(step):
-        step = step * numpy.ones(x.shape, numpy.float_, order)
+        step = step * numpy.ones(x.shape, numpy.float64, order)
 
     def stat_cb0(pars):
         return fcn(pars)[0]
@@ -1067,7 +1067,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     if len(finalsimplex) >= 3 and 0 != iquad:
         nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
                        maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
-        nelmea_x = numpy.asarray(nelmea[1], numpy.float_)
+        nelmea_x = numpy.asarray(nelmea[1], numpy.float64)
         nelmea_nfev = nelmea[4].get('nfev')
         info = nelmea[4].get('info')
         covarerr = nelmea[4].get('covarerr')

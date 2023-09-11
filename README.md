@@ -11,7 +11,7 @@
 - [Sherpa](#sherpa)
 - [License](#license)
 - [How To Install Sherpa](#how-to-install-sherpa)
-  - [Using Anaconda](#using-anaconda)
+  - [Using Conda](#using-conda)
   - [Using pip](#using-pip)
   - [Building from source](#building-from-source)
 - [History](#history)
@@ -76,14 +76,14 @@ Sherpa is tested against Python versions 3.9, 3.10, and 3.11.
 The last version of Sherpa which supported Python 2.7 is
 [Sherpa 4.11.1](https://doi.org/10.5281/zenodo.3358134).
 
-Using Anaconda
+Using Conda
 --------------
 
 Sherpa is provided for both Linux and macOS operating systems running
 Python 3.9, 3.10, and 3.11. It can be installed with the `conda`
 package manager by saying
 
-    $ conda install -c sherpa sherpa
+    $ conda install -c https://cxc.cfa.harvard.edu/conda/sherpa -c conda-forge sherpa
 
 Using pip
 ---------

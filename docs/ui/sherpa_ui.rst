@@ -53,6 +53,7 @@ hidden away. This needs better explanation...
       get_conf_opt
       get_conf_results
       get_confidence_results
+      get_contour_prefs
       get_covar
       get_covar_opt
       get_covar_results
@@ -102,6 +103,7 @@ hidden away. This needs better explanation...
       get_num_par_thawed
       get_par
       get_pdf_plot
+      get_plot_prefs
       get_prior
       get_proj
       get_proj_opt

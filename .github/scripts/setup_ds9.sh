@@ -33,7 +33,7 @@ download () {
 }
 
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.8.4.1.tar.gz
+ds9_tar=ds9.${ds9_os}.8.5.tar.gz
 xpa_tar=xpa.${ds9_os}.2.1.20.tar.gz
 
 # Fetch them

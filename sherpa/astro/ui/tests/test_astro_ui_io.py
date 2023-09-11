@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2021, 2022
+#  Copyright (C) 2015, 2016, 2018, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,6 +22,8 @@
 # of tests, in part to reduce file size, but also because some of these
 # may be better placed in tests of the sherpa.astro.io module, once that
 # becomes possible
+
+import pytest
 
 from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import ui
@@ -99,3 +101,33 @@ def test_pha3_read_implicit(make_data_path, clean_astro_ui):
     bpha = ui.get_bkg(idval, bkg_id=1)
     assert pha.name == bpha.name
     assert pha.name == fname
+
+
+@requires_fits
+@requires_data
+def test_hrci_imaging_mode_spectrum(make_data_path, clean_astro_ui):
+    """This is a follow-on test based on issue #1830"""
+
+    infile = make_data_path("chandra_hrci/hrcf24564_000N030_r0001"
+                            "_pha3.fits.gz")
+    ui.load_pha(infile)
+
+    # Just check we can evaluate the model folding through the
+    # response, and compare to the data. Getting a "nice" fit
+    # is surprisingly hard so do a non-physical fit.
+    #
+    ui.notice(4, 6)
+    pl = ui.create_model_component("powlaw1d", "pl")
+    pl.gamma = 2.24
+    pl.ampl = 4.6e-3
+    ui.set_source(ui.powlaw1d.pl)
+
+    ui.set_stat("chi2gehrels")
+
+    # regression tests (the expected values were calculated using CIAO
+    # 4.15/crates).
+    #
+    assert ui.calc_stat() == pytest.approx(39.58460766890158)
+
+    ui.subtract()
+    assert ui.calc_stat() == pytest.approx(39.611346193696164)

@@ -23,7 +23,11 @@ import re
 import logging
 
 import numpy as np
-from numpy import VisibleDeprecationWarning
+try:
+    from numpy.exceptions import VisibleDeprecationWarning
+except ImportError:
+    # Must be Earlier than NumPy 1.25
+    from numpy import VisibleDeprecationWarning
 
 import pytest
 
@@ -106,16 +110,7 @@ known_warnings = {
         [
             r"unorderable dtypes.*",
             r"Non-string object detected for the array ordering.*",
-            r"using a non-integer number instead of an integer will result in an error in the future",
             r"Use load_xstable_model to load XSPEC table models",
-            #  This does not have to do with Sherpa and is coming from some versions of
-            #  jupyter_client
-            r"metadata .* was set from the constructor.*",
-
-            # Matplotlib version 2 warnings (from HTML notebook represention)
-            #
-            r'np.asscalar\(a\) is deprecated since NumPy v1.16, use a.item\(\) instead',
-            r"Using or importing the ABCs from 'collections' instead of from 'collections.abc' is deprecated since Python 3.3,and in 3.9 it will stop working",
 
             # NumPy 1.25 warnings that are raised by (mid-2023) crates code.
             # Hopefully this can be removed by December 2023.
@@ -153,13 +148,6 @@ known_warnings = {
         ],
     RuntimeWarning:
         [r"invalid value encountered in sqrt",
-         # See https://github.com/ContinuumIO/anaconda-issues/issues/6678
-         r"numpy.dtype size changed, may indicate binary " +
-         r"incompatibility. Expected 96, got 88",
-         # See https://github.com/numpy/numpy/pull/432
-         r"numpy.ufunc size changed",
-         # numpy 1.20 shows this in some tests
-         r"numpy.ndarray size changed, may indicate binary "
          ],
     ResourceWarning:
         [

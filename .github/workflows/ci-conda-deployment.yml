@@ -17,9 +17,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  sherpa_channel: sherpa
   sherpa_label: dev
-  miniconda_loc: ${{ github.workspace }}/miniconda
+  conda_loc: ${{ github.workspace }}/conda_loc
 
 defaults:
   run:
@@ -81,9 +80,9 @@ jobs:
       env:
         CONDA_OS: ${{ matrix.conda-os }}
       run: |
-        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
-        bash miniconda.sh -b -p ${miniconda_loc}
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-${CONDA_OS}.sh -o conda-installer.sh
+        bash conda-installer.sh -b -p ${conda_loc}
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda create -yq -n builder conda-build conda-verify
 
     #Checkout the code with a depth of 0 to grab the tags/branches as well
@@ -107,7 +106,7 @@ jobs:
           echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set."
           exit 1
         fi
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate builder
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
         conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
@@ -131,28 +130,28 @@ jobs:
         os-dir: ["osx-64"]
         python-version: ["3.9", "3.10", "3.11"]
     env:
-      CONDA_BUILD_SYSROOT: /opt/MacOSX10.9.sdk
+      CONDA_BUILD_SYSROOT: /opt/MacOSX10.14.sdk
 
     steps:
     - name: Conda Setup
       env:
         CONDA_OS: ${{ matrix.conda-os }}
       run: |
-        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
-        bash miniconda.sh -b -p ${miniconda_loc}
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-${CONDA_OS}.sh -o conda-installer.sh
+        bash conda-installer.sh -b -p ${conda_loc}
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda create -yq -n builder conda-build conda-verify
 
-    - name: macOS 10.9 SDK
+    - name: macOS 10.14 SDK
       if: ${{ matrix.conda-os == 'MacOSX-x86_64' }}
       run: |
-        #Download the MacOS 10.9 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
+        #Download the MacOS 10.14 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
         mkdir -p /opt
-        curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/10.13/MacOSX10.9.sdk.tar.xz -o MacOSX10.9.sdk.tar.xz
+        curl -L https://github.com/phracker/MacOSX-SDKs/releases/download/11.3/MacOSX10.14.sdk.tar.xz -o MacOSX10.14.sdk.tar.xz
         if [[ $? -ne 0 ]]; then
-            echo "MacOS 10.9 SDK download failed"
+            echo "MacOS 10.14 SDK download failed"
         fi
-        sudo tar -C /opt -xf MacOSX10.9.sdk.tar.xz
+        sudo tar -C /opt -xf MacOSX10.14.sdk.tar.xz
 
     - name: Checkout Code
       uses: actions/checkout@v3.1.0
@@ -174,7 +173,7 @@ jobs:
           echo "Error: SHERPA_VERSION or SHERPA_BUILD_NUMBER not set"
           exit 1
         fi
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate builder
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
         conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
@@ -219,9 +218,9 @@ jobs:
         CONDA_OS: ${{ matrix.conda-os }}
       working-directory: ${{ github.workspace }}
       run: |
-        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-${CONDA_OS}.sh -o miniconda.sh
-        bash miniconda.sh -b -p ${miniconda_loc}
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-${CONDA_OS}.sh -o conda-installer.sh
+        bash conda-installer.sh -b -p ${conda_loc}
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda install conda-build
         echo "Packages downloaded here: ${{steps.download.outputs.download-path}}"
         echo "ls packages/*/sherpa*.bz2"
@@ -232,7 +231,7 @@ jobs:
     - name: Run the tests
       working-directory: ${{ github.workspace }}
       run: |
-        source ${miniconda_loc}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/main.zip 
         echo "conda create -n test39 --yes -q -c file://$(pwd)/packages python=3.9 astropy sherpa matplotlib"
         conda create -n test39 --yes -q -c file://$(pwd)/packages python=3.9 astropy sherpa matplotlib
@@ -252,36 +251,3 @@ jobs:
         pip install main.zip
         sherpa_smoke -f astropy
         sherpa_test
-
-  deploy:
-    needs: pre-deploy-test
-    name: Deploy to Dev Channel
-    runs-on: ubuntu-latest
-
-    steps:
-    #Download all artifacts
-    - uses: actions/download-artifact@v3
-      with:
-        path: packages
-
-    - name: Anaconda-Client Setup
-      run: |
-        curl -L https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -o miniconda.sh
-        bash miniconda.sh -b -p ${miniconda_loc}
-        source ${miniconda_loc}/etc/profile.d/conda.sh
-        conda install -yq anaconda-client
-      
-    - name: Deploy Sherpa
-      working-directory: ${{ github.workspace }}
-      env:
-        CONDA_UPLOAD_TOKEN: ${{ secrets.CONDA_UPLOAD_TOKEN }}
-      run: |
-        source ${miniconda_loc}/etc/profile.d/conda.sh
-        conda activate
-        if [ -z ${CONDA_UPLOAD_TOKEN} ] || [ -z ${sherpa_channel} ]; then
-          echo "Error: CONDA_UPLOAD_TOKEN or sherpa_channel is not set."
-          exit 1
-        fi
-        #We can switch this to use "--force" if we run into issues with the upload cutting or needing to re-run
-        anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} --force ${GITHUB_WORKSPACE}/packages/*/linux-64/sherpa*
-        anaconda -t ${CONDA_UPLOAD_TOKEN} upload -u ${sherpa_channel} -l ${sherpa_label} --force ${GITHUB_WORKSPACE}/packages/*/osx-64/sherpa*
