@@ -1311,7 +1311,7 @@ set_method_opt("xtol", 1.19209289551e-07)
 
 ######### Set Model Components and Parameters
 
-create_model_component("xstablemodel", "tbl")
+load_xstable_model("tbl", "@@/testpcfabs.mod")
 tbl.integrate = True
 
 tbl.nh.default_val = 2.0
@@ -2326,6 +2326,8 @@ set_bkg_source("csc", powlaw1d.bpl, bkg_id=1)
 """
 
 if has_xspec:
+    from sherpa.astro import xspec
+
     _canonical_extra = """
 ######### XSPEC Module Settings
 
@@ -2350,7 +2352,6 @@ def setup(hide_logging, old_numpy_printing, clean_astro_ui):
     """Setup for all the tests"""
 
     if has_xspec:
-        from sherpa.astro import xspec
         old_xspec = xspec.get_xsstate()
 
         # ensure we have the same settings as the test cases
@@ -3015,18 +3016,17 @@ def test_restore_xstable_model(make_data_path):
     tbl.fract = 0.2
     ui.freeze(tbl.fract)
 
-    compare(_canonical_xstable_model)
+    # Comparing the string version is a simlple way to check the
+    # parameters.
+    #
+    orig = str(tbl)
 
-    with pytest.raises(ArgumentErr,
-                       match="'xstablemodel' is not a valid model type"):
-        restore()
+    compare(add_datadir_path(_canonical_xstable_model))
 
-    # assert isinstance(tbl, xspec.XSTableModel)
-    # assert tbl.name == "xstablemodel.tbl"
-    # assert tbl.nh.val == pytest.approx(2)
-    # assert not tbl.nh.frozen
-    # assert tbl.fract.val == pytest.approx(0.2)
-    # assert tbl.fract.frozen()
+    restore()
+
+    assert isinstance(tbl, xspec.XSTableModel)
+    assert str(tbl) == orig
 
 
 def test_restore_pileup_model():

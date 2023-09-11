@@ -15512,7 +15512,8 @@ class Session(sherpa.ui.utils.Session):
            filter is no-longer included if it does not exclude any
            data, and the code tries to recreate manually-created
            datasets (e.g. use of `dataspace1d` or `load_arrays`), but
-           not all situations are handled.
+           not all situations are handled. XSPEC table models are now
+           correctly restored.
 
         Parameters
         ----------

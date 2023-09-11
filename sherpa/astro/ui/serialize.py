@@ -915,15 +915,6 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
         typename = mod.type
         modelname = mod.name.split(".")[1]
 
-        # Special cases:
-
-        # account for PSF creation elsewhere (above, with load_data
-        # commands);
-
-        # for table models, use "load_table_model", to ensure we
-        # add to lists of known models *and* separate list of
-        # tabel models;
-
         if typename == "usermodel":
             _handle_usermodel(out, mod, modelname)
 
@@ -932,9 +923,17 @@ def _save_model_components(out: OutType, state: SessionType) -> bool:
             _output(out, cmd)
 
         elif typename == "tablemodel":
-            # Create table model with load_table_model
             cmd = f'load_table_model("{modelname}", "{mod.filename}")'
             _output(out, cmd)
+
+        elif typename == "xstablemodel":
+            cmd = f'load_xstable_model("{modelname}", "{mod.filename}"'
+            if mod.etable:
+                cmd += ', etable=True'
+
+            cmd += ')'
+            _output(out, cmd)
+            found_xspec = True
 
         else:
             # Normal case:  create an instance of the model.
