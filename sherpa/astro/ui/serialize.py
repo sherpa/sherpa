@@ -563,13 +563,8 @@ def _save_data(out: OutType, state: SessionType) -> None:
                 _save_pha_grouping(out, state, id)
                 _save_pha_quality(out, state, id)
 
-            # End check for original groups and quality flags
             if state.get_data(id).grouped:
-                cmd = f"if get_data({cmd_id}).grouping is not None " + \
-                    f"and not get_data({cmd_id}).grouped:"
-                _output(out, cmd)
-                _output_banner(out, "Group Data", indent=1)
-                _output(out, f"group({cmd_id})", indent=1)
+                _output(out, f"group({cmd_id})")
         except:
             pass
 
@@ -605,13 +600,8 @@ def _save_data(out: OutType, state: SessionType) -> None:
                             _save_pha_grouping(out, state, id, bid)
                             _save_pha_quality(out, state, id, bid)
 
-                    # End check for original groups and quality flags
                     if state.get_bkg(id, bid).grouped:
-                        cmd = f"if get_bkg({cmd_id}, {cmd_bkg_id}).grouping is not None " + \
-                            f"and not get_bkg({cmd_id}, {cmd_bkg_id}).grouped:"
-                        _output(out, cmd)
-                        _output_banner(out, "Group Background", indent=1)
-                        _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})", indent=1)
+                        _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})")
                 except:
                     pass
 
@@ -644,10 +634,7 @@ def _save_data(out: OutType, state: SessionType) -> None:
         # Subtract background data if applicable
         try:
             if state.get_data(id).subtracted:
-                cmd = f"if not get_data({cmd_id}).subtracted:"
-                _output(out, cmd)
-                _output_banner(out, "Subtract Background Data", indent=1)
-                _output(out, f"subtract({cmd_id})", indent=1)
+                _output(out, f"subtract({cmd_id})")
         except:
             pass
 
