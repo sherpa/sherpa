@@ -35,7 +35,7 @@ from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
 
 import numpy
 
-from sherpa.astro.data import DataIMG, DataPHA
+from sherpa.astro.data import DataIMG, DataPHA, DataARF, DataRMF
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
 if TYPE_CHECKING:
@@ -67,6 +67,7 @@ string_types = (str, )
 OutType = TypedDict("OutType", {"imports": set[str], "main": list[str]})
 IdType = Union[int, str]
 MaybeIdType = Optional[IdType]
+DataType = Union[Data1D, Data2D]
 
 # Typing the state argument is awkward since it causes an import
 # error, so for runtime we default to Any and only when run under a
@@ -100,7 +101,7 @@ def _output_nl(out: OutType) -> None:
     _output(out, "")
 
 
-def _output_banner(out: OutType, msg: str, indent: int = 0) -> None:
+def _output_banner(out: OutType, msg: str) -> None:
     """Display the banner message.
 
     Parameters
@@ -109,40 +110,40 @@ def _output_banner(out: OutType, msg: str, indent: int = 0) -> None:
        The output state
     msg : str
        The label to output.
-    indent : int, optional
-       How many times to indent the banner (if set the leading and
-       trailing newlines aren't added).
 
     """
 
-    if indent == 0:
-        _output_nl(out)
-
-    _output(out, f"######### {msg}", indent=indent)
-    if indent == 0:
-        _output_nl(out)
+    _output_nl(out)
+    _output(out, f"######### {msg}")
+    _output_nl(out)
 
 
-def _remove_banner(out: OutType, indent: int = 0) -> None:
-    """Remove the banner message.
+def _get_out_pos(out: OutType) -> int:
+    """Return the current position.
 
-    There's no check that the banner was the last message added.
-    This is not the best way to handle this.
+    This is to make it easier to remove a banner call. The code
+    should be re-written so we only add text once we know we have
+    anything, but that is a relatively large change.
+    """
+    return len(out["main"])
+
+
+def _remove_banner(out: OutType, orig_pos: int) -> None:
+    """Remove the banner message if no text has been added.
 
     Parameters
     ----------
     out : dict
        The output state
-    indent : int, optional
-       How many times the banner was intended.
+    orig_pos : int
+       The position after the banner was added.
 
     """
 
-    out["main"].pop()
-    if indent != 0:
+    if _get_out_pos(out) != orig_pos:
         return
 
-    # remove the newlines
+    out["main"].pop()
     out["main"].pop()
     out["main"].pop()
 
@@ -238,6 +239,7 @@ def _save_response(out: OutType,
 
 def _save_arf_response(out: OutType,
                        state: SessionType,
+                       pha: DataPHA,
                        id: IdType,
                        rid: IdType,
                        bid: MaybeIdType = None) -> None:
@@ -248,6 +250,8 @@ def _save_arf_response(out: OutType,
     out : dict
        The output state
     state
+    pha : DataPHA
+       The PHA object
     id : id or str
        The Sherpa data set identifier.
     rid
@@ -257,16 +261,21 @@ def _save_arf_response(out: OutType,
        a background dataset, and which such data set to use.
     """
 
-    try:
-        respfile = state.get_arf(id, resp_id=rid, bkg_id=bid).name
-    except:
+    arf, _ = pha.get_response(rid)
+    if arf is None:
         return
 
-    _save_response(out, 'arf', respfile, id, rid, bid=bid)
+    if TYPE_CHECKING:
+        # We currently do not do much with arf, but add the type
+        # anyway.
+        assert isinstance(arf, DataARF)
+
+    _save_response(out, 'arf', arf.name, id, rid, bid=bid)
 
 
 def _save_rmf_response(out: OutType,
                        state: SessionType,
+                       pha: DataPHA,
                        id: IdType,
                        rid: IdType,
                        bid: MaybeIdType = None) -> None:
@@ -277,6 +286,8 @@ def _save_rmf_response(out: OutType,
     out : dict
        The output state
     state : Session
+    pha : DataPHA
+       The PHA object
     id : id or str
        The Sherpa data set identifier.
     rid
@@ -286,16 +297,21 @@ def _save_rmf_response(out: OutType,
        a background dataset, and which such data set to use.
     """
 
-    try:
-        respfile = state.get_rmf(id, resp_id=rid, bkg_id=bid).name
-    except:
+    _, rmf = pha.get_response(rid)
+    if rmf is None:
         return
 
-    _save_response(out, 'rmf', respfile, id, rid, bid=bid)
+    if TYPE_CHECKING:
+        # We currently do not do much with rmf, but add the type
+        # anyway.
+        assert isinstance(rmf, DataRMF)
+
+    _save_response(out, 'rmf', rmf.name, id, rid, bid=bid)
 
 
 def _save_pha_array(out: OutType,
                     state: SessionType,
+                    pha: DataPHA,
                     label: str,
                     id: IdType,
                     bid: MaybeIdType = None) -> None:
@@ -306,6 +322,8 @@ def _save_pha_array(out: OutType,
     out : dict
        The output state
     state
+    pha : DataPHA
+       The PHA object
     label : "grouping" or "quality"
     id : id or str
        The Sherpa data set identifier.
@@ -314,36 +332,18 @@ def _save_pha_array(out: OutType,
        is to be used.
     """
 
-    # This is an internal routine, so just protect against accidents
-    if label not in ['grouping', 'quality']:
-        raise ValueError(f"Invalid label={label}")
-
-    if bid is None:
-        data = state.get_data(id)
-        lbl = 'Data'
-    else:
-        data = state.get_bkg(id, bid)
-        lbl = 'Background'
-
-    vals = getattr(data, label)
+    vals = getattr(pha, label)
     if vals is None:
         return
-
-    _output_banner(out, f"{lbl} {label} flags")
-
-    # QUS: can we not use the vals variable here rather than
-    #      reassign it? i.e. isn't the "quality" (or "grouping"
-    #      field of get_data/get_bkg the same as state.get_grouping
-    #      or state.get_quality?
-    #
-    func = getattr(state, f'get_{label}')
-    vals = func(id, bkg_id=bid)
 
     # The OGIP standard is for quality and grouping to be 2-byte
     # integers -
     # http://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/node7.html
     # - then force that type here.
     vals = vals.astype(numpy.int16)
+
+    lbl = 'Data' if bid is None else 'Background'
+    _output_banner(out, f"{lbl} {label} flags")
 
     cmd = f"set_{label}({_id_to_str(id)}, " + \
           "val=numpy.array(" + repr(vals.tolist()) + \
@@ -357,6 +357,7 @@ def _save_pha_array(out: OutType,
 
 def _save_pha_grouping(out: OutType,
                        state: SessionType,
+                       pha: DataPHA,
                        id: IdType,
                        bid: MaybeIdType = None) -> None:
     """Save the grouping column values for a PHA data set.
@@ -366,6 +367,8 @@ def _save_pha_grouping(out: OutType,
     out : dict
        The output state
     state
+    pha : DataPHA
+       The PHA object
     id : id or str
        The Sherpa data set identifier.
     bid
@@ -376,11 +379,12 @@ def _save_pha_grouping(out: OutType,
        otherwise the information is added to the file handle.
     """
 
-    _save_pha_array(out, state, "grouping", id, bid=bid)
+    _save_pha_array(out, state, pha, "grouping", id, bid=bid)
 
 
 def _save_pha_quality(out: OutType,
                       state: SessionType,
+                      pha: DataPHA,
                       id: IdType,
                       bid: MaybeIdType = None) -> None:
     """Save the quality column values for a PHA data set.
@@ -390,6 +394,8 @@ def _save_pha_quality(out: OutType,
     out : dict
        The output state
     state
+    pha : DataPHA
+       The PHA object
     id : id or str
        The Sherpa data set identifier.
     bid
@@ -397,25 +403,13 @@ def _save_pha_quality(out: OutType,
        is to be used.
     """
 
-    _save_pha_array(out, state, "quality", id, bid=bid)
+    _save_pha_array(out, state, pha, "quality", id, bid=bid)
 
 
-def _handle_filter(out: OutType,
-                   state: SessionType,
-                   id: IdType) -> None:
-    """Set any filter expressions for source and background
-    components for data set id.
-
-    It is expected that there is a dataset with the given id
-    in the Sherpa session object (state).
-    """
-
-    _output_banner(out, "Filter Data")
-    written = False
-
-    cmd_id = _id_to_str(id)
-    d = state.get_data(id)
-    ndims = len(d.get_dims())
+def _add_filter(out: OutType,
+                data: DataType,
+                cmd_id: str) -> None:
+    """Add any filter applied to the source."""
 
     # We have mask being
     #  - True or an array of Trues
@@ -432,35 +426,70 @@ def _handle_filter(out: OutType,
     # boolval as [boolval], so we do not have to explicitly check if
     # the mask is a boolean.
     #
-    if numpy.all(d.mask):
-        pass
+    if numpy.all(data.mask):
+        return
 
-    elif numpy.any(d.mask):
-        if ndims == 2:
-            func = "notice2d"
-        else:
-            func = "notice"
+    extra = "2d" if len(data.get_dims()) == 2 else ""
+    if numpy.any(data.mask):
+        fvals = data.get_filter()
+        _output(out, f'notice{extra}_id({cmd_id}, "{fvals}")')
+        return
 
-        fvals = d.get_filter()
-        _output(out, f'{func}_id({cmd_id}, "{fvals}")')
-        written = True
+    # All data has been ignored.
+    #
+    _output(out, f'ignore{extra}_id({cmd_id})')
 
-    else:
-        if ndims == 2:
-            func = "ignore2d"
-        else:
-            func = "ignore"
 
-        _output(out, f'{func}_id({cmd_id})')
-        written = True
+def _add_bkg_filter(out: OutType,
+                    bpha: DataPHA,
+                    cmd_id: str,
+                    bkg_id: int) -> None:
+    """Add any filter applied to the background."""
+
+    if numpy.all(bpha.mask):
+        return
+
+    if numpy.any(bpha.mask):
+        # We need to clear any existing background filter set by
+        # the source.
+        #
+        _output(out, f'notice_id({cmd_id}, bkg_id={bkg_id})')
+        fvals = bpha.get_filter()
+        _output(out, f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})')
+        return
+
+    _output(out, f'ignore_id({cmd_id}, bkg_id={bkg_id})')
+
+
+def _handle_filter(out: OutType,
+                   state: SessionType,
+                   data: DataType,
+                   id: IdType) -> None:
+    """Set any filter expressions for source and background
+    components for data set id.
+
+    It is expected that there is a dataset with the given id
+    in the Sherpa session object (state).
+    """
+
+    _output_banner(out, "Filter Data")
+    orig_pos = _get_out_pos(out)
+
+    cmd_id = _id_to_str(id)
+
+    _add_filter(out, data, cmd_id)
+
+    # Since the state doesn't have type annotations, help the system out.
+    # Technically this is only true after the try call, not here.
+    #
+    if TYPE_CHECKING:
+        assert isinstance(data, DataPHA)
 
     try:
-        bids = state.list_bkg_ids(id)
-    except ArgumentErr:
+        bids = data.background_ids
+    except AttributeError:
         # Not a PHA data set
-        if not written:
-            _remove_banner(out)
-
+        _remove_banner(out, orig_pos)
         return
 
     # Only set the noticed range if the data set does not have
@@ -469,39 +498,110 @@ def _handle_filter(out: OutType,
     # between fitting and subtracting the background - but that is
     # probably beyond the use case of the serialization.
     #
-    if d.subtracted:
-        if not written:
-            _remove_banner(out)
-
+    if data.subtracted:
+        _remove_banner(out, orig_pos)
         return
 
     # NOTE: have to clear out the source filter before applying the
     #       background one.
     for bid in bids:
-        bkg_id = _id_to_str(bid)
-        b = state.get_bkg(id, bkg_id=bid)
+        bpha = data.get_background(bid)
 
-        # We know this is a PHA dataset so we do not have to worry
-        # about things like 2D data.
-        #
-        if numpy.all(b.mask):
-            pass
+        if TYPE_CHECKING:
+            assert isinstance(bpha, DataPHA)
 
-        elif numpy.any(b.mask):
-            # We need to clear any existing background filter set by
-            # the source.
+        _add_bkg_filter(out, bpha, cmd_id, bid)
+
+    _remove_banner(out, orig_pos)
+
+
+def _save_dataset_settings_pha(out: OutType,
+                               state: SessionType,
+                               pha: DataType,
+                               id: IdType) -> None:
+    """What settings need to be set for DataPHA"""
+
+    if not isinstance(pha, DataPHA):
+        return
+
+    cmd_id = _id_to_str(id)
+
+    # Only store group flags and quality flags if they were changed
+    # from flags in the file.
+    #
+    if not pha._original_groups:
+        _save_pha_grouping(out, state, pha, id)
+        _save_pha_quality(out, state, pha, id)
+
+    if pha.grouped:
+        _output(out, f"group({cmd_id})")
+
+    # Add responses and ARFs, if any/
+    #
+    rids = pha.response_ids
+    if len(rids) > 0:
+        _output_banner(out, "Data Spectral Responses")
+        for rid in rids:
+            _save_arf_response(out, state, pha, id, rid)
+            _save_rmf_response(out, state, pha, id, rid)
+
+    # Check if this data set has associated backgrounds.
+    #
+    bids = pha.background_ids
+    if len(bids) > 0:
+        _output_banner(out, "Load Background Data Sets")
+        for bid in bids:
+            cmd_bkg_id = _id_to_str(bid)
+
+            bpha = pha.get_background(bid)
+            if TYPE_CHECKING:
+                assert isinstance(bpha, DataPHA)
+
+            bname = bpha.name
+            cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
+            _output(out, cmd)
+
+            # Only store group flags and quality flags if they were
+            # changed from flags in the file
             #
-            _output(out, f'notice_id({cmd_id}, bkg_id={bkg_id})')
-            fvals = b.get_filter()
-            _output(out, f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})')
-            written = True
+            if not bpha._original_groups:
+                _save_pha_grouping(out, state, bpha, id, bid=bid)
+                _save_pha_quality(out, state, bpha, id, bid=bid)
 
-        else:
-            _output(out, f'ignore_id({cmd_id}, bkg_id={bkg_id})')
-            written = True
+            if bpha.grouped:
+                _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})")
 
-    if not written:
-        _remove_banner(out)
+            # Load background response, ARFs if any
+            rids = bpha.response_ids
+            if len(rids) > 0:
+                _output_banner(out, "Background Spectral Responses")
+                for rid in rids:
+                    _save_arf_response(out, state, bpha, id, rid, bid=bid)
+                    _save_rmf_response(out, state, bpha, id, rid, bid=bid)
+
+    # Set energy units if applicable
+    #
+    _output_banner(out, "Set Energy or Wave Units")
+    rate = "rate" if pha.rate else "counts"
+    cmd = f'set_analysis({cmd_id}, quantity="{pha.units}", ' + \
+        f'type="{rate}", factor={pha.plot_fac})'
+    _output(out, cmd)
+
+    if pha.subtracted:
+        _output(out, f"subtract({cmd_id})")
+
+
+def _save_dataset_settings_2d(out: OutType,
+                              state: SessionType,
+                              data: DataType,
+                              id: IdType) -> None:
+    """What settings need to be set for Data2D/IMG?"""
+
+    if not isinstance(data, DataIMG):
+        return
+
+    _output_banner(out, "Set Image Coordinates")
+    _output(out, f"set_coord({_id_to_str(id)}, '{data.coord}')")
 
 
 def _save_data(out: OutType, state: SessionType) -> None:
@@ -542,103 +642,16 @@ def _save_data(out: OutType, state: SessionType) -> None:
         # used?  Store them with data object?
         cmd_id = _id_to_str(id)
 
-        _save_dataset(out, state, id)
+        data = state.get_data(id)
+        if TYPE_CHECKING:
+            # Assert an actual type rather than the base type of Data
+            assert isinstance(data, (Data1D, Data2D))
 
-        # Set physical or WCS coordinates here if applicable
-        # If can't be done, just pass to next
-        try:
-            # If get_coord fails then we'll error out
-            coord = state.get_coord(id)
-            _output_banner(out, "Set Image Coordinates")
-            cmd = f"set_coord({_id_to_str(id)}, '{coord}')"
-            _output(out, cmd)
-        except:
-            pass
+        _save_dataset(out, state, data, id)
+        _save_dataset_settings_pha(out, state, data, id)
+        _save_dataset_settings_2d(out, state, data, id)
 
-        # PHA attributes; group data if applicable
-        try:
-            # Only store group flags and quality flags if they were changed
-            # from flags in the file
-            if not state.get_data(id)._original_groups:
-                _save_pha_grouping(out, state, id)
-                _save_pha_quality(out, state, id)
-
-            if state.get_data(id).grouped:
-                _output(out, f"group({cmd_id})")
-        except:
-            pass
-
-        # Add responses and ARFs, if any
-        try:
-            rids = state.list_response_ids(id)
-            _output_banner(out, "Data Spectral Responses")
-
-            for rid in rids:
-                _save_arf_response(out, state, id, rid)
-                _save_rmf_response(out, state, id, rid)
-
-        except:
-            pass
-
-        # Check if this data set has associated backgrounds
-        try:
-            bids = state.list_bkg_ids(id)
-            _output_banner(out, "Load Background Data Sets")
-            for bid in bids:
-                cmd_bkg_id = _id_to_str(bid)
-
-                bname = state.get_bkg(id, bid).name
-                cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
-                _output(out, cmd)
-
-                # Group data if applicable
-                try:
-                    # Only store group flags and quality flags if they were
-                    # changed from flags in the file
-                    if not state.get_bkg(id, bid)._original_groups:
-                        if state.get_bkg(id, bid).grouping is not None:
-                            _save_pha_grouping(out, state, id, bid)
-                            _save_pha_quality(out, state, id, bid)
-
-                    if state.get_bkg(id, bid).grouped:
-                        _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})")
-                except:
-                    pass
-
-                # Load background response, ARFs if any
-                rids = state.list_response_ids(id, bid)
-                _output_banner(out, "Background Spectral Responses")
-                for rid in rids:
-                    _save_arf_response(out, state, id, rid, bid)
-                    _save_rmf_response(out, state, id, rid, bid)
-
-        except:
-            pass
-
-        # Set energy units if applicable
-        # If can't be done, just pass to next
-        try:
-            units = state.get_data(id).units
-            if state.get_data(id).rate:
-                rate = "rate"
-            else:
-                rate = "counts"
-            factor = state.get_data(id).plot_fac
-            _output_banner(out, "Set Energy or Wave Units")
-            cmd = f'set_analysis({cmd_id}, quantity="{units}", ' + \
-                f'type="{rate}", factor={factor})'
-            _output(out, cmd)
-        except:
-            pass
-
-        # Subtract background data if applicable
-        try:
-            if state.get_data(id).subtracted:
-                _output(out, f"subtract({cmd_id})")
-        except:
-            pass
-
-        _handle_filter(out, state, id)
+        _handle_filter(out, state, data, id)
 
 
 def _print_par(par: ParameterType) -> tuple[str, str]:
@@ -747,12 +760,12 @@ def _save_iter_method(out: OutType, state: SessionType) -> None:
     state
     """
 
-    if state.get_iter_method_name() == 'none':
+    iname = state.get_iter_method_name()
+    if iname == 'none':
         return
 
     _output_banner(out, "Set Iterative Fitting Method")
-    meth = state.get_iter_method_name()
-    cmd = f'set_iter_method("{meth}")'
+    cmd = f'set_iter_method("{iname}")'
     _output(out, cmd)
     _output_nl(out)
 
@@ -1021,7 +1034,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
         return
 
     _output_banner(out, "Set Source, Pileup and Background Models")
-    nlines = len(out["main"])
+    orig_pos = _get_out_pos(out)
 
     for id in ids:
         cmd_id = _id_to_str(id)
@@ -1131,8 +1144,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
 
     # Do want to remove the initial banner?
     #
-    if len(out["main"]) == nlines:
-        _remove_banner(out)
+    _remove_banner(out, orig_pos)
 
 
 def _save_xspec(out: OutType) -> None:
@@ -1269,7 +1281,10 @@ def _save_dataset_pha(out: OutType, idstr: str, pha: DataPHA) -> None:
         _output(out, f"get_data({idstr}).bin_hi = {pha.bin_hi.tolist()}")
 
 
-def _save_dataset(out: OutType, state: SessionType, id: IdType) -> None:
+def _save_dataset(out: OutType,
+                  state: SessionType,
+                  data: Data,
+                  id: IdType) -> None:
     """Given a dataset identifier, return the text needed to
     re-create it.
 
@@ -1286,7 +1301,6 @@ def _save_dataset(out: OutType, state: SessionType, id: IdType) -> None:
     """
 
     idstr = _id_to_str(id)
-    dset = state.get_data(id)
 
     # If the name of the object is a file then we assume that the data
     # was read in from that location, otherwise we recreate the data
@@ -1314,7 +1328,7 @@ def _save_dataset(out: OutType, state: SessionType, id: IdType) -> None:
     #   The backend will read in gzip-enabled files so we need to
     #   check for .gz as well as the file name when calling isfile.
     #
-    infile = dset.name
+    infile = data.name
     if TYPE_CHECKING:
         assert io.backend is not None
     if io.backend.__name__ == "sherpa.astro.io.crates_backend":
@@ -1331,7 +1345,7 @@ def _save_dataset(out: OutType, state: SessionType, id: IdType) -> None:
             exists = os.path.isfile(f"{infile}.gz")
 
     if exists:
-        _save_dataset_file(out, idstr, dset)
+        _save_dataset_file(out, idstr, data)
         return
 
     # We could use dataspace1d/2d but easiest to just use load_arrays.
@@ -1346,38 +1360,38 @@ def _save_dataset(out: OutType, state: SessionType, id: IdType) -> None:
     # more details. This should also be done for DataIMGInt, but this
     # class is poorly tested, documented, or used.
     #
-    if isinstance(dset, DataPHA):
-        _save_dataset_pha(out, idstr, dset)
+    if isinstance(data, DataPHA):
+        _save_dataset_pha(out, idstr, data)
         return
 
-    if isinstance(dset, DataIMG):
+    if isinstance(data, DataIMG):
         # This assumes that orig[0] == "logical"
-        orig = dset._orig_indep_axis
+        orig = data._orig_indep_axis
         xs = (orig[1], orig[2])
     else:
-        xs = dset.get_indep()
+        xs = data.get_indep()
 
-    ys = f"{dset.get_dep().tolist()}"
+    ys = f"{data.get_dep().tolist()}"
 
     spacer = "            "
 
-    if isinstance(dset, Data1DInt):
+    if isinstance(data, Data1DInt):
         _output(out, f'load_arrays({idstr},')
         _output(out, f"{spacer}{xs[0].tolist()},")
         _output(out, f"{spacer}{xs[1].tolist()},")
         _output(out, f"{spacer}{ys},")
         _output(out, f"{spacer}Data1DInt)")
 
-    elif isinstance(dset, Data1D):
+    elif isinstance(data, Data1D):
         _output(out, f'load_arrays({idstr},')
         _output(out, f"{spacer}{xs[0].tolist()},")
         _output(out, f"{spacer}{ys},")
         _output(out, f"{spacer}Data1D)")
 
-    elif isinstance(dset, DataIMG):
+    elif isinstance(data, DataIMG):
 
         # Note that we set transforms outside the load_arrays call
-        if dset.sky is not None or dset.eqpos is not None:
+        if data.sky is not None or data.eqpos is not None:
             _output_wcs_import(out)
 
         # This does not save the header information in the file
@@ -1385,41 +1399,41 @@ def _save_dataset(out: OutType, state: SessionType, id: IdType) -> None:
         _output(out, f"{spacer}{xs[0].tolist()},")
         _output(out, f"{spacer}{xs[1].tolist()},")
         _output(out, f"{spacer}{ys},")
-        if dset.shape is not None:
-            _output(out, f"{spacer}{tuple(dset.shape)},")
+        if data.shape is not None:
+            _output(out, f"{spacer}{tuple(data.shape)},")
 
         _output(out, f"{spacer}DataIMG)")
 
         # Note that we set transforms outside the load_arrays call
-        if dset.sky is not None:
-            _output_add_wcs(out, idstr, "sky", dset.sky)
+        if data.sky is not None:
+            _output_add_wcs(out, idstr, "sky", data.sky)
 
-        if dset.eqpos is not None:
-            _output_add_wcs(out, idstr, "eqpos", dset.eqpos)
+        if data.eqpos is not None:
+            _output_add_wcs(out, idstr, "eqpos", data.eqpos)
 
-    elif isinstance(dset, Data2DInt):
+    elif isinstance(data, Data2DInt):
         msg = f"Unable to re-create Data2DInt data set '{id}'"
         warning(msg)
         _output(out, f'print("{msg}")')
 
-    elif isinstance(dset, Data2D):
+    elif isinstance(data, Data2D):
         _output(out, f'load_arrays({idstr},')
         _output(out, f"{spacer}{xs[0].tolist()},")
         _output(out, f"{spacer}{xs[1].tolist()},")
         _output(out, f"{spacer}{ys},")
-        if dset.shape is not None:
-            _output(out, f"{spacer}{tuple(dset.shape)},")
+        if data.shape is not None:
+            _output(out, f"{spacer}{tuple(data.shape)},")
 
         _output(out, f"{spacer}Data2D)")
 
     else:
-        msg = f"Unable to re-create {dset.__class__} data set '{id}'"
+        msg = f"Unable to re-create {data.__class__} data set '{id}'"
         warning(msg)
         _output(out, f'print("{msg}")')
         return
 
-    staterr = dset.get_staterror()
-    syserr = dset.get_syserror()
+    staterr = data.get_staterror()
+    syserr = data.get_syserror()
 
     if staterr is not None:
         _output(out, f"set_staterror({idstr}, {staterr.tolist()})")

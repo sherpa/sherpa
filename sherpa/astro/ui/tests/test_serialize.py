@@ -659,12 +659,6 @@ from sherpa.astro.ui import *
 
 load_pha("x", "@@/source1.pi")
 
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
 ######### Set Energy or Wave Units
 
 set_analysis("x", quantity="channel", type="counts", factor=0)
@@ -1351,12 +1345,6 @@ load_arrays(1,
             [2, 5, 2],
             DataPHA)
 
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
-
 ######### Set Energy or Wave Units
 
 set_analysis(1, quantity="channel", type="rate", factor=0)
@@ -1364,12 +1352,6 @@ load_arrays(2,
             [1, 2, 3],
             [3, 4, 1],
             DataPHA)
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
 
 ######### Set Energy or Wave Units
 
@@ -1600,12 +1582,6 @@ set_grouping(1, val=numpy.array([1, 1, -1, 0, 1], numpy.int16))
 
 set_quality(1, val=numpy.array([0, 0, 0, 0, 2], numpy.int16))
 group(1)
-
-######### Data Spectral Responses
-
-
-######### Load Background Data Sets
-
 
 ######### Set Energy or Wave Units
 
@@ -1960,19 +1936,10 @@ from sherpa.astro.ui import *
 
 load_pha(1, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(1, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(1, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -1987,19 +1954,10 @@ notice_id(1, bkg_id=2)
 notice_id(1, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(10, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(10, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(10, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2014,19 +1972,10 @@ notice_id(10, bkg_id=2)
 notice_id(10, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(11, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(11, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(11, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2041,19 +1990,10 @@ notice_id(11, bkg_id=2)
 notice_id(11, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(12, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(12, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(12, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2068,19 +2008,10 @@ notice_id(12, bkg_id=2)
 notice_id(12, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(2, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(2, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(2, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2095,19 +2026,10 @@ notice_id(2, bkg_id=2)
 notice_id(2, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(3, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(3, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(3, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2122,19 +2044,10 @@ notice_id(3, bkg_id=2)
 notice_id(3, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(4, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(4, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(4, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2149,19 +2062,10 @@ notice_id(4, bkg_id=2)
 notice_id(4, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(5, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(5, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(5, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2176,19 +2080,10 @@ notice_id(5, bkg_id=2)
 notice_id(5, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(6, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(6, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(6, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2203,19 +2098,10 @@ notice_id(6, bkg_id=2)
 notice_id(6, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(7, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(7, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(7, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2230,19 +2116,10 @@ notice_id(7, bkg_id=2)
 notice_id(7, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(8, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(8, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(8, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
@@ -2257,19 +2134,10 @@ notice_id(8, bkg_id=2)
 notice_id(8, "2.000000000000:4.000000000000", bkg_id=2)
 load_pha(9, "@@/3c120_pha2")
 
-######### Data Spectral Responses
-
-
 ######### Load Background Data Sets
 
 load_bkg(9, "@@/3c120_pha2", bkg_id=1)
-
-######### Background Spectral Responses
-
 load_bkg(9, "@@/3c120_pha2", bkg_id=2)
-
-######### Background Spectral Responses
-
 
 ######### Set Energy or Wave Units
 
