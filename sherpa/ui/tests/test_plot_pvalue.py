@@ -40,20 +40,26 @@ from sherpa.models.basic import Gauss2D
 @requires_group
 @requires_fits
 @requires_data
-def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
+def test_plot_pvalue(make_data_path, clean_astro_ui):
     """Check plot_pvalue with PHA data."""
 
-    # Set the seed
+    # Set the seed. However, there is a limited amount of
+    # repeatability here as LikelihoodRatioTest.run uses
+    # parallel_map_rng which means we can not rely on using the
+    # RandomState class, which limits the tests we can make.
+    #
     ui.set_rng(np.random.RandomState(123))
 
     fname = make_data_path("qso.pi")
-    ui.load_pha(fname)
+    with SherpaVerbosity('WARN'):
+        ui.load_pha(fname)
 
     ui.set_stat('cstat')
     ui.set_method("neldermead")
 
-    ui.group_counts(10)
-    ui.notice(0.3, 8)
+    with SherpaVerbosity('WARN'):
+        ui.group_counts(10)
+        ui.notice(0.3, 8)
 
     ui.set_model(ui.xsphabs.abs1 * (ui.xspowerlaw.p1 + ui.gauss1d.g1))
 
@@ -74,6 +80,7 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     #
     NUM = 20
     NBINS = 8
+
     ui.fit()
     ui.plot_pvalue(p1, p1 + g1, num=NUM, bins=NBINS)
 
@@ -84,9 +91,6 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     assert tmp.lr == pytest.approx(2.679487496941789)
 
     # Have we returned the correct info?
-    #
-    # Is it worth checking the stored data (aka how randomised is this
-    # output)?
     #
     assert tmp.samples.shape == (NUM, 2)
     assert tmp.stats.shape == (NUM, 2)
@@ -108,9 +112,10 @@ def test_plot_pvalue(make_data_path, clean_astro_ui, hide_logging):
     assert tmp.xhi.shape == (NBINS + 1, )
     assert tmp.y.shape == (NBINS + 1, )
 
-    # Hopefully this check is repeatable.
+    # Unfortunately this test is not repeatable as the data was
+    # created with parallel_map_rng.
     #
-    assert tmp.y == pytest.approx([0.35, 0.35, 0, 0, 0.2, 0.05, 0, 0, 0.05])
+    # assert tmp.y == pytest.approx([0.35, 0.35, 0, 0, 0.2, 0.05, 0, 0, 0.05])
 
 
 @pytest.fixture
