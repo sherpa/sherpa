@@ -377,13 +377,13 @@ Instead, the plotting tests in Sherpa fall into the following categories:
     of the test are useful for other backends as well, but skip specific statements if the wrong
     backend is active::
 
-    >>> import numpy as np
-    >>> from sherpa import plot
-    >>> from sherpa.data import Data1D
-    >>> def test_something_that_also_uses_matplotlib(all_plot_backends):
-    ...     d = Data1D('x', np.asarray([2, 4, 10]), np.asarray([2, 4, 0]))
-    ...     r = d._repr_html_()
-    ...     if plot.backend.name == 'pylab':
-    ...         assert f'<summary>{summary} Plot</summary>' in r
-    ...     else:
-    ...         assert f'<summary>{summary} Data (' in r
+      >>> import numpy as np
+      >>> from sherpa import plot
+      >>> from sherpa.data import Data1D
+      >>> def test_something_that_also_uses_matplotlib(all_plot_backends):
+      ...     d = Data1D('x', np.asarray([2, 4, 10]), np.asarray([2, 4, 0]))
+      ...     r = d._repr_html_()
+      ...     if plot.backend.name == 'pylab':
+      ...         assert f'<summary>{summary} Plot</summary>' in r
+      ...     else:
+      ...         assert f'<summary>{summary} Data (' in r

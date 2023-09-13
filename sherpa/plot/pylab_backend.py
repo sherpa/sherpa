@@ -499,7 +499,7 @@ class PylabBackend(BasicBackend):
                 xerr = xerr / 2.
             xerr = xerr if xerrorbars else None
             yerr = yerr if yerrorbars else None
-            objs = axes.errorbar(x, y, yerr, xerr,
+            return axes.errorbar(x, y, yerr, xerr,
                                  label=label,
                                  color=color,
                                  linestyle=linestyle,
@@ -513,20 +513,18 @@ class PylabBackend(BasicBackend):
                                  barsabove=barsabove,
                                  zorder=zorder)
 
-        else:
-            objs = axes.plot(x, y,
-                             color=color,
-                             alpha=alpha,
-                             linestyle=linestyle,
-                             linewidth=linewidth,
-                             label=label,
-                             drawstyle=drawstyle,
-                             marker=marker,
-                             markersize=markersize,
-                             markerfacecolor=markerfacecolor,
-                             zorder=zorder)
+        return axes.plot(x, y,
+                         color=color,
+                         alpha=alpha,
+                         linestyle=linestyle,
+                         linewidth=linewidth,
+                         label=label,
+                         drawstyle=drawstyle,
+                         marker=marker,
+                         markersize=markersize,
+                         markerfacecolor=markerfacecolor,
+                         zorder=zorder)
 
-        return objs
 
     @add_kwargs_to_doc(kwargs_doc)
     @translate_args

@@ -1944,6 +1944,8 @@ class FitPlot(Plot):
     >>> model = StepLo1D()
     >>> model.xcut = 19
     >>> mplot = ModelPlot()
+    >>> dplot.prepare(data)
+    >>> mplot.prepare(data, model)
     >>> fplot.prepare(dplot, mplot)
     >>> fplot.plot()
 

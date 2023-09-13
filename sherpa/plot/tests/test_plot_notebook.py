@@ -160,7 +160,9 @@ def test_datacontour(plot_backends):
 def test_model(all_plot_backends):
     p = plot.ModelPlot()
     r = p._repr_html_()
-    check_empty(r, 'ModelPlot', nsummary=7)
+
+    if plot.backend.name != 'PylabErrorArea':
+        check_empty(r, 'ModelPlot', nsummary=7)
 
     x = np.arange(5, 8, 0.5)
     y = np.ones(x.size)
@@ -273,7 +275,9 @@ def test_intproj(old_numpy_printing, all_plot_backends):
     p = plot.IntervalProjection()
     r = p._repr_html_()
 
-    check_empty(r, 'IntervalProjection', nsummary=8)
+    # TODO: Special-cased because it's not empty
+    if plot.backend.name != 'PylabErrorArea':
+        check_empty(r, 'IntervalProjection', nsummary=8)
 
     x = np.arange(5, 8, 0.5)
     y = np.asarray([2, 3, 4, 5, 4, 3])

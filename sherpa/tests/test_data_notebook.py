@@ -47,8 +47,7 @@ def test_data1d(old_numpy_printing, all_plot_backends):
 
     # If not HAS_PYLAB, then the symbol PylabBackend is not defined
     # and test collection will fail. So, we short-circuit that
-    # such that PylabBackend will only  be needed it
-    # HAS_PYLAB is True.
+    # such that PylabBackend will only be needed if HAS_PYLAB is True.
     if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert '<div class="sherpa-text-fallback">&lt;sherpa.plot.DataPlot object at ' in r
 

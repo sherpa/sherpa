@@ -59,8 +59,7 @@ def check(r, summary, name, label, nmeta):
 
     # If not HAS_PYLAB, then the symbol PylabBackend is not defined
     # and test collection will fail. So, we short-circuit that
-    # such that PylabBackend will only  be needed it
-    # HAS_PYLAB is True.
+    # such that PylabBackend will only be needed if HAS_PYLAB is True.
     if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert f'<summary>{summary} Plot</summary>' in r
         assert '<svg ' in r

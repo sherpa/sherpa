@@ -20,6 +20,7 @@
 from copy import deepcopy
 from inspect import signature
 import logging
+import types
 
 from sherpa.utils import formatting
 from sherpa.plot.backend_utils import (translate_args,
@@ -943,7 +944,10 @@ class IndepOnlyBackend(BasicBackend):
         little exersize in meta-programming.
         '''
         attr = super().__getattribute__(__name)
-        if callable(attr):
+        # If it's callable and not of type type it's a method
+        # The simpler isinstance(attr, types.MethodType) does not work
+        #if  type(attr) != type and callable(attr):
+        if isinstance(attr, types.MethodType):
             sig = signature(attr)
 
             def checked_func(*args, **kwargs):
