@@ -183,7 +183,7 @@ def test_unop(op):
 def test_unop_string():
     '''Check that the string output is sensible.
 
-    This implicitly also checks the logic to define a the format string for
+    This implicitly also checks the logic to define a format string for
     printing the model representation.
     '''
     porig = setUp_p()

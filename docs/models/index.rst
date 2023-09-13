@@ -438,14 +438,14 @@ can be used in the linking expression, for example::
 
 This includes many commonly used mathematical and trigonometric functions
 such as log, exp, sin, cos, which allows building quite complex parameter
-linkage. Only the numpy versions work here, but not the functions from the
+linkage. Only the numpy versions work here, **not** the functions from the
 build-in ``math`` module, so use `numpy.exp` instead of `math.exp`.
 Many more complex functions are available in
 `scipy.special <https://docs.scipy.org/doc/scipy/reference/special.html>`_;
 any arbitrary Python function can be turned into a ufunc with
 `numpy.frompyfunc <https://numpy.org/doc/stable/reference/generated/numpy.frompyfunc.html#numpy.frompyfunc>`_
 and the interface is also available for
-`C extensions <https://numpy.org/doc/stable/user/c-info.ufunc-tutorial.html#creating-a-new-universal-function>`.
+`C extensions <https://numpy.org/doc/stable/user/c-info.ufunc-tutorial.html#creating-a-new-universal-function>`_.
 However, if such complex expressions are required to link model parameters
 together, it might be better to write a
 :ref:`dedicated user model <usermodel>` that describes the data with the
@@ -460,7 +460,7 @@ turning values of parameters into arrays (Sherpa optimisers can only deal
 with scalar parameters.) In practice, such mistakes
 are easy to spot when displaying a model; because Sherpa is meant to be
 a general and flexible modelling application that works with (almost)
-arbitrary user-defined models, the code puts as few a-priory restrictions
+arbitrary user-defined models, the code puts as few restrictions
 as possible on the functions used for linking parameters.
 
 .. _parameter_reset:

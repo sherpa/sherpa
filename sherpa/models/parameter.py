@@ -649,11 +649,10 @@ class Parameter(NoNewAttributesAfterInit):
             return NotImplemented
         if ufunc.nin == 1:
             return UnaryOpParameter(inputs[0], ufunc, ufunc.__name__)
-        elif ufunc.nin == 2:
+        if ufunc.nin == 2:
             return BinaryOpParameter(inputs[0], inputs[1], ufunc, ufunc.__name__,
                                      strformat='{opstr}({lhs}, {rhs})')
-        else:
-            return NotImplemented
+        return NotImplemented
 
     def freeze(self):
         """Set the `frozen` attribute for the parameter.
