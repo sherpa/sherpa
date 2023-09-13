@@ -23,13 +23,13 @@ Those tests don't create a plot, but check that backends can be selected (or not
 that backends perform checks on inputs etc.
 '''
 import logging
-from tkinter import Place
 import pytest
 
 from sherpa.plot.backends import (IndepOnlyBackend, BaseBackend, PLOT_BACKENDS,
                                   backend_indep_colors)
-from sherpa.plot import set_backend
+from sherpa.plot import set_backend, TemporaryPlottingBackend
 from sherpa import plot
+from sherpa.utils.err import IdentifierErr, ArgumentTypeErr
 
 
 def test_IndepOnlyBackend_raises_for_values():
@@ -55,11 +55,18 @@ def test_IndepOnlyBackend_raises_for_arguments():
         back.plot(1, 2, notthis=5)
 
 
-def test_warning_backend_unkown(caplog):
+def test_setting_unknown_backend():
     '''Check that a warning appears if a backend is not registered'''
-    with caplog.at_level(logging.WARNING):
+    with pytest.raises(IdentifierErr,
+                       match="'qweraef' is not a valid plotting backend"):
         set_backend('qweraef')
-    assert 'qweraef is not a known plotting backend' in caplog.text
+
+
+def test_setting_backend_wrong_type():
+    '''Check that an exception is raised if the wrong type is passed to set_backend'''
+    with pytest.raises(ArgumentTypeErr,
+                       match="'5' is not a backend class, instance, or string name"):
+        set_backend(5)
 
 
 def test_backend_is_set():
@@ -68,7 +75,7 @@ def test_backend_is_set():
     old_backend = plot.backend
     try:
         # Don't know what old_backend is, since that depends on how the tests
-        # are run, but if we set_backend twice, we know for sure it's beem
+        # are run, but if we set_backend twice, we know for sure it's been
         # changed.
         set_backend('BaseBackend')
         assert isinstance(plot.backend, BaseBackend)
@@ -79,7 +86,7 @@ def test_backend_is_set():
 
 
 def test_backend_registry(caplog):
-    '''Check that a warning is issued for dublicate plotting backend names'''
+    '''Check that a warning is issued for duplicate plotting backend names'''
 
     class StupidName(BaseBackend):
         pass
@@ -95,8 +102,27 @@ def test_backend_registry(caplog):
     print(PLOT_BACKENDS)
     assert 'StupidName is already a registered name' in caplog.text
     assert PLOT_BACKENDS['StupidName'] == StupidName
+
+    # Now clean up PLOT_BACKENDS so that we don't mess up other tests
     del PLOT_BACKENDS['StupidName']
     del PLOT_BACKENDS['othername']
+
+
+@pytest.mark.parametrize('new_backend',
+                        ['IndepOnlyBackend', IndepOnlyBackend, IndepOnlyBackend()])
+def test_TemporaryPlottingBackend(new_backend):
+    '''Check that the TemporaryPlottingBackend works as expected.
+
+    Typically, IndepOnlyBackend is not the default backend, so we
+    can check that the backend is changed and then restored.
+    '''
+    old_backend = plot.backend
+    try:
+        with TemporaryPlottingBackend(new_backend):
+            assert isinstance(plot.backend, IndepOnlyBackend)
+        assert plot.backend is old_backend
+    finally:
+        plot.backend = old_backend
 
 
 def test_colorlist():

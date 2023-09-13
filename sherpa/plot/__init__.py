@@ -40,6 +40,7 @@ from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
 from sherpa import get_config
+from sherpa.utils.err import ArgumentTypeErr, IdentifierErr
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 # PLOT_BACKENDS only contains backends in modules that are imported successfully
 # but modules are not discovered by itself. Entrypoints would solve this problem
@@ -126,9 +127,10 @@ __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            )
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
+"""Statistics that do not make use of uncertainties."""
 
 
-def set_backend(name):
+def set_backend(new_backend):
     '''Set the Sherpa plotting backend.
 
     Plotting backends are registered in Sherpa with a string name.
@@ -136,8 +138,9 @@ def set_backend(name):
 
     Parameters
     ----------
-    name : string
-        Name of the plotting backend.
+    new_backend : string, class, or instance
+        Set a sherpa plotting backend. The backend can be passed in as an
+        object, or as a convenience, as a simple string
 
     Example
     -------
@@ -151,10 +154,7 @@ def set_backend(name):
 
         >>> from sherpa.plot import PLOT_BACKENDS
         >>> PLOT_BACKENDS
-        {'BaseBackend': sherpa.plot.backends.BaseBackend,
-         'BasicBackend': sherpa.plot.backends.BasicBackend,
-         'IndepOnlyBackend': sherpa.plot.backends.IndepOnlyBackend,
-         'pylab': sherpa.plot.pylab_backend.PylabBackend}
+        {'BaseBackend': <class 'sherpa.plot.backends.BaseBackend'>, ...}
 
     This list shows the names and the class for each backend.
     Details for each backend can be found in the Sherpa documentation or by
@@ -162,14 +162,27 @@ def set_backend(name):
 
         >>> from sherpa.plot.backends import BasicBackend
         >>> help(BasicBackend)
+        Help on class BasicBackend in module sherpa.plot.backends:
+        <BLANKLINE>
+        class BasicBackend(BaseBackend)
+        |  A dummy backend for plotting.
+        ...
     '''
     global backend
-    if name in PLOT_BACKENDS:
-        backend = PLOT_BACKENDS[name]()
+
+    if isinstance(new_backend, str):
+        if new_backend in PLOT_BACKENDS:
+            backend = PLOT_BACKENDS[new_backend]()
+        else:
+            raise IdentifierErr('noplotbackend', new_backend,
+                                list(PLOT_BACKENDS.keys()))
+    # It's a class and that class is a subclass of BaseBackend
+    elif isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
+        backend = new_backend()
+    elif isinstance(new_backend, BaseBackend):
+        backend = new_backend
     else:
-        warning(f'Plotting backend not changed because {name} is not a known plotting backend.\n' +
-                f'List of available plotting backends: {list(PLOT_BACKENDS.keys())}',
-                )
+        raise ArgumentTypeErr('tempplotbackend', new_backend)
 
 
 class TemporaryPlottingBackend(contextlib.AbstractContextManager):
@@ -179,27 +192,29 @@ class TemporaryPlottingBackend(contextlib.AbstractContextManager):
 
     Parameters
     ----------
-    backend : string
+    new_backend : string, class, or instance
         Set a sherpa plotting backend. The backend can be passed in as an
-        object, or as a convenience, as a simple string
+        instance of a plotting backend class. For simplicity, the user can
+        also pass in a string naming a loaded backend class or the class
+        itself; calling this context manager will then create an instance.
 
     Example
     -------
 
-    >>> from sherpa.plot import TemporaryPlottingBackend
+    >>> from sherpa.plot import TemporaryPlottingBackend, DataPlot
     >>> from sherpa.data import Data1D
     >>> with TemporaryPlottingBackend('pylab'):
     ...     x1 = [100, 200, 600, 1200]
     ...     y1 = [2000, 2100, 1400, 3050]
     ...     d1 = Data1D('oned', x1, y1)
-    ...     plot1 = plot.DataPlot()
+    ...     plot1 = DataPlot()
     ...     plot1.prepare(d1)
     ...     plot1.plot()
 
     '''
 
-    def __init__(self, backend):
-        self.backend = backend
+    def __init__(self, new_backend):
+        self.backend = new_backend
 
     def __enter__(self):
         global backend
@@ -848,6 +863,7 @@ class CDFPlot(Plot):
     Show the cumulative distribution of 1000 randomly-distributed
     points from a Gumbel distribution:
 
+    >>> import numpy as np
     >>> rng = np.random.default_rng()  # requires NumPy 1.17 or later
     >>> pts = rng.gumbel(loc=100, scale=20, size=1000)
     >>> plot = CDFPlot()
@@ -1566,7 +1582,7 @@ class ModelPlot(Plot):
     a line between each point:
 
     >>> from sherpa.data import Data1D
-    >>> from sherpa.models.basic import StepLot1D
+    >>> from sherpa.models.basic import StepLo1D
     >>> from sherpa.plot import ModelPlot
     >>> data = Data1D('a dataset', [10, 20, 25], [2, -7, 4])
     >>> model = StepLo1D()
@@ -1919,10 +1935,18 @@ class FitPlot(Plot):
     such as those created in the examples for `DataPlot` and `ModelPlot`,
     then a combined plot can be created with:
 
-    >>> from sherpa.plot import FitPlot
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.models.basic import StepLo1D
+    >>> from sherpa.plot import DataPlot, ModelPlot, FitPlot
+    >>> data = Data1D('a dataset', [10, 20, 25], [2, -7, 4])
+    >>> dplot = DataPlot()
     >>> fplot = FitPlot()
+    >>> model = StepLo1D()
+    >>> model.xcut = 19
+    >>> mplot = ModelPlot()
     >>> fplot.prepare(dplot, mplot)
     >>> fplot.plot()
+
 
     Keyword arguments can be given in the `plot` call, and these
     are passed through to both the data and model plots (in the

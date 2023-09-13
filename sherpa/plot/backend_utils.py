@@ -56,10 +56,11 @@ def translate_args(func):
     will be passed through unchanged so that the user can also make use of any other
     color specification that the backend allows.
 
+    >>> from sherpa.plot import backend_utils
     >>> class Plotter:
     ...     translate_args = {'color': {'r': (1,0,0), 'b': (0,0,1)}}
     ...
-    ...     @translate_args
+    ...     @backend_utils.translate_args
     ...     def plot(color=None):
     ...         print('RGB color tuple is: ', color)
     '''
@@ -86,13 +87,13 @@ def translate_args(func):
 def add_kwargs_to_doc(param_doc):
     '''Add documentation for keyword parameters
 
-    The plotting funtions for each backend take a large number of keyword
-    arguments that are repeased over several methods. This decorator can
+    The plotting functions for each backend take a large number of keyword
+    arguments that are repeated over several methods. This decorator can
     be used to fill in the description for those keyword arguments into
-    the method docstring to reduce repition, keep the docstrings readable
+    the method docstring to reduce repetition, keep the docstrings readable
     in the code files, and ensure consistency between different functions.
 
-    The decorator uses string formation and fills all keyword parameters
+    The decorator uses string formatting and fills all keyword parameters
     where `{kwargs}` appears in the docstring. This allows all other parts
     of the docstring to be written normally.
 
@@ -124,14 +125,14 @@ def add_kwargs_to_doc(param_doc):
     ...     """Func that does nothing
     ...
     ...     Parameters
-    ...     ---------
+    ...     ----------
     ...     a : int
     ...         Our stuff
     ...     {kwargs}
     ...     """
     ...     pass
     >>> help(test_func2)
-    Help on function test_func2 in module __main__:
+    Help on function test_func2 in module sherpa.plot.backend_utils:
     <BLANKLINE>
     test_func2(a, *, title=None, color='None')
         Func that does nothing
@@ -143,8 +144,8 @@ def add_kwargs_to_doc(param_doc):
         title : string, default=None
             Title of figure (only use if `overplot=False`)
         color : string or number, default=None
-            any matplotlib color with a really long text attached to it
-            that will not fit in the one line of text in the docstring
+            any matplotlib color with a really long text attached to it that will not fit in one line of text in the docstring
+
     '''
     def set_docstring(obj):
         sig = signature(obj)

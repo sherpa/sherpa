@@ -149,9 +149,12 @@ if HAS_PYTEST:
         otherwise skips the test.
         """
         pylab_backend = pytest.importorskip("sherpa.plot.pylab_backend")
+        plt  = pytest.importorskip("matplotlib.pyplot")
 
         with TemporaryPlottingBackend(pylab_backend.PylabBackend()):
             yield
+
+        plt.close(fig="all")
 
     def requires_fits(test_function):
         """Returns True if a working backend for FITS I/O is importable.
