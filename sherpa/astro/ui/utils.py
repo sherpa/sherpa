@@ -6530,6 +6530,10 @@ class Session(sherpa.ui.utils.Session):
         data set. The ``type`` and ``factor`` arguments control how
         the data is plotted.
 
+        .. versionchanged:: 4.16.0
+           The filter is now reported after the call for each dataset
+           that is processed.
+
         Parameters
         ----------
         id : int or str
@@ -6548,6 +6552,12 @@ class Session(sherpa.ui.utils.Session):
 
         Raises
         ------
+        sherpa.utils.err.ArgumentErr
+           If the given dataset does not contain PHA data.
+
+        sherpa.utils.err.DataErr
+           If the given dataset does not contain a response.
+
         sherpa.utils.err.IdentifierErr
            If the `id` argument is not recognized.
 
@@ -6600,7 +6610,22 @@ class Session(sherpa.ui.utils.Session):
             ids = [id]
 
         for id in ids:
-            self._get_pha_data(id).set_analysis(quantity, type, factor)
+            # We do not use _pha_report_filter_change as that assumes
+            # the quantity hasn't changed.
+            #
+            data = self._get_pha_data(id, bkg_id=None)
+            data.set_analysis(quantity=quantity, type=type, factor=factor)
+
+            nfilter = sherpa.ui.utils._get_filter(data)
+            if nfilter is None:
+                continue
+
+            if nfilter == "":
+                fstring = "no data"
+            else:
+                fstring = f"{nfilter} {data.get_xlabel()}"
+
+            info(f"dataset {id}: {fstring}")
 
     def get_analysis(self, id=None):
         """Return the units used when fitting spectral data.

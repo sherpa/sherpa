@@ -244,6 +244,22 @@ def test_show_bkg_model_with_bkg(make_data_path):
     session.show_bkg_model('foo')
 
 
+def check_nth_caplog(caplog, lname, lvl, msg, pos=-1):
+    """Check the given element contains the expected data."""
+
+    lname_got, lvl_got, msg_got = caplog.record_tuples[pos]
+    assert lname_got == lname
+    assert lvl_got == lvl
+    assert msg_got == msg
+
+
+def clc_filter(caplog, msg, astro=False, pos=-1):
+    """Special case for the ignore/notice filter check"""
+
+    reporter = "sherpa.astro.ui.utils" if astro else "sherpa.ui.utils"
+    check_nth_caplog(caplog, reporter, logging.INFO, msg, pos=pos)
+
+
 # Fix 476 - this should be in sherpa/ui/tests/test_session.py
 @requires_group
 def test_zero_division_calc_stat(caplog):
@@ -259,10 +275,7 @@ def test_zero_division_calc_stat(caplog):
     assert ui.get_data().grouped
 
     assert len(caplog.record_tuples) == 1
-    loc, lvl, msg = caplog.record_tuples[0]
-    assert loc == "sherpa.ui.utils"
-    assert lvl == logging.INFO
-    assert msg =="dataset 1: 0:99 Channel (unchanged)"
+    clc_filter(caplog, "dataset 1: 0:99 Channel (unchanged)")
 
     ui.set_full_model(1, Const1D("const"))
 
@@ -2434,27 +2447,22 @@ def test_notice_warning(caplog):
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
     s.set_rmf(2, rmf)
 
-    s.set_analysis(2, "energy")
-
     assert len(caplog.record_tuples) == 0
+    s.set_analysis(2, "energy")
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset 2: 0.5:2 Energy (keV)", astro=True)
+
     with caplog.at_level(logging.INFO, logger='sherpa'):
         s.notice(lo=2)
 
-    assert len(caplog.record_tuples) == 3
-    loc, lvl, msg = caplog.record_tuples[0]
+    assert len(caplog.record_tuples) == 4
+    loc, lvl, msg = caplog.record_tuples[1]
     assert loc == "sherpa.astro.ui.utils"
     assert lvl == logging.WARNING
     assert msg == "not all PHA datasets have equal analysis quantities: channel, energy"
 
-    loc, lvl, msg = caplog.record_tuples[1]
-    assert loc == "sherpa.ui.utils"
-    assert lvl == logging.INFO
-    assert msg == "dataset 1: 1:3 -> 2:3 Channel"
-
-    loc, lvl, msg = caplog.record_tuples[2]
-    assert loc == "sherpa.ui.utils"
-    assert lvl == logging.INFO
-    assert msg == "dataset 2: 0.5:2 Energy (keV) -> no data"
+    clc_filter(caplog, "dataset 1: 1:3 -> 2:3 Channel", pos=2)
+    clc_filter(caplog, "dataset 2: 0.5:2 Energy (keV) -> no data", pos=3)
 
 
 def test_ignore_warning(caplog):
@@ -2474,28 +2482,74 @@ def test_ignore_warning(caplog):
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
     s.set_rmf(2, rmf)
 
-    s.set_analysis(2, "energy")
-
     assert len(caplog.record_tuples) == 0
+    s.set_analysis(2, "energy")
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset 2: 0.5:2 Energy (keV)", astro=True)
+
     with caplog.at_level(logging.INFO, logger='sherpa'):
         s.ignore(lo=2)
 
-    assert len(caplog.record_tuples) == 3
-    loc, lvl, msg = caplog.record_tuples[0]
+    assert len(caplog.record_tuples) == 4
+    loc, lvl, msg = caplog.record_tuples[1]
     assert loc == "sherpa.astro.ui.utils"
     assert lvl == logging.WARNING
     assert msg == "not all PHA datasets have equal analysis quantities: channel, energy"
 
-    loc, lvl, msg = caplog.record_tuples[1]
-    assert loc == "sherpa.ui.utils"
-    assert lvl == logging.INFO
-    assert msg == "dataset 1: 1:3 -> 1 Channel"
+    clc_filter(caplog, "dataset 1: 1:3 -> 1 Channel", pos=2)
+    clc_filter(caplog, "dataset 2: 0.5:2 Energy (keV) (unchanged)", pos=3)
 
-    loc, lvl, msg = caplog.record_tuples[2]
-    assert loc == "sherpa.ui.utils"
-    assert lvl == logging.INFO
-    assert msg == "dataset 2: 0.5:2 Energy (keV) (unchanged)"
 
+
+def test_set_analysis_messages(caplog):
+    """What happens with multiple datasets.
+
+    Note that set_analysis fail if a dataset is not a DataPHA, or
+    there's no response, so that reduces the number of things to
+    check.
+
+    """
+
+    s = AstroSession()
+    s.load_arrays(2, [1, 2, 3], [1, 2, 3], DataPHA)
+    s.load_arrays("foo", [1, 2, 3], [1, 2, 3], DataPHA)
+
+    egrid = numpy.asarray([0.5, 0.7, 1.0, 2.0])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    s.set_rmf(2, rmf)
+    s.set_rmf("foo", rmf)
+
+    assert s.get_data(2).units == "energy"  # just check
+    assert s.get_data("foo").units == "energy"  # just check
+
+    assert len(caplog.record_tuples) == 0
+    with SherpaVerbosity("INFO"):
+        s.set_analysis("foo", "channel")
+
+    assert len(caplog.record_tuples) == 1
+    clc_filter(caplog, "dataset foo: 1:3 Channel", astro=True)
+
+    with SherpaVerbosity("INFO"):
+        s.set_analysis("wave")
+
+    assert len(caplog.record_tuples) == 3
+    clc_filter(caplog, "dataset 2: 6.19921:24.7968 Wavelength (Angstrom)", astro=True, pos=1)
+    clc_filter(caplog, "dataset foo: 6.19921:24.7968 Wavelength (Angstrom)", astro=True, pos=2)
+
+    # check the "no data" handling
+    #
+    s.ignore_id("foo")
+    assert len(caplog.record_tuples) == 4
+    clc_filter(caplog, "dataset foo: 6.19921:24.7968 Wavelength (Angstrom) -> no data", pos=3)
+
+    with SherpaVerbosity("INFO"):
+        s.set_analysis("wave")
+
+    assert len(caplog.record_tuples) == 6
+    clc_filter(caplog, "dataset 2: 6.19921:24.7968 Wavelength (Angstrom)", astro=True, pos=4)
+    clc_filter(caplog, "dataset foo: no data", astro=True, pos=5)
 
 
 @pytest.mark.parametrize("session,emsg",
