@@ -6559,7 +6559,8 @@ class Session(sherpa.ui.utils.Session):
            If the given dataset does not contain a response.
 
         sherpa.utils.err.IdentifierErr
-           If the `id` argument is not recognized.
+           If the `id` argument is not recognized or no data has been
+           loaded.
 
         See Also
         --------
@@ -6605,15 +6606,18 @@ class Session(sherpa.ui.utils.Session):
         _check_str_type(quantity, "quantity")
         _check_str_type(type, "type")
 
-        ids = self.list_data_ids()
         if id is not None:
             ids = [id]
+        else:
+            ids = self.list_data_ids()
+            if len(ids) == 0:
+                raise IdentifierErr("nodatasets")
 
-        for id in ids:
+        for idval in ids:
             # We do not use _pha_report_filter_change as that assumes
             # the quantity hasn't changed.
             #
-            data = self._get_pha_data(id, bkg_id=None)
+            data = self._get_pha_data(idval, bkg_id=None)
             data.set_analysis(quantity=quantity, type=type, factor=factor)
 
             nfilter = sherpa.ui.utils._get_filter(data)
@@ -6625,7 +6629,7 @@ class Session(sherpa.ui.utils.Session):
             else:
                 fstring = f"{nfilter} {data.get_xlabel()}"
 
-            info(f"dataset {id}: {fstring}")
+            info(f"dataset {idval}: {fstring}")
 
     def get_analysis(self, id=None):
         """Return the units used when fitting spectral data.
@@ -6746,12 +6750,12 @@ class Session(sherpa.ui.utils.Session):
 
         _check_str_type(coord, "coord")
 
-        ids = self.list_data_ids()
         if id is not None:
             ids = [id]
-
-        if len(ids) == 0:
-            raise IdentifierErr('nodatasets')
+        else:
+            ids = self.list_data_ids()
+            if len(ids) == 0:
+                raise IdentifierErr("nodatasets")
 
         for id in ids:
             self._get_img_data(id).set_coord(coord)

@@ -2552,6 +2552,15 @@ def test_set_analysis_messages(caplog):
     clc_filter(caplog, "dataset foo: no data", astro=True, pos=5)
 
 
+def test_set_analysis_no_data():
+    """What happens with no data"""
+
+    s = AstroSession()
+    with pytest.raises(IdentifierErr,
+                       match="^No data sets found$"):
+        s.set_analysis("energy")
+
+
 @pytest.mark.parametrize("session,emsg",
                          [(Session, r"save_delchi\(\) can not be used with 2D datasets"),
                           (AstroSession, r"save_delchi\(\) does not apply for images")])
