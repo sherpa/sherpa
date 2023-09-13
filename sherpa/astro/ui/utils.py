@@ -4857,7 +4857,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        load_arf, save_pha, save_rmf
+        create_arf, load_arf, save_pha, save_rmf
 
         Notes
         -----
@@ -4944,7 +4944,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        load_arf, save_arf, save_pha
+        create_rmf, load_arf, save_arf, save_pha
 
         Notes
         -----
@@ -5497,7 +5497,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        create_rmf, get_arf, set_arf, unpack_arf
+        create_rmf, get_arf, save_arf, set_arf, unpack_arf
 
         Examples
         --------
@@ -5531,6 +5531,10 @@ class Session(sherpa.ui.utils.Session):
         maps to a single energy bin), otherwise the RMF is taken from
         the image data stored in the file pointed to by `fname`.
 
+        .. versionchanged:: 4.16.0
+           The e_min and e_max values will use the rmflo and rmfhi
+           values if not set.
+
         .. versionadded:: 4.10.1
 
         Parameters
@@ -5548,7 +5552,8 @@ class Session(sherpa.ui.utils.Session):
             not enforced.
         e_min, e_max : None or array, optional
             The E_MIN and E_MAX columns of the EBOUNDS block of the
-            RMF.
+            RMF. If not set they are taken from rmflo and rmfhi
+            respectively.
         ethresh : number or None, optional
             Passed through to the DataRMF call. It controls whether
             zero-energy bins are replaced.
@@ -5567,7 +5572,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        create_arf, get_rmf, set_rmf, unpack_rmf
+        create_arf, get_rmf, save_rmf, set_rmf, unpack_rmf
+
         """
 
         if fname is None:
@@ -7728,6 +7734,7 @@ class Session(sherpa.ui.utils.Session):
         ----------
 
         `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+
         Examples
         --------
 
