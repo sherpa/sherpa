@@ -51,6 +51,7 @@ from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.data import Data1D
 from sherpa.astro import hc
 from sherpa.astro.data import DataARF, DataRMF, _notice_resp, DataIMG
+from sherpa.astro import io
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
 
@@ -1331,13 +1332,12 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     dummy = numpy.ones(nchans, dtype=numpy.int16)
     f_chan = numpy.arange(1, nchans + 1, dtype=numpy.int16)
 
-    return sherpa.astro.data.DataRMF(name, detchans=nchans,
-                                     energ_lo=rmflo, energ_hi=rmfhi,
-                                     n_grp=dummy, n_chan=dummy,
-                                     f_chan=f_chan, matrix=matrix,
-                                     offset=offset,
-                                     e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh, header=header)
+    return DataRMF(name, detchans=nchans, energ_lo=rmflo,
+                   energ_hi=rmfhi, n_grp=dummy,
+                   n_chan=dummy, f_chan=f_chan,
+                   matrix=matrix, offset=offset,
+                   e_min=e_min, e_max=e_max,
+                   ethresh=ethresh, header=header)
 
 
 def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
@@ -1401,44 +1401,58 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
     # TODO: should f_chan start at startchan?
     #
     nchans = rmflo.size
-
     n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
 
-    return sherpa.astro.data.DataRMF(name, detchans=nchans,
-                                     energ_lo=rmflo, energ_hi=rmfhi,
-                                     n_grp=n_grp, n_chan=n_chan,
-                                     f_chan=f_chan, matrix=matrix,
-                                     offset=offset,
-                                     e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh,
-                                     header=header)
+    return DataRMF(name, detchans=nchans, energ_lo=rmflo,
+                   energ_hi=rmfhi, n_grp=n_grp,
+                   n_chan=n_chan, f_chan=f_chan,
+                   matrix=matrix, offset=offset,
+                   e_min=e_min, e_max=e_max,
+                   ethresh=ethresh, header=header)
 
 
 def calc_grp_chan_matrix(fname):
-    try:
-        data, filename = \
-            sherpa.astro.io.backend.get_image_data(fname)
-        matrix = data['y']
-        n_grp = []
-        n_chan = []
-        f_chan = []
-        for row in matrix > 0:
-            flag = numpy.hstack([[0], row, [0]])
-            diffs = numpy.diff(flag, n=1)
-            starts, = numpy.where(diffs > 0)
-            ends, = numpy.where(diffs < 0)
-            n_chan.extend(ends - starts)
-            f_chan.extend(starts + 1)
-            n_grp.append(len(starts))
-        n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
-        f_chan = numpy.asarray(f_chan, dtype=numpy.int16)
-        n_chan = numpy.asarray(n_chan, dtype=numpy.int16)
-        matrix = matrix.flatten()
-        matrix = matrix[matrix > 0]
-        return n_grp, f_chan, n_chan, matrix
-    except sherpa.utils.err.IOErr as ioerr:
-        print(ioerr)
-        raise ioerr
+    """Read in an image and convert it to RMF components.
+
+    For an image containing a RMF - so X axis is for channels and Y
+    axis is for the energy axis - extract the needed data to create a
+    DataRMF object (modulo knowledge of the channel or energy grids).
+
+    Parameters
+    ----------
+    fname : str
+       The file name.
+
+    Returns
+    -------
+    n_grp, f_chan, n_chan, matrix : (ndarray, ndarray, ndarray, ndarray)
+       Needed to create a DataRMF to match fname.
+
+    """
+
+    # TODO: this could use the WCS info to create the channel and
+    # energy arrays, at least for files created by rmfimg.
+    #
+    data, _ = io.backend.get_image_data(fname)
+    matrix = data['y']
+    n_grp1 = []
+    n_chan1 = []
+    f_chan1 = []
+    for row in matrix > 0:
+        flag = numpy.hstack([[0], row, [0]])
+        diffs = numpy.diff(flag, n=1)
+        starts, = numpy.where(diffs > 0)
+        ends, = numpy.where(diffs < 0)
+        n_chan1.extend(ends - starts)
+        f_chan1.extend(starts + 1)
+        n_grp1.append(len(starts))
+
+    n_grp = numpy.asarray(n_grp1, dtype=numpy.int16)
+    f_chan = numpy.asarray(f_chan1, dtype=numpy.int16)
+    n_chan = numpy.asarray(n_chan1, dtype=numpy.int16)
+    matrix = matrix.flatten()
+    matrix = matrix[matrix > 0]
+    return n_grp, f_chan, n_chan, matrix
 
 
 def has_pha_response(model):
