@@ -38,6 +38,10 @@ References
 
 """
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional, Union
 import os
 
 import numpy
@@ -54,8 +58,9 @@ from sherpa.astro.data import DataARF, DataRMF, _notice_resp, DataIMG
 from sherpa.astro import io
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
+from sherpa.models.regrid import EvaluationSpace1D
 
-WCS = None
+WCS: Optional[type["sherpa.astro.io.wcs.WCS"]] = None
 try:
     from sherpa.astro.io.wcs import WCS
 except ImportError:
@@ -66,13 +71,13 @@ _tol = numpy.finfo(numpy.float32).eps
 string_types = (str, )
 
 
-__all__ = ('RMFModel', 'ARFModel', 'RSPModel',
-           'RMFModelPHA', 'RMFModelNoPHA',
-           'ARFModelPHA', 'ARFModelNoPHA',
-           'RSPModelPHA', 'RSPModelNoPHA',
-           'MultiResponseSumModel', 'PileupRMFModel', 'RMF1D', 'ARF1D',
-           'Response1D', 'MultipleResponse1D', 'PileupResponse1D',
-           'PSFModel')
+__all__ = ('RMFModel', 'ARFModel', 'RSPModel', 'RMFModelPHA',
+           'RMFModelNoPHA', 'ARFModelPHA', 'ARFModelNoPHA',
+           'RSPModelPHA', 'RSPModelNoPHA', 'MultiResponseSumModel',
+           'PileupRMFModel', 'RMF1D', 'ARF1D', 'Response1D',
+           'MultipleResponse1D', 'PileupResponse1D', 'PSFModel',
+           'RMFMatrix', 'create_arf', 'create_delta_rmf',
+           'create_non_delta_rmf', 'rmf_to_matrix', 'rmf_to_image' )
 
 
 def apply_areascal(mdl, pha, instlabel):
@@ -1415,7 +1420,6 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
         nchans = e_min.size
 
     n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
-
     return DataRMF(name, detchans=nchans, energ_lo=rmflo,
                    energ_hi=rmfhi, n_grp=n_grp,
                    n_chan=n_chan, f_chan=f_chan,
@@ -1424,7 +1428,7 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
                    ethresh=ethresh, header=header)
 
 
-def calc_grp_chan_matrix(fname):
+def calc_grp_chan_matrix(fname: str) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
     """Read in an image and convert it to RMF components.
 
     For an image containing a RMF - so X axis is for channels and Y
@@ -1443,14 +1447,40 @@ def calc_grp_chan_matrix(fname):
 
     """
 
+    if TYPE_CHECKING:
+        # Assume we have an I/O backend
+        assert io.backend is not None
+
     # TODO: this could use the WCS info to create the channel and
     # energy arrays, at least for files created by rmfimg.
     #
     data, _ = io.backend.get_image_data(fname)
-    matrix = data['y']
-    n_grp1 = []
-    n_chan1 = []
-    f_chan1 = []
+    return matrix_to_rmf(data["y"])
+
+
+def matrix_to_rmf(matrix: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+    """Convert a matrix (2D image) to RMF components.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    matrix : ndarray
+       A 2D matrix (X axis is channels, Y axis is energy).
+
+    Returns
+    -------
+    n_grp, f_chan, n_chan, matrix : (ndarray, ndarray, ndarray, ndarray)
+       Needed to create a DataRMF to match matrix.
+
+    """
+
+    if matrix.ndim != 2:
+        raise ValueError(f"matrix must be 2D, not {matrix.ndim}D")
+
+    n_grp1: list[int] = []
+    n_chan1: list[int] = []
+    f_chan1: list[int] = []
     for row in matrix > 0:
         flag = numpy.hstack([[0], row, [0]])
         diffs = numpy.diff(flag, n=1)
@@ -1468,7 +1498,157 @@ def calc_grp_chan_matrix(fname):
     return n_grp, f_chan, n_chan, matrix
 
 
-def has_pha_response(model):
+@dataclass
+class RMFMatrix:
+    """Raw RMF data"""
+
+    matrix: numpy.ndarray
+    """The matrix as a 2D array (X axis is channels, Y axis is energy)"""
+    channels: EvaluationSpace1D
+    """The channel values. This must be a non-integrated axis."""
+    energies: EvaluationSpace1D
+    """The energy values. This must be an integrated axis."""
+
+    def __post_init__(self) -> None:
+        if self.matrix.ndim != 2:
+            raise ValueError("matrix must be 2D")
+
+        if self.channels.is_integrated:
+            raise ValueError("channels axis must not be integrated")
+
+        if not self.energies.is_integrated:
+            raise ValueError("energies axis must be integrated")
+
+        nenergy, nchan = self.matrix.shape
+        if self.channels.x_axis.size != nchan:
+            raise ValueError("channels and matrix mis-match")
+
+        if self.energies.x_axis.size != nenergy:
+            raise ValueError("channels and matrix mis-match")
+
+
+def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
+    """Convert a RMF to a matrix (2D image).
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    rmf : DataRMF or RMF1D
+       The RMF instance.
+
+    Returns
+    -------
+    info : RMFMatrix
+       The matrix as a 2D array (X axis is channels and Y axis is
+       energy, and the channel and energy axes.
+
+    """
+
+    if not isinstance(rmf, (DataRMF, RMF1D)):
+        raise ValueError("not a rmf")
+
+    # Create an image of size
+    #    nx = number of channels
+    #    ny = number of energy bine
+    #
+    nchans = rmf.detchans
+    nenergy = rmf.energ_lo.size
+    matrix = numpy.zeros((nenergy, nchans), dtype=rmf.matrix.dtype)
+
+    # Loop through each energy bin and add in the data, which is split
+    # into n_grp chunks, each starting at f_chan (with 1 being the
+    # first element of this row). The RMF has removed excess data -
+    # that is, rows with 0 groups and flattening out a 2D array for
+    # the n_chan/f_chan values - which makes the reconstruction a
+    # little messy.
+    #
+    matrix_start = 0
+    chan_idx = 0
+    for energy_idx, n_grp in enumerate(rmf.n_grp):
+        # Loop through the groups for this energy
+        for _ in range(n_grp):
+            # Need to convert from 1-based (f_chan) numbering
+            # (although this actually depends on the offset value) and
+            # to convert from numpy.uint64 (since <int> + <uint64>
+            # tends to get converted to a float).
+            #
+            start = rmf.f_chan[chan_idx].astype(int) - int(rmf.offset)
+            nchan = rmf.n_chan[chan_idx].astype(int)
+            end = start + nchan
+            matrix_end = matrix_start + nchan
+            matrix[energy_idx, start:end] = rmf.matrix[matrix_start:matrix_end]
+            matrix_start = matrix_end
+            chan_idx += 1
+
+    # TODO: Is the offset handling correct here?
+    channels = numpy.arange(rmf.offset, rmf.offset + nchans,
+                            dtype=numpy.int16)
+    cgrid = EvaluationSpace1D(channels)
+    egrid = EvaluationSpace1D(rmf.energ_lo, rmf.energ_hi)
+    return RMFMatrix(matrix, cgrid, egrid)
+
+
+def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
+    """Convert a RMF to DataIMG.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    rmf : DataRMF or RMF1D
+       The RMF instance.
+
+    Returns
+    -------
+    image : DataIMG
+
+    """
+
+    mat = rmf_to_matrix(rmf)
+
+    nx = mat.channels.x_axis.size
+    ny = mat.energies.x_axis.size
+    x1, x0 = numpy.mgrid[1:ny + 1, 1:nx + 1]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = mat.matrix.flatten()
+    out = DataIMG(rmf.name, x0, x1, y, shape=(ny, nx))
+
+    # Add some header keywords from the RMF
+    #
+    def copy(key):
+        try:
+            val = rmf.header[key]
+        except KeyError:
+            return
+
+        if val is None:
+            return
+
+        out.header[key] = val
+
+    copy('MISSION')
+    copy('TELESCOP')
+    copy('INSTRUME')
+    copy('GRATING')
+    copy('FILTER')
+    copy('CHANTYPE')
+    copy('ORDER')
+    copy('OBJECT')
+    copy('TITLE')
+
+    out.header['DETCHANS'] = rmf.detchans
+    if rmf.ethresh is not None:
+        out.header['LO_THRES'] = rmf.ethresh
+
+    out.header['NUMGRP'] = len(rmf.n_chan)
+    out.header['NUMELT'] = len(rmf.matrix)
+
+    return out
+
+
+def has_pha_response(model: Model) -> bool:
     """Does the model contain a PHA response?
 
     Parameters

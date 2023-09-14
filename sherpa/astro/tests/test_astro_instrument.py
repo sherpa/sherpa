@@ -36,8 +36,9 @@ from sherpa.astro import hc
 from sherpa.astro.data import DataPHA, DataRMF, DataIMG
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
-    RSPModelNoPHA, RSPModelPHA, PSFModel, \
-    create_arf, create_delta_rmf, create_non_delta_rmf, has_pha_response
+    RSPModelNoPHA, RSPModelPHA, PSFModel, RMFMatrix, \
+    create_arf, create_delta_rmf, create_non_delta_rmf, \
+    rmf_to_matrix, rmf_to_image, has_pha_response
 from sherpa.astro import io
 from sherpa.data import Data1D
 from sherpa.fit import Fit
@@ -1775,6 +1776,138 @@ def test_rmf_creation_fails_approximate_energy_bounds(kwargs, msg):
     matrix = np.asarray([1, 1])
     with pytest.raises(DataErr, match=f"^{msg}$"):
         DataRMF("test", 2, elo, ehi, n_grp, f_chan, n_chan, matrix, **kwargs)
+
+
+@requires_data
+@requires_fits
+def test_recreate_img_from_rmf(make_data_path):
+    """The inverse of test_create_rmf"""
+
+    fname = make_data_path('test_rmfimg.fits')
+    energ = np.arange(0.3, 9.301, 0.01)
+    rmflo = energ[:-1]
+    rmfhi = energ[1:]
+
+    # fake up an energy range
+    #
+    # nchan = 1024  TODO it should be this, see #1889
+    nchan = 900
+    ebounds = np.linspace(0.1, 12, nchan + 1)
+    elo = ebounds[:-1]
+    ehi = ebounds[1:]
+
+    rmf = create_non_delta_rmf(rmflo, rmfhi, fname,
+                               e_min=elo, e_max=ehi)
+
+    # What is the input image?
+    #
+    data, _ = io.backend.get_image_data(fname)
+    expected = data["y"]
+    assert expected.shape == (900, 1024)
+
+    # Can we reconstruct the image in test_rmfimg.fits?
+    #
+    mat = rmf_to_matrix(rmf)
+    assert isinstance(mat, RMFMatrix)
+
+    matrix = mat.matrix
+    xaxis = mat.channels
+    yaxis = mat.energies
+    assert not xaxis.is_integrated
+    assert yaxis.is_integrated
+    assert xaxis.x_axis.size == nchan
+    assert yaxis.x_axis.size == 900
+    assert xaxis.start == 1
+    assert xaxis.end == nchan
+    assert yaxis.start == pytest.approx(0.3)
+    assert yaxis.end == pytest.approx(9.3)
+
+    # Need to subset expected because of #1889
+    assert matrix.shape == (900, nchan)
+    # assert matrix == pytest.approx(expected)
+    assert matrix == pytest.approx(expected[:, 0:900])
+
+
+def check_rmf_as_image(infile, tmpfile,  nchan, nenergy, offset):
+    """Read in RMF, convert to matrix and image. Check things.
+
+    We round-trip the data: convert RMF to image, write out,
+    read back in, and then compare the two RMFs by evaluating
+    a model.
+    """
+
+    rmf = io.read_rmf(infile)
+
+    mat = rmf_to_matrix(rmf)
+    assert mat.matrix.shape == (nenergy, nchan)
+    assert mat.channels.x_axis.size == nchan
+    assert mat.energies.x_axis.size == nenergy
+    assert mat.channels.start == offset
+    assert mat.channels.end == (nchan - 1 + offset)
+
+    img = rmf_to_image(rmf)
+    assert isinstance(img, DataIMG)
+
+    # Read the imge back to check the roundtrip behaviour.
+    #
+    io.write_image(tmpfile, img, ascii=False)
+
+    elo, ehi = mat.energies.grid
+    nrmf = create_non_delta_rmf(elo, ehi, tmpfile,
+                                e_min=rmf.e_min, e_max=rmf.e_max)
+
+    # Convolve a simple model with the two RMFs and check the result
+    # is the same.
+    #
+    r1 = RMF1D(rmf)
+    r2 = RMF1D(nrmf)
+    mdl = PowLaw1D()
+    mdl.gamma = 1.7
+    mdl.ampl = 1000
+
+    c1 = r1(mdl)
+    c2 = r2(mdl)
+    chans = mat.channels.grid
+    assert c2(chans) == pytest.approx(c1(chans))
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("rmfname,nchan,nenergy,offset",
+                         [("swxpc0to12s6_20130101v014.rmf.gz",
+                           1024, 2400, 0),  # SWIFT
+                          ("sis0.rmf", 1024, 1180, 1),  # ASCA
+                          ("chandra_hrci/hrcf24564_000N030_r0001_rmf3.fits.gz",
+                           1024, 16921, 1),  # CHANDRA/HRC-I
+                          ("xmmrgs/P0112880201R1S004RSPMAT1003.FTZ",
+                           3600, 4000, 1)  # XMM/RGS
+                          ])
+
+def test_rmf_to_matrix_mission(rmfname, nchan, nenergy, offset,
+                               make_data_path, tmp_path, recwarn):
+    """Check other missions for RMF
+
+    Note that the SWIFT RMF is essentially stored as an image,
+    i.e. each row is stored completely. It also starts at column 0
+    and triggers a user warning when read in.
+
+    The ASCA RMF has N_GRP=0 or 1.
+
+    The Chandra HRC-I RMF is used because it has caused problems for
+    the pyfits backend in the past.
+
+    XMM/RGS has EBOUNDS in decreasing order.
+    """
+
+    infile = make_data_path(rmfname)
+    outpath = tmp_path / "fake.img"
+    outfile = str(outpath)
+    check_rmf_as_image(infile, outfile, nchan, nenergy, offset)
+
+    # We do not care about any warnings here, so clear the state so
+    # that the capture_all_warnings fixture is not triggered.
+    #
+    recwarn.clear()
 
 
 # Several tests from sherpa/tests/test_instrument.py repeated to check out
