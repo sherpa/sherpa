@@ -188,15 +188,22 @@ def test_unop_string():
     '''
     porig = setUp_p()
     assert repr(-porig) == "<UnaryOpParameter '-model.name'>"
-    assert repr(np.cos(porig)) == "<UnaryOpParameter 'cos(model.name)'>"
+    assert repr(np.cos(porig)) == "<UnaryOpParameter 'numpy.cos(model.name)'>"
 
+
+def custom_func(a, b):
+   return a + b
+
+custom_ufunc = np.frompyfunc(custom_func, nin=2, nout=1)
 
 @pytest.mark.parametrize("op", [operator.add, operator.sub, operator.mul,
                                 operator.floordiv, operator.truediv, operator.mod,
                                 operator.pow,
                                 # Test a random selection of numpy ufuncs
                                 np.add, np.divide, np.true_divide,
-                                np.heaviside, np.greater, np.arctan2
+                                np.heaviside, np.greater, np.arctan2,
+                                # and out own, custom made ufunc
+                                custom_ufunc,
                                 ])
 def test_binop(op):
     p, p2 = setUp_composite()
@@ -217,7 +224,17 @@ def test_binop_string():
     comp = 1 + p * 2.7**p2
     assert repr(comp) == "<BinaryOpParameter '(1 + (model.p * (2.7 ** model.p2)))'>"
     comp = np.logaddexp2(p, p2)
-    assert repr(comp) == "<BinaryOpParameter 'logaddexp2(model.p, model.p2)'>"
+    assert repr(comp) == "<BinaryOpParameter 'numpy.logaddexp2(model.p, model.p2)'>"
+
+def test_binop_string_with_custom_ufunc():
+    '''Repeat the previous test, but with a custom ufunc.'''
+    def func(a, b):
+        return a + b
+
+    uf = np.frompyfunc(func, nin=2, nout=1)
+    p, p2 = setUp_composite()
+    comp = uf(p, p2)
+    assert repr(comp) == "<BinaryOpParameter 'func(model.p, model.p2)'>"
 
 
 def test_iter_composite():

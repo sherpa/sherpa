@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2017, 2020, 2021, 2022
+#  Copyright (C) 2007, 2017, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -647,10 +647,20 @@ class Parameter(NoNewAttributesAfterInit):
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if not method == '__call__':
             return NotImplemented
+        if hasattr(numpy, ufunc.__name__):
+            name = f"numpy.{ufunc.__name__}"
+        else:
+            # Unfortunately, there is no ufunc.__module__ we could use
+            # This could be a ufinc from e.g. scipy or generated from an
+            # arbitrary Python function with numpy.frompyfunc.
+            # In the latter case, the name will be something like
+            # "func (vectorized)", which looks confusing in out string
+            # represenantion, so we simplify it.
+            name = ufunc.__name__.replace(' (vectorized)', '')
         if ufunc.nin == 1:
-            return UnaryOpParameter(inputs[0], ufunc, ufunc.__name__)
+            return UnaryOpParameter(inputs[0], ufunc, name)
         if ufunc.nin == 2:
-            return BinaryOpParameter(inputs[0], inputs[1], ufunc, ufunc.__name__,
+            return BinaryOpParameter(inputs[0], inputs[1], ufunc, name,
                                      strformat='{opstr}({lhs}, {rhs})')
         return NotImplemented
 
