@@ -3720,7 +3720,6 @@ def test_pha_group_xxx_with_background(caplog):
     # Pick something which creates different grouping for source and
     # background.
     #
-    assert len(caplog.records) == 0
     with caplog.at_level(logging.INFO, logger='sherpa'):
         src.group_counts(4)
 
@@ -3732,8 +3731,4 @@ def test_pha_group_xxx_with_background(caplog):
     assert src.grouped
     assert bkg.grouped
 
-    assert len(caplog.records) == 1
-    rec = caplog.records[0]
-    assert rec.levelname == "INFO"
-    assert rec.module == "data"
-    assert rec.getMessage() == "data set 'bkg' does not specify grouping flags"
+    assert len(caplog.records) == 0
