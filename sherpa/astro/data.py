@@ -1184,6 +1184,29 @@ class DataRMF(DataOgipResponse):
         self._rsp = matrix
         self._lo = energ_lo
         self._hi = energ_hi
+
+        # It is assumed, but not yet required, that the RMF components
+        # are set with the __init__ call, and not changed after the
+        # fact (this is to avoid having to have a complex system of
+        # checks as used by the parent Data class for the independent
+        # and dependent axes). It would make sense to make these
+        # fields either read-only or add validation when changed, but
+        # either approach is a large change, so stick with the simple
+        # validation here for now (but allow for them to be set
+        # later).
+        #
+        if (self.e_min is not None) ^ (self.e_max is not None):
+            raise DataErr("e_min/max must both be set or empty")
+
+        if self.e_min is not None:
+            nelo = len(self.e_min)
+            nehi = len(self.e_max)
+            if nelo != nehi:
+                raise DataErr(f"e_min/max mismatch in size: {nelo} vs {nehi}")
+
+            if nelo != self.detchans:
+                raise DataErr(f"detchans mis-match with e_min/max: {self.detchans} vs {nelo}")
+
         Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
 
     # Although we have a Data1DInt-like dataset, the dependent axis

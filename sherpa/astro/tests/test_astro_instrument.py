@@ -1732,9 +1732,7 @@ def test_create_rmf(make_data_path):
     assert datarmf.matrix.max() == pytest.approx(0.23166645)
     assert datarmf.matrix.sum() == pytest.approx(900.14188997)
 
-    # This is issue #1889. Treat this as a regression test for now.
-    # assert datarmf.detchans == 1024
-    assert datarmf.detchans == 900
+    assert datarmf.detchans == 1024
 
     # Apply the model to a contstant model.
     #
@@ -1745,8 +1743,7 @@ def test_create_rmf(make_data_path):
     out = conv(np.arange(1, 1025, dtype=np.int16))
 
     # Compare to acisf04938_000N003_r0043_rmf3.fits.gz
-    # assert len(out) == 1024
-    assert len(out) == 900 # This is wrong
+    assert len(out) == 1024
     assert out.min() == 0.0
     assert out.max() == pytest.approx(1.6668367662320187)
     assert out.argmax() == 118
@@ -1755,6 +1752,29 @@ def test_create_rmf(make_data_path):
     assert out[600] == pytest.approx(1.4288386887490545)
     assert out[700] == pytest.approx(0.0005906268168658253)
     assert (out[765:] == 0).all()
+
+
+@pytest.mark.parametrize("kwargs,msg",
+                         [({"e_min": [1, 2], "e_max": None},
+                           "e_min/max must both be set or empty"),
+                          ({"e_min": None, "e_max": [1, 2]},
+                           "e_min/max must both be set or empty"),
+                          ({"e_min": [1, 2], "e_max": [2, 3, 4]},
+                           "e_min/max mismatch in size: 2 vs 3"),
+                          ({"e_min": [1, 2, 3], "e_max": [2, 3, 4]},
+                           "detchans mis-match with e_min/max: 2 vs 3")
+                          ])
+def test_rmf_creation_fails_approximate_energy_bounds(kwargs, msg):
+    """Check we error out when a validation step fails."""
+
+    elo = np.asarray([1, 2])
+    ehi = np.asarray([2, 3])
+    n_grp = np.asarray([1, 1])
+    f_chan = np.asarray([1, 2])
+    n_chan = np.asarray([1, 1])
+    matrix = np.asarray([1, 1])
+    with pytest.raises(DataErr, match=f"^{msg}$"):
+        DataRMF("test", 2, elo, ehi, n_grp, f_chan, n_chan, matrix, **kwargs)
 
 
 # Several tests from sherpa/tests/test_instrument.py repeated to check out

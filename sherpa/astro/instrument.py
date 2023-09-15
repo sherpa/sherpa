@@ -1306,7 +1306,8 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
         not enforced.
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
-        RMF.
+        RMF. This must have the same size as rmflo and rmfhi as the
+        RMF matrix is square in this "ideal" case.
     ethresh : number or None, optional
         Passed through to the DataRMF call. It controls whether
         zero-energy bins are replaced.
@@ -1322,6 +1323,7 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     See Also
     --------
     create_arf, create_non_delta_rmf
+
     """
 
     # Set up the delta-function response.
@@ -1343,11 +1345,14 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
 def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
                          e_min=None, e_max=None, ethresh=None,
                          name='delta-rmf', header=None):
-    """
-    Create a RMF using a matrix from a file.
+    """Create a RMF using a matrix from a file.
 
     The RMF matrix (the mapping from channel to energy bin) is
     read in from a file.
+
+    .. versionchanged:: 4.16.0
+       The number of channels is now taken from e_min (if set) so the
+       matrix is no-longer required to be square.
 
     .. versionadded:: 4.10.1
 
@@ -1370,6 +1375,9 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
         not enforced.
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
+        RMF. If not given the matrix is assumed to be square (using
+        the rmflo and rmfhi values), otherwise these arrays provide
+        the approximate mapping from channel to energy range of the
         RMF.
     ethresh : number or None, optional
         Passed through to the DataRMF call. It controls whether
@@ -1400,7 +1408,12 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
     # Set up the delta-function response.
     # TODO: should f_chan start at startchan?
     #
-    nchans = rmflo.size
+    # Is this a square matrix or not?
+    if e_min is None:
+        nchans = rmflo.size
+    else:
+        nchans = e_min.size
+
     n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
 
     return DataRMF(name, detchans=nchans, energ_lo=rmflo,
