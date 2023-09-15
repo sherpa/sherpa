@@ -82,8 +82,8 @@ where xxx is some backend.
 # backend-independent (i.e. those that works for any backend) defaults set.
 
 
-plot_opt = config.get('options', 'plot_pkg', fallback='dummy')
-plot_opt = [o.strip().lower() for o in plot_opt.split()]
+plot_opt = config.get('options', 'plot_pkg', fallback='BasicBackend')
+plot_opt = [o.strip() for o in plot_opt.split()]
 
 for plottry in plot_opt:
     if plottry in PLOT_BACKENDS:

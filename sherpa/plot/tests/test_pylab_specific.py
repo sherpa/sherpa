@@ -34,7 +34,7 @@ from sherpa import data
 from sherpa import plot
 
 
-def test_PylabErrorArea():
+def test_PylabErrorArea(caplog):
     '''Test that PylabErrorArea is functional.
 
     This does not test that its function is useful, only that it works at all.
@@ -57,3 +57,6 @@ def test_PylabErrorArea():
         plot2 = plot.DataPlot()
         plot2.prepare(d2)
         plot2.plot()
+
+    # Check we don't see any warnings from changing the backend
+    assert len(caplog.records) == 0

@@ -61,6 +61,7 @@ kwargs_doc = ChainMap(updated_kwarg_docs, orig_kwargs_doc)
 
 
 class PylabBackend(BasicBackend):
+    """sherpa plotting backend using matplotlib"""
 
     name = 'pylab'
     '''Alternative string names for plotting backend.
@@ -123,14 +124,8 @@ class PylabBackend(BasicBackend):
         plt.clf()
 
     def __exit__(self, exec_type, value, traceback):
-        self.set_window_redraw(True)
-        if plt.isinteractive():
-            plt.draw()
+        plt.draw()
         return False
-
-    def set_window_redraw(self, redraw):
-        if redraw:
-            plt.draw()
 
     def setup_axes(self, overplot, clearwindow):
         """Return the axes object, creating it if necessary.

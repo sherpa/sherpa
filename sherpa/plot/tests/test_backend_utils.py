@@ -120,3 +120,4 @@ def test_modify_doctring():
         something
         '''
     assert a.func.__doc__ == expected
+ 

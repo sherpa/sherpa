@@ -56,6 +56,8 @@ The sherpa.plot module
       IntervalUncertainty
       RegionProjection
       RegionUncertainty
+      TemporaryPlottingBackend
+      set_backend
 
 Class Inheritance Diagram
 =========================

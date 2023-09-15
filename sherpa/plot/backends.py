@@ -941,7 +941,7 @@ class IndepOnlyBackend(BasicBackend):
         every function a no-op. However, that means that everything
         has to be maintained here, too, and it is easy to get the
         two classes out of sync in the future. So, instead, we do a
-        little exersize in meta-programming.
+        little exercise in meta-programming.
         '''
         attr = super().__getattribute__(__name)
         # If it's callable and not of type type it's a method

@@ -43,7 +43,7 @@ class PylabErrorArea(PylabBackend):
     the error range is not shown with error bars as in 
     `sherpa.plot.backends.PylabBackend`, but instead with shaded regions.
 
-    This class does not display y errors, even if they are given.
+    This class does not display x errors, even if they are given.
     '''
 
     @property

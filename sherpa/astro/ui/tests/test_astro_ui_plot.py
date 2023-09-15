@@ -1658,14 +1658,7 @@ def test_pha1_plot_model_options(caplog, clean_astro_ui, basic_pha1):
     In matplotlib 3.1 the plot_model call causes a MatplotlibDeprecationWarning
     to be created:
 
-    Passing the drawstyle with the linestyle as a single string is deprecated
-    since Matplotlib 3.1 and support will be removed in 3.3; please pass the
-    drawstyle separately using the drawstyle keyword argument to Line2D or
-    set_drawstyle() method (or ds/set_ds()).
 
-    This warning is hidden by the test suite (sherpa/conftest.py) so that it
-    doesn't cause the tests to fail. Note that a number of other tests in this
-    module also cause this warning to be displayed.
 
     """
 

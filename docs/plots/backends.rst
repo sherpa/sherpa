@@ -3,7 +3,7 @@ Plotting backend details
 ************************
 
 .. warning::
-   The plotting backend API is currently re-designed and should currently be considered
+   The plotting backend API is currently being re-designed and should be considered
    experimental.
 
 Plotting in Sherpa is done through *plotting backends*.
@@ -80,7 +80,7 @@ Sherpa also provides a context manager to change the backend for just one plot::
 The list of available plotting backend names and the classes that implement them is::
 
   >>> from sherpa.plot.backends import PLOT_BACKENDS
-  >>> print(PLOT_BACKENDS)
+  >>> print(PLOT_BACKENDS.keys())
 
 Which backends are available depends on which packages are installed in your Python
 environment, e.g. the ``"pylab"`` backend requires :term:`matplotlib`.
@@ -284,8 +284,8 @@ Creating plots and panels, clearing and overplotting
 Each of the plotting functions above accepts
 the following arguments: title, xlabel, ylabel, xlog, ylog, overplot, clearwindow
 
-Multi-panels plot can be set with ``set_subplot`` and ``set_jointplot``.
-See `sherpa.plot.backends.BaseBackend` for a listing of the calling signature.
+Multi-panels plot can be set with `~sherpa.plot.backends.BaseBackend.set_subplot``
+and `~sherpa.plot.backends.BaseBacken.set_jointplot` (from `sherpa.plot.backends.BaseBackend`).
 
 
 Interaction with interactive plots in the UI
@@ -322,7 +322,7 @@ Example for a modified backend
 Since Sherpa backends are defined using inheritance, new backends can be
 created to change the appearance of plots in ways that are beyond the
 options offered as keyword arguments for the existing backends. As an example,
-the `~sherpa.plot.pylab_backend.PylabErrorArea` backend changes the way that
+the `~sherpa.plot.pylab_area_backend.PylabErrorArea` backend changes the way that
 x-errors are visualized in plots from simple error bars to a shaded area.
 
 .. literalinclude:: ../../sherpa/plot/pylab_area_backend.py
@@ -348,7 +348,7 @@ Instead, the plotting tests in Sherpa fall into the following categories:
     They work with any backend (since Sherpa has `sherpa.plot.backends.BasicBackend`
     there is always a backend). For those tests, no special
     setup is needed and they will just be run with whatever backend is loaded
-    based on the installed packages and the `.sherpa.rc` file.
+    based on the installed packages and the ``.sherpa.rc`` file.
   - Tests that should work with *all* backends. In particular, the
     `sherpa.plot.backends.IndepOnlyBackend` does not perform any plotting,
     but it does raise a warning when plotting options that are not on the list of

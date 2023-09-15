@@ -364,6 +364,7 @@ burden...
       set_model_autoassign_func
       set_par
       set_pileup_model
+      set_plot_backend
       set_prior
       set_proj_opt
       set_psf
