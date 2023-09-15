@@ -37,6 +37,7 @@ from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import ARFModelPHA, create_arf, create_delta_rmf
 from sherpa.models.model import ArithmeticConstantModel
 from sherpa.utils.err import DataErr, IdentifierErr, ModelErr
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 
@@ -2097,3 +2098,89 @@ def test_fit_bkg_with_bkg_models_missing(clean_astro_ui):
     fres = ui.get_fit_results()
     assert fres.parnames == ("bmdl.c0", )
     assert fres.parvals == pytest.approx([15])
+
+
+@requires_data
+@requires_fits
+def test_get_bkg_stat_info(make_data_path, clean_astro_ui, caplog):
+    """Check out the "background" stats.
+
+    """
+
+    ui.set_stat("cstat")
+
+    # We gave 4 observations we can use, but obs2 looks like the
+    # spectral shape is different, so we load it in but do not fit it
+    # (which adds a check for how we handle un-used data).
+    #
+    pl = ui.create_model_component("powlaw1d", "pl")
+    bpl = ui.create_model_component("powlaw1d", "bpl")
+    ngrp = 2
+
+    with SherpaVerbosity("ERROR"):
+        for idx in range(1, 5):
+            ui.load_pha(idx, make_data_path(f"obs{idx}.pi"))
+            if idx == 2:
+                continue
+
+            ui.set_source(idx, pl)
+            ui.set_bkg_source(idx, bpl)
+
+            ui.notice_id(idx, 1, 6)
+            data = ui.get_data(idx)
+            ui.group_counts(idx, ngrp, tabStops=~data.get_mask())
+
+            ui.notice_id(idx, 1, 8, bkg_id=1)
+            bkg = ui.get_bkg(idx, bkg_id=1)
+            ui.group_counts(idx, ngrp, bkg_id=1, tabStops=~bkg.get_mask())
+
+        ui.fit_bkg()
+        ui.fit()
+
+    expected_stats = [18.227080107057652,
+                      34.552754127308,
+                      17.105502808259327]
+    expected_sum = 69.88533704262498
+    assert ui.calc_bkg_stat() == pytest.approx(expected_sum)
+
+    bstats = ui.get_bkg_stat_info()
+    assert len(bstats) == 4
+    for bstat, estat in zip(bstats, expected_stats):
+        assert bstat.statval == pytest.approx(estat)
+
+    assert bstats[3].statval == pytest.approx(expected_sum)
+
+    for bstat, vs in zip(bstats,
+                         [{"idx": 1, "num": 13, "dof": 11},
+                          {"idx": 3, "num": 23, "dof": 21},
+                          {"idx": 4, "num": 14, "dof": 12}
+                          ]):
+        assert bstat.name == f"Background 1 for Dataset {vs['idx']}"
+        assert bstat.ids == (vs['idx'], )
+        assert bstat.bkg_ids == (1,)
+        assert bstat.numpoints == vs['num']
+        assert bstat.dof == vs['dof']
+        assert bstat.statname == "cstat"
+
+    bstat = bstats[3]
+    assert bstat.name == "Backgrounds for Datasets [1, 3, 4]"
+    assert bstat.ids == [1, 3, 4]
+    assert bstat.bkg_ids == (1,)
+    assert bstat.numpoints == 50
+    assert bstat.dof == 48
+    assert bstat.statname == "cstat"
+
+    # Just check we get some output from calc_bkg_stat_info()
+    # but do not do too many checks.
+    #
+    assert len(caplog.records) == 0
+    ui.calc_bkg_stat_info()
+    assert len(caplog.records) == 1
+
+    msg = caplog.records[0].getMessage()
+    toks = msg.split("\n\n")
+    assert len(toks) == 4
+    assert toks[0].startswith("Background 1 in Dataset = 1\n")
+    assert toks[1].startswith("Background 1 in Dataset = 3\n")
+    assert toks[2].startswith("Background 1 in Dataset = 4\n")
+    assert toks[3].startswith("Backgrounds in Datasets = [1, 3, 4]\n")
