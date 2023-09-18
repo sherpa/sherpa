@@ -23,6 +23,13 @@ Glossary
        A community Python library for Astronomy:
        https://www.astropy.org/.
 
+   bokeh
+       The bokeh plotting package, which is documented at
+       http://bokeh.org/, is used to provide the plotting support
+       in Sherpa. Bokeh plots are rendered through javascript in
+       a web browser and have interactive features (zoom, pan, and others).
+       Bokeh plots can be submitted to AAS journals as interactive figures.
+
    CIAO
        The data reduction and analysis provided by the :term:`CXC`
        for users of the Chandra X-ray telescope. Sherpa is provided

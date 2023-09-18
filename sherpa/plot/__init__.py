@@ -47,7 +47,7 @@ from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 # but the current implementation does not have this capability.
 # See docstring of sherpa.plot.backends.MetaBaseBackend for details.
 #
-for name in ["pylab", "pylab_area"]:
+for name in ["pylab", "pylab_area", "bokeh"]:
     try:
         importlib.import_module(f"sherpa.plot.{name}_backend")
     except ImportError:
@@ -79,7 +79,7 @@ where xxx is some backend.
 # might contain e.g. matplotlib specific defaults that are not applicable when other
 # backends are used.
 # Thus, we currently initialize them with the BasicBackend that has only the
-# backend-independent (i.e. those that works for any backend) defaults set.
+# backend-independent (i.e. those that works for any backend) defaults set.``
 
 
 plot_opt = config.get('options', 'plot_pkg', fallback='BasicBackend')

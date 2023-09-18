@@ -331,3 +331,4 @@ Reference/API
    backend_utils
    pylab_backend
    pylab_area_backend
+   bokeh_backend
