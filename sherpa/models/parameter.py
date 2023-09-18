@@ -651,11 +651,11 @@ class Parameter(NoNewAttributesAfterInit):
             name = f"numpy.{ufunc.__name__}"
         else:
             # Unfortunately, there is no ufunc.__module__ we could use
-            # This could be a ufinc from e.g. scipy or generated from an
+            # This could be a ufunc from e.g. scipy or generated from an
             # arbitrary Python function with numpy.frompyfunc.
             # In the latter case, the name will be something like
             # "func (vectorized)", which looks confusing in out string
-            # represenantion, so we simplify it.
+            # representation, so we simplify it.
             name = ufunc.__name__.replace(' (vectorized)', '')
         if ufunc.nin == 1:
             return UnaryOpParameter(inputs[0], ufunc, name)
@@ -837,7 +837,7 @@ class UnaryOpParameter(CompositeParameter):
         The symbol used to represent the operator.
     strformat : str
         Format string for printing this operation. Elements
-        than can be used are `arg` and `opstr`, e.g.
+        that can be used are `arg` and `opstr`, e.g.
         `strformat='{opstr}({arg})'`.
 
     See Also
@@ -872,7 +872,7 @@ class BinaryOpParameter(CompositeParameter):
         The symbol used to represent the operator.
     strformat : str
         Format string for printing this operation. Elements
-        than can be used are `lhs`, `rhs`, and `opstr`, e.g.
+        that can be used are `lhs`, `rhs`, and `opstr`, e.g.
         `strformat='{opstr}({lhs}, {rhs})'`.
 
     See Also

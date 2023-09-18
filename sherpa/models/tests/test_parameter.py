@@ -215,7 +215,7 @@ def test_binop(op):
 def test_binop_string():
     '''Check that the string output is sensible.
 
-    This implicitly also checks the logic to define a the format string for
+    This implicitly also checks the logic to define the format string for
     printing the model representation.
     '''
     p, p2 = setUp_composite()
