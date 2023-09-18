@@ -51,7 +51,7 @@ or any matplotlib marker, e.g. any of `os+v` or others
                   '''``'noline'``,
 ``'None'`` (as string, same as ``'noline'``),
 ``'solid'``, ``'dot'``, ``'dash'``, ``'dashdot'``, ``'-'`` (solid
-line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dot-dashed),
+line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dashdot),
 ``''`` (empty string, no line shown), `None` (default - usually
 solid line) or any other matplotlib linestyle.'''],
     'drawstyle': ['string', 'matplolib drawstyle'],
