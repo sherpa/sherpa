@@ -39,14 +39,14 @@ PLOT_BACKENDS = {}
 lgr = logging.getLogger(__name__)
 warning = lgr.warning
 
-backend_indep_colors = list('rgbkwcymk') + [None]
+backend_indep_colors = list('rgbkwcym') + [None]
 '''List of colors that are allowed in all backends'''
 
 backend_indep_kwargs = {
     'color': backend_indep_colors,
     'ecolor': backend_indep_colors,
     'markerfacecolor': backend_indep_colors,
-    'linestyle': [None, 'noline', 'solid', 'dot', 'dash', 'dotdash', '-', ':', '--',
+    'linestyle': [None, 'noline', 'solid', 'dot', 'dash', 'dashdot', '-', ':', '--',
                   '-.', '', "None"],
     'marker': [None, '', "None", ".", "o", "+", "s"]
 }
@@ -113,7 +113,7 @@ Some backends might accept additional values.'''],
               'linestyle': ['string',
                             '''The following values are accepted by all backends: ``'noline'``,
 ``'None'`` (as string, same as ``'noline'``),
-``'solid'``, ``'dot'``, ``'dash'``, ``'dotdash'``, ``'-'`` (solid
+``'solid'``, ``'dot'``, ``'dash'``, ``'dashdot'``, ``'-'`` (solid
 line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dot-dashed),
 ``''`` (empty string, no line shown), `None` (default - usually
 solid line).
@@ -128,7 +128,8 @@ could be a different shade of blue depending on the backend.
 Some backend might accept additional values.'''],
               'marker': ['string',
                          '''The following values are accepted by all backends: "None" (as a
-string, no marker shown), "." (dot), "o" (circle), "+", "s" (square), "" (empty string, no marker shown)
+string, no marker shown), "." (dot), "o" (circle), "+", "s" (square),
+"" (empty string, no marker shown), `None` (no marker shown).
 
 Some backends may accept additional values.'''],
               'alpha': ['float', 'Number between 0 and 1, setting the transparency.'],
@@ -136,9 +137,9 @@ Some backends may accept additional values.'''],
               'markersize': ['float',
                              '''Size of a marker. The scale may also depend on the backend. `None`
 uses the backend-specific default.'''],
-              'ecolor': ['string', 'Color of the errorbars.'],
-              'capsize': ['float', 'Size of the cap drawn at the end of the errorbars.'],
-              'label': ['string', 'Lable this dataset for use in a legend'],
+              'ecolor': ['string', 'Color of the error bars.'],
+              'capsize': ['float', 'Size of the cap drawn at the end of the error bars.'],
+              'label': ['string', 'Label this dataset for use in a legend'],
               'levels': ['array-like', 'Levels at which to draw the contours']
               }
 '''Documentation for keyword arguments used by several functions
@@ -155,7 +156,7 @@ class MetaBaseBackend(type):
     imported) then the class is added to the global
     `sherpa.plot.backends.PLOT_BACKENDS` dictionary using the class name or,
     if defined the ``"name"`` attribute of that class as key.
-    If the key is already in use, a warning is issued.
+    If the key is already in use, a warning is issued and the class is not added.
 
     This simple metaclass mimics the behavior of entrypoints to some degree:
     It is a registry of classes that provide a certain functionality.
@@ -193,7 +194,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
 
     In this sense, this backend can be understood as the "base" for backends.
     The string-formatting is implemented here so that other backends don't
-    have to dublicate that; they can call the functions here.
+    have to duplicate that; they can call the functions here.
 
     No plotting is implemented in this backend, but all functions are
     documented by what they should do, so that this backend can serve as a
@@ -217,10 +218,10 @@ class BaseBackend(metaclass=MetaBaseBackend):
     Example:
 
     >>> translate_dict = {'markerfacecolor': {'k': (0., 0., 0.)},
-    ...                   'alpha': lambda a: 256 * a}
+    ...                   'alpha': lambda a: 255 * a}
 
     This translates the color 'k' to tuple of RGB values and alpha values
-    to a number between 0 and 256.
+    to a number between 0 and 255.
     '''
 
     def __enter__(self):
@@ -773,7 +774,7 @@ class BasicBackend(BaseBackend):
 
     This backend extends `BaseBackend` by raising a warning message for
     plotting functions (plot, image, histrogram etc.) that are not implemented.
-    It is a the base for any real functional backend, which will override those
+    It is the base for any real functional backend, which will override those
     methods, but offer useful user feedback for any method not provided.
     This future-proofs any backend derived from this class: When sherpa adds new
     functions to its backend definition, they will be added here with a warning

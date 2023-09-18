@@ -33,7 +33,7 @@ from sherpa import plot
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.utils.testing import requires_data, requires_fits
 
-# This not the most elegant solution, but it makes sense to
+# This is not the most elegant solution, but it makes sense to
 # have an independent check here and not rely on what is
 # done in the sherpa.plot.__init__ module, so that the tests
 # stay independent of that particular implementation.
@@ -57,9 +57,6 @@ def check(r, summary, name, label, nmeta):
     """Very limited checks of the structure"""
     assert r is not None
 
-    # If not HAS_PYLAB, then the symbol PylabBackend is not defined
-    # and test collection will fail. So, we short-circuit that
-    # such that PylabBackend will only be needed if HAS_PYLAB is True.
     if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert f'<summary>{summary} Plot</summary>' in r
         assert '<svg ' in r

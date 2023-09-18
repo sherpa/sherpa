@@ -50,7 +50,7 @@ or any matplotlib marker, e.g. any of `os+v` or others
     'linestyle': ['string',
                   '''``'noline'``,
 ``'None'`` (as string, same as ``'noline'``),
-``'solid'``, ``'dot'``, ``'dash'``, ``'dotdash'``, ``'-'`` (solid
+``'solid'``, ``'dot'``, ``'dash'``, ``'dashdot'``, ``'-'`` (solid
 line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dot-dashed),
 ``''`` (empty string, no line shown), `None` (default - usually
 solid line) or any other matplotlib linestyle.'''],
@@ -75,7 +75,7 @@ class PylabBackend(BasicBackend):
         'solid': '-',
         'dot': ':',
         'dash': '--',
-        'dotdash': '-.',
+        'dashdot': '-.',
         'None': ' ', },
         'label': {None: '_nolegend_'},
     }

@@ -48,10 +48,6 @@ except ModuleNotFoundError:
 def check_empty(r, summary, nsummary=0):
     """Is this an 'empty' response?"""
 
-    # If not HAS_PYLAB, then the symbol PylabBackend is not defined
-    # and test collection will fail. So, we short-circuit that
-    # such that PylabBackend will only  be needed it
-    # HAS_PYLAB is True.
     if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert r is None
         return

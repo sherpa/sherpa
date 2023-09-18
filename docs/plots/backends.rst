@@ -138,7 +138,7 @@ can be specified in more than one form:
 - `None`  for the default style - usually a solid line, too,
 - ``'dot'`` or ``':'`` for dotted lines,
 - ``'dash'`` or ``'--'`` (dashed) for dashed lines, and
-- ``'dotdash'`` or ``'-.'`` for a dot-dashed line.
+- ``'dashdot'`` or ``'-.'`` for a dot-dashed line.
 
 Markers
 --------
