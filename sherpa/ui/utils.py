@@ -845,6 +845,9 @@ class Session(NoNewAttributesAfterInit):
                 if _is_subclass(cls, base):
                     odict[name.lower()] = cls()
 
+        # Note: levmar does not support the rng option so this
+        # can be done before set_rng is called.
+        #
         self._current_method = self._methods['levmar']
         self._current_itermethod = self._itermethods['none']
         self._current_stat = self._stats['chi2gehrels']
@@ -2289,6 +2292,20 @@ class Session(NoNewAttributesAfterInit):
             _check_type(meth, sherpa.optmethods.OptMethod, 'meth',
                         'a method name or object')
         self._current_method = meth
+
+        # Do we need to set the RNG argument? This is not ideal, but
+        # is a band-aid while we work out how to handle the RNG
+        # handling in the UI layer. One option would only to update
+        # this if the rng setting is None, but that would be
+        # problematic to users who change the method (as it could
+        # leave an "old" RNG state lying around), although it does
+        # mean that if the user has exlpicitly set rng then it will be
+        # over-written here. An alternative would be to remove the
+        # "rng" setting here (i.e. hide it somehow), but then how does
+        # this get passed to the method?
+        #
+        if "rng" in self._current_method.config:
+            self._current_method.config["rng"] = self.get_rng()
 
     def _check_method_opt(self, optname: str) -> None:
         _check_str_type(optname, "optname")
