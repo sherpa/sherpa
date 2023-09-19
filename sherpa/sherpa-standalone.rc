@@ -6,7 +6,7 @@
 # a dummy backend as default.
 # The backend can be changed in a running sherpa session.
 # The following line would try all available backends:
-# plot_pkg   : pylab dummy
+# plot_pkg   : pylab BasicBackend
 plot_pkg   : pylab
 
 # IO packages (space separated list) in the order they will be tried

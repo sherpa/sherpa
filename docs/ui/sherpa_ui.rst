@@ -242,6 +242,7 @@ hidden away. This needs better explanation...
       set_model
       set_model_autoassign_func
       set_par
+      set_plot_backend
       set_prior
       set_proj_opt
       set_psf

@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021, 2022, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -315,7 +316,9 @@ def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
 
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
 @pytest.mark.parametrize("statClass,flag", _stats_with_flags)
-def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass, flag):
+def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass,
+                                                   statClass, flag,
+                                                   plot_backends):
     """Do we see the warning when expected - fit + resid/ratio plot?
 
     This looks for the 'The displayed errorbars have been supplied with
@@ -386,7 +389,9 @@ def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass, statClass,
 
 @pytest.mark.parametrize("plotClass", [ResidPlot, RatioPlot])
 @pytest.mark.parametrize("statClass", _stats_no_flags)
-def test_fit_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass, statClass):
+def test_fit_residstyle_plot_no_errors_no_errorbar_warnings(caplog, plotClass,
+                                                            statClass,
+                                                            plot_backends):
     """Should not see warnings when no error bars are drawn (See #621).
 
     This is a copy of test_fit_residstyle_plot_see_errorbar_warnings

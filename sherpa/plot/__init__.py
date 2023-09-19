@@ -23,34 +23,11 @@
 Classes provide access to common plotting tasks, which is done by the
 plotting backend defined in the ``options.plot_pkg`` setting of the
 Sherpa configuration file. Note that plot objects can be created
-and used even when there is no available plot backend. It is just
-that no graphical display will be created.
-
-Which backend is used?
-----------------------
-
-When this module is first imported, Sherpa tries to import the
-backends installed with Sherpa in the order listed in the
-``options.plot_pkg`` setting from the ``sherpa.rc`` startup file.
-The first module that imports successfully is set as the active 
-backend. The following command prints the name and the location
-on disk of that module::
-
-   >>> from sherpa import plot
-   >>> print(plot.backend)
-
-Change the backend
-------------------
-
-After the initial import, the backend can be changed by loading one of
-the plotting backends shipped with sherpa (or any other module that
-provides the same interface):
-
-  >>> import sherpa.plot.pylab_backend
-  >>> plot.backend = sherpa.plot.pylab_backend
-
+and used even when only the `sherpa.plot.backends.BasicBackend` is
+available.
 """
 from configparser import ConfigParser
+import contextlib
 import logging
 import importlib
 
@@ -63,6 +40,19 @@ from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
 from sherpa import get_config
+from sherpa.utils.err import ArgumentTypeErr, IdentifierErr
+from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
+# PLOT_BACKENDS only contains backends in modules that are imported successfully
+# but modules are not discovered by itself. Entrypoints would solve this problem
+# but the current implementation does not have this capability.
+# See docstring of sherpa.plot.backends.MetaBaseBackend for details.
+#
+for name in ["pylab", "pylab_area"]:
+    try:
+        importlib.import_module(f"sherpa.plot.{name}_backend")
+    except ImportError:
+        pass
+
 config = ConfigParser()
 config.read(get_config())
 
@@ -72,23 +62,42 @@ warning = lgr.warning
 # TODO: why is this module globally changing the invalid mode of NumPy?
 _ = numpy.seterr(invalid='ignore')
 
-plot_opt = config.get('options', 'plot_pkg', fallback='dummy')
-plot_opt = [o.strip().lower() + '_backend' for o in plot_opt.split()]
-
 backend = None
 '''Currently active backend module for plotting.'''
 
+basicbackend = BasicBackend()
+'''This backend has all the defaults that are backend-independent.
+For all the plot classes in this module (e.g. FitPlot, JointPlot, ...)
+the default settings are set in code like `plot_prefs = xxx.get_plot_defaults()`
+where xxx is some backend.
+'''
+# In the current design, this code is executed when this
+# module imported and then the values are shared between all instances of a class.
+# That allows one to change those default "globally" (i.e. for all instances of the class)
+# but it means that the default values are based on the backend that is active when
+# this module is imported. That depends on the sherpa.rc setting and thus `plot_prefs`
+# might contain e.g. matplotlib specific defaults that are not applicable when other
+# backends are used.
+# Thus, we currently initialize them with the BasicBackend that has only the
+# backend-independent (i.e. those that works for any backend) defaults set.
+
+
+plot_opt = config.get('options', 'plot_pkg', fallback='BasicBackend')
+plot_opt = [o.strip() for o in plot_opt.split()]
+
 for plottry in plot_opt:
-    try:
-        backend = importlib.import_module('.' + plottry,
-                                          package='sherpa.plot')
+    if plottry in PLOT_BACKENDS:
+        backend = PLOT_BACKENDS[plottry]()
         break
-    except ImportError:
-        pass
+    warning(f"Plotting backend '{plottry}' not found or dependencies missing. Trying next option.")
 else:
     # None of the options in the rc file work, e.g. because it's an old file
-    # that does not have dummy listed
-    import sherpa.plot.dummy_backend as backend
+    backend = BasicBackend()
+
+    warning(f"Tried the following backends listed in {get_config()}: \n" +
+            f"{plot_opt}\n" +
+            "None of these imported correctly, so using the 'BasicBackend'.\n" +
+            f"List of backends that have loaded and would be available: {[k for k in PLOT_BACKENDS]}")
 
 __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'HistogramPlot', 'DataHistogramPlot',
@@ -113,9 +122,108 @@ __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'Confidence1D', 'Confidence2D',
            'IntervalProjection', 'IntervalUncertainty',
            'RegionProjection', 'RegionUncertainty',
+           'TemporaryPlottingBackend',
+           'set_backend',
            )
 
 _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
+"""Statistics that do not make use of uncertainties."""
+
+
+def set_backend(new_backend):
+    '''Set the Sherpa plotting backend.
+
+    Plotting backends are registered in Sherpa with a string name.
+    See the examples below for how to get a list of available backends.
+
+    Parameters
+    ----------
+    new_backend : string, class, or instance
+        Set a sherpa plotting backend. The backend can be passed in as an
+        object, or as a convenience, as a simple string
+
+    Example
+    -------
+    Set the backend to use Pylab from matplotlib for plotting. This is
+    probably what most users need:
+
+        >>> from sherpa.plot import set_backend
+        >>> set_backend('pylab')
+
+    Get a list of registered backends:
+
+        >>> from sherpa.plot import PLOT_BACKENDS
+        >>> PLOT_BACKENDS
+        {'BaseBackend': <class 'sherpa.plot.backends.BaseBackend'>, ...}
+
+    This list shows the names and the class for each backend.
+    Details for each backend can be found in the Sherpa documentation or by
+    inspecting the backend classes using normal Python functionality:
+
+        >>> from sherpa.plot.backends import BasicBackend
+        >>> help(BasicBackend)
+        Help on class BasicBackend in module sherpa.plot.backends:
+        <BLANKLINE>
+        class BasicBackend(BaseBackend)
+        |  A dummy backend for plotting.
+        ...
+    '''
+    global backend
+
+    if isinstance(new_backend, str):
+        if new_backend in PLOT_BACKENDS:
+            backend = PLOT_BACKENDS[new_backend]()
+        else:
+            raise IdentifierErr('noplotbackend', new_backend,
+                                list(PLOT_BACKENDS.keys()))
+    # It's a class and that class is a subclass of BaseBackend
+    elif isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
+        backend = new_backend()
+    elif isinstance(new_backend, BaseBackend):
+        backend = new_backend
+    else:
+        raise ArgumentTypeErr('tempplotbackend', new_backend)
+
+
+class TemporaryPlottingBackend(contextlib.AbstractContextManager):
+    '''Set the Sherpa plotting backend as a context, e.g. for a single plot
+
+    This changes the logging level globally for all modules in sherpa.
+
+    Parameters
+    ----------
+    new_backend : string, class, or instance
+        Set a sherpa plotting backend. The backend can be passed in as an
+        instance of a plotting backend class. For simplicity, the user can
+        also pass in a string naming a loaded backend class or the class
+        itself; calling this context manager will then create an instance.
+
+    Example
+    -------
+
+    >>> from sherpa.plot import TemporaryPlottingBackend, DataPlot
+    >>> from sherpa.data import Data1D
+    >>> with TemporaryPlottingBackend('pylab'):
+    ...     x1 = [100, 200, 600, 1200]
+    ...     y1 = [2000, 2100, 1400, 3050]
+    ...     d1 = Data1D('oned', x1, y1)
+    ...     plot1 = DataPlot()
+    ...     plot1.prepare(d1)
+    ...     plot1.plot()
+
+    '''
+
+    def __init__(self, new_backend):
+        self.backend = new_backend
+
+    def __enter__(self):
+        global backend
+        self.old = backend
+        set_backend(self.backend)
+
+    def __exit__(self, *args):
+        global backend
+        backend = self.old
 
 
 def _make_title(title, name=''):
@@ -226,7 +334,7 @@ def calculate_errors(data, stat, yerrorbars=True):
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
 
-    plot_prefs = backend.get_plot_defaults()
+    plot_prefs = basicbackend.get_plot_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -321,7 +429,7 @@ class Plot(NoNewAttributesAfterInit):
 class Contour(NoNewAttributesAfterInit):
     "Base class for contour plots"
 
-    contour_prefs = backend.get_contour_defaults()
+    contour_prefs = basicbackend.get_contour_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -341,12 +449,14 @@ class Contour(NoNewAttributesAfterInit):
         """Return the plot preferences merged with user settings."""
         return {**self.contour_prefs, **kwargs}
 
-    def contour(self, x0, x1, y, levels=None, title=None, xlabel=None,
+    def contour(self, x0, x1, y, title=None, xlabel=None,
                 ylabel=None, overcontour=False, clearwindow=True,
                 **kwargs):
         opts = self._merge_settings(kwargs)
-        backend.contour(x0, x1, y, levels, title, xlabel, ylabel, overcontour,
-                        clearwindow, **opts)
+        backend.contour(x0, x1, y, title=title,
+                        xlabel=xlabel, ylabel=ylabel,
+                        overcontour=overcontour,
+                        clearwindow=clearwindow, **opts)
 
     def overcontour(self, *args, **kwargs):
         kwargs['overcontour'] = True
@@ -356,7 +466,7 @@ class Contour(NoNewAttributesAfterInit):
 class Point(NoNewAttributesAfterInit):
     "Base class for point plots"
 
-    point_prefs = backend.get_point_defaults()
+    point_prefs = basicbackend.get_point_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -396,15 +506,15 @@ class Point(NoNewAttributesAfterInit):
 
         """
         opts = self._merge_settings(kwargs)
-        backend.point(x, y,
-                      overplot=overplot, clearwindow=clearwindow,
-                      **opts)
+        backend.plot(x, y,
+                     overplot=overplot, clearwindow=clearwindow,
+                     **opts)
 
 
 class Histogram(NoNewAttributesAfterInit):
     "Base class for histogram plots"
 
-    histo_prefs = backend.get_histo_defaults()
+    histo_prefs = basicbackend.get_histo_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -565,13 +675,11 @@ class HistogramPlot(Histogram):
 def get_data_hist_prefs():
     """Copy the data preferences to the histogram class"""
 
-    hprefs = backend.get_model_histo_defaults()
-    dprefs = backend.get_data_plot_defaults()
+    hprefs = basicbackend.get_model_histo_defaults()
+    dprefs = basicbackend.get_data_plot_defaults()
     for k, v in dprefs.items():
-        if k not in hprefs:
-            continue
-
-        hprefs[k] = v
+        if k in hprefs:
+            hprefs[k] = v
 
     return hprefs
 
@@ -755,6 +863,7 @@ class CDFPlot(Plot):
     Show the cumulative distribution of 1000 randomly-distributed
     points from a Gumbel distribution:
 
+    >>> import numpy as np
     >>> rng = np.random.default_rng()  # requires NumPy 1.17 or later
     >>> pts = rng.gumbel(loc=100, scale=20, size=1000)
     >>> plot = CDFPlot()
@@ -775,7 +884,7 @@ class CDFPlot(Plot):
                           linewidth=1.5)
     """The options used to draw the 84.13% line."""
 
-    plot_prefs = backend.get_cdf_plot_defaults()
+    plot_prefs = basicbackend.get_cdf_plot_defaults()
     """The plot options (the CDF and axes)."""
 
     def __init__(self):
@@ -887,6 +996,7 @@ plot_prefs = {self.plot_prefs}"""
 
 class LRHistogram(HistogramPlot):
     "Derived class for creating 1D likelihood ratio distribution plots"
+
     def __init__(self):
         self.ratios = None
         self.lr = None
@@ -971,8 +1081,7 @@ class SplitPlot(Plot, Contour):
     cols : int
        Number of columns of plots. The default is 1.
     """
-
-    plot_prefs = backend.get_split_plot_defaults()
+    plot_prefs = basicbackend.get_split_plot_defaults()
     "The preferences for the plot."
 
     def __init__(self, rows=2, cols=1):
@@ -1168,7 +1277,7 @@ class DataPlot(Plot):
 
     """
 
-    plot_prefs = backend.get_data_plot_defaults()
+    plot_prefs = basicbackend.get_data_plot_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -1279,7 +1388,7 @@ class DataPlot(Plot):
 
 class TracePlot(DataPlot):
 
-    plot_prefs = backend.get_model_plot_defaults()
+    plot_prefs = basicbackend.get_model_plot_defaults()
 
     def prepare(self, points, xlabel="x", name="x"):
         """The data to plot.
@@ -1307,7 +1416,7 @@ class TracePlot(DataPlot):
 
 class ScatterPlot(DataPlot):
 
-    plot_prefs = backend.get_scatter_plot_defaults()
+    plot_prefs = basicbackend.get_scatter_plot_defaults()
 
     def prepare(self, x, y, xlabel="x", ylabel="y", name="(x,y)"):
         """The data to plot.
@@ -1376,7 +1485,7 @@ class DataContour(Contour):
 
     """
 
-    contour_prefs = backend.get_data_contour_defaults()
+    contour_prefs = basicbackend.get_data_contour_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -1433,8 +1542,9 @@ class DataContour(Contour):
 
     def contour(self, overcontour=False, clearwindow=True, **kwargs):
         Contour.contour(self, self.x0, self.x1, self.y,
-                        self.levels, self.title, self.xlabel,
-                        self.ylabel, overcontour=overcontour,
+                        levels=self.levels, title=self.title,
+                        xlabel=self.xlabel, ylabel=self.ylabel,
+                        overcontour=overcontour,
                         clearwindow=clearwindow, **kwargs)
 
 
@@ -1472,7 +1582,7 @@ class ModelPlot(Plot):
     a line between each point:
 
     >>> from sherpa.data import Data1D
-    >>> from sherpa.models.basic import StepLot1D
+    >>> from sherpa.models.basic import StepLo1D
     >>> from sherpa.plot import ModelPlot
     >>> data = Data1D('a dataset', [10, 20, 25], [2, -7, 4])
     >>> model = StepLo1D()
@@ -1493,7 +1603,7 @@ class ModelPlot(Plot):
 
     """
 
-    plot_prefs = backend.get_model_plot_defaults()
+    plot_prefs = basicbackend.get_model_plot_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -1600,7 +1710,7 @@ class ModelPlot(Plot):
 
 class ComponentModelPlot(ModelPlot):
 
-    plot_prefs = backend.get_component_plot_defaults()
+    plot_prefs = basicbackend.get_component_plot_defaults()
     "The preferences for the plot."
 
     def prepare(self, data, model, stat=None):
@@ -1611,7 +1721,7 @@ class ComponentModelPlot(ModelPlot):
 class ComponentModelHistogramPlot(ModelHistogramPlot):
 
     # Is this the correct setting?
-    plot_prefs = backend.get_component_plot_defaults()
+    plot_prefs = basicbackend.get_component_plot_defaults()
     "The preferences for the plot."
 
     def prepare(self, data, model, stat=None):
@@ -1654,7 +1764,7 @@ class SourcePlot(ModelPlot):
 
 class ComponentSourcePlot(SourcePlot):
 
-    plot_prefs = backend.get_component_plot_defaults()
+    plot_prefs = basicbackend.get_component_plot_defaults()
 
     def prepare(self, data, model, stat=None):
         (self.x, self.y, self.yerr, self.xerr,
@@ -1666,7 +1776,7 @@ class ComponentSourcePlot(SourcePlot):
 class ComponentSourceHistogramPlot(SourceHistogramPlot):
 
     # Is this the correct setting?
-    plot_prefs = backend.get_component_plot_defaults()
+    plot_prefs = basicbackend.get_component_plot_defaults()
 
     def prepare(self, data, model, stat=None):
 
@@ -1729,7 +1839,7 @@ class PSFPlot(DataPlot):
 class ModelContour(Contour):
     "Derived class for creating 2D model contours"
 
-    contour_prefs = backend.get_model_contour_defaults()
+    contour_prefs = basicbackend.get_model_contour_defaults()
     "The preferences for the plot."
 
     def __init__(self):
@@ -1802,6 +1912,7 @@ class PSFContour(DataContour):
 
 class SourceContour(ModelContour):
     "Derived class for creating 2D model contours"
+
     def __init__(self):
         ModelContour.__init__(self)
         self.title = 'Source'
@@ -1824,10 +1935,20 @@ class FitPlot(Plot):
     such as those created in the examples for `DataPlot` and `ModelPlot`,
     then a combined plot can be created with:
 
-    >>> from sherpa.plot import FitPlot
+    >>> from sherpa.data import Data1D
+    >>> from sherpa.models.basic import StepLo1D
+    >>> from sherpa.plot import DataPlot, ModelPlot, FitPlot
+    >>> data = Data1D('a dataset', [10, 20, 25], [2, -7, 4])
+    >>> dplot = DataPlot()
     >>> fplot = FitPlot()
+    >>> model = StepLo1D()
+    >>> model.xcut = 19
+    >>> mplot = ModelPlot()
+    >>> dplot.prepare(data)
+    >>> mplot.prepare(data, model)
     >>> fplot.prepare(dplot, mplot)
     >>> fplot.plot()
+
 
     Keyword arguments can be given in the `plot` call, and these
     are passed through to both the data and model plots (in the
@@ -1837,7 +1958,7 @@ class FitPlot(Plot):
 
     """
 
-    plot_prefs = backend.get_fit_plot_defaults()
+    plot_prefs = basicbackend.get_fit_plot_defaults()
     """The preferences for the plot. Note that the display for the
     data and model plots are controlled by the preferences for
     the dataplot and modelplot objects, so this is currently
@@ -1925,8 +2046,8 @@ class FitPlot(Plot):
 class FitContour(Contour):
     "Derived class for creating 2D combination data and model contours"
 
-    contour_prefs = backend.get_fit_contour_defaults()
-    "The preferences for the plot"
+    contour_prefs = basicbackend.get_fit_contour_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         self.datacontour = None
@@ -1987,8 +2108,8 @@ class DelchiPlot(ModelPlot):
     linear scale.
     """
 
-    plot_prefs = backend.get_resid_plot_defaults()
-    "The preferences for the plot"
+    plot_prefs = basicbackend.get_resid_plot_defaults()
+    "The preferences for the plot."
 
     def _calc_delchi(self, ylist, staterr):
         return (ylist[0] - ylist[1]) / staterr
@@ -2013,6 +2134,8 @@ class DelchiPlot(ModelPlot):
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().hline(y=0, xmin=0, xmax=1, linecolor='k',
+                      linewidth=.8, overplot=True)
 
 
 class ChisqrPlot(ModelPlot):
@@ -2032,10 +2155,10 @@ class ChisqrPlot(ModelPlot):
        The error on the Y value. Will be `None` here.
     xlabel, ylabel, title : str
        Plot labels.
-
     """
-    plot_prefs = backend.get_model_plot_defaults()
-    "The preferences for the plot"
+
+    plot_prefs = basicbackend.get_model_plot_defaults()
+    "The preferences for the plot."
 
     def _calc_chisqr(self, ylist, staterr):
         dy = ylist[0] - ylist[1]
@@ -2052,7 +2175,8 @@ class ChisqrPlot(ModelPlot):
 
         self.y = self._calc_chisqr(y, staterr)
         self.ylabel = backend.get_latex_for_string(r'\chi^2')
-        self.title = _make_title(backend.get_latex_for_string(r'\chi^2'), data.name)
+        self.title = _make_title(
+            backend.get_latex_for_string(r'\chi^2'), data.name)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, title=self.title,
@@ -2085,8 +2209,8 @@ class ResidPlot(ModelPlot):
     linear scale.
     """
 
-    plot_prefs = backend.get_resid_plot_defaults()
-    "The preferences for the plot"
+    plot_prefs = basicbackend.get_resid_plot_defaults()
+    "The preferences for the plot."
 
     def _calc_resid(self, ylist):
         return ylist[0] - ylist[1]
@@ -2126,13 +2250,15 @@ class ResidPlot(ModelPlot):
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().hline(y=0, xmin=0, xmax=1, linecolor='k',
+                      linewidth=.8, overplot=True)
 
 
 class ResidContour(ModelContour):
     "Derived class for creating 2D residual contours (data-model)"
 
-    contour_prefs = backend.get_resid_contour_defaults()
-    "The preferences for the plot"
+    contour_prefs = basicbackend.get_resid_contour_defaults()
+    "The preferences for the plot."
 
     def _calc_resid(self, ylist):
         return ylist[0] - ylist[1]
@@ -2177,8 +2303,8 @@ class RatioPlot(ModelPlot):
     linear scale.
     """
 
-    plot_prefs = backend.get_ratio_plot_defaults()
-    "The preferences for the plot"
+    plot_prefs = basicbackend.get_ratio_plot_defaults()
+    "The preferences for the plot."
 
     def _calc_ratio(self, ylist):
         data = numpy.array(ylist[0])
@@ -2218,12 +2344,15 @@ class RatioPlot(ModelPlot):
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().hline(y=1, xmin=0, xmax=1, linecolor='k',
+                      linewidth=.8, overplot=True)
 
 
 class RatioContour(ModelContour):
     "Derived class for creating 2D ratio contours (data divided by model)"
-    contour_prefs = backend.get_ratio_contour_defaults()
-    "The preferences for the plot"
+
+    contour_prefs = basicbackend.get_ratio_contour_defaults()
+    "The preferences for the plot."
 
     def _calc_ratio(self, ylist):
         data = numpy.array(ylist[0])
@@ -2250,8 +2379,8 @@ class RatioContour(ModelContour):
 
 class Confidence1D(DataPlot):
 
-    plot_prefs = backend.get_confid_plot_defaults()
-    "The preferences for the plot"
+    plot_prefs = basicbackend.get_confid_plot_defaults()
+    "The preferences for the plot."
 
     def __init__(self):
         self.min = None
@@ -2440,8 +2569,8 @@ class Confidence1D(DataPlot):
 
 class Confidence2D(DataContour, Point):
 
-    contour_prefs = backend.get_confid_contour_defaults()
-    point_prefs = backend.get_confid_point_defaults()
+    contour_prefs = basicbackend.get_confid_contour_defaults()
+    point_prefs = basicbackend.get_confid_point_defaults()
 
     def __init__(self):
         self.min = None
@@ -2539,13 +2668,15 @@ class Confidence2D(DataContour, Point):
             try:
                 self.min = list(self.min)
             except TypeError:
-                raise ConfidenceErr('badarg', 'Parameter limits', 'a list') from None
+                raise ConfidenceErr(
+                    'badarg', 'Parameter limits', 'a list') from None
 
         if self.max is not None:
             try:
                 self.max = list(self.max)
             except TypeError:
-                raise ConfidenceErr('badarg', 'Parameter limits', 'a list') from None
+                raise ConfidenceErr(
+                    'badarg', 'Parameter limits', 'a list') from None
 
         self.stat = fit.calc_stat()
         self.xlabel = par0.fullname
