@@ -74,10 +74,10 @@ from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
 from sherpa.utils import parallel_map, func_counter
-from sherpa.utils._utils import sao_fcmp
+from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import random
 
-from . import _saoopt
+from . import _saoopt  # type: ignore
 
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
            'minim', 'montecarlo', 'neldermead')
@@ -552,8 +552,9 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     verbose: int
        The amount of information to print during the fit. The default
        is `0`, which means no output.
-    seed : int
-       The seed for the random number generator. Used when rng is not None.
+    seed : int or None
+       The seed for the random number generator. If not set then the
+       rng parameter is used to create a seed value.
     population_size : int or `None`
        The population of potential solutions is allowed to evolve to
        search for the minimum of the fit statistics. The trial
@@ -605,15 +606,12 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     weighting_factor = max(0.1, weighting_factor)
     weighting_factor = min(weighting_factor, 1.0)
 
-    # Do we need to create a seed? If rng is None then
-    # we need to create the seed if it is None. If rng
-    # is set then we always use this value, and ignore
-    # the seed value.
+    # Do we need to create a seed?
     #
     # We use a seed up to
-    #   pow(2,31) == 2147483648L
+    #   pow(2, 31) == 2147483648L
     #
-    if seed is None or rng is not None:
+    if seed is None:
         seed = random.integers(rng, 2147483648)
 
     if population_size is None:
