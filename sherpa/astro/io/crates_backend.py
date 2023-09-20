@@ -68,7 +68,14 @@ def open_crate(filename, crateType=CrateDataset, mode='r'):
     """
     dataset = open_crate_dataset(filename, crateType, mode)
     current = dataset.get_current_crate()
-    return dataset.get_crate(current)
+    try:
+        return dataset.get_crate(current)
+    except Exception as exc:
+        # crates can fail with unsupported data types - e.g.  see
+        # #1898 but also long-long columns for CIAO 4.15.
+        #
+        emsg = f"crates is unable to read '{filename}': {str(exc)}"
+        raise IOErr("openfailed", emsg) from exc
 
 
 def get_filename_from_dmsyntax(filename, blockname=None):
@@ -407,6 +414,13 @@ def _get_crate_by_blockname(dataset, blkname):
         return dataset.get_crate(blkname)
     except IndexError:
         return None
+    except Exception as exc:
+        # crates can fail with unsupported data types - e.g.  see
+        # #1898 but also long-long columns for CIAO 4.15.
+        #
+        filename = dataset.get_filename()
+        emsg = f"crates is unable to read '{filename}': {str(exc)}"
+        raise IOErr("openfailed", emsg) from exc
 
 
 # Read Functions #
