@@ -86,8 +86,8 @@ def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
     except KeyError:
         return None
 
-    # TODO: should this comparison be case insensitive, so that
-    # NONE and None are also matched?
+    # TODO: As noted with the crates backend, this test is probably
+    # overly broad, and we should look at simplifying it.
     #
     if str(key).find('none') != -1:
         return None

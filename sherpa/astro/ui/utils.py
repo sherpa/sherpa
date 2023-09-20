@@ -4816,6 +4816,11 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_pha(filename, d, ascii=ascii,
                                   clobber=clobber)
 
+    # This should be
+    #     def save_arf(self, id, filename=None, *, resp_id=None, ...
+    # but the existing logic used to create the ui moduke does not
+    # handle KEYWORD_ONLY so for now do not do this.
+    #
     def save_arf(self, id, filename=None, resp_id=None, bkg_id=None,
                  ascii=False, clobber=False):
         """Save an ARF data set to a file.
@@ -4824,13 +4829,15 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
-           The identifier for the data set to use. If not given then
-           the default identifier is used, as returned by
-           `get_default_id`.
-        filename : str
-           The name of the file to write the array to. The format
-           is determined by the `ascii` argument.
+        id : int or str
+           The identifier for the data set containing the ARF or the
+           filename (the latter is used when filename is set to None,
+           and in this case the id is set to the default identifier,
+           as returned by `get_default_id`).
+        filename : str or None
+           The name of the file to write the ARF to (when the id value
+           is explicitly given). The format is determined by the
+           `ascii` argument.
         resp_id : int or str, optional
            The identifier for the ARF within this data set, if there
            are multiple responses.
@@ -4838,15 +4845,13 @@ class Session(sherpa.ui.utils.Session):
            Set if the background ARF should be written out rather
            than the source ARF.
         ascii : bool, optional
-           If ``False`` then the data is written as a FITS
-           format binary table. The default is ``True``. The
-           exact format of the output file depends on the
-           I/O library in use (Crates or AstroPy).
+           If ``False`` then the data is written as a FITS format
+           binary table. The exact format of the output file depends
+           on the I/O library in use (Crates or AstroPy).
         clobber : bool, optional
-           If `outfile` is not ``None``, then this flag controls
-           whether an existing file can be overwritten (``True``)
-           or if it raises an exception (``False``, the default
-           setting).
+           This flag controls whether an existing file can be
+           overwritten (``True``) or if it raises an exception
+           (``False``).
 
         Raises
         ------
@@ -4864,9 +4869,9 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
-        respectively. The remaining parameters are expected to be
+        the `filename` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `filename`
+        parameters, respectively. The remaining parameters must be
         given as named arguments.
 
         Examples
@@ -4908,6 +4913,11 @@ class Session(sherpa.ui.utils.Session):
         sherpa.astro.io.write_arf(filename, arf, ascii=ascii,
                                   clobber=clobber)
 
+    # This should be
+    #     def save_rmf(self, id, filename=None, *, resp_id=None, ...
+    # but the existing logic used to create the ui moduke does not
+    # handle KEYWORD_ONLY so for now do not do this.
+    #
     def save_rmf(self, id, filename=None, resp_id=None, bkg_id=None,
                  clobber=False):
         """Save an RMF data set to a file.
@@ -4916,24 +4926,24 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
-           The identifier for the data set to use. If not given then
-           the default identifier is used, as returned by
-           `get_default_id`.
-        filename : str
-           The name of the file to write the array to. The format
-           is always FITS.
+        id : int or str
+           The identifier for the data set containing the RMF or the
+           filename (the latter is used when filename is set to None,
+           and in this case the id is set to the default identifier,
+           as returned by `get_default_id`).
+        filename : str or None
+           The name of the file to write the RMF to (when the id value
+           is explicitly given). Note that the format is always FITS.
         resp_id : int or str, optional
-           The identifier for the ARF within this data set, if there
+           The identifier for the RMF within this data set, if there
            are multiple responses.
         bkg_id : int or str, optional
-           Set if the background ARF should be written out rather
-           than the source ARF.
+           Set if the background RMF should be written out rather
+           than the source RMF.
         clobber : bool, optional
-           If `outfile` is not ``None``, then this flag controls
-           whether an existing file can be overwritten (``True``)
-           or if it raises an exception (``False``, the default
-           setting).
+           This flag controls whether an existing file can be
+           overwritten (``True``) or if it raises an exception
+           (``False``).
 
         Raises
         ------
@@ -4951,9 +4961,9 @@ class Session(sherpa.ui.utils.Session):
         The function does not follow the normal Python standards for
         parameter use, since it is designed for easy interactive use.
         When called with a single un-named argument, it is taken to be
-        the `filename` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `filename` parameters,
-        respectively. The remaining parameters are expected to be
+        the `filename` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `filename`
+        parameters, respectively. The remaining parameters must be
         given as named arguments.
 
         Examples

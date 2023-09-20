@@ -684,10 +684,7 @@ def _pack_image(dataset):
     data = {}
 
     # Data2D does not have a header
-    try:
-        header = dataset.header
-    except AttributeError:
-        header = {}
+    header = getattr(dataset, "header", {})
 
     data['pixels'] = numpy.asarray(dataset.get_img())
     data['sky'] = getattr(dataset, 'sky', None)
@@ -755,7 +752,7 @@ def _is_structural_keyword(key: str) -> bool:
                 "CHECKSUM", "DATASUM", "CHECKVER",
                 # HEASARC
                 "TSORTKEY",
-                # CIAO specific
+                # CIAO uses this as well as EXTNAME
                 "HDUNAME"
                 ]:
         return True
@@ -893,7 +890,6 @@ def _pack_pha(dataset):
     #
     default_header = {
         "EXTNAME": "SPECTRUM",
-        # "HDUNAME": "SPECTRUM",  - this is a CIAO-specific keyword
         "HDUCLASS": "OGIP",
         "HDUCLAS1": "SPECTRUM",
         "HDUCLAS2": "TOTAL",
@@ -922,7 +918,7 @@ def _pack_pha(dataset):
 
     # Merge the keywords
     #
-    header = {**default_header, **header}
+    header = default_header | header
 
     # Over-write the header value (if set). This value should really
     # exist (OGIP standards) but may not, particularly for testing.
@@ -1101,8 +1097,7 @@ def _pack_arf(dataset):
     # Check we have data. Should we allow missing columns?
     #
     for col in ["energ_lo", "energ_hi", "specresp"]:
-        cdata = getattr(dataset, col)
-        if cdata is None:
+        if getattr(dataset, col) is None:
             raise ArgumentErr("bad", "ARF",
                               f"{col.upper()} column is missing")
 
@@ -1111,7 +1106,6 @@ def _pack_arf(dataset):
     #
     default_header = {
         "EXTNAME": "SPECRESP",
-        # "HDUNAME": "SPECRESP",    # do we want this or not?
         "HDUCLASS": "OGIP",
         "HDUCLAS1": "RESPONSE",
         "HDUCLAS2": "SPECRESP",
@@ -1126,7 +1120,7 @@ def _pack_arf(dataset):
 
     # Merge the keywords
     #
-    header = {**default_header, **header}
+    header = default_header | header
 
     # The exposure time is not an OGIP-mandated value but
     # is used by CIAO, so copy it across if set.
@@ -1259,7 +1253,7 @@ def _reconstruct_rmf(rmf):
 
     This does not guarantee to create byte-identical data in a round
     trip, but it should create equivalent data (e.g. the choice of
-    whether a column shuold be a Variable Length Field may differ, as
+    whether a column should be a Variable Length Field may differ, as
     can the data types).
 
     Parameters
@@ -1460,7 +1454,7 @@ def _pack_rmf(dataset):
         "NUMELT": 0
     }
 
-    default_ebounds_header = {
+    ebounds_header = {
         "EXTNAME": "EBOUNDS",
         "HDUCLASS": "OGIP",
         "HDUCLAS1": "RESPONSE",
@@ -1478,8 +1472,7 @@ def _pack_rmf(dataset):
 
     # Merge the keywords (at least for the MATRIX block).
     #
-    matrix_header = {**default_matrix_header, **header}
-    ebounds_header = {**default_ebounds_header}
+    matrix_header = default_matrix_header | header
 
     matrix_header["NUMGRP"] = rmfdata["NUMGRP"]
     matrix_header["NUMELT"] = rmfdata["NUMELT"]

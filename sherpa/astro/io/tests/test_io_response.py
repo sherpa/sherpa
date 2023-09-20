@@ -652,8 +652,9 @@ def test_write_rmf_fits_swift_xrt(make_data_path, tmp_path):
 def test_write_rmf_fits_rosat_pspc(make_data_path, tmp_path):
     """Check we can write out an RMF as a FITS file.
 
-    Use the ROSAT PSPCC as it has it's own DataRosatRMF class.  It's
-    also a RSP rather than a RMF (ie includes the ARF, I believe).
+    Use the ROSAT PSPC-C example dataset as it has it's own
+    DataRosatRMF class.  It's also a RSP rather than a RMF (ie
+    includes the ARF, I believe).
 
     """
 
@@ -757,7 +758,7 @@ def test_write_rmf_fits_rosat_pspc(make_data_path, tmp_path):
 def test_write_rmf_fits_xmm_rgs(make_data_path, tmp_path):
     """Check we can write out an RMF as a FITS file.
 
-    Try out a grating RMF. Use XMM as smaller than Chandra.
+    Try out a grating RMF. Use XMM since it is smaller than Chandra.
 
     """
 
