@@ -92,6 +92,7 @@ Reference/API
    parallel
    random
    utils
+   utils_numeric_types
    testing
    io
    astro
