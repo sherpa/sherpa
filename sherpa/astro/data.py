@@ -4309,8 +4309,8 @@ It is an integer or string.
                 ylabel += '/channel'
 
         if self.plot_fac:
-            from sherpa.plot import backend
-            latex = backend.get_latex_for_string(
+            from sherpa import plot
+            latex = plot.backend.get_latex_for_string(
                 f'^{self.plot_fac}')
             ylabel += f' X {self.units.capitalize()}{latex}'
         return ylabel

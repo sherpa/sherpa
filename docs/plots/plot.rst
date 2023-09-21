@@ -56,6 +56,14 @@ The sherpa.plot module
       IntervalUncertainty
       RegionProjection
       RegionUncertainty
+      TemporaryPlottingBackend
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree: api
+
+      set_backend
 
 Class Inheritance Diagram
 =========================

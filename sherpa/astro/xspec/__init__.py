@@ -1224,7 +1224,24 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         #  - it is easier
         #  - it allows for the user to find out what bins are bad,
         #    by directly calling the _calc function of a model
-        out = self._calc(p, *args, **kwargs)
+        #
+        # If the call raises an error, add the model name and parameter
+        # values (the name is surprisingly tricky to add in the C++
+        # binding).
+        #
+        try:
+            out = self._calc(p, *args, **kwargs)
+        except ValueError as ve:
+            # Always add the extra information:
+            #   - model class
+            #   - model name
+            #   - parameter list
+            #
+            msg = f"{ve}: {self.type}.{self.name}"
+            for par, val in zip(self.pars, args[0]):
+                msg += f" {par.name}={val}"
+
+            raise ValueError(msg) from None
 
         # This check is being skipped in the 4.8.0 release as it
         # has had un-intended consequences. It should be re-evaluated
@@ -1363,12 +1380,21 @@ class XSTableModel(XSModel):
         self.addmodel = addmodel
         self.etable = etable
 
-        # Order appears to be
-        #   - z
+        # Order should be (z and escale were incorrectly mixed up
+        # in XSPEC 12.13.1 and earlier):
+        #
         #   - Escale
+        #   - z
         #   - norm
+        #
         # (for those models that support the relevant value)
         #
+        if addescale:
+            # Should this just use Parameter?
+            self.Escale = XSParameter(name, 'Escale', 1, 1e-5, 100,
+                                      1e-5, 100, frozen=True)
+            pars.append(self.Escale)
+
         if addredshift:
             # We use XSParameter rather than XSBaseParameter since it
             # is less likely to cause a crash if the parameter ranges
@@ -1381,12 +1407,6 @@ class XSTableModel(XSModel):
             self.redshift = XSParameter(name, 'redshift', 0., 0., 5.,
                                         0.0, 5, frozen=True)
             pars.append(self.redshift)
-
-        if addescale:
-            # Should this just use Parameter?
-            self.Escale = XSParameter(name, 'Escale', 1, 0, 1e20,
-                                      0, 1e24, frozen=True, units="keV")
-            pars.append(self.Escale)
 
         if addmodel:
             # Normalization parameters are not true XSPEC parameters and
@@ -2016,6 +2036,10 @@ class XSbapec(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keywords "APECROOT" and "APEC_TRACE_ABUND".
 
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
+
     Attributes
     ----------
     kT
@@ -2049,7 +2073,7 @@ class XSbapec(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e6, 0.0, 1e6, units='km/s', frozen=True)
+        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1e4, 0.0, 1e4, units='km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.Redshift, self.Velocity, self.norm))
 
@@ -2062,6 +2086,10 @@ class XSbtapec(XSAdditiveModel):
     abundances of the metals. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keywords "APECROOT" and "APEC_TRACE_ABUND".
+
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
 
     Attributes
     ----------
@@ -2099,7 +2127,7 @@ class XSbtapec(XSAdditiveModel):
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6, 'km/s', frozen=True)
+        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, 'km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.Abundanc, self.Redshift, self.Velocity, self.norm))
@@ -2497,6 +2525,10 @@ class XSbrnei(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
 
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
+
     Attributes
     ----------
     kT
@@ -2535,7 +2567,7 @@ class XSbrnei(XSAdditiveModel):
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
         self.Redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6,
+        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4,
                                     units='km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.kT_init, self.Abundanc, self.Tau, self.Redshift, self.Velocity, self.norm))
@@ -2546,6 +2578,10 @@ class XSbvapec(XSAdditiveModel):
 
     The model is described at [1]_, with ``XSbapec`` describing how
     it is implemented in Sherpa.
+
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
 
     Attributes
     ----------
@@ -2590,7 +2626,7 @@ class XSbvapec(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e6, 0.0, 1e6, units='km/s', frozen=True)
+        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1e4, units='km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift, self.Velocity, self.norm))
 
@@ -2601,6 +2637,10 @@ class XSbvrnei(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
+
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
 
     Attributes
     ----------
@@ -2651,7 +2691,7 @@ class XSbvrnei(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 10000., frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
         self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10., frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e6, 0.0, 1.e6, 'km/s', frozen=True)
+        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1.e4, 'km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.kT_init, self.H, self.He, self.C, self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift, self.Velocity, self.norm))
 
@@ -2662,6 +2702,10 @@ class XSbvtapec(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keywords "APECROOT" and "APEC_TRACE_ABUND".
+
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
 
     Attributes
     ----------
@@ -2711,7 +2755,7 @@ class XSbvtapec(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6, units='km/s')
+        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s')
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.He, self.C, self.N, self.O,
@@ -2724,6 +2768,10 @@ class XSbvvapec(XSAdditiveModel):
 
     The model is described at [1]_, with ``XSbapec`` describing how
     it is implemented in Sherpa.
+
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
 
     Attributes
     ----------
@@ -2786,7 +2834,7 @@ class XSbvvapec(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e6, 0.0, 1e6, units='km/s', frozen=True)
+        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1e4, units='km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.Velocity, self.norm))
 
@@ -2797,6 +2845,10 @@ class XSbvvrnei(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keyword "NEIVERS".
+
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
 
     Attributes
     ----------
@@ -2866,7 +2918,7 @@ class XSbvvrnei(XSAdditiveModel):
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, maxval, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
         self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10., frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e6, 0.0, 1.e6,
+        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1.e4,
                                     units='km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name, (self.kT, self.kT_init, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Tau, self.Redshift, self.Velocity, self.norm))
@@ -2878,6 +2930,10 @@ class XSbvvtapec(XSAdditiveModel):
     The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
     functions are used to set and query the XSPEC XSET "APECROOT"
     parameter.
+
+    .. versionchanged:: 4.16.0
+       The maximum for the Velocity parameter has been changed from
+       10^6 to 10^4 km/s.
 
     Attributes
     ----------
@@ -2943,7 +2999,7 @@ class XSbvvtapec(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e6, 0.0, 1.0e6, units='km/s')
+        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s')
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.Velocity, self.norm))
@@ -10376,28 +10432,31 @@ class XShrefl(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.thetamin, self.thetamax, self.thetaobs, self.Feabun, self.FeKedge, self.Escfrac, self.covfac, self.redshift))
 
 
+# The parameter names for this model have changed over time, with some
+# changes Sherpa made to handle confusion (e.g. SiI and SII used to
+# conflict so we changed to Si_I and S_II and XSPEC has since switched
+# to this naming scheme).
+#
 class XSismabs(XSMultiplicativeModel):
     """The XSPEC ismabs model: A high resolution ISM absorption model with variable columns for individual ions.
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.0
+       All species names now have the form <element>_<state>, such as
+       He_II and Ca_III. The old versions (HeII and CaIII) can still
+       be used but a deprecation warning may be displayed.
+
     Attributes
     ----------
     H
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
-    HeII, CI, CII, CIII, NI, NII, NIII, OI, OII, OIII, NeI, NeII, NeIII,
-    MgI, MgII, MgIII, Si_I, Si_II, Si_III, S_I, S_II, S_III,
-    ArI, ArII, ArIII, CaI, CaII, CaIII, Fe
+    He_II, C_I, C_II, C_III, N_I, N_II, N_III, O_I, O_II, O_III,
+    Ne_I, Ne_II, Ne_III, Mg_I, Mg_II, Mg_III, Si_I, Si_II, Si_III,
+    S_I, S_II, S_III, Ar_I, Ar_II, Ar_III, Ca_I, Ca_II, Ca_III, Fe
         The column for the species (in units of 10^16 atoms/cm^2).
     redshift
         The redshift of the absorber.
-
-    Notes
-    -----
-    As Sherpa parameter names are case insensitive the parameters
-    for Silicon and Sulfur include an underscore character after the
-    element name to avoid conflict: that is Si_I and S_I refer to
-    the XSPEC SiI and SI parameters respectively.
 
     References
     ----------
@@ -10411,39 +10470,42 @@ class XSismabs(XSMultiplicativeModel):
     def __init__(self, name='ismabs'):
 
         self.H = XSParameter(name, 'H', 0.1, 0.0, 1e5, 0, 1e6, units='10^22')
-        self.HeII = XSParameter(name, 'HeII', 0.0, 0.0, 1e5, 0, 1e6,
-                                units='10^16', frozen=True)
-        self.CI = XSParameter(name, 'CI', 33.1, 0.0, 1e5, 0, 1e6,
-                              units='10^16')
-        self.CII = XSParameter(name, 'CII', 0.0, 0.0, 1e5, 0, 1e6,
-                               units='10^16', frozen=True)
-        self.CIII = XSParameter(name, 'CIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                units='10^16', frozen=True)
-        self.NI = XSParameter(name, 'NI', 8.32, 0.0, 1e5, 0, 1e6,
-                              units='10^16')
-        self.NII = XSParameter(name, 'NII', 0.0, 0.0, 1e5, 0, 1e6,
-                               units='10^16', frozen=True)
-        self.NIII = XSParameter(name, 'NIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                units='10^16', frozen=True)
-        self.OI = XSParameter(name, 'OI', 67.6, 0.0, 1e5, 0, 1e6,
-                              units='10^16')
-        self.OII = XSParameter(name, 'OII', 0.0, 0.0, 1e5, 0, 1e6,
-                               units='10^16', frozen=True)
-        self.OIII = XSParameter(name, 'OIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                units='10^16', frozen=True)
-        self.NeI = XSParameter(name, 'NeI', 12.0, 0.0, 1e5, 0, 1e6,
-                               units='10^16')
-        self.NeII = XSParameter(name, 'NeII', 0.0, 0.0, 1e5, 0, 1e6,
-                                units='10^16', frozen=True)
-        self.NeIII = XSParameter(name, 'NeIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                 units='10^16', frozen=True)
-        self.MgI = XSParameter(name, 'MgI', 3.8, 0.0, 1e5, 0, 1e6,
-                               units='10^16')
-        self.MgII = XSParameter(name, 'MgII', 0.0, 0.0, 1e5, 0, 1e6,
-                                units='10^16', frozen=True)
-        self.MgIII = XSParameter(name, 'MgIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                 units='10^16', frozen=True)
-        # SiI and SI conflict, so add in underscores to differentiate.
+        self.He_II = XSParameter(name, 'He_II', 0.0, 0.0, 1e5, 0, 1e6,
+                                 units='10^16', frozen=True, aliases=["HeII"])
+        self.C_I = XSParameter(name, 'C_I', 33.1, 0.0, 1e5, 0, 1e6,
+                               units='10^16', aliases=["CI"])
+        self.C_II = XSParameter(name, 'C_II', 0.0, 0.0, 1e5, 0, 1e6,
+                                units='10^16', frozen=True, aliases=["CII"])
+        self.C_III = XSParameter(name, 'C_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                 units='10^16', frozen=True, aliases=["CIII"])
+        self.N_I = XSParameter(name, 'N_I', 8.32, 0.0, 1e5, 0, 1e6,
+                               units='10^16', aliases=["NI"])
+        self.N_II = XSParameter(name, 'N_II', 0.0, 0.0, 1e5, 0, 1e6,
+                                units='10^16', frozen=True, aliases=["NII"])
+        self.N_III = XSParameter(name, 'N_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                 units='10^16', frozen=True, aliases=["NIII"])
+        self.O_I = XSParameter(name, 'O_I', 67.6, 0.0, 1e5, 0, 1e6,
+                               units='10^16', aliases=["OI"])
+        self.O_II = XSParameter(name, 'O_II', 0.0, 0.0, 1e5, 0, 1e6,
+                                units='10^16', frozen=True, aliases=["OII"])
+        self.O_III = XSParameter(name, 'O_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                 units='10^16', frozen=True, aliases=["OIII"])
+        self.Ne_I = XSParameter(name, 'Ne_I', 12.0, 0.0, 1e5, 0, 1e6,
+                                units='10^16', aliases=["NeI"])
+        self.Ne_II = XSParameter(name, 'Ne_II', 0.0, 0.0, 1e5, 0, 1e6,
+                                 units='10^16', frozen=True, aliases=["NeII"])
+        self.Ne_III = XSParameter(name, 'Ne_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                  units='10^16', frozen=True, aliases=["NeIII"])
+        self.Mg_I = XSParameter(name, 'Mg_I', 3.8, 0.0, 1e5, 0, 1e6,
+                                units='10^16', aliases=["MgI"])
+        self.Mg_II = XSParameter(name, 'Mg_II', 0.0, 0.0, 1e5, 0, 1e6,
+                                 units='10^16', frozen=True, aliases=["MgII"])
+        self.Mg_III = XSParameter(name, 'Mg_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                  units='10^16', frozen=True, aliases=["MgIII"])
+        # Historically Sherpa added the underscore to differentiate
+        # between SiI and SII (e.g. Si_I and S_II) and now XSPEC has
+        # changed to use this naming scheme. This means there are no
+        # aliases for the Si and S parameters.
         #
         self.Si_I = XSParameter(name, 'Si_I', 3.35, 0.0, 1e5, 0, 1e6,
                                 units='10^16')
@@ -10457,50 +10519,50 @@ class XSismabs(XSMultiplicativeModel):
                                 units='10^16', frozen=True)
         self.S_III = XSParameter(name, 'S_III', 0.0, 0.0, 1e5, 0, 1e6,
                                  units='10^16', frozen=True)
-        self.ArI = XSParameter(name, 'ArI', 0.25, 0.0, 1e5, 0, 1e6,
-                               units='10^16')
-        self.ArII = XSParameter(name, 'ArII', 0.0, 0.0, 1e5, 0, 1e6,
-                                units='10^16', frozen=True)
-        self.ArIII = XSParameter(name, 'ArIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                 units='10^16', frozen=True)
-        self.CaI = XSParameter(name, 'CaI', 0.22, 0.0, 1e5, 0, 1e6,
-                               units='10^16')
-        self.CaII = XSParameter(name, 'CaII', 0.0, 0.0, 1e5, 0, 1e6,
-                                units='10^16', frozen=True)
-        self.CaIII = XSParameter(name, 'CaIII', 0.0, 0.0, 1e5, 0, 1e6,
-                                 units='10^16', frozen=True)
+        self.Ar_I = XSParameter(name, 'Ar_I', 0.25, 0.0, 1e5, 0, 1e6,
+                                units='10^16', aliases=["ArI"])
+        self.Ar_II = XSParameter(name, 'Ar_II', 0.0, 0.0, 1e5, 0, 1e6,
+                                 units='10^16', frozen=True, aliases=["ArII"])
+        self.Ar_III = XSParameter(name, 'Ar_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                  units='10^16', frozen=True, aliases=["ArIII"])
+        self.Ca_I = XSParameter(name, 'Ca_I', 0.22, 0.0, 1e5, 0, 1e6,
+                                units='10^16', aliases=["CaI"])
+        self.Ca_II = XSParameter(name, 'Ca_II', 0.0, 0.0, 1e5, 0, 1e6,
+                                 units='10^16', frozen=True, aliases=["CaII"])
+        self.Ca_III = XSParameter(name, 'Ca_III', 0.0, 0.0, 1e5, 0, 1e6,
+                                  units='10^16', frozen=True, aliases=["CaIII"])
         self.Fe = XSParameter(name, 'Fe', 3.16, 0.0, 1e5, 0, 1e6, units='10^16')
         self.redshift = XSParameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
                                     frozen=True)
         XSMultiplicativeModel.__init__(self, name,
-                                       (self.H, self.HeII,
-                                        self.CI,
-                                        self.CII,
-                                        self.CIII,
-                                        self.NI,
-                                        self.NII,
-                                        self.NIII,
-                                        self.OI,
-                                        self.OII,
-                                        self.OIII,
-                                        self.NeI,
-                                        self.NeII,
-                                        self.NeIII,
-                                        self.MgI,
-                                        self.MgII,
-                                        self.MgIII,
+                                       (self.H, self.He_II,
+                                        self.C_I,
+                                        self.C_II,
+                                        self.C_III,
+                                        self.N_I,
+                                        self.N_II,
+                                        self.N_III,
+                                        self.O_I,
+                                        self.O_II,
+                                        self.O_III,
+                                        self.Ne_I,
+                                        self.Ne_II,
+                                        self.Ne_III,
+                                        self.Mg_I,
+                                        self.Mg_II,
+                                        self.Mg_III,
                                         self.Si_I,
                                         self.Si_II,
                                         self.Si_III,
                                         self.S_I,
                                         self.S_II,
                                         self.S_III,
-                                        self.ArI,
-                                        self.ArII,
-                                        self.ArIII,
-                                        self.CaI,
-                                        self.CaII,
-                                        self.CaIII,
+                                        self.Ar_I,
+                                        self.Ar_II,
+                                        self.Ar_III,
+                                        self.Ca_I,
+                                        self.Ca_II,
+                                        self.Ca_III,
                                         self.Fe, self.redshift))
 
 
@@ -13663,6 +13725,10 @@ class XSzmshift(XSConvolutionKernel):
         XSConvolutionKernel.__init__(self, name, (self.Redshift,))
 
 
+# There is a conflict circa XSPEC 12.13.1 with the "delta" parameter,
+# since the model.dat file calls it "del". We can not use that name,
+# as Python does not allow it, so we use delta instead.
+#
 class XSbwcycl(XSAdditiveModel):
     """The XSPEC bwcycl model: Becker-Wolff self-consistent cyclotron line model.
 

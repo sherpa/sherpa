@@ -74,10 +74,11 @@ def check_last_caplog(caplog, lname, lvl, msg):
     assert msg_got == msg
 
 
-def clc_filter(caplog, msg):
+def clc_filter(caplog, msg, astro=False):
     """Special case for the ignore/notice filter check"""
 
-    check_last_caplog(caplog, "sherpa.ui.utils", logging.INFO, msg)
+    reporter = "sherpa.astro.ui.utils" if astro else "sherpa.ui.utils"
+    check_last_caplog(caplog, reporter, logging.INFO, msg)
 
 
 @requires_fits
@@ -553,23 +554,28 @@ def test_notice_reporting_datapha_with_response(caplog):
 
     # switch analysis units so the ignore call returns different values
     s.set_analysis("wave")
+    assert len(caplog.record_tuples) == 3
+    clc_filter(caplog, "dataset 1: 6.19921:6.88801,7.29319:9.53725 Wavelength (Angstrom)",
+               astro=True)
 
     s.ignore_id(1)
-    assert len(caplog.record_tuples) == 3
+    assert len(caplog.record_tuples) == 4
     clc_filter(caplog, "dataset 1: 6.19921:6.88801,7.29319:9.53725 Wavelength (Angstrom) -> no data")
 
     s.ignore()
-    assert len(caplog.record_tuples) == 4
+    assert len(caplog.record_tuples) == 5
     clc_filter(caplog, "dataset 1: no data (unchanged)")
 
     s.notice(8, 12)
-    assert len(caplog.record_tuples) == 5
+    assert len(caplog.record_tuples) == 6
     clc_filter(caplog, "dataset 1: no data -> 7.74901:12.3984 Wavelength (Angstrom)")
 
     s.set_analysis("chan")
+    assert len(caplog.record_tuples) == 7
+    clc_filter(caplog, "dataset 1: 10:15 Channel", astro=True)
 
     s.notice_id(1)
-    assert len(caplog.record_tuples) == 6
+    assert len(caplog.record_tuples) == 8
     clc_filter(caplog, "dataset 1: 10:15 -> 1:19 Channel")
 
 

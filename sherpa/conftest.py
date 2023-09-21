@@ -47,13 +47,41 @@ except ImportError:
     has_xspec = False
 
 
-import sherpa.plot
-import sherpa.astro.plot
-from sherpa.plot import dummy_backend
+from sherpa.plot.backends import BaseBackend, IndepOnlyBackend, PLOT_BACKENDS
+from sherpa.plot import TemporaryPlottingBackend
+
+FUNCTIONAL_PLOT_BACKENDS = []
+'''Unfortunately, there is no metadata that tell us which plotting backends are
+dummys and which ones actually produce useful plots. That's because
+"one person's dummy might be another person's use case", e.g. a backend might be a
+dummy for image, but not for a histogram.
+
+The goal of this list is to be able to run a large number of plotting tests
+with any installed, functional backend. These tests mostly execute
+`plot`, `histogram`, `vline`, `hline`, etc, but not image, 3D plots etc.
+So, a better name might be BACKENDS_FUNCTIONAL_FOR_1D_PLOT, but this can be
+refined when we actually have more plotting backends and more multi-D plot tests.
+
+Thus, we can't just autogenerate this list, but need to make it by hand here.
+'''
+
 try:
-    from sherpa.plot import pylab_backend
+    from sherpa.plot.pylab_backend import PylabBackend
+    FUNCTIONAL_PLOT_BACKENDS.append('pylab')
+
+    # Override the matplotlib backend from TkAgg to Agg to try
+    # and avoid errors from multiprocessing thanks to the error
+    # "Tcl_AsyncDelete: async handler deleted by the wrong thread"
+    # See issue #1590.
+    #
+    # This has been moved over from the existing code, which was
+    # added after this commit was made. Is this correct?
+    #
+    import matplotlib
+    matplotlib.use("agg")
+
 except ImportError:
-    pylab_backend = None
+    pass
 
 
 # In some instances, if some xvfb processes did not stop cleanly
@@ -557,66 +585,93 @@ def old_numpy_printing():
         np.set_printoptions(legacy=oldopts['legacy'])
 
 
-PLOT_BACKENDS = [dummy_backend]
-if pylab_backend is not None:
-
-    # override the matplotlib backend from TkAgg to Agg to try
-    # and avoid errors from multiprocessing thanks to the error
-    # "Tcl_AsyncDelete: async handler deleted by the wrong thread"
-    # See issue #1590.
-    #
-    import matplotlib
-    matplotlib.use("agg")
-
-    PLOT_BACKENDS.append(pylab_backend)
-
-
-@pytest.fixture(params=PLOT_BACKENDS)
-def override_plot_backend(request):
+@pytest.fixture(params=PLOT_BACKENDS.keys())
+def all_plot_backends(request):
     """Override the plot backend for this test
 
     Runs the test with the given plot backend and then restores the
     original value.
 
-    Note that this does not reload the ui layers, which will have
-    retain reference to the original backend throughout.
+    Note that this does not reload the ui layers, which will
+    retain a reference to the original backend throughout.
+    """
+    with TemporaryPlottingBackend(request.param):
+        yield
+        if request.param in ('pylab', 'PylabErrorArea'):
+            from matplotlib import pyplot as plt
+            plt.close(fig="all")
 
+
+@pytest.fixture(params=PLOT_BACKENDS.keys())
+def all_plot_backends_astro_ui(request):
+    """Override the plot backend for the astro ui session.
+
+    Runs the test with the given plot backend and then restores the
+    original value.
     """
 
-    old = sherpa.plot.backend
+    # Unfortunately can not easily use TemporaryPlottingBackend here
+    #
+    from sherpa.plot import backend
+    old = backend
 
-    changed = old.name != request.param.name
-    if changed:
-        sherpa.plot.backend = request.param
-        sherpa.astro.plot.backend = request.param
+    from sherpa.astro.ui import set_plot_backend
+    set_plot_backend(request.param)
 
     yield
-    if changed:
-        sherpa.plot.backend = old
-        sherpa.astro.plot.backend = old
+
+    # Backend-specific clean up.
+    if request.param == 'pylab':
+        from matplotlib import pyplot as plt
+        plt.close(fig="all")
+
+    # Restore the original backend.
+    #
+    set_plot_backend(old)
+
+
+@pytest.fixture(params=FUNCTIONAL_PLOT_BACKENDS)
+def plot_backends(request):
+    """Override the plot backend for this test (only for functional backends)
+
+    This fixtures runs tests for all backends that actually produce plots, i.e.
+    not for any type of dummy.
+
+    Runs the test with the given plot backend and then restores the
+    original value.
+
+    Note that this does not reload the ui layers, which will
+    retain a reference to the original backend throughout.
+    """
+
+    with TemporaryPlottingBackend(request.param):
+        yield
+        if request.param == 'pylab':
+            from matplotlib import pyplot as plt
+            plt.close(fig="all")
 
 
 @pytest.fixture(autouse=True, scope="session")
 def cleanup_pylab_backend():
-    """Ensure that the pylab backend has closed down all windows.
+     """Ensure that the pylab backend has closed down all windows.
 
-    This is related to https://github.com/The-Compiler/pytest-xvfb/issues/11
-    and the idea is to ensure that all matplotlib windows are closed at the
-    end of the tests.
-    """
+     This is related to https://github.com/The-Compiler/pytest-xvfb/issues/11
+     and the idea is to ensure that all matplotlib windows are closed at the
+     end of the tests.
+     """
 
-    yield
+     yield
 
-    # Technically the system could have matplotlib installed but not
-    # selected. However, this is not easily checked, so just check
-    # if we can install matplotlib and, if so, close down any windows.
-    #
-    try:
-        from matplotlib import pyplot as plt
-    except ImportError:
-        return
+     # Technically the system could have matplotlib installed but not
+     # selected. However, this is not easily checked, so just check
+     # if we can install matplotlib and, if so, close down any windows.
+     #
+     try:
+         from matplotlib import pyplot as plt
+     except ImportError:
+         return
 
-    plt.close(fig="all")
+     plt.close(fig="all")
 
 
 @pytest.fixture(autouse=True, scope="session")

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2017, 2020, 2021, 2023
+#  Copyright (C) 2007, 2017, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -257,18 +257,18 @@ def _make_set_limit(name):
     return _set_limit
 
 
-def _make_unop(op, opstr):
+def _make_unop(op, opstr, **kwargs):
     def func(self):
-        return UnaryOpParameter(self, op, opstr)
+        return UnaryOpParameter(self, op, opstr, **kwargs)
     return func
 
 
-def _make_binop(op, opstr):
+def _make_binop(op, opstr, **kwargs):
     def func(self, rhs):
-        return BinaryOpParameter(self, rhs, op, opstr)
+        return BinaryOpParameter(self, rhs, op, opstr, **kwargs)
 
     def rfunc(self, lhs):
-        return BinaryOpParameter(lhs, self, op, opstr)
+        return BinaryOpParameter(lhs, self, op, opstr, **kwargs)
 
     return (func, rfunc)
 
@@ -367,7 +367,7 @@ class Parameter(NoNewAttributesAfterInit):
     val = property(_get_val, _set_val,
                    doc='The current value of the parameter.\n\n' +
                    'If the parameter is a link then it is possible that accessing\n' +
-                   'the value will raise a ParamaterErr in cases where the link\n' +
+                   'the value will raise a ParameterErr in cases where the link\n' +
                    'expression falls outside the soft limits of the parameter.\n\n' +
                    'See Also\n' +
                    '--------\n' +
@@ -631,7 +631,7 @@ class Parameter(NoNewAttributesAfterInit):
         return html_parameter(self)
 
     # Unary operations
-    __neg__ = _make_unop(numpy.negative, '-')
+    __neg__ = _make_unop(numpy.negative, '-', strformat='-{arg}')
     __abs__ = _make_unop(numpy.absolute, 'abs')
 
     # Binary operations
@@ -643,6 +643,26 @@ class Parameter(NoNewAttributesAfterInit):
     __truediv__, __rtruediv__ = _make_binop(numpy.true_divide, '/')
     __mod__, __rmod__ = _make_binop(numpy.remainder, '%')
     __pow__, __rpow__ = _make_binop(numpy.power, '**')
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        if not method == '__call__':
+            return NotImplemented
+        if hasattr(numpy, ufunc.__name__):
+            name = f"numpy.{ufunc.__name__}"
+        else:
+            # Unfortunately, there is no ufunc.__module__ we could use
+            # This could be a ufunc from e.g. scipy or generated from an
+            # arbitrary Python function with numpy.frompyfunc.
+            # In the latter case, the name will be something like
+            # "func (vectorized)", which looks confusing in out string
+            # representation, so we simplify it.
+            name = ufunc.__name__.replace(' (vectorized)', '')
+        if ufunc.nin == 1:
+            return UnaryOpParameter(inputs[0], ufunc, name)
+        if ufunc.nin == 2:
+            return BinaryOpParameter(inputs[0], inputs[1], ufunc, name,
+                                     strformat='{opstr}({lhs}, {rhs})')
+        return NotImplemented
 
     def freeze(self):
         """Set the `frozen` attribute for the parameter.
@@ -815,17 +835,22 @@ class UnaryOpParameter(CompositeParameter):
         The ufunc to apply to the parameter value.
     opstr : str
         The symbol used to represent the operator.
+    strformat : str
+        Format string for printing this operation. Elements
+        that can be used are `arg` and `opstr`, e.g.
+        `strformat='{opstr}({arg})'`.
 
     See Also
     --------
     BinaryOpParameter
     """
 
-    def __init__(self, arg, op, opstr):
+    def __init__(self, arg, op, opstr, strformat='{opstr}({arg})'):
         self.arg = arg
         self.op = op
         CompositeParameter.__init__(self,
-                                    '%s(%s)' % (opstr, self.arg.fullname),
+                                    strformat.format(opstr=opstr,
+                                                     arg=self.arg.fullname),
                                     (self.arg,))
 
     def eval(self):
@@ -845,6 +870,10 @@ class BinaryOpParameter(CompositeParameter):
         The ufunc to apply to the two parameter values.
     opstr : str
         The symbol used to represent the operator.
+    strformat : str
+        Format string for printing this operation. Elements
+        that can be used are `lhs`, `rhs`, and `opstr`, e.g.
+        `strformat='{opstr}({lhs}, {rhs})'`.
 
     See Also
     --------
@@ -857,13 +886,16 @@ class BinaryOpParameter(CompositeParameter):
             return obj
         return ConstantParameter(obj)
 
-    def __init__(self, lhs, rhs, op, opstr):
+    def __init__(self, lhs, rhs, op, opstr,
+                 strformat='({lhs} {opstr} {rhs})'):
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
-        CompositeParameter.__init__(self, '(%s %s %s)' %
-                                    (self.lhs.fullname, opstr,
-                                     self.rhs.fullname), (self.lhs, self.rhs))
+        CompositeParameter.__init__(self,
+                                    strformat.format(lhs=self.lhs.fullname,
+                                                     rhs=self.rhs.fullname,
+                                                     opstr=opstr),
+                                    (self.lhs, self.rhs))
 
     def eval(self):
         return self.op(self.lhs.val, self.rhs.val)

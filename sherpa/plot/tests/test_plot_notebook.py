@@ -1,6 +1,6 @@
 #
-# Copyright (C) 2020, 2021
-# Smithsonian Astrophysical Observatory
+#  Copyright (C) 2020, 2021, 2022, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,7 +21,7 @@
 """Very-basic tests of the HTML representation of objects.
 
 The testing depends on the backend, but for now this is all
-kept with each test (i.e. the checks runin a test depend
+kept with each test (i.e. the checks running for a test depend
 on the backend).
 
 """
@@ -34,16 +34,21 @@ from sherpa.fit import Fit
 from sherpa.models.basic import Const1D, Gauss2D, Polynom1D
 from sherpa.stats import Chi2
 
-
-def plot_backend_is(name):
-    """Check we have the specified plot backend"""
-    return plot.backend.name == name
+# This not the most elegant solution, but it makes sense to
+# have an independent check here and not rely on what is
+# done in the sherpa.plot.__init__ module, so that the tests
+# stay independent of that particular implementation.
+try:
+    from sherpa.plot.pylab_backend import PylabBackend
+    HAS_PYLAB = True
+except ModuleNotFoundError:
+    HAS_PYLAB = False
 
 
 def check_empty(r, summary, nsummary=0):
     """Is this an 'empty' response?"""
 
-    if plot_backend_is("pylab"):
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert r is None
         return
 
@@ -56,7 +61,7 @@ def check_full(r, summary, label, title, nsummary=0):
 
     assert r is not None
 
-    if plot_backend_is("pylab"):
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert f"<summary>{summary}</summary>" in r
         assert "<svg " in r
         return
@@ -66,7 +71,7 @@ def check_full(r, summary, label, title, nsummary=0):
     assert f'<div class="dataval">{title}</div>' in r
 
 
-def test_histogram(override_plot_backend):
+def test_histogram(all_plot_backends):
     p = plot.HistogramPlot()
     r = p._repr_html_()
     check_empty(r, 'HistogramPlot', nsummary=6)
@@ -82,7 +87,7 @@ def test_histogram(override_plot_backend):
                'Title String', nsummary=6)
 
 
-def test_pdfplot(override_plot_backend):
+def test_pdfplot(all_plot_backends):
     p = plot.PDFPlot()
     r = p._repr_html_()
     check_empty(r, 'PDFPlot', nsummary=7)
@@ -94,7 +99,7 @@ def test_pdfplot(override_plot_backend):
                nsummary=7)
 
 
-def test_cdfplot(override_plot_backend):
+def test_cdfplot(all_plot_backends):
     p = plot.CDFPlot()
     r = p._repr_html_()
     check_empty(r, 'CDFPlot', nsummary=9)
@@ -106,7 +111,7 @@ def test_cdfplot(override_plot_backend):
     check_full(r, 'CDFPlot', 'p(<=x)', 'CDF: x', nsummary=9)
 
 
-def test_lrhist(override_plot_backend):
+def test_lrhist(all_plot_backends):
     p = plot.LRHistogram()
     r = p._repr_html_()
     check_empty(r, 'LRHistogram', nsummary=8)
@@ -119,7 +124,7 @@ def test_lrhist(override_plot_backend):
                'Likelihood Ratio Distribution', nsummary=8)
 
 
-def test_data(override_plot_backend):
+def test_data(all_plot_backends):
     p = plot.DataPlot()
     r = p._repr_html_()
     check_full(r, 'DataPlot', 'None', 'None', nsummary=7)  # NOT empty
@@ -133,7 +138,7 @@ def test_data(override_plot_backend):
     check_full(r, 'DataPlot', 'y', 'n n', nsummary=7)
 
 
-def test_datacontour(override_plot_backend):
+def test_datacontour(plot_backends):
     p = plot.DataContour()
     r = p._repr_html_()
     check_empty(r, 'DataContour', nsummary=7)
@@ -148,10 +153,12 @@ def test_datacontour(override_plot_backend):
     check_full(r, 'DataContour', 'x1', 'n n', nsummary=7)
 
 
-def test_model(override_plot_backend):
+def test_model(all_plot_backends):
     p = plot.ModelPlot()
     r = p._repr_html_()
-    check_empty(r, 'ModelPlot', nsummary=7)
+
+    if plot.backend.name != 'PylabErrorArea':
+        check_empty(r, 'ModelPlot', nsummary=7)
 
     x = np.arange(5, 8, 0.5)
     y = np.ones(x.size)
@@ -164,7 +171,7 @@ def test_model(override_plot_backend):
     check_full(r, 'ModelPlot', 'y', 'Model', nsummary=7)
 
 
-def test_modelcontour(override_plot_backend):
+def test_modelcontour(all_plot_backends):
     p = plot.ModelContour()
     r = p._repr_html_()
     check_empty(r, 'ModelContour', nsummary=7)
@@ -187,7 +194,7 @@ def test_modelcontour(override_plot_backend):
     check_full(r, 'ModelContour', 'x1', 'Model', nsummary=7)
 
 
-def test_fit(override_plot_backend):
+def test_fit(all_plot_backends):
     p = plot.FitPlot()
     r = p._repr_html_()
     assert r is None  # note: always None
@@ -210,7 +217,7 @@ def test_fit(override_plot_backend):
     # different to previous checks
     assert r is not None
 
-    if plot_backend_is("pylab"):
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert "<summary>FitPlot</summary>" in r
         assert "<svg " in r
         return
@@ -221,7 +228,7 @@ def test_fit(override_plot_backend):
     assert '<div class="dataval">Model</div>' in r
 
 
-def test_fitcontour(override_plot_backend):
+def test_fitcontour(all_plot_backends):
     p = plot.FitContour()
     r = p._repr_html_()
     assert r is None  # note: always None
@@ -249,7 +256,7 @@ def test_fitcontour(override_plot_backend):
     # different to previous checks
     assert r is not None
 
-    if plot_backend_is("pylab"):
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert "<summary>FitContour</summary>" in r
         assert "<svg " in r
         return
@@ -260,11 +267,13 @@ def test_fitcontour(override_plot_backend):
     assert '<div class="dataval">Model</div>' in r
 
 
-def test_intproj(old_numpy_printing, override_plot_backend):
+def test_intproj(old_numpy_printing, all_plot_backends):
     p = plot.IntervalProjection()
     r = p._repr_html_()
 
-    check_empty(r, 'IntervalProjection', nsummary=8)
+    # TODO: Special-cased because it's not empty
+    if plot.backend.name != 'PylabErrorArea':
+        check_empty(r, 'IntervalProjection', nsummary=8)
 
     x = np.arange(5, 8, 0.5)
     y = np.asarray([2, 3, 4, 5, 4, 3])
@@ -283,7 +292,7 @@ def test_intproj(old_numpy_printing, override_plot_backend):
     r = p._repr_html_()
     assert r is not None
 
-    if plot_backend_is("pylab"):
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert "<summary>IntervalProjection</summary>" in r
         assert "<svg " in r
         return
@@ -294,7 +303,7 @@ def test_intproj(old_numpy_printing, override_plot_backend):
     assert '<div class="dataname">nloop</div><div class="dataval">10</div>' in r
 
 
-def test_regproj(old_numpy_printing, override_plot_backend):
+def test_regproj(old_numpy_printing, all_plot_backends):
     p = plot.RegionProjection()
     r = p._repr_html_()
 
@@ -318,7 +327,7 @@ def test_regproj(old_numpy_printing, override_plot_backend):
     r = p._repr_html_()
     assert r is not None
 
-    if plot_backend_is("pylab"):
+    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
         assert "<summary>RegionProjection</summary>" in r
         assert "<svg " in r
         return

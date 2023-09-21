@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2019, 2020, 2022
+#  Copyright (C) 2010, 2016, 2017, 2019, 2020, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -93,7 +93,7 @@ class ArgumentTypeErr(TypeError, SherpaErr):
     dict = {'badarg': "'%s' must be %s",
             'intstr': 'identifiers must be integers or strings',
             'plotargs': 'not enough arguments to plot()',
-
+            'tempplotbackend': "'%s' is not a backend class, instance, or string name",
             }
 
     def __init__(self, key, *args):
@@ -109,7 +109,7 @@ class IdentifierErr(SherpaErr):
             'badidmodel': "'%s' is a model type, not allowed as a model name",
             'badidnative': "'%s' is reserved for the native Python function",
             'nomodelcmpt': "model component '%s' does not exist",
-
+            'noplotbackend': "'%s' is not a valid plotting backend, choose from %s",
             }
 
     def __init__(self, key, *args):

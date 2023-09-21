@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,7 +20,7 @@
 
 import operator
 
-from numpy import arange
+import numpy as np
 
 import pytest
 
@@ -121,7 +121,7 @@ def test_frozen():
     assert p.frozen is False
 
     with pytest.raises(ValueError):
-        p.frozen = arange(10)
+        p.frozen = np.arange(10)
 
     afp = setUp_afp()
     p.link = afp
@@ -170,23 +170,71 @@ def setUp_composite():
     return p, p2
 
 
-@pytest.mark.parametrize("op", (abs, operator.neg))
+@pytest.mark.parametrize("op", [abs, operator.neg,
+                                # Test a selection of numpy ufuncs
+                                np.abs, np.sin, np.expm1
+                                ])
 def test_unop(op):
     porig = setUp_p()
     p = op(porig)
     assert isinstance(p, UnaryOpParameter)
     assert p.val == op(p.val)
 
+def test_unop_string():
+    '''Check that the string output is sensible.
+
+    This implicitly also checks the logic to define a format string for
+    printing the model representation.
+    '''
+    porig = setUp_p()
+    assert repr(-porig) == "<UnaryOpParameter '-model.name'>"
+    assert repr(np.cos(porig)) == "<UnaryOpParameter 'numpy.cos(model.name)'>"
+
+
+def custom_func(a, b):
+   return a + b
+
+custom_ufunc = np.frompyfunc(custom_func, nin=2, nout=1)
 
 @pytest.mark.parametrize("op", [operator.add, operator.sub, operator.mul,
                                 operator.floordiv, operator.truediv, operator.mod,
-                                operator.pow])
+                                operator.pow,
+                                # Test a random selection of numpy ufuncs
+                                np.add, np.divide, np.true_divide,
+                                np.heaviside, np.greater, np.arctan2,
+                                # and out own, custom made ufunc
+                                custom_ufunc,
+                                ])
 def test_binop(op):
     p, p2 = setUp_composite()
     for comb in (op(p, p2.val), op(p.val, p2),
                  op(p, p2)):
         assert isinstance(comb, BinaryOpParameter)
         assert comb.val == op(p.val, p2.val)
+
+def test_binop_string():
+    '''Check that the string output is sensible.
+
+    This implicitly also checks the logic to define the format string for
+    printing the model representation.
+    '''
+    p, p2 = setUp_composite()
+    comp = p + p2
+    assert repr(comp) == "<BinaryOpParameter '(model.p + model.p2)'>"
+    comp = 1 + p * 2.7**p2
+    assert repr(comp) == "<BinaryOpParameter '(1 + (model.p * (2.7 ** model.p2)))'>"
+    comp = np.logaddexp2(p, p2)
+    assert repr(comp) == "<BinaryOpParameter 'numpy.logaddexp2(model.p, model.p2)'>"
+
+def test_binop_string_with_custom_ufunc():
+    '''Repeat the previous test, but with a custom ufunc.'''
+    def func(a, b):
+        return a + b
+
+    uf = np.frompyfunc(func, nin=2, nout=1)
+    p, p2 = setUp_composite()
+    comp = uf(p, p2)
+    assert repr(comp) == "<BinaryOpParameter 'func(model.p, model.p2)'>"
 
 
 def test_iter_composite():
@@ -341,7 +389,7 @@ def test_link_parameter_evaluation():
     mdl = PowLaw1D()
     lmdl = Const1D()
 
-    grid = arange(1, 5)
+    grid = np.arange(1, 5)
 
     mdl.gamma = lmdl.c0
     lmdl.c0 = 2

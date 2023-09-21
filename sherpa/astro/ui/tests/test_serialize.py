@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1791,3 +1791,33 @@ def test_restore_xspec_hard_limit_max():
     assert not mdl.PhoIndex.frozen
 
     assert mdl.norm.max == pytest.approx(100)
+
+
+def test_restore_linker_parameter_with_function(clean_astro_ui):
+    """Check we can save and restore a numpy ufunc"""
+
+    m1 = ui.create_model_component("gauss1d", "m1")
+    m2 = ui.create_model_component("scale1d", "m2")
+
+    delta = numpy.sqrt((m2.c0 - 23)**2)
+    m1.fwhm = 2 * numpy.exp(delta / 14)
+
+    m2.c0 = 30
+
+    expected = 2 * numpy.exp(0.5)
+
+    # safety check
+    assert m1.fwhm.link is not None
+    assert m1.fwhm.val == pytest.approx(expected)
+
+    restore()
+
+    got = ui.list_model_components()
+    assert len(got) == 2
+    assert "m1" in got
+    assert "m2" in got
+
+    mm1 = ui.get_model_component("m1")
+    assert mm1.name == "gauss1d.m1"
+    assert mm1.fwhm.link is not None
+    assert mm1.fwhm.val == pytest.approx(expected)

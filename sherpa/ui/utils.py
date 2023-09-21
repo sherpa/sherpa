@@ -40,6 +40,7 @@ from sherpa.models.basic import TableModel
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
+from sherpa.plot import set_backend
 from sherpa.utils import NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -893,6 +894,13 @@ class Session(NoNewAttributesAfterInit):
         self._regproj = sherpa.plot.RegionProjection()
         self._regunc = sherpa.plot.RegionUncertainty()
 
+        self._set_plot_types()
+        self._set_contour_types()
+        self._set_image_types()
+
+    def _set_plot_types(self):
+        """Set up the plot types."""
+
         # The keys of _plot_types are used to define:
         # a) the mapping from get_<key>_plot to the plot objects
         #    (that is, there must be a matching get_<key>_plot method)
@@ -941,6 +949,9 @@ class Session(NoNewAttributesAfterInit):
             "compmodel": "model_component"
         }
 
+    def _set_contour_types(self):
+        """Set up the contour types."""
+
         # This is used by the get_<key>_contour calls to access the
         # relevant contour class. The keys define the labels that can be
         # used in calls to contour(), and are also used to determine
@@ -956,6 +967,9 @@ class Session(NoNewAttributesAfterInit):
             "psf": sherpa.plot.PSFContour(),
             "kernel": sherpa.plot.PSFKernelContour()
         }
+
+    def _set_image_types(self):
+        """Set up the image types."""
 
         # This is used by the get_<key>_image calls to access the
         # relevant image class. The keys are not included in any check
@@ -1029,6 +1043,25 @@ class Session(NoNewAttributesAfterInit):
             raise ArgumentTypeErr("badarg", "rng", "a Generator or None")
 
         self._rng = rng
+
+    def set_plot_backend(self, backend):
+        """Change the plot backend.
+
+        This will reset any plot structures, such as that returned by
+        get_data_plot.
+
+        Parameters
+        ----------
+        backend : str
+            The name of the plot backend.
+
+        """
+
+        set_backend(backend)
+
+        # Re-create all the plot objects
+        self._set_plot_types()
+        self._set_contour_types()
 
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.
@@ -11721,13 +11754,6 @@ class Session(NoNewAttributesAfterInit):
         ``markersize``
            What size is the symbol drawn. The default is ``None``.
 
-        ``ratioline``
-           Should a horizontal line be drawn at y=1?  The default is
-           ``False``.
-
-        ``xaxis``
-           The default is ``False``
-
         ``xerrorbars``
            Should error bars be drawn for the X axis. The default is
            ``False``.
@@ -13139,16 +13165,9 @@ class Session(NoNewAttributesAfterInit):
         sp.reset(nrows, ncols)
         plotmeth = getattr(sp, f"add{plotmeth}")
 
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa.plot.backend:
             while plots:
                 plotmeth(plots.pop(0), **kwargs)
-
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     def _plot(self, plotobj, **kwargs):
         """Display a plot object
@@ -13166,14 +13185,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa.plot.backend:
             plotobj.plot(**kwargs)
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     def _set_plot_item(self, plottype, item, value):
         """Change a plot setting.
@@ -14481,8 +14494,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._jointplot.reset()
 
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa.plot.backend:
 
             # Note: the user preferences are set to both plots
             #
@@ -14509,11 +14521,6 @@ class Session(NoNewAttributesAfterInit):
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
             plot2.plot_prefs['xlog'] = oldval
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True, **kwargs):
@@ -15095,14 +15102,8 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa.plot.backend:
             plotobj.contour(overcontour=overcontour, **kwargs)
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
 
     # DOC-TODO: how to describe optional plot types
     # DOC-TODO: how to list information/examples about the backends?
@@ -15572,17 +15573,12 @@ class Session(NoNewAttributesAfterInit):
         plot2obj = self.get_resid_contour(id, recalc=not replot)
 
         self._splitplot.reset()
-        try:
-            sherpa.plot.backend.begin()
+        with sherpa.plot.backend:
 
             # Note: the user settings are applied to both contours
             self._splitplot.addcontour(plot1obj, overcontour=overcontour, **kwargs)
             self._splitplot.addcontour(plot2obj, overcontour=overcontour, **kwargs)
-        except:
-            sherpa.plot.backend.exceptions()
-            raise
-        else:
-            sherpa.plot.backend.end()
+
 
     ###########################################################################
     # Projection and uncertainty plots

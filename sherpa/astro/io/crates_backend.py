@@ -23,11 +23,14 @@ import os.path
 
 import numpy
 
+from pycrates import CrateDataset, CrateKey, CrateData, TABLECrate, \
+    IMAGECrate, WCSTANTransform, RMFCrateDataset, PHACrateDataset
 import pycrates
+import cxcdm  # work around missing TLMIN support in crates CIAO 4.15
 
 from sherpa.astro.utils import resp_init
 from sherpa.utils import is_binary_file
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
 
@@ -47,28 +50,34 @@ except:
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
-           'set_table_data', 'set_image_data', 'set_pha_data')
+           'set_table_data', 'set_image_data', 'set_pha_data',
+           'set_arf_data', 'set_rmf_data')
 
 
 string_types = (str, )
 
 
-def open_crate_dataset(filename, crateType=pycrates.CrateDataset, mode='r'):
+def open_crate_dataset(filename, crateType=CrateDataset, mode='r'):
     """
     checked for new crates
     """
-    dataset = crateType(filename, mode=mode)
-    return dataset
+    return crateType(filename, mode=mode)
 
 
-def open_crate(filename, crateType=pycrates.CrateDataset, mode='r'):
+def open_crate(filename, crateType=CrateDataset, mode='r'):
     """
     checked for new crates
     """
     dataset = open_crate_dataset(filename, crateType, mode)
     current = dataset.get_current_crate()
-    data = dataset.get_crate(current)
-    return data
+    try:
+        return dataset.get_crate(current)
+    except Exception as exc:
+        # crates can fail with unsupported data types - e.g.  see
+        # #1898 but also long-long columns for CIAO 4.15.
+        #
+        emsg = f"crates is unable to read '{filename}': {str(exc)}"
+        raise IOErr("openfailed", emsg) from exc
 
 
 def get_filename_from_dmsyntax(filename, blockname=None):
@@ -106,41 +115,51 @@ def get_filename_from_dmsyntax(filename, blockname=None):
     return arg
 
 
-def _try_hdr_key(crate, name, dtype=str):
-    """
-    checked for new crates
-    """
-    name = name.upper().strip()
-    if not crate.key_exists(name):
-        return None
-
-    return _try_key(crate, name, dtype)
-
-
 def _try_key(crate, name, dtype=str):
+    """Access the key from the crate returning None if it does not exist.
+
+    There's no way to differentiate between a key that does not exist
+    and a key that is set but has been set to a value of None (which
+    is unlikely as the ASCII and FITS serializations do not support
+    this).
+
+    Parameters
+    ----------
+    crate : TABLECrate or IMAGECrate
+    name : str
+       The name is case insensitive.
+    dtype
+
+    Returns
+    -------
+    value
+       The key value or None.
+
     """
-    checked for new crates
-    """
 
-    if not crate.key_exists(name):
-        return None
-
-    key = pycrates.get_key(crate, name)
-
+    # The get_key method will raise an IndexError if sent an integer
+    # outside the valid range, but here name is a string, where it
+    # returns None. This is inconsistent behaviour in crates circa
+    # CIAO 4.15.
+    #
+    key = crate.get_key(name)
     if key is None:
         return None
 
-    key = key.value
+    value = key.value
 
-    if str(key).find('none') != -1:
+    # Note that this check seems a bit too permissive, since a value
+    # of "This key is not set to none" will be matched.
+    #
+    if str(value).find('none') != -1:
         return None
 
     # byte strings are to be decoded to strings
     #
-    if dtype == str and isinstance(key, bytes):
-        return dtype(key, "utf-8")
+    if dtype == str and isinstance(value, bytes):
+        return dtype(value, "utf-8")
 
-    return dtype(key)
+    return dtype(value)
 
 
 def _get_meta_data(crate):
@@ -148,10 +167,10 @@ def _get_meta_data(crate):
     checked for new crates
     """
     meta = {}
-    names = pycrates.get_key_names(crate)
-    if names is not None and numpy.iterable(names):
+    names = crate.get_keynames()
+    if names is not None:
         for name in names:
-            val = pycrates.get_keyval(crate, name)
+            val = crate.get_key(name).value
 
             # empty numpy strings are not recognized by load pickle!
             if type(val) is numpy.str_ and val == '':
@@ -166,83 +185,71 @@ def _set_key(crate, name, val, fix_type=False, dtype=str):
     """
     checked for new crates
     """
-    key = pycrates.CrateKey()
+    key = CrateKey()
     key.name = str(name).strip().upper()
 
     if fix_type:
-        val = dtype(val)
+        key.value = dtype(val)
+    else:
+        key.value = val
 
-    key.value = val
-    pycrates.add_key(crate, key)
+    crate.add_key(key)
 
 
 def _set_column(crate, name, val):
     """
     checked for new crates
     """
-    col = pycrates.CrateData()
+    col = CrateData()
     col.name = name.upper()
     col.values = numpy.array(val)
-    pycrates.add_col(crate, col)
+    crate.add_column(col)
 
 
-def _set_pha_column(crate, col, name, val):
-    col.name = name.upper()
+def _require_key(crate, name, dtype=str):
+    """Access the key from the crate, erroring out if it does not exist.
 
-    if col.load(numpy.asarray(val), True) != pycrates.dmSUCCESS:
-        raise IOErr('setcolfailed', col.name, col.get_status_message())
+    There's no way to differentiate between a key that does not exist
+    and a key that is set but has been set to a value of None (which
+    is unlikely as the ASCII and FITS serializations do not support
+    this).
 
-    setattr(crate, name, col)
+    Parameters
+    ----------
+    crate : TABLECrate or IMAGECrate
+    name : str
+       The name is case insensitive.
+    dtype
 
+    Returns
+    -------
+    value
+       The key value
 
-def _require_key(crate, name, key, dtype=str):
+    Raises
+    ------
+    IOErr
+       The key does not exist.
+
     """
-    checked for new crates
-    """
-    key = _try_key(crate, key, dtype)
+    key = _try_key(crate, name, dtype)
     if key is None:
         raise IOErr('nokeyword', crate.get_filename(), name)
     return key
 
 
-def _require_hdr_key(crate, name, dtype=str):
+def _try_col(crate, colname, make_copy=False, fix_type=False,
+             dtype=SherpaFloat):
     """
     checked for new crates
     """
-    key = _try_hdr_key(crate, name, dtype)
-    if key is None:
-        raise IOErr('nokeyword', crate.get_filename(), name)
-    return key
 
-
-def _try_unit(col, dtype=str):
-    """
-    checked for new crates
-    """
-    if col is None:
+    try:
+        col = crate.get_column(colname)
+    except ValueError:
         return None
 
-    unit = col.unit
-
-    if str(unit) == '':
-        return None
-
-    return str(unit)
-
-
-def _try_col(crate, colname, make_copy=False, fix_type=False, dtype=SherpaFloat):
-    """
-    checked for new crates
-    """
-    if not crate.column_exists(colname):
-        return None
-
-    col = crate.get_column(colname)
-
-    if col is None:
-        return None
-
-    if hasattr(col, 'is_varlen') and col.is_varlen():
+    if col.is_varlen():
         values = col.get_fixed_length_array()
     else:
         values = col.values
@@ -266,12 +273,11 @@ def _require_tbl_col(crate, colname, cnames, make_copy=False,
     """
     checked for new crates
     """
-    name = str(colname).strip()
-    if not crate.column_exists(name):
-        raise IOErr('reqcol', name, cnames)
 
-    # data = pycrates.get_colvals(crate, name)
-    col = crate.get_column(name)
+    try:
+        col = crate.get_column(colname)
+    except ValueError as ve:
+        raise IOErr('reqcol', colname, cnames) from ve
 
     if make_copy:
         # Make a copy if a filename passed in
@@ -314,8 +320,7 @@ def _try_col_list(crate, colname, num, make_copy=False, fix_type=False,
         return numpy.array([None] * num)
 
     col = crate.get_column(colname)
-
-    if hasattr(col, 'is_varlen') and col.is_varlen():
+    if col.is_varlen():
         values = col.get_fixed_length_array()
     else:
         values = col.values
@@ -338,12 +343,17 @@ def _require_col_list(crate, colname, num, make_copy=False, fix_type=False,
     """
     check for new crates
     """
+
+    # _try_col_list returns [None] * num if the column doesn't exist
+    # which is awkward to check for so use an explicit check.
+    #
     if not crate.column_exists(colname):
         raise IOErr('badcol', colname)
     return _try_col_list(crate, colname, num, make_copy, fix_type, dtype)
 
 
-def _require_col(crate, colname, make_copy=False, fix_type=False, dtype=SherpaFloat):
+def _require_col(crate, colname, make_copy=False, fix_type=False,
+                 dtype=SherpaFloat):
     """
     checked for new crates
     """
@@ -386,12 +396,33 @@ def _require_image(crate, make_copy=False, fix_type=False, dtype=SherpaFloat):
 
 
 def _get_crate_by_blockname(dataset, blkname):
-    ncrates = dataset.get_ncrates()
-    for ii in range(1, ncrates + 1):
-        crate = dataset.get_crate(ii)
-        if crate.name.strip().lower() == blkname.strip().lower():
-            return crate
-    return None
+    """Select the given block name.
+
+    Parameters
+    ----------
+    dataset : pycrates.CrateDataset
+    blkname : str
+
+    Returns
+    -------
+    mblock : TABLECrate, IMAGECrate, or None
+    """
+
+    # Access used to only be by number but it can now
+    # also be by name, but we need to hide the error
+    # for unknown blocks.
+    #
+    try:
+        return dataset.get_crate(blkname)
+    except IndexError:
+        return None
+    except Exception as exc:
+        # crates can fail with unsupported data types - e.g.  see
+        # #1898 but also long-long columns for CIAO 4.15.
+        #
+        filename = dataset.get_filename()
+        emsg = f"crates is unable to read '{filename}': {str(exc)}"
+        raise IOErr("openfailed", emsg) from exc
 
 
 # Read Functions #
@@ -400,15 +431,15 @@ def read_table_blocks(arg, make_copy=False):
 
     filename = ''
     dataset = None
-    if isinstance(arg, pycrates.TABLECrate):
+    if isinstance(arg, TABLECrate):
         filename = arg.get_filename()
         dataset = arg.get_dataset()
-    elif isinstance(arg, pycrates.CrateDataset):
+    elif isinstance(arg, CrateDataset):
         filename = arg.get_filename()
         dataset = arg
     elif isinstance(arg, string_types):
         filename = arg
-        dataset = pycrates.CrateDataset(arg)
+        dataset = CrateDataset(arg)
     else:
         raise IOErr('badfile', arg, "CrateDataset obj")
 
@@ -423,7 +454,7 @@ def read_table_blocks(arg, make_copy=False):
         hdr[ii] = {}
         names = crate.get_keynames()
         for name in names:
-            hdr[ii][name] = _try_hdr_key(crate, name)
+            hdr[ii][name] = _try_key(crate, name)
 
         cols[ii] = {}
         # skip over primary
@@ -450,7 +481,7 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
 
         # Make a copy of the data, since we don't know that pycrates will
         # do something sensible wrt reference counting
-    elif isinstance(arg, pycrates.TABLECrate):
+    elif isinstance(arg, TABLECrate):
         tbl = arg
     else:
         raise IOErr('badfile', arg, 'TABLECrate obj')
@@ -466,11 +497,10 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
 
     hdr = {}
     if hdrkeys is None:
-        # hdrkeys = tbl.get_keynames()
-        hdrkeys = pycrates.get_key_names(tbl)
+        hdrkeys = tbl.get_keynames()
 
     for key in hdrkeys:
-        hdr[key] = _require_hdr_key(tbl, key)
+        hdr[key] = _require_key(tbl, key)
 
     return hdr
 
@@ -491,7 +521,7 @@ def get_column_data(*args):
 
     cols = []
     for arg in args:
-        if isinstance(arg, pycrates.CrateData):
+        if isinstance(arg, CrateData):
             # vals = arg.get_values()
             vals = arg.values
 
@@ -531,14 +561,14 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=True, fix_type=True,
 
         arg = get_filename_from_dmsyntax(arg)
         tbl = open_crate(arg)
-        if not isinstance(tbl, pycrates.TABLECrate):
+        if not isinstance(tbl, TABLECrate):
             raise IOErr('badfile', arg, 'TABLECrate obj')
 
         filename = tbl.get_filename()
 
         # Make a copy of the data, since we don't know that pycrates will
         # do something sensible wrt reference counting
-    elif isinstance(arg, pycrates.TABLECrate):
+    elif isinstance(arg, TABLECrate):
         tbl = arg
         filename = arg.get_filename()
         make_copy = False
@@ -581,7 +611,7 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=True, fix_type=True,
     hdr = {}
     if hdrkeys is not None:
         for key in hdrkeys:
-            hdr[key] = _require_hdr_key(tbl, key)
+            hdr[key] = _require_key(tbl, key)
 
     return colkeys, cols, filename, hdr
 
@@ -596,12 +626,12 @@ def get_image_data(arg, make_copy=True, fix_type=True):
     if type(arg) == str:
         img = open_crate(arg)
 
-        if not isinstance(img, pycrates.IMAGECrate):
+        if not isinstance(img, IMAGECrate):
             raise IOErr('badfile', arg, "IMAGECrate obj")
 
         filename = arg
 
-    elif isinstance(arg, pycrates.IMAGECrate):
+    elif isinstance(arg, IMAGECrate):
         img = arg
         filename = arg.get_filename()
         make_copy = False
@@ -627,7 +657,7 @@ def get_image_data(arg, make_copy=True, fix_type=True):
         wcs = img.get_transform('EQPOS')
 
     if sky is not None and transformstatus:
-        linear = pycrates.WCSTANTransform()
+        linear = WCSTANTransform()
         linear.set_name("LINEAR")
         linear.set_transform_matrix(sky.get_transform_matrix())
         cdelt = numpy.array(linear.get_parameter_value('CDELT'))
@@ -646,14 +676,9 @@ def get_image_data(arg, make_copy=True, fix_type=True):
                             crota, epoch, equin)
 
     data['header'] = _get_meta_data(img)
-
-    keys = ['MTYPE1', 'MFORM1', 'CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
-            'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
-            'MTYPE2', 'MFORM2', 'CTYPE1', 'CTYPE2', 'CDELT1', 'CDELT2', 'CRPIX1',
-            'CRPIX2', 'CRVAL1', 'CRVAL2', 'CUNIT1', 'CUNIT2', 'EQUINOX']
-#            'WCSTY1P', 'WCSTY2P']
-
-    for key in keys:
+    for key in ['CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
+                'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
+                'EQUINOX']:
         data['header'].pop(key, None)
 
     return data, filename
@@ -668,10 +693,10 @@ def get_arf_data(arg, make_copy=True):
     filename = ''
     if type(arg) == str:
         arf = open_crate(arg)
-        if not isinstance(arf, pycrates.TABLECrate):
+        if not isinstance(arf, TABLECrate):
             raise IOErr('badfile', arg, "ARFCrate obj")
         filename = arg
-    elif isinstance(arg, pycrates.TABLECrate):
+    elif isinstance(arg, TABLECrate):
         arf = arg
         filename = arg.get_filename()
         make_copy = False
@@ -711,13 +736,7 @@ def get_rmf_data(arg, make_copy=True):
     """
     filename = ''
     if type(arg) == str:
-        rmfdataset = open_crate_dataset(
-            arg, pycrates.rmfcratedataset.RMFCrateDataset)
-
-        # if (isinstance(rmfdataset, (pycrates.TABLECrate, pycrates.IMAGECrate)) or
-        #    pycrates.is_pha(rmfdataset) == 1):
-        #    raise IOErr('badfile', arg, "RMFCrateDataset obj")
-
+        rmfdataset = open_crate_dataset(arg, RMFCrateDataset)
         if pycrates.is_rmf(rmfdataset) != 1:
             raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
@@ -777,7 +796,7 @@ def get_rmf_data(arg, make_copy=True):
     if not rmf.column_exists('N_CHAN'):
         raise IOErr('reqcol', 'N_CHAN', filename)
 
-    data['detchans'] = _require_hdr_key(rmf, 'DETCHANS', SherpaInt)
+    data['detchans'] = _require_key(rmf, 'DETCHANS', SherpaInt)
     data['energ_lo'] = _require_col(rmf, 'ENERG_LO', make_copy, fix_type=True)
     data['energ_hi'] = _require_col(rmf, 'ENERG_HI', make_copy, fix_type=True)
     data['n_grp'] = _require_col(
@@ -861,9 +880,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
     """
     filename = ''
     if type(arg) == str:
-        phadataset = open_crate_dataset(
-            arg, pycrates.phacratedataset.PHACrateDataset)
-
+        phadataset = open_crate_dataset(arg, PHACrateDataset)
         if pycrates.is_pha(phadataset) != 1:
             raise IOErr('badfile', arg, "PHACrateDataset obj")
 
@@ -881,13 +898,13 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 
     if pha is None:
         pha = phadataset.get_crate(phadataset.get_current_crate())
-        if (_try_hdr_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
-                _try_hdr_key(pha, 'HDUCLAS2') == 'SPECTRUM'):
+        if (_try_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
+                _try_key(pha, 'HDUCLAS2') == 'SPECTRUM'):
             pass
         else:
             pha = phadataset.get_crate(1)
-            if (_try_hdr_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
-                    _try_hdr_key(pha, 'HDUCLAS2') == 'SPECTRUM'):
+            if (_try_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
+                    _try_key(pha, 'HDUCLAS2') == 'SPECTRUM'):
                 pass
             else:
                 # If background maybe better to go on to next block?
@@ -899,7 +916,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
         # Chandra Level 3 PHA files
         for ii in range(phadataset.get_ncrates()):
             block = phadataset.get_crate(ii + 1)
-            if _try_hdr_key(block, 'HDUCLAS2') == 'BKG':
+            if _try_key(block, 'HDUCLAS2') == 'BKG':
                 pha = block
 
     if pha is None or pha.get_colnames() is None:
@@ -1100,20 +1117,28 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 # Write/Pack Functions #
 #
 
+def check_clobber(filename, clobber):
+    """Error out if the file exists and clobber is not set."""
+
+    if clobber or not os.path.isfile(filename):
+        return
+
+    raise IOErr("filefound", filename)
+
 
 def set_image_data(filename, data, header, ascii=False, clobber=False,
                    packup=False):
 
-    if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr('filefound', filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
-    img = pycrates.IMAGECrate()
+    img = IMAGECrate()
 
     # Write Image Header Keys
-    for key in header.keys():
-        if header[key] is None:
+    for key, value in header.items():
+        if value is None:
             continue
-        _set_key(img, key, header[key])
+        _set_key(img, key, value)
 
     # Write Image WCS Header Keys
     if data['eqpos'] is not None:
@@ -1158,9 +1183,8 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         _set_key(img, 'EQUINOX', equin)
 
     # Write Image pixel values
-    pix_col = pycrates.CrateData()
+    pix_col = CrateData()
     pix_col.values = data['pixels']
-    # pycrates.add_piximg(img, pix_col)
     img.add_image(pix_col)
 
     if packup:
@@ -1170,21 +1194,25 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         # filename += "[opt kernel=text/simple]"
         raise IOErr('writenoimg')
 
-    # pycrates.write_file(img, filename)
     img.write(filename, clobber=True)
 
 
 def set_table_data(filename, data, col_names, header=None,
                    ascii=False, clobber=False, packup=False):
 
-    if not packup and not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+    if not packup:
+        check_clobber(filename, clobber)
 
-    tbl = pycrates.TABLECrate()
-
+    tbl = TABLECrate()
+    hdr = {} if header is None else header
     try:
         for name in col_names:
             _set_column(tbl, name, data[name])
+
+        for key, value in hdr.items():
+            if value is None:
+                continue
+            _set_key(tbl, key, value)
 
     finally:
         if packup:
@@ -1193,22 +1221,37 @@ def set_table_data(filename, data, col_names, header=None,
         if ascii and '[' not in filename and ']' not in filename:
             filename += "[opt kernel=text/simple]"
 
-        # pycrates.write_file(tbl, filename)
         tbl.write(filename, clobber=True)
+
+
+def set_arf_data(filename, data, col_names, header=None,
+                 ascii=False, clobber=False, packup=False):
+    """Create an ARF"""
+
+    if header is None:
+        raise ArgumentTypeErr("badarg", "header", "set")
+
+    # Currently we can use the same logic as set_table_data
+    return set_table_data(filename, data, col_names, header=header,
+                          ascii=ascii, clobber=clobber, packup=packup)
 
 
 def set_pha_data(filename, data, col_names, header=None,
                  ascii=False, clobber=False, packup=False):
+    """Create a PHA dataset/file"""
 
-    if not packup and os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+    if header is None:
+        raise ArgumentTypeErr("badarg", "header", "set")
 
-    phadataset = pycrates.phacratedataset.PHACrateDataset()
+    if not packup:
+        check_clobber(filename, clobber)
+
+    phadataset = PHACrateDataset()
 
     # FIXME: Placeholder for pycrates2 bug
     phadataset.set_rw_mode('rw')
 
-    pha = pycrates.TABLECrate()
+    pha = TABLECrate()
     pha.name = "SPECTRUM"
     try:
 
@@ -1233,14 +1276,133 @@ def set_pha_data(filename, data, col_names, header=None,
         if ascii and '[' not in filename and ']' not in filename:
             filename += "[opt kernel=text/simple]"
 
-        # pycrates.write_pha(phadataset, filename)
         phadataset.write(filename, clobber=True)
+
+
+def _update_header(cr, header):
+    """Update the header of the crate.
+
+    Unlike the dict update method, this is left biased, in that
+    it prefers the keys in the existing header (this is so that
+    structural keywords are not over-written by invalid data from
+    a previous FITS file), and to drop elements which are set
+    to None.
+
+    Parameters
+    ----------
+    cr : Crate
+    header : dict[str, Any]
+
+    """
+
+    for key, value in header.items():
+        if cr.key_exists(key):
+            continue
+
+        if value is None:
+            continue
+
+        # Do we need to worry about keys like TTYPE1 which crates
+        # hides from us?
+        _set_key(cr, key, value)
+
+
+def set_rmf_data(filename, blocks, clobber=False):
+    """Save the RMF data to disk.
+
+    Unlike the other save_*_data calls this does not support the ascii
+    or packup arguments. It also relies on the caller to have set up
+    the headers and columns correctly apart for variable-length fields,
+    which are limited to F_CHAN, N_CHAN, and MATRIX.
+
+    """
+
+    check_clobber(filename, clobber)
+
+    # For now assume only two blocks:
+    #    MATRIX
+    #    EBOUNDS
+    #
+    matrix_data, matrix_header = blocks[0]
+    ebounds_data, ebounds_header = blocks[1]
+
+    # Extract the data:
+    #   MATRIX:
+    #     ENERG_LO
+    #     ENERG_HI
+    #     N_GRP
+    #     F_CHAN
+    #     N_CHAN
+    #     MATRIX
+    #
+    #   EBOUNDS:
+    #     CHANNEL
+    #     E_MIN
+    #     E_MAX
+    #
+    # We may need to convert F_CHAN/N_CHAN/MATRIX to Variable-Length
+    # Fields. This is only needed if the ndarray type is object.
+    # Fortunately Crates will convert a n ndarray of objects to a
+    # Variable-Length array, so we do not need to do anything special
+    # here.
+    #
+    def mkcol(name, vals, units=None):
+        col = CrateData()
+        col.name = name
+        col.values = vals
+        col.unit = units
+        return col
+
+    # Does RMFCrateDataset offer us anything above creating a
+    # CrateDataset manually?
+    #
+    ds = RMFCrateDataset()
+    matrix_cr = ds.get_crate("MATRIX")
+    ebounds_cr = ds.get_crate("EBOUNDS")
+
+    matrix_cr.add_column(mkcol("ENERG_LO", matrix_data["ENERG_LO"], units="keV"))
+    matrix_cr.add_column(mkcol("ENERG_HI", matrix_data["ENERG_HI"], units="keV"))
+    matrix_cr.add_column(mkcol("N_GRP", matrix_data["N_GRP"]))
+    matrix_cr.add_column(mkcol("F_CHAN", matrix_data["F_CHAN"]))
+    matrix_cr.add_column(mkcol("N_CHAN", matrix_data["N_CHAN"]))
+    matrix_cr.add_column(mkcol("MATRIX", matrix_data["MATRIX"]))
+
+    # Crates does not have a good API for setting the subspace of an
+    # item. So we manually add the correct TLMIN value after the
+    # file has been written out with the cxcdm module.
+    #
+    # matrix_cr.F_CHAN._set_tlmin(matrix_data["OFFSET"])
+
+    ebounds_cr.add_column(mkcol("CHANNEL", ebounds_data["CHANNEL"]))
+    ebounds_cr.add_column(mkcol("E_MIN", ebounds_data["E_MIN"], units="keV"))
+    ebounds_cr.add_column(mkcol("E_MAX", ebounds_data["E_MAX"], units="keV"))
+
+    # Update the headers after adding the columns.
+    #
+    _update_header(matrix_cr, matrix_header)
+    _update_header(ebounds_cr, ebounds_header)
+
+    ds.write(filename, clobber=True)
+
+    # Add the TLMIN value for the F_CHAN column
+    ds = cxcdm.dmDatasetOpen(filename, update=True)
+    bl = cxcdm.dmBlockOpen("MATRIX", ds, update=True)
+    col = cxcdm.dmTableOpenColumn(bl, "F_CHAN")
+
+    # The lo and hi vals must have the same type, so force them to be
+    # int (so we do not have to worry about whether this should be
+    # Int16 or Int32). The OFFSET value should be an int, but let's
+    # convert it too to make sure.
+    #
+    lval, hval = cxcdm.dmDescriptorGetRange(col)
+    cxcdm.dmDescriptorSetRange(col, int(matrix_data["OFFSET"]), int(hval))
+    cxcdm.dmBlockClose(bl)
+    cxcdm.dmDatasetClose(ds)
 
 
 def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
 
-    if os.path.isfile(filename) and not clobber:
-        raise IOErr("filefound", filename)
+    check_clobber(filename, clobber)
 
     if not numpy.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')
@@ -1259,7 +1421,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     if ascii and '[' not in filename and ']' not in filename:
         filename += "[opt kernel=text/simple]"
 
-    tbl = pycrates.TABLECrate()
+    tbl = TABLECrate()
 
     if fields is None:
         fields = [f'col{ii + 1}' for ii in range(len(args))]
@@ -1270,4 +1432,4 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     for val, name in zip(args, fields):
         _set_column(tbl, name, val)
 
-    pycrates.write_file(tbl, filename, clobber=True)
+    tbl.write(filename, clobber=True)

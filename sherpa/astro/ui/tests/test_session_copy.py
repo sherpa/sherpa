@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2017  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2017, 2022
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -25,7 +26,6 @@ If we want to do this then some way of factoring out the common
 code and tests is likely needed.
 """
 
-from sherpa.utils.testing import requires_plotting
 from sherpa.astro.ui.utils import Session
 from numpy.testing import assert_array_equal
 
@@ -39,7 +39,6 @@ TEST2 = [4, 5, 6]
 # since in that case the initial get_data_plot_prefs() call will
 # return an empty dictionary rather than a filled one.
 #
-@requires_plotting
 def test_set_log():
     session = Session()
     assert not session.get_data_plot_prefs()['xlog']

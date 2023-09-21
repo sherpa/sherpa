@@ -1001,6 +1001,16 @@ def test_ismabs_parameter_name_clashes():
     scheme to address this is updated (it is technically not needed, but is
     left in as a check that any future auto-generated XSPEC model
     handles these parameter names).
+
+    As of XSPEC 12.13.0 (ish), the model.dat file now lists the
+    underscore version for all the parameters (e.g. He_II, C_I,
+    Ca_III), which changes this test somewhat. Note that as we don't
+    autogenerate the interface we have to decide on a naming scheme
+    (we don't go to the effort of making it depend on the XSPEC
+    version), and so we have decided to go with the XSPEC 12.13.1 /
+    HEASOFT 6.32 names. We have aliased the old names, so we can check
+    they work too.
+
     """
 
     from sherpa.astro import xspec
@@ -1008,12 +1018,12 @@ def test_ismabs_parameter_name_clashes():
     mdl = xspec.XSismabs()
     assert len(mdl.pars) == 31
 
-    # List of expected names taken from XSPEC 12.9.1 model.dat file.
+    # List of expected names taken from XSPEC 12.13.1 model.dat file.
     #
-    names = ["H", "HeII"]
-    for el in ["C", "N", "O", "Ne", "Mg", "Si_", "S_", "Ar", "Ca"]:
+    names = ["H", "He_II"]
+    for el in ["C", "N", "O", "Ne", "Mg", "Si", "S", "Ar", "Ca"]:
         for i in ["I", "II", "III"]:
-            names.append(el + i)
+            names.append(f"{el}_{i}")
     names.extend(["Fe", "redshift"])
     assert len(names) == 31  # this tests the test, not the module!
 
@@ -1023,6 +1033,30 @@ def test_ismabs_parameter_name_clashes():
         # Just check that there is no link between any of the parameters,
         # as would be the case if they were called SiI and SII (for example).
         assert par.link is None
+
+    # Check that the aliases work and raise a deprecation warning.
+    #
+    # Note that we include Si and S in the list, just so that we can
+    # keep the ordering with the names array, but we skip these as
+    # they do not have an alias (hence the name begins with SKIP).
+    #
+    aliases = ["HeII"]
+    for el in ["C", "N", "O", "Ne", "Mg", "SKIP-Si", "SKIP-S", "Ar", "Ca"]:
+        for i in ["I", "II", "III"]:
+            aliases.append(f"{el}{i}")
+
+    for name, alias in zip(names[1:], aliases):
+        if alias.startswith("SKIP"):
+            continue
+
+        assert alias != name  # safety check
+
+        emsg = f"^Parameter name {alias.lower()} is deprecated for " + \
+            f"model XSismabs, use {name} instead$"
+        with pytest.warns(DeprecationWarning, match=emsg):
+            par = getattr(mdl, alias)
+
+        assert par.name == name
 
     # It would be nice to be able to say the following, but at present
     # not sure how to enable this.
@@ -1681,15 +1715,18 @@ def test_table_mod_negative_delta_1850(addmodel, redshift, escale, make_data_pat
     parnames = [p.name for p in tbl.pars]
     assert parnames[0] == "lscale"
 
+    # Ordering taken from XSPEC 12.13.1a (unreleased at the time of
+    # writing of the test).
+    #
     idx = 1
-    if redshift:
-        assert parnames[idx] == "redshift"
-        assert tbl.redshift.frozen
-        idx += 1
-
     if escale:
         assert parnames[idx] == "Escale"
         assert tbl.escale.frozen
+        idx += 1
+
+    if redshift:
+        assert parnames[idx] == "redshift"
+        assert tbl.redshift.frozen
         idx += 1
 
     if addmodel:
@@ -1727,6 +1764,23 @@ def test_table_mod_add(make_data_path):
     assert tbl(elo, ehi) == pytest.approx(expected)
 
 
+# Values taken from XSPEC 12.13.1 with
+#
+#    dummyrsp 0.2 2.6 24 linear
+#    mo atable{smod1xx.tmod}
+#    newpar xxxxxx
+#    iplot model
+#    wdata
+#
+# Note that this gives photon/cm^2/s/keV and model evaluation
+# gives photon/cm^2/s.
+#
+ADD_TABLE_BASIC = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + \
+    [140] * 5 + [375, 20, 0, 0, 0, 0]
+ADD_TABLE_Z1 = [0, 82.5, 15, 57.5, 100, 120, 140, 140, 197.5] + [0] * 15
+ADD_TABLE_E2 = [0] * 8 + [37.5] * 2 + [75] * 2 + [7.5] * 8 + [50] * 4
+
+
 @requires_xspec
 @requires_data
 @requires_fits
@@ -1749,20 +1803,10 @@ def test_table_mod_add_redshift(make_data_path):
     ehi = egrid[1:]
     de = 0.1
 
-    # Values taken from XSPEC 12.13.1 with
-    #
-    #    dummyrsp 0.2 2.6 24 linear
-    #    mo atable{smod101.tmod}
-    #    iplot model
-    #    wdata
-    #
-    expected = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + [140] * 5 + \
-        [375, 20, 0, 0, 0, 0]
-    assert tbl(elo, ehi) / de == pytest.approx(expected)
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_BASIC)
 
     tbl.redshift = 1
-    expected = [0, 82.5, 15, 57.5, 100, 120, 140, 140, 197.5] + [0] * 15
-    assert tbl(elo, ehi) / de == pytest.approx(expected, rel=2e-6)
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_Z1, rel=2e-6)
 
 
 @requires_xspec
@@ -1787,20 +1831,46 @@ def test_table_mod_add_escale(make_data_path):
     ehi = egrid[1:]
     de = 0.1
 
-    # Values taken from XSPEC 12.13.1 with
-    #
-    #    dummyrsp 0.2 2.6 24 linear
-    #    mo atable{smod101.tmod}
-    #    iplot model
-    #    wdata
-    #
-    expected = [0, 0, 0, 75, 150] + [15] * 4 + [100] * 4 + [140] * 5 + \
-        [375, 20, 0, 0, 0, 0]
-    assert tbl(elo, ehi) / de == pytest.approx(expected)
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_BASIC)
 
     tbl.escale = 2
-    expected = [0] * 8 + [37.5] * 2 + [75] * 2 + [7.5] * 8 + [50] * 4
-    assert tbl(elo, ehi) / de == pytest.approx(expected, rel=2e-6)
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_E2, rel=2e-6)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_add_escale_redshift(make_data_path):
+    """Check the additive model is behaving as expected with escale+redshift.
+
+    Note, prior to XSPEC 12.13.1a XSPEC had the escale and redshift
+    parameters the wrong way round.
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod111.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    assert tbl.escale.val == pytest.approx(1)
+    assert tbl.redshift.val == pytest.approx(0)
+
+    egrid = np.linspace(0.2, 2.6, 25)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    de = 0.1
+
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_BASIC)
+
+    tbl.redshift = 1
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_Z1, rel=2e-6)
+
+    tbl.redshift = 0
+    tbl.escale = 2
+    assert tbl(elo, ehi) / de == pytest.approx(ADD_TABLE_E2, rel=2e-6)
 
 
 @requires_xspec
@@ -1830,6 +1900,23 @@ def test_table_mod_mul(make_data_path):
     assert tbl(elo, ehi) == pytest.approx(expected)
 
 
+# Values taken from XSPEC 12.13.1 with
+#
+#    dummyrsp 0.2 2.6 24 linear
+#    mo mtable{smod0xx.tmod}
+#    newpar xxxxx
+#    iplot model
+#    wdata
+#
+# As this is multiplicative there is no need to worry about
+# the bin width.
+#
+MUL_TABLE_BASIC = [0, 0, 0, 7.5, 15] + [6] * 4 + [40] * 4 + \
+    [70] * 5 + [37.5, 2, 5, 5, 5, 5]
+MUL_TABLE_Z1 = [0, 13.2, 6, 23, 40, 50 + 10/3, 70, 70, 19.75] + [5] * 15
+MUL_TABLE_E2 = [0] * 8 + [7.5] * 2 + [15] * 2 + [6] * 8 + [40] * 4
+
+
 @requires_xspec
 @requires_data
 @requires_fits
@@ -1851,21 +1938,10 @@ def test_table_mod_mul_redshift(make_data_path):
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    # Values taken from XSPEC 12.13.1 with
-    #
-    #    dummyrsp 0.2 2.6 24 linear
-    #    mo mtable{smod001.tmod} * powerlaw
-    #    newpar 3 0
-    #    iplot model
-    #    wdata
-    #
-    expected = [0, 0, 0, 7.5, 15] + [6] * 4 + [40] * 4 + [70] * 5 + \
-        [37.5, 2, 5, 5, 5, 5]
-    assert tbl(elo, ehi) == pytest.approx(expected)
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_BASIC)
 
     tbl.redshift = 1
-    expected = [0, 13.2, 6, 23, 40, 50 + 10/3, 70, 70, 19.75] + [5] * 15
-    assert tbl(elo, ehi) == pytest.approx(expected, rel=2e-6)
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_Z1, rel=2e-6)
 
 
 @requires_xspec
@@ -1889,18 +1965,42 @@ def test_table_mod_mul_escale(make_data_path):
     elo = egrid[:-1]
     ehi = egrid[1:]
 
-    # Values taken from XSPEC 12.13.1 with
-    #
-    #    dummyrsp 0.2 2.6 24 linear
-    #    mo mtable{smod001.tmod} * powerlaw
-    #    newpar 3 0
-    #    iplot model
-    #    wdata
-    #
-    expected = [0, 0, 0, 7.5, 15] + [6] * 4 + [40] * 4 + [70] * 5 + \
-        [37.5, 2, 5, 5, 5, 5]
-    assert tbl(elo, ehi) == pytest.approx(expected)
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_BASIC)
 
     tbl.escale = 2
-    expected = [0] * 8 + [7.5] * 2 + [15] * 2 + [6] * 8 + [40] * 4
-    assert tbl(elo, ehi) == pytest.approx(expected, rel=2e-6)
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_E2, rel=2e-6)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_table_mod_mul_escale_redshift(make_data_path):
+    """Check the multiplicative model is behaving as expected with escale+redshift.
+
+    Note, prior to XSPEC 12.13.1a XSPEC had the escale and redshift
+    parameters the wrong way round.
+
+    """
+
+    from sherpa.astro import xspec
+
+    name = "smod011.tmod"
+    infile = make_data_path(f"xspec_table_models/{name}")
+
+    tbl = xspec.read_xstable_model('tbl', infile)
+
+    assert tbl.escale.val == pytest.approx(1.0)
+    assert tbl.redshift.val == pytest.approx(0)
+
+    egrid = np.linspace(0.2, 2.6, 25)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_BASIC)
+
+    tbl.redshift = 1
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_Z1, rel=2e-6)
+
+    tbl.redshift = 0
+    tbl.escale = 2
+    assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_E2, rel=2e-6)
