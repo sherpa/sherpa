@@ -860,7 +860,7 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
 
     # If the model needs to be recalculated-per-spectrum turn off the
     # caching. This needs to be done after the parent class has been
-    # initalized.
+    # initialized.
     #
     if nflags > 1 and mdl.flags[1] == 1:
         out += f"{t2}self._use_caching = False\n"
@@ -1084,7 +1084,7 @@ def models_to_compiled(mdls: list[ModelDefinition],
 
     # The Sherpa/XSPEC interface uses a number of defines to control
     # behavior. These should not be needed for user models, but set
-    # them up. Note that tey depend on the available XSPEC library,
+    # them up. Note that they depend on the available XSPEC library,
     # which means that this can only be run when XSPEC support is
     # present (and the output will depend on the XSPEC model library
     # in use).

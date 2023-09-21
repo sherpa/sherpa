@@ -481,7 +481,7 @@ This code then can then be added to
 pass.
 
 .. note::
-   The outut from ``add_xspec_model.py`` is designed for XSPEC user
+   The output from ``add_xspec_model.py`` is designed for XSPEC user
    models, and so contains output that either is not needed or is
    already included in the ``_xspec.cc`` file.
 

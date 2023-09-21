@@ -338,7 +338,7 @@ def check_compiled(got, suffix):
 
     The output depends on the XSPEC version because it will cause
 
-        #define XSPEC_major_micro_minor
+        #define XSPEC_major_minor_micro
 
     lines to be included. To support this the code splits on these
     markers and checks the text before and after this, and checks the
