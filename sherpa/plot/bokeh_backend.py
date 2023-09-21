@@ -35,6 +35,7 @@ which hold the "currently active plot".
 import io
 import logging
 from collections import ChainMap
+from functools import partialmethod
 
 import numpy as np
 
@@ -143,7 +144,10 @@ class BokehBackend(BasicBackend):
         },
         'capsize': {
             None: 0,
-        }
+        },
+        'linewidths': {None: 1},
+        'linestyles': {None: 'solid'},
+        'colors': {None: 'black'},
     }
     '''Dict of keyword arguments that need to be translated for this backend.
 
@@ -591,15 +595,20 @@ class BokehBackend(BasicBackend):
             self.setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
         if levels is None:
+            levels = 7
+        if isinstance(levels, int):
             # Matplotlib has defaults for levels and sherpa can pass in "None" to mean
             # "use the default". Bokeh always requires to specify the levels, so
             # we have to define our own defaults here.
             # We try to pick something sensible, but not too complicated.
-            levels = np.linspace(np.min(y), np.max(y), 7)[1: -1]
+            # There are cases, where this simple appraoch does not
+            # provide nice nubmers for the levels, but matplotlib's
+            # MaxNLocator is > 200 lines, which I don't want to replicate.
+            levels = np.linspace(np.min(y), np.max(y), levels)[1: -1]
 
 
-        axes.contour(x0, x1, y, levels, alpha=alpha,
-                     colors=colors, linewidths=linewidths)
+        axes.contour(x0, x1, y, levels, line_alpha=alpha,
+                     line_color=colors, line_width=linewidths)
 
     def _index_axis(self, row, col):
         '''Find index number of subplot in a grid of plots
@@ -730,7 +739,43 @@ class BokehBackend(BasicBackend):
                               "complete grid of plots.".format(row, col)) from None
         self.current_fig['current_axis'] = self.current_fig['all_axes'][plotnum]
 
-    def as_html_plot(self, data, summary=None):
+
+    # HTML representation
+
+    def as_html(self, func):
+        """Create HTML representation of a plot
+
+
+        Parameters
+        ----------
+        func : function
+            The function, which takes no arguments, which will create the
+            plot. It creates the Figure.
+
+        Returns
+        -------
+        plot : str or None
+            The HTML, or None if there was an error (e.g. prepare not
+            called).
+
+        """
+        try:
+            func()
+        except Exception as e:
+            logger.debug("Unable to create bokeh plot: %s", str(e))
+            return None
+
+        image = embed.file_html(self.current_fig['current_axis'])
+
+        # See https://docs.bokeh.org/en/latest/docs/reference/embed.html#bokeh.embed.components
+        # for a list of other js files that might be needed.
+        # Also, do we want to use this offline instead of CDN?
+        return f'''
+        <script src="https://cdn.bokeh.org/bokeh/release/bokeh-{bokeh.__version__}.min.js"></script>
+        ''' + image
+
+
+    def as_html_plot_or_contour(self, data, summary=None, func="plot"):
         """Create HTML representation of a plot
 
         Parameters
@@ -741,6 +786,8 @@ class BokehBackend(BasicBackend):
         summary : str or None, optional
             The summary of the detail. If not set then the data type
             name is used.
+        func : str, optional
+            The function to call on the data object to make the plot.
 
         Returns
         -------
@@ -748,13 +795,10 @@ class BokehBackend(BasicBackend):
             The HTML, or None if there was an error (e.g. prepare not
             called).
         """
-        image = embed.file_html(self.current_fig['current_axis'])
-        # See https://docs.bokeh.org/en/latest/docs/reference/embed.html#bokeh.embed.components
-        # for a list of other js files that might be needed.
-        # Also, do we want to use this offline instead of CDN?
-        image = f'''
-        <script src="https://cdn.bokeh.org/bokeh/release/bokeh-{bokeh.__version__}.min.js"></script>
-        ''' + image
+        image = self.as_html(getattr(data, func))
+
+        if image is None:
+            return None
 
         if summary is None:
             summary = type(data).__name__
@@ -762,7 +806,8 @@ class BokehBackend(BasicBackend):
         ls = [formatting.html_svg(image, summary)]
         return formatting.html_from_sections(data, ls)
 
-    as_html_contour = as_html_plot
+    as_html_plot = partialmethod(as_html_plot_or_contour, func="plot")
+    as_html_contour = partialmethod(as_html_plot_or_contour, func="contour")
 
     as_html_histogram = as_html_plot
     as_html_pdf = as_html_plot

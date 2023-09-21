@@ -32,16 +32,7 @@ from sherpa.astro import data
 from sherpa import plot
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.utils.testing import requires_data, requires_fits
-
-# This is not the most elegant solution, but it makes sense to
-# have an independent check here and not rely on what is
-# done in the sherpa.plot.__init__ module, so that the tests
-# stay independent of that particular implementation.
-try:
-    from sherpa.plot.pylab_backend import PylabBackend
-    HAS_PYLAB = True
-except ModuleNotFoundError:
-    HAS_PYLAB = False
+from sherpa.plot.testing import check_full
 
 
 TEST_HEADER = {}
@@ -55,17 +46,11 @@ TEST_HEADER['LO_THRES'] = 0.001
 
 def check(r, summary, name, label, nmeta):
     """Very limited checks of the structure"""
-    assert r is not None
 
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert f'<summary>{summary} Plot</summary>' in r
-        assert '<svg ' in r
-
-    else:
-        assert f'<summary>{summary} Data (' in r
-        assert f'<div class="dataname">{label}</div>' in r
-        assert '<svg ' not in r
-
+    check_full(r, summary + ' Plot', test_other=[
+         f'<summary>{summary} Data (',
+         f'<div class="dataname">{label}</div>',
+    ])
     assert '<summary>Summary (' in r
     if nmeta == 0:
         assert '<summary>Metadata' not in r
@@ -251,16 +236,12 @@ def test_img(header, old_numpy_printing, all_plot_backends):
     r = d._repr_html_()
 
     # structure doesn't quite match the other cases
-    assert r is not None
 
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert '<summary>DataIMG Plot</summary>' in r
-        assert '<svg ' in r
+    check_full(r, 'DataIMG Plot', test_other=[
+        '<summary>DataIMG Data (',
+        '<div class="dataname">X0</div>'
+                           ])
 
-    else:
-        assert '<summary>DataIMG Data (' in r
-        assert '<div class="dataname">X0</div>' in r
-        assert '<svg ' not in r
 
     if (header is None) or (header == {}):
         assert '<summary>Metadata' not in r
@@ -280,10 +261,7 @@ def test_img_real(coord, make_data_path, old_numpy_printing, all_plot_backends):
 
     r = d._repr_html_()
 
-    assert r is not None
-
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert '<summary>DataIMG Plot</summary>' in r
+    check_full(r, 'DataIMG Plot', test_other=[])
 
     assert '<summary>Coordinates: physical (3)</summary>' in r
     assert '<summary>Coordinates: world (6)</summary>' in r
@@ -318,10 +296,7 @@ def test_img_real_filtered(coord, region, make_data_path,
 
     r = d._repr_html_()
 
-    assert r is not None
-
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert '<summary>DataIMG Plot</summary>' in r
+    check_full(r, 'DataIMG Plot', test_other=[])
 
     assert '<summary>Coordinates: physical (3)</summary>' in r
     assert '<summary>Coordinates: world (6)</summary>' in r

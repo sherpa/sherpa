@@ -33,42 +33,7 @@ from sherpa.data import Data1D, Data2D
 from sherpa.fit import Fit
 from sherpa.models.basic import Const1D, Gauss2D, Polynom1D
 from sherpa.stats import Chi2
-
-# This not the most elegant solution, but it makes sense to
-# have an independent check here and not rely on what is
-# done in the sherpa.plot.__init__ module, so that the tests
-# stay independent of that particular implementation.
-try:
-    from sherpa.plot.pylab_backend import PylabBackend
-    HAS_PYLAB = True
-except ModuleNotFoundError:
-    HAS_PYLAB = False
-
-
-def check_empty(r, summary, nsummary=0):
-    """Is this an 'empty' response?"""
-
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert r is None
-        return
-
-    assert r is not None
-    assert f"<summary>{summary} ({nsummary})</summary>" in r
-
-
-def check_full(r, summary, label, title, nsummary=0):
-    """Is this a 'full' response?"""
-
-    assert r is not None
-
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert f"<summary>{summary}</summary>" in r
-        assert "<svg " in r
-        return
-
-    assert f"<summary>{summary} ({nsummary})</summary>" in r
-    assert f'<div class="dataval">{label}</div>' in r
-    assert f'<div class="dataval">{title}</div>' in r
+from sherpa.plot.testing import check_empty, check_full
 
 
 def test_histogram(all_plot_backends):
@@ -217,15 +182,11 @@ def test_fit(all_plot_backends):
     # different to previous checks
     assert r is not None
 
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert "<summary>FitPlot</summary>" in r
-        assert "<svg " in r
-        return
-
-    assert "<summary>DataPlot (" in r
-    assert "<summary>ModelPlot (" in r
-    assert '<div class="dataval">n n</div>' in r
-    assert '<div class="dataval">Model</div>' in r
+    check_full(r, 'FitPlot', 'n n', 'Model', nsummary=8,
+               test_other=["<summary>DataPlot (",
+                           "<summary>ModelPlot (",
+                           '<div class="dataval">n n</div>',
+                           '<div class="dataval">Model</div>'])
 
 
 def test_fitcontour(all_plot_backends):
@@ -256,15 +217,11 @@ def test_fitcontour(all_plot_backends):
     # different to previous checks
     assert r is not None
 
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert "<summary>FitContour</summary>" in r
-        assert "<svg " in r
-        return
-
-    assert "<summary>DataContour (" in r
-    assert "<summary>ModelContour (" in r
-    assert '<div class="dataval">n n</div>' in r
-    assert '<div class="dataval">Model</div>' in r
+    check_full(r, 'FitContour', 'x1', 'Model', nsummary=8,
+               test_other=["<summary>DataContour (",
+                           "<summary>ModelContour (",
+                           '<div class="dataval">n n</div>',
+                           '<div class="dataval">Model</div>'])
 
 
 def test_intproj(old_numpy_printing, all_plot_backends):
@@ -292,15 +249,11 @@ def test_intproj(old_numpy_printing, all_plot_backends):
     r = p._repr_html_()
     assert r is not None
 
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert "<summary>IntervalProjection</summary>" in r
-        assert "<svg " in r
-        return
+    check_full(r, 'IntervalProjection', 'x', 'n n',
+               test_other = ["<summary>IntervalProjection (8)</summary>",
+                              '<div class="dataname">x</div><div class="dataval">[ 1.        1.555556  2.111111  2.666667  3.222222  3.777778  4.333333  4.888889\n  5.444444  6.      ]</div>',
+                              '<div class="dataname">nloop</div><div class="dataval">10</div>'])
 
-    assert "<summary>IntervalProjection (8)</summary>" in r
-
-    assert '<div class="dataname">x</div><div class="dataval">[ 1.        1.555556  2.111111  2.666667  3.222222  3.777778  4.333333  4.888889\n  5.444444  6.      ]</div>' in r
-    assert '<div class="dataname">nloop</div><div class="dataval">10</div>' in r
 
 
 def test_regproj(old_numpy_printing, all_plot_backends):
@@ -327,12 +280,9 @@ def test_regproj(old_numpy_printing, all_plot_backends):
     r = p._repr_html_()
     assert r is not None
 
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend):
-        assert "<summary>RegionProjection</summary>" in r
-        assert "<svg " in r
-        return
-
-    assert "<summary>RegionProjection (13)</summary>" in r
+    check_full(r, 'RegionProjection', 'y', 'n n',
+               test_other=[
+    "<summary>RegionProjection (13)</summary>",
 
     # Issue #1372 shows that the numbers here can depend on the platform; as
     # this test is not about whether the fit converged to the same solution
@@ -341,16 +291,17 @@ def test_regproj(old_numpy_printing, all_plot_backends):
     # the problem that this test currently requires old_numpy_printing,
     # so the results would not necessarily match.
     #
-    assert '<div class="dataname">parval0</div><div class="dataval">-0.5' in r
-    assert '<div class="dataname">parval1</div><div class="dataval">0.5' in r
-    assert '<div class="dataname">sigma</div><div class="dataval">(1, 2, 3)</div>' in r
+    '<div class="dataname">parval0</div><div class="dataval">-0.5',
+    '<div class="dataname">parval1</div><div class="dataval">0.5',
+    '<div class="dataname">sigma</div><div class="dataval">(1, 2, 3)</div>',
 
     # These values may depend on the platform so only very-limited check.
     #
-    assert '<div class="dataname">y</div><div class="dataval">[ 30' in r
-    assert '<div class="dataname">levels</div><div class="dataval">[  3.6' in r
+    '<div class="dataname">y</div><div class="dataval">[ 30',
+    '<div class="dataname">levels</div><div class="dataval">[  3.6',
 
-    assert '<div class="dataname">min</div><div class="dataval">[-2, -1]</div>' in r
-    assert '<div class="dataname">max</div><div class="dataval">[2, 2]</div>' in r
+    '<div class="dataname">min</div><div class="dataval">[-2, -1]</div>',
+    '<div class="dataname">max</div><div class="dataval">[2, 2]</div>',
 
-    assert '<div class="dataname">nloop</div><div class="dataval">(10, 20)</div>' in r
+    '<div class="dataname">nloop</div><div class="dataval">(10, 20)</div>',
+               ])
