@@ -81,28 +81,27 @@ def _has_hdu(hdulist, name):
 
 def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
 
-    try:
-        key = hdu.header[name]
-    except KeyError:
+    value = hdu.header.get(name, None)
+    if value is None:
         return None
 
     # TODO: As noted with the crates backend, this test is probably
     # overly broad, and we should look at simplifying it.
     #
-    if str(key).find('none') != -1:
+    if str(value).find('none') != -1:
         return None
 
     if not fix_type:
-        return key
+        return value
 
-    return dtype(key)
+    return dtype(value)
 
 
 def _require_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
-    key = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
-    if key is None:
+    value = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
+    if value is None:
         raise IOErr('nokeyword', hdu._file.name, name)
-    return key
+    return value
 
 
 def _get_meta_data(hdu):

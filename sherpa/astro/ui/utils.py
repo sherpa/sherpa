@@ -4818,8 +4818,8 @@ class Session(sherpa.ui.utils.Session):
 
     # This should be
     #     def save_arf(self, id, filename=None, *, resp_id=None, ...
-    # but the existing logic used to create the ui moduke does not
-    # handle KEYWORD_ONLY so for now do not do this.
+    # but the existing logic used to create the ui module does not
+    # handle KEYWORD_ONLY so for now do not do this. See #1901.
     #
     def save_arf(self, id, filename=None, resp_id=None, bkg_id=None,
                  ascii=False, clobber=False):
@@ -4915,8 +4915,8 @@ class Session(sherpa.ui.utils.Session):
 
     # This should be
     #     def save_rmf(self, id, filename=None, *, resp_id=None, ...
-    # but the existing logic used to create the ui moduke does not
-    # handle KEYWORD_ONLY so for now do not do this.
+    # but the existing logic used to create the ui module does not
+    # handle KEYWORD_ONLY so for now do not do this. See #1901.
     #
     def save_rmf(self, id, filename=None, resp_id=None, bkg_id=None,
                  clobber=False):
