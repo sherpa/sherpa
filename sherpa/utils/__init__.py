@@ -51,7 +51,7 @@ from sherpa.utils.parallel import multi as _multi, ncpus as _ncpus, \
 warning = logging.getLogger("sherpa").warning
 debug = logging.getLogger("sherpa").debug
 
-__all__ = ('NoNewAttributesAfterInit', 'SherpaFloat',
+__all__ = ('NoNewAttributesAfterInit',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'create_expr_integrated',
@@ -89,10 +89,6 @@ dividing and multiplying the value by ``_guess_ampl_scale``.
 ###############################################################################
 
 
-# Default numeric types (these match the typedefs in extension.hh)
-SherpaInt = numpy.intp
-SherpaUInt = numpy.uintp
-SherpaFloat = numpy.float64
 
 ###############################################################################
 

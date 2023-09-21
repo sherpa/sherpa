@@ -29,8 +29,9 @@ from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import Data1D, DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.models.basic import Gauss2D
-from sherpa.utils import parse_expr, SherpaFloat
+from sherpa.utils import parse_expr
 from sherpa.utils.err import ArgumentTypeErr, DataErr
+from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.testing import requires_data, requires_fits, requires_group
 
 

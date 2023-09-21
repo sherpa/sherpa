@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2011, 2016, 2017, 2018, 2019, 2020, 2021
-#     Smithsonian Astrophysical Observatory
+#  Copyright (C) 2011, 2016, 2017, 2018, 2019, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -40,8 +40,9 @@ References
 import numpy
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D
-from sherpa.utils import SherpaFloat, sao_fcmp
+from sherpa.utils import sao_fcmp
 from sherpa.utils.err import ModelErr
+from sherpa.utils.numeric_types import SherpaFloat
 
 _tol = numpy.finfo(numpy.float32).eps
 

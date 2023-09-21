@@ -96,13 +96,13 @@ import warnings
 
 import numpy as np
 
+from sherpa.astro.utils import get_xspec_position
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
-
-from sherpa.utils import SherpaFloat, guess_amplitude, param_apply_limits, bool_cast
+from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
 from sherpa.utils.err import IOErr, ParameterErr
-from sherpa.astro.utils import get_xspec_position
+from sherpa.utils.numeric_types import SherpaFloat
 
 # Note that utils also imports _xspec so it will error out if it is
 # not available.

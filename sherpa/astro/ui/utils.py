@@ -31,10 +31,10 @@ import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
 from sherpa.ui.utils import _check_type, _check_str_type, _is_str
-from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
-    send_to_pager
+from sherpa.utils import sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
+from sherpa.utils.numeric_types import SherpaFloat, SherpaInt
 from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot

@@ -32,7 +32,7 @@ Which backend is used?
 When this module is first imported, Sherpa tries to import the
 backends installed with Sherpa in the order listed in the
 ``options.plot_pkg`` setting from the ``sherpa.rc`` startup file.
-The first module that imports successfully is set as the active 
+The first module that imports successfully is set as the active
 backend. The following command prints the name and the location
 on disk of that module::
 
@@ -56,9 +56,10 @@ import importlib
 
 import numpy
 
-from sherpa.utils import NoNewAttributesAfterInit, erf, SherpaFloat, \
+from sherpa.utils import NoNewAttributesAfterInit, erf, \
     bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
 from sherpa.utils.err import PlotErr, StatErr, ConfidenceErr
+from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar

@@ -323,9 +323,10 @@ import warnings
 import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
-from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.utils import formatting
+from sherpa.utils.numeric_types import SherpaFloat
 
 from .parameter import Parameter
 

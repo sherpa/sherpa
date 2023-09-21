@@ -22,9 +22,9 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils import SherpaFloat
 from sherpa.utils.random import poisson_noise, \
     standard_normal, chisquare, choice
+from sherpa.utils.numeric_types import SherpaFloat
 
 
 def test_poisson_noise_checks_dtype():

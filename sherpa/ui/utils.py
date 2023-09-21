@@ -40,11 +40,12 @@ from sherpa.models.basic import TableModel
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
-from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
+from sherpa.utils import NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
+from sherpa.utils.numeric_types import SherpaFloat
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021
+#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,11 +24,11 @@ from numpy import arange
 
 import pytest
 
-from sherpa.utils import SherpaFloat
+from sherpa.models.basic import Gauss1D, Const1D, PowLaw1D
 from sherpa.models.parameter import Parameter, UnaryOpParameter, \
     BinaryOpParameter, ConstantParameter, hugeval
 from sherpa.utils.err import ParameterErr
-from sherpa.models.basic import Gauss1D, Const1D, PowLaw1D
+from sherpa.utils.numeric_types import SherpaFloat
 from sherpa import ui
 
 

@@ -124,15 +124,16 @@ import warnings
 
 import numpy
 
+from sherpa.astro import hc
 from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
-from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
-from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
+from sherpa.utils import pad_bounding_box, interpolate, \
     create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
+from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import formatting
-from sherpa.astro import hc
+from sherpa.utils.numeric_types import SherpaFloat
 
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.

@@ -22,9 +22,10 @@ import os
 
 import numpy
 
-from sherpa.utils import SherpaFloat, get_num_args, is_binary_file
-from sherpa.utils.err import IOErr
 from sherpa.data import Data1D, BaseData
+from sherpa.utils import get_num_args, is_binary_file
+from sherpa.utils.err import IOErr
+from sherpa.utils.numeric_types import SherpaFloat
 
 
 __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',

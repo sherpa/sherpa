@@ -29,9 +29,7 @@ allows both the legacy (pre 1.17) NumPy random API to be used
 
 import numpy as np
 
-# Copy of sherpa.utils.SherpaFloat
-#
-SherpaFloat = np.float_
+from .numeric_types import SherpaFloat
 
 
 __all__ = ("chisquare", "choice", "integers",

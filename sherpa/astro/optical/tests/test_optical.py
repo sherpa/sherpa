@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2018, 2020, 2021
+#  Copyright (C) 2007, 2016, 2017, 2018, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,9 +24,9 @@ import numpy as np
 import pytest
 
 import sherpa.astro.optical as models
-from sherpa.utils import SherpaFloat
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D, \
     RegriddableModel2D
+from sherpa.utils.numeric_types import SherpaFloat
 
 
 # The Absorption/EmissionVoigt models will be removed at some
