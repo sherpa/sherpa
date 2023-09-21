@@ -48,15 +48,6 @@ def backend_is(name):
     return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
 
 
-def check_hduname(hdr, expected):
-    """crates removes the HDUNAME setting but pyfits keeps it"""
-
-    if backend_is("crates"):
-        assert "HDUNAME" not in hdr
-    else:
-        assert hdr["HDUNAME"] == expected
-
-
 @requires_fits
 @requires_data
 def test_pha_write_basic(make_data_path, tmp_path):
@@ -70,9 +61,9 @@ def test_pha_write_basic(make_data_path, tmp_path):
         # check header for a selected set of keywords
         hdr = obj.header
 
-        # selected OGIP keywords
-        check_hduname(hdr, "SPECTRUM")
+        assert "HDUNAME" not in hdr
 
+        # selected OGIP keywords
         assert hdr["HDUCLASS"] == "OGIP"
         assert hdr["HDUCLAS1"] == "SPECTRUM"
         assert hdr["HDUCLAS2"] == "TOTAL"
@@ -201,9 +192,9 @@ def test_pha_write_basic_errors(make_data_path, tmp_path):
         # check header for a selected set of keywords
         hdr = obj.header
 
-        # selected OGIP keywords
-        check_hduname(hdr, "SPECTRUM")
+        assert "HDUNAME" not in hdr
 
+        # selected OGIP keywords
         assert hdr["HDUCLASS"] == "OGIP"
         assert hdr["HDUCLAS1"] == "SPECTRUM"
         assert hdr["HDUCLAS2"] == "TOTAL"
@@ -384,25 +375,14 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
         for key in ["RESPFILE", "ANCRFILE", "BACKFILE"]:
             assert key not in hdr
 
-        # WCS attached to the CHANNEL column
-        if backend_is("crates"):
-            assert "TCRYP1" not in hdr
-            assert "TCRVL1" not in hdr
-            assert "TLMIN1" not in hdr
-            assert "TLMAX1" not in hdr
-
-        elif backend_is("pyfits"):
-            assert hdr["TCTYP1"] == ""
-            assert hdr["TCUNI1"] == "Angstrom"
-            assert hdr["TCRPX1"] == 1
-            assert hdr["TCRVL1"] == pytest.approx(4.00500011)
-            assert hdr["TCDLT1"] == pytest.approx(0.01)
-
-            assert hdr["TLMIN1"] == 1
-            assert hdr["TLMAX1"] == 3600
-
-        else:
-            assert False  # programming error
+        # check WCS that was attached to the CHANNEL column
+        assert "TCRYP1" not in hdr
+        assert "TCRVL1" not in hdr
+        assert "TCUNI1" not in hdr
+        assert "TCRPX1" not in hdr
+        assert "TCDLT1" not in hdr
+        assert "TLMIN1" not in hdr
+        assert "TLMAX1" not in hdr
 
     def check_data(obj, roundtrip=False):
         """Basic checks of the data"""
@@ -496,7 +476,7 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     assert cr.name == "SPECTRUM"
     assert cr.get_colnames() == ["CHANNEL", "COUNTS"]
 
-    # undortunately crates auto-converts int32 to int64
+    # unfortunately crates auto-converts int32 to int64
     # (this is actually the underlying cxcdm module).
     #
     c0 = cr.get_column(0)
@@ -539,9 +519,11 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     for key in ["BACKFILE", "CORRFILE", "RESPFILE", "ANCRFILE"]:
         assert cr.get_key_value(key) == "none"
 
-    # keywords we should have but currently don't
-    for key in ["EXPOSURE"]:
-        assert cr.get_key_value(key) is None
+    # The EXPOSURE keyword should be an attribute now, and removed
+    # from the header, but we do not guarantee or require that, so
+    # check whether it exists in the header.
+    #
+    assert cr.get_key_value("EXPOSURE") is None
 
 
 def check_write_pha_fits_basic_roundtrip_pyfits(path):
@@ -594,9 +576,11 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert "TLMIN2" not in hdu.header
         assert "TLMAX2" not in hdu.header
 
-        # keywords we should have but currently don't
-        for key in ["EXPOSURE"]:
-            assert key not in hdu.header
+        # The EXPOSURE keyword should be an attribute now, and removed
+        # from the header, but we do not guarantee or require that, so
+        # check whether it exists in the header.
+        #
+        assert "EXPOSURE" not in hdu.header
 
     finally:
         hdus.close()
@@ -606,7 +590,8 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
 def test_write_pha_fits_basic_roundtrip(tmp_path):
     """A very-basic PHA output
 
-    No ancillary information and no header.
+    No ancillary information and no extra header information.
+
     """
 
     chans = np.arange(1, 5, dtype=np.int16)
@@ -887,7 +872,7 @@ def test_chandra_phaII_roundtrip(make_data_path, tmp_path):
         assert hdr["TG_M"] == 2
         assert hdr["TG_PART"] == 1
 
-        check_hduname(hdr, "SPECTRUM")
+        assert "HDUNAME" not in hdr
 
         assert hdr["HDUCLASS"] == "OGIP"
         assert hdr["HDUCLAS1"] == "SPECTRUM"
@@ -1097,10 +1082,9 @@ def test_csc_pha_roundtrip(make_data_path, tmp_path):
         # check header for a selected set of keywords
         hdr = obj.header
 
-        # selected OGIP keywords
-        expected = "SPECTRUM" + ("2" if background else "1")
-        check_hduname(hdr, expected)
+        assert "HDUNAME" not in hdr
 
+        # selected OGIP keywords
         assert hdr["HDUCLASS"] == "OGIP"
         assert hdr["HDUCLAS1"] == "SPECTRUM"
         assert hdr["HDUCLAS2"] == "BKG" if background else "TOTAL"
