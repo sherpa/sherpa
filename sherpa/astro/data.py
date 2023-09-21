@@ -3520,10 +3520,13 @@ It is an integer or string.
         """Group into a fixed number of bins.
 
         Combine the data so that there `num` equal-width bins (or
-        groups). The binning scheme is applied to all the channels,
-        but any existing filter - created by the `ignore` or `notice`
-        set of functions - is re-applied after the data has been
-        grouped.
+        groups). The binning scheme is, by default, applied to only
+        the noticed data range. It is suggested that filtering is done
+        before calling group_bins.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3531,11 +3534,12 @@ It is an integer or string.
            The number of bins in the grouped data set. Each bin
            will contain the same number of channels.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         See Also
         --------
@@ -3564,20 +3568,25 @@ It is an integer or string.
         """Group into a fixed bin width.
 
         Combine the data so that each bin contains `num` channels.
-        The binning scheme is applied to all the channels, but any
-        existing filter - created by the `ignore` or `notice` set of
-        functions - is re-applied after the data has been grouped.
+        The binning scheme is, by default, applied to only the noticed
+        data range. It is suggested that filtering is done before
+        calling group_width.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
         val : int
            The number of channels to combine into a group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         See Also
         --------
@@ -3606,12 +3615,15 @@ It is an integer or string.
         """Group into a minimum number of counts per bin.
 
         Combine the data so that each bin contains `num` or more
-        counts. The binning scheme is applied to all the channels, but
-        any existing filter - created by the `ignore` or `notice` set
-        of functions - is re-applied after the data has been grouped.
-        The background is *not* included in this calculation; the
-        calculation is done on the raw data even if `subtract` has
-        been called on this data set.
+        counts. The background is *not* included in this calculation;
+        the calculation is done on the raw data even if `subtract` has
+        been called on this data set. The binning scheme is, by
+        default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling group_counts.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3621,11 +3633,12 @@ It is an integer or string.
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         See Also
         --------
@@ -3641,6 +3654,25 @@ It is an integer or string.
         warning message will be displayed to the screen and the
         quality value for these channels will be set to 2.
 
+        Examples
+        --------
+
+        Group by 20 counts within the range 0.5 to 7 keV (this is
+        the default behavior for 4.16 and later):
+
+        >>> from sherpa.astro.io import read_pha
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
+        >>> pha.set_analysis("energy")
+        >>> pha.notice()
+        >>> pha.notice(0.5, 7)
+        >>> pha.group_counts(20)
+
+        Group by 20 but over the whole channel range, but then
+        filtering to the noticed range of 0.5 to 7 keV (this was the
+        default behaviour before 4.16):
+
+        >>> pha.group_counts(20, tabStops=[0] * pha.size)
+
         """
         self._dynamic_group("grpNumCounts", self.counts, num,
                             maxLength=maxLength, tabStops=tabStops)
@@ -3653,12 +3685,16 @@ It is an integer or string.
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        which exceeds `snr`. The binning scheme is applied to all the
-        channels, but any existing filter - created by the `ignore` or
-        `notice` set of functions - is re-applied after the data has
-        been grouped.  The background is *not* included in this
+        which exceeds `snr`. The background is *not* included in this
         calculation; the calculation is done on the raw data even if
-        `subtract` has been called on this data set.
+        `subtract` has been called on this data set. The binning
+        scheme is, by default, applied to only the noticed data
+        range. It is suggested that filtering is done before calling
+        group_snr.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3669,11 +3705,12 @@ It is an integer or string.
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -3712,10 +3749,13 @@ It is an integer or string.
         order to avoid over-grouping bright features, rather than at
         the first channel of the data. The adaptive nature means that
         low-count regions between bright features may not end up in
-        groups with the minimum number of counts.  The binning scheme
-        is applied to all the channels, but any existing filter -
-        created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
+        groups with the minimum number of counts. The binning scheme
+        is, by default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling group_adapt.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3725,11 +3765,12 @@ It is an integer or string.
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         See Also
         --------
@@ -3764,10 +3805,14 @@ It is an integer or string.
         in order to avoid over-grouping bright features, rather than
         at the first channel of the data. The adaptive nature means
         that low-count regions between bright features may not end up
-        in groups with the minimum number of counts.  The binning
-        scheme is applied to all the channels, but any existing filter
-        - created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
+        in groups with the minimum number of counts. The binning
+        scheme is, by default, applied to only the noticed data
+        range. It is suggested that filtering is done before calling
+        group_adapt_snr.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3778,11 +3823,12 @@ It is an integer or string.
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
