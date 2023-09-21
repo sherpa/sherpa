@@ -22,7 +22,7 @@ from dataclasses import dataclass
 import logging
 import os
 import sys
-from typing import Union
+from typing import Optional, Union
 import warnings
 
 import numpy
@@ -131,6 +131,45 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
     nfilter = sherpa.ui.utils._get_filter(data)
     sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
                                          data.get_xlabel())
+
+
+def _check_pha_tabstops(data: DataPHA,
+                        tabStops: Optional[Union[str, list, numpy.ndarray]]) -> Union[None, numpy.ndarray]:
+    """Validate the tabStops argument for the group_xxx calls.
+
+    This converts from "nofilter" to numpy.zeros(nchan), where
+    nchan is the number of channels in the PHA. The length is
+    checked elsewhere.
+
+    Parameters
+    ----------
+    data : DataPHA
+       The dataset to apply the tabStops to.
+    tabStops : str, list, ndarray, or None
+       The tabStops argument.
+
+    Returns
+    -------
+    tabStops : ndarray or None
+       The tabStops value to use.
+    """
+
+    if tabStops is None:
+        return None
+
+    if not isinstance(tabStops, str):
+        # This might error out, but if so let it as it indicates a
+        # user error.
+        #
+        return numpy.asarray(tabStops)
+
+    if tabStops != "nofilter":
+        raise ArgumentErr("bad", "tabStops", tabStops)
+
+    if data.size is None or data.size == 0:
+        raise DataErr("The DataPHA object has no data")
+
+    return numpy.zeros(data.size)
 
 
 def _save_errorcol(session, idval, filename, bkg_id,
@@ -8120,7 +8159,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_bins(num, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_bins(num, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8233,7 +8273,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_width(num, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_width(num, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8351,7 +8392,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_counts(num, maxLength, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_counts(num, maxLength, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8456,7 +8498,8 @@ class Session(sherpa.ui.utils.Session):
             id, snr = snr, id
 
         def change(data):
-            data.group_snr(snr, maxLength, tabStops, errorCol)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_snr(snr, maxLength, ts, errorCol)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8557,7 +8600,8 @@ class Session(sherpa.ui.utils.Session):
             id, min = min, id
 
         def change(data):
-            data.group_adapt(min, maxLength, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_adapt(min, maxLength, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8665,7 +8709,8 @@ class Session(sherpa.ui.utils.Session):
             id, min = min, id
 
         def change(data):
-            data.group_adapt_snr(min, maxLength, tabStops, errorCol)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_adapt_snr(min, maxLength, ts, errorCol)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
