@@ -34,6 +34,7 @@ jobs:
             test-data: package
             fits-pkg: 'astropy'
             matplotlib-pkg: 'matplotlib>=3,<4'
+            bokeh-pkg: 'bokeh>=3,<4'
 
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
@@ -42,6 +43,7 @@ jobs:
             install-type: install
             test-data: package
             matplotlib-pkg: 'matplotlib>=3,<4'
+            bokeh-pkg: 'bokeh>=3,<4'
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
@@ -75,12 +77,13 @@ jobs:
         NUMPYVER: ${{ matrix.numpy-pkg }}
         FITSBUILD: ${{ matrix.fits-pkg }}
         MATPLOTLIBVER: ${{ matrix.matplotlib-pkg }}
+        BOKEHVER: ${{ matrix.BOKEH-pkg }}
       run: |
         # In case we forget to set matrix.numpy-pkg
         if [ ! -n "${NUMPYVER}" ] ; then
           NUMPYVER='numpy'
         fi
-        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER}
+        pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER}
         # Ensure we use an old-enough setuptools: see issue #1456
         pip install 'setuptools < 60'
 
