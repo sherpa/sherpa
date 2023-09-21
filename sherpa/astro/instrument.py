@@ -26,7 +26,7 @@ such as Pulse-Height Amplitudes (PHA) or Pulse-Invariant channels.
 These 'responses' are assumed to follow OGIP standards, such as `OGIP
 Calibration Memo CAL/GEN/92-002, "The Calibration Requirements for
 Spectral Analysis (Definition of RMF and ARF file formats)", Ian
-M. George1, Keith A. Arnaud, Bill Pence, Laddawan Ruamsuwan and
+M. George, Keith A. Arnaud, Bill Pence, Laddawan Ruamsuwan and
 Michael F. Corcoran
 <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
 
@@ -1369,7 +1369,7 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
         The name of the two-dimensional image file which stores the
         response information (the format of this file matches that
         created by the `CIAO tool rmfimg
-        <http://cxc.harvard.edu/ciao/ahelp/rmfimg.html>`_).
+        <https://cxc.harvard.edu/ciao/ahelp/rmfimg.html>`_).
     offset : int, optional
         The starting channel number: expected to be 0 or 1 but this is
         not enforced.
