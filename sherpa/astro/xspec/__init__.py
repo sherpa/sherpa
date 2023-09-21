@@ -1224,7 +1224,24 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         #  - it is easier
         #  - it allows for the user to find out what bins are bad,
         #    by directly calling the _calc function of a model
-        out = self._calc(p, *args, **kwargs)
+        #
+        # If the call raises an error, add the model name and parameter
+        # values (the name is surprisingly tricky to add in the C++
+        # binding).
+        #
+        try:
+            out = self._calc(p, *args, **kwargs)
+        except ValueError as ve:
+            # Always add the extra information:
+            #   - model class
+            #   - model name
+            #   - parameter list
+            #
+            msg = f"{ve}: {self.type}.{self.name}"
+            for par, val in zip(self.pars, args[0]):
+                msg += f" {par.name}={val}"
+
+            raise ValueError(msg) from None
 
         # This check is being skipped in the 4.8.0 release as it
         # has had un-intended consequences. It should be re-evaluated

@@ -586,7 +586,12 @@ static void create_output(int nbins, T &a, T &b) {
 
         } // eval
 
-        const char* get_err_msg( ) { return "XSPEC model evaluation failed"; }
+	const char* get_err_msg( ) {
+	  if (HasNorm)
+	    return "XSPEC additive model evaluation failed";
+	  else
+	    return "XSPEC multiplicative model evaluation failed";
+	}
 
       protected:
 
@@ -702,7 +707,7 @@ static void create_output(int nbins, T &a, T &b) {
 
         } // eval
 
-        const char* get_err_msg( ) { return "XSPEC convolution model evaluation failed"; }
+	const char* get_err_msg( ) { return "XSPEC convolution model evaluation failed"; }
 
       protected:
 
@@ -801,7 +806,7 @@ static void create_output(int nbins, T &a, T &b) {
 
         } // eval
 
-        const char* get_err_msg( ) { return "XSPEC model evaluation failed"; }
+	const char* get_err_msg( ) { return "XSPEC table model evaluation failed"; }
 
       protected:
         int npts, ifl;
