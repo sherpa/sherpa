@@ -11,7 +11,7 @@ on:
 
 jobs:
   tests:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     if: (github.repository == 'sherpa/sherpa' && (github.event_name == 'schedule' || contains(github.event.pull_request.labels.*.name, 'CI arch')))
 
     strategy:
@@ -35,23 +35,22 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3.1.0
+      uses: actions/checkout@v4
       # As we do not include an I/O backend it is not worth checking out the data submodule.
       #
       # with:
       #   submodules: 'True'
 
     - name: Build and test
-      uses: uraimo/run-on-arch-action@v2.1.1
+      uses: uraimo/run-on-arch-action@v2
       with:
         arch: ${{ matrix.arch }}
-        distro: bullseye
+        distro: ubuntu_rolling
 
         shell: /bin/bash
 
         # Based on AstroPy
         install: |
-          echo "deb http://deb.debian.org/debian bullseye-backports main" >> /etc/apt/sources.list
           apt-get update -q -y
           apt-get install -q -y git \
                                 g++ \
