@@ -1480,7 +1480,8 @@ def _add_header(hdu, header):
         card = [hdr.name, hdr.value]
         if hdr.desc is not None or hdr.unit is not None:
             comment = "" if hdr.unit is None else f"[{hdr.unit}] "
-            comment += "" if hdr.desc is None else hdr.desc
+            if hdr.desc is not None:
+                comment += hdr.desc
             card.append(comment)
 
         hdu.header.append(tuple(card))

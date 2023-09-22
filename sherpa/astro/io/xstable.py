@@ -34,7 +34,7 @@ Example
 
 The following example creates an additive table model
 that represents a gaussian model where the only parameters are
-the line positon and the normalization.
+the line position and the normalization.
 
 >>> import numpy as np
 >>> from sherpa.astro.io import xstable
@@ -96,7 +96,7 @@ as a FITS file (`write_xstable_model`):
 ...                                   spectra=models)
 >>> xstable.write_xstable_model("example.mod", hdus, clobber=True)
 
-This file can the be used in Sherpa with either
+This file can then be used in Sherpa with either
 `sherpa.astro.ui.load_xstable_model` or
 `sherpa.astro.xspec.read_xstable_model`. For example:
 
@@ -115,11 +115,11 @@ Notes
 XSPEC models can be created without XSPEC support in Sherpa, but it is
 needed to read the files in.
 
-For additive models it is assumed that the model values - each those
-in each bin - have units of photon/cm^2/s. This is easy to
-accidentally change - e.g.  in the example above if mdl.norm were
-changed to a value other than 1 everything would work but Sherpa and
-XSPEC would infer incorrect fluxes or luminosities.
+For additive models it is assumed that the model values - that is,
+each bin - have units of photon/cm^2/s. This is easy to accidentally
+change - e.g.  in the example above if mdl.norm were changed to a
+value other than 1 everything would work but Sherpa and XSPEC would
+infer incorrect fluxes or luminosities.
 
 """
 
@@ -216,9 +216,7 @@ class IntParam(Param):
     """The parameter values used to create the model spectra.
 
     Is is required that they range from hardmin to hardmax and are in
-    monotonically increasing order. That is, it can not remain the
-    empty list.
-
+    monotonically increasing order (so it can not be an empty list).
     """
     loginterp: bool = False
     """Are the values logarithmically interpolated (True) or linearly (False).
