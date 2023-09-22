@@ -18,23 +18,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""
-Models of common Astronomical models, particularly in X-rays.
+"""Models of common Astronomical models, particularly in X-rays.
 
 The models in this module include support for instrument models that
 describe how X-ray photons are converted to measurable properties,
 such as Pulse-Height Amplitudes (PHA) or Pulse-Invariant channels.
-These 'responses' are assumed to follow OGIP standards, such as
-[OGIP92-002]_.
-
-References
-----------
-
-.. [OGIP92-002] OGIP Calibration Memo CAL/GEN/92-002, "The Calibration Requirements
-       for Spectral Analysis (Definition of RMF and ARF file formats)",
-       Ian M. George1, Keith A. Arnaud, Bill Pence, Laddawan Ruamsuwan and
-       Michael F. Corcoran,
-       https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html
+These 'responses' are assumed to follow OGIP standards, such as `OGIP
+Calibration Memo CAL/GEN/92-002, "The Calibration Requirements for
+Spectral Analysis (Definition of RMF and ARF file formats)", Ian
+M. George, Keith A. Arnaud, Bill Pence, Laddawan Ruamsuwan and
+Michael F. Corcoran
+<https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
 
 """
 
@@ -1294,25 +1288,30 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     that each channel maps exactly to one energy bin, the
     mapping is monotonic, and there are no gaps.
 
+    .. versionchanged:: 4.16.0
+       The e_min and e_max values will use the rmflo and rmfhi values
+       if not set.
+
     .. versionadded:: 4.10.1
 
     Parameters
     ----------
     rmflo, rmfhi : array
-        The energy bins (low and high, in keV) for the RMF.
-        It is assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
-        bins are either ascending, so rmflo_i+1 > rmflo_i or descending
-        (rmflo_i+1 < rmflo_i), and that there are no overlaps.
-        These correspond to the Elow and Ehigh columns (represented
-        by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
-        the OGIP standard.
+        The energy bins (low and high, in keV) for the RMF.  It is
+        assumed that emfhi_i > rmflo_i, rmflo_j > 0, that the energy
+        bins are either ascending, so rmflo_i+1 > rmflo_i or
+        descending (rmflo_i+1 < rmflo_i), and that there are no
+        overlaps.  These correspond to the Elow and Ehigh columns
+        (represented by the ENERG_LO and ENERG_HI columns of the
+        MATRIX block) of the OGIP standard.
     offset : int, optional
         The starting channel number: expected to be 0 or 1 but this is
         not enforced.
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
         RMF. This must have the same size as rmflo and rmfhi as the
-        RMF matrix is square in this "ideal" case.
+        RMF matrix is square in this "ideal" case. If not set they are
+        taken from rmflo and rmfhi respectively.
     ethresh : number or None, optional
         Passed through to the DataRMF call. It controls whether
         zero-energy bins are replaced.
@@ -1338,6 +1337,11 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     matrix = numpy.ones(nchans, dtype=numpy.float32)
     dummy = numpy.ones(nchans, dtype=numpy.int16)
     f_chan = numpy.arange(1, nchans + 1, dtype=numpy.int16)
+
+    if e_min is None:
+        e_min = rmflo
+    if e_max is None:
+        e_max = rmfhi
 
     return DataRMF(name, detchans=nchans, energ_lo=rmflo,
                    energ_hi=rmfhi, n_grp=dummy,
@@ -1374,7 +1378,8 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
     fname : str
         The name of the two-dimensional image file which stores the
         response information (the format of this file matches that
-        created by the CIAO tool rmfimg [1]_).
+        created by the `CIAO tool rmfimg
+        <https://cxc.harvard.edu/ciao/ahelp/rmfimg.html>`_).
     offset : int, optional
         The starting channel number: expected to be 0 or 1 but this is
         not enforced.
@@ -1399,11 +1404,6 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
     See Also
     --------
     create_arf, create_delta_rmf
-
-    References
-    ----------
-
-    .. [1] http://cxc.harvard.edu/ciao/ahelp/rmfimg.html
 
     """
 

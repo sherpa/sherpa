@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020, 2021, 2022
+#  Copyright (C) 2017, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -690,6 +690,37 @@ def test_arfmodelpha_call(ignore):
 def test_rmfmodelpha_delta_no_ebounds(analysis, caplog):
     """What happens calling an rmf with a pha and no EBOUNDS is set
 
+    create_delta_rmf, prior to 4.16.0, did not set the e_min/max
+    values when called like this, which meant that we couldn't
+    use an energy filter, so a test was created to test the
+    behavior. It now sets the values so we just check it works
+    as expected. See test_rmfmodelpha_delta_no_ebounds_manual.
+
+    """
+
+    egrid = np.arange(0.01, 0.07, 0.01)
+    rdata = create_delta_rmf(egrid[:-1], egrid[1:])
+
+    channels = np.arange(1, 6, dtype=np.int16)
+    counts = np.asarray([10, 5, 12, 7, 3], dtype=np.int16)
+    pha = DataPHA('test-pha', channel=channels, counts=counts)
+    pha.set_rmf(rdata)
+
+    pha.set_analysis(analysis)
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        pha.notice(0.025, 0.045, ignore=False)
+
+    assert len(caplog.records) == 0
+    if analysis == "energy":
+        assert pha.mask == pytest.approx([False, True, True, True, False])
+    else:
+        assert not pha.mask.any()
+
+
+@pytest.mark.parametrize("analysis", ["energy", "wave"])
+def test_rmfmodelpha_delta_no_ebounds_manual(analysis, caplog):
+    """What happens calling an rmf with a pha and no EBOUNDS is set
+
     Ensure we can't filter on energy or wavelength since there's no
     EBOUNDS information. This behavior was seen when writing
     test_rmfmodelpha_call, so a test was written for it.
@@ -698,12 +729,19 @@ def test_rmfmodelpha_delta_no_ebounds(analysis, caplog):
     logged warning.
     """
 
-    estep = 0.01
-    egrid = np.arange(0.01, 0.06, estep)
-    rdata = create_delta_rmf(egrid[:-1], egrid[1:])
+    egrid = np.arange(0.01, 0.07, 0.01)
+    nchans = egrid.size - 1
+    matrix = np.ones(nchans, dtype=np.float32)
+    dummy = np.ones(nchans, dtype=np.int16)
+    f_chan = np.arange(1, nchans + 1, dtype=np.int16)
 
-    channels = np.arange(1, 5, dtype=np.int16)
-    counts = np.asarray([10, 5, 12, 7], dtype=np.int16)
+    rdata = DataRMF(name="f", detchans=nchans, energ_lo=egrid[:-1], energ_hi=egrid[1:],
+                    n_grp=dummy, n_chan=dummy, f_chan=f_chan,
+                    matrix=matrix, offset=1, e_min=None, e_max=None,
+                    ethresh=None, header=None)
+
+    channels = np.arange(1, 6, dtype=np.int16)
+    counts = np.asarray([10, 5, 12, 7, 3], dtype=np.int16)
     pha = DataPHA('test-pha', channel=channels, counts=counts)
     pha.set_rmf(rdata)
 

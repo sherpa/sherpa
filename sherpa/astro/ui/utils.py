@@ -4781,7 +4781,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        load_pha : Load a PHA data set.
+        load_pha, save_arf, save_rmf
 
         Notes
         -----
@@ -4820,6 +4820,189 @@ class Session(sherpa.ui.utils.Session):
 
         sherpa.astro.io.write_pha(filename, d, ascii=ascii,
                                   clobber=clobber)
+
+    # This should be
+    #     def save_arf(self, id, filename=None, *, resp_id=None, ...
+    # but the existing logic used to create the ui module does not
+    # handle KEYWORD_ONLY so for now do not do this. See #1901.
+    #
+    def save_arf(self, id, filename=None, resp_id=None, bkg_id=None,
+                 ascii=False, clobber=False):
+        """Save an ARF data set to a file.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set containing the ARF or the
+           filename (the latter is used when filename is set to None,
+           and in this case the id is set to the default identifier,
+           as returned by `get_default_id`).
+        filename : str or None
+           The name of the file to write the ARF to (when the id value
+           is explicitly given). The format is determined by the
+           `ascii` argument.
+        resp_id : int or str, optional
+           The identifier for the ARF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set if the background ARF should be written out rather
+           than the source ARF.
+        ascii : bool, optional
+           If ``False`` then the data is written as a FITS format
+           binary table. The exact format of the output file depends
+           on the I/O library in use (Crates or AstroPy).
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (``True``) or if it raises an exception
+           (``False``).
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain an ARF.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is ``False``.
+
+        See Also
+        --------
+        create_arf, load_arf, save_pha, save_rmf
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `filename`
+        parameters, respectively. The remaining parameters must be
+        given as named arguments.
+
+        Examples
+        --------
+
+        Write out the ARF data from the default data set to the
+        file 'src.arf':
+
+        >>> save_arf('src.arf')
+
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
+
+        >>> save_arf('jet', 'out.arf', clobber=True)
+
+        Write the data out as an ASCII file:
+
+        >>> save_arf('pi.arf', ascii=True)
+
+        """
+        clobber = sherpa.utils.bool_cast(clobber)
+        ascii = sherpa.utils.bool_cast(ascii)
+        if filename is None:
+            id, filename = filename, id
+        _check_str_type(filename, 'filename')
+        d = self._get_pha_data(id, bkg_id)
+
+        arf = d.get_arf(id=resp_id)
+        if arf is None:
+            if bkg_id is not None:
+                emsg = f"background '{bkg_id}' of "
+            else:
+                emsg = ""
+
+            resp_id = 1 if resp_id is None else resp_id
+            emsg += f"data set '{id}' (response {resp_id}) does not contain an ARF"
+            raise ArgumentErr(emsg)
+
+        sherpa.astro.io.write_arf(filename, arf, ascii=ascii,
+                                  clobber=clobber)
+
+    # This should be
+    #     def save_rmf(self, id, filename=None, *, resp_id=None, ...
+    # but the existing logic used to create the ui module does not
+    # handle KEYWORD_ONLY so for now do not do this. See #1901.
+    #
+    def save_rmf(self, id, filename=None, resp_id=None, bkg_id=None,
+                 clobber=False):
+        """Save an RMF data set to a file.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        id : int or str
+           The identifier for the data set containing the RMF or the
+           filename (the latter is used when filename is set to None,
+           and in this case the id is set to the default identifier,
+           as returned by `get_default_id`).
+        filename : str or None
+           The name of the file to write the RMF to (when the id value
+           is explicitly given). Note that the format is always FITS.
+        resp_id : int or str, optional
+           The identifier for the RMF within this data set, if there
+           are multiple responses.
+        bkg_id : int or str, optional
+           Set if the background RMF should be written out rather
+           than the source RMF.
+        clobber : bool, optional
+           This flag controls whether an existing file can be
+           overwritten (``True``) or if it raises an exception
+           (``False``).
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain a RMF.
+        sherpa.utils.err.IOErr
+           If `filename` already exists and `clobber` is ``False``.
+
+        See Also
+        --------
+        create_rmf, load_arf, save_arf, save_pha
+
+        Notes
+        -----
+        The function does not follow the normal Python standards for
+        parameter use, since it is designed for easy interactive use.
+        When called with a single un-named argument, it is taken to be
+        the `filename` parameter. If given two un-named arguments,
+        then they are interpreted as the `id` and `filename`
+        parameters, respectively. The remaining parameters must be
+        given as named arguments.
+
+        Examples
+        --------
+
+        Write out the RMF data from the default data set to the
+        file 'src.rmf':
+
+        >>> save_rmf('src.rmf')
+
+        Over-write the file it it already exists, and take the data
+        from the data set "jet":
+
+        >>> save_rmf('jet', 'out.rmf', clobber=True)
+
+        """
+        clobber = sherpa.utils.bool_cast(clobber)
+        if filename is None:
+            id, filename = filename, id
+        _check_str_type(filename, 'filename')
+        d = self._get_pha_data(id, bkg_id)
+
+        rmf = d.get_rmf(id=resp_id)
+        if rmf is None:
+            if bkg_id is not None:
+                emsg = f"background '{bkg_id}' of "
+            else:
+                emsg = ""
+
+            resp_id = 1 if resp_id is None else resp_id
+            emsg += f"data set '{id}' (response {resp_id}) does not contain a RMF"
+            raise ArgumentErr(emsg)
+
+        sherpa.astro.io.write_rmf(filename, rmf, clobber=clobber)
 
     def save_grouping(self, id, filename=None, bkg_id=None,
                       ascii=True, clobber=False):
@@ -5329,7 +5512,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        create_rmf, get_arf, set_arf, unpack_arf
+        create_rmf, get_arf, save_arf, set_arf, unpack_arf
 
         Examples
         --------
@@ -5363,6 +5546,10 @@ class Session(sherpa.ui.utils.Session):
         maps to a single energy bin), otherwise the RMF is taken from
         the image data stored in the file pointed to by `fname`.
 
+        .. versionchanged:: 4.16.0
+           The e_min and e_max values will use the rmflo and rmfhi
+           values if not set.
+
         .. versionadded:: 4.10.1
 
         Parameters
@@ -5380,7 +5567,8 @@ class Session(sherpa.ui.utils.Session):
             not enforced.
         e_min, e_max : None or array, optional
             The E_MIN and E_MAX columns of the EBOUNDS block of the
-            RMF.
+            RMF. If not set they are taken from rmflo and rmfhi
+            respectively.
         ethresh : number or None, optional
             Passed through to the DataRMF call. It controls whether
             zero-energy bins are replaced.
@@ -5399,7 +5587,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        create_arf, get_rmf, set_rmf, unpack_rmf
+        create_arf, get_rmf, save_rmf, set_rmf, unpack_rmf
+
         """
 
         if fname is None:
@@ -7589,6 +7778,7 @@ class Session(sherpa.ui.utils.Session):
         ----------
 
         `K. A. Arnaud, I. M. George & A. F. Tennant, "The OGIP Spectral File Format" <https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html>`_
+
         Examples
         --------
 

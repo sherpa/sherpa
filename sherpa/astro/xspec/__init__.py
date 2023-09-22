@@ -1380,12 +1380,21 @@ class XSTableModel(XSModel):
         self.addmodel = addmodel
         self.etable = etable
 
-        # Order appears to be
-        #   - z
+        # Order should be (z and escale were incorrectly mixed up
+        # in XSPEC 12.13.1 and earlier):
+        #
         #   - Escale
+        #   - z
         #   - norm
+        #
         # (for those models that support the relevant value)
         #
+        if addescale:
+            # Should this just use Parameter?
+            self.Escale = XSParameter(name, 'Escale', 1, 1e-5, 100,
+                                      1e-5, 100, frozen=True)
+            pars.append(self.Escale)
+
         if addredshift:
             # We use XSParameter rather than XSBaseParameter since it
             # is less likely to cause a crash if the parameter ranges
@@ -1398,12 +1407,6 @@ class XSTableModel(XSModel):
             self.redshift = XSParameter(name, 'redshift', 0., 0., 5.,
                                         0.0, 5, frozen=True)
             pars.append(self.redshift)
-
-        if addescale:
-            # Should this just use Parameter?
-            self.Escale = XSParameter(name, 'Escale', 1, 0, 1e20,
-                                      0, 1e24, frozen=True, units="keV")
-            pars.append(self.Escale)
 
         if addmodel:
             # Normalization parameters are not true XSPEC parameters and

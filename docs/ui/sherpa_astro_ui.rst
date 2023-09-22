@@ -322,6 +322,7 @@ burden...
       sample_photon_flux
       save
       save_all
+      save_arf
       save_arrays
       save_data
       save_delchi
@@ -333,6 +334,7 @@ burden...
       save_pha
       save_quality
       save_resid
+      save_rmf
       save_source
       save_staterror
       save_syserror

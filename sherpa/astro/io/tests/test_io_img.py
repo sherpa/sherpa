@@ -43,9 +43,7 @@ def test_image_write_basic(make_data_path, tmp_path):
         # check header for a selected set of keywords
         hdr = obj.header
 
-        # selected OGIP keywords
-        if not backend_is("crates"):
-            assert hdr["HDUNAME"] == "EVENTS_IMAGE"
+        assert "HDUNAME" not in hdr
 
         assert hdr["HDUCLASS"] == "OGIP"
         assert hdr["HDUCLAS1"] == "EVENTS"
