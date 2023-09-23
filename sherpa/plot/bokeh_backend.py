@@ -32,10 +32,10 @@ In this module, we solve this problem using a few module-level variables,
 which hold the "currently active plot".
 '''
 
-import io
 import logging
 from collections import ChainMap
 from functools import partialmethod
+from itertools import cycle
 
 import numpy as np
 
@@ -45,11 +45,10 @@ from bokeh.models.scales import LinearScale, LogScale
 from bokeh.models.annotations import Span
 from bokeh.models import Whisker, Scatter
 from bokeh.models import ColumnDataSource
-from bokeh.resources import CDN
 from bokeh import embed
 from bokeh.layouts import gridplot
+from bokeh import palettes
 
-from sherpa.utils import get_keyword_defaults
 from sherpa.utils.err import ArgumentErr, NotImplementedErr
 from sherpa.utils import formatting
 from sherpa.plot.utils import histogram_line
@@ -133,15 +132,6 @@ class BokehBackend(BasicBackend):
         'alpha': {
             None: 1.0,
         },
-        'color': {
-            None: 'black',
-        },
-        'markerfacecolor': {
-            None: 'black',
-        },
-        'ecolor': {
-            None: 'black',
-        },
         'capsize': {
             None: 0,
         },
@@ -163,9 +153,10 @@ class BokehBackend(BasicBackend):
 
     In particular, sherpa uses None to mean "the default", while in bokeh
     None often means "don't show this", so None values are translated to
-    a sensible default value (e.g. the color black for symbols)
+    a sensible default value (e.g. line thickness of 1)
     '''
 
+    palette = palettes.Category10[10]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -176,8 +167,13 @@ class BokehBackend(BasicBackend):
         show(self.current_fig['all_axes'])
         return False
 
-    def clear_window(self):
+    def _figure(self):
         fig = figure()
+        fig._color_cycle = cycle(self.palette)
+        return fig
+
+    def clear_window(self):
+        fig = self._figure()
         self.current_fig = {'current_axis': fig,
                             'all_axes': gridplot([fig], ncols=1)}
 
@@ -455,21 +451,23 @@ class BokehBackend(BasicBackend):
         ratioline, xaxis : None
             These parameters are deprecated and not used any longer.
         """
-        if linecolor is not None:
-            logger.warning("The linecolor attribute, set to {}, is unused.".format(linecolor))
-        if markerfacecolor is None:
-                markerfacecolor = color
         axes = self.setup_axes(overplot, clearwindow)
 
         # Set up the axes
         if not overplot:
             self.setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
-        objs = []
-        # Rely on color-cycling to work for both the "no errorbar" and
-        # "errorbar" case.
-        # TODO: Check how color cycling in bokeh works
 
+        if color is None:
+            color = next(axes._color_cycle)
+        if linecolor is not None:
+            logger.warning("The linecolor attribute, set to {}, is unused.".format(linecolor))
+        if markerfacecolor is None:
+            markerfacecolor = color
+        if ecolor is None:
+            ecolor = color
+
+        objs = []
 
         kwargs = {}
         if label is not None:
@@ -657,7 +655,7 @@ class BokehBackend(BasicBackend):
 
         # At this stage, the subplot does not exist, so we make a new one
         # and add it to the grid.
-        newf = figure()
+        newf = self._figure()
         self.current_fig['all_axes'].children.append((newf, row, col))
         self.current_fig['current_axis'] = newf
 
@@ -691,7 +689,7 @@ class BokehBackend(BasicBackend):
         # always has 6 plots in a fixed order, the implementation would be
         # simpler.
         if create:
-            figs = [figure() for n in range(nrows * ncols)]
+            figs = [self._figure() for n in range(nrows * ncols)]
             self.current_fig = {'all_axes': gridplot(figs, ncols=ncols),
                                 'current_axis': figs[row * ncols + col]
                                }
@@ -765,7 +763,7 @@ class BokehBackend(BasicBackend):
             logger.debug("Unable to create bokeh plot: %s", str(e))
             return None
 
-        image = embed.file_html(self.current_fig['current_axis'])
+        image = embed.file_html(self.current_fig['all_axes'])
 
         # See https://docs.bokeh.org/en/latest/docs/reference/embed.html#bokeh.embed.components
         # for a list of other js files that might be needed.
