@@ -42,20 +42,20 @@ logger = logging.getLogger(__name__)
 # because matplotlib does support a wider range than just the
 # set of Sherpa backend-independent options.
 updated_kwarg_docs = {
-    'color': ['string or tuple', 'Any matplotlib color'],
-    'linecolor': ['string or tuple', 'Any matplotlib color'],
-    'marker': ['string',
+    'color': ['str or tuple', 'Any matplotlib color'],
+    'linecolor': ['str or tuple', 'Any matplotlib color'],
+    'marker': ['str',
                '''"None" (as a string, no marker shown), "" (empty string, no marker shown),
 or any matplotlib marker, e.g. any of `os+v` or others
 (see matplotlib documentation).'''],
-    'linestyle': ['string',
+    'linestyle': ['str',
                   '''``'noline'``,
 ``'None'`` (as string, same as ``'noline'``),
 ``'solid'``, ``'dot'``, ``'dash'``, ``'dashdot'``, ``'-'`` (solid
 line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dashdot),
 ``''`` (empty string, no line shown), `None` (default - usually
 solid line) or any other matplotlib linestyle.'''],
-    'drawstyle': ['string', 'matplolib drawstyle'],
+    'drawstyle': ['str', 'matplolib drawstyle'],
 }
 
 kwargs_doc = ChainMap(updated_kwarg_docs, orig_kwargs_doc)
@@ -378,9 +378,6 @@ class PylabBackend(BasicBackend):
         ----------
         x : float
             x position of the vertical line in data units
-        ymin, ymax : float
-            beginning and end of the vertical line in axes coordinates, i.e. from
-            0 (bottom) to 1 (top).
         {kwargs}
         """
         axes = self.setup_axes(overplot, clearwindow)
@@ -405,9 +402,6 @@ class PylabBackend(BasicBackend):
         ----------
         y : float
             x position of the vertical line in data units
-        xmin, xmax : float
-            beginning and end of the vertical line in axes coordinates, i.e. from
-            0 (bottom) to 1 (top).
         {kwargs}
         """
         axes = self.setup_axes(overplot, clearwindow)

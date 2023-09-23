@@ -140,7 +140,8 @@ extensions = [
 ]
 # Imported from sphinx_astropy so we don't have to maintain the list
 # of servers
-# intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
+# but adding to the astropy list.
+intersphinx_mapping['bokeh'] = ('https://docs.bokeh.org/en/latest/', None)
 
 # Settings for matplotlib sphinx extension
 plot_html_show_source_link = False

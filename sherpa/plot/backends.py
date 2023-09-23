@@ -73,9 +73,9 @@ Note that all error arrays should have positive values.'''],
   - None: No errorbar.
 
 Note that all error arrays should have positive values.'''],
-              'title': ['string',
+              'title': ['str',
                         'Plot title (can contain LaTeX formulas). Only used if a new plot is created.'],
-              'xlabel': ['string',
+              'xlabel': ['str',
                          'Axis label (can contain LaTeX formulas). Only used if a new plot is created.'],
               'ylabel': ['string',
                          'Axis label (can contain LaTeX formulas). Only used if a new plot is created.'],
@@ -103,14 +103,14 @@ are shown, but only if the size of the errorbars is provided in the
 errors and pass them to this method, but the user can still decide
 to change the style of the plot and choose if error bars should be
 displayed.'''],
-              'color': ['string',
+              'color': ['str',
                         '''The following colors are accepted by all backends: ``'b'`` (blue),
 ``'r'`` (red), ``'g'`` (green), ``'k'`` (black), ``'w'`` (white),
 ``'c'`` (cyan), ``'y'`` (yellow), ``'m'`` (magenta) but they may not
 translate to the exact same RGB values in each backend, e.g. ``'b'``
 could be a different shade of blue depending on the backend.
 Some backends might accept additional values.'''],
-              'linestyle': ['string',
+              'linestyle': ['str',
                             '''The following values are accepted by all backends: ``'noline'``,
 ``'None'`` (as string, same as ``'noline'``),
 ``'solid'``, ``'dot'``, ``'dash'``, ``'dashdot'``, ``'-'`` (solid
@@ -119,14 +119,14 @@ line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dot-dashed),
 solid line).
 Some backends may accept additional values.'''],
               'linewidth': ['float', 'Thickness of the line.'],
-              'linecolor': ['string',
+              'linecolor': ['str',
                             '''The following colors are accepted by all backends: ``'b'`` (blue),
 ``'r'`` (red), ``'g'`` (green), ``'k'`` (black), ``'w'`` (white),
 ``'c'`` (cyan), ``'y'`` (yellow), ``'m'`` (magenta) but they may not
 translate to the exact same RGB values in each backend, e.g. ``'b'``
 could be a different shade of blue depending on the backend.
 Some backend might accept additional values.'''],
-              'marker': ['string',
+              'marker': ['str',
                          '''The following values are accepted by all backends: "None" (as a
 string, no marker shown), "." (dot), "o" (circle), "+", "s" (square),
 "" (empty string, no marker shown), `None` (no marker shown).
@@ -137,11 +137,20 @@ Some backends may accept additional values.'''],
               'markersize': ['float',
                              '''Size of a marker. The scale may also depend on the backend. `None`
 uses the backend-specific default.'''],
-              'ecolor': ['string', 'Color of the error bars.'],
+              'ecolor': ['str', 'Color of the error bars.'],
               'capsize': ['float', 'Size of the cap drawn at the end of the error bars.'],
-              'label': ['string', 'Label this dataset for use in a legend'],
               'levels': ['array-like', 'Levels at which to draw the contours'],
-              'aspect': ['string or float', 'Aspect ratio of the plot. Strings "equal" or "auto" are accepted.'],
+              'aspect': ['str or float', 'Aspect ratio of the plot. Strings "equal" or "auto" are accepted.'],
+              'label': ['str', 'Label this dataset for use in a legend'],
+              'levels': ['array-like', 'Levels at which to draw the contours'],
+              'ymin' : ['float', '''Beginning of the vertical line in axes coordinates,
+i.e. from 0 (bottom) to 1 (top).'''],
+              'ymax' : ['float', '''End of the vertical line in axes coordinates,
+i.e. from 0 (bottom) to 1 (top).'''],
+              'xmin' : ['float', '''Beginning of the horizontal line in axes coordinates,
+i.e. from 0 (left) to 1 (right).'''],
+              'xmax' : ['float', '''End of the vertical line in axes coordinates,
+i.e. from 0 (left) to 1 (right).'''],
               }
 '''Documentation for keyword arguments used by several functions
 
@@ -234,10 +243,6 @@ class BaseBackend(metaclass=MetaBaseBackend):
     @property
     def name(self):
         '''An easy-to-read string name
-
-        .. warning::
-           This backend is a non-functional dummy. The documentation is provided
-           as a template only.
         '''
         return self.__class__.__name__
 
@@ -328,18 +333,15 @@ class BaseBackend(metaclass=MetaBaseBackend):
 
         Depending on the backend, this may provide a new,
         empty window or clear the existing, current window.
-
-        .. warning::
-           This backend is a non-functional dummy. The documentation is provided
-           as a template only.
         """
         pass
 
+    # Needed for datastack plotting wrapper
     def initialize_plot(self, dataset, ids):
         """Create the plot window or figure for the given dataset.
 
         .. warning::
-           This backend is a non-functional dummy. The documentation is provided
+           This function is a non-functional dummy. The documentation is provided
            as a template only.
 
         Parameters
@@ -356,13 +358,14 @@ class BaseBackend(metaclass=MetaBaseBackend):
         """
         pass
 
+    # Needed for datastack plotting wrapper
     def select_plot(self, dataset, ids):
         """Select the plot window or figure for the given dataset.
 
         The plot for this dataset is assumed to have been created.
 
         .. warning::
-           This backend is a non-functional dummy. The documentation is provided
+           This function is a non-functional dummy. The documentation is provided
            as a template only.
 
         Parameters
@@ -530,6 +533,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
         pass
 
 
+    @add_kwargs_to_doc(kwargs_doc)
     @translate_args
     def vline(self, x, *,
               ymin=0, ymax=1,
@@ -549,13 +553,11 @@ class BaseBackend(metaclass=MetaBaseBackend):
         ----------
         x : float
             x position of the vertical line in data units
-        ymin, ymax : float
-            beginning and end of the vertical line in axes coordinates, i.e. from
-            0 (bottom) to 1 (top).
         {kwargs}
         """
         pass
 
+    @add_kwargs_to_doc(kwargs_doc)
     @translate_args
     def hline(self, y, *,
               xmin=0, xmax=1,
@@ -575,9 +577,6 @@ class BaseBackend(metaclass=MetaBaseBackend):
         ----------
         y : float
             x position of the vertical line in data units
-        xmin, xmax : float
-            beginning and end of the vertical line in axes coordinates, i.e. from
-            0 (bottom) to 1 (top).
         {kwargs}
         """
         pass
@@ -919,6 +918,7 @@ class BasicBackend(BaseBackend):
         warning(f'{self.__class__} does not implement contour plotting. ' +
                 'No contour will be produced.')
 
+    @add_kwargs_to_doc(kwargs_doc)
     @translate_args
     def vline(self, x, *,
               ymin=0, ymax=1,
@@ -933,10 +933,17 @@ class BasicBackend(BaseBackend):
         .. warning::
            No output will be produced by this backend, since the implementation
            is incomplete.
+
+        Parameters
+        ----------
+        x : float
+            x position of the vertical line in data units
+        {kwargs}
         """
         warning(f'{self.__class__} does not implement line plotting. ' +
                 'No line will be produced.')
 
+    @add_kwargs_to_doc(kwargs_doc)
     @translate_args
     def hline(self, y, *,
               xmin=0, xmax=1,
@@ -951,6 +958,12 @@ class BasicBackend(BaseBackend):
         .. warning::
            No output will be produced by this backend, since the implementation
            is incomplete.
+
+        Parameters
+        ----------
+        y : float
+            x position of the vertical line in data units
+        {kwargs}
            """
         warning(f'{self.__class__} does not implement line plotting. ' +
                 'No line will be produced.')

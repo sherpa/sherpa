@@ -19,17 +19,7 @@
 #
 '''
 
-The sherpa plotting API is procedural and most of the commands act on the
-"current plot" or "current figure". This fits in very well with the `matplotlib.pyplot`
-model, but requires some extra work for object-oriented plotting packages.
 
-:term:`bokeh` is such an object-oriented package, which, by itself,
-does not keep a plotting state. Usually, bokeh commands act
-on an axis object that is passed in as a parameter.
-Sherpa, on the other hand, does not keep track of those objects,
-it expects the plotting package to know what the "current" plot is.
-In this module, we solve this problem using a few module-level variables,
-which hold the "currently active plot".
 '''
 
 import logging
@@ -66,19 +56,19 @@ logger = logging.getLogger(__name__)
 # because bokeh does support a wider range than just the
 # set of Sherpa backend-independent options.
 updated_kwarg_docs = {
-    'color': ['string or tuple', 'Any bokeh color'],
+    'color': ['str or tuple', 'Any bokeh color'],
     'linecolor': ['string or tuple', 'Any bokeh color'],
-    'marker': ['string',
+    'marker': ['str',
                '''"None" (as a string, no marker shown), "" (empty string, no marker shown),
 or any bokeh marker (see bokeh documentation).'''],
-    'linestyle': ['string',
+    'linestyle': ['str',
                   '''``'noline'``,
 ``'None'`` (as string, same as ``'noline'``),
 ``'solid'``, ``'dot'``, ``'dash'``, ``'dotdash'``, ``'-'`` (solid
 line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dot-dashed),
 ``''`` (empty string, no line shown), `None` (default - usually
 solid line) or any other bokeh linestyle.'''],
-    'drawstyle': ['string', 'bokeh drawstyle'],
+    'drawstyle': ['str', 'bokeh drawstyle'],
 }
 
 kwargs_doc = ChainMap(updated_kwarg_docs, orig_kwargs_doc)
@@ -94,6 +84,32 @@ class BokehBackend(BasicBackend):
     saved and displayed in a browser without the need for a running python kernel.
     Thus, plots like this can be embedded into webpages or as "interactive figures"
     in e.g. AAS journals.
+
+    Notes
+    -----
+    The sherpa plotting API is procedural and most of the commands act on the
+    "current plot" or "current figure". This fits in very well with the `matplotlib.pyplot`
+    model, but requires some extra work for object-oriented plotting packages.
+
+    term:`bokeh` is such an object-oriented package, which, by itself,
+    does not keep a plotting state. Usually, bokeh commands act
+    on an axis object that is passed in as a parameter.
+    Sherpa, on the other hand, does not keep track of those objects,
+    it expects the plotting package to know what the "current" plot is.
+
+    We solve this problem with attributes in the BokehBackend class:
+
+    - current_fig: the current figure
+    - current_axis: the current axis. This is a reference to one of the
+      panels in the current figure.
+
+    We follow a similar approach to default to cycling through colors
+    like matplotlib does. The bokeh package does not have a similar
+    mechanism, so we wrap `bokeh.plotting.figure` to add an additional
+    attribute `_color_cycle` that is an `itertools.cycle` object
+    cycling through the colors in the palette defined in the
+    `palette` attribute of the BokehBackend class.
+
     """
 
     translate_dict = {
@@ -164,7 +180,7 @@ class BokehBackend(BasicBackend):
 
     def __exit__(self, exec_type, value, traceback):
         '''Called from the UI after an interactive plot is done.'''
-        show(self.current_fig['all_axes'])
+        show(self.current_fig)
         return False
 
     def _figure(self):
@@ -174,8 +190,8 @@ class BokehBackend(BasicBackend):
 
     def clear_window(self):
         fig = self._figure()
-        self.current_fig = {'current_axis': fig,
-                            'all_axes': gridplot([fig], ncols=1)}
+        self.current_fig = gridplot([fig], ncols=1)
+        self.current_axis = fig
 
     def setup_axes(self, overplot, clearwindow):
         """Return the axes object, creating it if necessary.
@@ -193,7 +209,7 @@ class BokehBackend(BasicBackend):
         if not overplot and clearwindow:
             self.clear_window()
 
-        return self.current_fig['current_axis']
+        return self.current_axis
 
     @add_kwargs_to_doc(kwargs_doc)
     def setup_plot(self, axes, title=None, xlabel=None, ylabel=None,
@@ -359,9 +375,6 @@ class BokehBackend(BasicBackend):
         ----------
         x : float
             x position of the vertical line in data units
-        ymin, ymax : float
-            beginning and end of the vertical line in axes coordinates, i.e. from
-            0 (bottom) to 1 (top).
         {kwargs}
         """
         axes = self.setup_axes(overplot, clearwindow)
@@ -388,9 +401,6 @@ class BokehBackend(BasicBackend):
         ----------
         y : float
             x position of the vertical line in data units
-        xmin, xmax : float
-            beginning and end of the vertical line in axes coordinates, i.e. from
-            0 (bottom) to 1 (top).
         {kwargs}
         """
         axes = self.setup_axes(overplot, clearwindow)
@@ -611,13 +621,13 @@ class BokehBackend(BasicBackend):
     def _index_axis(self, row, col):
         '''Find index number of subplot in a grid of plots
 
-        self.current_fig['all_axes'] is a bokeh.models.plots.GridPlot
+        self.current_fig is a `bokeh.models.plots.GridPlot`
         object. It has a children attribute, which is a list of tuples, where
         each tuple is a (figure, row, col) tuple. This method returns the
         index of the tuple in the list that matches the given row and col or,
         if no such tuple exists, None.
         '''
-        for i, fig in enumerate(self.current_fig['all_axes'].children):
+        for i, fig in enumerate(self.current_fig.children):
             if fig[1] == row and fig[2] == col:
                 return i
         return None
@@ -646,18 +656,18 @@ class BokehBackend(BasicBackend):
         index = self._index_axis(row, col)
         if index is not None and not clearaxes:
             # We found the right subplot, now make it the current one
-            self.current_fig['current_axis'] = self.current_fig['all_axes'][index]
+            self.current_axis = self.current_fig[index]
             return
 
         # We found the subplot, but we want to replace it with a new one
         if index is not None and clearaxes:
-            self.current_fig['all_axes'].children.pop(index)
+            self.current_fig.children.pop(index)
 
         # At this stage, the subplot does not exist, so we make a new one
         # and add it to the grid.
         newf = self._figure()
-        self.current_fig['all_axes'].children.append((newf, row, col))
-        self.current_fig['current_axis'] = newf
+        self.current_fig.children.append((newf, row, col))
+        self.current_axis = newf
 
 
 
@@ -683,16 +693,15 @@ class BokehBackend(BasicBackend):
             The ratio of the height of row number top to the other
             rows.
         """
-        # This function is written to work with an imcomplete grid of plots,
+        # This function is written to work with an incomplete grid of plots,
         # so there is a whole lot of "if plotnum is not None" in here.
         # If we were to require that all grid are complete (i.e. a 3x2 grid)
         # always has 6 plots in a fixed order, the implementation would be
         # simpler.
         if create:
             figs = [self._figure() for n in range(nrows * ncols)]
-            self.current_fig = {'all_axes': gridplot(figs, ncols=ncols),
-                                'current_axis': figs[row * ncols + col]
-                               }
+            self.current_fig = gridplot(figs, ncols=ncols)
+            self.current_axis = figs[row * ncols + col]
 
         # space is dynamically allocated and lots of things can change the
         # height, e.g. a user may have changed bokeh defaults.
@@ -705,7 +714,7 @@ class BokehBackend(BasicBackend):
         # that as the "normal" height. That might fail for more complex grids,
         # but I declare that outside the scope of this function.
         height = None
-        for fig in enumerate(self.current_fig['all_axes'].children):
+        for fig in enumerate(self.current_fig.children):
             if fig[1] != top:
                 height = fig[0].height
                 break
@@ -717,7 +726,7 @@ class BokehBackend(BasicBackend):
                 # We might have an incomplete grid of plots, and then
                 # plotnum might be None.
                 if plotnum is not None:
-                    self.current_fig['all_axes'][plotnum].height = height * ratio
+                    self.current_fig[plotnum].height = height * ratio
 
         # Axis sharing
         for c in range(ncols):
@@ -727,15 +736,15 @@ class BokehBackend(BasicBackend):
                 if basenum is None:
                     basenum = index
                 else:
-                    self.current_fig['all_axes'][index].x_range = \
-                        self.current_fig['all_axes'][basenum].x_range
+                    self.current_fig[index].x_range = \
+                        self.current_fig[basenum].x_range
 
         plotnum = self._index_axis(row, col)
         if plotnum is None:
             raise ArgumentErr("No plot at row {} and column {}." +
                               "Use create=True to create an entirely new, " +
                               "complete grid of plots.".format(row, col)) from None
-        self.current_fig['current_axis'] = self.current_fig['all_axes'][plotnum]
+        self.current_axis = self.current_fig[plotnum]
 
 
     # HTML representation
@@ -763,7 +772,7 @@ class BokehBackend(BasicBackend):
             logger.debug("Unable to create bokeh plot: %s", str(e))
             return None
 
-        image = embed.file_html(self.current_fig['all_axes'])
+        image = embed.file_html(self.current_fig)
 
         # See https://docs.bokeh.org/en/latest/docs/reference/embed.html#bokeh.embed.components
         # for a list of other js files that might be needed.
