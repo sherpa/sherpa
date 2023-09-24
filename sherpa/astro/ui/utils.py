@@ -9660,10 +9660,10 @@ class Session(sherpa.ui.utils.Session):
 
         # The source model (which includes any background model
         # components and the response) is used. The decision here is
-        # whether to set the include_bgnd_flag to True or not. The
+        # whether to set the include_bgnd_data to True or not. The
         # idea is that the background components are included IF there
-        # is no source model set. If the used does not want this then
-        # they call fake_pha without setting any backround datasets.
+        # is no source model set. If the user does not want this then
+        # they call fake_pha without setting any background datasets.
         #
         # Unfortunately the existing API for this call makes this all
         # a bit murky - in particular the bkg parameter.

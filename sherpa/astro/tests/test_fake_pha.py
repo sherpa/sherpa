@@ -23,8 +23,6 @@
 At present it is *very* limited.
 """
 
-from functools import reduce
-import operator
 import warnings
 
 import numpy as np

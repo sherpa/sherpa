@@ -114,7 +114,8 @@ def fake_pha(data, model,
     >>> from sherpa.astro.instrument import Response1D, create_arf, create_delta_rmf
     >>> from sherpa.astro.xspec import XSphabs, XSapec
 
-    Create the model to simulate (the response is added later):
+    The model used for the simulation is defined - in this case an
+    absorbed APEC model:
 
     >>> gal = XSphabs()
     >>> clus = XSapec()
@@ -125,9 +126,12 @@ def fake_pha(data, model,
     >>> clus.redshift = 0.23
     >>> clus.norm = 6.3e-4
 
-    Create the ARF, RMF, and PHA datasets. For this simulation the ARF
-    is flat, with a break at 3.2 keV, and the response is "perfect"
-    (that is, there is no broadening of the model):
+    For this example a "fake" response is generated, using the
+    create_arf and create_delta_rmf routines to create an ARF with a
+    step in it (100 cm^2 below 3.2 keV and 50 cm^2 above it) together
+    with a "perfect" RMF (so there is no blurring of energies)
+    covering 1 to 5 keV. Normally the responses would be read from a
+    file:
 
     >>> chans = np.arange(1, 101, dtype=np.int16)
     >>> egrid = np.linspace(1, 5, 101)
@@ -135,23 +139,26 @@ def fake_pha(data, model,
     >>> yarf = 100 * (elo < 3.2) + 50 * (elo >= 3.2)
     >>> arf = create_arf(elo, ehi, yarf)
     >>> rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    In this case the DataPHA structure is also created manually,
+    but it can also be read in:
+
     >>> pha = DataPHA("faked", chans, chans * 0)
     >>> pha.set_response(arf=arf, rmf=rmf)
     >>> pha.exposure = 50000
 
-    The response - a combination of the ARF and RMF, along with the
-    exposure time - is applied to the model:
+    The "faked" data is created by applying a response model to the
+    model, and passing it to `fake_pha`:
 
     >>> resp = Response1D(pha)
     >>> full_model = resp(model)
-
-    The counts array of the PHA can now be simulated:
-
     >>> rng = numpy.random.default_rng()
     >>> fake_pha(pha, full_model, rng=rng)
 
     The following overlplots the model - used to simulate the data -
     on the simulated data:
+
+    The new data can be displayed, comparing it to the model:
 
     >>> pha.set_analysis("energy")
     >>> from sherpa.astro.plot import DataPHAPlot, ModelPHAHistogram
