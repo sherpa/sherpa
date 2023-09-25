@@ -469,25 +469,41 @@ def test_416_a():
 
     pha.notice(4.5, 6.5)
 
-    mask = [False, False, False, True, True, True, False, False, False, False]
-    assert pha.mask == pytest.approx(mask)
-
-    # With tabStops not set we use ~mask (as this is in channel space).
+    # There are two ways to get the mask:
+    #   - pha.mask returns the grouped mask (if the data is
+    #     grouped)
+    #   - pha.get_mask() always returns the ungrouped mask
     #
+    mask_ungrouped = [False] * 3 + [True] * 3 + [False] * 4
+    mask_grouped = [False] * 3 + [True] * 2 + [False] * 4
+
+    assert pha.mask == pytest.approx(mask_ungrouped)
+    assert pha.get_mask() == pytest.approx(mask_ungrouped)
+    assert pha.grouping is None
+    assert pha.quality is None
+
+    # The grouping is done only for the noticed data range.
     pha.group_counts(3)
 
-    # We have a simplified mask
-    mask = [False] * 3 + [True] * 2 + [False] * 4
-    assert pha.mask == pytest.approx(mask)
+    assert pha.mask == pytest.approx(mask_grouped)
+    assert pha.get_mask() == pytest.approx(mask_ungrouped)
 
-    # the "full" mask can be retrieved with get_mask
-    mask = [False] * 3 + [True] * 3 + [False] * 4
-    assert pha.get_mask() == pytest.approx(mask)
-
-    grouping = [0, 0, 0, 1, -1, 1, 0, 0, 0, 0]
+    # Check we get the expected grouping: the first 3 and last 4
+    # channels are excluded by the notice call above, so they are 0,
+    # which means we only have 3 channels with data.
+    #
+    grouping = [0] * 3 + [1, -1, 1] + [0] * 4
     assert pha.grouping == pytest.approx(grouping)
 
-    quality = [0, 0, 0, 0, 0, 2, 0, 0, 0, 0]
+    # As with grouoping, the first 3 and last 4 channels are not
+    # changed, so have a quality of 0. For the remaining three
+    # channels we know the first group is okay (this corresponds to
+    # [1, -1] from the grouping array above, correspondinf to counts
+    # [2, 1]) but the second group (the second [1] in grouping,
+    # corresponding to counts of [1]) does not meet the grouping
+    # criteria (it sums to 1!) and so has a quality of 2.
+    #
+    quality = [0] * 3 + [0, 0, 2] + [0] * 4
     assert pha.quality == pytest.approx(quality)
 
     dep = pha.get_dep(filter=True)
