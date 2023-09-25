@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2021, 2022
+#  Copyright (C) 2016, 2018, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -27,12 +27,15 @@
 import logging
 import os
 
+import numpy as np
+
 import pytest
 
 from sherpa.astro import ui
-from sherpa.utils.err import ArgumentTypeErr, DataErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr
 from sherpa.utils.logging import SherpaVerbosity
-from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_xspec
 
 
 # Note that the logic in load_table_model is quite convoluted,
@@ -260,3 +263,63 @@ def test_get_dep_1160(clean_astro_ui):
     #
     assert ui.get_dep(filter=False) == pytest.approx(dvals)
     assert ui.get_dep(filter=True) == pytest.approx(dvals)
+
+
+@pytest.mark.parametrize("gtype", ["bins", "width", "counts",
+                                   "snr", "adapt", "adapt_snr"])
+def test_group_xxx_tabstops_invalid_string(gtype, clean_astro_ui):
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5, 6], [12, 2, 3, 4, 8, 90],
+                   ui.DataPHA)
+
+    meth = getattr(ui, f"group_{gtype}")
+    msg = "Invalid tabStops: 'eeek'"
+    with pytest.raises(ArgumentErr, match=f"^{msg}$"):
+        meth(2, tabStops="eeek")
+
+
+@pytest.mark.parametrize("arg", [None, []])
+def test_group_counts_empty_data(arg, clean_astro_ui):
+    """We error out when empty."""
+
+    ui.set_data(ui.DataPHA("empty", arg, arg))
+
+    with pytest.raises(DataErr,
+                       match="^The DataPHA object has no data$"):
+        ui.group_counts(2, tabStops="nofilter")
+
+
+@pytest.mark.parametrize("tabstops", ["nofilter", [0] * 6])
+def test_group_width_tabstops_nofilter(tabstops, clean_astro_ui):
+    """Check tabStops='nofilter'.
+
+    We also check the explicit setting to make sure they
+    are equal.
+    """
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5, 6], [12, 2, 3, 4, 8, 90],
+                   ui.DataPHA)
+    ui.notice(lo=2, hi=5)
+
+    ui.group_width(3, tabStops=tabstops)
+
+    d = ui.get_data()
+    assert d.grouping == pytest.approx([1, -1, -1, 1, -1, -1])
+    assert d.quality == pytest.approx(np.zeros(6))
+
+
+def test_group_width_tabstops_notset(clean_astro_ui):
+    """Check tabStops 4.16.0 behavior.
+
+    Compare to test_group_width_tabstops_nofilter.
+    """
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5, 6], [12, 2, 3, 4, 8, 90],
+                   ui.DataPHA)
+    ui.notice(lo=2, hi=5)
+
+    ui.group_width(3)
+
+    d = ui.get_data()
+    assert d.grouping == pytest.approx([0, 1, -1, -1, 1, 0])
+    assert d.quality == pytest.approx([0, 0, 0, 0, 2, 0])

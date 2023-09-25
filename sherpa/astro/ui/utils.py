@@ -22,7 +22,7 @@ from dataclasses import dataclass
 import logging
 import os
 import sys
-from typing import Union
+from typing import Optional, Union
 import warnings
 
 import numpy
@@ -131,6 +131,45 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
     nfilter = sherpa.ui.utils._get_filter(data)
     sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
                                          data.get_xlabel())
+
+
+def _check_pha_tabstops(data: DataPHA,
+                        tabStops: Optional[Union[str, list, numpy.ndarray]]) -> Union[None, numpy.ndarray]:
+    """Validate the tabStops argument for the group_xxx calls.
+
+    This converts from "nofilter" to numpy.zeros(nchan), where
+    nchan is the number of channels in the PHA. The length is
+    checked elsewhere.
+
+    Parameters
+    ----------
+    data : DataPHA
+       The dataset to apply the tabStops to.
+    tabStops : str, list, ndarray, or None
+       The tabStops argument.
+
+    Returns
+    -------
+    tabStops : ndarray or None
+       The tabStops value to use.
+    """
+
+    if tabStops is None:
+        return None
+
+    if not isinstance(tabStops, str):
+        # This might error out, but if so let it as it indicates a
+        # user error.
+        #
+        return numpy.asarray(tabStops)
+
+    if tabStops != "nofilter":
+        raise ArgumentErr("bad", "tabStops", tabStops)
+
+    if data.size is None or data.size == 0:
+        raise DataErr("The DataPHA object has no data")
+
+    return numpy.zeros(data.size)
 
 
 def _save_errorcol(session, idval, filename, bkg_id,
@@ -8237,10 +8276,14 @@ class Session(sherpa.ui.utils.Session):
         """Group into a fixed number of bins.
 
         Combine the data so that there `num` equal-width bins (or
-        groups). The binning scheme is applied to all the channels,
-        but any existing filter - created by the `ignore` or `notice`
-        set of functions - is re-applied after the data has been
-        grouped.
+        groups). The binning scheme is, by default, applied to only
+        the noticed data range. It is suggested that filtering is done
+        before calling group_bins.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8260,12 +8303,15 @@ class Session(sherpa.ui.utils.Session):
            When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
-        tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+        tabStops : str or array of int or bool, optional
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         Raises
         ------
@@ -8309,29 +8355,33 @@ class Session(sherpa.ui.utils.Session):
 
         >>> group_bins(50)
 
-        Group the 'jet' data set to 50 bins and plot the result,
-        then re-bin to 100 bins and overplot the data:
+        Group the 'jet' data set to 50 bins and plot the result, then
+        re-bin to 100 bins and overplot the data:
 
         >>> group_bins('jet', 50)
         >>> plot_data('jet')
         >>> group_bins('jet', 100)
         >>> plot_data('jet', overplot=True)
 
-        The grouping is applied to the full data set, and then
-        the filter - in this case defined over the range 0.5
-        to 8 keV - will be applied. This means that the
-        noticed data range will likely contain less than
-        50 bins.
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
 
         >>> set_analysis('energy')
+        >>> notice()
         >>> notice(0.5, 8)
         >>> group_bins(50)
         >>> plot_data()
 
-        Do not group any channels numbered less than 20 or
-        800 or more. Since there are 780 channels to be
-        grouped, the width of each bin will be 20 channels
-        and there are no "left over" channels:
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_bins(50, tabStops="nofilter")
+
+        Do not group any channels numbered less than 20 or 800 or
+        more. Since there are 780 channels to be grouped, the width of
+        each bin will be 20 channels and there are no "left over"
+        channels:
 
         >>> notice()
         >>> channels = get_data().channel
@@ -8344,7 +8394,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_bins(num, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_bins(num, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8354,9 +8405,14 @@ class Session(sherpa.ui.utils.Session):
         """Group into a fixed bin width.
 
         Combine the data so that each bin contains `num` channels.
-        The binning scheme is applied to all the channels, but any
-        existing filter - created by the `ignore` or `notice` set of
-        functions - is re-applied after the data has been grouped.
+        The binning scheme is, by default, applied to only the noticed
+        data range. It is suggested that filtering is done before
+        calling group_width.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8376,11 +8432,14 @@ class Session(sherpa.ui.utils.Session):
            grouping is applied to all the associated background
            data sets as well as the source data set.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         Raises
         ------
@@ -8420,28 +8479,34 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Group the default data set so that each bin contains 20
+        Group the default data set so that each bin contains 5
         channels:
 
-        >>> group_width(20)
+        >>> group_width(5)
 
         Plot two versions of the 'jet' data set: the first uses
-        20 channels per group and the second is 50 channels per
+        2 channels per group and the second is 5 channels per
         group:
 
-        >>> group_width('jet', 20)
+        >>> group_width('jet', 2)
         >>> plot_data('jet')
-        >>> group_width('jet', 50)
+        >>> group_width('jet', 5)
         >>> plot_data('jet', overplot=True)
 
-        The grouping is applied to the full data set, and then
-        the filter - in this case defined over the range 0.5
-        to 8 keV - will be applied.
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
 
         >>> set_analysis('energy')
+        >>> notice()
         >>> notice(0.5, 8)
-        >>> group_width(50)
+        >>> group_width(7)
         >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_width(5, tabStops="nofilter")
 
         The grouping is not applied to channels 101 to
         149, inclusive:
@@ -8449,7 +8514,7 @@ class Session(sherpa.ui.utils.Session):
         >>> notice()
         >>> channels = get_data().channel
         >>> ign = (channels > 100) & (channels < 150)
-        >>> group_width(40, tabStops=ign)
+        >>> group_width(4, tabStops=ign)
         >>> plot_data()
 
         """
@@ -8457,7 +8522,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_width(num, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_width(num, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8466,12 +8532,16 @@ class Session(sherpa.ui.utils.Session):
         """Group into a minimum number of counts per bin.
 
         Combine the data so that each bin contains `num` or more
-        counts. The binning scheme is applied to all the channels, but
-        any existing filter - created by the `ignore` or `notice` set
-        of functions - is re-applied after the data has been grouped.
-        The background is *not* included in this calculation; the
-        calculation is done on the raw data even if `subtract` has
-        been called on this data set.
+        counts. The background is *not* included in this calculation;
+        the calculation is done on the raw data even if `subtract` has
+        been called on this data set. The binning scheme is, by
+        default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling group_counts.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8494,11 +8564,14 @@ class Session(sherpa.ui.utils.Session):
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         Raises
         ------
@@ -8549,14 +8622,20 @@ class Session(sherpa.ui.utils.Session):
         >>> group_counts('jet', 50)
         >>> plot_data('jet', overplot=True)
 
-        The grouping is applied to the full data set, and then
-        the filter - in this case defined over the range 0.5
-        to 8 keV - will be applied.
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
 
         >>> set_analysis('energy')
+        >>> notice()
         >>> notice(0.5, 8)
         >>> group_counts(30)
         >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_counts(25, tabStops="nofilter")
 
         If a channel has more than 30 counts then do not group,
         otherwise group channels so that they contain at least 40
@@ -8575,7 +8654,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_counts(num, maxLength, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_counts(num, maxLength, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8586,12 +8666,17 @@ class Session(sherpa.ui.utils.Session):
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least `snr`. The binning scheme is applied to all the
-        channels, but any existing filter - created by the `ignore` or
-        `notice` set of functions - is re-applied after the data has
-        been grouped.  The background is *not* included in this
+        of at least `snr`. The background is *not* included in this
         calculation; the calculation is done on the raw data even if
-        `subtract` has been called on this data set.
+        `subtract` has been called on this data set. The binning
+        scheme is, by default, applied to only the noticed data
+        range. It is suggested that filtering is done before calling
+        group_snr.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8615,11 +8700,14 @@ class Session(sherpa.ui.utils.Session):
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -8675,12 +8763,28 @@ class Session(sherpa.ui.utils.Session):
         >>> group_snr('jet', 5)
         >>> plot_data('jet', overplot=True)
 
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
+
+        >>> set_analysis('energy')
+        >>> notice()
+        >>> notice(0.5, 8)
+        >>> group_snr(3)
+        >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_snr(3, tabStops="nofilter")
+
         """
         if snr is None:
             id, snr = snr, id
 
         def change(data):
-            data.group_snr(snr, maxLength, tabStops, errorCol)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_snr(snr, maxLength, ts, errorCol)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8694,10 +8798,14 @@ class Session(sherpa.ui.utils.Session):
         order to avoid over-grouping bright features, rather than at
         the first channel of the data. The adaptive nature means that
         low-count regions between bright features may not end up in
-        groups with the minimum number of counts.  The binning scheme
-        is applied to all the channels, but any existing filter -
-        created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
+        groups with the minimum number of counts. The binning scheme
+        is, by default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling group_adapt.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8720,11 +8828,14 @@ class Session(sherpa.ui.utils.Session):
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         Raises
         ------
@@ -8776,12 +8887,28 @@ class Session(sherpa.ui.utils.Session):
         >>> group_counts('jet', 20)
         >>> plot_data('jet', overplot=True)
 
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
+
+        >>> set_analysis('energy')
+        >>> notice()
+        >>> notice(0.5, 8)
+        >>> group_adapt(20)
+        >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_adapt(20, tabStops="nofilter")
+
         """
         if min is None:
             id, min = min, id
 
         def change(data):
-            data.group_adapt(min, maxLength, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_adapt(min, maxLength, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8796,10 +8923,15 @@ class Session(sherpa.ui.utils.Session):
         order to avoid over-grouping bright features, rather than at
         the first channel of the data. The adaptive nature means that
         low-count regions between bright features may not end up in
-        groups with the minimum number of counts.  The binning scheme
-        is applied to all the channels, but any existing filter -
-        created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
+        groups with the minimum number of counts. The binning scheme
+        is, by default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling
+        group_adapt_snr.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8823,11 +8955,14 @@ class Session(sherpa.ui.utils.Session):
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -8884,12 +9019,28 @@ class Session(sherpa.ui.utils.Session):
         >>> group_snr('jet', 4)
         >>> plot_data('jet', overplot=True)
 
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
+
+        >>> set_analysis('energy')
+        >>> notice()
+        >>> notice(0.5, 8)
+        >>> group_adapt_snr(4)
+        >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_adapt_snr(3, tabStops="nofilter")
+
         """
         if min is None:
             id, min = min, id
 
         def change(data):
-            data.group_adapt_snr(min, maxLength, tabStops, errorCol)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_adapt_snr(min, maxLength, ts, errorCol)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
