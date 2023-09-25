@@ -776,8 +776,9 @@ class Session(sherpa.ui.utils.Session):
     def calc_bkg_stat_info(self):
         """Display the statistic values for the current background models.
 
-        Returns the statistic values for the background datasets.  See
-        calc_stat_info.
+        Returns the statistics values for background datasets with
+        background models. See `calc_stat_info` for a description
+        of the return value.
 
         .. versionadded:: 4.16.0
 
