@@ -3509,11 +3509,12 @@ It is an integer or string.
         the quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpNumBins", len(self.channel), num,
-                            tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_bins(num, tabStops=tabStops)
+
+        self._dynamic_group("grpNumBins", len(self.channel), num,
+                            tabStops=tabStops)
 
     def group_width(self, val, tabStops=None):
         """Group into a fixed bin width.
@@ -3551,11 +3552,12 @@ It is an integer or string.
         for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpBinWidth", len(self.channel), val,
-                            tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_width(val, tabStops=tabStops)
+
+        self._dynamic_group("grpBinWidth", len(self.channel), val,
+                            tabStops=tabStops)
 
     def group_counts(self, num, maxLength=None, tabStops=None):
         """Group into a minimum number of counts per bin.
@@ -3597,11 +3599,12 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpNumCounts", self.counts, num,
-                            maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
+
+        self._dynamic_group("grpNumCounts", self.counts, num,
+                            maxLength=maxLength, tabStops=tabStops)
 
     # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
@@ -3650,13 +3653,14 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpSnr", self.counts, snr,
-                            maxLength=maxLength, tabStops=tabStops,
-                            errorCol=errorCol)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops,
                           errorCol=errorCol)
+
+        self._dynamic_group("grpSnr", self.counts, snr,
+                            maxLength=maxLength, tabStops=tabStops,
+                            errorCol=errorCol)
 
     def group_adapt(self, minimum, maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
@@ -3701,12 +3705,13 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpAdaptive", self.counts, minimum,
-                            maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_adapt(minimum, maxLength=maxLength,
                             tabStops=tabStops)
+
+        self._dynamic_group("grpAdaptive", self.counts, minimum,
+                            maxLength=maxLength, tabStops=tabStops)
 
     # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_adapt_snr(self, minimum, maxLength=None, tabStops=None,
@@ -3759,13 +3764,14 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpAdaptiveSnr", self.counts, minimum,
-                            maxLength=maxLength, tabStops=tabStops,
-                            errorCol=errorCol)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_adapt_snr(minimum, maxLength=maxLength,
                                 tabStops=tabStops, errorCol=errorCol)
+
+        self._dynamic_group("grpAdaptiveSnr", self.counts, minimum,
+                            maxLength=maxLength, tabStops=tabStops,
+                            errorCol=errorCol)
 
     def eval_model_to_fit(self, modelfunc):
         model = super().eval_model_to_fit(modelfunc)

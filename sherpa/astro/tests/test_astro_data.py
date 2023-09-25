@@ -3694,3 +3694,41 @@ def test_pha_checks_background_size_is_set_bkg():
     with pytest.raises(DataErr,
                        match="^The channel field of the background must be set$"):
         pha.set_background(bkg)
+
+
+def test_pha_group_xxx_with_background(caplog):
+    """Do we get any warning from the background?
+
+    Assume we can test just one of the group_xxx routines.
+
+    This is issue #1881.
+    """
+
+    chans = [1, 2, 3, 4, 5]
+    src = DataPHA("src", chans, [4, 2, 3, 2, 1])
+    bkg = DataPHA("bkg", chans, [1, 2, 0, 2, 2])
+    src.set_background(bkg)
+
+    assert src.grouping is None
+    assert src.quality is None
+    assert bkg.grouping is None
+    assert bkg.quality is None
+
+    assert not src.grouped
+    assert not bkg.grouped
+
+    # Pick something which creates different grouping for source and
+    # background.
+    #
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        src.group_counts(4)
+
+    assert src.grouping == pytest.approx([1, 1, -1, 1, -1])
+    assert src.quality == pytest.approx([0, 0, 0, 2, 2])
+    assert bkg.grouping == pytest.approx([1, -1, -1, -1, 1])
+    assert bkg.quality == pytest.approx([0, 0, 0, 0, 2])
+
+    assert src.grouped
+    assert bkg.grouped
+
+    assert len(caplog.records) == 0
