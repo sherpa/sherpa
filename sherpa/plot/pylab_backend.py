@@ -327,8 +327,14 @@ class PylabBackend(BasicBackend):
                       capsize=capsize,
                       barsabove=barsabove,
                       linewidth=linewidth,
-                      label=label,
+                      # We do not want two labels for the same dataset
+                      # TODO: Do we want errorbars in the label?
+                      # Currently, we gives a line with no marker
+                      # label=label,
                       zorder=zorder)
+        handles, _ = axes.get_legend_handles_labels()
+        if len(handles) > 0:
+            axes.legend()
 
     # Note that this is an internal method that is not wrapped in
     # @ translate_args
@@ -494,7 +500,7 @@ class PylabBackend(BasicBackend):
                 xerr = xerr / 2.
             xerr = xerr if xerrorbars else None
             yerr = yerr if yerrorbars else None
-            return axes.errorbar(x, y, yerr, xerr,
+            obj = axes.errorbar(x, y, yerr, xerr,
                                  label=label,
                                  color=color,
                                  linestyle=linestyle,
@@ -508,17 +514,22 @@ class PylabBackend(BasicBackend):
                                  barsabove=barsabove,
                                  zorder=zorder)
 
-        return axes.plot(x, y,
-                         color=color,
-                         alpha=alpha,
-                         linestyle=linestyle,
-                         linewidth=linewidth,
-                         label=label,
-                         drawstyle=drawstyle,
-                         marker=marker,
-                         markersize=markersize,
-                         markerfacecolor=markerfacecolor,
-                         zorder=zorder)
+        else:
+            obj = axes.plot(x, y,
+                            color=color,
+                            alpha=alpha,
+                            linestyle=linestyle,
+                            linewidth=linewidth,
+                            label=label,
+                            drawstyle=drawstyle,
+                            marker=marker,
+                            markersize=markersize,
+                            markerfacecolor=markerfacecolor,
+                            zorder=zorder)
+        handles, _ = axes.get_legend_handles_labels()
+        if len(handles) > 0:
+            axes.legend()
+        return obj
 
 
     @add_kwargs_to_doc(kwargs_doc)
@@ -572,6 +583,9 @@ class PylabBackend(BasicBackend):
                          colors=colors,
                          linewidths=linewidths,
                          linestyles=linestyles)
+        handles, _ = axes.get_legend_handles_labels()
+        if len(handles) > 0:
+            axes.legend()
 
     def set_subplot(self, row, col, nrows, ncols, clearaxes=True,
                     left=None,
