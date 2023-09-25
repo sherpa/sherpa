@@ -1431,14 +1431,20 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
 def calc_grp_chan_matrix(fname: str) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
     """Read in an image and convert it to RMF components.
 
-    For an image containing a RMF - so X axis is for channels and Y
-    axis is for the energy axis - extract the needed data to create a
-    DataRMF object (modulo knowledge of the channel or energy grids).
+    For an image containing a RMF, such as created by the `CIAO tool
+    rmfimg <https://cxc.harvard.edu/ciao/ahelp/rmfimg.html>`_),
+    extract the needed data to create a DataRMF object (modulo
+    knowledge of the channel or energy grids).
 
     Parameters
     ----------
     fname : str
-       The file name.
+       The file name containing the RMF as an image in a format the
+       I/O backend can read (normally this will be FITS). The X axis
+       represents channels and the Y axis the energy resolution of the
+       RMF. At present any WCS information stored about these axes is
+       ignored, as is any metadata (such as the starting point of the
+       channel axis).
 
     Returns
     -------
@@ -1452,7 +1458,9 @@ def calc_grp_chan_matrix(fname: str) -> tuple[numpy.ndarray, numpy.ndarray, nump
         assert io.backend is not None
 
     # TODO: this could use the WCS info to create the channel and
-    # energy arrays, at least for files created by rmfimg.
+    # energy arrays, at least for files created by rmfimg. However
+    # it's not clear we can encode this information without losing
+    # some information.
     #
     data, _ = io.backend.get_image_data(fname)
     return matrix_to_rmf(data["y"])
@@ -1466,12 +1474,20 @@ def matrix_to_rmf(matrix: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray, 
     Parameters
     ----------
     matrix : ndarray
-       A 2D matrix (X axis is channels, Y axis is energy).
+       A 2D matrix of shape (ny, nx), where ny represents the energy
+       axis and nx the channels.
 
     Returns
     -------
     n_grp, f_chan, n_chan, matrix : (ndarray, ndarray, ndarray, ndarray)
        Needed to create a DataRMF to match matrix.
+
+    Notes
+    -----
+    This assumes that the channel array starts at 1 and there is no
+    knowledge of the energy bounds (either the ENERG_LO and ENERG_HI
+    values used for the matrix itself or the E_MIN and E_MAX values
+    used to approximate the channel boundaries).
 
     """
 
