@@ -322,6 +322,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types["source_component"].append(sherpa.astro.plot.ComponentSourcePlot())
 
         self._plot_types['arf'] = [sherpa.astro.plot.ARFPlot()]
+        self._plot_types['rmf'] = [sherpa.astro.plot.RMFPlot()]
         self._plot_types['order'] = [sherpa.astro.plot.OrderPlot()]
 
         self._plot_types['bkg'] = [sherpa.astro.plot.BkgDataPlot()]
@@ -11193,6 +11194,67 @@ class Session(sherpa.ui.utils.Session):
         plotobj.prepare(arf, data)
         return plotobj
 
+
+    def get_rmf_plot(self, id=None, resp_id=None, recalc=True):
+        """Return the data used by plot_arf.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set with an ARF. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           Which ARF to use in the case that multiple ARFs are
+           associated with a data set. The default is ``None``,
+           which means the first one.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_rmf` (or `get_rmf_plot`) are returned, otherwise
+           the data is re-generated.
+
+        Returns
+        -------
+        rmf_plot : a `sherpa.astro.plot.RMFPlot` instance
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+
+        See Also
+        --------
+        plot : Create one or more plot types.
+        plot_rmf : Plot the RMF associated with a data set.
+
+        Examples
+        --------
+
+        Return the RMF plot data for the default data set:
+
+        >>> rplot = get_rmf_plot()
+
+        Return the RMF data for the second response of the
+        data set labelled 'histate', and then plot it:
+
+        >>> rplot = get_rmf_plot('histate', 2)
+        >>> rplot.plot()
+
+        """
+
+        plotobj = self._plot_types["rmf"][0]
+        if not recalc:
+            return plotobj
+
+        idval = self._fix_id(id)
+        data = self._get_pha_data(idval)
+        rmf = data.get_rmf(resp_id)
+        if rmf is None:
+            raise DataErr('norsp', idval)
+
+        plotobj.prepare(rmf, data)
+        return plotobj
+
+
     def get_bkg_fit_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_fit.
 
@@ -12104,6 +12166,78 @@ class Session(sherpa.ui.utils.Session):
         plotobj = self.get_arf_plot(id, resp_id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
+
+
+    def plot_rmf(self, id=None, resp_id=None, replot=False, overplot=False,
+                 clearwindow=True, **kwargs):
+        """Plot the RMF associated with a data set.
+
+        Display the energy redistribution from the RMF
+        component of a PHA data set.
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set with an ARF. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           Which ARF to use in the case that multiple ARFs are
+           associated with a data set. The default is ``None``,
+           which means the first one.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_data`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an existing plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+
+        See Also
+        --------
+        get_rmf_plot : Return the data used by plot_rmf.
+        plot : Create one or more plot types.
+
+        Examples
+        --------
+
+        Plot the RMF for the default data set:
+
+        >>> plot_rmf()
+
+        Plot the RMF from data set 1 and overplot
+        the RMF from data set 2:
+
+        >>> plot_rmf(1)
+        >>> plot_rmf(2, overplot=True)
+
+        Plot the RMFs labelled "rmf1" and "rmf2" for the
+        "src" data set:
+
+        >>> plot_arf("src", "rmf1")
+        >>> plot_arf("src", "rmf2", overplot=True)
+
+        The following example requires that the Matplotlib backend
+        is selected, since this determines what extra keywords
+        `plot_rmf` accepts. The RMFs from the default and data set
+        2 are drawn together, but the second curve is drawn with
+        a dashed line.
+
+        >>> plot_rmf(ylog=True)
+        >>> plot_rmf(2, overplot=True, linestyle='dashed')
+
+        """
+
+        plotobj = self.get_rmf_plot(id, resp_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
+
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self, id=None, lo=None, hi=None, replot=False,

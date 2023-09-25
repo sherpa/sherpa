@@ -574,13 +574,22 @@ def html_rmf(rmf):
 
     # See _html_arf for general comments
 
+    from sherpa.astro.plot import RMFPlot
+    from sherpa import plot
+
     ls = []
 
-    svg = simulate_rmf_plot(rmf)
-    if svg is not None:
-        out = formatting.html_svg(svg, 'RMF Plot')
-    else:
+    plotter = RMFPlot()
+    plotter.prepare(rmf)
+
+    try:
+        out = plot.backend.as_html_plot(plotter, 'RMF Plot')
+    except AttributeError:
+        out = None
+
+    if out is None:
         out = _extract_fields(rmf, 'RMF Data')
+
 
     ls.append(out)
 
@@ -718,74 +727,6 @@ def html_img(img):
         ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(img, ls)
-
-
-def simulate_rmf_plot(rmf):
-    """Create a plot which shows the response to monochromatic energies.
-
-    The SVG of the plot is returned if matplotlib is selected as the
-    backend. The choice of energies used to create the response to
-    monochromatic energies is based on the data range (using log
-    scaling).
-
-    """
-
-    from sherpa.models.basic import Delta1D
-    from sherpa import plot
-
-    try:
-        from matplotlib import pyplot as plt
-    except ImportError:
-        return None
-
-    # X access
-    #
-    if rmf.e_min is None:
-        x = numpy.arange(rmf.offset, rmf.detchans + rmf.offset)
-        xlabel = 'Channel'
-    else:
-        x = 0.5 * (rmf.e_min + rmf.e_max)
-        xlabel = 'Energy (keV)'
-
-    # How many monochromatic lines to use
-    #
-    nlines = 5
-
-    # for now let's just create log-spaced energies
-    #
-    elo, ehi = rmf.energ_lo, rmf.energ_hi
-    l1 = numpy.log10(elo[0])
-    l2 = numpy.log10(ehi[-1])
-    dl = (l2 - l1) / (nlines + 1)
-
-    lines = l1 + dl * numpy.arange(1, nlines + 1)
-    energies = numpy.power(10, lines)
-
-    mdl = Delta1D()
-
-    def plotfunc():
-        fig, ax = plt.subplots()
-        fig.subplots_adjust(bottom=0.2)
-
-        for energy in energies:
-            mdl.pos = energy
-            y = rmf.apply_rmf(mdl(elo, ehi))
-            ax.plot(x, y, label=f'{energy:.2g} keV')
-
-        # Try to get the legend centered nicely below the plot
-        fig.legend(loc='center', ncol=nlines, bbox_to_anchor=(0.0, 0, 1, 0.1))
-
-        ax.set_xlabel(xlabel)
-        ax.set_title(rmf.name)
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-
-        return fig
-
-    try:
-        return plot.backend.as_svg(plotfunc)
-    except AttributeError:
-        return None
 
 
 def img_plot(img):
@@ -5306,9 +5247,7 @@ class DataIMG(Data2D):
         isfile = os.path.isfile(val)
         reg = Region(val, isfile)
 
-        # Calculate the mask for this region as an "included"
-        # region.
-        #
+        # Calculate the mask for this region as an "included" region.
         mask = reg.mask(self.get_x0(), self.get_x1())
         mask = mask.astype(bool)
 

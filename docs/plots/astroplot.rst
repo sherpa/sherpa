@@ -18,6 +18,7 @@ The sherpa.astro.plot module
       ComponentModelPlot
       ComponentSourcePlot
       ARFPlot
+      RMFPlot
       BkgDataPlot
       BkgModelPHAHistogram
       BkgModelHistogram
