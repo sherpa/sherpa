@@ -2333,7 +2333,7 @@ class Session(NoNewAttributesAfterInit):
         # this if the rng setting is None, but that would be
         # problematic to users who change the method (as it could
         # leave an "old" RNG state lying around), although it does
-        # mean that if the user has exlpicitly set rng then it will be
+        # mean that if the user has explicitly set rng then it will be
         # over-written here. An alternative would be to remove the
         # "rng" setting here (i.e. hide it somehow), but then how does
         # this get passed to the method?
