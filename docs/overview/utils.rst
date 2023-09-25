@@ -8,7 +8,9 @@ The sherpa.utils module
 
 .. versionchanged:: 4.16.0
    The `parallel_map` function should now be taken from the
-   :py:mod:`sherpa.utils.parallel` module.
+   :py:mod:`sherpa.utils.parallel` module and the numeric types
+   (`SherpaFloat`, `SherpaInt`, and `SherpaUInt`) from the
+   `sherpa.utils.numeric_types` module.
 
    .. rubric:: Functions
 
