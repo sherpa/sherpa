@@ -18,6 +18,8 @@ burden...
 
       add_model
       add_user_pars
+      calc_bkg_stat
+      calc_bkg_stat_info
       calc_chisqr
       calc_data_sum
       calc_data_sum2d
@@ -83,6 +85,7 @@ burden...
       get_bkg_scale
       get_bkg_source
       get_bkg_source_plot
+      get_bkg_stat_info
       get_cdf_plot
       get_chisqr_plot
       get_conf

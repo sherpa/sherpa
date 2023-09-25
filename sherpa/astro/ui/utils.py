@@ -762,6 +762,169 @@ class Session(sherpa.ui.utils.Session):
         txt = self._get_show_bkg_model(id, bkg_id)
         send_to_pager(txt, outfile, clobber)
 
+    def calc_bkg_stat(self, id=None, *otherids):
+        """Calculate the fit statistic for a background data set.
+
+        Evaluate the current background models for the background
+        datasets, calculate the statistic for each background, and
+        return the sum.  No fitting is done, as the current model
+        parameter, and any filters, are used. The `calc_bkg_stat_info`
+        routine should be used if the result for a particular
+        background component needs to be returned.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then all
+           background data sets with an associated background model
+           are used simultaneously.
+        *otherids : int or str, optional
+           Other data sets to use in the calculation.
+
+        Returns
+        -------
+        stat : number
+           The current statistic value.
+
+        See Also
+        --------
+        calc_bkg_stat_info, calc_stat, fit_bkg, get_bkg_stat_info,
+        set_stat
+
+        Examples
+        --------
+
+        Calculate the statistic for the background in the default data
+        set:
+
+        >>> stat = calc_bkg_stat()
+
+        Find the statistic for the background for data set 3:
+
+        >>> stat = calc_bkg_stat(3)
+
+        Calculate the background statistic value using two different
+        statistics:
+
+        >>> set_stat('chi2datavar')
+        >>> s1 = calc_bkg_stat()
+        >>> set_stat('chi2gehrels')
+        >>> s2 = calc_bkg_stat()
+
+        """
+        ids, f = self._get_bkg_fit(id, otherids)
+        return f.calc_stat()
+
+    def calc_bkg_stat_info(self):
+        """Display the statistic values for the current background models.
+
+        Returns the statistics values for background datasets with
+        background models. See `calc_stat_info` for a description
+        of the return value.
+
+        .. versionadded:: 4.16.0
+
+        See Also
+        --------
+        calc_bkg_stat, calc_stat_info, get_bkg_stat_info
+
+        Notes
+        -----
+        If a fit to a particular background data set has not been
+        made, or values - such as parameter settings, the noticed data
+        range, or choice of statistic - have been changed since the
+        last fit, then the results for that data set may not be
+        meaningful and will therefore bias the results for the
+        simultaneous results.
+
+        Examples
+        --------
+
+        >>> calc_bkg_stat_info()
+
+        """
+        output = self.get_bkg_stat_info()
+        output = [statinfo.format() for statinfo in output]
+
+        if len(output) > 1:
+            info('\n\n'.join(output))
+        else:
+            info(output[0])
+
+    def get_bkg_stat_info(self):
+        """Return the statistic values for the current background models.
+
+        Return the statistic values for the background datasets.
+        See get_stat_info.
+
+        .. versionadded:: 4.16.0
+
+        Returns
+        -------
+        stats : array of `sherpa.fit.StatInfoResults`
+           The values for each data set. If there are multiple model
+           expressions then the last element will be the value for the
+           combined data sets.
+
+        See Also
+        --------
+        calc_bkg_stat, calc_bkg_stat_info, get_stat_info
+
+        Notes
+        -----
+        If a fit to a particular data set has not been made, or values
+        - such as parameter settings, the noticed data range, or
+        choice of statistic - have been changed since the last fit,
+        then the results for that data set may not be meaningful and
+        will therefore bias the results for the simultaneous results.
+
+        Examples
+        --------
+
+        >>> res = get_stat_info()
+        >>> res[0].statval
+        498.21750663761935
+        >>> res[0].dof
+        439
+
+        """
+
+        store = self._prepare_bkg_fit(None)
+
+        # Prepare the per-background fits.
+        #
+        output = []
+        if len(store) > 1:
+            for s in store:
+                f = Fit(s.data, s.model, self._current_stat)
+                statinfo = f.calc_stat_info()
+                statinfo.ids = (s.idval, )
+                statinfo.bkg_ids = (s.bkg_id, )
+                statinfo.name = f"Background {s.bkg_id} for Dataset {s.idval}"
+
+                output.append(statinfo)
+
+        # The statinfo object is not really designed for cases where
+        # the background ids may differ, so just use the set of all
+        # identifiers.
+        #
+        bkgids = sorted(set(s.bkg_id for s in store))
+
+        idvals, f = self._get_fit_obj(store, estmethod=None)
+        statinfo = f.calc_stat_info()
+        statinfo.ids = list(idvals)  # TODO: list or tuple?
+        statinfo.bkg_ids = tuple(bkgids)
+        if len(idvals) == 1:
+            statinfo.name = f'Background for Dataset {statinfo.ids}'  # TODO: do we want to use ids[0]?
+        else:
+            statinfo.name = f'Backgrounds for Datasets {statinfo.ids}'
+
+        output.append(statinfo)
+        return output
+
+
     ###########################################################################
     # Data
     ###########################################################################
@@ -10834,26 +10997,11 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
-        contour_fit : Contour the fit to a data set.
-        covar : Estimate the confidence intervals using the confidence method.
-        fit : Fit a model to one or more data sets.
-        freeze : Fix model parameters so they are not changed by a fit.
-        get_fit_results : Return the results of the last fit.
-        plot_fit : Plot the fit results (data, model) for a data set.
-        image_fit : Display the data, model, and residuals for a data set in the image viewer.
-        set_stat : Set the statistical method.
-        set_method : Change the optimization method.
-        set_method_opt : Change an option of the current optimization method.
-        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
-        set_bkg_model : Set the background model expression for a PHA data set.
-        set_full_model : Define the convolved model expression for a data set.
-        set_iter_method : Set the iterative-fitting scheme used in the fit.
-        set_model : Set the model expression for a data set.
-        show_bkg_source : Display the background model expression for a data set.
-        show_bkg_model : Display the background model expression used to fit a data set.
-        show_fit : Summarize the fit results.
-        thaw : Allow model parameters to be varied during a fit.
+        calc_bkg_stat, conf, contour_fit, covar, fit, freeze,
+        get_fit_results, plot_fit, image_fit, set_stat, set_method,
+        set_method_opt, set_bkg_full_model, set_bkg_model,
+        set_full_model, set_iter_method, set_model, show_bkg_source,
+        show_bkg_model, show_fit, thaw
 
         Notes
         -----
