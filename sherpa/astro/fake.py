@@ -78,14 +78,18 @@ def fake_pha(data, model,
     -----
 
     The model must include the relevant response, and if a background
-    model is required then it must be included. The model is evaluated
-    to create the predicted counts. If the PHA dataset contains any
-    backgrounds and include_bkg_data is set then the counts are added,
-    after scaling, to the predicted counts. The predicted counts are
-    then passed to the simulate routine to create the simulated data.
+    model is required then it must also be included. The simulation
+    requires an array of "predicted counts" (one for each channel).
+    This array is created by evaluating the model and then, if the
+    dataset contains any background datasets and the include_bkg_data
+    flag is set, then the background signal is added, after
+    appropriate scaling between background and source apertures and
+    exposure times.  This "predicted counts" array is then passed to
+    the method argument to create the simulated data.
 
-    If simulated backgrounds are required then they should be
-    simulated with this routine and then added to the faked source
+    If simulated backgrounds are required then the backgrounds should
+    be simulated separately (as if they were source models but with no
+    associated backgrounds) and then added to the faked source
     dataset.
 
     This routine was significantly changed in Sherpa 4.16.1. To update
