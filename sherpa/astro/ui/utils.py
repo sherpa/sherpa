@@ -9529,12 +9529,12 @@ class Session(sherpa.ui.utils.Session):
         idval = self._fix_id(id)
 
         if idval in self._data:
-            d = self._get_pha_data(idval)
+            pha = self._get_pha_data(idval)
         else:
-            d = DataPHA('', None, None)
-            self.set_data(idval, d)
+            pha = DataPHA('', None, None)
+            self.set_data(idval, pha)
 
-        if rmf is None and len(d.response_ids) == 0:
+        if rmf is None and len(pha.response_ids) == 0:
             raise DataErr('normffake', idval)
 
         # TODO: do we still expect to get bytes here?
@@ -9546,24 +9546,28 @@ class Session(sherpa.ui.utils.Session):
             arf = self.unpack_arf(arf)
 
         if not (rmf is None and arf is None):
-            for resp_id in d.response_ids:
-                d.delete_response(resp_id)
+            # Remove any existing responses if ones are given.  This
+            # means that the rmf and arf arguments can only be used
+            # for "single-response" cases.
+            #
+            for resp_id in pha.response_ids:
+                pha.delete_response(resp_id)
 
         # Get one rmf for testing the channel number
         # This would be a lot simpler if I could just raise the
         # incompatiblersp error on the OO layer (that happens, but the id
         # is not in the error messaage).
         if rmf is None:
-            rmf0 = d.get_rmf()
+            rmf0 = pha.get_rmf()
         elif numpy.iterable(rmf):
             rmf0 = self.unpack_rmf(rmf[0])
         else:
             rmf0 = rmf
 
-        if d.channel is None:
-            d.channel = sao_arange(1, rmf0.detchans)
+        if pha.channel is None:
+            pha.channel = sao_arange(1, rmf0.detchans)
 
-        elif len(d.channel) != rmf0.detchans:
+        elif len(pha.channel) != rmf0.detchans:
             raise DataErr('incompatibleresp', rmf.name, str(idval))
 
         # at this point, we can be sure that arf is not a string, because
@@ -9587,25 +9591,25 @@ class Session(sherpa.ui.utils.Session):
                 self.set_rmf(idval, rmf)
 
         if exposure is not None:
-            d.exposure = exposure
+            pha.exposure = exposure
 
         if backscal is not None:
-            d.backscal = backscal
+            pha.backscal = backscal
 
         if areascal is not None:
-            d.areascal = areascal
+            pha.areascal = areascal
 
         if quality is not None:
-            d.quality = quality
+            pha.quality = quality
 
         if grouping is not None:
-            d.grouping = grouping
+            pha.grouping = grouping
 
-        if d.grouping is not None:
+        if pha.grouping is not None:
             if sherpa.utils.bool_cast(grouped):
-                d.group()
+                pha.group()
             else:
-                d.ungroup()
+                pha.ungroup()
 
         # If bkg is None then there is no background component, which
         # means removing any background dataset or models.  They will
@@ -9615,13 +9619,13 @@ class Session(sherpa.ui.utils.Session):
         # background models are set, but we do not force this
         # requirement here).
         #
-        # If bkg is a DataPHA object then remove all the existing
-        # backgrounds and replace them with the background, and set
-        # include_bkg_data. There is also the need to restore a
-        # background model if set: given that there's only the
-        # possibility of using a single background dataset this
-        # potentially loses information, but it's unclear what the
-        # user really expects here given the existing API.
+        # If bkg is a DataPHA object (and so not set to "model") then
+        # remove all the existing backgrounds and replace them with
+        # the background, and set include_bkg_data. There is also the
+        # need to restore a background model if set: given that
+        # there's only the possibility of using a single background
+        # dataset this potentially loses information, but it's unclear
+        # what the user really expects here given the existing API.
         #
         include_bkg_data = False
         restore = {}
@@ -9632,15 +9636,16 @@ class Session(sherpa.ui.utils.Session):
             # an argument to say they should be kept, but it's not
             # clear what is best.
             #
-            for bkg_id in d.background_ids:
-                restore[bkg_id] = {"data": d.get_background(bkg_id)}
+            for bkg_id in pha.background_ids:
+                restore[bkg_id] = {"data": pha.get_background(bkg_id)}
                 try:
-                    restore[bkg_id]["model"] = self.get_bkg_source(idval, bkg_id)
+                    restore[bkg_id]["model"] = self.get_bkg_source(idval,
+                                                                   bkg_id)
                     self.delete_bkg_model(idval, bkg_id)
                 except ModelErr:
                     pass
 
-                d.delete_background(bkg_id)
+                pha.delete_background(bkg_id)
 
         elif bkg != "model":
             try:
@@ -9651,31 +9656,17 @@ class Session(sherpa.ui.utils.Session):
             except ModelErr as me:
                 old_model = None
 
-            for bkg_id in d.background_ids:
+            for bkg_id in pha.background_ids:
                 self.delete_bkg_model(idval, bkg_id)
-                d.delete_background(bkg_id)
+                pha.delete_background(bkg_id)
 
             self.set_bkg(idval, bkg)
             include_bkg_data = True
 
-        # The source model (which includes any background model
-        # components and the response) is used. The decision here is
-        # whether to set the include_bgnd_data to True or not. The
-        # idea is that the background components are included IF there
-        # is no source model set. If the user does not want this then
-        # they call fake_pha without setting any background datasets.
-        #
-        # Unfortunately the existing API for this call makes this all
-        # a bit murky - in particular the bkg parameter.
-        #
-        m = self.get_model(idval)
-        include_bkg_data = False
-        if bkg is not None and bkg != "model":
-            include_bkg_data = True
-
-        fake.fake_pha(d, m, include_bkg_data=include_bkg_data,
-                      method=method, rng=self.get_rng())
-        d.name = 'faked'
+        mdl = self.get_model(idval)
+        fake.fake_pha(pha, mdl, method=method, rng=self.get_rng(),
+                      include_bkg_data=include_bkg_data)
+        pha.name = 'faked'
 
         # Restore any background that may have been removed.
         #
