@@ -116,6 +116,7 @@ docs/**/api
 docs/SherpaQuickStart.ipynb
 docs/NotebookSupport.ipynb
 docs/ExamplePlots.ipynb
+docs/ViewingPHAResponses.ipynb
 
 #generated from python setup.py test
 .pytest_cache

@@ -66,7 +66,8 @@ from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
     DataPHA, DataRosatRMF
-from sherpa.astro.instrument import ARF1D, RMF1D
+# leads to circular imports
+# from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa import get_config
 
@@ -1091,6 +1092,7 @@ def _pack_arf(dataset):
     # The UI layer wraps up a DataARF into ARF1D quite often, so
     # support both types as input.
     #
+    from sherpa.astro.instrument import ARF1D
     if not isinstance(dataset, (DataARF, ARF1D)):
         raise IOErr("data set is not an ARF")
 
@@ -1431,6 +1433,7 @@ def _pack_rmf(dataset):
     # The UI layer wraps up a DataRMF into RMF1D quite often, so
     # support both types as input.
     #
+    from sherpa.astro.instrument import RMF1D
     if not isinstance(dataset, (DataRMF, RMF1D)):
         raise IOErr("data set is not a RMF")
 
