@@ -39,19 +39,23 @@ References
 
 import logging
 import os
+from typing import Union
 import warnings
 
 import numpy
 
-from astropy.io import fits
-from astropy.io.fits.column import _VLF
-from astropy.table import Table
+from astropy.io import fits  # type: ignore
+from astropy.io.fits.column import _VLF  # type: ignore
+from astropy.table import Table  # type: ignore
 
 from sherpa.io import get_ascii_data, write_arrays
-from sherpa.utils.err import IOErr
+from sherpa.astro.io.io_types import HeaderItem, TableHDU
+from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
 
+
+HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU]
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -658,11 +662,10 @@ def get_arf_data(arg, make_copy=False):
 
 
 def _read_col(hdu, name):
-    """A specialized form of _require_col
+    """A specialized version of _require_col
 
     There is no attempt to convert from a variable-length field
     to any other form.
-
     """
 
     try:
@@ -671,72 +674,143 @@ def _read_col(hdu, name):
         raise IOErr("reqcol", name, hdu._file.name)
 
 
+# Commonly-used block names for the MATRIX block. Only the first two
+# are given in the OGIP standard.
+#
+RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
+
+
+def _read_rmf_matrix(data, filename, hdus):
+    """Append MATRIX block to data.
+
+    Parameters
+    ----------
+    data : dict
+    filename : str
+    hdus : fits.HDUList
+
+    Raises
+    ------
+    IOErr
+       The data contains no MATRIX block.
+
+    """
+
+    # There are three types of blocks:
+    #  - PRIMARY
+    #  - MATRIX, SPECRESP MATRIX
+    #  - EBOUNDS
+    #
+    # The naming of the matrix block can be complicated, and perhaps
+    # we should be looking for
+    #
+    #    HDUCLASS = OGIP
+    #    HDUCLAS1 = RESPONSE
+    #    HDUCLAS2 = RSP_MATRIX
+    #
+    # and check the HDUVERS keyword, but it's easier just to go on the
+    # name (as there's no guarantee that these keywords will be any
+    # cleaner to use). As of December 2020 there is now the
+    # possibility of RMF files with multiple MATRIX blocks (where the
+    # EXTVER starts at 1 and then increases). At present we do not
+    # support this addition.
+    #
+    matrixes = []
+    for hdu in hdus:
+        if hdu.name in RMF_BLOCK_NAMES or \
+           _is_ogip_block(hdu, "RESPONSE", "RSP_MATRIX"):
+            matrixes.append(hdu)
+
+    nmat = len(matrixes)
+    if nmat == 0:
+        raise IOErr('notrsp', filename, 'an RMF')
+
+    hdu = matrixes[0]
+
+    # The comments note the type we want the column to be, but this
+    # conversion needs to be done after cleaning up the data.
+    #
+    data['detchans'] = SherpaUInt(_require_key(hdu, 'DETCHANS'))
+    data['energ_lo'] = _read_col(hdu, 'ENERG_LO')  # SherpaFloat
+    data['energ_hi'] = _read_col(hdu, 'ENERG_HI')  # SherpaFloat
+    data['n_grp'] = _read_col(hdu, 'N_GRP')        # SherpaUInt
+    data['f_chan'] = _read_col(hdu, 'F_CHAN')      # SherpaUInt
+    data['n_chan'] = _read_col(hdu, 'N_CHAN')      # SherpauInt
+    data['matrix'] = _read_col(hdu, 'MATRIX')
+
+    data['header'] = _get_meta_data(hdu)
+    data['header'].pop('DETCHANS', None)
+
+    # Beginning of non-Chandra RMF support
+    fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
+    tlmin = _try_key(hdu, f"TLMIN{fchan_col}", fix_type=True,
+                     dtype=SherpaUInt)
+
+    if tlmin is not None:
+        data['offset'] = tlmin
+    else:
+        # QUS: should this actually be an error, rather than just
+        #      something that is logged to screen?
+        error("Failed to locate TLMIN keyword for F_CHAN "
+              "column in RMF file '%s'; "
+              "Update the offset value in the RMF data set to "
+              "the appropriate TLMIN value prior to fitting",
+              filename)
+
+
+def _read_rmf_ebounds(data, filename, hdus):
+    """Append EBOUNDS block to data if it exists.
+
+    Parameters
+    ----------
+    data : dict
+    filename : str
+    hdus : fits.HDUList
+
+    """
+
+    try:
+        hdu = hdus['EBOUNDS']
+    except KeyError:
+        data['e_min'] = None
+        data['e_max'] = None
+        return
+
+    data['e_min'] = _try_col(hdu, 'E_MIN', fix_type=True)
+    data['e_max'] = _try_col(hdu, 'E_MAX', fix_type=True)
+
+    # Check whther TLMIN for CHANNEL is set and if it matches the
+    # matrix block (constraint from the F_CHAN column). Is this worth
+    # it?
+    #
+    chan_col = list(hdu.columns.names).index('CHANNEL') + 1
+    tlmin = _try_key(hdu, f"TLMIN{chan_col}", fix_type=True,
+                     dtype=SherpaUInt)
+    if tlmin is None:
+        return
+
+    try:
+        if data['offset'] == tlmin:
+            return
+
+        # Drop this value as it is not obvious what to do here
+        warning("TLMIN of CHANNEL column does not match that of F_CHAN")
+    except KeyError:
+        # TLMIN of F_CHAN is not set, so use this TLMIN
+        data['offset'] = tlmin
+
+
 def _read_rmf_data(arg):
     """Read in the data from the RMF."""
 
     rmf, filename = _get_file_contents(arg, exptype="BinTableHDU",
                                        nobinary=True)
 
+    data = {}
     try:
-        if _has_hdu(rmf, 'MATRIX'):
-            hdu = rmf['MATRIX']
-        elif _has_hdu(rmf, 'SPECRESP MATRIX'):
-            hdu = rmf['SPECRESP MATRIX']
-        elif _has_hdu(rmf, 'AXAF_RMF'):
-            hdu = rmf['AXAF_RMF']
-        elif _is_ogip_type(rmf, 'RESPONSE', 'RSP_MATRIX'):
-            hdu = rmf[1]
-        else:
-            raise IOErr('notrsp', filename, 'an RMF')
+        _read_rmf_matrix(data, filename, rmf)
+        _read_rmf_ebounds(data, filename, rmf)
 
-        # The comments note the type we want the column to be, but
-        # this conversion needs to be done after cleaning up the
-        # data.
-        #
-        data = {}
-        data['detchans'] = SherpaUInt(_require_key(hdu, 'DETCHANS'))
-        data['energ_lo'] = _read_col(hdu, 'ENERG_LO')  # SherpaFloat
-        data['energ_hi'] = _read_col(hdu, 'ENERG_HI')  # SherpaFloat
-        data['n_grp'] = _read_col(hdu, 'N_GRP')        # SherpaUInt
-        data['f_chan'] = _read_col(hdu, 'F_CHAN')      # SherpaUInt
-        data['n_chan'] = _read_col(hdu, 'N_CHAN')      # SherpaUInt
-        data['matrix'] = _read_col(hdu, "MATRIX")
-
-        data['header'] = _get_meta_data(hdu)
-        data['header'].pop('DETCHANS', None)
-
-        # Beginning of non-Chandra RMF support
-        fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
-        tlmin = _try_key(hdu, f"TLMIN{fchan_col}", fix_type=True,
-                         dtype=SherpaUInt)
-
-        if tlmin is not None:
-            data['offset'] = tlmin
-        else:
-            # QUS: should this actually be an error, rather than just
-            #      something that is logged to screen?
-            error("Failed to locate TLMIN keyword for F_CHAN "
-                  "column in RMF file '%s'; "
-                  "Update the offset value in the RMF data set to "
-                  "the appropriate TLMIN value prior to fitting",
-                  filename)
-
-        if _has_hdu(rmf, 'EBOUNDS'):
-            # This should probably error out if E_MIN/MAX are not present.
-            hdu = rmf['EBOUNDS']
-            data['e_min'] = _try_col(hdu, 'E_MIN', fix_type=True)
-            data['e_max'] = _try_col(hdu, 'E_MAX', fix_type=True)
-
-            # Beginning of non-Chandra RMF support
-            chan_col = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, f"TLMIN{chan_col}", fix_type=True,
-                             dtype=SherpaUInt)
-            if tlmin is not None:
-                data['offset'] = tlmin
-
-        else:
-            data['e_min'] = None
-            data['e_max'] = None
     finally:
         rmf.close()
 
@@ -1139,7 +1213,7 @@ def _create_table(names, data):
     return Table(names=colnames, data=store)
 
 
-def check_clobber(filename, clobber):
+def check_clobber(filename: str, clobber: bool) -> None:
     """Error out if the file exists and clobber is not set."""
 
     if clobber or not os.path.isfile(filename):
@@ -1483,13 +1557,14 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     hdu.writeto(filename, overwrite=True)
 
 
-def _add_header(hdu, header):
+def _add_header(hdu: HDUType,
+                header: list[HeaderItem]) -> None:
     """Add the header items to the HDU.
 
     Parameters
     ----------
     hdu : astropy HDU
-    header : list of sherpa.astro.io.xstable.HeaderItem
+    header : list of HeaderItem
     """
 
     for hdr in header:
@@ -1503,7 +1578,7 @@ def _add_header(hdu, header):
         hdu.header.append(tuple(card))
 
 
-def _create_primary_hdu(hdu):
+def _create_primary_hdu(hdu: TableHDU) -> fits.PrimaryHDU:
     """Create a PRIMARY HDU.
 
     Parameters
@@ -1522,7 +1597,7 @@ def _create_primary_hdu(hdu):
     return out
 
 
-def _create_table_hdu(hdu):
+def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
     """Create a Table HDU.
 
     Parameters
@@ -1565,7 +1640,9 @@ def _create_table_hdu(hdu):
     return out
 
 
-def set_hdus(filename, hdulist, clobber=False):
+def set_hdus(filename: str,
+             hdulist: list[TableHDU],
+             clobber: bool = False) -> None:
     """Write out multiple HDUS to a single file.
 
     At present we are restricted to tables only.

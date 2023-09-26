@@ -19,20 +19,25 @@
 #
 
 import logging
-import os.path
+import os
+from typing import Union
 
 import numpy
 
 from pycrates import CrateDataset, CrateKey, CrateData, TABLECrate, \
-    IMAGECrate, WCSTANTransform, RMFCrateDataset, PHACrateDataset
-import pycrates
+    IMAGECrate, WCSTANTransform, RMFCrateDataset, \
+    PHACrateDataset  # type: ignore
+import pycrates  # type: ignore
 # work around missing TLMIN support in crates CIAO 4.15
-import cxcdm
+import cxcdm  # type: ignore
 
+from sherpa.astro.io.io_types import HeaderItem, TableHDU
 from sherpa.astro.utils import resp_init
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.utils.err import ArgumentTypeErr, IOErr
 
+
+CrateType = Union[IMAGECrate, TABLECrate]
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -710,48 +715,77 @@ def get_arf_data(arg, make_copy=True):
     return data, filename
 
 
-def get_rmf_data(arg, make_copy=True):
-    """Read a RMF from a file or crate"""
-    filename = ''
-    if isinstance(arg, string_types):
-        rmfdataset = open_crate_dataset(arg, RMFCrateDataset)
-        if pycrates.is_rmf(rmfdataset) != 1:
-            raise IOErr('badfile', arg, "RMFCrateDataset obj")
+# Commonly-used block names for the MATRIX block. Only the first two
+# are given in the OGIP standard.
+#
+RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
 
-        filename = arg
 
-    elif pycrates.is_rmf(arg) == 1:
-        rmfdataset = arg
-        filename = arg.get_filename()
-        make_copy = False
 
-    else:
-        raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
+
+
+
+
+
+def _read_rmf_matrix(data, filename, ds, make_copy):
+    """Append MATRIX block to data.
+
+    Parameters
+    ----------
+    data : dict
+    filename : str
+    ds : RMFCrateDataset
+    make_copy : bool
+
+    Raises
+    ------
+    IOErr
+       The data contains no MATRIX block.
+
+    """
+
+    # There are three types of blocks:
+    #  - PRIMARY
+    #  - MATRIX, SPECRESP MATRIX
+    #  - EBOUNDS
+    #
+    # The naming of the matrix block can be complicated, and perhaps
+    # we should be looking for
+    #
+    #    HDUCLASS = OGIP
+    #    HDUCLAS1 = RESPONSE
+    #    HDUCLAS2 = RSP_MATRIX
+    #
+    # and check the HDUVERS keyword, but it's easier just to go on the
+    # name (as there's no guarantee that these keywords will be any
+    # cleaner to use). As of December 2020 there is now the
+    # possibility of RMF files with multiple MATRIX blocks (where the
+    # EXTVER starts at 1 and then increases). At present we do not
+    # support this addition.
+    #
+    # Unlike the AstroPy backend we already have "support" for reading
+    # in a RMF, which changes the logic somewhat.  Note that
+    # RMFCrateDataset will read in a multi-matrix file but just drop
+    # the remaining blocks.
+    #
     # Open the response matrix by extension name, and try using
     # some of the many, many ways people break the OGIP definition
     # of the extension name for the response matrix.
-    rmf = _get_crate_by_blockname(rmfdataset, 'MATRIX')
-
-    if rmf is None:
-        rmf = _get_crate_by_blockname(rmfdataset, 'SPECRESP MATRIX')
-
-    if rmf is None:
-        rmf = _get_crate_by_blockname(rmfdataset, 'AXAF_RMF')
-
-    if rmf is None:
-        rmf = _get_crate_by_blockname(rmfdataset, 'RSP_MATRIX')
+    #
+    for blname in RMF_BLOCK_NAMES:
+        rmf = _get_crate_by_blockname(ds, blname)
+        if rmf is not None:
+            break
 
     if rmf is None:
         try:
-            rmf = rmfdataset.get_crate(2)
+            rmf = ds.get_crate(2)
         except IndexError:
             rmf = None
 
     if rmf is None or rmf.get_colnames() is None:
-        raise IOErr('filenotfound', arg)
-
-    data = {}
+        raise IOErr('filenotfound', filename)
 
     if not rmf.column_exists('ENERG_LO'):
         raise IOErr('reqcol', 'ENERG_LO', filename)
@@ -788,41 +822,6 @@ def get_rmf_data(arg, make_copy=True):
 
     respbuf = _require_col_list(rmf, 'MATRIX', 1, make_copy)
 
-    # ebounds = None
-    # if rmfdataset.get_current_crate() < rmfdataset.get_ncrates():
-    #    ebounds = rmfdataset.get_crate(rmfdataset.get_current_crate() + 1)
-    ebounds = _get_crate_by_blockname(rmfdataset, 'EBOUNDS')
-
-    if ebounds is None:
-        ebounds = rmfdataset.get_crate(3)
-
-    data['header'] = _get_meta_data(rmf)
-    data['header'].pop('DETCHANS', None)
-
-    channel = None
-    if ebounds is not None:
-        data['e_min'] = _try_col(ebounds, 'E_MIN', make_copy, fix_type=True)
-        data['e_max'] = _try_col(ebounds, 'E_MAX', make_copy, fix_type=True)
-        if ebounds.column_exists('CHANNEL'):
-            channel = ebounds.get_column('CHANNEL')
-
-        # FIXME: do I include the header keywords from ebounds
-        # data['header'].update(_get_meta_data(ebounds))
-
-    if offset < 0:
-        error("Failed to locate TLMIN keyword for F_CHAN "
-              "column in RMF file '%s'; "
-              "Update the offset value in the RMF data set to "
-              "the appropriate TLMIN value prior to fitting",
-              filename)
-
-    if offset < 0 and channel is not None:
-        offset = channel.get_tlmin()
-
-    # If response is non-OGIP, tlmin is -(max of type), so resort to default
-    if not offset < 0:
-        data['offset'] = offset
-
     # FIXME:
     #
     # Currently, CRATES does something screwy:  If n_grp is zero in a bin,
@@ -847,6 +846,81 @@ def get_rmf_data(arg, make_copy=True):
     (data['f_chan'], data['n_chan'],
      data['matrix']) = resp_init(data['n_grp'], fcbuf, ncbuf,
                                  chan_width, respbuf.ravel(), resp_width)
+
+    data['header'] = _get_meta_data(rmf)
+    data['header'].pop('DETCHANS', None)
+
+    # If TLMIN<n> is not set then crates will return a negative number
+    # for a signed datatype.
+    #
+    if offset >= 0:
+        data['offset'] = offset
+    else:
+        error("Failed to locate TLMIN keyword for F_CHAN "
+              "column in RMF file '%s'; "
+              "Update the offset value in the RMF data set to "
+              "the appropriate TLMIN value prior to fitting",
+              filename)
+
+
+
+def _read_rmf_ebounds(data, filename, ds, make_copy):
+    """Append EBOUNDS block to data if it exists.
+
+    Parameters
+    ----------
+    data : dict
+    filename : str
+    ds : RMFCrateDataset
+    make_copy : bool
+
+    """
+
+    ebounds = _get_crate_by_blockname(ds, 'EBOUNDS')
+    if ebounds is None:
+        ebounds = ds.get_crate(3)
+
+    channel = None
+    if ebounds is not None:
+        data['e_min'] = _try_col(ebounds, 'E_MIN', make_copy, fix_type=True)
+        data['e_max'] = _try_col(ebounds, 'E_MAX', make_copy, fix_type=True)
+        if ebounds.column_exists('CHANNEL'):
+            channel = ebounds.get_column('CHANNEL')
+
+    # Do we get the offset from the CHANNEL column?
+    #
+    if channel is not None:
+        offset = channel.get_tlmin()
+        if offset >= 0:
+            try:
+                if data['offset'] != offset:
+                    raise RuntimeError("ERRRRR")  # TODO: probably an error()
+            except KeyError:
+                data['offset'] = offset
+
+
+def get_rmf_data(arg, make_copy=True):
+    """Read a RMF from a file or crate"""
+    filename = ''
+    if isinstance(arg, string_types):
+        rmfdataset = open_crate_dataset(arg, RMFCrateDataset)
+
+        if pycrates.is_rmf(rmfdataset) != 1:
+            raise IOErr('badfile', arg, "RMFCrateDataset obj")
+
+        filename = arg
+
+    elif pycrates.is_rmf(arg) == 1:
+        rmfdataset = arg
+        filename = arg.get_filename()
+        make_copy = False
+
+    else:
+        raise IOErr('badfile', arg, "RMFCrateDataset obj")
+
+    data = {}
+    _read_rmf_matrix(data, filename, rmfdataset, make_copy=make_copy)
+    _read_rmf_ebounds(data, filename, rmfdataset, make_copy=make_copy)
 
     return data, filename
 
@@ -1092,7 +1166,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 # Write/Pack Functions #
 #
 
-def check_clobber(filename, clobber):
+def check_clobber(filename: str, clobber: bool) -> None:
     """Error out if the file exists and clobber is not set."""
 
     if clobber or not os.path.isfile(filename):
@@ -1410,13 +1484,14 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     tbl.write(filename, clobber=True)
 
 
-def _add_header(cr, header):
+def _add_header(cr: CrateType,
+                header: list[HeaderItem]):
     """Add the header keywords to the crate.
 
     Parameters
     ----------
     cr : TABLECrate or IMAGECrate
-    header : list of sherpa.astro.io.xstable.HeaderItem
+    header : list of HeaderItem
 
     """
 
@@ -1425,7 +1500,7 @@ def _add_header(cr, header):
         cr.add_key(CrateKey(key))
 
 
-def _create_primary_crate(hdu):
+def _create_primary_crate(hdu: TableHDU) -> IMAGECrate:
     """Create the primary block
 
     Parameters
@@ -1453,7 +1528,7 @@ def _create_primary_crate(hdu):
     return out
 
 
-def _create_table_crate(hdu):
+def _create_table_crate(hdu: TableHDU) -> TABLECrate:
     """Create a table block
 
     Parameters
@@ -1484,7 +1559,9 @@ def _create_table_crate(hdu):
     return out
 
 
-def set_hdus(filename, hdulist, clobber=False):
+def set_hdus(filename: str,
+             hdulist: list[TableHDU],
+             clobber: bool = False) -> None:
     """Write out multiple HDUS to a single file.
 
     At present we are restricted to tables only.
