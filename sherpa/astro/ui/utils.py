@@ -11196,15 +11196,17 @@ class Session(sherpa.ui.utils.Session):
 
 
     def get_rmf_plot(self, id=None, resp_id=None, recalc=True):
-        """Return the data used by plot_arf.
+        """Return the data used by plot_rmf.
+
+        .. versionadded:: 4.16.0
 
         Parameters
         ----------
         id : int or str, optional
-           The data set with an ARF. If not given then the default
+           The data set with a RMF. If not given then the default
            identifier is used, as returned by `get_default_id`.
         resp_id : int or str, optional
-           Which ARF to use in the case that multiple ARFs are
+           Which RMF to use in the case that multiple RMFs are
            associated with a data set. The default is ``None``,
            which means the first one.
         recalc : bool, optional
@@ -12173,15 +12175,19 @@ class Session(sherpa.ui.utils.Session):
         """Plot the RMF associated with a data set.
 
         Display the energy redistribution from the RMF
-        component of a PHA data set.
+        component of a PHA data set. This plot selects a few specific energies
+        and generates a plot with several histograms that show the energy
+        redistribution for those specific energies.
+
+        .. versionadded:: 4.16.0
 
         Parameters
         ----------
         id : int or str, optional
-           The data set with an ARF. If not given then the default
+           The data set with a RMF. If not given then the default
            identifier is used, as returned by `get_default_id`.
         resp_id : int or str, optional
-           Which ARF to use in the case that multiple ARFs are
+           Which RMF to use in the case that multiple RMFs are
            associated with a data set. The default is ``None``,
            which means the first one.
         replot : bool, optional
@@ -12202,7 +12208,6 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         get_rmf_plot : Return the data used by plot_rmf.
-        plot : Create one or more plot types.
 
         Examples
         --------
@@ -12220,8 +12225,8 @@ class Session(sherpa.ui.utils.Session):
         Plot the RMFs labelled "rmf1" and "rmf2" for the
         "src" data set:
 
-        >>> plot_arf("src", "rmf1")
-        >>> plot_arf("src", "rmf2", overplot=True)
+        >>> plot_rmf("src", "rmf1")
+        >>> plot_rmf("src", "rmf2", overplot=True)
 
         The following example requires that the Matplotlib backend
         is selected, since this determines what extra keywords

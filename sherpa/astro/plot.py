@@ -473,15 +473,20 @@ class RMFPlot(shplot.HistogramPlot):
         The labels for each line.
     """
 
-    histo_prefs = shplot.basicbackend.get_model_histo_defaults()
+
+    rmf_plot_prefs = shplot.basicbackend.get_rmf_plot_defaults()
 
     # TODO: Make that a plot preference
     # How many monochromatic lines to use
     n_lines = 5
 
     # Because this derived from NoNewAttributesAfterInit we need to
-    # make the attribute here it cna be used in prepare
+    # make the attribute here it can be used in prepare
     labels = None
+
+
+    def _merge_settings(self, kwargs):
+        return {**self.rmf_plot_prefs, **kwargs}
 
     def prepare(self, rmf, data=None):
         """Fill the fields given the RMF.
@@ -506,7 +511,7 @@ class RMFPlot(shplot.HistogramPlot):
             self.xhi = rmf.e_max
             self.xlabel = 'Energy (keV)'
 
-        # TODO copy ARFPLot logic to decide if x axis should be in wavelength
+        # TODO copy ARFPlot logic to decide if x axis should be in wavelength
 
         # for now let's just create log-spaced energies
         #
@@ -533,7 +538,6 @@ class RMFPlot(shplot.HistogramPlot):
         self.title = rmf.name
 
     def plot(self, overplot=False, clearwindow=True,
-             xlog=True, ylog=True,
              **kwargs):
         """Plot the data.
 
@@ -558,16 +562,12 @@ class RMFPlot(shplot.HistogramPlot):
 
         """
         y_array = self.y
-        print(kwargs)
         for n in range(self.n_lines):
             self.y = y_array[n, :]
             super().plot(
                 overplot=overplot if n == 0 else True,
                 clearwindow=clearwindow if n == 0 else False,
-                #title=self.title,
-                #xlabel=self.xlabel, ylabel=self.ylabel,
                 label=self.labels[n],
-                xlog=xlog, ylog=ylog,
                 **kwargs)
         self.y = y_array
 

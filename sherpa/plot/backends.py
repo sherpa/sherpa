@@ -693,6 +693,12 @@ class BaseBackend(metaclass=MetaBaseBackend):
         d = self.get_data_plot_defaults()
         return d
 
+    def get_rmf_plot_defaults(self):
+        d = self.get_model_histo_defaults()
+        d['xlog'] = True
+        d['ylog'] = True
+        return d
+
     def as_html_histogram(self, plot):
         return self.as_html(plot,
                             ['xlo', 'xhi', 'y', 'title', 'xlabel', 'ylabel'])
