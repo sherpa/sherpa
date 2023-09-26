@@ -22,16 +22,19 @@
 
 """
 
+import logging
 import warnings
 
 import numpy as np
 
 import pytest
 
-from sherpa.astro import io
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
-from sherpa.astro.instrument import create_arf, create_delta_rmf
+from sherpa.astro.instrument import RMF1D, create_arf, create_delta_rmf
+from sherpa.astro import io
+from sherpa.astro.io.io_types import HeaderItem, Column, TableHDU
 from sherpa.data import Data1DInt
+from sherpa.models.basic import Gauss1D
 from sherpa.utils.err import ArgumentErr, IOErr
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -1000,3 +1003,133 @@ def test_write_fake_perfect_rmf(offset, tmp_path):
 
     assert new.e_min == pytest.approx(elo)
     assert new.e_max == pytest.approx(ehi)
+
+
+@requires_fits
+def test_read_multi_matrix_rmf(tmp_path, caplog):
+    """Check reading in a multi-MATRIX RMF block.
+
+    As we don't currently have one "in the wild" we manually create
+    one.
+
+    This is a regression test since we currently only read in one of
+    the matrices. It also turns out to depend on which backend is in
+    use (AstroPy picks the first and Crates the second, at least in
+    the file used here).
+
+    """
+
+    # First block is "perfect" and the second adds a "blob"
+    # component.
+    #
+    egrid = np.linspace(0.1, 2.1, 21)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf1 = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi,
+                            name="perfect")
+    rmf1.header["TESTBLCK"] = 1
+
+    # reduce the "energy" resolution of the second block.
+    #
+    e4grid = np.linspace(0.1, 2.1, 6)
+    e4lo = e4grid[:-1]
+    e4hi = e4grid[1:]
+    matrix = np.zeros((5, 4), dtype=np.float32)
+    blur = [0.1, 0.3, 0.4, 0.2]
+    for i in range(5):
+        matrix[i] = blur
+
+    rmf2 = DataRMF("blob", detchans=rmf1.detchans,
+                   energ_lo=e4lo, energ_hi=e4hi,
+                   n_grp=np.ones(5, dtype=np.int32),
+                   f_chan=np.asarray([2, 4, 6, 8, 10], dtype=np.int32),
+                   n_chan=4 * np.ones(5, dtype=np.int32),
+                   matrix=matrix.flatten(),
+                   e_min=elo, e_max=ehi,
+                   header={"TESTBLCK": 2})
+
+    # Extract the data and then reconstruct a "multi" RMF.
+    #
+    matrix1, bounds1 = io._pack_rmf(rmf1)
+    matrix2, bounds2 = io._pack_rmf(rmf2)
+
+    # Convert to a form that set_hdus can use. It also doesn't create
+    # a "proper" RMF since it does not set the TLMIN value for the
+    # F_CHAN column (an infelicity in the Column type).
+    #
+    def mkhdr(old):
+        return [HeaderItem(name=n, value=v)
+                for n,v in old.items()]
+
+    def mkdata(old):
+        # We drop the OFFSET value (only from the matrix1/2 versions
+        # but doesn't harm to include in the bounds1 call).
+        #
+        return [Column(name=n, values=v)
+                for n,v in old.items()
+                if n != "OFFSET"]
+
+    m1_header = mkhdr(matrix1[1])
+    m1_data = mkdata(matrix1[0])
+
+    m2_header = mkhdr(matrix2[1])
+    m2_data = mkdata(matrix2[0])
+
+    eb_header = mkhdr(bounds1[1])
+    eb_data = mkdata(bounds1[0])
+
+    hdus = [TableHDU("PRIMARY", header=[HeaderItem("TESTKEY", "12")]),
+            TableHDU("MATRIX", header=m1_header, data=m1_data),
+            TableHDU("MATRIX", header=m2_header, data=m2_data),
+            TableHDU("EBOUNDS", header=eb_header, data=eb_data)]
+
+    outpath = tmp_path / "multi.rmf"
+    outfile = str(outpath)
+    io.backend.set_hdus(outfile, hdus)
+
+    # What happens if we try to read this in? As we haven't written
+    # out the correct TLMIN value we will get a warning about
+    # that. There is no warning about this being a multi-matrix RMF.
+    #
+    assert len(caplog.record_tuples) == 0
+    rmf = io.read_rmf(outfile)
+    assert len(caplog.record_tuples) == 1
+
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == io.backend.__name__
+    assert lvl == logging.ERROR
+    assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
+    assert msg.endswith("/multi.rmf'; Update the offset value in the RMF data set to the appropriate TLMIN value prior to fitting")
+
+    # What happens if we apply the RMF to a model? At the moment it
+    # depends on the backend because pyfits picks the first block, so
+    # the "perfect" RMF, whereas crates picks the second one (which
+    # blurs out the data, and we check using values calculated by Sherpa
+    # rather than created from the existing matrix).
+    #
+    mdl = Gauss1D()
+    mdl.pos = 1.1
+    mdl.fwhm = 0.8
+    mdl.ampl = 1e4
+
+    resp = RMF1D(rmf)
+    conv = resp(mdl)
+    chans = np.arange(1, 21, dtype=np.int16)
+    y = conv(chans)
+
+    # The check is a bit annoying.
+    #
+    if backend_is("pyfits"):
+        expected_perfect = mdl(elo, ehi)
+        assert y == pytest.approx(expected_perfect)
+    elif backend_is("crates"):
+        # Create a 2D array to represent the blurry matrix
+        #
+        blurry_matrix = np.zeros((5, 20))
+        for idx, fchan in enumerate([2, 4, 6, 8, 10]):
+            blurry_matrix[idx, fchan - 1:fchan + 3] = blur
+
+        expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
+        assert y == pytest.approx(expected_blurry)
+    else:
+        raise RuntimeError(f"unsupported I/O backend: {io.backend}")
