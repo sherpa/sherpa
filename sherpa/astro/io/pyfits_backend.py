@@ -37,6 +37,7 @@ References
 
 """
 
+from collections import defaultdict
 import logging
 import os
 from typing import Union
@@ -724,6 +725,13 @@ def _read_rmf_matrix(data, filename, hdus):
     nmat = len(matrixes)
     if nmat == 0:
         raise IOErr('notrsp', filename, 'an RMF')
+
+    if nmat > 1:
+        # Warn the user that the multi-matrix RMF is not supported.
+        #
+        error("RMF in %s contains %d MATRIX blocks; "
+              "Sherpa only uses the first block!",
+              filename, nmat)
 
     hdu = matrixes[0]
 
@@ -1640,6 +1648,49 @@ def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
     return out
 
 
+def _validate_block_names(hdulist: list[TableHDU]) -> list[TableHDU]:
+    """Ensure the block names are "independent".
+
+    Add in EXTVER keywords for those bloks with the same EXTNAME.
+
+    """
+
+    blnames: dict[str, int] = defaultdict(int)
+    for hdu in hdulist[1:]:
+        blnames[hdu.name.upper()] += 1
+
+    multi = [n for n,v in blnames.items() if v > 1]
+
+    # If the names are unique do nothing
+    #
+    if len(multi) == 0:
+        return hdulist
+
+    out = [hdulist[0]]
+    extvers: dict[str, int] = defaultdict(int)
+    for hdu in hdulist[1:]:
+        if hdu.name not in multi:
+            out.append(hdu)
+            continue
+
+        # Either create or update the EXTVER value
+        extvers[hdu.name] += 1
+        extver = extvers[hdu.name]
+
+        # Copy the headers list so we don't change the input data.
+        # Note that we could check whether EXTVER is already set (and
+        # is correct) but we do not expect this to happen (since the
+        # EXTVER keyword is not expected to be set for crates), so
+        # always do this.
+        #
+        hdrs = hdu.header[:]
+        hdrs.append(HeaderItem("EXTVER", extver))
+        nhdu = TableHDU(name=hdu.name, header=hdrs, data=hdu.data)
+        out.append(nhdu)
+
+    return out
+
+
 def set_hdus(filename: str,
              hdulist: list[TableHDU],
              clobber: bool = False) -> None:
@@ -1650,9 +1701,11 @@ def set_hdus(filename: str,
 
     check_clobber(filename, clobber)
 
+    nlist = _validate_block_names(hdulist)
+
     out = fits.HDUList()
-    out.append(_create_primary_hdu(hdulist[0]))
-    for hdu in hdulist[1:]:
+    out.append(_create_primary_hdu(nlist[0]))
+    for hdu in nlist[1:]:
         out.append(_create_table_hdu(hdu))
 
     out.writeto(filename, overwrite=True)

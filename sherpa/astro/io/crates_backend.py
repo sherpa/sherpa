@@ -18,6 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections import defaultdict
 import logging
 import os
 from typing import Union
@@ -721,11 +722,41 @@ def get_arf_data(arg, make_copy=True):
 RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
 
 
+def _find_matrix_blocks(filename):
+    """Report the block names that contain MATRIX data in a RMF.
 
+    Unfortunately, due to the way we read in the RMF, we end up having
+    to read the file in again.
 
+    Arguments
+    ---------
+    filename : str
 
+    Returns
+    -------
+    blnames : list of str
+       The block names that contain the MATRIX block. This may be
+       empty, which indicates that we had trouble reading in the file
+       (in case there's any issues with having the file open multiple
+       times).
 
+    """
 
+    try:
+        ds = CrateDataset(filename, mode='r')
+    except IOErr:
+        return []
+
+    matrixes = []
+    for crnum in range(1, ds.get_ncrates() + 1):
+        cr = ds.get_crate(crnum)
+        if cr.name in RMF_BLOCK_NAMES or \
+           (cr.get_key_value("HDUCLAS1") == "RESPONSE" and
+            cr.get_key_value("HDUCLAS2") == "RSP_MATRIX"):
+            matrixes.append(cr.name)
+            continue
+
+    return matrixes
 
 
 def _read_rmf_matrix(data, filename, ds, make_copy):
@@ -807,6 +838,22 @@ def _read_rmf_matrix(data, filename, ds, make_copy):
 
     if not rmf.column_exists('N_CHAN'):
         raise IOErr('reqcol', 'N_CHAN', filename)
+
+    # Although we have already read in the data, try reading in the
+    # file again so we can check if there are multiple blocks. Do this
+    # after verifying whether the dataset contains a "valid" RMF block
+    # to try to avoid excessive I/O. Allow for the possibility of this
+    # failing, which returns an empty array (it shouldn't, but just in
+    # case).
+    #
+    matrixes = _find_matrix_blocks(filename)
+    nmat = len(matrixes)
+    if nmat > 1:
+        # Warn the user that the multi-matrix RMF is not supported.
+        #
+        error("RMF in %s contains %d MATRIX blocks; "
+              "Sherpa only uses the first block!",
+              filename, nmat)
 
     data['detchans'] = _require_key(rmf, 'DETCHANS', SherpaInt)
     data['energ_lo'] = _require_col(rmf, 'ENERG_LO', make_copy, fix_type=True)
@@ -1559,6 +1606,45 @@ def _create_table_crate(hdu: TableHDU) -> TABLECrate:
     return out
 
 
+def _validate_block_names(hdulist: list[TableHDU]) -> list[TableHDU]:
+    """Ensure the block names are "independent".
+
+    Crates will correctly handle the case when blocks are numbered
+    MATRIX1, MATRIX2 (setting EXTNAME to MATRIX and EXTVER to 1 or 2),
+    but let's automatically add this if the user hasn't already done
+    so (since AstroPy works differently).
+
+    """
+
+    blnames: dict[str, int] = defaultdict(int)
+    for hdu in hdulist[1:]:
+        blnames[hdu.name.upper()] += 1
+
+    multi = [n for n,v in blnames.items() if v > 1]
+
+    # If the names are unique do nothing
+    #
+    if len(multi) == 0:
+        return hdulist
+
+    out = [hdulist[0]]
+    extvers: dict[str, int] = defaultdict(int)
+    for hdu in hdulist[1:]:
+        if hdu.name not in multi:
+            out.append(hdu)
+            continue
+
+        # Either create or update the EXTVER value
+        extvers[hdu.name] += 1
+        extver = extvers[hdu.name]
+
+        nhdu = TableHDU(name=f"{hdu.name}{extver}",
+                        header=hdu.header, data=hdu.data)
+        out.append(nhdu)
+
+    return out
+
+
 def set_hdus(filename: str,
              hdulist: list[TableHDU],
              clobber: bool = False) -> None:
@@ -1569,9 +1655,11 @@ def set_hdus(filename: str,
 
     check_clobber(filename, clobber)
 
+    nlist = _validate_block_names(hdulist)
+
     ds = CrateDataset()
-    ds.add_crate(_create_primary_crate(hdulist[0]))
-    for hdu in hdulist[1:]:
+    ds.add_crate(_create_primary_crate(nlist[0]))
+    for hdu in nlist[1:]:
         ds.add_crate(_create_table_crate(hdu))
 
     ds.write(filename, clobber=True)

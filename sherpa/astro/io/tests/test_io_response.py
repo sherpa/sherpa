@@ -1013,9 +1013,8 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     one.
 
     This is a regression test since we currently only read in one of
-    the matrices. It also turns out to depend on which backend is in
-    use (AstroPy picks the first and Crates the second, at least in
-    the file used here).
+    the matrices. We now at least pick the first block, regardless
+    of the backend.
 
     """
 
@@ -1089,23 +1088,28 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
 
     # What happens if we try to read this in? As we haven't written
     # out the correct TLMIN value we will get a warning about
-    # that. There is no warning about this being a multi-matrix RMF.
+    # that, and there is also a warning about the lack of support
+    # for the multi-matrix RMF.
     #
     assert len(caplog.record_tuples) == 0
     rmf = io.read_rmf(outfile)
-    assert len(caplog.record_tuples) == 1
+    assert len(caplog.record_tuples) == 2
 
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == io.backend.__name__
     assert lvl == logging.ERROR
+    assert msg.startswith("RMF in ")
+    assert msg.endswith("/multi.rmf contains 2 MATRIX blocks; Sherpa only uses the first block!")
+
+    lname, lvl, msg = caplog.record_tuples[1]
+    assert lname == io.backend.__name__
+    assert lvl == logging.ERROR
+    print(msg)
     assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
     assert msg.endswith("/multi.rmf'; Update the offset value in the RMF data set to the appropriate TLMIN value prior to fitting")
 
-    # What happens if we apply the RMF to a model? At the moment it
-    # depends on the backend because pyfits picks the first block, so
-    # the "perfect" RMF, whereas crates picks the second one (which
-    # blurs out the data, and we check using values calculated by Sherpa
-    # rather than created from the existing matrix).
+    # What happens if we apply the RMF to a model? At the moment we
+    # use the first matrix (the "perfect" response).
     #
     mdl = Gauss1D()
     mdl.pos = 1.1
@@ -1117,19 +1121,5 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     chans = np.arange(1, 21, dtype=np.int16)
     y = conv(chans)
 
-    # The check is a bit annoying.
-    #
-    if backend_is("pyfits"):
-        expected_perfect = mdl(elo, ehi)
-        assert y == pytest.approx(expected_perfect)
-    elif backend_is("crates"):
-        # Create a 2D array to represent the blurry matrix
-        #
-        blurry_matrix = np.zeros((5, 20))
-        for idx, fchan in enumerate([2, 4, 6, 8, 10]):
-            blurry_matrix[idx, fchan - 1:fchan + 3] = blur
-
-        expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
-        assert y == pytest.approx(expected_blurry)
-    else:
-        raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+    expected_perfect = mdl(elo, ehi)
+    assert y == pytest.approx(expected_perfect)
