@@ -26,7 +26,8 @@ import numpy
 from pycrates import CrateDataset, CrateKey, CrateData, TABLECrate, \
     IMAGECrate, WCSTANTransform, RMFCrateDataset, PHACrateDataset
 import pycrates
-import cxcdm  # work around missing TLMIN support in crates CIAO 4.15
+# work around missing TLMIN support in crates CIAO 4.15
+import cxcdm
 
 from sherpa.astro.utils import resp_init
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
@@ -397,7 +398,7 @@ def _get_crate_by_blockname(dataset, blkname):
 
     Parameters
     ----------
-    dataset : pycrates.CrateDataset
+    dataset : CrateDataset
     blkname : str
 
     Returns
@@ -1421,7 +1422,7 @@ def _add_header(cr, header):
 
     for hdr in header:
         key = (hdr.name, hdr.value, hdr.unit, hdr.desc)
-        cr.add_key(pycrates.CrateKey(key))
+        cr.add_key(CrateKey(key))
 
 
 def _create_primary_crate(hdu):
@@ -1438,13 +1439,13 @@ def _create_primary_crate(hdu):
 
     """
 
-    out = pycrates.IMAGECrate()
+    out = IMAGECrate()
     out.name = "PRIMARY"
 
     # For some reason we need to add an empty image
     # (CIAO 4.15).
     #
-    null = pycrates.CrateData()
+    null = CrateData()
     null.values = numpy.asarray([], dtype=numpy.uint8)
     out.add_image(null)
 
@@ -1461,18 +1462,18 @@ def _create_table_crate(hdu):
 
     Returns
     -------
-    out : pycrates.TABLECrate
+    out : TABLECrate
 
     """
 
     if hdu.data is None:
         raise ValueError("No column data to write out")
 
-    out = pycrates.TABLECrate()
+    out = TABLECrate()
     out.name = hdu.name
 
     for col in hdu.data:
-        cdata = pycrates.CrateData()
+        cdata = CrateData()
         cdata.name = col.name
         cdata.desc = col.desc
         cdata.unit = col.unit
@@ -1491,7 +1492,7 @@ def set_hdus(filename, hdulist, clobber=False):
 
     check_clobber(filename, clobber)
 
-    ds = pycrates.CrateDataset()
+    ds = CrateDataset()
     ds.add_crate(_create_primary_crate(hdulist[0]))
     for hdu in hdulist[1:]:
         ds.add_crate(_create_table_crate(hdu))
