@@ -936,14 +936,26 @@ def _read_rmf_ebounds(data, filename, ds, make_copy):
 
     # Do we get the offset from the CHANNEL column?
     #
-    if channel is not None:
-        offset = channel.get_tlmin()
-        if offset >= 0:
-            try:
-                if data['offset'] != offset:
-                    raise RuntimeError("ERRRRR")  # TODO: probably an error()
-            except KeyError:
-                data['offset'] = offset
+    if channel is None:
+        return
+
+    # Assume a negative minimum indicates that the file does not set
+    # TLMIN but that it's just using the minimum data value, and so
+    # we can return.
+    #
+    offset = channel.get_tlmin()
+    if offset < 0:
+        return
+
+    try:
+        if data['offset'] == offset:
+            return
+
+        # Drop this value as it is not obvious what to do here
+        warning("TLMIN of CHANNEL column does not match that of F_CHAN")
+    except KeyError:
+        # TLMIN of F_CHAN is not set, so use this TLMIN
+        data['offset'] = offset
 
 
 def get_rmf_data(arg, make_copy=True):
