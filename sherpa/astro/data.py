@@ -644,15 +644,20 @@ def html_img(img):
     Special-case of the Data2D handling. It would be nice to re-use
     parts of the superclass behavior.
     """
-
+    from sherpa.astro.plot import DataIMGPlot
+    from sherpa import plot
     ls = []
     dtype = type(img).__name__
 
-    svg = img_plot(img)
-    if svg is not None:
-        out = formatting.html_svg(svg, f'{dtype} Plot')
-        summary = ''
-    else:
+    plotter = DataIMGPlot()
+    plotter.prepare(img)
+
+    try:
+        out = plot.backend.as_html_image(plotter, f'{dtype} Plot')
+    except AttributeError:
+        out = None
+
+    if out is None:
         # Only add prefix to summary if there's no plot
         summary = f'{dtype} '
 
@@ -727,84 +732,6 @@ def html_img(img):
         ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(img, ls)
-
-
-def img_plot(img):
-    """Display the image.
-
-    The SVG of the plot is returned if matplotlib is selected as the
-    backend.
-
-    The eqpos/wcs coordinate system is not used; it uses physical
-    instead. This greatly simplifies the plot (no need to handle WCS).
-
-    """
-
-    from sherpa import plot
-
-    try:
-        from matplotlib import pyplot as plt
-    except ImportError:
-        return None
-
-    # Apply filter and coordinate system
-    #
-    y = img.get_img()
-
-    # extent is left, right, bottom, top and describes the
-    # outer-edge of the pixels.
-    #
-    ny, nx = img.shape
-    coord = img.coord
-    if coord in ['physical', 'world']:
-        x0, y0 = img._logical_to_physical(0.5, 0.5)
-        x1, y1 = img._logical_to_physical(nx + 0.5, ny + 0.5)
-        extent = (x0, x1, y0, y1)
-        lbl = 'physical'
-        cdelt = img.sky.cdelt
-        aspect = 'equal' if cdelt[1] == cdelt[0] else 'auto'
-
-    else:
-        extent = (0.5, nx + 0.5, 0.5, ny + 0.5)
-        aspect = 'equal'
-        lbl = 'logical'
-
-    # What is the filtered dataset?
-    #
-    if img.get_filter_expr() != '':
-        x0, x1 = img.get_indep(filter=True)
-
-        x0min, x0max = numpy.min(x0), numpy.max(x0)
-        x1min, x1max = numpy.min(x1), numpy.max(x1)
-
-        # Should add in half cdelt to padd these, but
-        # it looks like it isn't necessary.
-        filtered = (x0min, x1min, x0max, x1max)
-
-    else:
-        filtered = None
-
-    def plotfunc():
-        fig, ax = plt.subplots()
-
-        im = ax.imshow(y, origin='lower', extent=extent, aspect=aspect)
-        fig.colorbar(im, ax=ax)
-
-        if filtered is not None:
-            ax.set_xlim(filtered[0], filtered[2])
-            ax.set_ylim(filtered[1], filtered[3])
-
-        ax.set_xlabel(f'X ({lbl})')
-        ax.set_ylabel(f'Y ({lbl})')
-        if img.name is not None and img.name != '':
-            ax.set_title(img.name)
-
-        return fig
-
-    try:
-        return plot.backend.as_svg(plotfunc)
-    except AttributeError:
-        return None
 
 
 class DataOgipResponse(Data1DInt):

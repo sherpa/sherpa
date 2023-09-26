@@ -45,7 +45,9 @@ __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
            'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
            'BkgChisqrPlot', 'BkgSourcePlot',
            'OrderPlot',
-           'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
+           'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram',
+           'DataIMGPlot',
+           )
 
 
 # Identify "close-enough" bin edges when plotting histograms
@@ -461,28 +463,42 @@ class ARFPlot(shplot.HistogramPlot):
 class RMFPlot(shplot.HistogramPlot):
     """Create plots of the ancillary response file (RMF).
 
-    Attributes
-    ----------
-    xlo, xhi : array_like
-        The lower and upper edges of each bin.
-    y : array_like
-        The response for a specific energy or channel.
-    xlabel, ylabel, title : str
-        Plot labels.
-    labels : list of str
-        The labels for each line.
+    A full RMF is a matrix that is hard to visualize.
+    Here, we select a few specific energies and show
+    the response function for those energies as histograms.
     """
 
+   # Because this derived from NoNewAttributesAfterInit we need to
+   # make the attributes here so they can be used in prepare
+
+    xlo = None
+    "array_like: The  lower edges of each bin."
+
+    xhi = None
+    "array_like: The  upper edges of each bin."
+
+    y  = None
+    "array_like: The response for a specific energy or channel."
+
+    xlabel = ''
+    "Label for X axis"
+
+    ylabel = ''
+    "Label for Y axis"
+
+    title = ""
+    "Title of plot"
 
     rmf_plot_prefs = shplot.basicbackend.get_rmf_plot_defaults()
+    'Plot preferences'
+
 
     # TODO: Make that a plot preference
     # How many monochromatic lines to use
     n_lines = 5
 
-    # Because this derived from NoNewAttributesAfterInit we need to
-    # make the attribute here it can be used in prepare
     labels = None
+    "List of strings: The labels for each line."
 
 
     def _merge_settings(self, kwargs):
@@ -826,3 +842,82 @@ class PhotonFluxHistogram(FluxHistogram):
         self.title = "Photon flux distribution"
         self.xlabel = f"Photon flux (Photons cm{shplot.backend.get_latex_for_string('^{-2}')} sec{shplot.backend.get_latex_for_string('^{-1}')})"
         self.ylabel = "Frequency"
+
+
+class DataIMGPlot(shplot.Image):
+    """Class for DataIMG plots.
+
+    .. warning::
+        This class is experimental and subject to change in the future.
+        Currently, is is only used within _repr_html_ methods.
+    """
+    xlabel = 'x'
+    ylabel = 'y'
+    title = ''
+    aspect = 'auto'
+
+    # These are filled with array in the prepare stage, but we need
+    # to define them here with some value because of NoNewAttributesAfterInit
+    y = None
+    x0 = None
+    x1 = None
+
+    def prepare(self, img):
+        # Apply filter and coordinate system
+        #
+        self.y = img.get_img()
+
+        # extent is left, right, bottom, top and describes the
+        # outer-edge of the pixels.
+        #
+        ny, nx = img.shape
+        coord = img.coord
+        if coord in ['physical', 'world']:
+            x0, y0 = img._logical_to_physical(0.5, 0.5)
+            x1, y1 = img._logical_to_physical(nx + 0.5, ny + 0.5)
+            lbl = 'physical'
+            cdelt = img.sky.cdelt
+            self.aspect = 'equal' if cdelt[1] == cdelt[0] else 'auto'
+
+        else:
+            x0, x1, y0, y1 = 0.5, nx + 0.5, 0.5, ny + 0.5
+            self.aspect = 'equal'
+            lbl = 'logical'
+
+        self.x0 = np.linspace(x0, x1, nx, endpoint=True)
+        self.x1 = np.linspace(y0, y1, ny, endpoint=True)
+
+        # What is the filtered dataset?
+        #
+        if img.get_filter_expr() != '':
+            x0, x1 = img.get_indep(filter=True)
+
+            x0min, x0max = np.min(x0), np.max(x0)
+            x1min, x1max = np.min(x1), np.max(x1)
+
+            # Should add in half cdelt to padd these, but
+            # it looks like it isn't necessary.
+            # TODO: The old code (before converting it to a class)
+            # used set_xlim and set_ylim
+            # on the filtered limits, but we don't have that in the
+            # general in the backend. We should have an approach
+            # that is consistent with the line plots.
+            # For now, define here, but don't use.
+            filtered = (x0min, x1min, x0max, x1max)
+
+        else:
+            filtered = None
+
+        # Other plot classes use something like img.get_xlabel()
+        # but we dn't have that here, so for now this is what it is.
+        self.xlabel = f'X ({lbl})'
+        self.ylabel = f'Y ({lbl})'
+        self.title = img.name
+
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
+
+        super().plot(self.x0, self.x1, self.y, title=self.title,
+                        xlabel=self.xlabel, ylabel=self.ylabel,
+                        aspect=self.aspect,
+                        overplot=overplot, clearwindow=clearwindow,
+                        **kwargs)

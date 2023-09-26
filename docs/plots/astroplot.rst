@@ -32,9 +32,10 @@ The sherpa.astro.plot module
       FluxHistogram
       EnergyFluxHistogram
       PhotonFluxHistogram
+      DataIMGPlot
 
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::  DataPHAPlot ModelPHAHistogram ModelHistogram SourcePlot ComponentModelPlot ComponentSourcePlot ARFPlot BkgDataPlot BkgModelPHAHistogram BkgModelHistogram BkgFitPlot BkgDelchiPlot BkgResidPlot BkgRatioPlot BkgChisqrPlot BkgSourcePlot OrderPlot FluxHistogram EnergyFluxHistogram PhotonFluxHistogram
+.. inheritance-diagram::  DataPHAPlot ModelPHAHistogram ModelHistogram SourcePlot ComponentModelPlot ComponentSourcePlot ARFPlot RMFPlot BkgDataPlot BkgModelPHAHistogram BkgModelHistogram BkgFitPlot BkgDelchiPlot BkgResidPlot BkgRatioPlot BkgChisqrPlot BkgSourcePlot OrderPlot FluxHistogram EnergyFluxHistogram PhotonFluxHistogram DataIMGPlot
    :parts: 1

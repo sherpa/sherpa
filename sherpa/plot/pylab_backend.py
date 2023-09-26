@@ -587,6 +587,47 @@ class PylabBackend(BasicBackend):
         if len(handles) > 0:
             axes.legend()
 
+    @add_kwargs_to_doc(kwargs_doc)
+    @translate_args
+    def image(self, x0, x1, y, *,
+               aspect='auto',
+               title=None, xlabel=None, ylabel=None,
+               clearwindow=True,
+               overplot=False,
+               **kwargs):
+        """Draw 2D image data.
+
+        .. warning::
+           This function is a non-functional dummy. The documentation is provided
+           as a template only.
+
+        Parameters
+        ----------
+        x0 : array-like
+            independent axis in the first dimension
+        x1 : array-like
+            independent axis in the second dimension
+        y : array-like, with shape (len(x0), len(x1))
+            dependent axis (i.e. image values) in 2D
+            with shape (len(x0), len(x1))
+        {kwargs}
+        """
+
+        axes = self.setup_axes(overplot, clearwindow)
+
+        # Set up the axes
+        if not overplot:
+            self.setup_plot(axes, title, xlabel, ylabel)
+
+        extent = (x0[0], x0[-1], x1[0], x1[-1])
+        im = axes.imshow(y, origin='lower', extent=extent, aspect=aspect)
+
+        # TODO: This should be optional and have parameters.
+        # but, for now, it's only used in _repr_html_ for DataIMG,
+        # so can hardcode.
+        plt.colorbar(im, ax=axes)
+
+
     def set_subplot(self, row, col, nrows, ncols, clearaxes=True,
                     left=None,
                     right=None,
@@ -798,6 +839,7 @@ class PylabBackend(BasicBackend):
         ls = [formatting.html_svg(svg, summary)]
         return formatting.html_from_sections(data, ls)
 
+    as_html_image = as_html_plot
     as_html_histogram = as_html_plot
     as_html_pdf = as_html_plot
     as_html_cdf = as_html_plot
