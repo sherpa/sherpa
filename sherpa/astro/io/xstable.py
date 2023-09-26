@@ -131,6 +131,7 @@ from typing import Any, Optional, Union
 import numpy as np
 
 import sherpa
+from sherpa.astro.io.io_types import HeaderItem, Column, TableHDU
 
 
 __all__ = ("IntParam", "Param", "make_xstable_model",
@@ -241,64 +242,6 @@ class IntParam(Param):
             raise ValueError(f"Parameter {self.name} values are not monotonically increasing")
 
 
-# Perhaps the HeaderItem and Column types can be used in
-# sherpa.astro.io to pass information to and from the backends, rather
-# than the current system. However, that is for later work.
-#
-@dataclass
-class HeaderItem:
-    """Represent a FITS header card.
-
-    This does not support all FITS features.
-    """
-    name: str
-    """The keyword name (case insensitive)"""
-    value: Union[str, bool, int, float]  # will we need more?
-    """The keyword value"""
-    desc: Optional[str]
-    """The description for the keyword"""
-    unit: Optional[str]
-    """The units of the value"""
-
-
-@dataclass
-class Column:
-    """Represent a FITS column.
-
-    This does not support all FITS features.
-    """
-    name: str
-    """The column name (case insensitive)"""
-    values: Any  # should be typed
-    """The values for the column, as a ndarray.
-
-    Variable-field arrays are represented as ndarrays with an object
-    type.
-    """
-    desc: Optional[str]
-    """The column description"""
-    unit: Optional[str]
-    """The units of the column"""
-
-
-# To be generic this should probably be split into Primary, Table, and
-# Image HDUs.
-#
-@dataclass
-class TableHDU:
-    """Represent a HDU: header and optional columns"""
-    name: str
-    """The name of the HDU"""
-    header: list[HeaderItem]
-    """The header values"""
-    data: Optional[list[Column]] = None
-    """The column data.
-
-    This should be empty for a primary header, and have at least one
-    entry for a table HDU.
-    """
-
-
 def key(name: str,
         value: Union[str, bool, int, float],
         desc: Optional[str] = None,
@@ -388,12 +331,12 @@ def xstable_parameters(params: list[IntParam],
 
     # Provide the parameters and then the additional parameters.
     #
-    def get(field):
-        f1 = [getattr(p, field) for p in params]
+    def get(fld):
+        f1 = [getattr(p, fld) for p in params]
         if addparams is None:
             return f1
 
-        return f1 + [getattr(p, field) for p in addparams]
+        return f1 + [getattr(p, fld) for p in addparams]
 
     methods = [1 if p.loginterp else 0 for p in params] + [0] * nadd
     nvalues = [len(p.values) for p in params] + [0] * nadd
