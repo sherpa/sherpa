@@ -185,7 +185,7 @@ def _save_entries(out: OutType,
        The output state
     store
        A container with keys. The elements of the container are
-       passed to tocommand to create the string that is then
+       passed to tostatement to create the string that is then
        written to fh.
     tostatement : func
        A function which accepts two arguments, the key and value
@@ -536,7 +536,7 @@ def _save_dataset_settings_pha(out: OutType,
     if pha.grouped:
         _output(out, f"group({cmd_id})")
 
-    # Add responses and ARFs, if any/
+    # Add responses and ARFs, if any.
     #
     rids = pha.response_ids
     if len(rids) > 0:
@@ -1032,7 +1032,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
     if len(ids) == 0:
         return
 
-    _output_banner(out, "Set Source, Pileup and Background Models")
+    _output_banner(out, "Set Source, Pileup, and Background Models")
     orig_pos = _get_out_pos(out)
 
     for id in ids:
@@ -1155,7 +1155,7 @@ def _save_xspec(out: OutType) -> None:
        The output state
     """
 
-    # This case shpuld not happen, but just in case.
+    # This case should not happen, but just in case.
     #
     if xspec is None:
         return
