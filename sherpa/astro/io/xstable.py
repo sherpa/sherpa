@@ -85,8 +85,8 @@ used by Sherpa to decide if the parameter is frozen (value is
 negative) or not, but is used by the optimiser in XSPEC. The values
 field is set to those used to generate the spectral models.
 
->>> param = xstable.IntParam("pos", 1, 0.01, minval, maxval,
-...                          values=linepos)
+>>> param = xstable.Param("pos", 1, 0.01, minval, maxval,
+...                       values=linepos)
 
 With this we can create the necessary information to create the
 table model (`make_xstable_model`) and then write it out
@@ -112,8 +112,8 @@ xstablemodel.mygauss
 Notes
 -----
 
-XSPEC models can be created without XSPEC support in Sherpa, but it is
-needed to read the files in.
+XSPEC models can be created without XSPEC support in Sherpa, but XSPEC
+support is needed to read the files in.
 
 For additive models it is assumed that the model values - that is,
 each bin - have units of photon/cm^2/s. This is easy to accidentally
@@ -133,7 +133,7 @@ import numpy as np
 import sherpa
 
 
-__all__ = ("IntParam", "Param", "make_xstable_model",
+__all__ = ("BaseParam", "Param", "make_xstable_model",
            "write_xstable_model")
 
 
@@ -141,7 +141,7 @@ __all__ = ("IntParam", "Param", "make_xstable_model",
 #
 
 @dataclass
-class Param:
+class BaseParam:
     """Represent a parameter.
 
     The absolute DELTA value is used by XSPEC but ignored by Sherpa.
@@ -150,14 +150,17 @@ class Param:
     default.
 
     """
+
     name: str
     """The parameter name.
 
     This must be unique and ideally a valid attribute name in Python,
     although the latter is not enforced.
     """
+
     initial: float
     """The default value for the parameter."""
+
     delta: float
     """The delta value for fitting.
 
@@ -165,12 +168,16 @@ class Param:
     does not use this value (other than checking the sign) but XSPEC
     does.
     """
+
     hardmin: float
     """The minimum value for the parameter."""
+
     hardmax: float
     """The maximum value for the parameter."""
+
     softmin: Optional[float] = None
     """The "soft" minimum. Defaults to hardmin if not given.."""
+
     softmax: Optional[float] = None
     """The "soft" maximum. Defaults to hardmax if not given."""
 
@@ -209,7 +216,7 @@ class Param:
 
 
 @dataclass
-class IntParam(Param):
+class Param(BaseParam):
     """Represent an interpolated parameter."""
 
     values: list[float] = field(default_factory=list)
@@ -218,6 +225,7 @@ class IntParam(Param):
     Is is required that they range from hardmin to hardmax and are in
     monotonically increasing order (so it can not be an empty list).
     """
+
     loginterp: bool = False
     """Are the values logarithmically interpolated (True) or linearly (False).
 
@@ -365,8 +373,8 @@ def xstable_primary(name: str,
     return TableHDU(name="PRIMARY", header=header)
 
 
-def xstable_parameters(params: list[IntParam],
-                       addparams: Optional[list[Param]]) -> TableHDU:
+def xstable_parameters(params: list[Param],
+                       addparams: Optional[list[BaseParam]]) -> TableHDU:
     """The PARAMETERS block for an xspec table model."""
 
     nint = len(params)
@@ -405,7 +413,6 @@ def xstable_parameters(params: list[IntParam],
         # The main array stores objects as each row can have different
         # lengths.
         #
-        # What is the best way to create an "empty" object array?
         values = np.zeros(ntotal, dtype=object)
         for idx, p in enumerate(params):
             values[idx] = np.asarray(p.values, dtype=np.float32)
@@ -466,7 +473,7 @@ def xstable_energies(energ_lo: Any, energ_hi: Any) -> TableHDU:
 
 def xstable_spectra(paramvals: list[tuple[float, ...]],
                     spectra: list[Any],
-                    addparam: Optional[list[Param]],
+                    addparam: Optional[list[BaseParam]],
                     addspectra: Optional[list[list[Any]]],
                     units: Optional[str]) -> TableHDU:
     """The SPECTRA block for an xspec table model."""
@@ -508,7 +515,7 @@ def xstable_spectra(paramvals: list[tuple[float, ...]],
 
 
 # We could either send in the parameter values broken up by parameter,
-# or as a list of those used to create spectra (either way, we to
+# or as a list of those used to create spectra (either way, we need to
 # deconstruct/reconstruct the other form).  For now we send them in
 # per-parameter, but it could be changed if this approach is found to
 # be more awkward for users.
@@ -516,9 +523,9 @@ def xstable_spectra(paramvals: list[tuple[float, ...]],
 def make_xstable_model(name: str,
                        egrid_lo: Any,
                        egrid_hi: Any,
-                       params: list[IntParam],
+                       params: list[Param],
                        spectra: list[Any],
-                       addparams: Optional[list[Param]] = None,
+                       addparams: Optional[list[BaseParam]] = None,
                        addspectra: Optional[list[list[Any]]] = None,
                        addmodel: bool = True,
                        redshift: bool = False,
@@ -557,8 +564,8 @@ def make_xstable_model(name: str,
        paramvals[0].values[i], paramvals[1].values[j], ..
        where the first parameter loops the slowest. The number of rows
        is the multiplication of the number of parameter values.
-    addparams : sequence of Param or None, optional
-       The definitions of the additional parametersm that is those
+    addparams : sequence of BaseParam or None, optional
+       The definitions of the additional parameters; that is those
        that are not interpolated over.
     addspectra : sequence of sequence of sequence of float or None, optional
        The spectra for the additonal parameters. It must is a 3D
@@ -571,8 +578,8 @@ def make_xstable_model(name: str,
     escale : bool, optional
        Should the escale parameter be added? The default is False.
     lolim, hilim : bool, optional
-       The value to used when energies are below or above the values
-       in egrid_lo or egrid_hi.
+       The value to be used when energies are below or above the values
+       in egrid_lo or egrid_hi respectively.
     units : str or None, optional
        The model units. For additive models the default is
        "photons/cm^2/s" and for multiplicative models it is "".

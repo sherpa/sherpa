@@ -67,7 +67,7 @@ from sherpa.utils.testing import requires_fits, requires_xspec
 def test_check_valid_egrid(elo, ehi, msg):
     """Check we catch some error-grid errors"""
 
-    p0 = xstable.IntParam("nop", 12, -1, 12, 12, values=[12])
+    p0 = xstable.Param("nop", 12, -1, 12, 12, values=[12])
     model = [1, 2, 3, 4, 5]
     with pytest.raises(ValueError, match=f"^{msg}$"):
         xstable.make_xstable_model("fake", elo, ehi,
@@ -77,7 +77,7 @@ def test_check_valid_egrid(elo, ehi, msg):
 def test_check_single_spectrum_size():
     """Check we error out"""
 
-    p0 = xstable.IntParam("nop", 12, -1, 12, 12, values=[12])
+    p0 = xstable.Param("nop", 12, -1, 12, 12, values=[12])
     model = [1, 2, 3, 4, 5]
     with pytest.raises(ValueError, match="^Spectrum should have 3 elements but has 5$"):
         xstable.make_xstable_model("fake", [1, 2, 3], [2, 3, 4],
@@ -108,8 +108,8 @@ def test_check_param_valid(initial, delta, hardmin, softmin, softmax, hardmax, m
     """Simple error checks"""
 
     with pytest.raises(ValueError, match=f"^Parameter nop {msg}$"):
-        xstable.Param("nop", initial, delta,
-                      hardmin, hardmax, softmin=softmin, softmax=softmax)
+        xstable.BaseParam("nop", initial, delta, hardmin, hardmax,
+                          softmin=softmin, softmax=softmax)
 
 
 # Note these are subtly different to test_check_param_valid since some
@@ -137,17 +137,16 @@ def test_check_intparam_valid(initial, delta, hardmin, softmin, softmax, hardmax
     """Simple error checks"""
 
     with pytest.raises(ValueError, match=f"^Parameter nop {msg}$"):
-        xstable.IntParam("nop", initial, delta,
-                         hardmin, hardmax, softmin=softmin, softmax=softmax,
-                         values=values)
+        xstable.Param("nop", initial, delta, hardmin, hardmax,
+                      softmin=softmin, softmax=softmax, values=values)
 
 
 def mk(n):
-    return xstable.IntParam(n, 0, 0.01, 0, 1, values=[0, 1])
+    return xstable.Param(n, 0, 0.01, 0, 1, values=[0, 1])
 
 
 def mka(n):
-    return xstable.Param(n, 0, 0.01, 0, 1)
+    return xstable.BaseParam(n, 0, 0.01, 0, 1)
 
 
 @pytest.mark.parametrize("params,addparams",
@@ -169,7 +168,7 @@ def test_check_names_are_unique(params, addparams):
 def test_check_expected_spectra_size():
     """Expect 3 spectra but send in 2"""
 
-    p0 = xstable.IntParam("nop", 1, -1, 0, 1, values=[0, 0.5, 1])
+    p0 = xstable.Param("nop", 1, -1, 0, 1, values=[0, 0.5, 1])
     model1 = [1, 2, 3]
     model2 = [2, 5, 6]
     with pytest.raises(ValueError, match="^Expected 3 spectra, found 2$"):
@@ -186,7 +185,7 @@ def test_check_additional_match():
 
     """
 
-    p0 = xstable.IntParam("nop", 1, -1, 0, 1, values=[0, 1])
+    p0 = xstable.Param("nop", 1, -1, 0, 1, values=[0, 1])
     model1 = [1, 2, 3]
     model2 = [2, 5, 6]
     with pytest.raises(ValueError, match="Mismatch between addparams and addspectra sizes: 0 1"):
@@ -198,8 +197,8 @@ def test_check_additional_match():
 def test_check_additional_match_number_of_spectra():
     """Check we send in the correct number of additional spectra."""
 
-    p0 = xstable.IntParam("nop", 1, -1, 0, 1, values=[0, 1])
-    ap0 = xstable.Param("bob", 1, -1, 0, 1)
+    p0 = xstable.Param("nop", 1, -1, 0, 1, values=[0, 1])
+    ap0 = xstable.BaseParam("bob", 1, -1, 0, 1)
     model1 = [1, 2, 3]
     model2 = [2, 5, 6]
     with pytest.raises(ValueError, match="^Expected 2 spectra for additional parameter bob, found 1$"):
@@ -212,8 +211,8 @@ def test_check_additional_match_number_of_spectra():
 def test_check_additional_match_spectra_size():
     """Check the additional spectra nelem."""
 
-    p0 = xstable.IntParam("nop", 1, -1, 0, 1, values=[0, 1])
-    ap0 = xstable.Param("bob", 1, -1, 0, 1)
+    p0 = xstable.Param("nop", 1, -1, 0, 1, values=[0, 1])
+    ap0 = xstable.BaseParam("bob", 1, -1, 0, 1)
     model1 = [1, 2, 3]
     model2 = [2, 5, 6]
     with pytest.raises(ValueError, match="^Spectrum for parameter bob should have 3 elements but has 2$"):
@@ -226,8 +225,8 @@ def test_check_additional_match_spectra_size():
 def test_check_nxfp_match():
     """When NXFP is set we need more spectra"""
 
-    p0 = xstable.IntParam("nop", 1, -1, 0, 1, values=[0, 1])
-    ap0 = xstable.Param("bob", 1, -1, 0, 1)
+    p0 = xstable.Param("nop", 1, -1, 0, 1, values=[0, 1])
+    ap0 = xstable.BaseParam("bob", 1, -1, 0, 1)
     model1 = [1, 2, 3]
     model2 = [2, 5, 6]
     with pytest.raises(ValueError, match="^Expected 4 spectra, found 2$"):
@@ -242,7 +241,7 @@ def make_single_model(elo, ehi, model, addmodel=True,
                       lolim=0, hilim=0):
     """Create a single-spectrum model"""
 
-    p0 = xstable.IntParam("nop", 12, -1, 12, 12, values=[12])
+    p0 = xstable.Param("nop", 12, -1, 12, 12, values=[12])
     return xstable.make_xstable_model("fake", elo, ehi,
                                       params=[p0], spectra=[model],
                                       addmodel=addmodel,
@@ -389,9 +388,9 @@ def test_atable_interpolated(tmp_path):
     ehi = egrid[1:]
     emid = (elo + ehi) / 2
 
-    p1 = xstable.IntParam("a", 1, 0.01, 0, 10, values=[0, 5, 10])
-    p2 = xstable.IntParam("b", 0.2, -0.01, 0.01, 10,
-                          values=[0.01, 0.1, 1, 10], loginterp=True)
+    p1 = xstable.Param("a", 1, 0.01, 0, 10, values=[0, 5, 10])
+    p2 = xstable.Param("b", 0.2, -0.01, 0.01, 10,
+                       values=[0.01, 0.1, 1, 10], loginterp=True)
 
     def mkspec(pb, pa):
         return (20 - pa) + 10**pb * emid
@@ -473,12 +472,12 @@ def test_atable_interpolated_with_additional(tmp_path):
     ehi = egrid[1:]
     emid = (elo + ehi) / 2
 
-    p1 = xstable.IntParam("a", 1, 0.01, 0, 10, values=[0, 5, 10])
-    p2 = xstable.IntParam("b", 0.2, -0.01, 0.01, 10,
-                          values=[0.01, 0.1, 1, 10], loginterp=True)
+    p1 = xstable.Param("a", 1, 0.01, 0, 10, values=[0, 5, 10])
+    p2 = xstable.Param("b", 0.2, -0.01, 0.01, 10,
+                       values=[0.01, 0.1, 1, 10], loginterp=True)
 
-    ap1 = xstable.Param("pa", 1, -0.01, 0, 10)
-    ap2 = xstable.Param("pb", 1, -0.01, 0, 10)
+    ap1 = xstable.BaseParam("pa", 1, -0.01, 0, 10)
+    ap2 = xstable.BaseParam("pb", 1, -0.01, 0, 10)
 
     def mkspec(pb, pa):
         return (20 - pa) + 10**pb * emid
@@ -690,7 +689,7 @@ def test_atable_with_xfxp(tmp_path):
     model1 = np.asarray([2, 4, 5])
     model2 = np.asarray([5, 10, 40])
 
-    p0 = xstable.IntParam("nop", 12, -1, 12, 20, values=[12, 20])
+    p0 = xstable.Param("nop", 12, -1, 12, 20, values=[12, 20])
     hdus = xstable.make_xstable_model("fake", elo, ehi,
                                       params=[p0],
                                       spectra=[model1, model1 / 10,

@@ -11,7 +11,7 @@ The sherpa.astro.io.xstable module
    .. autosummary::
       :toctree: api
 
-      IntParam
+      BaseParam
       Param
 
    .. rubric:: Functions
