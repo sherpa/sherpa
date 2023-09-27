@@ -627,7 +627,7 @@ def _save_data(out: OutType, state: SessionType) -> None:
     if len(ids) == 0:
         return
 
-    # Try to only output a banned if the section contains a
+    # Try to only output a banner if the section contains a
     # command/setting.
     #
     _output_banner(out, "Load Data Sets")
