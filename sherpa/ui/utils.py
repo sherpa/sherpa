@@ -1070,6 +1070,11 @@ class Session(NoNewAttributesAfterInit):
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
 
+        .. warning::
+             Security risk: The imported functions and objects
+             could contain arbitrary Python code and be malicious.
+             Never use this function on untrusted input.
+
         Parameters
         ----------
         filename : str, optional
