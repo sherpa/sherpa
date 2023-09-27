@@ -63,7 +63,7 @@ Sherpa uses random numbers
 The primary way to control the random numbers used by Sherpa is to
 create a `NumPy Random Generator
 <https://numpy.org/doc/stable/reference/random/generator.html>`_ and
-pass it to routines wither with the ``rng`` parameter or, for users of
+pass it to routines either with the ``rng`` parameter or, for users of
 the Session class, the `~sherpa.ui.utils.Session.set_rng` method.
 However, for the optimiser code, which uses a C++ implementation
 of the Mersenne Twister random number generator,
