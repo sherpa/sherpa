@@ -1123,3 +1123,116 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
 
     expected_perfect = mdl(elo, ehi)
     assert y == pytest.approx(expected_perfect)
+
+
+@requires_data
+@requires_fits
+def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
+    """This XMM dataset has been useful for edge cases. So re-use it.
+
+    See sherpa-test-data/sherpatest/xmm-fit.py
+    """
+
+    NCHAN = 4096
+    NENERGY = 1319
+    NUMELT = 487198
+
+    def check(rmf):
+        assert rmf.detchans == NCHAN
+        assert rmf.offset == 0
+        assert np.log10(rmf.ethresh) == pytest.approx(-10)
+
+        hdr = rmf.header
+        assert "HDUNAME" not in hdr
+        assert hdr["HDUCLASS"] == "OGIP"
+        assert hdr["HDUCLAS1"] == "RESPONSE"
+        assert hdr["HDUCLAS2"] == "RSP_MATRIX"
+        assert hdr["HDUCLAS3"] == "DETECTOR"
+        assert hdr["HDUVERS1"] == "1.0.0"
+        assert hdr["HDUVERS2"] == "1.1.0"
+        assert "RMFVERSN" not in hdr
+
+        assert hdr["TELESCOP"] == "XMM"
+        assert hdr["INSTRUME"] == "EPN"
+        assert hdr["FILTER"] == "NONE"
+
+        assert hdr["CHANTYPE"] == "PI"
+        assert hdr["LO_THRES"] == pytest.approx(2e-6)
+
+        assert len(rmf.energ_lo) == NENERGY
+        assert len(rmf.energ_hi) == NENERGY
+        assert len(rmf.n_grp) == NENERGY
+
+        assert len(rmf.f_chan) == NENERGY
+        assert len(rmf.n_chan) == NENERGY
+
+        assert len(rmf.matrix) == NUMELT
+
+        assert len(rmf.e_min) == NCHAN
+        assert len(rmf.e_max) == NCHAN
+
+        assert rmf.n_grp.dtype == np.uint64
+
+        for field in ["f_chan", "n_chan"]:
+            attr = getattr(rmf, field)
+            if backend_is("crates"):
+                assert attr.dtype == np.uint32
+            elif backend_is("pyfits"):
+                assert attr.dtype == np.uint64
+            else:
+                raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+
+        for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
+            attr = getattr(rmf, field)
+            assert attr.dtype == np.float64
+
+        assert (rmf.energ_lo[1:] == rmf.energ_hi[:-1]).all()
+        assert rmf.energ_lo[0] == pytest.approx(0.05000000074505806)
+        assert rmf.energ_hi[-1] == pytest.approx(18.049999237060547)
+
+        assert rmf.n_grp.sum() == NENERGY
+        assert np.argmax(rmf.n_grp) == 0
+
+        # It is not obvious how the RMF is flattened here, so treat this
+        # as a regression test rather than "from first principles"
+        #
+        assert rmf.f_chan.sum() == 544580
+        assert rmf.n_chan.sum() == NUMELT
+
+        assert rmf.matrix.sum() == pytest.approx(1200.610821738967)
+
+        # e_min/max come from the EBOUNDS block
+        #
+        assert (rmf.e_min[1:] == rmf.e_max[:-1]).all()
+        assert rmf.e_min[0] == pytest.approx(0)
+        assert rmf.e_max[-1] == pytest.approx(20.48000144958496)
+
+
+    rmfname = "epn_ff20_dY9.rmf"
+    infile = make_data_path(rmfname)
+
+    # We get a TLMIN warning
+    assert len(caplog.record_tuples) == 0
+    orig = io.read_rmf(infile)
+    assert len(caplog.record_tuples) == 1
+
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == io.backend.__name__
+    assert lvl == logging.ERROR
+    print(msg)
+    assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
+    assert msg.endswith("'; Update the offset value in the RMF data set to the appropriate TLMIN value prior to fitting")
+
+    assert isinstance(orig, DataRMF)
+    assert orig.name.endswith(f"/{rmfname}")
+    check(orig)
+
+    outpath = tmp_path / "out.rmf"
+    outfile = str(outpath)
+    io.write_rmf(outfile, orig)
+    # Note: no TLMIN warning
+    assert len(caplog.record_tuples) == 1
+
+    new = io.read_rmf(outfile)
+    assert isinstance(new, DataRMF)
+    check(new)
