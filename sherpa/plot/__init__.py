@@ -79,7 +79,7 @@ where xxx is some backend.
 # might contain e.g. matplotlib specific defaults that are not applicable when other
 # backends are used.
 # Thus, we currently initialize them with the BasicBackend that has only the
-# backend-independent (i.e. those that works for any backend) defaults set.``
+# backend-independent (i.e. those that works for any backend) defaults set.
 
 
 plot_opt = config.get('options', 'plot_pkg', fallback='BasicBackend')

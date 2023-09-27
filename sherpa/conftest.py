@@ -52,7 +52,7 @@ from sherpa.plot import TemporaryPlottingBackend
 
 FUNCTIONAL_PLOT_BACKENDS = []
 '''Unfortunately, there is no metadata that tell us which plotting backends are
-dummys and which ones actually produce useful plots. That's because
+dummies and which ones actually produce useful plots. That's because
 "one person's dummy might be another person's use case", e.g. a backend might be a
 dummy for image, but not for a histogram.
 

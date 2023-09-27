@@ -154,6 +154,7 @@ class BokehBackend(BasicBackend):
         'linewidths': {None: 1},
         'linestyles': {None: 'solid'},
         'colors': {None: 'black'},
+        'aspect': {'auto': None, 'equal': 1.},
     }
     '''Dict of keyword arguments that need to be translated for this backend.
 
@@ -279,7 +280,7 @@ class BokehBackend(BasicBackend):
         {kwargs}
         """
         if linecolor is not None:
-            logger.warning("The linecolor attribute ({}) is unused.".format(linecolor))
+            logger.warning("The linecolor attribute (%s) is unused.", linecolor)
 
         x, y2 = histogram_line(xlo, xhi, y)
         # Note: this handles clearing the plot if needed.
@@ -308,11 +309,6 @@ class BokehBackend(BasicBackend):
             color = objs[0].get_color()
         except (AttributeError, IndexError):
             pass
-
-        # Do not draw a line connecting the points
-        #
-        # Unlike plot, using errorbar for both cases.
-        #
 
         ebars = self.plot(xmid, y,
                           # Plot error y bars if present
@@ -346,11 +342,6 @@ class BokehBackend(BasicBackend):
         linecolor, linestyle, linewidth : optional
             The attribute value or None.
         """
-
-        def set(label, newval):
-            func = getattr(line, 'set_' + label)
-            func(newval)
-
         if linecolor is not None:
             line.glyph.line_color = linecolor
 
@@ -609,14 +600,48 @@ class BokehBackend(BasicBackend):
             # "use the default". Bokeh always requires to specify the levels, so
             # we have to define our own defaults here.
             # We try to pick something sensible, but not too complicated.
-            # There are cases, where this simple appraoch does not
-            # provide nice nubmers for the levels, but matplotlib's
-            # MaxNLocator is > 200 lines, which I don't want to replicate.
             levels = np.linspace(np.min(y), np.max(y), levels)[1: -1]
 
 
         axes.contour(x0, x1, y, levels, line_alpha=alpha,
                      line_color=colors, line_width=linewidths)
+
+    @add_kwargs_to_doc(kwargs_doc)
+    @translate_args
+    def image(self, x0, x1, y, *,
+               aspect=None,
+               title=None, xlabel=None, ylabel=None,
+               clearwindow=True,
+               overplot=False,
+               **kwargs):
+        """Draw 2D image data.
+
+        .. warning::
+           This function is experimental and is currently only used in
+           the rish display code.
+
+        Parameters
+        ----------
+        x0 : array-like
+            independent axis in the first dimension
+        x1 : array-like
+            independent axis in the second dimension
+        y : array-like, with shape (len(x0), len(x1))
+            dependent axis (i.e. image values) in 2D
+            with shape (len(x0), len(x1))
+        {kwargs}
+        """
+        print(x0, x1, y, aspect, kwargs)
+        axes = self.setup_axes(overplot, clearwindow)
+
+        # Set up the axes
+        if not overplot:
+            self.setup_plot(axes, title, xlabel, ylabel)
+
+        axes.image(image=[y], x=x0[0], y=x1[0], dw=x0[-1] - x0[0], dh=x1[-1] - x1[0],
+                   level='image', palette="Sunset11")
+        axes.aspect_ratio = aspect
+
 
     def _index_axis(self, row, col):
         '''Find index number of subplot in a grid of plots
@@ -656,7 +681,7 @@ class BokehBackend(BasicBackend):
         index = self._index_axis(row, col)
         if index is not None and not clearaxes:
             # We found the right subplot, now make it the current one
-            self.current_axis = self.current_fig[index]
+            self.current_axis = self.current_fig.children[index]
             return
 
         # We found the subplot, but we want to replace it with a new one
@@ -741,9 +766,9 @@ class BokehBackend(BasicBackend):
 
         plotnum = self._index_axis(row, col)
         if plotnum is None:
-            raise ArgumentErr("No plot at row {} and column {}." +
+            raise ArgumentErr(f"No plot at row {row} and column {col}." +
                               "Use create=True to create an entirely new, " +
-                              "complete grid of plots.".format(row, col)) from None
+                              "complete grid of plots.") from None
         self.current_axis = self.current_fig[plotnum]
 
 
@@ -752,12 +777,11 @@ class BokehBackend(BasicBackend):
     def as_html(self, func):
         """Create HTML representation of a plot
 
-
         Parameters
         ----------
         func : function
             The function, which takes no arguments, which will create the
-            plot. It creates the Figure.
+            plot. It creates and returns the Figure.
 
         Returns
         -------
@@ -782,7 +806,7 @@ class BokehBackend(BasicBackend):
         ''' + image
 
 
-    def as_html_plot_or_contour(self, data, summary=None, func="plot"):
+    def as_html_plot_or_contour(self, data, summary=None, plotting_func="plot"):
         """Create HTML representation of a plot
 
         Parameters
@@ -793,7 +817,7 @@ class BokehBackend(BasicBackend):
         summary : str or None, optional
             The summary of the detail. If not set then the data type
             name is used.
-        func : str, optional
+        plotting_func : str, optional
             The function to call on the data object to make the plot.
 
         Returns
@@ -802,7 +826,7 @@ class BokehBackend(BasicBackend):
             The HTML, or None if there was an error (e.g. prepare not
             called).
         """
-        image = self.as_html(getattr(data, func))
+        image = self.as_html(getattr(data, plotting_func))
 
         if image is None:
             return None
@@ -813,9 +837,9 @@ class BokehBackend(BasicBackend):
         ls = [formatting.html_svg(image, summary)]
         return formatting.html_from_sections(data, ls)
 
-    as_html_plot = partialmethod(as_html_plot_or_contour, func="plot")
-    as_html_contour = partialmethod(as_html_plot_or_contour, func="contour")
-
+    as_html_plot = partialmethod(as_html_plot_or_contour, plotting_func="plot")
+    as_html_contour = partialmethod(as_html_plot_or_contour, plotting_func="contour")
+    as_html_image = as_html_plot
     as_html_histogram = as_html_plot
     as_html_pdf = as_html_plot
     as_html_cdf = as_html_plot
