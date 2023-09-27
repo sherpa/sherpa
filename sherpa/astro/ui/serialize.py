@@ -1032,7 +1032,7 @@ def _save_models(out: OutType, state: SessionType) -> None:
     if len(ids) == 0:
         return
 
-    _output_banner(out, "Set Source, Pileup, and Background Models")
+    _output_banner(out, "Set Source, Pileup and Background Models")
     orig_pos = _get_out_pos(out)
 
     for id in ids:
