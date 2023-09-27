@@ -974,7 +974,6 @@ def test_write_fake_perfect_rmf(offset, tmp_path):
     assert np.log10(new.ethresh) == pytest.approx(-10)
 
     hdr = new.header
-    print(hdr)
     assert "HDUNAME" not in hdr
     assert hdr["HDUCLASS"] == "OGIP"
     assert hdr["HDUCLAS1"] == "RESPONSE"
@@ -1102,9 +1101,8 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     assert msg.endswith("/multi.rmf contains 2 MATRIX blocks; Sherpa only uses the first block!")
 
     lname, lvl, msg = caplog.record_tuples[1]
-    assert lname == io.backend.__name__
+    assert lname == "sherpa.astro.io"
     assert lvl == logging.ERROR
-    print(msg)
     assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
     assert msg.endswith("/multi.rmf'; Update the offset value in the RMF data set to the appropriate TLMIN value prior to fitting")
 
@@ -1211,17 +1209,10 @@ def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
     rmfname = "epn_ff20_dY9.rmf"
     infile = make_data_path(rmfname)
 
-    # We get a TLMIN warning
+    # We do get a TLMIN warning (prior to 4.16 we did).
     assert len(caplog.record_tuples) == 0
     orig = io.read_rmf(infile)
-    assert len(caplog.record_tuples) == 1
-
-    lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == io.backend.__name__
-    assert lvl == logging.ERROR
-    print(msg)
-    assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
-    assert msg.endswith("'; Update the offset value in the RMF data set to the appropriate TLMIN value prior to fitting")
+    assert len(caplog.record_tuples) == 0
 
     assert isinstance(orig, DataRMF)
     assert orig.name.endswith(f"/{rmfname}")
@@ -1231,7 +1222,7 @@ def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
     outfile = str(outpath)
     io.write_rmf(outfile, orig)
     # Note: no TLMIN warning
-    assert len(caplog.record_tuples) == 1
+    assert len(caplog.record_tuples) == 0
 
     new = io.read_rmf(outfile)
     assert isinstance(new, DataRMF)

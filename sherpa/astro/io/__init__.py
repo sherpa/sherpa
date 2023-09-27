@@ -108,6 +108,7 @@ else:
     # that does not have dummy listed
     import sherpa.astro.io.dummy_backend as backend
 
+error = logging.getLogger(__name__).error
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
@@ -434,16 +435,50 @@ def read_rmf(arg):
     data : sherpa.astro.data.DataRMF
 
     """
-    data, filename = backend.get_rmf_data(arg)
-    data['header'] = _remove_structural_keywords(data['header'])
+    matrices, ebounds, filename = backend.get_rmf_data(arg)
 
-    # It is unlikely that the backend will set this, but allow
-    # it to override the config setting.
+    mat0 = matrices[0]
+    kwargs = {"detchans": mat0.detchans,
+              "header": _remove_structural_keywords(mat0.header)}
+
+    # Do we need to worry about a miissing TLMIN value for F_CHAN?
+    # There are some files where we can get an offset from the CHANNEL
+    # column og the EBOUNDS block, so we only warn if the first matrix
+    # and ebounds both have offset set to None. We do not bother
+    # checking other matrix blocks if present.
     #
-    if 'emin' not in data:
-        data['ethresh'] = ogip_emin
+    if mat0.offset is None:
+        if ebounds.offset is None:
+            # Assume that arg is readable as a string
+            error("Failed to locate TLMIN keyword for F_CHAN "
+                  "column in RMF file '%s'; "
+                  "Update the offset value in the RMF data set to "
+                  "the appropriate TLMIN value prior to fitting",
+                  arg)
 
-    return _rmf_factory(filename, data)
+        else:
+            kwargs["offset"] = ebounds.offset
+
+    else:
+        kwargs["offset"] = mat0.offset
+
+    if ebounds is not None:
+        kwargs["e_min"] = ebounds.e_min
+        kwargs["e_max"] = ebounds.e_max
+
+    # TODO: fix this (i.e. select a sensible value taken from the
+    # data).
+    #
+    kwargs["ethresh"] = ogip_emin
+
+    kwargs |= {"energ_lo": mat0.energ_lo,
+               "energ_hi": mat0.energ_hi,
+               "n_grp": mat0.n_grp,
+               "f_chan": mat0.f_chan,
+               "n_chan": mat0.n_chan,
+               "matrix": mat0.matrix}
+
+    return _rmf_factory(filename, kwargs)
 
 
 def _rmf_factory(filename, data):

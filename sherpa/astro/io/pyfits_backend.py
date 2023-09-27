@@ -40,7 +40,7 @@ References
 from collections import defaultdict
 import logging
 import os
-from typing import Union
+from typing import Optional, Union
 import warnings
 
 import numpy
@@ -50,7 +50,8 @@ from astropy.io.fits.column import _VLF  # type: ignore
 from astropy.table import Table  # type: ignore
 
 from sherpa.io import get_ascii_data, write_arrays
-from sherpa.astro.io.io_types import HeaderItem, TableHDU
+from sherpa.astro.io.io_types import HeaderItem, TableHDU, \
+    RMFMatrixData, RMFEboundsData
 from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
@@ -681,14 +682,20 @@ def _read_col(hdu, name):
 RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
 
 
-def _read_rmf_matrix(data, filename, hdus):
-    """Append MATRIX block to data.
+def _read_rmf_matrix(filename: str,
+                     hdus: fits.HDUList) -> list[RMFMatrixData]:
+    """Read in the MATRIX block(s).
+
+    At the moment only the first MATRIX block is returned.
 
     Parameters
     ----------
-    data : dict
     filename : str
     hdus : fits.HDUList
+
+    Returns
+    -------
+    data : list of RMFMatrixData
 
     Raises
     ------
@@ -738,107 +745,22 @@ def _read_rmf_matrix(data, filename, hdus):
     # The comments note the type we want the column to be, but this
     # conversion needs to be done after cleaning up the data.
     #
-    data['detchans'] = SherpaUInt(_require_key(hdu, 'DETCHANS'))
-    data['energ_lo'] = _read_col(hdu, 'ENERG_LO')  # SherpaFloat
-    data['energ_hi'] = _read_col(hdu, 'ENERG_HI')  # SherpaFloat
-    data['n_grp'] = _read_col(hdu, 'N_GRP')        # SherpaUInt
-    data['f_chan'] = _read_col(hdu, 'F_CHAN')      # SherpaUInt
-    data['n_chan'] = _read_col(hdu, 'N_CHAN')      # SherpauInt
-    data['matrix'] = _read_col(hdu, 'MATRIX')
+    detchans = _require_key(hdu, 'DETCHANS', dtype=SherpaInt)
+    energ_lo = _read_col(hdu, 'ENERG_LO')  # SherpaFloat
+    energ_hi = _read_col(hdu, 'ENERG_HI')  # SherpaFloat
+    n_grp = _read_col(hdu, 'N_GRP')        # SherpaUInt
+    f_chan = _read_col(hdu, 'F_CHAN')      # SherpaUInt
+    n_chan = _read_col(hdu, 'N_CHAN')      # SherpauInt
+    matrix = _read_col(hdu, 'MATRIX')
 
-    data['header'] = _get_meta_data(hdu)
-    data['header'].pop('DETCHANS', None)
+    # We already gave DETCHANS so we can remove it from the header.
+    #
+    header = _get_meta_data(hdu)
+    header.pop('DETCHANS', None)
 
     # Beginning of non-Chandra RMF support
     fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
-    tlmin = _try_key(hdu, f"TLMIN{fchan_col}", fix_type=True,
-                     dtype=SherpaUInt)
-
-    if tlmin is not None:
-        data['offset'] = tlmin
-    else:
-        # QUS: should this actually be an error, rather than just
-        #      something that is logged to screen?
-        error("Failed to locate TLMIN keyword for F_CHAN "
-              "column in RMF file '%s'; "
-              "Update the offset value in the RMF data set to "
-              "the appropriate TLMIN value prior to fitting",
-              filename)
-
-
-def _read_rmf_ebounds(data, filename, hdus):
-    """Append EBOUNDS block to data if it exists.
-
-    Parameters
-    ----------
-    data : dict
-    filename : str
-    hdus : fits.HDUList
-
-    """
-
-    try:
-        hdu = hdus['EBOUNDS']
-    except KeyError:
-        data['e_min'] = None
-        data['e_max'] = None
-        return
-
-    data['e_min'] = _try_col(hdu, 'E_MIN', fix_type=True)
-    data['e_max'] = _try_col(hdu, 'E_MAX', fix_type=True)
-
-    # Check whther TLMIN for CHANNEL is set and if it matches the
-    # matrix block (constraint from the F_CHAN column). Is this worth
-    # it?
-    #
-    chan_col = list(hdu.columns.names).index('CHANNEL') + 1
-    tlmin = _try_key(hdu, f"TLMIN{chan_col}", fix_type=True,
-                     dtype=SherpaUInt)
-    if tlmin is None:
-        return
-
-    try:
-        if data['offset'] == tlmin:
-            return
-
-        # Drop this value as it is not obvious what to do here
-        warning("TLMIN of CHANNEL column does not match that of F_CHAN")
-    except KeyError:
-        # TLMIN of F_CHAN is not set, so use this TLMIN
-        data['offset'] = tlmin
-
-
-def _read_rmf_data(arg):
-    """Read in the data from the RMF."""
-
-    rmf, filename = _get_file_contents(arg, exptype="BinTableHDU",
-                                       nobinary=True)
-
-    data = {}
-    try:
-        _read_rmf_matrix(data, filename, rmf)
-        _read_rmf_ebounds(data, filename, rmf)
-
-    finally:
-        rmf.close()
-
-    return data, filename
-
-
-def get_rmf_data(arg, make_copy=False):
-    """arg is a filename or a HDUList object.
-
-    Notes
-    -----
-    For more information on the RMF format see the `OGIP Calibration
-    Memo CAL/GEN/92-002
-    <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
-
-    """
-
-    # Read in the columns from the MATRIX and EBOUNDS extensions.
-    #
-    data, filename = _read_rmf_data(arg)
+    offset = _try_key(hdu, f"TLMIN{fchan_col}")
 
     # This could be taken from the NUMELT keyword, but this is not
     # a required value and it is not obvious how trustworthy it is.
@@ -846,7 +768,7 @@ def get_rmf_data(arg, make_copy=False):
     # Since N_CHAN can be a VLF we can not just use sum().
     #
     numelt = 0
-    for row in data["n_chan"]:
+    for row in n_chan:
         try:
             numelt += sum(row)
         except TypeError:
@@ -863,12 +785,13 @@ def get_rmf_data(arg, make_copy=False):
     # Note that crates uses the sherpa.astro.utils.resp_init routine,
     # but it's not clear why, so it is not used here for now.
     #
-    good = data['n_grp'] > 0
+    good = n_grp > 0
+    n_grp_all = n_grp
 
-    matrix = data['matrix'][good]
-    n_grp = data['n_grp'][good]
-    n_chan = data['n_chan'][good]
-    f_chan = data['f_chan'][good]
+    matrix = matrix[good]
+    n_grp = n_grp[good]
+    n_chan = n_chan[good]
+    f_chan = f_chan[good]
 
     # Flatten the array. There are four cases here:
     #
@@ -916,7 +839,7 @@ def get_rmf_data(arg, make_copy=False):
 
         matrix = numpy.concatenate(rowdata)
 
-    data['matrix'] = matrix.astype(SherpaFloat)
+    matrix = matrix.astype(SherpaFloat)
 
     # Flatten f_chan and n_chan vectors into 1D arrays as crates does
     # according to group. This is not always needed, but annoying to
@@ -936,20 +859,99 @@ def get_rmf_data(arg, make_copy=False):
             xf_chan.extend(fch[:grp])
             xn_chan.extend(nch[:grp])
 
-    data['f_chan'] = numpy.asarray(xf_chan, SherpaUInt)
-    data['n_chan'] = numpy.asarray(xn_chan, SherpaUInt)
+    f_chan = numpy.asarray(xf_chan, SherpaUInt)
+    n_chan = numpy.asarray(xn_chan, SherpaUInt)
 
     # Not all fields are "flattened" by this routine. In particular we
     # need to keep knowledge of these rows with 0 groups. This is why
-    # we set the n_grp entry to data['n_grp'] rather than the n_grp
-    # variable (which has the 0 elements removed).
+    # we set the n_grp entry to n_grp_all rather than the current
+    # n_grp variable (which has the 0 elements removed).
     #
-    data['n_grp'] = numpy.asarray(data['n_grp'], SherpaUInt)
+    n_grp = numpy.asarray(n_grp_all, SherpaUInt)
 
-    data['energ_lo'] = numpy.asarray(data['energ_lo'], SherpaFloat)
-    data['energ_hi'] = numpy.asarray(data['energ_hi'], SherpaFloat)
+    energ_lo = numpy.asarray(energ_lo, SherpaFloat)
+    energ_hi = numpy.asarray(energ_hi, SherpaFloat)
 
-    return data, filename
+    return [RMFMatrixData(detchans=detchans, offset=offset,
+                          energ_lo=energ_lo, energ_hi=energ_hi,
+                          n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,
+                          matrix=matrix, header=header)]
+
+
+def _read_rmf_ebounds(filename: str,
+                      hdus: fits.HDUList) -> Optional[RMFEboundsData]:
+    """Append EBOUNDS block to data if it exists.
+
+    Parameters
+    ----------
+    filename : str
+    hdus : fits.HDUList
+
+    Returns
+    -------
+    data : RMFEboundsData or None
+
+    """
+
+    try:
+        hdu = hdus['EBOUNDS']
+    except KeyError:
+        return None
+
+    e_min = _require_col(hdu, 'E_MIN', fix_type=True)
+    e_max = _require_col(hdu, 'E_MAX', fix_type=True)
+    channel = _require_col(hdu, 'CHANNEL', fix_type=True,
+                           dtype=SherpaUInt)
+
+    # Check whether TLMIN for CHANNEL is set and if it matches the
+    # matrix block (constraint from the F_CHAN column). Is this worth
+    # it?
+    #
+    chan_col = list(hdu.columns.names).index('CHANNEL') + 1
+    offset = _try_key(hdu, f"TLMIN{chan_col}")
+
+    return RMFEboundsData(e_min=e_min, e_max=e_max, channel=channel,
+                          offset=offset)
+
+
+def _read_rmf_data(arg):
+    """Read in the data from the RMF."""
+
+    rmf, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                       nobinary=True)
+
+    try:
+        mats = _read_rmf_matrix(filename, rmf)
+        ebound = _read_rmf_ebounds(filename, rmf)
+
+    finally:
+        rmf.close()
+
+    return mats, ebound, filename
+
+
+def get_rmf_data(arg, make_copy=False):
+    """arg is a filename or a HDUList object.
+
+    At the moment only the first matrix of a multi-matrix RMF file is
+    returned.
+
+    Returns
+    -------
+    matrices, ebounds, filename : list of RMFMatrixData, RMFEboundsData or None, str
+
+    Notes
+    -----
+    For more information on the RMF format see the `OGIP Calibration
+    Memo CAL/GEN/92-002
+    <https://heasarc.gsfc.nasa.gov/docs/heasarc/caldb/docs/memos/cal_gen_92_002/cal_gen_92_002.html>`_.
+
+    """
+
+    # Read in the columns from the MATRIX and EBOUNDS extensions.
+    #
+    mats, ebound, filename = _read_rmf_data(arg)
+    return mats, ebound, filename
 
 
 def get_pha_data(arg, make_copy=False, use_background=False):

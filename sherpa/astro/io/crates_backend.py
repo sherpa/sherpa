@@ -21,7 +21,7 @@
 from collections import defaultdict
 import logging
 import os
-from typing import Union
+from typing import Optional, Union
 
 import numpy
 
@@ -32,7 +32,8 @@ import pycrates  # type: ignore
 # work around missing TLMIN support in crates CIAO 4.15
 import cxcdm  # type: ignore
 
-from sherpa.astro.io.io_types import HeaderItem, TableHDU
+from sherpa.astro.io.io_types import HeaderItem, TableHDU, \
+    RMFMatrixData, RMFEboundsData
 from sherpa.astro.utils import resp_init
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.utils.err import ArgumentTypeErr, IOErr
@@ -759,15 +760,22 @@ def _find_matrix_blocks(filename):
     return matrixes
 
 
-def _read_rmf_matrix(data, filename, ds, make_copy):
-    """Append MATRIX block to data.
+def _read_rmf_matrix(filename: str,
+                     ds: RMFCrateDataset,
+                     make_copy: bool) -> list[RMFMatrixData]:
+    """Read in the MATRIX block(s).
+
+    At the moment only the first MATRIX block is returned.
 
     Parameters
     ----------
-    data : dict
     filename : str
     ds : RMFCrateDataset
     make_copy : bool
+
+    Returns
+    -------
+    data : list of RMFMatrixData
 
     Raises
     ------
@@ -824,9 +832,6 @@ def _read_rmf_matrix(data, filename, ds, make_copy):
     if not rmf.column_exists('ENERG_HI'):
         raise IOErr('reqcol', 'ENERG_HI', filename)
 
-    # FIXME: this will be a problem now that we have
-    # to pass the name of the matrix column
-
     if not rmf.column_exists('MATRIX'):
         raise IOErr('reqcol', 'MATRIX', filename)
 
@@ -855,115 +860,94 @@ def _read_rmf_matrix(data, filename, ds, make_copy):
               "Sherpa only uses the first block!",
               filename, nmat)
 
-    data['detchans'] = _require_key(rmf, 'DETCHANS', SherpaInt)
-    data['energ_lo'] = _require_col(rmf, 'ENERG_LO', make_copy, fix_type=True)
-    data['energ_hi'] = _require_col(rmf, 'ENERG_HI', make_copy, fix_type=True)
-    data['n_grp'] = _require_col(
-        rmf, 'N_GRP', make_copy, dtype=SherpaUInt, fix_type=True)
-
-    f_chan = rmf.get_column('F_CHAN')
-    offset = f_chan.get_tlmin()
+    detchans = _require_key(rmf, 'DETCHANS', dtype=SherpaInt)
+    energ_lo = _require_col(rmf, 'ENERG_LO', make_copy, fix_type=True)
+    energ_hi = _require_col(rmf, 'ENERG_HI', make_copy, fix_type=True)
+    n_grp = _require_col(rmf, 'N_GRP', make_copy, dtype=SherpaUInt,
+                         fix_type=True)
 
     fcbuf = _require_col(rmf, 'F_CHAN', make_copy)
     ncbuf = _require_col(rmf, 'N_CHAN', make_copy)
-
     respbuf = _require_col_list(rmf, 'MATRIX', 1, make_copy)
 
-    # FIXME:
-    #
-    # Currently, CRATES does something screwy:  If n_grp is zero in a bin,
-    # it appends a zero to f_chan, n_chan, and matrix.  I have no idea what
-    # the logic behind this is -- why would you add data that you know you
-    # don't need?  Although it's easy enough to filter the zeros out of
-    # f_chan and n_chan, it's harder for matrix, since zero is a legitimate
-    # value there.
-    #
-    # I think this crazy behavior of CRATES should be changed, but for the
-    # moment we'll just punt in this case.  (If we don't, the calculation
-    # in rmf_fold() will be trashed.)
-
-    # CRATES does not support variable length arrays, so here we condense
-    # the array of tuples into the proper length array
-    #
-    chan_width = data['n_grp'].max()
+    # Flatten out the various columns.
+    chan_width = n_grp.max()
     resp_width = 0
     if len(respbuf.shape) > 1:
         resp_width = respbuf.shape[1]
 
-    (data['f_chan'], data['n_chan'],
-     data['matrix']) = resp_init(data['n_grp'], fcbuf, ncbuf,
-                                 chan_width, respbuf.ravel(), resp_width)
+    f_chan, n_chan, matrix = resp_init(n_grp, fcbuf, ncbuf,
+                                       chan_width, respbuf.ravel(),
+                                       resp_width)
 
-    data['header'] = _get_meta_data(rmf)
-    data['header'].pop('DETCHANS', None)
+    # We already gave DETCHANS so we can remove it from the header.
+    #
+    header = _get_meta_data(rmf)
+    header.pop('DETCHANS', None)
 
     # If TLMIN<n> is not set then crates will return a negative number
     # for a signed datatype.
     #
-    if offset >= 0:
-        data['offset'] = offset
-    else:
-        error("Failed to locate TLMIN keyword for F_CHAN "
-              "column in RMF file '%s'; "
-              "Update the offset value in the RMF data set to "
-              "the appropriate TLMIN value prior to fitting",
-              filename)
+    offset = rmf.get_column('F_CHAN').get_tlmin()
+    if offset < 0:
+        offset = None
+
+    return [RMFMatrixData(detchans=detchans, offset=offset,
+                          energ_lo=energ_lo, energ_hi=energ_hi,
+                          n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,
+                          matrix=matrix, header=header)]
 
 
-
-def _read_rmf_ebounds(data, filename, ds, make_copy):
-    """Append EBOUNDS block to data if it exists.
+def _read_rmf_ebounds(filename: str,
+                      ds: RMFCrateDataset,
+                      make_copy: bool) -> Optional[RMFEboundsData]:
+    """Return the EBOUNDS block data, if it exists.
 
     Parameters
     ----------
-    data : dict
     filename : str
     ds : RMFCrateDataset
     make_copy : bool
+
+    Returns
+    -------
+    data : RMFEboundsData or None
 
     """
 
     ebounds = _get_crate_by_blockname(ds, 'EBOUNDS')
     if ebounds is None:
         ebounds = ds.get_crate(3)
+        if ebounds is None:
+            return None
 
-    channel = None
-    if ebounds is not None:
-        data['e_min'] = _try_col(ebounds, 'E_MIN', make_copy, fix_type=True)
-        data['e_max'] = _try_col(ebounds, 'E_MAX', make_copy, fix_type=True)
-        if ebounds.column_exists('CHANNEL'):
-            channel = ebounds.get_column('CHANNEL')
+    e_min = _require_col(ebounds, 'E_MIN', make_copy, fix_type=True)
+    e_max = _require_col(ebounds, 'E_MAX', make_copy, fix_type=True)
+    channel = _require_col(ebounds, 'CHANNEL', make_copy, fix_type=True,
+                           dtype=SherpaUInt)
 
-    # Do we get the offset from the CHANNEL column?
-    #
-    if channel is None:
-        return
-
-    # Assume a negative minimum indicates that the file does not set
-    # TLMIN but that it's just using the minimum data value, and so
-    # we can return.
-    #
-    offset = channel.get_tlmin()
+    offset = ebounds.get_column('CHANNEL').get_tlmin()
     if offset < 0:
-        return
+        offset = None
 
-    try:
-        if data['offset'] == offset:
-            return
-
-        # Drop this value as it is not obvious what to do here
-        warning("TLMIN of CHANNEL column does not match that of F_CHAN")
-    except KeyError:
-        # TLMIN of F_CHAN is not set, so use this TLMIN
-        data['offset'] = offset
+    return RMFEboundsData(e_min=e_min, e_max=e_max, channel=channel,
+                          offset=offset)
 
 
 def get_rmf_data(arg, make_copy=True):
-    """Read a RMF from a file or crate"""
+    """Read a RMF from a file or crate
+
+    At the moment only the first matrix of a multi-matrix RMF file is
+    returned.
+
+    Returns
+    -------
+    matrices, ebounds, filename : list of RMFMatrixData, RMFEboundsData or None, str
+
+    """
     filename = ''
     if isinstance(arg, string_types):
         rmfdataset = open_crate_dataset(arg, RMFCrateDataset)
-
         if pycrates.is_rmf(rmfdataset) != 1:
             raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
@@ -977,11 +961,9 @@ def get_rmf_data(arg, make_copy=True):
     else:
         raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
-    data = {}
-    _read_rmf_matrix(data, filename, rmfdataset, make_copy=make_copy)
-    _read_rmf_ebounds(data, filename, rmfdataset, make_copy=make_copy)
-
-    return data, filename
+    mats = _read_rmf_matrix(filename, rmfdataset, make_copy=make_copy)
+    ebound = _read_rmf_ebounds(filename, rmfdataset, make_copy=make_copy)
+    return mats, ebound, filename
 
 
 def get_pha_data(arg, make_copy=True, use_background=False):
@@ -1069,7 +1051,12 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 
         data['channel'] = _require_col(
             pha, 'CHANNEL', make_copy, fix_type=True)
+
         # Make sure channel numbers, not indices
+        #
+        # TODO: this should use the offset value itself rather than
+        # assuming we have 0 or 1 as the values.
+        #
         if int(data['channel'][0]) == 0 or pha.get_column('CHANNEL').get_tlmin() == 0:
             data['channel'] = data['channel'] + 1
 

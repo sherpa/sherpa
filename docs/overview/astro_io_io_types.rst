@@ -14,9 +14,11 @@ The sherpa.astro.io.io_types module
       Column
       HeaderItem
       TableHDU
+      RMFMatrixData
+      RMFEboundsData
 
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: Column HeaderItem TableHDU
+.. inheritance-diagram:: Column HeaderItem TableHDU RMFMatrixData RMFEboundsData
    :parts: 1

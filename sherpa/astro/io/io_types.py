@@ -23,11 +23,18 @@ This is an experimental module, and is likely to change.
 
 """
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, Optional, Union
 
+import numpy as np
 
-__all__ = ("HeaderItem", "Column", "TableHDU")
+
+__all__ = ("HeaderItem", "Column", "TableHDU",
+           "RMFMatrixData", "RMFEboundsData")
+
+
+KeyValue = Union[str, bool, int, float]
 
 
 # Perhaps the HeaderItem and Column types can be used in
@@ -42,7 +49,7 @@ class HeaderItem:
     """
     name: str
     """The keyword name (case insensitive)"""
-    value: Union[str, bool, int, float]  # will we need more?
+    value: KeyValue
     """The keyword value"""
     desc: Optional[str] = None
     """The description for the keyword"""
@@ -96,3 +103,60 @@ class TableHDU:
         self.name = self.name.strip().upper()
         if self.name == "":
             raise ValueError("name can not be empty")
+
+
+@dataclass
+class RMFMatrixData:
+    """The MATRIX block of a RMF as used by DataRMF.
+
+    This is an experimental interface. It does not contain the columns
+    from the MATRIX block as stored in a FITS file, but the
+    "compressed" version used by the I/O layer and the `rmf_fold`
+    routine.
+
+    """
+
+    detchans : int
+    """The number of channels."""
+    energ_lo : np.ndarray
+    """The ENERG_LO column of the MATRIX block."""
+    energ_hi : np.ndarray
+    """The ENERG_HI column of the MATRIX block."""
+    n_grp : np.ndarray
+    """The N_GRP column of the MATRIX block after compression."""
+    f_chan : np.ndarray
+    """The F_CHAN column of the MATRIX block after compression."""
+    n_chan : np.ndarray
+    """The N_CHAN column of the MATRIX block after compression."""
+    matrix : np.ndarray
+    """The MATRIX column of the MATRIX block after compression."""
+    header : Mapping[str, KeyValue]
+    """Metadata associated with the MATRIX block."""
+    offset : Optional[int] = None
+    """The offset for the channel array (also used by f_chan)."""
+
+    def __post_init__(self):
+        # TODO: Need to validate the energy axis and check the lengths
+        pass
+
+
+@dataclass
+class RMFEboundsData:
+    """The EBOUNDS block of a RMF as used by DataRMF.
+
+    This is an experimental interface.
+
+    """
+
+    e_min : np.ndarray
+    """The E_MIN column of the EBOUNDS block."""
+    e_max : np.ndarray
+    """The E_MAX column of the EBOUNDS block."""
+    channel : np.ndarray
+    """The CHANNEL column of the EBOUNDS block."""
+    offset : Optional[int] = None
+    """The offset for the channel array of the EBOUNDS block."""
+
+    def __post_init__(self):
+        # TODO: Need to validate the energy axis and check the lengths
+        pass
