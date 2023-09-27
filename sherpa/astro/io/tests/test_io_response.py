@@ -1086,41 +1086,44 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     io.backend.set_hdus(outfile, hdus)
 
     # What happens if we try to read this in? As we haven't written
-    # out the correct TLMIN value we will get a warning about
-    # that, and there is also a warning about the lack of support
-    # for the multi-matrix RMF.
+    # out the correct TLMIN value we will get a warning about that.
     #
     assert len(caplog.record_tuples) == 0
     rmf = io.read_rmf(outfile)
-    assert len(caplog.record_tuples) == 2
+    assert len(caplog.record_tuples) == 1
 
     lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == io.backend.__name__
-    assert lvl == logging.ERROR
-    assert msg.startswith("RMF in ")
-    assert msg.endswith("/multi.rmf contains 2 MATRIX blocks; Sherpa only uses the first block!")
-
-    lname, lvl, msg = caplog.record_tuples[1]
     assert lname == "sherpa.astro.io"
     assert lvl == logging.ERROR
     assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
     assert msg.endswith("/multi.rmf'; Update the offset value in the RMF data set to the appropriate TLMIN value prior to fitting")
 
-    # What happens if we apply the RMF to a model? At the moment we
-    # use the first matrix (the "perfect" response).
+    # The response is a "perfect" response combined with a
+    # "blurry" respponse.
     #
     mdl = Gauss1D()
     mdl.pos = 1.1
     mdl.fwhm = 0.8
     mdl.ampl = 1e4
 
+    expected_perfect = mdl(elo, ehi)
+
+    # Create a 2D array to represent the blurry matrix
+    #
+    blurry_matrix = np.zeros((5, 20))
+    for idx, fchan in enumerate([2, 4, 6, 8, 10]):
+        blurry_matrix[idx, fchan - 1:fchan + 3] = blur
+
+    expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
+
+    expected = expected_perfect + expected_blurry
+
     resp = RMF1D(rmf)
     conv = resp(mdl)
     chans = np.arange(1, 21, dtype=np.int16)
     y = conv(chans)
 
-    expected_perfect = mdl(elo, ehi)
-    assert y == pytest.approx(expected_perfect)
+    assert y == pytest.approx(expected)
 
 
 @requires_data

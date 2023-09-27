@@ -42,7 +42,6 @@ from sherpa.utils.err import ArgumentTypeErr, IOErr
 CrateType = Union[IMAGECrate, TABLECrate]
 
 warning = logging.getLogger(__name__).warning
-error = logging.getLogger(__name__).error
 info = logging.getLogger(__name__).info
 
 transformstatus = False
@@ -723,15 +722,12 @@ def get_arf_data(arg, make_copy=True):
 RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
 
 
-def _find_matrix_blocks(filename):
+def _find_matrix_blocks(ds: CrateDataset) -> list[str]:
     """Report the block names that contain MATRIX data in a RMF.
-
-    Unfortunately, due to the way we read in the RMF, we end up having
-    to read the file in again.
 
     Arguments
     ---------
-    filename : str
+    ds : CrateDataset
 
     Returns
     -------
@@ -742,11 +738,6 @@ def _find_matrix_blocks(filename):
        times).
 
     """
-
-    try:
-        ds = CrateDataset(filename, mode='r')
-    except IOErr:
-        return []
 
     matrixes = []
     for crnum in range(1, ds.get_ncrates() + 1):
@@ -760,17 +751,22 @@ def _find_matrix_blocks(filename):
     return matrixes
 
 
+# Prior to 4.16 this used a RMFCrateDataset but this has been changed
+# to just a CrateDataset until support for multi-matrix RMF data is
+# added to Crates.
+#
 def _read_rmf_matrix(filename: str,
-                     ds: RMFCrateDataset,
+                     ds: CrateDataset,
                      make_copy: bool) -> list[RMFMatrixData]:
     """Read in the MATRIX block(s).
-
-    At the moment only the first MATRIX block is returned.
 
     Parameters
     ----------
     filename : str
-    ds : RMFCrateDataset
+    ds : CrateDataset
+       This can also be a RMFCrateDataset, in which case there is no
+       support for multi-matrix RMFs.
+
     make_copy : bool
 
     Returns
@@ -800,31 +796,35 @@ def _read_rmf_matrix(filename: str,
     # name (as there's no guarantee that these keywords will be any
     # cleaner to use). As of December 2020 there is now the
     # possibility of RMF files with multiple MATRIX blocks (where the
-    # EXTVER starts at 1 and then increases). At present we do not
-    # support this addition.
+    # EXTVER starts at 1 and then increases).
     #
     # Unlike the AstroPy backend we already have "support" for reading
-    # in a RMF, which changes the logic somewhat.  Note that
+    # in a RMF, which changes the logic somewhat.  However, the
     # RMFCrateDataset will read in a multi-matrix file but just drop
-    # the remaining blocks.
+    # the remaining blocks (circa CIAO 4.16), so we try to use a
+    # CrateDataset for now. The API does allow a RMFCrateDataset to be
+    # input; in such a case there is no warning to the user (we could
+    # look for an EXTVER keyword as indicating it is a multi-matrix
+    # file, but that is a heuristic and it is rare that people will be
+    # sending in a RMFCrateDataset object here).
     #
-    # Open the response matrix by extension name, and try using
-    # some of the many, many ways people break the OGIP definition
-    # of the extension name for the response matrix.
-    #
-    for blname in RMF_BLOCK_NAMES:
-        rmf = _get_crate_by_blockname(ds, blname)
-        if rmf is not None:
-            break
+    matrixes = _find_matrix_blocks(ds)
+    nmat = len(matrixes)
+    if nmat == 0:
+        # We could try to follow RMFCrateDataset behaviour here, which
+        # raises a TypeError. However, use the same error as pyfits.
+        #
+        # raise TypeError(f"File {filename} does not contain a Response Matrix.")
+        raise IOErr('notrsp', filename, 'an RMF')
 
-    if rmf is None:
-        try:
-            rmf = ds.get_crate(2)
-        except IndexError:
-            rmf = None
+    return [_read_rmf_matrix_crate(filename, ds.get_crate(blname), make_copy)
+            for blname in matrixes]
 
-    if rmf is None or rmf.get_colnames() is None:
-        raise IOErr('filenotfound', filename)
+
+def _read_rmf_matrix_crate(filename: str,
+                           rmf: TABLECrate,
+                           make_copy: bool) -> RMFMatrixData:
+    """Read in the block as a RMF MATRIX block."""
 
     if not rmf.column_exists('ENERG_LO'):
         raise IOErr('reqcol', 'ENERG_LO', filename)
@@ -843,22 +843,6 @@ def _read_rmf_matrix(filename: str,
 
     if not rmf.column_exists('N_CHAN'):
         raise IOErr('reqcol', 'N_CHAN', filename)
-
-    # Although we have already read in the data, try reading in the
-    # file again so we can check if there are multiple blocks. Do this
-    # after verifying whether the dataset contains a "valid" RMF block
-    # to try to avoid excessive I/O. Allow for the possibility of this
-    # failing, which returns an empty array (it shouldn't, but just in
-    # case).
-    #
-    matrixes = _find_matrix_blocks(filename)
-    nmat = len(matrixes)
-    if nmat > 1:
-        # Warn the user that the multi-matrix RMF is not supported.
-        #
-        error("RMF in %s contains %d MATRIX blocks; "
-              "Sherpa only uses the first block!",
-              filename, nmat)
 
     detchans = _require_key(rmf, 'DETCHANS', dtype=SherpaInt)
     energ_lo = _require_col(rmf, 'ENERG_LO', make_copy, fix_type=True)
@@ -892,10 +876,10 @@ def _read_rmf_matrix(filename: str,
     if offset < 0:
         offset = None
 
-    return [RMFMatrixData(detchans=detchans, offset=offset,
-                          energ_lo=energ_lo, energ_hi=energ_hi,
-                          n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,
-                          matrix=matrix, header=header)]
+    return RMFMatrixData(detchans=detchans, offset=offset,
+                         energ_lo=energ_lo, energ_hi=energ_hi,
+                         n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,
+                         matrix=matrix, header=header)
 
 
 def _read_rmf_ebounds(filename: str,
@@ -947,13 +931,29 @@ def get_rmf_data(arg, make_copy=True):
     """
     filename = ''
     if isinstance(arg, string_types):
-        rmfdataset = open_crate_dataset(arg, RMFCrateDataset)
-        if pycrates.is_rmf(rmfdataset) != 1:
+        # The RMFCrateDataset object does not support multi-matrix
+        # RMFs (circa CIAO 4.16) so we will read it in as a
+        # RMFCrateDataset, to get the existing checks, but then
+        # re-open it as a CrateDataset so we can access the extra
+        # matrices.
+        #
+        rmfdataset_tmp = RMFCrateDataset(arg, mode='r')
+        if pycrates.is_rmf(rmfdataset_tmp) != 1:
             raise IOErr('badfile', arg, "RMFCrateDataset obj")
+
+        rmfdataset_tmp = None
 
         filename = arg
 
+        # re-load
+        rmfdataset = CrateDataset(arg, mode='r')
+
     elif pycrates.is_rmf(arg) == 1:
+        # If sent a RMFCrateDataset then there is no check for
+        # multiple matrices, as we can not guarantee the data can be
+        # read in from a disk (so it can not be re-read as a
+        # CrateDataset).
+        #
         rmfdataset = arg
         filename = arg.get_filename()
         make_copy = False

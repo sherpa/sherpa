@@ -65,7 +65,7 @@ from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils import SherpaFloat
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
-    DataPHA, DataRosatRMF
+    DataPHA, DataRosatRMF, DataMultiRMF
 from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa import get_config
@@ -471,14 +471,21 @@ def read_rmf(arg):
     #
     kwargs["ethresh"] = ogip_emin
 
-    kwargs |= {"energ_lo": mat0.energ_lo,
-               "energ_hi": mat0.energ_hi,
-               "n_grp": mat0.n_grp,
-               "f_chan": mat0.f_chan,
-               "n_chan": mat0.n_chan,
-               "matrix": mat0.matrix}
+    if len(matrices) == 1:
+        kwargs |= {"energ_lo": mat0.energ_lo,
+                   "energ_hi": mat0.energ_hi,
+                   "n_grp": mat0.n_grp,
+                   "f_chan": mat0.f_chan,
+                   "n_chan": mat0.n_chan,
+                   "matrix": mat0.matrix}
 
-    return _rmf_factory(filename, kwargs)
+        return _rmf_factory(filename, kwargs)
+
+    # Support multi-matrix RMF. At present there are no special-cases
+    # of this class.
+    #
+    kwargs["matrices"] = matrices
+    return DataMultiRMF(filename, **kwargs)
 
 
 def _rmf_factory(filename, data):
@@ -534,7 +541,7 @@ def _read_ancillary(data, key, label, dname,
 
         out = read_func(data[key])
         if output_once:
-            info(f'read {label} file {data[key]}')
+            info('read %s file %s', label, data[key])
 
     except Exception:
         if output_once:
@@ -618,7 +625,7 @@ def read_pha(arg, use_errors=False, use_background=False):
                     bkg_datasets = read_pha(data['backfile'], use_errors, True)
 
                     if output_once:
-                        info(f"read background file {data['backfile']}")
+                        info("read background file %s", data['backfile'])
 
                 if numpy.iterable(bkg_datasets):
                     for bkg_dataset in bkg_datasets:
@@ -651,7 +658,8 @@ def read_pha(arg, use_errors=False, use_background=False):
                               header=data['header'])
                 bkg.set_response(arf, rmf)
                 if output_once:
-                    info(f"read {bkg_type} into a dataset from file {filename}")
+                    info("read %s into a dataset from file %s",
+                         bkg_type, filename)
                 backgrounds.append(bkg)
 
         for k in ['backfile', 'arffile', 'rmffile', 'backscup', 'backscdn',

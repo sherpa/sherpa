@@ -60,7 +60,6 @@ import sherpa.utils
 HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU]
 
 warning = logging.getLogger(__name__).warning
-error = logging.getLogger(__name__).error
 
 transformstatus = False
 try:
@@ -672,8 +671,8 @@ def _read_col(hdu, name):
 
     try:
         return hdu.data[name]
-    except KeyError:
-        raise IOErr("reqcol", name, hdu._file.name)
+    except KeyError as ke:
+        raise IOErr("reqcol", name, hdu._file.name) from ke
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -685,8 +684,6 @@ RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
 def _read_rmf_matrix(filename: str,
                      hdus: fits.HDUList) -> list[RMFMatrixData]:
     """Read in the MATRIX block(s).
-
-    At the moment only the first MATRIX block is returned.
 
     Parameters
     ----------
@@ -720,8 +717,7 @@ def _read_rmf_matrix(filename: str,
     # name (as there's no guarantee that these keywords will be any
     # cleaner to use). As of December 2020 there is now the
     # possibility of RMF files with multiple MATRIX blocks (where the
-    # EXTVER starts at 1 and then increases). At present we do not
-    # support this addition.
+    # EXTVER starts at 1 and then increases).
     #
     matrixes = []
     for hdu in hdus:
@@ -733,14 +729,12 @@ def _read_rmf_matrix(filename: str,
     if nmat == 0:
         raise IOErr('notrsp', filename, 'an RMF')
 
-    if nmat > 1:
-        # Warn the user that the multi-matrix RMF is not supported.
-        #
-        error("RMF in %s contains %d MATRIX blocks; "
-              "Sherpa only uses the first block!",
-              filename, nmat)
+    return [_read_rmf_matrix_hdu(filename, hdu) for hdu in matrixes]
 
-    hdu = matrixes[0]
+
+def _read_rmf_matrix_hdu(filename: str,
+                         hdu: fits.BinTableHDU) -> RMFMatrixData:
+    """Read in the HDU as a RMF MATRIX block."""
 
     # The comments note the type we want the column to be, but this
     # conversion needs to be done after cleaning up the data.
@@ -872,10 +866,10 @@ def _read_rmf_matrix(filename: str,
     energ_lo = numpy.asarray(energ_lo, SherpaFloat)
     energ_hi = numpy.asarray(energ_hi, SherpaFloat)
 
-    return [RMFMatrixData(detchans=detchans, offset=offset,
-                          energ_lo=energ_lo, energ_hi=energ_hi,
-                          n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,
-                          matrix=matrix, header=header)]
+    return RMFMatrixData(detchans=detchans, offset=offset,
+                         energ_lo=energ_lo, energ_hi=energ_hi,
+                         n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,
+                         matrix=matrix, header=header)
 
 
 def _read_rmf_ebounds(filename: str,

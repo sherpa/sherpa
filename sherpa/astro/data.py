@@ -118,8 +118,11 @@ this range to have at least 20 counts per group:
 
 """
 
-import os.path
+from __future__ import annotations
+
 import logging
+import os
+from typing import TYPE_CHECKING, Any, Mapping, Optional
 import warnings
 
 import numpy
@@ -134,6 +137,10 @@ from sherpa.utils import SherpaFloat, pad_bounding_box, interpolate, \
 from sherpa.utils import formatting
 from sherpa.astro import hc
 
+if TYPE_CHECKING:
+    # Avoids an import loop as this symbol is only used for type checking
+    from sherpa.astro.io.io_types import RMFMatrixData
+
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
 from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
@@ -144,7 +151,7 @@ warning = logging.getLogger(__name__).warning
 
 regstatus = False
 try:
-    from sherpa.astro.utils._region import Region
+    from sherpa.astro.utils._region import Region  # type: ignore
     regstatus = True
 except ImportError:
     warning('failed to import sherpa.astro.utils._region; Region routines ' +
@@ -152,7 +159,7 @@ except ImportError:
 
 groupstatus = False
 try:
-    import group as pygroup
+    import group as pygroup  # type: ignore
     groupstatus = True
 except ImportError:
     groupstatus = False
@@ -734,7 +741,7 @@ def simulate_rmf_plot(rmf):
     from sherpa import plot
 
     try:
-        from matplotlib import pyplot as plt
+        from matplotlib import pyplot as plt  # type: ignore
     except ImportError:
         return None
 
@@ -802,7 +809,7 @@ def img_plot(img):
     from sherpa import plot
 
     try:
-        from matplotlib import pyplot as plt
+        from matplotlib import pyplot as plt  # type: ignore
     except ImportError:
         return None
 
@@ -1134,10 +1141,10 @@ class DataRMF(DataOgipResponse):
         containing the data.
     detchans : int
     energ_lo, energ_hi : array
-        The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
-        for the ARF. The ENERG_HI values must be greater than the
-        ENERG_LO values for each bin, and the energy arrays must be
-        in increasing or decreasing order.
+        The values of the ENERG_LO and ENERG_HI columns for the RMF
+        (for the MATRIX block). The ENERG_HI values must be greater
+        than the ENERG_LO values for each bin, and the energy arrays
+        must be in increasing or decreasing order.
     n_grp, f_chan, n_chan, matrix : array-like
     offset : int, optional
     e_min, e_max : array-like or None, optional
@@ -1288,6 +1295,116 @@ class DataRosatRMF(DataRMF):
 
     def _validate(self, name, energy_lo, energy_hi, ethresh):
         return energy_lo, energy_hi
+
+
+# Using a single class makes sense given the existing API but there
+# are reasons why we might want the logic in a sherpa.astro.instrument
+# class instead. This is therefore an experiment as we explore
+# supporting this type of data.
+#
+class DataMultiRMF(DataRMF):
+    """Support multi-matrix RMF.
+
+    Allow a multi-block RMF file - where the matrix information is
+    stored at different energy binning - as a `DataRMF` object. This
+    is an *experimental* interface which may change.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data set; often set to the name of the file
+        containing the data.
+    detchans : int
+    matrices : list of RMFMatrixData
+        The matrix information, containing the energ_lo, energ_hi,
+        n_grp, f_chan, n_chan, and matrix arrays. There must be at
+        least two elements.
+    e_min, e_max : array-like
+    offset : int, optional
+    header : dict or None, optional
+    ethresh : number or None, optional
+        If set it must be greater than 0 and is the replacement value
+        to use if the lowest-energy value is 0.0.
+
+    Notes
+    -----
+    The current representations of this RMF (e.g. string
+    representation and the rich visualization in notebooks) use the
+    "highest resolution" matrix only.
+
+    """
+
+    def __init__(self, name: str, detchans: int,
+                 matrices: list[RMFMatrixData],
+                 e_min: numpy.ndarray, e_max: numpy.ndarray,
+                 offset: int = 1,
+                 header: Optional[Mapping[str, Any]] = None,
+                 ethresh: Optional[float] = None) -> None:
+
+        nmat = len(matrices)
+        if nmat < 2:
+            raise ValueError(f"expected at least 2 matrices, sent {nmat}")
+
+        self._matrices: list[RMFMatrixData] = []
+        for mat in matrices:
+            self._matrices.append(mat)
+
+        # Does it really matter what we send to DataRMF here?  For now
+        # pick the matix with the most energy bins, as the assumption
+        # is that this is the "high-res" response, but there's nothing
+        # in the spec to stop "strange" RMFs being created.
+        #
+        # We could instead go and combine the different energ_lo/hi
+        # bins to create an overall grid, and then resample that for
+        # each matrix.
+        #
+        nbins = numpy.asarray([len(mat.energ_lo) for mat in matrices])
+        idx = numpy.argmax(nbins)
+        mat = matrices[idx]
+
+        # Store the identity of the "highest-res" matrix.
+        self._matrix0 = idx
+
+        DataRMF.__init__(self, name, detchans,
+                         mat.energ_lo, mat.energ_hi,
+                         mat.n_grp, mat.f_chan, mat.n_chan, mat.matrix,
+                         offset=offset, e_min=e_min, e_max=e_max,
+                         header=header, ethresh=ethresh)
+
+    # For now we drop all the fancy "restrict to just the range
+    # we care about".
+    #
+    def notice(self, noticed_chans=None):
+        return None
+
+    def apply_rmf(self, src, *args, **kwargs):
+        """Apply the RMF to the source model.
+
+        """
+
+        # We need to fold the model through each RMF and sum the
+        # results. Note that the use of uint64 for detchans can make
+        # the size calculation overflow into a float, hence the int
+        # call.
+        #
+        out = numpy.zeros(int(self.detchans + 1 - self.offset),
+                          dtype=SherpaFloat)
+        for mat in self._matrices:
+            if len(src) == len(mat.energ_lo):
+                tmp_src = src
+            else:
+                # The API should include the evaluation space for the
+                # model, as that would save a lot of issues here. As
+                # mentioned in #1907 this information may be sent
+                # here, bit it's not currently guaranteed.
+                #
+                tmp_src = rebin(src, self._lo, self._hi,
+                                mat.energ_lo, mat.energ_hi)
+
+            out += rmf_fold(tmp_src, mat.n_grp, mat.f_chan, mat.n_chan,
+                            mat.matrix, self.detchans, self.offset)
+
+        return out
 
 
 def validate_wavelength_limits(wlo, whi, emax):
