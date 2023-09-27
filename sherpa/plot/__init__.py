@@ -511,6 +511,58 @@ class Point(NoNewAttributesAfterInit):
                      **opts)
 
 
+class Image(NoNewAttributesAfterInit):
+    """Base class for image plots
+
+    .. warning::
+        This class is experimental and subject to change in the future.
+        Currently, is is only used within _repr_html_ methods.
+    """
+
+    image_prefs = basicbackend.get_image_defaults()
+    "The preferences for the plot."
+
+    def __init__(self):
+        """
+        Initialize a Image object.
+
+        Once an instance of Image is initialized no new
+        attributes of the class can be made. (To eliminate
+        the accidental creation of erroneous attributes.)
+        """
+        self.image_prefs = self.image_prefs.copy()
+        NoNewAttributesAfterInit.__init__(self)
+
+    def _merge_settings(self, kwargs):
+        """Return the plot preferences merged with user settings."""
+        return {**self.image_prefs, **kwargs}
+
+    def plot(self, x0, x1, y, overplot=True, clearwindow=False, **kwargs):
+        """Draw a point at the given location.
+
+        Parameters
+        ----------
+        x0, x1 : array-like
+            Value for the image axes.
+        y : array-like, 2D
+           The coordinates of the plot.
+        overplot : bool, optional
+           If `True` then add the data to an existing plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           image_prefs dictionary.
+
+        """
+        opts = self._merge_settings(kwargs)
+        backend.image(x0, x1, y,
+                     overplot=overplot, clearwindow=clearwindow,
+                     **opts)
+
 class Histogram(NoNewAttributesAfterInit):
     "Base class for histogram plots"
 

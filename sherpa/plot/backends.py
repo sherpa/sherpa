@@ -140,7 +140,8 @@ uses the backend-specific default.'''],
               'ecolor': ['string', 'Color of the error bars.'],
               'capsize': ['float', 'Size of the cap drawn at the end of the error bars.'],
               'label': ['string', 'Label this dataset for use in a legend'],
-              'levels': ['array-like', 'Levels at which to draw the contours']
+              'levels': ['array-like', 'Levels at which to draw the contours'],
+              'aspect': ['string or float', 'Aspect ratio of the plot. Strings "equal" or "auto" are accepted.'],
               }
 '''Documentation for keyword arguments used by several functions
 
@@ -501,6 +502,34 @@ class BaseBackend(metaclass=MetaBaseBackend):
         """
         pass
 
+
+    @add_kwargs_to_doc(kwargs_doc)
+    @translate_args
+    def image(self, x0, x1, y, *,
+               aspect=1,
+               title=None, xlabel=None, ylabel=None,
+               clearwindow=True,
+               **kwargs):
+        """Draw 2D image data.
+
+        .. warning::
+           This function is a non-functional dummy. The documentation is provided
+           as a template only.
+
+        Parameters
+        ----------
+        x0 : array-like
+            independent axis in the first dimenation
+        x1 : array-like
+            independent axis in the second dimenation
+        y : array-like, with shape (len(x0), len(x1))
+            dependent axis (i.e. image values) in 2D
+            with shape (len(x0), len(x1))
+        {kwargs}
+        """
+        pass
+
+
     @translate_args
     def vline(self, x, *,
               ymin=0, ymax=1,
@@ -693,6 +722,16 @@ class BaseBackend(metaclass=MetaBaseBackend):
         d = self.get_data_plot_defaults()
         return d
 
+    def get_rmf_plot_defaults(self):
+        d = self.get_model_histo_defaults()
+        d['xlog'] = True
+        d['ylog'] = True
+        return d
+
+    def get_image_defaults(self):
+        '''Currently, there are no configurable settings'''
+        return {}
+
     def as_html_histogram(self, plot):
         return self.as_html(plot,
                             ['xlo', 'xhi', 'y', 'title', 'xlabel', 'ylabel'])
@@ -767,6 +806,20 @@ class BaseBackend(metaclass=MetaBaseBackend):
                              'x0', 'x1', 'y', 'levels',
                              'min', 'max', 'nloop',
                              'delv', 'fac', 'log'])
+
+    # TODO: Inconsistent. Some plots have as_html_xxx, but others do not.
+    # Some have it only in the pylab backend and then code checks for
+    # the existence of the method.
+    # try:
+    #    out = plot.backend.as_html_image(plotter, f'{dtype} Plot')
+    # except AttributeError:
+    #    out = None
+    #
+    # Here is a proto-type if we want to continue adding as_html_xxx.
+    # def as_html_image(self, plot):
+    #     return self.as_html(plot,
+    #                         ['x0', 'x1', 'y', 'aspect', 'title',
+    #                          'xlabel', 'ylabel'])
 
 
 class BasicBackend(BaseBackend):

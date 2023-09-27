@@ -574,13 +574,22 @@ def html_rmf(rmf):
 
     # See _html_arf for general comments
 
+    from sherpa.astro.plot import RMFPlot
+    from sherpa import plot
+
     ls = []
 
-    svg = simulate_rmf_plot(rmf)
-    if svg is not None:
-        out = formatting.html_svg(svg, 'RMF Plot')
-    else:
+    plotter = RMFPlot()
+    plotter.prepare(rmf)
+
+    try:
+        out = plot.backend.as_html_plot(plotter, 'RMF Plot')
+    except AttributeError:
+        out = None
+
+    if out is None:
         out = _extract_fields(rmf, 'RMF Data')
+
 
     ls.append(out)
 
@@ -635,15 +644,20 @@ def html_img(img):
     Special-case of the Data2D handling. It would be nice to re-use
     parts of the superclass behavior.
     """
-
+    from sherpa.astro.plot import DataIMGPlot
+    from sherpa import plot
     ls = []
     dtype = type(img).__name__
 
-    svg = img_plot(img)
-    if svg is not None:
-        out = formatting.html_svg(svg, f'{dtype} Plot')
-        summary = ''
-    else:
+    plotter = DataIMGPlot()
+    plotter.prepare(img)
+
+    try:
+        out = plot.backend.as_html_image(plotter, f'{dtype} Plot')
+    except AttributeError:
+        out = None
+
+    if out is None:
         # Only add prefix to summary if there's no plot
         summary = f'{dtype} '
 
@@ -718,152 +732,6 @@ def html_img(img):
         ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(img, ls)
-
-
-def simulate_rmf_plot(rmf):
-    """Create a plot which shows the response to monochromatic energies.
-
-    The SVG of the plot is returned if matplotlib is selected as the
-    backend. The choice of energies used to create the response to
-    monochromatic energies is based on the data range (using log
-    scaling).
-
-    """
-
-    from sherpa.models.basic import Delta1D
-    from sherpa import plot
-
-    try:
-        from matplotlib import pyplot as plt
-    except ImportError:
-        return None
-
-    # X access
-    #
-    if rmf.e_min is None:
-        x = numpy.arange(rmf.offset, rmf.detchans + rmf.offset)
-        xlabel = 'Channel'
-    else:
-        x = 0.5 * (rmf.e_min + rmf.e_max)
-        xlabel = 'Energy (keV)'
-
-    # How many monochromatic lines to use
-    #
-    nlines = 5
-
-    # for now let's just create log-spaced energies
-    #
-    elo, ehi = rmf.energ_lo, rmf.energ_hi
-    l1 = numpy.log10(elo[0])
-    l2 = numpy.log10(ehi[-1])
-    dl = (l2 - l1) / (nlines + 1)
-
-    lines = l1 + dl * numpy.arange(1, nlines + 1)
-    energies = numpy.power(10, lines)
-
-    mdl = Delta1D()
-
-    def plotfunc():
-        fig, ax = plt.subplots()
-        fig.subplots_adjust(bottom=0.2)
-
-        for energy in energies:
-            mdl.pos = energy
-            y = rmf.apply_rmf(mdl(elo, ehi))
-            ax.plot(x, y, label=f'{energy:.2g} keV')
-
-        # Try to get the legend centered nicely below the plot
-        fig.legend(loc='center', ncol=nlines, bbox_to_anchor=(0.0, 0, 1, 0.1))
-
-        ax.set_xlabel(xlabel)
-        ax.set_title(rmf.name)
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-
-        return fig
-
-    try:
-        return plot.backend.as_svg(plotfunc)
-    except AttributeError:
-        return None
-
-
-def img_plot(img):
-    """Display the image.
-
-    The SVG of the plot is returned if matplotlib is selected as the
-    backend.
-
-    The eqpos/wcs coordinate system is not used; it uses physical
-    instead. This greatly simplifies the plot (no need to handle WCS).
-
-    """
-
-    from sherpa import plot
-
-    try:
-        from matplotlib import pyplot as plt
-    except ImportError:
-        return None
-
-    # Apply filter and coordinate system
-    #
-    y = img.get_img()
-
-    # extent is left, right, bottom, top and describes the
-    # outer-edge of the pixels.
-    #
-    ny, nx = img.shape
-    coord = img.coord
-    if coord in ['physical', 'world']:
-        x0, y0 = img._logical_to_physical(0.5, 0.5)
-        x1, y1 = img._logical_to_physical(nx + 0.5, ny + 0.5)
-        extent = (x0, x1, y0, y1)
-        lbl = 'physical'
-        cdelt = img.sky.cdelt
-        aspect = 'equal' if cdelt[1] == cdelt[0] else 'auto'
-
-    else:
-        extent = (0.5, nx + 0.5, 0.5, ny + 0.5)
-        aspect = 'equal'
-        lbl = 'logical'
-
-    # What is the filtered dataset?
-    #
-    if img.get_filter_expr() != '':
-        x0, x1 = img.get_indep(filter=True)
-
-        x0min, x0max = numpy.min(x0), numpy.max(x0)
-        x1min, x1max = numpy.min(x1), numpy.max(x1)
-
-        # Should add in half cdelt to padd these, but
-        # it looks like it isn't necessary.
-        filtered = (x0min, x1min, x0max, x1max)
-
-    else:
-        filtered = None
-
-    def plotfunc():
-        fig, ax = plt.subplots()
-
-        im = ax.imshow(y, origin='lower', extent=extent, aspect=aspect)
-        fig.colorbar(im, ax=ax)
-
-        if filtered is not None:
-            ax.set_xlim(filtered[0], filtered[2])
-            ax.set_ylim(filtered[1], filtered[3])
-
-        ax.set_xlabel(f'X ({lbl})')
-        ax.set_ylabel(f'Y ({lbl})')
-        if img.name is not None and img.name != '':
-            ax.set_title(img.name)
-
-        return fig
-
-    try:
-        return plot.backend.as_svg(plotfunc)
-    except AttributeError:
-        return None
 
 
 class DataOgipResponse(Data1DInt):
@@ -5426,9 +5294,7 @@ class DataIMG(Data2D):
         isfile = os.path.isfile(val)
         reg = Region(val, isfile)
 
-        # Calculate the mask for this region as an "included"
-        # region.
-        #
+        # Calculate the mask for this region as an "included" region.
         mask = reg.mask(self.get_x0(), self.get_x1())
         mask = mask.astype(bool)
 
