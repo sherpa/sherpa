@@ -2,15 +2,17 @@
 The sherpa.plot.bokeh_backend module
 ************************************
 
-The :term:`bokeh` plotting module is not integrated as tightly into
-IPython and Jupyter notebooks as :term:`matplotlib` is, so there is a little
-more setup required to make this work well.
+:term:`bokeh` is a plotting library that can be used to create interactive
+plots, which are rendered in a webbrowser. Those plots allow various options to zoom,
+pan, and scroll out of the box. Many additional interactions can be added by the
+user later, and we also plan make Sherpa use more features of this library
+in the future.
 
 .. note::
     The :term:`bokeh` backend is new in Sherpa 4.16 and should be considered
     experimental.
     We appreciate `feedback <https://github.com/sherpa/sherpa/issues/new>`_
-    on how it works for you, or what features are missing; and we anticipte
+    on how it works for you, or what features are missing; and we anticipate
     changes to how this backend works in the future.
 
 
@@ -20,7 +22,7 @@ Bokeh plots are rendered by a webbrowser and, by default, are displayed in a
 new tab. The plot can be saved to a file by clicking on the save icon in the
 toolbar at the top of the plot or by using `bokeh.io.save`.
 
-Once displayed, bokeh has no direct control over the browser tab any more,
+Once displayed, bokeh has no direct control over the browser tab anymore,
 so the plot cannot be updated automatically. In bokeh, that means that the
 user needs to call `bokeh.plotting.show` when all elements have been added.
 In Sherpa, this is done automatically in the UI, but users of the OO interface
@@ -72,6 +74,31 @@ the current plot is stored in the ``current_plot`` attribute of the backend obje
     >>> plot1.prepare(d1)
     >>> plot1.plot()
     >>> show(plot.backend.current_fig)
+
+Limitations
+-----------
+:term:`bokeh` itself is quite different from :term:`matplotlib` in the way plots
+are displayed in an external program (a webbrowser). Thus, the workflow is
+different from what we might be used to.
+See the `bokeh documentation on output options <https://docs.bokeh.org/en/latest/docs/user_guide/output.html>`_
+for details. In particular:
+
+  - Bokeh plots cannot easily be exported to png or pdf. They are always
+    rendered in javasript. Bokeh does
+    `offer a mechanism to export plots to static images <https://docs.bokeh.org/en/latest/docs/user_guide/output/export.html>`_,
+    but it requires additional software and drivers.
+  - For display, bokeh saves temporary files that are then automatically opened in a
+    webbrowser. In some linux systems, browsers are not allowed to open
+    files in the local ``\temp`` directory for security reasons, so the user
+    as to manually change the location the bokeh plot is written to with
+    `bokeh.io.output_file`.
+  - Once displayed, bokeh has not control over the webbrowser any longer.
+    For plotting in scripts or when using virtual frame buffers, that might
+    lead to those browser processes staying open and consuming resources.
+    Use `bokeh.io.output_file` together with `bokeh.io.save` instead of
+    `bokeh.io.show`.
+
+
 
 .. currentmodule:: sherpa.plot.bokeh_backend
 
