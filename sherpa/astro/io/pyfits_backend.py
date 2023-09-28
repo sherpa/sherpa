@@ -47,7 +47,7 @@ from astropy.io import fits
 from astropy.io.fits.column import _VLF
 from astropy.table import Table
 
-from sherpa.utils.err import IOErr
+from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
 from sherpa.io import get_ascii_data, write_arrays
