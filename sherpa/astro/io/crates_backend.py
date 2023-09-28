@@ -51,7 +51,7 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
            'set_table_data', 'set_image_data', 'set_pha_data',
-           'set_arf_data', 'set_rmf_data')
+           'set_arf_data', 'set_rmf_data', 'set_hdus')
 
 
 string_types = (str, )
@@ -541,21 +541,13 @@ def get_column_data(*args):
 
 
 def get_ascii_data(filename, ncols=2, colkeys=None, **kwargs):
-    """
-    get_table_data( filename [, ncols=2 [, colkeys=None [, **kwargs ]]] )
-    """
+    """Read columns from an ASCII file"""
     return get_table_data(filename, ncols, colkeys)[:3]
 
 
 def get_table_data(arg, ncols=1, colkeys=None, make_copy=True, fix_type=True,
                    blockname=None, hdrkeys=None):
-    """
-    get_table_data( filename , ncols=1 [, colkeys=None [, make_copy=True [,
-                    fix_type=True [, blockname=None [, hdrkeys=None ]]]]])
-
-    get_table_data( TABLECrate , ncols=1 [, colkeys=None [, make_copy=True [,
-                    fix_type=True [, blockname=None [, hdrkeys=None ] ]]]])
-    """
+    """Read columns from a file or crate."""
     filename = ''
     if type(arg) == str:
 
@@ -617,11 +609,7 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=True, fix_type=True,
 
 
 def get_image_data(arg, make_copy=True, fix_type=True):
-    """
-    get_image_data ( filename [, make_copy=True, fix_type=True ])
-
-    get_image_data ( IMAGECrate [, make_copy=True, fix_type=True ])
-    """
+    """Read image data from a file or crate"""
     filename = ''
     if type(arg) == str:
         img = open_crate(arg)
@@ -685,11 +673,7 @@ def get_image_data(arg, make_copy=True, fix_type=True):
 
 
 def get_arf_data(arg, make_copy=True):
-    """
-    get_arf_data( filename [, make_copy=True ])
-
-    get_arf_data( ARFCrate [, make_copy=True ])
-    """
+    """Read an ARF from a file or crate"""
     filename = ''
     if type(arg) == str:
         arf = open_crate(arg)
@@ -729,11 +713,7 @@ def get_arf_data(arg, make_copy=True):
 
 
 def get_rmf_data(arg, make_copy=True):
-    """
-    get_rmf_data( filename [, make_copy=True ])
-
-    get_rmf_data( RMFCrate [, make_copy=True ])
-    """
+    """Read a RMF from a file or crate"""
     filename = ''
     if type(arg) == str:
         rmfdataset = open_crate_dataset(arg, RMFCrateDataset)
@@ -873,11 +853,7 @@ def get_rmf_data(arg, make_copy=True):
 
 
 def get_pha_data(arg, make_copy=True, use_background=False):
-    """
-    get_pha_data( filename [, make_copy=True [, use_background=False]])
-
-    get_pha_data( PHACrate [, make_copy=True [, use_background=False]])
-    """
+    """Read PHA data from a file or crate"""
     filename = ''
     if type(arg) == str:
         phadataset = open_crate_dataset(arg, PHACrateDataset)
@@ -1433,3 +1409,93 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         _set_column(tbl, name, val)
 
     tbl.write(filename, clobber=True)
+
+
+def _add_header(cr, header):
+    """Add the header keywords to the crate.
+
+    Parameters
+    ----------
+    cr : TABLECrate or IMAGECrate
+    header : list of sherpa.astro.io.xstable.HeaderItem
+
+    """
+
+    for hdr in header:
+        key = (hdr.name, hdr.value, hdr.unit, hdr.desc)
+        cr.add_key(pycrates.CrateKey(key))
+
+
+def _create_primary_crate(hdu):
+    """Create the primary block
+
+    Parameters
+    ----------
+    hdu : sherpa.astro.xstable.TableHDU
+       Any data is ignored.
+
+    Returns
+    -------
+    out : pycreates.IMAGECrate
+
+    """
+
+    out = pycrates.IMAGECrate()
+    out.name = "PRIMARY"
+
+    # For some reason we need to add an empty image
+    # (CIAO 4.15).
+    #
+    null = pycrates.CrateData()
+    null.values = numpy.asarray([], dtype=numpy.uint8)
+    out.add_image(null)
+
+    _add_header(out, hdu.header)
+    return out
+
+
+def _create_table_crate(hdu):
+    """Create a table block
+
+    Parameters
+    ----------
+    hdu : sherpa.astro.xstable.TableHDU
+
+    Returns
+    -------
+    out : pycrates.TABLECrate
+
+    """
+
+    if hdu.data is None:
+       raise ValueError("No column data to write out")
+
+    out = pycrates.TABLECrate()
+    out.name = hdu.name
+
+    for col in hdu.data:
+        cdata = pycrates.CrateData()
+        cdata.name = col.name
+        cdata.desc = col.desc
+        cdata.unit = col.unit
+        cdata.values = col.values
+        out.add_column(cdata)
+
+    _add_header(out, hdu.header)
+    return out
+
+
+def set_hdus(filename, hdulist, clobber=False):
+    """Write out multiple HDUS to a single file.
+
+    At present we are restricted to tables only.
+    """
+
+    check_clobber(filename, clobber)
+
+    ds = pycrates.CrateDataset()
+    ds.add_crate(_create_primary_crate(hdulist[0]))
+    for hdu in hdulist[1:]:
+        ds.add_crate(_create_table_crate(hdu))
+
+    ds.write(filename, clobber=True)

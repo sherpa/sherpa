@@ -469,23 +469,41 @@ def test_416_a():
 
     pha.notice(4.5, 6.5)
 
-    mask = [False, False, False, True, True, True, False, False, False, False]
-    assert pha.mask == pytest.approx(mask)
+    # There are two ways to get the mask:
+    #   - pha.mask returns the grouped mask (if the data is
+    #     grouped)
+    #   - pha.get_mask() always returns the ungrouped mask
+    #
+    mask_ungrouped = [False] * 3 + [True] * 3 + [False] * 4
+    mask_grouped = [False] * 3 + [True] * 2 + [False] * 4
 
+    assert pha.mask == pytest.approx(mask_ungrouped)
+    assert pha.get_mask() == pytest.approx(mask_ungrouped)
+    assert pha.grouping is None
+    assert pha.quality is None
+
+    # The grouping is done only for the noticed data range.
     pha.group_counts(3)
 
-    # We have a simplified mask
-    mask = [True, True]
-    assert pha.mask == pytest.approx(mask)
+    assert pha.mask == pytest.approx(mask_grouped)
+    assert pha.get_mask() == pytest.approx(mask_ungrouped)
 
-    # the "full" mask can be retrieved with get_mask
-    mask = [True] * 10
-    assert pha.get_mask() == pytest.approx(mask)
-
-    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
+    # Check we get the expected grouping: the first 3 and last 4
+    # channels are excluded by the notice call above, so they are 0,
+    # which means we only have 3 channels with data.
+    #
+    grouping = [0] * 3 + [1, -1, 1] + [0] * 4
     assert pha.grouping == pytest.approx(grouping)
 
-    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
+    # As with grouoping, the first 3 and last 4 channels are not
+    # changed, so have a quality of 0. For the remaining three
+    # channels we know the first group is okay (this corresponds to
+    # [1, -1] from the grouping array above, correspondinf to counts
+    # [2, 1]) but the second group (the second [1] in grouping,
+    # corresponding to counts of [1]) does not meet the grouping
+    # criteria (it sums to 1!) and so has a quality of 2.
+    #
+    quality = [0] * 3 + [0, 0, 2] + [0] * 4
     assert pha.quality == pytest.approx(quality)
 
     dep = pha.get_dep(filter=True)
@@ -872,8 +890,6 @@ def test_img_get_img_model_filter_some2(make_test_image):
 
     # check
     assert img.mask.sum() == 11
-
-    print(np.where(img.mask))
 
     ival, mval = img.get_img(image_callable_filtered2)
 
@@ -1835,11 +1851,14 @@ def test_pha_change_quality_values():
     assert pha.get_dep(filter=True) == pytest.approx([6])
     assert pha.get_filter() == '1:7'
 
+    # With no tabStops set it uses ~pha.get_mask() which in this case
+    # is [False] * 5 + [True] * 2,
+    #
     pha.group_counts(4)
-    assert pha.quality == pytest.approx([0, 0, 0, 0, 0, 0, 2])
+    assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0, 0])
 
     # Should quality filter be reset?
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False, False])
+    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
     assert pha.get_dep(filter=True) == pytest.approx([4, 2])
     assert pha.get_filter() == '1:7'
 
@@ -1943,25 +1962,30 @@ def test_pha_ignore_bad_group_quality(caplog):
     assert pha.get_filter(format="%.1f") == "3.0:7.0"
     assert pha.get_noticed_channels() == pytest.approx(np.arange(3, 7))
 
+    omask = [False] * 2 + [True] * 4 + [False] * 4
+    assert pha.mask == pytest.approx(omask)
+    assert pha.get_mask() == pytest.approx(omask)
+
     # Only filtering
     assert pha.get_dep(filter=False) == pytest.approx(y)
     assert pha.get_dep(filter=True) == pytest.approx(y[2:6])
 
+    # tabStops is not set, so uses the current mask
     pha.group_counts(3)
-    assert pha.get_filter(format="%.1f") == "1.0:11.0"
-    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 11))
+    assert pha.get_filter(format="%.1f") == "3.0:7.0"
+    assert pha.get_noticed_channels() == pytest.approx(np.arange(3, 7))
 
     # Grouped and filtered
     assert pha.get_dep(filter=False) == pytest.approx(y)
-    assert pha.get_dep(filter=True) == pytest.approx([3, 2])
+    assert pha.get_dep(filter=True) == pytest.approx([3, 1])
 
-    assert pha.mask == pytest.approx([True] * 2)
-    assert pha.get_mask() == pytest.approx([True] * 10)
+    assert pha.mask == pytest.approx([False] * 2 + [True] * 2 + [False] * 4)
+    assert pha.get_mask() == pytest.approx(omask)
 
-    grouping = [1, -1, -1, -1, -1,  1, -1, -1, -1, -1.]
+    grouping = [0, 0, 1, -1, -1,  1, 0, 0, 0, 0]
     assert pha.grouping == pytest.approx(grouping)
 
-    quality = [0, 0, 0, 0, 0, 2, 2, 2, 2, 2]
+    quality = [0, 0, 0, 0, 0, 2, 0, 0, 0, 0]
     assert pha.quality == pytest.approx(quality)
     assert pha.quality_filter is None
 
@@ -1991,16 +2015,16 @@ def test_pha_ignore_bad_group_quality(caplog):
     assert type(pha.mask) is bool
     assert pha.mask
 
-    # However, get_mask reflects the quality filter, so is 5 True
-    # followed by 5 False.
+    # However, get_mask reflects the quality filter, so is all True
+    # except for the 6th element.
     #
-    mask = [True] * 5 + [False] * 5
-    assert pha.get_mask() == pytest.approx(mask)
+    single_bad = [True] * 5 + [False] + [True] * 4
+    assert pha.get_mask() == pytest.approx(single_bad)
 
     # What about the quality fields?
     #
     assert pha.quality == pytest.approx(quality)
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 5)
+    assert pha.quality_filter == pytest.approx(single_bad)
 
     # Saying all that though, the filter expression does not
     # know we are ignoring channels 6-10.
@@ -2008,13 +2032,13 @@ def test_pha_ignore_bad_group_quality(caplog):
     # TODO: This is likely a bug.
     #
     assert pha.get_filter(format="%.1f") == "1.0:11.0"
-    assert pha.get_noticed_channels() == pytest.approx(np.arange(1, 6))
+    assert pha.get_noticed_channels() == pytest.approx([1, 2, 3, 4, 5, 7, 8, 9, 10])
 
     # Grouped and quality-filtered (even though get_filter
     # returns 1:11 here).
     #
     assert pha.get_dep(filter=False) == pytest.approx(y)
-    assert pha.get_dep(filter=True) == pytest.approx([3])
+    assert pha.get_dep(filter=True) == pytest.approx([0, 0, 3, 0, 0, 1, 0])
 
     # check there have been no more messages.
     #
@@ -4371,3 +4395,124 @@ def test_img_checks_coord_no_transform(coord):
                        match="^data set 'ex' does not contain a .* coordinate system$"):
         DataIMG("ex", [1, 2, 1, 2], [1, 1, 2, 2], [1, 2, 3, 4],
                 coord=coord)
+
+
+@pytest.mark.parametrize("asarray", [True, False])
+def test_group_xxx_tabtops_not_ndarray(asarray):
+    """What happens if tabStops is not a ndarray?"""
+
+    pha = DataPHA("test", [1, 2, 3, 4, 5], [2, 3, 4, 5, 6])
+    tabstops = [1, 1, 0, 0, 1]
+    if asarray:
+        tabstops = np.asarray(tabstops)
+
+    # This should only group channels 3 and 4.
+    pha.group_width(2, tabStops=tabstops)
+
+    assert pha.get_y() == pytest.approx([2, 3, 4.5, 6])
+    assert pha.mask is True
+    assert pha.get_mask() is None
+
+
+@pytest.mark.parametrize("asarray", [True, False])
+@pytest.mark.parametrize("nelem", [4, 6])
+def test_group_xxx_tabtops_wrong_size(asarray, nelem):
+    """What happens if tabStops is not a ndarray?"""
+
+    pha = DataPHA("test", [1, 2, 3, 4, 5], [2, 3, 4, 5, 6])
+    tabstops = [0] * nelem
+    if asarray:
+        tabstops = np.asarray(tabstops)
+
+    emsg = r"^grpBinWidth\(\) The number of tab stops and number of channels specified in the argument list have different sizes$"
+    with pytest.raises(ValueError, match=emsg):
+        pha.group_width(2, tabStops=tabstops)
+
+
+def test_group_xxx_tabstops_already_grouped():
+    """Check what happens if tabStops is sent ~pha.mask when already grouped."""
+
+    pha = DataPHA("grp", [1, 2, 3, 4, 5, 6], [12, 2, 9, 2, 4, 5])
+    pha.mask = [1, 0, 1, 1, 1, 0]
+    assert pha.get_y(filter=True) == pytest.approx([12, 9, 2, 4])
+
+    pha.grouping = [1, 1, 1, -1, 1, 1]
+    pha.grouped = True
+    assert pha.get_y(filter=True) == pytest.approx([12, 5.5, 4])
+
+    tstops = ~pha.mask
+    assert tstops == pytest.approx([False, True, False, False, True])
+
+    # Apply the mask as the tabStops (after inversion) where
+    # len(tstops) < nchannel but does match the number of groups.
+    #
+    pha.group_counts(8, tabStops=tstops)
+
+    assert pha.grouping == pytest.approx([1, 0, 1, 1, -1, 0])
+    assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0])
+    assert pha.get_y(filter=True) == pytest.approx([12, 9, 3])
+
+
+def test_dataimg_axis_ordering():
+    """What are the x0/x1 axes meant to be?
+
+    See also test_dataimg_axis_ordering_1880
+    """
+
+    # nx=3, ny=2
+    #
+    x1, x0 = np.mgrid[1:3, 1:4]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.arange(6) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
+    orig = DataIMG("faked", x0, x1, y, shape=(2, 3), sky=sky,
+                   eqpos=eqpos)
+
+    orig.set_coord("physical")
+
+    orig.notice2d("circle(110, 210, 6)", True)
+
+    assert orig.get_filter() == "Field()&!Circle(110,210,6)"
+    assert orig.get_dep(filter=True) == pytest.approx([10, 20, 30, 40, 60])
+    a0, a1 = orig.get_indep()
+    assert a0 == pytest.approx([100, 110, 120] * 2)
+    assert a1 == pytest.approx([200, 200, 200, 210, 210, 210])
+
+
+def test_dataimg_axis_ordering_1880():
+    """What are the x0/x1 axes meant to be? See issues #1789 #1880
+
+    See also test_dataimg_axis_ordering. This is a regression test to
+    catch if we ever decide to update the DataIMG code.
+
+    """
+
+    # nx=2, ny=3
+    #
+    x1, x0 = np.mgrid[1:4, 1:3]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.arange(6) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
+    orig = DataIMG("faked", x0, x1, y, shape=(2, 3), sky=sky,
+                   eqpos=eqpos)
+
+    orig.set_coord("physical")
+
+    # This should remove the pixel with value 50 but it actually
+    # removes 40. This is an issue with how DataIMG requires the x0/x1
+    # arrays (I think) but for this test we just test the existing
+    # behavior. See issues #1880 and #1789.
+    #
+    orig.notice2d("circle(110, 210, 6)", True)
+
+    assert orig.get_filter() == "Field()&!Circle(110,210,6)"
+    assert orig.get_dep(filter=True) == pytest.approx([10, 20, 30, 50, 60])
+    a0, a1 = orig.get_indep()
+    assert a0 == pytest.approx([100, 110] * 3)
+    assert a1 == pytest.approx([200, 200, 210, 210, 220, 220])

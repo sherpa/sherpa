@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2015, 2016, 2019, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2015, 2016, 2019, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -26,15 +27,33 @@ routines in this module are subject to change.
 
 import inspect
 import logging
+import os
 import sys
+from types import ModuleType
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
+    TextIO, TypedDict, Union
 
 import numpy
 
+from sherpa.astro.data import DataIMG, DataPHA, DataARF, DataRMF
+from sherpa.astro import io
+from sherpa.astro.io.wcs import WCS
+if TYPE_CHECKING:
+    # Avoid an import cycle
+    from sherpa.astro.ui.utils import Session
+
+xspec: Optional[ModuleType]
+try:
+    from sherpa.astro import xspec
+except ImportError:
+    xspec = None
+
+from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
+from sherpa.models.basic import UserModel
+# from sherpa.models.parameter import Parameter
 import sherpa.utils
 from sherpa.utils.err import ArgumentErr
 
-from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
-from sherpa.astro.data import DataIMG, DataPHA
 
 logger = logging.getLogger(__name__)
 warning = logger.warning
@@ -45,30 +64,91 @@ string_types = (str, )
 #       the objects (or modules) being serialized.
 #
 
+OutType = TypedDict("OutType", {"imports": set[str], "main": list[str]})
+IdType = Union[int, str]
+MaybeIdType = Optional[IdType]
+DataType = Union[Data1D, Data2D]
 
-def _output(msg, fh=None):
-    """Display the message.
+# Typing the state argument is awkward since it causes an import
+# error, so for runtime we default to Any and only when run under a
+# type checker do we use the actual type.
+#
+if TYPE_CHECKING:
+    SessionType = Session
+else:
+    SessionType = Any
+
+# The par parameter is hard to type as it's Union[Parameter,
+# XSBaseParameter] but the latter is only defined if XSPEC support is
+# enabled. One way around this is to create a Protocol for defining
+# the parameter interface rather than have it be based on a class.
+#
+# For now we use Any to skip this, at the expense of not type checking
+# the module propery
+#
+# ParameterType = Parameter
+ParameterType = Any
+
+
+def _output(out: OutType, msg: str, indent: int = 0) -> None:
+    """Output the line"""
+    space = ' ' * (indent * 4)
+    out["main"].append(f"{space}{msg}")
+
+
+def _output_nl(out: OutType) -> None:
+    """Add a new-line."""
+    _output(out, "")
+
+
+def _output_banner(out: OutType, msg: str) -> None:
+    """Display the banner message.
 
     Parameters
     ----------
-    msg : None or str
-       The message to output. If ``None`` then the routine
-       returns immediately (with no output).
-    fh : None or a file handle
-       The file handle to write the message to. If fh is ``None``
-       then the standard output is used.
+    out : dict
+       The output state
+    msg : str
+       The label to output.
+
     """
 
-    if msg is None:
+    _output_nl(out)
+    _output(out, f"######### {msg}")
+    _output_nl(out)
+
+
+def _get_out_pos(out: OutType) -> int:
+    """Return the current position.
+
+    This is to make it easier to remove a banner call. The code
+    should be re-written so we only add text once we know we have
+    anything, but that is a relatively large change.
+    """
+    return len(out["main"])
+
+
+def _remove_banner(out: OutType, orig_pos: int) -> None:
+    """Remove the banner message if no text has been added.
+
+    Parameters
+    ----------
+    out : dict
+       The output state
+    orig_pos : int
+       The position after the banner was added.
+
+    """
+
+    if _get_out_pos(out) != orig_pos:
         return
 
-    if fh is None:
-        fh = sys.stdout
+    out["main"].pop()
+    out["main"].pop()
+    out["main"].pop()
 
-    fh.write(msg + '\n')
 
-
-def _id_to_str(id):
+def _id_to_str(id: IdType) -> str:
     """Convert a data set identifier to a string value.
 
     Parameters
@@ -84,12 +164,14 @@ def _id_to_str(id):
     """
 
     if isinstance(id, string_types):
-        return '"{}"'.format(id)
-    else:
-        return str(id)
+        return f'"{id}"'
+
+    return str(id)
 
 
-def _save_entries(store, tostatement, fh=None):
+def _save_entries(out: OutType,
+                  store: Mapping[str, Any],
+                  tostatement: Callable[[str, Any], str]) -> None:
     """Iterate through entries in the store and serialize them.
 
     Write out the key, value pairs in store in lexical order,
@@ -99,48 +181,38 @@ def _save_entries(store, tostatement, fh=None):
 
     Parameters
     ----------
+    out : dict
+       The output state
     store
        A container with keys. The elements of the container are
-       passed to tocommand to create the string that is then
+       passed to tostatement to create the string that is then
        written to fh.
     tostatement : func
        A function which accepts two arguments, the key and value
        from store, and returns a string. The reason for the name
        is that it is expected that the returned string will be
        a Python statement to restore this setting.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     keys = list(store)
     keys.sort()
     for key in keys:
         cmd = tostatement(key, store[key])
-        _output(cmd, fh)
+        _output(out, cmd)
 
 
-def _save_intro(fh=None):
-    """The set-up for the serialized file (imports).
-
-    Parameters
-    ----------
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
-    """
-
-    # QUS: should numpy only be loaded if it is needed?
-    _output("import numpy", fh)
-
-    _output("from sherpa.astro.ui import *", fh)
-
-
-def _save_response(label, respfile, id, rid, bid=None, fh=None):
+def _save_response(out: OutType,
+                   label: str,
+                   respfile: str,
+                   id: IdType,
+                   rid: IdType,
+                   bid: MaybeIdType = None) -> None:
     """Save the ARF or RMF
 
     Parameters
     ----------
+    out : dict
+       The output state
     label : str
        Either ``arf`` or ``rmf``.
     respfile : str
@@ -152,28 +224,34 @@ def _save_response(label, respfile, id, rid, bid=None, fh=None):
     bid
        If not ``None`` then this indicates that this is the ARF for
        a background dataset, and which such data set to use.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     id = _id_to_str(id)
     rid = _id_to_str(rid)
 
-    cmd = 'load_{}({}, "{}", resp_id={}'.format(label, id, respfile, rid)
+    cmd = f'load_{label}({id}, "{respfile}", resp_id={rid}'
     if bid is not None:
-        cmd += ", bkg_id={}".format(_id_to_str(bid))
+        cmd += f", bkg_id={_id_to_str(bid)}"
 
     cmd += ")"
-    _output(cmd, fh)
+    _output(out, cmd)
 
 
-def _save_arf_response(state, id, rid, bid=None, fh=None):
+def _save_arf_response(out: OutType,
+                       state: SessionType,
+                       pha: DataPHA,
+                       id: IdType,
+                       rid: IdType,
+                       bid: MaybeIdType = None) -> None:
     """Save the ARF.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
+    pha : DataPHA
+       The PHA object
     id : id or str
        The Sherpa data set identifier.
     rid
@@ -181,25 +259,35 @@ def _save_arf_response(state, id, rid, bid=None, fh=None):
     bid
        If not ``None`` then this indicates that this is the ARF for
        a background dataset, and which such data set to use.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    try:
-        respfile = state.get_arf(id, resp_id=rid, bkg_id=bid).name
-    except:
+    arf, _ = pha.get_response(rid)
+    if arf is None:
         return
 
-    _save_response('arf', respfile, id, rid, bid=bid, fh=fh)
+    if TYPE_CHECKING:
+        # We currently do not do much with arf, but add the type
+        # anyway.
+        assert isinstance(arf, DataARF)
+
+    _save_response(out, 'arf', arf.name, id, rid, bid=bid)
 
 
-def _save_rmf_response(state, id, rid, bid=None, fh=None):
+def _save_rmf_response(out: OutType,
+                       state: SessionType,
+                       pha: DataPHA,
+                       id: IdType,
+                       rid: IdType,
+                       bid: MaybeIdType = None) -> None:
     """Save the RMF.
 
     Parameters
     ----------
-    state
+    out : dict
+       The output state
+    state : Session
+    pha : DataPHA
+       The PHA object
     id : id or str
        The Sherpa data set identifier.
     rid
@@ -207,60 +295,46 @@ def _save_rmf_response(state, id, rid, bid=None, fh=None):
     bid
        If not ``None`` then this indicates that this is the RMF for
        a background dataset, and which such data set to use.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    try:
-        respfile = state.get_rmf(id, resp_id=rid, bkg_id=bid).name
-    except:
+    _, rmf = pha.get_response(rid)
+    if rmf is None:
         return
 
-    _save_response('rmf', respfile, id, rid, bid=bid, fh=fh)
+    if TYPE_CHECKING:
+        # We currently do not do much with rmf, but add the type
+        # anyway.
+        assert isinstance(rmf, DataRMF)
+
+    _save_response(out, 'rmf', rmf.name, id, rid, bid=bid)
 
 
-def _save_pha_array(state, label, id, bid=None, fh=None):
+def _save_pha_array(out: OutType,
+                    state: SessionType,
+                    pha: DataPHA,
+                    label: str,
+                    id: IdType,
+                    bid: MaybeIdType = None) -> None:
     """Save a grouping or quality array for a PHA data set.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
+    pha : DataPHA
+       The PHA object
     label : "grouping" or "quality"
     id : id or str
        The Sherpa data set identifier.
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    # This is an internal routine, so just protect against accidents
-    if label not in ['grouping', 'quality']:
-        raise ValueError("Invalid label={}".format(label))
-
-    if bid is None:
-        data = state.get_data(id)
-        lbl = 'Data'
-    else:
-        data = state.get_bkg(id, bid)
-        lbl = 'Background'
-
-    vals = getattr(data, label)
+    vals = getattr(pha, label)
     if vals is None:
         return
-
-    _output("\n######### {} {} flags\n".format(lbl, label), fh)
-
-    # QUS: can we not use the vals variable here rather than
-    #      reassign it? i.e. isn't the "quality" (or "grouping"
-    #      field of get_data/get_bkg the same as state.get_grouping
-    #      or state.get_quality?
-    #
-    func = getattr(state, 'get_{}'.format(label))
-    vals = func(id, bkg_id=bid)
 
     # The OGIP standard is for quality and grouping to be 2-byte
     # integers -
@@ -268,22 +342,33 @@ def _save_pha_array(state, label, id, bid=None, fh=None):
     # - then force that type here.
     vals = vals.astype(numpy.int16)
 
-    cmd = "set_{}({}, ".format(label, _id_to_str(id)) + \
+    lbl = 'Data' if bid is None else 'Background'
+    _output_banner(out, f"{lbl} {label} flags")
+
+    cmd = f"set_{label}({_id_to_str(id)}, " + \
           "val=numpy.array(" + repr(vals.tolist()) + \
-          ", numpy.{})".format(vals.dtype)
+          f", numpy.{vals.dtype})"
     if bid is not None:
-        cmd += ", bkg_id={}".format(_id_to_str(bid))
+        cmd += f", bkg_id={_id_to_str(bid)}"
 
     cmd += ")"
-    _output(cmd, fh)
+    _output(out, cmd)
 
 
-def _save_pha_grouping(state, id, bid=None, fh=None):
+def _save_pha_grouping(out: OutType,
+                       state: SessionType,
+                       pha: DataPHA,
+                       id: IdType,
+                       bid: MaybeIdType = None) -> None:
     """Save the grouping column values for a PHA data set.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
+    pha : DataPHA
+       The PHA object
     id : id or str
        The Sherpa data set identifier.
     bid
@@ -294,29 +379,92 @@ def _save_pha_grouping(state, id, bid=None, fh=None):
        otherwise the information is added to the file handle.
     """
 
-    _save_pha_array(state, "grouping", id, bid=bid, fh=fh)
+    _save_pha_array(out, state, pha, "grouping", id, bid=bid)
 
 
-def _save_pha_quality(state, id, bid=None, fh=None):
+def _save_pha_quality(out: OutType,
+                      state: SessionType,
+                      pha: DataPHA,
+                      id: IdType,
+                      bid: MaybeIdType = None) -> None:
     """Save the quality column values for a PHA data set.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
+    pha : DataPHA
+       The PHA object
     id : id or str
        The Sherpa data set identifier.
     bid
        If not ``None`` then this indicates that the background dataset
        is to be used.
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    _save_pha_array(state, "quality", id, bid=bid, fh=fh)
+    _save_pha_array(out, state, pha, "quality", id, bid=bid)
 
 
-def _handle_filter(state, id, fh):
+def _add_filter(out: OutType,
+                data: DataType,
+                cmd_id: str) -> None:
+    """Add any filter applied to the source."""
+
+    # We have mask being
+    #  - True or an array of Trues
+    #    => no filter is needed
+    #
+    #  - False or an array of Falses
+    #    => everything is filtered out
+    #
+    #  - array of True and False
+    #    => want to filter the data
+    #
+    # We only report a filter if it actually excludes some data.  The
+    # following relies on numpy.all/any behaving the same when given
+    # boolval as [boolval], so we do not have to explicitly check if
+    # the mask is a boolean.
+    #
+    if numpy.all(data.mask):
+        return
+
+    extra = "2d" if len(data.get_dims()) == 2 else ""
+    if numpy.any(data.mask):
+        fvals = data.get_filter()
+        _output(out, f'notice{extra}_id({cmd_id}, "{fvals}")')
+        return
+
+    # All data has been ignored.
+    #
+    _output(out, f'ignore{extra}_id({cmd_id})')
+
+
+def _add_bkg_filter(out: OutType,
+                    bpha: DataPHA,
+                    cmd_id: str,
+                    bkg_id: int) -> None:
+    """Add any filter applied to the background."""
+
+    if numpy.all(bpha.mask):
+        return
+
+    if numpy.any(bpha.mask):
+        # We need to clear any existing background filter set by
+        # the source.
+        #
+        _output(out, f'notice_id({cmd_id}, bkg_id={bkg_id})')
+        fvals = bpha.get_filter()
+        _output(out, f'notice_id({cmd_id}, "{fvals}", bkg_id={bkg_id})')
+        return
+
+    _output(out, f'ignore_id({cmd_id}, bkg_id={bkg_id})')
+
+
+def _handle_filter(out: OutType,
+                   state: SessionType,
+                   data: DataType,
+                   id: IdType) -> None:
     """Set any filter expressions for source and background
     components for data set id.
 
@@ -324,29 +472,24 @@ def _handle_filter(state, id, fh):
     in the Sherpa session object (state).
     """
 
+    _output_banner(out, "Filter Data")
+    orig_pos = _get_out_pos(out)
+
     cmd_id = _id_to_str(id)
-    _output("\n######### Filter Data\n", fh)
-    d = state.get_data(id)
-    fvals = d.get_filter()
-    ndims = len(d.get_dims())
-    if ndims == 1:
-        cmd = 'notice_id({}, "{}")'.format(cmd_id, fvals)
-        _output(cmd, fh)
-    elif ndims == 2:
-        # Only output the filter if it does anything
-        if fvals != '':
-            cmd = 'notice2d_id({}, "{}")'.format(cmd_id, fvals)
-            _output(cmd, fh)
-    else:
-        # just in case
-        _output('print("Set notice range of id={} to {}")'.format(cmd_id,
-                                                                  fvals),
-                fh)
+
+    _add_filter(out, data, cmd_id)
+
+    # Since the state doesn't have type annotations, help the system out.
+    # Technically this is only true after the try call, not here.
+    #
+    if TYPE_CHECKING:
+        assert isinstance(data, DataPHA)
 
     try:
-        bids = state.list_bkg_ids(id)
-    except ArgumentErr:
+        bids = data.background_ids
+    except AttributeError:
         # Not a PHA data set
+        _remove_banner(out, orig_pos)
         return
 
     # Only set the noticed range if the data set does not have
@@ -355,38 +498,113 @@ def _handle_filter(state, id, fh):
     # between fitting and subtracting the background - but that is
     # probably beyond the use case of the serialization.
     #
-    if d.subtracted:
+    if data.subtracted:
+        _remove_banner(out, orig_pos)
         return
 
     # NOTE: have to clear out the source filter before applying the
     #       background one.
     for bid in bids:
-        bkg_id = _id_to_str(bid)
-        fvals = state.get_bkg(id, bkg_id=bid).get_filter()
+        bpha = data.get_background(bid)
 
-        if ndims == 1:
-            _output('notice_id({}, None, None, bkg_id={})'.format(cmd_id,
-                                                                  bkg_id),
-                    fh)
-            cmd = 'notice_id({}, "{}", bkg_id={})'.format(cmd_id,
-                                                          fvals, bkg_id)
-            _output(cmd, fh)
-        elif ndims == 2:
-            _output('notice2d_id({}, None, None, bkg_id={})'.format(cmd_id,
-                                                                    bkg_id),
-                    fh)
-            cmd = 'notice2d_id({}, "{}", bkg_id={})'.format(cmd_id,
-                                                            fvals, bkg_id)
-            _output(cmd, fh)
-        else:
-            # just in case
-            msg = "Set notice range of id={} bkg_id={} to {}".format(cmd_id,
-                                                                     fvals,
-                                                                     bkg_id)
-            _output('print("{}")'.format(msg), fh)
+        if TYPE_CHECKING:
+            assert isinstance(bpha, DataPHA)
+
+        _add_bkg_filter(out, bpha, cmd_id, bid)
+
+    _remove_banner(out, orig_pos)
 
 
-def _save_data(state, fh=None):
+def _save_dataset_settings_pha(out: OutType,
+                               state: SessionType,
+                               pha: DataType,
+                               id: IdType) -> None:
+    """What settings need to be set for DataPHA"""
+
+    if not isinstance(pha, DataPHA):
+        return
+
+    cmd_id = _id_to_str(id)
+
+    # Only store group flags and quality flags if they were changed
+    # from flags in the file.
+    #
+    if not pha._original_groups:
+        _save_pha_grouping(out, state, pha, id)
+        _save_pha_quality(out, state, pha, id)
+
+    if pha.grouped:
+        _output(out, f"group({cmd_id})")
+
+    # Add responses and ARFs, if any.
+    #
+    rids = pha.response_ids
+    if len(rids) > 0:
+        _output_banner(out, "Data Spectral Responses")
+        for rid in rids:
+            _save_arf_response(out, state, pha, id, rid)
+            _save_rmf_response(out, state, pha, id, rid)
+
+    # Check if this data set has associated backgrounds.
+    #
+    bids = pha.background_ids
+    if len(bids) > 0:
+        _output_banner(out, "Load Background Data Sets")
+        for bid in bids:
+            cmd_bkg_id = _id_to_str(bid)
+
+            bpha = pha.get_background(bid)
+            if TYPE_CHECKING:
+                assert isinstance(bpha, DataPHA)
+
+            bname = bpha.name
+            cmd = f'load_bkg({cmd_id}, "{bname}", bkg_id={cmd_bkg_id})'
+            _output(out, cmd)
+
+            # Only store group flags and quality flags if they were
+            # changed from flags in the file
+            #
+            if not bpha._original_groups:
+                _save_pha_grouping(out, state, bpha, id, bid=bid)
+                _save_pha_quality(out, state, bpha, id, bid=bid)
+
+            if bpha.grouped:
+                _output(out, f"group({cmd_id}, bkg_id={cmd_bkg_id})")
+
+            # Load background response, ARFs if any
+            rids = bpha.response_ids
+            if len(rids) > 0:
+                _output_banner(out, "Background Spectral Responses")
+                for rid in rids:
+                    _save_arf_response(out, state, bpha, id, rid, bid=bid)
+                    _save_rmf_response(out, state, bpha, id, rid, bid=bid)
+
+    # Set energy units if applicable
+    #
+    _output_banner(out, "Set Energy or Wave Units")
+    rate = "rate" if pha.rate else "counts"
+    cmd = f'set_analysis({cmd_id}, quantity="{pha.units}", ' + \
+        f'type="{rate}", factor={pha.plot_fac})'
+    _output(out, cmd)
+
+    if pha.subtracted:
+        _output(out, f"subtract({cmd_id})")
+
+
+def _save_dataset_settings_2d(out: OutType,
+                              state: SessionType,
+                              data: DataType,
+                              id: IdType) -> None:
+    """What settings need to be set for Data2D/IMG?"""
+
+    if not isinstance(data, DataIMG):
+        return
+
+    _output_banner(out, "Set Image Coordinates")
+    _output(out, f"set_coord({_id_to_str(id)}, '{data.coord}')")
+
+
+def _save_data(out: OutType, state: SessionType) -> None:
     """Save the data.
 
     This can just be references to files, or serialization of
@@ -394,10 +612,9 @@ def _save_data(state, fh=None):
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
 
     Notes
     -----
@@ -406,145 +623,38 @@ def _save_data(state, fh=None):
     to be serialized it is included in the script.
     """
 
-    _output("\n######### Load Data Sets\n", fh)
+    ids = state.list_data_ids()
+    if len(ids) == 0:
+        return
+
+    # Try to only output a banner if the section contains a
+    # command/setting.
+    #
+    _output_banner(out, "Load Data Sets")
 
     cmd_id = ""
     cmd_bkg_id = ""
 
-    for id in state.list_data_ids():
+    for id in ids:
         # But if id is a string, then quote as a string
         # But what about the rest of any possible load_data() options;
         # how do we replicate the optional keywords that were possibly
         # used?  Store them with data object?
         cmd_id = _id_to_str(id)
 
-        cmd = _save_dataset(state, id)
-        _output(cmd, fh)
+        data = state.get_data(id)
+        if TYPE_CHECKING:
+            # Assert an actual type rather than the base type of Data
+            assert isinstance(data, (Data1D, Data2D))
 
-        # Set physical or WCS coordinates here if applicable
-        # If can't be done, just pass to next
-        try:
-            # TODO: add a test of the following
-            _output("\n######### Set Image Coordinates\n", fh)
-            cmd = 'set_coord({}, {})'.format(_id_to_str(id),
-                                             repr(state.get_coord(id)))
-            _output(cmd, fh)
-        except:
-            pass
+        _save_dataset(out, state, data, id)
+        _save_dataset_settings_pha(out, state, data, id)
+        _save_dataset_settings_2d(out, state, data, id)
 
-        # PHA attributes; group data if applicable
-        try:
-            # Only store group flags and quality flags if they were changed
-            # from flags in the file
-            if not state.get_data(id)._original_groups:
-                _save_pha_grouping(state, id, fh=fh)
-                _save_pha_quality(state, id, fh=fh)
-
-            # End check for original groups and quality flags
-            if state.get_data(id).grouped:
-                cmd = "if get_data(%s).grouping is not None and not get_data(%s).grouped:" % (
-                    cmd_id, cmd_id)
-                _output(cmd, fh)
-                _output("    ######### Group Data", fh)
-                cmd = "    group(%s)" % cmd_id
-                _output(cmd, fh)
-        except:
-            pass
-
-        # Add responses and ARFs, if any
-        try:
-            _output(
-                "\n######### Data Spectral Responses\n", fh)
-            rids = state.list_response_ids(id)
-
-            for rid in rids:
-                _save_arf_response(state, id, rid, fh=fh)
-                _save_rmf_response(state, id, rid, fh=fh)
-
-        except:
-            pass
-
-        # Check if this data set has associated backgrounds
-        try:
-            _output(
-                "\n######### Load Background Data Sets\n", fh)
-            bids = state.list_bkg_ids(id)
-            cmd_bkg_id = ""
-            for bid in bids:
-                cmd_bkg_id = _id_to_str(bid)
-
-                cmd = 'load_bkg(%s, "%s", bkg_id=%s)' % (
-                    cmd_id, state.get_bkg(id, bid).name, cmd_bkg_id)
-                _output(cmd, fh)
-
-                # Group data if applicable
-                try:
-                    # Only store group flags and quality flags if they were
-                    # changed from flags in the file
-                    if not state.get_bkg(id, bid)._original_groups:
-                        if state.get_bkg(id, bid).grouping is not None:
-                            _save_pha_grouping(state, id, bid, fh=fh)
-                            _save_pha_quality(state, id, bid, fh=fh)
-
-                    # End check for original groups and quality flags
-                    if state.get_bkg(id, bid).grouped:
-                        cmd = "if get_bkg(%s, %s).grouping is not None and not get_bkg(%s, %s).grouped:" % (
-                            cmd_id, cmd_bkg_id, cmd_id, cmd_bkg_id)
-                        _output(cmd, fh)
-                        _output(
-                            "    ######### Group Background", fh)
-                        cmd = "    group(%s, %s)" % (cmd_id, cmd_bkg_id)
-                        _output(cmd, fh)
-                except:
-                    pass
-
-                # Load background response, ARFs if any
-                _output(
-                    "\n######### Background Spectral Responses\n", fh)
-                rids = state.list_response_ids(id, bid)
-                for rid in rids:
-                    _save_arf_response(state, id, rid, bid, fh=fh)
-                    _save_rmf_response(state, id, rid, bid, fh=fh)
-
-        except:
-            pass
-
-        # Set energy units if applicable
-        # If can't be done, just pass to next
-        try:
-            _output(
-                "\n######### Set Energy or Wave Units\n", fh)
-            units = state.get_data(id).units
-            rate = state.get_data(id).rate
-            if rate:
-                rate = '"rate"'
-            else:
-                rate = '"counts"'
-            factor = state.get_data(id).plot_fac
-            cmd = "set_analysis(%s, %s, %s, %s)" % (cmd_id,
-                                                    repr(units),
-                                                    rate,
-                                                    repr(factor))
-            _output(cmd, fh)
-        except:
-            pass
-
-        # Subtract background data if applicable
-        try:
-            if state.get_data(id).subtracted:
-                cmd = "if not get_data(%s).subtracted:" % cmd_id
-                _output(cmd, fh)
-                _output(
-                    "    ######### Subtract Background Data", fh)
-                cmd = "    subtract(%s)" % cmd_id
-                _output(cmd, fh)
-        except:
-            pass
-
-        _handle_filter(state, id, fh)
+        _handle_filter(out, state, data, id)
 
 
-def _print_par(par):
+def _print_par(par: ParameterType) -> tuple[str, str]:
     """Convert a Sherpa parameter to a string.
 
     Note that we have to be careful with XSParameter parameters,
@@ -552,7 +662,7 @@ def _print_par(par):
 
     Parameters
     ----------
-    par
+    par : Parameter
        The Sherpa parameter object to serialize.
 
     Returns
@@ -564,12 +674,11 @@ def _print_par(par):
 
     linkstr = ""
     if par.link is not None:
-        linkstr = "\nlink(%s, %s)\n" % (
-            par.fullname, par.link.fullname)
+        linkstr = f"\nlink({par.fullname}, {par.link.fullname})\n"
 
     unitstr = ""
     if isinstance(par.units, string_types):
-        unitstr = '"%s"' % par.units
+        unitstr = f'"{par.units}"'
 
     # Do we have to worry about XSPEC parameters which have changed their
     # hard min/max ranges?
@@ -599,40 +708,36 @@ def _print_par(par):
     return (parstr, linkstr)
 
 
-def _save_statistic(state, fh=None):
+def _save_statistic(out: OutType, state: SessionType) -> None:
     """Save the statistic settings.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    _output("\n######### Set Statistic\n", fh)
-    cmd = 'set_stat("%s")' % state.get_stat_name()
-    _output(cmd, fh)
-    _output("", fh)
+    _output_banner(out, "Set Statistic")
+    _output(out, f'set_stat("{state.get_stat_name()}")')
+    _output_nl(out)
 
 
-def _save_fit_method(state, fh=None):
+def _save_fit_method(out: OutType, state: SessionType) -> None:
     """Save the fit method settings.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
     # Save fitting method
 
-    _output("\n######### Set Fitting Method\n", fh)
-    cmd = 'set_method("%s")' % state.get_method_name()
-    _output(cmd, fh)
-    _output("", fh)
+    _output_banner(out, "Set Fitting Method")
+    _output(out, f'set_method("{state.get_method_name()}")')
+    _output_nl(out)
 
     def tostatement(key, val):
         # TODO: Using .format() returns more decimal places, which
@@ -641,29 +746,28 @@ def _save_fit_method(state, fh=None):
         # return 'set_method_opt("{}", {})'.format(key, val)
         return 'set_method_opt("%s", %s)' % (key, val)
 
-    _save_entries(state.get_method_opt(), tostatement, fh)
-    _output("", fh)
+    _save_entries(out, state.get_method_opt(), tostatement)
+    _output_nl(out)
 
 
-def _save_iter_method(state, fh=None):
+def _save_iter_method(out: OutType, state: SessionType) -> None:
     """Save the iterated-fit method settings, if any.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    if state.get_iter_method_name() == 'none':
+    iname = state.get_iter_method_name()
+    if iname == 'none':
         return
 
-    _output("\n######### Set Iterative Fitting Method\n", fh)
-    meth = state.get_iter_method_name()
-    cmd = f'set_iter_method("{meth}")'
-    _output(cmd, fh)
-    _output("", fh)
+    _output_banner(out, "Set Iterative Fitting Method")
+    cmd = f'set_iter_method("{iname}")'
+    _output(out, cmd)
+    _output_nl(out)
 
     def tostatement(key, val):
         # There was a discussion here about the use of
@@ -672,12 +776,12 @@ def _save_iter_method(state, fh=None):
         # so it makes no difference.
         return f'set_iter_method_opt("{key}", {val})'
 
-    _save_entries(state.get_iter_method_opt(), tostatement, fh)
-    _output("", fh)
+    _save_entries(out, state.get_iter_method_opt(), tostatement)
+    _output_nl(out)
 
 
 # Is there something in the standard libraries that does this?
-def _reindent(code):
+def _reindent(code: str) -> str:
     """Try to remove leading spaces. Somewhat hacky."""
 
     # Assume the first line is 'def func()'
@@ -711,7 +815,9 @@ def _reindent(code):
 # but probably better to tell the user about each one
 # than only the first.
 #
-def _handle_usermodel(mod, modelname, fh=None):
+def _handle_usermodel(out: OutType,
+                      mod: UserModel,
+                      modelname: str) -> None:
 
     try:
         pycode = inspect.getsource(mod.calc)
@@ -721,26 +827,25 @@ def _handle_usermodel(mod, modelname, fh=None):
     # in case getsource can return None, have check here
     if pycode is None:
         msg = "Unable to save Python code for user model " + \
-              "'{}' function {}".format(modelname, mod.calc.name)
+              f"'{modelname}' function {mod.calc.__name__}"
         warning(msg)
-        _output('print("{}")'.format(msg), fh)
-        _output("def {}(*args):".format(mod.calc.name), fh)
-        _output("    raise NotImplementedError('User model was " +
-                "not saved by save_all().'", fh)
-        _output("", fh)
+        _output(out, f'print("{msg}")')
+        _output(out, f"def {mod.calc.__name__}(*args):")
+        _output(out, "raise NotImplementedError('User model was "
+                "not saved by save_all().'", indent=1)
+        _output_nl(out)
         return
 
-    msg = "Found user model '{}'; ".format(modelname) + \
+    msg = f"Found user model '{modelname}'; " + \
           "please check it is saved correctly."
     warning(msg)
 
     # Ensure the message is also seen if the script is run.
-    _output('print("{}")'.format(msg), fh)
+    _output(out, f'print("{msg}")')
 
-    _output(_reindent(pycode), fh)
-    cmd = 'load_user_model({}, "{}")'.format(
-        mod.calc.__name__, modelname)
-    _output(cmd, fh)
+    _output(out, _reindent(pycode))
+    cmd = f'load_user_model({mod.calc.__name__}, "{modelname}")'
+    _output(out, cmd)
 
     # Work out the add_user_pars call; this is explicit, i.e.
     # it does not include logic to work out what arguments
@@ -760,84 +865,86 @@ def _handle_usermodel(mod, modelname, fh=None):
     parfrozen = [p.frozen for p in mod.pars]
 
     spaces = '              '
-    _output('add_user_pars("{}",'.format(modelname), fh)
-    _output("{}parnames={},".format(spaces, parnames), fh)
-    _output("{}parvals={},".format(spaces, parvals), fh)
-    _output("{}parmins={},".format(spaces, parmins), fh)
-    _output("{}parmaxs={},".format(spaces, parmaxs), fh)
-    _output("{}parunits={},".format(spaces, parunits), fh)
-    _output("{}parfrozen={}".format(spaces, parfrozen), fh)
-    _output("{})\n".format(spaces), fh)
+    _output(out, f'add_user_pars("{modelname}",')
+    _output(out, f"{spaces}parnames={parnames},")
+    _output(out, f"{spaces}parvals={parvals},")
+    _output(out, f"{spaces}parmins={parmins},")
+    _output(out, f"{spaces}parmaxs={parmaxs},")
+    _output(out, f"{spaces}parunits={parunits},")
+    _output(out, f"{spaces}parfrozen={parfrozen}")
+    _output(out, f"{spaces})\n")
 
 
-def _save_model_components(state, fh=None):
+def _save_model_components(out: OutType, state: SessionType) -> bool:
     """Save the model components.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
+
+    Returns
+    -------
+    xspec_state : bool
+       True if any XSPEC models are found.
+
     """
 
-    # Have to call elements in list in reverse order (item at end of
-    # list was model first created), so that we get links right, if any
+    found_xspec = False
 
-    # To recreate attributes, print out dictionary as ordered pairs,
-    # for each parameter
-
-    _output("\n######### Set Model Components and Parameters\n", fh)
+    # Try to be careful about the ordering of the components here.
+    #
     all_model_components = state.list_model_components()
+    if len(all_model_components) == 0:
+        return found_xspec
+
     all_model_components.reverse()
+    _output_banner(out, "Set Model Components and Parameters")
 
     # If there are any links between parameters, store link commands here
     # Then, *after* processing all models in the for loop below, send
     # link commands to outfile -- *all* models need to be created before
     # *any* links between parameters can be established.
     linkstr = ""
-    for mod in all_model_components:
+    for modval in all_model_components:
 
         # get actual model instance from the name we are given
         # then get model type, and name of this instance.
-        mod = eval(mod)
+        mod = eval(modval)
         typename = mod.type
         modelname = mod.name.split(".")[1]
 
-        # Special cases:
-
-        # account for PSF creation elsewhere (above, with load_data
-        # commands);
-
-        # for table models, use "load_table_model", to ensure we
-        # add to lists of known models *and* separate list of
-        # tabel models;
-
         if typename == "usermodel":
-            _handle_usermodel(mod, modelname, fh)
+            _handle_usermodel(out, mod, modelname)
 
         elif typename == "psfmodel":
-            cmd = 'load_psf("%s", "%s")' % (mod._name, mod.kernel.name)
-            _output(cmd, fh)
-            try:
-                psfmod = state.get_psf(id)
-                cmd_id = _id_to_str(id)
-                cmd = "set_psf(%s, %s)" % (cmd_id, psfmod._name)
-                _output(cmd, fh)
-            except:
-                pass
+            cmd = f'load_psf("{mod._name}", "{mod.kernel.name}")'
+            _output(out, cmd)
 
         elif typename == "tablemodel":
-            # Create table model with load_table_model
-            cmd = 'load_table_model("%s", "%s")' % (
-                modelname, mod.filename)
-            _output(cmd, fh)
+            cmd = f'load_table_model("{modelname}", "{mod.filename}")'
+            _output(out, cmd)
+
+        elif typename == "xstablemodel":
+            cmd = f'load_xstable_model("{modelname}", "{mod.filename}"'
+            if mod.etable:
+                cmd += ', etable=True'
+
+            cmd += ')'
+            _output(out, cmd)
+            found_xspec = True
 
         else:
             # Normal case:  create an instance of the model.
-            cmd = 'create_model_component("{}", "{}")'.format(
-                typename, modelname)
-            _output(cmd, fh)
+            cmd = f'create_model_component("{typename}", "{modelname}")'
+            _output(out, cmd)
+
+            # Is this an XSPEC model? We only care if it's the first
+            # one we find.
+            #
+            if not found_xspec and xspec is not None:
+                found_xspec = isinstance(mod, xspec.XSModel)
 
         # QUS: should this be included in the above checks?
         #      @DougBurke doesn't think so, as the "normal
@@ -846,14 +953,13 @@ def _save_model_components(state, fh=None):
         #
         if typename == "convolutionkernel":
             # Create general convolution kernel with load_conv
-            cmd = 'load_conv("%s", "%s")' % (
-                modelname, mod.kernel.name)
-            _output(cmd, fh)
+            cmd = f'load_conv("{modelname}", "{mod.kernel.name}")'
+            _output(out, cmd)
 
         if hasattr(mod, "integrate"):
-            cmd = "%s.integrate = %s" % (modelname, mod.integrate)
-            _output(cmd, fh)
-            _output("", fh)
+            cmd = f"{modelname}.integrate = {mod.integrate}"
+            _output(out, cmd)
+            _output_nl(out)
 
         # Write out the parameters in the order they are stored in
         # the model. The original version of the code iterated
@@ -862,41 +968,74 @@ def _save_model_components(state, fh=None):
         #
         for par in mod.pars:
             par_attributes, par_linkstr = _print_par(par)
-            _output(par_attributes, fh)
+            _output(out, par_attributes)
             linkstr = linkstr + par_linkstr
 
         # If the model is a PSFModel, could have special
         # attributes "size" and "center" -- if so, record them.
         if typename == "psfmodel":
-            if hasattr(mod, "size"):
-                cmd = "%s.size = %s" % (modelname, repr(mod.size))
-                _output(cmd, fh)
-                _output("", fh)
-            if hasattr(mod, "center"):
-                cmd = "%s.center = %s" % (modelname, repr(mod.center))
-                _output(cmd, fh)
-                _output("", fh)
+            spacer = False
+            if hasattr(mod, "size") and mod.size is not None:
+                _output(out, f"{modelname}.size = {mod.size}")
+                spacer = True
+
+            if hasattr(mod, "center") and mod.center is not None:
+                _output(out, f"{modelname}.center = {mod.center}")
+                spacer = True
+
+            if spacer:
+                _output_nl(out)
 
     # If there were any links made between parameters, send those
     # link commands to outfile now; else, linkstr is just an empty string
-    _output(linkstr, fh)
+    _output(out, linkstr)
+    return found_xspec
 
 
-def _save_models(state, fh=None):
+def _save_psf_components(out: OutType, state: SessionType) -> None:
+    """Save the PSF components.
+
+    This must be done after setting up the data and model components.
+
+    Parameters
+    ----------
+    out : dict
+       The output state
+    state
+
+    """
+
+    # This is done after creating all the models and datasets.
+    #
+    if len(state._psf) == 0:
+        return
+
+    # Associate any PSF models with their appropriate datasets.
+    #
+    _output_banner(out, "Associate PSF models with the datasets")
+    for idval, psfmod in state._psf.items():
+        cmd_id = _id_to_str(idval)
+        _output(out, f"set_psf({cmd_id}, {psfmod._name})")
+
+
+def _save_models(out: OutType, state: SessionType) -> None:
     """Save the source, pileup, and background models.
 
     Parameters
     ----------
+    out : dict
+       The output state
     state
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
     """
 
-    # Save all source, pileup and background models
+    ids = state.list_data_ids()
+    if len(ids) == 0:
+        return
 
-    _output("\n######### Set Source, Pileup and Background Models\n", fh)
-    for id in state.list_data_ids():
+    _output_banner(out, "Set Source, Pileup and Background Models")
+    orig_pos = _get_out_pos(out)
+
+    for id in ids:
         cmd_id = _id_to_str(id)
 
         # If a data set has a source model associated with it,
@@ -927,31 +1066,20 @@ def _save_models(state, fh=None):
                         is_pha = False
 
                     if is_pha and repr(the_source) == repr(the_full_model):
-                        cmd = "set_full_model(%s, %s)" % (
-                            cmd_id, the_full_model.name)
+                        cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
                     else:
-                        cmd = "set_source(%s, %s)" % (
-                            cmd_id, the_source.name)
+                        cmd = f"set_source({cmd_id}, {the_source.name})"
                 else:
-                    cmd = "set_source(%s, %s)" % (cmd_id, the_source.name)
+                    cmd = f"set_source({cmd_id}, {the_source.name})"
 
             elif have_full_model:
-                cmd = "set_full_model(%s, %s)" % (
-                    cmd_id, the_full_model.name)
+                cmd = f"set_full_model({cmd_id}, {the_full_model.name})"
 
             else:
-                cmd = ""
+                continue
 
-            _output(cmd, fh)
-            _output("", fh)
-        except:
-            pass
-
-        # If any pileup models, try to set them.  If not, just pass.
-        try:
-            cmd = "set_pileup_model(%s, %s)" % (
-                cmd_id, state.get_pileup_model(id).name)
-            _output(cmd, fh)
+            _output(out, cmd)
+            _output_nl(out)
         except:
             pass
 
@@ -961,7 +1089,6 @@ def _save_models(state, fh=None):
         # different from whole background model.
         try:
             bids = state.list_bkg_ids(id)
-            cmd_bkg_id = ""
             for bid in bids:
                 cmd_bkg_id = _id_to_str(bid)
 
@@ -984,65 +1111,179 @@ def _save_models(state, fh=None):
                     # only one to support backgrounds
                     if have_full_model:
                         if repr(the_bkg_source) == repr(the_bkg_full_model):
-                            cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                                cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+                            cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
                         else:
-                            cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                                cmd_id, the_bkg_source.name, cmd_bkg_id)
+                            cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
                     else:
-                        cmd = "set_bkg_source(%s, %s, bkg_id=%s)" % (
-                            cmd_id, the_bkg_source.name, cmd_bkg_id)
+                        cmd = f"set_bkg_source({cmd_id}, {the_bkg_source.name}, bkg_id={cmd_bkg_id})"
 
                 elif have_full_model:
-                    cmd = "set_bkg_full_model(%s, %s, bkg_id=%s)" % (
-                        cmd_id, the_bkg_full_model.name, cmd_bkg_id)
+                    cmd = f"set_bkg_full_model({cmd_id}, {the_bkg_full_model.name}, bkg_id={cmd_bkg_id})"
 
                 else:
-                    cmd = ""
+                    continue
 
-                _output(cmd, fh)
-                _output("", fh)
+                _output(out, cmd)
+                _output_nl(out)
 
         except:
             pass
 
+    # separate out the pileup models from the source models
+    #
+    for id in ids:
+        try:
+            pname = state.get_pileup_model(id).name
+        except:
+            continue
 
-def _save_xspec(fh=None):
-    """Save the XSPEC settings, if the module is loaded.
+        cmd_id = _id_to_str(id)
+        cmd = f"set_pileup_model({cmd_id}, {pname})"
+        _output(out, cmd)
+
+    # Do want to remove the initial banner?
+    #
+    _remove_banner(out, orig_pos)
+
+
+def _save_xspec(out: OutType) -> None:
+    """Save the XSPEC settings.
 
     Parameters
     ----------
-    fh : None or file-like
-       If ``None``, the information is printed to standard output,
-       otherwise the information is added to the file handle.
+    out : dict
+       The output state
     """
 
-    if not hasattr(sherpa.astro, "xspec"):
+    # This case should not happen, but just in case.
+    #
+    if xspec is None:
         return
 
-    # TODO: should this make sure that the XSPEC module is in use?
-    #       i.e. only write these out if an XSPEC model is being used?
-    _output("\n######### XSPEC Module Settings\n", fh)
-    xspec_state = sherpa.astro.xspec.get_xsstate()
+    _output_banner(out, "XSPEC Module Settings")
+    xspec_state = xspec.get_xsstate()
 
-    cmd = "set_xschatter(%d)" % xspec_state["chatter"]
-    _output(cmd, fh)
-    cmd = 'set_xsabund("%s")' % xspec_state["abund"]
-    _output(cmd, fh)
-    cmd = "set_xscosmo(%g, %g, %g)" % (xspec_state["cosmo"][0],
-                                       xspec_state["cosmo"][1],
-                                       xspec_state["cosmo"][2])
-    _output(cmd, fh)
-    cmd = 'set_xsxsect("%s")' % xspec_state["xsect"]
-    _output(cmd, fh)
+    chatter =  xspec_state["chatter"]
+    abund = xspec_state["abund"]
+    xsect = xspec_state["xsect"]
+    cs = xspec_state["cosmo"]
+    _output(out, f"set_xschatter({chatter})")
+    _output(out, f'set_xsabund("{abund}")')
+    _output(out, f"set_xscosmo({cs[0]:g}, {cs[1]:g}, {cs[2]:g})")
+    _output(out, f'set_xsxsect("{xsect}")')
 
     def tostatement(key, val):
-        return 'set_xsxset("{}", "{}")'.format(key, val)
+        return f'set_xsxset("{key}", "{val}")'
 
-    _save_entries(xspec_state["modelstrings"], tostatement, fh)
+    _save_entries(out, xspec_state["modelstrings"], tostatement)
 
 
-def _save_dataset(state, id):
+def _save_dataset_file(out: OutType, idstr: str, dset: Data) -> None:
+    """The data can be read in from a file."""
+
+    # TODO: this does not handle options like selecting the columns
+    #       from a file, or the number of columns.
+    #
+    ncols = None
+    if isinstance(dset, DataPHA):
+        dtype = 'pha'
+    elif isinstance(dset, DataIMG):
+        dtype = 'image'
+    else:
+        dtype = 'data'
+
+        # Can we estimate what ncols should be? This is a heuristic as
+        # it does not cover all cases.
+        #
+        if dset.staterror is not None:
+            # assume we read in independent axis/es, dependent axis,
+            # and then staterror.
+            ncols = len(dset.get_indep()) + 2
+
+    cmd = f'load_{dtype}({idstr}, "{dset.name}"'
+    if ncols is not None:
+        cmd += f", ncols={ncols}"
+
+    cmd += ")"
+    _output(out, cmd)
+
+
+def _output_wcs_import(out: OutType) -> None:
+    """Import the WCS symbol if not done already.
+
+    Parameters
+    ----------
+    fh : None or a file handle
+       The file handle to write the message to. If fh is ``None``
+       then the standard output is used.
+
+    """
+
+    out["imports"].add("from sherpa.astro.io.wcs import WCS")
+
+
+def _output_add_wcs(out: OutType,
+                    idstr: str,
+                    label: str,
+                    wcs: WCS) -> None:
+    """Copy over the WCS"""
+
+    _output(out, f"get_data({idstr}).{label} = WCS('{wcs.name}', '{wcs.type}',")
+    _output(out, f"crval={wcs.crval.tolist()},", indent=1)
+    _output(out, f"crpix={wcs.crpix.tolist()},", indent=1)
+    if wcs.type == "LINEAR":
+        _output(out, f"cdelt={wcs.cdelt.tolist()})", indent=1)
+    else:
+        _output(out, f"cdelt={wcs.cdelt.tolist()},", indent=1)
+        _output(out, f"crota={wcs.crota}, epoch={wcs.epoch}, equinox={wcs.equinox})", indent=1)
+
+
+def _save_dataset_pha(out: OutType, idstr: str, pha: DataPHA) -> None:
+    """Try to recreate the PHA"""
+
+    spacer = "            "
+    _output(out, f'load_arrays({idstr},')
+    _output(out, f"{spacer}{pha.channel.tolist()},")
+    _output(out, f"{spacer}{pha.counts.tolist()},")
+    _output(out, f"{spacer}DataPHA)")
+
+    def setval(key):
+        val = getattr(pha, key)
+        if val is None:
+            return
+
+        _output(out, f"set_{key}({idstr}, {val})")
+
+    def setarray(key):
+        val = getattr(pha, key)
+        if val is None:
+            return
+
+        _output(out, f"set_{key}({idstr}, {val.tolist()})")
+
+    setval("exposure")
+    setval("backscal")
+    setval("areascal")
+
+    setarray("staterror")
+    setarray("syserror")
+
+    # These are set later so do not need to be set here.
+    #
+    # setarray("quality")
+    # setarray("grouping")
+
+    if pha.bin_lo is not None and pha.bin_hi is not None:
+        # no use restoring only one of these
+        #
+        _output(out, f"get_data({idstr}).bin_lo = {pha.bin_lo.tolist()}")
+        _output(out, f"get_data({idstr}).bin_hi = {pha.bin_hi.tolist()}")
+
+
+def _save_dataset(out: OutType,
+                  state: SessionType,
+                  data: Data,
+                  id: IdType) -> None:
     """Given a dataset identifier, return the text needed to
     re-create it.
 
@@ -1059,114 +1300,148 @@ def _save_dataset(state, id):
     """
 
     idstr = _id_to_str(id)
-    dset = state.get_data(id)
 
-    # For now assume that a missing name indicates the data
-    # was created by the user, otherwise it's a file name.
-    # The checks and error messages do not cover all situations,
-    # but hopefully the common ones.
+    # If the name of the object is a file then we assume that the data
+    # was read in from that location, otherwise we recreate the data
+    # (i.e. do not read it in).  This will fail if the data was read
+    # in with a relative path name and the directory has since been
+    # changed, or the on-disk file has been removed.
     #
     # This logic should be moved into the DataXXX objects, since
     # this is more extensible, and also the data object can
     # retain knowledge of where the data came from.
     #
-    if dset.name.strip() == '':
-        # Do not attempt to recreate all data sets at this
-        # time. They could be serialized, but leave for a
-        # later time (it may also make sense to actually
-        # save the data to an external file).
-        #
-        if isinstance(dset, DataPHA):
-            msg = "Unable to re-create PHA data set '{}'".format(id)
-            warning(msg)
-            return 'print("{}")'.format(msg)
-
-        elif isinstance(dset, DataIMG):
-            msg = "Unable to re-create image data set '{}'".format(id)
-            warning(msg)
-            return 'print("{}")'.format(msg)
-
-        # Fall back to load_arrays. As using isinstance,
-        # need to order the checks, since Data1DInt is
-        # a subclass of Data1D.
-        #
-        xs = dset.get_indep()
-        ys = dset.get_dep()
-        stat = dset.get_staterror()
-        sys = dset.get_syserror()
-
-        need_sys = sys is not None
-        if need_sys:
-            sys = "{}".format(sys.tolist())
-        else:
-            sys = "None"
-
-        need_stat = stat is not None or need_sys
-        if stat is not None:
-            stat = "{}".format(stat.tolist())
-        else:
-            stat = "None"
-
-        ys = "{}".format(ys.tolist())
-
-        out = 'load_arrays({},\n'.format(idstr)
-        if isinstance(dset, Data1DInt):
-            out += '            {},\n'.format(xs[0].tolist())
-            out += '            {},\n'.format(xs[1].tolist())
-            out += '            {},\n'.format(ys)
-            if need_stat:
-                out += '            {},\n'.format(stat)
-            if need_sys:
-                out += '            {},\n'.format(sys)
-            out += '            Data1DInt)'
-
-        elif isinstance(dset, Data1D):
-            out += '            {},\n'.format(xs[0].tolist())
-            out += '            {},\n'.format(ys)
-            if need_stat:
-                out += '            {},\n'.format(stat)
-            if need_sys:
-                out += '            {},\n'.format(sys)
-            out += '            Data1D)'
-
-        elif isinstance(dset, Data2DInt):
-            msg = "Unable to re-create Data2DInt data set '{}'".format(id)
-            warning(msg)
-            out = 'print("{}")'.format(msg)
-
-        elif isinstance(dset, Data2D):
-            out += '            {},\n'.format(xs[0].tolist())
-            out += '            {},\n'.format(xs[1].tolist())
-            out += '            {},\n'.format(ys)
-            out += '            {},\n'.format(dset.shape)
-            if need_stat:
-                out += '            {},\n'.format(stat)
-            if need_sys:
-                out += '            {},\n'.format(sys)
-            out += '            Data2D)'
-
-        else:
-            msg = "Unable to re-create {} data set '{}'".format(dset.__class__,
-                                                                id)
-            warning(msg)
-            out = 'print("{}")'.format(msg)
-
-        return out
-
-    # TODO: this does not handle options like selecting the columns
-    #       from a file, or the number of columns.
+    # Checking for a valid file name is complicated:
     #
-    if isinstance(dset, DataPHA):
-        dtype = 'pha'
-    elif isinstance(dset, DataIMG):
-        dtype = 'image'
+    # - crates
+    #
+    #   The backend can add in "VFS" syntax, such as "[opt
+    #   colnames=none]" to a file name. Hence the different code paths
+    #   below depending on the backend. The code could try to manually
+    #   remove any VFS syntax, but it's simpler to just try and read
+    #   in the file using crates (this automatically checks for .gz
+    #   versions of the file).
+    #
+    # - pyfits
+    #
+    #   The backend will read in gzip-enabled files so we need to
+    #   check for .gz as well as the file name when calling isfile.
+    #
+    infile = data.name
+    if TYPE_CHECKING:
+        assert io.backend is not None
+    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        import pycrates  # type: ignore
+        try:
+            pycrates.read_file(infile)
+            exists = True
+        except OSError:
+            exists = False
+
     else:
-        dtype = 'data'
+        exists = os.path.isfile(infile)
+        if not exists and not infile.endswith(".gz"):
+            exists = os.path.isfile(f"{infile}.gz")
 
-    return 'load_{}({}, "{}")'.format(dtype, idstr, dset.name)
+    if exists:
+        _save_dataset_file(out, idstr, data)
+        return
+
+    # We could use dataspace1d/2d but easiest to just use load_arrays.
+    # The isinstance checks have to pick the more-specific classes
+    # first (e.g. DataPHA and Data1DInt before Data1D, DataIMG before
+    # Data2D).
+    #
+    # Note that for DataIMG classes we use the "hidden"
+    # _orig_indep_axis attribute rather than get_indep(), since the
+    # latter will change when the coord system is not logical, and
+    # using this would cause downstream problems. See PR #1414 for
+    # more details. This should also be done for DataIMGInt, but this
+    # class is poorly tested, documented, or used.
+    #
+    if isinstance(data, DataPHA):
+        _save_dataset_pha(out, idstr, data)
+        return
+
+    if isinstance(data, DataIMG):
+        # This assumes that orig[0] == "logical"
+        orig = data._orig_indep_axis
+        xs = (orig[1], orig[2])
+    else:
+        xs = data.get_indep()
+
+    ys = f"{data.get_dep().tolist()}"
+
+    spacer = "            "
+
+    if isinstance(data, Data1DInt):
+        _output(out, f'load_arrays({idstr},')
+        _output(out, f"{spacer}{xs[0].tolist()},")
+        _output(out, f"{spacer}{xs[1].tolist()},")
+        _output(out, f"{spacer}{ys},")
+        _output(out, f"{spacer}Data1DInt)")
+
+    elif isinstance(data, Data1D):
+        _output(out, f'load_arrays({idstr},')
+        _output(out, f"{spacer}{xs[0].tolist()},")
+        _output(out, f"{spacer}{ys},")
+        _output(out, f"{spacer}Data1D)")
+
+    elif isinstance(data, DataIMG):
+
+        # Note that we set transforms outside the load_arrays call
+        if data.sky is not None or data.eqpos is not None:
+            _output_wcs_import(out)
+
+        # This does not save the header information in the file
+        _output(out, f'load_arrays({idstr},')
+        _output(out, f"{spacer}{xs[0].tolist()},")
+        _output(out, f"{spacer}{xs[1].tolist()},")
+        _output(out, f"{spacer}{ys},")
+        if data.shape is not None:
+            _output(out, f"{spacer}{tuple(data.shape)},")
+
+        _output(out, f"{spacer}DataIMG)")
+
+        # Note that we set transforms outside the load_arrays call
+        if data.sky is not None:
+            _output_add_wcs(out, idstr, "sky", data.sky)
+
+        if data.eqpos is not None:
+            _output_add_wcs(out, idstr, "eqpos", data.eqpos)
+
+    elif isinstance(data, Data2DInt):
+        msg = f"Unable to re-create Data2DInt data set '{id}'"
+        warning(msg)
+        _output(out, f'print("{msg}")')
+
+    elif isinstance(data, Data2D):
+        _output(out, f'load_arrays({idstr},')
+        _output(out, f"{spacer}{xs[0].tolist()},")
+        _output(out, f"{spacer}{xs[1].tolist()},")
+        _output(out, f"{spacer}{ys},")
+        if data.shape is not None:
+            _output(out, f"{spacer}{tuple(data.shape)},")
+
+        _output(out, f"{spacer}Data2D)")
+
+    else:
+        msg = f"Unable to re-create {data.__class__} data set '{id}'"
+        warning(msg)
+        _output(out, f'print("{msg}")')
+        return
+
+    staterr = data.get_staterror()
+    syserr = data.get_syserror()
+
+    if staterr is not None:
+        _output(out, f"set_staterror({idstr}, {staterr.tolist()})")
+
+    if syserr is not None:
+        _output(out, f"set_syserror({idstr}, {syserr.tolist()})")
 
 
-def save_all(state, fh=None):
+def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
     """Save the information about the current session to a file handle.
 
     This differs to the `save` command in that the output is human
@@ -1180,6 +1455,7 @@ def save_all(state, fh=None):
 
     Parameters
     ----------
+    state : sherpa.astro.ui.utils.Session
     fh : file_like, optional
        If not given the results are displayed to standard out,
        otherwise they are written to this file handle.
@@ -1222,12 +1498,40 @@ def save_all(state, fh=None):
 
     """
 
-    _save_intro(fh)
-    _save_data(state, fh)
-    _output("", fh)
-    _save_statistic(state, fh)
-    _save_fit_method(state, fh)
-    _save_iter_method(state, fh)
-    _save_model_components(state, fh)
-    _save_models(state, fh)
-    _save_xspec(fh)
+    # Record the various elements of the output.
+    #
+    out: OutType
+    out = { "imports": set(),
+            "main": []
+           }
+
+    _save_data(out, state)
+    _output_nl(out)
+    _save_statistic(out, state)
+    _save_fit_method(out, state)
+    _save_iter_method(out, state)
+    req_xspec = _save_model_components(out, state)
+    _save_psf_components(out, state)
+    _save_models(out, state)
+    if req_xspec:
+        _save_xspec(out)
+
+    if fh is None:
+        fh = sys.stdout
+
+    write = lambda msg: fh.write(f"{msg}\n")
+
+    # Hard code the required imports.
+    #
+    write("import numpy")
+    write("from sherpa.astro.ui import *")
+
+    # Add additional imports.
+    #
+    for iline in out["imports"]:
+        write(iline)
+
+    # Write out the contents.
+    #
+    for txt in out["main"]:
+        write(txt)

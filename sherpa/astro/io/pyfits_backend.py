@@ -47,6 +47,7 @@ from astropy.io import fits
 from astropy.io.fits.column import _VLF
 from astropy.table import Table
 
+from sherpa.utils.err import ArgumentTypeErr, IOErr
 import sherpa.utils
 from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
@@ -69,7 +70,7 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
            'set_table_data', 'set_image_data', 'set_pha_data',
-           'set_arf_data', 'set_rmf_data')
+           'set_arf_data', 'set_rmf_data', 'set_hdus')
 
 
 def _has_hdu(hdulist, name):
@@ -1466,3 +1467,101 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     hdu = fits.table_to_hdu(tbl)
     hdu.name = 'TABLE'
     hdu.writeto(filename, overwrite=True)
+
+
+def _add_header(hdu, header):
+    """Add the header items to the HDU.
+
+    Parameters
+    ----------
+    hdu : astropy HDU
+    header : list of sherpa.astro.io.xstable.HeaderItem
+    """
+
+    for hdr in header:
+        card = [hdr.name, hdr.value]
+        if hdr.desc is not None or hdr.unit is not None:
+            comment = "" if hdr.unit is None else f"[{hdr.unit}] "
+            if hdr.desc is not None:
+                comment += hdr.desc
+            card.append(comment)
+
+        hdu.header.append(tuple(card))
+
+
+def _create_primary_hdu(hdu):
+    """Create a PRIMARY HDU.
+
+    Parameters
+    ----------
+    hdu : sherpa.astro.io.xstable.TableHDU
+       Any data is ignored.
+
+    Returns
+    -------
+    out : astropy.io.fits.PrimaryHDU
+
+    """
+
+    out = fits.PrimaryHDU()
+    _add_header(out, hdu.header)
+    return out
+
+
+def _create_table_hdu(hdu):
+    """Create a Table HDU.
+
+    Parameters
+    ----------
+    hdu : sherpa.astro.io.xstable.TableHDU
+
+    Returns
+    -------
+    out : astropy.io.fits.BinTableHDU
+    """
+
+    if hdu.data is None:
+        raise ValueError("No column data to write out")
+
+    # First create a Table which handles the FITS column settings
+    # correctly.
+    #
+    store = []
+    colnames = []
+    for col in hdu.data:
+        colnames.append(col.name)
+        store.append(col.values)
+
+    out = fits.table_to_hdu(Table(names=colnames, data=store))
+    out.name = hdu.name
+    _add_header(out, hdu.header)
+
+    # Add any column metadata
+    #
+    for idx, col in enumerate(hdu.data, 1):
+        if col.unit is not None:
+            out.header.append((f"TUNIT{idx}", col.unit))
+
+        if col.desc is None:
+            continue
+
+        key = f"TTYPE{idx}"
+        out.header[key] = (col.name, col.desc)
+
+    return out
+
+
+def set_hdus(filename, hdulist, clobber=False):
+    """Write out multiple HDUS to a single file.
+
+    At present we are restricted to tables only.
+    """
+
+    check_clobber(filename, clobber)
+
+    out = fits.HDUList()
+    out.append(_create_primary_hdu(hdulist[0]))
+    for hdu in hdulist[1:]:
+        out.append(_create_table_hdu(hdu))
+
+    out.writeto(filename, overwrite=True)

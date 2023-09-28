@@ -22,7 +22,7 @@ from dataclasses import dataclass
 import logging
 import os
 import sys
-from typing import Union
+from typing import Optional, Union
 import warnings
 
 import numpy
@@ -131,6 +131,45 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
     nfilter = sherpa.ui.utils._get_filter(data)
     sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
                                          data.get_xlabel())
+
+
+def _check_pha_tabstops(data: DataPHA,
+                        tabStops: Optional[Union[str, list, numpy.ndarray]]) -> Union[None, numpy.ndarray]:
+    """Validate the tabStops argument for the group_xxx calls.
+
+    This converts from "nofilter" to numpy.zeros(nchan), where
+    nchan is the number of channels in the PHA. The length is
+    checked elsewhere.
+
+    Parameters
+    ----------
+    data : DataPHA
+       The dataset to apply the tabStops to.
+    tabStops : str, list, ndarray, or None
+       The tabStops argument.
+
+    Returns
+    -------
+    tabStops : ndarray or None
+       The tabStops value to use.
+    """
+
+    if tabStops is None:
+        return None
+
+    if not isinstance(tabStops, str):
+        # This might error out, but if so let it as it indicates a
+        # user error.
+        #
+        return numpy.asarray(tabStops)
+
+    if tabStops != "nofilter":
+        raise ArgumentErr("bad", "tabStops", tabStops)
+
+    if data.size is None or data.size == 0:
+        raise DataErr("The DataPHA object has no data")
+
+    return numpy.zeros(data.size)
 
 
 def _save_errorcol(session, idval, filename, bkg_id,
@@ -322,6 +361,7 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types["source_component"].append(sherpa.astro.plot.ComponentSourcePlot())
 
         self._plot_types['arf'] = [sherpa.astro.plot.ARFPlot()]
+        self._plot_types['rmf'] = [sherpa.astro.plot.RMFPlot()]
         self._plot_types['order'] = [sherpa.astro.plot.OrderPlot()]
 
         self._plot_types['bkg'] = [sherpa.astro.plot.BkgDataPlot()]
@@ -404,6 +444,11 @@ class Session(sherpa.ui.utils.Session):
 
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
+
+        .. warning::
+             Security risk: The imported functions and objects
+             could contain arbitrary Python code and be malicious.
+             Never use this function on untrusted input.
 
         Parameters
         ----------
@@ -722,6 +767,169 @@ class Session(sherpa.ui.utils.Session):
         """
         txt = self._get_show_bkg_model(id, bkg_id)
         send_to_pager(txt, outfile, clobber)
+
+    def calc_bkg_stat(self, id=None, *otherids):
+        """Calculate the fit statistic for a background data set.
+
+        Evaluate the current background models for the background
+        datasets, calculate the statistic for each background, and
+        return the sum.  No fitting is done, as the current model
+        parameter, and any filters, are used. The `calc_bkg_stat_info`
+        routine should be used if the result for a particular
+        background component needs to be returned.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then all
+           background data sets with an associated background model
+           are used simultaneously.
+        *otherids : int or str, optional
+           Other data sets to use in the calculation.
+
+        Returns
+        -------
+        stat : number
+           The current statistic value.
+
+        See Also
+        --------
+        calc_bkg_stat_info, calc_stat, fit_bkg, get_bkg_stat_info,
+        set_stat
+
+        Examples
+        --------
+
+        Calculate the statistic for the background in the default data
+        set:
+
+        >>> stat = calc_bkg_stat()
+
+        Find the statistic for the background for data set 3:
+
+        >>> stat = calc_bkg_stat(3)
+
+        Calculate the background statistic value using two different
+        statistics:
+
+        >>> set_stat('chi2datavar')
+        >>> s1 = calc_bkg_stat()
+        >>> set_stat('chi2gehrels')
+        >>> s2 = calc_bkg_stat()
+
+        """
+        ids, f = self._get_bkg_fit(id, otherids)
+        return f.calc_stat()
+
+    def calc_bkg_stat_info(self):
+        """Display the statistic values for the current background models.
+
+        Returns the statistics values for background datasets with
+        background models. See `calc_stat_info` for a description
+        of the return value.
+
+        .. versionadded:: 4.16.0
+
+        See Also
+        --------
+        calc_bkg_stat, calc_stat_info, get_bkg_stat_info
+
+        Notes
+        -----
+        If a fit to a particular background data set has not been
+        made, or values - such as parameter settings, the noticed data
+        range, or choice of statistic - have been changed since the
+        last fit, then the results for that data set may not be
+        meaningful and will therefore bias the results for the
+        simultaneous results.
+
+        Examples
+        --------
+
+        >>> calc_bkg_stat_info()
+
+        """
+        output = self.get_bkg_stat_info()
+        output = [statinfo.format() for statinfo in output]
+
+        if len(output) > 1:
+            info('\n\n'.join(output))
+        else:
+            info(output[0])
+
+    def get_bkg_stat_info(self):
+        """Return the statistic values for the current background models.
+
+        Return the statistic values for the background datasets.
+        See get_stat_info.
+
+        .. versionadded:: 4.16.0
+
+        Returns
+        -------
+        stats : array of `sherpa.fit.StatInfoResults`
+           The values for each data set. If there are multiple model
+           expressions then the last element will be the value for the
+           combined data sets.
+
+        See Also
+        --------
+        calc_bkg_stat, calc_bkg_stat_info, get_stat_info
+
+        Notes
+        -----
+        If a fit to a particular data set has not been made, or values
+        - such as parameter settings, the noticed data range, or
+        choice of statistic - have been changed since the last fit,
+        then the results for that data set may not be meaningful and
+        will therefore bias the results for the simultaneous results.
+
+        Examples
+        --------
+
+        >>> res = get_stat_info()
+        >>> res[0].statval
+        498.21750663761935
+        >>> res[0].dof
+        439
+
+        """
+
+        store = self._prepare_bkg_fit(None)
+
+        # Prepare the per-background fits.
+        #
+        output = []
+        if len(store) > 1:
+            for s in store:
+                f = Fit(s.data, s.model, self._current_stat)
+                statinfo = f.calc_stat_info()
+                statinfo.ids = (s.idval, )
+                statinfo.bkg_ids = (s.bkg_id, )
+                statinfo.name = f"Background {s.bkg_id} for Dataset {s.idval}"
+
+                output.append(statinfo)
+
+        # The statinfo object is not really designed for cases where
+        # the background ids may differ, so just use the set of all
+        # identifiers.
+        #
+        bkgids = sorted(set(s.bkg_id for s in store))
+
+        idvals, f = self._get_fit_obj(store, estmethod=None)
+        statinfo = f.calc_stat_info()
+        statinfo.ids = list(idvals)  # TODO: list or tuple?
+        statinfo.bkg_ids = tuple(bkgids)
+        if len(idvals) == 1:
+            statinfo.name = f'Background for Dataset {statinfo.ids}'  # TODO: do we want to use ids[0]?
+        else:
+            statinfo.name = f'Backgrounds for Datasets {statinfo.ids}'
+
+        output.append(statinfo)
+        return output
+
 
     ###########################################################################
     # Data
@@ -8237,10 +8445,14 @@ class Session(sherpa.ui.utils.Session):
         """Group into a fixed number of bins.
 
         Combine the data so that there `num` equal-width bins (or
-        groups). The binning scheme is applied to all the channels,
-        but any existing filter - created by the `ignore` or `notice`
-        set of functions - is re-applied after the data has been
-        grouped.
+        groups). The binning scheme is, by default, applied to only
+        the noticed data range. It is suggested that filtering is done
+        before calling group_bins.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8260,12 +8472,15 @@ class Session(sherpa.ui.utils.Session):
            When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
            data sets as well as the source data set.
-        tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+        tabStops : str or array of int or bool, optional
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         Raises
         ------
@@ -8309,29 +8524,33 @@ class Session(sherpa.ui.utils.Session):
 
         >>> group_bins(50)
 
-        Group the 'jet' data set to 50 bins and plot the result,
-        then re-bin to 100 bins and overplot the data:
+        Group the 'jet' data set to 50 bins and plot the result, then
+        re-bin to 100 bins and overplot the data:
 
         >>> group_bins('jet', 50)
         >>> plot_data('jet')
         >>> group_bins('jet', 100)
         >>> plot_data('jet', overplot=True)
 
-        The grouping is applied to the full data set, and then
-        the filter - in this case defined over the range 0.5
-        to 8 keV - will be applied. This means that the
-        noticed data range will likely contain less than
-        50 bins.
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
 
         >>> set_analysis('energy')
+        >>> notice()
         >>> notice(0.5, 8)
         >>> group_bins(50)
         >>> plot_data()
 
-        Do not group any channels numbered less than 20 or
-        800 or more. Since there are 780 channels to be
-        grouped, the width of each bin will be 20 channels
-        and there are no "left over" channels:
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_bins(50, tabStops="nofilter")
+
+        Do not group any channels numbered less than 20 or 800 or
+        more. Since there are 780 channels to be grouped, the width of
+        each bin will be 20 channels and there are no "left over"
+        channels:
 
         >>> notice()
         >>> channels = get_data().channel
@@ -8344,7 +8563,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_bins(num, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_bins(num, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8354,9 +8574,14 @@ class Session(sherpa.ui.utils.Session):
         """Group into a fixed bin width.
 
         Combine the data so that each bin contains `num` channels.
-        The binning scheme is applied to all the channels, but any
-        existing filter - created by the `ignore` or `notice` set of
-        functions - is re-applied after the data has been grouped.
+        The binning scheme is, by default, applied to only the noticed
+        data range. It is suggested that filtering is done before
+        calling group_width.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8376,11 +8601,14 @@ class Session(sherpa.ui.utils.Session):
            grouping is applied to all the associated background
            data sets as well as the source data set.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         Raises
         ------
@@ -8420,28 +8648,34 @@ class Session(sherpa.ui.utils.Session):
         Examples
         --------
 
-        Group the default data set so that each bin contains 20
+        Group the default data set so that each bin contains 5
         channels:
 
-        >>> group_width(20)
+        >>> group_width(5)
 
         Plot two versions of the 'jet' data set: the first uses
-        20 channels per group and the second is 50 channels per
+        2 channels per group and the second is 5 channels per
         group:
 
-        >>> group_width('jet', 20)
+        >>> group_width('jet', 2)
         >>> plot_data('jet')
-        >>> group_width('jet', 50)
+        >>> group_width('jet', 5)
         >>> plot_data('jet', overplot=True)
 
-        The grouping is applied to the full data set, and then
-        the filter - in this case defined over the range 0.5
-        to 8 keV - will be applied.
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
 
         >>> set_analysis('energy')
+        >>> notice()
         >>> notice(0.5, 8)
-        >>> group_width(50)
+        >>> group_width(7)
         >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_width(5, tabStops="nofilter")
 
         The grouping is not applied to channels 101 to
         149, inclusive:
@@ -8449,7 +8683,7 @@ class Session(sherpa.ui.utils.Session):
         >>> notice()
         >>> channels = get_data().channel
         >>> ign = (channels > 100) & (channels < 150)
-        >>> group_width(40, tabStops=ign)
+        >>> group_width(4, tabStops=ign)
         >>> plot_data()
 
         """
@@ -8457,7 +8691,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_width(num, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_width(num, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8466,12 +8701,16 @@ class Session(sherpa.ui.utils.Session):
         """Group into a minimum number of counts per bin.
 
         Combine the data so that each bin contains `num` or more
-        counts. The binning scheme is applied to all the channels, but
-        any existing filter - created by the `ignore` or `notice` set
-        of functions - is re-applied after the data has been grouped.
-        The background is *not* included in this calculation; the
-        calculation is done on the raw data even if `subtract` has
-        been called on this data set.
+        counts. The background is *not* included in this calculation;
+        the calculation is done on the raw data even if `subtract` has
+        been called on this data set. The binning scheme is, by
+        default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling group_counts.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8494,11 +8733,14 @@ class Session(sherpa.ui.utils.Session):
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         Raises
         ------
@@ -8549,14 +8791,20 @@ class Session(sherpa.ui.utils.Session):
         >>> group_counts('jet', 50)
         >>> plot_data('jet', overplot=True)
 
-        The grouping is applied to the full data set, and then
-        the filter - in this case defined over the range 0.5
-        to 8 keV - will be applied.
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
 
         >>> set_analysis('energy')
+        >>> notice()
         >>> notice(0.5, 8)
         >>> group_counts(30)
         >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_counts(25, tabStops="nofilter")
 
         If a channel has more than 30 counts then do not group,
         otherwise group channels so that they contain at least 40
@@ -8575,7 +8823,8 @@ class Session(sherpa.ui.utils.Session):
             id, num = num, id
 
         def change(data):
-            data.group_counts(num, maxLength, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_counts(num, maxLength, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8586,12 +8835,17 @@ class Session(sherpa.ui.utils.Session):
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        of at least `snr`. The binning scheme is applied to all the
-        channels, but any existing filter - created by the `ignore` or
-        `notice` set of functions - is re-applied after the data has
-        been grouped.  The background is *not* included in this
+        of at least `snr`. The background is *not* included in this
         calculation; the calculation is done on the raw data even if
-        `subtract` has been called on this data set.
+        `subtract` has been called on this data set. The binning
+        scheme is, by default, applied to only the noticed data
+        range. It is suggested that filtering is done before calling
+        group_snr.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8615,11 +8869,14 @@ class Session(sherpa.ui.utils.Session):
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -8675,12 +8932,28 @@ class Session(sherpa.ui.utils.Session):
         >>> group_snr('jet', 5)
         >>> plot_data('jet', overplot=True)
 
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
+
+        >>> set_analysis('energy')
+        >>> notice()
+        >>> notice(0.5, 8)
+        >>> group_snr(3)
+        >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_snr(3, tabStops="nofilter")
+
         """
         if snr is None:
             id, snr = snr, id
 
         def change(data):
-            data.group_snr(snr, maxLength, tabStops, errorCol)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_snr(snr, maxLength, ts, errorCol)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8694,10 +8967,14 @@ class Session(sherpa.ui.utils.Session):
         order to avoid over-grouping bright features, rather than at
         the first channel of the data. The adaptive nature means that
         low-count regions between bright features may not end up in
-        groups with the minimum number of counts.  The binning scheme
-        is applied to all the channels, but any existing filter -
-        created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
+        groups with the minimum number of counts. The binning scheme
+        is, by default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling group_adapt.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8720,11 +8997,14 @@ class Session(sherpa.ui.utils.Session):
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         Raises
         ------
@@ -8776,12 +9056,28 @@ class Session(sherpa.ui.utils.Session):
         >>> group_counts('jet', 20)
         >>> plot_data('jet', overplot=True)
 
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
+
+        >>> set_analysis('energy')
+        >>> notice()
+        >>> notice(0.5, 8)
+        >>> group_adapt(20)
+        >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_adapt(20, tabStops="nofilter")
+
         """
         if min is None:
             id, min = min, id
 
         def change(data):
-            data.group_adapt(min, maxLength, tabStops)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_adapt(min, maxLength, ts)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -8796,10 +9092,15 @@ class Session(sherpa.ui.utils.Session):
         order to avoid over-grouping bright features, rather than at
         the first channel of the data. The adaptive nature means that
         low-count regions between bright features may not end up in
-        groups with the minimum number of counts.  The binning scheme
-        is applied to all the channels, but any existing filter -
-        created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
+        groups with the minimum number of counts. The binning scheme
+        is, by default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling
+        group_adapt_snr.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range. The tabStops argument can be set to "nofilter" to
+           use the previous behaviour.
 
         .. versionchanged:: 4.15.1
            The filter is now reported, noting any changes the new
@@ -8823,11 +9124,14 @@ class Session(sherpa.ui.utils.Session):
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           ``True`` means that the channel should be ignored from the
-           grouping (use 0 or ``False`` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set it can be the string "nofilter", which means
+           that no filter is applied (and matches the behavior prior
+           to the 4.16 release), or an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -8884,12 +9188,28 @@ class Session(sherpa.ui.utils.Session):
         >>> group_snr('jet', 4)
         >>> plot_data('jet', overplot=True)
 
+        The grouping is applied to only the data within the 0.5 to 8
+        keV range (this behaviour is new in 4.16):
+
+        >>> set_analysis('energy')
+        >>> notice()
+        >>> notice(0.5, 8)
+        >>> group_adapt_snr(4)
+        >>> plot_data()
+
+        Group the full channel range and then apply the existing
+        filter (0.5 to 8 keV) so that the noticed range may be larger
+        (this was the default behaviour before 4.16):
+
+        >>> group_adapt_snr(3, tabStops="nofilter")
+
         """
         if min is None:
             id, min = min, id
 
         def change(data):
-            data.group_adapt_snr(min, maxLength, tabStops, errorCol)
+            ts = _check_pha_tabstops(data, tabStops)
+            data.group_adapt_snr(min, maxLength, ts, errorCol)
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
@@ -10684,26 +11004,11 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        conf : Estimate the confidence intervals using the confidence method.
-        contour_fit : Contour the fit to a data set.
-        covar : Estimate the confidence intervals using the confidence method.
-        fit : Fit a model to one or more data sets.
-        freeze : Fix model parameters so they are not changed by a fit.
-        get_fit_results : Return the results of the last fit.
-        plot_fit : Plot the fit results (data, model) for a data set.
-        image_fit : Display the data, model, and residuals for a data set in the image viewer.
-        set_stat : Set the statistical method.
-        set_method : Change the optimization method.
-        set_method_opt : Change an option of the current optimization method.
-        set_bkg_full_model : Define the convolved background model expression for a PHA data set.
-        set_bkg_model : Set the background model expression for a PHA data set.
-        set_full_model : Define the convolved model expression for a data set.
-        set_iter_method : Set the iterative-fitting scheme used in the fit.
-        set_model : Set the model expression for a data set.
-        show_bkg_source : Display the background model expression for a data set.
-        show_bkg_model : Display the background model expression used to fit a data set.
-        show_fit : Summarize the fit results.
-        thaw : Allow model parameters to be varied during a fit.
+        calc_bkg_stat, conf, contour_fit, covar, fit, freeze,
+        get_fit_results, plot_fit, image_fit, set_stat, set_method,
+        set_method_opt, set_bkg_full_model, set_bkg_model,
+        set_full_model, set_iter_method, set_model, show_bkg_source,
+        show_bkg_model, show_fit, thaw
 
         Notes
         -----
@@ -11193,6 +11498,69 @@ class Session(sherpa.ui.utils.Session):
 
         plotobj.prepare(arf, data)
         return plotobj
+
+
+    def get_rmf_plot(self, id=None, resp_id=None, recalc=True):
+        """Return the data used by plot_rmf.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set with a RMF. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           Which RMF to use in the case that multiple RMFs are
+           associated with a data set. The default is ``None``,
+           which means the first one.
+        recalc : bool, optional
+           If ``False`` then the results from the last call to
+           `plot_rmf` (or `get_rmf_plot`) are returned, otherwise
+           the data is re-generated.
+
+        Returns
+        -------
+        rmf_plot : a `sherpa.astro.plot.RMFPlot` instance
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+
+        See Also
+        --------
+        plot : Create one or more plot types.
+        plot_rmf : Plot the RMF associated with a data set.
+
+        Examples
+        --------
+
+        Return the RMF plot data for the default data set:
+
+        >>> rplot = get_rmf_plot()
+
+        Return the RMF data for the second response of the
+        data set labelled 'histate', and then plot it:
+
+        >>> rplot = get_rmf_plot('histate', 2)
+        >>> rplot.plot()
+
+        """
+
+        plotobj = self._plot_types["rmf"][0]
+        if not recalc:
+            return plotobj
+
+        idval = self._fix_id(id)
+        data = self._get_pha_data(idval)
+        rmf = data.get_rmf(resp_id)
+        if rmf is None:
+            raise DataErr('norsp', idval)
+
+        plotobj.prepare(rmf, data)
+        return plotobj
+
 
     def get_bkg_fit_plot(self, id=None, bkg_id=None, recalc=True):
         """Return the data used by plot_bkg_fit.
@@ -12105,6 +12473,81 @@ class Session(sherpa.ui.utils.Session):
         plotobj = self.get_arf_plot(id, resp_id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
+
+
+    def plot_rmf(self, id=None, resp_id=None, replot=False, overplot=False,
+                 clearwindow=True, **kwargs):
+        """Plot the RMF associated with a data set.
+
+        Display the energy redistribution from the RMF
+        component of a PHA data set. This plot selects a few specific energies
+        and generates a plot with several histograms that show the energy
+        redistribution for those specific energies.
+
+        .. versionadded:: 4.16.0
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set with a RMF. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        resp_id : int or str, optional
+           Which RMF to use in the case that multiple RMFs are
+           associated with a data set. The default is ``None``,
+           which means the first one.
+        replot : bool, optional
+           Set to ``True`` to use the values calculated by the last
+           call to `plot_data`. The default is ``False``.
+        overplot : bool, optional
+           If ``True`` then add the data to an existing plot, otherwise
+           create a new plot. The default is ``False``.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+
+        Raises
+        ------
+        sherpa.utils.err.ArgumentErr
+           If the data set does not contain PHA data.
+
+        See Also
+        --------
+        get_rmf_plot : Return the data used by plot_rmf.
+
+        Examples
+        --------
+
+        Plot the RMF for the default data set:
+
+        >>> plot_rmf()
+
+        Plot the RMF from data set 1 and overplot
+        the RMF from data set 2:
+
+        >>> plot_rmf(1)
+        >>> plot_rmf(2, overplot=True)
+
+        Plot the RMFs labelled "rmf1" and "rmf2" for the
+        "src" data set:
+
+        >>> plot_rmf("src", "rmf1")
+        >>> plot_rmf("src", "rmf2", overplot=True)
+
+        The following example requires that the Matplotlib backend
+        is selected, since this determines what extra keywords
+        `plot_rmf` accepts. The RMFs from the default and data set
+        2 are drawn together, but the second curve is drawn with
+        a dashed line.
+
+        >>> plot_rmf(ylog=True)
+        >>> plot_rmf(2, overplot=True, linestyle='dashed')
+
+        """
+
+        plotobj = self.get_rmf_plot(id, resp_id, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
+
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self, id=None, lo=None, hi=None, replot=False,
@@ -15232,7 +15675,16 @@ class Session(sherpa.ui.utils.Session):
 
          2. data sets are not included in the file
 
-         3. some settings and values may not be recorded.
+         3. some settings and values may not be recorded (such as
+            header information).
+
+        .. versionchanged:: 4.16.0
+           Any set_psf calls are now included in the output file. The
+           filter is no-longer included if it does not exclude any
+           data, and the code tries to recreate manually-created
+           datasets (e.g. use of `dataspace1d` or `load_arrays`), but
+           not all situations are handled. XSPEC table models are now
+           correctly restored.
 
         Parameters
         ----------
@@ -15267,15 +15719,17 @@ class Session(sherpa.ui.utils.Session):
         used. Not all Sherpa settings are saved. Items not fully restored
         include:
 
-        - data created by calls to `load_arrays`, or changed from the
-          version on disk - e.g. by calls to `sherpa.astro.ui.set_counts`.
+        - grating data is not guaranteed to be restored correctly,
+
+        - data changed from the version on disk - e.g. by calls to
+          `set_counts` - will not be restored correctly,
 
         - any optional keywords to comands such as `load_data`
-          or `load_pha`
+          or `load_pha`,
 
-        - user models may not be restored correctly
+        - user models may not be restored correctly,
 
-        - only a subset of Sherpa commands are saved.
+        - and only a subset of Sherpa commands are saved.
 
         Examples
         --------

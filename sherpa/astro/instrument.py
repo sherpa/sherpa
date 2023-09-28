@@ -32,6 +32,10 @@ Michael F. Corcoran
 
 """
 
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Optional, Union
 import os
 
 import numpy
@@ -45,10 +49,12 @@ from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.data import Data1D
 from sherpa.astro import hc
 from sherpa.astro.data import DataARF, DataRMF, _notice_resp, DataIMG
+from sherpa.astro import io
 from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
+from sherpa.models.regrid import EvaluationSpace1D
 
-WCS = None
+WCS: Optional[type["sherpa.astro.io.wcs.WCS"]] = None
 try:
     from sherpa.astro.io.wcs import WCS
 except ImportError:
@@ -59,13 +65,13 @@ _tol = numpy.finfo(numpy.float32).eps
 string_types = (str, )
 
 
-__all__ = ('RMFModel', 'ARFModel', 'RSPModel',
-           'RMFModelPHA', 'RMFModelNoPHA',
-           'ARFModelPHA', 'ARFModelNoPHA',
-           'RSPModelPHA', 'RSPModelNoPHA',
-           'MultiResponseSumModel', 'PileupRMFModel', 'RMF1D', 'ARF1D',
-           'Response1D', 'MultipleResponse1D', 'PileupResponse1D',
-           'PSFModel')
+__all__ = ('RMFModel', 'ARFModel', 'RSPModel', 'RMFModelPHA',
+           'RMFModelNoPHA', 'ARFModelPHA', 'ARFModelNoPHA',
+           'RSPModelPHA', 'RSPModelNoPHA', 'MultiResponseSumModel',
+           'PileupRMFModel', 'RMF1D', 'ARF1D', 'Response1D',
+           'MultipleResponse1D', 'PileupResponse1D', 'PSFModel',
+           'RMFMatrix', 'create_arf', 'create_delta_rmf',
+           'create_non_delta_rmf', 'rmf_to_matrix', 'rmf_to_image' )
 
 
 def apply_areascal(mdl, pha, instlabel):
@@ -1303,8 +1309,9 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
         not enforced.
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
-        RMF. If not set they are taken from rmflo and rmfhi
-        respectively.
+        RMF. This must have the same size as rmflo and rmfhi as the
+        RMF matrix is square in this "ideal" case. If not set they are
+        taken from rmflo and rmfhi respectively.
     ethresh : number or None, optional
         Passed through to the DataRMF call. It controls whether
         zero-energy bins are replaced.
@@ -1336,13 +1343,12 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     if e_max is None:
         e_max = rmfhi
 
-    return sherpa.astro.data.DataRMF(name, detchans=nchans,
-                                     energ_lo=rmflo, energ_hi=rmfhi,
-                                     n_grp=dummy, n_chan=dummy,
-                                     f_chan=f_chan, matrix=matrix,
-                                     offset=offset,
-                                     e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh, header=header)
+    return DataRMF(name, detchans=nchans, energ_lo=rmflo,
+                   energ_hi=rmfhi, n_grp=dummy,
+                   n_chan=dummy, f_chan=f_chan,
+                   matrix=matrix, offset=offset,
+                   e_min=e_min, e_max=e_max,
+                   ethresh=ethresh, header=header)
 
 
 def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
@@ -1352,6 +1358,10 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
 
     The RMF matrix (the mapping from channel to energy bin) is
     read in from a file.
+
+    .. versionchanged:: 4.16.0
+       The number of channels is now taken from e_min (if set) so the
+       matrix is no-longer required to be square.
 
     .. versionadded:: 4.10.1
 
@@ -1375,6 +1385,9 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
         not enforced.
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
+        RMF. If not given the matrix is assumed to be square (using
+        the rmflo and rmfhi values), otherwise these arrays provide
+        the approximate mapping from channel to energy range of the
         RMF.
     ethresh : number or None, optional
         Passed through to the DataRMF call. It controls whether
@@ -1400,48 +1413,258 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
     # Set up the delta-function response.
     # TODO: should f_chan start at startchan?
     #
-    nchans = rmflo.size
+    # Is this a square matrix or not?
+    if e_min is None:
+        nchans = rmflo.size
+    else:
+        nchans = e_min.size
 
     n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
-
-    return sherpa.astro.data.DataRMF(name, detchans=nchans,
-                                     energ_lo=rmflo, energ_hi=rmfhi,
-                                     n_grp=n_grp, n_chan=n_chan,
-                                     f_chan=f_chan, matrix=matrix,
-                                     offset=offset,
-                                     e_min=e_min, e_max=e_max,
-                                     ethresh=ethresh,
-                                     header=header)
+    return DataRMF(name, detchans=nchans, energ_lo=rmflo,
+                   energ_hi=rmfhi, n_grp=n_grp,
+                   n_chan=n_chan, f_chan=f_chan,
+                   matrix=matrix, offset=offset,
+                   e_min=e_min, e_max=e_max,
+                   ethresh=ethresh, header=header)
 
 
-def calc_grp_chan_matrix(fname):
-    try:
-        data, filename = \
-            sherpa.astro.io.backend.get_image_data(fname)
-        matrix = data['y']
-        n_grp = []
-        n_chan = []
-        f_chan = []
-        for row in matrix > 0:
-            flag = numpy.hstack([[0], row, [0]])
-            diffs = numpy.diff(flag, n=1)
-            starts, = numpy.where(diffs > 0)
-            ends, = numpy.where(diffs < 0)
-            n_chan.extend(ends - starts)
-            f_chan.extend(starts + 1)
-            n_grp.append(len(starts))
-        n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
-        f_chan = numpy.asarray(f_chan, dtype=numpy.int16)
-        n_chan = numpy.asarray(n_chan, dtype=numpy.int16)
-        matrix = matrix.flatten()
-        matrix = matrix[matrix > 0]
-        return n_grp, f_chan, n_chan, matrix
-    except sherpa.utils.err.IOErr as ioerr:
-        print(ioerr)
-        raise ioerr
+def calc_grp_chan_matrix(fname: str) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+    """Read in an image and convert it to RMF components.
+
+    For an image containing a RMF, such as created by the `CIAO tool
+    rmfimg <https://cxc.harvard.edu/ciao/ahelp/rmfimg.html>`_),
+    extract the needed data to create a DataRMF object (modulo
+    knowledge of the channel or energy grids).
+
+    Parameters
+    ----------
+    fname : str
+       The file name containing the RMF as an image in a format the
+       I/O backend can read (normally this will be FITS). The X axis
+       represents channels and the Y axis the energy resolution of the
+       RMF. At present any WCS information stored about these axes is
+       ignored, as is any metadata (such as the starting point of the
+       channel axis).
+
+    Returns
+    -------
+    n_grp, f_chan, n_chan, matrix : (ndarray, ndarray, ndarray, ndarray)
+       Needed to create a DataRMF to match fname.
+
+    """
+
+    if TYPE_CHECKING:
+        # Assume we have an I/O backend
+        assert io.backend is not None
+
+    # TODO: this could use the WCS info to create the channel and
+    # energy arrays, at least for files created by rmfimg. However
+    # it's not clear we can encode this information without losing
+    # some information.
+    #
+    data, _ = io.backend.get_image_data(fname)
+    return matrix_to_rmf(data["y"])
 
 
-def has_pha_response(model):
+def matrix_to_rmf(matrix: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+    """Convert a matrix (2D image) to RMF components.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    matrix : ndarray
+       A 2D matrix of shape (ny, nx), where ny represents the energy
+       axis and nx the channels.
+
+    Returns
+    -------
+    n_grp, f_chan, n_chan, matrix : (ndarray, ndarray, ndarray, ndarray)
+       Needed to create a DataRMF to match matrix.
+
+    Notes
+    -----
+    This assumes that the channel array starts at 1 and there is no
+    knowledge of the energy bounds (either the ENERG_LO and ENERG_HI
+    values used for the matrix itself or the E_MIN and E_MAX values
+    used to approximate the channel boundaries).
+
+    """
+
+    if matrix.ndim != 2:
+        raise ValueError(f"matrix must be 2D, not {matrix.ndim}D")
+
+    n_grp1: list[int] = []
+    n_chan1: list[int] = []
+    f_chan1: list[int] = []
+    for row in matrix > 0:
+        flag = numpy.hstack([[0], row, [0]])
+        diffs = numpy.diff(flag, n=1)
+        starts, = numpy.where(diffs > 0)
+        ends, = numpy.where(diffs < 0)
+        n_chan1.extend(ends - starts)
+        f_chan1.extend(starts + 1)
+        n_grp1.append(len(starts))
+
+    n_grp = numpy.asarray(n_grp1, dtype=numpy.int16)
+    f_chan = numpy.asarray(f_chan1, dtype=numpy.int16)
+    n_chan = numpy.asarray(n_chan1, dtype=numpy.int16)
+    matrix = matrix.flatten()
+    matrix = matrix[matrix > 0]
+    return n_grp, f_chan, n_chan, matrix
+
+
+@dataclass
+class RMFMatrix:
+    """Raw RMF data"""
+
+    matrix: numpy.ndarray
+    """The matrix as a 2D array (X axis is channels, Y axis is energy)"""
+    channels: EvaluationSpace1D
+    """The channel values. This must be a non-integrated axis."""
+    energies: EvaluationSpace1D
+    """The energy values. This must be an integrated axis."""
+
+    def __post_init__(self) -> None:
+        if self.matrix.ndim != 2:
+            raise ValueError("matrix must be 2D")
+
+        if self.channels.is_integrated:
+            raise ValueError("channels axis must not be integrated")
+
+        if not self.energies.is_integrated:
+            raise ValueError("energies axis must be integrated")
+
+        nenergy, nchan = self.matrix.shape
+        if self.channels.x_axis.size != nchan:
+            raise ValueError("channels and matrix mis-match")
+
+        if self.energies.x_axis.size != nenergy:
+            raise ValueError("channels and matrix mis-match")
+
+
+def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
+    """Convert a RMF to a matrix (2D image).
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    rmf : DataRMF or RMF1D
+       The RMF instance.
+
+    Returns
+    -------
+    info : RMFMatrix
+       The matrix as a 2D array (X axis is channels and Y axis is
+       energy, and the channel and energy axes.
+
+    """
+
+    if not isinstance(rmf, (DataRMF, RMF1D)):
+        raise ValueError("not a rmf")
+
+    # Create an image of size
+    #    nx = number of channels
+    #    ny = number of energy bine
+    #
+    nchans = rmf.detchans
+    nenergy = rmf.energ_lo.size
+    matrix = numpy.zeros((nenergy, nchans), dtype=rmf.matrix.dtype)
+
+    # Loop through each energy bin and add in the data, which is split
+    # into n_grp chunks, each starting at f_chan (with 1 being the
+    # first element of this row). The RMF has removed excess data -
+    # that is, rows with 0 groups and flattening out a 2D array for
+    # the n_chan/f_chan values - which makes the reconstruction a
+    # little messy.
+    #
+    matrix_start = 0
+    chan_idx = 0
+    for energy_idx, n_grp in enumerate(rmf.n_grp):
+        # Loop through the groups for this energy
+        for _ in range(n_grp):
+            # Need to convert from 1-based (f_chan) numbering
+            # (although this actually depends on the offset value) and
+            # to convert from numpy.uint64 (since <int> + <uint64>
+            # tends to get converted to a float).
+            #
+            start = rmf.f_chan[chan_idx].astype(int) - int(rmf.offset)
+            nchan = rmf.n_chan[chan_idx].astype(int)
+            end = start + nchan
+            matrix_end = matrix_start + nchan
+            matrix[energy_idx, start:end] = rmf.matrix[matrix_start:matrix_end]
+            matrix_start = matrix_end
+            chan_idx += 1
+
+    # TODO: Is the offset handling correct here?
+    channels = numpy.arange(rmf.offset, rmf.offset + nchans,
+                            dtype=numpy.int16)
+    cgrid = EvaluationSpace1D(channels)
+    egrid = EvaluationSpace1D(rmf.energ_lo, rmf.energ_hi)
+    return RMFMatrix(matrix, cgrid, egrid)
+
+
+def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
+    """Convert a RMF to DataIMG.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    rmf : DataRMF or RMF1D
+       The RMF instance.
+
+    Returns
+    -------
+    image : DataIMG
+
+    """
+
+    mat = rmf_to_matrix(rmf)
+
+    nx = mat.channels.x_axis.size
+    ny = mat.energies.x_axis.size
+    x1, x0 = numpy.mgrid[1:ny + 1, 1:nx + 1]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = mat.matrix.flatten()
+    out = DataIMG(rmf.name, x0, x1, y, shape=(ny, nx))
+
+    # Add some header keywords from the RMF
+    #
+    def copy(key):
+        try:
+            val = rmf.header[key]
+        except KeyError:
+            return
+
+        if val is None:
+            return
+
+        out.header[key] = val
+
+    copy('MISSION')
+    copy('TELESCOP')
+    copy('INSTRUME')
+    copy('GRATING')
+    copy('FILTER')
+    copy('CHANTYPE')
+    copy('ORDER')
+    copy('OBJECT')
+    copy('TITLE')
+
+    out.header['DETCHANS'] = rmf.detchans
+    if rmf.ethresh is not None:
+        out.header['LO_THRES'] = rmf.ethresh
+
+    out.header['NUMGRP'] = len(rmf.n_chan)
+    out.header['NUMELT'] = len(rmf.matrix)
+
+    return out
+
+
+def has_pha_response(model: Model) -> bool:
     """Does the model contain a PHA response?
 
     Parameters

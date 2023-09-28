@@ -1050,6 +1050,8 @@ class Session(NoNewAttributesAfterInit):
         This will reset any plot structures, such as that returned by
         get_data_plot.
 
+        .. versionadded:: 4.16.0
+
         Parameters
         ----------
         backend : str
@@ -1124,6 +1126,11 @@ class Session(NoNewAttributesAfterInit):
 
     def restore(self, filename='sherpa.save'):
         """Load in a Sherpa session from a file.
+
+        .. warning::
+             Security risk: The imported functions and objects
+             could contain arbitrary Python code and be malicious.
+             Never use this function on untrusted input.
 
         Parameters
         ----------

@@ -6,8 +6,6 @@ The sherpa.astro.io module
 
 .. automodule:: sherpa.astro.io
 
-   .. rubric:: Attributes
-
    .. rubric:: Functions
 
    .. autosummary::

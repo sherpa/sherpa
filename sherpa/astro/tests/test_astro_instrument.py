@@ -36,8 +36,10 @@ from sherpa.astro import hc
 from sherpa.astro.data import DataPHA, DataRMF, DataIMG
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
     Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
-    RSPModelNoPHA, RSPModelPHA, create_arf, create_delta_rmf, \
-    PSFModel, has_pha_response
+    RSPModelNoPHA, RSPModelPHA, PSFModel, RMFMatrix, \
+    create_arf, create_delta_rmf, create_non_delta_rmf, \
+    rmf_to_matrix, rmf_to_image, has_pha_response
+from sherpa.astro import io
 from sherpa.data import Data1D
 from sherpa.fit import Fit
 from sherpa.models.basic import Box1D, Const1D, Gauss1D, Polynom1D, \
@@ -66,7 +68,7 @@ def validate_zero_replacement(ws, rtype, label, ethresh):
 
 
 def get_non_delta_matrix():
-    """Return a 2D matrix representing the RMF in create_non_delta_rmf."""
+    """Return a 2D matrix representing the RMF in create_non_delta_rmf_local."""
 
     # X axis is channel number (e_min/max grid)
     # Y axis is energ_lo/hi grid
@@ -124,7 +126,10 @@ def get_non_delta_matrix():
     return matrix
 
 
-def create_non_delta_rmf():
+# The _local suffix is to avoid a conflict with
+# sherpa.astro.instrument.create_non_delta_rmf
+#
+def create_non_delta_rmf_local():
     """Create a RMF which does not have a delta-function response.
 
     This is hard-coded to have a range of behavior: some energies
@@ -190,7 +195,7 @@ def create_non_delta_rmf():
 
 
 def create_non_delta_specresp():
-    """A SPECRESP column compatible with create_non_delta_rmf.
+    """A SPECRESP column compatible with create_non_delta_rmf_local.
 
     Returns
     -------
@@ -212,7 +217,7 @@ def test_datarmf_get_y():
     a "complex" RMF anyway).
     """
 
-    rmf = create_non_delta_rmf()
+    rmf = create_non_delta_rmf_local()
     matrix = get_non_delta_matrix()
     y = matrix[matrix > 0]
     assert rmf.y == pytest.approx(y)
@@ -322,7 +327,7 @@ def test_rmf1d_no_pha_delta():
 def test_rmf1d_no_pha_matrix():
     "Can we create an RMF (matrix) with no PHA?"
 
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     rmf = RMF1D(rdata)
 
     assert rmf._rmf == rdata
@@ -408,7 +413,7 @@ def test_rmf1d_simple_no_pha_call():
 def test_rmf1d_matrix_no_pha_call():
     "Can we call an RMF (delta function) with no PHA"
 
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     rmf = RMF1D(rdata)
 
     mdl = Const1D('flat')
@@ -453,7 +458,7 @@ def test_rmf1d_matrix_arf_no_pha_call():
     # NOTE: there is no check that the grids are compatible
     #       so this is probably not that useful a test
     #
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     elo = rdata.e_min
     ehi = rdata.e_max
     adata = create_arf(elo, ehi)
@@ -531,7 +536,7 @@ def test_rmfmodelnopha_delta_call():
 def test_rmfmodelnopha_matrix_call():
     "What happens calling an rmf (matrix) with no pha?"
 
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
 
     # Do not use a flat model as it is not as useful a check
     # that the RMF is doing its job.
@@ -591,7 +596,7 @@ def test_rspmodelnopha_delta_call():
 def test_rspmodelnopha_matrix_call():
     "What happens calling an RMF (matrix)+ARF with no pha?"
 
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     exposure = 200.1
     specresp = np.asarray([200.0, 100.0, 0.0, 175.0, 300.0,
                            400.0, 350.0, 200.0, 250.0, 300.0,
@@ -758,7 +763,7 @@ def test_rmfmodelpha_matrix_mismatch(analysis):
     """
 
     exposure = 200.1
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
 
     # nchans should be rdata.e_min.size for the sizes to match
     nchans = rdata.energ_lo.size
@@ -782,7 +787,7 @@ def test_rsp_normf_error(analysis):
     exposure = 200.1
 
     # rdata is only used to define the grids
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     specresp = create_non_delta_specresp()
     adata = create_arf(rdata.energ_lo,
                        rdata.energ_hi,
@@ -808,7 +813,7 @@ def test_rsp_norsp_error():
     """
 
     # rdata is only used to define the grids
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
 
     nchans = rdata.e_min.size
     channels = np.arange(1, nchans + 1, dtype=np.int16)
@@ -883,7 +888,7 @@ def test_rmfmodelpha_matrix_call(ignore):
     """
 
     exposure = 200.1
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     elo = rdata.e_min
     ehi = rdata.e_max
     nchans = elo.size
@@ -996,7 +1001,7 @@ def test_rspmodelpha_matrix_call(ignore):
     """
 
     exposure = 200.1
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     specresp = create_non_delta_specresp()
     elo = rdata.energ_lo
     ehi = rdata.energ_hi
@@ -1140,7 +1145,7 @@ def test_rspmodelpha_matrix_call_xspec():
     """
 
     exposure = 200.1
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     specresp = create_non_delta_specresp()
     adata = create_arf(rdata.energ_lo,
                        rdata.energ_hi,
@@ -1216,7 +1221,7 @@ def test_rsp_matrix_call(analysis, arfexp, phaexp):
         exposure = 1.0
         mdl_label = 'flat'
 
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     specresp = create_non_delta_specresp()
     adata = create_arf(rdata.energ_lo,
                        rdata.energ_hi,
@@ -1294,7 +1299,7 @@ def test_rsp_normf_call(arfexp, phaexp):
         mdl_label = 'flat'
 
     # rdata is only used to define the grids
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     specresp = create_non_delta_specresp()
     adata = create_arf(rdata.energ_lo,
                        rdata.energ_hi,
@@ -1355,7 +1360,7 @@ def test_rsp_no_arf_matrix_call(analysis, phaexp):
         exposure = 1.0
         mdl_label = 'flat'
 
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
 
     constant = 2.3
     mdl = Const1D('flat')
@@ -1677,7 +1682,7 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
 
     ethresh = 1.0e-5
 
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
 
     # hack the first bin to have 0 energy
     rdata.energ_lo[0] = 0.0
@@ -1725,17 +1730,222 @@ def test_rsp1d_matrix_pha_zero_energy_bin():
 @requires_data
 @requires_fits
 def test_create_rmf(make_data_path):
-    from sherpa.astro.ui.utils import Session
-    ui = Session()
-    energ = np.arange(0.05, 1.1, 0.05)
+    """It would have been nice to have the original RMF used to create
+    the image, to compare against.
+
+    Running 'dmlist test_rmfimg.fits rmfimg' returns
+
+    rmfimg infile="acisf04938_000N002_r0043_rmf3.fits" outfile="test_rmfimg.fits" arf="" arfout="" product="no" verbose="0" clobber="no"
+
+    From CSC 1.1 we get acisf04938_000N003_r0043_arf/pha/rmf3.fits.gz
+    and running rmfimg on this gives the same pixel values as
+    test_rmfmg.fits. Using this RMF to convolve a constant (c0=100)
+    gives the checks against the out array below.
+
+    """
+
+    # The energy grid is 0.3-0.31, 0.31-0.32, .., 9.29-9.3,
+    # which is 900 elements, but there are 1024 channels.
+    #
+    energ = np.arange(0.3, 9.301, 0.01)
     rmflo = energ[:-1]
     rmfhi = energ[1:]
+
+    # We do not know the original grid, but could guess as it's from a
+    # ACIS RMF. However, the exact values do not matter here.
+    #
+    ebounds = np.linspace(0.1, 12, 1025)
+    elo = ebounds[:-1]
+    ehi = ebounds[1:]
+
+    # The header has NUMGRP=1039 and NUMELT=380384 so we can check these.
+    #
     fname = make_data_path('test_rmfimg.fits')
-    datarmf = ui.create_rmf(rmflo, rmfhi, fname=fname)
-    assert len(datarmf._fch) == 1039
-    assert len(datarmf._nch) == 1039
+    datarmf = create_non_delta_rmf(rmflo, rmfhi, fname, e_min=elo, e_max=ehi)
+    assert len(datarmf.f_chan) == 1039
+    assert len(datarmf.n_chan) == 1039
     assert len(datarmf.n_grp) == 900
-    assert datarmf._rsp.shape[0] == 380384
+    assert len(datarmf.matrix) == 380384
+    # How much use is the minimum value check?
+    assert datarmf.matrix.min() == pytest.approx(1.0000736e-06)
+    assert datarmf.matrix.max() == pytest.approx(0.23166645)
+    assert datarmf.matrix.sum() == pytest.approx(900.14188997)
+
+    assert datarmf.detchans == 1024
+
+    # Apply the model to a contstant model.
+    #
+    wrapper = RMF1D(datarmf)
+    orig = Const1D("orig")
+    orig.c0 = 100
+    conv = wrapper(orig)
+    out = conv(np.arange(1, 1025, dtype=np.int16))
+
+    # Compare to acisf04938_000N003_r0043_rmf3.fits.gz
+    assert len(out) == 1024
+    assert out.min() == 0.0
+    assert out.max() == pytest.approx(1.6668367662320187)
+    assert out.argmax() == 118
+    assert out.sum() == pytest.approx(900.1419080498199)
+    assert out[5] == pytest.approx(0.30729822633750686)
+    assert out[600] == pytest.approx(1.4288386887490545)
+    assert out[700] == pytest.approx(0.0005906268168658253)
+    assert (out[765:] == 0).all()
+
+
+@pytest.mark.parametrize("kwargs,msg",
+                         [({"e_min": [1, 2], "e_max": None},
+                           "e_min/max must both be set or empty"),
+                          ({"e_min": None, "e_max": [1, 2]},
+                           "e_min/max must both be set or empty"),
+                          ({"e_min": [1, 2], "e_max": [2, 3, 4]},
+                           "e_min/max mismatch in size: 2 vs 3"),
+                          ({"e_min": [1, 2, 3], "e_max": [2, 3, 4]},
+                           "detchans mis-match with e_min/max: 2 vs 3")
+                          ])
+def test_rmf_creation_fails_approximate_energy_bounds(kwargs, msg):
+    """Check we error out when a validation step fails."""
+
+    elo = np.asarray([1, 2])
+    ehi = np.asarray([2, 3])
+    n_grp = np.asarray([1, 1])
+    f_chan = np.asarray([1, 2])
+    n_chan = np.asarray([1, 1])
+    matrix = np.asarray([1, 1])
+    with pytest.raises(DataErr, match=f"^{msg}$"):
+        DataRMF("test", 2, elo, ehi, n_grp, f_chan, n_chan, matrix, **kwargs)
+
+
+@requires_data
+@requires_fits
+def test_recreate_img_from_rmf(make_data_path):
+    """The inverse of test_create_rmf"""
+
+    fname = make_data_path('test_rmfimg.fits')
+    energ = np.arange(0.3, 9.301, 0.01)
+    rmflo = energ[:-1]
+    rmfhi = energ[1:]
+
+    # fake up an energy range
+    #
+    # nchan = 1024  TODO it should be this, see #1889
+    nchan = 900
+    ebounds = np.linspace(0.1, 12, nchan + 1)
+    elo = ebounds[:-1]
+    ehi = ebounds[1:]
+
+    rmf = create_non_delta_rmf(rmflo, rmfhi, fname,
+                               e_min=elo, e_max=ehi)
+
+    # What is the input image?
+    #
+    data, _ = io.backend.get_image_data(fname)
+    expected = data["y"]
+    assert expected.shape == (900, 1024)
+
+    # Can we reconstruct the image in test_rmfimg.fits?
+    #
+    mat = rmf_to_matrix(rmf)
+    assert isinstance(mat, RMFMatrix)
+
+    matrix = mat.matrix
+    xaxis = mat.channels
+    yaxis = mat.energies
+    assert not xaxis.is_integrated
+    assert yaxis.is_integrated
+    assert xaxis.x_axis.size == nchan
+    assert yaxis.x_axis.size == 900
+    assert xaxis.start == 1
+    assert xaxis.end == nchan
+    assert yaxis.start == pytest.approx(0.3)
+    assert yaxis.end == pytest.approx(9.3)
+
+    # Need to subset expected because of #1889
+    assert matrix.shape == (900, nchan)
+    # assert matrix == pytest.approx(expected)
+    assert matrix == pytest.approx(expected[:, 0:900])
+
+
+def check_rmf_as_image(infile, tmpfile,  nchan, nenergy, offset):
+    """Read in RMF, convert to matrix and image. Check things.
+
+    We round-trip the data: convert RMF to image, write out,
+    read back in, and then compare the two RMFs by evaluating
+    a model.
+    """
+
+    rmf = io.read_rmf(infile)
+
+    mat = rmf_to_matrix(rmf)
+    assert mat.matrix.shape == (nenergy, nchan)
+    assert mat.channels.x_axis.size == nchan
+    assert mat.energies.x_axis.size == nenergy
+    assert mat.channels.start == offset
+    assert mat.channels.end == (nchan - 1 + offset)
+
+    img = rmf_to_image(rmf)
+    assert isinstance(img, DataIMG)
+
+    # Read the imge back to check the roundtrip behaviour.
+    #
+    io.write_image(tmpfile, img, ascii=False)
+
+    elo, ehi = mat.energies.grid
+    nrmf = create_non_delta_rmf(elo, ehi, tmpfile,
+                                e_min=rmf.e_min, e_max=rmf.e_max)
+
+    # Convolve a simple model with the two RMFs and check the result
+    # is the same.
+    #
+    r1 = RMF1D(rmf)
+    r2 = RMF1D(nrmf)
+    mdl = PowLaw1D()
+    mdl.gamma = 1.7
+    mdl.ampl = 1000
+
+    c1 = r1(mdl)
+    c2 = r2(mdl)
+    chans = mat.channels.grid
+    assert c2(chans) == pytest.approx(c1(chans))
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("rmfname,nchan,nenergy,offset",
+                         [("swxpc0to12s6_20130101v014.rmf.gz",
+                           1024, 2400, 0),  # SWIFT
+                          ("sis0.rmf", 1024, 1180, 1),  # ASCA
+                          ("chandra_hrci/hrcf24564_000N030_r0001_rmf3.fits.gz",
+                           1024, 16921, 1),  # CHANDRA/HRC-I
+                          ("xmmrgs/P0112880201R1S004RSPMAT1003.FTZ",
+                           3600, 4000, 1)  # XMM/RGS
+                          ])
+
+def test_rmf_to_matrix_mission(rmfname, nchan, nenergy, offset,
+                               make_data_path, tmp_path, recwarn):
+    """Check other missions for RMF
+
+    Note that the SWIFT RMF is essentially stored as an image,
+    i.e. each row is stored completely. It also starts at column 0
+    and triggers a user warning when read in.
+
+    The ASCA RMF has N_GRP=0 or 1.
+
+    The Chandra HRC-I RMF is used because it has caused problems for
+    the pyfits backend in the past.
+
+    XMM/RGS has EBOUNDS in decreasing order.
+    """
+
+    infile = make_data_path(rmfname)
+    outpath = tmp_path / "fake.img"
+    outfile = str(outpath)
+    check_rmf_as_image(infile, outfile, nchan, nenergy, offset)
+
+    # We do not care about any warnings here, so clear the state so
+    # that the capture_all_warnings fixture is not triggered.
+    #
+    recwarn.clear()
 
 
 # Several tests from sherpa/tests/test_instrument.py repeated to check out
@@ -1880,7 +2090,7 @@ def test_has_pha_response():
     """Check the examples from the docstring"""
 
     exposure = 200.1
-    rdata = create_non_delta_rmf()
+    rdata = create_non_delta_rmf_local()
     specresp = create_non_delta_specresp()
     adata = create_arf(rdata.energ_lo,
                        rdata.energ_hi,

@@ -68,7 +68,6 @@ _arf = np.asarray([0.8, 0.8, 0.9, 1.0, 1.1, 1.1, 0.7, 0.6, 0.6, 0.6])
 # constant bin width like 0.1 keV the factor of 10 is too easy
 # to confuse for other terms.
 #
-_energies = np.linspace(0.5, 1.5, 11)
 _energies = np.asarray([0.5, 0.65, 0.75, 0.8, 0.9, 1., 1.1, 1.12, 1.3, 1.4, 1.5])
 _energies_lo = _energies[:-1]
 _energies_hi = _energies[1:]
@@ -294,6 +293,7 @@ get_bkg_source_plot
 get_model_component_plot
 get_model_plot               X
 get_order_plot
+get rmf_plot                 X
 get_source_component_plot
 get_source_plot              X
 
@@ -359,6 +359,71 @@ def test_get_arf_plot_recalc(idval, clean_astro_ui):
     assert ap.xlo is None
     assert ap.y is None
     assert ap.title is None
+
+
+@pytest.mark.parametrize("idval", [None, 'x'])
+def test_get_rmf_plot_no_rmf(idval, clean_astro_ui):
+    """Errors out if we are unthoughtful enough to have no RMF
+    """
+
+    setup_example(idval)
+    ui.get_data(idval).set_rmf(None)
+
+    with pytest.raises(DataErr) as exc:
+        if idval is None:
+            idval = 1
+            ap = ui.get_rmf_plot()
+        else:
+            ap = ui.get_rmf_plot(idval)
+
+    emsg = f"No instrument response found for dataset {idval}"
+    assert str(exc.value) == emsg
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_rmf_plot(idval, clean_astro_ui):
+    """Basic testing of get_arf_plot
+    """
+
+    setup_example(idval)
+    if idval is None:
+        rp = ui.get_rmf_plot()
+    else:
+        rp = ui.get_rmf_plot(idval)
+
+    assert isinstance(rp, sherpa.astro.plot.RMFPlot)
+
+    assert rp.xlo == pytest.approx(_energies_lo)
+    assert rp.xhi == pytest.approx(_energies_hi)
+
+    # With nlines=5 in the RMF plot we get 5 lines
+    plotted_rmf = np.array(
+        [[1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0., 0., 1., 0., 0.]])
+    assert rp.y == pytest.approx(plotted_rmf)
+
+    assert rp.title == 'delta-rmf'
+    assert rp.xlabel == 'Energy (keV)'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_rmf_plot_recalc(idval, clean_astro_ui):
+    """Check recalc=False handling
+    """
+
+    setup_example(idval)
+    if idval is None:
+        rp = ui.get_rmf_plot(recalc=False)
+    else:
+        rp = ui.get_rmf_plot(idval, recalc=False)
+
+    assert isinstance(rp, sherpa.astro.plot.RMFPlot)
+    assert rp.xlo is None
+    assert rp.y is None
+    assert rp.title is None
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])

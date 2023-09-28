@@ -24,6 +24,7 @@ import pytest
 
 from sherpa.astro.data import DataIMG, Data2D
 from sherpa.astro import io
+from sherpa.astro.io.wcs import WCS
 from sherpa.utils.testing import requires_data, requires_fits
 
 
@@ -185,3 +186,73 @@ def test_can_read_image_as_data2d(make_data_path):
     assert d2d.x0 == pytest.approx(dimg.x0)
     assert d2d.x1 == pytest.approx(dimg.x1)
     assert d2d.y == pytest.approx(dimg.y)
+
+
+@requires_fits
+def test_axs_ordering(tmp_path):
+    """Check out the #1789 #1880 behavior.
+
+    See sherpa/astro/tests/test_astro_data2.py::test_dataimg_axis_ordering
+    """
+
+    # nx=3, ny=2
+    #
+    x1, x0 = np.mgrid[1:3, 1:4]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.arange(6) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
+    orig = DataIMG("faked", x0, x1, y, shape=(2, 3), sky=sky,
+                   eqpos=eqpos)
+
+    outfile = tmp_path / "test.img"
+    outfile = str(outfile)
+    io.write_image(outfile, orig, ascii=False, clobber=False)
+
+    new = io.read_image(outfile)
+    new.set_coord("physical")
+    new.notice2d("circle(110, 210, 6)", True)
+
+    assert new.get_dep(filter=True) == pytest.approx([10, 20, 30, 40, 60])
+    a0, a1 = new.get_indep()
+    assert a0 == pytest.approx([100, 110, 120] * 2)
+    assert a1 == pytest.approx([200, 200, 200, 210, 210, 210])
+
+
+@requires_fits
+def test_axs_ordering_1880(tmp_path):
+    """Check out the #1880 behavior.
+
+    See sherpa/astro/tests/test_astro_data2.py::test_dataimg_axis_ordering_1880
+    """
+
+    # nx=2, ny=3
+    #
+    x1, x0 = np.mgrid[1:4, 1:3]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.arange(6) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
+    orig = DataIMG("faked", x0, x1, y, shape=(2, 3), sky=sky,
+                   eqpos=eqpos)
+
+    outfile = tmp_path / "test.img"
+    outfile = str(outfile)
+    io.write_image(outfile, orig, ascii=False, clobber=False)
+
+    new = io.read_image(outfile)
+    new.set_coord("physical")
+    new.notice2d("circle(110, 210, 6)", True)
+
+    # Unlike test_dataimg_axis_ordering, this filter does remove the
+    # bin=50 pixel, but the independent axes do not match x0, x1
+    # above.
+    #
+    assert new.get_dep(filter=True) == pytest.approx([10, 20, 30, 40, 60])
+    a0, a1 = new.get_indep()
+    assert a0 == pytest.approx([100, 110, 120] * 2)
+    assert a1 == pytest.approx([200, 200, 200, 210, 210, 210])

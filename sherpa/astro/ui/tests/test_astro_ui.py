@@ -378,6 +378,34 @@ def test_more_ui_string_model_with_rmf(make_data_path):
 @requires_fits
 @requires_data
 @requires_group
+def test_more_ui_bug38_pre_416(make_data_path, caplog):
+    with SherpaVerbosity("ERROR"):
+        ui.load_pha('3c273', make_data_path('3c273.pi'))
+
+    assert len(caplog.records) == 0
+
+    ui.notice_id('3c273', 0.3, 2)
+    assert len(caplog.records) == 1
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 "dataset 3c273: 0.00146:14.9504 -> 0.2482:2.0294 Energy (keV)")
+
+    ui.group_counts('3c273', 30, tabStops=[0] * 1024)
+
+    assert len(caplog.records) == 2
+    exact_record(caplog.records[1], "sherpa.ui.utils", "INFO",
+                 "dataset 3c273: 0.2482:2.0294 -> 0.00146:2.0294 Energy (keV)")
+
+    ui.group_counts('3c273', 15, tabStops=numpy.zeros(1024))
+
+    assert len(caplog.records) == 3
+    exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
+                 "dataset 3c273: 0.00146:2.0294 Energy (keV) (unchanged)")
+
+
+# bug #38
+@requires_fits
+@requires_data
+@requires_group
 def test_more_ui_bug38(make_data_path, caplog):
     with SherpaVerbosity("ERROR"):
         ui.load_pha('3c273', make_data_path('3c273.pi'))
@@ -393,13 +421,13 @@ def test_more_ui_bug38(make_data_path, caplog):
 
     assert len(caplog.records) == 2
     exact_record(caplog.records[1], "sherpa.ui.utils", "INFO",
-                 "dataset 3c273: 0.2482:2.0294 -> 0.00146:2.0294 Energy (keV)")
+                 "dataset 3c273: 0.2482:2.0294 Energy (keV) (unchanged)")
 
     ui.group_counts('3c273', 15)
 
     assert len(caplog.records) == 3
     exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
-                 "dataset 3c273: 0.00146:2.0294 Energy (keV) (unchanged)")
+                 "dataset 3c273: 0.2482:2.0294 Energy (keV) (unchanged)")
 
 
 @requires_fits
@@ -415,6 +443,53 @@ def test_bug38_filtering(make_data_path):
     assert pha.mask.size == 46
     assert pha.mask.sum() == 25
     assert pha.mask[1:26].all()
+
+
+@requires_fits
+@requires_data
+@requires_group
+def test_bug38_filtering_grouping_pre_416(make_data_path, caplog):
+    """Low-level tests related to bugs #38, #917: filter+group"""
+
+    from sherpa.astro.io import read_pha
+    pha = read_pha(make_data_path('3c273.pi'))
+
+    # Just check that the logging that may happen at the UI level does
+    # not happen here.
+    #
+    assert len(caplog.records) == 7
+    pha.notice(1, 6)
+    pha.ignore(3, 4)
+    assert len(caplog.records) == 7
+
+    expected = '0.9928:2.8616,4.0296:6.5700'
+    assert pha.get_filter(group=True, format='%.4f') == expected
+    assert pha.get_filter(group=False, format='%.4f') == expected
+
+    pha.group_width(40, tabStops=[0] * 1024)
+    assert len(caplog.records) == 7
+
+    expected = '0.5840:2.9200,3.5040:7.0080'
+    assert pha.get_filter(group=True, format='%.4f') == expected
+    assert pha.get_filter(group=False, format='%.4f') == expected
+
+    assert pha.mask.size == 26
+    assert pha.mask.sum() == 10
+    assert pha.mask[1:5].all()
+    assert pha.mask[6:12].all()
+
+    # get the ungrouped mask
+    mask = pha.get_mask()
+    assert mask.sum() == 10 * 40
+    assert mask[40:200].all()
+    assert mask[240:480].all()
+
+    # check filtered bins
+    elo_all, ehi_all = pha._get_ebins(group=False)
+    elo, ehi = pha._get_ebins(group=True)
+
+    assert elo[1] == elo_all[40]
+    assert ehi[11] == ehi_all[479]
 
 
 @requires_fits
@@ -441,31 +516,31 @@ def test_bug38_filtering_grouping(make_data_path, caplog):
     pha.group_width(40)
     assert len(caplog.records) == 7
 
-    expected = '0.5840:2.9200,3.5040:7.0080'
     assert pha.get_filter(group=True, format='%.4f') == expected
     assert pha.get_filter(group=False, format='%.4f') == expected
 
-    assert pha.mask.size == 26
-    assert pha.mask.sum() == 10
-    assert pha.mask[1:5].all()
-    assert pha.mask[6:12].all()
+    assert pha.mask.size == 731
+    assert pha.mask.sum() == 9
+    assert pha.mask[68:72].all()
+    assert pha.mask[152:157].all()
 
     # get the ungrouped mask
     mask = pha.get_mask()
-    assert mask.sum() == 10 * 40
-    assert mask[40:200].all()
-    assert mask[240:480].all()
+    assert mask.sum() == 302
+    assert mask[68:196].all()
+    assert mask[276:450].all()
 
     # check filtered bins
     elo_all, ehi_all = pha._get_ebins(group=False)
     elo, ehi = pha._get_ebins(group=True)
 
-    assert elo[1] == elo_all[40]
-    assert ehi[11] == ehi_all[479]
+    assert elo[68] == elo_all[68]
+    assert elo[72] == elo_all[196]
+    assert ehi[157] == ehi_all[450]
 
 
 @requires_group
-def test_group_reporting_case(clean_astro_ui, caplog):
+def test_group_reporting_case_pre_416(clean_astro_ui, caplog):
     """logging group output can provide surprising output.
 
     Filter and grouping can provide surprising results, so check the
@@ -488,7 +563,9 @@ def test_group_reporting_case(clean_astro_ui, caplog):
     exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
                  "dataset 1: 5:7,9:11 -> 5:7,9:11,13:15 Channel")
 
-    ui.group_width(3)
+    # Prior to 4.16.0 the group_xxx calls ignored the existing filter.
+    #
+    ui.group_width(3, tabStops=numpy.zeros(21))
 
     assert len(caplog.records) == 4
     exact_record(caplog.records[3], "sherpa.ui.utils", "INFO",
@@ -498,9 +575,43 @@ def test_group_reporting_case(clean_astro_ui, caplog):
 
 
 @requires_group
+def test_group_reporting_case(clean_astro_ui, caplog):
+    """logging group output can provide surprising output.
+
+    Filter and grouping can provide surprising results, so check the
+    current behaviour.
+    """
+
+    x = numpy.arange(1, 22)
+    ui.load_arrays(1, x, x, ui.DataPHA)
+    ui.notice(5, 7)
+    ui.notice(9, 11)
+    ui.notice(13, 15)
+
+    full_filter = "5:7,9:11,13:15"
+    assert ui.get_filter() == full_filter
+
+    assert len(caplog.records) == 3
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 "dataset 1: 1:21 -> 5:7 Channel")
+    exact_record(caplog.records[1], "sherpa.ui.utils", "INFO",
+                 "dataset 1: 5:7 -> 5:7,9:11 Channel")
+    exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
+                 f"dataset 1: 5:7,9:11 -> {full_filter} Channel")
+
+    ui.group_width(3)
+
+    assert len(caplog.records) == 4
+    exact_record(caplog.records[3], "sherpa.ui.utils", "INFO",
+                 f"dataset 1: {full_filter} Channel (unchanged)")
+
+    assert ui.get_filter() == full_filter
+
+
+@requires_group
 @pytest.mark.parametrize("idval", [None, 2])
-def test_group_bins(idval, clean_astro_ui, caplog):
-    """Just check out group_bins"""
+def test_group_bins_pre_416(idval, clean_astro_ui, caplog):
+    """Just check out group_bins (pre 4.16 release)"""
 
     idarg = 1 if idval is None else idval
 
@@ -523,9 +634,9 @@ def test_group_bins(idval, clean_astro_ui, caplog):
                  f"dataset {idarg}: 5:7,9:11 -> 5:7,9:11,13:15 Channel")
 
     if idval is None:
-        ui.group_bins(3)
+        ui.group_bins(3, tabStops=[0] * 21)
     else:
-        ui.group_bins(idval, 3)
+        ui.group_bins(idval, 3, tabStops=[0] * 21)
 
     assert len(caplog.records) == 4
     msg = f"dataset {idarg}: 5:7,9:11,13:15 -> 1:21 Channel"
@@ -544,6 +655,54 @@ def test_group_bins(idval, clean_astro_ui, caplog):
     assert ui.get_filter(idval) == "1:21"
     assert ui.get_dep(idval) == pytest.approx([4, 11, 18])
     assert ui.get_dep(idval, filter=True) == pytest.approx([4, 11, 18])
+
+
+@requires_group
+@pytest.mark.parametrize("idval", [None, 2])
+def test_group_bins(idval, clean_astro_ui, caplog):
+    """Just check out group_bins"""
+
+    idarg = 1 if idval is None else idval
+
+    x = numpy.arange(1, 22)
+    ui.load_arrays(idarg, x, x, ui.DataPHA)
+    ui.notice(5, 7)
+    ui.notice(9, 11)
+    ui.notice(13, 15)
+
+    full_filter = "5:7,9:11,13:15"
+    assert ui.get_filter(idval) == full_filter
+    assert ui.get_dep(idval) == pytest.approx(x)
+    assert ui.get_dep(idval, filter=True) == pytest.approx([5, 6, 7, 9, 10, 11, 13, 14, 15])
+
+    assert len(caplog.records) == 3
+    exact_record(caplog.records[0], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 1:21 -> 5:7 Channel")
+    exact_record(caplog.records[1], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 5:7 -> 5:7,9:11 Channel")
+    exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
+                 f"dataset {idarg}: 5:7,9:11 -> {full_filter} Channel")
+
+    if idval is None:
+        ui.group_bins(3)
+    else:
+        ui.group_bins(idval, 3)
+
+    assert len(caplog.records) == 4
+    msg = f"dataset {idarg}: 5:7,9:11,13:15 Channel (unchanged)"
+    exact_record(caplog.records[3], "sherpa.ui.utils", "INFO", msg)
+
+    grp = [1, -1, -1]
+    expected = [0] * 4 + grp + [0] + grp + [0] + grp + [0] * 6
+    assert ui.get_grouping(idval) == pytest.approx(expected)
+    assert ui.get_quality(idval) == pytest.approx([0] * 21)
+
+    # We record the mid-point of each grouped bin, and the individual
+    # channels of the points out of the filter.
+    #
+    assert ui.get_filter(idval) == full_filter
+    assert ui.get_dep(idval) == pytest.approx([1, 2, 3, 4, 6, 8, 10, 12, 14, 16, 17, 18, 19, 20, 21])
+    assert ui.get_dep(idval, filter=True) == pytest.approx([6, 10, 14])
 
 
 @requires_group

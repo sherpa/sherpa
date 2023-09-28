@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -332,8 +333,82 @@ break  Hz   2.42E17 1.E10   1.E15     1.E19    1.E25    1E10
     assert model.pars[3].hardmax == pytest.approx(1e25)
 
 
+def check_compiled(got, suffix):
+    """Check the compiled output.
 
-def test_create_model_additive():
+    The output depends on the XSPEC version because it will cause
+
+        #define XSPEC_major_minor_micro
+
+    lines to be included. To support this the code splits on these
+    markers and checks the text before and after this, and checks the
+    define lines make sense.
+
+    This test must be run with the requires_xspec fixture. This
+    means that there must be one XSPEC define line present.
+
+    Note that the text before the defines does not depend on
+    the models being evaluated.
+
+    """
+
+    # This should be expressible with the re module, but it would
+    # be a bit hard to read.
+    #
+    idx = got.find("\n#define XSPEC_")
+    if idx == -1:
+        assert False, f"No #define XSPEC fragment found."
+
+    prefix = '''// Includes
+
+#include <iostream>
+
+#include <xsTypes.h>
+#include <XSFunctions/Utilities/funcType.h>
+'''
+
+    assert got[:idx] == prefix
+
+    # Check the XSPEC version lines
+    #   - have form major_minor_micro
+    #   - are in order
+    #   - there's at least one of them.
+    #
+    toks = got[idx + 1:].split("\n")
+    prev = (0, 0, 0)
+    while True:
+        tok = toks.pop(0)
+        if not tok.startswith("#define XSPEC_"):
+            break
+
+        ntok = tok[14:].split("_")
+        assert len(ntok) == 3
+
+        # check we can convert to integers
+        version = tuple([int(n) for n in ntok])
+        assert version > prev
+        prev = version
+
+    # There should be a few fixed lines until we get to the Defines
+    # header (which could have been included here but the tests
+    # read better with the text there rather than here).
+    #
+    assert tok == ""
+
+    tok = toks.pop(0)
+    assert tok == '#include "sherpa/astro/xspec_extension.hh"'
+
+    tok = toks.pop(0)
+    assert tok == ""
+
+    # Reconstruct the text to make it easy to compare to the user input.
+    #
+    got = "\n".join(toks)
+    assert got == suffix
+
+
+@requires_xspec
+def test_create_model_additive(caplog):
     """Fake up an additive model"""
 
     model = StringIO("""apec           1  0.         1.e20           C_apec    add  0
@@ -344,23 +419,70 @@ kT      keV     1.    0.008   0.008   64.0      64.0      .01
 
     converted = xspec.create_xspec_code(parsed)
 
-    # Very basic checks of the output
-    #
-    python = converted.python.split('\n')
-    compiled = converted.compiled.split('\n')
+    expected = '''
+class XSapec(XSAdditiveModel):
+    """XSPEC AdditiveModel: apec
 
-    assert 'class XSapec(XSAdditiveModel):' in python
-    assert '    _calc = _models.C_apec' in python
-    assert "    def __init__(self, name='apec'):" in python
-    assert "        self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')" in python
-    assert "        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)" in python
-    assert '        XSAdditiveModel.__init__(self, name, (self.kT,self.norm))' in python
+    Parameters
+    ----------
+    kT
+    norm
 
-    assert converted.compiled.find('\nextern "C" {\n\n}\n') > -1
-    assert '  XSPECMODELFCT_C_NORM(C_apec, 2),' in compiled
+    """
+    _calc = _models.C_apec
+
+    def __init__(self, name='apec'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.kT,self.norm))
+
+'''
+    assert converted.python == expected
+
+    check_compiled(converted.compiled,
+                   '''// Defines
+
+void cppModelWrapper(const double* energy, int nFlux, const double* params,
+  int spectrumNumber, double* flux, double* fluxError, const char* initStr,
+  int nPar, void (*cppFunc)(const RealArray&, const RealArray&,
+  int, RealArray&, RealArray&, const string&));
+
+extern "C" {
+  XSCCall apec;
+  void C_apec(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {
+    const size_t nPar = 2;
+    cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, apec);
+  }
+}
+
+// Wrapper
+
+static PyMethodDef Wrappers[] = {
+  XSPECMODELFCT_C_NORM(C_apec, 2),
+  { NULL, NULL, 0, NULL }
+};
+
+// Module
+
+static struct PyModuleDef wrapper_module = {
+  PyModuleDef_HEAD_INIT,
+  "_models",
+  NULL,
+  -1,
+  Wrappers,
+};
+
+PyMODINIT_FUNC PyInit__models(void) {
+  import_array();
+  return PyModule_Create(&wrapper_module);
+}
+''')
+
+    assert len(caplog.records) == 0
 
 
-def test_create_model_multiplicative():
+@requires_xspec
+def test_create_model_multiplicative(caplog):
     """Fake up a multplicative model"""
 
     model = StringIO("""abcd           1  0.         1.e20           foos    mul  0
@@ -371,25 +493,65 @@ nH      cm^-3   1.0   1.e-6  1.e-5  1.e19  1.e20   -0.01
 
     converted = xspec.create_xspec_code(parsed)
 
-    # Very basic checks of the output
-    #
-    python = converted.python.split('\n')
-    compiled = converted.compiled.split('\n')
+    expected = '''
+class XSabcd(XSMultiplicativeModel):
+    """XSPEC MultiplicativeModel: abcd
 
-    assert 'class XSabcd(XSMultiplicativeModel):' in python
-    assert '    _calc = _models.foos' in python
-    assert "    def __init__(self, name='abcd'):" in python
-    assert "        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')" in python
-    assert '        XSMultiplicativeModel.__init__(self, name, (self.nH,))' in python
+    Parameters
+    ----------
+    nH
 
-    assert '  void foos_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);' in compiled
-    assert '  XSPECMODELFCT(foos, 1),' in compiled
+    """
+    _calc = _models.foos
+
+    def __init__(self, name='abcd'):
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        XSMultiplicativeModel.__init__(self, name, (self.nH,))
+
+'''
+    assert converted.python == expected
+
+    check_compiled(converted.compiled,
+                   '''// Defines
+
+extern "C" {
+  xsf77Call foos_;
+}
+
+// Wrapper
+
+static PyMethodDef Wrappers[] = {
+  XSPECMODELFCT(foos, 1),
+  { NULL, NULL, 0, NULL }
+};
+
+// Module
+
+static struct PyModuleDef wrapper_module = {
+  PyModuleDef_HEAD_INIT,
+  "_models",
+  NULL,
+  -1,
+  Wrappers,
+};
+
+PyMODINIT_FUNC PyInit__models(void) {
+  import_array();
+  return PyModule_Create(&wrapper_module);
+}
+''')
+
+    assert len(caplog.records) == 0
 
 
-def test_create_model_convolution():
-    """Fake up a convolution model"""
+@requires_xspec
+def test_create_model_convolution(caplog):
+    """Fake up a convolution model
 
-    model = StringIO("""rgsxsrc        1  0.         1.e20           rgsxsrc   con  0
+    Also checks case handling
+    """
+
+    model = StringIO("""rgsxsrc        1  0.         1.e20           rgsxSRC   con  0
 order    " "  -1.   -3.    -3.      -1.       -1.       -1
 
 """)
@@ -397,19 +559,206 @@ order    " "  -1.   -3.    -3.      -1.       -1.       -1
 
     converted = xspec.create_xspec_code(parsed)
 
-    # Very basic checks of the output
+    expected = '''
+class XSrgsxsrc(XSConvolutionKernel):
+    """XSPEC ConvolutionKernel: rgsxsrc
+
+    Parameters
+    ----------
+    order
+
+    """
+    _calc = _models.rgsxsrc
+
+    def __init__(self, name='rgsxsrc'):
+        self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
+        XSConvolutionKernel.__init__(self, name, (self.order,))
+
+'''
+    assert converted.python == expected
+
+    check_compiled(converted.compiled,
+                   '''// Defines
+
+extern "C" {
+  xsf77Call rgsxsrc_;
+}
+
+// Wrapper
+
+static PyMethodDef Wrappers[] = {
+  XSPECMODELFCT_CON_F77(rgsxsrc, 1),
+  { NULL, NULL, 0, NULL }
+};
+
+// Module
+
+static struct PyModuleDef wrapper_module = {
+  PyModuleDef_HEAD_INIT,
+  "_models",
+  NULL,
+  -1,
+  Wrappers,
+};
+
+PyMODINIT_FUNC PyInit__models(void) {
+  import_array();
+  return PyModule_Create(&wrapper_module);
+}
+''')
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_create_model_spectrum_specific(caplog):
+    """Fake up an additive model that is marked as spectrum specific"""
+
+    model = StringIO("""abcd           1  0.         1.e20           c_foos    add  0 1
+xs   ""    10    1 2  20 30  0.01
+
+""")
+    parsed = xspec.parse_xspec_model_description(model)
+
+    converted = xspec.create_xspec_code(parsed)
+
+    expected = '''import warnings
+
+class XSabcd(XSAdditiveModel):
+    """XSPEC AdditiveModel: abcd
+
+    Parameters
+    ----------
+    xs
+    norm
+
+    """
+    _calc = _models.foos
+
+    def __init__(self, name='abcd'):
+        self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.xs,self.norm))
+        self._use_caching = False
+        warnings.warn('support for models like xsabcd (recalculated per spectrum) is untested.')
+
+'''
+
+    assert converted.python == expected
+
+    check_compiled(converted.compiled,
+                   '''// Defines
+
+extern "C" {
+  xsccCall foos;
+}
+
+// Wrapper
+
+static PyMethodDef Wrappers[] = {
+  XSPECMODELFCT_C_NORM(foos, 2),
+  { NULL, NULL, 0, NULL }
+};
+
+// Module
+
+static struct PyModuleDef wrapper_module = {
+  PyModuleDef_HEAD_INIT,
+  "_models",
+  NULL,
+  -1,
+  Wrappers,
+};
+
+PyMODINIT_FUNC PyInit__models(void) {
+  import_array();
+  return PyModule_Create(&wrapper_module);
+}
+''')
+
+    # Do we get a warning to screen?
     #
-    python = converted.python.split('\n')
-    compiled = converted.compiled.split('\n')
+    assert len(caplog.records) == 1
+    assert caplog.records[0].msg == "abcd needs to be re-calculated per spectrum; this is untested."
 
-    assert 'class XSrgsxsrc(XSConvolutionKernel):' in python
-    assert '    _calc = _models.rgsxsrc' in python
-    assert "    def __init__(self, name='rgsxsrc'):" in python
-    assert "        self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)" in python
-    assert '        XSConvolutionKernel.__init__(self, name, (self.order,))' in python
 
-    assert '  void rgsxsrc_(float* ear, int* ne, float* param, int* ifl, float* photar, float* photer);' in compiled
-    assert '  XSPECMODELFCT_CON_F77(rgsxsrc, 1),' in compiled
+@requires_xspec
+def test_create_model_error_specific(caplog):
+    """Fake up an additive model that is marked as needing the errors"""
+
+    model = StringIO("""abcd           1  0.         1.e20           C_foos    add  1 0
+xs   ""    10    1 2  20 30  0.01
+
+""")
+    parsed = xspec.parse_xspec_model_description(model)
+
+    converted = xspec.create_xspec_code(parsed)
+
+    expected = '''import warnings
+
+class XSabcd(XSAdditiveModel):
+    """XSPEC AdditiveModel: abcd
+
+    Parameters
+    ----------
+    xs
+    norm
+
+    """
+    _calc = _models.C_foos
+
+    def __init__(self, name='abcd'):
+        self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
+        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
+        XSAdditiveModel.__init__(self, name, (self.xs,self.norm))
+        warnings.warn('support for models like xsabcd (variances are calculated by the model) is untested.')
+
+'''
+    assert converted.python == expected
+
+    check_compiled(converted.compiled,
+                   '''// Defines
+
+void cppModelWrapper(const double* energy, int nFlux, const double* params,
+  int spectrumNumber, double* flux, double* fluxError, const char* initStr,
+  int nPar, void (*cppFunc)(const RealArray&, const RealArray&,
+  int, RealArray&, RealArray&, const string&));
+
+extern "C" {
+  XSCCall foos;
+  void C_foos(const double* energy, int nFlux, const double* params, int spectrumNumber, double* flux, double* fluxError, const char* initStr) {
+    const size_t nPar = 2;
+    cppModelWrapper(energy, nFlux, params, spectrumNumber, flux, fluxError, initStr, nPar, foos);
+  }
+}
+
+// Wrapper
+
+static PyMethodDef Wrappers[] = {
+  XSPECMODELFCT_C_NORM(C_foos, 2),
+  { NULL, NULL, 0, NULL }
+};
+
+// Module
+
+static struct PyModuleDef wrapper_module = {
+  PyModuleDef_HEAD_INIT,
+  "_models",
+  NULL,
+  -1,
+  Wrappers,
+};
+
+PyMODINIT_FUNC PyInit__models(void) {
+  import_array();
+  return PyModule_Create(&wrapper_module);
+}
+''')
+
+    # Do we get a warning to screen?
+    #
+    assert len(caplog.records) == 1
+    assert caplog.records[0].msg == "abcd calculates model variances; this is untested/unsupported in Sherpa"
 
 
 @requires_xspec

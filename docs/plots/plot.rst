@@ -14,6 +14,7 @@ The sherpa.plot module
       Plot
       Contour
       Point
+      Image
       Histogram
       HistogramPlot
       DataHistogramPlot

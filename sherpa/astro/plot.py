@@ -27,6 +27,7 @@ import logging
 import numpy as np
 from numpy import iterable, array2string, asarray
 
+from sherpa.models.basic import Delta1D
 from sherpa.astro.data import DataPHA
 from sherpa import plot as shplot
 from sherpa.astro.utils import bounds_check
@@ -39,12 +40,14 @@ warning = logging.getLogger(__name__).warning
 
 __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
            'SourcePlot', 'ComponentModelPlot', 'ComponentSourcePlot',
-           'ARFPlot',
+           'ARFPlot', 'RMFPlot',
            'BkgDataPlot', 'BkgModelPHAHistogram', 'BkgModelHistogram',
            'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
            'BkgChisqrPlot', 'BkgSourcePlot',
            'OrderPlot',
-           'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram')
+           'FluxHistogram', 'EnergyFluxHistogram', 'PhotonFluxHistogram',
+           'DataIMGPlot',
+           )
 
 
 # Identify "close-enough" bin edges when plotting histograms
@@ -112,25 +115,6 @@ def _check_hist_bins(xlo, xhi):
     xlo[idx + 1] = xhi[idx]
 
     return xlo, xhi
-
-
-def to_latex(txt):
-    """Add any backend-specific markup to indicate LaTeX.
-
-    Parameters
-    ----------
-    txt : str
-       The LaTeX input (the contents are going to be interpreted
-       as LaTeX so do not send in text that is not to be converted).
-
-    Returns
-    -------
-    out : str
-       The LaTeX text including the markup to indicate to the
-       plotting backend to display as LaTeX.
-    """
-
-    return shplot.backend.get_latex_for_string(txt)
 
 
 class DataPHAPlot(shplot.DataHistogramPlot):
@@ -321,8 +305,8 @@ class SourcePlot(shplot.HistogramPlot):
         if self.units == "wavelength":
             # No other labels use the LaTeX forms for lambda and
             # Angstrom, so use the text version here too.
-            # prefix_quant = to_latex('\\lambda')
-            # quant = to_latex('\\AA')
+            # prefix_quant = shplot.backend.get_latex_for_string('\\lambda')
+            # quant = shplot.backend.get_latex_for_string('\\AA')
             prefix_quant = 'lambda'
             quant = 'Angstrom'
             (self.xlo, self.xhi) = (self.xhi, self.xlo)
@@ -355,18 +339,18 @@ class SourcePlot(shplot.HistogramPlot):
             post = ''
 
         elif data.plot_fac > 1:
-            pterm = to_latex(f'^{data.plot_fac}')
+            pterm = shplot.backend.get_latex_for_string(f'^{data.plot_fac}')
             pre = f'{prefix_quant}{pterm} f({prefix_quant})'
             post = f' {quant}'
             if data.plot_fac > 2:
-                pterm = to_latex(f'^{data.plot_fac - 1}')
+                pterm = shplot.backend.get_latex_for_string(f'^{data.plot_fac - 1}')
                 post += pterm
 
         scale = (self.xhi + self.xlo) / 2
         for ii in range(data.plot_fac):
             self.y *= scale
 
-        sqr = to_latex('^2')
+        sqr = shplot.backend.get_latex_for_string('^2')
         self.xlabel = f'{self.units.capitalize()} ({quant})'
         self.ylabel = f'{pre}  Photons{tlabel}/cm{sqr}{post}'
 
@@ -474,6 +458,134 @@ class ARFPlot(shplot.HistogramPlot):
                 self.xlabel = 'Wavelength (Angstrom)'
                 self.xlo = hc / self.xlo
                 self.xhi = hc / self.xhi
+
+
+class RMFPlot(shplot.HistogramPlot):
+    """Create plots of the ancillary response file (RMF).
+
+    A full RMF is a matrix that is hard to visualize.
+    Here, we select a few specific energies and show
+    the response function for those energies as histograms.
+    """
+
+   # Because this derived from NoNewAttributesAfterInit we need to
+   # make the attributes here so they can be used in prepare
+
+    xlo = None
+    "array_like: The  lower edges of each bin."
+
+    xhi = None
+    "array_like: The  upper edges of each bin."
+
+    y  = None
+    "array_like: The response for a specific energy or channel."
+
+    xlabel = ''
+    "Label for X axis"
+
+    ylabel = ''
+    "Label for Y axis"
+
+    title = ""
+    "Title of plot"
+
+    rmf_plot_prefs = shplot.basicbackend.get_rmf_plot_defaults()
+    'Plot preferences'
+
+
+    # TODO: Make that a plot preference
+    # How many monochromatic lines to use
+    n_lines = 5
+
+    labels = None
+    "List of strings: The labels for each line."
+
+
+    def _merge_settings(self, kwargs):
+        return {**self.rmf_plot_prefs, **kwargs}
+
+    def prepare(self, rmf, data=None):
+        """Fill the fields given the RMF.
+
+        Parameters
+        ----------
+        RMF :
+           The RMF to plot
+        data : DataPHA instance, optional
+           The `units` attribute of this object is used
+           to determine whether the X axis should be
+           in Angstrom instead of KeV (the default).
+
+        """
+        # X access
+        if rmf.e_min is None:
+            self.x_lo = np.arange(rmf.offset, rmf.detchans + rmf.offset) - 0.5
+            self.x_hi = self.x_lo + 1
+            self.xlabel = 'Channel'
+        else:
+            self.xlo = rmf.e_min
+            self.xhi = rmf.e_max
+            self.xlabel = 'Energy (keV)'
+
+        # TODO copy ARFPlot logic to decide if x axis should be in wavelength
+
+        # for now let's just create log-spaced energies
+        #
+        elo, ehi = rmf.energ_lo, rmf.energ_hi
+        l1 = np.log10(elo[0])
+        l2 = np.log10(ehi[-1])
+        dl = (l2 - l1) / (self.n_lines + 1)
+
+        lines = l1 + dl * np.arange(1, self.n_lines + 1)
+        energies = np.power(10, lines)
+
+        mdl = Delta1D()
+
+        y = []
+        self.labels = []
+        for energy in energies:
+            mdl.pos = energy
+            y.append(rmf.apply_rmf(mdl(elo, ehi)))
+            self.labels.append(f'{energy:.2g} keV')
+
+        # __str__ and similar functions in the superclass
+        # expect this to be and array, not a list
+        self.y = np.stack(y)
+        self.title = rmf.name
+
+    def plot(self, overplot=False, clearwindow=True,
+             **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If `True` then add the data to an existing plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plotcs)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+
+        """
+        y_array = self.y
+        for n in range(self.n_lines):
+            self.y = y_array[n, :]
+            super().plot(
+                overplot=overplot if n == 0 else True,
+                clearwindow=clearwindow if n == 0 else False,
+                label=self.labels[n],
+                **kwargs)
+        self.y = y_array
 
 
 class BkgDataPlot(DataPHAPlot):
@@ -718,7 +830,7 @@ class EnergyFluxHistogram(FluxHistogram):
     def __init__(self):
         super().__init__()
         self.title = "Energy flux distribution"
-        self.xlabel = f"Energy flux (ergs cm{to_latex('^{-2}')} sec{to_latex('^{-1}')})"
+        self.xlabel = f"Energy flux (ergs cm{shplot.backend.get_latex_for_string('^{-2}')} sec{shplot.backend.get_latex_for_string('^{-1}')})"
         self.ylabel = "Frequency"
 
 
@@ -728,5 +840,84 @@ class PhotonFluxHistogram(FluxHistogram):
     def __init__(self):
         super().__init__()
         self.title = "Photon flux distribution"
-        self.xlabel = f"Photon flux (Photons cm{to_latex('^{-2}')} sec{to_latex('^{-1}')})"
+        self.xlabel = f"Photon flux (Photons cm{shplot.backend.get_latex_for_string('^{-2}')} sec{shplot.backend.get_latex_for_string('^{-1}')})"
         self.ylabel = "Frequency"
+
+
+class DataIMGPlot(shplot.Image):
+    """Class for DataIMG plots.
+
+    .. warning::
+        This class is experimental and subject to change in the future.
+        Currently, is is only used within _repr_html_ methods.
+    """
+    xlabel = 'x'
+    ylabel = 'y'
+    title = ''
+    aspect = 'auto'
+
+    # These are filled with array in the prepare stage, but we need
+    # to define them here with some value because of NoNewAttributesAfterInit
+    y = None
+    x0 = None
+    x1 = None
+
+    def prepare(self, img):
+        # Apply filter and coordinate system
+        #
+        self.y = img.get_img()
+
+        # extent is left, right, bottom, top and describes the
+        # outer-edge of the pixels.
+        #
+        ny, nx = img.shape
+        coord = img.coord
+        if coord in ['physical', 'world']:
+            x0, y0 = img._logical_to_physical(0.5, 0.5)
+            x1, y1 = img._logical_to_physical(nx + 0.5, ny + 0.5)
+            lbl = 'physical'
+            cdelt = img.sky.cdelt
+            self.aspect = 'equal' if cdelt[1] == cdelt[0] else 'auto'
+
+        else:
+            x0, x1, y0, y1 = 0.5, nx + 0.5, 0.5, ny + 0.5
+            self.aspect = 'equal'
+            lbl = 'logical'
+
+        self.x0 = np.linspace(x0, x1, nx, endpoint=True)
+        self.x1 = np.linspace(y0, y1, ny, endpoint=True)
+
+        # What is the filtered dataset?
+        #
+        if img.get_filter_expr() != '':
+            x0, x1 = img.get_indep(filter=True)
+
+            x0min, x0max = np.min(x0), np.max(x0)
+            x1min, x1max = np.min(x1), np.max(x1)
+
+            # Should add in half cdelt to padd these, but
+            # it looks like it isn't necessary.
+            # TODO: The old code (before converting it to a class)
+            # used set_xlim and set_ylim
+            # on the filtered limits, but we don't have that in the
+            # general in the backend. We should have an approach
+            # that is consistent with the line plots.
+            # For now, define here, but don't use.
+            filtered = (x0min, x1min, x0max, x1max)
+
+        else:
+            filtered = None
+
+        # Other plot classes use something like img.get_xlabel()
+        # but we dn't have that here, so for now this is what it is.
+        self.xlabel = f'X ({lbl})'
+        self.ylabel = f'Y ({lbl})'
+        self.title = img.name
+
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
+
+        super().plot(self.x0, self.x1, self.y, title=self.title,
+                        xlabel=self.xlabel, ylabel=self.ylabel,
+                        aspect=self.aspect,
+                        overplot=overplot, clearwindow=clearwindow,
+                        **kwargs)

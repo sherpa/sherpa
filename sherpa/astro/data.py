@@ -575,13 +575,22 @@ def html_rmf(rmf):
 
     # See _html_arf for general comments
 
+    from sherpa.astro.plot import RMFPlot
+    from sherpa import plot
+
     ls = []
 
-    svg = simulate_rmf_plot(rmf)
-    if svg is not None:
-        out = formatting.html_svg(svg, 'RMF Plot')
-    else:
+    plotter = RMFPlot()
+    plotter.prepare(rmf)
+
+    try:
+        out = plot.backend.as_html_plot(plotter, 'RMF Plot')
+    except AttributeError:
+        out = None
+
+    if out is None:
         out = _extract_fields(rmf, 'RMF Data')
+
 
     ls.append(out)
 
@@ -636,15 +645,20 @@ def html_img(img):
     Special-case of the Data2D handling. It would be nice to re-use
     parts of the superclass behavior.
     """
-
+    from sherpa.astro.plot import DataIMGPlot
+    from sherpa import plot
     ls = []
     dtype = type(img).__name__
 
-    svg = img_plot(img)
-    if svg is not None:
-        out = formatting.html_svg(svg, f'{dtype} Plot')
-        summary = ''
-    else:
+    plotter = DataIMGPlot()
+    plotter.prepare(img)
+
+    try:
+        out = plot.backend.as_html_image(plotter, f'{dtype} Plot')
+    except AttributeError:
+        out = None
+
+    if out is None:
         # Only add prefix to summary if there's no plot
         summary = f'{dtype} '
 
@@ -719,152 +733,6 @@ def html_img(img):
         ls.append(formatting.html_section(meta, summary='Metadata'))
 
     return formatting.html_from_sections(img, ls)
-
-
-def simulate_rmf_plot(rmf):
-    """Create a plot which shows the response to monochromatic energies.
-
-    The SVG of the plot is returned if matplotlib is selected as the
-    backend. The choice of energies used to create the response to
-    monochromatic energies is based on the data range (using log
-    scaling).
-
-    """
-
-    from sherpa.models.basic import Delta1D
-    from sherpa import plot
-
-    try:
-        from matplotlib import pyplot as plt
-    except ImportError:
-        return None
-
-    # X access
-    #
-    if rmf.e_min is None:
-        x = numpy.arange(rmf.offset, rmf.detchans + rmf.offset)
-        xlabel = 'Channel'
-    else:
-        x = 0.5 * (rmf.e_min + rmf.e_max)
-        xlabel = 'Energy (keV)'
-
-    # How many monochromatic lines to use
-    #
-    nlines = 5
-
-    # for now let's just create log-spaced energies
-    #
-    elo, ehi = rmf.energ_lo, rmf.energ_hi
-    l1 = numpy.log10(elo[0])
-    l2 = numpy.log10(ehi[-1])
-    dl = (l2 - l1) / (nlines + 1)
-
-    lines = l1 + dl * numpy.arange(1, nlines + 1)
-    energies = numpy.power(10, lines)
-
-    mdl = Delta1D()
-
-    def plotfunc():
-        fig, ax = plt.subplots()
-        fig.subplots_adjust(bottom=0.2)
-
-        for energy in energies:
-            mdl.pos = energy
-            y = rmf.apply_rmf(mdl(elo, ehi))
-            ax.plot(x, y, label=f'{energy:.2g} keV')
-
-        # Try to get the legend centered nicely below the plot
-        fig.legend(loc='center', ncol=nlines, bbox_to_anchor=(0.0, 0, 1, 0.1))
-
-        ax.set_xlabel(xlabel)
-        ax.set_title(rmf.name)
-        ax.set_xscale('log')
-        ax.set_yscale('log')
-
-        return fig
-
-    try:
-        return plot.backend.as_svg(plotfunc)
-    except AttributeError:
-        return None
-
-
-def img_plot(img):
-    """Display the image.
-
-    The SVG of the plot is returned if matplotlib is selected as the
-    backend.
-
-    The eqpos/wcs coordinate system is not used; it uses physical
-    instead. This greatly simplifies the plot (no need to handle WCS).
-
-    """
-
-    from sherpa import plot
-
-    try:
-        from matplotlib import pyplot as plt
-    except ImportError:
-        return None
-
-    # Apply filter and coordinate system
-    #
-    y = img.get_img()
-
-    # extent is left, right, bottom, top and describes the
-    # outer-edge of the pixels.
-    #
-    ny, nx = img.shape
-    coord = img.coord
-    if coord in ['physical', 'world']:
-        x0, y0 = img._logical_to_physical(0.5, 0.5)
-        x1, y1 = img._logical_to_physical(nx + 0.5, ny + 0.5)
-        extent = (x0, x1, y0, y1)
-        lbl = 'physical'
-        cdelt = img.sky.cdelt
-        aspect = 'equal' if cdelt[1] == cdelt[0] else 'auto'
-
-    else:
-        extent = (0.5, nx + 0.5, 0.5, ny + 0.5)
-        aspect = 'equal'
-        lbl = 'logical'
-
-    # What is the filtered dataset?
-    #
-    if img.get_filter_expr() != '':
-        x0, x1 = img.get_indep(filter=True)
-
-        x0min, x0max = numpy.min(x0), numpy.max(x0)
-        x1min, x1max = numpy.min(x1), numpy.max(x1)
-
-        # Should add in half cdelt to padd these, but
-        # it looks like it isn't necessary.
-        filtered = (x0min, x1min, x0max, x1max)
-
-    else:
-        filtered = None
-
-    def plotfunc():
-        fig, ax = plt.subplots()
-
-        im = ax.imshow(y, origin='lower', extent=extent, aspect=aspect)
-        fig.colorbar(im, ax=ax)
-
-        if filtered is not None:
-            ax.set_xlim(filtered[0], filtered[2])
-            ax.set_ylim(filtered[1], filtered[3])
-
-        ax.set_xlabel(f'X ({lbl})')
-        ax.set_ylabel(f'Y ({lbl})')
-        if img.name is not None and img.name != '':
-            ax.set_title(img.name)
-
-        return fig
-
-    try:
-        return plot.backend.as_svg(plotfunc)
-    except AttributeError:
-        return None
 
 
 class DataOgipResponse(Data1DInt):
@@ -1185,6 +1053,29 @@ class DataRMF(DataOgipResponse):
         self._rsp = matrix
         self._lo = energ_lo
         self._hi = energ_hi
+
+        # It is assumed, but not yet required, that the RMF components
+        # are set with the __init__ call, and not changed after the
+        # fact (this is to avoid having to have a complex system of
+        # checks as used by the parent Data class for the independent
+        # and dependent axes). It would make sense to make these
+        # fields either read-only or add validation when changed, but
+        # either approach is a large change, so stick with the simple
+        # validation here for now (but allow for them to be set
+        # later).
+        #
+        if (self.e_min is not None) ^ (self.e_max is not None):
+            raise DataErr("e_min/max must both be set or empty")
+
+        if self.e_min is not None:
+            nelo = len(self.e_min)
+            nehi = len(self.e_max)
+            if nelo != nehi:
+                raise DataErr(f"e_min/max mismatch in size: {nelo} vs {nehi}")
+
+            if nelo != self.detchans:
+                raise DataErr(f"detchans mis-match with e_min/max: {self.detchans} vs {nelo}")
+
         Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
 
     # Although we have a Data1DInt-like dataset, the dependent axis
@@ -3468,6 +3359,51 @@ It is an integer or string.
             if kwargs[key] is None:
                 kwargs.pop(key)
 
+        # If tabstops is given then we want to ensure it is an
+        # ndarray.  Really this should be done on args as well, in
+        # case the array is sent in as a positional argument, but we
+        # always send it in as a keyword argument. An alternative is
+        # to do the conversion in the C++ code, but that is
+        # significantly harder to orchestrate so this approach has
+        # been taken.
+        #
+        # We also want to ensure that it is the correct size. If a
+        # user tries to call with tabStops=~self.mask, which is the
+        # "obvious" thing to do, then the call will fail if the data
+        # is already grouped, since mask will have less values in it
+        # then required. However, we can identify this case and
+        # convert the mask into a "per-channel" array (in the same way
+        # that get_mask does it).
+        #
+        if "tabStops" in kwargs:
+            ts = numpy.asarray(kwargs["tabStops"])
+
+            # We only expand the array if it has the correct size
+            # (expand_grouped_mask does not enforce length checks for
+            # Sherpa ~ 4.15).
+            #
+            # TODO: this probably doesn't work if we have quality_filter
+            # set.
+            #
+            nts = len(ts)
+            nchan = len(self.channel)
+            if self.grouped and nts != nchan and \
+               numpy.iterable(self.mask) and len(self.mask) == nts:
+                ts = expand_grouped_mask(ts, self.grouping)
+
+            kwargs["tabStops"] = ts
+
+        else:
+            # If there is a mask, and it is an array, invert it for
+            # the tabStops. Note that
+            #
+            # a) use get_mask to ensure we have a value for each channel
+            # b) get_mask can return None or an array.
+            #
+            mask = self.get_mask()
+            if numpy.iterable(mask):
+                kwargs["tabStops"] = ~mask
+
         self.grouping, self.quality = group_func(*args, **kwargs)
         self.group()
         self._original_groups = False
@@ -3476,10 +3412,13 @@ It is an integer or string.
         """Group into a fixed number of bins.
 
         Combine the data so that there `num` equal-width bins (or
-        groups). The binning scheme is applied to all the channels,
-        but any existing filter - created by the `ignore` or `notice`
-        set of functions - is re-applied after the data has been
-        grouped.
+        groups). The binning scheme is, by default, applied to only
+        the noticed data range. It is suggested that filtering is done
+        before calling group_bins.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3487,11 +3426,12 @@ It is an integer or string.
            The number of bins in the grouped data set. Each bin
            will contain the same number of channels.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         See Also
         --------
@@ -3510,30 +3450,36 @@ It is an integer or string.
         the quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpNumBins", len(self.channel), num,
-                            tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_bins(num, tabStops=tabStops)
+
+        self._dynamic_group("grpNumBins", len(self.channel), num,
+                            tabStops=tabStops)
 
     def group_width(self, val, tabStops=None):
         """Group into a fixed bin width.
 
         Combine the data so that each bin contains `num` channels.
-        The binning scheme is applied to all the channels, but any
-        existing filter - created by the `ignore` or `notice` set of
-        functions - is re-applied after the data has been grouped.
+        The binning scheme is, by default, applied to only the noticed
+        data range. It is suggested that filtering is done before
+        calling group_width.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
         val : int
            The number of channels to combine into a group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         See Also
         --------
@@ -3552,22 +3498,26 @@ It is an integer or string.
         for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpBinWidth", len(self.channel), val,
-                            tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_width(val, tabStops=tabStops)
+
+        self._dynamic_group("grpBinWidth", len(self.channel), val,
+                            tabStops=tabStops)
 
     def group_counts(self, num, maxLength=None, tabStops=None):
         """Group into a minimum number of counts per bin.
 
         Combine the data so that each bin contains `num` or more
-        counts. The binning scheme is applied to all the channels, but
-        any existing filter - created by the `ignore` or `notice` set
-        of functions - is re-applied after the data has been grouped.
-        The background is *not* included in this calculation; the
-        calculation is done on the raw data even if `subtract` has
-        been called on this data set.
+        counts. The background is *not* included in this calculation;
+        the calculation is done on the raw data even if `subtract` has
+        been called on this data set. The binning scheme is, by
+        default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling group_counts.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3577,11 +3527,12 @@ It is an integer or string.
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         See Also
         --------
@@ -3597,24 +3548,48 @@ It is an integer or string.
         warning message will be displayed to the screen and the
         quality value for these channels will be set to 2.
 
+        Examples
+        --------
+
+        Group by 20 counts within the range 0.5 to 7 keV (this is
+        the default behavior for 4.16 and later):
+
+        >>> from sherpa.astro.io import read_pha
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
+        >>> pha.set_analysis("energy")
+        >>> pha.notice()
+        >>> pha.notice(0.5, 7)
+        >>> pha.group_counts(20)
+
+        Group by 20 but over the whole channel range, but then
+        filtering to the noticed range of 0.5 to 7 keV (this was the
+        default behaviour before 4.16):
+
+        >>> pha.group_counts(20, tabStops=[0] * pha.size)
+
         """
-        self._dynamic_group("grpNumCounts", self.counts, num,
-                            maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
+
+        self._dynamic_group("grpNumCounts", self.counts, num,
+                            maxLength=maxLength, tabStops=tabStops)
 
     # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_snr(self, snr, maxLength=None, tabStops=None, errorCol=None):
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
-        which exceeds `snr`. The binning scheme is applied to all the
-        channels, but any existing filter - created by the `ignore` or
-        `notice` set of functions - is re-applied after the data has
-        been grouped.  The background is *not* included in this
+        which exceeds `snr`. The background is *not* included in this
         calculation; the calculation is done on the raw data even if
-        `subtract` has been called on this data set.
+        `subtract` has been called on this data set. The binning
+        scheme is, by default, applied to only the noticed data
+        range. It is suggested that filtering is done before calling
+        group_snr.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3625,11 +3600,12 @@ It is an integer or string.
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -3651,13 +3627,14 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpSnr", self.counts, snr,
-                            maxLength=maxLength, tabStops=tabStops,
-                            errorCol=errorCol)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops,
                           errorCol=errorCol)
+
+        self._dynamic_group("grpSnr", self.counts, snr,
+                            maxLength=maxLength, tabStops=tabStops,
+                            errorCol=errorCol)
 
     def group_adapt(self, minimum, maxLength=None, tabStops=None):
         """Adaptively group to a minimum number of counts.
@@ -3668,10 +3645,13 @@ It is an integer or string.
         order to avoid over-grouping bright features, rather than at
         the first channel of the data. The adaptive nature means that
         low-count regions between bright features may not end up in
-        groups with the minimum number of counts.  The binning scheme
-        is applied to all the channels, but any existing filter -
-        created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
+        groups with the minimum number of counts. The binning scheme
+        is, by default, applied to only the noticed data range. It is
+        suggested that filtering is done before calling group_adapt.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3681,11 +3661,12 @@ It is an integer or string.
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
 
         See Also
         --------
@@ -3702,12 +3683,13 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpAdaptive", self.counts, minimum,
-                            maxLength=maxLength, tabStops=tabStops)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_adapt(minimum, maxLength=maxLength,
                             tabStops=tabStops)
+
+        self._dynamic_group("grpAdaptive", self.counts, minimum,
+                            maxLength=maxLength, tabStops=tabStops)
 
     # DOC-TODO: see discussion in astro.ui.utils regarding errorCol
     def group_adapt_snr(self, minimum, maxLength=None, tabStops=None,
@@ -3720,10 +3702,14 @@ It is an integer or string.
         in order to avoid over-grouping bright features, rather than
         at the first channel of the data. The adaptive nature means
         that low-count regions between bright features may not end up
-        in groups with the minimum number of counts.  The binning
-        scheme is applied to all the channels, but any existing filter
-        - created by the `ignore` or `notice` set of functions - is
-        re-applied after the data has been grouped.
+        in groups with the minimum number of counts. The binning
+        scheme is, by default, applied to only the noticed data
+        range. It is suggested that filtering is done before calling
+        group_adapt_snr.
+
+        .. versionchanged:: 4.16.0
+           Grouping now defaults to only using the noticed channel
+           range.
 
         Parameters
         ----------
@@ -3734,11 +3720,12 @@ It is an integer or string.
            The maximum number of channels that can be combined into a
            single group.
         tabStops : array of int or bool, optional
-           If set, indicate one or more ranges of channels that should
-           not be included in the grouped output. The array should
-           match the number of channels in the data set and non-zero or
-           `True` means that the channel should be ignored from the
-           grouping (use 0 or `False` otherwise).
+           If not set then it will be based on the filtering of the
+           data set, so that the grouping only uses the filtered
+           data. If set, it should be an array of booleans where True
+           indicates that the channel should not be used in the
+           grouping (this array must match the number of channels in
+           the data set).
         errorCol : array of num, optional
            If set, the error to use for each channel when calculating
            the signal-to-noise ratio. If not given then Poisson
@@ -3760,13 +3747,14 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        self._dynamic_group("grpAdaptiveSnr", self.counts, minimum,
-                            maxLength=maxLength, tabStops=tabStops,
-                            errorCol=errorCol)
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
             bkg.group_adapt_snr(minimum, maxLength=maxLength,
                                 tabStops=tabStops, errorCol=errorCol)
+
+        self._dynamic_group("grpAdaptiveSnr", self.counts, minimum,
+                            maxLength=maxLength, tabStops=tabStops,
+                            errorCol=errorCol)
 
     def eval_model_to_fit(self, modelfunc):
         model = super().eval_model_to_fit(modelfunc)
@@ -5307,9 +5295,7 @@ class DataIMG(Data2D):
         isfile = os.path.isfile(val)
         reg = Region(val, isfile)
 
-        # Calculate the mask for this region as an "included"
-        # region.
-        #
+        # Calculate the mask for this region as an "included" region.
         mask = reg.mask(self.get_x0(), self.get_x1())
         mask = mask.astype(bool)
 

@@ -142,7 +142,14 @@ class StatInfoResults(NoNewAttributesAfterInit):
                 out.append(f'Datasets              = {idstr}')
 
         elif self.ids is not None and self.bkg_ids is not None:
-            out.append(f'Background {self.bkg_ids[0]} in Dataset = {self.ids[0]}')
+            if len(self.ids) == 1:
+                out.append(f'Background {self.bkg_ids[0]} in Dataset = {self.ids[0]}')
+            else:
+                # It's not clear what the best way to label this, as
+                # the bkg_ids may not be constant per background.
+                #
+                idstr = str(self.ids).strip("()")
+                out.append(f'Backgrounds in Datasets = {idstr}')
 
         out.extend([f'Statistic             = {self.statname}',
                     f'Fit statistic value   = {self.statval:g}',
