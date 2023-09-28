@@ -25,5 +25,5 @@ The sherpa.astro.io.xstable module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: IntParam Param
+.. inheritance-diagram:: BaseParam Param
    :parts: 1
