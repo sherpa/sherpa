@@ -6434,6 +6434,11 @@ class Session(sherpa.ui.utils.Session):
     def unpack_rmf(self, arg):
         """Create a RMF data structure.
 
+        .. versionchanged:: 4.16.0
+           This command does not support multi-matrix RMF files and
+           will warn the user when given such a file (as only the
+           first matrix is read in, the results will not be correct).
+
         Parameters
         ----------
         arg
@@ -6491,6 +6496,11 @@ class Session(sherpa.ui.utils.Session):
         Load in the redistribution matrix function for a PHA data set,
         or its background. The `load_bkg_rmf` function can be used for
         setting most background RMFs.
+
+        .. versionchanged:: 4.16.0
+           This command does not support multi-matrix RMF files and
+           will warn the user when given such a file (as only the
+           first matrix is read in, the results will not be correct).
 
         Parameters
         ----------
