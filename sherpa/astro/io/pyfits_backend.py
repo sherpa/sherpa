@@ -43,10 +43,12 @@ import warnings
 
 import numpy
 
-from astropy.io import fits
-from astropy.io.fits.column import _VLF
-from astropy.table import Table
+from astropy.io import fits  # type: ignore
+from astropy.io.fits.column import _VLF  # type: ignore
+from astropy.table import Table  # type: ignore
 
+
+from sherpa.astro.io.xstable import TableHDU
 from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
@@ -590,6 +592,21 @@ def get_image_data(arg, make_copy=False):
     return data, filename
 
 
+def _is_ogip_block(hdu, bltype1, bltype2=None):
+    """Does the block contain the expected HDUCLAS1 or HDUCLAS2 values?
+
+    If given, we need both HDUCLAS1 and 2 to be set correctly.
+    """
+
+    if _try_key(hdu, 'HDUCLAS1') != bltype1:
+        return False
+
+    if bltype2 is None:
+        return True
+
+    return  _try_key(hdu, 'HDUCLAS2') == bltype2
+
+
 def _is_ogip_type(hdus, bltype, bltype2=None):
     """Return True if hdus[1] exists and has
     the given type (as determined by the HDUCLAS1 or HDUCLAS2
@@ -598,12 +615,12 @@ def _is_ogip_type(hdus, bltype, bltype2=None):
     bltype is for HDUCLAS1.
     """
 
-    bnum = 1
-    if bltype2 is None:
-        bltype2 = bltype
-    return _has_hdu(hdus, bnum) and \
-        (_try_key(hdus[bnum], 'HDUCLAS1') == bltype or
-         _try_key(hdus[bnum], 'HDUCLAS2') == bltype2)
+    try:
+        hdu = hdus[1]
+    except IndexError:
+        return False
+
+    return _is_ogip_block(hdu, bltype, bltype2)
 
 
 def get_arf_data(arg, make_copy=False):
@@ -619,7 +636,7 @@ def get_arf_data(arg, make_copy=False):
             hdu = arf['SPECRESP']
         elif _has_hdu(arf, 'AXAF_ARF'):
             hdu = arf['AXAF_ARF']
-        elif _is_ogip_type(arf, 'SPECRESP'):
+        elif _is_ogip_type(arf, 'RESPONSE', 'SPECRESP'):
             hdu = arf[1]
         else:
             raise IOErr('notrsp', filename, 'an ARF')
@@ -653,7 +670,60 @@ def _read_col(hdu, name):
     try:
         return hdu.data[name]
     except KeyError:
-        raise IOErr("reqcol", name, hdu._file.name)
+        raise IOErr("reqcol", name, hdu._file.name) from None
+
+
+# Commonly-used block names for the MATRIX block. Only the first two
+# are given in the OGIP standard.
+#
+RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
+
+
+def _find_matrix_blocks(filename: str,
+                        hdus: fits.HDUList) -> list[str]:
+    """Report the block names that contain MATRIX data in a RMF.
+
+    Parameters
+    ----------
+    filename : str
+    hdus : fits.HDUList
+
+    Returns
+    -------
+    blnames : list of str
+       The block names that contain the MATRIX block. It will not be
+       empty.
+
+    Raises
+    ------
+    IOErr
+       No matrix block was found
+
+    """
+
+    # The naming of the matrix block can be complicated, and perhaps
+    # we should be looking for
+    #
+    #    HDUCLASS = OGIP
+    #    HDUCLAS1 = RESPONSE
+    #    HDUCLAS2 = RSP_MATRIX
+    #
+    # and check the HDUVERS keyword, but it's easier just to go on the
+    # name (as there's no guarantee that these keywords will be any
+    # cleaner to use). As of December 2020 there is now the
+    # possibility of RMF files with multiple MATRIX blocks (where the
+    # EXTVER starts at 1 and then increases).
+    #
+    blnames = []
+    for hdu in hdus:
+        if hdu.name in RMF_BLOCK_NAMES or \
+           _is_ogip_block(hdu, "RESPONSE", "RSP_MATRIX"):
+            blnames.append(hdu)
+
+    if not blnames:
+        raise IOErr('notrsp', filename, 'an RMF')
+
+    return blnames
 
 
 def _read_rmf_data(arg):
@@ -663,16 +733,19 @@ def _read_rmf_data(arg):
                                        nobinary=True)
 
     try:
-        if _has_hdu(rmf, 'MATRIX'):
-            hdu = rmf['MATRIX']
-        elif _has_hdu(rmf, 'SPECRESP MATRIX'):
-            hdu = rmf['SPECRESP MATRIX']
-        elif _has_hdu(rmf, 'AXAF_RMF'):
-            hdu = rmf['AXAF_RMF']
-        elif _is_ogip_type(rmf, 'RESPONSE', bltype2='RSP_MATRIX'):
-            hdu = rmf[1]
-        else:
-            raise IOErr('notrsp', filename, 'an RMF')
+
+        # Find all the potential matrix blocks.
+        #
+        blnames = _find_matrix_blocks(filename, rmf)
+        nmat = len(blnames)
+        if nmat > 1:
+            # Warn the user that the multi-matrix RMF is not supported.
+            #
+            error("RMF in %s contains %d MATRIX blocks; "
+                  "Sherpa only uses the first block!",
+                  filename, nmat)
+
+        hdu = rmf[blnames[0]]
 
         # The comments note the type we want the column to be, but
         # this conversion needs to be done after cleaning up the
@@ -1487,12 +1560,12 @@ def _add_header(hdu, header):
         hdu.header.append(tuple(card))
 
 
-def _create_primary_hdu(hdu):
+def _create_primary_hdu(hdu: TableHDU) -> fits.PrimaryHDU:
     """Create a PRIMARY HDU.
 
     Parameters
     ----------
-    hdu : sherpa.astro.io.xstable.TableHDU
+    hdu : TableHDU
        Any data is ignored.
 
     Returns
@@ -1506,16 +1579,16 @@ def _create_primary_hdu(hdu):
     return out
 
 
-def _create_table_hdu(hdu):
+def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
     """Create a Table HDU.
 
     Parameters
     ----------
-    hdu : sherpa.astro.io.xstable.TableHDU
+    hdu : TableHDU
 
     Returns
     -------
-    out : astropy.io.fits.BinTableHDU
+    out : fits.BinTableHDU
     """
 
     if hdu.data is None:
@@ -1549,7 +1622,9 @@ def _create_table_hdu(hdu):
     return out
 
 
-def set_hdus(filename, hdulist, clobber=False):
+def set_hdus(filename: str,
+             hdulist: list[TableHDU],
+             clobber: bool = False) -> None:
     """Write out multiple HDUS to a single file.
 
     At present we are restricted to tables only.

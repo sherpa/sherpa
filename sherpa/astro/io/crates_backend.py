@@ -18,16 +18,20 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections import defaultdict
 import logging
 import os.path
 
 import numpy
 
 from pycrates import CrateDataset, CrateKey, CrateData, TABLECrate, \
-    IMAGECrate, WCSTANTransform, RMFCrateDataset, PHACrateDataset
-import pycrates
-import cxcdm  # work around missing TLMIN support in crates CIAO 4.15
+    IMAGECrate, WCSTANTransform, RMFCrateDataset, \
+    PHACrateDataset  # type: ignore
+import pycrates  # type: ignore
+# work around missing TLMIN support in crates CIAO 4.15
+import cxcdm  # type: ignore
 
+from sherpa.astro.io.xstable import TableHDU
 from sherpa.astro.utils import resp_init
 from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
 from sherpa.utils.err import ArgumentTypeErr, IOErr
@@ -41,8 +45,8 @@ transformstatus = False
 try:
     from sherpa.astro.io.wcs import WCS
     transformstatus = True
-except:
-    warning('failed to import WCS module; WCS routines will not be ' +
+except ImportError:
+    warning('failed to import WCS module; WCS routines will not be '
             'available')
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -398,7 +402,7 @@ def _get_crate_by_blockname(dataset, blkname):
 
     Parameters
     ----------
-    dataset : pycrates.CrateDataset
+    dataset : CrateDataset
     blkname : str
 
     Returns
@@ -710,6 +714,62 @@ def get_arf_data(arg, make_copy=True):
     return data, filename
 
 
+# Commonly-used block names for the MATRIX block. Only the first two
+# are given in the OGIP standard.
+#
+RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
+
+
+def _find_matrix_blocks(filename: str,
+                        ds: CrateDataset) -> list[str]:
+    """Report the block names that contain MATRIX data in a RMF.
+
+    Arguments
+    ---------
+    filename : str
+    ds : CrateDataset
+       This is expected to be a RMFCrateDataset.
+
+    Returns
+    -------
+    blnames : list of str
+       The block names that contain the MATRIX block. It will not be
+       empty.
+
+    Raises
+    ------
+    IOErr
+       No matrix block was found
+
+    """
+
+    # The naming of the matrix block can be complicated, and perhaps
+    # we should be looking for
+    #
+    #    HDUCLASS = OGIP
+    #    HDUCLAS1 = RESPONSE
+    #    HDUCLAS2 = RSP_MATRIX
+    #
+    # and check the HDUVERS keyword, but it's easier just to go on the
+    # name (as there's no guarantee that these keywords will be any
+    # cleaner to use). As of December 2020 there is now the
+    # possibility of RMF files with multiple MATRIX blocks (where the
+    # EXTVER starts at 1 and then increases).
+    #
+    blnames = []
+    for crnum in range(1, ds.get_ncrates() + 1):
+        cr = ds.get_crate(crnum)
+        if cr.name in RMF_BLOCK_NAMES or \
+           (cr.get_key_value("HDUCLAS1") == "RESPONSE" and
+            cr.get_key_value("HDUCLAS2") == "RSP_MATRIX"):
+            blnames.append(cr.name)
+
+    if not blnames:
+        raise IOErr('notrsp', filename, 'an RMF')
+
+    return blnames
+
+
 def get_rmf_data(arg, make_copy=True):
     """Read a RMF from a file or crate"""
     filename = ''
@@ -728,30 +788,18 @@ def get_rmf_data(arg, make_copy=True):
     else:
         raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
-    # Open the response matrix by extension name, and try using
-    # some of the many, many ways people break the OGIP definition
-    # of the extension name for the response matrix.
-    rmf = _get_crate_by_blockname(rmfdataset, 'MATRIX')
+    # Find all the potential matrix blocks.
+    #
+    blnames = _find_matrix_blocks(filename, rmfdataset)
+    nmat = len(blnames)
+    if nmat > 1:
+        # Warn the user that the multi-matrix RMF is not supported.
+        #
+        error("RMF in %s contains %d MATRIX blocks; "
+              "Sherpa only uses the first block!",
+              filename, nmat)
 
-    if rmf is None:
-        rmf = _get_crate_by_blockname(rmfdataset, 'SPECRESP MATRIX')
-
-    if rmf is None:
-        rmf = _get_crate_by_blockname(rmfdataset, 'AXAF_RMF')
-
-    if rmf is None:
-        rmf = _get_crate_by_blockname(rmfdataset, 'RSP_MATRIX')
-
-    if rmf is None:
-        try:
-            rmf = rmfdataset.get_crate(2)
-        except IndexError:
-            rmf = None
-
-    if rmf is None or rmf.get_colnames() is None:
-        raise IOErr('filenotfound', arg)
-
-    data = {}
+    rmf = rmfdataset.get_crate(blnames[0])
 
     if not rmf.column_exists('ENERG_LO'):
         raise IOErr('reqcol', 'ENERG_LO', filename)
@@ -774,6 +822,7 @@ def get_rmf_data(arg, make_copy=True):
     if not rmf.column_exists('N_CHAN'):
         raise IOErr('reqcol', 'N_CHAN', filename)
 
+    data = {}
     data['detchans'] = _require_key(rmf, 'DETCHANS', SherpaInt)
     data['energ_lo'] = _require_col(rmf, 'ENERG_LO', make_copy, fix_type=True)
     data['energ_hi'] = _require_col(rmf, 'ENERG_HI', make_copy, fix_type=True)
@@ -1421,30 +1470,30 @@ def _add_header(cr, header):
 
     for hdr in header:
         key = (hdr.name, hdr.value, hdr.unit, hdr.desc)
-        cr.add_key(pycrates.CrateKey(key))
+        cr.add_key(CrateKey(key))
 
 
-def _create_primary_crate(hdu):
+def _create_primary_crate(hdu: TableHDU) -> IMAGECrate:
     """Create the primary block
 
     Parameters
     ----------
-    hdu : sherpa.astro.xstable.TableHDU
+    hdu : TableHDU
        Any data is ignored.
 
     Returns
     -------
-    out : pycreates.IMAGECrate
+    out : IMAGECrate
 
     """
 
-    out = pycrates.IMAGECrate()
+    out = IMAGECrate()
     out.name = "PRIMARY"
 
     # For some reason we need to add an empty image
     # (CIAO 4.15).
     #
-    null = pycrates.CrateData()
+    null = CrateData()
     null.values = numpy.asarray([], dtype=numpy.uint8)
     out.add_image(null)
 
@@ -1452,27 +1501,27 @@ def _create_primary_crate(hdu):
     return out
 
 
-def _create_table_crate(hdu):
+def _create_table_crate(hdu: TableHDU) -> TABLECrate:
     """Create a table block
 
     Parameters
     ----------
-    hdu : sherpa.astro.xstable.TableHDU
+    hdu : TableHDU
 
     Returns
     -------
-    out : pycrates.TABLECrate
+    out : TABLECrate
 
     """
 
     if hdu.data is None:
-       raise ValueError("No column data to write out")
+        raise ValueError("No column data to write out")
 
-    out = pycrates.TABLECrate()
+    out = TABLECrate()
     out.name = hdu.name
 
     for col in hdu.data:
-        cdata = pycrates.CrateData()
+        cdata = CrateData()
         cdata.name = col.name
         cdata.desc = col.desc
         cdata.unit = col.unit
@@ -1483,17 +1532,59 @@ def _create_table_crate(hdu):
     return out
 
 
-def set_hdus(filename, hdulist, clobber=False):
+def _validate_block_names(hdulist: list[TableHDU]) -> list[TableHDU]:
+    """Ensure the block names are "independent".
+
+    Crates will correctly handle the case when blocks are numbered
+    MATRIX1, MATRIX2 (setting EXTNAME to MATRIX and EXTVER to 1 or 2),
+    but let's automatically add this if the user hasn't already done
+    so (since AstroPy works differently).
+
+    """
+
+    blnames: dict[str, int] = defaultdict(int)
+    for hdu in hdulist[1:]:
+        blnames[hdu.name.upper()] += 1
+
+    multi = [n for n,v in blnames.items() if v > 1]
+
+    # If the names are unique do nothing
+    #
+    if len(multi) == 0:
+        return hdulist
+
+    out = [hdulist[0]]
+    extvers: dict[str, int] = defaultdict(int)
+    for hdu in hdulist[1:]:
+        if hdu.name not in multi:
+            out.append(hdu)
+            continue
+
+        # Either create or update the EXTVER value
+        extvers[hdu.name] += 1
+        extver = extvers[hdu.name]
+
+        nhdu = TableHDU(name=f"{hdu.name}{extver}",
+                        header=hdu.header, data=hdu.data)
+        out.append(nhdu)
+
+    return out
+
+
+def set_hdus(filename: str,
+             hdulist: list[TableHDU],
+             clobber: bool = False) -> None:
     """Write out multiple HDUS to a single file.
 
     At present we are restricted to tables only.
     """
 
     check_clobber(filename, clobber)
+    nlist = _validate_block_names(hdulist)
 
-    ds = pycrates.CrateDataset()
-    ds.add_crate(_create_primary_crate(hdulist[0]))
-    for hdu in hdulist[1:]:
+    ds = CrateDataset()
+    ds.add_crate(_create_primary_crate(nlist[0]))
+    for hdu in nlist[1:]:
         ds.add_crate(_create_table_crate(hdu))
 
     ds.write(filename, clobber=True)

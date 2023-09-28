@@ -379,18 +379,11 @@ def test_read_rmf(make_data_path):
 def test_read_rmf_fails_pha(make_data_path):
     """Just check in we can't read in a PHA file as a RMF."""
 
-    if backend_is("pyfits"):
-        emsg = " does not appear to be an RMF"
-    elif backend_is("crates"):
-        emsg = "Required column 'ENERG_LO' not found in "
-    else:
-        assert False, f"Internal error: unknown backend {io.backend}"
+    emsg = " does not appear to be an RMF"
 
     infile = make_data_path(PHAFILE)
-    with pytest.raises(IOErr) as excinfo:
+    with pytest.raises(IOErr, match=emsg):
         io.read_rmf(infile)
-
-    assert emsg in str(excinfo.value)
 
 
 @requires_data
