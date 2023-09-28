@@ -4451,3 +4451,68 @@ def test_group_xxx_tabstops_already_grouped():
     assert pha.grouping == pytest.approx([1, 0, 1, 1, -1, 0])
     assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0])
     assert pha.get_y(filter=True) == pytest.approx([12, 9, 3])
+
+
+def test_dataimg_axis_ordering():
+    """What are the x0/x1 axes meant to be?
+
+    See also test_dataimg_axis_ordering_1880
+    """
+
+    # nx=3, ny=2
+    #
+    x1, x0 = np.mgrid[1:3, 1:4]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.arange(6) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
+    orig = DataIMG("faked", x0, x1, y, shape=(2, 3), sky=sky,
+                   eqpos=eqpos)
+
+    orig.set_coord("physical")
+
+    orig.notice2d("circle(110, 210, 6)", True)
+
+    assert orig.get_filter() == "Field()&!Circle(110,210,6)"
+    assert orig.get_dep(filter=True) == pytest.approx([10, 20, 30, 40, 60])
+    a0, a1 = orig.get_indep()
+    assert a0 == pytest.approx([100, 110, 120] * 2)
+    assert a1 == pytest.approx([200, 200, 200, 210, 210, 210])
+
+
+def test_dataimg_axis_ordering_1880():
+    """What are the x0/x1 axes meant to be? See issues #1789 #1880
+
+    See also test_dataimg_axis_ordering. This is a regression test to
+    catch if we ever decide to update the DataIMG code.
+
+    """
+
+    # nx=2, ny=3
+    #
+    x1, x0 = np.mgrid[1:4, 1:3]
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = np.arange(6) * 10 + 10
+
+    sky = WCS("physical", "LINEAR", [100, 200], [1, 1], [10, 10])
+    eqpos = WCS("world", "WCS", [30, 50], [100, 200], [-0.1, 0.1])
+    orig = DataIMG("faked", x0, x1, y, shape=(2, 3), sky=sky,
+                   eqpos=eqpos)
+
+    orig.set_coord("physical")
+
+    # This should remove the pixel with value 50 but it actually
+    # removes 40. This is an issue with how DataIMG requires the x0/x1
+    # arrays (I think) but for this test we just test the existing
+    # behavior. See issues #1880 and #1789.
+    #
+    orig.notice2d("circle(110, 210, 6)", True)
+
+    assert orig.get_filter() == "Field()&!Circle(110,210,6)"
+    assert orig.get_dep(filter=True) == pytest.approx([10, 20, 30, 50, 60])
+    a0, a1 = orig.get_indep()
+    assert a0 == pytest.approx([100, 110] * 3)
+    assert a1 == pytest.approx([200, 200, 210, 210, 220, 220])

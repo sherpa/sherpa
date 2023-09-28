@@ -15648,7 +15648,16 @@ class Session(sherpa.ui.utils.Session):
 
          2. data sets are not included in the file
 
-         3. some settings and values may not be recorded.
+         3. some settings and values may not be recorded (such as
+            header information).
+
+        .. versionchanged:: 4.16.0
+           Any set_psf calls are now included in the output file. The
+           filter is no-longer included if it does not exclude any
+           data, and the code tries to recreate manually-created
+           datasets (e.g. use of `dataspace1d` or `load_arrays`), but
+           not all situations are handled. XSPEC table models are now
+           correctly restored.
 
         Parameters
         ----------
@@ -15683,15 +15692,17 @@ class Session(sherpa.ui.utils.Session):
         used. Not all Sherpa settings are saved. Items not fully restored
         include:
 
-        - data created by calls to `load_arrays`, or changed from the
-          version on disk - e.g. by calls to `sherpa.astro.ui.set_counts`.
+        - grating data is not guaranteed to be restored correctly,
+
+        - data changed from the version on disk - e.g. by calls to
+          `set_counts` - will not be restored correctly,
 
         - any optional keywords to comands such as `load_data`
-          or `load_pha`
+          or `load_pha`,
 
-        - user models may not be restored correctly
+        - user models may not be restored correctly,
 
-        - only a subset of Sherpa commands are saved.
+        - and only a subset of Sherpa commands are saved.
 
         Examples
         --------
