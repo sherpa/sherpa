@@ -5,7 +5,7 @@ The sherpa.plot.bokeh_backend module
 :term:`bokeh` is a plotting library that can be used to create interactive
 plots, which are rendered in a webbrowser. Those plots allow various options to zoom,
 pan, and scroll out of the box. Many additional interactions can be added by the
-user later, and we also plan make Sherpa use more features of this library
+user later, and we also plan to make Sherpa use more features of this library
 in the future.
 
 .. note::
@@ -23,21 +23,9 @@ new tab. The plot can be saved to a file by clicking on the save icon in the
 toolbar at the top of the plot or by using `bokeh.io.save`.
 
 Once displayed, bokeh has no direct control over the browser tab anymore,
-so the plot cannot be updated automatically. In bokeh, that means that the
-user needs to call `bokeh.plotting.show` when all elements have been added.
-In Sherpa, this is done automatically in the UI, but users of the OO interface
-need to call `bokeh.plotting.show` themselves.
-
-In the UI, a new plot is shown after every plot command. That's pretty
-automatic and works fine with jupyter notebook or on the command line.
-However, it is annoying if you use ``overplot=True`` repeatedly,
-because you'll get a new plot each time - and in the notebook, you end up with a
-list of plots in the cell where the top one shows only what you plotted first,
-and with each overplot, another plot is appended at the bottom that is
-like the previous one, just with the overplotted data added.
-
-To avoid it, in the OO interface, you need to call `bokeh.plotting.show` yourself
-or activate the `bokeh.io.output_notebook` mode.
+so the plot cannot be updated automatically. When doing plots with bokeh,
+that means that the user needs to call `bokeh.plotting.show` when all elements
+have been added.
 
 
 Jupyter notebooks
@@ -58,9 +46,8 @@ Python scripts and (I)Python terminals
 --------------------------------------
 Bokeh plots can either be displayed in a new tab in the default webbrowser or be
 saved to a file. In both cases, a plot is not continuously updated.
-In the UI, plotting is wrapped into a context manager that displays the plot after
-plotting is finished; users of Sherpa's OO interface
-must explicitly call `bokeh.plotting.show` to display the plot. The reference to
+Users must explicitly call `bokeh.plotting.show` to display the plot or
+`bokeh.plotting.save` to save the plot to a html file. The reference to
 the current plot is stored in the ``current_plot`` attribute of the backend object::
 
     >>> from bokeh.plotting import show
@@ -75,6 +62,24 @@ the current plot is stored in the ``current_plot`` attribute of the backend obje
     >>> plot1.plot()
     >>> show(plot.backend.current_fig)
 
+The same is true for the UI interface::
+
+    >>> from bokeh.plotting import show, save
+    >>> from sherpa.astro import ui
+    >>> from sherpa import plot
+    >>> from sherpa.astro.data import DataPHA
+    >>> session = Session()
+    >>> ui.load_arrays(1, [1, 2, 3], [1, 2, 3], DataPHA)
+    >>> ui.plot_data()
+    >>> show(plot.backend.current_fig)
+    >>> # or
+    >>> save(plot.backend.current_fig, filename='plot.html')
+
+Suggestions on how to integrate that better into the Sherpa UI are welcome.
+
+
+
+
 Limitations
 -----------
 :term:`bokeh` itself is quite different from :term:`matplotlib` in the way plots
@@ -84,15 +89,15 @@ See the `bokeh documentation on output options <https://docs.bokeh.org/en/latest
 for details. In particular:
 
   - Bokeh plots cannot easily be exported to png or pdf. They are always
-    rendered in javasript. Bokeh does
+    rendered in javascript. Bokeh does
     `offer a mechanism to export plots to static images <https://docs.bokeh.org/en/latest/docs/user_guide/output/export.html>`_,
     but it requires additional software and drivers.
   - For display, bokeh saves temporary files that are then automatically opened in a
     webbrowser. In some linux systems, browsers are not allowed to open
     files in the local ``\temp`` directory for security reasons, so the user
-    as to manually change the location the bokeh plot is written to with
+    has to manually change the location the bokeh plot is written to with
     `bokeh.io.output_file`.
-  - Once displayed, bokeh has not control over the webbrowser any longer.
+  - Once displayed, bokeh no longer has control over the webbrowser.
     For plotting in scripts or when using virtual frame buffers, that might
     lead to those browser processes staying open and consuming resources.
     Use `bokeh.io.output_file` together with `bokeh.io.save` instead of

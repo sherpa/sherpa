@@ -181,7 +181,6 @@ class BokehBackend(BasicBackend):
 
     def __exit__(self, exec_type, value, traceback):
         '''Called from the UI after an interactive plot is done.'''
-        show(self.current_fig)
         return False
 
     def _figure(self):
