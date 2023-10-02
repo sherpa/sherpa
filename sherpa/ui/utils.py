@@ -999,7 +999,7 @@ class Session(NoNewAttributesAfterInit):
         """Return the RNG generator in use.
 
         The return can be None, which means that the routines in
-        `numpy.random` are used, and so can are affected by calls to
+        `numpy.random` are used, and thus are affected by calls to
         `numpy.random.seed`, otherwise the supplied generator is used
         to create random numbers. See
         https://numpy.org/doc/stable/reference/random/legacy.html for
