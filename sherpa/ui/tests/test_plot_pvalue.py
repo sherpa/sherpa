@@ -76,7 +76,7 @@ def test_plot_pvalue(make_data_path, clean_astro_ui):
     ui.freeze(g1.fwhm)
 
     # Pick a small number of bins to try to reduce the runtime of the
-    # test whist still exercising the code.
+    # test while still exercising the code.
     #
     NUM = 20
     NBINS = 8
