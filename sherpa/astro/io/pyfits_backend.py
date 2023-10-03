@@ -49,8 +49,9 @@ from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
 from sherpa.io import get_ascii_data, write_arrays
 
 from .types import ColumnsType, DataType, DataTypeArg, \
-    HdrType, HdrTypeArg, KeyType, NamesType
-from .xstable import HeaderItem, TableHDU
+    HdrType, HdrTypeArg, KeyType, NamesType, \
+    Header, ImageBlock, TableBlock, BlockList
+
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -77,7 +78,7 @@ name: str = "pyfits"
 
 
 DatasetType = Union[str, fits.HDUList]
-HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU]
+HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU, fits.ImageHDU]
 
 
 def _try_key(hdu: HDUType,
@@ -149,7 +150,10 @@ def _add_keyword(hdrlist: fits.Header,
     hdrlist.append(fits.Card(name, val))
 
 
-def _try_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
+def _try_col(hdu,
+             name: str, *,
+             dtype: type = SherpaFloat,
+             fix_type: bool = False) -> Optional[np.ndarray]:
     try:
         col = hdu.data.field(name)
     except KeyError:
@@ -211,7 +215,7 @@ def _try_vec(hdu,
 def _require_col(hdu,
                  name: str,
                  *,
-                 dtype=SherpaFloat,
+                 dtype: type = SherpaFloat,
                  fix_type: bool = False) -> np.ndarray:
     col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
     if col is None:
@@ -1490,7 +1494,7 @@ def pack_rmf_data(blocks) -> fits.HDUList:
         if not np.issubdtype(val, np.floating):
             raise ValueError(f"Unexpected value '{val}' with type {val.dtype}")
 
-        if isinstance(val,np.float32):
+        if isinstance(val, np.float32):
             return "E"
 
         # This should not be reached
@@ -1706,10 +1710,10 @@ def set_arrays(filename: str,
 
 
 def _add_header(hdu: HDUType,
-                header: Sequence[HeaderItem]) -> None:
+                header: Header) -> None:
     """Add the header items to the HDU."""
 
-    for hdr in header:
+    for hdr in header.values:
         card = [hdr.name, hdr.value]
         if hdr.desc is not None or hdr.unit is not None:
             comment = "" if hdr.unit is None else f"[{hdr.unit}] "
@@ -1720,26 +1724,31 @@ def _add_header(hdu: HDUType,
         hdu.header.append(tuple(card))
 
 
-def _create_primary_hdu(hdu: TableHDU) -> fits.PrimaryHDU:
+def _create_primary_hdu(hdr: Header) -> fits.PrimaryHDU:
     """Create a PRIMARY HDU."""
 
     out = fits.PrimaryHDU()
+    _add_header(out, hdr)
+    return out
+
+
+def _create_image_hdu(hdu: ImageBlock) -> fits.ImageHDU:
+    """Create an Image HDU."""
+
+    out = fits.ImageHDU(name=hdu.name, data=hdu.image)
     _add_header(out, hdu.header)
     return out
 
 
-def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
+def _create_table_hdu(hdu: TableBlock) -> fits.BinTableHDU:
     """Create a Table HDU."""
-
-    if hdu.data is None:
-        raise ValueError("No column data to write out")
 
     # First create a Table which handles the FITS column settings
     # correctly.
     #
     store = []
     colnames = []
-    for col in hdu.data:
+    for col in hdu.columns:
         colnames.append(col.name)
         store.append(col.values)
 
@@ -1749,9 +1758,15 @@ def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
 
     # Add any column metadata
     #
-    for idx, col in enumerate(hdu.data, 1):
+    for idx, col in enumerate(hdu.columns, 1):
         if col.unit is not None:
-            out.header.append((f"TUNIT{idx}", col.unit))
+            out.columns[col.name].unit = col.unit
+
+        if col.minval is not None:
+            out.header.append((f"TLMIN{idx}", col.minval))
+
+        if col.maxval is not None:
+            out.header.append((f"TLMAX{idx}", col.maxval))
 
         if col.desc is None:
             continue
@@ -1762,27 +1777,30 @@ def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
     return out
 
 
-def pack_hdus(blocks: Sequence[TableHDU]) -> fits.HDUList:
-    """Create a dataset.
-
-    At present we are restricted to tables only.
-    """
+def pack_hdus(blocks: BlockList) -> fits.HDUList:
+    """Create a dataset."""
 
     out = fits.HDUList()
-    out.append(_create_primary_hdu(blocks[0]))
-    for hdu in blocks[1:]:
-        out.append(_create_table_hdu(hdu))
+    if blocks.header is not None:
+        out.append(_create_primary_hdu(blocks.header))
+
+    for block in blocks.blocks:
+        if isinstance(block, TableBlock):
+            hdu = _create_table_hdu(block)
+        elif isinstance(block, ImageBlock):
+            hdu = _create_image_hdu(block)
+        else:
+            raise RuntimeError(f"Unsupported block: {block}")
+
+        out.append(hdu)
 
     return out
 
 
 def set_hdus(filename: str,
-             blocks: Sequence[TableHDU],
+             blocks: BlockList,
              clobber: bool = False) -> None:
-    """Write out multiple HDUS to a single file.
-
-    At present we are restricted to tables only.
-    """
+    """Write out multiple HDUS to a single file."""
 
     check_clobber(filename, clobber)
     hdus = pack_hdus(blocks)

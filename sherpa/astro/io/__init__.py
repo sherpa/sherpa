@@ -50,6 +50,7 @@ interface):
 """
 
 from configparser import ConfigParser
+from contextlib import suppress
 import importlib
 import logging
 import os
@@ -70,6 +71,7 @@ from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
 from .types import KeyType, NamesType, HdrTypeArg, HdrType, DataType
+
 
 config = ConfigParser()
 config.read(get_config())
@@ -95,12 +97,11 @@ else:
         raise ValueError(emsg)
 
 for iotry in io_opt:
-    try:
+    with suppress(ImportError):
         backend = importlib.import_module('.' + iotry,
                                           package='sherpa.astro.io')
         break
-    except ImportError:
-        pass
+
 else:
     # None of the options in the rc file work, e.g. because it's an
     # old file that does not have dummy listed
