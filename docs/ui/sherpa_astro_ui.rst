@@ -174,6 +174,7 @@ burden...
       get_resid_plot
       get_response
       get_rmf
+      get_rng
       get_sampler
       get_sampler_name
       get_sampler_opt
@@ -375,6 +376,7 @@ burden...
       set_psf
       set_quality
       set_rmf
+      set_rng
       set_sampler
       set_sampler_opt
       set_source

@@ -101,7 +101,7 @@ def test_fake_pha_requires_response():
         fake_pha(pha, mdl)
 
 
-def identity(x):
+def identity(x, rng=None):
     """Return the input data"""
     return x
 
@@ -113,7 +113,7 @@ def identity(x):
                           (identity, False, [2, 2, 2], [2, 2, 2])
                           ])
 @pytest.mark.parametrize("has_bkg", [True, False])
-def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg, reset_seed):
+def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg):
     """No background.
 
     For simplicity we use perfect responses.
@@ -121,7 +121,8 @@ def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg, reset_
     A background dataset can be added, but it should
     not be used in the simulation with default settings
     """
-    np.random.seed(4276)
+
+    rng = np.random.RandomState(4276)
     data = DataPHA("any", channels, counts, exposure=1000.)
 
     if has_bkg:
@@ -135,7 +136,7 @@ def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg, reset_
     mdl = Const1D("mdl")
     mdl.c0 = 2
 
-    fake_pha(data, mdl, is_source=is_source, add_bkgs=False, method=method)
+    fake_pha(data, mdl, is_source=is_source, add_bkgs=False, method=method, rng=rng)
 
     assert data.exposure == pytest.approx(1000.0)
     assert (data.channel == channels).all()
@@ -167,7 +168,7 @@ def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg, reset_
     #
     data.set_arf(arf, 2)
     data.set_rmf(rmf, 2)
-    fake_pha(data, mdl, is_source=is_source, add_bkgs=False, method=method)
+    fake_pha(data, mdl, is_source=is_source, add_bkgs=False, method=method, rng=rng)
 
     assert data.counts == pytest.approx(expected2)
 
@@ -176,9 +177,10 @@ def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg, reset_
                          [(None, [186, 197, 212], [9, 4, 6]),  # expected2 is wrong
                           pytest.param(identity, [200, 200, 200], [202 / 6, 202 / 6, 202 / 6], marks=pytest.mark.xfail)
                           ])
-def test_fake_pha_background_pha(method, expected1, expected2, reset_seed):
+def test_fake_pha_background_pha(method, expected1, expected2):
     """Sample from background pha (no background model)"""
-    np.random.seed(1234)
+
+    rng = np.random.RandomState(1234)
 
     data = DataPHA("any", channels, counts, exposure=1000.)
     bkg = DataPHA("bkg", channels, bcounts, exposure=2000, backscal=2.5)
@@ -191,7 +193,7 @@ def test_fake_pha_background_pha(method, expected1, expected2, reset_seed):
     mdl.c0 = 0
 
     # Just make sure that the model does not contribute
-    fake_pha(data, mdl, is_source=True, add_bkgs=False)
+    fake_pha(data, mdl, is_source=True, add_bkgs=False, rng=rng)
     assert data.counts == pytest.approx([0, 0, 0])
 
     # The background signal (as each bin is the same) is
@@ -205,7 +207,7 @@ def test_fake_pha_background_pha(method, expected1, expected2, reset_seed):
     #
     #   1000 / 2 / 2.5 = 1000 / 5 = 200
     #
-    fake_pha(data, mdl, is_source=True, add_bkgs=True, method=method)
+    fake_pha(data, mdl, is_source=True, add_bkgs=True, method=method, rng=rng)
     assert data.counts == pytest.approx(expected1)
 
     # Add several more backgrounds with, compared to the first
@@ -231,7 +233,7 @@ def test_fake_pha_background_pha(method, expected1, expected2, reset_seed):
                       exposure=1000, backscal=2.5)
         data.set_background(bkg, id=i)
 
-    fake_pha(data, mdl, is_source=True, add_bkgs=True, method=method)
+    fake_pha(data, mdl, is_source=True, add_bkgs=True, method=method, rng=rng)
     assert data.counts == pytest.approx(expected2)
 
 
@@ -239,11 +241,11 @@ def test_fake_pha_background_pha(method, expected1, expected2, reset_seed):
                          [(None, [186, 411, 405], [197, 396, 389]),
                           (identity, [200, 400, 400], [200, 400, 400])
                           ])
-def test_fake_pha_bkg_model(method, expected1, expected2, reset_seed):
+def test_fake_pha_bkg_model(method, expected1, expected2):
     """Test background model
     """
 
-    np.random.seed(5329853)
+    rng = np.random.RandomState(5329853)
 
     data = DataPHA("any", channels, counts, exposure=1000.)
 
@@ -268,14 +270,14 @@ def test_fake_pha_bkg_model(method, expected1, expected2, reset_seed):
     #
     bmodels = {"used-bkg": bmdl}
     fake_pha(data, mdl, is_source=True, add_bkgs=False,
-             bkg_models=bmodels, method=method)
+             bkg_models=bmodels, method=method, rng=rng)
 
     assert data.counts == pytest.approx([0, 0, 0])
 
     # Check we have created source counts this time.
     #
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models=bmodels, method=method)
+             bkg_models=bmodels, method=method, rng=rng)
 
     assert data.exposure == pytest.approx(1000.0)
     assert (data.channel == channels).all()
@@ -319,7 +321,7 @@ def test_fake_pha_bkg_model(method, expected1, expected2, reset_seed):
     data.set_arf(arf, 2)
     data.set_rmf(rmf, 2)
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models=bmodels, method=method)
+             bkg_models=bmodels, method=method, rng=rng)
 
     assert data.counts == pytest.approx(expected2)
 
@@ -328,7 +330,7 @@ def test_fake_pha_bkg_model(method, expected1, expected2, reset_seed):
                          [(None, [388, 777, 755], [479, 957, 785]),  # expected2 values look wrong
                           pytest.param(identity, [400, 800, 800], [400 + 1000/3, 800 + 1000/3, 800 - 400/3], marks=pytest.mark.xfail)
                           ])
-def test_fake_pha_bkg_model_multiple(method, expected1, expected2, reset_seed):
+def test_fake_pha_bkg_model_multiple(method, expected1, expected2):
     """Test background model with multiple backgounds
 
     This is to check the different scaling factors, in particular
@@ -339,7 +341,7 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2, reset_seed):
     realisation using poisson_noise).
     """
 
-    np.random.seed(873)
+    rng = np.random.RandomState(873)
 
     data = DataPHA("any", channels, counts, exposure=1000.)
 
@@ -393,7 +395,7 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2, reset_seed):
     #   1000 * 4 * [0.1, 0.2, 0.2] = [400, 800, 800]
     #
     fake_pha(data, mdl, is_source=True, add_bkgs=False,
-             bkg_models=bmodels, method=method)
+             bkg_models=bmodels, method=method, rng=rng)
 
     assert data.exposure == pytest.approx(1000.0)
     assert data.counts == pytest.approx(expected1)
@@ -402,7 +404,7 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2, reset_seed):
     # backgrounds and the source.
     #
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models=bmodels, method=method)
+             bkg_models=bmodels, method=method, rng=rng)
 
     # The background identifiers haven't changed.
     #
@@ -450,10 +452,10 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2, reset_seed):
                           (identity, [400, 800, 800])
                           ])
 @pytest.mark.parametrize("add_bkgs", [False, True])
-def test_fake_pha_with_no_background(method, expected, add_bkgs, reset_seed):
+def test_fake_pha_with_no_background(method, expected, add_bkgs):
     """Check add_bkgs keyword does nothing if no background."""
 
-    np.random.seed(3567)
+    rng = np.random.RandomState(3567)
 
     # For fun we only set a RMF, not a ARF.
     data = DataPHA("x", channels, counts, exposure=1000)
@@ -467,7 +469,7 @@ def test_fake_pha_with_no_background(method, expected, add_bkgs, reset_seed):
     assert data.channel == pytest.approx(channels)
     assert data.counts == pytest.approx(counts)
 
-    fake_pha(data, mdl, add_bkgs=add_bkgs, method=method)
+    fake_pha(data, mdl, add_bkgs=add_bkgs, method=method, rng=rng)
 
     assert data.exposure == pytest.approx(1000.0)
     assert data.channel == pytest.approx(channels)
@@ -475,13 +477,13 @@ def test_fake_pha_with_no_background(method, expected, add_bkgs, reset_seed):
 
 
 @requires_fits
-def test_fake_pha_has_valid_ogip_keywords_all_fake(tmp_path, reset_seed):
+def test_fake_pha_has_valid_ogip_keywords_all_fake(tmp_path):
     """See #1209
 
     When everything is faked, what happens?
     """
 
-    np.random.seed(5)
+    rng = np.random.RandomState(5)
 
     data = DataPHA("any", channels, counts, exposure=1000.)
 
@@ -502,7 +504,7 @@ def test_fake_pha_has_valid_ogip_keywords_all_fake(tmp_path, reset_seed):
     bmdl.c0 = 2
 
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models={"used-bkg": bmdl})
+             bkg_models={"used-bkg": bmdl}, rng=rng)
 
     outfile = tmp_path / "sim.pha"
     io.write_pha(str(outfile), data, ascii=False)
@@ -540,7 +542,7 @@ def test_fake_pha_has_valid_ogip_keywords_all_fake(tmp_path, reset_seed):
 
 @requires_fits
 @requires_data
-def test_fake_pha_has_valid_ogip_keywords_from_real(make_data_path, tmp_path, reset_seed):
+def test_fake_pha_has_valid_ogip_keywords_from_real(make_data_path, tmp_path):
     """See #1209
 
     In this version we use a "real" PHA file as the base.
@@ -552,7 +554,7 @@ def test_fake_pha_has_valid_ogip_keywords_from_real(make_data_path, tmp_path, re
     which is closer to the reported case in #1209
     """
 
-    np.random.seed(5)
+    rng = np.random.RandomState(5)
 
     infile = make_data_path("acisf01575_001N001_r0085_pha3.fits.gz")
     data = io.read_pha(infile)
@@ -564,7 +566,7 @@ def test_fake_pha_has_valid_ogip_keywords_from_real(make_data_path, tmp_path, re
     bmdl.c0 = 2
 
     fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models={"used-bkg": bmdl})
+             bkg_models={"used-bkg": bmdl}, rng=rng)
 
     outfile = tmp_path / "sim.pha"
     io.write_pha(str(outfile), data, ascii=False)

@@ -41,11 +41,12 @@ from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
 from sherpa.plot import set_backend
-from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit, \
+from sherpa.utils import NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
+from sherpa.utils.numeric_types import SherpaFloat
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -846,6 +847,9 @@ class Session(NoNewAttributesAfterInit):
                 if _is_subclass(cls, base):
                     odict[name.lower()] = cls()
 
+        # Note: levmar does not support the rng option so this
+        # can be done before set_rng is called.
+        #
         self._current_method = self._methods['levmar']
         self._current_itermethod = self._itermethods['none']
         self._current_stat = self._stats['chi2gehrels']
@@ -986,6 +990,59 @@ class Session(NoNewAttributesAfterInit):
             'model_component': sherpa.image.ComponentModelImage(),
             'source_component': sherpa.image.ComponentSourceImage()
         }
+
+        # Reset the generator.
+        #
+        self.set_rng(None)
+
+    def get_rng(self):
+        """Return the RNG generator in use.
+
+        The return can be None, which means that the routines in
+        `numpy.random` are used, and thus are affected by calls to
+        `numpy.random.seed`, otherwise the supplied generator is used
+        to create random numbers. See
+        https://numpy.org/doc/stable/reference/random/legacy.html for
+        more information.
+
+        .. versionadded:: 4.16.0
+
+        See Also
+        --------
+        set_rng
+
+        """
+
+        return self._rng
+
+    def set_rng(self, rng):
+        """Set the RNG generator.
+
+        .. versionadded:: 4.16.0
+           This replaces the seed argument for certain routines and
+           the need to explictly call `numpy.random.seed` in others.
+
+        Parameters
+        ----------
+        rng : numpy.random.Generator, numpy.random.RandomState, or None
+           Determines how random numbers are created. If set to None
+           then the routines in `numpy.random` are used, and so can be
+           controlled by calling `numpy.random.seed`.
+
+        See Also
+        --------
+        get_rng
+
+        """
+
+        if rng is not None and not isinstance(rng,
+                                              (numpy.random.Generator,
+                                               numpy.random.RandomState)):
+            # Do not include RandomState in the error message as it is
+            # really meant for testing/old code.
+            raise ArgumentTypeErr("badarg", "rng", "a Generator or None")
+
+        self._rng = rng
 
     def set_plot_backend(self, backend):
         """Change the plot backend.
@@ -2276,6 +2333,20 @@ class Session(NoNewAttributesAfterInit):
             _check_type(meth, sherpa.optmethods.OptMethod, 'meth',
                         'a method name or object')
         self._current_method = meth
+
+        # Do we need to set the RNG argument? This is not ideal, but
+        # is a band-aid while we work out how to handle the RNG
+        # handling in the UI layer. One option would only to update
+        # this if the rng setting is None, but that would be
+        # problematic to users who change the method (as it could
+        # leave an "old" RNG state lying around), although it does
+        # mean that if the user has explicitly set rng then it will be
+        # over-written here. An alternative would be to remove the
+        # "rng" setting here (i.e. hide it somehow), but then how does
+        # this get passed to the method?
+        #
+        if "rng" in self._current_method.config:
+            self._current_method.config["rng"] = self.get_rng()
 
     def _check_method_opt(self, optname: str) -> None:
         _check_str_type(optname, "optname")
@@ -4195,7 +4266,8 @@ class Session(NoNewAttributesAfterInit):
         """
         data = self.get_data(id)
         model = self.get_model(id)
-        self.set_dep(id, method(data.eval_model(model)))
+        ndep = method(data.eval_model(model), rng=self.get_rng())
+        self.set_dep(id, ndep)
 
     @staticmethod
     def _read_data(readfunc, filename, *args, **kwargs):
@@ -9457,8 +9529,12 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        get_pvalue_results : Return the data calculated by the last plot_pvalue call.
-        plot_pvalue : Compute and plot a histogram of likelihood ratios by simulating data.
+        get_pvalue_results, plot_pvalue, set_rng
+
+        Notes
+        -----
+        The `set_rng` routine is used to control how the random
+        numbers are generated.
 
         Examples
         --------
@@ -9495,7 +9571,8 @@ class Session(NoNewAttributesAfterInit):
                          stat=self._current_stat,
                          method=self._current_method,
                          niter=num,
-                         numcores=numcores)
+                         numcores=numcores,
+                         rng=self.get_rng())
 
         info(results.format())
         self._pvalue_results = results
@@ -11397,15 +11474,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         --------
-        covar : Estimate the confidence intervals using the covariance method.
-        fit : Fit a model to one or more data sets.
-        plot_cdf : Plot the cumulative density function of an array.
-        plot_pdf : Plot the probability density function of an array.
-        plot_scatter : Create a scatter plot.
-        plot_trace : Create a trace plot of row number versus value.
-        set_prior : Set the prior function to use with a parameter.
-        set_sampler : Set the MCMC sampler.
-        get_sampler : Return information about the current MCMC sampler.
+        covar, fit, get_sampler, plot_cdf, plot_pdf, plot_scatter,
+        plot_trace, set_prior, set_rng, set_sampler
 
         Notes
         -----
@@ -11416,6 +11486,9 @@ class Session(NoNewAttributesAfterInit):
         to find the best-fit parameters, and `covar` called, before
         running `get_draws`. The results from `get_draws` is used to
         estimate the parameter distributions.
+
+        The `set_rng` routine is used to control how the random
+        numbers are generated.
 
         References
         ----------
@@ -11472,9 +11545,8 @@ class Session(NoNewAttributesAfterInit):
 
             covar_matrix = covar_results.extra_output
 
-        stats, accept, params = self._pyblocxs.get_draws(
-            fit, covar_matrix, niter=niter)
-        return (stats, accept, params)
+        return self._pyblocxs.get_draws(fit, covar_matrix,
+                                        niter=niter, rng=self.get_rng())
 
     ###########################################################################
     # Basic plotting

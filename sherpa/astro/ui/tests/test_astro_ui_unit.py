@@ -156,11 +156,7 @@ def test_all_has_no_repeated_elements():
 
 
 def setup_data1d_fit():
-    """Create a 1D dataset for fitting a gaussian-like profile.
-
-    This sets the random seed to a fixed value, so use the
-    reset_seed fixture.
-    """
+    """Create a 1D dataset for fitting a gaussian-like profile."""
 
     x = np.linspace(2300, 2400, 51)
 
@@ -170,8 +166,7 @@ def setup_data1d_fit():
     cpt.fwhm_l = 15
     cpt.ampl = 480
 
-    np.random.seed(72383)
-    y = poisson_noise(cpt(x))
+    y = poisson_noise(cpt(x), rng=np.random.RandomState(72383))
 
     ui.load_arrays(1, x, y, ui.Data1D)
     ui.set_stat("leastsq")
@@ -190,7 +185,7 @@ def setup_data1d_fit():
                            [0.5253350907054826, 31.35910472670331, 2343.6786455810307, 440.7219934649222]),
                           (ui.voigt1d, 162.4321009471359,
                            [24.290859063445527, 12.35931466539915, 2343.751436403753, 437.0342780289447])])
-def test_fit_profile(model, stat, pars, reset_seed, clean_astro_ui):
+def test_fit_profile(model, stat, pars, clean_astro_ui):
     """Regression test simple 1D fits"""
 
     setup_data1d_fit()

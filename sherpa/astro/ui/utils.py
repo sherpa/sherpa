@@ -31,10 +31,10 @@ import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
 from sherpa.ui.utils import _check_type, _check_str_type, _is_str
-from sherpa.utils import SherpaInt, SherpaFloat, sao_arange, \
-    send_to_pager
+from sherpa.utils import sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
+from sherpa.utils.numeric_types import SherpaFloat, SherpaInt
 from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
@@ -9609,7 +9609,8 @@ class Session(sherpa.ui.utils.Session):
         m = self.get_model(id)
 
         fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None,
-                      id=str(id), bkg_models=bkg_models, method=method)
+                      id=str(id), bkg_models=bkg_models, method=method,
+                      rng=self.get_rng())
         d.name = 'faked'
 
     ###########################################################################
@@ -13790,6 +13791,10 @@ class Session(sherpa.ui.utils.Session):
         each realization, and displays the average and standard
         deviation for each parameter.
 
+        .. versionchanged:: 4.16.0
+           The random number generation is now controlled by the
+           `set_rng` routine. The seed argument is now deprecated.
+
         .. versionadded:: 4.12.2
            The samples and statistic keys were added to the return
            value and the parameter values are returned as NumPy arrays
@@ -13803,6 +13808,7 @@ class Session(sherpa.ui.utils.Session):
            The number of iterations to use. The default is ``1000``.
         seed : int, optional
            The seed for the random number generator. The default is ```None```.
+           The `set_rng` routine should be used instead.
 
         Returns
         -------
@@ -13817,6 +13823,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         load_ascii_with_errors : Load an ASCII file with asymmetric errors as a data set.
+        set_rng : Set the RNG generator.
 
         Examples
         --------
@@ -13867,7 +13874,8 @@ class Session(sherpa.ui.utils.Session):
         data = self.get_data(id)
         model = self.get_model(id)
         resampledata = sherpa.sim.ReSampleData(data, model)
-        return resampledata(niter=niter, seed=seed)
+        return resampledata(niter=niter, seed=seed,
+                            rng=self.get_rng())
 
     def sample_photon_flux(self, lo=None, hi=None, id=None, num=1,
                            scales=None, correlated=False,
@@ -13880,6 +13888,10 @@ class Session(sherpa.ui.utils.Session):
         model over the given range (the flux). The return array
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_photon_flux`.
+
+        .. versionchanged:: 4.16.0
+           The random number generation is now controlled by the
+           `set_rng` routine.
 
         .. versionchanged:: 4.12.2
            The model, otherids, and clip parameters were added and
@@ -14098,7 +14110,8 @@ class Session(sherpa.ui.utils.Session):
                                              correlated=correlated,
                                              num=num, lo=lo, hi=hi,
                                              numcores=numcores,
-                                             samples=scales, clip=clip)
+                                             samples=scales, clip=clip,
+                                             rng=self.get_rng())
 
     def sample_energy_flux(self, lo=None, hi=None, id=None, num=1,
                            scales=None, correlated=False,
@@ -14111,6 +14124,10 @@ class Session(sherpa.ui.utils.Session):
         model over the given range (the flux). The return array
         contains the flux and parameter values for each iteration.
         The units for the flux are as returned by `calc_energy_flux`.
+
+        .. versionchanged:: 4.16.0
+           The random number generation is now controlled by the
+           `set_rng` routine.
 
         .. versionchanged:: 4.12.2
            The model, otherids, and clip parameters were added and
@@ -14329,7 +14346,8 @@ class Session(sherpa.ui.utils.Session):
                                              correlated=correlated,
                                              num=num, lo=lo, hi=hi,
                                              numcores=numcores,
-                                             samples=scales, clip=clip)
+                                             samples=scales, clip=clip,
+                                             rng=self.get_rng())
 
     def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
                     num=1, scales=None, correlated=False,
@@ -14342,6 +14360,10 @@ class Session(sherpa.ui.utils.Session):
         and sum the model over the given range (the flux). Return the
         parameter values used, together with the median, upper, and
         lower quantiles of the flux distribution.
+
+        .. versionchanged:: 4.16.0
+           The random number generation is now controlled by the
+           `set_rng` routine.
 
         .. versionchanged:: 4.13.1
            The `id` parameter is now used if set (previously the
@@ -14558,6 +14580,10 @@ class Session(sherpa.ui.utils.Session):
         is calculated in the selected units
         for the data set (which can be retrieved with `get_analysis`).
 
+        .. versionchanged:: 4.16.0
+           The random number generation is now controlled by the
+           `set_rng` routine.
+
         .. versionchanged:: 4.10.1
            The `error` parameter was added which controls whether the
            return value is a scalar (the calculated equivalent width),
@@ -14709,7 +14735,8 @@ class Session(sherpa.ui.utils.Session):
                                        covar_matrix=covar_matrix)
                 else:
                     sampler = NormalParameterSampleFromScaleMatrix()
-                    tmp = sampler.get_sample(fit, mycov=covar_matrix, num=niter + 1)
+                    tmp = sampler.get_sample(fit, mycov=covar_matrix,
+                                             num=niter + 1, rng=self.get_rng())
                     params = tmp.transpose()
 
             else:

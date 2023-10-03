@@ -29,7 +29,6 @@ be used with other data classes.
 import logging
 
 import numpy
-import numpy.random
 
 from sherpa.astro.utils import calc_energy_flux
 from sherpa.utils import parallel_map
@@ -138,7 +137,7 @@ def calc_flux(data, src, samples, method=calc_energy_flux,
 
 
 def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
-                                         num, clip='hard'):
+                                         num, clip='hard', rng=None):
     """Return the parameter samples given the parameter scales.
 
     Parameters
@@ -163,7 +162,7 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
         are different. For 1D the size is mfree and for 2D it is
         mfree by mfree.
     num : int
-        Tne number of samples to return. This must be 1 or greater.
+        The number of samples to return. This must be 1 or greater.
     clip : {'hard', 'soft', 'none'}, optional
         What clipping strategy should be applied to the sampled
         parameters. The default ('hard') is to fix values at their
@@ -171,6 +170,10 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
         soft limits instead, and 'none' applies no clipping. The last
         column in the returned arrays indicates if the row had any
         clipped parameters (even when clip is set to 'none').
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -255,16 +258,16 @@ def _sample_flux_get_samples_with_scales(fit, src, correlated, scales,
 
     if correlated:
         sampler = NormalParameterSampleFromScaleMatrix()
-        samples = sampler.get_sample(fit, mycov=scales, num=num)
+        samples = sampler.get_sample(fit, mycov=scales, num=num, rng=rng)
     else:
         sampler = NormalParameterSampleFromScaleVector()
-        samples = sampler.get_sample(fit, myscales=scales, num=num)
+        samples = sampler.get_sample(fit, myscales=scales, num=num, rng=rng)
 
     clipped = sampler.clip(fit, samples, clip=clip)
     return samples, clipped
 
 
-def _sample_flux_get_samples(fit, src, correlated, num, clip='hard'):
+def _sample_flux_get_samples(fit, src, correlated, num, clip='hard', rng=None):
     """Return the parameter samples, using fit to define the scales.
 
     The covariance method is used to estimate the errors for the
@@ -285,7 +288,7 @@ def _sample_flux_get_samples(fit, src, correlated, num, clip='hard'):
     correlated : bool
         Are the parameters assumed to be correlated or not?
     num : int
-        Tne number of samples to return. This must be 1 or greater.
+        The number of samples to return. This must be 1 or greater.
     clip : {'hard', 'soft', 'none'}, optional
         What clipping strategy should be applied to the sampled
         parameters. The default ('hard') is to fix values at their
@@ -293,6 +296,10 @@ def _sample_flux_get_samples(fit, src, correlated, num, clip='hard'):
         soft limits instead, and 'none' applies no clipping. The last
         column in the returned arrays indicates if the row had any
         clipped parameters (even when clip is set to 'none').
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -319,7 +326,7 @@ def _sample_flux_get_samples(fit, src, correlated, num, clip='hard'):
     else:
         sampler = NormalParameterSampleFromScaleVector()
 
-    samples = sampler.get_sample(fit, num=num)
+    samples = sampler.get_sample(fit, num=num, rng=rng)
     clipped = sampler.clip(fit, samples, clip=clip)
     return samples, clipped
 
@@ -370,13 +377,16 @@ def decompose(mdl):
 def sample_flux(fit, data, src,
                 method=calc_energy_flux, correlated=False,
                 num=1, lo=None, hi=None, numcores=None, samples=None,
-                clip='hard'):
+                clip='hard', rng=None):
     """Calculate model fluxes from a sample of parameter values.
 
     Draw parameter values from a normal distribution and then calculate
     the model flux for each set of parameter values. The values are
     drawn from normal distributions, and the distributions can either
     be independent or have correlations between the parameters.
+
+    .. versionchanged:: 4.16.0
+       The rng parameter was added.
 
     .. versionchanged:: 4.12.2
        The clip parameter was added and an extra column is added to
@@ -431,6 +441,10 @@ def sample_flux(fit, data, src,
         soft limits instead, and 'none' applies no clipping. The last
         column in the returned arrays indicates if the row had any
         clipped parameters (even when clip is set to 'none').
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Returns
     -------
@@ -491,10 +505,11 @@ def sample_flux(fit, data, src,
     scales = samples
     if scales is None:
         samples, clipped = _sample_flux_get_samples(fit, src, correlated,
-                                                    num, clip=clip)
+                                                    num, clip=clip, rng=rng)
     else:
         samples, clipped = _sample_flux_get_samples_with_scales(fit, src, correlated,
-                                                                scales, num, clip=clip)
+                                                                scales, num, clip=clip,
+                                                                rng=rng)
 
     # When a subset of the full model is used we need to know how
     # to select which rows in the samples array refer to the
@@ -509,11 +524,11 @@ def sample_flux(fit, data, src,
         for src_par in [p for p in src.pars if not p.frozen]:
             try:
                 cols.append(full_pars[src_par])
-            except KeyError:
+            except KeyError as exc:
                 # This should not be possible at this point but the
                 # decompose check above may be insufficient.
                 raise ArgumentErr('bad', 'src',
-                                  'unknown parameter "{}"'.format(src_par.fullname))
+                                  f'unknown parameter "{src_par.fullname}"') from exc
 
         cols = numpy.asarray(cols)
         assert cols.size == npar, 'We have lost a parameter somewhere'
@@ -662,8 +677,7 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
 
     for lbl, arg in zip(['original model', 'model component'], result):
         med, usig, lsig = arg
-        msg = '{} flux = {:g}, + {:g}, - {:g}'.format(lbl, med, usig - med, med - lsig)
-        info(msg)
+        info('%s flux = %g, + %g, - %g', lbl, med, usig - med, med - lsig)
 
     samples = numpy.concatenate((samples, mystat), axis=1)
     result.append(samples)

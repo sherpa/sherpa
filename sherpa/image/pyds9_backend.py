@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2020, 2021, 2023
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,8 +24,8 @@ import numpy
 
 import ds9
 
-from sherpa.utils import SherpaFloat
 from sherpa.utils.err import DS9Err
+from sherpa.utils.numeric_types import SherpaFloat
 
 _target = 'sherpa'
 

@@ -33,8 +33,10 @@ import cxcdm  # type: ignore
 
 from sherpa.astro.io.xstable import TableHDU
 from sherpa.astro.utils import resp_init
-from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat, is_binary_file
+from sherpa.utils import is_binary_file
 from sherpa.utils.err import ArgumentTypeErr, IOErr
+from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
+    SherpaFloat
 
 
 warning = logging.getLogger(__name__).warning

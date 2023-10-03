@@ -21,8 +21,9 @@
 The ``fake_pha`` routine is used to create simulated
 `sherpa.astro.data.DataPHA` data objects.
 '''
+
 import numpy as np
-from sherpa.utils import poisson_noise
+from sherpa.utils.random import poisson_noise
 from sherpa.utils.err import ArgumentTypeErr, DataErr
 from sherpa.astro.background import get_response_for_pha
 
@@ -32,7 +33,7 @@ __all__ = ('fake_pha', )
 def fake_pha(data, model,
              is_source=True, pileup_model=None,
              add_bkgs=False, bkg_models=None, id=None,
-             method=None):
+             method=None, rng=None):
     """Simulate a PHA data set from a model.
 
     This function replaces the counts in a PHA dataset with simulated counts
@@ -55,7 +56,7 @@ def fake_pha(data, model,
     source PHA dataset and the background PHA dataset(s) independently.
 
     .. versionchanged:: 4.16.0
-       The method parameter was added.
+       The method and rng parameters were added.
 
     Parameters
     ----------
@@ -86,12 +87,17 @@ def fake_pha(data, model,
         For all background ids not listed in this dictionary, the
         counts will be drawn from the PHA data of the background data set.
     id : str
-        String with id number if called from UI layer. This is only
-        used for certain error messages.
+        String with id number if called from UI layer. This is only used for
+        certain error messages.
     method : callable or None
         The routine used to simulate the data. If None (the default)
         then sherpa.utils.poisson_noise is used, otherwise the function
-        must accept a single ndarray, returning a ndarray of the same shape.
+        must accept a single ndarray, returning a ndarray of the same shape,
+        and an optional rng argument.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+        Determines how random numbers are created. If set to None then
+        the routines from `numpy.random` are used, and so can be
+        controlled by calling `numpy.random.seed`.
 
     Examples
     --------
@@ -143,9 +149,9 @@ def fake_pha(data, model,
     rmf0 = data.get_rmf(data.response_ids[0])
     data.channel = np.arange(1, rmf0.detchans + 1)
 
-    # Calculate the source model, and take a Poisson draw based on
+    # Calculate the source model, and take a "draw" based on
     # the source model.  That becomes the simulated data.
-    data.counts = method(data.eval_model(model))
+    data.counts = method(data.eval_model(model), rng=rng)
 
     # Add in background counts:
     #  -- Scale each background properly given data's
@@ -191,5 +197,5 @@ def fake_pha(data, model,
 
         if nbkg > 0:
             b = b / nbkg
-            b_poisson = method(b)
+            b_poisson = method(b, rng=rng)
             data.counts = data.counts + b_poisson

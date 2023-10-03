@@ -2914,7 +2914,7 @@ def test_fake_fixed(session, idval):
 
     # We use a custom method which does not add noise
     #
-    def custom(x):
+    def custom(x, rng=None):
         return x
 
     assert s.get_dep(idval) == pytest.approx([12, 13, 14])
@@ -2929,13 +2929,12 @@ def test_fake_fixed(session, idval):
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
 @pytest.mark.parametrize("idval", [None, "bob"])
-def test_fake_random(session, idval, reset_seed):
+def test_fake_random(session, idval):
     """Basic check of fake"""
-
-    numpy.random.seed(735)
 
     s = session()
     s._add_model_types(sherpa.models.basic)
+    s.set_rng(numpy.random.RandomState(735))
 
     s.load_arrays(idval, [2, 5, 9], [12, 13, 14])
     mdl = s.create_model_component("polynom1d", "mdl")
@@ -4186,3 +4185,40 @@ def test_fit_datapha_mix_data_with_bkg_sensible():
     s.fit()
     check_fit_results(s, (1, 2, 3), ("smdl.c0", "bmdl.c0"),
                       [2.5, 2/3], 17, 8 + 1/6, 12, 10)
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_get_fit_works(session):
+    """Check the default output.
+
+    This will need updating when the behavior changes.
+    """
+
+    s = session()
+    assert s.get_rng() is None
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_set_fit_works(session):
+    """Basic check."""
+
+    s = session()
+
+    rng = numpy.random.RandomState()
+    s.set_rng(rng)
+    got = s.get_rng()
+    assert isinstance(got, numpy.random.RandomState)
+
+    s.set_rng(None)
+    got = s.get_rng()
+    assert got is None
+
+
+@pytest.mark.parametrize("session", [Session, AstroSession])
+def test_set_fit_checks_arg(session):
+    """Basic check."""
+
+    s = session()
+    with pytest.raises(ArgumentTypeErr,
+                       match="^'rng' must be a Generator or None$"):
+        s.set_rng(1234)

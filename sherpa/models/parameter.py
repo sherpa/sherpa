@@ -195,10 +195,10 @@ fit.
 
 import logging
 import numpy
-from sherpa.utils import SherpaFloat, NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import ParameterErr
 from sherpa.utils import formatting
-
+from sherpa.utils.numeric_types import SherpaFloat
 
 warning = logging.getLogger(__name__).warning
 

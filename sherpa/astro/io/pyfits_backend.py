@@ -50,8 +50,10 @@ from astropy.table import Table  # type: ignore
 
 from sherpa.astro.io.xstable import TableHDU
 from sherpa.utils.err import ArgumentTypeErr, IOErr
-from sherpa.utils import SherpaInt, SherpaUInt, SherpaFloat
 import sherpa.utils
+from sherpa.utils.err import IOErr
+from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
+    SherpaFloat
 from sherpa.io import get_ascii_data, write_arrays
 
 

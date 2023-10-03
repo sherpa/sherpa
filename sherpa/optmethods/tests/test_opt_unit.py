@@ -37,7 +37,9 @@ def rosenbrock(x):
 SEED = 2354
 
 
-def test_is_simplexbase_repeatable():
+@pytest.mark.parametrize("rng", [None,
+                                 np.random.RandomState(2354)])
+def test_is_simplexbase_repeatable(rng):
     """The SimplexBase* classes uses RNG, so can we make it repeatable?
 
     This is based on the 'if __name__ == "__main__"' section of
@@ -55,7 +57,7 @@ def test_is_simplexbase_repeatable():
     xmax = [1000, 1000]
     simp = SimplexRandom(func=rosenbrock, npop=4, xpar=x0, xmin=xmin,
                          xmax=xmax, step=x0 + 1.2, seed=SEED,
-                         factor=10)
+                         factor=10, rng=rng)
 
     # After the first line, which is the x0 array + function value,
     # the next three rows have 2 random numbers and then the function
@@ -63,9 +65,37 @@ def test_is_simplexbase_repeatable():
     # So this tests how repeatable the RNG is.
     #
     expected = np.asarray([[-1.2, 1.0, 24.2],
-                           [4.21466190e-01, -1.72015071e+00, 3.60493288e+02],
-                           [-3.66908476e+00, 6.96971374e+00, 4.23701601e+03],
-                           [-6.71378027e-01, 1.07842741e+01, 1.06809687e+04]])
+                           [-3.35073356, 10.0887400, 148.587036],
+                           [-4.81446429, -5.89369307, 8.45563422e+04],
+                           [6.25720004, 2.32379451, 1.35663379e+05]])
+    assert simp.simplex == pytest.approx(expected)
+
+
+def test_is_simplexbase_repeatable_post_117():
+    """test_is_simplese_repeatable with a post NumPy 1.17 RNG.
+
+    It's not clear how "repeatable" this will be (i.e. using
+    a fixed seed is not guaranteed to give the same results
+    over NumPy versions).
+
+    """
+
+    # The seed argument to SimplexRandom should not be used, so send
+    # it a different value to the one used with the RNG.
+    #
+    rng = np.random.default_rng(SEED)
+
+    x0 = np.array([-1.2, 1.0])
+    xmin = [-1000, -1000]
+    xmax = [1000, 1000]
+    simp = SimplexRandom(func=rosenbrock, npop=4, xpar=x0, xmin=xmin,
+                         xmax=xmax, step=x0 + 1.2, seed=SEED + 1,
+                         factor=10, rng=rng)
+
+    expected = np.asarray([[-1.2, 1.0, 24.2],
+                           [-1.56818621, -3.88919619, 4.03681915e+03],
+                           [ 4.48924317, -0.37612188, 4.21579083e+04],
+                           [-8.84949593,  9.70166152, 4.70856524e+05]])
     assert simp.simplex == pytest.approx(expected)
 
 

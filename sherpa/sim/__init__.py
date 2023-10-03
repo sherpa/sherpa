@@ -204,9 +204,10 @@ import numpy
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
 from sherpa.sim.mh import *
+from sherpa.stats import Cash, CStat, WStat, LeastSq
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults, \
     sao_fcmp
-from sherpa.stats import Cash, CStat, WStat, LeastSq
+from sherpa.utils import random
 
 from sherpa.fit import Fit
 from sherpa.data import Data1D, Data1DAsymmetricErrs
@@ -643,7 +644,7 @@ class MCMC(NoNewAttributesAfterInit):
         """
         self._set_sampler_opt(opt, value)
 
-    def get_draws(self, fit, sigma, niter=1000, cache=True):
+    def get_draws(self, fit, sigma, niter=1000, cache=True, rng=None):
         """Run the pyBLoCXS MCMC algorithm.
 
         The function runs a Markov Chain Monte Carlo (MCMC) algorithm
@@ -655,6 +656,9 @@ class MCMC(NoNewAttributesAfterInit):
         flag indicating whether the row represents a jump from the
         current location or not.
 
+        .. versionadded:: 4.16.0
+           The rng parameter was added.
+
         Parameters
         ----------
         fit
@@ -664,6 +668,10 @@ class MCMC(NoNewAttributesAfterInit):
            values.
         niter : int, optional
            The number of draws to use. The default is ``1000``.
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+           Determines how random numbers are created. If set to None then
+           the routines from `numpy.random` are used, and so can be
+           controlled by calling `numpy.random.seed`.
 
         Returns
         -------
@@ -745,7 +753,7 @@ class MCMC(NoNewAttributesAfterInit):
 
         try:
             fit.model.startup(cache)
-            self.sample = sampler(calc_stat, sigma, mu, dof, fit)
+            self.sample = sampler(calc_stat, sigma, mu, dof, fit, rng=rng)
             self.walk = walker(self.sample, niter)
             stats, accept, params = self.walk(**sampler_kwargs)
         finally:
@@ -839,11 +847,14 @@ class ReSampleData(NoNewAttributesAfterInit):
         self.model = model
         NoNewAttributesAfterInit.__init__(self)
 
-    def __call__(self, niter=1000, seed=None):
-        return self.call(niter, seed)
+    def __call__(self, niter=1000, seed=None, rng=None):
+        return self.call(niter, seed, rng=rng)
 
-    def call(self, niter, seed=None):
+    def call(self, niter, seed=None, rng=None):
         """Resample the data and fit the model to each iteration.
+
+        .. versionadded:: 4.16.0
+           The rng parameter was added.
 
         .. versionadded:: 4.12.2
            The samples and statistic keys were added to the return
@@ -854,9 +865,13 @@ class ReSampleData(NoNewAttributesAfterInit):
         Parameters
         ----------
         niter : int
-            The number of iterations.
+           The number of iterations.
         seed : int or None, optional
-            The seed value.
+           The seed value (only used if rng is None).
+        rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+           Determines how random numbers are created. If set to None then
+           the routines from `numpy.random` are used, and so can be
+           controlled by calling `numpy.random.seed`.
 
         Returns
         -------
@@ -902,7 +917,9 @@ class ReSampleData(NoNewAttributesAfterInit):
         # TODO: we do not properly handle Data1DInt here
         fake_data = Data1D('tmp', x, numpy.zeros(ny))
 
-        numpy.random.seed(seed)
+        if rng is None:
+            numpy.random.seed(seed)
+
         ry_all = numpy.zeros((niter, ny), dtype=y_l.dtype)
         stats = numpy.zeros(niter)
         for j in range(niter):
@@ -924,7 +941,7 @@ class ReSampleData(NoNewAttributesAfterInit):
                     #
                     # u = numpy.random.randint(low=0, high=2)
                     #
-                    u = numpy.random.random_sample()
+                    u = random.random(rng)
                     u = 0 if u < 0.5 else 1
 
                     # Rather than dropping this value, we could
@@ -932,7 +949,8 @@ class ReSampleData(NoNewAttributesAfterInit):
                     # is wrong). Would this affect the statistical
                     # properties?
                     #
-                    dr = numpy.random.normal(loc=0, scale=1, size=None)
+                    dr = random.normal(rng)
+
                     if u == 0:
                         if dr > 0:
                             continue

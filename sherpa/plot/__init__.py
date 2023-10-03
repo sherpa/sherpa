@@ -33,9 +33,10 @@ import importlib
 
 import numpy
 
-from sherpa.utils import NoNewAttributesAfterInit, erf, SherpaFloat, \
+from sherpa.utils import NoNewAttributesAfterInit, erf, \
     bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
 from sherpa.utils.err import PlotErr, StatErr, ConfidenceErr
+from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar

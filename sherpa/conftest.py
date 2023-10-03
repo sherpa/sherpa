@@ -546,22 +546,6 @@ def restore_xspec_settings():
 
 
 @pytest.fixture
-def reset_seed(request):
-    """Force a random seed after the test.
-
-    The random seed is set to np.random.seed() after the
-    test is done. It is expected that the test sets the
-    seed to an explicit value. Ideally we would use the
-    new NumPy RNG but we still need to support older NumPy
-    versions.
-
-    """
-
-    yield
-    np.random.seed()
-
-
-@pytest.fixture
 def hide_logging():
     """Set Sherpa's logging to ERROR for the test.
 

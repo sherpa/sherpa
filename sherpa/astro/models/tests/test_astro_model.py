@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022
+#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -23,10 +23,10 @@ import numpy as np
 import pytest
 
 import sherpa.astro.models as models
-from sherpa.utils import SherpaFloat
 from sherpa.models.model import ArithmeticModel, RegriddableModel2D, \
     RegriddableModel1D, boolean_to_byte
 from sherpa.models import basic
+from sherpa.utils.numeric_types import SherpaFloat
 
 
 # See sherpa/models/tests/test_basic.py

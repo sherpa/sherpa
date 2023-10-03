@@ -1,4 +1,4 @@
-# Copyright 2018, 2020, 2021, 2022
+# Copyright 2018, 2020, 2021, 2022, 2023
 # Smithsonian Astrophysical Observatory
 #
 # Redistribution and use in source and binary forms, with or without modification, are permitted provided that the
@@ -335,10 +335,11 @@ class MyGauss(RegriddableModel1D):
         return ampl * np.exp(-0.5 * (args[0] - pos)**2 / sigma**2)
 
 
-def test_regrid_binaryop_1d(reset_seed):
+def test_regrid_binaryop_1d():
     """issue #762, Cannot regrid a composite model (BinaryOpModel)"""
 
-    np.random.seed(0)
+    rng = np.random.RandomState(0)
+
     leastsq = LeastSq()
     levmar = LevMar()
     mygauss = MyGauss()
@@ -346,7 +347,7 @@ def test_regrid_binaryop_1d(reset_seed):
     mymodel = mygauss + myconst
     x = np.linspace(-5., 5., 5)
     err = 0.25
-    y = mymodel(x) + np.random.normal(mygauss.pos.val, err, x.shape)
+    y = mymodel(x) + rng.normal(mygauss.pos.val, err, x.shape)
     mygauss.counter = 0
     myconst.counter = 0
     data = Data1D('one', x, y)

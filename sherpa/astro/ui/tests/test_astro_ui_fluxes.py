@@ -872,7 +872,7 @@ def test_sample_foo_flux_niter(multi, single, id, niter, correlated,
 def test_sample_foo_flux_params(multi, correlated, lnh0, gamma0, lampl0,
                                 slnh0, sgamma0, slampl0,
                                 make_data_path, clean_astro_ui,
-                                hide_logging, reset_seed):
+                                hide_logging):
     """Is the parameter sampling in sample_energy/photon_flux sensible?
 
     Do the parameter values used in the sampling make sense?
@@ -881,7 +881,7 @@ def test_sample_foo_flux_params(multi, correlated, lnh0, gamma0, lampl0,
     (~1e-3) to test the numbers, given the seed is fixed.
     """
 
-    np.random.seed(4276)
+    ui.set_rng(np.random.RandomState(4276))
 
     # Rather than loop over ids, like earlier tests, just pick a non-default
     # one.
@@ -1072,7 +1072,7 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
                                 lnh0, gamma0, lampl0,
                                 slnh0, sgamma0, slampl0,
                                 make_data_path, clean_astro_ui,
-                                hide_logging, reset_seed):
+                                hide_logging):
     """What happens when we specify the scale parameters?
 
     Test out sending in the errors to the sample_*_flux routines.
@@ -1081,7 +1081,7 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
     The tests are based on those in test_sample_foo_flux_params
     """
 
-    np.random.seed(888)
+    ui.set_rng(np.random.RandomState(888))
 
     id = 2
     gal, pl = setup_sample(id, make_data_path)
@@ -1139,7 +1139,7 @@ def test_sample_foo_flux_scales(multi, correlated, scales,
 @pytest.mark.parametrize("multi", [ui.sample_energy_flux,
                                    ui.sample_photon_flux])
 def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui,
-                                        hide_logging, reset_seed):
+                                        hide_logging):
     """Ensure that one of the examples works as expected.
 
     It is a simplified version of test_sample_foo_flux_scales
@@ -1147,7 +1147,7 @@ def test_sample_foo_flux_scales_example(multi, make_data_path, clean_astro_ui,
     of the covariance output.
     """
 
-    np.random.seed(3975529)
+    ui.set_rng(np.random.RandomState(3975529))
 
     id = None
     gal, pl = setup_sample(id, make_data_path)
@@ -1351,7 +1351,7 @@ def test_sample_flux_1d_int():
 @pytest.mark.parametrize("correlated", [False, True])
 def test_sample_foo_flux_component(multi, fac, correlated,
                                    make_data_path, clean_astro_ui,
-                                   hide_logging, reset_seed):
+                                   hide_logging):
     """Can we sample just a component?
 
     The idea is to check that the flux for the unabsorbed
@@ -1371,7 +1371,7 @@ def test_sample_foo_flux_component(multi, fac, correlated,
     best-fit location, so shouldn't depend on the errors).
     """
 
-    np.random.seed(39401)
+    ui.set_rng(np.random.RandomState(39401))
 
     id = 'xx'
     gal, pl = setup_sample(id, make_data_path)
@@ -1459,7 +1459,7 @@ def test_sample_foo_flux_component(multi, fac, correlated,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
-                              hide_logging, reset_seed, caplog):
+                              hide_logging, caplog):
     """What happens with 1 iteration?
 
     This is the same data as test_sample_flux_751_752 but
@@ -1469,7 +1469,7 @@ def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
     """
 
     # Use a different value to test_sample_flux_751_752
-    np.random.seed(3704)
+    ui.set_rng(np.random.RandomState(3704))
 
     gamma0 = 1.95014
     ampl0 = 1.77506e-4
@@ -1545,14 +1545,14 @@ def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
 @requires_data
 @requires_fits
 def test_sample_flux_nologging(make_data_path, clean_astro_ui,
-                               hide_logging, reset_seed, caplog):
+                               hide_logging, caplog):
     """Check the example code (using SherpaVerbosity).
 
     We just want to check we get no logging output. We don't
     check anything else.
     """
 
-    np.random.seed(3704)
+    ui.set_rng(np.random.RandomState(3704))
 
     gamma0 = 1.95014
     ampl0 = 1.77506e-4
@@ -1585,7 +1585,7 @@ def test_sample_flux_nologging(make_data_path, clean_astro_ui,
                           (True, COVMAT)])
 def test_sample_foo_flux_component_scales(method, correlated, scales3,
                                           make_data_path, clean_astro_ui,
-                                          hide_logging, reset_seed):
+                                          hide_logging):
     """Can we sample just a component and send in errors?
 
     Since the full model (gal * pl) has 3 free parameters
@@ -1600,7 +1600,7 @@ def test_sample_foo_flux_component_scales(method, correlated, scales3,
 
     """
 
-    np.random.seed(283491)
+    ui.set_rng(np.random.RandomState(283491))
 
     id = 2
     cpts = setup_sample(id, make_data_path)
@@ -1739,7 +1739,7 @@ def test_sample_foo_flux_component_scales_fitpars(method, id,
 @pytest.mark.parametrize("id", [None, "foo"])
 def test_sample_foo_flux_bkg(method, fluxval1, fluxval2,
                              id, make_data_path, clean_astro_ui,
-                             hide_logging, reset_seed):
+                             hide_logging):
     """Basic test when calculating flux with a background model.
 
     fluxval is a value used to check that the median values for the
@@ -1751,7 +1751,7 @@ def test_sample_foo_flux_bkg(method, fluxval1, fluxval2,
 
     """
 
-    np.random.seed(22843)
+    ui.set_rng(np.random.RandomState(22843))
 
     infile = make_data_path('3c273.pi')
     if id is None:
@@ -1829,12 +1829,12 @@ def test_sample_foo_flux_bkg(method, fluxval1, fluxval2,
 @requires_fits
 @requires_xspec
 def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
-                               hide_logging, reset_seed):
+                               hide_logging):
     """Basic test when calculating flux with multiple datasets
     and, for completeness, fitting the background.
     """
 
-    np.random.seed(8290573)
+    ui.set_rng(np.random.RandomState(8290573))
 
     # use xswabs as it is simple and unlikely to change
     # (rather than one of the newwe absorption models)
@@ -1955,7 +1955,7 @@ def test_sample_foo_flux_multi(make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
-                             hide_logging, reset_seed, caplog):
+                             hide_logging, caplog):
     """Very basic test of sample_flux.
 
     Based around issue #751 (not all iterations have a statistic
@@ -1967,7 +1967,7 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
 
     # Try to ensure we get some clipping.
     #
-    np.random.seed(4073)
+    ui.set_rng(np.random.RandomState(4073))
 
     # we want niter to be even so that the returned number of
     # values (niter+1) is odd, as that makes the median check
@@ -2064,7 +2064,7 @@ def test_sample_flux_751_752(idval, make_data_path, clean_astro_ui,
 @requires_data
 @requires_fits
 def test_sample_flux_457(make_data_path, clean_astro_ui,
-                         hide_logging, reset_seed):
+                         hide_logging):
     """What happens with upper-bounds?
 
     The absorption is an upper limit, so check what happens
@@ -2079,7 +2079,7 @@ def test_sample_flux_457(make_data_path, clean_astro_ui,
 
     # Try to ensure we get some clipping.
     #
-    np.random.seed(8077)
+    ui.set_rng(np.random.RandomState(8077))
 
     # we want niter to be even so that the returned number of
     # values (niter+1) is odd, as that makes the median check
@@ -2129,10 +2129,10 @@ def test_sample_flux_457(make_data_path, clean_astro_ui,
                          [(ui.get_photon_flux_hist, 1.276591979716474e-4),
                           (ui.get_energy_flux_hist, 4.550271338687814e-13)])
 def test_get_xxx_flux_hist_unabsorbed(getfunc, medflux, make_data_path, clean_astro_ui,
-                                      reset_seed, hide_logging):
+                                      hide_logging):
     """Can we get the histogram data for fluxes (for an unabsorbed flux?)"""
 
-    np.random.seed(427247)
+    ui.set_rng(np.random.RandomState(427247))
 
     infile = make_data_path('3c273.pi')
     ui.load_pha(infile)
@@ -2165,13 +2165,13 @@ def test_get_xxx_flux_hist_unabsorbed(getfunc, medflux, make_data_path, clean_as
 @pytest.mark.parametrize("plotfunc",
                          [ui.plot_photon_flux, ui.plot_energy_flux])
 def test_plot_xxx_flux_unabsorbed(plotfunc, make_data_path, clean_astro_ui,
-                                  reset_seed, hide_logging):
+                                  hide_logging):
     """Can we plot the histogram data for fluxes (for an unabsorbed flux?)
 
     There is essentially no check that we do the right thing
     """
 
-    np.random.seed(427248)
+    ui.set_rng(np.random.RandomState(427248))
 
     infile = make_data_path('3c273.pi')
     ui.load_pha(infile)
@@ -2195,7 +2195,7 @@ def test_plot_xxx_flux_unabsorbed(plotfunc, make_data_path, clean_astro_ui,
 @requires_data
 @requires_fits
 def test_sample_flux_errors(make_data_path, clean_astro_ui,
-                            hide_logging, reset_seed):
+                            hide_logging):
     """Does sample_flux return sensible sigma limits?
 
     This can be thought of as test_sample_flux_751_752 but just
@@ -2206,7 +2206,7 @@ def test_sample_flux_errors(make_data_path, clean_astro_ui,
 
     """
 
-    np.random.seed(28737)
+    ui.set_rng(np.random.RandomState(28737))
 
     # now we have a seed can we get tighter constraints
 
@@ -2270,7 +2270,7 @@ def test_sample_flux_errors(make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
-                                   hide_logging, reset_seed, caplog):
+                                   hide_logging, caplog):
     """Does the component analysis work?
 
     Apply a model which has a normalization term in it (which is fixed)
@@ -2282,7 +2282,7 @@ def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
 
     """
 
-    np.random.seed(97284)
+    ui.set_rng(np.random.RandomState(97284))
 
     # Now we have a fixed seed we don't need to run as many iterations.
     #
@@ -2366,10 +2366,10 @@ def test_sample_flux_pha_component(idval, make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_bkg_no_source(idval, make_data_path, clean_astro_ui,
-                                       hide_logging, reset_seed):
+                                       hide_logging):
     """Can we get the flux for the background fit when there's no source model?"""
 
-    np.random.seed(287241)
+    ui.set_rng(np.random.RandomState(287241))
 
     niter = 100
 
@@ -2402,7 +2402,7 @@ def test_sample_flux_pha_bkg_no_source(idval, make_data_path, clean_astro_ui,
 @requires_xspec
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_bkg(idval, make_data_path, clean_astro_ui,
-                             hide_logging, reset_seed):
+                             hide_logging):
     """Can we get the flux for the background fit.
 
     In this case we have a source fit that has also been run,
@@ -2452,12 +2452,12 @@ def test_sample_flux_pha_bkg(idval, make_data_path, clean_astro_ui,
 
     # Use the same seed for both runs.
     #
-    np.random.seed(287247)
+    ui.set_rng(np.random.RandomState(287247))
     bflux1, bflux2, bvals = ui.sample_flux(id=idval, bkg_id=1,
                                            lo=1, hi=5, num=niter,
                                            correlated=False)
 
-    np.random.seed(287247)
+    ui.set_rng(np.random.RandomState(287247))
     flux1, flux2, vals = ui.sample_flux(id=idval,
                                         lo=1, hi=5, num=niter,
                                         correlated=False)
@@ -2501,10 +2501,10 @@ def test_sample_flux_pha_bkg(idval, make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_full_model(idval, make_data_path, clean_astro_ui,
-                                    hide_logging, reset_seed, caplog):
+                                    hide_logging, caplog):
     """When using set_full_model we error out. Is it a nice error?"""
 
-    np.random.seed(9783)
+    ui.set_rng(np.random.RandomState(9783))
 
     niter = 100
 
@@ -2540,10 +2540,10 @@ def test_sample_flux_pha_full_model(idval, make_data_path, clean_astro_ui,
 @requires_fits
 @pytest.mark.parametrize("idval", [1, 2])
 def test_sample_flux_pha_bkg_full_model(idval, make_data_path, clean_astro_ui,
-                                        hide_logging, reset_seed, caplog):
+                                        hide_logging, caplog):
     """When using set_bkg_full_model we error out. Is it a nice error?"""
 
-    np.random.seed(9783)
+    ui.set_rng(np.random.RandomState(9783))
 
     niter = 100
 

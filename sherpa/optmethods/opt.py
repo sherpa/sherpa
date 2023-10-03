@@ -19,12 +19,12 @@
 #
 
 import multiprocessing
-import random
 
 import numpy as np
 
 from sherpa.utils import Knuth_close, func_counter
 from sherpa.utils.parallel import multi, run_tasks
+from sherpa.utils.random import uniform
 
 
 __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
@@ -125,11 +125,13 @@ class Opt:
 
 class SimplexBase:
 
-    def __init__(self, func, npop, xpar, xmin, xmax, step, seed, factor):
+    def __init__(self, func, npop, xpar, xmin, xmax, step, seed,
+                 factor, rng=None):
         self.func = func
         self.xmin = xmin
         self.xmax = xmax
         self.npar = len(xpar)
+        self.rng = rng
         self.simplex = self.init(npop=npop, xpar=xpar, step=step,
                                  seed=seed, factor=factor)
 
@@ -213,7 +215,11 @@ class SimplexBase:
         raise NotImplementedError("init has not been implemented")
 
     def init_random_simplex(self, xpar, simplex, start, npop, seed, factor):
-        random.seed(seed)
+        # Set the seed when there is no RNG set, otherwise the RNG
+        # determines the state.
+        #
+        if self.rng is None:
+            np.random.seed(seed)
 
         # This could be done before changing the seed, but code may
         # require the current behavior.
@@ -227,8 +233,9 @@ class SimplexBase:
         deltas = factor * np.abs(np.asarray(xpar))
         for ii in range(start, npop):
             simplex[ii][:-1] = \
-                np.array([random.uniform(max(xmin, xp - delta),
-                                         min(xmax, xp + delta))
+                np.array([uniform(self.rng,
+                                  max(xmin, xp - delta),
+                                  min(xmax, xp + delta))
                           for xmin, xmax, xp, delta in zip(self.xmin,
                                                            self.xmax,
                                                            xpar,

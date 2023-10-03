@@ -25,6 +25,7 @@ import numpy as np
 from sherpa.fit import Fit
 from sherpa.estmethods import Covariance
 from sherpa.sim.mh import MetropolisMH, rmvt, CovarError, Walk, LimitError
+from sherpa.utils import random
 
 read_table_blocks = None
 try:
@@ -42,10 +43,10 @@ __all__ = ['PragBayes', 'PCA1DAdd', 'SIM1DAdd', 'ARFSIMFactory',
 
 class ARFSIMFactory():
 
-    def __call__(self, filename):
-        return self.read(filename)
+    def __call__(self, filename, rng=None):
+        return self.read(filename, rng=rng)
 
-    def read(self, filename):
+    def read(self, filename, rng=None):
         filename, cols, hdr = read_table_blocks(filename)
 
         emethod = None
@@ -62,20 +63,23 @@ class ARFSIMFactory():
             fvariance = cols[3]['FVARIANCE']
             eigenval = cols[3]['EIGENVAL']
             eigenvec = cols[3]['EIGENVEC']
-            return PCA1DAdd(bias, component, fvariance, eigenval, eigenvec)
+            return PCA1DAdd(bias, component, fvariance,
+                            eigenval, eigenvec, rng=rng)
 
         if emethod.startswith('SIM1DADD'):
             bias = cols[2]['BIAS']
             component = cols[3]['COMPONENT']
             simcomp = cols[3]['SIMCOMP']
-            return SIM1DAdd(bias, component, simcomp)
+            return SIM1DAdd(bias, component, simcomp,
+                            rng=rng)
 
         raise TypeError(f"Unknown simulation ARF '{filename}'")
 
 
 class PCA1DAdd():
 
-    def __init__(self, bias, component, fvariance, eigenval, eigenvec):
+    def __init__(self, bias, component, fvariance, eigenval, eigenvec,
+                 rng=None):
         self.bias = bias
         self.component = component
         self.fvariance = fvariance
@@ -83,12 +87,14 @@ class PCA1DAdd():
         self.eigenvec = eigenvec
         self.ncomp = len(self.component)
         self.rrout = None
+        self.rng = rng
 
     def add_deviations(self, specresp, rrin=None, rrsig=None):
         # copy the old ARF (use new memory for deviations)
         new_arf = np.add(specresp, self.bias)
 
-        rrout = np.random.standard_normal(self.ncomp)
+        rrout = random.standard_normal(self.rng, self.ncomp)
+
         if rrin is not None and rrsig is not None:
             rrout = rrin + rrsig * rrout
         self.rrout = rrout
@@ -101,17 +107,20 @@ class PCA1DAdd():
 
 class SIM1DAdd():
 
-    def __init__(self, bias, component, simcomp):
+    def __init__(self, bias, component, simcomp, rng=None):
         self.bias = bias
         self.component = component
         self.simcomp = simcomp
         self.ncomp = len(self.component)
+        self.rng = rng
 
     def add_deviations(self, specresp):
         # copy the old ARF (use new memory for deviations)
         new_arf = np.add(specresp, self.bias)
+
         # Include the perturbed effective area in each iteration.
-        rr = np.random.randint(self.ncomp)
+        rr = random.integers(self.rng, self.ncomp)
+
         return np.add(new_arf, self.simcomp[rr], new_arf)
 
 
@@ -292,8 +301,8 @@ class WalkWithSubIters(Walk):
 
 class PragBayes(MetropolisMH):
 
-    def __init__(self, fcn, sigma, mu, dof, fit, *args):
-        MetropolisMH.__init__(self, fcn, sigma, mu, dof, *args)
+    def __init__(self, fcn, sigma, mu, dof, fit, *args, rng=None):
+        MetropolisMH.__init__(self, fcn, sigma, mu, dof, *args, rng=rng)
 
         self._fit = fit
         if hasattr(fit.model, 'teardown'):
@@ -316,7 +325,7 @@ class PragBayes(MetropolisMH):
         if isinstance(simarf, (PCA1DAdd, SIM1DAdd)):
             self.simarf = simarf
         else:
-            self.simarf = ARFSIMFactory()(simarf)
+            self.simarf = ARFSIMFactory()(simarf, rng=self.rng)
 
         return MetropolisMH.init(self, log, inv, defaultprior, priorshape,
                                  priors, originalscale, scale, sigma_m, p_M)
@@ -364,17 +373,18 @@ class PragBayes(MetropolisMH):
 
         # Use _sigma from fit in the first subiteration.
         # Reset for each iteration.
-        proposal = rmvt(current, self._sigma, self._dof)
-        return proposal
+        return rmvt(current, self._sigma, self._dof, rng=self.rng)
 
     def perturb_arf(self, current_params, current_stat):
-        if self.simarf is not None:
-            # add deviations starting with original ARF for each iter
-            for specresp, arf in zip(self.backup_arfs, self.arfs):
-                arf.specresp = self.simarf.add_deviations(specresp)
+        if self.simarf is None:
+            return
 
-            # When ARF is updated, set scale to None
-            self._sigma = None
+        # add deviations starting with original ARF for each iter
+        for specresp, arf in zip(self.backup_arfs, self.arfs):
+            arf.specresp = self.simarf.add_deviations(specresp)
+
+        # When ARF is updated, set scale to None
+        self._sigma = None
 
     def tear_down(self):
         MetropolisMH.tear_down(self)

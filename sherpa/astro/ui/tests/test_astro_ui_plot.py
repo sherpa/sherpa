@@ -2342,7 +2342,7 @@ def test_pha1_get_foo_flux_hist_no_data(getfunc, clean_astro_ui, basic_pha1):
 @pytest.mark.parametrize("scale", [None, 1.0, 2.0])
 def test_pha1_get_foo_flux_hist_scales(getfunc, scale,
                                        clean_astro_ui, basic_pha1,
-                                       hide_logging, reset_seed):
+                                       hide_logging):
     """Can we call get_energy/photon_flux_hist with the scales argument.
 
     Run with the covar-calculated errors and then manually-specified
@@ -2354,7 +2354,7 @@ def test_pha1_get_foo_flux_hist_scales(getfunc, scale,
     This is issue #801.
     """
 
-    np.random.seed(42873)
+    ui.set_rng(np.random.RandomState(42873))
 
     orig_mdl = ui.get_source('tst')
     gal = ui.create_model_component('xswabs', 'gal')
@@ -2405,7 +2405,7 @@ def test_pha1_get_foo_flux_hist_scales(getfunc, scale,
 @pytest.mark.parametrize("scale", [1.0, 2.0])
 def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
                                    clean_astro_ui, basic_pha1,
-                                   hide_logging, reset_seed):
+                                   hide_logging):
     """Can we call plot_energy/photon_flux with the scales argument.
 
     Based on test_pha1_get_foo_flux_hist_scales. By using some
@@ -2413,7 +2413,7 @@ def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
     to check that the plot did use the scales.
     """
 
-    np.random.seed(38259)
+    ui.set_rng(np.random.RandomState(38259))
 
     # unlike test_pha1_get-foo_flux_hist_scales, only use a power-law
     # component
@@ -2452,7 +2452,7 @@ def test_pha1_plot_foo_flux_scales(plotfunc, getfunc, scale,
                           (ui.plot_photon_flux, ui.get_photon_flux_hist, 1.1892431836751618)])
 def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
                                   clean_astro_ui, basic_pha1,
-                                  hide_logging, reset_seed):
+                                  hide_logging):
     """Can we call plot_energy/photon_flux with the model argument.
 
     Based on test_pha1_get_foo_flux_hist_scales. By using some
@@ -2461,7 +2461,7 @@ def test_pha1_plot_foo_flux_model(plotfunc, getfunc, ratio,
 
     """
 
-    np.random.seed(286728)
+    ui.set_rng(np.random.RandomState(286728))
 
     # This time we want the absorbing component to make a difference
     # between the two plots.
@@ -2688,11 +2688,11 @@ def test_pha1_get_foo_flux_none(energy, getfunc, clean_astro_ui, basic_pha1):
                           (ui.plot_photon_flux, ui.get_photon_flux_hist)])
 def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
                                   make_data_path, clean_astro_ui,
-                                  hide_logging, reset_seed):
+                                  hide_logging):
     """Can we call plot_energy/photon_flux with multiple datasets.
     """
 
-    np.random.seed(7267239)
+    ui.set_rng(np.random.RandomState(7267239))
 
     ui.load_pha(1, make_data_path('obs1.pi'))
     ui.load_pha(3, make_data_path('obs1.pi'))
@@ -2761,13 +2761,13 @@ def test_pha1_plot_foo_flux_multi(plotfunc, getfunc,
                           (ui.get_photon_flux_hist, 1.1880213994341908)])
 def test_pha1_get_foo_flux_hist_model(getfunc, ratio,
                                       clean_astro_ui, basic_pha1,
-                                      hide_logging, reset_seed):
+                                      hide_logging):
     """Can we call get_energy/photon_flux_hist with the model argument.
 
     Very similar to test_pha1_plot_foo_flux_model.
     """
 
-    np.random.seed(2731)
+    ui.set_rng(np.random.RandomState(2731))
 
     # This time we want the absorbing component to make a difference
     # between the two plots.

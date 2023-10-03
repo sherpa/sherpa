@@ -23,6 +23,7 @@ Routines for running code in parallel.
 """
 
 from configparser import ConfigParser
+import inspect
 import logging
 from typing import Final
 
@@ -30,7 +31,8 @@ import numpy as np
 
 from sherpa import get_config
 
-warning = logging.getLogger("sherpa").warning
+debug = logging.getLogger(__name__).debug
+warning = logging.getLogger(__name__).warning
 
 config = ConfigParser()
 config.read(get_config())
@@ -87,7 +89,7 @@ default setting of ``None`` will use all available cores.
 
 
 __all__ = ("multi", "ncpus",
-           "parallel_map", "parallel_map_funcs",
+           "parallel_map", "parallel_map_funcs", "parallel_map_rng",
            "run_tasks")
 
 
@@ -155,6 +157,42 @@ def worker(f, ii, chunk, out_q, err_q):
 
     # output the result and task ID to output queue
     out_q.put((ii, vals))
+
+
+def worker_rng(func, idx, chunk, out_q, err_q, rng):
+    """Evaluate a function for each element, add response to queue.
+
+    Unlike worker(), this also sends in a RNG.
+
+    Parameters
+    ----------
+    func : callable
+       The function. It accepts two arguments, the first being an
+       element of chunk and the second the rng argument.
+    idx : int
+       The identifier for this worker.
+    chunk : sequence
+       The elements to be passed to func.
+    out_q, err_q : manager.Queue
+       The success channel - which will be sent (idx, retval) on
+       success - and the error channel, which will be sent any
+       exception.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+       Determines how random numbers are created. If set to None then
+       the routines in `numpy.random` are used, and so can be
+       controlled by calling `numpy.random.seed`. It is up to the
+       caller to ensure that the generator will work correctly if
+       called in parallel.
+
+    """
+
+    try:
+        vals = [func(c, rng) for c in chunk]
+    except Exception as e:
+        err_q.put(e)
+        return
+
+    out_q.put((idx, vals))
 
 
 def process_tasks(procs, err_q):
@@ -246,8 +284,9 @@ def parallel_map(function, sequence, numcores=None):
     """Run a function on a sequence of inputs in parallel.
 
     A parallelized version of the native Python map function that
-    utilizes the Python multiprocessing module to divide and
-    conquer sequence.
+    utilizes the Python multiprocessing module to divide and conquer
+    sequence. If ``function`` uses random numbers then
+    `parallel_map_rng` should be used instead.
 
     Parameters
     ----------
@@ -268,6 +307,10 @@ def parallel_map(function, sequence, numcores=None):
     ans : array
        The return values from the calls, in the same order as the
        ``sequence`` array.
+
+    See Also
+    --------
+    parallel_map_rng
 
     Notes
     -----
@@ -458,5 +501,142 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     procs = [multiprocessing.Process(target=worker,
                                      args=(funcs[ii], ii, chunk, out_q, err_q))
              for ii, chunk in enumerate(datasets)]
+
+    return run_tasks(procs, err_q, out_q)
+
+
+def parallel_map_rng(function, sequence, numcores=None, rng=None):
+    """Run a function on a sequence of inputs in parallel with a RNG.
+
+    Similar to parallel_map, but the function takes two arguments,
+    with the second one being ``rng``, the random generator to use. This
+    is for those functions which need random numbers, and this routine
+    takes care to create a separate generator for each process run in
+    parallel.
+
+    .. versionadded:: 4.16.0
+
+    Parameters
+    ----------
+    function : function
+       This function accepts two arguments - the first being an
+       element of ``sequence`` and second called ``rng`` - and returns a
+       value.
+    sequence : array_like
+       The data to be passed to ``function`` as the first argument.
+    numcores : int or None, optional
+       The number of calls to ``function`` to run in parallel. When
+       set to ``None``, all the available CPUs on the machine - as
+       set either by the 'numcores' setting of the 'parallel' section
+       of Sherpa's preferences or by multiprocessing.cpu_count - are
+       used.
+    rng : numpy.random.Generator, numpy.random.RandomState, or None, optional
+       Controls how random numbers are generated. When code is run in
+       parallel, each worker is sent a separate generator, to ensure
+       that the sequences are different, and the rng parameter is used
+       to create the seed number passed to `numpy.random.SeedSequence`
+       for this case.
+
+    Returns
+    -------
+    ans : array
+       The return values from the calls, in the same order as the
+       ``sequence`` array.
+
+    See Also
+    --------
+    parallel_map
+
+    Notes
+    -----
+    The input ``rng`` argument is used to create a seed number, which
+    is passed to the `numpy.random.SeedSequence` object to create a
+    separate generator for each worker. The generator used for these
+    is always created by a call to `numpy.random.default_rng`, even when
+    the ``rng`` argument is None (indicating that the legacy random API is
+    being used), or a different generator that that used by
+    ``default_rng``.
+
+    """
+    if not callable(function):
+        raise TypeError(f"input function '{repr(function)}' is not callable")
+
+    # Check the function takes two arguments, with the second one
+    # called rng.
+    #
+    sig = inspect.signature(function)
+    if len(sig.parameters) != 2:
+        raise TypeError(f"input function '{repr(function)}' does not take two arguments")
+
+    names = list(sig.parameters)
+    if names[1] != "rng":
+        raise TypeError(f"input function '{repr(function)}' second argument is not called rng")
+
+    if not np.iterable(sequence):
+        raise TypeError(f"input '{repr(sequence)}' is not iterable")
+
+    size = len(sequence)
+
+    if not _multi or size == 1 or (numcores is not None and numcores < 2):
+        # As this is not in parallel the supplied generator can be
+        # used.
+        #
+        debug("parallel_map_rng: running %d items in serial with rng=%s",
+              len(sequence), rng)
+        return [function(s, rng=rng) for s in sequence]
+
+    if numcores is None:
+        numcores = _ncpus
+
+    # Returns a started SyncManager object which can be used for sharing
+    # objects between processes. The returned manager object corresponds
+    # to a spawned child process and has methods which will create shared
+    # objects and return corresponding proxies.
+    manager = multiprocessing.Manager()
+
+    # Create FIFO queue and lock shared objects and return proxies to them.
+    # The managers handles a server process that manages shared objects that
+    # each slave process has access to.  Bottom line -- thread-safe.
+    out_q = manager.Queue()
+    err_q = manager.Queue()
+    # lock = manager.Lock() - currently unused
+
+    # if sequence is less than numcores, only use len sequence number of
+    # processes
+    if size < numcores:
+        numcores = size
+
+    # group sequence into numcores-worth of chunks
+    sequence = split_array(sequence, numcores)
+
+    debug("parallel_map_rng: running %d items in parallel (%d processes) with rng=%s",
+          size, len(sequence), rng)
+
+    # Create the RNG for each chunk. To be repeatable an explicit seed
+    # is created given the input rng.
+    #
+    # TODO: Should the seed be created for a larger (i.e. more bits)
+    # data type?
+    #
+    maxval = np.iinfo(np.uint64).max
+    if rng is None:
+        root_seed = np.random.randint(maxval, dtype=np.uint64)
+    else:
+        try:
+            root_seed = rng.integers(maxval, endpoint=False, dtype=np.uint64)
+        except AttributeError:
+            root_seed = rng.randint(maxval, dtype=np.uint64)
+
+    seeds = np.random.SeedSequence(root_seed).spawn(len(sequence))
+
+    # This always uses default_rng; I can not see a sensible way to
+    # allow the user to over-ride this (if they want to choose a
+    # particular generator) or to get it to use np.random.RandomState
+    # if required.
+    #
+    procs = [multiprocessing.Process(target=worker_rng,
+                                     args=(function, ii, chunk, out_q, err_q,
+                                           np.random.default_rng(seed)))
+             for ii, (chunk, seed) in enumerate(zip(sequence, seeds))]
 
     return run_tasks(procs, err_q, out_q)

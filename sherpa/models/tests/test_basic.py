@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022
+#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,7 +26,7 @@ import sherpa.models.basic as basic
 from sherpa.models.parameter import hugeval
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D, \
     RegriddableModel2D
-from sherpa.utils import SherpaFloat
+from sherpa.utils.numeric_types import SherpaFloat
 
 
 def userfunc(pars, x, *args, **kwargs):

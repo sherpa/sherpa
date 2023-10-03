@@ -53,23 +53,22 @@ from configparser import ConfigParser
 import importlib
 import logging
 import os
-import os.path
 import re
 import sys
 from typing import Any, Optional
 
 import numpy
 
-import sherpa.io
-from sherpa.utils.err import ArgumentErr, DataErr, IOErr
-from sherpa.utils import SherpaFloat
-from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
+from sherpa import get_config
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
     DataPHA, DataRosatRMF
 # leads to circular imports
 # from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import reshape_2d_arrays
-from sherpa import get_config
+from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
+import sherpa.io
+from sherpa.utils.err import ArgumentErr, DataErr, IOErr
+from sherpa.utils.numeric_types import SherpaFloat
 
 config = ConfigParser()
 config.read(get_config())

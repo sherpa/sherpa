@@ -21,8 +21,9 @@
 
 import numpy as np
 
-from sherpa.sim.mh import MetropolisMH, dmvnorm
 from sherpa.astro.sim.pragbayes import PragBayes, PCA1DAdd, ARFSIMFactory
+from sherpa.sim.mh import MetropolisMH, dmvnorm
+from sherpa.utils import random
 
 
 __all__ = ('FullBayes',)
@@ -30,8 +31,8 @@ __all__ = ('FullBayes',)
 
 class FullBayes(PragBayes):
 
-    def __init__(self, fcn, sigma, mu, dof, fit, *args):
-        PragBayes.__init__(self, fcn, sigma, mu, dof, fit, *args)
+    def __init__(self, fcn, sigma, mu, dof, fit, *args, rng=None):
+        PragBayes.__init__(self, fcn, sigma, mu, dof, fit, *args, rng=rng)
         self.arf_dicts = [{'current': arf.specresp.copy(),
                            'old_rr': None}
                           for arf in self.arfs]
@@ -45,7 +46,7 @@ class FullBayes(PragBayes):
         if isinstance(simarf, PCA1DAdd):
             self.simarf = simarf
         else:
-            self.simarf = ARFSIMFactory()(simarf)
+            self.simarf = ARFSIMFactory()(simarf, rng=self.rng)
 
         if not isinstance(self.simarf, PCA1DAdd):
             raise TypeError("Simulation ARF must be PCA for FullBayes"
@@ -60,13 +61,13 @@ class FullBayes(PragBayes):
     def _update_arf(self, arf, specresp, current_params, current_stat,
                     arf_dict):
 
-        u = np.random.uniform(0, 1, 1)
+        u = random.uniform(self.rng, 0, 1)
         if u > self.p_M_arf:
 
             ncomp = self.simarf.ncomp
             old_rr = arf_dict['old_rr']
             if old_rr is None:
-                old_rr = np.random.standard_normal(ncomp)
+                old_rr = random.standard_normal(self.rng, ncomp)
 
             # Assume the ARF is accepted by default
             # Update the ARFs with new deviates
@@ -84,7 +85,7 @@ class FullBayes(PragBayes):
             accept_pr += stat_temp - current_stat
             accept_pr = np.exp(accept_pr)
 
-            uu = np.random.uniform(0, 1, 1)
+            uu = random.uniform(self.rng, 0, 1)
             if accept_pr > uu:
                 arf_dict['old_rr'] = new_rr
                 arf_dict['current'] = arf.specresp.copy()
@@ -109,7 +110,7 @@ class FullBayes(PragBayes):
             accept_pr += stat_temp - current_stat
             accept_pr = np.exp(accept_pr)
 
-            uu = np.random.uniform(0, 1, 1)
+            uu = random.uniform(self.rng, 0, 1)
             if accept_pr > uu:
                 arf_dict['current'] = arf.specresp.copy()
                 self.accept_arf()
