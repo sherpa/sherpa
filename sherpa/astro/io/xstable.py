@@ -131,6 +131,7 @@ from typing import Any, Optional, Union
 import numpy as np
 
 import sherpa
+from .io_types import HeaderItem, Header, Column, TableBlock, BlockList
 
 
 __all__ = ("BaseParam", "Param", "make_xstable_model",
@@ -249,64 +250,6 @@ class Param(BaseParam):
             raise ValueError(f"Parameter {self.name} values are not monotonically increasing")
 
 
-# Perhaps the HeaderItem and Column types can be used in
-# sherpa.astro.io to pass information to and from the backends, rather
-# than the current system. However, that is for later work.
-#
-@dataclass
-class HeaderItem:
-    """Represent a FITS header card.
-
-    This does not support all FITS features.
-    """
-    name: str
-    """The keyword name (case insensitive)"""
-    value: Union[str, bool, int, float]  # will we need more?
-    """The keyword value"""
-    desc: Optional[str]
-    """The description for the keyword"""
-    unit: Optional[str]
-    """The units of the value"""
-
-
-@dataclass
-class Column:
-    """Represent a FITS column.
-
-    This does not support all FITS features.
-    """
-    name: str
-    """The column name (case insensitive)"""
-    values: Any  # should be typed
-    """The values for the column, as a ndarray.
-
-    Variable-field arrays are represented as ndarrays with an object
-    type.
-    """
-    desc: Optional[str]
-    """The column description"""
-    unit: Optional[str]
-    """The units of the column"""
-
-
-# To be generic this should probably be split into Primary, Table, and
-# Image HDUs.
-#
-@dataclass
-class TableHDU:
-    """Represent a HDU: header and optional columns"""
-    name: str
-    """The name of the HDU"""
-    header: list[HeaderItem]
-    """The header values"""
-    data: Optional[list[Column]] = None
-    """The column data.
-
-    This should be empty for a primary header, and have at least one
-    entry for a table HDU.
-    """
-
-
 def key(name: str,
         value: Union[str, bool, int, float],
         desc: Optional[str] = None,
@@ -330,7 +273,7 @@ def xstable_primary(name: str,
                     escale: bool,
                     lolim: float,
                     hilim: float,
-                    xfxp: Optional[list[str]] = None) -> TableHDU:
+                    xfxp: Optional[list[str]] = None) -> Header:
     """The PRIMARY block for an xspec table model."""
 
     header = [
@@ -370,11 +313,11 @@ def xstable_primary(name: str,
                       time.strftime("%Y-%m-%dT%H:%M:%S"),
                       "Date file created"))
 
-    return TableHDU(name="PRIMARY", header=header)
+    return Header(header)
 
 
 def xstable_parameters(params: list[Param],
-                       addparams: Optional[list[BaseParam]]) -> TableHDU:
+                       addparams: Optional[list[BaseParam]]) -> TableBlock:
     """The PARAMETERS block for an xspec table model."""
 
     nint = len(params)
@@ -426,7 +369,7 @@ def xstable_parameters(params: list[Param],
         for idx, p in enumerate(params):
             values[idx, :len(p.values)] = p.values
 
-    data = [
+    cols = [
         col("NAME", np.asarray(get("name"), dtype="U12"),
             "name of the parameter"),
         col("METHOD", np.asarray(methods, dtype=np.int32),
@@ -447,10 +390,11 @@ def xstable_parameters(params: list[Param],
             "number of tabulated parameter values"),
         col("VALUE", values, "tabulated parameter values")
     ]
-    return TableHDU(name="PARAMETERS", header=header, data=data)
+    return TableBlock(name="PARAMETERS", header=Header(header),
+                      columns=cols)
 
 
-def xstable_energies(energ_lo: Any, energ_hi: Any) -> TableHDU:
+def xstable_energies(energ_lo: Any, energ_hi: Any) -> TableBlock:
     """The ENERGIES block for an xspec table model."""
 
     header = [
@@ -462,20 +406,21 @@ def xstable_energies(energ_lo: Any, energ_hi: Any) -> TableHDU:
             "extension containing energy bin info"),
         key("HDUVERS", "1.0.0", "version of format")
     ]
-    data = [
+    cols = [
         col("ENERG_LO", np.asarray(energ_lo, dtype=np.float32),
             "Minimum energy of the bin", unit="keV"),
         col("ENERG_HI", np.asarray(energ_hi, dtype=np.float32),
             "Maximum energy of the bin", unit="keV"),
     ]
-    return TableHDU(name="ENERGIES", header=header, data=data)
+    return TableBlock(name="ENERGIES", header=Header(header),
+                      columns=cols)
 
 
 def xstable_spectra(paramvals: list[tuple[float, ...]],
                     spectra: list[Any],
                     addparam: Optional[list[BaseParam]],
                     addspectra: Optional[list[list[Any]]],
-                    units: Optional[str]) -> TableHDU:
+                    units: Optional[str]) -> TableBlock:
     """The SPECTRA block for an xspec table model."""
 
     header = [
@@ -493,7 +438,7 @@ def xstable_spectra(paramvals: list[tuple[float, ...]],
     #
     unit_opt = None if units == "" else units
     pvals = np.asarray(paramvals, dtype=np.float32)
-    data = [
+    cols = [
         col("PARAMVAL", np.asarray(paramvals, dtype=np.float32),
             "Parameter values for spectrum"),
         col("INTPSPEC", np.asarray(spectra, dtype=np.float32),
@@ -506,12 +451,13 @@ def xstable_spectra(paramvals: list[tuple[float, ...]],
     if addparam is not None and addspectra is not None:
         zipped = zip(addparam, addspectra)
         for idx, (param, aspec) in enumerate(zipped, 1):
-            data.append(col(f"ADDSP{idx:03d}",
+            cols.append(col(f"ADDSP{idx:03d}",
                             np.asarray(aspec, dtype=np.float32),
                             desc=f"Additional spectrum {idx:03d}: {param.name}",
                             unit=unit_opt))
 
-    return TableHDU(name="SPECTRA", header=header, data=data)
+    return TableBlock(name="SPECTRA", header=Header(header),
+                      columns=cols)
 
 
 # We could either send in the parameter values broken up by parameter,
@@ -534,7 +480,7 @@ def make_xstable_model(name: str,
                        hilim: float = 0,
                        units: Optional[str] = None,
                        xfxp: Optional[list[str]] = None
-                       ) -> list[TableHDU]:
+                       ) -> BlockList:
     """Create the blocks for a XSPEC table model.
 
     An XSPEC table model can be either additive or multiplicative,
@@ -591,7 +537,7 @@ def make_xstable_model(name: str,
 
     Returns
     -------
-    hdus : list of TableHDU
+    hdus : BlockList
        The header and column data needed to create a FITS file.
 
     See Also
@@ -721,20 +667,21 @@ def make_xstable_model(name: str,
 
     # Create the separate blocks.
     #
-    out = []
-    out.append(xstable_primary(name_str, unit_str, bool(addmodel),
-                               bool(redshift), bool(escale),
-                               float(lolim), float(hilim),
-                               xfxp=xfxp))
-    out.append(xstable_parameters(params, addparams))
-    out.append(xstable_energies(egrid_lo, egrid_hi))
-    out.append(xstable_spectra(pvalues, spectra, addparams, addspectra,
-                               units=unit_str))
-    return out
+    primary = xstable_primary(name_str, unit_str, bool(addmodel),
+                              bool(redshift), bool(escale),
+                              float(lolim), float(hilim),
+                              xfxp=xfxp)
+
+    out = [xstable_parameters(params, addparams),
+           xstable_energies(egrid_lo, egrid_hi),
+           xstable_spectra(pvalues, spectra, addparams, addspectra,
+                           units=unit_str)
+           ]
+    return BlockList(blocks=list(out), header=primary)
 
 
 def write_xstable_model(filename: str,
-                        hdus: list[TableHDU],
+                        hdus: BlockList,
                         clobber: bool = False) -> None:
     """Write a XSPEC table model to disk.
 
@@ -742,7 +689,7 @@ def write_xstable_model(filename: str,
     ----------
     filename : str
         The filename to create.
-    hdus : list of TableHDU
+    hdus : BlockList
         The output of make_xstable_model.
     clobber : bool, optional
        If `True` then the output file will be over-written if it

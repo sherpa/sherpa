@@ -32,6 +32,7 @@ from typing import Any, Optional, Sequence, Union
 import numpy as np
 
 from ..data import Data1D
+from .io_types import KeyType
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -53,7 +54,6 @@ warning("""Cannot import usable I/O backend.
     If you are using Standalone Sherpa, please install astropy.""")
 
 
-KeyType = Union[str, bool, int, float]
 NamesType = Sequence[str]
 HdrType = dict[str, KeyType]
 

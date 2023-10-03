@@ -36,7 +36,8 @@ from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
 
-from .xstable import HeaderItem, TableHDU
+from .io_types import KeyType, HeaderItem, Header, ImageBlock, \
+    TableBlock, BlockList
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -60,7 +61,7 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
 
 
 CrateType = Union[TABLECrate, IMAGECrate]
-KeyType = Union[str, bool, int, float]
+BlockType = Union[TableBlock, ImageBlock]
 NamesType = Sequence[str]
 HdrType = dict[str, KeyType]
 
@@ -204,6 +205,24 @@ def _get_meta_data(crate: CrateType) -> HdrType:
         meta[name] = val
 
     return meta
+
+
+def _get_meta_data_header(crate: CrateType) -> Header:
+    """Retrieve the header information from the crate.
+
+    This loses the "specialized" keywords like HISTORY and COMMENT.
+
+    """
+
+    out = []
+    for name in crate.get_keynames():
+        key = crate.get_key(name)
+        item = HeaderItem(name=name, value=key.value)
+        item.unit = key.unit if key.unit != '' else None
+        item.desc = key.desc if key.desc != '' else None
+        out.append(item)
+
+    return Header(out)
 
 
 def _set_key(crate: CrateType,
@@ -1502,10 +1521,10 @@ def set_arrays(filename: str,
 
 
 def _add_header(cr: CrateType,
-                header: Sequence[HeaderItem]) -> None:
+                header: Header) -> None:
     """Add the header keywords to the crate."""
 
-    for item in header:
+    for item in header.values:
         key = CrateKey()
         key.name = item.name
         key.value = item.value
@@ -1514,7 +1533,7 @@ def _add_header(cr: CrateType,
         cr.add_key(key)
 
 
-def _create_primary_crate(hdu: TableHDU) -> IMAGECrate:
+def _create_primary_crate(hdr: Header) -> IMAGECrate:
     """Create the primary block."""
 
     out = IMAGECrate()
@@ -1527,20 +1546,33 @@ def _create_primary_crate(hdu: TableHDU) -> IMAGECrate:
     null.values = np.asarray([], dtype=np.uint8)
     out.add_image(null)
 
+    _add_header(out, hdr)
+    return out
+
+
+def _create_image_crate(hdu: ImageBlock) -> IMAGECrate:
+    """Create an image block."""
+
+    out = IMAGECrate()
+    out.name = hdu.name
+
+    img = CrateData()
+    img.values = hdu.image
+    out.add_image(img)
+
     _add_header(out, hdu.header)
     return out
 
 
-def _create_table_crate(hdu: TableHDU) -> TABLECrate:
+def _create_table_crate(hdu: TableBlock) -> TABLECrate:
     """Create a table block."""
-
-    if hdu.data is None:
-        raise ValueError("No column data to write out")
 
     out = TABLECrate()
     out.name = hdu.name
 
-    for col in hdu.data:
+    _add_header(out, hdu.header)
+
+    for idx, col in enumerate(hdu.columns, 1):
         cdata = CrateData()
         cdata.name = col.name
         cdata.desc = col.desc
@@ -1548,11 +1580,26 @@ def _create_table_crate(hdu: TableHDU) -> TABLECrate:
         cdata.values = col.values
         out.add_column(cdata)
 
-    _add_header(out, hdu.header)
+        # For CIAO 4.16 crates does not have a "nice" way to set
+        # TLMIN/MAX, but it appears we can just set the TLMIN/MAX
+        # values directly in the header and it works.
+        #
+        if col.minval is not None:
+            key = CrateKey()
+            key.name = f"TLMIN{idx}"
+            key.value = col.minval
+            out.add_key(key)
+
+        if col.maxval is not None:
+            key = CrateKey()
+            key.name = f"TLMAX{idx}"
+            key.value = col.maxval
+            out.add_key(key)
+
     return out
 
 
-def _validate_block_names(hdulist: Sequence[TableHDU]) -> list[TableHDU]:
+def _validate_block_names(hdulist: Sequence[BlockType]) -> None:
     """Ensure the block names are "independent".
 
     Crates will correctly handle the case when blocks are numbered
@@ -1560,10 +1607,11 @@ def _validate_block_names(hdulist: Sequence[TableHDU]) -> list[TableHDU]:
     but let's automatically add this if the user hasn't already done
     so (since AstroPy works differently).
 
+    This may change the input list contents.
     """
 
     blnames: dict[str, int] = defaultdict(int)
-    for hdu in hdulist[1:]:
+    for hdu in hdulist:
         blnames[hdu.name.upper()] += 1
 
     multi = [n for n,v in blnames.items() if v > 1]
@@ -1571,49 +1619,47 @@ def _validate_block_names(hdulist: Sequence[TableHDU]) -> list[TableHDU]:
     # If the names are unique do nothing
     #
     if len(multi) == 0:
-        return list(hdulist)
+        return
 
-    out = [hdulist[0]]
     extvers: dict[str, int] = defaultdict(int)
-    for hdu in hdulist[1:]:
+    for hdu in hdulist:
         if hdu.name not in multi:
-            out.append(hdu)
             continue
 
         # Either create or update the EXTVER value
         extvers[hdu.name] += 1
         extver = extvers[hdu.name]
 
-        nhdu = TableHDU(name=f"{hdu.name}{extver}",
-                        header=hdu.header, data=hdu.data)
-        out.append(nhdu)
-
-    return out
+        # Change the name field
+        hdu.name = f"{hdu.name}{extver}"
 
 
-def pack_hdus(blocks: Sequence[TableHDU]) -> CrateDataset:
-    """Create a dataset.
+def pack_hdus(blocks: BlockList) -> CrateDataset:
+    """Create a dataset."""
 
-    At present we are restricted to tables only.
-    """
-
-    nblocks = _validate_block_names(blocks)
+    _validate_block_names(blocks.blocks)
 
     dset = CrateDataset()
-    dset.add_crate(_create_primary_crate(nblocks[0]))
-    for hdu in nblocks[1:]:
-        dset.add_crate(_create_table_crate(hdu))
+    if blocks.header is not None:
+        dset.add_crate(_create_primary_crate(blocks.header))
+
+    for block in blocks.blocks:
+        if isinstance(block, TableBlock):
+            cr = _create_table_crate(block)
+        elif isinstance(block, ImageBlock):
+            cr = _create_image_crate(block)
+        else:
+            raise RuntimeError(f"Unsupported block: {block}")
+
+        dset.add_crate(cr)
 
     return dset
 
 
 def set_hdus(filename: str,
-             blocks: Sequence[TableHDU],
+             blocks: BlockList,
              clobber: bool = False) -> None:
-    """Write out a dataset.
-
-    At present we are restricted to tables only.
-    """
+    """Write out a dataset."""
 
     dset = pack_hdus(blocks)
     write_dataset(dset, filename, ascii=False, clobber=clobber)

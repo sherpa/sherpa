@@ -69,6 +69,9 @@ import sherpa.io
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
+from .io_types import HeaderItem, Header
+
+
 config = ConfigParser()
 config.read(get_config())
 
@@ -803,6 +806,57 @@ def _remove_structural_keywords(header: dict[str, Any]) -> dict[str, Any]:
         out[key] = value
 
     return out
+
+
+def _remove_structural_items(header: Header) -> list[HeaderItem]:
+    """Remove FITS keywords relating to file structure.
+
+    The aim is to allow writing out a header that was taken from a
+    file and not copy along "unwanted" values, since the data may
+    no-longer be relevant. Not all FITS header keys may be passed
+    along by a particular backend (e.g. crates).
+
+    Parameters
+    ----------
+    header : Header
+       The input header
+
+    Returns
+    -------
+    nheader : list of HeaderItem
+       Header with unwanted keywords returned (including those
+       set to None).
+
+    Notes
+    -----
+    The tricky part is knowing what is unwanted, since copying
+    along a WCS transform for a column may be useful, or may
+    break things.
+
+    """
+
+    return [item for item in header.values
+            if not _is_structural_keyword(item.name)]
+
+
+try:
+    CREATOR_STR = f"sherpa {sherpa.__version__}"
+except AttributeError:
+    # should not happen, but just in case
+    CREATOR_STR = "sherpa"
+
+
+CREATOR = HeaderItem(name="CREATOR", value=CREATOR_STR,
+                     desc="Program creating this file")
+
+
+def _add_creator(header: Header) -> None:
+    """Add a CREATOR card if not set."""
+
+    if header.get("CREATOR") is not None:
+        return
+
+    header.add(CREATOR)
 
 
 def _pack_pha(dataset):
