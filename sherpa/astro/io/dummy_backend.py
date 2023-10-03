@@ -33,9 +33,11 @@ from typing import Any, Optional, Sequence
 import numpy as np
 
 from ..data import Data1D
+
 from .types import NamesType, HdrTypeArg, HdrType, \
-    ColumnsType, ColumnsTypeArg, DataTypeArg, DataType
-from .xstable import TableHDU
+    ColumnsType, ColumnsTypeArg, DataTypeArg, DataType, \
+    BlockList, TableBlock
+
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data', 'get_arf_data',
@@ -513,14 +515,14 @@ def pack_rmf_data(blocks) -> Any:
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_hdus(blocks: Sequence[TableHDU]) -> Any:
+def pack_hdus(blocks: BlockList) -> Any:
     """Create a dataset.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    blocks : sequence of TableHDU
+    blocks : BlockList
         The blocks (HDUs) to store.
 
     Returns
@@ -702,7 +704,7 @@ def set_rmf_data(filename: str,
 
 
 def set_hdus(filename: str,
-             blocks: Sequence[TableHDU],
+             blocks: BlockList,
              clobber: bool = False) -> None:
     """Write out (possibly multiple) blocks.
 
@@ -710,7 +712,7 @@ def set_hdus(filename: str,
     ----------
     filename : str
         The name of the file to create.
-    blocks : sequence of TableHDU
+    blocks : BlockList
         The blocks (HDUs) to store.
     clobber : bool, optional
         If the file already exists can it be over-written (`True`) or

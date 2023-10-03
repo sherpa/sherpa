@@ -32,7 +32,7 @@ import pytest
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro.instrument import RMF1D, create_arf, create_delta_rmf
 from sherpa.astro import io
-from sherpa.astro.io.xstable import HeaderItem, Column, TableHDU
+from sherpa.astro.io.types import HeaderItem, Header, Column, TableBlock, BlockList
 from sherpa.data import Data1DInt
 from sherpa.models.basic import Gauss1D
 from sherpa.utils.err import ArgumentErr, IOErr
@@ -1134,9 +1134,7 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     one.
 
     This is a regression test since we currently only read in one of
-    the matrices. It also turns out to depend on which backend is in
-    use (AstroPy picks the first and Crates the second, at least in
-    the file used here).
+    the matrices.
 
     """
 
@@ -1179,14 +1177,14 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     # F_CHAN column (an infelicity in the Column type).
     #
     def mkhdr(old):
-        return [HeaderItem(name=n, value=v, desc=None, unit=None)
-                for n,v in old.items()]
+        return Header([HeaderItem(name=n, value=v)
+                       for n,v in old.items()])
 
     def mkdata(old):
         # We drop the OFFSET value (only from the matrix1/2 versions
         # but doesn't harm to include in the bounds1 call).
         #
-        return [Column(name=n, values=v, desc=None, unit=None)
+        return [Column(name=n, values=v)
                 for n,v in old.items()
                 if n != "OFFSET"]
 
@@ -1199,34 +1197,34 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     eb_header = mkhdr(bounds1[1])
     eb_data = mkdata(bounds1[0])
 
-    hdus = [TableHDU("PRIMARY", header=mkhdr({"TESTKEY": 12})),
-            TableHDU("MATRIX", header=m1_header, data=m1_data),
-            TableHDU("MATRIX", header=m2_header, data=m2_data),
-            TableHDU("EBOUNDS", header=eb_header, data=eb_data)]
+    # Add in the TLMIN value for F_CHAN; check we are column 4.
+    #
+    assert m1_data[3].name == "F_CHAN"
+    assert m2_data[3].name == "F_CHAN"
+    m1_data[3].minval = matrix1[0]["OFFSET"]
+    m2_data[3].minval = matrix2[0]["OFFSET"]
+
+    primary = mkhdr({"TESTKEY": 12})
+    hdus = [TableBlock("MATRIX", header=m1_header, columns=m1_data),
+            TableBlock("MATRIX", header=m2_header, columns=m2_data),
+            TableBlock("EBOUNDS", header=eb_header, columns=eb_data)]
+    blist = BlockList(blocks=hdus, header=primary)
 
     outpath = tmp_path / "multi.rmf"
     outfile = str(outpath)
-    io.backend.set_hdus(outfile, hdus)
+    io.backend.set_hdus(outfile, blist)
 
-    # What happens if we try to read this in? As we haven't written
-    # out the correct TLMIN value we will get a warning about
-    # that. There is no warning about this being a multi-matrix RMF.
+    # What happens if we try to read this in?
     #
     assert len(caplog.record_tuples) == 0
     rmf = io.read_rmf(outfile)
-    assert len(caplog.record_tuples) == 2
+    assert len(caplog.record_tuples) == 1
 
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == io.backend.__name__
     assert lvl == logging.ERROR
     assert msg.startswith("RMF in ")
     assert msg.endswith("/multi.rmf contains 2 MATRIX blocks; Sherpa only uses the first block!")
-
-    lname, lvl, msg = caplog.record_tuples[1]
-    assert lname == io.backend.__name__
-    assert lvl == logging.ERROR
-    assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
-    assert msg.endswith("/multi.rmf'; Update the offset value in the RMF data set to appropriate TLMIN value prior to fitting")
 
     # What happens if we apply the RMF to a model?
     #
