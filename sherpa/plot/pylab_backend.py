@@ -20,6 +20,7 @@
 import io
 import logging
 from collections import ChainMap
+from functools import partialmethod
 
 import numpy
 
@@ -41,20 +42,20 @@ logger = logging.getLogger(__name__)
 # because matplotlib does support a wider range than just the
 # set of Sherpa backend-independent options.
 updated_kwarg_docs = {
-    'color': ['string or tuple', 'Any matplotlib color'],
-    'linecolor': ['string or tuple', 'Any matplotlib color'],
-    'marker': ['string',
+    'color': ['str or tuple', 'Any matplotlib color'],
+    'linecolor': ['str or tuple', 'Any matplotlib color'],
+    'marker': ['str',
                '''"None" (as a string, no marker shown), "" (empty string, no marker shown),
 or any matplotlib marker, e.g. any of `os+v` or others
 (see matplotlib documentation).'''],
-    'linestyle': ['string',
+    'linestyle': ['str',
                   '''``'noline'``,
 ``'None'`` (as string, same as ``'noline'``),
 ``'solid'``, ``'dot'``, ``'dash'``, ``'dashdot'``, ``'-'`` (solid
-line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dot-dashed),
+line), ``':'`` (dotted), ``'--'`` (dashed), ``'-.'`` (dashdot),
 ``''`` (empty string, no line shown), `None` (default - usually
 solid line) or any other matplotlib linestyle.'''],
-    'drawstyle': ['string', 'matplolib drawstyle'],
+    'drawstyle': ['str', 'matplolib drawstyle'],
 }
 
 kwargs_doc = ChainMap(updated_kwarg_docs, orig_kwargs_doc)
@@ -377,9 +378,6 @@ class PylabBackend(BasicBackend):
         ----------
         x : float
             x position of the vertical line in data units
-        ymin, ymax : float
-            beginning and end of the vertical line in axes coordinates, i.e. from
-            0 (bottom) to 1 (top).
         {kwargs}
         """
         axes = self.setup_axes(overplot, clearwindow)
@@ -404,9 +402,6 @@ class PylabBackend(BasicBackend):
         ----------
         y : float
             x position of the vertical line in data units
-        xmin, xmax : float
-            beginning and end of the vertical line in axes coordinates, i.e. from
-            0 (bottom) to 1 (top).
         {kwargs}
         """
         axes = self.setup_axes(overplot, clearwindow)
@@ -728,7 +723,7 @@ class PylabBackend(BasicBackend):
 
         The output is a SVG representation of the data, as a HTML
         svg element, or a single div pointing out that the
-        plot object has not been prepared,
+        plot object has not been prepared.
 
         Parameters
         ----------
@@ -763,45 +758,7 @@ class PylabBackend(BasicBackend):
 
         return svg[idx:]
 
-    def as_html_plot(self, data, summary=None):
-        """Create HTML representation of a plot
-
-        The output is a SVG representation of the data, as a HTML
-        svg element.
-
-        Parameters
-        ----------
-        data : Plot instance
-            The plot object to display. It has already had its prepare
-            method called.
-        summary : str or None, optional
-            The summary of the detail. If not set then the data type
-            name is used.
-
-        Returns
-        -------
-        plot : str or None
-            The HTML, or None if there was an error (e.g. prepare not
-            called).
-
-        """
-
-        def plotfunc():
-            fig = plt.figure()
-            data.plot()
-            return fig
-
-        svg = self.as_svg(plotfunc)
-        if svg is None:
-            return None
-
-        if summary is None:
-            summary = type(data).__name__
-
-        ls = [formatting.html_svg(svg, summary)]
-        return formatting.html_from_sections(data, ls)
-
-    def as_html_contour(self, data, summary=None):
+    def as_html_plot_or_contour(self, data, summary=None, func="plot"):
         """Create HTML representation of a contour
 
         The output is a SVG representation of the data, as a HTML
@@ -815,6 +772,8 @@ class PylabBackend(BasicBackend):
         summary : str or None, optional
             The summary of the detail. If not set then the data type
             name is used.
+        func : str, optional
+            The function to call on the data object to make the plot.
 
         Returns
         -------
@@ -826,7 +785,7 @@ class PylabBackend(BasicBackend):
 
         def plotfunc():
             fig = plt.figure()
-            data.contour()
+            getattr(data, func)()
             return fig
 
         svg = self.as_svg(plotfunc)
@@ -839,6 +798,8 @@ class PylabBackend(BasicBackend):
         ls = [formatting.html_svg(svg, summary)]
         return formatting.html_from_sections(data, ls)
 
+    as_html_plot = partialmethod(as_html_plot_or_contour, func="plot")
+    as_html_contour = partialmethod(as_html_plot_or_contour, func="contour")
     as_html_image = as_html_plot
     as_html_histogram = as_html_plot
     as_html_pdf = as_html_plot

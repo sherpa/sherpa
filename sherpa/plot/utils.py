@@ -20,8 +20,8 @@
 '''Helper functions for plotting
 
 '''
-
 import numpy as np
+
 
 __all__ = ('histogram_line', )
 

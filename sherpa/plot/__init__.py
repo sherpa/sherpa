@@ -48,7 +48,7 @@ from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 # but the current implementation does not have this capability.
 # See docstring of sherpa.plot.backends.MetaBaseBackend for details.
 #
-for name in ["pylab", "pylab_area"]:
+for name in ["pylab", "pylab_area", "bokeh"]:
     try:
         importlib.import_module(f"sherpa.plot.{name}_backend")
     except ImportError:
