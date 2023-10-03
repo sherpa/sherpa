@@ -83,7 +83,7 @@ jobs:
         curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-${CONDA_OS}.sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
         source ${conda_loc}/etc/profile.d/conda.sh
-        conda create -yq -n builder conda-build conda-verify
+        conda create -yq -n builder conda-build=3.25 conda-verify
 
     #Checkout the code with a depth of 0 to grab the tags/branches as well
     - name: Checkout Code
@@ -140,7 +140,7 @@ jobs:
         curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-${CONDA_OS}.sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
         source ${conda_loc}/etc/profile.d/conda.sh
-        conda create -yq -n builder conda-build conda-verify
+        conda create -yq -n builder conda-build=3.25 conda-verify
 
     - name: macOS 10.14 SDK
       if: ${{ matrix.conda-os == 'MacOSX-x86_64' }}
@@ -221,7 +221,7 @@ jobs:
         curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-${CONDA_OS}.sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
         source ${conda_loc}/etc/profile.d/conda.sh
-        conda install conda-build
+        conda install conda-build=3.25
         echo "Packages downloaded here: ${{steps.download.outputs.download-path}}"
         echo "ls packages/*/sherpa*.bz2"
         ls packages/*/sherpa*.bz2
