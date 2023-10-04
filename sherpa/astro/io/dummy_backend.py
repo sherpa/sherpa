@@ -32,7 +32,7 @@ from typing import Any, Optional, Sequence, Union
 import numpy as np
 
 from ..data import Data1D
-from .io_types import KeyType
+from .io_types import KeyType, TableBlock, BlockList
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -114,7 +114,7 @@ def get_arf_data(arg,
 
 def get_rmf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[dict[str, Any], str]:
+                 ) -> tuple[list[TableBlock], TableBlock, str]:
     """Read in the RMF."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -147,12 +147,12 @@ def pack_arf_data(data, col_names, header=None) -> Any:
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_rmf_data(blocks) -> Any:
+def pack_rmf_data(blocks: BlockList) -> Any:
     """Create the ARF."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_hdus(blocks) -> Any:
+def pack_hdus(blocks: BlockList) -> Any:
     """Create a dataset."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -190,14 +190,14 @@ def set_arf_data(filename: str,
 
 
 def set_rmf_data(filename: str,
-                 blocks,
+                 blocks: BlockList,
                  clobber: bool = False) -> None:
     """Write out the RMF."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
 def set_hdus(filename: str,
-             blocks,
+             blocks: BlockList,
              clobber: bool = False) -> None:
     """Write out (possibly multiple) blocks."""
     raise NotImplementedError('No usable I/O backend was imported.')
