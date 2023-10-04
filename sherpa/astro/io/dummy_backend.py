@@ -321,7 +321,7 @@ def get_arf_data(arg,
 
 def get_rmf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[DataType, str]:
+                 ) -> tuple[list[TableBlock], TableBlock, str]:
     """Read in the RMF.
 
     Parameters
@@ -338,10 +338,8 @@ def get_rmf_data(arg,
 
     Returns
     -------
-    data, filename
-        The data, as a dictionary, and the filename. The keys of the
-        dictionary match the arguments when creating a
-        sherpa.astro.data.DataRMF object.
+    matrix_blocks, ebounds_block, filename
+        The data and the filename.
 
     Raises
     ------
@@ -493,18 +491,15 @@ def pack_arf_data(data: ColumnsTypeArg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_rmf_data(blocks) -> Any:
+def pack_rmf_data(blocks: BlockList) -> Any:
     """Create the RMF.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    blocks : sequence of pairs
-        The RMF data, stored as pairs of (data, header), where data is
-        a dictionary of column name (keys) and values, and header is a
-        dictionary of key and values. The first element is the MATRIX
-        block and the second is for the EBOUNDS block.
+    blocks : BlockList
+        The RMF data.
 
     Returns
     -------
@@ -672,23 +667,21 @@ def set_arf_data(filename: str,
 
 
 def set_rmf_data(filename: str,
-                 blocks,
+                 blocks: BlockList,
                  clobber: bool = False) -> None:
     """Write out the RMF.
 
     .. versionchanged:: 4.17.0
-       The packup argument has been removed as `pack_rmf_data`
-       should be used instead.
+       The packup argument has been removed as `pack_rnf_data` should
+       be used instead, and the data is now set with the blocks
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    blocks : sequence of pairs
-        The RMF data, stored as pairs of (data, header), where data is
-        a dictionary of column name (keys) and values, and header is a
-        dictionary of key and values. The first element is the MATRIX
-        block and the second is for the EBOUNDS block.
+    blocks : BlockList
+        The RMF data.
     clobber : bool, optional
         If the file already exists can it be over-written (`True`) or
         will a sherpa.utils.err.IOErr error be raised? The default is
@@ -707,6 +700,8 @@ def set_hdus(filename: str,
              blocks: BlockList,
              clobber: bool = False) -> None:
     """Write out (possibly multiple) blocks.
+
+    .. versionadded:: 4.17.0
 
     Parameters
     ----------

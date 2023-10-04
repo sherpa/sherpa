@@ -49,14 +49,17 @@ interface):
 
 """
 
+from __future__ import annotations
+
 from configparser import ConfigParser
 from contextlib import suppress
 import importlib
+import importlib.metadata
 import logging
 import os
 import re
-from typing import Any, Callable, Mapping, Optional, Sequence, \
-    TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
+    Sequence, TypeVar, Union
 
 import numpy as np
 
@@ -68,9 +71,25 @@ from sherpa.data import Data, Data1D, Data2D, Data2DInt
 from sherpa.io import _check_args
 from sherpa.utils import is_subclass
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
-from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.numeric_types import SherpaFloat, SherpaUInt
 
-from .types import KeyType, NamesType, HdrTypeArg, HdrType, DataType
+from .types import KeyType, NamesType, HdrTypeArg, HdrType, DataType, \
+    Header, HeaderItem, Column, Block, TableBlock, ImageBlock, BlockList
+
+# Responses can often be send as the Data object or the instrument
+# version, so support it would be good to support this with types
+# like
+#
+#  RMFType = Union[DataRMF, RMF1D]
+#
+# but that is annoying thanks to circular dependencies.
+#
+if TYPE_CHECKING:
+    from sherpa.astro.instrument import RMF1D
+    RMFType = Union[DataRMF, RMF1D]
+
+else:
+    RMFType = DataRMF
 
 
 config = ConfigParser()
@@ -107,6 +126,7 @@ else:
     # old file that does not have dummy listed
     import sherpa.astro.io.dummy_backend as backend
 
+error = logging.getLogger(__name__).error
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
@@ -451,15 +471,120 @@ def read_rmf(arg) -> DataRMF:
     data : sherpa.astro.data.DataRMF
 
     """
-    data, filename = backend.get_rmf_data(arg)
-    data['header'] = _remove_structural_keywords(data['header'])
 
-    # It is unlikely that the backend will set this, but allow
-    # it to override the config setting.
+    matrixes, ebounds, filename = backend.get_rmf_data(arg)
+
+    # matrixes is guaranteed not to be empty
+    nmat = len(matrixes)
+    if nmat > 1:
+        # Warn the user that the multi-matrix RMF is not supported.
+        #
+        error("RMF in %s contains %d MATRIX blocks; "
+              "Sherpa only uses the first block!",
+              filename, nmat)
+
+    matrix = matrixes[0]
+
+    header = {}
+    detchans = 0
+    for item in _remove_structural_items(matrix.header):
+        if item.name == "DETCHANS":
+            detchans = int(item.value)
+        else:
+            header[item.name] = item.value
+
+    # Validate the data:
+    #  - check that OFFSET is set in either F_CHAN column of MATRIX
+    #    or CHANNEL column of EBOUNDS
+    #  - flatten out the F_CHAN, N_CHAN, and MATRIX columns
     #
-    if 'emin' not in data:
-        data['ethresh'] = ogip_emin
+    # We know the column order here.
+    #
+    f_chan = matrix.columns[3]
+    channel = ebounds.columns[0]
+    if f_chan.minval is not None:
+        offset = f_chan.minval
+    elif channel.minval is not None:
+        offset = channel.minval
+    else:
+        offset = 1
+        error("Failed to locate TLMIN keyword for F_CHAN column "
+              "in RMF file '%s'; Update the offset value in the "
+              "RMF data set to the appropriate TLMIN value prior "
+              "to fitting", filename)
 
+    # The n_grp column remains as is but the other columns
+    # - remove any rows where n_grp for that row is 0
+    # - flatten out any 2D structure or variable-length
+    #   data
+    #
+    # This is not designed to be the fastest code.
+    #
+    n_grp = matrix.columns[2].values
+    f_chan_raw = matrix.columns[3].values
+    n_chan_raw = matrix.columns[4].values
+    mat_raw = matrix.columns[5].values
+
+    good = n_grp > 0
+    ng_raw = n_grp[good]
+    fc_raw = f_chan_raw[good]
+    nc_raw = n_chan_raw[good]
+    mx_raw = mat_raw[good]
+
+    # Since these values are sent to the fold_rmf routine in
+    # sherpa.astro.utils._utils, we want the types to match up to
+    # avoid conversion time in that routine. The n_grp, f_chan, and
+    # n_chan arrays should be SherpaUIntArray and the matrix should be
+    # given by sherpa.utils.numeric_types. This conversion should
+    # probably be done by DataRMF itself though.
+    #
+    f_chan_l = []
+    n_chan_l = []
+    mat_l = []
+    for ng, fc, nc, mxs in zip(ng_raw, fc_raw, nc_raw, mx_raw):
+        # fc and nc may be scalars rather than an array (this is known
+        # before the loop but for now we check for it each row).
+        #
+        try:
+            f_chan_l.append(fc[:ng])
+            n_chan_l.append(nc[:ng])
+        except IndexError:
+            f_chan_l.append([fc])
+            n_chan_l.append([nc])
+
+        # Loop through all the matrix elements, restricting to nchan
+        # (in case we do not have a VLF matrix array).  The matrix may
+        # also be a scalar.
+        #
+        start = 0
+        for nchan in n_chan_l[-1]:
+            # nchan may be an unsigned int, which could lead to type casting
+            # errors, so explicitly convert to an int.
+            end = start + int(nchan)
+            try:
+                mat_l.append(mxs[start:end])
+            except IndexError:
+                # Assume the scalar case
+                mat_l.append([mxs])
+
+            start = end
+
+    def flatten(xs, dtype):
+        return np.concatenate(xs).astype(dtype)
+
+    data = {"detchans": detchans,
+            "energ_lo": matrix.columns[0].values,
+            "energ_hi": matrix.columns[1].values,
+            "n_grp": np.asarray(n_grp, dtype=SherpaUInt),
+            "f_chan": flatten(f_chan_l, dtype=SherpaUInt),
+            "n_chan": flatten(n_chan_l, dtype=SherpaUInt),
+            "matrix": flatten(mat_l, dtype=SherpaFloat),
+            "offset": offset,
+            "e_min": ebounds.columns[1].values,
+            "e_max": ebounds.columns[2].values,
+            "header": header,
+            "ethresh": ogip_emin  # should we take this from the header?
+            }
     return _rmf_factory(filename, data)
 
 
@@ -827,6 +952,8 @@ def _is_structural_keyword(key: str) -> bool:
                         ]
 
 
+# This is being replaced by _remove_structural_items
+#
 def _remove_structural_keywords(header: HdrTypeArg) -> HdrType:
     """Remove FITS keywords relating to file structure.
 
@@ -861,6 +988,59 @@ def _remove_structural_keywords(header: HdrTypeArg) -> HdrType:
         out[key] = value
 
     return out
+
+
+def _remove_structural_items(header: Header) -> list[HeaderItem]:
+    """Remove FITS keywords relating to file structure.
+
+    The aim is to allow writing out a header that was taken from a
+    file and not copy along "unwanted" values, since the data may
+    no-longer be relevant. Not all FITS header keys may be passed
+    along by a particular backend (e.g. crates).
+
+    Parameters
+    ----------
+    header : Header
+       The input header
+
+    Returns
+    -------
+    nheader : list of HeaderItem
+       Header with unwanted keywords returned (including those
+       set to None).
+
+    Notes
+    -----
+    The tricky part is knowing what is unwanted, since copying
+    along a WCS transform for a column may be useful, or may
+    break things.
+
+    """
+
+    return [item for item in header.values
+            if not _is_structural_keyword(item.name)]
+
+
+# By making this a package-level value, users can actually change the
+# text (and in fact the name) by using code like
+#
+#    from sherpa.astro.io import CREATOR
+#    CREATOR.value = "not sherpa"
+#
+# but it does not seem worth documenting this at this time.
+#
+CREATOR = HeaderItem(name="CREATOR",
+                     value=f"sherpa {importlib.metadata.version('sherpa')}",
+                     desc="Program creating this file")
+
+
+def _add_creator(header: Header) -> None:
+    """Add a CREATOR card if not set."""
+
+    if header.get("CREATOR") is not None:
+        return
+
+    header.add(CREATOR)
 
 
 def _pack_pha(dataset: DataPHA) -> tuple[DataType, HdrType]:
@@ -1320,7 +1500,7 @@ def _make_int_vlf(rows: Sequence[Sequence[int]]) -> np.ndarray:
     return np.asarray(out, dtype=object)
 
 
-def _reconstruct_rmf(rmf: DataRMF) -> DataType:
+def _reconstruct_rmf(rmf: RMFType) -> DataType:
     """Recreate the structure needed to write out as a FITS file.
 
     This does not guarantee to create byte-identical data in a round
@@ -1447,11 +1627,7 @@ def _reconstruct_rmf(rmf: DataRMF) -> DataType:
             "NUMELT": numelt}
 
 
-# Technically this should check for DataRMF | RMF1D but that leads to
-# import loops, and it doesn't seem worth avoiding the issue with a
-# forward reference.
-#
-def _pack_rmf(dataset: DataRMF) -> list[tuple[DataType, HdrType]]:
+def _pack_rmf(dataset: RMFType) -> BlockList:
     """Extract FITS column and header information.
 
     Unlike the other pack routines this returns data for
@@ -1512,6 +1688,15 @@ def _pack_rmf(dataset: DataRMF) -> list[tuple[DataType, HdrType]]:
     if not isinstance(dataset, (DataRMF, RMF1D)):
         raise IOErr("data set is not a RMF")
 
+    # We convert the input into a dict (rmfdata) and then more
+    # dictionaries (both for headers and columns) before eventually
+    # creating the Block objects we return. This separates out the
+    # data manipulation - e.g. creating the correct column types and
+    # ensuring the headers contain the needed data - from creating the
+    # file contents (i.e. Block objects). The two steps could be
+    # combined but leave as is for now since this is not code that
+    # needs to be fast, but does need to be readable.
+    #
     rmfdata = _reconstruct_rmf(dataset)
 
     # The default keywords; these will be over-ridden by
@@ -1598,8 +1783,60 @@ def _pack_rmf(dataset: DataRMF) -> list[tuple[DataType, HdrType]]:
         "E_MAX": dataset.e_max.astype(np.float32)
         }
 
-    return [(matrix_data, matrix_header),
-            (ebounds_data, ebounds_header)]
+    # Now convert these into TableBlock types.
+    #
+    # Create the MATRIX block:
+    #     ENERG_LO
+    #     ENERG_HI
+    #     N_GRP
+    #     F_CHAN
+    #     N_CHAN
+    #     MATRIX
+    #
+    mheader = Header([HeaderItem(name=name, value=value)
+                      for name, value in matrix_header.items()])
+    _add_creator(mheader)
+
+    mcols = [Column(name=name, values=value)
+             for name, value in matrix_data.items()
+             if name != "OFFSET"]
+
+    # Adjust the column objects.
+    #
+    for col in mcols:
+        if col.name.startswith("ENERG"):
+            col.unit = "keV"
+            continue
+
+        if col.name == "F_CHAN":
+            col.minval = matrix_data["OFFSET"]
+            continue
+
+    # Create the EBOUNDS block:
+    #     CHANNEL
+    #     E_MIN
+    #     E_MAX
+    #
+    eheader = Header([HeaderItem(name=name, value=value)
+                      for name, value in ebounds_header.items()])
+    _add_creator(eheader)
+
+    ecols = [Column(name=name, values=value)
+             for name, value in ebounds_data.items()]
+
+    for col in ecols:
+        if col.name == "CHANNEL":
+            continue
+
+        col.unit = "keV"
+
+    header = Header([])
+    _add_creator(header)
+    blocks: list[Union[TableBlock, ImageBlock]]
+    blocks = [TableBlock(name="MATRIX", header=mheader, columns=mcols),
+              TableBlock(name="EBOUNDS", header=eheader, columns=ecols)]
+
+    return BlockList(header=header, blocks=blocks)
 
 
 def write_arrays(filename: str,
@@ -1750,7 +1987,7 @@ def write_arf(filename: str,
 
 
 def write_rmf(filename: str,
-              dataset: DataRMF,
+              dataset: RMFType,
               clobber: bool = False) -> None:
     """Write out a RMF.
 
