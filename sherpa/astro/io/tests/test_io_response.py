@@ -147,14 +147,10 @@ def test_read_rmf(make_data_path):
 
     for field in ["f_chan", "n_chan"]:
         attr = getattr(rmf, field)
-        if backend_is("crates"):
-            assert attr.dtype == np.uint32
-        elif backend_is("pyfits"):
-            assert attr.dtype == np.uint64
-        else:
-            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+        assert attr.dtype == np.uint64
 
     for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
+        print(field)
         attr = getattr(rmf, field)
         assert attr.dtype == np.float64
 
@@ -386,12 +382,7 @@ def test_write_rmf_fits_chandra_acis(make_data_path, tmp_path):
 
     for field in ["f_chan", "n_chan"]:
         attr = getattr(new, field)
-        if backend_is("crates"):
-            assert attr.dtype == np.uint32
-        elif backend_is("pyfits"):
-            assert attr.dtype == np.uint64
-        else:
-            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+        assert attr.dtype == np.uint64
 
     for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
         attr = getattr(new, field)
@@ -442,10 +433,10 @@ def test_write_rmf_fits_asca_sis(make_data_path, tmp_path, caplog):
     assert len(caplog.record_tuples) == 1
 
     lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == io.backend.__name__
+    assert lname == "sherpa.astro.io"
     assert lvl == logging.ERROR
     assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
-    assert msg.endswith("sis0.rmf'; Update the offset value in the RMF data set to appropriate TLMIN value prior to fitting")
+    assert msg.endswith("sis0.rmf'; Update the offset value in the RMF data set to the appropriate TLMIN value prior to fitting")
 
     # Unlike the ACIS case, this does not have NUMELT/GRP and
     # leave in the HDU keys to check they don't get over-written.
@@ -503,12 +494,7 @@ def test_write_rmf_fits_asca_sis(make_data_path, tmp_path, caplog):
 
     for field in ["f_chan", "n_chan"]:
         attr = getattr(new, field)
-        if backend_is("crates"):
-            assert attr.dtype == np.uint32
-        elif backend_is("pyfits"):
-            assert attr.dtype == np.uint64
-        else:
-            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+        assert attr.dtype == np.uint64
 
     for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
         attr = getattr(new, field)
@@ -625,12 +611,7 @@ def test_write_rmf_fits_swift_xrt(make_data_path, tmp_path):
 
     for field in ["f_chan", "n_chan"]:
         attr = getattr(new, field)
-        if backend_is("crates"):
-            assert attr.dtype == np.uint32
-        elif backend_is("pyfits"):
-            assert attr.dtype == np.uint64
-        else:
-            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+        assert attr.dtype == np.uint64
 
     for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
         attr = getattr(new, field)
@@ -733,12 +714,7 @@ def test_write_rmf_fits_rosat_pspc(make_data_path, tmp_path):
 
     for field in ["f_chan", "n_chan"]:
         attr = getattr(new, field)
-        if backend_is("crates"):
-            assert attr.dtype == np.uint32
-        elif backend_is("pyfits"):
-            assert attr.dtype == np.uint64
-        else:
-            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+        assert attr.dtype == np.uint64
 
     for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
         attr = getattr(new, field)
@@ -844,12 +820,7 @@ def test_write_rmf_fits_xmm_rgs(make_data_path, tmp_path):
 
     for field in ["f_chan", "n_chan"]:
         attr = getattr(new, field)
-        if backend_is("crates"):
-            assert attr.dtype == np.uint32
-        elif backend_is("pyfits"):
-            assert attr.dtype == np.uint64
-        else:
-            raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+        assert attr.dtype == np.uint64
 
     for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
         attr = getattr(new, field)
@@ -994,12 +965,13 @@ def test_write_fake_perfect_rmf(offset, tmp_path):
     assert hdr["CHANTYPE"] == "PI"
     assert hdr["NUMGRP"] == 10
     assert hdr["NUMELT"] == 10
+    assert hdr["CREATOR"].startswith("sherpa ")
 
     # We may add keywords, which will mean this needs updating.  It
     # also relies on the removal of "structural" keywords to make this
     # match between different backends.
     #
-    assert len(hdr) == 10
+    assert len(hdr) == 11
 
     assert new.energ_lo == pytest.approx(elo)
     assert new.energ_hi == pytest.approx(ehi)
@@ -1063,12 +1035,7 @@ def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
 
         for field in ["f_chan", "n_chan"]:
             attr = getattr(rmf, field)
-            if backend_is("crates"):
-                assert attr.dtype == np.uint32
-            elif backend_is("pyfits"):
-                assert attr.dtype == np.uint64
-            else:
-                raise RuntimeError(f"unsupported I/O backend: {io.backend}")
+            assert attr.dtype == np.uint64
 
         for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
             attr = getattr(rmf, field)
@@ -1099,17 +1066,13 @@ def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
     rmfname = "epn_ff20_dY9.rmf"
     infile = make_data_path(rmfname)
 
-    # We get a TLMIN warning
+    # In 4.16.0 and earlier this gave a TLMIN warning, even though we
+    # managed to read the data in from the EBOUNDS/CHANNEL column. The
+    # code now doesn't warn in this case.
+    #
     assert len(caplog.record_tuples) == 0
     orig = io.read_rmf(infile)
-    assert len(caplog.record_tuples) == 1
-
-    lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == io.backend.__name__
-    assert lvl == logging.ERROR
-    print(msg)
-    assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
-    assert msg.endswith("'; Update the offset value in the RMF data set to appropriate TLMIN value prior to fitting")
+    assert len(caplog.record_tuples) == 0
 
     assert isinstance(orig, DataRMF)
     assert orig.name.endswith(f"/{rmfname}")
@@ -1118,8 +1081,7 @@ def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
     outpath = tmp_path / "out.rmf"
     outfile = str(outpath)
     io.write_rmf(outfile, orig)
-    # Note: no TLMIN warning
-    assert len(caplog.record_tuples) == 1
+    assert len(caplog.record_tuples) == 0
 
     new = io.read_rmf(outfile)
     assert isinstance(new, DataRMF)
@@ -1169,46 +1131,12 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
 
     # Extract the data and then reconstruct a "multi" RMF.
     #
-    matrix1, bounds1 = io._pack_rmf(rmf1)
-    matrix2, bounds2 = io._pack_rmf(rmf2)
+    blocks1 = io._pack_rmf(rmf1)
+    blocks2 = io._pack_rmf(rmf2)
 
-    # Convert to a form that set_hdus can use. It also doesn't create
-    # a "proper" RMF since it does not set the TLMIN value for the
-    # F_CHAN column (an infelicity in the Column type).
-    #
-    def mkhdr(old):
-        return Header([HeaderItem(name=n, value=v)
-                       for n,v in old.items()])
-
-    def mkdata(old):
-        # We drop the OFFSET value (only from the matrix1/2 versions
-        # but doesn't harm to include in the bounds1 call).
-        #
-        return [Column(name=n, values=v)
-                for n,v in old.items()
-                if n != "OFFSET"]
-
-    m1_header = mkhdr(matrix1[1])
-    m1_data = mkdata(matrix1[0])
-
-    m2_header = mkhdr(matrix2[1])
-    m2_data = mkdata(matrix2[0])
-
-    eb_header = mkhdr(bounds1[1])
-    eb_data = mkdata(bounds1[0])
-
-    # Add in the TLMIN value for F_CHAN; check we are column 4.
-    #
-    assert m1_data[3].name == "F_CHAN"
-    assert m2_data[3].name == "F_CHAN"
-    m1_data[3].minval = matrix1[0]["OFFSET"]
-    m2_data[3].minval = matrix2[0]["OFFSET"]
-
-    primary = mkhdr({"TESTKEY": 12})
-    hdus = [TableBlock("MATRIX", header=m1_header, columns=m1_data),
-            TableBlock("MATRIX", header=m2_header, columns=m2_data),
-            TableBlock("EBOUNDS", header=eb_header, columns=eb_data)]
-    blist = BlockList(blocks=hdus, header=primary)
+    header = Header([HeaderItem(name="TESTKEY", value=12)])
+    blocks = [blocks1.blocks[0], blocks2.blocks[0], blocks1.blocks[1]]
+    blist = BlockList(blocks=blocks, header=header)
 
     outpath = tmp_path / "multi.rmf"
     outfile = str(outpath)
@@ -1221,7 +1149,7 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     assert len(caplog.record_tuples) == 1
 
     lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == io.backend.__name__
+    assert lname == "sherpa.astro.io"
     assert lvl == logging.ERROR
     assert msg.startswith("RMF in ")
     assert msg.endswith("/multi.rmf contains 2 MATRIX blocks; Sherpa only uses the first block!")

@@ -29,15 +29,13 @@ from pycrates import CrateDataset, IMAGECrate, TABLECrate  # type: ignore
 import pycrates  # type: ignore
 import pytransform  # type: ignore
 
-from sherpa.astro.utils import resp_init
 from sherpa.utils import is_binary_file
 from sherpa.utils.err import ArgumentTypeErr, IOErr
-from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
-    SherpaFloat
+from sherpa.utils.numeric_types import SherpaFloat
 
 from .types import ColumnsType, DataType, DataTypeArg, \
     HdrType, HdrTypeArg, KeyType, NamesType, BlockType, \
-    Header, ImageBlock, TableBlock, BlockList
+    HeaderItem, Header, Column, ImageBlock, TableBlock, BlockList
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -65,6 +63,7 @@ name: str = "crates"
 
 
 CrateType = Union[TABLECrate, IMAGECrate]
+DatasetType = Union[str, CrateDataset]
 
 
 def open_crate(filename: str,
@@ -210,6 +209,8 @@ def _try_key(crate: CrateType,
     return dtype(value)
 
 
+# This is being replaced by _get_meta_data_header
+#
 def _get_meta_data(crate: CrateType) -> HdrType:
     """Retrieve the header information from the crate.
 
@@ -223,6 +224,24 @@ def _get_meta_data(crate: CrateType) -> HdrType:
         meta[name] = val
 
     return meta
+
+
+def _get_meta_data_header(crate: CrateType) -> Header:
+    """Retrieve the header information from the crate.
+
+    This loses the "specialized" keywords like HISTORY and COMMENT.
+
+    """
+
+    out = []
+    for name in crate.get_keynames():
+        key = crate.get_key(name)
+        item = HeaderItem(name=name, value=key.value)
+        item.unit = key.unit if key.unit != '' else None
+        item.desc = key.desc if key.desc != '' else None
+        out.append(item)
+
+    return Header(out)
 
 
 def _set_key(crate: CrateType,
@@ -834,10 +853,143 @@ def _find_matrix_blocks(filename: str,
     return blnames
 
 
+def copycol(cr: TABLECrate,
+            filename: str,
+            name: str,
+            dtype: Optional[type] = None) -> Column:
+    """Copy the column data (which must exist).
+
+    Parameters
+    ----------
+    cr : TableCrate
+       The crate to search.
+    filename : str
+       The filename from which the crate was created. This is used for
+       error messages only.
+    name : str
+       The column name (case insensitive).
+    dtype : None or type
+       The data type to convert the column values to.
+
+    Returns
+    -------
+    col : Column
+       The column data.
+
+    Raises
+    ------
+    IOErr
+       The column does not exist.
+
+    Notes
+    -----
+
+    Historically Sherpa has converted RMF columns to double-precision
+    values, even though the standard has them as single-precision.
+    Using the on-disk type (e.g. float rather than double) has some
+    annoynig consequences on the test suite, so for now we retain this
+    behaviour.
+
+    """
+
+    try:
+        col = cr.get_column(name)
+    except ValueError:
+        raise IOErr("reqcol", name, filename) from None
+
+    vals = col.values
+    if dtype is not None:
+        vals = vals.astype(dtype)
+
+    # do not expand out variable-length arrays for now.
+    #
+    out = Column(col.name, values=vals)
+    out.desc = col.desc if col.desc != '' else None
+    out.unit = col.unit if col.unit != '' else None
+
+    # Only set the min/max if they are informative (ie not just
+    # the min/max for that datatype). Assume we do not have to
+    # worry about bit columns (for CIAO 4.16 it seems hard to find
+    # this information out, hence the logic below).
+    #
+    if col.is_varlen():
+        # Assume this works even if the first row has no elements
+        coltype = col.values[0].dtype
+    else:
+        coltype = col.values.dtype
+
+    tlmin = col.get_tlmin()
+    tlmax = col.get_tlmax()
+
+    # This is a bit-more verbose than normal to appease mypy.
+    #
+    minval: Any
+    maxval: Any
+    try:
+        ftypeinfo = np.finfo(coltype)
+        minval = ftypeinfo.min
+        maxval = ftypeinfo.max
+    except ValueError:
+        dtypeinfo = np.iinfo(coltype)
+        minval = dtypeinfo.min
+        maxval = dtypeinfo.max
+
+    out.minval = tlmin if tlmin != minval else None
+    out.maxval = tlmax if tlmax != maxval else None
+    return out
+
+
+def _read_rmf_matrix(rmfdataset: pycrates.RMFCrateDataset,
+                     filename: str,
+                     blname: str) -> TableBlock:
+    """Read in the given MATRIX block"""
+
+    # By design we know this block exists but we are not guaranteed we
+    # can read it in.
+    #
+    rmf = _get_crate_by_blockname(rmfdataset, blname)
+    if rmf is None:
+        raise IOErr(f"Unable to read {blname} from {filename}")
+
+    # Ensure we have a DETCHANS keyword
+    if rmf.get_key("DETCHANS") is None:
+        raise IOErr("nokeyword", filename, "DETCHANS")
+
+    mheaders = _get_meta_data_header(rmf)
+    mcols = [copycol(rmf, filename, name, dtype=dtype) for name, dtype in
+             [("ENERG_LO", SherpaFloat),
+              ("ENERG_HI", SherpaFloat),
+              ("N_GRP", None),
+              ("F_CHAN", None),
+              ("N_CHAN", None),
+              ("MATRIX", None)]]
+    return TableBlock(blname, header=mheaders, columns=mcols)
+
+
+def _read_rmf_ebounds(rmfdataset: pycrates.RMFCrateDataset,
+                      filename: str,
+                      blname: str) -> TableBlock:
+    """Read in the given EBOUNDS block"""
+
+    ebounds = _get_crate_by_blockname(rmfdataset, "EBOUNDS")
+    if ebounds is None:
+        raise IOErr(f"Unable to read {blname} from {filename}")
+
+    eheaders = _get_meta_data_header(ebounds)
+    ecols = [copycol(ebounds, filename, name, dtype=dtype) for name, dtype in
+             [("CHANNEL", None),
+              ("E_MIN", SherpaFloat),
+              ("E_MAX", SherpaFloat)]]
+    return TableBlock("EBOUNDS", header=eheaders, columns=ecols)
+
+
 def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
                  make_copy: bool = True
-                 ) -> tuple[DataType, str]:
-    """Read a RMF from a file or crate"""
+                 ) -> tuple[list[TableBlock], TableBlock, str]:
+    """Read a RMF from a file or crate.
+
+    This drops any information in the PRIMARY block.
+    """
 
     if isinstance(arg, str):
         try:
@@ -845,6 +997,7 @@ def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
         except OSError as oe:
             raise IOErr('openfailed', f"unable to open {arg}: {oe}") from oe
 
+        # Is this check needed?
         if pycrates.is_rmf(rmfdataset) != 1:
             raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
@@ -861,110 +1014,10 @@ def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
     # Find all the potential matrix blocks.
     #
     blnames = _find_matrix_blocks(filename, rmfdataset)
-    nmat = len(blnames)
-    if nmat > 1:
-        # Warn the user that the multi-matrix RMF is not supported.
-        #
-        error("RMF in %s contains %d MATRIX blocks; "
-              "Sherpa only uses the first block!",
-              filename, nmat)
-
-    rmf = rmfdataset.get_crate(blnames[0])
-
-    if not rmf.column_exists('ENERG_LO'):
-        raise IOErr('reqcol', 'ENERG_LO', filename)
-
-    if not rmf.column_exists('ENERG_HI'):
-        raise IOErr('reqcol', 'ENERG_HI', filename)
-
-    # FIXME: this will be a problem now that we have
-    # to pass the name of the matrix column
-
-    if not rmf.column_exists('MATRIX'):
-        raise IOErr('reqcol', 'MATRIX', filename)
-
-    if not rmf.column_exists('N_GRP'):
-        raise IOErr('reqcol', 'N_GRP', filename)
-
-    if not rmf.column_exists('F_CHAN'):
-        raise IOErr('reqcol', 'F_CHAN', filename)
-
-    if not rmf.column_exists('N_CHAN'):
-        raise IOErr('reqcol', 'N_CHAN', filename)
-
-    data: DataType = {}
-    data['detchans'] = _require_key(rmf, 'DETCHANS', dtype=SherpaInt)
-    data['energ_lo'] = _require_col(rmf, 'ENERG_LO',
-                                    make_copy=make_copy, fix_type=True)
-    data['energ_hi'] = _require_col(rmf, 'ENERG_HI',
-                                    make_copy=make_copy, fix_type=True)
-    data['n_grp'] = _require_col(rmf, 'N_GRP', make_copy=make_copy,
-                                 dtype=SherpaUInt, fix_type=True)
-
-    f_chan = rmf.get_column('F_CHAN')
-    offset = f_chan.get_tlmin()
-
-    fcbuf = _require_col(rmf, 'F_CHAN', make_copy)
-    ncbuf = _require_col(rmf, 'N_CHAN', make_copy)
-
-    respbuf = _require_col_list(rmf, 'MATRIX', make_copy=make_copy)
-
-    ebounds = _get_crate_by_blockname(rmfdataset, 'EBOUNDS')
-    if ebounds is None:
-        ebounds = rmfdataset.get_crate(3)
-
-    data['header'] = _get_meta_data(rmf)
-    data['header'].pop('DETCHANS', None)
-
-    channel = None
-    if ebounds is not None:
-        data['e_min'] = _try_col(ebounds, 'E_MIN', make_copy, fix_type=True)
-        data['e_max'] = _try_col(ebounds, 'E_MAX', make_copy, fix_type=True)
-        if ebounds.column_exists('CHANNEL'):
-            channel = ebounds.get_column('CHANNEL')
-
-        # FIXME: do I include the header keywords from ebounds
-        # data['header'].update(_get_meta_data(ebounds))
-
-    if offset < 0:
-        error("Failed to locate TLMIN keyword for F_CHAN "
-              "column in RMF file '%s'; "
-              'Update the offset value in the RMF data set to '
-              'appropriate TLMIN value prior to fitting', filename)
-
-    if offset < 0 and channel is not None:
-        offset = channel.get_tlmin()
-
-    # If response is non-OGIP, tlmin is -(max of type), so resort to default
-    if not offset < 0:
-        data['offset'] = offset
-
-    # FIXME:
-    #
-    # Currently, CRATES does something screwy:  If n_grp is zero in a bin,
-    # it appends a zero to f_chan, n_chan, and matrix.  I have no idea what
-    # the logic behind this is -- why would you add data that you know you
-    # don't need?  Although it's easy enough to filter the zeros out of
-    # f_chan and n_chan, it's harder for matrix, since zero is a legitimate
-    # value there.
-    #
-    # I think this crazy behavior of CRATES should be changed, but for the
-    # moment we'll just punt in this case.  (If we don't, the calculation
-    # in rmf_fold() will be trashed.)
-
-    # CRATES does not support variable length arrays, so here we condense
-    # the array of tuples into the proper length array
-
-    chan_width = data['n_grp'].max()
-    resp_width = 0
-    if len(respbuf.shape) > 1:
-        resp_width = respbuf.shape[1]
-
-    (data['f_chan'], data['n_chan'],
-     data['matrix']) = resp_init(data['n_grp'], fcbuf, ncbuf,
-                                 chan_width, respbuf.ravel(), resp_width)
-
-    return data, filename
+    matrixes = [_read_rmf_matrix(rmfdataset, filename, blname)
+                for blname in blnames]
+    ebounds = _read_rmf_ebounds(rmfdataset, filename, "EBOUNDS")
+    return matrixes, ebounds, filename
 
 
 def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
@@ -1424,85 +1477,38 @@ def _update_header(cr: CrateType,
         _set_key(cr, key, value)
 
 
-def pack_rmf_data(blocks) -> pycrates.RMFCrateDataset:
+def pack_rmf_data(blocks: BlockList) -> pycrates.RMFCrateDataset:
     """Pack up the RMF data."""
 
-    # For now assume only two blocks:
-    #    MATRIX
-    #    EBOUNDS
-    #
-    matrix_data, matrix_header = blocks[0]
-    ebounds_data, ebounds_header = blocks[1]
+    _validate_block_names(blocks.blocks)
 
-    # Extract the data:
-    #   MATRIX:
-    #     ENERG_LO
-    #     ENERG_HI
-    #     N_GRP
-    #     F_CHAN
-    #     N_CHAN
-    #     MATRIX
-    #
-    #   EBOUNDS:
-    #     CHANNEL
-    #     E_MIN
-    #     E_MAX
-    #
-    # We may need to convert F_CHAN/N_CHAN/MATRIX to Variable-Length
-    # Fields. This is only needed if the ndarray type is object.
-    # Fortunately Crates will convert a n ndarray of objects to a
-    # Variable-Length array, so we do not need to do anything special
-    # here.
-    #
-    def mkcol(name, vals, units=None):
-        col = pycrates.CrateData()
-        col.name = name
-        col.values = vals
-        col.unit = units
-        return col
+    rmf = pycrates.RMFCrateDataset()
+    if blocks.header is not None:
+        rmf.add_crate(_create_primary_crate(blocks.header))
 
-    # Does RMFCrateDataset offer us anything above creating a
-    # CrateDataset manually?
+    # Should only be tables in the list but allow images to make the
+    # code simpler.
     #
-    ds = pycrates.RMFCrateDataset()
-    matrix_cr = ds.get_crate("MATRIX")
-    ebounds_cr = ds.get_crate("EBOUNDS")
+    for block in blocks.blocks:
+        if isinstance(block, TableBlock):
+            cr = _create_table_crate(block)
+        elif isinstance(block, ImageBlock):
+            cr = _create_image_crate(block)
+        else:
+            raise RuntimeError(f"Unsupported block: {block}")
 
-    matrix_cr.add_column(mkcol("ENERG_LO", matrix_data["ENERG_LO"], units="keV"))
-    matrix_cr.add_column(mkcol("ENERG_HI", matrix_data["ENERG_HI"], units="keV"))
-    matrix_cr.add_column(mkcol("N_GRP", matrix_data["N_GRP"]))
-    matrix_cr.add_column(mkcol("F_CHAN", matrix_data["F_CHAN"]))
-    matrix_cr.add_column(mkcol("N_CHAN", matrix_data["N_CHAN"]))
-    matrix_cr.add_column(mkcol("MATRIX", matrix_data["MATRIX"]))
+        rmf.add_crate(cr)
 
-    # Crates does not have a good API for setting the subspace of an
-    # item. So we manually add the correct TLMIN value to the header
-    # directly, as this appears to work.
-    #
-    # matrix_cr.F_CHAN._set_tlmin(matrix_data["OFFSET"])
-    matrix_header["TLMIN4"] = int(matrix_data["OFFSET"])
-
-    ebounds_cr.add_column(mkcol("CHANNEL", ebounds_data["CHANNEL"]))
-    ebounds_cr.add_column(mkcol("E_MIN", ebounds_data["E_MIN"], units="keV"))
-    ebounds_cr.add_column(mkcol("E_MAX", ebounds_data["E_MAX"], units="keV"))
-
-    # Update the headers after adding the columns.
-    #
-    _update_header(matrix_cr, matrix_header)
-    _update_header(ebounds_cr, ebounds_header)
-
-    return ds
+    return rmf
 
 
 def set_rmf_data(filename: str,
-                 blocks,
+                 blocks: BlockList,
                  clobber: bool = False) -> None:
     """Save the RMF data to disk.
 
     Unlike the other save_*_data calls this does not support the ascii
-    argument. It also relies on the caller to have set up the headers
-    and columns correctly apart for variable-length fields, which are
-    limited to F_CHAN, N_CHAN, and MATRIX.
+    argument.
 
     """
 

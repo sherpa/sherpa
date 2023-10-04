@@ -42,15 +42,15 @@ from astropy.io import fits  # type: ignore
 from astropy.io.fits.column import _VLF  # type: ignore
 from astropy.table import Table  # type: ignore
 
-import sherpa.utils
+from sherpa.io import get_ascii_data, write_arrays
+import sherpa.utils  # unlike crates we do not import is_binary_file directly
 from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
-from sherpa.io import get_ascii_data, write_arrays
 
 from .types import ColumnsType, DataType, DataTypeArg, \
     HdrType, HdrTypeArg, KeyType, NamesType, \
-    Header, ImageBlock, TableBlock, BlockList
+    HeaderItem, Header, Column, ImageBlock, TableBlock, BlockList
 
 
 warning = logging.getLogger(__name__).warning
@@ -122,6 +122,8 @@ def _require_key(hdu: HDUType,
     return value
 
 
+# This is being replaced by _get_meta_data_header
+#
 def _get_meta_data(hdu: HDUType) -> HdrType:
     # If the header keywords are not specified correctly then
     # astropy will error out when we try to access it. Since
@@ -136,6 +138,41 @@ def _get_meta_data(hdu: HDUType) -> HdrType:
         meta[key] = val
 
     return meta
+
+
+def _get_meta_data_header(hdu: fits.BinTableHDU) -> Header:
+    """Retrieve the header information from the table.
+
+    This loses the "specialized" keywords like HISTORY and COMMENT.
+
+    """
+
+    # If the header keywords are not specified correctly then
+    # astropy will error out when we try to access it. Since
+    # this is not an uncommon problem, there is a verify method
+    # that can be used to fix up the data to avoid this: the
+    # "silentfix" option is used so as not to complain too much.
+    #
+    hdu.verify('silentfix')
+
+    out = []
+    for name in hdu.header.keys():
+        if name in ["", "COMMENT", "HISTORY"]:
+            continue
+
+        item = HeaderItem(name=name, value=hdu.header[name])
+
+        comment = hdu.header.comments[name]
+        if comment != '':
+            # For now treat the unit as part of the comment rather
+            # than try to split it out.
+            #
+            # item.unit = key.unit if key.unit != '' else None
+            item.desc = comment
+
+        out.append(item)
+
+    return Header(out)
 
 
 def _add_keyword(hdrlist: fits.Header,
@@ -726,20 +763,6 @@ def get_arf_data(arg: DatasetType,
     return data, filename
 
 
-def _read_col(hdu: fits.BinTableHDU, name: str) -> np.ndarray:
-    """A specialized form of _require_col
-
-    There is no attempt to convert from a variable-length field
-    to any other form.
-
-    """
-
-    try:
-        return hdu.data[name]
-    except KeyError:
-        raise IOErr("reqcol", name, _get_filename_from_hdu(hdu)) from None
-
-
 # Commonly-used block names for the MATRIX block. Only the first two
 # are given in the OGIP standard.
 #
@@ -757,9 +780,8 @@ def _find_matrix_blocks(filename: str,
 
     Returns
     -------
-    blnames : list of str
-       The block names that contain the MATRIX block. It will not be
-       empty.
+    blocks : list of fits.BinTableHDU
+       The blocks that contain the MATRIX block. It will not be empty.
 
     Raises
     ------
@@ -793,82 +815,123 @@ def _find_matrix_blocks(filename: str,
     return blocks
 
 
-def _read_rmf_data(arg: DatasetType
-                   ) -> tuple[DataType, str]:
-    """Read in the data from the RMF."""
+def copycol(hdu: fits.BinTableHDU,
+            filename: str,
+            name: str,
+            dtype: Optional[type] = None) -> Column:
+    """Copy the column data (which must exist).
 
-    cm, filename = _get_file_contents(arg, exptype="BinTableHDU",
-                                      nobinary=True)
+    Parameters
+    ----------
+    hdu : BinTableHDU
+       The HDU to search.
+    filename : str
+       The filename from which the HDU was created. This is used for
+       error messages only.
+    name : str
+       The column name (case insensitive).
+    dtype : None or type
+       The data type to convert the column values to.
 
-    with cm as rmf:
-        # Find all the potential matrix blocks.
-        #
-        mblocks = _find_matrix_blocks(filename, rmf)
-        nmat = len(mblocks)
-        if nmat > 1:
-            # Warn the user that the multi-matrix RMF is not supported.
-            #
-            error("RMF in %s contains %d MATRIX blocks; "
-                  "Sherpa only uses the first block!",
-                  filename, nmat)
+    Returns
+    -------
+    col : Column
+       The column data.
 
-        hdu = mblocks[0]
+    Raises
+    ------
+    IOErr
+       The column does not exist.
 
-        # The comments note the type we want the column to be, but
-        # this conversion needs to be done after cleaning up the
-        # data.
-        #
-        data: DataType = {}
-        data['detchans'] = SherpaUInt(_require_key(hdu, 'DETCHANS'))
-        data['energ_lo'] = _read_col(hdu, 'ENERG_LO')  # SherpaFloat
-        data['energ_hi'] = _read_col(hdu, 'ENERG_HI')  # SherpaFloat
-        data['n_grp'] = _read_col(hdu, 'N_GRP')        # SherpaUInt
-        data['f_chan'] = _read_col(hdu, 'F_CHAN')      # SherpaUInt
-        data['n_chan'] = _read_col(hdu, 'N_CHAN')      # SherpaUInt
-        data['matrix'] = _read_col(hdu, "MATRIX")
+    Notes
+    -----
 
-        data['header'] = _get_meta_data(hdu)
-        data['header'].pop('DETCHANS', None)
+    Historically Sherpa has converted RMF columns to double-precision
+    values, even though the standard has them as single-precision.
+    Using the on-disk type (e.g. float rather than double) has some
+    annoying consequences on the test suite, so for now we retain this
+    behaviour.
 
-        # Beginning of non-Chandra RMF support
-        fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
-        tlmin = _try_key(hdu, f"TLMIN{fchan_col}", fix_type=True,
-                         dtype=SherpaUInt)
+    """
 
-        if tlmin is not None:
-            data['offset'] = tlmin
-        else:
-            error("Failed to locate TLMIN keyword for F_CHAN "
-                  "column in RMF file '%s'; "
-                  'Update the offset value in the RMF data set to '
-                  'appropriate TLMIN value prior to fitting', filename)
+    uname = name.upper()
+    try:
+        vals = hdu.data[uname]
+    except KeyError:
+        raise IOErr("reqcol", uname, filename) from None
 
-        try:
-            hdu = rmf['EBOUNDS']
-        except KeyError:
-            hdu = None
+    if dtype is not None:
+        vals = vals.astype(dtype)
 
-        if hdu is not None:
-            data['e_min'] = _try_col(hdu, 'E_MIN', fix_type=True)
-            data['e_max'] = _try_col(hdu, 'E_MAX', fix_type=True)
+    # Do not expand out variable-length arrays for now.  Note that for
+    # columns the unit value is stored separately from the description
+    # (TUNIT versus the commenf for the TTYPE value).
+    #
+    colinfo = hdu.columns[uname]
+    out = Column(uname, values=vals)
+    if colinfo.unit is not None:
+        out.unit = colinfo.unit
 
-            # Beginning of non-Chandra RMF support
-            chan_col = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, f"TLMIN{chan_col}", fix_type=True,
-                             dtype=SherpaUInt)
-            if tlmin is not None:
-                data['offset'] = tlmin
+    # Is there a better way of finding the description than
+    # manually hunting around for the TTYPE<n> description?
+    #
+    pos = 1 + hdu.columns.names.index(uname)
+    desc = hdu.header.comments[f"TTYPE{pos}"]
+    if desc != '':
+        out.desc = desc
 
-        else:
-            data['e_min'] = None
-            data['e_max'] = None
+    try:
+        out.minval = hdu.header[f"TLMIN{pos}"]
+    except KeyError:
+        pass
 
-    return data, filename
+    try:
+        out.maxval = hdu.header[f"TLMAX{pos}"]
+    except KeyError:
+        pass
+
+    return out
+
+
+def _read_rmf_matrix(matrix: fits.BinTableHDU,
+                     filename: str) -> TableBlock:
+    """Read in the given MATRIX block"""
+
+    # Ensure we have a DETCHANS keyword
+    if matrix.header.get("DETCHANS") is None:
+        raise IOErr("nokeyword", filename, "DETCHANS")
+
+    mheaders = _get_meta_data_header(matrix)
+    mcols = [copycol(matrix, filename, name, dtype=dtype) for name, dtype in
+             [("ENERG_LO", SherpaFloat),
+              ("ENERG_HI", SherpaFloat),
+              ("N_GRP", None),
+              ("F_CHAN", None),
+              ("N_CHAN", None),
+              ("MATRIX", None)]]
+    return TableBlock(matrix.name, header=mheaders, columns=mcols)
+
+
+def _read_rmf_ebounds(hdus: fits.HDUList,
+                      filename: str,
+                      blname: str) -> TableBlock:
+    """Read in the given EBOUNDS block"""
+
+    ebounds = hdus[blname]
+    if ebounds is None:
+        raise IOErr(f"Unable to read {blname} from {filename}")
+
+    eheaders = _get_meta_data_header(ebounds)
+    ecols = [copycol(ebounds, filename, name, dtype=dtype) for name, dtype in
+             [("CHANNEL", None),
+              ("E_MIN", SherpaFloat),
+              ("E_MAX", SherpaFloat)]]
+    return TableBlock("EBOUNDS", header=eheaders, columns=ecols)
 
 
 def get_rmf_data(arg: DatasetType,
                  make_copy: bool = False
-                 ) -> tuple[DataType, str]:
+                 ) -> tuple[list[TableBlock], TableBlock, str]:
     """Read in the RMF.
 
     Notes
@@ -881,118 +944,18 @@ def get_rmf_data(arg: DatasetType,
 
     # Read in the columns from the MATRIX and EBOUNDS extensions.
     #
-    data, filename = _read_rmf_data(arg)
+    cm, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                      nobinary=True)
 
-    # This could be taken from the NUMELT keyword, but this is not
-    # a required value and it is not obvious how trustworthy it is.
-    #
-    # Since N_CHAN can be a VLF we can not just use sum().
-    #
-    numelt = 0
-    for row in data["n_chan"]:
-        try:
-            numelt += sum(row)
-        except TypeError:
-            # assumed to be a scalar
-            numelt += row
+    with cm as rmf:
+        # Find all the potential matrix blocks.
+        #
+        blocks = _find_matrix_blocks(filename, rmf)
+        matrixes = [_read_rmf_matrix(block, filename)
+                    for block in blocks]
+        ebounds = _read_rmf_ebounds(rmf, filename, "EBOUNDS")
 
-    # Remove unwanted data
-    #  - rows where N_GRP=0
-    #  - for each row, any excess data (beyond the sum(N_CHAN) for that row)
-    #
-    # The columns may be 1D or 2D vectors, or variable-field arrays,
-    # where each row is an object containing a number of elements.
-    #
-    # Note that crates uses the sherpa.astro.utils.resp_init routine,
-    # but it's not clear why, so it is not used here for now.
-    #
-    good = data['n_grp'] > 0
-
-    matrix = data['matrix'][good]
-    n_grp = data['n_grp'][good]
-    n_chan = data['n_chan'][good]
-    f_chan = data['f_chan'][good]
-
-    # Flatten the array. There are four cases here:
-    #
-    # a) a variable-length field with no "padding"
-    # b) a variable-length field with padding
-    # c) a rectangular matrix is given, with no "padding"
-    # d) a rectangular matrix is given, but a row can contain
-    #    unused data
-    #
-    if numelt == matrix.size:
-        if isinstance(matrix, _VLF):
-            # case a
-            matrix = np.concatenate([np.asarray(row)
-                                     for row in matrix])
-        else:
-            # case c
-            matrix = matrix.flatten()
-
-    else:
-        # cases b or d; assume we can use the same logic
-        rowdata = []
-        for mrow, ncs in zip(matrix, n_chan):
-            # Need a RMF which ng>1 to test this with.
-            if np.isscalar(ncs):
-                ncs = [ncs]
-
-            start = 0
-            for nc in ncs:
-                # n_chan can be an unsigned integer. Adding a Python
-                # integer to a NumPy unsigned integer appears to return
-                # a float.
-                end = start + int(nc)
-
-                # "perfect" RMFs may have mrow as a scalar
-                try:
-                    rdata = mrow[start:end]
-                except IndexError as ie:
-                    if start != 0 or end != 1:
-                        raise IOErr('bad', 'format', 'MATRIX column formatting') from ie
-
-                    rdata = [mrow]
-
-                rowdata.append(rdata)
-                start = end
-
-        matrix = np.concatenate(rowdata)
-
-    data['matrix'] = matrix.astype(SherpaFloat)
-
-    # Flatten f_chan and n_chan vectors into 1D arrays as crates does
-    # according to group. This is not always needed, but annoying to
-    # check for so we always do it.
-    #
-    xf_chan = []
-    xn_chan = []
-    for grp, fch, nch, in zip(n_grp, f_chan, n_chan):
-        if np.isscalar(fch):
-            # The assumption is that grp==1 here
-            xf_chan.append(fch)
-            xn_chan.append(nch)
-        else:
-            # The arrays may contain extra elements (which
-            # should be 0).
-            #
-            xf_chan.extend(fch[:grp])
-            xn_chan.extend(nch[:grp])
-
-    data['f_chan'] = np.asarray(xf_chan, SherpaUInt)
-    data['n_chan'] = np.asarray(xn_chan, SherpaUInt)
-
-    # Not all fields are "flattened" by this routine. In particular we
-    # need to keep knowledge of these rows with 0 groups. This is why
-    # we set the n_grp entry to data['n_grp'] rather than the n_grp
-    # variable (which has the 0 elements removed).
-    #
-    data['n_grp'] = np.asarray(data['n_grp'], SherpaUInt)
-
-    data['energ_lo'] = np.asarray(data['energ_lo'], SherpaFloat)
-    data['energ_hi'] = np.asarray(data['energ_hi'], SherpaFloat)
-
-    return data, filename
+    return matrixes, ebounds, filename
 
 
 def _read_single_pha(hdu,
@@ -1454,124 +1417,16 @@ def set_pha_data(filename: str,
 def pack_rmf_data(blocks) -> fits.HDUList:
     """Pack up the RMF data."""
 
-    # For now assume only two blocks:
-    #    MATRIX
-    #    EBOUNDS
-    #
-    matrix_data, matrix_header = blocks[0]
-    ebounds_data, ebounds_header = blocks[1]
-
-    # Extract the data:
-    #   MATRIX:
-    #     ENERG_LO
-    #     ENERG_HI
-    #     N_GRP
-    #     F_CHAN
-    #     N_CHAN
-    #     MATRIX
-    #
-    #   EBOUNDS:
-    #     CHANNEL
-    #     E_MIN
-    #     E_MAX
-    #
-    # We may need to convert F_CHAN/N_CHAN/MATRIX to Variable-Length
-    # Fields. This is only needed if the ndarray type is object.
-    #
-    # It looks like we can not use the go-via-a-table approach
-    # here, as that does not support Variable Length Fields.
-    #
-    def get_format(val):
-        """We only bother with formats we expect"""
-        if np.issubdtype(val, np.integer):
-            if isinstance(val, np.int16):
-                return "I"
-
-            # default to Int32. AstroPy does support Int64/K but
-            # this should not be needed here.
-            return "J"
-
-        if not np.issubdtype(val, np.floating):
-            raise ValueError(f"Unexpected value '{val}' with type {val.dtype}")
-
-        if isinstance(val, np.float32):
-            return "E"
-
-        # This should not be reached
-        return "D"
-
-    def get_full_format(name, vals):
-        if vals.dtype == object:
-            # We need to get the format from the first non-empty row.
-            bformat = None
-            ny = 0
-            for v in vals:
-                nv = len(v)
-                ny = max(ny, nv)
-                if nv == 0:
-                    continue
-
-                if bformat is not None:
-                    continue
-
-                bformat = get_format(v[0])
-                break
-
-            if bformat is None:
-                # This should not happen
-                raise ValueError(f"Unable to find data for column '{name}'")
-
-            return f"P{bformat}({ny})"
-
-        bformat = get_format(vals[0][0])
-        ny = vals.shape[1]
-        return f"{ny}{bformat}"
-
-    def arraycol(name):
-        vals = matrix_data[name]
-        formatval = get_full_format(name, vals)
-        return fits.Column(name=name, format=formatval, array=vals)
-
-    n_grp = matrix_data["N_GRP"]
-    col1 = fits.Column(name="ENERG_LO", format="E",
-                       array=matrix_data["ENERG_LO"], unit="keV")
-    col2 = fits.Column(name="ENERG_HI", format="E",
-                       array=matrix_data["ENERG_HI"], unit="keV")
-    col3 = fits.Column(name="N_GRP", format=get_format(n_grp[0]),
-                       array=n_grp)
-    col4 = arraycol("F_CHAN")
-    col5 = arraycol("N_CHAN")
-    col6 = arraycol("MATRIX")
-    cols = [col1, col2, col3, col4, col5, col6]
-    matrix_hdu = fits.BinTableHDU.from_columns(cols)
-    _update_header(matrix_hdu, matrix_header)
-
-    # Ensure the TLMIN4 value (for F_CHAN) is set.
-    matrix_hdu.header["TLMIN4"] = matrix_data["OFFSET"]
-
-    channel = ebounds_data["CHANNEL"]
-    col1 = fits.Column(name="CHANNEL", format=get_format(channel[0]),
-                       array=channel)
-    col2 = fits.Column(name="E_MIN", format="E",
-                       array=ebounds_data["E_MIN"], unit="keV")
-    col3 = fits.Column(name="E_MAX", format="E",
-                       array=ebounds_data["E_MAX"], unit="keV")
-    ebounds_hdu = fits.BinTableHDU.from_columns([col1, col2, col3])
-    _update_header(ebounds_hdu, ebounds_header)
-
-    primary_hdu = fits.PrimaryHDU()
-    return fits.HDUList([primary_hdu, matrix_hdu, ebounds_hdu])
+    return pack_hdus(blocks)
 
 
 def set_rmf_data(filename: str,
-                 blocks,
+                 blocks: BlockList,
                  clobber: bool = False) -> None:
     """Save the RMF data to disk.
 
     Unlike the other save_*_data calls this does not support the ascii
-    argument. It also relies on the caller to have set up the headers
-    and columns correctly apart for variable-length fields, which are
-    limited to F_CHAN, N_CHAN, and MATRIX.
+    argument.
 
     """
 
