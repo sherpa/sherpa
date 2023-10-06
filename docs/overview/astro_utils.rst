@@ -29,6 +29,5 @@ The sherpa.astro.utils module
       get_xspec_norm
       get_xspec_position
       is_in
-      resp_init
       rmf_fold
       shrink_effarea
