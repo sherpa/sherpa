@@ -913,12 +913,13 @@ def test_write_fake_arf(tmp_path):
     assert hdr["TELESCOP"] == "none"
     assert hdr["INSTRUME"] == "none"
     assert hdr["FILTER"] == "none"
+    assert hdr["CREATOR"].startswith("sherpa ")
 
     # We may add keywords, which will mean this needs updating.  It
     # also relies on the removal of "structural" keywords to make this
     # match between different backends.
     #
-    assert len(hdr) == 7
+    assert len(hdr) == 8
 
     assert new.energ_lo == pytest.approx(elo)
     assert new.energ_hi == pytest.approx(ehi)

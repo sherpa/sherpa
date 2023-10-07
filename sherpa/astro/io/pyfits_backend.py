@@ -33,7 +33,7 @@ References
 from contextlib import nullcontext
 import logging
 import os
-from typing import Any, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Mapping, Optional, Sequence, Union
 import warnings
 
 import numpy as np
@@ -727,40 +727,46 @@ def _has_ogip_type(hdus: fits.HDUList,
 
 def get_arf_data(arg: DatasetType,
                  make_copy: bool = False
-                 ) -> tuple[DataType, str]:
+                 ) -> tuple[TableBlock, str]:
     """Read in the ARF."""
 
     cm, filename = _get_file_contents(arg, exptype="BinTableHDU",
                                       nobinary=True)
 
     with cm as arf:
-        # Should we do the _has_ogip_type check first and only if that
-        # fails fall back to the "common" block names? Given the lack
-        # of consistency in following the OGIP standards by missions
-        # let's keep this ordering.
-        #
-        for blname in ["SPECRESP", "AXAF_ARF"]:
-            if blname in arf:
-                hdu = arf[blname]
-                break
-        else:
+        specresp = _read_arf_specresp(arf, filename)
+
+    return specresp, filename
+
+
+def _read_arf_specresp(arf: fits.HDUList,
+                       filename: str) -> TableBlock:
+    """Read in the SPECRESP block of the ARF."""
+
+    try:
+        hdu = arf["SPECREP"]
+    except KeyError:
+        try:
+            hdu = arf["AXAF_ARF"]
+        except KeyError:
             hdu = _has_ogip_type(arf, 'RESPONSE', 'SPECRESP')
             if hdu is None:
-                raise IOErr('notrsp', filename, 'an ARF')
+                raise IOErr('notrsp', filename, 'an ARF') from None
 
-        data: DataType = {}
+    headers = _get_meta_data_header(hdu)
+    cols = [copycol(hdu, filename, name, dtype=SherpaFloat)
+            for name in ["ENERG_LO", "ENERG_HI", "SPECRESP"]]
 
-        data['exposure'] = _try_key(hdu, 'EXPOSURE', fix_type=True)
+    # Optional columns: either both given or none
+    #
+    try:
+        bin_lo = copycol(hdu, filename, "BIN_LO", dtype=SherpaFloat)
+        bin_hi = copycol(hdu, filename, "BIN_HI", dtype=SherpaFloat)
+        cols.extend([bin_lo, bin_hi])
+    except IOErr:
+        pass
 
-        data['energ_lo'] = _require_col(hdu, 'ENERG_LO', fix_type=True)
-        data['energ_hi'] = _require_col(hdu, 'ENERG_HI', fix_type=True)
-        data['specresp'] = _require_col(hdu, 'SPECRESP', fix_type=True)
-        data['bin_lo'] = _try_col(hdu, 'BIN_LO', fix_type=True)
-        data['bin_hi'] = _try_col(hdu, 'BIN_HI', fix_type=True)
-        data['header'] = _get_meta_data(hdu)
-        data['header'].pop('EXPOSURE', None)
-
-    return data, filename
+    return TableBlock(hdu.name, header=headers, columns=cols)
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -1356,27 +1362,32 @@ def _update_header(hdu: HDUType,
         hdu.header[key] = value
 
 
-def pack_arf_data(data: ColumnsType,
-                  col_names: NamesType,
-                  header: Optional[HdrTypeArg] = None) -> fits.BinTableHDU:
+def pack_arf_data(blocks: BlockList) -> fits.BinTableHDU:
     """Pack the ARF"""
 
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
-
-    return pack_table_data(data, col_names, header)
+    return pack_hdus(blocks)
 
 
 def set_arf_data(filename: str,
-                 data: ColumnsType,
-                 col_names: NamesType,
-                 header: Optional[HdrTypeArg] = None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the ARF"""
 
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
+    # TODO: rework once set_table_data gets updated to use BlockList
+    #
+    # Assume we have been sent a correct ARF dataset.
+    if TYPE_CHECKING:
+        assert isinstance(blocks.blocks[0], TableBlock)
+
+    col_names = []
+    data = {}
+    for col in blocks.blocks[0].columns:
+        col_names.append(col.name)
+        data[col.name] = col.values
+
+    header = {item.name: item.value
+              for item in blocks.blocks[0].header.values}
 
     # This does not use pack_arf_data as we need to deal with ASCII
     # support.
