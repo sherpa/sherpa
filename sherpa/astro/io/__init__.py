@@ -49,8 +49,6 @@ interface):
 
 """
 
-from __future__ import annotations
-
 from configparser import ConfigParser
 from contextlib import suppress
 import importlib
@@ -85,10 +83,12 @@ from .types import KeyType, NamesType, HdrTypeArg, HdrType, DataType, \
 # but that is annoying thanks to circular dependencies.
 #
 if TYPE_CHECKING:
-    from sherpa.astro.instrument import RMF1D
+    from sherpa.astro.instrument import ARF1D, RMF1D
+    ARFType = Union[DataARF, ARF1D]
     RMFType = Union[DataRMF, RMF1D]
 
 else:
+    ARFType = DataARF
     RMFType = DataRMF
 
 
@@ -444,14 +444,26 @@ def read_arf(arg) -> DataARF:
     data : sherpa.astro.data.DataARF
 
     """
-    data, filename = backend.get_arf_data(arg)
-    data['header'] = _remove_structural_keywords(data['header'])
 
-    # It is unlikely that the backend will set this, but allow
-    # it to override the config setting.
-    #
-    if 'emin' not in data:
-        data['ethresh'] = ogip_emin
+    block, filename = backend.get_arf_data(arg)
+
+    header = {}
+    exposure = None
+    for item in _remove_structural_items(block.header):
+        if item.name == "EXPOSURE":
+            exposure = item.value
+        else:
+            header[item.name] = item.value
+
+    data = {"energ_lo": block.columns[0].values,
+            "energ_hi": block.columns[1].values,
+            "specresp": block.columns[2].values,
+            "exposure": exposure,
+            "header": header,
+            "ethresh": ogip_emin}
+    if len(block.columns) > 3:
+        data["bin_lo"] = block.columns[3].values
+        data["bin_hi"] = block.columns[4].values
 
     return DataARF(filename, **data)
 
@@ -829,6 +841,15 @@ def read_pha(arg,
         return phasets[0]
 
     return phasets
+
+
+def _pack_header(header: Mapping[str, KeyType]) -> Header:
+    """Convert a header and add a CREATOR keyword if not set."""
+
+    out = Header([HeaderItem(name=name, value=value)
+                  for name, value in header.items()])
+    _add_creator(out)
+    return out
 
 
 def _pack_table(dataset: Data) -> DataType:
@@ -1307,11 +1328,7 @@ def _pack_pha(dataset: DataPHA) -> tuple[DataType, HdrType]:
     return data, header
 
 
-# Technically this should check for DataARF | ARF1D but that leads to
-# import loops, and it doesn't seem worth avoiding the issue with a
-# forward reference.
-#
-def _pack_arf(dataset: DataARF) -> tuple[DataType, HdrType]:
+def _pack_arf(dataset: ARFType) -> BlockList:
     """Extract FITS column and header information.
 
     There is currently no support for Type II ARF files.
@@ -1375,14 +1392,15 @@ def _pack_arf(dataset: DataARF) -> tuple[DataType, HdrType]:
     if dataset.exposure is not None:
         header["EXPOSURE"] = dataset.exposure
 
-    # The column ordering for the output file is determined by the
+    aheader = _pack_header(header)
+
+    # The column ordering for the ouput file is determined by the
     # order the keys are added to the data dict. Ensure the
     # data type meets the FITS standard (Real4).
     #
-    data = {}
-    data["ENERG_LO"] = dataset.energ_lo.astype(np.float32)
-    data["ENERG_HI"] = dataset.energ_hi.astype(np.float32)
-    data["SPECRESP"] = dataset.specresp.astype(np.float32)
+    acols = [Column("ENERG_LO", dataset.energ_lo.astype(np.float32)),
+             Column("ENERG_HI", dataset.energ_hi.astype(np.float32)),
+             Column("SPECRESP", dataset.specresp.astype(np.float32))]
 
     # Chandra files can have BIN_LO/HI values, so copy
     # across if both set.
@@ -1390,10 +1408,15 @@ def _pack_arf(dataset: DataARF) -> tuple[DataType, HdrType]:
     blo = dataset.bin_lo
     bhi = dataset.bin_hi
     if blo is not None and bhi is not None:
-        data["BIN_LO"] = blo
-        data["BIN_HI"] = bhi
+        acols.extend([Column("BIN_LO", blo),
+                      Column("BIN_HI", bhi)])
 
-    return data, header
+    pheader = Header([])
+    _add_creator(pheader)
+    blocks: list[Union[TableBlock, ImageBlock]]
+    blocks = [TableBlock(name="SPECRESP", header=aheader, columns=acols)]
+
+    return BlockList(header=pheader, blocks=blocks)
 
 
 def _find_int_dtype(rows: Sequence[Sequence[int]]) -> type:
@@ -1793,9 +1816,7 @@ def _pack_rmf(dataset: RMFType) -> BlockList:
     #     N_CHAN
     #     MATRIX
     #
-    mheader = Header([HeaderItem(name=name, value=value)
-                      for name, value in matrix_header.items()])
-    _add_creator(mheader)
+    mheader = _pack_header(matrix_header)
 
     mcols = [Column(name=name, values=value)
              for name, value in matrix_data.items()
@@ -1817,9 +1838,7 @@ def _pack_rmf(dataset: RMFType) -> BlockList:
     #     E_MIN
     #     E_MAX
     #
-    eheader = Header([HeaderItem(name=name, value=value)
-                      for name, value in ebounds_header.items()])
-    _add_creator(eheader)
+    eheader = _pack_header(ebounds_header)
 
     ecols = [Column(name=name, values=value)
              for name, value in ebounds_data.items()]
@@ -1830,8 +1849,7 @@ def _pack_rmf(dataset: RMFType) -> BlockList:
 
         col.unit = "keV"
 
-    header = Header([])
-    _add_creator(header)
+    header = _pack_header({})
     blocks: list[Union[TableBlock, ImageBlock]]
     blocks = [TableBlock(name="MATRIX", header=mheader, columns=mcols),
               TableBlock(name="EBOUNDS", header=eheader, columns=ecols)]
@@ -1954,7 +1972,7 @@ def write_pha(filename: str,
 
 
 def write_arf(filename: str,
-              dataset: DataARF,
+              dataset: ARFType,
               ascii: bool = True,
               clobber: bool = False) -> None:
     """Write out an ARF.
@@ -1980,9 +1998,9 @@ def write_arf(filename: str,
     read_arf
 
     """
-    data, hdr = _pack_arf(dataset)
-    names = list(data.keys())
-    backend.set_arf_data(filename, data, names, header=hdr,
+
+    blocks = _pack_arf(dataset)
+    backend.set_arf_data(filename, blocks,
                          ascii=ascii, clobber=clobber)
 
 
