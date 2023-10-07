@@ -107,7 +107,7 @@ def get_ascii_data(filename: str,
 
 def get_arf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[dict[str, Any], str]:
+                 ) -> tuple[TableBlock, str]:
     """Read in the ARF."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -142,7 +142,7 @@ def pack_pha_data(data, col_names, header=None) -> Any:
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_arf_data(data, col_names, header=None) -> Any:
+def pack_arf_data(blocks: BlockList) -> Any:
     """Create the ARF."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -182,7 +182,7 @@ def set_pha_data(filename: str,
 
 
 def set_arf_data(filename: str,
-                 data, col_names, header=None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the ARF."""

@@ -111,7 +111,7 @@ def _require_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
     return value
 
 
-def _get_meta_data(hdu: HDUType) -> dict[str, KeyType]:
+def _get_meta_data(hdu: HDUType) -> HdrType:
     # If the header keywords are not specified correctly then
     # astropy will error out when we try to access it. Since
     # this is not an uncommon problem, there is a verify method
@@ -669,7 +669,7 @@ def _has_ogip_type(hdus: fits.HDUList,
 
 def get_arf_data(arg: DatasetType,
                  make_copy: bool = False
-                 ) -> tuple[dict[str, Any], str]:
+                 ) -> tuple[TableBlock, str]:
     """Read in the ARF."""
 
     arf, filename, close = _get_file_contents(arg,
@@ -677,33 +677,42 @@ def get_arf_data(arg: DatasetType,
                                               nobinary=True)
 
     try:
-        try:
-            hdu = arf["SPECREP"]
-        except KeyError:
-            try:
-                hdu = arf["AXAF_ARF"]
-            except KeyError:
-                hdu = _has_ogip_type(arf, 'RESPONSE', 'SPECRESP')
-                if hdu is None:
-                    raise IOErr('notrsp', filename, 'an ARF') from None
-
-        data = {}
-
-        data['exposure'] = _try_key(hdu, 'EXPOSURE', fix_type=True)
-
-        data['energ_lo'] = _require_col(hdu, 'ENERG_LO', fix_type=True)
-        data['energ_hi'] = _require_col(hdu, 'ENERG_HI', fix_type=True)
-        data['specresp'] = _require_col(hdu, 'SPECRESP', fix_type=True)
-        data['bin_lo'] = _try_col(hdu, 'BIN_LO', fix_type=True)
-        data['bin_hi'] = _try_col(hdu, 'BIN_HI', fix_type=True)
-        data['header'] = _get_meta_data(hdu)
-        data['header'].pop('EXPOSURE', None)
-
+        specresp = _read_arf_specresp(arf, filename)
     finally:
         if close:
             arf.close()
 
-    return data, filename
+    return specresp, filename
+
+
+def _read_arf_specresp(arf: fits.HDUList,
+                       filename: str) -> TableBlock:
+    """Read in the SPECRESP block of the ARF."""
+
+    try:
+        hdu = arf["SPECREP"]
+    except KeyError:
+        try:
+            hdu = arf["AXAF_ARF"]
+        except KeyError:
+            hdu = _has_ogip_type(arf, 'RESPONSE', 'SPECRESP')
+            if hdu is None:
+                raise IOErr('notrsp', filename, 'an ARF') from None
+
+    headers = _get_meta_data_header(hdu)
+    cols = [copycol(hdu, filename, name, dtype=SherpaFloat)
+            for name in ["ENERG_LO", "ENERG_HI", "SPECRESP"]]
+
+    # Optional columns: either both given or none
+    #
+    try:
+        bin_lo = copycol(hdu, filename, "BIN_LO", dtype=SherpaFloat)
+        bin_hi = copycol(hdu, filename, "BIN_HI", dtype=SherpaFloat)
+        cols.extend([bin_lo, bin_hi])
+    except IOErr:
+        pass
+
+    return TableBlock(hdu.name, header=headers, columns=cols)
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -1247,11 +1256,6 @@ def _update_header(hdu: HDUType,
     a previous FITS file), and to drop elements which are set
     to None.
 
-    Parameters
-    ----------
-    hdu : HDU
-    header : dict[str, Any]
-
     """
 
     for key, value in header.items():
@@ -1264,20 +1268,32 @@ def _update_header(hdu: HDUType,
         hdu.header[key] = value
 
 
-def pack_arf_data(data, col_names, header) -> fits.BinTableHDU:
+def pack_arf_data(blocks: BlockList) -> fits.BinTableHDU:
     """Pack the ARF"""
 
-    return pack_table_data(data, col_names, header)
+    return pack_hdus(blocks)
 
 
 def set_arf_data(filename: str,
-                 data, col_names, header=None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the ARF"""
 
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
+    # TODO: rework once set_table_data gets updated to use BlockList
+    #
+    # Assume we have been sent a correct ARF dataset.
+    if TYPE_CHECKING:
+        assert isinstance(blocks.blocks[0], TableBlock)
+
+    col_names = []
+    data = {}
+    for col in blocks.blocks[0].columns:
+        col_names.append(col.name)
+        data[col.name] = col.values
+
+    header = {item.name: item.value
+              for item in blocks.blocks[0].header.values}
 
     return set_table_data(filename, data, col_names, header=header,
                           ascii=ascii, clobber=clobber)

@@ -735,8 +735,7 @@ def get_image_data(arg: Union[str, IMAGECrate],
 
 
 def get_arf_data(arg: Union[str, TABLECrate],
-                 make_copy: bool = True
-                 ) -> tuple[dict[str, Any], str]:
+                 make_copy: bool = True) -> tuple[TableBlock, str]:
     """Read an ARF from a file or crate"""
 
     if isinstance(arg, str):
@@ -752,27 +751,20 @@ def get_arf_data(arg: Union[str, TABLECrate],
     else:
         raise IOErr('badfile', arg, "ARFCrate obj")
 
-    if arf is None or arf.get_colnames() is None:
-        raise IOErr('filenotfound', arg)
+    headers = _get_meta_data_header(arf)
+    cols = [copycol(arf, filename, name, dtype=SherpaFloat)
+            for name in ["ENERG_LO", "ENERG_HI", "SPECRESP"]]
 
-    data: dict[str, Any] = {}
+    # Optional columns: either both given or none
+    #
+    try:
+        bin_lo = copycol(arf, filename, "BIN_LO", dtype=SherpaFloat)
+        bin_hi = copycol(arf, filename, "BIN_HI", dtype=SherpaFloat)
+        cols.extend([bin_lo, bin_hi])
+    except IOErr:
+        pass
 
-    data['energ_lo'] = _require_col(arf, 'ENERG_LO',
-                                    make_copy=make_copy,
-                                    fix_type=True)
-    data['energ_hi'] = _require_col(arf, 'ENERG_HI',
-                                    make_copy=make_copy,
-                                    fix_type=True)
-    data['specresp'] = _require_col(arf, 'SPECRESP',
-                                    make_copy=make_copy,
-                                    fix_type=True)
-    data['bin_lo'] = _try_col(arf, 'BIN_LO', make_copy, fix_type=True)
-    data['bin_hi'] = _try_col(arf, 'BIN_HI', make_copy, fix_type=True)
-    data['exposure'] = _try_key(arf, 'EXPOSURE', dtype=SherpaFloat)
-    data['header'] = _get_meta_data(arf)
-    data['header'].pop('EXPOSURE', None)
-
-    return data, filename
+    return TableBlock(arf.name, header=headers, columns=cols), filename
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -1354,20 +1346,19 @@ def set_table_data(filename, data, col_names, header=None,
     write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_arf_data(data, col_names, header=None) -> TABLECrate:
+def pack_arf_data(blocks: BlockList) -> CrateDataset:
     """Pack the ARF"""
 
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
-
-    return pack_table_data(data, col_names, header)
+    return pack_hdus(blocks)
 
 
-def set_arf_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False) -> None:
+def set_arf_data(filename: str,
+                 blocks: BlockList,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
     """Write out the ARF"""
 
-    arf = pack_arf_data(data, col_names, header)
+    arf = pack_arf_data(blocks)
     write_dataset(arf, filename, ascii=ascii, clobber=clobber)
 
 
