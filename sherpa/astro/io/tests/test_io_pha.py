@@ -728,7 +728,8 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         assert hdu.columns[3].name == "QUALITY"
         assert hdu.columns[3].format == "I"
         assert hdu.columns[4].name == "AREASCAL"
-        assert hdu.columns[4].format == "D"
+        # FITS standard has as this 4-byte real
+        assert hdu.columns[4].format == "E"
 
         assert hdu.header["HDUCLASS"] == "OGIP"
         assert hdu.header["HDUCLAS1"] == "SPECTRUM"
