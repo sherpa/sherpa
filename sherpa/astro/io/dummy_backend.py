@@ -122,7 +122,7 @@ def get_rmf_data(arg,
 def get_pha_data(arg,
                  make_copy: bool = False,
                  use_background: bool = False
-                 ) -> tuple[list[dict[str, Any]], str]:
+                 ) -> tuple[TableBlock, str]:
     """Read in the PHA."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -137,7 +137,7 @@ def pack_image_data(data, header, ascii=False) -> Any:
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_pha_data(data, col_names, header=None) -> Any:
+def pack_pha_data(blocks: BlockList) -> Any:
     """Create the PHA."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
