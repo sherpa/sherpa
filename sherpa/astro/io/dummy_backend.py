@@ -351,7 +351,7 @@ def get_rmf_data(arg,
 def get_pha_data(arg,
                  make_copy: bool = False,
                  use_background: bool = False
-                 ) -> tuple[list[DataType], str]:
+                 ) -> tuple[TableBlock, str]:
     """Read in the PHA.
 
     Parameters
@@ -373,11 +373,9 @@ def get_pha_data(arg,
 
     Returns
     -------
-    datas, filename
-        A list of dictionaries, containing the PHA data (since there
-        can be multiple datasets with a PHA-II file) and the filename.
-        The keys of the dictionary match the arguments when creating
-        a sherpa.astro.data.DataPHA object.
+    data, filename
+        The PHA data (since there can be multiple datasets with a
+        PHA-II file) and the filename.
 
     Raises
     ------
@@ -437,22 +435,15 @@ def pack_image_data(data: DataTypeArg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_pha_data(data: ColumnsTypeArg,
-                  col_names: NamesType,
-                  header: Optional[HdrTypeArg] = None) -> Any:
+def pack_pha_data(blocks: BlockList) -> Any:
     """Create the PHA.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks : BlockList
+        The PHA data.
 
     Returns
     -------
@@ -588,28 +579,22 @@ def set_image_data(filename: str,
 
 
 def set_pha_data(filename: str,
-                 data: ColumnsTypeArg,
-                 col_names: NamesType,
-                 header: Optional[HdrTypeArg] = None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the PHA.
 
     .. versionchanged:: 4.17.0
-       The packup argument has been removed as `pack_pha_data`
-       should be used instead.
+       The packup argument has been removed as `pack_pha_data` should
+       be used instead, and the data is now set with the blocks
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks : BlockList
+        The PHA data.
     ascii : bool, optional
         Is the file to be written out as a text file (`True`) or a
         binary file? The default is `False`.

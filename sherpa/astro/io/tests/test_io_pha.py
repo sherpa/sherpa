@@ -670,9 +670,10 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
 
     c4 = cr.get_column(4)
     assert c4.name == "AREASCAL"
-    assert c4.values.dtype == np.float64
-    assert c4.get_tlmin() < 1e308
-    assert c4.get_tlmax() > 1e308
+    # FITS standard has as this 4-byte real
+    assert c4.values.dtype == np.float32
+    assert c4.get_tlmin() < -3e38
+    assert c4.get_tlmax() > 3e38
 
     assert cr.get_key_value("HDUCLASS") == "OGIP"
     assert cr.get_key_value("HDUCLAS1") == "SPECTRUM"
@@ -728,7 +729,8 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         assert hdu.columns[3].name == "QUALITY"
         assert hdu.columns[3].format == "I"
         assert hdu.columns[4].name == "AREASCAL"
-        assert hdu.columns[4].format == "D"
+        # FITS standard has as this 4-byte real
+        assert hdu.columns[4].format == "E"
 
         assert hdu.header["HDUCLASS"] == "OGIP"
         assert hdu.header["HDUCLAS1"] == "SPECTRUM"
