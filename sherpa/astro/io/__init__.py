@@ -54,7 +54,6 @@ import importlib
 import logging
 import os
 import re
-import sys
 from typing import Any, Optional
 
 import numpy
@@ -501,9 +500,9 @@ def _read_ancillary(data, key, label, dname,
         if output_once:
             info(f'read {label} file {data[key]}')
 
-    except Exception:
+    except Exception as exc:
         if output_once:
-            warning(str(sys.exc_info()[1]))
+            warning(str(exc))
 
     return out
 
@@ -544,16 +543,17 @@ def read_pha(arg, use_errors=False, use_background=False):
                 elif data['syserror'] is None:
                     msg = 'statistical'
                     if output_once:
-                        wmsg = "systematic errors were not found in " + \
-                               f"file '{filename}'"
-                        warning(wmsg)
+                        warning("systematic errors were not found in "
+                                "file '%s'", filename)
+
                 else:
                     msg = 'statistical and systematic'
+
                 if output_once:
-                    imsg = msg + " errors were found in file " + \
-                           f"'{filename}' \nbut not used; " + \
-                           "to use them, re-read with use_errors=True"
-                    info(imsg)
+                    info("%s errors were found in file '%s'\n"
+                         "but not used; to use them, re-read "
+                         "with use_errors=True", msg, filename)
+
                 data['staterror'] = None
                 data['syserror'] = None
 
@@ -581,7 +581,6 @@ def read_pha(arg, use_errors=False, use_background=False):
                 # Do not read backgrounds of backgrounds
                 if not use_background:
                     bkg_datasets = read_pha(data['backfile'], use_errors, True)
-
                     if output_once:
                         info(f"read background file {data['backfile']}")
 
@@ -597,9 +596,9 @@ def read_pha(arg, use_errors=False, use_background=False):
                         bkg_datasets.set_response(arf, rmf)
                     backgrounds.append(bkg_datasets)
 
-            except Exception:
+            except Exception as exc:
                 if output_once:
-                    warning(str(sys.exc_info()[1]))
+                    warning(str(exc))
 
         for bkg_type, bscal_type in zip(('background_up', 'background_down'),
                                         ('backscup', 'backscdn')):
@@ -691,22 +690,6 @@ def _pack_image(dataset):
     data['eqpos'] = getattr(dataset, 'eqpos', None)
 
     return data, header
-
-
-def _set_keyword(header, label, value):
-    """Extract the string form of the value, and store
-    the last path element in the header using the label
-    key.
-    """
-
-    if value is None:
-        return
-
-    name = getattr(value, 'name', 'none')
-    if name is not None and name.find('/') != -1:
-        name = name.split('/')[-1]
-
-    header[label] = name
 
 
 # This is to match NAXIS1 and the like, but we do not make it
@@ -926,9 +909,23 @@ def _pack_pha(dataset):
     if dataset.exposure is not None:
         header["EXPOSURE"] = dataset.exposure
 
-    _set_keyword(header, "RESPFILE", rmf)
-    _set_keyword(header, "ANCRFILE", arf)
-    _set_keyword(header, "BACKFILE", bkg)
+    def _set_keyword(label: str, value: Optional[Data1D]) -> None:
+        """Do we set the *FILE keyword?"""
+
+        if value is None or value.name is None:
+            return
+
+        # Split on / and then take the last element. Should this
+        # instead make the path relative to the file name for the PHA
+        # dataset (but the problem is that this information is not
+        # known here)?
+        #
+        toks = value.name.split("/")
+        header[label] = toks[-1]
+
+    _set_keyword("RESPFILE", rmf)
+    _set_keyword("ANCRFILE", arf)
+    _set_keyword("BACKFILE", bkg)
 
     # The column ordering for the ouput file is determined by the
     # order the keys are added to the data dict.
