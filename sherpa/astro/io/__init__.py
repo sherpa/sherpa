@@ -57,7 +57,8 @@ import logging
 import os
 from pathlib import Path
 import re
-from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
+    Type, TypeVar, Union
 
 import numpy
 
@@ -191,7 +192,11 @@ def read_arrays(*args):
     return dstype('', *args)
 
 
-def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
+
+def read_table(arg,
+               ncols: int = 2,
+               colkeys: Optional[list[str]] = None,
+               dstype: Type[Data1D] = Data1D) -> Data1D:
     """Create a dataset from a tabular file.
 
     The supported file types (e.g. ASCII or FITS) depends on the
@@ -241,18 +246,25 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
     >>> d = read_table('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
-    args = backend.get_table_data(arg, ncols, colkeys)
-    cols = args[1]
-    name = args[2]
+    if TYPE_CHECKING:
+        assert backend is not None
+
+    hdu, name = backend.get_table_data(arg, ncols, colkeys)
+
+    cols = [col.values for col in hdu.columns]
 
     # Determine max number of args for dataset constructor
     sherpa.io._check_args(len(cols), dstype)
-
     return dstype(name, *cols)
 
 
 # TODO: should this be exported?
-def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
+#
+def read_ascii(filename: str,
+               ncols: int = 2,
+               colkeys: Optional[list[str]] = None,
+               dstype: Type[Data1D] = Data1D,
+               **kwargs) -> Data1D:
     """Create a dataset from an ASCII tabular file.
 
     Parameters
@@ -301,14 +313,16 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
     >>> d = read_ascii('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
-    args = backend.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
-                                  dstype=dstype, **kwargs)
-    cols = args[1]
-    name = args[2]
+    if TYPE_CHECKING:
+        assert backend is not None
+
+    hdu, name = backend.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
+                                       dstype=dstype, **kwargs)
+
+    cols = [col.values for col in hdu.columns]
 
     # Determine max number of args for dataset constructor
     sherpa.io._check_args(len(cols), dstype)
-
     return dstype(name, *cols)
 
 
@@ -590,9 +604,9 @@ def _rmf_factory(filename, data):
     return rmf_class(filename, **data)
 
 
-# This is used to simplify the typing (as the initial attempt to use
-# DataOgipResponse, which both DataARF and DataRMF have as a parent)
-# did not work.
+# The "generic" type T is used to simplify the typing (as the initial
+# attempt to use DataOgipResponse, which both DataARF and DataRMF have
+# as a parent) did not work.
 #
 T = TypeVar("T")
 
@@ -680,7 +694,7 @@ def _process_pha_block(filename: str,
     exposure = None if expval is None else expval.value
 
     def get(name: str,
-            expand: bool = False) -> Optional[Union[numpy.ndarray, int, float]]:
+            expand: bool = False) -> Optional[Union[numpy.ndarray, int, float, numpy.integer, numpy.floating]]:
         """Return the column values if they exist.
 
         This checks for columns and then the header. For the header
@@ -1978,7 +1992,11 @@ def _pack_rmf(dataset: Union[DataRMF, RMF1D]) -> BlockList:
     return BlockList(header=header, blocks=blocks)
 
 
-def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
+def write_arrays(filename: str,
+                 args,
+                 fields: Optional[list[str]] = None,
+                 ascii: bool = True,
+                 clobber: bool = False) -> None:
     """Write out a collection of arrays.
 
     Parameters
@@ -2001,10 +2019,16 @@ def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
     read_arrays
 
     """
+    if TYPE_CHECKING:
+        assert backend is not None
+
     backend.set_arrays(filename, args, fields, ascii=ascii, clobber=clobber)
 
 
-def write_table(filename, dataset, ascii=True, clobber=False):
+def write_table(filename: str,
+                dataset: Data1D,
+                ascii: bool = True,
+                clobber: bool = False) -> None:
     """Write out a table.
 
     Parameters
@@ -2024,6 +2048,9 @@ def write_table(filename, dataset, ascii=True, clobber=False):
     read_table
 
     """
+    if TYPE_CHECKING:
+        assert backend is not None
+
     data = _pack_table(dataset)
     backend.set_table_data(filename, data, ascii=ascii, clobber=clobber)
 
@@ -2148,7 +2175,9 @@ def write_rmf(filename: str,
     backend.set_rmf_data(filename, blocks, clobber=clobber)
 
 
-def pack_table(dataset):
+# Output type depends on the backend for the pack calls.
+#
+def pack_table(dataset:Data1D):
     """Convert a Sherpa data object into an I/O item (tabular).
 
     Parameters
@@ -2172,6 +2201,9 @@ def pack_table(dataset):
     >>> tbl = pack_table(d)
 
     """
+    if TYPE_CHECKING:
+        assert backend is not None
+
     data = _pack_table(dataset)
     return backend.pack_table_data(data)
 
@@ -2233,7 +2265,8 @@ def pack_pha(dataset: DataPHA):
     return backend.pack_pha_data(block)
 
 
-def read_table_blocks(arg, make_copy=False):
+def read_table_blocks(arg,
+                      make_copy: bool = False) -> tuple[str, dict[int, dict[str, numpy.ndarray]], dict[int, dict[str, Any]]]:
     """Return the HDU elements (columns and header) from a FITS table.
 
     Parameters
@@ -2254,5 +2287,30 @@ def read_table_blocks(arg, make_copy=False):
        being the column or header name.
 
     """
+    if TYPE_CHECKING:
+        assert backend is not None
 
-    return backend.read_table_blocks(arg, make_copy=make_copy)
+    def getkeys(hdr):
+        if hdr is None:
+            return {}
+
+        return {key.name: key.value for key in hdr.values}
+
+    def getcols(cols):
+        if cols is None:
+            return {}
+
+        return {col.name: col.values for col in cols}
+
+    # Desconstruct the data.
+    #
+    blist, filename = backend.read_table_blocks(arg, make_copy=make_copy)
+    hdr = {1: getkeys(blist.header)}
+
+    cols: dict[int, dict[str, numpy.ndarray]]
+    cols = {1: {}}
+    for idx, block in enumerate(blist.blocks, 2):
+        hdr[idx] = getkeys(block.header)
+        cols[idx] = getcols(block.columns)
+
+    return filename, cols, hdr

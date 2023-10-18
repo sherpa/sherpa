@@ -32,7 +32,7 @@ from typing import Any, Optional, Sequence, Union
 import numpy as np
 
 from ..data import Data1D
-from .io_types import KeyType, TableBlock, BlockList
+from .io_types import Header, TableBlock, BlockList
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -55,7 +55,6 @@ warning("""Cannot import usable I/O backend.
 
 
 NamesType = Sequence[str]
-HdrType = dict[str, KeyType]
 
 
 def get_table_data(arg,
@@ -65,7 +64,7 @@ def get_table_data(arg,
                    fix_type: bool = True,
                    blockname: Optional[str] = None,
                    hdrkeys: Optional[NamesType] = None
-                   ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -73,7 +72,7 @@ def get_table_data(arg,
 def get_header_data(arg,
                     blockname: Optional[str] = None,
                     hdrkeys: Optional[NamesType] = None
-                    ) -> dict[str, KeyType]:
+                    ) -> Header:
     """Read the metadata."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -100,7 +99,7 @@ def get_ascii_data(filename: str,
                    dstype: type = Data1D,
                    comment: str = '#',
                    require_floats: bool = True
-                   ) -> tuple[list[str], list[np.ndarray], str]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from an ASCII file"""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -127,7 +126,7 @@ def get_pha_data(arg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_table_data(data, col_names, header=None) -> Any:
+def pack_table_data(blocks: BlockList) -> Any:
     """Create the tabular data."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -158,7 +157,7 @@ def pack_hdus(blocks: BlockList) -> Any:
 
 
 def set_table_data(filename: str,
-                   data, col_names, header=None,
+                   blocks: BlockList,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the tabular data."""
@@ -174,7 +173,7 @@ def set_image_data(filename: str,
 
 
 def set_pha_data(filename: str,
-                 data, col_names, header=None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the PHA."""
@@ -205,9 +204,7 @@ def set_hdus(filename: str,
 
 def read_table_blocks(arg,
                       make_copy: bool = False
-                      ) -> tuple[str,
-                                 dict[int, dict[str, np.ndarray]],
-                                 dict[int, HdrType]]:
+                      ) -> tuple[BlockList, str]:
     """Read in tabular data with no restrictions on the columns."""
     raise NotImplementedError('No usable I/O backend was imported.')
 

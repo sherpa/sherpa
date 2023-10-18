@@ -258,152 +258,6 @@ def _require_key(crate: CrateType,
     return key
 
 
-def _try_col(crate: TABLECrate,
-             colname: str,
-             make_copy: bool = False,
-             fix_type: bool = False,
-             dtype: type = SherpaFloat) -> Optional[np.ndarray]:
-    """Return the column data or return None."""
-
-    try:
-        return _require_col(crate, colname, make_copy=make_copy,
-                            fix_type=fix_type, dtype=dtype)
-    except IOErr:
-        return None
-
-
-# This is surprisingly hard to type (because of column_stack) so skip
-# it.
-#
-def _require_tbl_col(crate, colname, cnames, make_copy=False,
-                     fix_type=False):
-    """
-    checked for new crates
-    """
-
-    try:
-        col = crate.get_column(colname)
-    except ValueError as ve:
-        raise IOErr('reqcol', colname, cnames) from ve
-
-    if make_copy:
-        # Make a copy if a filename passed in
-        data = np.array(col.values)
-    else:
-        # Use a reference if a crate passed in
-        data = np.asarray(col.values)
-
-    if fix_type:
-        data = data.astype(SherpaFloat)
-
-    return np.column_stack(data)
-
-
-def _try_key_list(crate: CrateType,
-                  keyname: str,
-                  num: int,
-                  dtype: type = SherpaFloat,
-                  fix_type: bool = False) -> Optional[np.ndarray]:
-    """
-    checked for new crates
-    """
-    if not crate.key_exists(keyname):
-        return None
-
-    key = crate.get_key(keyname)
-
-    # Make a copy of the data, since we don't know that pycrates will
-    # do something sensible wrt reference counting
-    key = np.array([key.value] * num)
-
-    if fix_type:
-        key = key.astype(dtype)
-
-    return key
-
-
-def _try_col_list(crate: TABLECrate,
-                  colname: str,
-                  num: int,
-                  make_copy: bool = False,
-                  fix_type: bool = False) -> np.ndarray:
-    """
-    checked for the new crates
-    """
-
-    try:
-        return _require_col_list(crate, colname,
-                                 make_copy=make_copy,
-                                 fix_type=fix_type)
-    except IOErr:
-        return np.array([None] * num)
-
-
-def _require_col_list(crate: TABLECrate,
-                      colname: str,
-                      make_copy: bool = False,
-                      fix_type: bool = False) -> np.ndarray:
-    """
-    check for new crates
-    """
-
-    try:
-        col = crate.get_column(colname)
-    except ValueError:
-        raise IOErr("reqcol", colname, crate.get_filename()) from None
-
-    if col.is_varlen():
-        values = col.get_fixed_length_array()
-    else:
-        values = col.values
-
-    if make_copy:
-        # Make a copy if a filename passed in
-        col = np.array(values)
-    else:
-        # Use a reference if a crate passed in
-        col = np.asarray(values)
-
-    if fix_type:
-        col = col.astype(SherpaFloat)
-
-    return col
-
-
-def _require_col(crate: TABLECrate,
-                 colname: str,
-                 make_copy: bool = False,
-                 fix_type: bool = False,
-                 label: Optional[str] = None,
-                 dtype: type = SherpaFloat) -> np.ndarray:
-    """Return the column data or error out."""
-
-    try:
-        col = crate.get_column(colname)
-    except ValueError:
-        msg = colname if label is None else label
-        raise IOErr("reqcol", msg, crate.get_filename()) from None
-
-    if col.is_varlen():
-        values = col.get_fixed_length_array()
-    else:
-        values = col.values
-
-    if make_copy:
-        # Make a copy if a filename passed in
-        data = np.array(values).ravel()
-
-    else:
-        # Use a reference if a crate passed in
-        data = np.asarray(values).ravel()
-
-    if fix_type:
-        data = data.astype(dtype)
-
-    return data
-
-
-
 def _require_image(crate: IMAGECrate,
                    filename: str,
                    make_copy: bool = False,
@@ -460,12 +314,10 @@ def _get_crate_by_blockname(dataset: CrateDataset,
 
 # Read Functions #
 
+# This should be added to the official backend API.
+#
 def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
-                      make_copy: bool = False
-                      ) -> tuple[str,
-                                 dict[int, dict[str, np.ndarray]],
-                                 dict[int, dict[str, Optional[KeyType]]]
-                                 ]:
+                      make_copy: bool = False) -> tuple[BlockList, str]:
     """Read in tabular data with no restrictions on the columns."""
 
     dataset = None
@@ -481,33 +333,28 @@ def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
     else:
         raise IOErr('badfile', arg, "CrateDataset obj")
 
-    cols: dict[int, dict[str, np.ndarray]] = {}
-    hdr: dict[int, dict[str, Optional[KeyType]]] = {}
-    for idx in range(1, dataset.get_ncrates() + 1):
-        crate = dataset.get_crate(idx)
-        hdr[idx] = {}
-        names = crate.get_keynames()
-        for name in names:
-            hdr[idx][name] = _try_key(crate, name)
+    header = _get_meta_data_header(dataset.get_crate(1))
 
-        cols[idx] = {}
-        # skip over primary
-        if crate.name == 'PRIMARY':
-            continue
+    ncrates = dataset.get_ncrates()
+    blocks: list[BlockType] = []
+    for idx in range(2, ncrates + 1):
+        cr = dataset.get_crate(idx)
+        hdr = _get_meta_data_header(cr)
+        cols = [copycol(cr, filename, name) for name in cr.get_colnames()]
+        blocks.append(TableBlock(cr.name, header=hdr, columns=cols))
 
-        names = crate.get_colnames()
-        for name in names:
-            cols[idx][name] = crate.get_column(name).values
-
-    return filename, cols, hdr
+    return BlockList(blocks=blocks, header=header), filename
 
 
 def get_header_data(arg: Union[str, TABLECrate],
                     blockname: Optional[str] = None,
                     hdrkeys: Optional[NamesType] = None
-                    ) -> HdrType:
+                    ) -> Header:
     """Read the metadata."""
 
+    # Note: this check is too restrictive since it can be sent an
+    # IMAGECrate (e.g. when blockname is set to "PRIMARY").
+    #
     if isinstance(arg, str):
         arg = get_filename_from_dmsyntax(arg)
         tbl = open_crate(arg)
@@ -525,12 +372,11 @@ def get_header_data(arg: Union[str, TABLECrate],
         crate = _get_crate_by_blockname(tbl.get_dataset(), blockname)
         tbl = crate or tbl
 
-    hdr = {}
-    if hdrkeys is None:
-        hdrkeys = tbl.get_keynames()
-
-    for key in hdrkeys:
-        hdr[key] = _require_key(tbl, key)
+    hdr = _get_meta_data_header(tbl)
+    if hdrkeys is not None:
+        for key in hdrkeys:
+            if hdr.get(key) is None:
+                raise IOErr('nokeyword', tbl.get_filename(), key)
 
     return hdr
 
@@ -567,9 +413,10 @@ def get_ascii_data(filename: str,
                    ncols: int = 2,
                    colkeys: Optional[NamesType] = None,
                    **kwargs
-                   ) -> tuple[list[str], list[np.ndarray], str]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from an ASCII file"""
-    return get_table_data(filename, ncols, colkeys)[:3]
+
+    return get_table_data(filename, ncols, colkeys)
 
 
 def get_table_data(arg: Union[str, TABLECrate],
@@ -579,7 +426,7 @@ def get_table_data(arg: Union[str, TABLECrate],
                    fix_type: bool = True,
                    blockname: Optional[str] = None,
                    hdrkeys: Optional[NamesType] = None
-                   ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from a file or crate."""
 
     if isinstance(arg, str):
@@ -588,14 +435,13 @@ def get_table_data(arg: Union[str, TABLECrate],
         if not isinstance(tbl, TABLECrate):
             raise IOErr('badfile', arg, 'TABLECrate obj')
 
-        filename = tbl.get_filename()
-
     elif isinstance(arg, TABLECrate):
         tbl = arg
-        filename = arg.get_filename()
         make_copy = False
     else:
         raise IOErr('badfile', arg, 'TABLECrate obj')
+
+    filename = tbl.get_filename()
 
     # Crates "caches" open files by their filename in memory.  If you try
     # to open a file multiple times (with DM syntax) it corrupts the Crate
@@ -605,11 +451,13 @@ def get_table_data(arg: Union[str, TABLECrate],
     if blockname is not None:
         crate = _get_crate_by_blockname(tbl.get_dataset(), blockname)
         tbl = crate or tbl
+        if not isinstance(tbl, TABLECrate):
+            raise IOErr('badfile', arg, 'TABLECrate obj')
 
-    cnames = list(pycrates.get_col_names(tbl, vectors=False, rawonly=True))
+    cnames = tbl.get_colnames(vectors=False, rawonly=True)
 
     if colkeys is not None:
-        colkeys = [str(name).strip() for name in list(colkeys)]
+        colkeys = [name.strip() for name in list(colkeys)]
 
     elif (isinstance(arg, str) and (not os.path.isfile(arg))
           and '[' in arg and ']' in arg):
@@ -625,19 +473,35 @@ def get_table_data(arg: Union[str, TABLECrate],
     else:
         colkeys = cnames[:ncols]
 
+    # The main issue here is do we allow string columns through?
+    #
+    dtype = SherpaFloat if fix_type else None
+
+    # As this can be used to read in string columns there is no
+    # conversion on the data type of the column values. However,
+    # there is a need to convert "array" columns into separate
+    # values (e.g. R[2] should get converted to R_1 and R_2).
+    #
+    headers = _get_meta_data_header(tbl)
     cols = []
     for name in colkeys:
-        for col in _require_tbl_col(tbl, name, cnames,
-                                    make_copy=make_copy,
-                                    fix_type=fix_type):
+        col = copycol(tbl, filename, name, dtype=dtype)
+
+        if col.values.ndim == 1:
             cols.append(col)
+            continue
 
-    hdr = {}
-    if hdrkeys is not None:
-        for key in hdrkeys:
-            hdr[key] = _require_key(tbl, key)
+        if col.values.ndim != 2:
+            raise IOErr(f"Unsupported column dimension for {name}: {col.values.ndim}")
 
-    return colkeys, cols, filename, hdr
+        for idx in range(col.values.shape[1]):
+            col2 = Column(f"{col.name}_{idx + 1}",
+                          col.values[:, idx].copy(),
+                          desc=col.desc, unit=col.unit,
+                          minval=col.minval, maxval=col.maxval)
+            cols.append(col2)
+
+    return TableBlock("TABLE", header=headers, columns=cols), filename
 
 
 def get_image_data(arg: Union[str, IMAGECrate],
@@ -862,9 +726,6 @@ def copycol(cr: TABLECrate,
     else:
         coltype = col.values.dtype
 
-    tlmin = col.get_tlmin()
-    tlmax = col.get_tlmax()
-
     # This is a bit-more verbose than normal to appease mypy.
     #
     minval: Any
@@ -874,12 +735,22 @@ def copycol(cr: TABLECrate,
         minval = ftypeinfo.min
         maxval = ftypeinfo.max
     except ValueError:
-        dtypeinfo = np.iinfo(coltype)
-        minval = dtypeinfo.min
-        maxval = dtypeinfo.max
+        try:
+            dtypeinfo = np.iinfo(coltype)
+            minval = dtypeinfo.min
+            maxval = dtypeinfo.max
+        except ValueError:
+            # Assume some sort of a string column
+            minval = None
+            maxval = None
 
-    out.minval = tlmin if tlmin != minval else None
-    out.maxval = tlmax if tlmax != maxval else None
+    if minval is not None:
+        tlmin = col.get_tlmin()
+        tlmax = col.get_tlmax()
+
+        out.minval = tlmin if tlmin != minval else None
+        out.maxval = tlmax if tlmax != maxval else None
+
     return out
 
 
@@ -1320,7 +1191,7 @@ def set_arrays(filename: str,
         raise IOErr('wrongnumcols', nargs, len(fields))
 
     tbl = TABLECrate()
-    for val, name in zip(args, fields):
+    for val, name in zip(args, fieldnames):
         col = CrateData()
         col.name = name.upper()
         col.values = np.array(val)

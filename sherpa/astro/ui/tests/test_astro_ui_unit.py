@@ -782,8 +782,7 @@ def test_save_data_data1d_fits(tmp_path):
     outfile = str(out)
     ui.save_data(outfile, ascii=False)
 
-    ans = read_table_blocks(outfile)
-    blocks = ans[1]
+    _, blocks, _ = read_table_blocks(outfile)
     assert len(blocks) == 2
     check_table(blocks[2],
                 {"X": [1, 2, 3],
@@ -817,8 +816,7 @@ def test_save_data_data1dint_fits(tmp_path):
     outfile = str(out)
     ui.save_data(outfile, ascii=False)
 
-    ans = read_table_blocks(outfile)
-    blocks = ans[1]
+    _, blocks, _ = read_table_blocks(outfile)
     assert len(blocks) == 2
     check_table(blocks[2],
                 {"XLO": [1, 2, 4],
@@ -1240,8 +1238,7 @@ def test_save_model_fits(savefunc, mtype, clean_astro_ui, tmp_path):
     outfile = str(out)
     savefunc(outfile)
 
-    ans = read_table_blocks(outfile)
-    blocks = ans[1]
+    _, blocks, _ = read_table_blocks(outfile)
     assert len(blocks) == 2
     check_table(blocks[2],
                 {"X": [1, 2],
@@ -1275,8 +1272,7 @@ def test_save_source_pha_fits(clean_astro_ui, tmp_path):
     outfile = str(out)
     ui.save_source(outfile)
 
-    ans = read_table_blocks(outfile)
-    blocks = ans[1]
+    _, blocks, _ = read_table_blocks(outfile)
     assert len(blocks) == 2
     check_table(blocks[2],
                 {"XLO": [0.1, 0.2],
@@ -1311,8 +1307,7 @@ def test_save_model_pha_fits(clean_astro_ui, tmp_path):
     outfile = str(out)
     ui.save_model(outfile)
 
-    ans = read_table_blocks(outfile)
-    blocks = ans[1]
+    _, blocks, _ = read_table_blocks(outfile)
     assert len(blocks) == 2
     check_table(blocks[2],
                 {"XLO": [0.1, 0.2],
@@ -1350,8 +1345,7 @@ def test_save_resid_data1d_fits(tmp_path):
     outfile = str(out)
     ui.save_resid(outfile)
 
-    ans = read_table_blocks(outfile)
-    blocks = ans[1]
+    _, blocks, _ = read_table_blocks(outfile)
     assert len(blocks) == 2
     check_table(blocks[2],
                 {"X": [100, 200],
@@ -1412,8 +1406,7 @@ def test_save_resid_datapha_fits(tmp_path):
     outfile = str(out)
     ui.save_resid(outfile)
 
-    ans = read_table_blocks(outfile)
-    blocks = ans[1]
+    _, blocks, _ = read_table_blocks(outfile)
     assert len(blocks) == 2
     check_table(blocks[2],
                 {"X": [0.15, 0.3],
