@@ -39,10 +39,9 @@ import warnings
 import numpy as np
 
 from astropy.io import fits  # type: ignore
-from astropy.io.fits.column import _VLF  # type: ignore
 from astropy.table import Table  # type: ignore
 
-from sherpa.io import get_ascii_data, write_arrays
+import sherpa.io
 import sherpa.utils  # unlike crates we do not import is_binary_file directly
 from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -174,135 +173,6 @@ def _get_meta_data_header(hdu: fits.BinTableHDU) -> Header:
     return Header(out)
 
 
-def _try_col(hdu,
-             name: str,
-             *,
-             dtype: type = SherpaFloat,
-             fix_type: bool = False) -> Optional[np.ndarray]:
-    try:
-        col = hdu.data.field(name)
-    except KeyError:
-        return None
-
-    if isinstance(col, _VLF):
-        col = np.concatenate([np.asarray(row) for row in col])
-    else:
-        col = np.asarray(col).ravel()
-
-    if fix_type:
-        col = col.astype(dtype)
-
-    return col
-
-
-def _try_tbl_col(hdu,
-                 name: str,
-                 *,
-                 dtype=SherpaFloat,
-                 fix_type: bool = False) -> Optional[np.ndarray]:
-    try:
-        col = hdu.data.field(name)
-    except KeyError:
-        return None
-
-    if isinstance(col, _VLF):
-        col = np.concatenate([np.asarray(row) for row in col])
-    else:
-        col = np.asarray(col)
-
-    if fix_type:
-        col = col.astype(dtype)
-
-    return np.column_stack(col)
-
-
-def _try_vec(hdu,
-             name: str,
-             *,
-             dtype=SherpaFloat,
-             fix_type: bool = False) -> Optional[np.ndarray]:
-    try:
-        col = hdu.data.field(name)
-    except KeyError:
-        return None
-
-    if isinstance(col, _VLF):
-        col = np.concatenate([np.asarray(row) for row in col])
-    else:
-        col = np.asarray(col)
-
-    if fix_type:
-        return col.astype(dtype)
-
-    return col
-
-
-def _require_col(hdu,
-                 name: str,
-                 *,
-                 dtype: type = SherpaFloat,
-                 fix_type: bool = False) -> np.ndarray:
-    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
-    if col is None:
-        raise IOErr('reqcol', name, _get_filename_from_hdu(hdu))
-
-    return col
-
-
-def _require_tbl_col(hdu,
-                     name: str,
-                     *,
-                     dtype=SherpaFloat,
-                     fix_type: bool = False) -> np.ndarray:
-    col = _try_tbl_col(hdu, name, dtype=dtype, fix_type=fix_type)
-    if col is None:
-        raise IOErr('reqcol', name, _get_filename_from_hdu(hdu))
-
-    return col
-
-
-def _require_vec(hdu,
-                 name: str,
-                 *,
-                 dtype=SherpaFloat,
-                 fix_type: bool = False) -> np.ndarray:
-    col = _try_vec(hdu, name, dtype=dtype, fix_type=fix_type)
-    if col is None:
-        raise IOErr('reqcol', name, _get_filename_from_hdu(hdu))
-
-    return col
-
-
-def _try_col_or_key(hdu, name, *, dtype=SherpaFloat, fix_type=False):
-    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
-    if col is not None:
-        return col
-
-    return _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
-
-
-def _try_vec_or_key(hdu,
-                    name: str,
-                    size: int,
-                    *,
-                    dtype=SherpaFloat,
-                    fix_type=False
-                    ) -> Optional[np.ndarray]:
-    """Return an array, even if this is a key.
-
-    For keys, the value is replicated to the requested size.
-    """
-    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
-    if col is not None:
-        return col
-
-    got = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
-    if got is None:
-        return None
-
-    return np.full(size, got)
-
-
 # Read Functions
 
 # Crates supports reading gzipped files both when the '.gz' suffix
@@ -371,9 +241,7 @@ def open_fits(filename: str) -> fits.HDUList:
 
 def read_table_blocks(arg: DatasetType,
                       make_copy: bool = False
-                      ) -> tuple[str,
-                                 dict[int, ColumnsType],
-                                 dict[int, HdrType]]:
+                      ) -> tuple[BlockList, str]:
     """Read in tabular data with no restrictions on the columns."""
 
     # This sets nobinary=True to match the original version of
@@ -382,26 +250,16 @@ def read_table_blocks(arg: DatasetType,
     cm, filename = _get_file_contents(arg, exptype="BinTableHDU",
                                       nobinary=True)
 
-    cols: dict[int, ColumnsType] = {}
-    hdr: dict[int, HdrType] = {}
-
     with cm as hdus:
-        for blockidx, hdu in enumerate(hdus, 1):
-            hdr[blockidx] = {}
-            header = hdu.header
-            if header is not None:
-                for key in header.keys():
-                    hdr[blockidx][key] = header[key]
+        header = _get_meta_data_header(hdus[0])
+        blocks: list[Union[TableBlock, ImageBlock]] = []
+        for hdu in hdus[1:]:
+            hdr = _get_meta_data_header(hdu)
+            cols = [copycol(hdu, filename, name) for name in hdu.columns.names]
+            blocks.append(TableBlock(hdu.name, header=hdr, columns=cols))
 
-            # skip over primary, hdu.data is None
 
-            cols[blockidx] = {}
-            recarray = hdu.data
-            if recarray is not None:
-                for colname in recarray.names:
-                    cols[blockidx][colname] = recarray[colname]
-
-    return filename, cols, hdr
+    return BlockList(blocks=blocks, header=header), filename
 
 
 # The return value (first argument) is actually
@@ -491,22 +349,19 @@ def _find_binary_table(tbl: fits.HDUList,
 def get_header_data(arg: DatasetType,
                     blockname: Optional[str] = None,
                     hdrkeys: Optional[NamesType] = None
-                    ) -> HdrType:
+                    ) -> Header:
     """Read in the header data."""
 
     cm, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
-    hdr = {}
     with cm as tbl:
         hdu = _find_binary_table(tbl, filename, blockname)
+        hdr = _get_meta_data_header(hdu)
 
-        if hdrkeys is None:
-            hdrkeys = hdu.header.keys()
-
+    if hdrkeys is not None:
         for key in hdrkeys:
-            # TODO: should this set require_type=true or remove dtype,
-            # as currently it does not change the value to str.
-            hdr[key] = _require_key(hdu, key, dtype=str)
+            if hdr.get(key) is None:
+                raise IOErr('nokeyword', filename, key)
 
     return hdr
 
@@ -532,6 +387,30 @@ def get_column_data(*args) -> list[np.ndarray]:
     return cols
 
 
+def get_ascii_data(filename: str,
+                   ncols: int = 2,
+                   colkeys: Optional[list[str]] = None,
+                   **kwargs
+                   ) -> tuple[TableBlock, str]:
+    """Read columns from an ASCII file"""
+
+    # TODO: why not use get_table_data like the crates backend does?
+    #
+    cnames, cdata, name = sherpa.io.get_ascii_data(filename,
+                                                   ncols=ncols,
+                                                   colkeys=colkeys,
+                                                   **kwargs)
+
+    # We can not trust the column names. One option would be to always
+    # create the names used for the Column objects.
+    #
+    if len(cnames) != len(cdata):
+        cnames = [f"col{idx}" for idx in range(1, len(cdata) + 1)]
+
+    cols = [Column(cname, cval) for cname, cval in zip(cnames, cdata)]
+    return TableBlock("TABLE", header=Header([]), columns=cols), name
+
+
 def get_table_data(arg: DatasetType,
                    ncols: int = 1,
                    colkeys: Optional[NamesType] = None,
@@ -539,14 +418,14 @@ def get_table_data(arg: DatasetType,
                    fix_type: bool = False,
                    blockname: Optional[str] = None,
                    hdrkeys: Optional[NamesType] = None
-                   ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns."""
 
     cm, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
     with cm as tbl:
         hdu = _find_binary_table(tbl, filename, blockname)
-        cnames = list(hdu.columns.names)
+        cnames = hdu.columns.names
 
         # Try Channel, Counts or X,Y before defaulting to the first
         # ncols columns in cnames (when colkeys is not given).
@@ -560,17 +439,30 @@ def get_table_data(arg: DatasetType,
         else:
             colkeys = cnames[:ncols]
 
+        # As this can be used to read in string columns there is no
+        # conversion on the data type of the column values. However,
+        # there is a need to convert "array" columns into separate
+        # values (e.g. R[2] should get converted to R_1 and R_2).
+        #
+        headers = _get_meta_data_header(hdu)
         cols = []
         for name in colkeys:
-            for col in _require_tbl_col(hdu, name, fix_type=fix_type):
+            col = copycol(hdu, filename, name)
+            if col.values.ndim == 1:
                 cols.append(col)
+                continue
 
-        hdr = {}
-        if hdrkeys is not None:
-            for key in hdrkeys:
-                hdr[key] = _require_key(hdu, key)
+            if col.values.ndim != 2:
+                raise IOErr(f"Unsupported column dimension for {name}: {col.values.ndim}")
 
-    return colkeys, cols, filename, hdr
+            for idx in range(col.values.shape[1]):
+                col2 = Column(f"{col.name}_{idx + 1}",
+                              col.values[:, idx].copy(),
+                              desc=col.desc, unit=col.unit,
+                              minval=col.minval, maxval=col.maxval)
+                cols.append(col2)
+
+    return TableBlock("TABLE", header=headers, columns=cols), filename
 
 
 def get_image_data(arg: DatasetType,
@@ -856,8 +748,17 @@ def copycol(hdu: fits.BinTableHDU,
 
     # Is there a better way of finding the description than
     # manually hunting around for the TTYPE<n> description?
+    # This has to be done case-insensitively too.
     #
-    pos = 1 + hdu.columns.names.index(uname)
+    pos = None
+    for idx, col in enumerate(hdu.columns, 1):
+        if col.name.upper() == uname:
+            pos = idx
+
+    if pos is None:
+        # This should not be possible.
+        return out
+
     desc = hdu.header.comments[f"TTYPE{pos}"]
     if desc != '':
         out.desc = desc
@@ -1244,8 +1145,8 @@ def set_arrays(filename: str,
         # The fields setting can be None here, which means that
         # write_arrays will not write out a header line.
         #
-        write_arrays(filename, args, fields=fields,
-                     comment="# ", clobber=clobber)
+        sherpa.io.write_arrays(filename, args, fields=fields,
+                               comment="# ", clobber=clobber)
         return
 
     # Simplest to convert via a Table.
