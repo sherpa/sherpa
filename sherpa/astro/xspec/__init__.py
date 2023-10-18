@@ -846,67 +846,71 @@ def read_xstable_model(modelname, filename, etable=False):
 
     # TODO: how to avoid loading this if no backend is available
     import sherpa.astro.io
-    read_tbl = sherpa.astro.io.backend.get_table_data
     read_hdr = sherpa.astro.io.backend.get_header_data
+    read_tbl = sherpa.astro.io.backend.get_table_data
 
-    # Not all keywords are going to be present, so check what are.
+    # What sort of a XSPEC table model is this?
     #
-    blkname = 'PRIMARY'
     try:
-        hdr = read_hdr(filename, blockname=blkname, hdrkeys=None)
+        hdr1 = read_hdr(filename, blockname="PRIMARY")
     except IOErr as ie:
         # The error message will be generic, so add some more
         # information.
         #
         raise IOErr(f"Unable to read XSPEC table model: {ie}") from ie
 
-    try:
-        hduclas1 = hdr["HDUCLAS1"].upper()
-    except KeyError:
-        raise IOErr("nokeyword", filename, "HDUCLAS1") from None
+    hduclas1 = hdr1.get("HDUCLAS1")
+    if hduclas1 is None:
+        raise IOErr("nokeyword", filename, "HDUCLAS1")
 
-    if hduclas1 != 'XSPEC TABLE MODEL':
+    if hduclas1.value != 'XSPEC TABLE MODEL':
         # TODO: change Exception to something more useful
         raise Exception("Not an XSPEC table model")
 
-    try:
-        addredshift = bool_cast(hdr["REDSHIFT"])
-    except KeyError:
-        raise IOErr("nokeyword", filename, "REDSHIFT") from None
-
-    try:
-        addmodel = bool_cast(hdr["ADDMODEL"])
-    except KeyError:
-        raise IOErr("nokeyword", filename, "ADDMODEL") from None
-
     # ESCALE may not exist in the header, as it is relatively new.
     #
-    try:
-        addescale = bool_cast(hdr["ESCALE"])
-    except KeyError:
-        addescale = False
+    redshift = hdr1.get("REDSHIFT")
+    model = hdr1.get("ADDMODEL")
+    escale = hdr1.get("ESCALE")
+    nxflt = hdr1.get("NXFLTEXP")
+    if redshift is None:
+        raise IOErr("nokeyword", filename, "REDSHIFT")
+    if model is None:
+        raise IOErr("nokeyword", filename, "ADDMODEL")
+
+    addredshift = bool_cast(redshift.value)
+    addmodel = bool_cast(model.value)
+    addescale = False if escale is None else bool_cast(escale.value)
 
     # We want to error out if NXFLTEXP is set (and more than 1). If
     # set to 1 we ignore it.
     #
-    try:
-        nxfltexp = int(hdr["NXFLTEXP"])
-    except KeyError:
-        nxfltexp = 1
-
+    nxfltexp = 1 if nxflt is None else int(nxflt.value)
     if nxfltexp > 1:
         raise IOErr(f"No support for NXFLTEXP={nxfltexp} in {filename}")
 
-    blkname = 'PARAMETERS'
     colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
                'MINIMUM', 'MAXIMUM']
-    hdrkeys = ['NINTPARM', 'NADDPARM']
 
-    (colnames, cols,
-     name, hdr) = read_tbl(filename, colkeys=colkeys, hdrkeys=hdrkeys,
-                           blockname=blkname, fix_type=False)
-    nint = int(hdr["NINTPARM"])
-    return XSTableModel(filename, modelname, *cols,
+    hdu2, name2 = read_tbl(filename, colkeys=colkeys,
+                           blockname="PARAMETERS", fix_type=False)
+    hdr2 = hdu2.header
+    cols2 = [col.values for col in hdu2.columns]
+
+    nintkey = hdr2.get("NINTPARM")
+    if nintkey is None:
+        raise IOErr("nokeyword", filename, "NINTPARM")
+
+    # The constructor does not need this but the XSPEC model library
+    # has historically been very poor at reporting missing or invalid
+    # information, often preferrnig to crash, so ensure this required
+    # keyword is present.
+    #
+    if hdr2.get("NADDPARM") is None:
+        raise IOErr("nokeyword", filename, "NADDPARM")
+
+    nint = int(nintkey.value)
+    return XSTableModel(filename, modelname, *cols2,
                         nint=nint, addmodel=addmodel,
                         addredshift=addredshift,
                         addescale=addescale, etable=etable)

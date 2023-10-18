@@ -36,7 +36,7 @@ from ..data import Data1D
 
 from .types import NamesType, HdrTypeArg, HdrType, \
     ColumnsType, ColumnsTypeArg, DataTypeArg, DataType, \
-    BlockList, TableBlock
+    Header, BlockList, TableBlock
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -67,7 +67,7 @@ def get_table_data(arg,
                    fix_type: bool = True,
                    blockname: Optional[str] = None,
                    hdrkeys: Optional[NamesType] = None
-                   ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from a file or object.
 
     The columns to select depend on the ncols and colkeys arguments,
@@ -106,12 +106,8 @@ def get_table_data(arg,
 
     Returns
     -------
-    names, data, filename, hdr
-        The column names, as a list of strings, and the data as
-        a list of NumPy arrays (matching the order and length of
-        the names array). The filename is the name of the file (a
-        string) and hdr is a dictionary with the requested keywords
-        (when hdrkeys is `None` this dictionary will be empty).
+    data, filename
+        The file data and filename.
 
     Raises
     ------
@@ -126,7 +122,7 @@ def get_table_data(arg,
 def get_header_data(arg,
                     blockname: Optional[str] = None,
                     hdrkeys: Optional[NamesType] = None
-                    ) -> HdrType:
+                    ) -> Header:
     """Read the metadata.
 
     Parameters
@@ -146,10 +142,9 @@ def get_header_data(arg,
 
     Returns
     -------
-    hdr: dict
-        A dictionary with the keyword data (only the name and values
-        are returned, any sort of metadata, such as comments or units,
-        are not returned).
+    hdr: Header
+        The header data. This is not guaranteed to return all the
+        metadata in the input data.
 
     Raises
     ------
@@ -239,7 +234,7 @@ def get_ascii_data(filename: str,
                    dstype: type = Data1D,
                    comment: str = '#',
                    require_floats: bool = True
-                   ) -> tuple[list[str], list[np.ndarray], str]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from an ASCII file.
 
     The `sep`, `dstype`, `comment`, and `require_floats` arguments
@@ -267,10 +262,8 @@ def get_ascii_data(filename: str,
 
     Returns
     -------
-    colnames, coldata, filename
-       The column names read in, the data for the columns
-       as an array, with each element being the data for the column
-       (the order matches ``colnames``), and the name of the file.
+    data, filename
+       The data and filename.
 
     Raises
     ------
@@ -386,22 +379,15 @@ def get_pha_data(arg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_table_data(data: ColumnsTypeArg,
-                    col_names: NamesType,
-                    header: Optional[HdrTypeArg] = None) -> Any:
+def pack_table_data(blocks: BlockList) -> Any:
     """Create the tabular data.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks: BlockList
+        The table data.
 
     Returns
     -------
@@ -512,28 +498,22 @@ def pack_hdus(blocks: BlockList) -> Any:
 
 
 def set_table_data(filename: str,
-                   data: ColumnsTypeArg,
-                   col_names: NamesType,
-                   header: Optional[HdrTypeArg] = None,
+                   blocks: BlockList,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the tabular data.
 
     .. versionchanged:: 4.17.0
        The packup argument has been removed as `pack_table_data`
-       should be used instead.
+       should be used instead, and the data is now set with the blocks
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks: BlockList
+        The table data.
     ascii : bool, optional
         Is the file to be written out as a text file (`True`) or a
         binary file? The default is `False`.
@@ -690,9 +670,7 @@ def set_hdus(filename: str,
 
 def read_table_blocks(arg,
                       make_copy: bool = False
-                      ) -> tuple[str,
-                                 dict[int, ColumnsType],
-                                 dict[int, HdrType]]:
+                      ) -> tuple[BlockList, str]:
     """Read in tabular data with no restrictions on the columns.
 
     Parameters
@@ -709,13 +687,8 @@ def read_table_blocks(arg,
 
     Returns
     -------
-    filename, blockdata, hdrdata
-        The filename as a string. The blockdata and hdrdata values are
-        dictionaries where the key is an integer representing the
-        block (or HDU) number (where the first block is numbered 1 and
-        represents the first tabular block, that is it does not
-        include the primary HDU) and the values are dictionaries
-        representing the column data or header data for each block.
+    hdus, filename
+        The data and filename.
 
     Raises
     ------
