@@ -58,7 +58,7 @@ import os
 from pathlib import Path
 import re
 from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
-    Sequence, TypeVar, Union
+    Sequence, Type, TypeVar, Union
 
 import numpy as np
 
@@ -208,7 +208,7 @@ def read_arrays(*args) -> Data:
 def read_table(arg,
                ncols: int = 2,
                colkeys: Optional[NamesType] = None,
-               dstype=Data1D) -> Data:
+               dstype: Type[Data1D] = Data1D) -> Data1D:
     """Create a dataset from a tabular file.
 
     The supported file types (e.g. ASCII or FITS) depends on the
@@ -258,22 +258,23 @@ def read_table(arg,
     >>> d = read_table('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
-    args = backend.get_table_data(arg, ncols, colkeys)
-    cols = args[1]
-    name = args[2]
+
+    hdu, name = backend.get_table_data(arg, ncols, colkeys)
+
+    cols = [col.values for col in hdu.columns]
 
     # Determine max number of args for dataset constructor
     _check_args(len(cols), dstype)
-
     return dstype(name, *cols)
 
 
 # TODO: should this be exported?
+#
 def read_ascii(filename: str,
                ncols: int = 2,
                colkeys: Optional[NamesType] = None,
-               dstype=Data1D,
-               **kwargs) -> Data:
+               dstype: Type[Data1D] = Data1D,
+               **kwargs) -> Data1D:
     """Create a dataset from an ASCII tabular file.
 
     Parameters
@@ -322,14 +323,14 @@ def read_ascii(filename: str,
     >>> d = read_ascii('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
-    args = backend.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
-                                  dstype=dstype, **kwargs)
-    cols = args[1]
-    name = args[2]
+
+    hdu, name = backend.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
+                                       dstype=dstype, **kwargs)
+
+    cols = [col.values for col in hdu.columns]
 
     # Determine max number of args for dataset constructor
     _check_args(len(cols), dstype)
-
     return dstype(name, *cols)
 
 
@@ -699,7 +700,7 @@ def _process_pha_block(filename: str,
     exposure = None if expval is None else expval.value
 
     def get(name: str,
-            expand: bool = False) -> Optional[Union[np.ndarray, int, float]]:
+            expand: bool = False) -> Optional[Union[np.ndarray, int, float, np.integer, np.floating]]:
         """Return the column values if they exist.
 
         This checks for columns and then the header. For the header
@@ -2047,6 +2048,7 @@ def write_arrays(filename: str,
     read_arrays
 
     """
+
     backend.set_arrays(filename, args, fields, ascii=ascii, clobber=clobber)
 
 
@@ -2073,6 +2075,7 @@ def write_table(filename: str,
     read_table
 
     """
+
     data = _pack_table(dataset)
     backend.set_table_data(filename, data, ascii=ascii, clobber=clobber)
 
@@ -2217,6 +2220,7 @@ def pack_table(dataset: Data1D) -> object:
     >>> tbl = pack_table(d)
 
     """
+
     data = _pack_table(dataset)
     return backend.pack_table_data(data)
 
@@ -2301,4 +2305,33 @@ def read_table_blocks(arg,
 
     """
 
-    return backend.read_table_blocks(arg, make_copy=make_copy)
+    def getkeys(hdr):
+        if hdr is None:
+            return {}
+
+        return {key.name: key.value for key in hdr.values}
+
+    def getcols(cols):
+        if cols is None:
+            return {}
+
+        return {col.name: col.values for col in cols}
+
+    # Desconstruct the data. It is not clear what to do if the file
+    # contains any image blocks, so we exlpicitly ignore them at this
+    # time (i.e. there is currently no requirement on the
+    # backend.read_table_blocks call on what to do in this situation).
+    #
+    blist, filename = backend.read_table_blocks(arg, make_copy=make_copy)
+    hdr = {1: getkeys(blist.header)}
+
+    cols: dict[int, dict[str, np.ndarray]]
+    cols = {1: {}}
+    for idx, block in enumerate(blist.blocks, 2):
+        if isinstance(block, ImageBlock):
+            continue
+
+        hdr[idx] = getkeys(block.header)
+        cols[idx] = getcols(block.columns)
+
+    return filename, cols, hdr
