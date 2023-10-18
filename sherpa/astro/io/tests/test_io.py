@@ -19,6 +19,7 @@
 #
 
 import struct
+import warnings
 
 import numpy as np
 
@@ -36,11 +37,44 @@ from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
 @requires_data
 @requires_fits
 @requires_xspec
-def test_mod_fits(make_data_path):
+def test_mod_fits(make_data_path, clean_astro_ui, caplog):
+    """Can we read in an XSPEC table model with load_table_model.
+
+    This approach is deprecated. Use load_xstable_model instead.
+    """
+
     tablemodelfile = make_data_path("xspec-tablemodel-RCS.mod")
-    ui.load_table_model("tmod", tablemodelfile)
+    with warnings.catch_warnings(record=True) as warn:
+        ui.load_table_model("tmod", tablemodelfile)
+
+    assert len(warn) == 1
+    assert warn[0].category == DeprecationWarning
+    assert str(warn[0].message) == "Use load_xstable_model to load XSPEC table models"
+
     tmod = ui.get_model_component("tmod")
     assert tmod.name == "xstablemodel.tmod"
+
+    # just check the log output is empty
+    assert len(caplog.records) == 0
+
+
+@requires_data
+@requires_fits
+@requires_xspec
+def test_xsmod_fits(make_data_path, clean_astro_ui, caplog):
+    """Can we read in an XSPEC table model with load_xstable_model."""
+
+    tablemodelfile = make_data_path("xspec-tablemodel-RCS.mod")
+    with warnings.catch_warnings(record=True) as warn:
+        ui.load_xstable_model("tmod", tablemodelfile)
+
+    assert len(warn) == 0
+
+    tmod = ui.get_model_component("tmod")
+    assert tmod.name == "xstablemodel.tmod"
+
+    # just check the log output is empty
+    assert len(caplog.records) == 0
 
 
 @requires_fits
