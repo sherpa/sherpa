@@ -437,7 +437,7 @@ def read_template_model(modelname, templatefile,
         tm.ampl.freeze()
         templates.append(tm)
 
-    assert(len(templates) == parvals.shape[0])
+    assert len(templates) == parvals.shape[0]
 
     return create_template_model(modelname, parnames, parvals,
                                  templates,
@@ -1208,7 +1208,7 @@ class Session(NoNewAttributesAfterInit):
             ids = [self._fix_id(id)]
         for id in ids:
             data_str += 'Data Set: %s\n' % id
-            data_str += self.get_data(id).__str__() + '\n\n'
+            data_str += str(self.get_data(id)) + '\n\n'
         return data_str
 
     def _get_show_filter(self, id=None):
@@ -1230,7 +1230,7 @@ class Session(NoNewAttributesAfterInit):
         for id in ids:
             if id in mdl_ids:
                 model_str += 'Model: %s\n' % id
-                model_str += self.get_model(id).__str__() + '\n\n'
+                model_str += str(self.get_model(id)) + '\n\n'
         return model_str
 
     def _get_show_source(self, id=None):
@@ -1242,7 +1242,7 @@ class Session(NoNewAttributesAfterInit):
         for id in ids:
             if id in src_ids:
                 model_str += 'Model: %s\n' % id
-                model_str += self.get_source(id).__str__() + '\n\n'
+                model_str += str(self.get_source(id)) + '\n\n'
         return model_str
 
     def _get_show_kernel(self, id=None):
@@ -1254,7 +1254,7 @@ class Session(NoNewAttributesAfterInit):
             if id in self._psf.keys():
                 kernel_str += 'PSF Kernel: %s\n' % id
                 # Show the PSF parameters
-                kernel_str += self.get_psf(id).__str__() + '\n\n'
+                kernel_str += str(self.get_psf(id)) + '\n\n'
         return kernel_str
 
     def _get_show_psf(self, id=None):
@@ -1266,18 +1266,18 @@ class Session(NoNewAttributesAfterInit):
             if id in self._psf.keys():
                 psf_str += 'PSF Model: %s\n' % id
                 # Show the PSF dataset or PSF model
-                psf_str += self.get_psf(id).kernel.__str__() + '\n\n'
+                psf_str += str(self.get_psf(id).kernel) + '\n\n'
         return psf_str
 
     def _get_show_method(self):
         return ('Optimization Method: %s\n%s\n' %
                 (type(self._current_method).__name__,
-                 self._current_method.__str__()))
+                 str(self._current_method)))
 
     def _get_show_stat(self):
         return ('Statistic: %s\n%s\n' %
                 (type(self._current_stat).__name__,
-                 self._current_stat.__str__()))
+                 str(self._current_stat)))
 
     def _get_show_fit(self):
         if self._fit_results is None:
@@ -2018,7 +2018,8 @@ class Session(NoNewAttributesAfterInit):
         # use the logger interface instead. It does mean that the
         # message will be repeated each time it is used.
         #
-        warning(f"The argument '{plottype}' is deprecated and '{answer}' should be used instead")
+        warning("The argument '%s' is deprecated and "
+                "'%s' should be used instead", plottype, answer)
         return answer
 
     def _check_plottype(self, plottype):
@@ -5968,8 +5969,8 @@ class Session(NoNewAttributesAfterInit):
         name = modelclass.__name__.lower()
 
         if not _is_subclass(modelclass, sherpa.models.ArithmeticModel):
-            raise TypeError("model class '%s' is not a derived class" % name +
-                            " from sherpa.models.ArithmeticModel")
+            raise TypeError(f"model class '{name}' is not a derived class "
+                            "from sherpa.models.ArithmeticModel")
 
         self._model_types[name] = ModelWrapper(self, modelclass, args, kwargs)
         self._model_globals.update(self._model_types)
@@ -6675,7 +6676,7 @@ class Session(NoNewAttributesAfterInit):
                 ntokens = len(tokens)
 
                 if ntokens > 3:
-                    info("Error: Please provide a comma-separated " +
+                    info("Error: Please provide a comma-separated "
                          "list of floats; e.g. val,min,max")
                     continue
 
@@ -6683,21 +6684,21 @@ class Session(NoNewAttributesAfterInit):
                     try:
                         val = float(tokens[0])
                     except Exception as e:
-                        info(f"Please provide a float value; {e}")
+                        info("Please provide a float value; %s", e)
                         continue
 
                 if ntokens > 1 and tokens[1] != '':
                     try:
                         minval = float(tokens[1])
                     except Exception as e:
-                        info(f"Please provide a float value; {e}")
+                        info("Please provide a float value; %s", e)
                         continue
 
                 if ntokens > 2 and tokens[2] != '':
                     try:
                         maxval = float(tokens[2])
                     except Exception as e:
-                        info(f"Please provide a float value; {e}")
+                        info("Please provide a float value; %s", e)
                         continue
 
                 try:
@@ -7367,9 +7368,8 @@ class Session(NoNewAttributesAfterInit):
 
         A table model is defined on a grid of points which is
         interpolated onto the independent axis of the data set. The
-        model has a single parameter, ``ampl``, which is used to
-        scale the data, and it can be fixed or allowed to vary
-        during a fit.
+        model has a single parameter, ``ampl``, which is used to scale
+        the data, and it can be fixed or allowed to vary during a fit.
 
         Parameters
         ----------
@@ -7444,12 +7444,13 @@ class Session(NoNewAttributesAfterInit):
         >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
 
         """
-        tablemodel = TableModel(modelname)
-        # interpolation method
-        tablemodel.method = method
-        tablemodel.filename = filename
+
         x, y = self._read_user_model(filename, ncols, colkeys,
                                      dstype, sep, comment)
+
+        tablemodel = TableModel(modelname)
+        tablemodel.method = method
+        tablemodel.filename = filename
         tablemodel.load(x, y)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
@@ -7554,8 +7555,8 @@ class Session(NoNewAttributesAfterInit):
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
         usermodel._file = filename
-        if (filename is not None):
-            x, usermodel._y = self._read_user_model(filename, ncols, colkeys,
+        if filename is not None:
+            _, usermodel._y = self._read_user_model(filename, ncols, colkeys,
                                                     dstype, sep, comment)
         self._add_model_component(usermodel)
 
@@ -7629,7 +7630,7 @@ class Session(NoNewAttributesAfterInit):
 
         usermodel = self._get_model_component(modelname)
         if (usermodel is None or
-                type(usermodel) is not sherpa.models.UserModel):
+            not isinstance(usermodel, sherpa.models.UserModel)):
             raise ArgumentTypeErr('badarg', modelname, "a user model")
 
         pars = []
@@ -7823,7 +7824,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
-            except:
+            except Exception:
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
@@ -7887,7 +7888,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
-            except:
+            except Exception:
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
@@ -8314,9 +8315,9 @@ class Session(NoNewAttributesAfterInit):
 
             try:
                 par.freeze()
-            except AttributeError:
+            except AttributeError as exc:
                 raise ArgumentTypeErr('badarg', 'par',
-                                      'a parameter or model object or expression string')
+                                      'a parameter or model object or expression string') from exc
 
     def thaw(self, *args):
         """Allow model parameters to be varied during a fit.
@@ -8377,9 +8378,9 @@ class Session(NoNewAttributesAfterInit):
 
             try:
                 par.thaw()
-            except AttributeError:
+            except AttributeError as exc:
                 raise ArgumentTypeErr('badarg', 'par',
-                                      'a parameter or model object or expression string')
+                                      'a parameter or model object or expression string') from exc
 
     def link(self, par, val):
         """Link a parameter to a value.
@@ -11895,9 +11896,9 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'{}'".format(mdl.name) +
-                                "\n is set for dataset {}.".format(id) +
-                                " You should use get_model_plot instead.")
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'\n"
+                                f" is set for dataset {id}. "
+                                "You should use get_model_plot instead.")
 
         if recalc:
             data = self.get_data(id)
@@ -13968,9 +13969,9 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'{}'".format(mdl.name) +
-                                "\n is set for dataset {}.".format(id) +
-                                " You should use plot_model instead.")
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'\n"
+                                f" is set for dataset {id}. "
+                                "You should use plot_model instead.")
 
         plotobj = self.get_source_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,

@@ -34,7 +34,7 @@ from sherpa.ui.utils import _check_type, _check_str_type, _is_str
 from sherpa.utils import sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
-from sherpa.utils.numeric_types import SherpaFloat, SherpaInt
+from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
@@ -1712,13 +1712,13 @@ class Session(sherpa.ui.utils.Session):
         """
         try:
             return self.unpack_pha(filename, *args, **kwargs)
-        except:
+        except Exception:
             try:
                 return self.unpack_image(filename, *args, **kwargs)
-            except:
+            except Exception:
                 try:
                     return self.unpack_table(filename, *args, **kwargs)
-                except:
+                except Exception:
                     # If this errors out then so be it
                     return self.unpack_ascii(filename, *args, **kwargs)
 
@@ -1874,10 +1874,10 @@ class Session(sherpa.ui.utils.Session):
             ids.append(idval)
 
         if num > 1:
-            info("Multiple data sets have been input: " +
-                 "{}-{}".format(ids[0], ids[-1]))
+            info("Multiple data sets have been input: %s-%s",
+                 ids[0], ids[-1])
         else:
-            info("One data set has been input: {}".format(ids[0]))
+            info("One data set has been input: %s", ids[0])
 
     # DOC-NOTE: also in sherpa.utils without the support for
     #           multiple datasets.
@@ -7041,7 +7041,7 @@ class Session(sherpa.ui.utils.Session):
             else:
                 fstring = f"{nfilter} {data.get_xlabel()}"
 
-            info(f"dataset {idval}: {fstring}")
+            info("dataset %s: %s", idval, fstring)
 
     def get_analysis(self, id=None):
         """Return the units used when fitting spectral data.
@@ -9558,12 +9558,12 @@ class Session(sherpa.ui.utils.Session):
                 resp_ids = range(1, len(arf) + 1)
                 self.load_multi_arfs(id, arf, resp_ids=resp_ids)
             elif arf is None:
-               # In some cases, arf is None, but rmf is not.
-               # For example, XMM/RGS does uses only a single file (the RMF)
-               # to hold all information.
-               pass
+                # In some cases, arf is None, but rmf is not.
+                # For example, XMM/RGS does uses only a single file (the RMF)
+                # to hold all information.
+                pass
             else:
-               self.set_arf(id, arf)
+                self.set_arf(id, arf)
 
             if numpy.iterable(rmf):
                 resp_ids = range(1, len(rmf) + 1)
@@ -9622,7 +9622,7 @@ class Session(sherpa.ui.utils.Session):
         if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
-            except:
+            except Exception:
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
@@ -9736,12 +9736,11 @@ class Session(sherpa.ui.utils.Session):
                     if sherpa.ui.utils._is_subclass(type(part), instruments):
                         do_warning = False
                 if do_warning:
-                    warning("PHA source model '%s' \ndoes not" %
-                            model.name +
-                            " have an associated instrument model; " +
-                            "consider using \nset_source() instead of" +
-                            " set_full_model() to include associated " +
-                            "\ninstrument automatically")
+                    warning("PHA source model '%s' \ndoes not"
+                            " have an associated instrument model; "
+                            "consider using \nset_source() instead of"
+                            " set_full_model() to include associated "
+                            "\ninstrument automatically", model.name)
 
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
 
@@ -10237,10 +10236,10 @@ class Session(sherpa.ui.utils.Session):
                     do_warning = False
             if do_warning:
                 self.delete_bkg_model(id, bkg_id)
-                raise TypeError("PHA background source model '%s' \n" % model.name +
-                                " does not have an associated instrument model;" +
-                                " consider using\n set_bkg_source() instead of" +
-                                " set_bkg_model() to include associated\n instrument" +
+                raise TypeError(f"PHA background source model '{model.name}' \n"
+                                " does not have an associated instrument model;"
+                                " consider using\n set_bkg_source() instead of"
+                                " set_bkg_model() to include associated\n instrument"
                                 " automatically")
 
         self._runparamprompt(model.pars)
@@ -10343,9 +10342,9 @@ class Session(sherpa.ui.utils.Session):
         # Delete any previous model set with set_full_bkg_model()
         bkg_mdl = self._background_models.get(id, {}).pop(bkg_id, None)
         if bkg_mdl is not None:
-            warning("Clearing background convolved model\n'%s'\n" %
-                    (bkg_mdl.name) + "for dataset %s background %s" %
-                    (str(id), str(bkg_id)))
+            warning("Clearing background convolved model\n'%s'\n"
+                    "for dataset %s background %s",
+                    bkg_mdl.name, str(id), str(bkg_id))
 
     set_bkg_source = set_bkg_model
 
@@ -10410,7 +10409,7 @@ class Session(sherpa.ui.utils.Session):
         except TypeError:
             y = sherpa.astro.io.backend.get_ascii_data(filename, *args,
                                                        **kwargs)[1].pop()
-        except:
+        except Exception:
             try:
                 data = self.unpack_table(filename, *args, **kwargs)
                 x = data.get_x()
@@ -10422,7 +10421,7 @@ class Session(sherpa.ui.utils.Session):
             except TypeError:
                 y = sherpa.astro.io.backend.get_table_data(filename, *args,
                                                            **kwargs)[1].pop()
-            except:
+            except Exception:
                 # unpack_data doesn't include a call to try
                 # getting data from image, so try that here.
                 data = self.unpack_image(filename, *args, **kwargs)
@@ -10534,14 +10533,13 @@ class Session(sherpa.ui.utils.Session):
         .. note:: Deprecated in Sherpa 4.9
                   The new `load_xstable_model` routine should be used for
                   loading XSPEC table model files. Support for these files
-                  will be removed from `load_table_model` in the next
+                  will be removed from `load_table_model` in the 4.17
                   release.
 
         A table model is defined on a grid of points which is
-        interpolated onto the independent axis of the data set.  The
-        model will have at least one parameter (the amplitude, or
-        scaling factor to multiply the data by), but may have more
-        (if X-Spec table models are used).
+        interpolated onto the independent axis of the data set. The
+        model has a single parameter, ``ampl``, which is used to scale
+        the data, and it can be fixed or allowed to vary during a fit.
 
         Parameters
         ----------
@@ -10595,35 +10593,34 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source('img', emap * gauss2d)
 
         """
-        tablemodel = TableModel(modelname)
-        # interpolation method
-        tablemodel.method = method
-        tablemodel.filename = filename
 
         try:
-            if not sherpa.utils.is_binary_file(filename):
-                # TODO: use a Sherpa exception
-                raise Exception("Not a FITS file")
-
             self.load_xstable_model(modelname, filename)
-            warnings.warn('Use load_xstable_model to load XSPEC table models',
-                          DeprecationWarning)
+
+            # Since users don't see DeprecationWarnings in ipython
+            # let's be explicit now, as most people are not aware of
+            # this change.
+            #
+            msg = 'Use load_xstable_model to load XSPEC table models'
+            warnings.warn(msg, DeprecationWarning)
+            warning(msg)
             return
-
         except Exception:
-            x = None
-            y = None
-            try:
-                x, y = self._read_user_model(filename, *args, **kwargs)
-            except:
-                # Fall back to reading plain ASCII, if no other
-                # more sophisticated I/O backend loaded (such as
-                # pyfits or crates) SMD 05/29/13
-                data = sherpa.io.read_data(filename, ncols=2)
-                x = data.x
-                y = data.y
-            tablemodel.load(x, y)
+            pass
 
+        x = None
+        y = None
+        try:
+            x, y = self._read_user_model(filename, *args, **kwargs)
+        except Exception:
+            data = sherpa.io.read_data(filename, ncols=2)
+            x = data.x
+            y = data.y
+
+        tablemodel = TableModel(modelname)
+        tablemodel.method = method
+        tablemodel.filename = filename
+        tablemodel.load(x, y)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
@@ -10773,16 +10770,18 @@ class Session(sherpa.ui.utils.Session):
             bkg_srcs = self._background_sources.get(s.idval, {})
             if s.data.subtracted:
                 if (bkg_models or bkg_srcs):
-                    warning(f'data set {repr(s.idval)} is background-subtracted; ' +
-                            'background models will be ignored')
+                    warning('data set %s is background-subtracted; '
+                            'background models will be ignored',
+                            repr(s.idval))
 
                 continue
 
             if not (bkg_models or bkg_srcs):
                 if s.data.background_ids and self._current_stat.name != 'wstat':
-                    warning(f'data set {repr(s.idval)} has associated backgrounds, ' +
-                            'but they have not been subtracted, ' +
-                            'nor have background models been set')
+                    warning('data set %s has associated backgrounds, '
+                            'but they have not been subtracted, '
+                            'nor have background models been set',
+                            repr(s.idval))
 
                 continue
 
@@ -14702,12 +14701,11 @@ class Session(sherpa.ui.utils.Session):
                     msg = name + ' must be 2d numpy.ndarray'
                     raise IOErr(msg)
                 if shape[0] != npars:
-                    msg = name + ' must be of dimension (%d, x)' % npars
+                    msg = name + f' must be of dimension ({npars}, x)'
                     raise IOErr(msg)
                 if dim1 is not None:
                     if shape[1] != npars:
-                        msg = name + ' must be of dimension (%d, %d)' % \
-                            (npars, npars)
+                        msg = name + f' must be of dimension ({npars}, {npars})'
                         raise IOErr(msg)
 
             _, fit = self._get_fit(id)
@@ -15768,7 +15766,7 @@ class Session(sherpa.ui.utils.Session):
                 else:
                     raise IOErr('filefound', outfile)
 
-            with open(outfile, 'w') as fh:
+            with open(outfile, 'w', encoding="UTF-8") as fh:
                 serialize.save_all(self, fh)
 
         else:

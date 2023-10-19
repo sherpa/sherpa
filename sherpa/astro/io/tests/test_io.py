@@ -47,15 +47,18 @@ def test_mod_fits(make_data_path, clean_astro_ui, caplog):
     with warnings.catch_warnings(record=True) as warn:
         ui.load_table_model("tmod", tablemodelfile)
 
+    msg = "Use load_xstable_model to load XSPEC table models"
     assert len(warn) == 1
     assert warn[0].category == DeprecationWarning
-    assert str(warn[0].message) == "Use load_xstable_model to load XSPEC table models"
+    assert str(warn[0].message) == msg
 
     tmod = ui.get_model_component("tmod")
     assert tmod.name == "xstablemodel.tmod"
 
-    # just check the log output is empty
-    assert len(caplog.records) == 0
+    assert len(caplog.records) == 1
+    assert caplog.records[0].name == "sherpa.astro.ui.utils"
+    assert caplog.records[0].levelname == "WARNING"
+    assert caplog.records[0].getMessage() == msg
 
 
 @requires_data
