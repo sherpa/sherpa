@@ -21,7 +21,7 @@
 from collections import defaultdict
 import logging
 import os
-from typing import Any, Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
 
 import numpy as np
 
@@ -184,26 +184,6 @@ def _try_key(crate: CrateType,
         return dtype(value, "utf-8")
 
     return dtype(value)
-
-
-def _get_meta_data(crate: CrateType) -> HdrType:
-    """Retrieve the header information from the crate.
-
-    This loses the "specialized" keywords like HISTORY and COMMENT.
-
-    """
-
-    meta = {}
-    for name in crate.get_keynames():
-        val = crate.get_key(name).value
-
-        # empty numpy strings are not recognized by load pickle!
-        if isinstance(val, np.str_) and val == '':
-            val = ''
-
-        meta[name] = val
-
-    return meta
 
 
 def _get_meta_data_header(crate: CrateType) -> Header:
@@ -507,7 +487,7 @@ def get_table_data(arg: Union[str, TABLECrate],
 def get_image_data(arg: Union[str, IMAGECrate],
                    make_copy: bool = True,
                    fix_type: bool = True
-                   ) -> tuple[dict[str, Any], str]:
+                   ) -> tuple[ImageBlock, str]:
     """Read image data from a file or crate"""
 
     if isinstance(arg, str):
@@ -525,51 +505,51 @@ def get_image_data(arg: Union[str, IMAGECrate],
     else:
         raise IOErr('badfile', arg, "IMAGECrate obj")
 
-    data: dict[str, Any] = {}
+    name = img.name
+    image = _require_image(img, filename, make_copy=make_copy,
+                           fix_type=fix_type)
 
-    data['y'] = _require_image(img, filename, make_copy=make_copy,
-                               fix_type=fix_type)
-
+    # Find the SKY name using the set intersection. This is only
+    # needed if we have the WCS class.
+    #
+    sky = None
+    eqpos = None
     if HAS_TRANSFORM:
-        sky = None
         skynames = ['SKY', 'sky', 'pos', 'POS']
         names = img.get_axisnames()
 
-        # find the SKY name using the set intersection
         inter = list(set(names) & set(skynames))
-        if inter:
-            sky = img.get_transform(inter[0])
+        sky_tr = img.get_transform(inter[0]) if inter else None
 
-        wcs = None
-        if 'EQPOS' in names:
-            wcs = img.get_transform('EQPOS')
-
-        if sky is not None:
+        if sky_tr is not None:
             linear = WCSTANTransform()
             linear.set_name("LINEAR")
-            linear.set_transform_matrix(sky.get_transform_matrix())
+            linear.set_transform_matrix(sky_tr.get_transform_matrix())
             cdelt = np.array(linear.get_parameter_value('CDELT'))
             crpix = np.array(linear.get_parameter_value('CRPIX'))
             crval = np.array(linear.get_parameter_value('CRVAL'))
-            data['sky'] = WCS('physical', 'LINEAR', crval, crpix, cdelt)
+            sky = WCS('physical', 'LINEAR', crval, crpix, cdelt)
 
-        if wcs is not None:
-            cdelt = np.array(wcs.get_parameter_value('CDELT'))
-            crpix = np.array(wcs.get_parameter_value('CRPIX'))
-            crval = np.array(wcs.get_parameter_value('CRVAL'))
-            crota = SherpaFloat(wcs.get_parameter_value('CROTA'))
-            equin = SherpaFloat(wcs.get_parameter_value('EQUINOX'))
-            epoch = SherpaFloat(wcs.get_parameter_value('EPOCH'))
-            data['eqpos'] = WCS('world', 'WCS', crval, crpix, cdelt,
-                                crota, epoch, equin)
+        wcs_tr = img.get_transform('EQPOS') if 'EQPOS' in names else None
+        if wcs_tr is not None:
+            cdelt = np.array(wcs_tr.get_parameter_value('CDELT'))
+            crpix = np.array(wcs_tr.get_parameter_value('CRPIX'))
+            crval = np.array(wcs_tr.get_parameter_value('CRVAL'))
+            crota = SherpaFloat(wcs_tr.get_parameter_value('CROTA'))
+            equin = SherpaFloat(wcs_tr.get_parameter_value('EQUINOX'))
+            epoch = SherpaFloat(wcs_tr.get_parameter_value('EPOCH'))
+            eqpos = WCS('world', 'WCS', crval, crpix, cdelt,
+                        crota, epoch, equin)
 
-    data['header'] = _get_meta_data(img)
+    header = _get_meta_data_header(img)
     for key in ['CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
                 'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
                 'EQUINOX']:
-        data['header'].pop(key, None)
+        header.delete(key)
 
-    return data, filename
+    block = ImageBlock(name, header=header, image=image,
+                       sky=sky, eqpos=eqpos)
+    return block, filename
 
 
 def get_arf_data(arg: Union[str, TABLECrate],
@@ -961,94 +941,82 @@ def write_dataset(dataset: Union[TABLECrate, IMAGECrate, CrateDataset],
     dataset.write(filename, clobber=True)
 
 
-def pack_image_data(data, header) -> IMAGECrate:
+def pack_image_data(data: ImageBlock) -> IMAGECrate:
     """Pack up the image data."""
 
     img = IMAGECrate()
 
-    def _set_key(name: str,
-                 val: KeyType) -> None:
-        """Add a key + value to the header."""
-
+    def _add_key(name, value):
         key = CrateKey()
-        key.name = name.upper()
-        key.value = val
+        key.name = name
+        key.value = value
         img.add_key(key)
 
-    def _update_header(header: Mapping[str, Optional[KeyType]],
-                       skip_if_known: bool = True) -> None:
-        """Update the header of the crate."""
-
-        for key, value in header.items():
-            if skip_if_known and img.key_exists(key):
-                continue
-
-            if value is None:
-                continue
-
-            # Do we need to worry about keys like TTYPE1 which crates
-            # hides from us?
-            _set_key(key, value)
-
     # Write Image Header Keys
-    _update_header(header, skip_if_known=False)
+    #
+    for item in data.header.values:
+        _add_key(item.name, item.value)
 
     # Write Image WCS Header Keys
-    if data['eqpos'] is not None:
-        cdeltw = data['eqpos'].cdelt
-        crvalw = data['eqpos'].crval
-        crpixw = data['eqpos'].crpix
-        equin = data['eqpos'].equinox
+    if data.eqpos is not None:
+        cdeltw = data.eqpos.cdelt
+        crvalw = data.eqpos.crval
+        crpixw = data.eqpos.crpix
+        equin = data.eqpos.equinox
 
-    if data['sky'] is not None:
-        cdeltp = data['sky'].cdelt
-        crvalp = data['sky'].crval
-        crpixp = data['sky'].crpix
+    if data.sky is not None:
+        cdeltp = data.sky.cdelt
+        crvalp = data.sky.crval
+        crpixp = data.sky.crpix
 
-        _set_key('MTYPE1', 'sky     ')
-        _set_key('MFORM1', 'x,y     ')
-        _set_key('CTYPE1P', 'x       ')
-        _set_key('CTYPE2P', 'y       ')
-        _set_key('WCSNAMEP', 'PHYSICAL')
-        _set_key('CDELT1P', cdeltp[0])
-        _set_key('CDELT2P', cdeltp[1])
-        _set_key('CRPIX1P', crpixp[0])
-        _set_key('CRPIX2P', crpixp[1])
-        _set_key('CRVAL1P', crvalp[0])
-        _set_key('CRVAL2P', crvalp[1])
+        _add_key('MTYPE1', 'sky     ')
+        _add_key('MFORM1', 'x,y     ')
+        _add_key('CTYPE1P', 'x       ')
+        _add_key('CTYPE2P', 'y       ')
+        _add_key('WCSNAMEP', 'PHYSICAL')
+        _add_key('CDELT1P', cdeltp[0])
+        _add_key('CDELT2P', cdeltp[1])
+        _add_key('CRPIX1P', crpixp[0])
+        _add_key('CRPIX2P', crpixp[1])
+        _add_key('CRVAL1P', crvalp[0])
+        _add_key('CRVAL2P', crvalp[1])
 
-        if data['eqpos'] is not None:
+        if data.eqpos is not None:
             # Simply the inverse of read transformations in get_image_data
             cdeltw = cdeltw * cdeltp
             crpixw = (crpixw - crvalp) / cdeltp + crpixp
 
-    if data['eqpos'] is not None:
-        _set_key('MTYPE2', 'EQPOS   ')
-        _set_key('MFORM2', 'RA,DEC  ')
-        _set_key('CTYPE1', 'RA---TAN')
-        _set_key('CTYPE2', 'DEC--TAN')
-        _set_key('CDELT1', cdeltw[0])
-        _set_key('CDELT2', cdeltw[1])
-        _set_key('CRPIX1', crpixw[0])
-        _set_key('CRPIX2', crpixw[1])
-        _set_key('CRVAL1', crvalw[0])
-        _set_key('CRVAL2', crvalw[1])
-        _set_key('EQUINOX', equin)
+    if data.eqpos is not None:
+        _add_key('MTYPE2', 'EQPOS   ')
+        _add_key('MFORM2', 'RA,DEC  ')
+        _add_key('CTYPE1', 'RA---TAN')
+        _add_key('CTYPE2', 'DEC--TAN')
+        _add_key('CDELT1', cdeltw[0])
+        _add_key('CDELT2', cdeltw[1])
+        _add_key('CRPIX1', crpixw[0])
+        _add_key('CRPIX2', crpixw[1])
+        _add_key('CRVAL1', crvalw[0])
+        _add_key('CRVAL2', crvalw[1])
+        _add_key('EQUINOX', equin)
 
     # Write Image pixel values
     pix_col = CrateData()
-    pix_col.values = data['pixels']
+    pix_col.values = data.image
     img.add_image(pix_col)
     return img
 
 
-def set_image_data(filename, data, header, ascii=False, clobber=False) -> None:
+def set_image_data(filename: str,
+                   data: ImageBlock,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
+
     """Write out the image data."""
 
     if ascii and '[' not in filename and ']' not in filename:
         raise IOErr('writenoimg')
 
-    img = pack_image_data(data, header)
+    img = pack_image_data(data)
     write_dataset(img, filename, ascii=ascii, clobber=clobber)
 
 

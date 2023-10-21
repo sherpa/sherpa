@@ -39,7 +39,7 @@ References
 
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 import warnings
 
 import numpy as np
@@ -52,7 +52,7 @@ import sherpa.utils  # unlike crates we do not import is_binary_file directly
 from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
-from .io_types import KeyType, HeaderItem, Header, Column, \
+from .io_types import HeaderItem, Header, Column, \
     ImageBlock, TableBlock, BlockList
 
 
@@ -79,7 +79,6 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
 DatasetType = Union[str, fits.HDUList]
 HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU]
 NamesType = Sequence[str]
-HdrType = dict[str, KeyType]
 
 
 def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
@@ -109,27 +108,7 @@ def _require_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
     return value
 
 
-def _get_meta_data(hdu: HDUType) -> HdrType:
-    # If the header keywords are not specified correctly then
-    # astropy will error out when we try to access it. Since
-    # this is not an uncommon problem, there is a verify method
-    # that can be used to fix up the data to avoid this: the
-    # "silentfix" option is used so as not to complain too much.
-    #
-    hdu.verify('silentfix')
-
-    meta = {}
-    for key, val in hdu.header.items():
-        # empty numpy strings are not recognized by load pickle!
-        if isinstance(val, np.str_) and val == '':
-            val = ''
-
-        meta[key] = val
-
-    return meta
-
-
-def _get_meta_data_header(hdu: fits.BinTableHDU) -> Header:
+def _get_meta_data_header(hdu: HDUType) -> Header:
     """Retrieve the header information from the table.
 
     This loses the "specialized" keywords like HISTORY and COMMENT.
@@ -443,9 +422,63 @@ def get_table_data(arg: DatasetType,
     return TableBlock("TABLE", header=headers, columns=cols), filename
 
 
+# As the return value depends on whether the WCS code has been
+# compiled, typing this is awkward.
+#
+def _make_wcs(img: fits.ImageHDU) -> tuple[Optional[WCS], Optional[WCS]]:
+    """Create the WCS for the SKY and EQPOS transforms.
+
+    This is rather CIAO specific.
+    """
+
+    sky = None
+    eqpos = None
+    if not HAS_TRANSFORM:
+        return sky, eqpos
+
+    def _get_wcs_key(prefix: str,
+                     suffix: str = "") -> Optional[np.ndarray]:
+        """WCS 2D keywords."""
+
+        key1 = f"{prefix}1{suffix}"
+        val1 = _try_key(img, key1)
+        if val1 is None:
+            return None
+
+        key2 = f"{prefix}2{suffix}"
+        val2 = _try_key(img, key2)
+        if val2 is None:
+            return None
+
+        return np.array([val1, val2], dtype=SherpaFloat)
+
+    cdeltp = _get_wcs_key('CDELT', 'P')
+    crpixp = _get_wcs_key('CRPIX', 'P')
+    crvalp = _get_wcs_key('CRVAL', 'P')
+    cdeltw = _get_wcs_key('CDELT')
+    crpixw = _get_wcs_key('CRPIX')
+    crvalw = _get_wcs_key('CRVAL')
+
+    if cdeltp is not None and crpixp is not None and crvalp is not None:
+        sky = WCS('physical', 'LINEAR', crvalp, crpixp, cdeltp)
+
+    # proper calculation of cdelt wrt PHYSICAL coords
+    if cdeltw is not None and cdeltp is not None:
+        cdeltw = cdeltw / cdeltp
+
+    # proper calculation of crpix wrt PHYSICAL coords
+    if crpixw is not None and crvalp is not None and cdeltp is not None and crpixp is not None:
+        crpixw = crvalp + (crpixw - crpixp) * cdeltp
+
+    if cdeltw is not None and crpixw is not None and crvalw is not None:
+        eqpos = WCS('world', 'WCS', crvalw, crpixw, cdeltw)
+
+    return sky, eqpos
+
+
 def get_image_data(arg: DatasetType,
                    make_copy: bool = False
-                   ) -> tuple[dict[str, Any], str]:
+                   ) -> tuple[ImageBlock, str]:
     """Read image data."""
 
     hdus, filename, close = _get_file_contents(arg)
@@ -481,8 +514,6 @@ def get_image_data(arg: DatasetType,
     #
 
     try:
-        data: dict[str, Any] = {}
-
         # Look for data in the primary or first block.
         #
         img = hdus[0]
@@ -494,58 +525,23 @@ def get_image_data(arg: DatasetType,
         if not isinstance(img, (fits.PrimaryHDU, fits.ImageHDU)):
             raise IOErr("badimg", filename)
 
-        data['y'] = np.asarray(img.data)
-
-        if HAS_TRANSFORM:
-
-            def _get_wcs_key(key, suffix=""):
-                val1 = _try_key(img, f"{key}1{suffix}")
-                if val1 is None:
-                    return None
-
-                val2 = _try_key(img, f"{key}2{suffix}")
-                if val2 is None:
-                    return None
-
-                return np.array([val1, val2], dtype=SherpaFloat)
-
-            cdeltp = _get_wcs_key('CDELT', 'P')
-            crpixp = _get_wcs_key('CRPIX', 'P')
-            crvalp = _get_wcs_key('CRVAL', 'P')
-            cdeltw = _get_wcs_key('CDELT')
-            crpixw = _get_wcs_key('CRPIX')
-            crvalw = _get_wcs_key('CRVAL')
-
-            # proper calculation of cdelt wrt PHYSICAL coords
-            if cdeltw is not None and cdeltp is not None:
-                cdeltw = cdeltw / cdeltp
-
-            # proper calculation of crpix wrt PHYSICAL coords
-            if (crpixw is not None and crvalp is not None and
-                cdeltp is not None and crpixp is not None):
-                crpixw = crvalp + (crpixw - crpixp) * cdeltp
-
-            if (cdeltp is not None and crpixp is not None and
-                crvalp is not None):
-                data['sky'] = WCS('physical', 'LINEAR', crvalp,
-                                  crpixp, cdeltp)
-
-            if (cdeltw is not None and crpixw is not None and
-                crvalw is not None):
-                data['eqpos'] = WCS('world', 'WCS', crvalw, crpixw,
-                                    cdeltw)
-
-        data['header'] = _get_meta_data(img)
-        for key in ['CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
-                    'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
-                    'EQUINOX']:
-            data['header'].pop(key, None)
+        name = img.name
+        image = np.asarray(img.data)
+        sky, eqpos = _make_wcs(img)
+        header = _get_meta_data_header(img)
 
     finally:
         if close:
             hdus.close()
 
-    return data, filename
+    for key in ['CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
+                'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
+                'EQUINOX']:
+        header.delete(key)
+
+    block = ImageBlock(name, header=header, image=image,
+                       sky=sky, eqpos=eqpos)
+    return block, filename
 
 
 def _is_ogip_block(hdu: HDUType,
@@ -1012,72 +1008,69 @@ def set_rmf_data(filename: str,
     hdus.writeto(filename, overwrite=True)
 
 
-def pack_image_data(data, header) -> fits.PrimaryHDU:
+def pack_image_data(data: ImageBlock) -> fits.PrimaryHDU:
     """Pack up the image data."""
 
     hdrlist = fits.Header()
 
-    def _add_keyword(name: str, val: Any) -> None:
-        """Add the name,val pair to hdulist."""
-
-        name = name.upper()
+    def _add_key(name, val):
         hdrlist.append(fits.Card(name, val))
 
-    for key, value in header.items():
-        if value is None:
-            continue
-
-        _add_keyword(key, value)
+    # Write Image Header Keys
+    #
+    for item in data.header.values:
+        _add_key(item.name, item.value)
 
     # Write Image WCS Header Keys
-    if data['eqpos'] is not None:
-        cdeltw = data['eqpos'].cdelt
-        crpixw = data['eqpos'].crpix
-        crvalw = data['eqpos'].crval
-        equin = data['eqpos'].equinox
+    #
+    if data.eqpos is not None:
+        cdeltw = data.eqpos.cdelt
+        crpixw = data.eqpos.crpix
+        crvalw = data.eqpos.crval
+        equin = data.eqpos.equinox
 
-    if data['sky'] is not None:
-        cdeltp = data['sky'].cdelt
-        crpixp = data['sky'].crpix
-        crvalp = data['sky'].crval
+    if data.sky is not None:
+        cdeltp = data.sky.cdelt
+        crpixp = data.sky.crpix
+        crvalp = data.sky.crval
 
-        _add_keyword('MTYPE1', 'sky     ')
-        _add_keyword('MFORM1', 'x,y     ')
-        _add_keyword('CTYPE1P', 'x      ')
-        _add_keyword('CTYPE2P', 'y      ')
-        _add_keyword('WCSNAMEP', 'PHYSICAL')
-        _add_keyword('CDELT1P', cdeltp[0])
-        _add_keyword('CDELT2P', cdeltp[1])
-        _add_keyword('CRPIX1P', crpixp[0])
-        _add_keyword('CRPIX2P', crpixp[1])
-        _add_keyword('CRVAL1P', crvalp[0])
-        _add_keyword('CRVAL2P', crvalp[1])
+        _add_key('MTYPE1', 'sky     ')
+        _add_key('MFORM1', 'x,y     ')
+        _add_key('CTYPE1P', 'x      ')
+        _add_key('CTYPE2P', 'y      ')
+        _add_key('WCSNAMEP', 'PHYSICAL')
+        _add_key('CDELT1P', cdeltp[0])
+        _add_key('CDELT2P', cdeltp[1])
+        _add_key('CRPIX1P', crpixp[0])
+        _add_key('CRPIX2P', crpixp[1])
+        _add_key('CRVAL1P', crvalp[0])
+        _add_key('CRVAL2P', crvalp[1])
 
-    if data['eqpos'] is not None:
-        if data['sky'] is not None:
+    if data.eqpos is not None:
+        if data.sky is not None:
             # Simply the inverse of read transformations in get_image_data
             cdeltw = cdeltw * cdeltp
             crpixw = (crpixw - crvalp) / cdeltp + crpixp
 
-        _add_keyword('MTYPE2', 'EQPOS   ')
-        _add_keyword('MFORM2', 'RA,DEC  ')
-        _add_keyword('CTYPE1', 'RA---TAN')
-        _add_keyword('CTYPE2', 'DEC--TAN')
-        _add_keyword('CDELT1', cdeltw[0])
-        _add_keyword('CDELT2', cdeltw[1])
-        _add_keyword('CRPIX1', crpixw[0])
-        _add_keyword('CRPIX2', crpixw[1])
-        _add_keyword('CRVAL1', crvalw[0])
-        _add_keyword('CRVAL2', crvalw[1])
-        _add_keyword('CUNIT1', 'deg     ')
-        _add_keyword('CUNIT2', 'deg     ')
-        _add_keyword('EQUINOX', equin)
+        _add_key('MTYPE2', 'EQPOS   ')
+        _add_key('MFORM2', 'RA,DEC  ')
+        _add_key('CTYPE1', 'RA---TAN')
+        _add_key('CTYPE2', 'DEC--TAN')
+        _add_key('CDELT1', cdeltw[0])
+        _add_key('CDELT2', cdeltw[1])
+        _add_key('CRPIX1', crpixw[0])
+        _add_key('CRPIX2', crpixw[1])
+        _add_key('CRVAL1', crvalw[0])
+        _add_key('CRVAL2', crvalw[1])
+        _add_key('CUNIT1', 'deg     ')
+        _add_key('CUNIT2', 'deg     ')
+        _add_key('EQUINOX', equin)
 
-    return fits.PrimaryHDU(data['pixels'], header=fits.Header(hdrlist))
+    return fits.PrimaryHDU(data.image, header=fits.Header(hdrlist))
 
 
 def set_image_data(filename: str,
-                   data, header,
+                   data: ImageBlock,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the image data."""
@@ -1085,11 +1078,11 @@ def set_image_data(filename: str,
     check_clobber(filename, clobber)
 
     if ascii:
-        set_arrays(filename, [data['pixels'].ravel()],
+        set_arrays(filename, [data.image.ravel()],
                    ascii=True, clobber=clobber)
         return
 
-    img = pack_image_data(data, header)
+    img = pack_image_data(data)
     img.writeto(filename, overwrite=True)
     return
 

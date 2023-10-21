@@ -32,7 +32,7 @@ from typing import Any, Optional, Sequence, Union
 import numpy as np
 
 from ..data import Data1D
-from .io_types import Header, TableBlock, BlockList
+from .io_types import Header, ImageBlock, TableBlock, BlockList
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -80,7 +80,7 @@ def get_header_data(arg,
 def get_image_data(arg,
                    make_copy: bool = True,
                    fix_type: bool = True
-                   ) -> tuple[dict[str, Any], str]:
+                   ) -> tuple[ImageBlock, str]:
     """Read image data."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -131,7 +131,7 @@ def pack_table_data(blocks: BlockList) -> Any:
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_image_data(data, header, ascii=False) -> Any:
+def pack_image_data(data: ImageBlock) -> Any:
     """Create the image data."""
     raise NotImplementedError('No usable I/O backend was imported.')
 

@@ -326,7 +326,10 @@ def read_ascii(filename: str,
     return dstype(name, *cols)
 
 
-def read_image(arg, coord='logical', dstype=DataIMG):
+# TODO: Can this read in Data2D or only DataIMG?
+def read_image(arg,
+               coord: str = 'logical',
+               dstype: Type[Data2D] = DataIMG) -> Data2D:
     """Create an image dataset from a file.
 
     .. versionchanged:: 4.16.0
@@ -341,7 +344,7 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     coord : {'logical', 'physical', 'world'}, optional
         The type of axis coordinates to use. An error is raised if the
         file does not contain the necessary metadata for the selected
-        coordinate system.
+        coordinate system or the selected dstype does not support it.
     dstype : optional
         The data type to create (it is expected to follow the
         `sherpa.data.BaseData` interface).
@@ -369,16 +372,18 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     >>> d = read_image('img.fits', coord='physical')
 
     """
-    data, filename = backend.get_image_data(arg)
-    data['header'] = _remove_structural_keywords(data['header'])
-    axlens = data['y'].shape
+    if TYPE_CHECKING:
+        assert backend is not None
 
-    x0 = numpy.arange(axlens[1], dtype=SherpaFloat) + 1.
-    x1 = numpy.arange(axlens[0], dtype=SherpaFloat) + 1.
+    block, filename = backend.get_image_data(arg)
+
+    img = block.image
+    ny, nx = img.shape
+    x0 = numpy.arange(nx, dtype=SherpaFloat) + 1.
+    x1 = numpy.arange(ny, dtype=SherpaFloat) + 1.
     x0, x1 = reshape_2d_arrays(x0, x1)
 
-    data['y'] = data['y'].ravel()
-    data['shape'] = axlens
+    data = {"y": img.ravel(), "shape": img.shape}
 
     # We have to be careful with issubclass checks because
     #
@@ -387,11 +392,14 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     #    Data2D        DataIMG
     #    DataIMG       DataIMGInt
     #
-    # Drop the transform fields if the object doesn't support them.
-    #
-    if not issubclass(dstype, DataIMG):
-        for name in ['eqpos', 'sky', 'header']:
-            data.pop(name, None)
+    if issubclass(dstype, DataIMG):
+        header = {}
+        for item in _remove_structural_items(block.header):
+            header[item.name] = item.value
+
+        data["header"] = header
+        data["sky"] = block.sky
+        data["eqpos"] = block.eqpos
 
     # What are the independent axes?
     #
@@ -401,17 +409,16 @@ def read_image(arg, coord='logical', dstype=DataIMG):
         indep = [x0, x1]
 
     # Note that we only set the coordinates after creating the
-    # dataset, which assumes that data['x'] and data['y'] are always
-    # in logical units. They may not be, but in this case we need to
-    # drop the logical/physical/world conversion system (or improve it
-    # to be more flexible). This is an attempt to resolve issue #1762,
+    # dataset, which assumes that the independent axes are always in
+    # logical units. They may not be, but in this case we need to drop
+    # the logical/physical/world conversion system (or improve it to
+    # be more flexible). This is an attempt to resolve issue #1762,
     # where sherpa.astro.ui.load_image(infile, coord="physical") did
     # not behave sensibly (likely due to #1414 which was to address
     # issue #1380).
     #
     dataset = dstype(filename, *indep, **data)
-
-    if issubclass(dstype, DataIMG):
+    if isinstance(dataset, DataIMG):
         dataset.set_coord(coord)
 
     return dataset
@@ -1056,20 +1063,25 @@ def _pack_table(dataset: Data1D) -> BlockList:
     return BlockList(header=empty, blocks=blocks)
 
 
-def _pack_image(dataset):
-    if not isinstance(dataset, (Data2D, DataIMG)):
+def _pack_image(dataset: Data2D) -> ImageBlock:
+    """Extract the needed data of a 2D dataset."""
+
+    if not isinstance(dataset, Data2D):
         raise IOErr('notimage', dataset.name)
 
-    data = {}
+    img = dataset.get_img()
 
-    # Data2D does not have a header
-    header = getattr(dataset, "header", {})
+    # Data2D does not have a header or sky/eqpos
+    #
+    hdr = getattr(dataset, "header", {})
+    sky = getattr(dataset, "sky", None)
+    eqpos = getattr(dataset, "eqpos", None)
 
-    data['pixels'] = numpy.asarray(dataset.get_img())
-    data['sky'] = getattr(dataset, 'sky', None)
-    data['eqpos'] = getattr(dataset, 'eqpos', None)
+    header = Header([HeaderItem(name, value)
+                     for name, value in hdr.items()])
 
-    return data, header
+    return ImageBlock("IMAGE", header=header, image=img,
+                      sky=sky, eqpos=eqpos)
 
 
 # This is to match NAXIS1 and the like, but we do not make it
@@ -1142,43 +1154,6 @@ def _is_structural_keyword(key: str) -> bool:
                         "DSTYP", "DSVAL", "DSFORM", "DSUNIT", "TDBIN",
                         "MTYPE", "MFORM",
                         ]
-
-
-def _remove_structural_keywords(header: dict[str, Any]) -> dict[str, Any]:
-    """Remove FITS keywords relating to file structure.
-
-    The aim is to allow writing out a header that was taken from a
-    file and not copy along "unwanted" values, since the data may
-    no-longer be relevant. Not all FITS header keys may be passed
-    along by a particular backend (e.g. crates).
-
-    Parameters
-    ----------
-    header : dict[str, Any]
-       The input header
-
-    Returns
-    -------
-    nheader : dict[str, Any]
-       Header with unwanted keywords returned (including those
-       set to None).
-
-    Notes
-    -----
-    The tricky part is knowing what is unwanted, since copying
-    along a WCS transform for a column may be useful, or may
-    break things.
-
-    """
-
-    out = {}
-    for key, value in header.items():
-        if value is None or _is_structural_keyword(key):
-            continue
-
-        out[key] = value
-
-    return out
 
 
 def _remove_structural_items(header: Header) -> list[HeaderItem]:
@@ -2055,7 +2030,10 @@ def write_table(filename: str,
     backend.set_table_data(filename, data, ascii=ascii, clobber=clobber)
 
 
-def write_image(filename, dataset, ascii=True, clobber=False):
+def write_image(filename: str,
+                dataset: Data2D,
+                ascii: bool = True,
+                clobber: bool = False) -> None:
     """Write out an image.
 
     Parameters
@@ -2075,8 +2053,11 @@ def write_image(filename, dataset, ascii=True, clobber=False):
     read_image
 
     """
-    data, hdr = _pack_image(dataset)
-    backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber)
+    if TYPE_CHECKING:
+        assert backend is not None
+
+    data = _pack_image(dataset)
+    backend.set_image_data(filename, data, ascii=ascii, clobber=clobber)
 
 
 def write_pha(filename: str,
@@ -2208,7 +2189,7 @@ def pack_table(dataset:Data1D):
     return backend.pack_table_data(data)
 
 
-def pack_image(dataset):
+def pack_image(dataset: Data2D):
     """Convert a Sherpa data object into an I/O item (image).
 
     Parameters
@@ -2235,8 +2216,11 @@ def pack_image(dataset):
     >>> img = pack_image(d)
 
     """
-    data, hdr = _pack_image(dataset)
-    return backend.pack_image_data(data, hdr)
+    if TYPE_CHECKING:
+        assert backend is not None
+
+    data = _pack_image(dataset)
+    return backend.pack_image_data(data)
 
 
 def pack_pha(dataset: DataPHA):
