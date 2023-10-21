@@ -36,7 +36,7 @@ from ..data import Data1D
 
 from .types import NamesType, HdrTypeArg, HdrType, \
     ColumnsType, ColumnsTypeArg, DataTypeArg, DataType, \
-    Header, BlockList, TableBlock
+    Header, BlockList, TableBlock, ImageBlock
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -158,7 +158,7 @@ def get_header_data(arg,
 def get_image_data(arg,
                    make_copy: bool = True,
                    fix_type: bool = True
-                   ) -> tuple[DataType, str]:
+                   ) -> tuple[ImageBlock, str]:
     """Read image data.
 
     Parameters
@@ -180,9 +180,7 @@ def get_image_data(arg,
     Returns
     -------
     data, filename
-        The data, as a dictionary, and the filename. The keys of the
-        dictionary match the arguments when creating a
-        sherpa.astro.data.DataIMG object.
+        The data and the filename.
 
     Raises
     ------
@@ -398,19 +396,15 @@ def pack_table_data(blocks: BlockList) -> Any:
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_image_data(data: DataTypeArg,
-                    header: HdrTypeArg) -> Any:
+def pack_image_data(data: ImageBlock) -> Any:
     """Create the image data.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    data : dict
-        The image data, where the keys are arguments used to create a
-        sherpa.astro.data.DataIMG object.
-    header : dict
-        The header information to include.
+    data : ImageBlock
+        The image data.
 
     Returns
     -------
@@ -527,25 +521,22 @@ def set_table_data(filename: str,
 
 
 def set_image_data(filename: str,
-                   data: DataTypeArg,
-                   header: HdrTypeArg,
+                   data: ImageBlock,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the image data.
 
     .. versionchanged:: 4.17.0
        The packup argument has been removed as `pack_image_data`
-       should be used instead.
+       should be used instead, and the data is now set with the data
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    data : dict
-        The image data, where the keys are arguments used to create a
-        sherpa.astro.data.DataIMG object.
-    header : dict
-        The header information to include.
+    data : ImageBlock
+        The image data.
     ascii : bool, optional
         Is the file to be written out as a text file (`True`) or a
         binary file? The default is `False`.
