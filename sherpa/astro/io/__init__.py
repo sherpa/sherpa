@@ -334,9 +334,10 @@ def read_ascii(filename: str,
     return dstype(name, *cols)
 
 
+# TODO: Can this read in Data2D or only DataIMG?
 def read_image(arg,
                coord: str = 'logical',
-               dstype=DataIMG) -> Data2D:
+               dstype: Type[Data2D] = DataIMG) -> Data2D:
     """Create an image dataset from a file.
 
     .. versionchanged:: 4.16.0
@@ -351,7 +352,7 @@ def read_image(arg,
     coord : {'logical', 'physical', 'world'}, optional
         The type of axis coordinates to use. An error is raised if the
         file does not contain the necessary metadata for the selected
-        coordinate system.
+        coordinate system or the selected dstype does not support it.
     dstype : optional
         The data type to create (it is expected to follow the
         `sherpa.data.Data` interface).
@@ -379,16 +380,16 @@ def read_image(arg,
     >>> d = read_image('img.fits', coord='physical')
 
     """
-    data, filename = backend.get_image_data(arg)
-    data['header'] = _remove_structural_keywords(data['header'])
-    axlens = data['y'].shape
 
-    x0 = np.arange(axlens[1], dtype=SherpaFloat) + 1.
-    x1 = np.arange(axlens[0], dtype=SherpaFloat) + 1.
+    block, filename = backend.get_image_data(arg)
+
+    img = block.image
+    ny, nx = img.shape
+    x0 = np.arange(nx, dtype=SherpaFloat) + 1.
+    x1 = np.arange(ny, dtype=SherpaFloat) + 1.
     x0, x1 = reshape_2d_arrays(x0, x1)
 
-    data['y'] = data['y'].ravel()
-    data['shape'] = axlens
+    data = {"y": img.ravel(), "shape": img.shape}
 
     # We have to be careful with issubclass checks because
     #
@@ -397,11 +398,14 @@ def read_image(arg,
     #    Data2D        DataIMG
     #    DataIMG       DataIMGInt
     #
-    # Drop the transform fields if the object doesn't support them.
-    #
-    if not issubclass(dstype, DataIMG):
-        for name in ['eqpos', 'sky', 'header']:
-            data.pop(name, None)
+    if issubclass(dstype, DataIMG):
+        header = {}
+        for item in _remove_structural_items(block.header):
+            header[item.name] = item.value
+
+        data["header"] = header
+        data["sky"] = block.sky
+        data["eqpos"] = block.eqpos
 
     # What are the independent axes?
     #
@@ -418,10 +422,10 @@ def read_image(arg,
                           "dstype is not derived from Data2D")
 
     # Note that we only set the coordinates after creating the
-    # dataset, which assumes that data['x'] and data['y'] are always
-    # in logical units. They may not be, but in this case we need to
-    # drop the logical/physical/world conversion system (or improve it
-    # to be more flexible). This is an attempt to resolve issue #1762,
+    # dataset, which assumes that the independent axes are always in
+    # logical units. They may not be, but in this case we need to drop
+    # the logical/physical/world conversion system (or improve it to
+    # be more flexible). This is an attempt to resolve issue #1762,
     # where sherpa.astro.ui.load_image(infile, coord="physical") did
     # not behave sensibly (likely due to #1414 which was to address
     # issue #1380).
@@ -1067,20 +1071,25 @@ def _pack_table(dataset: Data1D) -> BlockList:
     return BlockList(header=empty, blocks=blocks)
 
 
-def _pack_image(dataset: Data2D) -> tuple[DataType, HdrType]:
-    if not isinstance(dataset, (Data2D, DataIMG)):
+def _pack_image(dataset: Data2D) -> ImageBlock:
+    """Extract the needed data of a 2D dataset."""
+
+    if not isinstance(dataset, Data2D):
         raise IOErr('notimage', dataset.name)
 
-    data: DataType = {}
+    img = dataset.get_img()
 
-    # Data2D does not have a header
-    header = getattr(dataset, "header", {})
+    # Data2D does not have a header or sky/eqpos
+    #
+    hdr = getattr(dataset, "header", {})
+    sky = getattr(dataset, "sky", None)
+    eqpos = getattr(dataset, "eqpos", None)
 
-    data['pixels'] = np.asarray(dataset.get_img())
-    data['sky'] = getattr(dataset, 'sky', None)
-    data['eqpos'] = getattr(dataset, 'eqpos', None)
+    header = Header([HeaderItem(name, value)
+                     for name, value in hdr.items()])
 
-    return data, header
+    return ImageBlock("IMAGE", header=header, image=img,
+                      sky=sky, eqpos=eqpos)
 
 
 # This is to match NAXIS1 and the like, but we do not make it
@@ -1153,44 +1162,6 @@ def _is_structural_keyword(key: str) -> bool:
                         "DSTYP", "DSVAL", "DSFORM", "DSUNIT", "TDBIN",
                         "MTYPE", "MFORM",
                         ]
-
-
-# This is being replaced by _remove_structural_items
-#
-def _remove_structural_keywords(header: HdrTypeArg) -> HdrType:
-    """Remove FITS keywords relating to file structure.
-
-    The aim is to allow writing out a header that was taken from a
-    file and not copy along "unwanted" values, since the data may
-    no-longer be relevant. Not all FITS header keys may be passed
-    along by a particular backend (e.g. crates).
-
-    Parameters
-    ----------
-    header : dict[str, Any]
-       The input header
-
-    Returns
-    -------
-    nheader : dict[str, Any]
-       Header with unwanted keywords removed.
-
-    Notes
-    -----
-    The tricky part is knowing what is unwanted, since copying
-    along a WCS transform for a column may be useful, or may
-    break things.
-
-    """
-
-    out = {}
-    for key, value in header.items():
-        if value is None or _is_structural_keyword(key):
-            continue
-
-        out[key] = value
-
-    return out
 
 
 def _remove_structural_items(header: Header) -> list[HeaderItem]:
@@ -2103,8 +2074,9 @@ def write_image(filename: str,
     read_image
 
     """
-    data, hdr = _pack_image(dataset)
-    backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber)
+
+    data = _pack_image(dataset)
+    backend.set_image_data(filename, data, ascii=ascii, clobber=clobber)
 
 
 def write_pha(filename: str,
@@ -2252,8 +2224,9 @@ def pack_image(dataset: Data2D) -> Any:
     >>> img = pack_image(d)
 
     """
-    data, hdr = _pack_image(dataset)
-    return backend.pack_image_data(data, hdr)
+
+    data = _pack_image(dataset)
+    return backend.pack_image_data(data)
 
 
 def pack_pha(dataset: DataPHA) -> Any:
