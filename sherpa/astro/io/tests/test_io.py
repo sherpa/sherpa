@@ -559,3 +559,21 @@ def test_read_table_pha(make_data_path):
     assert tbl.y[-1] == pytest.approx(128)
     assert tbl.y[:-1].max() == pytest.approx(78)
     assert np.argmax(tbl.y[:-1]) == 74
+
+
+@requires_data
+@requires_fits
+def test_read_ascii_3_col(make_data_path):
+    """Found when working on #1921 so explicitly test this case."""
+
+    infile = make_data_path("data1.dat")
+    tbl = io.read_ascii(infile, 3)
+    assert isinstance(tbl, Data1D)
+    assert tbl.name.find("/data1.dat")
+    assert tbl.x == pytest.approx(np.arange(0.5, 11.5))
+    assert tbl.y == pytest.approx([1.6454, 1.7236, 1.9472,
+                                   2.2348, 2.6187, 2.8642,
+                                   3.1263, 3.2073, 3.2852,
+                                   3.3092, 3.4496])
+    assert tbl.staterror == pytest.approx(0.04114 * np.ones(11))
+    assert tbl.syserror is None
