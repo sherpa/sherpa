@@ -498,7 +498,7 @@ def _read_ancillary(data, key, label, dname,
 
         out = read_func(data[key])
         if output_once:
-            info(f'read {label} file {data[key]}')
+            info('read %s file %s', label, data[key])
 
     except Exception as exc:
         if output_once:
@@ -580,9 +580,11 @@ def read_pha(arg, use_errors=False, use_background=False):
                 bkg_datasets = []
                 # Do not read backgrounds of backgrounds
                 if not use_background:
-                    bkg_datasets = read_pha(data['backfile'], use_errors, True)
+                    bkg_datasets = read_pha(data['backfile'],
+                                            use_errors=use_errors,
+                                            use_background=True)
                     if output_once:
-                        info(f"read background file {data['backfile']}")
+                        info("read background file %s", data['backfile'])
 
                 if numpy.iterable(bkg_datasets):
                     for bkg_dataset in bkg_datasets:
@@ -615,7 +617,9 @@ def read_pha(arg, use_errors=False, use_background=False):
                               header=data['header'])
                 bkg.set_response(arf, rmf)
                 if output_once:
-                    info(f"read {bkg_type} into a dataset from file {filename}")
+                    info("read %s into a dataset from file %s",
+                         bkg_type, filename)
+
                 backgrounds.append(bkg)
 
         for k in ['backfile', 'arffile', 'rmffile', 'backscup', 'backscdn',
@@ -1230,7 +1234,6 @@ def _make_int_vlf(rows):
 
     """
 
-    nrows = len(rows)
     maxval = 0
     for row in rows:
         if len(row) == 0:
