@@ -1700,7 +1700,7 @@ def pack_table(dataset):
     """
     data = _pack_table(dataset)
     names = list(data.keys())
-    return backend.set_table_data('', data, names, packup=True)
+    return backend.pack_table_data(data, names)
 
 
 def pack_image(dataset):
@@ -1731,7 +1731,7 @@ def pack_image(dataset):
 
     """
     data, hdr = _pack_image(dataset)
-    return backend.set_image_data('', data, hdr, packup=True)
+    return backend.pack_image_data(data, hdr)
 
 
 def pack_pha(dataset):
@@ -1754,8 +1754,7 @@ def pack_pha(dataset):
     """
     data, hdr = _pack_pha(dataset)
     col_names = list(data.keys())
-    return backend.set_pha_data('', data, col_names, header=hdr,
-                                packup=True)
+    return backend.pack_pha_data(data, col_names, header=hdr)
 
 
 def read_table_blocks(arg, make_copy=False):

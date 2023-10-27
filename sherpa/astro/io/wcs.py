@@ -20,14 +20,14 @@
 
 import logging
 
-import numpy
+import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit
 
 warning = logging.getLogger(__name__).warning
 
 try:
-    from sherpa.astro.utils._wcs import pix2world, world2pix
+    from sherpa.astro.utils._wcs import pix2world, world2pix  # type: ignore
 except ImportError:
     warning('WCS support is not available')
 
@@ -44,9 +44,9 @@ class WCS(NoNewAttributesAfterInit):
                  crota=0.0, epoch=2000.0, equinox=2000.0):
         self.name = name
         self.type = type
-        self.crval = numpy.asarray(crval, dtype=float)
-        self.crpix = numpy.asarray(crpix, dtype=float)
-        self.cdelt = numpy.asarray(cdelt, dtype=float)
+        self.crval = np.asarray(crval, dtype=float)
+        self.crpix = np.asarray(crpix, dtype=float)
+        self.cdelt = np.asarray(cdelt, dtype=float)
         self.crota = crota
         self.epoch = epoch
         self.equinox = equinox
@@ -58,9 +58,9 @@ class WCS(NoNewAttributesAfterInit):
 
     def __str__(self):
         val = [self.name,
-               ' crval    = %s' % numpy.array2string(self.crval, separator=',', precision=4, suppress_small=False),
-               ' crpix    = %s' % numpy.array2string(self.crpix, separator=',', precision=4, suppress_small=False),
-               ' cdelt    = %s' % numpy.array2string(self.cdelt, separator=',', precision=4, suppress_small=False)]
+               ' crval    = %s' % np.array2string(self.crval, separator=',', precision=4, suppress_small=False),
+               ' crpix    = %s' % np.array2string(self.crpix, separator=',', precision=4, suppress_small=False),
+               ' cdelt    = %s' % np.array2string(self.cdelt, separator=',', precision=4, suppress_small=False)]
 
         if self.type == 'WCS':
             val.append(' crota    = %g' % self.crota)
