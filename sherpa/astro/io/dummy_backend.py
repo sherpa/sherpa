@@ -19,15 +19,16 @@
 #
 '''A dummy backend for I/O.
 
-This backend provides no functionality and raises an error if any of its
-functions are used. It is provided as a model for what is needed in a
-backend, even if it does nothing, and to allow `sherpa.astro.io` to be
-imported even if no usable backend is available.
+This backend provides no functionality and raises an error if any of
+its functions are used. It is provided as a model for what routines
+are needed in a backend, even if it does nothing, and to allow
+`sherpa.astro.io` to be imported even if no usable backend is
+available.
 
 '''
 
 import logging
-from typing import Optional, Sequence
+from typing import Any, Optional, Sequence
 
 import numpy as np
 
@@ -37,8 +38,12 @@ from .types import NamesType, HdrTypeArg, HdrType, \
 from .xstable import TableHDU
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
-           'get_column_data', 'get_ascii_data',
-           'get_arf_data', 'get_rmf_data', 'get_pha_data',
+           'get_column_data', 'get_ascii_data', 'get_arf_data',
+           'get_rmf_data', 'get_pha_data',
+           #
+           'pack_table_data', 'pack_image_data', 'pack_pha_data',
+           'pack_arf_data', 'pack_rmf_data', 'pack_hdus',
+           #
            'set_table_data', 'set_image_data', 'set_pha_data',
            'set_arf_data', 'set_rmf_data', 'set_hdus')
 
@@ -381,18 +386,159 @@ def get_pha_data(arg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-# Note that we do not describe the packup arguments as the plan is to
-# remove them. This will then make the return value easier to type (as
-# it will be None rather than Optional[Any]).
-#
+def pack_table_data(data: ColumnsTypeArg,
+                    col_names: NamesType,
+                    header: Optional[HdrTypeArg] = None) -> Any:
+    """Create the tabular data.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    data : dict
+        The table data, where the key is the column name and the value
+        the data.
+    col_names : sequence of str
+        The column names from data to use (this also sets the order).
+    header : dict or None, optional
+        Any header information to include.
+
+    Returns
+    -------
+    table
+        A data structure used by the backend to represent tabular data.
+
+    """
+    raise NotImplementedError('No usable I/O backend was imported.')
+
+
+def pack_image_data(data: DataTypeArg,
+                    header: HdrTypeArg) -> Any:
+    """Create the image data.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    data : dict
+        The image data, where the keys are arguments used to create a
+        sherpa.astro.data.DataIMG object.
+    header : dict
+        The header information to include.
+
+    Returns
+    -------
+    image
+        A data structure used by the backend to represent image data.
+
+    """
+    raise NotImplementedError('No usable I/O backend was imported.')
+
+
+def pack_pha_data(data: ColumnsTypeArg,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None) -> Any:
+    """Create the PHA.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    data : dict
+        The table data, where the key is the column name and the value
+        the data.
+    col_names : sequence of str
+        The column names from data to use (this also sets the order).
+    header : dict or None, optional
+        Any header information to include.
+
+    Returns
+    -------
+    pha
+        A data structure used by the backend to represent PHA data.
+
+    """
+    raise NotImplementedError('No usable I/O backend was imported.')
+
+
+def pack_arf_data(data: ColumnsTypeArg,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None) -> Any:
+    """Create the ARF.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    data : dict
+        The table data, where the key is the column name and the value
+        the data.
+    col_names : sequence of str
+        The column names from data to use (this also sets the order).
+    header : dict or None, optional
+        Any header information to include.
+
+    Returns
+    -------
+    arf
+        A data structure used by the backend to represent ARF data.
+
+    """
+    raise NotImplementedError('No usable I/O backend was imported.')
+
+
+def pack_rmf_data(blocks) -> Any:
+    """Create the RMF.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    blocks : sequence of pairs
+        The RMF data, stored as pairs of (data, header), where data is
+        a dictionary of column name (keys) and values, and header is a
+        dictionary of key and values. The first element is the MATRIX
+        block and the second is for the EBOUNDS block.
+
+    Returns
+    -------
+    rmf
+        A data structure used by the backend to represent RMF data.
+
+    """
+    raise NotImplementedError('No usable I/O backend was imported.')
+
+
+def pack_hdus(blocks: Sequence[TableHDU]) -> Any:
+    """Create a dataset.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    blocks : sequence of TableHDU
+        The blocks (HDUs) to store.
+
+    Returns
+    -------
+    hdus
+        A data structure used by the backend to represent the data.
+
+    """
+    raise NotImplementedError('No usable I/O backend was imported.')
+
+
 def set_table_data(filename: str,
                    data: ColumnsTypeArg,
                    col_names: NamesType,
                    header: Optional[HdrTypeArg] = None,
                    ascii: bool = False,
-                   clobber: bool = False,
-                   packup: bool = False):
+                   clobber: bool = False) -> None:
     """Write out the tabular data.
+
+    .. versionchanged:: 4.17.0
+       The packup argument has been removed as `pack_table_data`
+       should be used instead.
 
     Parameters
     ----------
@@ -421,9 +567,12 @@ def set_image_data(filename: str,
                    data: DataTypeArg,
                    header: HdrTypeArg,
                    ascii: bool = False,
-                   clobber: bool = False,
-                   packup: bool = False):
+                   clobber: bool = False) -> None:
     """Write out the image data.
+
+    .. versionchanged:: 4.17.0
+       The packup argument has been removed as `pack_image_data`
+       should be used instead.
 
     Parameters
     ----------
@@ -451,9 +600,12 @@ def set_pha_data(filename: str,
                  col_names: NamesType,
                  header: Optional[HdrTypeArg] = None,
                  ascii: bool = False,
-                 clobber: bool = False,
-                 packup: bool = False):
+                 clobber: bool = False) -> None:
     """Write out the PHA.
+
+    .. versionchanged:: 4.17.0
+       The packup argument has been removed as `pack_pha_data`
+       should be used instead.
 
     Parameters
     ----------
@@ -483,9 +635,12 @@ def set_arf_data(filename: str,
                  col_names: NamesType,
                  header: Optional[HdrTypeArg] = None,
                  ascii: bool = False,
-                 clobber: bool = False,
-                 packup: bool = False):
+                 clobber: bool = False) -> None:
     """Write out the ARF.
+
+    .. versionchanged:: 4.17.0
+       The packup argument has been removed as `pack_arf_data`
+       should be used instead.
 
     Parameters
     ----------
@@ -514,6 +669,10 @@ def set_rmf_data(filename: str,
                  blocks,
                  clobber: bool = False) -> None:
     """Write out the RMF.
+
+    .. versionchanged:: 4.17.0
+       The packup argument has been removed as `pack_rmf_data`
+       should be used instead.
 
     Parameters
     ----------

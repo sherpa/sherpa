@@ -39,7 +39,7 @@ References
 
 import logging
 import os
-from typing import Any, Optional, Sequence, Union
+from typing import Any, Mapping, Optional, Sequence, Union
 import warnings
 
 import numpy as np
@@ -55,7 +55,8 @@ from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
 from sherpa.io import get_ascii_data, write_arrays
 
-from .types import HdrType, KeyType, NamesType
+from .types import ColumnsType, DataType, HdrType, HdrTypeArg, \
+    KeyType, NamesType
 from .xstable import HeaderItem, TableHDU
 
 warning = logging.getLogger(__name__).warning
@@ -72,6 +73,8 @@ except ImportError:
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
+           'pack_table_data', 'pack_arf_data', 'pack_rmf_data',
+           'pack_image_data', 'pack_hdus',
            'set_table_data', 'set_image_data', 'set_pha_data',
            'set_arf_data', 'set_rmf_data', 'set_hdus')
 
@@ -288,7 +291,12 @@ def open_fits(filename: str) -> fits.HDUList:
     return out
 
 
-def read_table_blocks(arg, make_copy=False):
+def read_table_blocks(arg: DatasetType,
+                      make_copy: bool = False
+                      ) -> tuple[str,
+                                 dict[int, ColumnsType],
+                                 dict[int, HdrType]]:
+    """Read in tabular data with no restrictions on the columns."""
 
     # This sets nobinary=True to match the original version of
     # the code, which did not use _get_file_contents.
@@ -297,8 +305,8 @@ def read_table_blocks(arg, make_copy=False):
                                                exptype="BinTableHDU",
                                                nobinary=True)
 
-    cols = {}
-    hdr = {}
+    cols: dict[int, ColumnsType] = {}
+    hdr: dict[int, HdrType] = {}
     try:
         for blockidx, hdu in enumerate(hdus, 1):
             hdr[blockidx] = {}
@@ -324,7 +332,8 @@ def read_table_blocks(arg, make_copy=False):
 
 def _get_file_contents(arg: DatasetType,
                        exptype: str = "PrimaryHDU",
-                       nobinary: bool = False) -> tuple[fits.HDUList, str, bool]:
+                       nobinary: bool = False
+                       ) -> tuple[fits.HDUList, str, bool]:
     """Read in the contents if needed.
 
     Set nobinary to True to avoid checking that the input
@@ -381,7 +390,10 @@ def _find_binary_table(tbl: fits.HDUList,
     raise IOErr('badext', filename)
 
 
-def get_header_data(arg, blockname=None, hdrkeys=None):
+def get_header_data(arg: DatasetType,
+                    blockname: Optional[str] = None,
+                    hdrkeys: Optional[NamesType] = None
+                    ) -> HdrType:
     """Read in the header data."""
 
     tbl, filename, close = _get_file_contents(arg, exptype="BinTableHDU")
@@ -405,10 +417,9 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
     return hdr
 
 
-def get_column_data(*args):
-    """
-    get_column_data( *NumPy_args )
-    """
+def get_column_data(*args) -> list[np.ndarray]:
+    """Extract the column data."""
+
     # args is passed as type list
     if len(args) == 0:
         raise IOErr('noarrays')
@@ -427,11 +438,15 @@ def get_column_data(*args):
     return cols
 
 
-def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
-                   blockname=None, hdrkeys=None):
-    """
-    arg is a filename or a HDUList object.
-    """
+def get_table_data(arg: DatasetType,
+                   ncols: int = 1,
+                   colkeys: Optional[NamesType] = None,
+                   make_copy: bool = False,
+                   fix_type: bool = False,
+                   blockname: Optional[str] = None,
+                   hdrkeys: Optional[NamesType] = None
+                   ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
+    """Read columns."""
 
     tbl, filename, close = _get_file_contents(arg, exptype="BinTableHDU")
 
@@ -468,10 +483,11 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
     return colkeys, cols, filename, hdr
 
 
-def get_image_data(arg, make_copy=False):
-    """
-    arg is a filename or a HDUList object
-    """
+def get_image_data(arg: DatasetType,
+                   make_copy: bool = False
+                   ) -> tuple[DataType, str]:
+    """Read image data."""
+
     hdus, filename, close = _get_file_contents(arg)
 
     #   FITS uses logical-to-world where we use physical-to-world.
@@ -505,7 +521,7 @@ def get_image_data(arg, make_copy=False):
     #
 
     try:
-        data = {}
+        data: DataType = {}
 
         # Look for data in the primary or first block.
         #
@@ -610,10 +626,10 @@ def _has_ogip_type(hdus: fits.HDUList,
     return None
 
 
-def get_arf_data(arg, make_copy=False):
-    """
-    arg is a filename or a HDUList object
-    """
+def get_arf_data(arg: DatasetType,
+                 make_copy: bool = False
+                 ) -> tuple[DataType, str]:
+    """Read in the ARF."""
 
     arf, filename, close = _get_file_contents(arg,
                                               exptype="BinTableHDU",
@@ -653,7 +669,7 @@ def get_arf_data(arg, make_copy=False):
     return data, filename
 
 
-def _read_col(hdu, name):
+def _read_col(hdu: fits.BinTableHDU, name: str) -> np.ndarray:
     """A specialized form of _require_col
 
     There is no attempt to convert from a variable-length field
@@ -720,7 +736,8 @@ def _find_matrix_blocks(filename: str,
     return blocks
 
 
-def _read_rmf_data(arg):
+def _read_rmf_data(arg: DatasetType
+                   ) -> tuple[DataType, str]:
     """Read in the data from the RMF."""
 
     rmf, filename, close = _get_file_contents(arg,
@@ -746,7 +763,7 @@ def _read_rmf_data(arg):
         # this conversion needs to be done after cleaning up the
         # data.
         #
-        data = {}
+        data: DataType = {}
         data['detchans'] = SherpaUInt(_require_key(hdu, 'DETCHANS'))
         data['energ_lo'] = _read_col(hdu, 'ENERG_LO')  # SherpaFloat
         data['energ_hi'] = _read_col(hdu, 'ENERG_HI')  # SherpaFloat
@@ -797,8 +814,10 @@ def _read_rmf_data(arg):
     return data, filename
 
 
-def get_rmf_data(arg, make_copy=False):
-    """arg is a filename or a HDUList object.
+def get_rmf_data(arg: DatasetType,
+                 make_copy: bool = False
+                 ) -> tuple[DataType, str]:
+    """Read in the RMF.
 
     Notes
     -----
@@ -924,10 +943,11 @@ def get_rmf_data(arg, make_copy=False):
     return data, filename
 
 
-def get_pha_data(arg, make_copy=False, use_background=False):
-    """
-    arg is a filename or a HDUList object
-    """
+def get_pha_data(arg: DatasetType,
+                 make_copy: bool = False,
+                 use_background: bool = False
+                 ) -> tuple[list[DataType], str]:
+    """Read in the PHA."""
 
     pha, filename, close = _get_file_contents(arg,
                                               exptype="BinTableHDU")
@@ -950,7 +970,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
         datasets = []
 
         if _try_col(hdu, 'SPEC_NUM') is None:
-            data = {}
+            data: DataType = {}
 
             # Create local versions of the "try" routines.
             #
@@ -1081,9 +1101,6 @@ def get_pha_data(arg, make_copy=False, use_background=False):
                 if int(channel[idx][0]) == 0:
                     channel[idx] += 1
 
-            # if ((tlmin is not None) and tlmin == 0) or int(channel[0]) == 0:
-            #     channel += 1
-
             # Why does this convert to SherpaFloat?
             counts = try_sfloat("COUNTS")
             staterror = _try_vec(hdu, 'STAT_ERR', size=num)
@@ -1115,7 +1132,8 @@ def get_pha_data(arg, make_copy=False, use_background=False):
                           counts, staterror, syserror, background_up,
                           background_down, bin_lo, bin_hi, grouping, quality,
                           orders, parts, specnums, srcids):
-                idata = {}
+
+                idata: DataType = {}
 
                 idata['exposure'] = exposure
                 # idata['poisserr'] = poisserr
@@ -1163,7 +1181,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
 # Write Functions
 
 def _create_table(names: NamesType,
-                  data: dict[str, Optional[np.ndarray]]) -> Table:
+                  data: Mapping[str, Optional[np.ndarray]]) -> Table:
     """Create a Table.
 
     The idea is that by going via a Table we let the AstroPy
@@ -1205,18 +1223,10 @@ def check_clobber(filename: str, clobber: bool) -> None:
     raise IOErr("filefound", filename)
 
 
-def set_table_data(filename, data, col_names, header=None,
-                   ascii=False, clobber=False, packup=False) -> Optional[fits.BinTableHDU]:
-
-    if not packup:
-        check_clobber(filename, clobber)
+def pack_table_data(data, col_names, header=None) -> fits.BinTableHDU:
+    """Pack up the table data."""
 
     tbl = _create_table(col_names, data)
-    if ascii:
-        tbl.write(filename, format='ascii.commented_header',
-                  overwrite=clobber)
-        return None
-
     hdu = fits.table_to_hdu(tbl)
 
     # Add in the header. We should special case the HISTORY/COMMENT
@@ -1231,30 +1241,41 @@ def set_table_data(filename, data, col_names, header=None,
     if header is not None:
         _update_header(hdu, header)
 
-    if packup:
-        return hdu
+    return hdu
 
+
+def set_table_data(filename: str,
+                   data, col_names, header=None,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
+    """Write out the table data."""
+
+    check_clobber(filename, clobber)
+
+    if ascii:
+        tbl = _create_table(col_names, data)
+        tbl.write(filename, format='ascii.commented_header',
+                  overwrite=clobber)
+        return
+
+    hdu = pack_table_data(data, col_names, header)
     hdu.writeto(filename, overwrite=True)
-    return None
 
 
-def _create_header(header: HdrType) -> fits.Header:
+def _create_header(header: HdrTypeArg) -> fits.Header:
     """Create a FITS header with the contents of header,
     the Sherpa representation of the key,value store.
     """
 
     hdrlist = fits.Header()
     for key, value in header.items():
-        if value is None:
-            continue
-
         _add_keyword(hdrlist, key, value)
 
     return hdrlist
 
 
 def _update_header(hdu: HDUType,
-                   header: dict[str, Optional[KeyType]]) -> None:
+                   header: Mapping[str, Optional[KeyType]]) -> None:
     """Update the header of the HDU.
 
     Unlike the dict update method, this is left biased, in that
@@ -1280,46 +1301,52 @@ def _update_header(hdu: HDUType,
         hdu.header[key] = value
 
 
-def set_arf_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False, packup=False) -> Optional[fits.BinTableHDU]:
-    """Create an ARF"""
+def pack_arf_data(data, col_names, header) -> fits.BinTableHDU:
+    """Pack the ARF"""
+
+    return pack_table_data(data, col_names, header)
+
+
+def set_arf_data(filename: str,
+                 data, col_names, header=None,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
+    """Write out the ARF"""
 
     if header is None:
         raise ArgumentTypeErr("badarg", "header", "set")
 
-    # Currently we can use the same logic as set_table_data
-    return set_table_data(filename, data, col_names, header=header,
-                          ascii=ascii, clobber=clobber, packup=packup)
+    # This does not use pack_arf_data as we need to deal with ASCII
+    # support.
+    #
+    set_table_data(filename, data, col_names, header=header,
+                   ascii=ascii, clobber=clobber)
 
 
-def set_pha_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False, packup=False) -> Optional[fits.BinTableHDU]:
-    """Create a PHA dataset/file
+def pack_pha_data(data, col_names, header) -> fits.BinTableHDU:
+    """Pack the PHA data."""
 
-    The header argument must be set as this routine does no validation
-    of its contents.
+    return pack_table_data(data, col_names, header)
 
-    """
+
+def set_pha_data(filename: str,
+                 data, col_names, header=None,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
+    """ Write out the PHA."""
 
     if header is None:
         raise ArgumentTypeErr("badarg", "header", "set")
 
-    # Currently we can use the same logic as set_table_data
-    return set_table_data(filename, data, col_names, header=header,
-                          ascii=ascii, clobber=clobber, packup=packup)
+    # This does not use pack_pha_data as we need to deal with ASCII
+    # support.
+    #
+    set_table_data(filename, data, col_names, header=header,
+                   ascii=ascii, clobber=clobber)
 
 
-def set_rmf_data(filename, blocks, clobber=False) -> None:
-    """Save the RMF data to disk.
-
-    Unlike the other save_*_data calls this does not support the ascii
-    or packup arguments. It also relies on the caller to have set up
-    the headers and columns correctly apart for variable-length fields,
-    which are limited to F_CHAN, N_CHAN, and MATRIX.
-
-    """
-
-    check_clobber(filename, clobber)
+def pack_rmf_data(blocks) -> fits.HDUList:
+    """Pack up the RMF data."""
 
     # For now assume only two blocks:
     #    MATRIX
@@ -1427,20 +1454,28 @@ def set_rmf_data(filename, blocks, clobber=False) -> None:
     _update_header(ebounds_hdu, ebounds_header)
 
     primary_hdu = fits.PrimaryHDU()
-    hdulist = fits.HDUList([primary_hdu, matrix_hdu, ebounds_hdu])
-    hdulist.writeto(filename, overwrite=True)
+    return fits.HDUList([primary_hdu, matrix_hdu, ebounds_hdu])
 
 
-def set_image_data(filename, data, header, ascii=False, clobber=False,
-                   packup=False) -> Optional[fits.PrimaryHDU]:
+def set_rmf_data(filename: str,
+                 blocks,
+                 clobber: bool = False) -> None:
+    """Save the RMF data to disk.
 
-    if not packup:
-        check_clobber(filename, clobber)
+    Unlike the other save_*_data calls this does not support the ascii
+    argument. It also relies on the caller to have set up the headers
+    and columns correctly apart for variable-length fields, which are
+    limited to F_CHAN, N_CHAN, and MATRIX.
 
-    if ascii:
-        set_arrays(filename, [data['pixels'].ravel()],
-                   ascii=True, clobber=clobber)
-        return None
+    """
+
+    check_clobber(filename, clobber)
+    hdus = pack_rmf_data(blocks)
+    hdus.writeto(filename, overwrite=True)
+
+
+def pack_image_data(data, header) -> fits.PrimaryHDU:
+    """Pack up the image data."""
 
     hdrlist = _create_header(header)
 
@@ -1488,15 +1523,32 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
         _add_keyword(hdrlist, 'CUNIT2', 'deg     ')
         _add_keyword(hdrlist, 'EQUINOX', equin)
 
-    img = fits.PrimaryHDU(data['pixels'], header=fits.Header(hdrlist))
-    if packup:
-        return img
+    return fits.PrimaryHDU(data['pixels'], header=fits.Header(hdrlist))
 
+
+def set_image_data(filename: str,
+                   data, header,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
+    """Write out the image data."""
+
+    check_clobber(filename, clobber)
+
+    if ascii:
+        set_arrays(filename, [data['pixels'].ravel()],
+                   ascii=True, clobber=clobber)
+        return
+
+    img = pack_image_data(data, header)
     img.writeto(filename, overwrite=True)
-    return None
+    return
 
 
-def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
+def set_arrays(filename: str,
+               args: Sequence[np.ndarray],
+               fields: Optional[NamesType] = None,
+               ascii: bool = True,
+               clobber: bool = False) -> None:
 
     # Historically the clobber command has been checked before
     # processing the data, so do so here.
@@ -1524,7 +1576,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     if fields is None:
         fieldnames = [f'COL{idx + 1}' for idx in range(nargs)]
     elif nargs == len(fields):
-        fieldnames = fields
+        fieldnames = list(fields)
     else:
         raise IOErr("wrongnumcols", nargs, len(fields))
 
@@ -1607,8 +1659,22 @@ def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
     return out
 
 
+def pack_hdus(blocks: Sequence[TableHDU]) -> fits.HDUList:
+    """Create a dataset.
+
+    At present we are restricted to tables only.
+    """
+
+    out = fits.HDUList()
+    out.append(_create_primary_hdu(blocks[0]))
+    for hdu in blocks[1:]:
+        out.append(_create_table_hdu(hdu))
+
+    return out
+
+
 def set_hdus(filename: str,
-             hdulist: Sequence[TableHDU],
+             blocks: Sequence[TableHDU],
              clobber: bool = False) -> None:
     """Write out multiple HDUS to a single file.
 
@@ -1616,10 +1682,5 @@ def set_hdus(filename: str,
     """
 
     check_clobber(filename, clobber)
-
-    out = fits.HDUList()
-    out.append(_create_primary_hdu(hdulist[0]))
-    for hdu in hdulist[1:]:
-        out.append(_create_table_hdu(hdu))
-
-    out.writeto(filename, overwrite=True)
+    hdus = pack_hdus(blocks)
+    hdus.writeto(filename, overwrite=True)
