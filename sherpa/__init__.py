@@ -126,10 +126,10 @@ def _make_citation(version, title, date, authors, idval, latest=True):
     authnames = ' and\n                  '.join(authors)
 
     if latest:
-        out = "The latest release of Sherpa is {}\n".format(title)
-        out += "released on {}.".format(nicedate)
+        out = f"The latest release of Sherpa is {title}\n"
+        out += f"released on {nicedate}."
     else:
-        out = "Sherpa {} was released on {}.".format(version, nicedate)
+        out = f"Sherpa {version} was released on {nicedate}."
 
     out += """
 
@@ -372,13 +372,13 @@ def _download_json(url):
     try:
         res = urlopen(req, context=context)
     except HTTPError as he:
-        dbg("Unable to access {}: {}".format(url, he))
+        dbg(f"Unable to access {url}: {he}")
         return {'failed': 'Unable to access the Zenodo site.'}
 
     try:
         jsdata = json.load(res)
     except UnicodeDecodeError as ue:
-        dbg("Unable to decode JSON from Zenodo: {}".format(ue))
+        dbg(f"Unable to decode JSON from Zenodo: {ue}")
         return {'failed': 'Unable to understand the response from Zenodo.'}
 
     return {'success': jsdata}
@@ -404,7 +404,7 @@ def _make_zenodo_citation(jsdata, latest=True):
         mdata = jsdata['metadata']
         idval = jsdata['id']
     except KeyError as ke:
-        dbg("Unable to find metadata: {}".format(ke))
+        dbg(f"Unable to find metadata: {ke}")
         return {'failed': 'Unable to parse the Zenodo response.'}
 
     created = created.split('T')[0]
@@ -412,7 +412,7 @@ def _make_zenodo_citation(jsdata, latest=True):
     try:
         date = datetime.datetime.strptime(created, isoformat)
     except ValueError:
-        dbg("Unable to convert created: '{}'".format(created))
+        dbg(f"Unable to convert created: '{created}'")
         return {'failed': 'Unable to parse the Zenodo response.'}
 
     try:
@@ -420,7 +420,7 @@ def _make_zenodo_citation(jsdata, latest=True):
         title = mdata['title']
         creators = mdata['creators']
     except KeyError as ke:
-        dbg("Unable to find metadata: {}".format(ke))
+        dbg(f"Unable to find metadata: {ke}")
         return {'failed': 'Unable to parse the Zenodo response.'}
 
     authors = [c['name'] for c in creators]
@@ -439,7 +439,7 @@ def _get_citation_version():
         The Sherpa version.
     """
 
-    out = 'You are using Sherpa {}'.format(__version__)
+    out = f'You are using Sherpa {__version__}'
     if '+' in __version__:
         out += " (it is not a released version)"
 
@@ -475,14 +475,32 @@ def _get_citation_zenodo_latest():
 
     # Can we retrieve the information from Zenodo?
     #
-    # We do not access the DOI but the Zenodo API
-    # url = 'https://doi.org/10.5281/zenodo.593753'
-    url = 'https://zenodo.org/api/records/593753'
+    # This used to access the information via
+    #     https://zenodo.org/api/records/593753
+    # but this no-longer works and I do not trust Zenodo not
+    # to change things again, so this is no a simplified
+    # version of _download_zenodo_data().
+    #
+    from urllib.parse import urlencode
+
+    params = {"q": "parent.id:593753",
+              "all_versions": 0,
+              "sort": "mostrecent"}
+    paramstr = urlencode(params)
+    url = f'https://zenodo.org/api/records?{paramstr}'
+
+    dbg(f"Zenodo query: {url}")
     jsdata = _download_json(url)
     if 'failed' in jsdata:
         return _get_citation_zenodo_failure(jsdata['failed'])
 
-    out = _make_zenodo_citation(jsdata['success'])
+    try:
+        hit = jsdata['success']['hits']['hits'][0]
+    except (KeyError, IndexError):
+        dbg("Unable to find hits/hits[0]")
+        return _get_citation_zenodo_failure({'failed': 'Unable to parse the Zenodo response'})
+
+    out = _make_zenodo_citation(hit)
     if 'failed' in out:
         return _get_citation_zenodo_failure(out['failed'])
 
@@ -503,7 +521,7 @@ def _zenodo_missing(version):
         The "unable to find" message.
     """
 
-    return 'Zenodo has no information for version {}.'.format(version)
+    return f'Zenodo has no information for version {version}.'
 
 
 def _parse_zenodo_data(jsdata, version):
@@ -544,7 +562,7 @@ def _parse_zenodo_data(jsdata, version):
         return {'failed': 'Unable to parse the Zenodo response.'}
 
     if data is None:
-        dbg('Version {} not found'.format(version))
+        dbg(f'Version {version} not found')
         return {'failed': _zenodo_missing(version)}
 
     return {'success': data}
@@ -575,11 +593,18 @@ def _download_zenodo_data(version):
     # of it below. The alternative would be to manually track the
     # page counter and add '&page=n' to the call.
     #
-    url = 'https://zenodo.org/api/records/?q=conceptrecid:"593753"&all_versions=True&sort=mostrecent'
+    from urllib.parse import urlencode
+
+    params = {"q": "parent.id:593753",
+              "all_versions": 1,
+              "sort": "mostrecent"}
+    paramstr = urlencode(params)
+    url = f'https://zenodo.org/api/records?{paramstr}'
+
     missing = _zenodo_missing(version)
 
     while True:
-        dbg("Zenodo query: {}".format(url))
+        dbg(f"Zenodo query: {url}")
         jsdata = _download_json(url)
 
         # If the query fails then we error out
