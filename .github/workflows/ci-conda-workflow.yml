@@ -31,8 +31,6 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             xspec-version: 12.13.1
-            # run xvfb with this display
-            display: :99
 
           - name: Linux Minimum Setup (Python 3.9)
             os: ubuntu-latest
@@ -121,13 +119,6 @@ jobs:
         conda activate build
         source .github/scripts/setup_ds9.sh
         source .github/scripts/setup_xspec.sh
-
-    - name: Start Xvfb (macOS)
-      if: runner.os == 'macOS'
-      env:
-        DISPLAY: ${{ matrix.display }}
-      run: |
-        sudo /opt/X11/bin/Xvfb ${DISPLAY} -ac -screen 0 1024x768x8 &
 
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
