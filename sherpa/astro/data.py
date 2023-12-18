@@ -1685,6 +1685,7 @@ will be removed. The identifiers can be integers or strings.
 
         self.bin_lo = bin_lo
         self.bin_hi = bin_hi
+        self.quality_filter = None
         self.quality = quality
         self.grouping = grouping
         self.exposure = exposure
@@ -1714,7 +1715,6 @@ will be removed. The identifiers can be integers or strings.
         self._rate = True
         self._plot_fac = 0
         self.units = "channel"
-        self.quality_filter = None
         super().__init__(name, channel, counts, staterror, syserror)
 
     def _set_related(self, attr, val, check_mask=True, allow_scalar=False):
@@ -1922,6 +1922,11 @@ will be removed. The identifiers can be integers or strings.
         # quality_filter?
         #
         self._set_related("quality", val)
+        if self.quality_filter is not None:
+            # This needs re-wording
+            warning("The ignore_bad() call has been removed as quality has changed")
+
+        self.quality_filter = None
 
     @property
     def areascal(self):

@@ -1832,7 +1832,7 @@ def test_pha_quality_bad_filter_remove(make_test_pha):
     assert pha.get_filter() == "2:4"
 
 
-def test_pha_change_quality_values():
+def test_pha_change_quality_values(caplog):
     """What happens if we change the quality column?
 
     This is a regression test as it is likely we should change the filter,
@@ -1854,13 +1854,151 @@ def test_pha_change_quality_values():
     # With no tabStops set it uses ~pha.get_mask() which in this case
     # is [False] * 5 + [True] * 2,
     #
-    pha.group_counts(4)
+    assert len(caplog.record_tuples) == 0
+    with caplog.at_level(logging.INFO, logger='sherpa'):
+        pha.group_counts(4)
+
     assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0, 0])
 
     # Should quality filter be reset?
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
-    assert pha.get_dep(filter=True) == pytest.approx([4, 2])
+    assert pha.quality_filter is None
+    assert pha.get_dep(filter=True) == pytest.approx([4, 2, 2, 1])
     assert pha.get_filter() == '1:7'
+
+    # check captured log
+    #
+    emsg = "The ignore_bad() call has been removed as quality has changed"
+    assert caplog.record_tuples == [
+        ("sherpa.astro.data", logging.WARNING, emsg)
+        ]
+
+
+def test_pha_group_adapt_check(caplog):
+    """Found when testing ignore_bad so added as a test case.
+
+    This is a regression test since the existing behaviour is not
+    obvious.
+    """
+
+    pha = DataPHA('ex', [1, 2, 3, 4, 5, 6, 7], [4, 2, 3, 1, 5, 6, 7])
+    pha.group_adapt(6)
+
+    assert pha.quality_filter is None
+    assert pha.get_dep(filter=True) == pytest.approx([6, 3, 6, 6, 7])
+    # TODO: why is the last element 2 not 0 here?
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
+    assert pha.get_filter() == '1:7'
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ignore_bad_then_filter(caplog):
+    """Check what happens with ignore_bad then filters"""
+
+    pha = DataPHA('ex', [1, 2, 3, 4, 5, 6, 7], [4, 2, 3, 1, 5, 6, 4])
+    assert pha.mask is True
+    assert pha.quality_filter is None
+    assert pha.get_filter() == '1:7'
+
+    pha.group_adapt(6)
+    assert pha.mask is True
+    assert pha.quality_filter is None
+
+    pha.ignore_bad()
+
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx([1, 1, 0, 1, 1, 1, 0])
+    assert pha.quality_filter == pytest.approx([1, 1, 0, 1, 1, 1, 0])
+    assert pha.get_dep(filter=True) == pytest.approx([6, 6, 6])
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
+    assert pha.get_filter() == '1:7'  # TODO: should this have changed?
+
+    pha.ignore(4, 5)
+
+    print(pha.get_mask())
+    assert pha.mask == pytest.approx([1, 0, 1])
+    assert pha.get_mask() == pytest.approx([1, 1, 0, 0, 1])
+    assert pha.quality_filter == pytest.approx([1, 1, 0, 1, 1, 1, 0])
+    assert pha.get_dep(filter=True) == pytest.approx([6, 6])
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
+    assert pha.get_filter() == '1:2,6'
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_ignore_bad_then_group(caplog):
+    """Check what happens with ignore_bad then a second group call"""
+
+    pha = DataPHA('ex', [1, 2, 3, 4, 5, 6, 7], [4, 2, 3, 1, 5, 6, 4])
+    pha.group_adapt(6)
+    pha.ignore_bad()
+
+    # Since there's bad channels this grouping should behave
+    # differently to when there's been no such ignore_bad call.
+    #
+    pha.group_counts(4)
+
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx([1, 1, 0, 1, 1, 1, 0])
+    assert pha.quality_filter == pytest.approx([1, 1, 0, 1, 1, 1, 0])
+    assert pha.get_dep(filter=True) == pytest.approx([4, 2, 6, 6])
+    assert pha.quality == pytest.approx([0, 2, 0, 0, 0, 0, 0])
+    assert pha.get_filter() == '1:7'  # TODO: should this have changed?
+
+    # Will this apply the new quality values?
+    pha.ignore_bad()
+
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx([1, 0, 1, 1, 1, 1, 1])
+    assert pha.quality_filter == pytest.approx([1, 0, 1, 1, 1, 1, 1])
+    assert pha.get_dep(filter=True) == pytest.approx([4, 3, 6, 6, 4])
+    assert pha.quality == pytest.approx([0, 2, 0, 0, 0, 0, 0])
+    assert pha.get_filter() == '1:7'  # TODO: should this have changed?
+
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_filter_ignore_bad_filter(caplog):
+    """Check what happens with ignore_bad within filter calls"""
+
+    pha = DataPHA('ex', [1, 2, 3, 4, 5, 6, 7], [4, 2, 3, 1, 5, 6, 4])
+
+    pha.ignore(lo=4, hi=4)
+    assert len(caplog.record_tuples) == 0
+
+    assert pha.mask == pytest.approx([1, 1, 1, 0, 1, 1, 1])
+    assert pha.get_mask() == pytest.approx([1, 1, 1, 0, 1, 1, 1])
+    assert pha.quality_filter is None
+    assert pha.get_dep(filter=True) == pytest.approx([4, 2, 3, 5, 6, 4])
+    assert pha.quality is None
+    assert pha.get_filter() == '1:3,5:7'
+
+    pha.group_counts(5)
+    assert len(caplog.record_tuples) == 0
+    pha.ignore_bad()
+    assert len(caplog.record_tuples) == 1
+    assert caplog.record_tuples[0][0] == "sherpa.astro.data"
+    assert caplog.record_tuples[0][1] == logging.WARNING
+    assert caplog.record_tuples[0][2] == "filtering grouped data with quality flags, previous filters deleted"
+
+    assert pha.mask is True  # TODO: is this expected?
+    assert pha.get_mask() == pytest.approx([1, 1, 0, 1, 1, 1, 0])
+    assert pha.quality_filter == pytest.approx([1, 1, 0, 1, 1, 1, 0])
+    assert pha.get_dep(filter=True) == pytest.approx([6, 1, 5, 6])
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
+    assert pha.get_filter() == '1:7'  # TODO: is this expected?
+
+    pha.ignore(lo=2, hi=2)
+    assert len(caplog.record_tuples) == 1
+
+    assert pha.mask == pytest.approx([0, 1, 1, 1])
+    assert pha.get_mask() == pytest.approx([0, 0, 1, 1, 1])
+    assert pha.quality_filter == pytest.approx([1, 1, 0, 1, 1, 1, 0])
+    assert pha.get_dep(filter=True) == pytest.approx([1, 5, 6])
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
+    assert pha.get_filter() == '4:6'  # TODO: is this expected?
+
+    assert len(caplog.record_tuples) == 1
 
 
 @pytest.mark.parametrize("field", ["grouping", "quality"])
