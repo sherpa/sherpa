@@ -19,6 +19,7 @@ is expected.
 import datetime
 import json
 import ssl
+from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 
@@ -87,7 +88,11 @@ def dump_zenodo(version):
         are reported.
     """
 
-    url = 'https://zenodo.org/api/records/?q=conceptrecid:"593753"&all_versions=True&sort=mostrecent'
+    params = {"q": "parent.id:593753",
+              "all_versions": 1,
+              "sort": "mostrecent"}
+    paramstr = urlencode(params)
+    url = f'https://zenodo.org/api/records?{paramstr}'
     while True:
         jsdata = download_json(url)
         for hit in jsdata['hits']['hits']:
