@@ -108,8 +108,8 @@ int tcdOffsetToPixel(
 {
 
   long rn;     /* residual for n'th iteration */
-  long sf = 1; /* product of lenghts          */
-  long ii;     /* loop varialbe               */
+  long sf = 1; /* product of lengths          */
+  long ii;     /* loop variable               */
 
 
   /* determine size of data in n-1 dimensions */

@@ -132,7 +132,7 @@ class OptMethod(NoNewAttributesAfterInit):
        The name of the optimiser.
     optfunc : function
        The function which optimises the model: its arguments are
-       a function which evalutes the statistic given a list of parameter
+       a function which evaluates the statistic given a list of parameter
        values, the starting parameters, minima, and maxima, followed
        by keyword arguments matching the configuration data.
     """

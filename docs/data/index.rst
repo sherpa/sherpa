@@ -273,7 +273,7 @@ and :py:class:`~sherpa.astro.data.DataPHA` objects):
 Accessing filtered data
 -----------------------
 
-Although the :py:attr:`~sherpa.data.Data.mask` attribure can be used
+Although the :py:attr:`~sherpa.data.Data.mask` attribute can be used
 to manually filter the data, many data accessors accept a ``filter``
 argument which, if set, will filter the requested data.  When a filter
 is applied, :py:meth:`~sherpa.data.Data1D.get_x` and

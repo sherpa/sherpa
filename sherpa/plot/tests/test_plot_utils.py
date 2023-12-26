@@ -28,9 +28,9 @@ def test_histrogram_line():
     '''Histrogram line manually puts together the (x,y) pairs to draw a
     line that looks list the "steps" option in matplotlib, but works better
     for our input formats and deal with missing or non-continuous bins by
-    inserting nans. In this test, we check that the fuction works even if
-    the input hi/lo arrays are intercahnged to reversed. That can happen when
-    converting from energy to wavelength and it's eaiser to just allow the
+    inserting nans. In this test, we check that the function works even if
+    the input hi/lo arrays are interchanged to reversed. That can happen when
+    converting from energy to wavelength and it's easier to just allow the
     flexibility in the plotting code than to enforce a certain ordering
     convention.
     '''

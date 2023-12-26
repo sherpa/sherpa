@@ -331,7 +331,7 @@ def test_fake_pha_bkg_model(method, expected1, expected2):
                           pytest.param(identity, [400, 800, 800], [400 + 1000/3, 800 + 1000/3, 800 - 400/3], marks=pytest.mark.xfail)
                           ])
 def test_fake_pha_bkg_model_multiple(method, expected1, expected2):
-    """Test background model with multiple backgounds
+    """Test background model with multiple backgrounds
 
     This is to check the different scaling factors, in particular
     the exposure to background exposure differences.

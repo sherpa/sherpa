@@ -64,7 +64,7 @@ The `val` attribute is used to retrieve or change the parameter value:
     2.0
     >>> p.val = 3
 
-Parameter limts
+Parameter limits
 ===============
 
 The parameter is forced to lie within the `min` and `max` attributes

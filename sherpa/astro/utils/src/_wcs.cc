@@ -98,8 +98,8 @@ static PyObject* pix2world( PyObject* self, PyObject* args )
   // Initialize WCS
   WorldCoor* wcs = wcskinit( 2,           // number of values per set
 			     nsets,       // number of value sets.
-			     ct1,         // Tranform flavor
-			     ct2,         // Tranform flavor
+			     ct1,         // Transform flavor
+			     ct2,         // Transform flavor
 			     crpix[0],
 			     crpix[1],
 			     crval[0],
@@ -214,8 +214,8 @@ static PyObject* world2pix( PyObject* self, PyObject* args )
   // Initialize WCS
   WorldCoor* wcs = wcskinit( 2,           // number of values per set
 			     nsets,       // number of value sets.
-			     ct1,         // Tranform flavor
-			     ct2,         // Tranform flavor
+			     ct1,         // Transform flavor
+			     ct2,         // Transform flavor
 			     crpix[0],
 			     crpix[1],
 			     crval[0],

@@ -39,7 +39,7 @@ _all_dataset_ids = {}
 keys_to_display = ['OBJECT', 'TELESCOP', 'OBS_ID', 'INSTRUME', 'FILTER',
                    # Standard is MJD_OBS, but older CIAO used 'MJD-OBS'
                    # Usually, we'll have the one of the other with few cases
-                   # of mixed occurance. Thus, we can just treat them as
+                   # of mixed occurrence. Thus, we can just treat them as
                    # separate columns
                    'MJD_OBS', 'MJD-OBS',
                    # grating spectroscopy
@@ -323,7 +323,7 @@ class DataStack():
         Parameters
         ----------
         par : str
-           The name of the parameters, incuding the model component name.
+           The name of the parameters, including the model component name.
         """
         parname, attr, pars = self._get_parname_attr_pars(par,
                                                           'Getting %%s.%s')
@@ -349,7 +349,7 @@ class DataStack():
     def link(self, par):
         """Link the parameter across the data stacks.
 
-        Link all occurences of the model parameter to the value in the
+        Link all occurrences of the model parameter to the value in the
         first dataset in the stack.
 
         Parameters

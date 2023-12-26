@@ -132,7 +132,7 @@ Glossary
        <https://hea-www.harvard.edu/saord/xpa/>`_
        is used by :term:`DS9` to communicate
        with external programs. Sherpa uses this functionality to
-       control DS9 - by sending it images to display and retriving
+       control DS9 - by sending it images to display and retrieving
        any regions a used may have created on the image data.
        The command-line tools used for this commiunication may be
        available via the package manager for a particular

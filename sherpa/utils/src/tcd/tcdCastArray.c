@@ -364,7 +364,7 @@ int tcdCastArray( tcdDATATYPE inType,  /* i: input data type           */
   +------------------------------------------------
   +
   + Take two arrays of floats and merge into a complex
-  + data array (essentally casting data).  Memory
+  + data array (essentially casting data).  Memory
   + for output array is already allocated by user.
   +
   +------------------------------------------------
@@ -487,7 +487,7 @@ int tcdCastToComplex(
   +------------------------------------------------
   +
   + Take two arrays of floats and merge into a complex
-  + data array (essentally casting data).  Memory
+  + data array (essentially casting data).  Memory
   + for output array is already allocated by user.
   +
   +------------------------------------------------

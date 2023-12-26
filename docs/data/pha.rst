@@ -88,7 +88,7 @@ PHA FITS file::
 
 As well as reading in the data it has also automatically loaded in
 the background data and response information (:term:`ARF` and :term:`RMF`)
-that are set in this file's FITS metdata::
+that are set in this file's FITS metadata::
 
   >>> print(pha.get_background())
   name           = 3c273_bg.pi
@@ -526,7 +526,7 @@ which is achieved with the :py:meth:`~sherpa.astro.data.DataPHA.subtract`
 method, but you can instead fit a model to just the background data, and
 have this then included in the source region (with appropriate scaling
 to account for differences in the source and background apertures). Filtering
-and grouping changes to a source region are automatically propogated to
+and grouping changes to a source region are automatically propagated to
 the associated background regions, but they can be applied to the background
 data set directly if needed.
 

@@ -495,7 +495,7 @@ class IntegratedDataSpace2D():
 
 
 class DataSpaceND():
-    """Class for representing arbitray N-Dimensional data domains
+    """Class for representing arbitrary N-Dimensional data domains
 
     Parameters
     ----------
@@ -627,7 +627,7 @@ class Filter():
         ------
         sherpa.utils.err.DataErr
             The filter has removed all elements or there is a
-            mis-match between the `mask` and the ``array`` argument.
+            mismatch between the `mask` and the ``array`` argument.
 
         See Also
         --------
@@ -790,7 +790,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     Notes
     -----
 
-    This class can be extended by classes definining data sets of
+    This class can be extended by classes defining data sets of
     specific dimensionality. Extending classes should override the
     `_init_data_space` method.
 

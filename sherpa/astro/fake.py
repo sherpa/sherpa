@@ -40,7 +40,7 @@ def fake_pha(data, model,
     drawn from a model with Poisson noise. For the simulations, all the details
     already set up in the PHA dataset will be used, including the exposure
     time, one or more ARFs and RMFs, area and background scalings,
-    grouping, and data quality arrys.
+    grouping, and data quality arrays.
 
     Including a background component is optional; if requested, the background
     will be a Poisson draw from the average of all backgrounds that have been
@@ -76,7 +76,7 @@ def fake_pha(data, model,
         If ``True`` backgrounds are added to the source counts.
     bkg_srcs : dict
         Keys in the dictionary need to be the background ids in the dataset
-        ``data``, and the values are the corresponsing source models. For all
+        ``data``, and the values are the corresponding source models. For all
         background datasets that are listed in this dictionary, the
         background counts will be simulated based on the model, appropriately
         scaled (for area etc.) and added to the source. The same ``is_source``

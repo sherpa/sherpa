@@ -157,7 +157,7 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 class ModelPHAHistogram(shplot.HistogramPlot):
     """Plot a model for a PHA dataset.
 
-    The filtering and grouping from the PHA datset
+    The filtering and grouping from the PHA dataset
     are used to create the bins for the model.
     """
 
@@ -600,7 +600,7 @@ class BkgModelPHAHistogram(ModelPHAHistogram):
     """Plot a background model for a PHA dataset.
 
     The filtering and grouping from the background of
-    the PHA datset are used to create the bins for the model.
+    the PHA dataset are used to create the bins for the model.
     """
 
     def __init__(self):
@@ -895,7 +895,7 @@ class DataIMGPlot(shplot.Image):
             x0min, x0max = np.min(x0), np.max(x0)
             x1min, x1max = np.min(x1), np.max(x1)
 
-            # Should add in half cdelt to padd these, but
+            # Should add in half cdelt to pad these, but
             # it looks like it isn't necessary.
             # TODO: The old code (before converting it to a class)
             # used set_xlim and set_ylim

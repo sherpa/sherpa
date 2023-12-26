@@ -685,7 +685,7 @@ def test_img_get_img_filter_none1(make_test_image):
 
     It is not obvious what is meant to happen here (the docs suggest
     the filter is ignored but there is some handling of filters), so
-    this should be treated as a regresion test. See issue #1447
+    this should be treated as a regression test. See issue #1447
 
     """
     img = make_test_image
@@ -879,7 +879,7 @@ def test_img_get_img_model_filter_some(make_test_image):
 def test_img_get_img_model_filter_some2(make_test_image):
     """test_img_get_img_model_filter_some but with a non-rectangular filter
 
-    We have been using a fitler that is rectangular, so matches the
+    We have been using a filter that is rectangular, so matches the
     grid. Let's see what happens if the filter like a circle so that
     the bounding box does not match the filter.
 
@@ -4363,7 +4363,7 @@ def test_pha_delete_missing_background_is_a_noop():
     assert not bkg.subtracted
     assert bkg.background_ids == []
 
-    # deleting a non-existant background is a no-op:
+    # deleting a non-existent background is a no-op:
     #  - dataset with no backgrounds
     #  - dataset with a different-background to the requested
     #

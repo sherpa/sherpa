@@ -439,7 +439,7 @@ can be used in the linking expression, for example::
 This includes many commonly used mathematical and trigonometric functions
 such as log, exp, sin, cos, which allows building quite complex parameter
 linkage. Only the numpy versions work here, **not** the functions from the
-build-in ``math`` module, so use `numpy.exp` instead of `math.exp`.
+built-in ``math`` module, so use `numpy.exp` instead of `math.exp`.
 Many more complex functions are available in
 `scipy.special <https://docs.scipy.org/doc/scipy/reference/special.html>`_;
 any arbitrary Python function can be turned into a ufunc with
@@ -500,7 +500,7 @@ Inspecting models and parameters
 
 Models, whether a single component or composite, contain a
 ``pars`` attribute which is a tuple of all the parameters
-for that model. This can be used to programatically query
+for that model. This can be used to programmatically query
 or change the parameter values.
 There are several attributes that return arrays of values
 for the thawed parameters of the model expression: the most

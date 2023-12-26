@@ -141,7 +141,7 @@ static double make_projection(double* pars, const double* pars_hardmins,
     } 
     // If the exponential factor is getting smaller than 
     // DBL_EPSILON, then subtracting (factor * step size)
-    // from parameter will bascially be zero -- no need then
+    // from parameter will basically be zero -- no need then
     // to try exp(dp) even smaller than DBL_EPSILON
     if (exp(dp) < DBL_EPSILON)
       return NAN;

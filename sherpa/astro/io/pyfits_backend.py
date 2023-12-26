@@ -364,7 +364,7 @@ def read_table_blocks(arg, make_copy=False):
 # If we do want to include a binary-file check, then all the callers of
 # _get_file_contents should be reviewed to see if they should include the binary-file check
 #
-# the exptype argument lets the error message be changed; however, does this make sence since the code that does call
+# the exptype argument lets the error message be changed; however, does this make sense since the code that does call
 # this function with exptype="BinTableHDU" aren't guaranteed that there is a binary table in the file (very likely,
 # but it is possible to write a FITS file with only a PrimaryHDU or have an ImageHDU [or whatever it's called]
 # falling it [*]).

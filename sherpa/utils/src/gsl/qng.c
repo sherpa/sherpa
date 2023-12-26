@@ -56,7 +56,7 @@ gsl_integration_qng (const gsl_function *f,
       * result = 0;
       * abserr = 0;
       * neval = 0;
-      GSL_ERROR ("tolerance cannot be acheived with given epsabs and epsrel",
+      GSL_ERROR ("tolerance cannot be achieved with given epsabs and epsrel",
                  GSL_EBADTOL);
     };
 
@@ -223,7 +223,7 @@ sao_integration_qng (int (*f)(double *x, int len, void *params),
       * result = 0;
       * abserr = 0;
       * neval = 0;
-      GSL_ERROR ("tolerance cannot be acheived with given epsabs and epsrel",
+      GSL_ERROR ("tolerance cannot be achieved with given epsabs and epsrel",
                  GSL_EBADTOL);
     };
 

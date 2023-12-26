@@ -602,7 +602,7 @@ def test_notice_reporting_data2d(session, caplog):
     assert s.get_filter() == ""
 
     # At the moment it's not obvious what the arguments mean, so just
-    # act as a regression test. In particuar, we get no caplog output.
+    # act as a regression test. In particular, we get no caplog output.
     #
     s.notice(lo=13)
     assert len(caplog.record_tuples) == 0

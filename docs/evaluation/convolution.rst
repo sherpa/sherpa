@@ -132,7 +132,7 @@ zero):
     >>> psf1.fold(blank)
 
 With this out of the way, we can compare the convolved to
-un-convolved resuls::
+un-convolved results::
 
     >>> y1 = point(x)
     >>> y2 = convolved(x)
@@ -342,7 +342,7 @@ starts at ``x=5`` and extends to the end of the grid (at ``y=7``).
 
    In this example the image coordinates were chosen to be the same
    as those drawn by matplotlib. The ``extent`` parameter of the
-   ``imshow`` call can be used when this correspondance does not
+   ``imshow`` call can be used when this correspondence does not
    hold.
 
 As with :ref:`the 1D case <convolution-1d-fold>`, the

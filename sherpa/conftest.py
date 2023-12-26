@@ -152,7 +152,7 @@ known_warnings = {
             r"File '/data/regression_test/master/in/sherpa/aref_Cedge.fits' does not have write permission.  Changing to read-only mode.",
             r"Converting array .* to numpy array",
 
-            # Matplotlib version 2 warnings (from HTML notebook represention)
+            # Matplotlib version 2 warnings (from HTML notebook representation)
             #
             r'Attempting to set identical bottom==top results\nin singular transformations; automatically expanding.\nbottom=1.0, top=1.0',
 
@@ -549,7 +549,7 @@ def restore_xspec_settings():
 def hide_logging():
     """Set Sherpa's logging to ERROR for the test.
 
-    This code is somehwat redundant with the decorator
+    This code is somewhat redundant with the decorator
     in utils/logging:SherpaVerbosity and, should this
     fixture ever need to be redone, it might be worth
     investigating if the same decorator can be used.
@@ -788,7 +788,7 @@ def check_str_fixture(out, expecteds):
     pytest_doctestplus.output_checker.OutputChecker - for the checking
     (to avoid the need to mark up expected text as a regexp) but this
     is problematic at the moment, so it is not done. For now we
-    require users to explictly mark up those lines which we want to
+    require users to explicitly mark up those lines which we want to
     check with numeric constraints by adding the text (taken from
     doctestplus)
 

@@ -868,7 +868,7 @@ def check_cache(mdl, expected, x, xhi=None):
 
 
 def test_evaluate_no_cache1d():
-    """Check we can turn off cacheing: 1d"""
+    """Check we can turn off caching: 1d"""
 
     xgrid = numpy.arange(2, 10, 1.5)
 
@@ -891,7 +891,7 @@ def test_evaluate_no_cache1d():
 
 
 def test_evaluate_cache1d():
-    """Check we run with cacheing on: 1d"""
+    """Check we run with caching on: 1d"""
 
     xgrid = numpy.arange(2, 10, 1.5)
 
@@ -914,7 +914,7 @@ def test_evaluate_cache1d():
 
 
 def test_evaluate_no_cache1dint():
-    """Check we can turn off cacheing: 1dint"""
+    """Check we can turn off caching: 1dint"""
 
     xgrid = numpy.arange(2, 10, 1.5)
     xlo, xhi = xgrid[:-1], xgrid[1:]
@@ -944,7 +944,7 @@ def test_evaluate_no_cache1dint():
 
 
 def test_evaluate_cache1dint():
-    """Check we run with cacheing on: 1dint"""
+    """Check we run with caching on: 1dint"""
 
     xgrid = numpy.arange(2, 10, 1.5)
     xlo, xhi = xgrid[:-1], xgrid[1:]
@@ -1014,7 +1014,7 @@ def test_evaluate_cache_swap():
 
 
 def test_evaluate_cache_arithmeticconstant():
-    """Check we run with cacheing: ArihmeticConstant"""
+    """Check we run with caching: ArihmeticConstant"""
 
     mdl = ArithmeticConstantModel(2.3)
     assert not hasattr(mdl, '_use_caching')
@@ -1508,7 +1508,7 @@ def test_model_binop_keywords(kwargs):
     """Check we can send keyword arguments to a BinOp model"""
 
     # Make this a "complicated" expression with at least one
-    # non-marked-up model. We also ensure that cacheing is off, in
+    # non-marked-up model. We also ensure that caching is off, in
     # case a model gets evaluated multiple times (should not be
     # relevant here).
     #

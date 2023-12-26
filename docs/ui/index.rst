@@ -48,7 +48,7 @@ Examples
 ========
 
 The following examples are *very* basic, since they are
-intended to highlight how the Sesssion API is used.
+intended to highlight how the Session API is used.
 The CIAO documentation for Sherpa at https://cxc.harvard.edu/sherpa/
 provides more documentation and examples.
 
@@ -154,7 +154,7 @@ data with Gaussian errors::
    'levmar'
 
 As the data here is counts based, and is to be fit with Poisson
-statitics, the
+statistics, the
 :py:meth:`~sherpa.ui.utils.Session.set_stat`
 and
 :py:meth:`~sherpa.ui.utils.Session.set_method`
@@ -273,13 +273,13 @@ Using the UI module
 
 Using the UI module is very similar to the Session object, since it
 automatically creates a global Session object, and registers the available
-models, when imported. This means that the preceeding example can be replicated
+models, when imported. This means that the preceding example can be replicated
 but without the need for the Session object.
 
 Since the module is intended for an interactive environment, in this example
 the symbols are loaded into the default namespace to avoid having to qualify
 each function with the module name. For commentary, please refer to the
-preceeding example::
+preceding example::
 
    >>> from sherpa.ui import *
 

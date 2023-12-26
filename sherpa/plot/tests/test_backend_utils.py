@@ -52,7 +52,7 @@ def test_translate_func():
 
 
 def test_keyword_defaults():
-    """Check that we get a dictonary of the default values defined in a function"""
+    """Check that we get a dictionary of the default values defined in a function"""
     def func(a, b=5, c=None):
         pass
     assert get_keyword_defaults(func) == {'b': 5, 'c': None}
@@ -84,7 +84,7 @@ class A():
 
         more text here
 
-        Paramters
+        Parameters
         ---------
         a : int
             Our stuff
@@ -104,7 +104,7 @@ def test_modify_doctring():
 
         more text here
 
-        Paramters
+        Parameters
         ---------
         a : int
             Our stuff

@@ -299,7 +299,7 @@ def test_read_ideal_rmf(tmp_path):
 
     # Can we apply it?
     #
-    # The cmdl evalutes to a value of 2 * bin width
+    # The cmdl evaluates to a value of 2 * bin width
     # The bmdl evalates to the bin width * x
     # where x = [0, 1, 0.5, 0, 0]
     #

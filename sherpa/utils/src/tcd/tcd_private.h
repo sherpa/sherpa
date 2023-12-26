@@ -45,7 +45,7 @@
 #define TCD_PRIVATE_H
 
 /* ------------------------------------------------------ */
-/* Priviate functions */
+/* Private functions */
 /* ------------------------------------------------------ */
 
 
@@ -94,7 +94,7 @@ extern int tcdDetLength(
 extern int tcd_strNDarray(
 			  tcdDATATYPE dtype,
 			  char   *spec,  /* input array specification   */
-			  void  *data,  /* ouptut data array           */
+			  void  *data,  /* output data array           */
 			  long  *nAxes,  /* output number of dimensions */
 			  long **lAxes   /* length of data axes         */
 			    );
