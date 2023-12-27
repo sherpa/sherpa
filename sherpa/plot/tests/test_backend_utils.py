@@ -85,7 +85,7 @@ class A():
         more text here
 
         Parameters
-        ---------
+        ----------
         a : int
             Our stuff
         {kwargs}
