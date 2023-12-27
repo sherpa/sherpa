@@ -13,7 +13,7 @@ be useful. Unfortunately it is not always obvious whether a routine is for use
 with the Object-Oriented API or the Session API.
 
 Controlling the verbosity of Sherpa
-==================================
+===================================
 
 Sherpa uses `Python logging
 <https://docs.python.org/3/library/logging.html>`_ for most
