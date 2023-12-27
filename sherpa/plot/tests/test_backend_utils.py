@@ -105,7 +105,7 @@ def test_modify_doctring():
         more text here
 
         Parameters
-        ---------
+        ----------
         a : int
             Our stuff
         title : string, default=None
