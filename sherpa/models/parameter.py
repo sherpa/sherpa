@@ -65,7 +65,7 @@ The `val` attribute is used to retrieve or change the parameter value:
     >>> p.val = 3
 
 Parameter limits
-===============
+================
 
 The parameter is forced to lie within the `min` and `max` attributes
 of the parameter (known as the "soft" limits). The default values
