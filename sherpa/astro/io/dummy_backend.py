@@ -36,7 +36,8 @@ from ..data import Data1D
 
 from .types import NamesType, HdrTypeArg, HdrType, \
     ColumnsType, ColumnsTypeArg, DataTypeArg, DataType, \
-    Header, BlockList, TableBlock, ImageBlock
+    Header, BlockList, TableBlock, ImageBlock, \
+    SpectrumBlock, SpecrespBlock, MatrixBlock, EboundsBlock
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -279,7 +280,7 @@ def get_ascii_data(filename: str,
 
 def get_arf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[TableBlock, str]:
+                 ) -> tuple[SpecrespBlock, str]:
     """Read in the ARF.
 
     Parameters
@@ -310,7 +311,7 @@ def get_arf_data(arg,
 
 def get_rmf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[list[TableBlock], TableBlock, str]:
+                 ) -> tuple[list[MatrixBlock], EboundsBlock, str]:
     """Read in the RMF.
 
     Parameters
@@ -342,7 +343,7 @@ def get_rmf_data(arg,
 def get_pha_data(arg,
                  make_copy: bool = False,
                  use_background: bool = False
-                 ) -> tuple[TableBlock, str]:
+                 ) -> tuple[SpectrumBlock, str]:
     """Read in the PHA.
 
     Parameters
