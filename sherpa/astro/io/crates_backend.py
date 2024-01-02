@@ -34,7 +34,8 @@ from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
 from .types import KeyType, NamesType, BlockType, \
-    HeaderItem, Header, Column, ImageBlock, TableBlock, BlockList
+    HeaderItem, Header, Column, ImageBlock, TableBlock, BlockList, \
+    SpectrumBlock, SpecrespBlock, MatrixBlock, EboundsBlock
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -556,7 +557,7 @@ def get_image_data(arg: Union[str, IMAGECrate],
 
 def get_arf_data(arg: Union[str, TABLECrate],
                  make_copy: bool = True
-                 ) -> tuple[TableBlock, str]:
+                 ) -> tuple[SpecrespBlock, str]:
     """Read an ARF from a file or crate"""
 
     if isinstance(arg, str):
@@ -583,7 +584,7 @@ def get_arf_data(arg: Union[str, TABLECrate],
         bin_hi = copycol(arf, filename, "BIN_HI", dtype=SherpaFloat)
         cols.extend([bin_lo, bin_hi])
 
-    return TableBlock(arf.name, header=headers, columns=cols), filename
+    return SpecrespBlock(arf.name, header=headers, columns=cols), filename
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -737,7 +738,7 @@ def copycol(cr: TABLECrate,
 
 def _read_rmf_matrix(rmfdataset: pycrates.RMFCrateDataset,
                      filename: str,
-                     blname: str) -> TableBlock:
+                     blname: str) -> MatrixBlock:
     """Read in the given MATRIX block"""
 
     # By design we know this block exists but we are not guaranteed we
@@ -759,12 +760,12 @@ def _read_rmf_matrix(rmfdataset: pycrates.RMFCrateDataset,
               ("F_CHAN", None),
               ("N_CHAN", None),
               ("MATRIX", None)]]
-    return TableBlock(blname, header=mheaders, columns=mcols)
+    return MatrixBlock(blname, header=mheaders, columns=mcols)
 
 
 def _read_rmf_ebounds(rmfdataset: pycrates.RMFCrateDataset,
                       filename: str,
-                      blname: str) -> TableBlock:
+                      blname: str) -> EboundsBlock:
     """Read in the given EBOUNDS block"""
 
     ebounds = _get_crate_by_blockname(rmfdataset, "EBOUNDS")
@@ -776,12 +777,12 @@ def _read_rmf_ebounds(rmfdataset: pycrates.RMFCrateDataset,
              [("CHANNEL", None),
               ("E_MIN", SherpaFloat),
               ("E_MAX", SherpaFloat)]]
-    return TableBlock("EBOUNDS", header=eheaders, columns=ecols)
+    return EboundsBlock("EBOUNDS", header=eheaders, columns=ecols)
 
 
 def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
                  make_copy: bool = True
-                 ) -> tuple[list[TableBlock], TableBlock, str]:
+                 ) -> tuple[list[MatrixBlock], EboundsBlock, str]:
     """Read a RMF from a file or crate.
 
     This drops any information in the PRIMARY block.
@@ -817,7 +818,7 @@ def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
 
 
 def _read_pha(pha: TABLECrate,
-              filename: str) -> TableBlock:
+              filename: str) -> SpectrumBlock:
     """Read in the PHA data.
 
     Note that there is minimal intepretation of the data.
@@ -858,13 +859,13 @@ def _read_pha(pha: TABLECrate,
         with suppress(IOErr):
             cols.append(copycol(pha, filename, name, dtype=dtype))
 
-    return TableBlock(pha.name, header=headers, columns=cols)
+    return SpectrumBlock(pha.name, header=headers, columns=cols)
 
 
 def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
                  make_copy: bool = True,
                  use_background: bool = False
-                 ) -> tuple[TableBlock, str]:
+                 ) -> tuple[SpectrumBlock, str]:
     """Read PHA data from a file or crate.
 
     This does not decide whether this is a type I or II dataset.
