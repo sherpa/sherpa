@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015 - 2019, 2021 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -72,7 +72,8 @@ from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat, SherpaUInt
 
 from .io_types import HeaderItem, Header, Column, Block, TableBlock, \
-    ImageBlock, BlockList, KeyType
+    SpecrespBlock, MatrixBlock, EboundsBlock, ImageBlock, \
+    BlockList, KeyType
 
 if TYPE_CHECKING:
     from sherpa.astro.instrument import ARF1D, RMF1D
@@ -452,50 +453,40 @@ def read_arf(arg) -> DataARF:
         else:
             header[item.name] = item.value
 
-    data = {"energ_lo": block.columns[0].values,
-            "energ_hi": block.columns[1].values,
-            "specresp": block.columns[2].values,
+    data = {"energ_lo": block.rget("ENERG_LO").values,
+            "energ_hi": block.rget("ENERG_HI").values,
+            "specresp": block.rget("SPECRESP").values,
             "exposure": exposure,
             "header": header,
             "ethresh": ogip_emin}
-    if len(block.columns) > 3:
-        data["bin_lo"] = block.columns[3].values
-        data["bin_hi"] = block.columns[4].values
+
+    blo = block.get("BIN_LO")
+    bhi = block.get("BIN_HI")
+    if blo is not None and bhi is not None:
+        data["bin_lo"] = blo.values
+        data["bin_hi"] = bhi.values
 
     return DataARF(filename, **data)
 
 
-def read_rmf(arg) -> DataRMF:
-    """Create a DataRMF object.
+def _extract_rmf(matrix: MatrixBlock,
+                 ebounds: EboundsBlock,
+                 filename: str) -> dict[str, Any]:
+    """Extract the matrix data from the table.
 
     Parameters
     ----------
-    arg
-        The name of the file or a representation of the file
-        (the type depends on the I/O backend) containing the
-        RMF data.
+    matrix, ebounds : TableBlock
+        The MATRIX and EBOUNDS blocks.
+    filename : str
+        The file name (used for error/warning messages).
 
     Returns
     -------
-    data : sherpa.astro.data.DataRMF
+    data : dict
+        The arguments needed for creating a RMF.
 
     """
-
-    if TYPE_CHECKING:
-        assert backend is not None
-
-    matrixes, ebounds, filename = backend.get_rmf_data(arg)
-
-    # matrixes is guaranteed not to be empty
-    nmat = len(matrixes)
-    if nmat > 1:
-        # Warn the user that the multi-matrix RMF is not supported.
-        #
-        error("RMF in %s contains %d MATRIX blocks; "
-              "Sherpa only uses the first block!",
-              filename, nmat)
-
-    matrix = matrixes[0]
 
     header = {}
     detchans = 0
@@ -510,10 +501,9 @@ def read_rmf(arg) -> DataRMF:
     #    or CHANNEL column of EBOUNDS
     #  - flatten out the F_CHAN, N_CHAN, and MATRIX columns
     #
-    # We know the column order here.
-    #
-    f_chan = matrix.columns[3]
-    channel = ebounds.columns[0]
+    f_chan = matrix.rget("F_CHAN")
+    channel = ebounds.rget("CHANNEL")
+
     if f_chan.minval is not None:
         offset = f_chan.minval
     elif channel.minval is not None:
@@ -532,13 +522,13 @@ def read_rmf(arg) -> DataRMF:
     #
     # This is not designed to be the fastest code.
     #
-    n_grp = matrix.columns[2].values
-    f_chan_raw = matrix.columns[3].values
-    n_chan_raw = matrix.columns[4].values
-    mat_raw = matrix.columns[5].values
+    n_grp_raw = matrix.rget("N_GRP").values
+    f_chan_raw = f_chan.values
+    n_chan_raw = matrix.rget("N_CHAN").values
+    mat_raw = matrix.rget("MATRIX").values
 
-    good = n_grp > 0
-    ng_raw = n_grp[good]
+    good = n_grp_raw > 0
+    ng_raw = n_grp_raw[good]
     fc_raw = f_chan_raw[good]
     nc_raw = n_chan_raw[good]
     mx_raw = mat_raw[good]
@@ -583,19 +573,55 @@ def read_rmf(arg) -> DataRMF:
     def flatten(xs, dtype):
         return numpy.concatenate(xs).astype(dtype)
 
-    data = {"detchans": detchans,
-            "energ_lo": matrix.columns[0].values,
-            "energ_hi": matrix.columns[1].values,
-            "n_grp": numpy.asarray(n_grp, dtype=SherpaUInt),
+    return {"detchans": detchans,
+            "energ_lo": matrix.rget("ENERG_LO").values,
+            "energ_hi": matrix.rget("ENERG_HI").values,
+            "n_grp": numpy.asarray(n_grp_raw, dtype=SherpaUInt),
             "f_chan": flatten(f_chan_l, dtype=SherpaUInt),
             "n_chan": flatten(n_chan_l, dtype=SherpaUInt),
             "matrix": flatten(mat_l, dtype=SherpaFloat),
             "offset": offset,
-            "e_min": ebounds.columns[1].values,
-            "e_max": ebounds.columns[2].values,
+            "e_min": ebounds.rget("E_MIN").values,
+            "e_max": ebounds.rget("E_MAX").values,
             "header": header,
             "ethresh": ogip_emin  # should we take this from the header?
             }
+
+
+def read_rmf(arg) -> DataRMF:
+    """Create a DataRMF object.
+
+    Parameters
+    ----------
+    arg
+        The name of the file or a representation of the file
+        (the type depends on the I/O backend) containing the
+        RMF data.
+
+    Returns
+    -------
+    data : sherpa.astro.data.DataRMF or subclass
+
+    """
+
+    if TYPE_CHECKING:
+        assert backend is not None
+
+    matrixes, ebounds, filename = backend.get_rmf_data(arg)
+
+    # matrixes is guaranteed not to be empty
+    nmat = len(matrixes)
+    if nmat > 1:
+        # Warn the user that the multi-matrix RMF is not supported.
+        #
+        error("RMF in %s contains %d MATRIX blocks; "
+              "Sherpa only uses the first block!",
+              filename, nmat)
+
+    # Use the metadata from the first matrix
+    #
+    matrix = matrixes[0]
+    data = _extract_rmf(matrix, ebounds, filename)
     return _rmf_factory(filename, data)
 
 
@@ -926,12 +952,7 @@ def read_pha(arg,
 
     # Check all the columns have the same shape (e.g. all type I or II).
     #
-    chancol = pha.get("CHANNEL")
-    if chancol is None:
-        raise IOErr("reqcol", "CHANNEL", filename)
-
-    # Is this a type I or II dataset?
-    #
+    chancol = pha.rget("CHANNEL")
     channel = chancol.values
     if len(channel.shape) == 1:
         ptype = 1
@@ -1539,7 +1560,7 @@ def _pack_arf(dataset: Union[DataARF, ARF1D]) -> BlockList:
     pheader = Header([])
     _add_creator(pheader)
     blocks: list[BlockType]
-    blocks = [TableBlock(name="SPECRESP", header=aheader, columns=acols)]
+    blocks = [SpecrespBlock(name="SPECRESP", header=aheader, columns=acols)]
 
     return BlockList(header=pheader, blocks=blocks)
 
@@ -1961,8 +1982,8 @@ def _pack_rmf(dataset: Union[DataRMF, RMF1D]) -> BlockList:
 
     header = _pack_header({})
     blocks: list[BlockType]
-    blocks = [TableBlock(name="MATRIX", header=mheader, columns=mcols),
-              TableBlock(name="EBOUNDS", header=eheader, columns=ecols)]
+    blocks = [MatrixBlock(name="MATRIX", header=mheader, columns=mcols),
+              EboundsBlock(name="EBOUNDS", header=eheader, columns=ecols)]
 
     return BlockList(header=header, blocks=blocks)
 

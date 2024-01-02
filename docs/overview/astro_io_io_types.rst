@@ -17,11 +17,15 @@ The sherpa.astro.io.io_types module
       Column
       Block
       TableBlock
+      SpectrumBlock
+      SpecrespBlock
+      MatrixBlock
+      EboundsBlock
       ImageBlock
       BlockList
 
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram:: HeaderItem Header Column Block TableBlock ImageBlock BlockList
+.. inheritance-diagram:: HeaderItem Header Column Block TableBlock SpectrumBlock SpecrespBlock MatrixBlock EboundsBlock ImageBlock BlockList
    :parts: 1

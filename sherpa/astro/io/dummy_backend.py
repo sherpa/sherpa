@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2022, 2023
+#  Copyright (C) 2021 - 2024
 #  MIT
 #
 #
@@ -32,7 +32,8 @@ from typing import Any, Optional, Sequence, Union
 import numpy as np
 
 from ..data import Data1D
-from .io_types import Header, ImageBlock, TableBlock, BlockList
+from .io_types import Header, ImageBlock, TableBlock, SpectrumBlock, \
+    SpecrespBlock, MatrixBlock, EboundsBlock, BlockList
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -106,14 +107,14 @@ def get_ascii_data(filename: str,
 
 def get_arf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[TableBlock, str]:
+                 ) -> tuple[SpecrespBlock, str]:
     """Read in the ARF."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
 def get_rmf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[list[TableBlock], TableBlock, str]:
+                 ) -> tuple[list[MatrixBlock], EboundsBlock, str]:
     """Read in the RMF."""
     raise NotImplementedError('No usable I/O backend was imported.')
 
@@ -121,7 +122,7 @@ def get_rmf_data(arg,
 def get_pha_data(arg,
                  make_copy: bool = False,
                  use_background: bool = False
-                 ) -> tuple[TableBlock, str]:
+                 ) -> tuple[SpectrumBlock, str]:
     """Read in the PHA."""
     raise NotImplementedError('No usable I/O backend was imported.')
 

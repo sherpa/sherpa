@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023
+#  Copyright (C) 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,11 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""Provide a generic abstraction of FITS-like concepts needed to send
-data between the I/O layer and the backends. These classes are not
-intended to support all FITS features or to be particularly efficient.
-They are also intended for internal use by Sherpa and so the interface
-is not guaranteed to be stable.
+"""Provide a generic abstraction of FITS-like concepts for the I/O code.
+
+These classes are not intended to support all FITS features or to be
+particularly efficient.  They are also intended for internal use by
+Sherpa, for sending data between the I/O layer and the backend code,
+and so the interface is not guaranteed to be stable, or to provide a
+general-purpose interface (that is, the classes only support what is
+useful).
 
 """
 
@@ -38,7 +41,9 @@ if TYPE_CHECKING:
 
 
 __all__ = ("KeyType", "HeaderItem", "Header", "Column",
-           "Block", "TableBlock", "ImageBlock", "BlockList")
+           "Block", "TableBlock", "SpectrumBlock", "SpecrespBlock",
+           "MatrixBlock", "EboundsBlock", "ImageBlock",
+           "BlockList")
 
 
 # Supporting numpy types makes this messy.
@@ -216,6 +221,109 @@ class TableBlock(Block):
 
         return None
 
+    def rget(self, colname: str) -> Column:
+        """Return a required column (case insensitive).
+
+        Raise a ValueError if colname does not exist.
+        """
+
+        col = self.get(colname)
+        if col is None:
+            raise ValueError(f"column {colname} does not exist in {self.name}")
+
+        return col
+
+
+@dataclass
+class SpectrumBlock(TableBlock):
+    """Represent a PHA dataset.
+
+    This ensures that the column CHANNEL exists and is 1 or 2D, and
+    that COUNTS and RATE + EXPOSURE keyword.
+
+    """
+
+    def __post_init__(self) -> None:
+
+        super().__post_init__()
+        chan = self.get("CHANNEL")
+        if chan is None:
+            raise ValueError(f"The PHA SPECTRUM block {self.name} "
+                             "is missing the column: 'CHANNEL'")
+        if chan.values.ndim not in [1, 2]:
+            raise ValueError("Unable to handle CHANNEL shape: "
+                             f"{chan.values.shape}")
+
+        if self.get("COUNTS") is not None:
+            return
+
+        if self.get("RATE") is None:
+            raise ValueError(f"The PHA SPECTRUM block {self.name} "
+                             "is missing one of: 'COUNTS' or 'RATE'")
+
+        if self.header.get("EXPOSURE") is None:
+            raise ValueError(f"The PHA SPECTRUM block {self.name} "
+                             "is missing the EXPOSURE keyword")
+
+
+@dataclass
+class SpecrespBlock(TableBlock):
+    """Represent an ARF.
+
+    This ensures that the columns SPECRESP, ENERG_LO, and ENERG_HI
+    exist. It currently does not enforce any header settings.
+
+    """
+
+    def __post_init__(self) -> None:
+
+        super().__post_init__()
+        for name in ["SPECRESP", "ENERG_LO", "ENERG_HI"]:
+            col = self.get(name)
+            if col is None:
+                raise ValueError(f"The ARF SPECRESP block {self.name} "
+                                 "is missing the column: '{name}'")
+
+
+@dataclass
+class MatrixBlock(TableBlock):
+    """Represent the MATRIX block of a RMF.
+
+    This ensures that the columns ENERG_LO, ENERG_HI, N_GRP, F_CHAN,
+    N_CHAN, and MATRIX exist. It currently does not enforce any header
+    settings.
+
+    """
+
+    def __post_init__(self) -> None:
+
+        super().__post_init__()
+        for name in ["ENERG_LO", "ENERG_HI", "N_GRP", "F_CHAN",
+                     "N_CHAN", "MATRIX"]:
+            col = self.get(name)
+            if col is None:
+                raise ValueError(f"The RMF MATRIX block {self.name} is "
+                                 f"missing the column: '{name}'")
+
+
+@dataclass
+class EboundsBlock(TableBlock):
+    """Represent the EBOUNDS block of a RMF.
+
+    This ensures that the columns CHANNEL, E_MIN, and E_MAX exist.  It
+    currently does not enforce any header settings.
+
+    """
+
+    def __post_init__(self) -> None:
+
+        super().__post_init__()
+        for name in ["CHANNEL", "E_MIN", "E_MAX"]:
+            col = self.get(name)
+            if col is None:
+                raise ValueError(f"The RMF EBOUNDS block {self.name} is "
+                                 f"missing the column: '{name}'")
+
 
 # The sky and eqpos field depends on whether the WCS code is
 # available.
@@ -256,6 +364,9 @@ class BlockList:
 
         # If there's no header then the first  block must be an image.
         #
-        if self.header is None and (len(self.blocks) == 0 or
-                                    not isinstance(self.blocks[0], ImageBlock)):
+        if self.header is not None:
+            return
+
+        if (len(self.blocks) == 0 or
+            not isinstance(self.blocks[0], ImageBlock)):
             raise ValueError("If header is empty the first block must be an image.")
