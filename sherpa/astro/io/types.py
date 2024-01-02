@@ -40,9 +40,10 @@ if TYPE_CHECKING:
 
 # Useful names to export
 #
-__all__ = ("KeyType", "HeaderItem", "Header", "Column",
-           "Block", "TableBlock", "ImageBlock", "BlockList",
-           "BlockType")
+__all__ = ("KeyType", "HeaderItem", "Header", "Column", "Block",
+           "TableBlock", "ImageBlock", "SpectrumBlock",
+           "SpecrespBlock", "MatrixBlock", "EboundsBlock",
+           "BlockList", "BlockType")
 
 
 # Some variants are named xxx and xxxArg, where the former is the
@@ -244,6 +245,109 @@ class TableBlock(Block):
                 return col
 
         return None
+
+    def rget(self, colname: str) -> Column:
+        """Return a required column (case insensitive).
+
+        Raise a ValueError if colname does not exist.
+        """
+
+        col = self.get(colname)
+        if col is None:
+            raise ValueError(f"column {colname} does not exist in {self.name}")
+
+        return col
+
+
+@dataclass
+class SpectrumBlock(TableBlock):
+    """Represent a PHA dataset.
+
+    This ensures that the column CHANNEL exists and is 1 or 2D, and
+    that COUNTS and RATE + EXPOSURE keyword.
+
+    """
+
+    def __post_init__(self) -> None:
+
+        super().__post_init__()
+        chan = self.get("CHANNEL")
+        if chan is None:
+            raise ValueError(f"The PHA SPECTRUM block {self.name} "
+                             "is missing the column: 'CHANNEL'")
+        if chan.values.ndim not in [1, 2]:
+            raise ValueError("Unable to handle CHANNEL shape: "
+                             f"{chan.values.shape}")
+
+        if self.get("COUNTS") is not None:
+            return
+
+        if self.get("RATE") is None:
+            raise ValueError(f"The PHA SPECTRUM block {self.name} "
+                             "is missing one of: 'COUNTS' or 'RATE'")
+
+        if self.header.get("EXPOSURE") is None:
+            raise ValueError(f"The PHA SPECTRUM block {self.name} "
+                             "is missing the EXPOSURE keyword")
+
+
+@dataclass
+class SpecrespBlock(TableBlock):
+    """Represent an ARF.
+
+    This ensures that the columns SPECRESP, ENERG_LO, and ENERG_HI
+    exist. It currently does not enforce any header settings.
+
+    """
+
+    def __post_init__(self) -> None:
+
+        super().__post_init__()
+        for name in ["SPECRESP", "ENERG_LO", "ENERG_HI"]:
+            col = self.get(name)
+            if col is None:
+                raise ValueError(f"The ARF SPECRESP block {self.name} "
+                                 "is missing the column: '{name}'")
+
+
+@dataclass
+class MatrixBlock(TableBlock):
+    """Represent the MATRIX block of a RMF.
+
+    This ensures that the columns ENERG_LO, ENERG_HI, N_GRP, F_CHAN,
+    N_CHAN, and MATRIX exist. It currently does not enforce any header
+    settings.
+
+    """
+
+    def __post_init__(self) -> None:
+
+        super().__post_init__()
+        for name in ["ENERG_LO", "ENERG_HI", "N_GRP", "F_CHAN",
+                     "N_CHAN", "MATRIX"]:
+            col = self.get(name)
+            if col is None:
+                raise ValueError(f"The RMF MATRIX block {self.name} is "
+                                 f"missing the column: '{name}'")
+
+
+@dataclass
+class EboundsBlock(TableBlock):
+    """Represent the EBOUNDS block of a RMF.
+
+    This ensures that the columns CHANNEL, E_MIN, and E_MAX exist.  It
+    currently does not enforce any header settings.
+
+    """
+
+    def __post_init__(self) -> None:
+
+        super().__post_init__()
+        for name in ["CHANNEL", "E_MIN", "E_MAX"]:
+            col = self.get(name)
+            if col is None:
+                raise ValueError(f"The RMF EBOUNDS block {self.name} is "
+                                 f"missing the column: '{name}'")
 
 
 # The sky and eqpos field depends on whether the WCS code is

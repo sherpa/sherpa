@@ -48,7 +48,8 @@ from sherpa.utils.numeric_types import SherpaFloat
 
 from .types import ColumnsType, DataType, DataTypeArg, \
     HdrType, HdrTypeArg, KeyType, NamesType, \
-    HeaderItem, Header, Column, ImageBlock, TableBlock, BlockList
+    HeaderItem, Header, Column, ImageBlock, TableBlock, BlockList, \
+    SpectrumBlock, SpecrespBlock, MatrixBlock, EboundsBlock
 
 
 warning = logging.getLogger(__name__).warning
@@ -585,7 +586,7 @@ def _is_ogip_block(hdu: HDUType,
 
 def get_arf_data(arg: DatasetType,
                  make_copy: bool = False
-                 ) -> tuple[TableBlock, str]:
+                 ) -> tuple[SpecrespBlock, str]:
     """Read in the ARF."""
 
     cm, filename = _get_file_contents(arg, exptype="BinTableHDU",
@@ -598,7 +599,7 @@ def get_arf_data(arg: DatasetType,
 
 
 def _read_arf_specresp(arf: fits.HDUList,
-                       filename: str) -> TableBlock:
+                       filename: str) -> SpecrespBlock:
     """Read in the SPECRESP block of the ARF."""
 
     # Should we do the _has_ogip_type check first and only if that
@@ -633,7 +634,7 @@ def _read_arf_specresp(arf: fits.HDUList,
         bin_hi = copycol(hdu, filename, "BIN_HI", dtype=SherpaFloat)
         cols.extend([bin_lo, bin_hi])
 
-    return TableBlock(hdu.name, header=headers, columns=cols)
+    return SpecrespBlock(hdu.name, header=headers, columns=cols)
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -772,7 +773,7 @@ def copycol(hdu: fits.BinTableHDU,
 
 
 def _read_rmf_matrix(matrix: fits.BinTableHDU,
-                     filename: str) -> TableBlock:
+                     filename: str) -> MatrixBlock:
     """Read in the given MATRIX block"""
 
     # Ensure we have a DETCHANS keyword
@@ -787,12 +788,12 @@ def _read_rmf_matrix(matrix: fits.BinTableHDU,
               ("F_CHAN", None),
               ("N_CHAN", None),
               ("MATRIX", None)]]
-    return TableBlock(matrix.name, header=mheaders, columns=mcols)
+    return MatrixBlock(matrix.name, header=mheaders, columns=mcols)
 
 
 def _read_rmf_ebounds(hdus: fits.HDUList,
                       filename: str,
-                      blname: str) -> TableBlock:
+                      blname: str) -> EboundsBlock:
     """Read in the given EBOUNDS block"""
 
     ebounds = hdus[blname]
@@ -807,12 +808,12 @@ def _read_rmf_ebounds(hdus: fits.HDUList,
              [("CHANNEL", None),
               ("E_MIN", SherpaFloat),
               ("E_MAX", SherpaFloat)]]
-    return TableBlock("EBOUNDS", header=eheaders, columns=ecols)
+    return EboundsBlock("EBOUNDS", header=eheaders, columns=ecols)
 
 
 def get_rmf_data(arg: DatasetType,
                  make_copy: bool = False
-                 ) -> tuple[list[TableBlock], TableBlock, str]:
+                 ) -> tuple[list[MatrixBlock], EboundsBlock, str]:
     """Read in the RMF.
 
     Notes
@@ -840,7 +841,7 @@ def get_rmf_data(arg: DatasetType,
 
 
 def _read_pha(pha: fits.BinTableHDU,
-              filename: str) -> TableBlock:
+              filename: str) -> SpectrumBlock:
     """Read in the PHA data.
 
     Note that there is minimal intepretation of the data.
@@ -887,13 +888,13 @@ def _read_pha(pha: fits.BinTableHDU,
         with suppress(IOErr):
             cols.append(copycol(pha, filename, name, dtype=dtype))
 
-    return TableBlock(pha.name, header=headers, columns=cols)
+    return SpectrumBlock(pha.name, header=headers, columns=cols)
 
 
 def get_pha_data(arg: DatasetType,
                  make_copy: bool = False,
                  use_background: bool = False
-                 ) -> tuple[TableBlock, str]:
+                 ) -> tuple[SpectrumBlock, str]:
     """Read in the PHA."""
 
     cm, filename = _get_file_contents(arg, exptype="BinTableHDU")
