@@ -64,7 +64,7 @@ import numpy as np
 
 from sherpa import get_config
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
-    DataPHA, DataRosatRMF
+    DataPHA, DataRosatRMF, DataMultiRMF, MatrixRMF
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.data import Data, Data1D, Data2D, Data2DInt
 from sherpa.io import _check_args
@@ -481,51 +481,11 @@ def read_arf(arg) -> DataARF:
     return DataARF(filename, **data)
 
 
-def _extract_rmf(matrix: MatrixBlock,
-                 ebounds: EboundsBlock,
-                 filename: str) -> dict[str, Any]:
-    """Extract the matrix data from the table.
+def _get_rmf(matrix: MatrixBlock) -> MatrixRMF:
+    """Create the RMF object.
 
-    Parameters
-    ----------
-    matrix, ebounds : TableBlock
-        The MATRIX and EBOUNDS blocks.
-    filename : str
-        The file name (used for error/warning messages).
-
-    Returns
-    -------
-    data : dict
-        The arguments needed for creating a RMF.
-
+    This removes excess elements from the various fields.
     """
-
-    header = {}
-    detchans = 0
-    for item in _remove_structural_items(matrix.header):
-        if item.name == "DETCHANS":
-            detchans = int(item.value)
-        else:
-            header[item.name] = item.value
-
-    # Validate the data:
-    #  - check that OFFSET is set in either F_CHAN column of MATRIX
-    #    or CHANNEL column of EBOUNDS
-    #  - flatten out the F_CHAN, N_CHAN, and MATRIX columns
-    #
-    f_chan = matrix.rget("F_CHAN")
-    channel = ebounds.rget("CHANNEL")
-
-    if f_chan.minval is not None:
-        offset = f_chan.minval
-    elif channel.minval is not None:
-        offset = channel.minval
-    else:
-        offset = 1
-        error("Failed to locate TLMIN keyword for F_CHAN column "
-              "in RMF file '%s'; Update the offset value in the "
-              "RMF data set to the appropriate TLMIN value prior "
-              "to fitting", filename)
 
     # The n_grp column remains as is but the other columns
     # - remove any rows where n_grp for that row is 0
@@ -534,6 +494,7 @@ def _extract_rmf(matrix: MatrixBlock,
     #
     # This is not designed to be the fastest code.
     #
+    f_chan = matrix.rget("F_CHAN")
     n_grp_raw = matrix.rget("N_GRP").values
     f_chan_raw = f_chan.values
     n_chan_raw = matrix.rget("N_CHAN").values
@@ -547,10 +508,10 @@ def _extract_rmf(matrix: MatrixBlock,
 
     # Since these values are sent to the fold_rmf routine in
     # sherpa.astro.utils._utils, we want the types to match up to
-    # avoid conversion time in that routine. The n_grp, f_chan, and
-    # n_chan arrays should be SherpaUIntArray and the matrix should be
-    # given by sherpa.utils.numeric_types. This conversion should
-    # probably be done by DataRMF itself though.
+    # avoid any need for datatype conversion that routine. The n_grp,
+    # f_chan, and n_chan arrays should be SherpaUIntArray and the
+    # matrix should be given by sherpa.utils.numeric_types. This
+    # conversion should probably be done by DataRMF itself though.
     #
     f_chan_l = []
     n_chan_l = []
@@ -586,16 +547,134 @@ def _extract_rmf(matrix: MatrixBlock,
     def flatten(xs, dtype):
         return np.concatenate(xs).astype(dtype)
 
+    return MatrixRMF(energ_lo=matrix.rget("ENERG_LO").values,
+                     energ_hi=matrix.rget("ENERG_HI").values,
+                     n_grp=np.asarray(n_grp_raw, dtype=SherpaUInt),
+                     f_chan=flatten(f_chan_l, dtype=SherpaUInt),
+                     n_chan=flatten(n_chan_l, dtype=SherpaUInt),
+                     matrix=flatten(mat_l, dtype=SherpaFloat))
+
+
+def _extract_rmf(matrix: MatrixBlock,
+                 ebounds: EboundsBlock,
+                 filename: str) -> dict[str, Any]:
+    """Extract the matrix data from the table.
+
+    Parameters
+    ----------
+    matrix : MatrixBlock
+        The MATRIX block.
+    ebounds : EboundsBlock
+        The EBOUNDS block.
+    filename : str
+        The file name (used for error/warning messages).
+
+    Returns
+    -------
+    data : dict
+        The arguments needed for creating a RMF.
+
+    """
+
+    header = {}
+    detchans = 0
+    for item in _remove_structural_items(matrix.header):
+        if item.name == "DETCHANS":
+            detchans = int(item.value)
+        else:
+            header[item.name] = item.value
+
+    f_chan = matrix.rget("F_CHAN")
+    channel = ebounds.rget("CHANNEL")
+
+    if f_chan.minval is not None:
+        offset = f_chan.minval
+    elif channel.minval is not None:
+        offset = channel.minval
+    else:
+        offset = 1
+        error("Failed to locate TLMIN keyword for F_CHAN column "
+              "in RMF file '%s'; Update the offset value in the "
+              "RMF data set to the appropriate TLMIN value prior "
+              "to fitting", filename)
+
+    mat = _get_rmf(matrix)
+
     return {"detchans": detchans,
-            "energ_lo": matrix.rget("ENERG_LO").values,
-            "energ_hi": matrix.rget("ENERG_HI").values,
-            "n_grp": np.asarray(n_grp_raw, dtype=SherpaUInt),
-            "f_chan": flatten(f_chan_l, dtype=SherpaUInt),
-            "n_chan": flatten(n_chan_l, dtype=SherpaUInt),
-            "matrix": flatten(mat_l, dtype=SherpaFloat),
+            "energ_lo": mat.energ_lo,
+            "energ_hi": mat.energ_hi,
+            "n_grp": mat.n_grp,
+            "f_chan": mat.f_chan,
+            "n_chan": mat.n_chan,
+            "matrix": mat.matrix,
             "offset": offset,
             "e_min": ebounds.rget("E_MIN").values,
             "e_max": ebounds.rget("E_MAX").values,
+            "header": header,
+            "ethresh": ogip_emin  # should we take this from the header?
+            }
+
+
+def _extract_multi_rmf(matrices: list[MatrixBlock],
+                       ebounds: EboundsBlock,
+                       filename: str) -> dict[str, Any]:
+    """Extract the matrix data from the table.
+
+    Parameters
+    ----------
+    matrices: list[MatrixBlock]
+        The MATRIX blocks.
+    ebounds: EboundsBlock
+        The EBOUNDS block.
+    filename : str
+        The file name (used for error/warning messages).
+
+    Returns
+    -------
+    data : dict
+        The arguments needed for creating a RMF.
+
+    """
+
+    # Use the first MATRIX block to
+    #  - get the header
+    #  - calculate OFFSET
+    #
+    # Technically there could be a different OFFSET for each matrix,
+    # but worry about that later.
+    #
+    matrix = matrices[0]
+
+    header = {}
+    detchans = 0
+    for item in _remove_structural_items(matrix.header):
+        if item.name == "DETCHANS":
+            detchans = int(item.value)
+        else:
+            header[item.name] = item.value
+
+    f_chan = matrix.rget("F_CHAN")
+    channel = ebounds.rget("CHANNEL")
+
+    if f_chan.minval is not None:
+        offset = f_chan.minval
+    elif channel.minval is not None:
+        offset = channel.minval
+    else:
+        offset = 1
+        error("Failed to locate TLMIN keyword for F_CHAN column "
+              "in RMF file '%s'; Update the offset value in the "
+              "RMF data set to the appropriate TLMIN value prior "
+              "to fitting", filename)
+
+    mats = [_get_rmf(mat) for mat in matrices]
+
+    return {"name": filename,
+            "detchans": detchans,
+            "matrices": mats,
+            "e_min": ebounds.rget("E_MIN").values,
+            "e_max": ebounds.rget("E_MAX").values,
+            "offset": offset,
             "header": header,
             "ethresh": ogip_emin  # should we take this from the header?
             }
@@ -621,18 +700,15 @@ def read_rmf(arg) -> DataRMF:
 
     # matrixes is guaranteed not to be empty
     nmat = len(matrixes)
-    if nmat > 1:
-        # Warn the user that the multi-matrix RMF is not supported.
+    if nmat == 1:
+        # Use the metadata from the first matrix
         #
-        error("RMF in %s contains %d MATRIX blocks; "
-              "Sherpa only uses the first block!",
-              filename, nmat)
+        matrix = matrixes[0]
+        data = _extract_rmf(matrix, ebounds, filename)
+        return _rmf_factory(filename, data)
 
-    # Use the metadata from the first matrix
-    #
-    matrix = matrixes[0]
-    data = _extract_rmf(matrix, ebounds, filename)
-    return _rmf_factory(filename, data)
+    kwargs = _extract_multi_rmf(matrixes, ebounds, filename)
+    return DataMultiRMF(**kwargs)
 
 
 def _rmf_factory(filename: str,
