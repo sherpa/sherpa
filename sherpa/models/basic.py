@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -2039,6 +2039,22 @@ class TableModel(ArithmeticModel):
             val = numpy.asarray(val)
             if val.ndim != 1:
                 raise ModelErr("Array must be 1D or None")
+
+            # Check we can add 0 to the values. This is to try and
+            # catch cases when a string column is passed to load. It
+            # will not catch all possible problem cases. An
+            # alternative would be to check
+            #    isinstance(val[0], numbers.Number)
+            # but it's not clear which is best.
+            #
+            # We could also check whether values are np.isfinite() but
+            # users may want to read in bad values that we then always
+            # mask out.
+            #
+            try:
+                val + 0
+            except Exception:
+                raise ModelErr(f"Unable to treat array as numeric: {val}") from None
 
             return val
 

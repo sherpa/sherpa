@@ -252,7 +252,6 @@ def test_polynom2d_guess_y0():
         check(par, 0)
 
 
-@pytest.mark.xfail
 def test_tablemodel_invalid_x():
     """We error out if X is invalid."""
 
@@ -262,7 +261,6 @@ def test_tablemodel_invalid_x():
         tbl.load([1, 2, "x"], [3, 4, 5])
 
 
-@pytest.mark.xfail
 def test_tablemodel_invalid_y():
     """We error out if y is invalid."""
 
