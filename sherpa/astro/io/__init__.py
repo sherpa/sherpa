@@ -64,7 +64,7 @@ import numpy
 
 from sherpa import get_config
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
-    DataPHA, DataRosatRMF
+    DataPHA, DataRosatRMF, DataMultiRMF, MatrixRMF
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
 import sherpa.io
@@ -469,6 +469,79 @@ def read_arf(arg) -> DataARF:
     return DataARF(filename, **data)
 
 
+def _get_rmf(matrix: MatrixBlock) -> MatrixRMF:
+    """Create the RMF object.
+
+    This removes excess elements from the various fields.
+    """
+
+    # The n_grp column remains as is but the other columns
+    # - remove any rows where n_grp for that row is 0
+    # - flatten out any 2D structure or variable-length
+    #   data
+    #
+    # This is not designed to be the fastest code.
+    #
+    f_chan = matrix.rget("F_CHAN")
+    n_grp_raw = matrix.rget("N_GRP").values
+    f_chan_raw = f_chan.values
+    n_chan_raw = matrix.rget("N_CHAN").values
+    mat_raw = matrix.rget("MATRIX").values
+
+    good = n_grp_raw > 0
+    ng_raw = n_grp_raw[good]
+    fc_raw = f_chan_raw[good]
+    nc_raw = n_chan_raw[good]
+    mx_raw = mat_raw[good]
+
+    # Since these values are sent to the fold_rmf routine in
+    # sherpa.astro.utils._utils, we want the types to match up to
+    # avoid any need for datatype conversion that routine. The n_grp,
+    # f_chan, and n_chan arrays should be SherpaUIntArray and the
+    # matrix should be given by sherpa.utils.numeric_types. This
+    # conversion should probably be done by DataRMF itself though.
+    #
+    f_chan_l = []
+    n_chan_l = []
+    mat_l = []
+    for ng, fc, nc, mxs in zip(ng_raw, fc_raw, nc_raw, mx_raw):
+        # fc and nc may be scalars rather than an array (this is known
+        # before the loop but for now we check for it each row).
+        #
+        try:
+            f_chan_l.append(fc[:ng])
+            n_chan_l.append(nc[:ng])
+        except IndexError:
+            f_chan_l.append([fc])
+            n_chan_l.append([nc])
+
+        # Loop through all the matrix elements, restricting to nchan
+        # (in case we do not have a VLF matrix array).  The matrix may
+        # also be a scalar.
+        #
+        ncs = n_chan_l[-1]
+        start = 0
+        for nchan in n_chan_l[-1]:
+            end = start + int(nchan)  # avoid any potential uint type casting
+            try:
+                mat_l.append(mxs[start:end])
+            except IndexError:
+                # Assume the scalar case
+                mat_l.append([mxs])
+
+            start = end
+
+    def flatten(xs, dtype):
+        return numpy.concatenate(xs).astype(dtype)
+
+    return MatrixRMF(energ_lo=matrix.rget("ENERG_LO").values,
+                     energ_hi=matrix.rget("ENERG_HI").values,
+                     n_grp=numpy.asarray(n_grp_raw, dtype=SherpaUInt),
+                     f_chan=flatten(f_chan_l, dtype=SherpaUInt),
+                     n_chan=flatten(n_chan_l, dtype=SherpaUInt),
+                     matrix=flatten(mat_l, dtype=SherpaFloat))
+
+
 def _extract_rmf(matrix: MatrixBlock,
                  ebounds: EboundsBlock,
                  filename: str) -> dict[str, Any]:
@@ -476,8 +549,10 @@ def _extract_rmf(matrix: MatrixBlock,
 
     Parameters
     ----------
-    matrix, ebounds : TableBlock
-        The MATRIX and EBOUNDS blocks.
+    matrix : MatrixBlock
+        The MATRIX block.
+    ebounds : EboundsBlock
+        The EBOUNDS block.
     filename : str
         The file name (used for error/warning messages).
 
@@ -515,74 +590,81 @@ def _extract_rmf(matrix: MatrixBlock,
               "RMF data set to the appropriate TLMIN value prior "
               "to fitting", filename)
 
-    # The n_grp column remains as is but the other columns
-    # - remove any rows where n_grp for that row is 0
-    # - flatten out any 2D structure or variable-length
-    #   data
-    #
-    # This is not designed to be the fastest code.
-    #
-    n_grp_raw = matrix.rget("N_GRP").values
-    f_chan_raw = f_chan.values
-    n_chan_raw = matrix.rget("N_CHAN").values
-    mat_raw = matrix.rget("MATRIX").values
-
-    good = n_grp_raw > 0
-    ng_raw = n_grp_raw[good]
-    fc_raw = f_chan_raw[good]
-    nc_raw = n_chan_raw[good]
-    mx_raw = mat_raw[good]
-
-    # Since these values are sent to the fold_rmf routine in
-    # sherpa.astro.utils._utils, we want the types to match up to
-    # avoid conversion time in that routine. The n_grp, f_chan, and
-    # n_chan arrays should be SherpaUIntArray and the matrix should be
-    # given by sherpa.utils.numeric_types. This conversion should
-    # probably be done by DataRMF itself though.
-    #
-    f_chan_l = []
-    n_chan_l = []
-    mat_l = []
-    for ng, fc, nc, mxs in zip(ng_raw, fc_raw, nc_raw, mx_raw):
-        # fc and nc may be scalars rather than an array (this is known
-        # before the loop but for now we check for it each row).
-        #
-        try:
-            f_chan_l.append(fc[:ng])
-            n_chan_l.append(nc[:ng])
-        except IndexError:
-            f_chan_l.append([fc])
-            n_chan_l.append([nc])
-
-        # Loop through all the matrix elements, restricting to nchan
-        # (in case we do not have a VLF matrix array).  The matrix may
-        # also be a scalar.
-        #
-        ncs = n_chan_l[-1]
-        start = 0
-        for nchan in n_chan_l[-1]:
-            end = start + int(nchan)  # avoid any potential uint type casting
-            try:
-                mat_l.append(mxs[start:end])
-            except IndexError:
-                # Assume the scalar case
-                mat_l.append([mxs])
-
-            start = end
-
-    def flatten(xs, dtype):
-        return numpy.concatenate(xs).astype(dtype)
+    mat = _get_rmf(matrix)
 
     return {"detchans": detchans,
-            "energ_lo": matrix.rget("ENERG_LO").values,
-            "energ_hi": matrix.rget("ENERG_HI").values,
-            "n_grp": numpy.asarray(n_grp_raw, dtype=SherpaUInt),
-            "f_chan": flatten(f_chan_l, dtype=SherpaUInt),
-            "n_chan": flatten(n_chan_l, dtype=SherpaUInt),
-            "matrix": flatten(mat_l, dtype=SherpaFloat),
+            "energ_lo": mat.energ_lo,
+            "energ_hi": mat.energ_hi,
+            "n_grp": mat.n_grp,
+            "f_chan": mat.f_chan,
+            "n_chan": mat.n_chan,
+            "matrix": mat.matrix,
             "offset": offset,
             "e_min": ebounds.rget("E_MIN").values,
             "e_max": ebounds.rget("E_MAX").values,
+            "header": header,
+            "ethresh": ogip_emin  # should we take this from the header?
+            }
+
+
+def _extract_multi_rmf(matrices: list[MatrixBlock],
+                       ebounds: EboundsBlock,
+                       filename: str) -> dict[str, Any]:
+    """Extract the matrix data from the table.
+
+    Parameters
+    ----------
+    matrix, ebounds : TableBlock
+        The MATRIX and EBOUNDS blocks.
+    filename : str
+        The file name (used for error/warning messages).
+
+    Returns
+    -------
+    data : dict
+        The arguments needed for creating a RMF.
+
+    """
+
+    # Use the first MATRIX block to
+    #  - get the header
+    #  - calculate OFFSET
+    #
+    # Technically there could be a different OFFSET for each matrix,
+    # but worry about that later.
+    #
+    matrix = matrices[0]
+
+    header = {}
+    detchans = 0
+    for item in _remove_structural_items(matrix.header):
+        if item.name == "DETCHANS":
+            detchans = int(item.value)
+        else:
+            header[item.name] = item.value
+
+    f_chan = matrix.rget("F_CHAN")
+    channel = ebounds.rget("CHANNEL")
+
+    if f_chan.minval is not None:
+        offset = f_chan.minval
+    elif channel.minval is not None:
+        offset = channel.minval
+    else:
+        offset = 1
+        error("Failed to locate TLMIN keyword for F_CHAN column "
+              "in RMF file '%s'; Update the offset value in the "
+              "RMF data set to the appropriate TLMIN value prior "
+              "to fitting", filename)
+
+    mats = [_get_rmf(mat) for mat in matrices]
+
+    return {"name": filename,
+            "detchans": detchans,
+            "matrices": mats,
+            "e_min": ebounds.rget("E_MIN").values,
+            "e_max": ebounds.rget("E_MAX").values,
+            "offset": offset,
             "header": header,
             "ethresh": ogip_emin  # should we take this from the header?
             }
@@ -611,18 +693,15 @@ def read_rmf(arg) -> DataRMF:
 
     # matrixes is guaranteed not to be empty
     nmat = len(matrixes)
-    if nmat > 1:
-        # Warn the user that the multi-matrix RMF is not supported.
+    if nmat == 1:
+        # Use the metadata from the first matrix
         #
-        error("RMF in %s contains %d MATRIX blocks; "
-              "Sherpa only uses the first block!",
-              filename, nmat)
+        matrix = matrixes[0]
+        data = _extract_rmf(matrix, ebounds, filename)
+        return _rmf_factory(filename, data)
 
-    # Use the metadata from the first matrix
-    #
-    matrix = matrixes[0]
-    data = _extract_rmf(matrix, ebounds, filename)
-    return _rmf_factory(filename, data)
+    kwargs = _extract_multi_rmf(matrixes, ebounds, filename)
+    return DataMultiRMF(**kwargs)
 
 
 def _rmf_factory(filename, data):
