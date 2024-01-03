@@ -9559,7 +9559,7 @@ class Session(sherpa.ui.utils.Session):
                 self.load_multi_arfs(id, arf, resp_ids=resp_ids)
             elif arf is None:
                 # In some cases, arf is None, but rmf is not.
-                # For example, XMM/RGS does uses only a single file (the RMF)
+                # For example, XMM/RGS uses only a single file (the RMF)
                 # to hold all information.
                 pass
             else:
