@@ -1146,13 +1146,7 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     #
     assert len(caplog.record_tuples) == 0
     rmf = io.read_rmf(outfile)
-    assert len(caplog.record_tuples) == 1
-
-    lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == "sherpa.astro.io"
-    assert lvl == logging.ERROR
-    assert msg.startswith("RMF in ")
-    assert msg.endswith("/multi.rmf contains 2 MATRIX blocks; Sherpa only uses the first block!")
+    assert len(caplog.record_tuples) == 0
 
     # What happens if we apply the RMF to a model?
     #
@@ -1178,8 +1172,9 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
         blurry_matrix[idx, fchan - 1:fchan + 3] = blur
 
     expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
+    expected = expected_perfect + expected_blurry
 
-    assert y == pytest.approx(expected_perfect)
+    assert y == pytest.approx(expected)
 
 
 @requires_fits
