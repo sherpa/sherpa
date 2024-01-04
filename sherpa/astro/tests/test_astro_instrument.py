@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020 - 2024
+#  Copyright (C) 2017, 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,22 +30,21 @@ import warnings
 import numpy as np
 from numpy.testing import assert_allclose
 
-import pytest  # pytest >= 3.0 is needed
+import pytest
 
-from sherpa.astro import hc
+from sherpa.astro import hc, io
 from sherpa.astro.data import DataPHA, DataRMF, DataIMG
 from sherpa.astro.instrument import ARF1D, ARFModelNoPHA, ARFModelPHA, \
-    Response1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
+    Response1D, MultipleResponse1D, RMF1D, RMFModelNoPHA, RMFModelPHA, \
     RSPModelNoPHA, RSPModelPHA, PSFModel, RMFMatrix, \
     create_arf, create_delta_rmf, create_non_delta_rmf, \
     rmf_to_matrix, rmf_to_image, has_pha_response
-from sherpa.astro import io
 from sherpa.data import Data1D
 from sherpa.fit import Fit
 from sherpa.models.basic import Box1D, Const1D, Gauss1D, Polynom1D, \
     PowLaw1D, TableModel
 from sherpa.models.model import ArithmeticModel, \
-    ArithmeticConstantModel, BinaryOpModel
+    ArithmeticConstantModel, BinaryOpModel, Model
 from sherpa.utils.err import DataErr, PSFErr
 from sherpa.utils.testing import requires_xspec, requires_data, requires_fits
 
@@ -1188,25 +1187,27 @@ def test_rspmodelpha_matrix_call_xspec():
     assert_allclose(out_en, expected)
 
 
-@pytest.mark.parametrize("analysis", ['channel', 'energy', 'wave'])
-@pytest.mark.parametrize("arfexp", [True, False])
-@pytest.mark.parametrize("phaexp", [True, False])
-def test_rsp_matrix_call(analysis, arfexp, phaexp):
-    """Check out Response1D with matrix.
+def setup_resp(arfexp: bool,
+               phaexp: bool,
+               with_rmf: bool = True,
+               with_arf: bool = True
+               ) -> tuple[DataPHA, Model, np.ndarray, str]:
+    """Used in several tests"""
 
-    analysis is the analysis setting
-    arfexp determines whether the arf has an exposure time
-    phaexp determines whether the PHA has an exposure time
-    """
+    # Just check we aren't combining unexpected arguments
+    #
+    assert with_arf or with_rmf
 
-    # Chose different exposure times for ARF and PHA to see which
+    # Select different exposure times for ARF and PHA to see which
     # gets picked up.
     #
+    arf_exposure : float | None
     if arfexp:
         arf_exposure = 200.1
     else:
         arf_exposure = None
 
+    pha_exposure : float | None
     if phaexp:
         pha_exposure = 220.9
     else:
@@ -1223,11 +1224,6 @@ def test_rsp_matrix_call(analysis, arfexp, phaexp):
         mdl_label = 'flat'
 
     rdata = create_non_delta_rmf_local()
-    specresp = create_non_delta_specresp()
-    adata = create_arf(rdata.energ_lo,
-                       rdata.energ_hi,
-                       specresp,
-                       exposure=arf_exposure)
 
     constant = 2.3
     mdl = Const1D('flat')
@@ -1244,8 +1240,35 @@ def test_rsp_matrix_call(analysis, arfexp, phaexp):
     pha = DataPHA('test-pha', channel=channels, counts=counts,
                   exposure=pha_exposure)
 
-    pha.set_arf(adata)
-    pha.set_rmf(rdata)
+    if with_arf:
+        specresp = create_non_delta_specresp()
+        adata = create_arf(rdata.energ_lo,
+                           rdata.energ_hi,
+                           specresp,
+                           exposure=arf_exposure)
+        pha.set_arf(adata)
+    else:
+        specresp = np.ones(rdata.energ_lo.size)
+
+    if with_rmf:
+        pha.set_rmf(rdata)
+
+    modvals = exposure * constant * specresp
+    return pha, mdl, modvals, mdl_label
+
+
+@pytest.mark.parametrize("analysis", ['channel', 'energy', 'wave'])
+@pytest.mark.parametrize("arfexp", [True, False])
+@pytest.mark.parametrize("phaexp", [True, False])
+def test_rsp_matrix_call(analysis, arfexp, phaexp):
+    """Check out Response1D with matrix.
+
+    analysis is the analysis setting
+    arfexp determines whether the arf has an exposure time
+    phaexp determines whether the PHA has an exposure time
+    """
+
+    pha, mdl, modvals, mdl_label = setup_resp(arfexp, phaexp)
 
     rsp = Response1D(pha)
     wrapped = rsp(mdl)
@@ -1255,13 +1278,12 @@ def test_rsp_matrix_call(analysis, arfexp, phaexp):
     expname = f'apply_rmf(apply_arf({mdl_label}))'
     assert wrapped.name == expname
 
-    modvals = exposure * constant * specresp
     matrix = get_non_delta_matrix()
     expected = np.matmul(modvals, matrix)
 
     pha.set_analysis(analysis)
     out = wrapped([4, 5])
-    assert_allclose(out, expected, rtol=2e-7)
+    assert out == pytest.approx(expected, rel=2e-7)
 
 
 @pytest.mark.parametrize("arfexp", [True, False])
@@ -1276,53 +1298,7 @@ def test_rsp_normf_call(arfexp, phaexp):
     This only uses the channel setting
     """
 
-    # Chose different exposure times for ARF and PHA to see which
-    # gets picked up.
-    #
-    if arfexp:
-        arf_exposure = 200.1
-    else:
-        arf_exposure = None
-
-    if phaexp:
-        pha_exposure = 220.9
-    else:
-        pha_exposure = None
-
-    if phaexp:
-        exposure = pha_exposure
-        mdl_label = f'{exposure} * flat'
-    elif arfexp:
-        exposure = arf_exposure
-        mdl_label = f'{exposure} * flat'
-    else:
-        exposure = 1.0
-        mdl_label = 'flat'
-
-    # rdata is only used to define the grids
-    rdata = create_non_delta_rmf_local()
-    specresp = create_non_delta_specresp()
-    adata = create_arf(rdata.energ_lo,
-                       rdata.energ_hi,
-                       specresp,
-                       exposure=arf_exposure)
-
-    constant = 2.3
-    mdl = Const1D('flat')
-    mdl.c0 = constant
-
-    # Turn off integration on this model, so that it is not integrated
-    # across the bin width.
-    #
-    mdl.integrate = False
-
-    nchans = rdata.e_min.size
-    channels = np.arange(1, nchans + 1, dtype=np.int16)
-    counts = np.ones(nchans, dtype=np.int16)
-    pha = DataPHA('test-pha', channel=channels, counts=counts,
-                  exposure=pha_exposure)
-
-    pha.set_arf(adata)
+    pha, mdl, expected, mdl_label = setup_resp(arfexp, phaexp, with_rmf=False)
 
     rsp = Response1D(pha)
     wrapped = rsp(mdl)
@@ -1332,11 +1308,9 @@ def test_rsp_normf_call(arfexp, phaexp):
     expname = f'apply_arf({mdl_label})'
     assert wrapped.name == expname
 
-    expected = exposure * constant * specresp
-
     pha.set_analysis('channel')
     out = wrapped([4, 5])
-    assert_allclose(out, expected)
+    assert out == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("analysis", ['channel', 'energy', 'wave'])
@@ -1349,36 +1323,7 @@ def test_rsp_no_arf_matrix_call(analysis, phaexp):
     phaexp determines whether the PHA has an exposure time
     """
 
-    if phaexp:
-        pha_exposure = 220.9
-    else:
-        pha_exposure = None
-
-    if phaexp:
-        exposure = pha_exposure
-        mdl_label = f'{exposure} * flat'
-    else:
-        exposure = 1.0
-        mdl_label = 'flat'
-
-    rdata = create_non_delta_rmf_local()
-
-    constant = 2.3
-    mdl = Const1D('flat')
-    mdl.c0 = constant
-
-    # Turn off integration on this model, so that it is not integrated
-    # across the bin width.
-    #
-    mdl.integrate = False
-
-    nchans = rdata.e_min.size
-    channels = np.arange(1, nchans + 1, dtype=np.int16)
-    counts = np.ones(nchans, dtype=np.int16)
-    pha = DataPHA('test-pha', channel=channels, counts=counts,
-                  exposure=pha_exposure)
-
-    pha.set_rmf(rdata)
+    pha, mdl, modvals, mdl_label = setup_resp(False, phaexp, with_arf=False)
 
     rsp = Response1D(pha)
     wrapped = rsp(mdl)
@@ -1388,13 +1333,207 @@ def test_rsp_no_arf_matrix_call(analysis, phaexp):
     expname = f'apply_rmf({mdl_label})'
     assert wrapped.name == expname
 
-    modvals = exposure * constant * np.ones(rdata.energ_lo.size)
     matrix = get_non_delta_matrix()
     expected = np.matmul(modvals, matrix)
 
     pha.set_analysis(analysis)
     out = wrapped([4, 5])
-    assert_allclose(out, expected)
+    assert out == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("arfexp", [True, False])
+@pytest.mark.parametrize("phaexp", [True, False])
+def test_rsp_multi_1_label(arfexp, phaexp):
+    """What does MultiResponse1D do here?
+
+    This is currently a regression test.
+    """
+
+    pha, mdl, modvals, mdl_label = setup_resp(arfexp, phaexp)
+
+    rsp = MultipleResponse1D(pha)
+    wrapped = rsp(mdl)
+
+    assert isinstance(wrapped, ArithmeticModel)
+
+    # The labelling of the model differes from the Response1D case, so
+    # re-do the analysis.
+    #
+    # TODO:
+    #   - what happens to the ARF exposure time?
+    #   - why is there "((flat))" and not "(flat)" for apply_arf?
+    #   - there are not enough closing brackets
+    #
+    expname = f'MultiResponseSumModel(apply_rmf(apply_arf((flat))'
+    if phaexp:
+        expname = f"220.9 * {expname}"
+
+    assert wrapped.name == expname
+
+
+@pytest.mark.parametrize("analysis", ['channel', 'energy', 'wave'])
+@pytest.mark.parametrize("arfexp", [True, False])
+@pytest.mark.parametrize("phaexp", [True, False])
+def test_rsp_multi_1_no_filter(analysis, arfexp, phaexp):
+    """What does MultiResponse1D do here?
+
+    This is currently a regression test.
+    """
+
+    pha, mdl, modvals, mdl_label = setup_resp(arfexp, phaexp)
+
+    rsp = MultipleResponse1D(pha)
+    wrapped = rsp(mdl)
+
+    # Note that ARF-only seems to behave differently to Response1D
+    #
+    if arfexp and not phaexp:
+        modvals = modvals / 200.1
+
+    matrix = get_non_delta_matrix()
+    expected = np.matmul(modvals, matrix)
+
+    pha.set_analysis(analysis)
+    out = wrapped(pha.channel)
+
+    assert out == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("analysis", ['channel', 'energy', 'wave'])
+@pytest.mark.parametrize("arfexp", [True, False])
+@pytest.mark.parametrize("phaexp", [True, False])
+def test_rsp_multi_1_filtered(analysis, arfexp, phaexp):
+    """What does MultiResponse1D do here?
+
+    This is currently a regression test.
+    """
+
+    pha, mdl, modvals, mdl_label = setup_resp(arfexp, phaexp)
+
+    rsp = MultipleResponse1D(pha)
+    wrapped = rsp(mdl)
+
+    pha.set_analysis(analysis)
+    out = wrapped([4, 5])
+
+    # Note that ARF-only seems to behave differently to Response1D
+    #
+    if arfexp and not phaexp:
+        modvals = modvals / 200.1
+
+    matrix = get_non_delta_matrix()
+    expected = np.matmul(modvals, matrix)
+
+    expected2 = expected[[3, 4]]
+    assert out == pytest.approx(expected2)
+
+
+@pytest.mark.parametrize("analysis", ['channel', 'energy', 'wave'])
+@pytest.mark.parametrize("arfexp", [True, False])
+@pytest.mark.parametrize("phaexp", [True, False])
+def test_rsp_multi_2_label(analysis, arfexp, phaexp):
+    """Check Response1D is half MultipleResponse1D.
+
+    Apply the same response twice for the MultipleResponse1D case.
+    This is currently a regression test.
+
+    """
+
+    pha, mdl, modvals, mdl_label = setup_resp(arfexp, phaexp)
+
+    # Duplicate the response
+    arf, rmf = pha.get_response(id=1)
+    pha.set_rmf(rmf, id=2)
+    pha.set_arf(arf, id=2)
+
+    rsp = MultipleResponse1D(pha)
+    wrapped = rsp(mdl)
+
+    assert isinstance(wrapped, ArithmeticModel)
+
+    # The labelling of the model differes from the Response1D case, so
+    # re-do the analysis.
+    #
+    # TODO:
+    #   - see test_rsp_multi_1_label
+    #   - multiple responses are not handled particularly well
+    #
+    expname = f'MultiResponseSumModel(apply_rmf(apply_arf((flat),apply_rmf(apply_arf((flat))'
+    if phaexp:
+        expname = f"220.9 * {expname}"
+
+    assert wrapped.name == expname
+
+
+@pytest.mark.parametrize("analysis", ['channel', 'energy', 'wave'])
+@pytest.mark.parametrize("arfexp", [True, False])
+@pytest.mark.parametrize("phaexp", [True, False])
+def test_rsp_multi_2_no_filter(analysis, arfexp, phaexp):
+    """Check Response1D is half MultipleResponse1D.
+
+    Apply the same response twice for the MultipleResponse1D case.
+    This is currently a regression test.
+
+    """
+
+    pha, mdl, modvals, mdl_label = setup_resp(arfexp, phaexp)
+
+    # Duplicate the response
+    arf, rmf = pha.get_response(id=1)
+    pha.set_rmf(rmf, id=2)
+    pha.set_arf(arf, id=2)
+
+    rsp = MultipleResponse1D(pha)
+    wrapped = rsp(mdl)
+
+    # Note that ARF-only seems to behave differently to Response1D
+    #
+    if arfexp and not phaexp:
+        modvals = modvals / 200.1
+
+    matrix = get_non_delta_matrix()
+    expected = np.matmul(modvals, matrix)
+
+    pha.set_analysis(analysis)
+    out = wrapped(pha.channel)
+
+    assert out == pytest.approx(2 * expected)
+
+
+@pytest.mark.parametrize("analysis", ['channel', 'energy', 'wave'])
+@pytest.mark.parametrize("arfexp", [True, False])
+@pytest.mark.parametrize("phaexp", [True, False])
+def test_rsp_multi_2_filtered(analysis, arfexp, phaexp):
+    """Check Response1D is half MultipleResponse1D.
+
+    Apply the same response twice for the MultipleResponse1D case.
+    This is currently a regression test.
+
+    """
+
+    pha, mdl, modvals, mdl_label = setup_resp(arfexp, phaexp)
+
+    # Duplicate the response
+    arf, rmf = pha.get_response(id=1)
+    pha.set_rmf(rmf, id=2)
+    pha.set_arf(arf, id=2)
+
+    rsp = MultipleResponse1D(pha)
+    wrapped = rsp(mdl)
+
+    # Note that ARF-only seems to behave differently to Response1D
+    #
+    if arfexp and not phaexp:
+        modvals = modvals / 200.1
+
+    matrix = get_non_delta_matrix()
+    expected = np.matmul(modvals, matrix)
+
+    pha.set_analysis(analysis)
+    out = wrapped([4, 5])
+
+    expected2 = expected[[3, 4]]
+    assert out == pytest.approx(2 * expected2)
 
 
 class MyPowLaw1D(PowLaw1D):
