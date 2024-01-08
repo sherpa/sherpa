@@ -275,13 +275,13 @@ def test_load_data(loader, make_data_path, clean_astro_ui, caplog):
     assert ui.list_data_ids() == ['foo']
 
     msg1 = f"systematic errors were not found in file '{infile}'"
-    msg2 = f"statistical errors were found in file '{infile}' \n" + \
+    msg2 = f"statistical errors were found in file '{infile}'\n" + \
         "but not used; to use them, re-read with use_errors=True"
     msg3 = f"read ARF file {arf}"
     msg4 = f"read RMF file {rmf}"
 
     msg5 = f"systematic errors were not found in file '{bgfile}'"
-    msg6 = f"statistical errors were found in file '{bgfile}' \n" + \
+    msg6 = f"statistical errors were found in file '{bgfile}'\n" + \
         "but not used; to use them, re-read with use_errors=True"
     msg7 = f"read background file {bgfile}"
 
