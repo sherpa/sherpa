@@ -33,14 +33,14 @@ from sherpa.astro.data import DataARF, DataIMG, DataIMGInt, DataPHA, DataRMF
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
-from sherpa.astro.utils._region import Region
 from sherpa.data import Data2D, Data2DInt
 from sherpa.models import Delta2D, Polynom2D
 from sherpa.plot import backend
 from sherpa.stats._statfcts import calc_chi2datavar_errors
 from sherpa.utils import dataspace2d
 from sherpa.utils.err import DataErr
-from sherpa.utils.testing import requires_data, requires_fits, requires_group
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_group, requires_region, requires_wcs
 
 
 def test_can_not_group_ungrouped():
@@ -702,6 +702,7 @@ def test_img_get_img_filter_none1(make_test_image):
     assert ival == pytest.approx(expected)
 
 
+@requires_region
 def test_img_get_img_filter_none2(make_test_image):
     """get_img when all the data has been filtered: mask is array of False"""
 
@@ -718,6 +719,7 @@ def test_img_get_img_filter_none2(make_test_image):
     assert not np.any(np.isfinite(ival))
 
 
+@requires_region
 def test_img_get_img_filter_some(make_test_image):
     """get_img when some of the data has been filtered.
 
@@ -828,6 +830,7 @@ def test_img_get_img_model_filter_none1(make_test_image):
         img.get_img(image_callable)
 
 
+@requires_region
 def test_img_get_img_model_filter_none2(make_test_image):
     """See test_img_get_img_filter_none2. Issue #1447"""
 
@@ -843,6 +846,7 @@ def test_img_get_img_model_filter_none2(make_test_image):
     assert not np.any(np.isfinite(mval))
 
 
+@requires_region
 def test_img_get_img_model_filter_some(make_test_image):
     """get_img with a callable and having a filter"""
 
@@ -876,6 +880,7 @@ def test_img_get_img_model_filter_some(make_test_image):
     assert mval[good] == pytest.approx(expected2[good])
 
 
+@requires_region
 def test_img_get_img_model_filter_some2(make_test_image):
     """test_img_get_img_model_filter_some but with a non-rectangular filter
 
@@ -1012,6 +1017,7 @@ def read_test_image(make_data_path):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize('coord,expected',
                          [('logical', 'logical'),
                           ('image', 'logical'),
@@ -1028,6 +1034,7 @@ def test_img_file_set_coord(coord, expected, read_test_image):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize('coord', ['logical', 'image', 'physical', 'world', 'wcs'])
 def test_img_file_get_logical(coord, read_test_image):
     """get_logical when coord is set"""
@@ -1045,6 +1052,7 @@ def test_img_file_get_logical(coord, read_test_image):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize('coord', ['logical', 'image', 'physical', 'world', 'wcs'])
 def test_img_file_get_physical(coord, read_test_image):
     """get_physical when coord is set"""
@@ -1062,6 +1070,7 @@ def test_img_file_get_physical(coord, read_test_image):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize('coord', ['logical', 'image', 'physical', 'world', 'wcs'])
 def test_img_file_get_world(coord, read_test_image):
     """get_world when coord is set"""
@@ -1116,6 +1125,7 @@ def test_img_file_get_axes_logical(coord, read_test_image):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize('coord', ['physical'])
 def test_img_file_get_axes_physical(coord, read_test_image):
     """get_axes when coord is set: physical"""
@@ -1129,6 +1139,7 @@ def test_img_file_get_axes_physical(coord, read_test_image):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize('coord', ['world', 'wcs'])
 def test_img_file_get_axes_world(coord, read_test_image):
     """get_axes when coord is set: world"""
@@ -1149,6 +1160,7 @@ def test_img_file_get_axes_world(coord, read_test_image):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize('coord,expected',
                          [('logical', 'x0'),
                           ('image', 'x0'),
@@ -1164,6 +1176,7 @@ def test_img_file_get_xlabel(coord, expected, read_test_image):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize('coord,expected',
                          [('logical', 'x1'),
                           ('image', 'x1'),
@@ -1196,6 +1209,7 @@ def test_img_get_bounding_mask_nodata(make_test_image):
     assert ans[1] is None
 
 
+@requires_region
 def test_img_get_bounding_mask_filtered(make_test_image):
     """get_bounding_mask with data partially filtered"""
     d = make_test_image
@@ -1212,6 +1226,7 @@ def test_img_get_bounding_mask_filtered(make_test_image):
     assert ans[1] == (5, 7)
 
 
+@requires_region
 def test_img_get_filter(make_test_image):
     """Simple get_filter check on an image."""
     d = make_test_image
@@ -1222,6 +1237,7 @@ def test_img_get_filter(make_test_image):
     assert d.get_filter() == shape.capitalize()
 
 
+@requires_region
 def test_img_get_filter_exclude(make_test_image):
     """Simple get_filter check on an image."""
     d = make_test_image
@@ -1234,6 +1250,7 @@ def test_img_get_filter_exclude(make_test_image):
     assert d.get_filter() == expected
 
 
+@requires_region
 def test_img_get_filter_none(make_test_image):
     """Simple get_filter check on an image: no data"""
     d = make_test_image
@@ -1246,6 +1263,7 @@ def test_img_get_filter_none(make_test_image):
     assert d.get_filter() == ''
 
 
+@requires_region
 def test_img_get_filter_combined(make_test_image):
     """Simple get_filter check on an image."""
     d = make_test_image
@@ -1262,6 +1280,7 @@ def test_img_get_filter_combined(make_test_image):
     assert d.get_filter() == shape
 
 
+@requires_region
 def test_img_get_filter_excluded(make_test_image):
     """Simple get_filter check on an image."""
     d = make_test_image
@@ -1279,7 +1298,12 @@ def test_img_get_filter_excluded(make_test_image):
 
 
 def check_ignore_ignore(d):
-    """Check removing the shapes works as expected."""
+    """Check removing the shapes works as expected.
+
+    Tests must use requires_region
+    """
+
+    from sherpa.astro.utils._region import Region
 
     shape1 = 'ellipse(4260,3840,3,2,0)'
     d.notice2d(shape1, ignore=True)
@@ -1301,6 +1325,7 @@ def check_ignore_ignore(d):
     assert d.get_filter() == expected
 
 
+@requires_region
 def test_img_get_filter_included_excluded(make_test_image):
     """Simple get_filter check on an image.
 
@@ -1310,6 +1335,7 @@ def test_img_get_filter_included_excluded(make_test_image):
     check_ignore_ignore(d)
 
 
+@requires_region
 def test_img_get_filter_excluded_excluded(make_test_image):
     """Simple get_filter check on an image.
 
@@ -1347,6 +1373,7 @@ def test_img_get_filter_excluded_excluded(make_test_image):
     check_ignore_ignore(d)
 
 
+@requires_region
 def test_img_get_filter_compare_filtering(make_test_image):
     """Check calling notice2d(ignore=True) with 2 shapes is same as once.
 
@@ -2661,6 +2688,7 @@ def test_pickle_image_filter_none(make_test_image):
     assert d2._region is None
 
 
+@requires_region
 @pytest.mark.parametrize("ignore,region,expected",
                          [(False, 'circle(4255, 3840, 20)', 'Circle(4255,3840,20)'),
                           (True, 'circle(4255, 3840, 20)', 'Field()&!Circle(4255,3840,20)'),
@@ -2668,13 +2696,9 @@ def test_pickle_image_filter_none(make_test_image):
                           (True, 'circle(4255, 3840, 20) - field()', 'Field()&!Circle(4255,3840,20)|Field()'),
                           ])
 def test_pickle_image_filter(ignore, region, expected, make_test_image):
-    """Check we can pickle/unpickle with a region filter.
+    """Check we can pickle/unpickle with a region filter."""
 
-    This test assumes we have region support, but we do not
-    currently have any test builds without it so do not
-    bother skipping.
-
-    """
+    from sherpa.astro.utils._region import Region
 
     d = make_test_image
     d.notice2d(region, ignore=ignore)
@@ -2739,6 +2763,7 @@ def test_img_world_show(make_test_image_world):
     assert len(out) == 16
 
 
+@requires_wcs
 def test_img_sky_pickle(make_test_image_sky):
     """Very basic test of pickling"""
     d = make_test_image_sky
@@ -2758,6 +2783,7 @@ def test_img_sky_pickle(make_test_image_sky):
     assert (d2.x1 == d.x1).all()
 
 
+@requires_wcs
 def test_img_world_pickle(make_test_image_world):
     """Very basic test of pickling"""
     d = make_test_image_world
@@ -2777,6 +2803,7 @@ def test_img_world_pickle(make_test_image_world):
     assert (d2.x1 == d.x1).all()
 
 
+@requires_wcs  # not for all, but easiest this way
 @pytest.mark.parametrize("path", [[],
                                   ["logical"],
                                   ["physical", "logical", "physical", "logical", "physical", "logical"]])
@@ -2791,6 +2818,7 @@ def test_img_sky_logical(path, make_test_image_sky):
     assert (d.x1 == x1.flatten()).all()
 
 
+@requires_wcs  # not for all, but easiest this way
 @pytest.mark.parametrize("path", [[],
                                   ["logical"],
                                   ["world", "logical", "world", "logical", "world", "logical"]])
@@ -2805,6 +2833,7 @@ def test_img_world_logical(path, make_test_image_world):
     assert (d.x1 == x1.flatten()).all()
 
 
+@requires_wcs
 @pytest.mark.parametrize("path", [[],
                                   ["physical"],
                                   ["logical", "physical", "logical", "physical", "logical"]])
@@ -2839,6 +2868,7 @@ def test_img_sky_world(make_test_image_sky):
         d.set_coord("world")
 
 
+@requires_wcs
 @pytest.mark.parametrize("path", [[],
                                   ["logical"],
                                   ["world", "logical", "world", "logical", "world", "logical"]])
@@ -2853,6 +2883,7 @@ def test_img_world_world(path, make_test_image_world):
     assert d.x1 == pytest.approx(WORLD_X1)
 
 
+@requires_wcs
 @pytest.mark.parametrize("path", [[],
                                   ["physical"],
                                   ["logical", "physical", "logical", "physical"]])
@@ -2868,6 +2899,7 @@ def test_img_sky_get_logical(path, make_test_image_sky):
     assert (b == x1.flatten()).all()
 
 
+@requires_wcs
 @pytest.mark.parametrize("path", [[],
                                   ["world"],
                                   ["logical", "world", "logical", "world"]])
@@ -2883,6 +2915,7 @@ def test_img_world_get_logical(path, make_test_image_world):
     assert (b == x1.flatten()).all()
 
 
+@requires_wcs
 @pytest.mark.parametrize("path", [[],
                                   ["logical"],
                                   ["physical", "logical", "physical", "logical", "physical", "logical"]])
@@ -2917,6 +2950,7 @@ def test_img_sky_get_world(make_test_image_sky):
         d.get_world()
 
 
+@requires_wcs
 @pytest.mark.parametrize("path", [[],
                                   ["logical"],
                                   ["world", "logical", "world", "logical"]])
@@ -2931,6 +2965,8 @@ def test_img_world_get_world(path, make_test_image_world):
     assert b == pytest.approx(WORLD_X1)
 
 
+@requires_wcs
+@requires_region
 def test_img_sky_can_filter(make_test_image_sky):
     """Check we can filter the image using physical coordinates"""
     data = make_test_image_sky
@@ -2948,6 +2984,8 @@ def test_img_sky_can_filter(make_test_image_sky):
     assert data.get_filter() == "Field()&!Rectangle(2009,-5006,2011,-5000)"
 
 
+@requires_wcs
+@requires_region
 def test_img_sky_can_filter_change_coords(make_test_image_sky, caplog):
     """What happens to a filter after changing coordinates?
 
@@ -3441,6 +3479,7 @@ def test_dataimgint_notice_get_y(make_dataimgint):
     assert (img.get_y(True) == np.asarray([10])).all()
 
 
+@requires_region
 def test_dataimgint_notice2d(make_dataimgint):
     """basic notice2d call.
 
@@ -3453,6 +3492,7 @@ def test_dataimgint_notice2d(make_dataimgint):
     assert (img.mask == np.asarray([True, False])).all()
 
 
+@requires_region
 def test_dataimgint_ignore2d(make_dataimgint):
     """basic ignore2d call.
 
@@ -3464,18 +3504,21 @@ def test_dataimgint_ignore2d(make_dataimgint):
     assert (img.mask == np.asarray([False, True])).all()
 
 
+@requires_region
 def test_dataimgint_notice2d_get_filter(make_dataimgint):
     img = make_dataimgint
     img.notice2d("rect(-100, 10, 100, 11)")
     assert img.get_filter() == 'Rectangle(-100,10,100,11)'
 
 
+@requires_region
 def test_dataimgint_notice2d_get_filter_expr(make_dataimgint):
     img = make_dataimgint
     img.notice2d("rect(-100, 10, 100, 11)")
     assert img.get_filter_expr() == 'Rectangle(-100,10,100,11)'
 
 
+@requires_region
 def test_dataimgint_notice2d_get_x0(make_dataimgint):
     """basic notice2d call + get_x0"""
     img = make_dataimgint
@@ -3484,6 +3527,7 @@ def test_dataimgint_notice2d_get_x0(make_dataimgint):
     assert (img.get_x0(True) == np.asarray([-4.5])).all()
 
 
+@requires_region
 def test_dataimgint_notice2d_get_x1(make_dataimgint):
     """basic notice2d call + get_x1"""
     img = make_dataimgint
@@ -3492,6 +3536,7 @@ def test_dataimgint_notice2d_get_x1(make_dataimgint):
     assert (img.get_x1(True) == np.asarray([10.5])).all()
 
 
+@requires_region
 def test_dataimgint_notice2d_get_y(make_dataimgint):
     """basic notice2d call + get_y"""
     img = make_dataimgint
@@ -3583,6 +3628,7 @@ def test_dataimgint_no_sky(make_dataimgint):
         make_dataimgint.get_physical()
 
 
+@requires_wcs
 def test_dataimgint_sky(make_dataimgint):
     """We can convert coordinates.
 
@@ -3634,6 +3680,7 @@ def test_dataimgint_sky_coords_unchanged(make_dataimgint):
     assert img.get_x1() == pytest.approx(x)
 
 
+@requires_wcs
 def test_dataimgint_set_sky(make_dataimgint):
     """We can change to the SKY coordinate system"""
 
@@ -3648,6 +3695,7 @@ def test_dataimgint_set_sky(make_dataimgint):
     assert img.coord == "physical"
 
 
+@requires_wcs
 def test_dataimgint_set_sky_x0hi(make_dataimgint):
     """x0hi is changed
 
@@ -3666,6 +3714,7 @@ def test_dataimgint_set_sky_x0hi(make_dataimgint):
     assert img.x0hi == pytest.approx(x)
 
 
+@requires_wcs
 def test_dataimgint_set_sky_get_x1(make_dataimgint):
     """get_x1 is changed
 
@@ -3684,6 +3733,7 @@ def test_dataimgint_set_sky_get_x1(make_dataimgint):
     assert img.get_x1() == pytest.approx(x)
 
 
+@requires_wcs
 def test_dataimgint_sky_coords_reset(make_dataimgint):
     """We can get back to the logical units
 
@@ -3791,6 +3841,7 @@ def test_1379_evaluation_model_not_integrated(dclass):
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize("coord", ["logical", "image", "physical", "world", "wcs"])
 def test_1380_data(coord, make_data_path):
     """The contour data should ideally remain the same.
@@ -3829,6 +3880,7 @@ def test_1380_data(coord, make_data_path):
 
 @requires_fits
 @requires_data
+@requires_wcs
 def test_1380_pickle(make_data_path):
     """Can we pickle and restore an image?
 
@@ -4453,6 +4505,8 @@ def test_group_xxx_tabstops_already_grouped():
     assert pha.get_y(filter=True) == pytest.approx([12, 9, 3])
 
 
+@requires_wcs
+@requires_region
 def test_dataimg_axis_ordering():
     """What are the x0/x1 axes meant to be?
 
@@ -4482,6 +4536,8 @@ def test_dataimg_axis_ordering():
     assert a1 == pytest.approx([200, 200, 200, 210, 210, 210])
 
 
+@requires_wcs
+@requires_region
 def test_dataimg_axis_ordering_1880():
     """What are the x0/x1 axes meant to be? See issues #1789 #1880
 
