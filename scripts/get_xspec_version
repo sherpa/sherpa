@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+
+"""
+Report the XSPEC version, including the patch level.
+
+The assumption is that the FORTRAN interface will remain,
+so the API being used (which is not C++, hence can be easily
+used with ctypes) will remain valid.
+
+"""
+
+from contextlib import suppress
+import ctypes
+import sys
+
+
+def print_xspec_version() -> None:
+    """Call the xs_getVersion routine and print the result."""
+
+    # We could be clever here, but it doesn't seem worth it.
+    #
+    dll = None
+    for suffix in ["so", "dylib"]:
+        with suppress(OSError):
+            dll = ctypes.cdll.LoadLibrary(f"libXSFunctions.{suffix}")
+            break
+
+    if dll is None:
+        raise RuntimeError("Unable to find libXSFunctions")
+
+    get_version = dll.xs_getVersion
+
+    # I don't want to bother with "length vs length - 1" so create an
+    # array 1 larger than we tell the routine about, just to be
+    # safe. The size should be significantly larger than any expected
+    # version string.
+    #
+    nchar = 80
+    buf = ctypes.c_char_p(b' ' * nchar)
+    size = ctypes.c_int(nchar - 1)
+
+    resp = get_version(buf, size)
+    if resp != 0:
+        raise RuntimeError(f"xs_getVersion returned {resp}")
+
+    print(buf.value.decode())
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) != 1:
+        sys.stderr.write("Usage: {sys.argv[0]}\n")
+        sys.exit(1)
+
+    print_xspec_version()
