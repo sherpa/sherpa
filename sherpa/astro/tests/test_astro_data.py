@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1157,7 +1157,7 @@ def test_grouping_filter(analysis, make_data_path):
     pha.group_width(50, tabStops=[0] * 1024)
     dep = np.array([213, 136,  79,  47,  47,  29,  27, 18])
     assert pha.get_dep(filter=True) == pytest.approx(dep)
-    
+
     qual = np.zeros(1024, dtype=int)
     qual[1000:1024] = 2
     assert pha.quality == pytest.approx(qual)
@@ -3770,6 +3770,7 @@ def test_pha_checks_background_size_is_set_bkg():
         pha.set_background(bkg)
 
 
+@requires_group
 def test_pha_group_xxx_with_background(caplog):
     """Do we get any warning from the background?
 

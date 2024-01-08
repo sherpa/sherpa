@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -3114,6 +3114,7 @@ def test_restore_load_arrays_simple():
     assert ui.get_dep("f") == pytest.approx([-2e4, 3e5])
 
 
+@requires_group
 def test_restore_load_arrays_pha():
     """Can we re-create a load_arrays/DataPHA case?"""
 
@@ -3568,6 +3569,7 @@ def test_restore_pha2(make_data_path):
 
 
 @requires_data
+@requires_group
 @requires_fits
 @requires_xspec
 def test_restore_pha_csc(make_data_path):
