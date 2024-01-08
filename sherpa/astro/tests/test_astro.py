@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,11 +25,12 @@ from numpy import sqrt
 from pytest import approx
 import pytest
 
-from sherpa.utils.parallel import ncpus
-from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_xspec, requires_group
 from sherpa.astro import ui
 from sherpa.astro.data import DataPHA
+
+from sherpa.utils.parallel import ncpus
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_xspec, requires_group, requires_region, requires_wcs
 
 try:
     from sherpa.astro import xspec
@@ -225,6 +226,8 @@ def test_sourceandbg(parallel, run_thread, fix_xspec):
 
 @requires_data
 @requires_fits
+@requires_region
+@requires_wcs
 def test_spatial(run_thread, clean_astro_ui):
     tlocals = run_thread('spatial')
     g1 = tlocals['g1']
@@ -287,6 +290,7 @@ def test_radpro_dm(run_thread, clean_astro_ui):
 
 @requires_data
 @requires_fits
+@requires_region
 def test_psf2d(run_thread, clean_astro_ui):
     tlocals = run_thread('psf')
     g1 = tlocals['g1']
@@ -305,6 +309,7 @@ def test_psf2d(run_thread, clean_astro_ui):
 
 @requires_data
 @requires_fits
+@requires_region
 def test_fpsf2d(run_thread, clean_astro_ui):
     tlocals = run_thread('fpsf')
 
@@ -566,6 +571,8 @@ def test_stats_all(run_thread, fix_xspec):
 
 @requires_data
 @requires_fits
+@requires_region
+@requires_wcs
 def test_lev3fft(run_thread, clean_astro_ui):
     tlocals = run_thread('lev3fft', scriptname='bar.py')
 

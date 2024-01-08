@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2021, 2022
+#  Copyright (C) 2017, 2018, 2021, 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,7 +33,8 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.data import Data1DInt, Data2D
 from sherpa.ui.utils import Session
 from sherpa.utils.logging import SherpaVerbosity
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_region
 
 
 def setup_model(make_data_path):
@@ -621,6 +622,7 @@ def test_notice_reporting_data2d(session, caplog):
     assert s.get_filter() == ""
 
 
+@requires_region
 def test_notice2d_reporting(caplog):
     """Check handling of notice2d/ignore2d/... reports"""
 
