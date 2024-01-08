@@ -1,0 +1,40 @@
+
+option('build-group', type: 'boolean', value: true,
+       description: 'Is the group module built? CIAO users should ' +
+       'set this to false.')
+option('build-stk', type: 'boolean', value: true,
+       description: 'Is the stack module built? CIAO users should ' +
+       'set this to false.')
+
+option('build-region', type: 'boolean', value: true,
+       description: 'Is the region support code built? CIAO users ' +
+       'should set this to false and set the region-prefix option.')
+option('region-prefix', type: 'string', value: '',
+       description: 'Location of include/ and lib/ directories for ' +
+       'the region library. CIAO users should set this to ' +
+       '$ASCDS_INSTALL. Only used if build-region is false.')
+option('region-use-cxc-parser', type: 'boolean', value: true,
+       description: 'Is the CXC Data Model parser used? Only used ' +
+       'if region-prefix is set.')
+
+option('build-wcssubs', type: 'boolean', value: true,
+       description: 'Is the wcssubs support module built? CIAO users ' +
+       'should set this to false and set the wcssubs-prefix option.')
+option('wcssubs-prefix', type: 'string', value: '',
+       description: 'Location of include/ and lib/ directories for ' +
+       'the wcssubs library. CIAO users should set this to ' +
+       '$ASCDS_INSTALL. Only used if build-wcssubs is false.')
+
+option('build-fftw3', type: 'boolean', value: false,
+       description: 'Is the FFTW3 support module built? This should only ' +
+       'be set if you are unable to install FFTW3 through some other ' +
+       'means. DOES NOT WORK WHEN SET')
+
+option('xspec-prefix', type: 'string', value: '',
+       description: 'Location of include/ and lib/ directories for ' +
+       'the wcssubs library. This is expected to be set to $HEADAS.')
+option('xspec-libraries', type: 'array',
+       value: ['XSFunctions', 'XSUtil', 'XS', 'hdsp_6.33', 'CCfits_2.6', 'wcs-8.2.1'],
+       description: 'The XSPEC libraries that should be linked to. ' +
+       'The value depends on the version of the XSPEC library and ' +
+       'how it was built.')

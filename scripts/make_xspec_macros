@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+
+"""Create the macros needed to compile the Sherpa XSPEC module.
+
+The models definitions change over time - normally adding new ones but
+sometimes changing the symbol name for the same model - and this is
+handled by defining a symbol XSPEC_x_y_z for each supported XSPEC
+version x.y.z (the patch level is assumed to not be relevant here).
+
+"""
+
+import re
+import sys
+
+
+# What versions of XSPEC do we support? I am not sure what the
+# naming of the XSPEC components are, but let's stick with
+# major, minor, and micro. We drop the patch level - e.g.
+# "c" in "12.12.0c" as that is not helpful to track here.
+#
+SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1),
+                      (12, 13, 0), (12, 13, 1),
+                      (12, 14, 0), (12, 14, 1)]
+
+
+# We could use packaging.versions.Version here, but for our needs we
+# can get away with a tuple of integers. That is, we do not need the
+# full support for PEP-440.
+#
+MIN_VERSION = min(SUPPORTED_VERSIONS)
+MAX_VERSION = max(SUPPORTED_VERSIONS)
+
+
+def get_version(version: str) -> tuple[int, int, int]:
+    """Strip out any XSPEC patch level.
+
+    So '12.12.0c' gets converted to '12.12.0', and then to (12, 12,
+    0). This is helpful as then it makes version comparison easier, as
+    we can rely on the standard tuple ordering.
+
+    Parameters
+    ----------
+    version : str
+        The XSPEC version string, of the form "12.12.0c", so it can
+        include the XSPEC patch level.
+
+    Returns
+    -------
+    (major, minor, micro) : tuple of int
+        The XSPEC patchlevel is ignored.
+
+    """
+
+    # XSPEC versions do not match PEP 440, so strip out the trailing
+    # text (which indicates the XSPEC patch level).
+    #
+    match = re.search(r'^(\d+)\.(\d+)\.(\d+)', version)
+    if match is None:
+        raise ValueError(f"Invalid XSPEC version string: {version}")
+
+    return (int(match[1]), int(match[2]), int(match[3]))
+
+
+def make_macros(version: str) -> list[str]:
+    """Convert the given XSPEC version into a set of arguments."""
+
+    xspec_version = get_version(version)
+
+    if xspec_version < MIN_VERSION:
+        raise ValueError(f"XSPEC Version {xspec_version} is less than {MIN_VERSION}, which is the earliest supported version for Sherpa")
+
+    # How best to warn the user (and is this the best place to do this?)
+    #
+    if xspec_version > MAX_VERSION:
+        sys.stderr.write("WARNING: XSPEC Version is greater than "
+                         f"{MAX_VERSION}, which is the latest "
+                         "supported version for Sherpa\n")
+
+    out = []
+    for version in SUPPORTED_VERSIONS:
+        if xspec_version >= version:
+            major, minor, micro = version
+            out.append(f"-DXSPEC_{major}_{minor}_{micro}")
+
+    if len(out) == 0:
+        raise RuntimeError(f"Unable to process XSPEC version '{version}'")
+
+    return out
+
+
+if __name__ == "__main__":
+
+    if len(sys.argv) != 2:
+        sys.stderr.write(f"Usage: {sys.argv[0]} version\n")
+        sys.exit(1)
+
+    opts = make_macros(sys.argv[1])
+    print(" ".join(opts))

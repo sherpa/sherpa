@@ -107,7 +107,8 @@ jobs:
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
       run: |
-        pip install -e . --verbose
+        pip install ninja meson meson-python numpy
+        pip install -e . --verbose --no-build-isolation
 
     - name: install pytest-xvfb
       if: matrix.test-data == 'package'

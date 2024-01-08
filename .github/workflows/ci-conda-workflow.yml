@@ -152,6 +152,7 @@ jobs:
         # We need xvfb to run the tests so ensure it's installed
         pip install pytest-xvfb
 
+    # this probably isn't needed with meson
     - name: Conda Setup (Xspec)
       if: matrix.xspec-version != ''
       env:
@@ -164,20 +165,27 @@ jobs:
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
       env:
+        XSPECVER: ${{ matrix.xspec-version }}
         PYTHON_LDFLAGS: " "
       run: |
         source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
-        pip install .[test] --verbose
+        build_args=`bash .github/scripts/make_build_args_conda.sh`
+        echo "** build_args: ${build_args}"
+        pip install .[test] $build_args --verbose
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
       env:
+        XSPECVER: ${{ matrix.xspec-version }}
         PYTHON_LDFLAGS: " "
       run: |
         source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
-        pip install -e .[test] --verbose
+        pip install numpy ninja meson meson-python
+        build_args=`bash .github/scripts/make_build_args_conda.sh`
+        echo "** build_args: ${build_args}"
+        pip install -e .[test] $build_args --verbose --no-build-isolation
 
     - name: Install the test data?
       if: matrix.test-data == 'package'
@@ -263,4 +271,3 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ${{ github.workspace }}/coverage.xml
         verbose: true
-

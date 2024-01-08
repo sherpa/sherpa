@@ -79,7 +79,10 @@ jobs:
           # could be a make vs gmake issue but we can't easily change this (and it may
           # not be the actual problem).
           #
-          sed -i.orig "s|#configure=None|configure=--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib --disable-dependency-tracking|" setup.cfg
+          # Is this still needed with meson?
+          #
+          # sed -i.orig "s|#configure=None|configure=--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib --disable-dependency-tracking|" setup.cfg
 
-          pip3 install -e .[test]
+          pip3 install numpy ninja meson meson-python
+          pip3 install -e .[test] --no-build-isolation
           python3 -m pytest

@@ -1,0 +1,3 @@
+# sherpa/include
+
+subdir('sherpa')
