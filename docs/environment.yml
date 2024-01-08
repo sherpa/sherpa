@@ -5,9 +5,11 @@ channels:
   - astropy
 
 dependencies:
-  - bison
   - python=3.10
+  - bison
+  - pkg-config
   - numpy
+  - fftw
   - pandoc
   - matplotlib
   - astropy
