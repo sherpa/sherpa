@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1832,6 +1832,7 @@ def test_pha_quality_bad_filter_remove(make_test_pha):
     assert pha.get_filter() == "2:4"
 
 
+@requires_group
 def test_pha_change_quality_values():
     """What happens if we change the quality column?
 
@@ -3999,6 +4000,7 @@ def test_pha_subtract_bkg_filter_cih2datavar():
     assert got == pytest.approx(expected)
 
 
+@requires_group
 @pytest.mark.parametrize("opt,arg",
                          [("bins", 2), ("width", 2),
                           ("counts", 3), ("adapt", 3),
@@ -4397,6 +4399,7 @@ def test_img_checks_coord_no_transform(coord):
                 coord=coord)
 
 
+@requires_group
 @pytest.mark.parametrize("asarray", [True, False])
 def test_group_xxx_tabtops_not_ndarray(asarray):
     """What happens if tabStops is not a ndarray?"""
@@ -4414,6 +4417,7 @@ def test_group_xxx_tabtops_not_ndarray(asarray):
     assert pha.get_mask() is None
 
 
+@requires_group
 @pytest.mark.parametrize("asarray", [True, False])
 @pytest.mark.parametrize("nelem", [4, 6])
 def test_group_xxx_tabtops_wrong_size(asarray, nelem):
@@ -4429,6 +4433,7 @@ def test_group_xxx_tabtops_wrong_size(asarray, nelem):
         pha.group_width(2, tabStops=tabstops)
 
 
+@requires_group
 def test_group_xxx_tabstops_already_grouped():
     """Check what happens if tabStops is sent ~pha.mask when already grouped."""
 
