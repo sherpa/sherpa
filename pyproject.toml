@@ -1,6 +1,215 @@
 [build-system]
-requires = ["setuptools >= 51.0.0, < 60",
-            "wheel",
-            "numpy",
-            ]
+requires = [
+  "setuptools >= 64.0.0",  # minimum for PEP 660 editable install
+  "numpy",
+  "tomli; python_version < '3.11'"
+]
 build-backend = "setuptools.build_meta"
+
+[project]
+dynamic = ["version"]
+
+name = "sherpa"
+description = "Modeling and fitting package for scientific data analysis"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+
+authors = [
+  { name = "Smithsonian Astrophysical Observatory / Chandra X-Ray Center", email = "cxchelp@head.cfa.harvard.edu" }
+]
+
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Programming Language :: C",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  "Topic :: Scientific/Engineering :: Physics"
+]
+
+requires-python = ">= 3.9"
+dependencies = [
+  "numpy"
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=8.0"
+]
+
+[project.urls]
+Homepage = "https://cxc.harvard.edu/sherpa/"
+Documentation = "https://sherpa.readthedocs.io/"
+Repository = "https://github.com/sherpa/sherpa"
+Issues = "https://github.com/sherpa/sherpa/issues"
+
+[project.scripts]
+sherpa_test = "sherpa:clitest"
+sherpa_smoke = "sherpa:_smoke_cli"
+
+[tool.versioneer]
+VCS = "git"
+style = "pep440"
+versionfile_source = "sherpa/_version.py"
+versionfile_build = "sherpa/_version.py"
+tag_prefix = ""
+parentdir_prefix = "sherpa-"
+
+# Be explicit as we have src/ directories which complicate things.
+# find sherpa -name __init__.py | sort | sed -e "s|/__init__.py||" -e "s|/|.|g"
+# find sherpa -name tests
+#
+# Note that this has been set up to reduce the number of
+#   Python recognizes 'sherpa...' as an importable pachage[^1],
+# messages from pip, rather than working out from first principles
+# what to include.
+#
+[tool.setuptools]
+packages = [
+  "sherpa.astro.datastack",
+  "sherpa.astro",
+  "sherpa.astro.io",
+  "sherpa.astro.models",
+  "sherpa.astro.optical",
+  "sherpa.astro.sim",
+  "sherpa.astro.ui",
+  "sherpa.astro.utils",
+  "sherpa.astro.xspec",
+  "sherpa.estmethods",
+  "sherpa.image",
+  "sherpa",
+  "sherpa.models",
+  "sherpa.optmethods",
+  "sherpa.plot",
+  "sherpa.sim",
+  "sherpa.stats",
+  "sherpa.ui",
+  "sherpa.utils",
+  "sherpa.estmethods.tests",
+  "sherpa.sim.tests",
+  "sherpa.tests",
+  "sherpa.image.tests",
+  "sherpa.astro.xspec.tests",
+  "sherpa.astro.sim.tests",
+  "sherpa.astro.tests",
+  "sherpa.astro.datastack.tests",
+  "sherpa.astro.datastack.tests.data",
+  "sherpa.astro.utils.tests",
+  "sherpa.astro.optical.tests",
+  "sherpa.astro.ui.tests",
+  "sherpa.astro.ui.tests.data",
+  "sherpa.astro.io.tests",
+  "sherpa.astro.models.tests",
+  "sherpa.utils.tests",
+  "sherpa.stats.tests",
+  "sherpa.ui.tests",
+  "sherpa.optmethods.tests",
+  "sherpa.models.tests",
+  "sherpa.plot.tests",
+  "sherpa.include",
+  "sherpa.include.sherpa",
+  "sherpa.include.sherpa.astro",
+  "sherpa.static.css"
+]
+
+# Install the tests as "package data".
+# find sherpa -name tests | sort
+#
+# It's not clear how this interacts with tools.setuptols.packages.
+#
+[tool.setuptools.package-data]
+"sherpa.astro.datastack" = [
+  "tests/data/*",
+  "tests/acis_bkg_model.py",
+  "tests/test_*py"
+]
+"sherpa.astro.io" = [
+  "tests/test_*py"
+]
+"sherpa.astro.models" = [
+  "tests/test_*py"
+]
+"sherpa.astro.optical" = [
+  "tests/test_*py"
+]
+"sherpa.astro.sim" = [
+  "tests/test_*py"
+]
+"sherpa.astro" = [
+  "tests/test_*py"
+]
+"sherpa.astro.ui" = [
+  "tests/data/*",
+  "tests/test_*py"
+]
+"sherpa.astro.utils" = [
+  "tests/test_*py"
+]
+"sherpa.astro.xspec" = [
+  "tests/test_*py"
+]
+"sherpa.estmethods" = [
+  "tests/test_*py"
+]
+"sherpa.image" = [
+  "tests/test_*py"
+]
+"sherpa.models" = [
+  "tests/test_*py"
+]
+"sherpa.optmethods" = [
+  "tests/test_*py",
+  "tests/*.hh",           # do we need this?
+  "tests/_tstoptfct.cc"   # do we need this
+]
+"sherpa.plot" = [
+  "tests/test_*py"
+]
+"sherpa.sim" = [
+  "tests/test_*py"
+]
+"sherpa.stats" = [
+  "tests/test_*py"
+]
+"sherpa" = [
+  "tests/test_*py",
+  "tests/a.lis",
+  "tests/b.lis",
+  "include/sherpa/*.hh",
+  "include/sherpa/astro/*.hh",
+  "static/css/*css",
+  "sherpa.rc",
+  "sherpa-standalone.rc"
+]
+"sherpa.ui" = [
+  "tests/test_*py"
+]
+"sherpa.utils" = [
+  "tests/test_*py"
+]
+
+# Remove the src/ directories. Does this make sense?
+# find sherpa -name src | sort
+#
+# It also doesn't seem to work, so I obviously haven't got the
+# incantation correct.
+#
+#[tool.setuptools.exclude-package-data]
+#"sherpa.astro.models" = ["src"]
+#"sherpa.astro.models" = ["src/*"]
+#"sherpa.astro.utils" = ["src/*"]
+#"sherpa.astro.xspec" = ["src/*"]
+#"sherpa.estmethods" = ["src/*"]
+#"sherpa.models" = ["src/*"]
+#"sherpa.optmethods" = ["src/*"]
+#"sherpa.stats" = ["src/*"]
+#"sherpa.utils" = [
+#  "src",
+#  "src/cephes",
+#  "src/gsl",
+#  "src/sjohnson",
+#  "src/tcd"
+#]
