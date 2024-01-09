@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2014, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+# Copyright (C) 2014, 2017 - 2024
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -21,12 +21,6 @@
 import os
 import sys
 
-# Ideally we would rely on the configuration in setup.cfg to avoid
-# this situation, but as we may have users who still use old systems
-# add an error message. As Sherpa releases occur the minimum-supported
-# Python version is going to increase (beyond 3.7) but it is not really
-# worth spending a lot of time on the error message here.
-#
 # This is done before we load in any non-core modules to avoid people
 # installing software that they can not use.
 #
@@ -40,8 +34,7 @@ if sys.version_info < (3, 9):
 # I am leaving in as I can imagine it might require a newer setuptools
 # than we currently support.
 #
-import setuptools
-from numpy.distutils.core import setup
+from setuptools import setup
 
 # How do we use local modules like helpers? This is a hack based on
 # discussions around
@@ -56,7 +49,8 @@ import versioneer
 
 # First provide helpful messages if contributors try and run legacy commands.
 
-TEST_HELP = """
+HELP = {
+    "test": """
 Note: tests are no-longer run using 'python setup.py test'. Instead
 you will need to use pytest. For example:
 
@@ -65,11 +59,34 @@ you will need to use pytest. For example:
 
 will ensure that pytest and pytest-xvfb are installed before running
 the tests.
-"""
+""",
 
-if 'test' in sys.argv:
-    print(TEST_HELP)
-    sys.exit(1)
+    "develop": """
+Note: 'python setup.py develop' is no-longer supported. Please use
+either of
+
+    pip install -e .
+    pip install -e .[test]
+""",
+
+    "install": """
+Note: 'python setup.py install' is no-longer supported. Please use
+
+    pip install .
+""",
+
+    "build_sphinx": """
+Note: the documentation is now built by saying
+
+    cd docs
+    make html
+"""
+}
+
+for opt, help in HELP.items():
+    if opt in sys.argv:
+        print(help)
+        sys.exit(1)
 
 
 setup(version=versioneer.get_version(),

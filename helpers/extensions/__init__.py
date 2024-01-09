@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2016, 2017, 2018, 2020, 2022
+#  Copyright (C) 2014, 2016 - 2018, 2020, 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,10 +20,12 @@
 
 
 from setuptools.extension import Extension
+import numpy
 
+numpy_incdir = numpy.get_include()
 
 # Include directory for Sherpa headers
-sherpa_inc = ['sherpa/include', 'sherpa/utils/src']
+sherpa_inc = [numpy_incdir, 'sherpa/include', 'sherpa/utils/src']
 
 header_deps = {
     'myArray': (),
@@ -51,7 +53,7 @@ def get_deps(deps):
             alldeps.add(dep)
             deps.update(header_deps[dep])
 
-    return [sherpa_inc[0] + '/sherpa/' + d + '.hh' for d in alldeps]
+    return ['sherpa/include/sherpa/' + d + '.hh' for d in alldeps]
 
 ####
 # EXTENSIONS WITH EXTERNAL DEPENDENCIES
