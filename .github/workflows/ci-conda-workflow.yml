@@ -31,8 +31,6 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             xspec-version: 12.13.1
-            # run xvfb with this display
-            display: :99
 
           - name: Linux Minimum Setup (Python 3.9)
             os: ubuntu-latest
@@ -119,15 +117,10 @@ jobs:
       run: |
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
-        source .github/scripts/setup_ds9.sh
+        if [ "$RUNNER_OS" != "macOS" ]; then
+          source .github/scripts/setup_ds9.sh
+        fi
         source .github/scripts/setup_xspec.sh
-
-    - name: Start Xvfb (macOS)
-      if: runner.os == 'macOS'
-      env:
-        DISPLAY: ${{ matrix.display }}
-      run: |
-        sudo /opt/X11/bin/Xvfb ${DISPLAY} -ac -screen 0 1024x768x8 &
 
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
@@ -169,6 +162,14 @@ jobs:
         if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
         if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
         smokevars="${XSPECTEST} ${FITSTEST} -v 3"
+
+        # special case the macOS build as we currently do not
+        # include DS9; as we know the XSPECVER/FITS sittings for
+        # this it is hard-coded
+        if [ "$RUNNER_OS" == "macOS" ]; then
+          smokevars="-x -f ${FITS} -v 3"
+        fi
+
         echo "** smoke test: ${smokevars}"
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
