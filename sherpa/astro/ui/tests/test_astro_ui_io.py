@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2021, 2022, 2023
+#  Copyright (C) 2015, 2016, 2018, 2021 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,7 @@ from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.utils.err import ArgumentErr
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_xspec
+    requires_group, requires_xspec
 
 
 FILE_NAME = 'acisf01575_001N001_r0085_pha3.fits'
@@ -136,7 +136,10 @@ def test_hrci_imaging_mode_spectrum(make_data_path, clean_astro_ui):
 
 
 def check_fit_stats():
-    """Do we get the expected results?"""
+    """Do we get the expected results?
+
+    Use of this means @requires_xspec, @requires_group
+    """
 
     ui.set_method("levmar")
     ui.set_stat("chi2xspecvar")
@@ -173,6 +176,7 @@ def check_fit_stats():
 
 
 @requires_xspec
+@requires_group
 @requires_fits
 @requires_data
 def test_pha3_original_check(make_data_path, clean_astro_ui):
@@ -188,6 +192,7 @@ def test_pha3_original_check(make_data_path, clean_astro_ui):
 
 
 @requires_xspec
+@requires_group
 @requires_fits
 @requires_data
 def test_pha3_roundtrip_check(make_data_path, clean_astro_ui, tmp_path):

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2021, 2022, 2023
+#  Copyright (C) 2016, 2018, 2021 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -35,7 +35,7 @@ from sherpa.astro import ui
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_xspec
+    requires_group, requires_xspec
 
 
 # Note that the logic in load_table_model is quite convoluted,
@@ -289,6 +289,7 @@ def test_group_counts_empty_data(arg, clean_astro_ui):
         ui.group_counts(2, tabStops="nofilter")
 
 
+@requires_group
 @pytest.mark.parametrize("tabstops", ["nofilter", [0] * 6])
 def test_group_width_tabstops_nofilter(tabstops, clean_astro_ui):
     """Check tabStops='nofilter'.
@@ -308,6 +309,7 @@ def test_group_width_tabstops_nofilter(tabstops, clean_astro_ui):
     assert d.quality == pytest.approx(np.zeros(6))
 
 
+@requires_group
 def test_group_width_tabstops_notset(clean_astro_ui):
     """Check tabStops 4.16.0 behavior.
 
