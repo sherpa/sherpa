@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2008, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2008, 2020, 2021, 2024
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,10 +18,24 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+import logging
+
 import numpy
 
 from sherpa.utils import NoNewAttributesAfterInit
-from sherpa.astro.utils._wcs import pix2world, world2pix
+
+warning = logging.getLogger(__name__).warning
+
+try:
+    from sherpa.astro.utils._wcs import pix2world, world2pix
+except ImportError:
+    warning('WCS support is not available')
+
+    def pix2world(*args, **kwargs):
+        raise RuntimeError("No WCS support")
+
+    def world2pix(*args, **kwargs):
+        raise RuntimeError("No WCS support")
 
 
 class WCS(NoNewAttributesAfterInit):

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023
+#  Copyright (C) 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,7 +25,8 @@ import pytest
 from sherpa.astro.data import DataIMG, Data2D
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_region, requires_wcs
 
 
 def backend_is(name):
@@ -147,6 +148,7 @@ def test_image_write_basic(make_data_path, tmp_path):
 
 @requires_fits
 @requires_data
+@requires_wcs  # only needed for physical and world
 @pytest.mark.parametrize("incoord,outcoord,x0,x1",
                          [("logical", None, 1, 1),
                           ("image", "logical", 1, 1),
@@ -189,6 +191,8 @@ def test_can_read_image_as_data2d(make_data_path):
 
 
 @requires_fits
+@requires_region
+@requires_wcs
 def test_axs_ordering(tmp_path):
     """Check out the #1789 #1880 behavior.
 
@@ -222,6 +226,8 @@ def test_axs_ordering(tmp_path):
 
 
 @requires_fits
+@requires_region
+@requires_wcs
 def test_axs_ordering_1880(tmp_path):
     """Check out the #1880 behavior.
 

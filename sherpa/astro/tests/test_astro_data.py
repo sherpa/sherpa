@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2017, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2017, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -32,7 +32,8 @@ from sherpa.models.basic import Gauss2D
 from sherpa.utils import parse_expr
 from sherpa.utils.err import ArgumentTypeErr, DataErr
 from sherpa.utils.numeric_types import SherpaFloat
-from sherpa.utils.testing import requires_data, requires_fits, requires_group
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_group, requires_region
 
 
 EMPTY_DATA_OBJECTS = [(DataPHA, [None] * 2),
@@ -1157,7 +1158,7 @@ def test_grouping_filter(analysis, make_data_path):
     pha.group_width(50, tabStops=[0] * 1024)
     dep = np.array([213, 136,  79,  47,  47,  29,  27, 18])
     assert pha.get_dep(filter=True) == pytest.approx(dep)
-    
+
     qual = np.zeros(1024, dtype=int)
     qual[1000:1024] = 2
     assert pha.quality == pytest.approx(qual)
@@ -2704,6 +2705,7 @@ def test_is_mask_reset_pha_channel(caplog):
     assert data.mask == pytest.approx([False, False, True])
 
 
+@requires_region
 @pytest.mark.parametrize("data_args",
                          [IMG_ARGS, IMGINT_ARGS])
 def test_is_mask_reset_img(data_args, caplog):
@@ -3455,6 +3457,7 @@ def get_img_spatial_mask():
                       dtype=bool)
 
 
+@requires_region
 def test_img_spatial_filter():
     """This is really meant to check some of the assumptions of the
     next test: test_img_combine_spatial_filter_and_mask():
@@ -3494,6 +3497,7 @@ def test_img_spatial_filter():
     assert got[mask] == pytest.approx(yimg[mask])
 
 
+@requires_region
 def test_img_combine_spatial_filter_and_mask():
     """What happens when we have both a spatial filter and change the mask attribute?"""
 
@@ -3630,6 +3634,7 @@ def test_image_sparse_get_img(make_image_sparse):
         make_image_sparse.get_img()
 
 
+@requires_region
 def test_image_sparse_region_filter(make_image_sparse):
     """Pick a region that overlaps the missing pixel"""
 
@@ -3648,6 +3653,7 @@ def test_image_sparse_region_filter(make_image_sparse):
     assert out == pytest.approx([6])
 
 
+@requires_region
 def test_image_sparse_region_filter_restore(make_image_sparse):
     """Check we can restore the region"""
 
@@ -3667,6 +3673,7 @@ def test_image_sparse_region_filter_restore(make_image_sparse):
     assert out == pytest.approx([1, 2, 3, 4, 6])
 
 
+@requires_region
 def test_image_sparse_region_filter_out_all(make_image_sparse):
     """Pick a region that removes all points"""
 
@@ -3770,6 +3777,7 @@ def test_pha_checks_background_size_is_set_bkg():
         pha.set_background(bkg)
 
 
+@requires_group
 def test_pha_group_xxx_with_background(caplog):
     """Do we get any warning from the background?
 

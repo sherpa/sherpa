@@ -1,6 +1,46 @@
 [build-system]
-requires = ["setuptools >= 51.0.0, < 60",
-            "wheel",
-            "oldest-supported-numpy",
-            ]
-build-backend = "setuptools.build_meta"
+requires = [
+  "meson-python",
+  # "wheel", 
+  "numpy",
+]
+build-backend = "mesonpy"
+
+[project]
+dynamic = ["version"]
+
+name = "sherpa"
+description = "Modeling and fitting package for scientific data analysis"
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+
+authors = [
+  { name = "Smithsonian Astrophysical Observatory / Chandra X-Ray Center", email = "cxchelp@head.cfa.harvard.edu" }
+]   
+
+classifiers = [
+  "Intended Audience :: Science/Research",
+  "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
+  "Programming Language :: C",
+  "Programming Language :: Python :: 3.9",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: Implementation :: CPython",
+  "Topic :: Scientific/Engineering :: Astronomy",
+  "Topic :: Scientific/Engineering :: Physics"
+]
+
+requires-python = ">= 3.9"
+dependencies = [
+  "numpy"
+]
+
+[project.urls]
+Homepage = "https://cxc.harvard.edu/sherpa/"
+Documentation = "https://sherpa.readthedocs.io/"
+Repository = "https://github.com/sherpa/sherpa"
+Issues = "https://github.com/sherpa/sherpa/issues"
+
+[project.scripts]
+sherpa_test = "sherpa:clitest"
+sherpa_smoke = "sherpa:_smoke_cli"

@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2020, 2021, 2022, 2023
+# Copyright (C) 2020 - 2024
 # Smithsonian Astrophysical Observatory
 #
 #
@@ -31,7 +31,8 @@ import pytest
 from sherpa.astro import data
 from sherpa import plot
 from sherpa.astro.instrument import create_delta_rmf
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_region, requires_wcs
 from sherpa.plot.testing import check_full
 
 
@@ -251,6 +252,7 @@ def test_img(header, old_numpy_printing, all_plot_backends):
 
 @requires_data
 @requires_fits
+@requires_wcs  # only needed for coord=physical
 @pytest.mark.parametrize('coord', ['logical', 'physical'])
 def test_img_real(coord, make_data_path, old_numpy_printing, all_plot_backends):
     """Use an image from a file (easy to set up)"""
@@ -273,9 +275,10 @@ def test_img_real(coord, make_data_path, old_numpy_printing, all_plot_backends):
     assert '<div class="dataval">destreak - CAT3.0.2</div>' in r
 
 
-# does this needs a decorator if region support is not available?
 @requires_data
 @requires_fits
+@requires_region
+@requires_wcs
 @pytest.mark.parametrize("coord,region",
                          [("logical", "circle(90, 190, 20)"),
                           ("physical", "circle(3151.3 , 4524.1, 20 )")

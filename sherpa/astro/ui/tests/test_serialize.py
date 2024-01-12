@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,12 +33,15 @@ import pytest
 
 from sherpa.astro.models import JDPileup
 from sherpa.astro import ui
+from sherpa.astro.io.wcs import WCS
+
 from sherpa.models.basic import TableModel
 
 from sherpa.utils.err import ArgumentErr, DataErr, \
     IdentifierErr, IOErr, StatErr
 from sherpa.utils.testing import get_datadir, requires_data, \
-    requires_xspec, has_package_from_list, requires_fits, requires_group
+    requires_xspec, has_package_from_list, requires_fits, \
+    requires_group, requires_region, requires_wcs
 
 
 has_xspec = has_package_from_list("sherpa.astro.xspec")
@@ -2867,6 +2870,7 @@ def test_restore_img_no_filter_no_model(make_data_path):
 
 @requires_data
 @requires_fits
+@requires_region
 def test_restore_img_filter_model(make_data_path):
     """Simple image check"""
 
@@ -3073,6 +3077,7 @@ def test_restore_dataspace1d_int():
     assert ui.get_dep(filter=True) == pytest.approx(expected)
 
 
+@requires_region
 def test_restore_dataspace2d_img():
     """Can we restore a dataspace2d case?"""
 
@@ -3114,6 +3119,7 @@ def test_restore_load_arrays_simple():
     assert ui.get_dep("f") == pytest.approx([-2e4, 3e5])
 
 
+@requires_group
 def test_restore_load_arrays_pha():
     """Can we re-create a load_arrays/DataPHA case?"""
 
@@ -3568,6 +3574,7 @@ def test_restore_pha2(make_data_path):
 
 
 @requires_data
+@requires_group
 @requires_fits
 @requires_xspec
 def test_restore_pha_csc(make_data_path):
@@ -3690,6 +3697,7 @@ def test_filter2d_excluded1():
     assert len(ui.get_data().shape) == 2
 
 
+@requires_region
 def test_filter2d_excluded2():
     """Check what happens if all data filtered out.
 
@@ -3710,13 +3718,9 @@ def test_filter2d_excluded2():
         ui.get_dep(filter=True)
 
 
+@requires_wcs
 def test_fake_image_wcs():
     """Can we restore an image with WCS?"""
-
-    try:
-        from sherpa.astro.io.wcs import WCS
-    except ImportError:
-        pytest.skip("sherpa.astro.io.wcs.WCS is not available")
 
     # nx=2, ny=3
     #
@@ -3754,17 +3758,14 @@ def test_fake_image_wcs():
     assert g1 == pytest.approx(x1)
 
 
+@requires_wcs
+@requires_region
 def test_fake_image_wcs_coord():
     """Can we restore an image with WCS when coord has been changed?
 
     We also add a spatial filter to check that we aren't messing
     up x0/y0.
     """
-
-    try:
-        from sherpa.astro.io.wcs import WCS
-    except ImportError:
-        pytest.skip("sherpa.astro.io.wcs.WCS is not available")
 
     # nx=3, ny=2
     #

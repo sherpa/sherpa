@@ -2100,6 +2100,7 @@ def test_fit_bkg_with_bkg_models_missing(clean_astro_ui):
     assert fres.parvals == pytest.approx([15])
 
 
+@requires_group
 @requires_data
 @requires_fits
 def test_get_bkg_stat_info(make_data_path, clean_astro_ui, caplog):

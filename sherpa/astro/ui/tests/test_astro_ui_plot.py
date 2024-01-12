@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -48,7 +48,7 @@ from sherpa.models.template import create_template_model
 
 from sherpa.utils.err import ArgumentTypeErr, DataErr, IdentifierErr, ModelErr, PlotErr
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_xspec, requires_pylab
+    requires_xspec, requires_pylab, requires_wcs
 
 import sherpa.ui.utils
 import sherpa.astro.ui.utils
@@ -4405,6 +4405,7 @@ def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path,
 
 @requires_fits
 @requires_data
+@requires_wcs
 @pytest.mark.parametrize("coord", ["logical", "image", "physical", "world", "wcs"])
 def test_1380_plot(coord, make_data_path, clean_astro_ui):
     """The contour data should ideally remain the same.
