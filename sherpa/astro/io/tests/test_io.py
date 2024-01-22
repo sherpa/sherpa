@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2020, 2021, 2023
+#  Copyright (C) 2016 - 2018, 2020, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,8 +30,8 @@ from sherpa.astro import ui
 from sherpa.data import Data1D, Data2DInt
 from sherpa.models.basic import Box1D, Const1D
 from sherpa.utils.err import IOErr
-from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
-    requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_group, requires_xspec
 
 
 @requires_data
@@ -577,3 +577,43 @@ def test_read_ascii_3_col(make_data_path):
                                    3.3092, 3.4496])
     assert tbl.staterror == pytest.approx(0.04114 * np.ones(11))
     assert tbl.syserror is None
+
+
+@requires_fits
+@requires_data
+def test_read_table_object(make_data_path):
+    """Check we can send in a 'object'.
+
+    This support is not well advertised so it could perhaps be
+    removed, but let's add a basic test at least.
+
+    """
+
+    # Could create the "object" manually, but let's just read one in
+    #
+    infile = make_data_path("1838_rprofile_rmid.fits")
+    close = False
+
+    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        import pycrates
+        arg = pycrates.read_file(infile)
+
+    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+        from astropy.io import fits
+        arg = fits.open(infile)
+        close = True
+
+    else:
+        assert False, f"unknown backend: {io.backend.__name__}"
+
+    try:
+        # this implicitly checks case insensitivity on column names
+        tbl = io.read_table(arg, colkeys=["area", "counts"])
+
+    finally:
+        if close:
+            arg.close()
+
+    assert isinstance(tbl, Data1D)
+    assert tbl.x.sum() == pytest.approx(125349.55)
+    assert tbl.y.sum() == pytest.approx(21962)
