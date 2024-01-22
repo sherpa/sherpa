@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2016 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -144,6 +144,12 @@ known_warnings = {
             # Hopefully this can be removed by December 2023.
             #
             r"Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. \(Deprecated NumPy 1.25.\)",
+
+            # See https://github.com/sherpa/sherpa/issues/1953
+            # Technically this should only be needed if bokeh is installed
+            # but it doesn't seem worth setting up that machinery.
+            #
+            "\nPyarrow will become a required dependency of pandas "
 
         ],
     UserWarning:
