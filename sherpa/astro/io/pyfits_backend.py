@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2011, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -71,8 +71,8 @@ except ImportError:
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
-           'pack_table_data', 'pack_arf_data', 'pack_arf_data',
-           'pack_rmf_data', 'pack_image_data', 'pack_hdus',
+           'pack_table_data', 'pack_arf_data', 'pack_rmf_data',
+           'pack_image_data', 'pack_hdus',
            'set_table_data', 'set_image_data', 'set_pha_data',
            'set_arf_data', 'set_rmf_data', 'set_hdus')
 
@@ -1262,7 +1262,6 @@ def set_table_data(filename: str,
 
     hdu = pack_table_data(data, col_names, header)
     hdu.writeto(filename, overwrite=True)
-    return
 
 
 def _create_header(header: Mapping[str, KeyType]) -> fits.Header:
@@ -1319,8 +1318,11 @@ def set_arf_data(filename: str,
     if header is None:
         raise ArgumentTypeErr("badarg", "header", "set")
 
-    return set_table_data(filename, data, col_names, header=header,
-                          ascii=ascii, clobber=clobber)
+    # This does not use pack_arf_data as we need to deal with ASCII
+    # support.
+    #
+    set_table_data(filename, data, col_names, header=header,
+                   ascii=ascii, clobber=clobber)
 
 
 def pack_pha_data(data, col_names, header) -> fits.BinTableHDU:
@@ -1338,8 +1340,11 @@ def set_pha_data(filename: str,
     if header is None:
         raise ArgumentTypeErr("badarg", "header", "set")
 
-    return set_table_data(filename, data, col_names, header=header,
-                          ascii=ascii, clobber=clobber)
+    # This does not use pack_pha_data as we need to deal with ASCII
+    # support.
+    #
+    set_table_data(filename, data, col_names, header=header,
+                   ascii=ascii, clobber=clobber)
 
 
 def pack_rmf_data(blocks) -> fits.HDUList:
