@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2011, 2015, 2016, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -62,7 +62,12 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
 CrateType = Union[TABLECrate, IMAGECrate]
 KeyType = Union[str, bool, int, float]
 NamesType = Sequence[str]
+HdrTypeArg = Mapping[str, KeyType]
 HdrType = dict[str, KeyType]
+ColumnsType = Mapping[str, Union[np.ndarray, list, tuple]]
+
+DataTypeArg = Mapping[str, Any]
+DataType = dict[str, Any]
 
 
 def open_crate(filename: str,
@@ -572,7 +577,7 @@ def get_column_data(*args) -> list[np.ndarray]:
 
 
 def get_ascii_data(filename: str,
-                   ncols: int = 2,
+                   ncols: int = 1,
                    colkeys: Optional[NamesType] = None,
                    **kwargs
                    ) -> tuple[list[str], list[np.ndarray], str]:
@@ -651,7 +656,7 @@ def get_table_data(arg: Union[str, TABLECrate],
 def get_image_data(arg: Union[str, IMAGECrate],
                    make_copy: bool = True,
                    fix_type: bool = True
-                   ) -> tuple[dict[str, Any], str]:
+                   ) -> tuple[DataType, str]:
     """Read image data from a file or crate"""
 
     if isinstance(arg, str):
@@ -669,7 +674,7 @@ def get_image_data(arg: Union[str, IMAGECrate],
     else:
         raise IOErr('badfile', arg, "IMAGECrate obj")
 
-    data: dict[str, Any] = {}
+    data: DataType = {}
 
     data['y'] = _require_image(img, filename, make_copy=make_copy,
                                fix_type=fix_type)
@@ -718,7 +723,7 @@ def get_image_data(arg: Union[str, IMAGECrate],
 
 def get_arf_data(arg: Union[str, TABLECrate],
                  make_copy: bool = True
-                 ) -> tuple[dict[str, Any], str]:
+                 ) -> tuple[DataType, str]:
     """Read an ARF from a file or crate"""
 
     if isinstance(arg, str):
@@ -737,7 +742,7 @@ def get_arf_data(arg: Union[str, TABLECrate],
     if arf is None or arf.get_colnames() is None:
         raise IOErr('filenotfound', arg)
 
-    data: dict[str, Any] = {}
+    data: DataType = {}
 
     data['energ_lo'] = _require_col(arf, 'ENERG_LO',
                                     make_copy=make_copy,
@@ -815,7 +820,7 @@ def _find_matrix_blocks(filename: str,
 
 def get_rmf_data(arg: Union[str, RMFCrateDataset],
                  make_copy: bool = True
-                 ) -> tuple[dict[str, Any], str]:
+                 ) -> tuple[DataType, str]:
     """Read a RMF from a file or crate"""
 
     if isinstance(arg, str):
@@ -867,7 +872,7 @@ def get_rmf_data(arg: Union[str, RMFCrateDataset],
     if not rmf.column_exists('N_CHAN'):
         raise IOErr('reqcol', 'N_CHAN', filename)
 
-    data: dict[str, Any] = {}
+    data: DataType = {}
     data['detchans'] = _require_key(rmf, 'DETCHANS', dtype=SherpaInt)
     data['energ_lo'] = _require_col(rmf, 'ENERG_LO',
                                     make_copy=make_copy, fix_type=True)
@@ -945,7 +950,7 @@ def get_rmf_data(arg: Union[str, RMFCrateDataset],
 def get_pha_data(arg: Union[str, PHACrateDataset],
                  make_copy: bool = True,
                  use_background: bool = False
-                 ) -> tuple[list[dict[str, Any]], str]:
+                 ) -> tuple[list[DataType], str]:
     """Read PHA data from a file or crate"""
 
     if isinstance(arg, str):
@@ -1003,7 +1008,7 @@ def get_pha_data(arg: Union[str, PHACrateDataset],
     # Here, I instead test for a column, SPEC_NUM, that can
     # *only* be present in Type II. SMD 05/15/13
     if _try_col(pha, 'SPEC_NUM') is None:
-        data: dict[str, Any] = {}
+        data: DataType = {}
 
         # Keywords
         data['exposure'] = _try_key(pha, 'EXPOSURE', SherpaFloat)
@@ -1145,7 +1150,7 @@ def get_pha_data(arg: Union[str, PHACrateDataset],
                       background_down, bin_lo, bin_hi, grouping, quality,
                       orders, parts, specnums, srcids):
 
-            idata: dict[str, Any] = {}
+            idata: DataType = {}
 
             idata['exposure'] = exposure
             # data['poisserr'] = poisserr
@@ -1215,7 +1220,8 @@ def write_dataset(dataset: Union[TABLECrate, IMAGECrate, CrateDataset],
     dataset.write(filename, clobber=True)
 
 
-def pack_image_data(data, header) -> IMAGECrate:
+def pack_image_data(data: DataTypeArg,
+                    header: HdrTypeArg) -> IMAGECrate:
     """Pack up the image data."""
 
     img = IMAGECrate()
@@ -1272,7 +1278,11 @@ def pack_image_data(data, header) -> IMAGECrate:
     return img
 
 
-def set_image_data(filename, data, header, ascii=False, clobber=False) -> None:
+def set_image_data(filename: str,
+                   data: DataTypeArg,
+                   header: HdrTypeArg,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
     """Write out the image data."""
 
     if ascii and '[' not in filename and ']' not in filename:
@@ -1282,7 +1292,9 @@ def set_image_data(filename, data, header, ascii=False, clobber=False) -> None:
     write_dataset(img, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_table_data(data, col_names, header=None) -> TABLECrate:
+def pack_table_data(data: ColumnsType,
+                    col_names: NamesType,
+                    header: Optional[HdrTypeArg] = None) -> TABLECrate:
     """Pack up the table data."""
 
     tbl = TABLECrate()
@@ -1294,15 +1306,21 @@ def pack_table_data(data, col_names, header=None) -> TABLECrate:
     return tbl
 
 
-def set_table_data(filename, data, col_names, header=None,
-                   ascii=False, clobber=False) -> None:
+def set_table_data(filename: str,
+                   data: ColumnsType,
+                   col_names: NamesType,
+                   header: Optional[HdrTypeArg] = None,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
     """Write out the table data."""
 
     tbl = pack_table_data(data, col_names, header=header)
     write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_arf_data(data, col_names, header=None) -> TABLECrate:
+def pack_arf_data(data: ColumnsType,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None) -> TABLECrate:
     """Pack the ARF"""
 
     if header is None:
@@ -1311,15 +1329,21 @@ def pack_arf_data(data, col_names, header=None) -> TABLECrate:
     return pack_table_data(data, col_names, header)
 
 
-def set_arf_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False) -> None:
+def set_arf_data(filename: str,
+                 data: ColumnsType,
+                 col_names: NamesType,
+                 header: Optional[HdrTypeArg] = None,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
     """Write out the ARF"""
 
     arf = pack_arf_data(data, col_names, header)
     write_dataset(arf, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_pha_data(data, col_names, header=None) -> PHACrateDataset:
+def pack_pha_data(data: ColumnsType,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None) -> PHACrateDataset:
     """Pack the PHA data."""
 
     if header is None:
@@ -1345,8 +1369,12 @@ def pack_pha_data(data, col_names, header=None) -> PHACrateDataset:
     return phadataset
 
 
-def set_pha_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False) -> None:
+def set_pha_data(filename: str,
+                 data: ColumnsType,
+                 col_names: NamesType,
+                 header: Optional[HdrTypeArg] = None,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
     """Create a PHA dataset/file"""
 
     pha = pack_pha_data(data, col_names, header)
@@ -1401,6 +1429,7 @@ def pack_rmf_data(blocks) -> RMFCrateDataset:
     # here.
     #
     def mkcol(name, vals, units=None):
+        ###### if name == "MATRIX": print(vals)   DEBUG REMOVE
         col = CrateData()
         col.name = name
         col.values = vals
