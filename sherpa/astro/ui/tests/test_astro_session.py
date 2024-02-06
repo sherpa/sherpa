@@ -2624,7 +2624,7 @@ def check_save_ascii2d(session, expected, out, savefunc, idval, kwargs, check_st
 
 @pytest.mark.parametrize("session,kwargs,expected",
                          [(Session, {"comment": "!! "}, ["!! SOURCE", "7 11", ""]),
-                          (AstroSession, {"ascii": True}, ["7", "11", ""])])
+                          (AstroSession, {"ascii": True}, ["# col1", "7", "11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io, check_str):
     """Basic check it works
@@ -2651,7 +2651,7 @@ def test_save_source_ascii_data2d(session, kwargs, expected, idval, tmp_path, sk
 
 @pytest.mark.parametrize("session,kwargs,expected",
                          [(Session, {"comment": ""}, ["MODEL", "7 11", ""]),
-                          (AstroSession, {"ascii": True}, ["7", "11", ""])])
+                          (AstroSession, {"ascii": True}, ["# col1", "7", "11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io, check_str):
     """Basic check it works
@@ -2678,7 +2678,7 @@ def test_save_model_ascii_data2d(session, kwargs, expected, idval, tmp_path, ski
 
 @pytest.mark.parametrize("session,kwargs,expected",
                          [(Session, {}, ["#RESID", "-7 -11", ""]),
-                          (AstroSession, {"ascii": True}, ["-7", "-11", ""])])
+                          (AstroSession, {"ascii": True}, ["# col1", "-7", "-11", ""])])
 @pytest.mark.parametrize("idval", [None, "bob"])
 def test_save_resid_ascii_data2d(session, kwargs, expected, idval, tmp_path, skip_if_no_io, check_str):
     """Basic check it works

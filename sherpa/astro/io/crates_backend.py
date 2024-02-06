@@ -531,12 +531,13 @@ def _find_matrix_blocks(filename: str,
 def write_dataset(dataset: Union[TABLECrate, IMAGECrate, CrateDataset],
                   filename: str,
                   *,
-                  ascii: bool,
-                  clobber: bool) -> None:
-    """Write out the data."""
+                  ascii: bool) -> None:
+    """Write out the data.
 
-    if not clobber and os.path.isfile(filename):
-        raise IOErr("filefound", filename)
+    Any clobber check is assumed to have been done before this is
+    called.
+
+    """
 
     if ascii and '[' not in filename and ']' not in filename:
         filename += "[opt kernel=text/simple]"
@@ -1392,8 +1393,10 @@ class Backend(BaseBackend):
         if ascii and '[' not in filename and ']' not in filename:
             raise IOErr('writenoimg')
 
+        self.check_clobber(filename, clobber)
+
         img = self.pack_image_data(data, header)
-        write_dataset(img, filename, ascii=ascii, clobber=clobber)
+        write_dataset(img, filename, ascii=ascii)
 
     def pack_table_data(self,
                         data: ColumnsType,
@@ -1418,8 +1421,10 @@ class Backend(BaseBackend):
                        clobber: bool = False) -> None:
         """Write out the table data."""
 
+        self.check_clobber(filename, clobber)
+
         tbl = self.pack_table_data(data, col_names, header=header)
-        write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
+        write_dataset(tbl, filename, ascii=ascii)
 
     def pack_arf_data(self,
                       data: ColumnsType,
@@ -1441,8 +1446,10 @@ class Backend(BaseBackend):
                      clobber: bool = False) -> None:
         """Write out the ARF"""
 
+        self.check_clobber(filename, clobber)
+
         arf = self.pack_arf_data(data, col_names, header)
-        write_dataset(arf, filename, ascii=ascii, clobber=clobber)
+        write_dataset(arf, filename, ascii=ascii)
 
     def pack_pha_data(self,
                       data: ColumnsType,
@@ -1481,8 +1488,10 @@ class Backend(BaseBackend):
                      clobber: bool = False) -> None:
         """Create a PHA dataset/file"""
 
+        self.check_clobber(filename, clobber)
+
         pha = self.pack_pha_data(data, col_names, header)
-        write_dataset(pha, filename, ascii=ascii, clobber=clobber)
+        write_dataset(pha, filename, ascii=ascii)
 
     def pack_rmf_data(self, blocks) -> RMFCrateDataset:
         """Pack up the RMF data."""
@@ -1567,53 +1576,23 @@ class Backend(BaseBackend):
 
         """
 
-        rmf = self.pack_rmf_data(blocks)
-        write_dataset(rmf, filename, ascii=False, clobber=clobber)
+        self.check_clobber(filename, clobber)
 
-    def set_arrays(self,
-                   filename: str,
-                   args: Sequence[np.ndarray],
-                   fields: Optional[NamesType] = None,
-                   ascii: bool = True,
-                   clobber: bool = False) -> None:
+        rmf = self.pack_rmf_data(blocks)
+        write_dataset(rmf, filename, ascii=False)
+
+    def write_arrays(self,
+                     filename: str,
+                     args: Sequence[np.ndarray],
+                     fields: NamesType,
+                     ascii: bool = True) -> None:
         """Write out the columns."""
 
-        # Historically the clobber command has been checked before
-        # processing the data, so do so here.
-        #
-        if not clobber and os.path.isfile(filename):
-            raise IOErr("filefound", filename)
-
-        # Check args is a sequence of sequences (although not a complete
-        # check).
-        #
-        try:
-            size = len(args[0])
-        except (TypeError, IndexError) as exc:
-            raise IOErr('noarrayswrite') from exc
-
-        for arg in args[1:]:
-            try:
-                argsize = len(arg)
-            except (TypeError, IndexError) as exc:
-                raise IOErr('noarrayswrite') from exc
-
-            if argsize != size:
-                raise IOErr('arraysnoteq')
-
-        nargs = len(args)
-        if fields is None:
-            fieldnames = [f'col{idx + 1}' for idx in range(nargs)]
-        elif nargs == len(fields):
-            fieldnames = list(fields)
-        else:
-            raise IOErr('wrongnumcols', nargs, len(fields))
-
         tbl = TABLECrate()
-        for val, name in zip(args, fieldnames):
+        for val, name in zip(args, fields):
             _set_column(tbl, name, val)
 
-        write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
+        write_dataset(tbl, filename, ascii=ascii)
 
     def pack_hdus(self,
                   blocks: Sequence[TableHDU]) -> CrateDataset:
@@ -1640,5 +1619,7 @@ class Backend(BaseBackend):
         At present we are restricted to tables only.
         """
 
+        self.check_clobber(filename, clobber)
+
         dset = self.pack_hdus(blocks)
-        write_dataset(dset, filename, ascii=False, clobber=clobber)
+        write_dataset(dset, filename, ascii=False)

@@ -39,10 +39,12 @@ class name.
 """
 
 from abc import ABCMeta, abstractmethod
+import os
 from typing import Any, Mapping, Optional, Sequence, Union
 
 import numpy as np
 
+from ...utils.err import IOErr
 from ..data import Data1D
 
 from .xstable import TableHDU
@@ -72,6 +74,14 @@ class BaseBackend(metaclass=ABCMeta):
 
     name: str = "base"
     """The name of the backend."""
+
+    def check_clobber(self, filename: str, clobber: bool) -> None:
+        """Error out if the file exists and clobber is not set."""
+
+        if clobber or not os.path.isfile(filename):
+            return
+
+        raise IOErr("filefound", filename)
 
     @abstractmethod
     def get_table_data(self, arg,
@@ -734,7 +744,6 @@ class BaseBackend(metaclass=ABCMeta):
 
         """
 
-    @abstractmethod
     def set_arrays(self,
                    filename: str,
                    args: Sequence[np.ndarray],
@@ -759,5 +768,62 @@ class BaseBackend(metaclass=ABCMeta):
             If the file already exists can it be over-written (`True`) or
             will a sherpa.utils.err.IOErr error be raised? The default is
             `False`.
+
+        """
+
+        self.check_clobber(filename, clobber)
+
+        # Check args is a sequence of sequences (although not a complete
+        # check).
+        #
+        try:
+            size = len(args[0])
+        except (TypeError, IndexError) as exc:
+            raise IOErr('noarrayswrite') from exc
+
+        for arg in args[1:]:
+            try:
+                argsize = len(arg)
+            except (TypeError, IndexError) as exc:
+                raise IOErr('noarrayswrite') from exc
+
+            if argsize != size:
+                raise IOErr('arraysnoteq')
+
+        nargs = len(args)
+        if fields is None:
+            fieldnames = [f'col{idx + 1}' for idx in range(nargs)]
+        elif nargs == len(fields):
+            fieldnames = list(fields)
+        else:
+            raise IOErr('wrongnumcols', nargs, len(fields))
+
+        # This is the backend-specific functionality.
+        #
+        self.write_arrays(filename, args, fieldnames, ascii=ascii)
+
+    @abstractmethod
+    def write_arrays(self,
+                     filename: str,
+                     args: Sequence[np.ndarray],
+                     fields: Optional[NamesType] = None,
+                     ascii: bool = True) -> None:
+        """Write out columns.
+
+        The clobber check has been made in save_arrays.
+
+        Parameters
+        ----------
+        filename : str
+            The file name.
+        args : sequence of ndarray
+            The column data. This has been checked to have the same
+            size for each column.
+        fields : sequence of str
+            The column names to use. This matches the number of columns
+            in args.
+        ascii : bool, optional
+            Is the file to be written out as a text file (`True`) or a
+            binary file? The default is `True`.
 
         """

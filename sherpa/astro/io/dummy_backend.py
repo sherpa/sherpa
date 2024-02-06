@@ -250,11 +250,10 @@ class Backend(BaseBackend):
         raise NotImplementedError('No usable I/O backend was imported.')
 
 
-    def set_arrays(self,
-                   filename: str,
-                   args: Sequence[np.ndarray],
-                   fields: Optional[NamesType] = None,
-                   ascii: bool = True,
-                   clobber: bool = False) -> None:
+    def write_arrays(self,
+                     filename: str,
+                     args: Sequence[np.ndarray],
+                     fields: Optional[NamesType] = None,
+                     ascii: bool = True) -> None:
         """Write out columns."""
         raise NotImplementedError('No usable I/O backend was imported.')

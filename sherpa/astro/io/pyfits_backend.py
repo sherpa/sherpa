@@ -584,15 +584,6 @@ def _create_table(names: NamesType,
     return Table(names=colnames, data=store)
 
 
-def check_clobber(filename: str, clobber: bool) -> None:
-    """Error out if the file exists and clobber is not set."""
-
-    if clobber or not os.path.isfile(filename):
-        return
-
-    raise IOErr("filefound", filename)
-
-
 def _create_header(header: Mapping[str, KeyType]) -> fits.Header:
     """Create a FITS header with the contents of header,
     the Sherpa representation of the key,value store.
@@ -1370,7 +1361,7 @@ class Backend(BaseBackend):
                        clobber: bool = False) -> None:
         """Write out the table data."""
 
-        check_clobber(filename, clobber)
+        self.check_clobber(filename, clobber)
 
         if ascii:
             tbl = _create_table(col_names, data)
@@ -1564,7 +1555,7 @@ class Backend(BaseBackend):
 
         """
 
-        check_clobber(filename, clobber)
+        self.check_clobber(filename, clobber)
         hdus = self.pack_rmf_data(blocks)
         hdus.writeto(filename, overwrite=True)
 
@@ -1629,7 +1620,7 @@ class Backend(BaseBackend):
                        clobber: bool = False) -> None:
         """Write out the image data."""
 
-        check_clobber(filename, clobber)
+        self.check_clobber(filename, clobber)
 
         if ascii:
             self.set_arrays(filename, [data['pixels'].ravel()],
@@ -1639,42 +1630,11 @@ class Backend(BaseBackend):
         img = self.pack_image_data(data, header)
         img.writeto(filename, overwrite=True)
 
-    def set_arrays(self,
-                   filename: str,
-                   args: Sequence[np.ndarray],
-                   fields: Optional[NamesType] = None,
-                   ascii: bool = True,
-                   clobber: bool = False) -> None:
-
-        # Historically the clobber command has been checked before
-        # processing the data, so do so here.
-        #
-        check_clobber(filename, clobber)
-
-        # Check args is a sequence of sequences (although not a complete
-        # check).
-        #
-        try:
-            size = len(args[0])
-        except (TypeError, IndexError) as exc:
-            raise IOErr('noarrayswrite') from exc
-
-        for arg in args[1:]:
-            try:
-                argsize = len(arg)
-            except (TypeError, IndexError) as exc:
-                raise IOErr('noarrayswrite') from exc
-
-            if argsize != size:
-                raise IOErr('arraysnoteq')
-
-        nargs = len(args)
-        if fields is None:
-            fieldnames = [f'COL{idx + 1}' for idx in range(nargs)]
-        elif nargs == len(fields):
-            fieldnames = list(fields)
-        else:
-            raise IOErr("wrongnumcols", nargs, len(fields))
+    def write_arrays(self,
+                     filename: str,
+                     args: Sequence[np.ndarray],
+                     fields: NamesType,
+                     ascii: bool = True) -> None:
 
         if ascii:
             # Historically, the serialization doesn't quite match the
@@ -1684,15 +1644,16 @@ class Backend(BaseBackend):
             # the AstroPy table output used for other "ASCII table" forms
             # in this module.
             #
-            # The fields setting can be None here, which means that
-            # write_arrays will not write out a header line.
+            # Prior to 4.16.1, fields could have been None, which would
+            # mean no header line was written out. This is no-longer
+            # possible.
             #
             write_arrays(filename, args, fields,
-                         comment="# ", clobber=clobber)
+                         comment="# ", clobber=True)
             return
 
-        data = dict(zip(fieldnames, args))
-        tbl = _create_table(fieldnames, data)
+        data = dict(zip(fields, args))
+        tbl = _create_table(fields, data)
         hdu = fits.table_to_hdu(tbl)
         hdu.name = 'TABLE'
         hdu.writeto(filename, overwrite=True)
@@ -1720,6 +1681,6 @@ class Backend(BaseBackend):
         At present we are restricted to tables only.
         """
 
-        check_clobber(filename, clobber)
+        self.check_clobber(filename, clobber)
         hdus = self.pack_hdus(blocks)
         hdus.writeto(filename, overwrite=True)

@@ -854,7 +854,7 @@ def test_save_data_data2d(tmp_path):
         expected = "\n".join(expected) + "\n"
 
     elif backend_is("pyfits"):
-        expected = "\n".join([str(zz) for zz in z]) + "\n"
+        expected = "\n".join(["# col1"] + [str(zz) for zz in z]) + "\n"
     else:
         raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.name}")
 
@@ -907,7 +907,7 @@ def test_save_data_dataimg(tmp_path):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    expected = "\n".join([str(zz) for zz in z]) + "\n"
+    expected = "\n".join(["# col1"] + [str(zz) for zz in z]) + "\n"
     assert cts == expected
 
 
@@ -1443,7 +1443,7 @@ def test_save_resid_dataimg(tmp_path):
     ui.save_resid(outfile, ascii=True)
 
     cts = out.read_text()
-    expected = "\n".join([str(zz - 10) for zz in z]) + "\n"
+    expected = "\n".join(["# col1"] + [str(zz - 10) for zz in z]) + "\n"
     assert cts == expected
 
 
