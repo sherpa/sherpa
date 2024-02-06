@@ -35,9 +35,14 @@ source ${CONDA}/etc/profile.d/conda.sh
 
 # update and add channels
 conda update --yes conda
-conda config --add channels conda-forge
-#Remove defaults to avoid conflicts with conda-forge
-conda config --remove channels defaults
+
+# miniforge has already done this for us, hence the OS restriction.
+#
+if [ "`uname -s`" != "Darwin" ] ; then
+  conda config --add channels conda-forge
+  #Remove defaults to avoid conflicts with conda-forge
+  conda config --remove channels defaults
+fi
 
 # To avoid issues with non-XSPEC builds (e.g.
 # https://github.com/sherpa/sherpa/pull/794#issuecomment-616570995 )
