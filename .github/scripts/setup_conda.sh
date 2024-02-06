@@ -49,7 +49,12 @@ fi
 # the XSPEC-related channels are only added if needed
 #
 if [ -n "${XSPECVER}" ]; then
- conda config --add channels ${xspec_channel}
+  if [ "`uname -s`" == "Darwin" ] ; then
+    # we need to use the CXC conda channel to get the ARM XSPEC build for now
+    conda config --add channels https://cxc.harvard.edu/conda/ciao
+  else
+    conda config --add channels ${xspec_channel}
+  fi
 fi
 
 # Figure out requested dependencies
