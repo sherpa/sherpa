@@ -115,6 +115,9 @@ jobs:
       env:
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          CONDA="${HOME}/conda"
+        fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         if [ "$RUNNER_OS" != "macOS" ]; then
@@ -127,6 +130,9 @@ jobs:
       env:
         PYTHON_LDFLAGS: " "
       run: |
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          CONDA="${HOME}/conda"
+        fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         pip install . --verbose
@@ -136,6 +142,9 @@ jobs:
       env:
         PYTHON_LDFLAGS: " "
       run: |
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          CONDA="${HOME}/conda"
+        fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         pip install -e . --verbose
@@ -143,6 +152,9 @@ jobs:
     - name: Install the test data?
       if: matrix.test-data == 'package'
       run: |
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          CONDA="${HOME}/conda"
+        fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         pip install ./sherpa-test-data
@@ -171,6 +183,9 @@ jobs:
         fi
 
         echo "** smoke test: ${smokevars}"
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          CONDA="${HOME}/conda"
+        fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         cd /home
@@ -199,6 +214,9 @@ jobs:
           # make sure pytext-xvfb can find Xvfb
           export PATH="${PATH}:/opt/X11/bin"
         fi
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          CONDA="${HOME}/conda"
+        fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
@@ -207,6 +225,9 @@ jobs:
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       run: |
+        if [ "$RUNNER_OS" = "macOS" ]; then
+          CONDA="${HOME}/conda"
+        fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov

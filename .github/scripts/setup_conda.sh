@@ -10,6 +10,13 @@ if [ "`uname -s`" == "Darwin" ] ; then
       echo "macOS 10.14 SDK download failed"
     fi
     tar -C ${GITHUB_WORKSPACE}/10.14SDK -xf MacOSX10.14.sdk.tar.xz
+
+    # Install miniforge; see
+    # https://github.com/conda-forge/miniforge?tab=readme-ov-file#downloading-the-installer-as-part-of-a-ci-pipeline
+    CONDA="${HOME}/conda"
+    curl -fsSLo Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-$(uname -m).sh"
+    bash Miniforge3.sh -b -p $CONDA
+
     #End of Conda compilers section
 else
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
