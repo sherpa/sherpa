@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2022
+#  Copyright (C) 2021, 2022, 2024
 #  MIT
 #
 #
@@ -23,9 +23,10 @@ from unittest.mock import patch
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro import io
 from sherpa.astro import ui
+from sherpa.utils.err import ArgumentTypeErr
+from sherpa.utils.testing import requires_data, requires_fits
 
 
 @requires_fits
@@ -43,8 +44,8 @@ def test_backend_switch(make_data_path):
 
     orig_backend = io.backend
 
-    import sherpa.astro.io.dummy_backend
-    io.backend = sherpa.astro.io.dummy_backend
+    from sherpa.astro.io.dummy_backend import Backend
+    io.backend = Backend()
 
     with pytest.raises(NotImplementedError,
                        match="No usable I/O backend was imported."):
@@ -54,6 +55,66 @@ def test_backend_switch(make_data_path):
     infile = make_data_path("9774.pi")
     ui.load_pha(infile)
     assert ui.get_data().name.endswith('9774.pi')
+
+
+@requires_fits
+@requires_data
+def test_backend_switch_explicit(make_data_path):
+    """Test that we can switch backends using set_backend."""
+
+    oname = io.backend.name
+    orig_backend = io.backend
+    assert oname != "dummy"
+
+    pha = make_data_path("3c273.pi")
+    ui.clean()
+    ui.load_pha(pha)
+    assert ui.get_data().name.endswith('3c273.pi')
+
+    io.set_backend("dummy")
+
+    with pytest.raises(NotImplementedError,
+                       match="No usable I/O backend was imported."):
+         ui.load_pha(pha)
+
+    io.set_backend(orig_backend)
+    assert io.backend.name == oname
+
+    infile = make_data_path("9774.pi")
+    ui.load_pha(infile)
+    assert ui.get_data().name.endswith('9774.pi')
+
+
+def test_set_backend_invalid_string():
+    """Check we error out.
+
+    This will need changing if we ever add a backend called
+    "not-a-backend".
+
+    """
+
+    with pytest.raises(ImportError):
+        io.set_backend("not-a-backend")
+
+
+class NotABackend:
+    """dummy class"""
+
+
+def test_set_backend_invalid_class():
+    """Check we error out."""
+
+    with pytest.raises(ArgumentTypeErr,
+                       match=" is not a backend class, instance, or string name"):
+        io.set_backend(NotABackend)
+
+
+def test_set_backend_invalid_instance():
+    """Check we error out."""
+
+    with pytest.raises(ArgumentTypeErr,
+                       match=" is not a backend class, instance, or string name"):
+        io.set_backend(NotABackend())
 
 
 def test_io_load_config_invalid_io_pkg(tmp_path):
@@ -71,7 +132,7 @@ io_pkg : not_a_module
     with patch("sherpa.get_config", lambda: str(conf)):
         mod = importlib.reload(io)
 
-    assert mod.backend is io.dummy_backend
+    assert mod.backend.name == "dummy"
 
     # Restore the import
     mod = importlib.reload(io)

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2016, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -59,7 +59,7 @@ def skip_if_no_io(request):
     # If the I/O backend is not the dummy backend then we assume that
     # we can return.
     #
-    if io.backend.__name__ != "sherpa.astro.io.dummy_backend":
+    if io.backend.name != "dummy":
         return
 
     pytest.skip(reason="FITS backend required")
@@ -2602,7 +2602,7 @@ def check_save_ascii2d(session, expected, out, savefunc, idval, kwargs, check_st
 
     """
 
-    if session == AstroSession and io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if session == AstroSession and io.backend.name == "crates":
         if idval is None:
             with pytest.raises(IOErr,
                                match="writing images in ASCII is not supported"):
@@ -3234,10 +3234,10 @@ def check_text_output(path, header, coldata):
     # Use the same logic as test_astro_ui_unit.py.
     #
     from sherpa.astro import io
-    name = io.backend.__name__
-    if name == "sherpa.astro.io.crates_backend":
+    name = io.backend.name
+    if name == "crates":
         expected = f"#TEXT/SIMPLE\n# {header}\n"
-    elif name == "sherpa.astro.io.pyfits_backend":
+    elif name == "pyfits":
         expected = f"# {header}\n"
     else:
         assert False, f"Unknown I/O backend: {name}"

@@ -41,7 +41,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 
 def backend_is(name):
     """Are we using the specified backend?"""
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 @requires_data
@@ -442,7 +442,7 @@ def test_write_rmf_fits_asca_sis(make_data_path, tmp_path, caplog):
     assert len(caplog.record_tuples) == 1
 
     lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == io.backend.__name__
+    assert lname == f"sherpa.astro.io.{io.backend.name}_backend"
     assert lvl == logging.ERROR
     assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
     assert msg.endswith("sis0.rmf'; Update the offset value in the RMF data set to appropriate TLMIN value prior to fitting")
@@ -982,7 +982,6 @@ def test_write_fake_perfect_rmf(offset, tmp_path):
     assert np.log10(new.ethresh) == pytest.approx(-10)
 
     hdr = new.header
-    print(hdr)
     assert "HDUNAME" not in hdr
     assert hdr["HDUCLASS"] == "OGIP"
     assert hdr["HDUCLAS1"] == "RESPONSE"
@@ -1105,9 +1104,8 @@ def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
     assert len(caplog.record_tuples) == 1
 
     lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == io.backend.__name__
+    assert lname == f"sherpa.astro.io.{io.backend.name}_backend"
     assert lvl == logging.ERROR
-    print(msg)
     assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
     assert msg.endswith("'; Update the offset value in the RMF data set to appropriate TLMIN value prior to fitting")
 
@@ -1217,13 +1215,13 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     assert len(caplog.record_tuples) == 2
 
     lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == io.backend.__name__
+    assert lname == f"sherpa.astro.io.{io.backend.name}_backend"
     assert lvl == logging.ERROR
     assert msg.startswith("RMF in ")
     assert msg.endswith("/multi.rmf contains 2 MATRIX blocks; Sherpa only uses the first block!")
 
     lname, lvl, msg = caplog.record_tuples[1]
-    assert lname == io.backend.__name__
+    assert lname == f"sherpa.astro.io.{io.backend.name}_backend"
     assert lvl == logging.ERROR
     assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
     assert msg.endswith("/multi.rmf'; Update the offset value in the RMF data set to appropriate TLMIN value prior to fitting")
@@ -1271,17 +1269,17 @@ def test_read_arf_object(make_data_path):
     infile = make_data_path("MNLup_2138_0670580101_EMOS1_S001_spec.arf")
     close = False
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if backend_is("crates"):
         import pycrates
         arg = pycrates.read_file(infile)
 
-    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    elif backend_is("pyfits"):
         from astropy.io import fits
         arg = fits.open(infile)
         close = True
 
     else:
-        assert False, f"unknown backend: {io.backend.__name__}"
+        assert False, f"unknown backend: {io.backend.name}"
 
     try:
         with warnings.catch_warnings(record=True) as ws:
@@ -1320,17 +1318,17 @@ def test_read_rmf_object(make_data_path):
     infile = make_data_path("source.rmf")
     close = False
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if backend_is("crates"):
         import pycrates
         arg = pycrates.RMFCrateDataset(infile, mode='r')
 
-    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    elif backend_is("pyfits"):
         from astropy.io import fits
         arg = fits.open(infile)
         close = True
 
     else:
-        assert False, f"unknown backend: {io.backend.__name__}"
+        assert False, f"unknown backend: {io.backend.name}"
 
     try:
         rmf = io.read_rmf(arg)

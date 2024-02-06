@@ -32,7 +32,7 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 
 def backend_is(name):
     """Are we using the given backend?"""
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 @requires_fits
@@ -293,17 +293,17 @@ def test_read_image_object(make_data_path):
     infile = make_data_path("psf_0.0_00_bin1.img")
     close = False
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if backend_is("crates"):
         import pycrates
         arg = pycrates.read_file(infile)
 
-    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    elif backend_is("pyfits"):
         from astropy.io import fits
         arg = fits.open(infile)
         close = True
 
     else:
-        assert False, f"unknown backend: {io.backend.__name__}"
+        assert False, f"unknown backend: {io.backend.name}"
 
     try:
         img = io.read_image(arg)

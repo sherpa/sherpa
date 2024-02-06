@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2019, 2021, 2023
+#  Copyright (C) 2015, 2016, 2019, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1330,7 +1330,7 @@ def _save_dataset(out: OutType,
     infile = data.name
     if TYPE_CHECKING:
         assert io.backend is not None
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if io.backend.name == "crates":
         import pycrates  # type: ignore
         try:
             pycrates.read_file(infile)

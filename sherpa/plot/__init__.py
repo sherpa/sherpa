@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2009, 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -174,16 +174,21 @@ def set_backend(new_backend):
     if isinstance(new_backend, str):
         if new_backend in PLOT_BACKENDS:
             backend = PLOT_BACKENDS[new_backend]()
-        else:
-            raise IdentifierErr('noplotbackend', new_backend,
-                                list(PLOT_BACKENDS.keys()))
+            return
+
+        raise IdentifierErr('noplotbackend', new_backend,
+                            list(PLOT_BACKENDS.keys()))
+
     # It's a class and that class is a subclass of BaseBackend
-    elif isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
+    if isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
         backend = new_backend()
-    elif isinstance(new_backend, BaseBackend):
+        return
+
+    if isinstance(new_backend, BaseBackend):
         backend = new_backend
-    else:
-        raise ArgumentTypeErr('tempplotbackend', new_backend)
+        return
+
+    raise ArgumentTypeErr('tempbackend', new_backend)
 
 
 class TemporaryPlottingBackend(contextlib.AbstractContextManager):

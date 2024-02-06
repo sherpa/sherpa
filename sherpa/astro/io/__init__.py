@@ -67,8 +67,10 @@ from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.data import Data, Data2D, Data1D, BaseData, Data2DInt
 import sherpa.io
-from sherpa.utils.err import ArgumentErr, DataErr, IOErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat
+
+from .backends import BaseBackend
 
 config = ConfigParser()
 config.read(get_config())
@@ -93,20 +95,25 @@ else:
     if ogip_emin <= 0.0:
         raise ValueError(emsg)
 
-backend = None
-'''Currently active backend module for astronomy specific I/O.'''
-
 for iotry in io_opt:
     try:
-        backend = importlib.import_module('.' + iotry,
-                                          package='sherpa.astro.io')
+        backend_module = importlib.import_module('.' + iotry,
+                                                 package='sherpa.astro.io')
         break
     except ImportError:
         pass
 else:
     # None of the options in the rc file work, e.g. because it's an old file
     # that does not have dummy listed
-    import sherpa.astro.io.dummy_backend as backend
+    import sherpa.astro.io.dummy_backend as backend_module
+
+
+backend = backend_module.Backend()
+'''Currently active backend module for astronomy specific I/O.
+
+The selected backend is given by the name attribute of this object.
+'''
+
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -121,11 +128,55 @@ DataType = dict[str, Any]
 T = TypeVar('T')
 
 
-__all__ = ('backend',
+__all__ = ('backend', 'set_backend',
            'read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
            'read_pha', 'write_image', 'write_pha', 'write_table',
            'write_arf', 'write_rmf',
            'pack_table', 'pack_image', 'pack_pha', 'read_table_blocks')
+
+
+# Similar to sherpa.plot.set_backend
+#
+def set_backend(new_backend):
+    """Set the Sherpa I/O backend.
+
+    Parameters
+    ----------
+    new_backend: string, class, or instance
+        The new backend to use. There is no check that the requisite
+        I/O package is available.
+
+    Raises
+    ------
+    ImportError
+        If new_backend is an invalid string.
+
+    Example
+    -------
+
+    >>> set_backend("crates")
+
+    """
+
+    global backend
+
+    if isinstance(new_backend, str):
+
+        name = f"{new_backend}_backend"
+        backend_module = importlib.import_module('.' + name,
+                                                 package='sherpa.astro.io')
+        backend = backend_module.Backend()
+        return
+
+    if isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
+        backend = new_backend()
+        return
+
+    if isinstance(new_backend, BaseBackend):
+        backend = new_backend
+        return
+
+    raise ArgumentTypeErr("tempbackend", new_backend)
 
 
 # Note: write_arrays is not included in __all__, so don't add to the

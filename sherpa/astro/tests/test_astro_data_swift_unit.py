@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2021, 2023
+#  Copyright (C) 2017, 2018, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -47,7 +47,7 @@ from sherpa.astro import ui
 
 def backend_is(name):
     """Are we using the specified backend?"""
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 # PHA and ARF are stored uncompressed while RMF is gzip-compressed.
