@@ -15,7 +15,7 @@ readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
 
 authors = [
-  { name = "Smithsonian Astrophysical Observatory / Chandra X-Ray Center", email = "cxchelp@head.cfa.harvard.edu" }
+  { name = "Smithsonian Astrophysical Observatory / Chandra X-Ray Center", email = "cxchelp@cfa.harvard.edu" }
 ]
 
 classifiers = [
@@ -119,7 +119,7 @@ packages = [
 # Install the tests as "package data".
 # find sherpa -name tests | sort
 #
-# It's not clear how this interacts with tools.setuptols.packages.
+# It's not clear how this interacts with tools.setuptools.packages.
 #
 [tool.setuptools.package-data]
 "sherpa.astro.datastack" = [
