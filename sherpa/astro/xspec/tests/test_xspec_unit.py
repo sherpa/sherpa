@@ -835,7 +835,7 @@ def test_xspec_convolutionmodel_requires_bin_edges():
     m2 = xs.XScflux()
     mdl = m2(m1)
 
-    # We get warnings from m1 evalated on the grid and then the
+    # We get warnings from m1 evaluated on the grid and then the
     # convolution model m2.
     #
     emsg1 = r'calc\(\) requires pars,rhs,lo,hi arguments, sent 3 arguments'
@@ -858,7 +858,7 @@ def test_xspec_convolutionmodel_requires_bin_edges_low_level():
     m2 = xs.XScflux()
     mdl = m2(m1)
 
-    # We get warnings from m1 evalated on the grid and then the
+    # We get warnings from m1 evaluated on the grid and then the
     # convolution model m2.
     #
     emsg1 = r'calc\(\) requires pars,rhs,lo,hi arguments, sent 3 arguments'
