@@ -171,8 +171,3 @@ class sherpa_config(Command):
     def run(self):
         configure = self.build_configure()
         build_deps(configure)
-
-        # Can we copy across the stk and group libraries to
-        # somewhere "useful" for editable installs?
-        #
-        # raise RuntimeError("XXX")
