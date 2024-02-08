@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016-2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2016 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -835,9 +835,14 @@ def test_xspec_convolutionmodel_requires_bin_edges():
     m2 = xs.XScflux()
     mdl = m2(m1)
 
-    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
-    with pytest.warns(FutureWarning, match=emsg):
-        mdl([0.1, 0.2, 0.3, 0.4])
+    # We get warnings from m1 evaluated on the grid and then the
+    # convolution model m2.
+    #
+    emsg1 = r'calc\(\) requires pars,rhs,lo,hi arguments, sent 3 arguments'
+    emsg2 = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
+    with pytest.warns(FutureWarning, match=emsg1):
+        with pytest.warns(FutureWarning, match=emsg2):
+            mdl([0.1, 0.2, 0.3, 0.4])
 
 
 @requires_xspec
@@ -853,9 +858,14 @@ def test_xspec_convolutionmodel_requires_bin_edges_low_level():
     m2 = xs.XScflux()
     mdl = m2(m1)
 
-    emsg = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
-    with pytest.warns(FutureWarning, match=emsg):
-        mdl.calc([p.val for p in mdl.pars], [0.1, 0.2, 0.3, 0.4])
+    # We get warnings from m1 evaluated on the grid and then the
+    # convolution model m2.
+    #
+    emsg1 = r'calc\(\) requires pars,rhs,lo,hi arguments, sent 3 arguments'
+    emsg2 = r'calc\(\) requires pars,lo,hi arguments, sent 2 arguments'
+    with pytest.warns(FutureWarning, match=emsg1):
+        with pytest.warns(FutureWarning, match=emsg2):
+            mdl.calc([p.val for p in mdl.pars], [0.1, 0.2, 0.3, 0.4])
 
 
 @requires_data
