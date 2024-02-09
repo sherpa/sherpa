@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2020, 2021, 2022
+#  Copyright (C) 2008, 2016, 2020, 2021, 2022, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,13 +22,13 @@ import logging
 
 import numpy
 
+from sherpa.astro import hc, charge_e
 from sherpa.utils import get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
 
 from ._utils import arf_fold, do_group, expand_grouped_mask, \
-    filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
+    filter_resp, is_in, rmf_fold, shrink_effarea
 from ._pileup import apply_pileup
-from sherpa.astro import hc, charge_e
 
 
 __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
@@ -37,7 +37,7 @@ __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
            'calc_data_sum2d', 'calc_model_sum2d', 'filter_resp',
            'calc_source_sum', 'compile_energy_grid',
            'calc_kcorr',
-           'expand_grouped_mask', 'resp_init', 'is_in',
+           'expand_grouped_mask', 'is_in',
            'get_xspec_position']
 
 
@@ -372,7 +372,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     # same (which is set by bounds_check when a density is requested).
     #
     if lo is not None and dim == 2 and lo == hi:
-        assert scale.sum() == 1, 'programmer error: sum={}'.format(scale.sum())
+        assert scale.sum() == 1, f'programmer error: sum={scale.sum()}'
         y /= numpy.abs(axislist[1] - axislist[0])
 
     flux = (scale * y).sum()
@@ -1015,11 +1015,11 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
 
     if obslo * (1.0 + z.min()) < emin:
         raise IOErr('energoverlap', emin, emax, 'observed-frame',
-                    restlo, resthi, "at a redshift of %f" % z.min())
+                    restlo, resthi, f"at a redshift of {z.min()}")
 
     if obshi * (1.0 + z.max()) > emax:
         raise IOErr('energoverlap', emin, emax, 'rest-frame',
-                    restlo, resthi, "at a redshift of %f" % z.min())
+                    restlo, resthi, f"at a redshift of {z.max()}")
 
     zplus1 = z + 1.0
     flux_rest = _flux(data, restlo, resthi, model, eflux=True)

@@ -1839,8 +1839,8 @@ def test_recreate_img_from_rmf(make_data_path):
 
     # What is the input image?
     #
-    data, _ = io.backend.get_image_data(fname)
-    expected = data["y"]
+    iblock, _ = io.backend.get_image_data(fname)
+    expected = iblock.image
     assert expected.shape == (900, 1024)
 
     # Can we reconstruct the image in test_rmfimg.fits?
