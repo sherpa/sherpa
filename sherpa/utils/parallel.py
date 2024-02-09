@@ -473,7 +473,7 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     funcs_size = len(funcs)
     datasets_size = len(datasets)
     if funcs_size != datasets_size:
-        raise TypeError(f"input funcs ({funcs_size}) and datsets "
+        raise TypeError(f"input funcs ({funcs_size}) and datasets "
                         "({datasets_size}) size must be same")
 
     if not _multi or datasets_size == 1 or \

@@ -40,7 +40,7 @@ double Simplex::calc_standard_deviation_square(int num,
   //
   // The standard deviation algorithm is due to Donald E. Knuth (1998).
   // The art of Computer Programming, volume2: Seminumerical Algorithms,
-  // 3rd edn., p 232
+  // 3rd ed., p 232
   //
   double mean = 0.0, stddev = 0.0;
   for (int ii = 0; ii < num; ++ii) {

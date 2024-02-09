@@ -2077,7 +2077,7 @@ def test_pha_check_filter_channel(make_data_path):
 
     # The data is grouped so it doesn't quite match.
     # See the comments above test_notice_energy_grouping
-    # for the channel/grup/energy range mapping for
+    # for the channel/group/energy range mapping for
     # this file.
     #
     pha.notice(35, 480)
@@ -2716,7 +2716,7 @@ def test_is_mask_reset_img(data_args, caplog):
     assert data.mask is True
     data.notice2d("rect(0,0,3,3)", ignore=True)
 
-    # The filter depends on the intepretation of the bin edges so just
+    # The filter depends on the interpretation of the bin edges so just
     # check something has happened (the values are for the img and
     # imgint variants).
     #

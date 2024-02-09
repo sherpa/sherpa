@@ -268,7 +268,7 @@ extern int tcdPowerSpectrum(
 		     );
 
 
-/* ----------------  Kernel Routins  -------------------*/
+/* ----------------  Kernel Routines  -------------------*/
 
 
 
@@ -307,7 +307,7 @@ extern int tcdFreeKernel(
 
 
 
-/* ----------------  Convolve Routins  -------------------*/
+/* ----------------  Convolve Routines  -------------------*/
 
 
 
@@ -359,7 +359,7 @@ extern int tcdFFTConvolve(
 			  float **output,     /* o: output array         */
 			  long  **newAxes,     /* o: new length array     */
 			  tcdComplex **fftData, /* o: fft of data array    */
-			  tcdComplex **fftKern  /* o: fft of kernal array  */
+			  tcdComplex **fftKern  /* o: fft of kernel array  */
 			  );
 
 /* double precision */
@@ -377,7 +377,7 @@ extern int tcdFFTConvolveD(
 			  double **output,     /* o: output array         */
 			  long  **newAxes,     /* o: new length array     */
 			  tcdDComplex **fftData, /* o: fft of data array    */
-			  tcdDComplex **fftKern  /* o: fft of kernal array  */
+			  tcdDComplex **fftKern  /* o: fft of kernel array  */
 			  );
 
 
@@ -580,7 +580,7 @@ extern int tcdFreeCastArray(
 /* convert a complex data array, which can be interpreted as an array  of
    floats with real, imag, real, imag, real, imag, ..... into two arrays
    of floats with real, real, ... real, imag, imag, imag..... */
-/* This is for easy output of the data array into two seperate peices */
+/* This is for easy output of the data array into two separate pieces */
 /* This conversion is done IN PLACE which means that real and imag are
    merely pointers inside the data array.  The data array itself is mangled
    by this operation.*/

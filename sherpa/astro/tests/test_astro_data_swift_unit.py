@@ -21,7 +21,7 @@
 """Test handling of Swift [1]_ data.
 
 At the moment the tests are of routines in the sherpa.astro.io module,
-since the high-level routins like sherpa.astro.ui.unpack_pha are a
+since the high-level routines like sherpa.astro.ui.unpack_pha are a
 very-thin wrapper around the io routines.
 
 References

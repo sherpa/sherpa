@@ -241,7 +241,7 @@ data, model, statistic, and optimiser choices. The
 returns a
 :py:class:`~sherpa.fit.FitResults` instance, which
 contains information on how the fit performed. This
-infomation includes the
+information includes the
 :py:attr:`~sherpa.fit.FitResults.succeeded`
 attribute, to determine whether the fit converged, as well
 as information on the fit (such as the start and end
@@ -497,7 +497,7 @@ The default error estimation routine is
     openinterval = False
 
 ..
-   Comment: IGNORE_OUTPUT is neccessary because numcores will have
+   Comment: IGNORE_OUTPUT is necessary because numcores will have
    different value, depending on the machine that runs the doctest.
 
 Running the error analysis can take time, for particularly complex
@@ -620,7 +620,7 @@ number of steps requested. The resulting data looks like::
 The curve is stored in the
 :py:class:`~sherpa.plot.IntervalProjection` object (in fact, these
 values are created by the call to
-:py:meth:`~sherpa.plot.IntervalProjection.calc` and so can be accesed without
+:py:meth:`~sherpa.plot.IntervalProjection.calc` and so can be accessed without
 needing to create the plot)::
 
     >>> print(iproj)
@@ -668,7 +668,7 @@ this step can take time.
 As with the single-parameter case, the statistic values for the grid are
 stored in the :py:class:`~sherpa.plot.RegionProjection` object by the 
 :py:meth:`~sherpa.plot.RegionProjection.calc` call, 
-and so can be accesed without needing to create the contour plot. Useful
+and so can be accessed without needing to create the contour plot. Useful
 fields include ``x0`` and ``x1`` (the two parameter values), 
 ``y`` (the statistic value), and ``levels`` (the values used for the
 contours)::

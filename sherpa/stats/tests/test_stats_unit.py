@@ -293,7 +293,7 @@ def setup_single_pha(stat, sys, background=True,
                  }
 
     # If used the same bins as setup_single_1dint then could
-    # re-use the results, but the bins are different, and it
+    # reuse the results, but the bins are different, and it
     # is useful for the Data1DInt case to test non-consecutive
     # histogram bins.
     #

@@ -1595,7 +1595,7 @@ def test_get_xxx_component_plot_with_templates_recalc_false(session, label, make
 def test_get_xxx_component_plot_with_templates_recalc_false_no_interp(session, label, make_data_path, skip_if_no_io):
     """What is the intended behavior for template models?
 
-    This is a regresion test.
+    This is a regression test.
 
     """
 
@@ -1797,7 +1797,7 @@ def test_get_xxx_component_plot_with_templates_data1dint_no_interp(session, labe
     # The logic here is not-at-all obvious, but just test the current
     # behavior.
     #
-    # NOTE THE DIFFERENCE TO Data1DInt with interpolator whem label=spirce
+    # NOTE THE DIFFERENCE TO Data1DInt with interpolator when label=spirce
     #
     if label == "source":
         assert isinstance(cplot, sherpa.plot.ComponentTemplateSourcePlot)
@@ -2357,7 +2357,7 @@ def test_bkg_model_warns_after_full(caplog):
 def test_fit_checks_kwarg(session, msg):
     """Check what happens if fit is sent an unknown argument.
 
-    This is just a regression test so we know if anyting ever changes.
+    This is just a regression test so we know if anything ever changes.
 
     """
 

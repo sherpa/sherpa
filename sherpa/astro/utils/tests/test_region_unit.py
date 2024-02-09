@@ -146,7 +146,7 @@ def test_region_mask_keywords2():
 
 
 def test_region_mask_nomatch_file(tmp_path):
-    """It shoudn't matter where the region comes from"""
+    """It shouldn't matter where the region comes from"""
     f = tmp_path / 'reg.reg'
     f.write_text(normalized_string)
 
@@ -156,7 +156,7 @@ def test_region_mask_nomatch_file(tmp_path):
 
 
 def test_region_mask_match_file(tmp_path):
-    """It shoudn't matter where the region comes from"""
+    """It shouldn't matter where the region comes from"""
     f = tmp_path / 'reg.src'
     f.write_text(normalized_string)
 
@@ -395,7 +395,7 @@ def test_complex_region_file_implicit(tmp_path):
        b
        -c
 
-    Note that this actualy behaves as if we've just ignored the "-c"
+    Note that this actually behaves as if we've just ignored the "-c"
     filter (e.g. a dmcopy with this filter file ignores the -c
     expression) because c does not overlap b [or whatever logic
     is used by CIAO region expressions]

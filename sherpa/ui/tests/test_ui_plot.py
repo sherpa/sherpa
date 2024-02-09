@@ -1102,7 +1102,7 @@ def test_plot_contour_error_out_invalid(plottype, session):
     """plot()/contour() error out if argument name is invalid
 
     When it's not the first argument it will cause an error
-    because of an invaid identifier.
+    because of an invalid identifier.
     """
 
     s = session()
@@ -2082,7 +2082,7 @@ def test_model_plot_recalc(ptype, extraargs, session):
     s.set_source(mdl)
 
     # What data should be returned here? At the moment it uses the
-    # cuurent dataset to identify the value, but perhaps it should
+    # current dataset to identify the value, but perhaps it should
     # just use the ModelPlot.
     #
     p = func(*extraargs, recalc=False)

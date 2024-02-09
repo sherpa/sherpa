@@ -625,7 +625,7 @@ static int _extract_kernel( const double* psf, const long* dims,
         while ( coord[0] >= dims[0] ) coord[0] -= dims[0];
 	
 	long newidx = jj * nsize[0] + ii;
-	// Find indices relevent for new bounds wrt old psf size (dims[0])
+	// Find indices relevant for new bounds wrt old psf size (dims[0])
 	long oldidx = coord[1] * dims[0] + coord[0];
 	
 	res[ newidx  ] = psf[ oldidx ];

@@ -590,7 +590,7 @@ def calc_sample_flux(lo, hi, fit, data, samples, modelcomponent,
     modelcomponent : sherpa.models.Arithmetic instance or None
         The source model (without instrument response for PHA data)
         that is used for calculating the "unabsorbed" flux. This is
-        not a SimulFitModel instance. If None then we just re-use the
+        not a SimulFitModel instance. If None then we just reuse the
         input flux values (first column of samples).
     confidence : number, optional
        The confidence level for the upper and lower values, as a

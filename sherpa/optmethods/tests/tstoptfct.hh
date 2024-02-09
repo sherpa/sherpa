@@ -1724,7 +1724,7 @@ namespace tstoptfct {
 
   //
   // From The Theory And Practice Of Econometrics, 2nd ed., pp. 956-7.
-  // Judge et al: judge(0.86479,1.2357)=16.0817307, the global minumum
+  // Judge et al: judge(0.86479,1.2357)=16.0817307, the global minimum
   // judge(2.35,-0.319)=20.9805, the  local minimum
   //
   template<typename Real, typename Type>

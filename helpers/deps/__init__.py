@@ -85,7 +85,7 @@ def build_deps(configure):
         ]
         make("install", opts, check=True)
 
-        # Create the built file to indicate the dependecies have been
+        # Create the built file to indicate the dependencies have been
         # created.
         #
         open('built', 'w').close()

@@ -26,7 +26,7 @@ Direct evaluation of the model
 
 Normally Sherpa will handle model evaluation automatically, such as
 during a fit or displaying the model results. However, the
-models can be evalutated directly by passing in the
+models can be evaluated directly by passing in the
 grid
 (:ref:`the independent axis <independent-axis>`)
 directly. If ``mdl`` is an instance of a Sherpa model - that

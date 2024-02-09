@@ -448,7 +448,7 @@ def check3(p1, p2, p3):
                           (2, 2, 0.5, 1, 15, check3(0.5, 1, 15)),
                           (3, 2, 0.5, 1, 15, check3(0.5, 1, 15)),
 
-                          # Actual vaues are [39, 57, 81]
+                          # Actual values are [39, 57, 81]
                           # Why does the order setting not matter?
                           #
                           (1, 2, 0.75, 4.5, 27, [41, 58, 81]),

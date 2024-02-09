@@ -1773,7 +1773,7 @@ def test_create_rmf(make_data_path):
 
     assert datarmf.detchans == 1024
 
-    # Apply the model to a contstant model.
+    # Apply the model to a constant model.
     #
     wrapper = RMF1D(datarmf)
     orig = Const1D("orig")
@@ -1801,7 +1801,7 @@ def test_create_rmf(make_data_path):
                           ({"e_min": [1, 2], "e_max": [2, 3, 4]},
                            "e_min/max mismatch in size: 2 vs 3"),
                           ({"e_min": [1, 2, 3], "e_max": [2, 3, 4]},
-                           "detchans mis-match with e_min/max: 2 vs 3")
+                           "detchans mismatch with e_min/max: 2 vs 3")
                           ])
 def test_rmf_creation_fails_approximate_energy_bounds(kwargs, msg):
     """Check we error out when a validation step fails."""

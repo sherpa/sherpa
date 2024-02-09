@@ -868,7 +868,7 @@ def _pack_pha(dataset):
     arf, rmf = dataset.get_response()
     bkg = dataset.get_background()
 
-    # The default keywords; these wil be over-ridden by
+    # The default keywords; these will be over-ridden by
     # anything set by the input.
     #
     default_header = {
@@ -927,7 +927,7 @@ def _pack_pha(dataset):
     _set_keyword("ANCRFILE", arf)
     _set_keyword("BACKFILE", bkg)
 
-    # The column ordering for the ouput file is determined by the
+    # The column ordering for the output file is determined by the
     # order the keys are added to the data dict.
     #
     # TODO: perhaps we should error out if channel or counts is not set?
@@ -1099,7 +1099,7 @@ def _pack_arf(dataset):
             raise ArgumentErr("bad", "ARF",
                               f"{col.upper()} column is missing")
 
-    # The default keywords; these wil be over-ridden by
+    # The default keywords; these will be over-ridden by
     # anything set by the input.
     #
     default_header = {
@@ -1126,7 +1126,7 @@ def _pack_arf(dataset):
     if dataset.exposure is not None:
         header["EXPOSURE"] = dataset.exposure
 
-    # The column ordering for the ouput file is determined by the
+    # The column ordering for the output file is determined by the
     # order the keys are added to the data dict. Ensure the
     # data type meets the FITS standard (Real4).
     #
@@ -1435,7 +1435,7 @@ def _pack_rmf(dataset):
 
     rmfdata = _reconstruct_rmf(dataset)
 
-    # The default keywords; these wil be over-ridden by
+    # The default keywords; these will be over-ridden by
     # anything set by the input.
     #
     default_matrix_header = {
@@ -1483,7 +1483,7 @@ def _pack_rmf(dataset):
                     "DETCHANS"]:
         ebounds_header[copykey] = matrix_header[copykey]
 
-    # The column ordering for the ouput file is determined by the
+    # The column ordering for the output file is determined by the
     # order the keys are added to the data dict.
     #
     # To allow the backend convert to Variable-Length fields, we

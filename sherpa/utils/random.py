@@ -57,7 +57,7 @@ def poisson_noise(x, rng=None):
 
     Notes
     -----
-    All input vaules less than zero are replaced by zero.
+    All input values less than zero are replaced by zero.
 
     Examples
     --------

@@ -209,12 +209,12 @@ namespace sherpa { namespace astro { namespace models {
     //      Atomic Data and Nuclear Data Tables, 18, 497
     //      (from Frits Paerels 12/90) (then from Stefan Vennes 4/92)
 
-    //      polynomial coeffients for He I cross section to use for wavelengths
+    //      polynomial coefficients for He I cross section to use for wavelengths
     //      greater than or equal to 46 A.
     const DataType c1[] = {-2.953607e+01, 7.083061e+00, 8.678646e-01,
 			    -1.221932e+00, 4.052997e-02, 1.317109e-01,
 			    -3.265795e-02, 2.500933e-03};
-    //      polynomial coeffients for He I cross section to use for wavelengths
+    //      polynomial coefficients for He I cross section to use for wavelengths
     //      less than 46 A.
     const DataType c2[] = {-2.465188e+01, 4.354679e+00, -3.553024e+00,
 			    5.573040e+00, -5.872938e+00, 3.720797e+00,

@@ -106,7 +106,7 @@ namespace sherpa {
       (void) PyArray_Resize( (PyArrayObject*) array, &newdims,
                              1, NPY_ANYORDER );
 
-      // We know what the size value shoule be (newsize), but
+      // We know what the size value should be (newsize), but
       // check with Python.
       data = PyArray_BYTES( (PyArrayObject*) array );
       size = PyArray_SIZE( (PyArrayObject*) array );

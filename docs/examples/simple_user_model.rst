@@ -184,7 +184,7 @@ be discussed below in the
       rise.coeff   thawed           -1 -3.40282e+38  3.40282e+38           
       rise.ampl    frozen            1            0  3.40282e+38           
    
-The funtional form of the exponential model provided
+The functional form of the exponential model provided
 by Sherpa, assuming an amplitude of unity, is
 
 .. math:: f(x) = e^{{\rm coeff} * (x - {\rm offset})}
@@ -211,7 +211,7 @@ Sherpa and Matplotlib APIs::
 
 .. image:: ../_static/examples/user_model/model_data_before_fit.png
 
-The title of the data plot was removed since it overlaped the X axis
+The title of the data plot was removed since it overlapped the X axis
 of the model plot above it.
 
 Fitting the data
@@ -373,7 +373,7 @@ represent the asymptote of the curve.
 .. _simple_user_model_refit:
 
 A new fit object could be created, but it is also possible
-to re-use the existing object. This leaves the optimiser set to
+to reuse the existing object. This leaves the optimiser set to
 :py:class:`~sherpa.optmethods.NelderMead`, although in this
 case the same parameter values are found if the method
 attribute had been changed back to

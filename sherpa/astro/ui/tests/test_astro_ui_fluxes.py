@@ -746,7 +746,7 @@ def test_sample_foo_flux_no_free_params(method, make_data_path,
 
     assert str(exc.value) == 'model has no thawed parameters'
 
-    # try with explict model setting
+    # try with explicit model setting
     #
     with pytest.raises(FitErr) as exc:
         method(lo=0.5, hi=7, num=1, model=cpts[1])
@@ -1531,7 +1531,7 @@ def test_sample_flux_pha_num1(idval, make_data_path, clean_astro_ui,
         assert row[4] > stat0
 
     # check that the parameter values have not changed, nor the
-    # statitic value, by calling sample_flux
+    # statistic value, by calling sample_flux
     #
     assert pmdl.gamma.val == pytest.approx(gamma0)
     assert pmdl.ampl.val == pytest.approx(ampl0)

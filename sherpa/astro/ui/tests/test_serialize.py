@@ -1138,7 +1138,7 @@ set_source(1, (gauss2d.gmdl + scale2d.bmdl))
 # This is currently wrong, since it does not include the "set the psf"
 # code, but it's unclear what this should be, so just describe the
 # existing output (the test that uses this fails because the
-# reconstuction is not correct).
+# reconstruction is not correct).
 #
 _canonical_img_no_filter_model_psf = """import numpy
 from sherpa.astro.ui import *
@@ -3006,7 +3006,7 @@ def test_restore_table_model(make_data_path):
 def test_restore_xstable_model(make_data_path):
     """Note: this only sets the table model
 
-    This is a regresion test as it curently does not do the right
+    This is a regression test as it currently does not do the right
     thing.
 
     """

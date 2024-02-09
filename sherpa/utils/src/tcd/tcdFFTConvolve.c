@@ -41,7 +41,7 @@ int tcdFFTConvolveD(
 		   double **output,       /* o: output array         */
 		   long  **newAxes,      /* o: new length array     */
 		   tcdDComplex **fftData, /* o: fft of data array    */
-		   tcdDComplex **fftKern  /* o: fft of kernal array  */
+		   tcdDComplex **fftKern  /* o: fft of kernel array  */
 		   )
 {
 
@@ -193,7 +193,7 @@ int tcdFFTConvolveD(
 
       if ( status != tcdSUCCESS ) return( status );
 
-    } /* end if kernal specified */
+    } /* end if kernel specified */
 
 
   /* alloc memory for convol array */
@@ -311,7 +311,7 @@ static int phase_shift_2d ( void *data,
 		   )
 {
 
-  long jj;  /* loop varialbes */
+  long jj;  /* loop variables */
 
   long nTotal;  /* number of data points */
 
@@ -511,7 +511,7 @@ static int phase_shift_3d (void *data,
 		   )
 {
 
-  long jj, kk;  /* loop varialbes */
+  long jj, kk;  /* loop variables */
 
   long nTotal;  /* number of data points */
 

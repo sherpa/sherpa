@@ -149,7 +149,7 @@ are passed straight to the :py:class:`~sherpa.fit.Fit` object.
 The :py:meth:`~sherpa.fit.Fit.fit` method is used to fit the data; as it
 returns useful information (in a :py:class:`~sherpa.fit.FitResults`
 object) we capture this in the ``res`` variable, and then check that
-the fit was succesfull (i.e. it converged):
+the fit was successful (i.e. it converged):
 
    >>> res = f.fit()
    >>> res.succeeded

@@ -191,7 +191,7 @@ def test_regrid1d_wrapping_str():
 # Although it is expected that a direct pass through will
 # be used, so an exact check for equality could be used,
 # the following tests use an approximate equality test
-# since there is no requrement on how the model is to
+# since there is no requirement on how the model is to
 # work. The model values are chosen so that the
 # comparison by the numpy.assert_allclose (limits
 # are explicitly set to atol=0, rtol=1e-7) should be

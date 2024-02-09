@@ -282,7 +282,7 @@ namespace sherpa { namespace stats {
       DataType err_sqr = model[ ii ];
       if ( err_sqr < 1.0 )
 	err_sqr = 1.0;
-      // err_sqr is guarranteed to be >= 1.0
+      // err_sqr is guaranteed to be >= 1.0
 
       if ( syserror )
 	err_sqr += syserror[ ii ] * syserror[ ii ];

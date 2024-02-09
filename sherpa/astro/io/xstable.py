@@ -568,7 +568,7 @@ def make_xstable_model(name: str,
        The definitions of the additional parameters; that is those
        that are not interpolated over.
     addspectra : sequence of sequence of sequence of float or None, optional
-       The spectra for the additonal parameters. It must is a 3D
+       The spectra for the additional parameters. It must is a 3D
        array of shape (nrows, len(addparams), len(egrid_lo)).
     addmodel : bool, optional
        Is this an additive model (True) or a multiplicative one (False).

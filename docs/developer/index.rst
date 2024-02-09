@@ -68,7 +68,7 @@ module, one might expect tests for this module to be the most likely to fail::
   pytest sherpa/astro/ui/tests/test_astro_ui.py
 
 Once everything looks good, you can do a final run of the entire test suite. A
-second option useful for develoment is ``--pdb`` which drops into the
+second option useful for development is ``--pdb`` which drops into the
 `interactive Python debugger <https://docs.python.org/3/library/pdb.html>`_
 when a test fails so that you can move up and down the stack and inspect the
 value of individual variables.
@@ -96,7 +96,7 @@ run allows us to generate a coverage report after that::
   coverage html -d report
 
 The report is in ``report/index.html``, which links to individual
-files and shows exactly which lines were excuted while running the tests.
+files and shows exactly which lines were executed while running the tests.
 
 Run doctests locally
 --------------------
@@ -186,7 +186,7 @@ activated the environment)::
 As described in :ref:`build-from-source`, the file ``setup.cfg`` in
 the root directory of the sherpa source needs to be modified to
 configure the build. This is particularly easy in this setup, where
-all external dependencies are installed in conda and the enviroment
+all external dependencies are installed in conda and the environment
 variable ``ASCDS_INSTALL`` (or ``CONDA_PREFIX``, which has the same
 value) can be used. For most cases, the ``scripts/use_ciao_config``
 script can be used::
@@ -242,7 +242,7 @@ should be updated to match the output above::
    The XSPEC version may include the patch level, such as ``12.12.0e``,
    and this can be included in the configuration file.
 
-To avoid accidentially commiting the modified ``setup.cfg`` into git,
+To avoid accidentally committing the modified ``setup.cfg`` into git,
 the file can be marked as "assumed unchanged".
 
 ::
@@ -788,7 +788,7 @@ Git offers `pre-commit hooks <https://git-scm.com/book/en/v2/Customizing-Git-Git
 that can do file checks for you before a commit is executed. The script in
 `scripts/pre-commit` will check if the copyright notice in any of the files in the
 current commit must be updated and, if so, add the current year to the copyright notice
-and abort the commit so that you can manually check before commiting again.
+and abort the commit so that you can manually check before committing again.
 
 To use this opt-in functionality, simply copy the file to the appropriate location::
 
@@ -870,7 +870,7 @@ current way that models are checked:
   the ``ndim`` attribute for the components it is given (the
   ``parts`` argument) and checks that they all have the same
   ``ndim`` value (ignoring those models whose dimensionality
-  is set to ``None``). If there is a mis-match then a
+  is set to ``None``). If there is a mismatch then a
   :py:class:`sherpa.utils.err.ModelErr` is raised.
 * as :ref:`described below <data_design_ndim>`, the dimensions of
   data and model can be compared.
@@ -935,7 +935,7 @@ Checks have been added in Sherpa 4.14.1 to ensure that the correct
 number of arrays are used when setting the independent axis: that is,
 a `~sherpa.data.Data1D` object uses `(x,)`, `~sherpa.data.Data1DInt`
 uses `(lo, hi)`, and `~sherpa.data.Data2D` uses `(x0, x1)`. Note that
-the arguement is expected to be a tuple, even in the
+the argument is expected to be a tuple, even in the
 `~sherpa.data.Data1D` case, and that the individual components are
 checked to ensure they have the same size.
 
@@ -1196,7 +1196,7 @@ necessary ``get_xxx_plot`` or ``get_xxx_contour`` routine.
 The image routines are conceptually the same, but the actual
 implementation is different, in that it uses a centralized
 routine to create the image objects rather than have the
-logic encoded in the relavant ``get_xxx_image`` routines. It is
+logic encoded in the relevant ``get_xxx_image`` routines. It is
 planned to update the image code to match the plot and contour
 routines. The main difference is that the image display is handled
 via :term:`XPA` calls to an external :term:`DS9` application, rather than with

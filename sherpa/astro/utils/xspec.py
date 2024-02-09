@@ -235,7 +235,7 @@ class ParameterDefinition:
         The parameter name.
     default : float
         The default value
-    units : str or None, optinal
+    units : str or None, optional
         The unit field. There is no check this meets any standard.
     softmin, softmax, hardmin, hardmax : float or None
         The minimum and maximum values for the parameter (using the
@@ -775,7 +775,7 @@ def parse_xspec_model_description(modelfile,
             # If there is a problem reading in a model definition then
             # we do not try to recover - e.g. by wrapping this in a
             # try/except block - since it is not clear how to skip over
-            # the "invalid" model definiton so that we can move to the
+            # the "invalid" model definition so that we can move to the
             # next model (well, some simple heuristics could be applied,
             # but leave off developing these until it turns out to be
             # a problem).

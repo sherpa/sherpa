@@ -572,13 +572,13 @@ def test_user_model1d_fit(clean_ui):
     assert fres.dof == 2
 
     # Tolerance has been adjusted to get the tests to pass on my
-    # machine. It's really just to check that the values have chanegd
+    # machine. It's really just to check that the values have changed
     # from their default values.
     #
     assert fres.parvals[0] == pytest.approx(slope, abs=0.01)
     assert fres.parvals[1] == pytest.approx(intercept, abs=0.05)
 
-    # Thse should be the same values, so no need to use pytest.approx
+    # These should be the same values, so no need to use pytest.approx
     # (unless there's some internal translation between types done
     # somewhere?).
     #

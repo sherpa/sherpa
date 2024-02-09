@@ -54,7 +54,7 @@
   */
 int tcdFreePadData(
 		   void *data,   /* i/o: pointer to data array    */
-		   long **lAxes  /* i/o: pointer to legths array  */
+		   long **lAxes  /* i/o: pointer to lengths array */
 		   )
 {
   void **p;

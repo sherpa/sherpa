@@ -811,7 +811,7 @@ Details
     error on implicit function declarations
 
 #1361 - Ensure FITS column access is case insensitive for the pyfits I/O backend (fix #143)
-    Allow FITS colummn access with the pyfits backend to be case insensitive. Fixes #143.
+    Allow FITS column access with the pyfits backend to be case insensitive. Fixes #143.
 
 #1365 - Simplify a test (fix #541)
     Remove duplicated code in a test (fix #541).
@@ -1358,7 +1358,7 @@ Details
     optimizer
 
 #1303 - Updated Introductory Section of the MCMC page
-    Added additional details regarding sherpa's MCMC inplementation to the 
+    Added additional details regarding sherpa's MCMC implementation to the 
     documentation 
 
 #1308 - Docs: fix get_filter examples
@@ -2051,7 +2051,7 @@ Documentation and infrastructure fixes are not shown.
 
 #602 - Reduce integration tol
     Changed integration routine tolerance from double epsilon to float epsilon
-    since opt routines hove tolerance of ~ 1.0e-7
+    since opt routines have tolerance of ~ 1.0e-7
 
 #606 - stop using numpy.typeNA which is now deprecated
     A numpy deprecation warning was fixed by removing the usage of typeNA, which

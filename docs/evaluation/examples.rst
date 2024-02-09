@@ -29,7 +29,7 @@ Evaluating a one-dimensional model directly
 In the following example a one-dimensional gaussian is evaluated
 on a grid of 5 points by
 :ref:`using the model object directly <evaluation_direct>`.
-The first approch just calls the model with the evaluation
+The first approach just calls the model with the evaluation
 grid (here the array ``x``),
 which uses the parameter values as defined in the model itself::
 
@@ -460,7 +460,7 @@ and
 attributes of the
 :py:class:`~sherpa.astro.data.DataRMF` object returned by
 :py:meth:`~sherpa.astro.data.DataPHA.get_rmf`, and we can
-group them as we did earlier (except for chosing the
+group them as we did earlier (except for choosing the
 ``min`` and ``max`` labels for defining the bounds)::
 
    >>> rmf = pha.get_rmf()

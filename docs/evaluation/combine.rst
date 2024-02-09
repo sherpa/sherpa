@@ -93,7 +93,7 @@ The two components used to create the simulated dataset are called
 
 The individual components can be displayed, as the ``__str__``
 method of the model class creates a display which includes the
-model expression and then a list of the paramters::
+model expression and then a list of the parameters::
 
     >>> print(s1)
     sim1
@@ -297,7 +297,7 @@ data with no weighting), along with the default optimiser::
     >>> res.succeeded
     True
 
-When displayig the results, the :py:class:`~sherpa.plot.FitPlot`
+When displaying the results, the :py:class:`~sherpa.plot.FitPlot`
 class is used since it combines both data and model plots (after
 updating the ``mplot`` object to include the new model parameter
 values)::

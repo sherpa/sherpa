@@ -398,7 +398,7 @@ def test_fake_pha_no_data(method, expected, idval, clean_astro_ui):
 def test_fake_pha_file(make_data_path, clean_astro_ui):
     '''Test fake_pha using real input file.
 
-    Note that HEG orders -1 and +1 should really be treated spearately,
+    Note that HEG orders -1 and +1 should really be treated separately,
     but for this test we just need two files to load.
     '''
 
@@ -473,7 +473,7 @@ def test_fake_pha_file_as_list(make_data_path, clean_astro_ui):
 def test_fake_pha_multi_file(make_data_path, clean_astro_ui):
     '''Test fake_pha using multiple real input files.
 
-    Note that HEG orders -1 and +1 should really be treated spearately,
+    Note that HEG orders -1 and +1 should really be treated separately,
     but for this test we just need two files to load.
     '''
 

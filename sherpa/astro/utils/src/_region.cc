@@ -87,7 +87,7 @@ static PyObject* pyRegion_build(PyTypeObject *type, regRegion *reg) {
 
 // The constructor can be given a string and a flag, which if
 // set indicates this is a file name. The file support is
-// unnescessary as we can read the data in Python, so this
+// unnecessary as we can read the data in Python, so this
 // API could just deal with strings (it lets the C code deal
 // with the length of the region string rather than us).
 //

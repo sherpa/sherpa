@@ -539,7 +539,7 @@ def test_calc_sherpa_regrid():
     ymax = np.abs(yconvolved[idx]).max()
     assert ymax == 0.0, 'yconvolved: > 5 keV max={}'.format(ymax)
 
-    # expect last bin to be ~ 0 but preceeding ones to be zero
+    # expect last bin to be ~ 0 but preceding ones to be zero
     idx = np.where(ehi < 2)
     ymax = np.abs(yregrid[idx][:-1]).max()
     assert ymax == 0, 'yregrid < 2 keV: max={}'.format(ymax)
