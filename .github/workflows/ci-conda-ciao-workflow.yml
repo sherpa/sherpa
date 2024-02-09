@@ -39,7 +39,7 @@ jobs:
         # worry about collision between the CIAO version of Sherpa and this
         # build.
         #
-        downloads="ciao xspec-modelsonly ds9"
+        downloads="ciao pyciao xspec-modelsonly ds9"
         channel=https://cxc.cfa.harvard.edu/conda/ciao
         conda create --yes -n build -c $channel -c conda-forge $downloads $compilers python=3.11
 
