@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2011, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -39,48 +39,47 @@ References
 
 import logging
 import os
+from typing import TYPE_CHECKING, Optional, Sequence, Union
 import warnings
 
-import numpy
+import numpy as np
 
 from astropy.io import fits  # type: ignore
-from astropy.io.fits.column import _VLF  # type: ignore
 from astropy.table import Table  # type: ignore
 
-
-from sherpa.astro.io.xstable import TableHDU
-from sherpa.utils.err import ArgumentTypeErr, IOErr
-import sherpa.utils
+import sherpa.io
+import sherpa.utils  # unlike crates we do not import is_binary_file directly
 from sherpa.utils.err import IOErr
-from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
-    SherpaFloat
-from sherpa.io import get_ascii_data, write_arrays
+from sherpa.utils.numeric_types import SherpaFloat
+
+from .io_types import HeaderItem, Header, Column, ImageBlock, \
+    TableBlock, SpectrumBlock, SpecrespBlock, MatrixBlock, EboundsBlock, \
+    BlockList
 
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
 
-transformstatus = False
 try:
-    from sherpa.astro.io.wcs import WCS
-    transformstatus = True
+    from .wcs import WCS
+    HAS_TRANSFORM = True
 except ImportError:
-    warning('failed to import WCS module; WCS routines will not be ' +
+    HAS_TRANSFORM = False
+    warning('failed to import WCS module; WCS routines will not be '
             'available')
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
+           'pack_table_data', 'pack_arf_data', 'pack_arf_data',
+           'pack_rmf_data', 'pack_image_data', 'pack_hdus',
            'set_table_data', 'set_image_data', 'set_pha_data',
            'set_arf_data', 'set_rmf_data', 'set_hdus')
 
 
-def _has_hdu(hdulist, name):
-    try:
-        hdulist[name]
-    except (KeyError, IndexError):
-        return False
-    return True
+DatasetType = Union[str, fits.HDUList]
+HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU]
+NamesType = Sequence[str]
 
 
 def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
@@ -104,11 +103,19 @@ def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
 def _require_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
     value = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
     if value is None:
-        raise IOErr('nokeyword', hdu._file.name, name)
+        raise IOErr('nokeyword',
+                    hdu._file.name if hdu._file is not None else "unknown",
+                    name)
     return value
 
 
-def _get_meta_data(hdu):
+def _get_meta_data_header(hdu: HDUType) -> Header:
+    """Retrieve the header information from the table.
+
+    This loses the "specialized" keywords like HISTORY and COMMENT.
+
+    """
+
     # If the header keywords are not specified correctly then
     # astropy will error out when we try to access it. Since
     # this is not an uncommon problem, there is a verify method
@@ -117,133 +124,24 @@ def _get_meta_data(hdu):
     #
     hdu.verify('silentfix')
 
-    meta = {}
-    for key, val in hdu.header.items():
-        # empty numpy strings are not recognized by load pickle!
-        if isinstance(val, numpy.str_) and val == '':
-            val = ''
+    out = []
+    for name in hdu.header.keys():
+        if name in ["", "COMMENT", "HISTORY"]:
+            continue
 
-        meta[key] = val
+        item = HeaderItem(name=name, value=hdu.header[name])
 
-    return meta
+        comment = hdu.header.comments[name]
+        if comment != '':
+            # For now treat the unit as part of the comment rather
+            # than try to split it out.
+            #
+            # item.unit = key.unit if key.unit != '' else None
+            item.desc = comment
 
+        out.append(item)
 
-# Note: it is not really WCS specific, but leave the name alone for now.
-def _get_wcs_key(hdu, key0, key1):
-    """Return the pair of keyword values as an array of values of
-    the requested datatype. If either key is missing then return
-    ().
-    """
-
-    val1 = _try_key(hdu, key0)
-    if val1 is None:
-        return ()
-
-    val2 = _try_key(hdu, key1)
-    if val2 is None:
-        return ()
-
-    return numpy.array([val1, val2], dtype=SherpaFloat)
-
-
-def _add_keyword(hdrlist, name, val):
-    """Add the name,val pair to hdulist."""
-    name = str(name).upper()
-    if name in ['', 'COMMENT', 'HISTORY']:
-        # The values are assumed to be an array of strings
-        for v in val:
-            hdrlist.append(fits.Card(name, v))
-
-    else:
-        hdrlist.append(fits.Card(name, val))
-
-
-def _try_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
-    try:
-        col = hdu.data.field(name)
-    except KeyError:
-        return None
-
-    if isinstance(col, _VLF):
-        col = numpy.concatenate([numpy.asarray(row) for row in col])
-    else:
-        col = numpy.asarray(col).ravel()
-
-    if fix_type:
-        col = col.astype(dtype)
-
-    return col
-
-
-def _try_tbl_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
-    try:
-        col = hdu.data.field(name)
-    except KeyError:
-        return (None, )
-
-    if isinstance(col, _VLF):
-        col = numpy.concatenate([numpy.asarray(row) for row in col])
-    else:
-        col = numpy.asarray(col)
-
-    if fix_type:
-        col = col.astype(dtype)
-
-    return numpy.column_stack(col)
-
-
-def _try_vec(hdu, name, *, size=2, dtype=SherpaFloat, fix_type=False):
-    try:
-        col = hdu.data.field(name)
-    except KeyError:
-        return numpy.array([None] * size)
-
-    if isinstance(col, _VLF):
-        col = numpy.concatenate([numpy.asarray(row) for row in col])
-    else:
-        col = numpy.asarray(col)
-
-    if fix_type:
-        return col.astype(dtype)
-
-    return col
-
-
-def _require_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
-    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
-    if col is None:
-        raise IOErr('reqcol', name, hdu._file.name)
-    return col
-
-
-def _require_tbl_col(hdu, name, *, dtype=SherpaFloat, fix_type=False):
-    col = _try_tbl_col(hdu, name, dtype=dtype, fix_type=fix_type)
-    if len(col) > 0 and col[0] is None:
-        raise IOErr('reqcol', name, hdu._file.name)
-    return col
-
-
-def _require_vec(hdu, name, *, size=2, dtype=SherpaFloat, fix_type=False):
-    col = _try_vec(hdu, name, size=size, dtype=dtype, fix_type=fix_type)
-    if numpy.equal(col, None).any():
-        raise IOErr('reqcol', name, hdu._file.name)
-    return col
-
-
-def _try_col_or_key(hdu, name, *, dtype=SherpaFloat, fix_type=False):
-    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
-    if col is not None:
-        return col
-    return _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
-
-
-def _try_vec_or_key(hdu, name, size, *, dtype=SherpaFloat, fix_type=False):
-    col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
-    if col is not None:
-        return col
-
-    got = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
-    return numpy.array([got] * size)
+    return Header(out)
 
 
 # Read Functions
@@ -253,7 +151,7 @@ def _try_vec_or_key(hdu, name, size, *, dtype=SherpaFloat, fix_type=False):
 # and 'foo.fits.gz' exists, then it will use this). This requires some
 # effort to emulate with the astropy backend.
 
-def _infer_and_check_filename(filename):
+def _infer_and_check_filename(filename: str) -> str:
     if os.path.exists(filename):
         return filename
 
@@ -265,19 +163,8 @@ def _infer_and_check_filename(filename):
     raise IOErr('filenotfound', filename)
 
 
-def is_binary_file(filename):
+def is_binary_file(filename: str) -> bool:
     """Do we think the file contains binary data?
-
-    Parameters
-    ----------
-    filename : str
-       The file name.
-
-    Returns
-    -------
-    flag : bool
-       ``True`` if the file appears to contain binary data,
-       ``False`` otherwise.
 
     Notes
     -----
@@ -289,7 +176,7 @@ def is_binary_file(filename):
     return sherpa.utils.is_binary_file(fname)
 
 
-def open_fits(filename):
+def open_fits(filename: str) -> fits.HDUList:
     """Try and open filename as a FITS file.
 
     Parameters
@@ -322,78 +209,63 @@ def open_fits(filename):
     return out
 
 
-def read_table_blocks(arg, make_copy=False):
+def read_table_blocks(arg: DatasetType,
+                      make_copy: bool = False
+                      ) -> tuple[BlockList, str]:
+    """Read in tabular data with no restrictions on the columns."""
 
-    if isinstance(arg, fits.HDUList):
-        filename = arg[0]._file.name
-        hdus = arg
-    elif isinstance(arg, str) and is_binary_file(arg):
-        filename = arg
-        hdus = open_fits(arg)
-    else:
-        raise IOErr('badfile', arg,
-                    "a binary FITS table or a BinTableHDU list")
+    # This sets nobinary=True to match the original version of
+    # the code, which did not use _get_file_contents.
+    #
+    hdus, filename, close = _get_file_contents(arg,
+                                               exptype="BinTableHDU",
+                                               nobinary=True)
 
-    cols = {}
-    hdr = {}
+    try:
+        header = _get_meta_data_header(hdus[0])
+        blocks: list[Union[TableBlock, ImageBlock]] = []
+        for hdu in hdus[1:]:
+            hdr = _get_meta_data_header(hdu)
+            cols = [copycol(hdu, filename, name) for name in hdu.columns.names]
+            blocks.append(TableBlock(hdu.name, header=hdr, columns=cols))
 
-    for ii, hdu in enumerate(hdus):
-        blockidx = ii + 1
+    finally:
+        if close:
+            hdus.close()
 
-        hdr[blockidx] = {}
-        header = hdu.header
-        if header is not None:
-            for key in header.keys():
-                hdr[blockidx][key] = header[key]
-
-        # skip over primary, hdu.data is None
-
-        cols[blockidx] = {}
-        recarray = hdu.data
-        if recarray is not None:
-            for colname in recarray.names:
-                cols[blockidx][colname] = recarray[colname]
-
-    return filename, cols, hdr
+    return BlockList(blocks=blocks, header=header), filename
 
 
-# TODO @DougBurke comments:
-# Is the check for a binary file even useful here; perhaps the code should just try and open the file
-# and we deal with the error (it's "more pythonic")
-#
-# If we do want to include a binary-file check, then all the callers of
-# _get_file_contents should be reviewed to see if they should include the binary-file check
-#
-# the exptype argument lets the error message be changed; however, does this make sence since the code that does call
-# this function with exptype="BinTableHDU" aren't guaranteed that there is a binary table in the file (very likely,
-# but it is possible to write a FITS file with only a PrimaryHDU or have an ImageHDU [or whatever it's called]
-# falling it [*]).
-# I haven't checked the FITS standard to see if either of these are valid, but that doesn't mean that they
-# can't be created. It could be that astropy will error out if it reads such a file, but I haven't checked this either.
-def _get_file_contents(arg, exptype="PrimaryHDU", nobinary=False):
-    """arg is a filename or a list of HDUs, with the first
-    one a PrimaryHDU. The return value is the list of
-    HDUs and the filename.
+def _get_file_contents(arg: DatasetType,
+                       exptype: str = "PrimaryHDU",
+                       nobinary: bool = False
+                       ) -> tuple[fits.HDUList, str, bool]:
+    """Read in the contents if needed.
 
     Set nobinary to True to avoid checking that the input
     file is a binary file (via the is_binary_file routine).
+    Is this needed?
     """
 
     if isinstance(arg, str) and (not nobinary or is_binary_file(arg)):
         tbl = open_fits(arg)
         filename = arg
+        close = True
     elif isinstance(arg, fits.HDUList) and len(arg) > 0 and \
             isinstance(arg[0], fits.PrimaryHDU):
         tbl = arg
-        filename = tbl[0]._file.name
+        filename = arg._file.name if arg._file is not None else "unknown"
+        close = False
     else:
         msg = f"a binary FITS table or a {exptype} list"
         raise IOErr('badfile', arg, msg)
 
-    return (tbl, filename)
+    return (tbl, filename, close)
 
 
-def _find_binary_table(tbl, filename, blockname=None):
+def _find_binary_table(tbl: fits.HDUList,
+                       filename: str,
+                       blockname: Optional[str] = None) -> fits.BinTableHDU:
     """Return the first binary table extension we find. If blockname
     is not None then the name of the block has to match (case-insensitive
     match), and any spaces are removed from blockname before checking.
@@ -401,13 +273,21 @@ def _find_binary_table(tbl, filename, blockname=None):
     Throws an exception if there aren't any.
     """
 
+    # This behaviour appears odd:
+    # - if blockname is no set then find the first table block
+    #   (this seems okay)
+    # - if blockname is set then loop through the tables and
+    #   find the first block which is either a table or matches
+    #   blockname
+    #   (why the "is table" check; why not only match the blockname?)
+    #
     if blockname is None:
         for hdu in tbl:
             if isinstance(hdu, fits.BinTableHDU):
                 return hdu
 
     else:
-        blockname = str(blockname).strip().lower()
+        blockname = blockname.strip().lower()
         for hdu in tbl:
             if hdu.name.lower() == blockname or \
                     isinstance(hdu, fits.BinTableHDU):
@@ -416,44 +296,44 @@ def _find_binary_table(tbl, filename, blockname=None):
     raise IOErr('badext', filename)
 
 
-def get_header_data(arg, blockname=None, hdrkeys=None):
+def get_header_data(arg: DatasetType,
+                    blockname: Optional[str] = None,
+                    hdrkeys: Optional[NamesType] = None
+                    ) -> Header:
     """Read in the header data."""
 
-    tbl, filename = _get_file_contents(arg, exptype="BinTableHDU")
+    tbl, filename, close = _get_file_contents(arg, exptype="BinTableHDU")
 
-    hdr = {}
     try:
         hdu = _find_binary_table(tbl, filename, blockname)
-
-        if hdrkeys is None:
-            hdrkeys = hdu.header.keys()
-
-        for key in hdrkeys:
-            # TODO: should this set require_type=true or remove dtype,
-            # as currently it does not change the value to str.
-            hdr[key] = _require_key(hdu, key, dtype=str)
+        hdr = _get_meta_data_header(hdu)
 
     finally:
-        tbl.close()
+        if close:
+            tbl.close()
+
+    if hdrkeys is not None:
+        for key in hdrkeys:
+            if hdr.get(key) is None:
+                raise IOErr('nokeyword', tbl.get_filename(), key)
 
     return hdr
 
 
-def get_column_data(*args):
-    """
-    get_column_data( *NumPy_args )
-    """
+def get_column_data(*args) -> list[np.ndarray]:
+    """Extract the column data."""
+
     # args is passed as type list
     if len(args) == 0:
         raise IOErr('noarrays')
 
     cols = []
     for arg in args:
-        if arg is not None and not isinstance(arg, (numpy.ndarray, list, tuple)):
+        if arg is not None and not isinstance(arg, (np.ndarray, list, tuple)):
             raise IOErr('badarray', arg)
         if arg is not None:
-            vals = numpy.asanyarray(arg)
-            for col in numpy.atleast_2d(vals.T):
+            vals = np.asanyarray(arg)
+            for col in np.atleast_2d(vals.T):
                 cols.append(col)
         else:
             cols.append(arg)
@@ -461,17 +341,45 @@ def get_column_data(*args):
     return cols
 
 
-def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
-                   blockname=None, hdrkeys=None):
-    """
-    arg is a filename or a HDUList object.
-    """
+def get_ascii_data(filename: str,
+                   ncols: int = 2,
+                   colkeys: Optional[list[str]] = None,
+                   **kwargs
+                   ) -> tuple[TableBlock, str]:
+    """Read columns from an ASCII file"""
 
-    tbl, filename = _get_file_contents(arg, exptype="BinTableHDU")
+    # TODO: why not use get_table_data like the crates backend does?
+    #
+    cnames, cdata, name = sherpa.io.get_ascii_data(filename,
+                                                   ncols=ncols,
+                                                   colkeys=colkeys,
+                                                   **kwargs)
+
+    # We can not trust the column names. One option would be to always
+    # create the names used for the Column objects.
+    #
+    if len(cnames) != len(cdata):
+        cnames = [f"col{idx}" for idx in range(1, len(cdata) + 1)]
+
+    cols = [Column(cname, cval) for cname, cval in zip(cnames, cdata)]
+    return TableBlock("TABLE", header=Header([]), columns=cols), name
+
+
+def get_table_data(arg: DatasetType,
+                   ncols: int = 1,
+                   colkeys: Optional[NamesType] = None,
+                   make_copy: bool = False,
+                   fix_type: bool = False,
+                   blockname: Optional[str] = None,
+                   hdrkeys: Optional[NamesType] = None
+                   ) -> tuple[TableBlock, str]:
+    """Read columns."""
+
+    tbl, filename, close = _get_file_contents(arg, exptype="BinTableHDU")
 
     try:
         hdu = _find_binary_table(tbl, filename, blockname)
-        cnames = list(hdu.columns.names)
+        cnames = hdu.columns.names
 
         # Try Channel, Counts or X,Y before defaulting to the first
         # ncols columns in cnames (when colkeys is not given).
@@ -485,27 +393,96 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=False, fix_type=False,
         else:
             colkeys = cnames[:ncols]
 
+        # As this can be used to read in string columns there is no
+        # conversion on the data type of the column values. However,
+        # there is a need to convert "array" columns into separate
+        # values (e.g. R[2] should get converted to R_1 and R_2).
+        #
+        headers = _get_meta_data_header(hdu)
         cols = []
         for name in colkeys:
-            for col in _require_tbl_col(hdu, name, fix_type=fix_type):
+            col = copycol(hdu, filename, name)
+            if col.values.ndim == 1:
                 cols.append(col)
+                continue
 
-        hdr = {}
-        if hdrkeys is not None:
-            for key in hdrkeys:
-                hdr[key] = _require_key(hdu, key)
+            if col.values.ndim != 2:
+                raise IOErr(f"Unsupported column dimension for {name}: {col.values.ndim}")
+
+            for idx in range(col.values.shape[1]):
+                col2 = Column(f"{col.name}_{idx + 1}",
+                              col.values[:, idx].copy(),
+                              desc=col.desc, unit=col.unit,
+                              minval=col.minval, maxval=col.maxval)
+                cols.append(col2)
 
     finally:
-        tbl.close()
+        if close:
+            tbl.close()
 
-    return colkeys, cols, filename, hdr
+    return TableBlock("TABLE", header=headers, columns=cols), filename
 
 
-def get_image_data(arg, make_copy=False):
+# As the return value depends on whether the WCS code has been
+# compiled, typing this is awkward.
+#
+def _make_wcs(img: fits.ImageHDU) -> tuple[Optional[WCS], Optional[WCS]]:
+    """Create the WCS for the SKY and EQPOS transforms.
+
+    This is rather CIAO specific.
     """
-    arg is a filename or a HDUList object
-    """
-    hdu, filename = _get_file_contents(arg)
+
+    sky = None
+    eqpos = None
+    if not HAS_TRANSFORM:
+        return sky, eqpos
+
+    def _get_wcs_key(prefix: str,
+                     suffix: str = "") -> Optional[np.ndarray]:
+        """WCS 2D keywords."""
+
+        key1 = f"{prefix}1{suffix}"
+        val1 = _try_key(img, key1)
+        if val1 is None:
+            return None
+
+        key2 = f"{prefix}2{suffix}"
+        val2 = _try_key(img, key2)
+        if val2 is None:
+            return None
+
+        return np.array([val1, val2], dtype=SherpaFloat)
+
+    cdeltp = _get_wcs_key('CDELT', 'P')
+    crpixp = _get_wcs_key('CRPIX', 'P')
+    crvalp = _get_wcs_key('CRVAL', 'P')
+    cdeltw = _get_wcs_key('CDELT')
+    crpixw = _get_wcs_key('CRPIX')
+    crvalw = _get_wcs_key('CRVAL')
+
+    if cdeltp is not None and crpixp is not None and crvalp is not None:
+        sky = WCS('physical', 'LINEAR', crvalp, crpixp, cdeltp)
+
+    # proper calculation of cdelt wrt PHYSICAL coords
+    if cdeltw is not None and cdeltp is not None:
+        cdeltw = cdeltw / cdeltp
+
+    # proper calculation of crpix wrt PHYSICAL coords
+    if crpixw is not None and crvalp is not None and cdeltp is not None and crpixp is not None:
+        crpixw = crvalp + (crpixw - crpixp) * cdeltp
+
+    if cdeltw is not None and crpixw is not None and crvalw is not None:
+        eqpos = WCS('world', 'WCS', crvalw, crpixw, cdeltw)
+
+    return sky, eqpos
+
+
+def get_image_data(arg: DatasetType,
+                   make_copy: bool = False
+                   ) -> tuple[ImageBlock, str]:
+    """Read image data."""
+
+    hdus, filename, close = _get_file_contents(arg)
 
     #   FITS uses logical-to-world where we use physical-to-world.
     #   For all transforms, update their physical-to-world
@@ -538,63 +515,39 @@ def get_image_data(arg, make_copy=False):
     #
 
     try:
-        data = {}
+        # Look for data in the primary or first block.
+        #
+        img = hdus[0]
+        if img.data is None:
+            img = hdus[1]
+            if img.data is None:
+                raise IOErr('badimg', filename)
 
-        img = hdu[0]
-        if hdu[0].data is None:
-            img = hdu[1]
-            if hdu[1].data is None:
-                raise IOErr('badimg', '')
+        if not isinstance(img, (fits.PrimaryHDU, fits.ImageHDU)):
+            raise IOErr("badimg", filename)
 
-        data['y'] = numpy.asarray(img.data)
-
-        cdeltp = _get_wcs_key(img, 'CDELT1P', 'CDELT2P')
-        crpixp = _get_wcs_key(img, 'CRPIX1P', 'CRPIX2P')
-        crvalp = _get_wcs_key(img, 'CRVAL1P', 'CRVAL2P')
-        cdeltw = _get_wcs_key(img, 'CDELT1', 'CDELT2')
-        crpixw = _get_wcs_key(img, 'CRPIX1', 'CRPIX2')
-        crvalw = _get_wcs_key(img, 'CRVAL1', 'CRVAL2')
-
-        # proper calculation of cdelt wrt PHYSICAL coords
-        if (isinstance(cdeltw, numpy.ndarray)
-                and isinstance(cdeltp, numpy.ndarray)):
-            cdeltw = cdeltw / cdeltp
-
-        # proper calculation of crpix wrt PHYSICAL coords
-        if (isinstance(crpixw, numpy.ndarray)
-                and isinstance(crvalp, numpy.ndarray)
-                and isinstance(cdeltp, numpy.ndarray)
-                and isinstance(crpixp, numpy.ndarray)):
-            crpixw = crvalp + (crpixw - crpixp) * cdeltp
-
-        sky = None
-        if (transformstatus and isinstance(cdeltp, numpy.ndarray)
-                and isinstance(crpixp, numpy.ndarray)
-                and isinstance(crvalp, numpy.ndarray)):
-            sky = WCS('physical', 'LINEAR', crvalp, crpixp, cdeltp)
-
-        eqpos = None
-        if (transformstatus and isinstance(cdeltw, numpy.ndarray)
-                and isinstance(crpixw, numpy.ndarray)
-                and isinstance(crvalw, numpy.ndarray)):
-            eqpos = WCS('world', 'WCS', crvalw, crpixw, cdeltw)
-
-        data['sky'] = sky
-        data['eqpos'] = eqpos
-
-        data['header'] = _get_meta_data(img)
-        for key in ['CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
-                    'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
-                    'EQUINOX']:
-            data['header'].pop(key, None)
+        name = img.name
+        image = np.asarray(img.data)
+        sky, eqpos = _make_wcs(img)
+        header = _get_meta_data_header(img)
 
     finally:
-        hdu.close()
+        if close:
+            hdus.close()
 
-    return data, filename
+    for key in ['CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
+                'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
+                'EQUINOX']:
+        header.delete(key)
+
+    block = ImageBlock(name, header=header, image=image,
+                       sky=sky, eqpos=eqpos)
+    return block, filename
 
 
-def _is_ogip_block(hdu, bltype1, bltype2=None):
+def _is_ogip_block(hdu: HDUType,
+                   bltype1: str,
+                   bltype2: Optional[str] = None) -> bool:
     """Does the block contain the expected HDUCLAS1 or HDUCLAS2 values?
 
     If given, we need both HDUCLAS1 and 2 to be set correctly.
@@ -609,70 +562,56 @@ def _is_ogip_block(hdu, bltype1, bltype2=None):
     return  _try_key(hdu, 'HDUCLAS2') == bltype2
 
 
-def _is_ogip_type(hdus, bltype, bltype2=None):
-    """Return True if hdus[1] exists and has
-    the given type (as determined by the HDUCLAS1 or HDUCLAS2
-    keywords). If bltype2 is None then bltype is used for
-    both checks, otherwise bltype2 is used for HDUCLAS2 and
-    bltype is for HDUCLAS1.
-    """
+def get_arf_data(arg: DatasetType,
+                 make_copy: bool = False
+                 ) -> tuple[SpecrespBlock, str]:
+    """Read in the ARF."""
+
+    arf, filename, close = _get_file_contents(arg,
+                                              exptype="BinTableHDU",
+                                              nobinary=True)
 
     try:
-        hdu = hdus[1]
-    except IndexError:
-        return False
-
-    return _is_ogip_block(hdu, bltype, bltype2)
-
-
-def get_arf_data(arg, make_copy=False):
-    """
-    arg is a filename or a HDUList object
-    """
-
-    arf, filename = _get_file_contents(arg, exptype="BinTableHDU",
-                                       nobinary=True)
-
-    try:
-        if _has_hdu(arf, 'SPECRESP'):
-            hdu = arf['SPECRESP']
-        elif _has_hdu(arf, 'AXAF_ARF'):
-            hdu = arf['AXAF_ARF']
-        elif _is_ogip_type(arf, 'RESPONSE', 'SPECRESP'):
-            hdu = arf[1]
-        else:
-            raise IOErr('notrsp', filename, 'an ARF')
-
-        data = {}
-
-        data['exposure'] = _try_key(hdu, 'EXPOSURE', fix_type=True)
-
-        data['energ_lo'] = _require_col(hdu, 'ENERG_LO', fix_type=True)
-        data['energ_hi'] = _require_col(hdu, 'ENERG_HI', fix_type=True)
-        data['specresp'] = _require_col(hdu, 'SPECRESP', fix_type=True)
-        data['bin_lo'] = _try_col(hdu, 'BIN_LO', fix_type=True)
-        data['bin_hi'] = _try_col(hdu, 'BIN_HI', fix_type=True)
-        data['header'] = _get_meta_data(hdu)
-        data['header'].pop('EXPOSURE', None)
-
+        specresp = _read_arf_specresp(arf, filename)
     finally:
-        arf.close()
+        if close:
+            arf.close()
 
-    return data, filename
+    return specresp, filename
 
 
-def _read_col(hdu, name):
-    """A specialized form of _require_col
-
-    There is no attempt to convert from a variable-length field
-    to any other form.
-
-    """
+def _read_arf_specresp(arf: fits.HDUList,
+                       filename: str) -> SpecrespBlock:
+    """Read in the SPECRESP block of the ARF."""
 
     try:
-        return hdu.data[name]
+        hdu = arf["SPECREP"]
     except KeyError:
-        raise IOErr("reqcol", name, hdu._file.name) from None
+        try:
+            hdu = arf["AXAF_ARF"]
+        except KeyError:
+            try:
+                hdu = arf[1]
+            except IndexError:
+                raise IOErr("notrsp", filename, "an ARF") from None
+
+            if not _is_ogip_block(hdu, 'RESPONSE', 'SPECRESP'):
+                raise IOErr("notrsp", filename, "an ARF") from None
+
+    headers = _get_meta_data_header(hdu)
+    cols = [copycol(hdu, filename, name, dtype=SherpaFloat)
+            for name in ["ENERG_LO", "ENERG_HI", "SPECRESP"]]
+
+    # Optional columns: either both given or none
+    #
+    try:
+        bin_lo = copycol(hdu, filename, "BIN_LO", dtype=SherpaFloat)
+        bin_hi = copycol(hdu, filename, "BIN_HI", dtype=SherpaFloat)
+        cols.extend([bin_lo, bin_hi])
+    except IOErr:
+        pass
+
+    return SpecrespBlock(hdu.name, header=headers, columns=cols)
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -682,7 +621,7 @@ RMF_BLOCK_NAMES = ["MATRIX", "SPECRESP MATRIX", "AXAF_RMF", "RSP_MATRIX"]
 
 
 def _find_matrix_blocks(filename: str,
-                        hdus: fits.HDUList) -> list[str]:
+                        hdus: fits.HDUList) -> list[fits.BinTableHDU]:
     """Report the block names that contain MATRIX data in a RMF.
 
     Parameters
@@ -692,9 +631,8 @@ def _find_matrix_blocks(filename: str,
 
     Returns
     -------
-    blnames : list of str
-       The block names that contain the MATRIX block. It will not be
-       empty.
+    blocks : list of fits.BinTableHDU
+       The blocks that contain the MATRIX block. It will not be empty.
 
     Raises
     ------
@@ -716,94 +654,145 @@ def _find_matrix_blocks(filename: str,
     # possibility of RMF files with multiple MATRIX blocks (where the
     # EXTVER starts at 1 and then increases).
     #
-    blnames = []
+    blocks = []
     for hdu in hdus:
         if hdu.name in RMF_BLOCK_NAMES or \
            _is_ogip_block(hdu, "RESPONSE", "RSP_MATRIX"):
-            blnames.append(hdu)
+            blocks.append(hdu)
 
-    if not blnames:
+    if not blocks:
         raise IOErr('notrsp', filename, 'an RMF')
 
-    return blnames
+    return blocks
 
 
-def _read_rmf_data(arg):
-    """Read in the data from the RMF."""
+def copycol(hdu: fits.BinTableHDU,
+            filename: str,
+            name: str,
+            dtype: Optional[type] = None) -> Column:
+    """Copy the column data (which must exist).
 
-    rmf, filename = _get_file_contents(arg, exptype="BinTableHDU",
-                                       nobinary=True)
+    Parameters
+    ----------
+    hdu : BinTableHDU
+       The HDU to search.
+    filename : str
+       The filename from which the HDU was created. This is used for
+       error messages only.
+    name : str
+       The column name (case insensitive).
+    dtype : None or type
+       The data type to convert the column values to.
+
+    Returns
+    -------
+    col : Column
+       The column data.
+
+    Raises
+    ------
+    IOErr
+       The column does not exist.
+
+    Notes
+    -----
+
+    Historically Sherpa has converted RMF columns to double-precision
+    values, even though the standard has them as single-precision.
+    Using the on-disk type (e.g. float rather than double) has some
+    annoying consequences on the test suite, so for now we retain this
+    behaviour.
+
+    """
+
+    uname = name.upper()
+    try:
+        vals = hdu.data[uname]
+    except KeyError:
+        raise IOErr("reqcol", uname, filename) from None
+
+    if dtype is not None:
+        vals = vals.astype(dtype)
+
+    # Do not expand out variable-length arrays for now.  Note that for
+    # columns the unit value is stored separately from the description
+    # (TUNIT versus the commenf for the TTYPE value).
+    #
+    colinfo = hdu.columns[uname]
+    out = Column(uname, values=vals)
+    if colinfo.unit is not None:
+        out.unit = colinfo.unit
+
+    # Is there a better way of finding the description than
+    # manually hunting around for the TTYPE<n> description?
+    # This has to be done case-insensitively too.
+    #
+    pos = None
+    for idx, col in enumerate(hdu.columns, 1):
+        if col.name.upper() == uname:
+            pos = idx
+
+    if pos is None:
+        # This should not be possible.
+        return out
+
+    desc = hdu.header.comments[f"TTYPE{pos}"]
+    if desc != '':
+        out.desc = desc
 
     try:
+        out.minval = hdu.header[f"TLMIN{pos}"]
+    except KeyError:
+        pass
 
-        # Find all the potential matrix blocks.
-        #
-        blnames = _find_matrix_blocks(filename, rmf)
-        nmat = len(blnames)
-        if nmat > 1:
-            # Warn the user that the multi-matrix RMF is not supported.
-            #
-            error("RMF in %s contains %d MATRIX blocks; "
-                  "Sherpa only uses the first block!",
-                  filename, nmat)
+    try:
+        out.maxval = hdu.header[f"TLMAX{pos}"]
+    except KeyError:
+        pass
 
-        hdu = rmf[blnames[0]]
-
-        # The comments note the type we want the column to be, but
-        # this conversion needs to be done after cleaning up the
-        # data.
-        #
-        data = {}
-        data['detchans'] = SherpaUInt(_require_key(hdu, 'DETCHANS'))
-        data['energ_lo'] = _read_col(hdu, 'ENERG_LO')  # SherpaFloat
-        data['energ_hi'] = _read_col(hdu, 'ENERG_HI')  # SherpaFloat
-        data['n_grp'] = _read_col(hdu, 'N_GRP')        # SherpaUInt
-        data['f_chan'] = _read_col(hdu, 'F_CHAN')      # SherpaUInt
-        data['n_chan'] = _read_col(hdu, 'N_CHAN')      # SherpaUInt
-        data['matrix'] = _read_col(hdu, "MATRIX")
-
-        data['header'] = _get_meta_data(hdu)
-        data['header'].pop('DETCHANS', None)
-
-        # Beginning of non-Chandra RMF support
-        fchan_col = list(hdu.columns.names).index('F_CHAN') + 1
-        tlmin = _try_key(hdu, f"TLMIN{fchan_col}", fix_type=True,
-                         dtype=SherpaUInt)
-
-        if tlmin is not None:
-            data['offset'] = tlmin
-        else:
-            # QUS: should this actually be an error, rather than just
-            #      something that is logged to screen?
-            error("Failed to locate TLMIN keyword for F_CHAN" +
-                  f" column in RMF file '{filename}'; " +
-                  'Update the offset value in the RMF data set to' +
-                  ' appropriate TLMIN value prior to fitting')
-
-        if _has_hdu(rmf, 'EBOUNDS'):
-            # This should probably error out if E_MIN/MAX are not present.
-            hdu = rmf['EBOUNDS']
-            data['e_min'] = _try_col(hdu, 'E_MIN', fix_type=True)
-            data['e_max'] = _try_col(hdu, 'E_MAX', fix_type=True)
-
-            # Beginning of non-Chandra RMF support
-            chan_col = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, f"TLMIN{chan_col}", fix_type=True,
-                             dtype=SherpaUInt)
-            if tlmin is not None:
-                data['offset'] = tlmin
-
-        else:
-            data['e_min'] = None
-            data['e_max'] = None
-    finally:
-        rmf.close()
-
-    return data, filename
+    return out
 
 
-def get_rmf_data(arg, make_copy=False):
-    """arg is a filename or a HDUList object.
+def _read_rmf_matrix(matrix: fits.BinTableHDU,
+                     filename: str) -> MatrixBlock:
+    """Read in the given MATRIX block"""
+
+    # Ensure we have a DETCHANS keyword
+    if matrix.header.get("DETCHANS") is None:
+        raise IOErr("nokeyword", filename, "DETCHANS")
+
+    mheaders = _get_meta_data_header(matrix)
+    mcols = [copycol(matrix, filename, name, dtype=dtype) for name, dtype in
+             [("ENERG_LO", SherpaFloat),
+              ("ENERG_HI", SherpaFloat),
+              ("N_GRP", None),
+              ("F_CHAN", None),
+              ("N_CHAN", None),
+              ("MATRIX", None)]]
+    return MatrixBlock(matrix.name, header=mheaders, columns=mcols)
+
+
+def _read_rmf_ebounds(hdus: fits.HDUList,
+                      filename: str,
+                      blname: str) -> EboundsBlock:
+    """Read in the given EBOUNDS block"""
+
+    ebounds = hdus[blname]
+    if ebounds is None:
+        raise IOErr(f"Unable to read {blname} from {filename}")
+
+    eheaders = _get_meta_data_header(ebounds)
+    ecols = [copycol(ebounds, filename, name, dtype=dtype) for name, dtype in
+             [("CHANNEL", None),
+              ("E_MIN", SherpaFloat),
+              ("E_MAX", SherpaFloat)]]
+    return EboundsBlock("EBOUNDS", header=eheaders, columns=ecols)
+
+
+def get_rmf_data(arg: DatasetType,
+                 make_copy: bool = False
+                 ) -> tuple[list[MatrixBlock], EboundsBlock, str]:
+    """Read in the RMF.
 
     Notes
     -----
@@ -815,390 +804,117 @@ def get_rmf_data(arg, make_copy=False):
 
     # Read in the columns from the MATRIX and EBOUNDS extensions.
     #
-    data, filename = _read_rmf_data(arg)
-
-    # This could be taken from the NUMELT keyword, but this is not
-    # a required value and it is not obvious how trustworthy it is.
-    #
-    # Since N_CHAN can be a VLF we can not just use sum().
-    #
-    numelt = 0
-    for row in data["n_chan"]:
-        try:
-            numelt += sum(row)
-        except TypeError:
-            # assumed to be a scalar
-            numelt += row
-
-    # Remove unwanted data
-    #  - rows where N_GRP=0
-    #  - for each row, any excess data (beyond the sum(N_CHAN) for that row)
-    #
-    # The columns may be 1D or 2D vectors, or variable-field arrays,
-    # where each row is an object containing a number of elements.
-    #
-    # Note that crates uses the sherpa.astro.utils.resp_init routine,
-    # but it's not clear why, so it is not used here for now.
-    #
-    good = data['n_grp'] > 0
-
-    matrix = data['matrix'][good]
-    n_grp = data['n_grp'][good]
-    n_chan = data['n_chan'][good]
-    f_chan = data['f_chan'][good]
-
-    # Flatten the array. There are four cases here:
-    #
-    # a) a variable-length field with no "padding"
-    # b) a variable-length field with padding
-    # c) a rectangular matrix is given, with no "padding"
-    # d) a rectangular matrix is given, but a row can contain
-    #    unused data
-    #
-    if numelt == matrix.size:
-        if isinstance(matrix, _VLF):
-            # case a
-            matrix = numpy.concatenate([numpy.asarray(row)
-                                        for row in matrix])
-        else:
-            # case c
-            matrix = matrix.flatten()
-
-    else:
-        # cases b or d; assume we can use the same logic
-        rowdata = []
-        for mrow, ng, ncs in zip(matrix, n_grp, n_chan):
-            # Need a RMF which ng>1 to test this with.
-            if numpy.isscalar(ncs):
-                ncs = [ncs]
-
-            start = 0
-            for nc in ncs:
-                # n_chan can be an unsigned integer. Adding a Python
-                # integer to a NumPy unsigned integer appears to return
-                # a float.
-                end = start + int(nc)
-
-                # "perfect" RMFs may have mrow as a scalar
-                try:
-                    rdata = mrow[start:end]
-                except IndexError as ie:
-                    if start != 0 or end != 1:
-                        raise IOErr('bad', 'format', 'MATRIX column formatting') from ie
-
-                    rdata = [mrow]
-
-                rowdata.append(rdata)
-                start = end
-
-        matrix = numpy.concatenate(rowdata)
-
-    data['matrix'] = matrix.astype(SherpaFloat)
-
-    # Flatten f_chan and n_chan vectors into 1D arrays as crates does
-    # according to group. This is not always needed, but annoying to
-    # check for so we always do it.
-    #
-    xf_chan = []
-    xn_chan = []
-    for grp, fch, nch, in zip(n_grp, f_chan, n_chan):
-        if numpy.isscalar(fch):
-            # The assumption is that grp==1 here
-            xf_chan.append(fch)
-            xn_chan.append(nch)
-        else:
-            # The arrays may contain extra elements (which
-            # should be 0).
-            #
-            xf_chan.extend(fch[:grp])
-            xn_chan.extend(nch[:grp])
-
-    data['f_chan'] = numpy.asarray(xf_chan, SherpaUInt)
-    data['n_chan'] = numpy.asarray(xn_chan, SherpaUInt)
-
-    # Not all fields are "flattened" by this routine. In particular we
-    # need to keep knowledge of these rows with 0 groups. This is why
-    # we set the n_grp entry to data['n_grp'] rather than the n_grp
-    # variable (which has the 0 elements removed).
-    #
-    data['n_grp'] = numpy.asarray(data['n_grp'], SherpaUInt)
-
-    data['energ_lo'] = numpy.asarray(data['energ_lo'], SherpaFloat)
-    data['energ_hi'] = numpy.asarray(data['energ_hi'], SherpaFloat)
-
-    return data, filename
-
-
-def get_pha_data(arg, make_copy=False, use_background=False):
-    """
-    arg is a filename or a HDUList object
-    """
-
-    pha, filename = _get_file_contents(arg, exptype="BinTableHDU")
+    rmf, filename, close = _get_file_contents(arg,
+                                              exptype="BinTableHDU",
+                                              nobinary=True)
 
     try:
-        if _has_hdu(pha, 'SPECTRUM'):
-            hdu = pha['SPECTRUM']
-        elif _is_ogip_type(pha, 'SPECTRUM'):
-            hdu = pha[1]
-        else:
-            raise IOErr('notrsp', filename, "a PHA spectrum")
+        # Find all the potential matrix blocks.
+        #
+        blocks = _find_matrix_blocks(filename, rmf)
+        matrixes = [_read_rmf_matrix(block, filename)
+                    for block in blocks]
+        ebounds = _read_rmf_ebounds(rmf, filename, "EBOUNDS")
+    finally:
+        if close:
+            rmf.close()
+
+    return matrixes, ebounds, filename
+
+
+def _read_pha(pha: fits.BinTableHDU,
+              filename: str) -> SpectrumBlock:
+    """Read in the PHA data.
+
+    Note that there is minimal intepretation of the data.
+    """
+
+    headers = _get_meta_data_header(pha)
+
+    # A lot of the data is optional or checked for in the I/O layer.
+    #
+    # TODO: Why not read in the channels as integers?
+    cols = [copycol(pha, filename, "CHANNEL", dtype=SherpaFloat)]
+
+    # This includes values that can be scalars (i.e. keywords)
+    # or columns. It also incudes non-OGIP columns used to
+    # identify PHA:II data.
+    #
+    # NOTE: currently unsupported (and not in crates)
+    #
+    #    if data['syserror'] is not None:
+    #         # SYS_ERR is the fractional systematic error
+    #         data['syserror'] = data['syserror'] * data['counts']
+    #
+    for name, dtype in [("COUNTS", SherpaFloat),
+                        ("RATE", SherpaFloat),
+                        ("STAT_ERR", SherpaFloat),
+                        ("SYS_ERR", SherpaFloat),
+                        ("BIN_LO", SherpaFloat),
+                        ("BIN_HI", SherpaFloat),
+                        ("BACKGROUND_UP", SherpaFloat),
+                        ("BACKGROUND_DOWN", SherpaFloat),
+                        # Possible scalar values
+                        ("GROUPING", None),
+                        ("QUALITY", None),
+                        ("BACKSCAL", SherpaFloat),
+                        ("BACKSCUP", SherpaFloat),
+                        ("BACKSCDN", SherpaFloat),
+                        ("AREASCAL", SherpaFloat),
+                        # PHA:II columns or scalars
+                        ("TG_M", None),
+                        ("TG_PART", None),
+                        ("TG_SRCID", None),
+                        ("SPEC_NUM", None)
+                        ]:
+        try:
+            cols.append(copycol(pha, filename, name, dtype=dtype))
+        except IOErr:
+            pass
+
+    return SpectrumBlock(pha.name, header=headers, columns=cols)
+
+
+def get_pha_data(arg: DatasetType,
+                 make_copy: bool = False,
+                 use_background: bool = False
+                 ) -> tuple[SpectrumBlock, str]:
+    """Read in the PHA."""
+
+    pha, filename, close = _get_file_contents(arg,
+                                              exptype="BinTableHDU")
+
+    try:
+        try:
+            hdu = pha["SPECTRUM"]
+        except KeyError:
+            try:
+                hdu = pha[1]
+            except IndexError:
+                raise IOErr("notrsp", filename, "a PHA spectrum") from None
+
+            if not _is_ogip_block(hdu, "SPECTRUM"):
+                raise IOErr("notrsp", filename, "a PHA spectrum") from None
 
         if use_background:
+            # Used to read BKGs found in an additional block of
+            # Chandra Level 3 PHA files
             for block in pha:
                 if _try_key(block, 'HDUCLAS2') == 'BKG':
                     hdu = block
 
-        keys = ['BACKFILE', 'ANCRFILE', 'RESPFILE',
-                'BACKSCAL', 'AREASCAL', 'EXPOSURE']
-        datasets = []
-
-        if _try_col(hdu, 'SPEC_NUM') is None:
-            data = {}
-
-            # Create local versions of the "try" routines.
-            #
-            def try_any_sfloat(key):
-                "Get col/key and return a SherpaFloat"
-                return _try_col_or_key(hdu, key, fix_type=True)
-
-            def try_sfloat(key):
-                "Get col and return a SherpaFloat"
-                return _try_col(hdu, key, fix_type=True)
-
-            def try_sint(key):
-                """Get col and return a SherpaInt
-
-                Or, it looks like it should do this, but at the moment
-                it does not force the data type.
-
-                """
-                # return _try_col(hdu, key, fix_type=True, dtype=SherpaInt)
-                return _try_col(hdu, key, dtype=SherpaInt)
-
-            def req_sfloat(key):
-                "Get col and return a SherpaFloat"
-                return _require_col(hdu, key, fix_type=True)
-
-            # Keywords
-            data['exposure'] = _try_key(hdu, 'EXPOSURE', fix_type=True)
-            # data['poisserr'] = _try_key(hdu, 'POISSERR', True, bool)
-            data['backfile'] = _try_key(hdu, 'BACKFILE')
-            data['arffile'] = _try_key(hdu, 'ANCRFILE')
-            data['rmffile'] = _try_key(hdu, 'RESPFILE')
-
-            # Keywords or columns
-            data['backscal'] = try_any_sfloat('BACKSCAL')
-            data['backscup'] = try_any_sfloat('BACKSCUP')
-            data['backscdn'] = try_any_sfloat('BACKSCDN')
-            data['areascal'] = try_any_sfloat('AREASCAL')
-
-            # Columns
-            data['channel'] = req_sfloat("CHANNEL")
-
-            # Make sure channel numbers not indices
-            chan = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, f"TLMIN{chan}", fix_type=True,
-                             dtype=SherpaUInt)
-            if int(data['channel'][0]) == 0 or tlmin == 0:
-                data['channel'] = data['channel'] + 1
-
-            data['counts'] = try_sfloat("COUNTS")
-            data['staterror'] = _try_col(hdu, 'STAT_ERR')
-
-            # The following assumes that EXPOSURE is set
-            if data['counts'] is None:
-                data['counts'] = req_sfloat("RATE") * data['exposure']
-                if data['staterror'] is not None:
-                    data['staterror'] = data['staterror'] * data['exposure']
-
-            data['syserror'] = _try_col(hdu, 'SYS_ERR')
-            data['background_up'] = try_sfloat('BACKGROUND_UP')
-            data['background_down'] = try_sfloat('BACKGROUND_DOWN')
-            data['bin_lo'] = try_sfloat('BIN_LO')
-            data['bin_hi'] = try_sfloat('BIN_HI')
-            data['grouping'] = try_sint('GROUPING')
-            data['quality'] = try_sint('QUALITY')
-            data['header'] = _get_meta_data(hdu)
-            for key in keys:
-                data['header'].pop(key, None)
-
-            if data['syserror'] is not None:
-                # SYS_ERR is the fractional systematic error
-                data['syserror'] = data['syserror'] * data['counts']
-
-            datasets.append(data)
-
-        else:
-            # Type 2 PHA file support
-            specnum = _try_col_or_key(hdu, 'SPEC_NUM')
-            num = len(specnum)
-
-            # Create local versions of the "try" routines set for this
-            # size=num value.
-            #
-            def try_any_sfloat(key):
-                "Get col/key and return a SherpaFloat"
-                return _try_vec_or_key(hdu, key, size=num, fix_type=True)
-
-            def try_sfloat(key):
-                "Get col and return a SherpaFloat"
-                return _try_vec(hdu, key, size=num, fix_type=True)
-
-            def try_sint(key):
-                """Get col and return a SherpaInt
-
-                Or, it looks like it should do this, but at the moment
-                it does not force the data type.
-
-                """
-                # return _try_vec(hdu, key, size=num, fix_type=True, dtype=SherpaInt)
-                return _try_vec(hdu, key, size=num, dtype=SherpaInt)
-
-            def req_sfloat(key):
-                "Get col and return a SherpaFloat"
-                return _require_vec(hdu, key, size=num, fix_type=True)
-
-            # Keywords
-            exposure = _try_key(hdu, 'EXPOSURE', fix_type=True)
-            # poisserr = _try_key(hdu, 'POISSERR', True, bool)
-            backfile = _try_key(hdu, 'BACKFILE')
-            arffile = _try_key(hdu, 'ANCRFILE')
-            rmffile = _try_key(hdu, 'RESPFILE')
-
-            # Keywords or columns
-            backscal = try_any_sfloat('BACKSCAL')
-            backscup = try_any_sfloat('BACKSCUP')
-            backscdn = try_any_sfloat('BACKSCDN')
-            areascal = try_any_sfloat('AREASCAL')
-
-            # Columns
-            # Why does this convert to SherpaFloat?
-            channel = req_sfloat('CHANNEL')
-
-            # Make sure channel numbers not indices
-            chan = list(hdu.columns.names).index('CHANNEL') + 1
-            tlmin = _try_key(hdu, f"TLMIN{chan}", fix_type=True,
-                             dtype=SherpaUInt)
-
-            for ii in range(num):
-                if int(channel[ii][0]) == 0:
-                    channel[ii] += 1
-
-            # if ((tlmin is not None) and tlmin == 0) or int(channel[0]) == 0:
-            #     channel += 1
-
-            # Why does this convert to SherpaFloat?
-            counts = try_sfloat("COUNTS")
-            staterror = _try_vec(hdu, 'STAT_ERR', size=num)
-            if numpy.equal(counts, None).any():  # _try_vec can return an array of Nones
-                counts = req_sfloat("RATE") * exposure
-                if not numpy.equal(staterror, None).any():
-                    staterror *= exposure
-
-            syserror = _try_vec(hdu, 'SYS_ERR', size=num)
-            background_up = try_sfloat('BACKGROUND_UP')
-            background_down = try_sfloat('BACKGROUND_DOWN')
-            bin_lo = try_sfloat('BIN_LO')
-            bin_hi = try_sfloat('BIN_HI')
-            grouping = try_sint('GROUPING')
-            quality = try_sint('QUALITY')
-
-            orders = try_sint('TG_M')
-            parts = try_sint('TG_PART')
-            specnums = try_sint('SPEC_NUM')
-            srcids = try_sint('TG_SRCID')
-
-            # Iterate over all rows of channels, counts, errors, etc
-            # Populate a list of dictionaries containing
-            # individual dataset info
-            for (bscal, bscup, bscdn, arsc, chan, cnt, staterr, syserr,
-                 backup, backdown, binlo, binhi, group, qual, ordr, prt,
-                 specnum, srcid
-                 ) in zip(backscal, backscup, backscdn, areascal, channel,
-                          counts, staterror, syserror, background_up,
-                          background_down, bin_lo, bin_hi, grouping, quality,
-                          orders, parts, specnums, srcids):
-                data = {}
-
-                data['exposure'] = exposure
-                # data['poisserr'] = poisserr
-                data['backfile'] = backfile
-                data['arffile'] = arffile
-                data['rmffile'] = rmffile
-
-                data['backscal'] = bscal
-                data['backscup'] = bscup
-                data['backscdn'] = bscdn
-                data['areascal'] = arsc
-
-                data['channel'] = chan
-                data['counts'] = cnt
-                data['staterror'] = staterr
-                data['syserror'] = syserr
-                data['background_up'] = backup
-                data['background_down'] = backdown
-                data['bin_lo'] = binlo
-                data['bin_hi'] = binhi
-                data['grouping'] = group
-                data['quality'] = qual
-                data['header'] = _get_meta_data(hdu)
-                data['header']['TG_M'] = ordr
-                data['header']['TG_PART'] = prt
-                data['header']['SPEC_NUM'] = specnum
-                data['header']['TG_SRCID'] = srcid
-
-                for key in keys:
-                    data['header'].pop(key, None)
-
-                if syserr is not None:
-                    # SYS_ERR is the fractional systematic error
-                    data['syserror'] = syserr * cnt
-
-                datasets.append(data)
+        block = _read_pha(hdu, filename)
 
     finally:
-        pha.close()
+        if close:
+            pha.close()
 
-    return datasets, filename
+    return block, filename
 
 
 # Write Functions
 
-def _create_table(names, data):
-    """Create a Table.
-
-    The idea is that by going via a Table we let the AstroPy
-    code deal with all the conversions (e.g. to get the FITS
-    data types on columns correct).
-
-    Parameters
-    ----------
-    names : list of str
-        The order of the column names (must exist in data).
-    data : dict[str, ndarray or None]
-        Any None values are dropped.
-
-    Returns
-    -------
-    tbl : Table
-
-    """
-
-    store = []
-    colnames = []
-    for name in names:
-        coldata = data[name]
-        if coldata is None:
-            continue
-
-        store.append(coldata)
-        colnames.append(name)
-
-    return Table(names=colnames, data=store)
-
-
-def check_clobber(filename, clobber):
+def check_clobber(filename: str, clobber: bool) -> None:
     """Error out if the file exists and clobber is not set."""
 
     if clobber or not os.path.isfile(filename):
@@ -1207,315 +923,206 @@ def check_clobber(filename, clobber):
     raise IOErr("filefound", filename)
 
 
-def set_table_data(filename, data, col_names, header=None,
-                   ascii=False, clobber=False, packup=False):
+def pack_table_data(blocks: BlockList) -> fits.BinTableHDU:
+    """Pack up the table data."""
 
-    if not packup:
-        check_clobber(filename, clobber)
+    return pack_hdus(blocks)
 
-    tbl = _create_table(col_names, data)
+
+def set_table_data(filename: str,
+                   blocks: BlockList,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
+    """Write out the table data."""
+
+    check_clobber(filename, clobber)
+
     if ascii:
+        if TYPE_CHECKING:
+            assert isinstance(blocks.blocks[0], TableBlock)
+
+        block = blocks.blocks[0]
+        store = []
+        colnames = []
+        for col in block.columns:
+            store.append(col.values)
+            colnames.append(col.name)
+
+        tbl = Table(names=colnames, data=store)
         tbl.write(filename, format='ascii.commented_header',
                   overwrite=clobber)
         return
 
-    hdu = fits.table_to_hdu(tbl)
-    if hdu.name == '':
-        tbl.name = 'HISTOGRAM'
-
-    # Add in the header. We should special case the HISTORY/COMMENT
-    # keywords but at the moment we do nothing.
-    #
-    # There is the issue of conflicts between the existing and sent-in
-    # header - fortunately we can just drop those keys from the sent-in
-    # header, and also just whether the sent-in header keys (e.g. if
-    # TUNIT1 and TLMIN1 are set are they valid)? For the latter we rely
-    # on validation done by the code calling set_table_data.
-    #
-    if header is not None:
-        _update_header(hdu, header)
-
-    if packup:
-        return hdu
-
+    hdu = pack_table_data(blocks)
     hdu.writeto(filename, overwrite=True)
+    return
 
 
-def _create_header(header):
-    """Create a FITS header with the contents of header,
-    the Sherpa representation of the key,value store.
-    """
+def pack_arf_data(blocks: BlockList) -> fits.BinTableHDU:
+    """Pack the ARF"""
 
-    hdrlist = fits.Header()
-    for key, value in header.items():
-        if value is None:
-            continue
-
-        _add_keyword(hdrlist, key, value)
-
-    return hdrlist
+    return pack_hdus(blocks)
 
 
-def _update_header(hdu, header):
-    """Update the header of the HDU.
+def set_arf_data(filename: str,
+                 blocks: BlockList,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
+    """Write out the ARF"""
 
-    Unlike the dict update method, this is left biased, in that
-    it prefers the keys in the existing header (this is so that
-    structural keywords are not over-written by invalid data from
-    a previous FITS file), and to drop elements which are set
-    to None.
-
-    Parameters
-    ----------
-    hdu : HDU
-    header : dict[str, Any]
-
-    """
-
-    for key, value in header.items():
-        if key in hdu.header:
-            continue
-
-        if value is None:
-            continue
-
-        hdu.header[key] = value
+    set_table_data(filename, blocks, ascii=ascii, clobber=clobber)
 
 
-def set_arf_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False, packup=False):
-    """Create an ARF"""
+def pack_pha_data(blocks: BlockList) -> fits.BinTableHDU:
+    """Pack the PHA"""
 
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
-
-    # Currently we can use the same logic as set_table_data
-    return set_table_data(filename, data, col_names, header=header,
-                          ascii=ascii, clobber=clobber, packup=packup)
+    return pack_hdus(blocks)
 
 
-def set_pha_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False, packup=False):
-    """Create a PHA dataset/file
+def set_pha_data(filename: str,
+                 blocks: BlockList,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
+    """Create a PHA dataset/file"""
 
-    The header argument must be set as this routine does no validation
-    of its contents.
-
-    """
-
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
-
-    # Currently we can use the same logic as set_table_data
-    return set_table_data(filename, data, col_names, header=header,
-                          ascii=ascii, clobber=clobber, packup=packup)
+    set_table_data(filename, blocks, ascii=ascii, clobber=clobber)
 
 
-def set_rmf_data(filename, blocks, clobber=False):
+def pack_rmf_data(blocks) -> fits.HDUList:
+    """Pack up the RMF data."""
+
+    return pack_hdus(blocks)
+
+
+def set_rmf_data(filename: str,
+                 blocks: BlockList,
+                 clobber: bool = False) -> None:
     """Save the RMF data to disk.
 
     Unlike the other save_*_data calls this does not support the ascii
-    or packup arguments. It also relies on the caller to have set up
-    the headers and columns correctly apart for variable-length fields,
-    which are limited to F_CHAN, N_CHAN, and MATRIX.
+    argument.
 
     """
 
     check_clobber(filename, clobber)
+    hdus = pack_rmf_data(blocks)
+    hdus.writeto(filename, overwrite=True)
 
-    # For now assume only two blocks:
-    #    MATRIX
-    #    EBOUNDS
+
+def pack_image_data(data: ImageBlock) -> fits.PrimaryHDU:
+    """Pack up the image data."""
+
+    hdrlist = fits.Header()
+
+    def _add_key(name, val):
+        hdrlist.append(fits.Card(name, val))
+
+    # Write Image Header Keys
     #
-    matrix_data, matrix_header = blocks[0]
-    ebounds_data, ebounds_header = blocks[1]
-
-    # Extract the data:
-    #   MATRIX:
-    #     ENERG_LO
-    #     ENERG_HI
-    #     N_GRP
-    #     F_CHAN
-    #     N_CHAN
-    #     MATRIX
-    #
-    #   EBOUNDS:
-    #     CHANNEL
-    #     E_MIN
-    #     E_MAX
-    #
-    # We may need to convert F_CHAN/N_CHAN/MATRIX to Variable-Length
-    # Fields. This is only needed if the ndarray type is object.
-    #
-    # It looks like we can not use the go-via-a-table approach
-    # here, as that does not support Variable Length Fields.
-    #
-    def get_format(val):
-        """We only bother with formats we expect"""
-        if numpy.issubdtype(val, numpy.integer):
-            if isinstance(val, numpy.int16):
-                return "I"
-
-            # default to Int32. AstroPy does support Int64/K but
-            # this should not be needed here.
-            return "J"
-
-        if not numpy.issubdtype(val, numpy.floating):
-            raise ValueError(f"Unexpected value '{val}' with type {val.dtype}")
-
-        if isinstance(val,numpy.float32):
-            return "E"
-
-        # This should not be reached
-        return "D"
-
-    def get_full_format(name, vals):
-        if vals.dtype == object:
-            # We need to get the format from the first non-empty row.
-            bformat = None
-            ny = 0
-            for v in vals:
-                nv = len(v)
-                ny = max(ny, nv)
-                if nv == 0:
-                    continue
-
-                if bformat is not None:
-                    continue
-
-                bformat = get_format(v[0])
-                break
-
-            if bformat is None:
-                # This should not happen
-                raise ValueError(f"Unable to find data for column '{name}'")
-
-            return f"P{bformat}({ny})"
-
-        bformat = get_format(vals[0][0])
-        ny = vals.shape[1]
-        return f"{ny}{bformat}"
-
-    def arraycol(name):
-        vals = matrix_data[name]
-        formatval = get_full_format(name, vals)
-        return fits.Column(name=name, format=formatval, array=vals)
-
-    n_grp = matrix_data["N_GRP"]
-    col1 = fits.Column(name="ENERG_LO", format="E",
-                       array=matrix_data["ENERG_LO"], unit="keV")
-    col2 = fits.Column(name="ENERG_HI", format="E",
-                       array=matrix_data["ENERG_HI"], unit="keV")
-    col3 = fits.Column(name="N_GRP", format=get_format(n_grp[0]),
-                       array=n_grp)
-    col4 = arraycol("F_CHAN")
-    col5 = arraycol("N_CHAN")
-    col6 = arraycol("MATRIX")
-    cols = [col1, col2, col3, col4, col5, col6]
-    matrix_hdu = fits.BinTableHDU.from_columns(cols)
-    _update_header(matrix_hdu, matrix_header)
-
-    # Ensure the TLMIN4 value (for F_CHAN) is set.
-    matrix_hdu.header["TLMIN4"] = matrix_data["OFFSET"]
-
-    channel = ebounds_data["CHANNEL"]
-    col1 = fits.Column(name="CHANNEL", format=get_format(channel[0]),
-                       array=channel)
-    col2 = fits.Column(name="E_MIN", format="E",
-                       array=ebounds_data["E_MIN"], unit="keV")
-    col3 = fits.Column(name="E_MAX", format="E",
-                       array=ebounds_data["E_MAX"], unit="keV")
-    ebounds_hdu = fits.BinTableHDU.from_columns([col1, col2, col3])
-    _update_header(ebounds_hdu, ebounds_header)
-
-    primary_hdu = fits.PrimaryHDU()
-    hdulist = fits.HDUList([primary_hdu, matrix_hdu, ebounds_hdu])
-    hdulist.writeto(filename, overwrite=True)
-
-
-def set_image_data(filename, data, header, ascii=False, clobber=False,
-                   packup=False):
-
-    if not packup:
-        check_clobber(filename, clobber)
-
-    if ascii:
-        set_arrays(filename, [data['pixels'].ravel()],
-                   ascii=True, clobber=clobber)
-        return
-
-    hdrlist = _create_header(header)
+    for item in data.header.values:
+        _add_key(item.name, item.value)
 
     # Write Image WCS Header Keys
-    if data['eqpos'] is not None:
-        cdeltw = data['eqpos'].cdelt
-        crpixw = data['eqpos'].crpix
-        crvalw = data['eqpos'].crval
-        equin = data['eqpos'].equinox
+    #
+    if data.eqpos is not None:
+        cdeltw = data.eqpos.cdelt
+        crpixw = data.eqpos.crpix
+        crvalw = data.eqpos.crval
+        equin = data.eqpos.equinox
 
-    if data['sky'] is not None:
-        cdeltp = data['sky'].cdelt
-        crpixp = data['sky'].crpix
-        crvalp = data['sky'].crval
+    if data.sky is not None:
+        cdeltp = data.sky.cdelt
+        crpixp = data.sky.crpix
+        crvalp = data.sky.crval
 
-        _add_keyword(hdrlist, 'MTYPE1', 'sky     ')
-        _add_keyword(hdrlist, 'MFORM1', 'x,y     ')
-        _add_keyword(hdrlist, 'CTYPE1P', 'x      ')
-        _add_keyword(hdrlist, 'CTYPE2P', 'y      ')
-        _add_keyword(hdrlist, 'WCSNAMEP', 'PHYSICAL')
-        _add_keyword(hdrlist, 'CDELT1P', cdeltp[0])
-        _add_keyword(hdrlist, 'CDELT2P', cdeltp[1])
-        _add_keyword(hdrlist, 'CRPIX1P', crpixp[0])
-        _add_keyword(hdrlist, 'CRPIX2P', crpixp[1])
-        _add_keyword(hdrlist, 'CRVAL1P', crvalp[0])
-        _add_keyword(hdrlist, 'CRVAL2P', crvalp[1])
+        _add_key('MTYPE1', 'sky     ')
+        _add_key('MFORM1', 'x,y     ')
+        _add_key('CTYPE1P', 'x      ')
+        _add_key('CTYPE2P', 'y      ')
+        _add_key('WCSNAMEP', 'PHYSICAL')
+        _add_key('CDELT1P', cdeltp[0])
+        _add_key('CDELT2P', cdeltp[1])
+        _add_key('CRPIX1P', crpixp[0])
+        _add_key('CRPIX2P', crpixp[1])
+        _add_key('CRVAL1P', crvalp[0])
+        _add_key('CRVAL2P', crvalp[1])
 
-        if data['eqpos'] is not None:
+    if data.eqpos is not None:
+        if data.sky is not None:
             # Simply the inverse of read transformations in get_image_data
             cdeltw = cdeltw * cdeltp
             crpixw = (crpixw - crvalp) / cdeltp + crpixp
 
-    if data['eqpos'] is not None:
-        _add_keyword(hdrlist, 'MTYPE2', 'EQPOS   ')
-        _add_keyword(hdrlist, 'MFORM2', 'RA,DEC  ')
-        _add_keyword(hdrlist, 'CTYPE1', 'RA---TAN')
-        _add_keyword(hdrlist, 'CTYPE2', 'DEC--TAN')
-        _add_keyword(hdrlist, 'CDELT1', cdeltw[0])
-        _add_keyword(hdrlist, 'CDELT2', cdeltw[1])
-        _add_keyword(hdrlist, 'CRPIX1', crpixw[0])
-        _add_keyword(hdrlist, 'CRPIX2', crpixw[1])
-        _add_keyword(hdrlist, 'CRVAL1', crvalw[0])
-        _add_keyword(hdrlist, 'CRVAL2', crvalw[1])
-        _add_keyword(hdrlist, 'CUNIT1', 'deg     ')
-        _add_keyword(hdrlist, 'CUNIT2', 'deg     ')
-        _add_keyword(hdrlist, 'EQUINOX', equin)
+        _add_key('MTYPE2', 'EQPOS   ')
+        _add_key('MFORM2', 'RA,DEC  ')
+        _add_key('CTYPE1', 'RA---TAN')
+        _add_key('CTYPE2', 'DEC--TAN')
+        _add_key('CDELT1', cdeltw[0])
+        _add_key('CDELT2', cdeltw[1])
+        _add_key('CRPIX1', crpixw[0])
+        _add_key('CRPIX2', crpixw[1])
+        _add_key('CRVAL1', crvalw[0])
+        _add_key('CRVAL2', crvalw[1])
+        _add_key('CUNIT1', 'deg     ')
+        _add_key('CUNIT2', 'deg     ')
+        _add_key('EQUINOX', equin)
 
-    #
-    img = fits.PrimaryHDU(data['pixels'], header=fits.Header(hdrlist))
-    if packup:
-        return img
-    img.writeto(filename, overwrite=True)
+    return fits.PrimaryHDU(data.image, header=fits.Header(hdrlist))
 
 
-def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
+def set_image_data(filename: str,
+                   data: ImageBlock,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
+    """Write out the image data."""
 
     check_clobber(filename, clobber)
 
-    if not numpy.iterable(args) or len(args) == 0:
-        raise IOErr('noarrayswrite')
+    if ascii:
+        set_arrays(filename, [data.image.ravel()],
+                   ascii=True, clobber=clobber)
+        return
 
-    if not numpy.iterable(args[0]):
-        raise IOErr('noarrayswrite')
+    img = pack_image_data(data)
+    img.writeto(filename, overwrite=True)
+    return
 
-    size = len(args[0])
-    for arg in args:
-        if not numpy.iterable(arg):
-            raise IOErr('noarrayswrite')
-        if len(arg) != size:
+
+def set_arrays(filename: str,
+               args: Sequence[np.ndarray],
+               fields: Optional[NamesType] = None,
+               ascii: bool = True,
+               clobber: bool = False) -> None:
+
+    # Historically the clobber command has been checked before
+    # processing the data, so do so here.
+    #
+    check_clobber(filename, clobber)
+
+    # Check args is a sequence of sequences (although not a complete
+    # check).
+    #
+    try:
+        size = len(args[0])
+    except (TypeError, IndexError) as exc:
+        raise IOErr('noarrayswrite') from exc
+
+    for arg in args[1:]:
+        try:
+            argsize = len(arg)
+        except (TypeError, IndexError) as exc:
+            raise IOErr('noarrayswrite') from exc
+
+        if argsize != size:
             raise IOErr('arraysnoteq')
 
-    if fields is not None and len(args) != len(fields):
-        raise IOErr("wrongnumcols", len(args), len(fields))
+    nargs = len(args)
+    if fields is None:
+        fieldnames = [f'COL{idx + 1}' for idx in range(nargs)]
+    elif nargs == len(fields):
+        fieldnames = list(fields)
+    else:
+        raise IOErr("wrongnumcols", nargs, len(fields))
 
     if ascii:
         # Historically, the serialization doesn't quite match the
@@ -1528,30 +1135,23 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
         # The fields setting can be None here, which means that
         # write_arrays will not write out a header line.
         #
-        write_arrays(filename, args, fields,
-                     comment="# ", clobber=clobber)
+        sherpa.io.write_arrays(filename, args, fields,
+                               comment="# ", clobber=clobber)
         return
 
-    if fields is None:
-        fields = [f'COL{ii + 1}' for ii in range(len(args))]
-
-    data = dict(zip(fields, args))
-    tbl = _create_table(fields, data)
+    # Simplest to convert via a Table.
+    #
+    tbl = Table(names=fieldnames, data=args)
     hdu = fits.table_to_hdu(tbl)
     hdu.name = 'TABLE'
     hdu.writeto(filename, overwrite=True)
 
 
-def _add_header(hdu, header):
-    """Add the header items to the HDU.
+def _add_header(hdu: HDUType,
+                header: Header) -> None:
+    """Add the header items to the HDU."""
 
-    Parameters
-    ----------
-    hdu : astropy HDU
-    header : list of sherpa.astro.io.xstable.HeaderItem
-    """
-
-    for hdr in header:
+    for hdr in header.values:
         card = [hdr.name, hdr.value]
         if hdr.desc is not None or hdr.unit is not None:
             comment = "" if hdr.unit is None else f"[{hdr.unit}] "
@@ -1562,46 +1162,31 @@ def _add_header(hdu, header):
         hdu.header.append(tuple(card))
 
 
-def _create_primary_hdu(hdu: TableHDU) -> fits.PrimaryHDU:
-    """Create a PRIMARY HDU.
-
-    Parameters
-    ----------
-    hdu : TableHDU
-       Any data is ignored.
-
-    Returns
-    -------
-    out : astropy.io.fits.PrimaryHDU
-
-    """
+def _create_primary_hdu(hdr: Header) -> fits.PrimaryHDU:
+    """Create a PRIMARY HDU."""
 
     out = fits.PrimaryHDU()
+    _add_header(out, hdr)
+    return out
+
+
+def _create_image_hdu(hdu: ImageBlock) -> fits.ImageHDU:
+    """Create an Image HDU."""
+
+    out = fits.ImageHDU(name=hdu.name, data=hdu.image)
     _add_header(out, hdu.header)
     return out
 
 
-def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
-    """Create a Table HDU.
-
-    Parameters
-    ----------
-    hdu : TableHDU
-
-    Returns
-    -------
-    out : fits.BinTableHDU
-    """
-
-    if hdu.data is None:
-        raise ValueError("No column data to write out")
+def _create_table_hdu(hdu: TableBlock) -> fits.BinTableHDU:
+    """Create a Table HDU."""
 
     # First create a Table which handles the FITS column settings
     # correctly.
     #
     store = []
     colnames = []
-    for col in hdu.data:
+    for col in hdu.columns:
         colnames.append(col.name)
         store.append(col.values)
 
@@ -1611,9 +1196,15 @@ def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
 
     # Add any column metadata
     #
-    for idx, col in enumerate(hdu.data, 1):
+    for idx, col in enumerate(hdu.columns, 1):
         if col.unit is not None:
-            out.header.append((f"TUNIT{idx}", col.unit))
+            out.columns[col.name].unit = col.unit
+
+        if col.minval is not None:
+            out.header.append((f"TLMIN{idx}", col.minval))
+
+        if col.maxval is not None:
+            out.header.append((f"TLMAX{idx}", col.maxval))
 
         if col.desc is None:
             continue
@@ -1624,19 +1215,31 @@ def _create_table_hdu(hdu: TableHDU) -> fits.BinTableHDU:
     return out
 
 
-def set_hdus(filename: str,
-             hdulist: list[TableHDU],
-             clobber: bool = False) -> None:
-    """Write out multiple HDUS to a single file.
-
-    At present we are restricted to tables only.
-    """
-
-    check_clobber(filename, clobber)
+def pack_hdus(blocks: BlockList) -> fits.HDUList:
+    """Create a dataset."""
 
     out = fits.HDUList()
-    out.append(_create_primary_hdu(hdulist[0]))
-    for hdu in hdulist[1:]:
-        out.append(_create_table_hdu(hdu))
+    if blocks.header is not None:
+        out.append(_create_primary_hdu(blocks.header))
 
-    out.writeto(filename, overwrite=True)
+    for block in blocks.blocks:
+        if isinstance(block, TableBlock):
+            hdu = _create_table_hdu(block)
+        elif isinstance(block, ImageBlock):
+            hdu = _create_image_hdu(block)
+        else:
+            raise RuntimeError(f"Unsupported block: {block}")
+
+        out.append(hdu)
+
+    return out
+
+
+def set_hdus(filename: str,
+             blocks: BlockList,
+             clobber: bool = False) -> None:
+    """Write out multiple HDUS to a single file."""
+
+    check_clobber(filename, clobber)
+    hdus = pack_hdus(blocks)
+    hdus.writeto(filename, overwrite=True)
