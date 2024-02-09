@@ -19,12 +19,12 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Linux + Python 3.10
+          - name: Linux + Python 3.11
             os: ubuntu-latest
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v2
+      uses: actions/checkout@v4
       with:
         submodules: 'True'
 
@@ -41,7 +41,7 @@ jobs:
         #
         downloads="ciao xspec-modelsonly ds9"
         channel=https://cxc.cfa.harvard.edu/conda/ciao
-        conda create --yes -n build -c $channel -c conda-forge $downloads $compilers python=3.10
+        conda create --yes -n build -c $channel -c conda-forge $downloads $compilers python=3.11
 
     - name: Build Sherpa
       env:
@@ -84,7 +84,7 @@ jobs:
         sherpa_test --cov sherpa --cov-report xml --test-data=${datadir}/sherpa-test-data/sherpatest
 
     - name: upload coverage
-      uses: codecov/codecov-action@v2
+      uses: codecov/codecov-action@v3
       with:
         # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
         files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
