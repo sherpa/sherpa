@@ -1,0 +1,91 @@
+name: Conda+CIAO CI
+
+on:
+  push:
+    branches:
+    - main
+    tags:
+    - '*'
+  pull_request:
+
+jobs:
+  tests:
+    defaults:
+      run:
+        shell: bash
+
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - name: Linux + Python 3.11
+            os: ubuntu-latest
+
+    steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
+      with:
+        submodules: 'True'
+
+    - name: Conda Setup
+      run: |
+        compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
+
+        source ${CONDA}/etc/profile.d/conda.sh
+        # conda update --yes conda  assume it is up to date
+
+        # We install xspec-modelsonly, not sherpa, so that we don't have to
+        # worry about collision between the CIAO version of Sherpa and this
+        # build.
+        #
+        downloads="ciao pyciao xspec-modelsonly ds9"
+        channel=https://cxc.cfa.harvard.edu/conda/ciao
+        conda create --yes -n build -c $channel -c conda-forge $downloads $compilers python=3.11
+
+    - name: Build Sherpa
+      env:
+        PYTHON_LDFLAGS: " "
+      run: |
+        source ${CONDA}/etc/profile.d/conda.sh
+        conda activate build
+
+        # Tweak the configuration to build against CIAO
+        source scripts/use_ciao_config
+
+        pip install . --verbose
+
+    - name: Activate CIAO configuration
+      run: |
+        cp sherpa/sherpa.rc $HOME/.sherpa-standalone.rc
+
+        source ${CONDA}/etc/profile.d/conda.sh
+        conda activate build
+
+        echo "Sherpa is using the configuration file:"
+        python -c 'import sherpa; print(sherpa.get_config());'
+
+    - name: Smoke Tests
+      run: |
+        source ${CONDA}/etc/profile.d/conda.sh
+        conda activate build
+
+        cd $HOME
+        sherpa_smoke --require-xspec --require-ds9 --fits-module=pycrates
+
+    - name: Tests
+      run: |
+        source ${CONDA}/etc/profile.d/conda.sh
+        conda activate build
+
+        datadir=`pwd`
+        cd $HOME
+        pip install pytest-xvfb pytest-cov
+        sherpa_test --cov sherpa --cov-report xml --test-data=${datadir}/sherpa-test-data/sherpatest
+
+    - name: upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
+        files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
+        verbose: true
