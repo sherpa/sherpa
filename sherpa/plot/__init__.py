@@ -2431,6 +2431,13 @@ class RatioContour(ModelContour):
 
 
 class Confidence1D(DataPlot):
+    """The base class for 1D confidence plots.
+
+    .. versionchanged:: 4.16.1
+       Handling of log-scaled axes has been improved.
+
+    """
+
 
     plot_prefs = basicbackend.get_confid_plot_defaults()
     "The preferences for the plot."
@@ -2495,12 +2502,39 @@ class Confidence1D(DataPlot):
                 delv=None, fac=1, log=False, numcores=None):
         """Set the data to plot.
 
-        This defines the range over which the statistic will
-        be calculated, but does not perform the evaluation.
+        This defines the range over which the statistic will be
+        calculated, but does not perform the evaluation.
+
+        Parameters
+        ----------
+        min, max : number or None, optional
+            The minimum and maximum parameter value to used. If either
+            is not set then the range is calculated using the fac
+            parameter.
+        nloop : int, optional
+            The number of points at which to evaluate the
+            statistic. It must be greater than 1. This is used when
+            delv is set to None.
+        delv : number or None, optional
+            The spacing of the parameter grid. This takes precedence
+            over nloop. It can not be used when log is set to True.
+        fac : number, optional
+            Used when either min or max are not set. The parameter
+            range in this case is taken to be fac times the separation
+            of the covariance limits for the parameter (unless
+            explicitly given).
+        log : bool, optional
+            Should the parameter be evaluated on a
+            logarithmically-spaced grid rather than a linearly-spaced
+            one?
+        numcores : int or None, optional
+            Should the parameter evaluation use multiple CPU cores if
+            available?
 
         See Also
         --------
         calc
+
         """
 
         self.min = min
@@ -2512,6 +2546,21 @@ class Confidence1D(DataPlot):
         self.numcores = numcores
 
     def _interval_init(self, fit, par):
+        """Calculate the grid to use for the parameter.
+
+        Parameters
+        ----------
+        fit : sherpa.fit.Fit instance
+            The current fit.
+        par : sherpa.models.parameter.Parameter instance
+            The parameter to analyze.
+
+        Returns
+        -------
+        x : ndarray
+            The parameter values to use (also set to self.x)
+
+        """
 
         self.stat = fit.calc_stat()
         self.parval = par.val
@@ -2527,15 +2576,15 @@ class Confidence1D(DataPlot):
 
             if self.min is None:
                 self.min = par.min
-                min = r.parmins[index]
-                if min is not None and not numpy.isnan(min):
-                    self.min = par.val + min
+                minval = r.parmins[index]
+                if minval is not None and not numpy.isnan(minval):
+                    self.min = par.val + minval
 
             if self.max is None:
                 self.max = par.max
-                max = r.parmaxes[index]
-                if max is not None and not numpy.isnan(max):
-                    self.max = par.val + max
+                maxval = r.parmaxes[index]
+                if maxval is not None and not numpy.isnan(maxval):
+                    self.max = par.val + maxval
 
             v = (self.max + self.min) / 2.
             dv = numpy.fabs(v - self.min)
@@ -2558,22 +2607,35 @@ class Confidence1D(DataPlot):
             self.max = par.max
 
         if self.delv is None:
-            self.x = numpy.linspace(self.min, self.max, self.nloop)
-        else:
+            minval = self.min
+            maxval = self.max
+        elif self.delv > 0:
             eps = numpy.finfo(numpy.float32).eps
-            self.x = numpy.arange(self.min, self.max + self.delv - eps,
-                                  self.delv)
+            minval = self.min
+            maxval = self.max + self.delv - eps
+        else:
+            raise ConfidenceErr('badarg', 'delv parameter', '> 0')
 
-        x = self.x
         if self.log:
-            if self.max <= 0.0 or self.min <= 0.0:
+            if minval <= 0.0 or maxval <= 0.0:
                 raise ConfidenceErr('badarg', 'Log scale',
                                     'on positive boundaries')
-            self.max = numpy.log10(self.max)
-            self.min = numpy.log10(self.min)
 
-            x = numpy.linspace(self.min, self.max, len(x))
+            minval = numpy.log10(minval)
+            maxval = numpy.log10(maxval)
 
+        if self.delv is None:
+            x = numpy.linspace(minval, maxval, self.nloop)
+        else:
+            # TODO: should we filter out any value > self.maxval
+            # (would have to be done after converting from a log, if set)
+            #
+            x = numpy.arange(minval, maxval, self.delv)
+
+        if self.log:
+            x = 10**x
+
+        self.x = x
         return x
 
     def calc(self, fit, par):
@@ -2876,23 +2938,52 @@ class Confidence2D(DataContour, Point):
 
 
 class IntervalProjectionWorker():
-    def __init__(self, log, par, thawed, fit):
-        self.log = log
+    """Used to evaluate the model by IntervalProjection.
+
+    .. versionchanged:: 4.16.1
+       The calling convention was changed.
+
+    See Also
+    --------
+    IntervalUncertaintyWorker
+
+    """
+
+    def __init__(self, par, fit, otherpars):
         self.par = par
-        self.thawed = thawed
         self.fit = fit
+        self.otherpars = otherpars
 
     def __call__(self, val):
-        if self.log:
-            val = numpy.power(10, val)
         self.par.val = val
-        if len(self.thawed) > 1:
+
+        # It there are other parameters then we need to fit to get the
+        # best-fit statistic.
+        #
+        if self.otherpars:
             r = self.fit.fit()
             return r.statval
+
+        # If this was the only free parameter we can just calculate
+        # the statistic value.
+        #
         return self.fit.calc_stat()
 
 
 class IntervalProjection(Confidence1D):
+    """The Interval-Projection method.
+
+    Evaluate the parameter value on a grid of points, allowing the
+    other thawed parameters to be fit.
+
+    .. versionchanged:: 4.16.1
+       Support for logarithmically-spaced grids has been improved.
+
+    See Also
+    --------
+    IntervalUncertainty
+
+    """
 
     def __init__(self):
         self.fast = True
@@ -2943,6 +3034,10 @@ class IntervalProjection(Confidence1D):
         oldpars = fit.model.thawedpars
         par.freeze()
 
+        # We know that par is thawed, so we can check to see whether a fit
+        # is needed by looking for other parameters.
+        #
+        otherpars = len(oldpars) > 1
         try:
             fit.model.startup(cache)
 
@@ -2953,10 +3048,9 @@ class IntervalProjection(Confidence1D):
             teardown = fit.model.teardown
             fit.model.teardown = return_none
 
-            self.y = numpy.asarray(parallel_map(IntervalProjectionWorker(self.log, par, thawed, fit),
-                                                xvals,
-                                                self.numcores)
-                                   )
+            worker = IntervalProjectionWorker(par, fit, otherpars)
+            res = parallel_map(worker, xvals, self.numcores)
+            self.y = numpy.asarray(res)
 
         finally:
             # Set back data that we changed
@@ -2971,19 +3065,40 @@ class IntervalProjection(Confidence1D):
 
 
 class IntervalUncertaintyWorker():
-    def __init__(self, log, par, fit):
-        self.log = log
+    """Used to evaluate the model by IntervalUncertainty.
+
+    .. versionchanged:: 4.16.1
+       The calling convention was changed.
+
+    See Also
+    --------
+    IntervalProjectionWorker
+
+    """
+
+    def __init__(self, par, fit):
         self.par = par
         self.fit = fit
 
     def __call__(self, val):
-        if self.log:
-            val = numpy.power(10, val)
         self.par.val = val
         return self.fit.calc_stat()
 
 
 class IntervalUncertainty(Confidence1D):
+    """The Interval-Projection method.
+
+    Evaluate the parameter value on a grid of points, where the other
+    thawed parameters are *not* changed from their current values.
+
+    .. versionchanged:: 4.16.1
+       Support for logarithmically-spaced grids has been improved.
+
+    See Also
+    --------
+    IntervalProjection
+
+    """
 
     def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Uncertainty'
@@ -3006,10 +3121,10 @@ class IntervalUncertainty(Confidence1D):
 
         try:
             fit.model.startup(cache)
-            self.y = numpy.asarray(parallel_map(IntervalUncertaintyWorker(self.log, par, fit),
-                                                xvals,
-                                                self.numcores)
-                                   )
+
+            worker = IntervalUncertaintyWorker(par, fit)
+            res = parallel_map(worker, xvals, self.numcores)
+            self.y = numpy.asarray(res)
 
         finally:
             # Set back data that we changed
@@ -3039,9 +3154,7 @@ class RegionProjectionWorker():
 
 
 def return_none(cache=None):
-    """
-    dummy implementation of callback for multiprocessing
-    """
+    """dummy implementation of callback for multiprocessing"""
     return None
 
 

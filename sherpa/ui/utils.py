@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -15605,6 +15605,9 @@ class Session(NoNewAttributesAfterInit):
         are ignored and the results of the last `int_proj` call are
         returned.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
+
         Parameters
         ----------
         par
@@ -15716,6 +15719,9 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `int_unc` call are
         returned.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
 
         Parameters
         ----------
@@ -16081,6 +16087,9 @@ class Session(NoNewAttributesAfterInit):
         after a successful fit, so that the parameter values identify
         the best-fit location.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
+
         Parameters
         ----------
         par
@@ -16199,6 +16208,9 @@ class Session(NoNewAttributesAfterInit):
         the statistic evaluated while holding the other parameters
         fixed. It is expected that this is run after a successful fit,
         so that the parameter values identify the best-fit location.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
 
         Parameters
         ----------

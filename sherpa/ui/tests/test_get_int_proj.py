@@ -233,8 +233,6 @@ def test_get_reg_xxx_limits_positive_when_log(setUp, method, minval, maxval):
                nloop=(3, 3), log=(True, True))
 
 
-# FAIL: this currently fails with ZeroDivisionError.
-@pytest.mark.xfail
 @pytest.mark.parametrize("method", [ui.get_int_unc, ui.get_int_proj])
 def test_get_int_xxx_delv_positive(setUp, method):
     """delv must be positive"""
@@ -512,7 +510,6 @@ def test_get_int_unc(setUp):
     assert result.y == pytest.approx(expected, abs=1.0e-4)
 
 
-@pytest.mark.xfail
 def test_get_int_unc_log(setUp):
     """Use log scaling to check. See issue #1561
 
@@ -536,7 +533,6 @@ def test_get_int_unc_log(setUp):
     assert result.y == pytest.approx(expected, abs=1.0e-4)
 
 
-@pytest.mark.xfail
 def test_get_int_proj_log(setUp):
     """Use log scaling to check. See issue #1561
 
@@ -581,7 +577,6 @@ def test_int_xxx_delv(setUp, method):
     assert result.x == pytest.approx([0.1, 0.4, 0.7, 1])
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("method", [ui.get_int_unc, ui.get_int_proj])
 def test_int_xxx_delv_log(setUp, method):
     """What happens if we set delv and log?"""

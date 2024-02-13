@@ -766,7 +766,6 @@ def test_region_xxx_set_vars(ptype, kwargs, setup_confidence):
                                        35.90482971, 35.85479384], abs=1e-4)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("cls,expected",
                          [(sherpaplot.IntervalProjection,
                            [265.94960651707015, 267.00393711532496, 201.42206132760674, 36.51066189551196]),
