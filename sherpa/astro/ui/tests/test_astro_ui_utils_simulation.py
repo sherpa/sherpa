@@ -31,6 +31,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro import ui
 from sherpa.utils.err import DataErr, IOErr
+from sherpa.utils.testing import requires_fits
 
 
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
@@ -50,6 +51,7 @@ def test_fake_pha_no_rmf(idval, clean_astro_ui):
         ui.fake_pha(idval, arf=None, rmf=None, exposure=1000.0)
 
 
+@requires_fits
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 def test_fake_pha_missing_rmf(idval, clean_astro_ui, tmp_path):
     """Check we error out if RMF is not valid."""
@@ -65,6 +67,7 @@ def test_fake_pha_missing_rmf(idval, clean_astro_ui, tmp_path):
         ui.fake_pha(idval, None, str(rmf), 1000.0)
 
 
+@requires_fits
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 def test_fake_pha_missing_arf(idval, clean_astro_ui, tmp_path):
     """Check we error out if ARF is not valid."""
@@ -125,9 +128,6 @@ def test_fake_pha_exposure_is_none_data_is_none(method, expected, idval, clean_a
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
 
-    # 0.5 keV bin widths mean that source evaluation is half the
-    # c0 value for a const1d model.
-    #
     egrid = np.arange(2, 6) * 0.5
     elo = egrid[:-1]
     ehi = egrid[1:]
@@ -151,8 +151,8 @@ def test_fake_pha_exposure_is_none_data_is_none(method, expected, idval, clean_a
 
 
 @pytest.mark.parametrize("method,expected",
-                         [(None, [9, 12, 18]),
-                          (identity, [12, 12, 12])
+                         [(None, [54, 60, 74]),
+                          (identity, [60, 60, 60])
                           ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 def test_fake_pha_exposure_is_none_data_is_set(method, expected, idval, clean_astro_ui):
@@ -180,13 +180,11 @@ def test_fake_pha_exposure_is_none_data_is_set(method, expected, idval, clean_as
 
     ui.fake_pha(idval, arf=None, rmf=None, exposure=None, method=method)
 
-    # The model evaluation should now be texp * c0 * bin-width
-    # but the exposure time is being over-written so it is
-    # not included.
+    # The model evaluation should now be texp * c0 * bin-width.
     #
     d = ui.get_data(idval)
     assert d.counts == pytest.approx(expected)
-    assert d.exposure is None
+    assert d.exposure == pytest.approx(5)
 
 
 @pytest.mark.parametrize("method,expected",
@@ -257,6 +255,69 @@ def test_fake_pha_basic(method, expected, idval, has_bkg, clean_astro_ui):
 
 
 @pytest.mark.parametrize("method,expected",
+                         [(None, [16, 38, 39]),
+                          (identity, [20, 40, 40])
+                          ])
+@pytest.mark.parametrize("idval", [None, 1, "faked"])
+@pytest.mark.parametrize("has_bkg", [True, False])
+def test_fake_pha_basic_no_args(method, expected, idval, has_bkg, clean_astro_ui):
+    """test_fake_pha_basic but call fake_pha just with idval
+
+    """
+
+    ui.set_rng(np.random.RandomState(9836))
+
+    channels = np.arange(1, 4, dtype=np.int16)
+    counts = np.ones(3, dtype=np.int16)
+    bcounts = 100 * counts
+
+    ui.load_arrays(idval, channels, counts, ui.DataPHA)
+    ui.set_exposure(idval, 100)
+
+    if has_bkg:
+        bkg = ui.DataPHA('bkg', channels, bcounts,
+                         exposure=200, backscal=0.4)
+        ui.set_bkg(idval, bkg, bkg_id='faked-bkg')
+
+    ebins = np.asarray([1.1, 1.2, 1.4, 1.6])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    arf = ui.create_arf(elo, ehi)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    mdl = ui.create_model_component('const1d', 'mdl')
+    mdl.c0 = 2
+    ui.set_source(idval, mdl)
+    ui.set_rmf(idval, rmf)
+    ui.set_arf(idval, arf)
+
+    ui.fake_pha(idval, method=method)
+
+    faked = ui.get_data(idval)
+    assert faked.exposure == pytest.approx(100.0)
+    assert (faked.channel == channels).all()
+
+    assert faked.name == 'faked'
+    assert faked.get_arf().name == 'test-arf'
+    assert faked.get_rmf().name == 'delta-rmf'
+
+    if has_bkg:
+        assert faked.background_ids == ['faked-bkg']
+        bkg = ui.get_bkg(idval, 'faked-bkg')
+        assert bkg.name == 'bkg'
+        assert bkg.counts == pytest.approx(bcounts)
+        assert bkg.exposure == pytest.approx(200)
+
+    else:
+        assert faked.background_ids == []
+
+    # For reference the predicted source signal is
+    #    [200, 400, 400]
+    #
+    assert faked.counts == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("method,expected",
                          [(None, [198, 384, 409]),
                           (identity, [200, 400, 400])
                           ])
@@ -302,7 +363,7 @@ def test_fake_pha_basic_arfrmf_set_in_advance(method, expected, clean_astro_ui):
 
 
 @pytest.mark.parametrize("method,expected",
-                         [(None, [321, 506, 504]),
+                         [(None, [326, 490, 516]),
                           (identity, [325, 525, 525])
                           ])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
@@ -508,7 +569,7 @@ def test_fake_pha_multi_file(make_data_path, clean_astro_ui):
 
 @pytest.mark.parametrize("method,expected",
                          [(None, [42, 137, 53]),
-                          (identity, [50, 151.25, 50])  # TODO: should be [50, 150, 50]
+                          (identity, [50, 150, 50])
                           ])
 def test_fake_pha_background_model(method, expected, clean_astro_ui):
     """Check we can add a background component.
@@ -549,6 +610,9 @@ def test_fake_pha_background_model(method, expected, clean_astro_ui):
     ui.set_source(idval, mdl)
     ui.set_bkg(idval, bkg)
     ui.set_bkg_source(idval, bkgmdl)
+
+    ui.set_arf(idval, arf)
+    ui.set_rmf(idval, rmf)
     ui.set_arf(idval, arf, bkg_id=1)
     ui.set_rmf(idval, rmf, bkg_id=1)
 
@@ -569,14 +633,6 @@ def test_fake_pha_background_model(method, expected, clean_astro_ui):
     #
     # The idea here is that the observed background data should
     # not contribute.
-    #
-    # The current predicted signal is actually
-    #
-    #    [50, 150, 50] + [0, 1.25, 0]
-    #
-    # where the extra term is because the background model has
-    # been evaluated again, this time with no response, to calculate
-    # [0, 1, 0] and then scaled by 100 * (100 / 200) * (0.1 / 0.4).
     #
     assert faked.counts == pytest.approx(expected)
 
@@ -853,8 +909,8 @@ def setup_fake_pha_test():
 
 
 @pytest.mark.parametrize("method,expected",
-                         [(None, [85, 75, 297]),
-                          (identity, [80, 80, 300])
+                         [(None, [85, 75, 0]),
+                          (identity, [80, 80, 0])
                           ])
 def test_fake_pha_without_bgnd(method, expected, clean_astro_ui):
     """Extend test_fake_pha_with_bgnd_model to check with no background"""
@@ -866,8 +922,8 @@ def test_fake_pha_without_bgnd(method, expected, clean_astro_ui):
 
 
 @pytest.mark.parametrize("method,expected",
-                         [(None, [85, 76, 297]),
-                          (identity, [80, 80.3, 300.3])  # TODO: should be [80, 80, 300]
+                         [(None, [85, 75, 297]),
+                          (identity, [80, 80, 300])
                           ])
 def test_fake_pha_with_bgnd_model(method, expected, clean_astro_ui):
     """Add a test found when investigating #1685
@@ -891,8 +947,8 @@ def test_fake_pha_with_bgnd_model(method, expected, clean_astro_ui):
 
 
 @pytest.mark.parametrize("method,expected",
-                         [(None, [90, 89, 1196]),
-                          (identity, [85, 87.5, 1202.5])
+                         [(None, [90, 86, 2]),
+                          (identity, [85, 87.5, 2.5])
                           ])
 def test_fake_pha_with_bgnd_data(method, expected, clean_astro_ui):
     """Extend test_fake_pha_with_bgnd_model to check with a dataset."""
@@ -914,14 +970,16 @@ def test_fake_pha_with_bgnd_data(method, expected, clean_astro_ui):
     # The expected signal should be the sum of the expected model
     # and the scaled background counts. That is
     #
-    #     [80, 80, 1200] +
+    #     [80, 80, 0] +
     #     (100 / 400) * (0.2 / 0.1) * [10, 15, 5]
     #
-    #   = [80, 80, 1200] + 0.5 * [10, 15, 5]
-    #   = [85, 87.5, 1202.5]
+    #   = [80, 80, 0] + 0.5 * [10, 15, 5]
+    #   = [85, 87.5, 2.5]
     #
-    # Note that this includes the background model as well as the
-    # background data.
+    # Note that here the expected model is just the source model,
+    # and does not include the background model component, unlike
+    # get_model_plot, which returns [80, 80, 1200] rather than
+    # [80, 80, 0].
     #
     check_analysis_settings(expected=expected,
                             bexpected=bexpected,
@@ -985,4 +1043,6 @@ def test_fake_pha_subtracted(clean_astro_ui):
 
     ui.fake_pha(1, arf=None, rmf=None, exposure=10)
 
-    assert ui.get_data().subtracted
+    # At present the subtraction flag is not retained.
+    #
+    assert not ui.get_data().subtracted
