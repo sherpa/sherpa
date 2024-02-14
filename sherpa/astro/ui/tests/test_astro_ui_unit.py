@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2017, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -42,7 +42,8 @@ import sherpa.models.basic
 from sherpa.utils import poisson_noise
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, StatErr
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_region, requires_wcs
 
 
 def backend_is(name):
@@ -2290,6 +2291,8 @@ def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui, caplog):
 
 @requires_fits
 @requires_data
+@requires_region
+@requires_wcs
 def test_image_filter_coord_change_same(make_data_path, clean_astro_ui, caplog):
     """What happens to the mask after a coordinate change? NO CHANGE
 
@@ -2335,6 +2338,8 @@ def test_image_filter_coord_change_same(make_data_path, clean_astro_ui, caplog):
 
 @requires_fits
 @requires_data
+@requires_region
+@requires_wcs
 def test_image_filter_coord_change(make_data_path, clean_astro_ui, caplog):
     """What happens to the mask after a coordinate change?
 
@@ -2389,6 +2394,8 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui, caplog):
 
 @requires_fits
 @requires_data
+@requires_region
+@requires_wcs
 def test_image_filter_coord_change_same_negate(make_data_path, clean_astro_ui, caplog):
     """A ignore2d case of test_image_filter_coord_change_same
 
@@ -2429,6 +2436,8 @@ def test_image_filter_coord_change_same_negate(make_data_path, clean_astro_ui, c
 
 @requires_fits
 @requires_data
+@requires_region
+@requires_wcs
 def test_image_filter_coord_change_negate(make_data_path, clean_astro_ui, caplog):
     """negate the filter used in test_image_filter_coord_change
 
@@ -3166,6 +3175,7 @@ def test_set_bkg_not_a_background(clean_astro_ui):
 
 @requires_fits
 @requires_data
+@requires_wcs  # only needed for physical / world
 @pytest.mark.parametrize("incoord,outcoord,x0,x1",
                          [("logical", None, 1, 1),
                           ("image", "logical", 1, 1),

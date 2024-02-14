@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020, 2021, 2022, 2023
+#  Copyright (C) 2017, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -178,6 +178,14 @@ if HAS_PYTEST:
         """Decorator for test functions requiring stk library"""
         return requires_package("stk library required", 'stk')(test_function)
 
+    def requires_region(test_function):
+        """Decorator for test functions requiring 2D region support"""
+        return requires_package("Region required", 'sherpa.astro.utils._region')(test_function)
+
+    def requires_wcs(test_function):
+        """Decorator for test functions requiring WCS support"""
+        return requires_package("WCS required", 'sherpa.astro.utils._wcs')(test_function)
+
     def requires_ds9(test_function):
         """Decorator for test functions requiring ds9"""
         return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
@@ -204,6 +212,10 @@ else:
     requires_group = make_fake()
 
     requires_stk = make_fake()
+
+    requires_region = make_fake()
+
+    requires_wcs = make_fake()
 
     requires_ds9 = make_fake()
 
