@@ -57,8 +57,7 @@ for name in ["pylab", "pylab_area", "bokeh"]:
 config = ConfigParser()
 config.read(get_config())
 
-lgr = logging.getLogger(__name__)
-warning = lgr.warning
+warning = logging.getLogger(__name__).warning
 
 # TODO: why is this module globally changing the invalid mode of NumPy?
 _ = numpy.seterr(invalid='ignore')
@@ -90,7 +89,7 @@ for plottry in plot_opt:
     if plottry in PLOT_BACKENDS:
         backend = PLOT_BACKENDS[plottry]()
         break
-    warning(f"Plotting backend '{plottry}' not found or dependencies missing. Trying next option.")
+    warning("Plotting backend '%s' not found or dependencies missing. Trying next option.", plottry)
 else:
     # None of the options in the rc file work, e.g. because it's an old file
     backend = BasicBackend()
@@ -247,8 +246,8 @@ def _make_title(title, name=''):
 
     if name in [None, '']:
         return title
-    else:
-        return "{} for {}".format(title, name)
+
+    return f"{title} for {name}"
 
 
 def _errorbar_warning(stat):
@@ -267,7 +266,7 @@ def _errorbar_warning(stat):
 
     return "The displayed errorbars have been supplied with the " + \
         "data or calculated using chi2xspecvar; the errors are not " + \
-        "used in fits with {}".format(stat.name)
+        f"used in fits with {stat.name}"
 
 
 def calculate_errors(data, stat, yerrorbars=True):
@@ -327,7 +326,7 @@ def calculate_errors(data, stat, yerrorbars=True):
         # changed).
         #
         if yerrorbars:
-            warning(msg + "\nzeros or negative values found")
+            warning("%s\nzeros or negative values found", msg)
 
         return None
 
@@ -925,16 +924,16 @@ class CDFPlot(Plot):
 
     """
 
-    median_defaults = dict(linestyle='dash', linecolor='orange',
-                           linewidth=1.5)
+    median_defaults = {"linestyle": 'dash', "linecolor": 'orange',
+                       "linewidth": 1.5}
     """The options used to draw the median line."""
 
-    lower_defaults = dict(linestyle='dash', linecolor='blue',
-                          linewidth=1.5)
+    lower_defaults = {"linestyle": 'dash', "linecolor": 'blue',
+                      "linewidth": 1.5}
     """The options used to draw the 15.87% line."""
 
-    upper_defaults = dict(linestyle='dash', linecolor='blue',
-                          linewidth=1.5)
+    upper_defaults = {"linestyle": 'dash', "linecolor": 'blue',
+                      "linewidth": 1.5}
     """The options used to draw the 84.13% line."""
 
     plot_prefs = basicbackend.get_cdf_plot_defaults()
@@ -2365,7 +2364,7 @@ class RatioPlot(ModelPlot):
         bad = numpy.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
-        return (data / model)
+        return data / model
 
     def prepare(self, data, model, stat):
         (self.x, y, self.yerr, self.xerr,
@@ -2413,7 +2412,7 @@ class RatioContour(ModelContour):
         bad = numpy.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
-        return (data / model)
+        return data / model
 
     def prepare(self, data, model, stat):
         (self.x0, self.x1, self.y, self.xlabel,
@@ -2653,7 +2652,7 @@ class Confidence1D(DataPlot):
         plot, prepare
         """
 
-        if type(fit.stat) in (LeastSq,):
+        if isinstance(fit.stat, LeastSq):
             raise ConfidenceErr('badargconf', fit.stat.name)
 
         # Check the parameter
@@ -2778,17 +2777,17 @@ class Confidence2D(DataContour, Point):
 
     def _region_init(self, fit, par0, par1):
 
-        def check2(value, name, opt=True):
+        def check2(value, pname, opt=True):
             """Check value is None (when opt set) or has size of 2"""
 
             if opt and value is None:
                 return None
 
             if numpy.isscalar(value):
-                raise ConfidenceErr('badarg', name, 'a list')
+                raise ConfidenceErr('badarg', pname, 'a list')
 
             if len(value) != 2:
-                raise ConfidenceErr('badarg', name, 'a list of size 2')
+                raise ConfidenceErr('badarg', pname, 'a list of size 2')
 
             # Ensure we return an ndarray
             return numpy.asarray(value)
@@ -2834,16 +2833,13 @@ class Confidence2D(DataContour, Point):
         self.parval1 = par1.val
 
         if self.levels is None:
-            # TODO: should validate the statistic (e.g. not
-            # least-squares)?
             stat = self.stat
             if self.sigma is None or numpy.isscalar(self.sigma):
                 raise ConfidenceErr('needlist', 'sigma bounds')
-            thelevels = numpy.zeros(len(self.sigma), SherpaFloat)
-            for i in range(len(self.sigma)):
-                thelevels[i] = stat - (2. * numpy.log(1. - erf(
-                    self.sigma[i] / numpy.sqrt(2.))))
-            self.levels = thelevels
+
+            sigma = numpy.asarray(self.sigma)
+            lvls = stat - (2. * numpy.log(1. - erf(sigma / numpy.sqrt(2.))))
+            self.levels = numpy.asarray(lvls, dtype=SherpaFloat)
 
         if self.min is None or self.max is None:
             oldestmethod = fit.estmethod
@@ -2958,7 +2954,7 @@ class Confidence2D(DataContour, Point):
         plot, prepare
         """
 
-        if type(fit.stat) in (LeastSq,):
+        if isinstance(fit.stat, LeastSq):
             raise ConfidenceErr('badargconf', fit.stat.name)
 
         # Check the parameter
@@ -3077,22 +3073,23 @@ class IntervalProjection(Confidence1D):
 
         # If current method is not LM or NM, warn it is not a good
         # method for estimating parameter limits.
-        if type(fit.method) not in (NelderMead, LevMar):
-            warning(fit.method.name + " is inappropriate for confidence " +
-                    "limit estimation")
+        #
+        if not isinstance(fit.method, (NelderMead, LevMar)):
+            warning("%s is inappropriate for confidence limit "
+                    "estimation", fit.method.name)
 
         oldfitmethod = fit.method
-        if (bool_cast(self.fast) is True and methoddict is not None):
-            if (isinstance(fit.stat, Likelihood)):
-                if (type(fit.method) is not NelderMead):
+        if bool_cast(self.fast) is True and methoddict is not None:
+            if isinstance(fit.stat, Likelihood):
+                if not isinstance(fit.method, NelderMead):
                     fit.method = methoddict['neldermead']
-                    warning("Setting optimization to " + fit.method.name +
-                            " for interval projection plot")
-            else:
-                if (type(fit.method) is not LevMar):
-                    fit.method = methoddict['levmar']
-                    warning("Setting optimization to " + fit.method.name +
-                            " for interval projection plot")
+                    warning("Setting optimization to %s for interval "
+                            "projection plot", fit.method.name)
+
+            elif not isinstance(fit.method, LevMar):
+                fit.method = methoddict['levmar']
+                warning("Setting optimization to %s for interval "
+                        "projection plot", fit.method.name)
 
         xvals = self._interval_init(fit, par)
         oldpars = fit.model.thawedpars
@@ -3102,14 +3099,18 @@ class IntervalProjection(Confidence1D):
         # is needed by looking for other parameters.
         #
         otherpars = len(oldpars) > 1
+
+        # Store these before we enter the try block as they are used
+        # in the finally block.
+        #
+        startup = fit.model.startup
+        teardown = fit.model.teardown
+
         try:
             fit.model.startup(cache)
 
-            # store the class methods for startup and teardown
             # these calls are unnecessary for every fit
-            startup = fit.model.startup
             fit.model.startup = return_none
-            teardown = fit.model.teardown
             fit.model.teardown = return_none
 
             worker = IntervalProjectionWorker(par, fit, otherpars)
@@ -3270,34 +3271,38 @@ class RegionProjection(Confidence2D):
 
         # If current method is not LM or NM, warn it is not a good
         # method for estimating parameter limits.
-        if type(fit.method) not in (NelderMead, LevMar):
-            warning(fit.method.name + " is inappropriate for confidence " +
-                    "limit estimation")
+        #
+        if not isinstance(fit.method, (NelderMead, LevMar)):
+            warning("%s is inappropriate for confidence limit "
+                    "estimation", fit.method.name)
 
         oldfitmethod = fit.method
-        if (bool_cast(self.fast) is True and methoddict is not None):
-            if (isinstance(fit.stat, Likelihood)):
-                if (type(fit.method) is not NelderMead):
+        if bool_cast(self.fast) is True and methoddict is not None:
+            if isinstance(fit.stat, Likelihood):
+                if not isinstance(fit.method, NelderMead):
                     fit.method = methoddict['neldermead']
-                    warning("Setting optimization to " + fit.method.name +
-                            " for region projection plot")
-            else:
-                if (type(fit.method) is not LevMar):
-                    fit.method = methoddict['levmar']
-                    warning("Setting optimization to " + fit.method.name +
-                            " for region projection plot")
+                    warning("Setting optimization to %s for region "
+                            "projection plot", fit.method.name)
+
+            elif not isinstance(fit.method, LevMar):
+                fit.method = methoddict['levmar']
+                warning("Setting optimization to %s for region "
+                        "projection plot", fit.method.name)
 
         oldpars = fit.model.thawedpars
         otherpars = len(oldpars) > 2
 
+        # Store these before we enter the try block as they are used
+        # in the finally block.
+        #
+        startup = fit.model.startup
+        teardown = fit.model.teardown
+
         try:
             fit.model.startup(cache)
 
-            # store the class methods for startup and teardown
             # these calls are unnecessary for every fit
-            startup = fit.model.startup
             fit.model.startup = return_none
-            teardown = fit.model.teardown
             fit.model.teardown = return_none
 
             grid = self._region_init(fit, par0, par1)
