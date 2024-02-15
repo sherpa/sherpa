@@ -112,14 +112,11 @@ def test_get_reg_xxx_nloop_not_scalar(setUp, method):
                max=(0, -1.5), nloop=1)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
 @pytest.mark.parametrize("val", [[10], (2, 3, 4)])
 def test_get_reg_xxx_nloop_size_2(setUp, method, val):
     """nloop must contain 2 elements"""
 
-    # XFAIL: currently raises an IndexError or does not appear to fail
-    #
     with pytest.raises(ConfidenceErr,
                        match="Nloop parameter must be a list of size 2"):
         method(poly.c0, poly.c1, recalc=True, min=(-20, -3.5),
@@ -185,7 +182,6 @@ def test_get_reg_xxx_limits_not_scalar(setUp, method, minval, maxval):
                nloop=(3, 3))
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
 @pytest.mark.parametrize("minval,maxval",
                          [([-20], (0, -1.5)),
@@ -197,8 +193,6 @@ def test_get_reg_xxx_limits_not_scalar(setUp, method, minval, maxval):
 def test_get_reg_xxx_limits_size_2(setUp, method, minval, maxval):
     """max and min must contain 2 elements each"""
 
-    # XFAIL: currently raises an IndexError or does not appear to fail
-    #
     with pytest.raises(ConfidenceErr,
                        match="Parameter limits must be a list of size 2"):
         method(poly.c0, poly.c1, recalc=True, min=minval, max=maxval,
@@ -242,30 +236,23 @@ def test_get_int_xxx_delv_positive(setUp, method):
         method(poly.c1, recalc=True, min=-5, max=-1, delv=-0.1)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
 @pytest.mark.parametrize("delv", [(-5, 0.5), (5, -0.5), (0, 0.5),
                                   (5, 0), (0, 0)])
 def test_get_reg_xxx_delv_positive(setUp, method, delv):
     """delv must be positive"""
 
-    # XFAIL: this actually fails with one of
-    #        ValueError: Maximum allowed size exceeded
-    #        ZeroDivisionError
     with pytest.raises(ConfidenceErr,
                        match="delv parameter must be a list with elements > 0"):
         method(poly.c0, poly.c1, recalc=True, min=(-20, -3.5),
                max=(0, -1.5), nloop=(5, 5), delv=delv)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
 @pytest.mark.parametrize("delv", [[5], (2, 3, 4)])
 def test_get_reg_xxx_delv_list_2(setUp, method, delv):
     """delv must contain 2 elements"""
 
-    # XFAIL: currently raises an IndexError or does not appear to fail
-    #
     with pytest.raises(ConfidenceErr,
                        match="delv parameter must be a list of size 2"):
         method(poly.c0, poly.c1, recalc=True, min=(-20, -3.5),
@@ -616,7 +603,6 @@ def test_get_reg_unc(setUp):
     assert result.y == pytest.approx(expected, abs=1.0e-4)
 
 
-@pytest.mark.xfail
 def test_get_reg_unc_log(setUp):
     """Use log scaling to check. See issue #1561
 
@@ -649,7 +635,6 @@ def test_get_reg_unc_log(setUp):
     assert result.y == pytest.approx(expected, abs=1.0e-4)
 
 
-@pytest.mark.xfail
 def test_get_reg_proj_log(setUp):
     """Use log scaling to check. See issue #1561
 
@@ -704,7 +689,6 @@ def test_reg_xxx_delv(setUp, method):
     assert result.x1 == pytest.approx([-5] * 4 + [-4.5] * 4 + [-4] * 4)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
 def test_reg_xxx_delv_log(setUp, method):
     """What happens if we set delv and log?"""

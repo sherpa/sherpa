@@ -15831,6 +15831,10 @@ class Session(NoNewAttributesAfterInit):
         are ignored and the results of the last `reg_proj` call are
         returned.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True` for one or both
+           parameters.
+
         Parameters
         ----------
         par0, par1
@@ -15956,6 +15960,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `reg_unc` call are
         returned.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True` for one or both
+           parameters.
 
         Parameters
         ----------

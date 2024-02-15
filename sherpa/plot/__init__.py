@@ -2438,7 +2438,6 @@ class Confidence1D(DataPlot):
 
     """
 
-
     plot_prefs = basicbackend.get_confid_plot_defaults()
     "The preferences for the plot."
 
@@ -2606,12 +2605,11 @@ class Confidence1D(DataPlot):
         if self.max > par.max:
             self.max = par.max
 
+        minval = self.min
         if self.delv is None:
-            minval = self.min
             maxval = self.max
         elif self.delv > 0:
             eps = numpy.finfo(numpy.float32).eps
-            minval = self.min
             maxval = self.max + self.delv - eps
         else:
             raise ConfidenceErr('badarg', 'delv parameter', '> 0')
@@ -2683,6 +2681,12 @@ class Confidence1D(DataPlot):
 
 
 class Confidence2D(DataContour, Point):
+    """The base class for 2D confidence contours.
+
+    .. versionchanged:: 4.16.1
+       Handling of log-scaled axes has been improved.
+
+    """
 
     contour_prefs = basicbackend.get_confid_contour_defaults()
     point_prefs = basicbackend.get_confid_point_defaults()
@@ -2774,10 +2778,26 @@ class Confidence2D(DataContour, Point):
 
     def _region_init(self, fit, par0, par1):
 
-        # Issue #1093 points out that if min or max is a tuple
-        # we can have a problem, as below the code can assign
-        # to an element of one of them. So ensure we have a list
-        # not a tuple.
+        def check2(value, name, opt=True):
+            """Check value is None (when opt set) or has size of 2"""
+
+            if opt and value is None:
+                return None
+
+            if numpy.isscalar(value):
+                raise ConfidenceErr('badarg', name, 'a list')
+
+            if len(value) != 2:
+                raise ConfidenceErr('badarg', name, 'a list of size 2')
+
+            # Ensure we return an ndarray
+            return numpy.asarray(value)
+
+        # Issue #1093 points out that if min or max is a tuple we can
+        # have a problem, as below the code can assign to an element
+        # of one of them. So ensure we have a list not a tuple. The
+        # exact setting of min/max (whether a tuple, list, or ndarray)
+        # makes the following code a bit messy.
         #
         if self.min is not None:
             try:
@@ -2793,6 +2813,20 @@ class Confidence2D(DataContour, Point):
                 raise ConfidenceErr(
                     'badarg', 'Parameter limits', 'a list') from None
 
+        # We ignore the return value for min/max
+        check2(self.min, "Parameter limits")
+        check2(self.max, "Parameter limits")
+        nloop = check2(self.nloop, "Nloop parameter", opt=False)
+        delv = check2(self.delv, "delv parameter")
+
+        if numpy.any(nloop <= 1):
+            raise ConfidenceErr('badarg', 'Nloop parameter',
+                                'a list with elements > 1')
+
+        if delv is not None and numpy.any(delv <= 0):
+            raise ConfidenceErr('badarg', 'delv parameter',
+                                'a list with elements > 0')
+
         self.stat = fit.calc_stat()
         self.xlabel = par0.fullname
         self.ylabel = par1.fullname
@@ -2800,6 +2834,8 @@ class Confidence2D(DataContour, Point):
         self.parval1 = par1.val
 
         if self.levels is None:
+            # TODO: should validate the statistic (e.g. not
+            # least-squares)?
             stat = self.stat
             if self.sigma is None or numpy.isscalar(self.sigma):
                 raise ConfidenceErr('needlist', 'sigma bounds')
@@ -2841,63 +2877,67 @@ class Confidence2D(DataContour, Point):
                 if max1 is not None and not numpy.isnan(max1):
                     self.max[1] = par1.val + max1
 
-            for i in [0, 1]:
-                v = (self.max[i] + self.min[i]) / 2.
-                dv = numpy.fabs(v - self.min[i])
-                self.min[i] = v - self.fac * dv
-                self.max[i] = v + self.fac * dv
+            # This works for vectors
+            v = (self.max + self.min) / 2.
+            dv = numpy.fabs(v - self.min)
+            self.min = v - self.fac * dv
+            self.max = v + self.fac * dv
 
         hmin = numpy.array([par0.min, par1.min])
         hmax = numpy.array([par0.max, par1.max])
 
         for i in [0, 1]:
             # check user limits for errors
-            if numpy.isscalar(self.min) or numpy.isscalar(self.max):
-                raise ConfidenceErr('badarg', 'Parameter limits', 'a list')
-
             if self.min[i] >= self.max[i]:
                 raise ConfidenceErr('badlimits')
-
-            if numpy.isscalar(self.nloop) or self.nloop[i] <= 1:
-                raise ConfidenceErr('badarg', 'Nloop parameter',
-                                    'a list with elements > 1')
 
             if self.min[i] < hmin[i]:
                 self.min[i] = hmin[i]
             if self.max[i] > hmax[i]:
                 self.max[i] = hmax[i]
 
-        if self.delv is None:
-            self.x0 = numpy.linspace(self.min[0], self.max[0], self.nloop[0])
-            self.x1 = numpy.linspace(self.min[1], self.max[1], self.nloop[1])
-
+        minval = self.min
+        if delv is None:
+            maxval = self.max
         else:
             eps = numpy.finfo(numpy.float32).eps
-            self.x0 = numpy.arange(self.min[0],
-                                   self.max[0] + self.delv[0] - eps,
-                                   self.delv[0])
-            self.x1 = numpy.arange(self.min[1],
-                                   self.max[1] + self.delv[1] - eps,
-                                   self.delv[1])
+            maxval = self.max + delv - eps
 
-        # x = numpy.array([self.x0, self.x1])
-        x = [self.x0, self.x1]
+        # as we may mutate minval/maxval we want to use a copy.
+        #
+        minval = numpy.copy(minval)
+        maxval = numpy.copy(maxval)
 
-        self.x0, self.x1 = numpy.meshgrid(self.x0, self.x1)
-        self.x0 = self.x0.ravel()
-        self.x1 = self.x1.ravel()
-
-        for i in [0, 1]:
-            if self.log[i]:
-                if self.max[i] <= 0.0 or self.min[i] <= 0.0:
+        for idx in [0, 1]:
+            if self.log[idx]:
+                if minval[idx] <= 0.0 or maxval[idx] <= 0.0:
                     raise ConfidenceErr('badarg', 'Log scale',
                                         'on positive boundaries')
-                self.max[i] = numpy.log10(self.max[i])
-                self.min[i] = numpy.log10(self.min[i])
-                x[i] = numpy.linspace(self.min[i], self.max[i], len(x[i]))
 
-        x0, x1 = numpy.meshgrid(x[0], x[1])
-        return numpy.array([x0.ravel(), x1.ravel()]).T
+                minval[idx] = numpy.log10(minval[idx])
+                maxval[idx] = numpy.log10(maxval[idx])
+
+        if delv is None:
+            x0 = numpy.linspace(minval[0], maxval[0], nloop[0])
+            x1 = numpy.linspace(minval[1], maxval[1], nloop[1])
+        else:
+            # TODO: should we filter out any value > self.maxval
+            # (would have to be done after converting from a log, if set)
+            #
+            x0 = numpy.arange(minval[0], maxval[0], delv[0])
+            x1 = numpy.arange(minval[1], maxval[1], delv[1])
+
+        if self.log[0]:
+            x0 = 10**x0
+
+        if self.log[1]:
+            x1 = 10**x1
+
+        x0g, x1g = numpy.meshgrid(x0, x1)
+        self.x0 = x0g.ravel()
+        self.x1 = x1g.ravel()
+
+        return numpy.array([self.x0, self.x1]).T
 
     def calc(self, fit, par0, par1):
         if type(fit.stat) in (LeastSq,):
@@ -3135,21 +3175,36 @@ class IntervalUncertainty(Confidence1D):
 
 
 class RegionProjectionWorker():
-    def __init__(self, log, par0, par1, thawed, fit):
-        self.log = log
+    """Used to evaluate the model by RegionProjection.
+
+    .. versionchanged:: 4.16.1
+       The calling convention was changed.
+
+    See Also
+    --------
+    RegionUncertaintyWorker
+
+    """
+
+    def __init__(self, par0, par1, fit, otherpars):
         self.par0 = par0
         self.par1 = par1
-        self.thawed = thawed
         self.fit = fit
+        self.otherpars = otherpars
 
     def __call__(self, pars):
-        for ii in [0, 1]:
-            if self.log[ii]:
-                pars[ii] = numpy.power(10, pars[ii])
         (self.par0.val, self.par1.val) = pars
-        if len(self.thawed) > 2:
+
+        # It there are other parameters then we need to fit to get the
+        # best-fit statistic.
+        #
+        if self.otherpars:
             r = self.fit.fit()
             return r.statval
+
+        # If these were the only two free parameters we can just
+        # calculate the statistic value.
+        #
         return self.fit.calc_stat()
 
 
@@ -3159,6 +3214,19 @@ def return_none(cache=None):
 
 
 class RegionProjection(Confidence2D):
+    """The Region-Projection method.
+
+    Evaluate the statistic on a grid of points for two parameters,
+    where the other thawed parameters are fit for each location.
+
+    .. versionchanged:: 4.16.1
+       Support for logarithmically-spaced grids has been improved.
+
+    See Also
+    --------
+    RegionUncertainty
+
+    """
 
     def __init__(self):
         self.fast = True
@@ -3182,6 +3250,9 @@ class RegionProjection(Confidence2D):
 
         thawed = [i for i in fit.model.pars if not i.frozen]
 
+        # Technically we have already checked this, but we could have
+        # given par0 or par1 that is not a member of the fit model.
+        #
         if par0 not in thawed:
             raise ConfidenceErr('thawed', par0.fullname, fit.model.name)
         if par1 not in thawed:
@@ -3211,6 +3282,7 @@ class RegionProjection(Confidence2D):
                             " for region projection plot")
 
         oldpars = fit.model.thawedpars
+        otherpars = len(oldpars) > 2
 
         try:
             fit.model.startup(cache)
@@ -3227,10 +3299,9 @@ class RegionProjection(Confidence2D):
             par0.freeze()
             par1.freeze()
 
-            self.y = numpy.asarray(parallel_map(RegionProjectionWorker(self.log, par0, par1, thawed, fit),
-                                                grid,
-                                                self.numcores)
-                                   )
+            worker = RegionProjectionWorker(par0, par1, fit, otherpars)
+            results = parallel_map(worker, grid, self.numcores)
+            self.y = numpy.asarray(results)
 
         finally:
             # Set back data after we changed it
@@ -3246,21 +3317,42 @@ class RegionProjection(Confidence2D):
 
 
 class RegionUncertaintyWorker():
-    def __init__(self, log, par0, par1, fit):
-        self.log = log
+    """Used to evaluate the model by RegionUncertainty.
+
+    .. versionchanged:: 4.16.1
+       The calling convention was changed.
+
+    See Also
+    --------
+    RegionProjectionWorker
+
+    """
+
+    def __init__(self, par0, par1, fit):
         self.par0 = par0
         self.par1 = par1
         self.fit = fit
 
     def __call__(self, pars):
-        for ii in [0, 1]:
-            if self.log[ii]:
-                pars[ii] = numpy.power(10, pars[ii])
         (self.par0.val, self.par1.val) = pars
         return self.fit.calc_stat()
 
 
 class RegionUncertainty(Confidence2D):
+    """The Region-Projection method.
+
+    Evaluate the statistic on a grid of points for two parameters,
+    where the other thawed parameters are *not* changed from their
+    current values.
+
+    .. versionchanged:: 4.16.1
+       Support for logarithmically-spaced grids has been improved.
+
+    See Also
+    --------
+    RegionProjection
+
+    """
 
     def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Uncertainty'
@@ -3273,6 +3365,9 @@ class RegionUncertainty(Confidence2D):
 
         thawed = [i for i in fit.model.pars if not i.frozen]
 
+        # Technically we have already checked this, but we could have
+        # given par0 or par1 that is not a member of the fit model.
+        #
         if par0 not in thawed:
             raise ConfidenceErr('thawed', par0.fullname, fit.model.name)
         if par1 not in thawed:
@@ -3288,10 +3383,9 @@ class RegionUncertainty(Confidence2D):
             for i in thawed:
                 i.freeze()
 
-            self.y = numpy.asarray(parallel_map(RegionUncertaintyWorker(self.log, par0, par1, fit),
-                                                grid,
-                                                self.numcores)
-                                   )
+            worker = RegionUncertaintyWorker(par0, par1, fit)
+            result = parallel_map(worker, grid, self.numcores)
+            self.y = numpy.asarray(result)
 
         finally:
             # Set back data after we changed it
