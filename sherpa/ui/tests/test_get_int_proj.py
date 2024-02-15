@@ -370,14 +370,15 @@ def test_get_int_xxx_no_recalc(setUp, method, check_str):
     assert not res.log
 
     check_str(str(res),
-              ["x     = None",
-               "y     = None",
-               "min   = None",
-               "max   = None",
-               "nloop = 20",
-               "delv  = None",
-               "fac   = 1",
-               "log   = False"
+              ["x      = None",
+               "y      = None",
+               "min    = None",
+               "max    = None",
+               "nloop  = 20",
+               "delv   = None",
+               "fac    = 1",
+               "log    = False",
+               "parval = None"
                ])
 
 
@@ -430,14 +431,15 @@ def test_get_int_xxx_show(setUp, method, expected, check_str):
 
     res = method(poly.c1, min=-2, max=-1, nloop=3, recalc=True)
     check_str(str(res),
-              ["x     = [-2. ,-1.5,-1. ]",
-               f"y     = {expected}  # doctest: +FLOAT_CMP",
-               "min   = -2",
-               "max   = -1",
-               "nloop = 3",
-               "delv  = None",
-               "fac   = 1",
-               "log   = False"
+              ["x      = [-2. ,-1.5,-1. ]",
+               f"y      = {expected}  # doctest: +FLOAT_CMP",
+               "min    = -2",
+               "max    = -1",
+               "nloop  = 3",
+               "delv   = None",
+               "fac    = 1",
+               "log    = False",
+               "parval = -2.4169154937340127  # doctest: +FLOAT_CMP"
                ])
 
 

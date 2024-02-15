@@ -2434,7 +2434,8 @@ class Confidence1D(DataPlot):
     """The base class for 1D confidence plots.
 
     .. versionchanged:: 4.16.1
-       Handling of log-scaled axes has been improved.
+       Handling of log-scaled axes has been improved and the string
+       output now includes the parameter value (if available).
 
     """
 
@@ -2476,22 +2477,15 @@ class Confidence1D(DataPlot):
             y = numpy.array2string(self.y, separator=',', precision=4,
                                    suppress_small=False)
 
-        return (('x     = %s\n' +
-                 'y     = %s\n' +
-                 'min   = %s\n' +
-                 'max   = %s\n' +
-                 'nloop = %s\n' +
-                 'delv  = %s\n' +
-                 'fac   = %s\n' +
-                 'log   = %s') %
-                (x,
-                 y,
-                 self.min,
-                 self.max,
-                 self.nloop,
-                 self.delv,
-                 self.fac,
-                 self.log))
+        return (f'x      = {x}\n' +
+                f'y      = {y}\n' +
+                f'min    = {self.min}\n' +
+                f'max    = {self.max}\n' +
+                f'nloop  = {self.nloop}\n' +
+                f'delv   = {self.delv}\n' +
+                f'fac    = {self.fac}\n' +
+                f'log    = {self.log}\n' +
+                f'parval = {self.parval}')
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the confidence 1D plot."""
@@ -2730,32 +2724,19 @@ class Confidence2D(DataContour, Point):
             y = numpy.array2string(self.y, separator=',', precision=4,
                                    suppress_small=False)
 
-        return (('x0      = %s\n' +
-                 'x1      = %s\n' +
-                 'y       = %s\n' +
-                 'min     = %s\n' +
-                 'max     = %s\n' +
-                 'nloop   = %s\n' +
-                 'fac     = %s\n' +
-                 'delv    = %s\n' +
-                 'log     = %s\n' +
-                 'sigma   = %s\n' +
-                 'parval0 = %s\n' +
-                 'parval1 = %s\n' +
-                 'levels  = %s') %
-                (x0,
-                 x1,
-                 y,
-                 self.min,
-                 self.max,
-                 self.nloop,
-                 self.fac,
-                 self.delv,
-                 self.log,
-                 self.sigma,
-                 self.parval0,
-                 self.parval1,
-                 self.levels))
+        return (f'x0      = {x0}\n' +
+                f'x1      = {x1}\n' +
+                f'y       = {y}\n' +
+                f'min     = {self.min}\n' +
+                f'max     = {self.max}\n' +
+                f'nloop   = {self.nloop}\n' +
+                f'fac     = {self.fac}\n' +
+                f'delv    = {self.delv}\n' +
+                f'log     = {self.log}\n' +
+                f'sigma   = {self.sigma}\n' +
+                f'parval0 = {self.parval0}\n' +
+                f'parval1 = {self.parval1}\n' +
+                f'levels  = {self.levels}')
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the confidence 2D plot."""
@@ -3017,7 +2998,8 @@ class IntervalProjection(Confidence1D):
     other thawed parameters to be fit.
 
     .. versionchanged:: 4.16.1
-       Support for logarithmically-spaced grids has been improved.
+       Handling of log-scaled axes has been improved and the string
+       output now includes the parameter value (if available).
 
     See Also
     --------
@@ -3132,7 +3114,8 @@ class IntervalUncertainty(Confidence1D):
     thawed parameters are *not* changed from their current values.
 
     .. versionchanged:: 4.16.1
-       Support for logarithmically-spaced grids has been improved.
+       Handling of log-scaled axes has been improved and the string
+       output now includes the parameter value (if available).
 
     See Also
     --------
