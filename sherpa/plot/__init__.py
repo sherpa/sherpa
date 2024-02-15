@@ -2442,6 +2442,10 @@ class Confidence1D(DataPlot):
     plot_prefs = basicbackend.get_confid_plot_defaults()
     "The preferences for the plot."
 
+    # This is only used for an error message
+    conf_type = "unknown"
+    "The type of confidence analysis."
+
     def __init__(self):
         self.min = None
         self.max = None
@@ -2652,6 +2656,17 @@ class Confidence1D(DataPlot):
         if type(fit.stat) in (LeastSq,):
             raise ConfidenceErr('badargconf', fit.stat.name)
 
+        # Check the parameter
+        #  - is thawed
+        #  - is part of the model expression
+        #
+        if par.frozen:
+            raise ConfidenceErr('frozen', par.fullname,
+                                f'interval {self.conf_type}')
+
+        if par not in fit.model.pars:
+            raise ConfidenceErr('thawed', par.fullname, fit.model.name)
+
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         if self.log:
             self.plot_prefs['xlog'] = True
@@ -2684,6 +2699,10 @@ class Confidence2D(DataContour, Point):
 
     contour_prefs = basicbackend.get_confid_contour_defaults()
     point_prefs = basicbackend.get_confid_point_defaults()
+
+    # This is only used for an error message
+    conf_type = "unknown"
+    "The type of confidence analysis."
 
     def __init__(self):
         self.min = None
@@ -2921,8 +2940,38 @@ class Confidence2D(DataContour, Point):
         return numpy.array([self.x0, self.x1]).T
 
     def calc(self, fit, par0, par1):
+        """Evaluate the statistic for the parameter range.
+
+        This requires prepare to have been called, and must be
+        called before plot is called.
+
+        Parameters
+        ----------
+        fit
+            The Sherpa fit instance to use (defines the statistic
+            and optimiser to use).
+        par0, par1
+            The parameters to iterate over.
+
+        See Also
+        --------
+        plot, prepare
+        """
+
         if type(fit.stat) in (LeastSq,):
             raise ConfidenceErr('badargconf', fit.stat.name)
+
+        # Check the parameter
+        #  - is thawed
+        #  - is part of the model expression
+        #
+        for par in [par0, par1]:
+            if par.frozen:
+                raise ConfidenceErr('frozen', par.fullname,
+                                    f'region {self.conf_type}')
+
+            if par not in fit.model.pars:
+                raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
     # TODO: should this be overcontour rather than overplot?
     def contour(self, overplot=False, clearwindow=True, **kwargs):
@@ -3007,6 +3056,8 @@ class IntervalProjection(Confidence1D):
 
     """
 
+    conf_type = "projection"
+
     def __init__(self):
         self.fast = True
         Confidence1D.__init__(self)
@@ -3018,16 +3069,7 @@ class IntervalProjection(Confidence1D):
 
     def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Projection'
-
         Confidence1D.calc(self, fit, par)
-
-        if par.frozen:
-            raise ConfidenceErr('frozen', par.fullname, 'interval projection')
-
-        thawed = [i for i in fit.model.pars if not i.frozen]
-
-        if par not in thawed:
-            raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
         # If "fast" option enabled, set fitting method to
         # lmdif if stat is chi-squared,
@@ -3123,24 +3165,17 @@ class IntervalUncertainty(Confidence1D):
 
     """
 
+    conf_type = "uncertainty"
+
     def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Uncertainty'
-
         Confidence1D.calc(self, fit, par)
-        if par.frozen:
-            raise ConfidenceErr('frozen', par.fullname, 'interval uncertainty')
 
-        thawed = [i for i in fit.model.pars if not i.frozen]
-
-        if par not in thawed:
-            raise ConfidenceErr('thawed', par.fullname, fit.model.name)
-
+        thawed = [p for p in fit.model.pars if not p.frozen]
         oldpars = fit.model.thawedpars
-
         xvals = self._interval_init(fit, par)
-
-        for i in thawed:
-            i.freeze()
+        for p in thawed:
+            p.freeze()
 
         try:
             fit.model.startup(cache)
@@ -3151,8 +3186,9 @@ class IntervalUncertainty(Confidence1D):
 
         finally:
             # Set back data that we changed
-            for i in thawed:
-                i.thaw()
+            for p in thawed:
+                p.thaw()
+
             fit.model.teardown()
             fit.model.thawedpars = oldpars
 
@@ -3211,6 +3247,8 @@ class RegionProjection(Confidence2D):
 
     """
 
+    conf_type = "projection"
+
     def __init__(self):
         self.fast = True
         Confidence2D.__init__(self)
@@ -3224,22 +3262,7 @@ class RegionProjection(Confidence2D):
 
     def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Projection'
-
         Confidence2D.calc(self, fit, par0, par1)
-        if par0.frozen:
-            raise ConfidenceErr('frozen', par0.fullname, 'region projection')
-        if par1.frozen:
-            raise ConfidenceErr('frozen', par1.fullname, 'region projection')
-
-        thawed = [i for i in fit.model.pars if not i.frozen]
-
-        # Technically we have already checked this, but we could have
-        # given par0 or par1 that is not a member of the fit model.
-        #
-        if par0 not in thawed:
-            raise ConfidenceErr('thawed', par0.fullname, fit.model.name)
-        if par1 not in thawed:
-            raise ConfidenceErr('thawed', par1.fullname, fit.model.name)
 
         # If "fast" option enabled, set fitting method to
         # lmdif if stat is chi-squared,
@@ -3337,25 +3360,13 @@ class RegionUncertainty(Confidence2D):
 
     """
 
+    conf_type = "uncertainty"
+
     def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Uncertainty'
-
         Confidence2D.calc(self, fit, par0, par1)
-        if par0.frozen:
-            raise ConfidenceErr('frozen', par0.fullname, 'region uncertainty')
-        if par1.frozen:
-            raise ConfidenceErr('frozen', par1.fullname, 'region uncertainty')
 
         thawed = [i for i in fit.model.pars if not i.frozen]
-
-        # Technically we have already checked this, but we could have
-        # given par0 or par1 that is not a member of the fit model.
-        #
-        if par0 not in thawed:
-            raise ConfidenceErr('thawed', par0.fullname, fit.model.name)
-        if par1 not in thawed:
-            raise ConfidenceErr('thawed', par1.fullname, fit.model.name)
-
         oldpars = fit.model.thawedpars
 
         try:
@@ -3363,8 +3374,8 @@ class RegionUncertainty(Confidence2D):
 
             grid = self._region_init(fit, par0, par1)
 
-            for i in thawed:
-                i.freeze()
+            for p in thawed:
+                p.freeze()
 
             worker = RegionUncertaintyWorker(par0, par1, fit)
             result = parallel_map(worker, grid, self.numcores)
@@ -3372,7 +3383,8 @@ class RegionUncertainty(Confidence2D):
 
         finally:
             # Set back data after we changed it
-            for i in thawed:
-                i.thaw()
+            for p in thawed:
+                p.thaw()
+
             fit.model.teardown()
             fit.model.thawedpars = oldpars
