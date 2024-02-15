@@ -328,6 +328,33 @@ def test_get_reg_xxx_not_thawed(setUp, method, name1, name2):
         method(par1, par2, recalc=True)
 
 
+@pytest.mark.parametrize("method", [ui.get_int_unc, ui.get_int_proj])
+def test_get_int_xxx_must_be_fitted_parameter(setUp, method):
+    """We must use a parameter that is part of the fitted model"""
+
+    const = ui.create_model_component("const1d", "other")
+    with pytest.raises(ConfidenceErr,
+                       match="Thawed parameter other.c0 not found in polynom1d.poly"):
+        method(const.c0, recalc=True, min=1, max=3, nloop=10)
+
+
+@pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
+def test_get_reg_xxx_must_be_fitted_parameter(setUp, method):
+    """We must use a parameter that is part of the fitted model"""
+
+    const = ui.create_model_component("const1d", "other")
+
+    # Could break into two tests but not worth it.
+    #
+    with pytest.raises(ConfidenceErr,
+                       match="Thawed parameter other.c0 not found in polynom1d.poly"):
+        method(const.c0, poly.c2, recalc=True)
+
+    with pytest.raises(ConfidenceErr,
+                       match="Thawed parameter other.c0 not found in polynom1d.poly"):
+        method(poly.c2, const.c0, recalc=True)
+
+
 @pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
 def test_get_reg_xxx_need_two_params(setUp, method):
     """we need to provide two parameters"""
