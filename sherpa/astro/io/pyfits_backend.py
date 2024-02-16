@@ -1508,7 +1508,6 @@ class Backend(BaseBackend):
 
         def arraycol(name):
             vals = matrix_data[name]
-            if name == "MATRIX": print(vals)
             formatval = get_full_format(name, vals)
             return fits.Column(name=name, format=formatval, array=vals)
 

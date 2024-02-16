@@ -111,7 +111,7 @@ class BaseBackend(metaclass=ABCMeta):
             otherwise the backend selects. The default is `None`.
             Names are compared using a case insensitive match.
         make_copy: bool, optional
-            If set then the returned NumPy arrays are expictly copied,
+            If set then the returned NumPy arrays are explicitly copied,
             rather than using a reference from the data structure
             created by the backend. Backends are not required to
             honor this setting. The default is `True`.
@@ -195,7 +195,7 @@ class BaseBackend(metaclass=ABCMeta):
             backend but is expected to be a file name or a data structure
             supported by the backend.
         make_copy: bool, optional
-            If set then the returned NumPy arrays are expictly copied,
+            If set then the returned NumPy arrays are explicitly copied,
             rather than using a reference from the data structure
             created by the backend. Backends are not required to
             honor this setting. The default is `True`.
@@ -318,7 +318,7 @@ class BaseBackend(metaclass=ABCMeta):
             is expected to be a file name or a data structure supported by
             the backend.
         make_copy: bool, optional
-            If set then the returned NumPy arrays are expictly copied,
+            If set then the returned NumPy arrays are explicitly copied,
             rather than using a reference from the data structure
             created by the backend. Backends are not required to
             honor this setting. The default is `True`.
@@ -350,7 +350,7 @@ class BaseBackend(metaclass=ABCMeta):
             is expected to be a file name or a data structure supported by
             the backend.
         make_copy: bool, optional
-            If set then the returned NumPy arrays are expictly copied,
+            If set then the returned NumPy arrays are explicitly copied,
             rather than using a reference from the data structure
             created by the backend. Backends are not required to
             honor this setting. The default is `True`.
@@ -383,7 +383,7 @@ class BaseBackend(metaclass=ABCMeta):
             is expected to be a file name or a data structure supported by
             the backend.
         make_copy: bool, optional
-            If set then the returned NumPy arrays are expictly copied,
+            If set then the returned NumPy arrays are explicitly copied,
             rather than using a reference from the data structure
             created by the backend. Backends are not required to
             honor this setting. The default is `True`.
@@ -721,7 +721,7 @@ class BaseBackend(metaclass=ABCMeta):
             backend but is expected to be a file name or a tabular
             data structure supported by the backend.
         make_copy: bool, optional
-            If set then the returned NumPy arrays are expictly copied,
+            If set then the returned NumPy arrays are explicitly copied,
             rather than using a reference from the data structure
             created by the backend. Backends are not required to
             honor this setting. The default is `True`.
