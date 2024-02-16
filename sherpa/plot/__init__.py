@@ -2469,8 +2469,10 @@ def calc_par_range(minval: float,
     """
 
     if delv is not None:
+        # This assumes that delv > eps, but this should be safe.
+        #
         eps = numpy.finfo(numpy.float32).eps
-        maxval = maxval + delv - eps
+        maxval = maxval + eps
 
     if log:
         if minval <= 0.0 or maxval <= 0.0:
@@ -2483,9 +2485,6 @@ def calc_par_range(minval: float,
     if delv is None:
         x = numpy.linspace(minval, maxval, nloop)
     else:
-        # TODO: should we filter out any value > self.maxval
-        # (would have to be done after converting from a log, if set)
-        #
         x = numpy.arange(minval, maxval, delv)
 
     if log:

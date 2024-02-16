@@ -560,10 +560,18 @@ def test_int_xxx_fac(setUp, method, fac):
 
 @pytest.mark.parametrize("method", [ui.get_int_unc, ui.get_int_proj])
 def test_int_xxx_delv(setUp, method):
-    """What happens if we set delv"""
+    """What happens if we set delv (max not included)"""
 
     result = method(poly.c2, recalc=True, min=0.1, max=0.9, delv=0.3)
-    assert result.x == pytest.approx([0.1, 0.4, 0.7, 1])
+    assert result.x == pytest.approx([0.1, 0.4, 0.7])
+
+
+@pytest.mark.parametrize("method", [ui.get_int_unc, ui.get_int_proj])
+def test_int_xxx_delv_exact(setUp, method):
+    """What happens if we set delv (max is included)"""
+
+    result = method(poly.c2, recalc=True, min=0.1, max=0.9, delv=0.2)
+    assert result.x == pytest.approx([0.1, 0.3, 0.5, 0.7, 0.9])
 
 
 @pytest.mark.parametrize("method", [ui.get_int_unc, ui.get_int_proj])
@@ -682,13 +690,24 @@ def test_reg_xxx_fac(setUp, method, fac):
 
 @pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
 def test_reg_xxx_delv(setUp, method):
-    """What happens if we set delv"""
+    """What happens if we set delv (max not included)"""
+
+    result = method(poly.c2, poly.c0, recalc=True,
+                    min=(0.1, -5), max=(0.9, -4), delv=(0.3, 0.4))
+
+    assert result.x0 == pytest.approx([0.1, 0.4, 0.7] * 3)
+    assert result.x1 == pytest.approx([-5] * 3 + [-4.6] * 3 + [-4.2] * 3)
+
+
+@pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
+def test_reg_xxx_delv_exact(setUp, method):
+    """What happens if we set delv (max is included, at least for one)"""
 
     result = method(poly.c2, poly.c0, recalc=True,
                     min=(0.1, -5), max=(0.9, -4), delv=(0.3, 0.5))
 
-    assert result.x0 == pytest.approx([0.1, 0.4, 0.7, 1] * 3)
-    assert result.x1 == pytest.approx([-5] * 4 + [-4.5] * 4 + [-4] * 4)
+    assert result.x0 == pytest.approx([0.1, 0.4, 0.7] * 3)
+    assert result.x1 == pytest.approx([-5] * 3 + [-4.5] * 3 + [-4] * 3)
 
 
 @pytest.mark.parametrize("method", [ui.get_reg_unc, ui.get_reg_proj])
