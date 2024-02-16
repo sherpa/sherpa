@@ -26,10 +26,12 @@ Sherpa configuration file. Note that plot objects can be created
 and used even when only the `sherpa.plot.backends.BasicBackend` is
 available.
 """
+
 from configparser import ConfigParser
 import contextlib
 import logging
 import importlib
+from typing import Optional
 
 import numpy
 
@@ -82,8 +84,8 @@ where xxx is some backend.
 # backend-independent (i.e. those that works for any backend) defaults set.
 
 
-plot_opt = config.get('options', 'plot_pkg', fallback='BasicBackend')
-plot_opt = [o.strip() for o in plot_opt.split()]
+plot_opt_str = config.get('options', 'plot_pkg', fallback='BasicBackend')
+plot_opt = [o.strip() for o in plot_opt_str.split()]
 
 for plottry in plot_opt:
     if plottry in PLOT_BACKENDS:
@@ -2429,6 +2431,69 @@ class RatioContour(ModelContour):
                         **kwargs)
 
 
+def calc_par_range(minval: float,
+                   maxval: float,
+                   nloop: int,
+                   delv: Optional[float] = None,
+                   log: Optional[bool] = False) -> numpy.ndarray:
+    """Calculate the parameter range to use.
+
+    This assumes that the arguments have already been checked for
+    validity.
+
+    Parameters
+    ----------
+    minval, maxval : number
+       The requested parameter range, with maxval > minval.
+    nloop : int
+       The number of values to create. This is not used if delv is
+       set.
+    delv : float or None, optional
+       If set this is the spacing to use (and over-rides the nloop
+       parameter). It must be positive and, when `log` is set, the
+       spacing is 10**delv.
+    log : bool, optional
+       Should the spacing be linear or logarithmic?
+
+    Returns
+    -------
+    pars : ndarray
+       The parameter values.
+
+    Raises
+    ------
+    ConfidenceErr
+       If either minval or maxval are not positive definite when the
+       `log` option is set.
+
+    """
+
+    if delv is not None:
+        eps = numpy.finfo(numpy.float32).eps
+        maxval = maxval + delv - eps
+
+    if log:
+        if minval <= 0.0 or maxval <= 0.0:
+            raise ConfidenceErr('badarg', 'Log scale',
+                                'on positive boundaries')
+
+        minval = numpy.log10(minval)
+        maxval = numpy.log10(maxval)
+
+    if delv is None:
+        x = numpy.linspace(minval, maxval, nloop)
+    else:
+        # TODO: should we filter out any value > self.maxval
+        # (would have to be done after converting from a log, if set)
+        #
+        x = numpy.arange(minval, maxval, delv)
+
+    if log:
+        x = 10**x
+
+    return x
+
+
 class Confidence1D(DataPlot):
     """The base class for 1D confidence plots.
 
@@ -2558,6 +2623,20 @@ class Confidence1D(DataPlot):
 
         """
 
+        # Validate the values first (as much as we can).
+        #
+        if self.min is not None and not numpy.isscalar(self.min):
+            raise ConfidenceErr('badarg', 'Parameter limits', 'scalars')
+
+        if self.max is not None and not numpy.isscalar(self.max):
+            raise ConfidenceErr('badarg', 'Parameter limits', 'scalars')
+
+        if self.nloop <= 1:
+            raise ConfidenceErr('badarg', 'Nloop parameter', '> 1')
+
+        if self.delv is not None and self.delv <= 0:
+            raise ConfidenceErr('badarg', 'delv parameter', '> 0')
+
         self.stat = fit.calc_stat()
         self.parval = par.val
         self.xlabel = par.fullname
@@ -2587,51 +2666,18 @@ class Confidence1D(DataPlot):
             self.min = v - self.fac * dv
             self.max = v + self.fac * dv
 
-        if not numpy.isscalar(self.min) or not numpy.isscalar(self.max):
-            raise ConfidenceErr('badarg', 'Parameter limits', 'scalars')
-
-        # check user limits for errors
-        if self.min >= self.max:
-            raise ConfidenceErr('badlimits')
-
-        if self.nloop <= 1:
-            raise ConfidenceErr('badarg', 'Nloop parameter', '> 1')
-
         if self.min < par.min:
             self.min = par.min
         if self.max > par.max:
             self.max = par.max
 
-        minval = self.min
-        if self.delv is None:
-            maxval = self.max
-        elif self.delv > 0:
-            eps = numpy.finfo(numpy.float32).eps
-            maxval = self.max + self.delv - eps
-        else:
-            raise ConfidenceErr('badarg', 'delv parameter', '> 0')
+        # check user limits for errors
+        if self.min >= self.max:
+            raise ConfidenceErr('badlimits')
 
-        if self.log:
-            if minval <= 0.0 or maxval <= 0.0:
-                raise ConfidenceErr('badarg', 'Log scale',
-                                    'on positive boundaries')
-
-            minval = numpy.log10(minval)
-            maxval = numpy.log10(maxval)
-
-        if self.delv is None:
-            x = numpy.linspace(minval, maxval, self.nloop)
-        else:
-            # TODO: should we filter out any value > self.maxval
-            # (would have to be done after converting from a log, if set)
-            #
-            x = numpy.arange(minval, maxval, self.delv)
-
-        if self.log:
-            x = 10**x
-
-        self.x = x
-        return x
+        self.x = calc_par_range(self.min, self.max, self.nloop,
+                                delv=self.delv, log=self.log)
+        return self.x
 
     def calc(self, fit, par):
         """Evaluate the statistic for the parameter range.
@@ -2776,6 +2822,24 @@ class Confidence2D(DataContour, Point):
         self.numcores = numcores
 
     def _region_init(self, fit, par0, par1):
+        """Calculate the grid to use for the parameters.
+
+        Parameters
+        ----------
+        fit : sherpa.fit.Fit instance
+            The current fit.
+        par0, par1 : sherpa.models.parameter.Parameter instance
+            The parameters to analyze.
+
+        Returns
+        -------
+        x : 2D ndarray
+            The parameter values to use. unlike the Confidencee1D case
+            this is not just self.x0 or self.x1, but is a 2D array
+            where each row represent each pair of parameters, so the
+            first column is par0 and the second column is par1.
+
+        """
 
         def check2(value, pname, opt=True):
             """Check value is None (when opt set) or has size of 2"""
@@ -2892,46 +2956,25 @@ class Confidence2D(DataContour, Point):
             if self.max[i] > hmax[i]:
                 self.max[i] = hmax[i]
 
-        minval = self.min
         if delv is None:
-            maxval = self.max
-        else:
-            eps = numpy.finfo(numpy.float32).eps
-            maxval = self.max + delv - eps
+            # Just make the following code easier to write
+            delv = [None, None]
 
-        # as we may mutate minval/maxval we want to use a copy.
+        x0 = calc_par_range(self.min[0], self.max[0],
+                            self.nloop[0], delv=delv[0],
+                            log=self.log[0])
+        x1 = calc_par_range(self.min[1], self.max[1],
+                            self.nloop[1], delv=delv[1],
+                            log=self.log[1])
+
+        # Does it matter whether this is x0,x1 or x1,x0? Not for the
+        # calculation of the parameter values, but the contour
+        # plotting may care (but at least self.x0 and self.x1 should
+        # match the ordering of self.y).
         #
-        minval = numpy.copy(minval)
-        maxval = numpy.copy(maxval)
-
-        for idx in [0, 1]:
-            if self.log[idx]:
-                if minval[idx] <= 0.0 or maxval[idx] <= 0.0:
-                    raise ConfidenceErr('badarg', 'Log scale',
-                                        'on positive boundaries')
-
-                minval[idx] = numpy.log10(minval[idx])
-                maxval[idx] = numpy.log10(maxval[idx])
-
-        if delv is None:
-            x0 = numpy.linspace(minval[0], maxval[0], nloop[0])
-            x1 = numpy.linspace(minval[1], maxval[1], nloop[1])
-        else:
-            # TODO: should we filter out any value > self.maxval
-            # (would have to be done after converting from a log, if set)
-            #
-            x0 = numpy.arange(minval[0], maxval[0], delv[0])
-            x1 = numpy.arange(minval[1], maxval[1], delv[1])
-
-        if self.log[0]:
-            x0 = 10**x0
-
-        if self.log[1]:
-            x1 = 10**x1
-
         x0g, x1g = numpy.meshgrid(x0, x1)
-        self.x0 = x0g.ravel()
-        self.x1 = x1g.ravel()
+        self.x0 = x0g.flatten()
+        self.x1 = x1g.flatten()
 
         return numpy.array([self.x0, self.x1]).T
 
