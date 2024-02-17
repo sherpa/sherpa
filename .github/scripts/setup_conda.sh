@@ -10,6 +10,13 @@ if [ "`uname -s`" == "Darwin" ] ; then
       echo "macOS 10.14 SDK download failed"
     fi
     tar -C ${GITHUB_WORKSPACE}/10.14SDK -xf MacOSX10.14.sdk.tar.xz
+
+    # Install miniforge; see
+    # https://github.com/conda-forge/miniforge?tab=readme-ov-file#downloading-the-installer-as-part-of-a-ci-pipeline
+    CONDA="${HOME}/conda"
+    curl -fsSLo Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-$(uname -m).sh"
+    bash Miniforge3.sh -b -p $CONDA
+
     #End of Conda compilers section
 else
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
@@ -28,16 +35,26 @@ source ${CONDA}/etc/profile.d/conda.sh
 
 # update and add channels
 conda update --yes conda
-conda config --add channels conda-forge
-#Remove defaults to avoid conflicts with conda-forge
-conda config --remove channels defaults
+
+# miniforge has already done this for us, hence the OS restriction.
+#
+if [ "`uname -s`" != "Darwin" ] ; then
+  conda config --add channels conda-forge
+  #Remove defaults to avoid conflicts with conda-forge
+  conda config --remove channels defaults
+fi
 
 # To avoid issues with non-XSPEC builds (e.g.
 # https://github.com/sherpa/sherpa/pull/794#issuecomment-616570995 )
 # the XSPEC-related channels are only added if needed
 #
 if [ -n "${XSPECVER}" ]; then
- conda config --add channels ${xspec_channel}
+  if [ "`uname -s`" == "Darwin" ] ; then
+    # we need to use the CXC conda channel to get the ARM XSPEC build for now
+    conda config --add channels https://cxc.harvard.edu/conda/ciao
+  else
+    conda config --add channels ${xspec_channel}
+  fi
 fi
 
 # Figure out requested dependencies
