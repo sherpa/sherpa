@@ -148,4 +148,4 @@ def test_dummy_backend_warning(caplog):
     (lname, llevel, lmsg) = caplog.record_tuples[0]
     assert lname == "sherpa.plot.backends"
     assert llevel == logging.WARNING
-    assert lmsg == "<class 'sherpa.plot.backends.IndepOnlyBackend'> does not implement line/symbol plotting. No plot will be produced."
+    assert lmsg == "IndepOnlyBackend does not implement line/symbol plotting. No plot will be produced."
