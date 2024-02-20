@@ -2497,8 +2497,9 @@ class Confidence1D(DataPlot):
     """The base class for 1D confidence plots.
 
     .. versionchanged:: 4.16.1
-       Handling of log-scaled axes has been improved and the string
-       output now includes the parameter value (if available).
+       Handling of log-scaled axes and use of the delv argument has
+       been improved, and the string output now includes the parameter
+       value (if available).
 
     """
 
@@ -2577,7 +2578,7 @@ class Confidence1D(DataPlot):
             delv is set to None.
         delv : number or None, optional
             The spacing of the parameter grid. This takes precedence
-            over nloop. It can not be used when log is set to True.
+            over nloop.
         fac : number, optional
             Used when either min or max are not set. The parameter
             range in this case is taken to be fac times the separation
@@ -2695,6 +2696,14 @@ class Confidence1D(DataPlot):
         See Also
         --------
         plot, prepare
+
+        Notes
+        -----
+        This method is assumed to be over-ridden in derived classes,
+        where it will perform the statistic calculations needed to
+        create the visualization. This version should be called from
+        these classes as it validates the fit and par arguments.
+
         """
 
         if isinstance(fit.stat, LeastSq):
@@ -2737,7 +2746,8 @@ class Confidence2D(DataContour, Point):
     """The base class for 2D confidence contours.
 
     .. versionchanged:: 4.16.1
-       Handling of log-scaled axes has been improved.
+       Handling of log-scaled axes and use of the delv argument has
+       been improved.
 
     """
 
@@ -2808,6 +2818,50 @@ class Confidence2D(DataContour, Point):
     def prepare(self, min=None, max=None, nloop=(10, 10),
                 delv=None, fac=4, log=(False, False),
                 sigma=(1, 2, 3), levels=None, numcores=None):
+        """Set the data to plot.
+
+        This defines the ranges over which the statistic will be
+        calculated, but does not perform the evaluation.
+
+        Parameters
+        ----------
+        min, max : sequence of number or None, optional
+            The minimum and maximum parameter values to used. If set
+            then they must contain two elements, and if not then the
+            range is calculated using the fac parameter.
+        nloop : sequence of int, optional
+            The number of points at which to evaluate the statistic,
+            where each value must be greater than 1. This is used when
+            delv is set to None.
+        delv : sequence of number or None, optional
+            The spacing of the parameter grids, and if set it must
+            contain two values each greater than 0. This takes
+            precedence over nloop.
+        fac : number, optional
+            Used when either min or max are not set. The parameter
+            range in this case is taken to be fac times the separation
+            of the covariance limits for the parameter (unless
+            explicitly given).
+        log : sequence of bool, optional
+            Should each parameter be evaluated on a
+            logarithmically-spaced grid rather than a linearly-spaced
+            one?
+        sigma : sequence of number, optional
+            The sigma values at which to draw contours. This is only
+            used if levels is set to None.
+        levels : sequence of number or None, optional
+            The levels at which the contours are drawn. This over-rides
+            the sigma setting.
+        numcores : int or None, optional
+            Should the parameter evaluation use multiple CPU cores if
+            available?
+
+        See Also
+        --------
+        calc
+
+        """
+
         self.min = min
         self.max = max
         self.nloop = nloop
@@ -2833,7 +2887,7 @@ class Confidence2D(DataContour, Point):
         Returns
         -------
         x : 2D ndarray
-            The parameter values to use. unlike the Confidencee1D case
+            The parameter values to use. Unlike the Confidence1D case
             this is not just self.x0 or self.x1, but is a 2D array
             where each row represent each pair of parameters, so the
             first column is par0 and the second column is par1.
@@ -2860,6 +2914,9 @@ class Confidence2D(DataContour, Point):
         # of one of them. So ensure we have a list not a tuple. The
         # exact setting of min/max (whether a tuple, list, or ndarray)
         # makes the following code a bit messy.
+        #
+        # See also #1967 which discusses what type we should accept
+        # for fields like min and max.
         #
         if self.min is not None:
             try:
@@ -2936,7 +2993,7 @@ class Confidence2D(DataContour, Point):
                 if max1 is not None and not numpy.isnan(max1):
                     self.max[1] = par1.val + max1
 
-            # This works for vectors
+            # This assumes that self.min/max are ndarray
             v = (self.max + self.min) / 2.
             dv = numpy.fabs(v - self.min)
             self.min = v - self.fac * dv
@@ -2981,7 +3038,7 @@ class Confidence2D(DataContour, Point):
         """Evaluate the statistic for the parameter range.
 
         This requires prepare to have been called, and must be
-        called before plot is called.
+        called before contour is called.
 
         Parameters
         ----------
@@ -2993,13 +3050,21 @@ class Confidence2D(DataContour, Point):
 
         See Also
         --------
-        plot, prepare
+        contour, prepare
+
+        Notes
+        -----
+        This method is assumed to be over-ridden in derived classes,
+        where it will perform the statistic calculations needed to
+        create the visualization. This version should be called from
+        these classes as it validates the fit and par arguments.
+
         """
 
         if isinstance(fit.stat, LeastSq):
             raise ConfidenceErr('badargconf', fit.stat.name)
 
-        # Check the parameter
+        # Check that each parameter
         #  - is thawed
         #  - is part of the model expression
         #

@@ -511,7 +511,7 @@ def test_get_int_unc_log(setUp):
     cmp_int_args_log(result)
     cmp_int_x_log(result)
 
-    # We can work out the expected vaues as we know all the parameter
+    # We can work out the expected values as we know all the parameter
     # values.
     #
     expected = []
@@ -633,7 +633,7 @@ def test_get_reg_unc_log(setUp):
     assert result.x0 == pytest.approx([0.1, 0.3, 0.9, 0.1, 0.3, 0.9])
     assert result.x1 == pytest.approx([-5, -5, -5, -4, -4, -4])
 
-    # We can work out the expected vaues as we know all the parameter
+    # We can work out the expected values as we know all the parameter
     # values.
     #
     expected = []
