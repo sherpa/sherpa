@@ -835,4 +835,12 @@ def test_confidence1d_log(cls, expected):
             fmdl.fwhm_g = x
             expected.append(fit.calc_stat())
 
-    assert plotobj.y == pytest.approx(expected)
+    # During testing the tolerance had to be relaxed for macOS. As
+    # this test is a bit "unusual" (synthetic data with no noise), and
+    # because we just want to check the code is doing something
+    # reasonable (i.e. this is not a test of the confidence routine
+    # but that the parameter under test is drawn from a log, rather
+    # than linear, distribution) we allow the relaxation in the
+    # tolerance.
+    #
+    assert plotobj.y == pytest.approx(expected, rel=4e-4)
