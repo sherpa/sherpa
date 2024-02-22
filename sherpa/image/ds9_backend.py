@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2021, 2023
+#  Copyright (C) 2007, 2016, 2017, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,8 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import time
+"""Control commumication with the DS9 backend using XPA directly."""
+
 import os
+import time
 
 from sherpa.utils.err import DS9Err
 
@@ -28,29 +30,44 @@ from . import DS9
 imager = DS9.DS9Win(DS9._DefTemplate, False)
 
 
-# TODO: the except blocks would ideally catch explicit errors; the present
-#       catch-anything approach means that we lose potentially-useful
-#       information on the type of error.
-#
-
 def close():
+    """Ensure the DS9 instance is closed."""
     if imager.isOpen():
         imager.xpaset("quit")
 
 
 def delete_frames():
+    """Remove all frames and create a new frame."""
+
     if not imager.isOpen():
         raise DS9Err('open')
+
     try:
         imager.xpaset("frame delete all")
         return imager.xpaset("frame new")
-    except:
-        raise DS9Err('delframe')
+
+    except Exception as exc:
+        raise DS9Err('delframe') from exc
 
 
 def get_region(coord):
+    """Return the current region as a string.
+
+    Parameters
+    ----------
+    coord : str
+       The coordinate setting to use. It may be empty.
+
+    Returns
+    -------
+    region : str
+       The current region.
+
+    """
+
     if not imager.isOpen():
         raise DS9Err('open')
+
     try:
         regionstr = "regions -format saoimage -strip yes"
         if coord != '':
@@ -59,46 +76,81 @@ def get_region(coord):
             else:
                 regionfmt = 'saoimage'
 
-            regionstr = "regions -format {} ".format(regionfmt) + \
-                        "-strip yes -system {}".format(coord)
+            regionstr = f"regions -format {regionfmt} " + \
+                        f"-strip yes -system {coord}"
 
-        regionstr = imager.xpaget(regionstr)
-        return regionstr
+        return imager.xpaget(regionstr)
 
-    except:
-        raise DS9Err('retreg')
+    except Exception as exc:
+        raise DS9Err('retreg') from exc
 
 
 def image(arr, newframe=False, tile=False):
+    """Display the data as an image in DS9.
+
+    Parameters
+    ----------
+    arr : ndarray
+       The pixel data. It is required to be 2D (Y, X) or 3D (Z, Y, X)
+       ordering.
+    newframe : bool, optional
+       Should the image be displayed in a new frame?
+    tile : bool, optional
+       Should DS9 tiling mode be selected?
+
+    """
+
     if not imager.isOpen():
         imager.doOpen()
+
     # Create a new frame if the user requested it, *or* if
     # there happen to be no DS9 frames.
     if newframe or imager.xpaget("frame all") == "\n":
         try:
             imager.xpaset("frame new")
             imager.xpaset("frame last")
-        except:
-            raise DS9Err('newframe')
+
+        except Exception as exc:
+            raise DS9Err('newframe') from exc
+
     try:
         if tile:
             imager.xpaset("tile yes")
         else:
             imager.xpaset("tile no")
-    except:
-        raise DS9Err('settile')
+
+    except Exception as exc:
+        raise DS9Err('settile') from exc
+
     time.sleep(1)
     try:
         imager.showArray(arr)
-    except:
-        raise DS9Err('noimage')
+
+    except Exception as exc:
+        raise DS9Err('noimage') from exc
 
 
 def _set_wcs(keys):
+    """Convert the WCS information into FITS metadata.
+
+    Parameters
+    ----------
+    keys : triple
+       The (eqpos, sky, name) values, where eqpos and sky are None or
+       a WCS object. The name field is a string used as the OBJECT
+       name.
+
+    Returns
+    -------
+    header : str
+       The FITS metadata to send to represent the WCS data.
+
+    """
+
     eqpos, sky, name = keys
 
-    phys = ''
-    wcs = "OBJECT = '%s'\n" % name
+    phys_keys = []
+    wcs_keys = [f"OBJECT = '{name}'\n"]
 
     if eqpos is not None:
         wcrpix = eqpos.crpix
@@ -110,38 +162,46 @@ def _set_wcs(keys):
         pcrval = sky.crval
         pcdelt = sky.cdelt
 
-        # join together all strings with a '\n' between each
-        phys = '\n'.join(["WCSNAMEP = 'PHYSICAL'",
-                          "CTYPE1P = 'x       '",
-                          'CRVAL1P = %.14E' % pcrval[0],
-                          'CRPIX1P = %.14E' % pcrpix[0],
-                          'CDELT1P = %.14E' % pcdelt[0],
-                          "CTYPE2P = 'y       '",
-                          'CRVAL2P = %.14E' % pcrval[1],
-                          'CRPIX2P = %.14E' % pcrpix[1],
-                          'CDELT2P = %.14E' % pcdelt[1]])
+        phys_keys = ["WCSNAMEP = 'PHYSICAL'",
+                     "CTYPE1P = 'x       '",
+                     f'CRVAL1P = {pcrval[0]:.14E}',
+                     f'CRPIX1P = {pcrpix[0]:.14E}',
+                     f'CDELT1P = {pcdelt[0]:.14E}',
+                     "CTYPE2P = 'y       '",
+                     f'CRVAL2P = {pcrval[1]:.14E}',
+                     f'CRPIX2P = {pcrpix[1]:.14E}',
+                     f'CDELT2P = {pcdelt[1]:.14E}']
 
         if eqpos is not None:
             wcdelt = wcdelt * pcdelt
             wcrpix = (wcrpix - pcrval) / pcdelt + pcrpix
 
     if eqpos is not None:
-        # join together all strings with a '\n' between each
-        wcs = wcs + '\n'.join(["RADECSYS = 'ICRS    '",
-                               "CTYPE1  = 'RA---TAN'",
-                               'CRVAL1  = %.14E' % wcrval[0],
-                               'CRPIX1  = %.14E' % wcrpix[0],
-                               'CDELT1  = %.14E' % wcdelt[0],
-                               "CTYPE2  = 'DEC--TAN'",
-                               'CRVAL2  = %.14E' % wcrval[1],
-                               'CRPIX2  = %.14E' % wcrpix[1],
-                               'CDELT2  = %.14E' % wcdelt[1]])
+        wcs_keys += ["RADECSYS = 'ICRS    '",
+                     "CTYPE1  = 'RA---TAN'",
+                     f'CRVAL1  = {wcrval[0]:.14E}',
+                     f'CRPIX1  = {wcrpix[0]:.14E}',
+                     f'CDELT1  = {wcdelt[0]:.14E}',
+                     "CTYPE2  = 'DEC--TAN'",
+                     f'CRVAL2  = {wcrval[1]:.14E}',
+                     f'CRPIX2  = {wcrpix[1]:.14E}',
+                     f'CDELT2  = {wcdelt[1]:.14E}']
 
-    # join the wcs and physical with '\n' between them and at the end
-    return ('\n'.join([wcs, phys]) + '\n')
+    # Adding an empty string ensures we end with \n
+    return '\n'.join(wcs_keys + phys_keys + [""])
 
 
 def wcs(keys):
+    """Send the WCS data to DS9 for the current image.
+
+    Parameters
+    ----------
+    keys : triple
+       The (eqpos, sky, name) values, where eqpos and sky are None or
+       a WCS object. The name field is a string used as the OBJECT
+       name.
+
+    """
 
     if not imager.isOpen():
         raise DS9Err('open')
@@ -151,21 +211,33 @@ def wcs(keys):
     try:
         # use stdin to pass the WCS info
         imager.xpaset('wcs replace', info)
-    except:
-        raise DS9Err('setwcs')
+
+    except Exception as exc:
+        raise DS9Err('setwcs') from exc
 
 
 def open():
+    """Start the DS9 instance (if not already started)."""
     imager.doOpen()
 
 
 def set_region(reg, coord):
+    """Send the region to DS9.
+
+    Parameters
+    ----------
+    reg : str or filename
+       The file containing the region or a string containing regions
+       separated by semi-colon characters.
+
+    """
     if not imager.isOpen():
         raise DS9Err('open')
+
     try:
         # Assume a region file defines everything correctly
         if os.access(reg, os.R_OK):
-            imager.xpaset("regions load " + "'" + reg + "'")
+            imager.xpaset(f"regions load '{reg}'")
         else:
             # Assume region string has to be in CIAO format
             regions = reg.split(";")
@@ -178,17 +250,48 @@ def set_region(reg, coord):
 
                     imager.xpaset("regions", data=data)
 
-    except:
-        raise DS9Err('badreg', str(reg))
+    except Exception as exc:
+        raise DS9Err('badreg', str(reg)) from exc
 
 
 def xpaget(arg):
+    """Send a XPA query to DS9.
+
+    Parameter
+    ---------
+    arg : str
+       The XPA query.
+
+    Returns
+    -------
+    result
+       The response from DS9.
+
+    """
     if not imager.isOpen():
         raise DS9Err('open')
+
     return imager.xpaget(arg)
 
 
 def xpaset(arg, data=None):
+    """Send an XPA command to DS9.
+
+    Parameter
+    ---------
+    arg : str
+       The XPA command.
+    data : optional
+       Any data the XPA command requires.
+
+    Returns
+    -------
+    result
+       The response from DS9.
+
+    """
+
     if not imager.isOpen():
         raise DS9Err('open')
+
     return imager.xpaset(arg, data)
