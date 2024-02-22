@@ -4,6 +4,7 @@ name: Conda Deployments
 #With check-skip job, we skip build on main/ciaox if directly tagged as a release.
 # (To only build releases on the release branch)
 on:
+  pull_request:
   push:
     branches:
     - main
