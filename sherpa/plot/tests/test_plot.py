@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022
+#  Copyright (C) 2007, 2015, 2018 - 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,6 +25,7 @@ import pytest
 
 import sherpa.all as sherpa
 from sherpa.ui.utils import Session as BaseSession
+from sherpa.astro.models import Voigt1D
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.models import basic
 from sherpa import plot as sherpaplot
@@ -763,3 +764,83 @@ def test_region_xxx_set_vars(ptype, kwargs, setup_confidence):
     #
     assert plotobj.y == pytest.approx([36.82967813, 35.94869461,
                                        35.90482971, 35.85479384], abs=1e-4)
+
+
+@pytest.mark.parametrize("cls,expected",
+                         [(sherpaplot.IntervalProjection,
+                           [265.94960651707015, 267.00393711532496, 201.42206132760674, 36.51066189551196]),
+                          (sherpaplot.IntervalUncertainty, None)
+                          ])
+def test_confidence1d_log(cls, expected):
+    """Check out Confidence1D plots with a log scale. Issue #1561."""
+
+    omdl = basic.Gauss1D('ideal')
+    omdl.fwhm = 10.1
+    omdl.pos = 31.05
+    omdl.ampl = 20.2
+
+    x = numpy.linspace(20, 40, 50)
+    y = omdl(x)
+    data = Data1D('temp', x, y)
+
+    # I want a model that is similar to, but not the same as, gauss1d
+    # (alternatively we could have added noise to the fit).
+    #
+    fmdl = Voigt1D('fit')
+    fmdl.fwhm_l = fmdl.fwhm_g / numpy.sqrt(2 * numpy.log(2))
+
+    # as this is not a test of fitting
+    #
+    fmdl.fwhm_g = 6
+    fmdl.pos = 31
+    fmdl.ampl = 250
+
+    fit = sherpa.Fit(data, fmdl)
+    fit.fit()
+
+    # We want to check the Confidence1D call doesn't change
+    # the results. We could just store these values and then check
+    # again later, but we can also add an explicit check that things
+    # are behaving as expected.
+    #
+    assert fmdl.fwhm_g.val == pytest.approx(5.989888868679278)
+    assert fmdl.pos.val == pytest.approx(31.09649448167323)
+    assert fmdl.ampl.val == pytest.approx(256.1058145890131)
+
+    # The range is chosen to make the values easy to check.  If we
+    # bump up to max=100 then the analysis fails because at some point
+    # the IntervalX call hits an upper limit on fwhm_g. Which is not
+    # relevant here.
+    #
+    plotobj = cls()
+    plotobj.prepare(min=0.01, max=10, nloop=4, log=True)
+    plotobj.calc(fit, fmdl.fwhm_g)
+
+    # Values are unchanged
+    assert fmdl.fwhm_g.val == pytest.approx(5.989888868679278)
+    assert fmdl.pos.val == pytest.approx(31.09649448167323)
+    assert fmdl.ampl.val == pytest.approx(256.1058145890131)
+
+    assert plotobj.log
+    assert plotobj.min == pytest.approx(0.01)
+    assert plotobj.max == pytest.approx(10)
+    assert plotobj.x == pytest.approx([0.01, 0.1, 1, 10])
+
+    if expected is None:
+        # For IntUnc we can calculate the expected values since only
+        # the fwhm_g value changes.
+        #
+        expected = []
+        for x in plotobj.x:
+            fmdl.fwhm_g = x
+            expected.append(fit.calc_stat())
+
+    # During testing the tolerance had to be relaxed for macOS. As
+    # this test is a bit "unusual" (synthetic data with no noise), and
+    # because we just want to check the code is doing something
+    # reasonable (i.e. this is not a test of the confidence routine
+    # but that the parameter under test is drawn from a log, rather
+    # than linear, distribution) we allow the relaxation in the
+    # tolerance.
+    #
+    assert plotobj.y == pytest.approx(expected, rel=4e-4)
