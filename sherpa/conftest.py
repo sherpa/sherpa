@@ -185,33 +185,6 @@ known_warnings = {
          ],
     ResourceWarning:
         [
-            r"unclosed file .*king_kernel.txt.* closefd=True>",
-            r"unclosed file .*phas.dat.* closefd=True>",
-            r"unclosed file .*data.txt.* closefd=True>",
-            r"unclosed file .*cstat.dat.* closefd=True>",
-            r"unclosed file .*data1.dat.* closefd=True>",
-            r"unclosed file .*aref_Cedge.fits.* closefd=True>",
-            r"unclosed file .*aref_sample.fits.* closefd=True>",
-            r"unclosed file .*/tmp.* closefd=True>",
-            # added for sherpa/astro/ui/tests/test_astro_ui_utils_unit.py
-            r"unclosed file .*/dev/null.* closefd=True>",
-            r"unclosed file .*table.txt.* closefd=True>",
-            # tests in sherpa/astro/ui/tests/test_astro_ui_unit.py
-            # seen in some macOS test runs (e.g. pip, not conda) and python 3.8
-            r"unclosed file .*/data.dat'.* closefd=True>",
-            r"unclosed file .*/model.dat'.* closefd=True>",
-            r"unclosed file .*/resid.out'.* closefd=True>",
-
-            # It would be nice if we could find this out from first principles,
-            # rather than only finding them from random CI runs
-            r"unclosed file <_io.BufferedReader name='.*/data.dat'>",
-            r"unclosed file <_io.BufferedReader name='.*/model.dat'>",
-            r"unclosed file <_io.BufferedReader name='.*/resid.out'>",
-
-            # Does this replace the versions above?
-            r"unclosed file <_io.BufferedReader name='.*/aref_Cedge.fits'>",
-            r"unclosed file <_io.BufferedReader name='.*/aref_sample.fits'>",
-
         ],
     VisibleDeprecationWarning:
         [],

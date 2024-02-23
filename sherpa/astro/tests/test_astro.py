@@ -41,7 +41,7 @@ except ImportError:
 
 try:
     from sherpa.astro.io import backend
-    is_crates_io = "sherpa.astro.io.crates_backend" == backend.__name__
+    is_crates_io = backend.name == "crates"
 except ImportError:
     is_crates_io = False
 

@@ -3400,7 +3400,7 @@ def test_load_data(make_data_path):
                        match="data set '1' does not specify systematic errors"):
         ui.get_syserror()
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if io.backend.name == "crates":
         term = "@@/data1.dat"
         idx = _canonical_load_data.find(term)
         expected_output = _canonical_load_data[:idx] + term + \

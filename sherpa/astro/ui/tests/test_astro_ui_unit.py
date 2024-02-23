@@ -47,7 +47,7 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 
 
 def backend_is(name):
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 def check_table(hdu, colinfo):
@@ -730,7 +730,7 @@ def check_output(out, colnames, rows):
         assert lines[0] == f"# {cols}"
         lines = lines[1:]
     else:
-        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.__name__}")
+        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.name}")
 
     assert lines[-1] == ""
     lines = lines[:-1]
@@ -854,9 +854,9 @@ def test_save_data_data2d(tmp_path, clean_astro_ui):
         expected = "\n".join(expected) + "\n"
 
     elif backend_is("pyfits"):
-        expected = "\n".join([str(zz) for zz in z]) + "\n"
+        expected = "\n".join(["# col1"] + [str(zz) for zz in z]) + "\n"
     else:
-        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.__name__}")
+        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.name}")
 
     assert cts == expected
 
@@ -907,7 +907,7 @@ def test_save_data_dataimg(tmp_path, clean_astro_ui):
     ui.save_data(outfile)
 
     cts = out.read_text()
-    expected = "\n".join([str(zz) for zz in z]) + "\n"
+    expected = "\n".join(["# col1"] + [str(zz) for zz in z]) + "\n"
     assert cts == expected
 
 
@@ -1444,7 +1444,7 @@ def test_save_resid_dataimg(clean_astro_ui, tmp_path):
     ui.save_resid(outfile, ascii=True)
 
     cts = out.read_text()
-    expected = "\n".join([str(zz - 10) for zz in z]) + "\n"
+    expected = "\n".join(["# col1"] + [str(zz - 10) for zz in z]) + "\n"
     assert cts == expected
 
 

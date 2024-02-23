@@ -25,13 +25,14 @@ import pytest
 from sherpa.astro.data import DataIMG, Data2D
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
+from sherpa.utils.err import IOErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_region, requires_wcs
 
 
 def backend_is(name):
     """Are we using the given backend?"""
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 @requires_fits
@@ -262,3 +263,68 @@ def test_axs_ordering_1880(tmp_path):
     a0, a1 = new.get_indep()
     assert a0 == pytest.approx([100, 110, 120] * 2)
     assert a1 == pytest.approx([200, 200, 200, 210, 210, 210])
+
+
+@requires_fits
+def test_read_image():
+    """Check we get a failure.
+
+    This is a regression test. The exact failure message depends
+    on the backend.
+    """
+
+    with pytest.raises(IOErr,
+                       match="^'True' is not a filename or "):
+        io.read_image(True)
+
+
+@requires_fits
+@requires_data
+def test_read_image_object(make_data_path):
+    """Check we can send in a 'object'.
+
+    This support is not well advertised so it could perhaps be
+    removed, but let's add a basic test at least.
+
+    """
+
+    # Could create the "object" manually, but let's just read one in
+    #
+    infile = make_data_path("psf_0.0_00_bin1.img")
+    close = False
+
+    if backend_is("crates"):
+        import pycrates
+        arg = pycrates.read_file(infile)
+
+    elif backend_is("pyfits"):
+        from astropy.io import fits
+        arg = fits.open(infile)
+        close = True
+
+    else:
+        assert False, f"unknown backend: {io.backend.name}"
+
+    try:
+        img = io.read_image(arg)
+
+    finally:
+        if close:
+            arg.close()
+
+    assert isinstance(img, DataIMG)
+    assert img.x0.min() == pytest.approx(1)
+    assert img.x0.max() == pytest.approx(26)
+    assert img.x1.min() == pytest.approx(1)
+    assert img.x1.max() == pytest.approx(26)
+    assert img.y.sum() == pytest.approx(25300408)
+
+    try:
+        from sherpa.astro.io import wcs
+        # Technically the following depends on WCS support
+        assert img.sky.crval == pytest.approx([4083.7, 4083.7])
+        assert img.eqpos.crval == pytest.approx([112.71019, 40.82296])
+
+    except ImportError:
+        assert img.sky is None
+        assert img.eqpos is None

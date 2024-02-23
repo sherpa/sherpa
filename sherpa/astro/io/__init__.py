@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015 - 2019, 2021 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -54,7 +54,8 @@ import importlib
 import logging
 import os
 import re
-from typing import Any, Optional
+from typing import TYPE_CHECKING, Any, Callable, Mapping, MutableMapping, \
+    Optional, Sequence, Tuple, TypeVar, Union
 
 import numpy
 
@@ -64,10 +65,12 @@ from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
 # leads to circular imports
 # from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import reshape_2d_arrays
-from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
+from sherpa.data import Data, Data2D, Data1D, BaseData, Data2DInt
 import sherpa.io
-from sherpa.utils.err import ArgumentErr, DataErr, IOErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat
+
+from .backends import BaseBackend
 
 config = ConfigParser()
 config.read(get_config())
@@ -92,36 +95,94 @@ else:
     if ogip_emin <= 0.0:
         raise ValueError(emsg)
 
-backend = None
-'''Currently active backend module for astronomy specific I/O.'''
-
 for iotry in io_opt:
     try:
-        backend = importlib.import_module('.' + iotry,
-                                          package='sherpa.astro.io')
+        backend_module = importlib.import_module('.' + iotry,
+                                                 package='sherpa.astro.io')
         break
     except ImportError:
         pass
 else:
     # None of the options in the rc file work, e.g. because it's an old file
     # that does not have dummy listed
-    import sherpa.astro.io.dummy_backend as backend
+    import sherpa.astro.io.dummy_backend as backend_module
+
+
+backend = backend_module.Backend()
+'''Currently active backend module for astronomy specific I/O.
+
+The selected backend is given by the name attribute of this object.
+'''
+
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
 
-__all__ = ('backend',
+KeyType = Union[str, bool, int, float]
+NamesType = Sequence[str]
+HdrTypeArg = Mapping[str, KeyType]
+HdrType = dict[str, KeyType]
+DataType = dict[str, Any]
+
+T = TypeVar('T')
+
+
+__all__ = ('backend', 'set_backend',
            'read_table', 'read_image', 'read_arf', 'read_rmf', 'read_arrays',
            'read_pha', 'write_image', 'write_pha', 'write_table',
            'write_arf', 'write_rmf',
            'pack_table', 'pack_image', 'pack_pha', 'read_table_blocks')
 
 
+# Similar to sherpa.plot.set_backend
+#
+def set_backend(new_backend):
+    """Set the Sherpa I/O backend.
+
+    Parameters
+    ----------
+    new_backend: string, class, or instance
+        The new backend to use. There is no check that the requisite
+        I/O package is available.
+
+    Raises
+    ------
+    ImportError
+        If new_backend is an invalid string.
+
+    Example
+    -------
+
+    >>> set_backend("crates")
+
+    """
+
+    global backend
+
+    if isinstance(new_backend, str):
+
+        name = f"{new_backend}_backend"
+        backend_module = importlib.import_module('.' + name,
+                                                 package='sherpa.astro.io')
+        backend = backend_module.Backend()
+        return
+
+    if isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
+        backend = new_backend()
+        return
+
+    if isinstance(new_backend, BaseBackend):
+        backend = new_backend
+        return
+
+    raise ArgumentTypeErr("tempbackend", new_backend)
+
+
 # Note: write_arrays is not included in __all__, so don't add to the
 #       See Also section.
 #
-def read_arrays(*args):
+def read_arrays(*args) -> BaseData:
     """Create a dataset from multiple arrays.
 
     The return value defaults to a `sherpa.data.Data1D` instance,
@@ -163,23 +224,32 @@ def read_arrays(*args):
     >>> d = read_arrays(x0, x1, y, sherpa.data.Data2D)
 
     """
-    args = list(args)
-    if len(args) == 0:
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
+    largs = list(args)
+    if len(largs) == 0:
         raise IOErr('noarrays')
 
     dstype = Data1D
     if sherpa.io._is_subclass(args[-1], BaseData):
-        dstype = args.pop()
+        dstype = largs.pop()
 
-    args = backend.get_column_data(*args)
+    dargs = backend.get_column_data(*largs)
 
     # Determine max number of args for dataset constructor
-    sherpa.io._check_args(len(args), dstype)
+    sherpa.io._check_args(len(dargs), dstype)
 
-    return dstype('', *args)
+    return dstype('', *dargs)
 
 
-def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
+def read_table(arg,
+               ncols: int = 2,
+               colkeys: Optional[NamesType] = None,
+               dstype: type = Data1D) -> BaseData:
     """Create a dataset from a tabular file.
 
     The supported file types (e.g. ASCII or FITS) depends on the
@@ -229,6 +299,12 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
     >>> d = read_table('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     args = backend.get_table_data(arg, ncols, colkeys)
     cols = args[1]
     name = args[2]
@@ -240,7 +316,11 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
 
 
 # TODO: should this be exported?
-def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
+def read_ascii(filename,
+               ncols: int = 2,
+               colkeys: Optional[NamesType] = None,
+               dstype: type = Data1D,
+               **kwargs) -> BaseData:
     """Create a dataset from an ASCII tabular file.
 
     Parameters
@@ -289,6 +369,12 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
     >>> d = read_ascii('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     args = backend.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
                                   dstype=dstype, **kwargs)
     cols = args[1]
@@ -300,7 +386,9 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
     return dstype(name, *cols)
 
 
-def read_image(arg, coord='logical', dstype=DataIMG):
+def read_image(arg,
+               coord: str = 'logical',
+               dstype: type = DataIMG) -> Data2D:
     """Create an image dataset from a file.
 
     .. versionchanged:: 4.16.0
@@ -343,6 +431,12 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     >>> d = read_image('img.fits', coord='physical')
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data, filename = backend.get_image_data(arg)
     data['header'] = _remove_structural_keywords(data['header'])
     axlens = data['y'].shape
@@ -371,8 +465,11 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     #
     if issubclass(dstype, (Data2DInt, DataIMGInt)):
         indep = [x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5]
-    else:
+    elif issubclass(dstype, Data2D):
         indep = [x0, x1]
+    else:
+        raise ArgumentErr("bad", "dstype argument",
+                          "dstype is not derived from Data2D")
 
     # Note that we only set the coordinates after creating the
     # dataset, which assumes that data['x'] and data['y'] are always
@@ -385,13 +482,13 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     #
     dataset = dstype(filename, *indep, **data)
 
-    if issubclass(dstype, DataIMG):
+    if isinstance(dataset, DataIMG):
         dataset.set_coord(coord)
 
     return dataset
 
 
-def read_arf(arg):
+def read_arf(arg) -> DataARF:
     """Create a DataARF object.
 
     Parameters
@@ -406,6 +503,12 @@ def read_arf(arg):
     data : sherpa.astro.data.DataARF
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data, filename = backend.get_arf_data(arg)
     data['header'] = _remove_structural_keywords(data['header'])
 
@@ -418,7 +521,7 @@ def read_arf(arg):
     return DataARF(filename, **data)
 
 
-def read_rmf(arg):
+def read_rmf(arg) -> DataRMF:
     """Create a DataRMF object.
 
     Parameters
@@ -433,6 +536,12 @@ def read_rmf(arg):
     data : sherpa.astro.data.DataRMF
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data, filename = backend.get_rmf_data(arg)
     data['header'] = _remove_structural_keywords(data['header'])
 
@@ -445,7 +554,8 @@ def read_rmf(arg):
     return _rmf_factory(filename, data)
 
 
-def _rmf_factory(filename, data):
+def _rmf_factory(filename: str,
+                 data: Mapping[str, Any]) -> DataRMF:
     response_map = {
         'ROSAT': DataRosatRMF,
         'DEFAULT': DataRMF,
@@ -457,8 +567,12 @@ def _rmf_factory(filename, data):
     return rmf_class(filename, **data)
 
 
-def _read_ancillary(data, key, label, dname,
-                    read_func, output_once=True):
+def _read_ancillary(data: dict[str, str],
+                    key: str,
+                    label: str,
+                    dname: str,
+                    read_func: Callable[[str], T],
+                    output_once: bool = True) -> Optional[T]:
     """Read in a file if the keyword is set.
 
     Parameters
@@ -507,7 +621,9 @@ def _read_ancillary(data, key, label, dname,
     return out
 
 
-def read_pha(arg, use_errors=False, use_background=False):
+def read_pha(arg,
+             use_errors: bool = False,
+             use_background: bool = False) -> Union[DataPHA, list[DataPHA]]:
     """Create a DataPHA object.
 
     Parameters
@@ -529,6 +645,12 @@ def read_pha(arg, use_errors=False, use_background=False):
     data : sherpa.astro.data.DataPHA
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     datasets, filename = backend.get_pha_data(arg,
                                               use_background=use_background)
     phasets = []
@@ -536,26 +658,26 @@ def read_pha(arg, use_errors=False, use_background=False):
     for data in datasets:
         data['header'] = _remove_structural_keywords(data['header'])
 
-        if not use_errors:
-            if data['staterror'] is not None or data['syserror'] is not None:
-                if data['staterror'] is None:
-                    msg = 'systematic'
-                elif data['syserror'] is None:
-                    msg = 'statistical'
-                    if output_once:
-                        warning("systematic errors were not found in "
-                                "file '%s'", filename)
-
-                else:
-                    msg = 'statistical and systematic'
-
+        if not use_errors and (data['staterror'] is not None
+                               or data['syserror'] is not None):
+            if data['staterror'] is None:
+                msg = 'systematic'
+            elif data['syserror'] is None:
+                msg = 'statistical'
                 if output_once:
-                    info("%s errors were found in file '%s'\n"
-                         "but not used; to use them, re-read "
-                         "with use_errors=True", msg, filename)
+                    warning("systematic errors were not found in "
+                            "file '%s'", filename)
 
-                data['staterror'] = None
-                data['syserror'] = None
+            else:
+                msg = 'statistical and systematic'
+
+            if output_once:
+                info("%s errors were found in file '%s'\n"
+                     "but not used; to use them, re-read "
+                     "with use_errors=True", msg, filename)
+
+            data['staterror'] = None
+            data['syserror'] = None
 
         dname = os.path.dirname(filename)
         albl = 'ARF'
@@ -571,18 +693,29 @@ def read_pha(arg, use_errors=False, use_background=False):
 
         backgrounds = []
 
+        # We could include the use_background check here, but this
+        # could have subtle knock-on issues (namely, that the
+        # 'backfile' key of the data dictionary can get changed, even
+        # when use_background is set), and it's not clear whether
+        # anything relies on this (it probably should not, but hard to
+        # check for, so leave as is).
+        #
         if data['backfile'] and data['backfile'].lower() != 'none':
             try:
                 if os.path.dirname(data['backfile']) == '':
                     data['backfile'] = os.path.join(os.path.dirname(filename),
                                                     data['backfile'])
 
+                bkg_datasets : Union[list[DataPHA], DataPHA]
                 bkg_datasets = []
+
                 # Do not read backgrounds of backgrounds
                 if not use_background:
-                    bkg_datasets = read_pha(data['backfile'], use_errors, True)
+                    bkg_datasets = read_pha(data['backfile'],
+                                            use_errors=use_errors,
+                                            use_background=True)
                     if output_once:
-                        info(f"read background file {data['backfile']}")
+                        info("read background file %s", data['backfile'])
 
                 if numpy.iterable(bkg_datasets):
                     for bkg_dataset in bkg_datasets:
@@ -591,6 +724,10 @@ def read_pha(arg, use_errors=False, use_background=False):
                             bkg_dataset.set_response(arf, rmf)
                         backgrounds.append(bkg_dataset)
                 else:
+
+                    if TYPE_CHECKING:
+                        assert isinstance(bkg_datasets, DataPHA)
+
                     if bkg_datasets.get_response() == (None, None) and \
                        rmf is not None:
                         bkg_datasets.set_response(arf, rmf)
@@ -615,7 +752,9 @@ def read_pha(arg, use_errors=False, use_background=False):
                               header=data['header'])
                 bkg.set_response(arf, rmf)
                 if output_once:
-                    info(f"read {bkg_type} into a dataset from file {filename}")
+                    info("read %s into a dataset from file %s",
+                         bkg_type, filename)
+
                 backgrounds.append(bkg)
 
         for k in ['backfile', 'arffile', 'rmffile', 'backscup', 'backscdn',
@@ -624,13 +763,17 @@ def read_pha(arg, use_errors=False, use_background=False):
 
         pha = DataPHA(filename, **data)
         pha.set_response(arf, rmf)
-        for i, bkg in enumerate(backgrounds):
+        for idx, bkg in enumerate(backgrounds, 1):
+            # Copy over the grouping data from the source, if set.
+            #
             if bkg.grouping is None:
                 bkg.grouping = pha.grouping
                 bkg.grouped = bkg.grouping is not None
+
             if bkg.quality is None:
                 bkg.quality = pha.quality
-            pha.set_background(bkg, i + 1)
+
+            pha.set_background(bkg, idx)
 
         # set units *after* bkgs have been set
         pha._set_initial_quantity()
@@ -638,12 +781,12 @@ def read_pha(arg, use_errors=False, use_background=False):
         output_once = False
 
     if len(phasets) == 1:
-        phasets = phasets[0]
+        return phasets[0]
 
     return phasets
 
 
-def _pack_table(dataset):
+def _pack_table(dataset: Data) -> DataType:
     """Identify the columns in the data.
 
     This relies on the _fields attribute containing the data columns,
@@ -661,7 +804,9 @@ def _pack_table(dataset):
         the column names being converted to upper case.
 
     """
+
     data = {}
+
     for name in dataset._fields:
         if name == 'name':
             continue
@@ -676,10 +821,11 @@ def _pack_table(dataset):
     return data
 
 
-def _pack_image(dataset):
+def _pack_image(dataset: Data2D) -> Tuple[DataType, HdrType]:
     if not isinstance(dataset, (Data2D, DataIMG)):
         raise IOErr('notimage', dataset.name)
 
+    data: DataType
     data = {}
 
     # Data2D does not have a header
@@ -764,7 +910,7 @@ def _is_structural_keyword(key: str) -> bool:
                         ]
 
 
-def _remove_structural_keywords(header: dict[str, Any]) -> dict[str, Any]:
+def _remove_structural_keywords(header: HdrTypeArg) -> HdrType:
     """Remove FITS keywords relating to file structure.
 
     The aim is to allow writing out a header that was taken from a
@@ -780,7 +926,7 @@ def _remove_structural_keywords(header: dict[str, Any]) -> dict[str, Any]:
     Returns
     -------
     nheader : dict[str, Any]
-       Header with unwanted keywords returned (including those
+       Header with unwanted keywords removed (including those
        set to None).
 
     Notes
@@ -801,7 +947,7 @@ def _remove_structural_keywords(header: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def _pack_pha(dataset):
+def _pack_pha(dataset: DataPHA) -> Tuple[DataType, HdrType]:
     """Extract FITS column and header information.
 
     Notes
@@ -1042,16 +1188,22 @@ def _pack_pha(dataset):
     #
     try:
         vals = data["COUNTS"]
-        if numpy.issubdtype(vals.dtype, numpy.integer):
-            vals = vals.astype(numpy.int32)
+        if vals is None:
+            # Need to appease mypy
+            raise DataErr("ogip-error", "PHA dataset",
+                          dataset.name,
+                          "contains an unsupported COUNTS column")
+
+        elif numpy.issubdtype(vals.dtype, numpy.integer):
+            cvals = vals.astype(numpy.int32)
         elif numpy.issubdtype(vals.dtype, numpy.floating):
-            vals = vals.astype(numpy.float32)
+            cvals = vals.astype(numpy.float32)
         else:
             raise DataErr("ogip-error", "PHA dataset",
                           dataset.name,
                           "contains an unsupported COUNTS column")
 
-        data["COUNTS"] = vals
+        data["COUNTS"] = cvals
 
     except KeyError:
         pass
@@ -1059,7 +1211,11 @@ def _pack_pha(dataset):
     return data, header
 
 
-def _pack_arf(dataset):
+# Technically this should check for DataARF | ARF1D but that leads to
+# import loops, and it doesn't seem worth avoiding the issue with a
+# forward reference.
+#
+def _pack_arf(dataset: DataARF) -> Tuple[DataType, HdrType]:
     """Extract FITS column and header information.
 
     There is currently no support for Type II ARF files.
@@ -1147,7 +1303,21 @@ def _pack_arf(dataset):
     return data, header
 
 
-def _make_int_array(rows, ncols):
+def _find_int_dtype(rows: Sequence[Sequence[int]]) -> type:
+    """What data type should represent the matrix of integers?"""
+
+    maxval = 0
+    for row in rows:
+        if len(row) == 0:
+            continue
+
+        maxval = max(maxval, numpy.max(row))
+
+    return numpy.int32 if maxval > 32767 else numpy.int16
+
+
+def _make_int_array(rows: Sequence[Sequence[int]],
+                    ncols: int) -> numpy.ndarray:
     """Convert a list of rows into a 2D array of "width" ncols.
 
     The conversion is to a type determined by the maximum value in
@@ -1168,15 +1338,9 @@ def _make_int_array(rows, ncols):
     """
 
     nrows = len(rows)
-    maxval = 0
-    for row in rows:
-        if len(row) == 0:
-            continue
+    dtype = _find_int_dtype(rows)
 
-        maxval = max(maxval, row.max())
-
-    dtype = numpy.int32 if maxval > 32767 else numpy.int16
-    out = numpy.zeros((nrows, ncols), dtype=dtype)
+    out: numpy.ndarray = numpy.zeros((nrows, ncols), dtype=dtype)
     for idx, row in enumerate(rows):
         if len(row) == 0:
             continue
@@ -1186,7 +1350,8 @@ def _make_int_array(rows, ncols):
     return out
 
 
-def _make_float32_array(rows, ncols):
+def _make_float32_array(rows: Sequence[Sequence[float]],
+                        ncols: int) -> numpy.ndarray:
     """Convert a list of rows into a 2D array of "width" ncols.
 
     The output has type numpy.float32.
@@ -1213,7 +1378,7 @@ def _make_float32_array(rows, ncols):
     return out
 
 
-def _make_int_vlf(rows):
+def _make_int_vlf(rows: Sequence[Sequence[int]]) -> numpy.ndarray:
     """Convert a list of rows into a VLF.
 
     The conversion is to a type determined by the maximum value in
@@ -1230,23 +1395,16 @@ def _make_int_vlf(rows):
 
     """
 
-    nrows = len(rows)
-    maxval = 0
-    for row in rows:
-        if len(row) == 0:
-            continue
+    dtype = _find_int_dtype(rows)
 
-        maxval = max(maxval, row.max())
-
-    dtype = numpy.int32 if maxval > 32767 else numpy.int16
-    out = []
+    out: list[numpy.ndarray] = []
     for row in rows:
         out.append(numpy.asarray(row, dtype=dtype))
 
     return numpy.asarray(out, dtype=object)
 
 
-def _reconstruct_rmf(rmf):
+def _reconstruct_rmf(rmf: DataRMF) -> DataType:
     """Recreate the structure needed to write out as a FITS file.
 
     This does not guarantee to create byte-identical data in a round
@@ -1276,9 +1434,9 @@ def _reconstruct_rmf(rmf):
     """
 
     n_grp = []
-    f_chan = []
-    n_chan = []
-    matrix= []
+    f_chan: list[list[int]] = []
+    n_chan: list[list[int]] = []
+    matrix: list[list[float]] = []
 
     # Used to reconstruct the original data
     idx = 0
@@ -1300,11 +1458,6 @@ def _reconstruct_rmf(rmf):
         # Short-cut when no data
         if ng == 0:
             matrix_size.add(0)
-
-            # Convert from [] to numpy empty list
-            f_chan[-1] = numpy.asarray([], dtype=numpy.int32)
-            n_chan[-1] = numpy.asarray([], dtype=numpy.int32)
-            matrix[-1] = numpy.asarray([], dtype=numpy.float32)
             continue
 
         # Grab the next ng elements from rmf.f_chan/n_chan
@@ -1320,59 +1473,66 @@ def _reconstruct_rmf(rmf):
 
             f_chan[-1].append(rmf.f_chan[idx])
             n_chan[-1].append(rmf.n_chan[idx])
-            matrix[-1].extend(mdata)
+            matrix[-1].extend(mdata.astype(numpy.float32))
 
             idx += 1
             start = end
 
-        # Ensure F_CHAN/N_CHAN is either 2- or 4-byte integer by
-        # converting to 4-byte integer here, which can later be
-        # downcast.
-        #
-        f_chan[-1] = numpy.asarray(f_chan[-1], dtype=numpy.int32)
-        n_chan[-1] = numpy.asarray(n_chan[-1], dtype=numpy.int32)
-
-        # Ensure the matrix is Real-4
-        matrix[-1] = numpy.asarray(matrix[-1], dtype=numpy.float32)
-        matrix_size.add(matrix[-1].size)
-
-        numelt += sum(n_chan[-1])
+        matrix_size.add(len(matrix[-1]))
+        numelt += numpy.sum(n_chan[-1])
 
     # N_GRP should be 2-byte integer.
     #
-    n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
-    numgrp = n_grp.sum()
+    n_grp_out = numpy.asarray(n_grp, dtype=numpy.int16)
+    numgrp = n_grp_out.sum()
 
     # Can we convert F_CHAN/N_CHAN to fixed-length if either:
     #  - N_GRP is the same for all rows
     #  - max(N_GRP) < 4
     #
-    if len(set(n_grp)) == 1 or n_grp.max() < 4:
-        ny = n_grp.max()
-        f_chan = _make_int_array(f_chan, ny)
-        n_chan = _make_int_array(n_chan, ny)
+    # The decision to convert to the int16 or int32 types is made
+    # within the _make_int_xxx routines (the maximum value is used to
+    # decide what type to use).
+    #
+    if len(set(n_grp_out)) == 1 or n_grp_out.max() < 4:
+        ny = n_grp_out.max()
+        f_chan_out = _make_int_array(f_chan, ny)
+        n_chan_out = _make_int_array(n_chan, ny)
     else:
-        f_chan = _make_int_vlf(f_chan)
-        n_chan = _make_int_vlf(n_chan)
+        f_chan_out = _make_int_vlf(f_chan)
+        n_chan_out = _make_int_vlf(n_chan)
 
     # We can convert the matrix to fixed size if each row in matrix
     # has the same size.
     #
+    # The individual matrix elements are of type np.float32 so we
+    # should not need to do any conversion, but we are explicit in
+    # the fixed-length case.
+    #
     if len(matrix_size) == 1:
         ny = matrix_size.pop()
-        matrix = _make_float32_array(matrix, ny)
+        matrix_out = _make_float32_array(matrix, ny)
     else:
-        matrix = numpy.asarray(matrix, dtype=object)
+        # Since the elements can be lists, ensure they get converted
+        # to ndarray.
+        #
+        matrix_out = numpy.asarray([numpy.asarray(m, dtype=numpy.float32)
+                                    for m in matrix],
+                                   dtype=object)
 
-    return {"N_GRP": n_grp,
-            "F_CHAN": f_chan,
-            "N_CHAN": n_chan,
-            "MATRIX": matrix,
+    return {"N_GRP": n_grp_out,
+            "F_CHAN": f_chan_out,
+            "N_CHAN": n_chan_out,
+            "MATRIX": matrix_out,
             "NUMGRP": numgrp,
             "NUMELT": numelt}
 
 
-def _pack_rmf(dataset):
+# Technically this should check for DataRMF | RMF1D but that leads to
+# import loops, and it doesn't seem worth avoiding the issue with a
+# forward reference.
+#
+def _pack_rmf(dataset: DataRMF) -> list[Tuple[DataType, HdrType]]:
     """Extract FITS column and header information.
 
     Unlike the other pack routines this returns data for
@@ -1453,7 +1613,7 @@ def _pack_rmf(dataset):
         "NUMELT": 0
     }
 
-    ebounds_header = {
+    ebounds_header: HdrType = {
         "EXTNAME": "EBOUNDS",
         "HDUCLASS": "OGIP",
         "HDUCLAS1": "RESPONSE",
@@ -1515,7 +1675,11 @@ def _pack_rmf(dataset):
             (ebounds_data, ebounds_header)]
 
 
-def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
+def write_arrays(filename: str,
+                 args: Sequence[numpy.ndarray],
+                 fields: Optional[NamesType] = None,
+                 ascii: bool = True,
+                 clobber: bool = False) -> None:
     """Write out a collection of arrays.
 
     Parameters
@@ -1538,10 +1702,19 @@ def write_arrays(filename, args, fields=None, ascii=True, clobber=False):
     read_arrays
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     backend.set_arrays(filename, args, fields, ascii=ascii, clobber=clobber)
 
 
-def write_table(filename, dataset, ascii=True, clobber=False):
+def write_table(filename: str,
+                dataset: Data,
+                ascii: bool = True,
+                clobber: bool = False) -> None:
     """Write out a table.
 
     Parameters
@@ -1561,12 +1734,21 @@ def write_table(filename, dataset, ascii=True, clobber=False):
     read_table
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data = _pack_table(dataset)
     names = list(data.keys())
     backend.set_table_data(filename, data, names, ascii=ascii, clobber=clobber)
 
 
-def write_image(filename, dataset, ascii=True, clobber=False):
+def write_image(filename: str,
+                dataset: Data2D,
+                ascii: bool = True,
+                clobber: bool = False) -> None:
     """Write out an image.
 
     Parameters
@@ -1586,11 +1768,20 @@ def write_image(filename, dataset, ascii=True, clobber=False):
     read_image
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data, hdr = _pack_image(dataset)
     backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber)
 
 
-def write_pha(filename, dataset, ascii=True, clobber=False):
+def write_pha(filename: str,
+              dataset: DataPHA,
+              ascii: bool = True,
+              clobber: bool = False) -> None:
     """Write out a PHA dataset.
 
     Parameters
@@ -1610,13 +1801,22 @@ def write_pha(filename, dataset, ascii=True, clobber=False):
     read_pha
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data, hdr = _pack_pha(dataset)
     col_names = list(data.keys())
     backend.set_pha_data(filename, data, col_names, header=hdr,
                          ascii=ascii, clobber=clobber)
 
 
-def write_arf(filename, dataset, ascii=True, clobber=False):
+def write_arf(filename: str,
+              dataset: DataARF,
+              ascii: bool = True,
+              clobber: bool = False) -> None:
     """Write out an ARF.
 
     This does not handle Type II files.
@@ -1640,13 +1840,21 @@ def write_arf(filename, dataset, ascii=True, clobber=False):
     read_arf
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data, hdr = _pack_arf(dataset)
     names = list(data.keys())
     backend.set_arf_data(filename, data, names, header=hdr,
                          ascii=ascii, clobber=clobber)
 
 
-def write_rmf(filename, dataset, clobber=False):
+def write_rmf(filename: str,
+              dataset: DataRMF,
+              clobber: bool = False) -> None:
     """Write out a RMF.
 
     .. versionadded:: 4.16.0
@@ -1667,11 +1875,16 @@ def write_rmf(filename, dataset, clobber=False):
 
     """
 
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     blocks = _pack_rmf(dataset)
     backend.set_rmf_data(filename, blocks, clobber=clobber)
 
 
-def pack_table(dataset):
+def pack_table(dataset: Data) -> object:
     """Convert a Sherpa data object into an I/O item (tabular).
 
     Parameters
@@ -1695,12 +1908,18 @@ def pack_table(dataset):
     >>> tbl = pack_table(d)
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data = _pack_table(dataset)
     names = list(data.keys())
-    return backend.set_table_data('', data, names, packup=True)
+    return backend.pack_table_data(data, names)
 
 
-def pack_image(dataset):
+def pack_image(dataset: Data2D) -> Any:
     """Convert a Sherpa data object into an I/O item (image).
 
     Parameters
@@ -1727,11 +1946,17 @@ def pack_image(dataset):
     >>> img = pack_image(d)
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data, hdr = _pack_image(dataset)
-    return backend.set_image_data('', data, hdr, packup=True)
+    return backend.pack_image_data(data, hdr)
 
 
-def pack_pha(dataset):
+def pack_pha(dataset: DataPHA) -> Any:
     """Convert a Sherpa PHA data object into an I/O item (tabular).
 
     Parameters
@@ -1749,13 +1974,21 @@ def pack_pha(dataset):
     pack_image, pack_table
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
+
     data, hdr = _pack_pha(dataset)
     col_names = list(data.keys())
-    return backend.set_pha_data('', data, col_names, header=hdr,
-                                packup=True)
+    return backend.pack_pha_data(data, col_names, header=hdr)
 
 
-def read_table_blocks(arg, make_copy=False):
+def read_table_blocks(arg,
+                      make_copy: bool = False) -> tuple[str,
+                                                        dict[int, dict[str, numpy.ndarray]],
+                                                        dict[int, HdrType]]:
     """Return the HDU elements (columns and header) from a FITS table.
 
     Parameters
@@ -1776,5 +2009,10 @@ def read_table_blocks(arg, make_copy=False):
        being the column or header name.
 
     """
+
+    if TYPE_CHECKING:
+        # This is annoying; needed as have a docstring on backend and
+        # we default its value to None.
+        assert backend is not None
 
     return backend.read_table_blocks(arg, make_copy=make_copy)

@@ -93,7 +93,7 @@ class ArgumentTypeErr(TypeError, SherpaErr):
     dict = {'badarg': "'%s' must be %s",
             'intstr': 'identifiers must be integers or strings',
             'plotargs': 'not enough arguments to plot()',
-            'tempplotbackend': "'%s' is not a backend class, instance, or string name",
+            'tempbackend': "'%s' is not a backend class, instance, or string name",
             }
 
     def __init__(self, key, *args):

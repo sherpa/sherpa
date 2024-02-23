@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,6 +19,7 @@
 #
 
 import os
+from typing import Optional, Sequence
 
 import numpy
 
@@ -30,6 +31,9 @@ from sherpa.utils.numeric_types import SherpaFloat
 
 __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
            'write_arrays')
+
+
+NamesType = Sequence[str]
 
 
 def _is_subclass(t1, t2):
@@ -123,8 +127,14 @@ def get_column_data(*args):
     return cols
 
 
-def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
-                   comment='#', require_floats=True):
+def get_ascii_data(filename: str,
+                   ncols: int = 1,
+                   colkeys: Optional[NamesType] = None,
+                   sep: str = ' ',
+                   dstype: type = Data1D,
+                   comment: str = '#',
+                   require_floats: bool = True
+                   ) -> tuple[list[str], list[numpy.ndarray], str]:
     r"""Read in columns from an ASCII file.
 
     Parameters
