@@ -149,7 +149,7 @@ if HAS_PYTEST:
         otherwise skips the test.
         """
         pylab_backend = pytest.importorskip("sherpa.plot.pylab_backend")
-        plt  = pytest.importorskip("matplotlib.pyplot")
+        plt = pytest.importorskip("matplotlib.pyplot")
 
         with TemporaryPlottingBackend(pylab_backend.PylabBackend()):
             yield
@@ -187,8 +187,19 @@ if HAS_PYTEST:
         return requires_package("WCS required", 'sherpa.astro.utils._wcs')(test_function)
 
     def requires_ds9(test_function):
-        """Decorator for test functions requiring ds9"""
-        return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
+        """Decorator for test functions requiring ds9
+
+        This also ensures that the test is run in the same xdist
+        'group' as the other DS9 tests, which means they will all be
+        run sequentially, avoiding issue #1704 when using pytest-xdist
+        to run multiple tests in parallel.
+
+        """
+
+        pkg = requires_package('ds9 required', 'sherpa.image.ds9_backend')
+        grp = pytest.mark.xdist_group("ds9-tests")
+
+        return grp(pkg(test_function))
 
     def requires_xspec(test_function):
         return requires_package("xspec required", "sherpa.astro.xspec")(test_function)
