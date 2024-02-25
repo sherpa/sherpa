@@ -18,8 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 '''
-
-
+Plotting using bokeh.
 '''
 
 import logging
@@ -771,6 +770,25 @@ class BokehBackend(BasicBackend):
                               "complete grid of plots.") from None
         self.current_axis = self.current_fig[plotnum]
 
+    def set_title(self, title: str) -> None:
+        """Change the display title.
+
+        Parameters
+        ----------
+        title : str
+           The title text to use.
+
+        """
+
+        # It is not at all obvious how to do this since is it the
+        # first component or all components or ?
+        #
+        plotnum = self._index_axis(0, 0)
+        if plotnum is None:
+            # Should this error out?
+            return
+
+        self.current_fig.children[plotnum][0].title.text = title
 
     # HTML representation
 

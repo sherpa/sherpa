@@ -589,6 +589,17 @@ class BaseBackend(metaclass=MetaBaseBackend):
         """
         pass
 
+    def set_title(self, title: str) -> None:
+        """Change the display title.
+
+        Parameters
+        ----------
+        title : str
+           The title text to use.
+
+        """
+        pass
+
     def get_latex_for_string(self, txt):
         """Convert LaTeX formula
 
