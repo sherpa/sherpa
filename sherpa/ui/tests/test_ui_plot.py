@@ -2955,11 +2955,13 @@ def test_get_foo_component_plot_recalc(session, label, idval):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-@pytest.mark.parametrize("ptype,label",
-                         [("source", "Source model"),
-                          ("model", "Model")
+@pytest.mark.parametrize("ptype,mclass,label",
+                         [("source", sherpa.plot.ComponentSourcePlot,
+                           "Source model"),
+                          ("model", sherpa.plot.ComponentModelPlot,
+                           "Model")
                           ])
-def test_plot_xxx_components_simple(session, ptype, label):
+def test_get_xxx_components_simple(session, ptype, mclass, label):
     """Simple check of get_xxx_components
 
     This does not require a backend
@@ -2984,13 +2986,116 @@ def test_plot_xxx_components_simple(session, ptype, label):
     pfunc = getattr(s, f"get_{ptype}_components_plot")
     out = pfunc(3)
 
-    assert len(out) == 2
-    assert out[0].x == pytest.approx([1, 10, 50])
-    assert out[1].x == pytest.approx([1, 10, 50])
+    assert isinstance(out, sherpa.plot.MultiPlot)
+    assert len(out.plots) == 2
+    assert isinstance(out.plots[0], mclass)
+    assert isinstance(out.plots[1], mclass)
+
+    assert out.plots[0].x == pytest.approx([1, 10, 50])
+    assert out.plots[1].x == pytest.approx([1, 10, 50])
 
     # This should be c1 * c2 and c1 * c3
-    assert out[0].y == pytest.approx([1, 1, 1])
-    assert out[1].y == pytest.approx([0, 2, 2])
+    assert out.plots[0].y == pytest.approx([1, 1, 1])
+    assert out.plots[1].y == pytest.approx([0, 2, 2])
 
-    assert out[0].title == f"{label} component: scale1d.c1 * const1d.c2"
-    assert out[1].title == f"{label} component: scale1d.c1 * box1d.c3"
+    assert out.plots[0].title == f"{label} component: scale1d.c1 * const1d.c2"
+    assert out.plots[1].title == f"{label} component: scale1d.c1 * box1d.c3"
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+def test_plot_xxx_components_simple_mpl(session, ptype, requires_pylab):
+    """Simple check of plot_xxx_components using matpotlib"""
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_default_id(3)
+    s.load_arrays(3, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+
+    c1.c0 = 0.5
+    c2.c0 = 2
+    c3.ampl = 4
+    c3.xhi = 100
+    c3.xlow = 7
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    pfunc()
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+
+    axes = fig.axes[0]
+    assert axes.get_xlabel() == 'x'
+    assert axes.get_ylabel() == 'y'
+    assert axes.get_title() == 'Component plot'
+
+    assert len(axes.lines) == 2
+
+    assert axes.lines[0].get_xdata() == pytest.approx([1, 10, 50])
+    assert axes.lines[1].get_xdata() == pytest.approx([1, 10, 50])
+
+    # This should be c1 * c2 and c1 * c3
+    assert axes.lines[0].get_ydata() == pytest.approx([1, 1, 1])
+    assert axes.lines[1].get_ydata() == pytest.approx([0, 2, 2])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+def test_plot_xxx_components_simple_bokeh(session, ptype):
+    """Simple check of plot_xxx_components using bokeh"""
+
+    backend_mod = pytest.importorskip("sherpa.plot.bokeh_backend")
+    backend = backend_mod.BokehBackend()
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_plot_backend(backend)
+
+    s.set_default_id(3)
+    s.load_arrays(3, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+
+    c1.c0 = 0.5
+    c2.c0 = 2
+    c3.ampl = 4
+    c3.xhi = 100
+    c3.xlow = 7
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    pfunc()
+
+    # What to check? At the moment *very* basic (less than
+    # test_plot_xxx_components_simple_mpl).
+    #
+    fig = backend.current_fig
+    assert len(fig.children) == 1
+
+    fig0 = fig.children[0][0]
+    assert len(fig0.axis) == 2
+    assert fig0.xaxis.axis_label == "x"
+    assert fig0.yaxis.axis_label == "y"
+    assert fig0.title.text == "Component plot"
+
+    """
+    # How would we check the plotted data?
+
+    assert axes.lines[0].get_xdata() == pytest.approx([1, 10, 50])
+    assert axes.lines[1].get_xdata() == pytest.approx([1, 10, 50])
+
+    # This should be c1 * c2 and c1 * c3
+    assert axes.lines[0].get_ydata() == pytest.approx([1, 1, 1])
+    assert axes.lines[1].get_ydata() == pytest.approx([0, 2, 2])
+    """

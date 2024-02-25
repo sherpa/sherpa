@@ -716,6 +716,18 @@ class PylabBackend(BasicBackend):
 
         plt.sca(ax)
 
+    def set_title(self, title: str) -> None:
+        """Change the display title.
+
+        Parameters
+        ----------
+        title : str
+           The title text to use.
+
+        """
+
+        plt.title(title)
+
     # HTML representation as SVG plots
 
     def as_svg(self, func):

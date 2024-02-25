@@ -40,7 +40,7 @@ from sherpa.models.basic import TableModel
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
-from sherpa.plot import Plot, set_backend
+from sherpa.plot import Plot, MultiPlot, set_backend
 from sherpa.utils import NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -721,49 +721,20 @@ class FitStore:
 
 def get_components_helper(getfunc: Callable[..., Plot],
                           model: Model,
-                          idval: Union[int, str]) -> list[Plot]:
+                          idval: Union[int, str]) -> MultiPlot:
     """Handle get_source/model_components_plot.
 
     Iterate through each term in the source model.
     """
 
-    out = []
+    out = MultiPlot()
     cpts = sherpa.models.model.model_deconstruct(model)
     for cpt in cpts:
-        # Note: we need to copy the return value since the get
-        # routines just return a shared object.
         plotobj = getfunc(id=idval, model=cpt, recalc=True)
-        out.append(copy.deepcopy(plotobj))
+        out.add(plotobj)
 
+    out.title = "Component plot"
     return out
-
-
-def plot_components_helper(plots: list[Plot],
-                           overplot: bool,
-                           clearwindow: bool,
-                           **kwargs) -> None:
-    """Handle plot_source/model_components.
-
-    We only care about overplot and clearwindow for the first
-    plot. The plot titles are also "reset". This means the
-    plots array is changed in place.
-
-    """
-
-    with sherpa.plot.backend:
-        for plot in plots:
-
-            # Set the title to something anodyne.
-            plot.title = "Component plot"
-
-            # The first call we use the user's overplot and clearwindow
-            # settings. For the remainder we clear them.
-            #
-            plot.plot(overplot=overplot, clearwindow=clearwindow,
-                      **kwargs)
-
-            overplot = True
-            clearwindow = False
 
 
 ###############################################################################
@@ -979,8 +950,10 @@ class Session(NoNewAttributesAfterInit):
             'data': [sherpa.plot.DataPlot(), sherpa.plot.DataHistogramPlot()],
             'model': [sherpa.plot.ModelPlot(), sherpa.plot.ModelHistogramPlot()],
             'model_component': [sherpa.plot.ComponentModelPlot(), sherpa.plot.ComponentModelHistogramPlot()],
+            'model_components': [sherpa.plot.MultiPlot()],
             'source': [sherpa.plot.SourcePlot(), sherpa.plot.SourceHistogramPlot()],
             'source_component': [sherpa.plot.ComponentSourcePlot(), sherpa.plot.ComponentSourceHistogramPlot()],
+            'source_components': [sherpa.plot.MultiPlot()],
             'fit': [sherpa.plot.FitPlot()],
             'resid': [sherpa.plot.ResidPlot()],
             'ratio': [sherpa.plot.RatioPlot()],
@@ -13675,6 +13648,9 @@ class Session(NoNewAttributesAfterInit):
         ``model_component``
            Part of the full model expression (convolved).
 
+        ``model_components``
+           Parts of the full model expression (convolved).
+
         ``order``
           Plot the model for a selected response
 
@@ -13692,6 +13668,9 @@ class Session(NoNewAttributesAfterInit):
 
         ``source_component``
            Part of the full model expression (un-convolved).
+
+        ``source_components``
+           Parts of the full model expression (un-convolved).
 
         The plots can be specialized for a particular data type,
         such as the `set_analysis` command controlling the units
@@ -14049,8 +14028,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plots = self.get_source_components_plot(id)
-        plot_components_helper(plots, overplot=overplot,
-                               clearwindow=clearwindow, **kwargs)
+        self._plot(plots, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_model_component(self, id, model=None, replot=False,
                              overplot=False, clearwindow=True, **kwargs):
@@ -14185,8 +14164,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         plots = self.get_model_components_plot(id)
-        plot_components_helper(plots, overplot=overplot,
-                               clearwindow=clearwindow, **kwargs)
+        self._plot(plots, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
     def plot_source(self, id=None, replot=False,
