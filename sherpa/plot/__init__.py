@@ -27,11 +27,13 @@ and used even when only the `sherpa.plot.backends.BasicBackend` is
 available.
 """
 
+from __future__ import annotations
+
 from configparser import ConfigParser
 import contextlib
 import logging
 import importlib
-from typing import Optional
+from typing import Any, Literal, Optional, Sequence, Union
 
 import numpy as np
 
@@ -64,15 +66,18 @@ warning = logging.getLogger(__name__).warning
 # TODO: why is this module globally changing the invalid mode of NumPy?
 _ = np.seterr(invalid='ignore')
 
-backend = None
-'''Currently active backend module for plotting.'''
-
 basicbackend = BasicBackend()
 '''This backend has all the defaults that are backend-independent.
 For all the plot classes in this module (e.g. FitPlot, JointPlot, ...)
 the default settings are set in code like `plot_prefs = xxx.get_plot_defaults()`
 where xxx is some backend.
 '''
+
+# This may be over-ridden below, depending on the options.plot_pkg setting.
+#
+backend: BaseBackend = basicbackend
+'''Currently active backend module for plotting.'''
+
 # In the current design, this code is executed when this
 # module imported and then the values are shared between all instances of a class.
 # That allows one to change those default "globally" (i.e. for all instances of the class)
@@ -93,9 +98,7 @@ for plottry in plot_opt:
         break
     warning("Plotting backend '%s' not found or dependencies missing. Trying next option.", plottry)
 else:
-    # None of the options in the rc file work, e.g. because it's an old file
-    backend = BasicBackend()
-
+    # The backend will default to BasicBackend from above
     warning(f"Tried the following backends listed in {get_config()}: \n" +
             f"{plot_opt}\n" +
             "None of these imported correctly, so using the 'BasicBackend'.\n" +
@@ -132,7 +135,7 @@ _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
 """Statistics that do not make use of uncertainties."""
 
 
-def set_backend(new_backend):
+def set_backend(new_backend: Union[str, BaseBackend, type[BaseBackend]]) -> None:
     '''Set the Sherpa plotting backend.
 
     Plotting backends are registered in Sherpa with a string name.
@@ -173,18 +176,24 @@ def set_backend(new_backend):
     global backend
 
     if isinstance(new_backend, str):
-        if new_backend in PLOT_BACKENDS:
+        try:
             backend = PLOT_BACKENDS[new_backend]()
-        else:
+        except KeyError:
             raise IdentifierErr('noplotbackend', new_backend,
-                                list(PLOT_BACKENDS.keys()))
+                                list(PLOT_BACKENDS.keys())) from None
+
+        return
+
     # It's a class and that class is a subclass of BaseBackend
-    elif isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
+    if isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
         backend = new_backend()
-    elif isinstance(new_backend, BaseBackend):
+        return
+
+    if isinstance(new_backend, BaseBackend):
         backend = new_backend
-    else:
-        raise ArgumentTypeErr('tempplotbackend', new_backend)
+        return
+
+    raise ArgumentTypeErr('tempplotbackend', new_backend)
 
 
 class TemporaryPlottingBackend(contextlib.AbstractContextManager):
@@ -215,17 +224,24 @@ class TemporaryPlottingBackend(contextlib.AbstractContextManager):
 
     '''
 
-    def __init__(self, new_backend):
+    def __init__(self, new_backend: BaseBackend) -> None:
         self.backend = new_backend
 
-    def __enter__(self):
+    def __enter__(self) -> TemporaryPlottingBackend:
         global backend
         self.old = backend
         set_backend(self.backend)
+        return self
 
-    def __exit__(self, *args):
+    # As exc_type/val/tb are not used here we type them as Any, and the
+    # return value is marked as an explicit False rather than bool since
+    # it avoids warnings from mypy (as __exit__ is special).
+    #
+    def __exit__(self,
+                 exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         global backend
         backend = self.old
+        return False
 
 
 def _make_title(title, name=''):
@@ -2470,9 +2486,10 @@ def calc_par_range(minval: float,
 
     if delv is not None:
         # This assumes that delv > eps, but this should be safe.
+        # The float(eps) term is for mypy.
         #
         eps = np.finfo(np.float32).eps
-        maxval = maxval + eps
+        maxval = maxval + float(eps)
 
     if log:
         if minval <= 0.0 or maxval <= 0.0:
