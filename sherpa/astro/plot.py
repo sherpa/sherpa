@@ -251,7 +251,7 @@ class ChisqrPHAPlot(shplot.ChisqrHistogramPlot):
         self.xlo, self.xhi = calc_x(data)
 
 
-class ModelPHAHistogram(shplot.HistogramPlot):
+class ModelPHAHistogram(shplot.BaseHistogram):
     """Plot a model for a PHA dataset.
 
     The filtering and grouping from the PHA dataset
@@ -504,7 +504,7 @@ class ComponentSourcePlot(SourcePlot):
         self.title = f'Source model component: {model.name}'
 
 
-class ARFPlot(shplot.HistogramPlot):
+class ARFPlot(shplot.BaseHistogram):
     """Create plots of the ancillary response file (ARF).
 
     Attributes
@@ -561,7 +561,7 @@ class ARFPlot(shplot.HistogramPlot):
             self.xhi = hc / arf.energ_lo
 
 
-class RMFPlot(shplot.HistogramPlot):
+class RMFPlot(shplot.BaseHistogram):
     """Create plots of the ancillary response file (RMF).
 
     A full RMF is a matrix that is hard to visualize.
@@ -728,7 +728,7 @@ class RMFPlot(shplot.HistogramPlot):
              **kwargs):
         """Plot the data.
 
-        This will plot the data sent to the prepare method.
+        This will plot the data created by the prepare method.
 
         Parameters
         ----------

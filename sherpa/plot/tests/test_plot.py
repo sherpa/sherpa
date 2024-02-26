@@ -1375,7 +1375,8 @@ def test_does_fitplot_have_labels():
     This is relevant because JointPlot uses the presence of xlabel vs
     dataplot/modelplot to determine how to hide the x-axis label of
     the top plot (written during 4.17.0 development). So we want to
-    check what the current status is here.
+    check what the current status is here. The JointPlot code has
+    now been changed, but leave this test in
 
     This can be thought of checking the plot hierarchy: i.e. how much
     does FitPlot share with other classes?.
@@ -1384,11 +1385,8 @@ def test_does_fitplot_have_labels():
 
     fp = sherpa.FitPlot()
 
-    for attr in ["xlabel", "ylabel", "title"]:
-        assert not hasattr(fp, attr), attr
-
-    # add these in for good measure
-    for attr in ["dataplot", "modelplot", "plot_prefs"]:
+    # Should FitPlot really have x/ylabel and title fields?
+    for attr in ["xlabel", "ylabel", "title", "dataplot", "modelplot", "plot_prefs"]:
         aval = getattr(fp, attr)
         assert not callable(aval), attr
 
