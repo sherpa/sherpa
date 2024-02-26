@@ -1038,11 +1038,9 @@ def check_bkg_fit(plotfunc, idval, isfit=True):
     mplot = fplot.modelplot
     assert isinstance(mplot, sherpa.astro.plot.BkgModelPHAHistogram)
 
-    xlabel = 'Channel' if plotfunc == ui.plot_bkg_fit else ''
-
     # check plot basics
     for plot in [dplot, mplot]:
-        assert plot.xlabel == xlabel
+        assert plot.xlabel == 'Channel'
         assert plot.ylabel == 'Counts/sec/channel'
 
     assert dplot.xlo == pytest.approx(_data_chan)
@@ -4266,7 +4264,7 @@ def check_plot2_xscale(xscale):
     fig = plt.gcf()
     axes = fig.axes
     assert len(axes) == 2
-    assert axes[0].xaxis.get_label().get_text() == ''
+    assert axes[0].xaxis.get_label().get_text() == 'Channel'
 
     assert axes[0].xaxis.get_scale() == xscale
     assert axes[0].yaxis.get_scale() == 'linear'
