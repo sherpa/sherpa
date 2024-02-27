@@ -33,7 +33,7 @@ from sherpa.astro.ui.utils import Session
 from sherpa.instrument import PSFModel
 from sherpa.models import basic
 from sherpa.models.model import ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, UnaryOpModel
+    ArithmeticFunctionModel, BinaryOpModel, UnaryOpModel, Model
 from sherpa.utils.err import ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
@@ -103,7 +103,7 @@ def test_basic_binop_raw(op):
     mdl = BinaryOpModel(l, r, op, 'xOx')
 
     assert isinstance(mdl, BinaryOpModel)
-    assert mdl.name == '(polynom2d xOx gauss2d)'
+    assert mdl.name == 'polynom2d xOx gauss2d'
     assert mdl.op == op
     assert mdl.opstr == 'xOx'
     assert len(mdl.parts) == 2
@@ -124,7 +124,7 @@ def test_basic_binop(op, opstr):
     mdl = op(l, r)
 
     assert isinstance(mdl, BinaryOpModel)
-    assert mdl.name == f'(polynom2d {opstr} gauss2d)'
+    assert mdl.name == f'polynom2d {opstr} gauss2d'
     assert mdl.op == op
     assert mdl.opstr == opstr
     assert len(mdl.parts) == 2
@@ -181,7 +181,7 @@ def test_eval_add_sub_op():
     mdl = m1 - (+m2 - m3)
     assert mdl.ndim == 1
 
-    assert mdl.name == "(c - (+(p) - b))"
+    assert mdl.name == "c - (+(p) - b)"
 
     bins = np.arange(2, 10, 2)
     yexp = m1(bins) + m3(bins) - m2(bins)
@@ -498,110 +498,152 @@ class TestBrackets:
     @pytest.mark.parametrize("model,expected",
                              [(a, "a"),
                               (abs(a), "abs(a)"),
-                              (abs(a) + b, "(abs(a) + b)"),
-                              (b + abs(a), "(b + abs(a))"),
-                              (abs(a + b), "abs((a + b))"),
-                              (abs(a + b * c), "abs((a + (b * c)))"),
-                              (abs(a - b * c), "abs((a - (b * c)))"),
-                              (abs((a + b) * c), "abs(((a + b) * c))"),
-                              (abs((a - b) * c), "abs(((a - b) * c))"),
-                              (abs((a - b) / c), "abs(((a - b) / c))"),
-                              (abs((a * b) - c), "abs(((a * b) - c))"),
-                              (abs((a / b) - c), "abs(((a / b) - c))"),
-                              (a * abs(b * (c + d)), "(a * abs((b * (c + d))))"),
-                              (abs(b * (c + d)) * (a + d), "(abs((b * (c + d))) * (a + d))"),
+                              (abs(a) + b, "abs(a) + b"),
+                              (b + abs(a), "b + abs(a)"),
+                              (abs(a + b), "abs(a + b)"),
+                              (abs(a + b * c), "abs(a + b * c)"),
+                              (abs(a - b * c), "abs(a - b * c)"),
+                              (abs((a + b) * c), "abs((a + b) * c)"),
+                              (abs((a - b) * c), "abs((a - b) * c)"),
+                              (abs((a - b) / c), "abs((a - b) / c)"),
+                              (abs((a * b) - c), "abs(a * b - c)"),
+                              (abs((a / b) - c), "abs(a / b - c)"),
+                              (a * abs(b * (c + d)), "a * abs(b * (c + d))"),
+                              (abs(b * (c + d)) * (a + d), "abs(b * (c + d)) * (a + d)"),
                               (-a, "-(a)"),
                               (+a, "+(a)"),
-                              (-a + b, "(-(a) + b)"),
-                              (+a + b, "(+(a) + b)"),
-                              (-(a + b), "-((a + b))"),
-                              (-(a * b), "-((a * b))"),
-                              (-(a - b), "-((a - b))"),
-                              (-(a * b - c), "-(((a * b) - c))"),
-                              (-(a - b * c), "-((a - (b * c)))"),
-                              (a - a - b, "((a - a) - b)"),
-                              (a - (a - b), "(a - (a - b))"),
-                              (a - (b - (c - d)), '(a - (b - (c - d)))'),
-                              (a - (b + (c - d)), '(a - (b + (c - d)))'),
-                              (b - (c + d), '(b - (c + d))'),
-                              ((a - b) - (c + d), '((a - b) - (c + d))'),
-                              (a - (b - (c + d)), '(a - (b - (c + d)))'),
-                              (a - (b + (c + d)), '(a - (b + (c + d)))'),
-                              (2 * (a + b) - c * 3, "((2.0 * (a + b)) - (c * 3.0))"),
-                              (abs(2 * (a + b) - c * 3), "abs(((2.0 * (a + b)) - (c * 3.0)))"),
-                              (a + a, "(a + a)"),
-                              (a * b, "(a * b)"),
-                              (a - a, "(a - a)"),
-                              (a / b, "(a / b)"),
-                              (a + b + c, "((a + b) + c)"),
-                              (a * b * c, "((a * b) * c)"),
-                              ((a * b) + c, "((a * b) + c)"),
-                              ((a + b) * c, "((a + b) * c)"),
-                              (a + (b * c), "(a + (b * c))"),
-                              (a * (b + c), "(a * (b + c))"),
-                              ((a + b) * (c + d), "((a + b) * (c + d))"),
-                              ((a * b) * (c + d), "((a * b) * (c + d))"),
-                              ((a + b) * (c * d), "((a + b) * (c * d))"),
-                              ((a + (b * c) + d), "((a + (b * c)) + d)"),
-                              (100 * a * (b + c), "((100.0 * a) * (b + c))"),
-                              (100 * (a * (b + c)), "(100.0 * (a * (b + c)))"),
-                              (a + b + 2 * c + d + a, "((((a + b) + (2.0 * c)) + d) + a)"),
-                              (a + b + c * 2 + d + a, "((((a + b) + (c * 2.0)) + d) + a)"),
-                              (a + b * (c - 2) + d + a, "(((a + (b * (c - 2.0))) + d) + a)"),
-                              (a + b * (2 - c) + d + a, "(((a + (b * (2.0 - c))) + d) + a)"),
-                              ((a + b + c) + (c + b + d + a), "(((a + b) + c) + (((c + b) + d) + a))"),
-                              ((a + b + c) + (c + b - d + a), "(((a + b) + c) + (((c + b) - d) + a))"),
-                              ((a + b + c) + (c + b - abs(d) + a), "(((a + b) + c) + (((c + b) - abs(d)) + a))"),
-                              ((a + b + c) * (c + b + d + a), "(((a + b) + c) * (((c + b) + d) + a))"),
-                              ((a + b + c) * (c + b - d + a), "(((a + b) + c) * (((c + b) - d) + a))"),
-                              ((a + b + c) * (c + b - abs(d) + a), "(((a + b) + c) * (((c + b) - abs(d)) + a))"),
-                              ((a * b * c) * (c + b + d + a), "(((a * b) * c) * (((c + b) + d) + a))"),
-                              ((a + b + c) * (c * b * d * a), "(((a + b) + c) * (((c * b) * d) * a))"),
-                              ((a + b + c) * (c * b + d * a), "(((a + b) + c) * ((c * b) + (d * a)))"),
-                              (2 * a * 2, "((2.0 * a) * 2.0)"),
-                              (a * 2 * 2, "((a * 2.0) * 2.0)"),
-                              (2 * a + 2 * (b + c - 4) * 3, "((2.0 * a) + ((2.0 * ((b + c) - 4.0)) * 3.0))"),
+                              (-a + b, "-(a) + b"),
+                              (-a + 2, "-(a) + 2.0"),
+                              (+a + b, "+(a) + b"),
+                              (-(a + b), "-(a + b)"),
+                              (-(a * b), "-(a * b)"),
+                              (-(a - b), "-(a - b)"),
+                              (-(a * b - c), "-(a * b - c)"),
+                              (-(a - b * c), "-(a - b * c)"),
+                              (a - a - b, "a - a - b"),
+                              (a - (a - b), "a - (a - b)"),
+                              (a - (b - (c - d)), 'a - (b - (c - d))'),
+                              (a - (b + (c - d)), 'a - (b + c - d)'),
+                              (b - (c + d), 'b - (c + d)'),
+                              ((a - b) - (c + d), 'a - b - (c + d)'),
+                              (a - (b - (c + d)), 'a - (b - (c + d))'),
+                              (a - (b + (c + d)), 'a - (b + c + d)'),
+                              (2 * (a + b) - c * 3, "2.0 * (a + b) - c * 3.0"),
+                              (abs(2 * (a + b) - c * 3), "abs(2.0 * (a + b) - c * 3.0)"),
+                              (a + a, "a + a"),
+                              (a * b, "a * b"),
+                              (a - a, "a - a"),
+                              (a / b, "a / b"),
+                              (a + b + c, "a + b + c"),
+                              (a * b * c, "a * b * c"),
+                              ((a * b) + c, "a * b + c"),
+                              ((a + b) * c, "(a + b) * c"),
+                              (a + (b * c), "a + b * c"),
+                              (a * (b + c), "a * (b + c)"),
+                              ((a + b) * (c + d), "(a + b) * (c + d)"),
+                              ((a * b) * (c + d), "a * b * (c + d)"),
+                              ((a + b) * (c * d), "(a + b) * c * d"),
+                              ((a + (b * c) + d), "a + b * c + d"),
+                              (100 * a * (b + c), "100.0 * a * (b + c)"),
+                              (100 * (a * (b + c)), "100.0 * a * (b + c)"),
+                              (a + b + 2 * c + d + a, "a + b + 2.0 * c + d + a"),
+                              (a + b + c * 2 + d + a, "a + b + c * 2.0 + d + a"),
+                              (a + b * (c - 2) + d + a, "a + b * (c - 2.0) + d + a"),
+                              (a + b * (2 - c) + d + a, "a + b * (2.0 - c) + d + a"),
+                              ((a + b + c) + (c + b + d + a), "a + b + c + c + b + d + a"),
+                              ((a + b + c) + (c + b - d + a), "a + b + c + c + b - d + a"),
+                              ((a + b + c) + (c + b - abs(d) + a), "a + b + c + c + b - abs(d) + a"),
+                              ((a + b + c) * (c + b + d + a), "(a + b + c) * (c + b + d + a)"),
+                              ((a + b + c) * (c + b - d + a), "(a + b + c) * (c + b - d + a)"),
+                              ((a + b + c) * (c + b - abs(d) + a), "(a + b + c) * (c + b - abs(d) + a)"),
+                              ((a * b * c) * (c + b + d + a), "a * b * c * (c + b + d + a)"),
+                              ((a + b + c) * (c * b * d * a), "(a + b + c) * c * b * d * a"),
+                              ((a + b + c) * (c * b + d * a), "(a + b + c) * (c * b + d * a)"),
+                              (2 * a * 2, "2.0 * a * 2.0"),
+                              (a * 2 * 2, "a * 2.0 * 2.0"),
+                              (2 * a + 2 * (b + c - 4) * 3, "2.0 * a + 2.0 * (b + c - 4.0) * 3.0"),
                               (tm * (a + b) + tm * (a * b),
-                               '((tm * (a + b)) + (tm * (a * b)))'),
+                               'tm * (a + b) + tm * a * b'),
                               (tm * (a + b) + tm * (a * (b + 3)),
-                               '((tm * (a + b)) + (tm * (a * (b + 3.0))))'),
-                              (cm(a) + b, '(cm(a) + b)'),
-                              (a * cm(b + c), '(a * cm((b + c)))'),
+                               'tm * (a + b) + tm * a * (b + 3.0)'),
+                              (cm(a) + b, 'cm(a) + b'),
+                              (a * cm(b + c), 'a * cm(b + c)'),
                               (a + cm(b + 2 * d + c),
-                               '(a + cm(((b + (2.0 * d)) + c)))'),
+                               'a + cm(b + 2.0 * d + c)'),
                               (arf(b * (c * d)) + d,
-                               "(apply_arf((100.0 * (b * (c * d)))) + d)"),
+                               "apply_arf(100.0 * b * c * d) + d"),
                               (a + 2 * arf(b * (c + d)),
-                               "(a + (2.0 * apply_arf((100.0 * (b * (c + d))))))"),
+                               "a + 2.0 * apply_arf(100.0 * b * (c + d))"),
                               (a + 2 * rmf(b * (c + d)),
-                               "(a + (2.0 * apply_rmf((b * (c + d)))))"),
+                               "a + 2.0 * apply_rmf(b * (c + d))"),
                               # Manually combining RMF1D and ARF1D is interesting as we would normally
                               # use RSPModelNoPHA
                               (a * rmf(arf(a * (b + c * d))) + d * arf(a + b),
-                               '((a * apply_rmf(apply_arf((100.0 * (a * (b + (c * d))))))) + (d * apply_arf((100.0 * (a + b)))))'),
+                               'a * apply_rmf(apply_arf(100.0 * a * (b + c * d))) + d * apply_arf(100.0 * (a + b))'),
                               # Repeat but with rsp instead
                               (a * rsp(a * (b + c * d)) + d * arf(a + b),
-                               '((a * apply_rmf(apply_arf((100.0 * (a * (b + (c * d))))))) + (d * apply_arf((100.0 * (a + b)))))'),
+                               'a * apply_rmf(apply_arf(100.0 * a * (b + c * d))) + d * apply_arf(100.0 * (a + b))'),
                               (arf(b * (c + d)),
-                               "apply_arf((100.0 * (b * (c + d))))"),
+                               "apply_arf(100.0 * b * (c + d))"),
                               # How about expressions with exponentation
-                              (a**2, "(a ** 2.0)"),
-                              (a**-2, "(a ** -2.0)"),
-                              (a + b**2, "(a + (b ** 2.0))"),
-                              (a + (b + c)**2, "(a + ((b + c) ** 2.0))"),
-                              (a - b**(c - 2) - a, "((a - (b ** (c - 2.0))) - a)"),
-                              ((a ** 2) ** b, "((a ** 2.0) ** b)"),
-                              (-a ** 2, "-((a ** 2.0))"),
-                              ((-a)**2, "(-(a) ** 2.0)"),  # Is this wrong?
+                              (a**2, "a ** 2.0"),
+                              (a**-2, "a ** -2.0"),
+                              (a + b**2, "a + b ** 2.0"),
+                              (a + (b + c)**2, "a + (b + c) ** 2.0"),
+                              (a - b**(c - 2) - a, "a - b ** (c - 2.0) - a"),
+                              ((a ** 2) ** b, "(a ** 2.0) ** b"),
+                              (-a ** 2, "-(a ** 2.0)"),
+                              ((-a)**2, "(-(a)) ** 2.0"),
                               # remainder and integer division, for fun
-                              (a // 2, "(a // 2.0)"),
-                              ((a + b) // 2, "((a + b) // 2.0)"),
-                              ((a * b) // 2, "((a * b) // 2.0)"),
-                              (a % 2, "(a % 2.0)"),
-                              ((a + b) % 2, "((a + b) % 2.0)"),
-                              ((a * b) % 2, "((a * b) % 2.0)")
+                              (a // 2, "a // 2.0"),
+                              ((a + b) // 2, "(a + b) // 2.0"),
+                              ((a * b) // 2, "(a * b) // 2.0"),
+                              (a % 2, "a % 2.0"),
+                              ((a + b) % 2, "(a + b) % 2.0"),
+                              ((a * b) % 2, "(a * b) % 2.0")
                              ])
     def test_brackets(self, model, expected):
         """Do we get the expected number of brackets?"""
 
         assert model.name == expected
+
+        # Can we check that the string expression, when evaluated
+        # as a model, returns the same result?
+        #
+        # Now, thanks to how models are converted to strings, the
+        # ARF/RMF cases do not work, so skip if any expected string
+        # contains "apply".
+        #
+        if expected.find("apply") != -1:
+            return
+
+        got = eval(expected, None,
+                   {"a": self.a,
+                    "b": self.b,
+                    "c": self.c,
+                    "d": self.d,
+                    "tm": self.tm,
+                    "cm": self.cm})
+        assert isinstance(got, Model)
+
+        # Just because we can
+        assert got.name == expected
+
+        # Evaluate the two models and check they get the same. Since
+        # most of the models are very simple (e.g. return 1 for each
+        # bin) this does not test that much, but should be sufficient
+        # here.
+        #
+        # However, those models that include convolution-style
+        # expressions need to be folded through a data object which we
+        # do not want to set up here, so we skip those tests. There is
+        # a similar issue with the table model.
+        #
+        if expected.find("cm") != -1 or expected.find("tm") != -1:
+            return
+
+        x = [2, 5, 7]
+        ymdl = model(x)
+        ygot = got(x)
+
+        assert ygot == pytest.approx(ymdl)

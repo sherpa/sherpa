@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2023
+#  Copyright (C) 2020, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -75,8 +75,8 @@ def test_regrid_name_combined():
     mdl = c1 * c2
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
-    assert mdl.name == '(wabs * powerlaw)'
-    assert regrid.name == 'regrid1d((wabs * powerlaw))'
+    assert mdl.name == 'wabs * powerlaw'
+    assert regrid.name == 'regrid1d(wabs * powerlaw)'
 
 
 @requires_xspec
