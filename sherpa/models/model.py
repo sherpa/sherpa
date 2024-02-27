@@ -319,6 +319,7 @@ non-integrated and integrated datasets of any dimensionality (see
 
 import functools
 import logging
+from typing import Optional
 import warnings
 
 import numpy
@@ -524,7 +525,7 @@ class Model(NoNewAttributesAfterInit):
 
     """
 
-    ndim = None
+    ndim: Optional[int] = None
     "The dimensionality of the model, if defined, or None."
 
     def __init__(self, name, pars=()):
