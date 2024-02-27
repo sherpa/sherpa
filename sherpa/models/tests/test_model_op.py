@@ -543,7 +543,23 @@ class TestBrackets:
                               (a * rsp(a * (b + c * d)) + d * arf(a + b),
                                '((a * apply_rmf(apply_arf((100.0 * (a * (b + (c * d))))))) + (d * apply_arf((100.0 * (a + b)))))'),
                               (arf(b * (c + d)),
-                               "apply_arf((100.0 * (b * (c + d))))")
+                               "apply_arf((100.0 * (b * (c + d))))"),
+                              # How about expressions with exponentation
+                              (a**2, "(a ** 2.0)"),
+                              (a**-2, "(a ** -2.0)"),
+                              (a + b**2, "(a + (b ** 2.0))"),
+                              (a + (b + c)**2, "(a + ((b + c) ** 2.0))"),
+                              (a - b**(c - 2) - a, "((a - (b ** (c - 2.0))) - a)"),
+                              ((a ** 2) ** b, "((a ** 2.0) ** b)"),
+                              (-a ** 2, "-((a ** 2.0))"),
+                              ((-a)**2, "(-(a) ** 2.0)"),  # Is this wrong?
+                              # remainder and integer division, for fun
+                              (a // 2, "(a // 2.0)"),
+                              ((a + b) // 2, "((a + b) // 2.0)"),
+                              ((a * b) // 2, "((a * b) // 2.0)"),
+                              (a % 2, "(a % 2.0)"),
+                              ((a + b) % 2, "((a + b) % 2.0)"),
+                              ((a * b) % 2, "((a * b) % 2.0)")
                              ])
     def test_brackets(self, model, expected):
         """Do we get the expected number of brackets?"""
