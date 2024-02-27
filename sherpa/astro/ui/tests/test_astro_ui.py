@@ -1389,7 +1389,7 @@ def test_pileup_model(make_data_path, clean_astro_ui):
     # Check pileup is added to get_model
     #
     mlines = str(ui.get_model('pileup')).split('\n')
-    assert mlines[0] == 'apply_rmf(jdpileup.jdp((xswabs.amdl * powlaw1d.pl)))'
+    assert mlines[0] == 'apply_rmf(jdpileup.jdp(xswabs.amdl * powlaw1d.pl))'
     assert mlines[3].strip() == 'jdp.alpha    thawed         0.95            0            1'
     assert mlines[5].strip() == 'jdp.f        thawed         0.91          0.9            1'
     assert mlines[11].strip() == 'pl.gamma     thawed         1.97          -10           10'
@@ -1423,11 +1423,11 @@ def test_pileup_model(make_data_path, clean_astro_ui):
 
     toks = mlines[0].split()
     assert len(toks) == 5
-    assert toks[0].startswith('apply_rmf(apply_arf((38564.608')
+    assert toks[0].startswith('apply_rmf(apply_arf(38564.608')
     assert toks[1] == '*'
-    assert toks[2] == '(xswabs.amdl'
+    assert toks[2] == 'xswabs.amdl'
     assert toks[3] == '*'
-    assert toks[4] == 'powlaw1d.pl))))'
+    assert toks[4] == 'powlaw1d.pl))'
 
     assert mlines[4].strip() == 'pl.gamma     thawed         1.97          -10           10'
 

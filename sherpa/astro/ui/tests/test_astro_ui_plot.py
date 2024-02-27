@@ -1318,8 +1318,8 @@ def check_pha1_model_component_plot(mplot, mdl):
     # so do not use an equality check but something a bit-more forgiving
     # (could use a regexp but not worth it).
     #
-    assert mplot.title.startswith('Model component: apply_rmf(apply_arf((38564.60')
-    assert mplot.title.endswith(' * powlaw1d.pl)))')
+    assert mplot.title.startswith('Model component: apply_rmf(apply_arf(38564.60')
+    assert mplot.title.endswith(' * powlaw1d.pl))')
 
     # This may change if we change the filtering/grouping code
     # Note that the model is evaluated on the un-grouped data.

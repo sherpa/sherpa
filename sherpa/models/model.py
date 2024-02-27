@@ -319,7 +319,7 @@ non-integrated and integrated datasets of any dimensionality (see
 
 import functools
 import logging
-from typing import Optional
+from typing import Callable, Optional
 import warnings
 
 import numpy
@@ -891,7 +891,7 @@ class CompositeModel(Model):
     >>> b = Polynom1D('b')
     >>> mdl = l1 + (0.5 * l2) + b
     >>> mdl
-    <BinaryOpModel model instance '((l1 + (0.5 * l2)) + b)'>
+    <BinaryOpModel model instance 'l1 + 0.5 * l2 + b'>
     >>> for cpt in mdl:
     ...     print(type(cpt))
     ...
@@ -1325,14 +1325,79 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
-        CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
-                                (self.arg,))
+
+        # We do not simplify this (e.g. remove brackets if self.arg
+        # is not a composite model).
+        #
+        name = f'{opstr}({self.arg.name})'
+
+        CompositeModel.__init__(self, name, (self.arg,))
 
     def calc(self, p, *args, **kwargs):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
+def get_precedences_op(op: Callable) -> tuple[int, bool]:
+    """Return precedences for the operation.
+
+    Unrecognized parameters are mapped to (9, False).
+
+    Parameters
+    ----------
+    op : callable
+       The operator (e.g. np.multiply or np.power).
+
+    Returns
+    -------
+    lprec, rprec : (int, bool)
+       The left and right "precedences" (the right case only cares
+       about being set or not hence we use a boolean).
+
+    """
+
+    # We make remainder and floor_divide have the same precedence
+    # as power (aka **) just to make things clear.
+    #
+    lprec = {numpy.power: 4, numpy.remainder: 4,
+             numpy.floor_divide: 4,
+             numpy.multiply: 3, numpy.divide: 3, numpy.true_divide: 3,
+             numpy.add: 2, numpy.subtract: 2}
+
+    rprec = {numpy.power: True, numpy.remainder: True,
+             numpy.floor_divide: True}
+
+    return lprec.get(op, 9), rprec.get(op, False)
+
+
+def get_precedence_mdl(mdl: Model) -> int:
+    """Return precedence for the model.
+
+    This is the precedence of the operator in the model,
+    if one exists.
+
+    Parameters
+    ----------
+    mdl : Model
+       The model expression.
+
+    Returns
+    -------
+    prec : int
+       The "precedence".
+
+    """
+
+    # Perhaps this should check if this is a BinaryOpModel instance
+    # rather than ask for the op setting?
+    #
+    try:
+        return get_precedences_op(mdl.op)[0]
+    except AttributeError:
+        return 9
+
+
 class BinaryOpModel(CompositeModel, RegriddableModel):
+
     """Combine two model expressions.
 
     Parameters
@@ -1381,9 +1446,48 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.op = op
         self.opstr = opstr
 
-        CompositeModel.__init__(self,
-                                f'({self.lhs.name} {opstr} {self.rhs.name})',
-                                (self.lhs, self.rhs))
+        # Simplify the expression if possible. We could store the
+        # precedences in the object but it doesn't seem worth it.
+        #
+        p, a = get_precedences_op(op)
+        lp = get_precedence_mdl(self.lhs)
+        rp = get_precedence_mdl(self.rhs)
+
+        # There is no attempt to simplify '-(-x)' to 'x' or similar.
+        # What happens if this hits a recursion error?
+        #
+        lstr = self.lhs.name
+        if lp < p:
+            lstr = f"({lstr})"
+        elif a:
+            # We could combine all these into one, but for now keep
+            # them separate.
+            #
+            if lp == p:
+                # For now ensure the left term is bracketed just to be
+                # clear.
+                #
+                lstr = f"({lstr})"
+            elif lstr[0] == "-":
+                # If the term is negative then ensure it is included
+                # in a bracket before passed through to the power
+                # term.  Python has "-a ** 2" actually mapping to "-(a
+                # ** 2)" so we need to say "(-a) ** 2" if we really
+                # want the unary operator before the power term.
+                #
+                lstr = f"({lstr})"
+
+        rstr = self.rhs.name
+        if opstr in ["+", "*"]:
+            condition = rp < p
+        else:
+            condition = rp <= p
+
+        if condition:
+            rstr = f"({rstr})"
+
+        name = f'{lstr} {opstr} {rstr}'
+        CompositeModel.__init__(self, name, (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
         for part in self.parts:
