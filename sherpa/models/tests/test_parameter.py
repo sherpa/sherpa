@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -425,3 +425,103 @@ def test_link_manual(attr):
     assert p.link.parts[0].val == 2
     assert isinstance(p.link.parts[1], Parameter)
     assert p.link.parts[1] is q
+
+
+def test_link_expression_add():
+    """Check that the model expression behaves as expected.
+
+    This encodes a number of checks which should be split out.
+    """
+
+    p1 = Parameter("p", "a", 10)
+    p2 = Parameter("p", "b", -5)
+    p2.frozen = True
+
+    expr = 2 * p1 + p2 + 40
+
+    assert expr.name == "(((2 * p.a) + p.b) + 40)"
+    assert expr.val == 55
+    assert not expr.frozen
+
+    # Deconstruct the tree
+    assert isinstance(expr, BinaryOpParameter)
+    assert expr.op == np.add
+    assert isinstance(expr.lhs, BinaryOpParameter)
+    assert isinstance(expr.rhs, ConstantParameter)
+
+    # The constant term (40) should be frozen, but is not
+    assert not expr.rhs.frozen
+    assert expr.rhs.val == pytest.approx(40)
+
+    # Do not use instance on Parameter as the objects we expect here
+    # are all sub-classes of it, so it adds no real power to the test.
+    #
+    assert expr.lhs.op == np.add
+    assert isinstance(expr.lhs.lhs, BinaryOpParameter)
+    assert type(expr.lhs.rhs) == Parameter
+
+    assert expr.lhs.rhs.name == "b"
+    assert expr.lhs.rhs.val == pytest.approx(-5)
+    assert expr.lhs.rhs.frozen
+
+    assert expr.lhs.lhs.op == np.multiply
+    assert isinstance(expr.lhs.lhs.lhs, ConstantParameter)
+    assert type(expr.lhs.lhs.rhs) == Parameter
+
+    # The constant term (2) should be frozen, but is not
+    assert not expr.lhs.lhs.lhs.frozen
+    assert expr.lhs.lhs.lhs.val == pytest.approx(2)
+
+    assert expr.lhs.lhs.rhs.name == "a"
+    assert expr.lhs.lhs.rhs.val == pytest.approx(10)
+    assert not expr.lhs.lhs.rhs.frozen
+
+
+def test_link_expression_sub():
+    """Check that the model expression behaves as expected.
+
+    This encodes a number of checks which should be split out.
+    """
+
+    p1 = Parameter("p", "a", 10)
+    p2 = Parameter("p", "b", -5)
+    p2.frozen = True
+
+    expr = 2 * p1 - p2 + 40
+
+    assert expr.name == "(((2 * p.a) - p.b) + 40)"
+    assert expr.val == 65
+    assert not expr.frozen
+
+    # Deconstruct the tree
+    assert isinstance(expr, BinaryOpParameter)
+    assert expr.op == np.add
+    assert isinstance(expr.lhs, BinaryOpParameter)
+    assert isinstance(expr.rhs, ConstantParameter)
+
+    # The constant term (40) should be frozen, but is not
+    assert not expr.rhs.frozen
+    assert expr.rhs.val == pytest.approx(40)
+
+    # Do not use instance on Parameter as the objects we expect here
+    # are all sub-classes of it, so it adds no real power to the test.
+    #
+    assert expr.lhs.op == np.subtract
+    assert isinstance(expr.lhs.lhs, BinaryOpParameter)
+    assert type(expr.lhs.rhs) == Parameter
+
+    assert expr.lhs.rhs.name == "b"
+    assert expr.lhs.rhs.val == pytest.approx(-5)
+    assert expr.lhs.rhs.frozen
+
+    assert expr.lhs.lhs.op == np.multiply
+    assert isinstance(expr.lhs.lhs.lhs, ConstantParameter)
+    assert type(expr.lhs.lhs.rhs) == Parameter
+
+    # The constant term (2) should be frozen, but is not
+    assert not expr.lhs.lhs.lhs.frozen
+    assert expr.lhs.lhs.lhs.val == pytest.approx(2)
+
+    assert expr.lhs.lhs.rhs.name == "a"
+    assert expr.lhs.lhs.rhs.val == pytest.approx(10)
+    assert not expr.lhs.lhs.rhs.frozen
