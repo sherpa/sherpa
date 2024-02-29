@@ -449,8 +449,8 @@ def test_link_expression_add():
     assert isinstance(expr.lhs, BinaryOpParameter)
     assert isinstance(expr.rhs, ConstantParameter)
 
-    # The constant term (40) should be frozen, but is not
-    assert not expr.rhs.frozen
+    # The constant term (40) should be frozen
+    assert expr.rhs.frozen
     assert expr.rhs.val == pytest.approx(40)
 
     # Do not use instance on Parameter as the objects we expect here
@@ -468,8 +468,8 @@ def test_link_expression_add():
     assert isinstance(expr.lhs.lhs.lhs, ConstantParameter)
     assert type(expr.lhs.lhs.rhs) == Parameter
 
-    # The constant term (2) should be frozen, but is not
-    assert not expr.lhs.lhs.lhs.frozen
+    # The constant term (2) should be frozen
+    assert expr.lhs.lhs.lhs.frozen
     assert expr.lhs.lhs.lhs.val == pytest.approx(2)
 
     assert expr.lhs.lhs.rhs.name == "a"
@@ -499,8 +499,8 @@ def test_link_expression_sub():
     assert isinstance(expr.lhs, BinaryOpParameter)
     assert isinstance(expr.rhs, ConstantParameter)
 
-    # The constant term (40) should be frozen, but is not
-    assert not expr.rhs.frozen
+    # The constant term (40) should be frozen
+    assert expr.rhs.frozen
     assert expr.rhs.val == pytest.approx(40)
 
     # Do not use instance on Parameter as the objects we expect here
@@ -518,8 +518,8 @@ def test_link_expression_sub():
     assert isinstance(expr.lhs.lhs.lhs, ConstantParameter)
     assert type(expr.lhs.lhs.rhs) == Parameter
 
-    # The constant term (2) should be frozen, but is not
-    assert not expr.lhs.lhs.lhs.frozen
+    # The constant term (2) should be frozen
+    assert expr.lhs.lhs.lhs.frozen
     assert expr.lhs.lhs.lhs.val == pytest.approx(2)
 
     assert expr.lhs.lhs.rhs.name == "a"
