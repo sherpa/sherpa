@@ -918,6 +918,10 @@ class ConstantParameter(CompositeParameter):
         self.value = SherpaFloat(value)
         CompositeParameter.__init__(self, str(value), ())
 
+        # Ensure the constant is considered frozen
+        self._alwaysfrozen = True
+        self.frozen = True
+
     def eval(self) -> SherpaFloat:
         return self.value
 
