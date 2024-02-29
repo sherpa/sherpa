@@ -869,3 +869,20 @@ def xsmodel():
         return cls(mname)
 
     return func
+
+
+# Fixtures that control access to the tests, based on the availability
+# of external "features" (normally this is the presence of optional
+# modules). These used to be decorators in sherpa.utils.testing.
+#
+@pytest.fixture
+def requires_pylab():
+    """Runs the test with the pylab plotting backend if available."""
+
+    pylab_backend = pytest.importorskip("sherpa.plot.pylab_backend")
+    plt = pytest.importorskip("matplotlib.pyplot")
+
+    with TemporaryPlottingBackend(pylab_backend.PylabBackend()):
+        yield
+
+    plt.close(fig="all")

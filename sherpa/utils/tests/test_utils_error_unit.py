@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2023
+#  Copyright (C) 2017 - 2019, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -37,11 +37,6 @@ def test_decorator_exception_when_pytest_is_absent(monkeypatch):
     from sherpa.utils import testing
 
     @testing.requires_data
-    def foo():
-        raise RuntimeError(SKIP_MESSAGE)
-    assert_decorated_function(foo)
-
-    @testing.requires_pylab
     def foo():
         raise RuntimeError(SKIP_MESSAGE)
     assert_decorated_function(foo)

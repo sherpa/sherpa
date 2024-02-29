@@ -143,19 +143,6 @@ if HAS_PYTEST:
 
         return decorator
 
-
-    def requires_pylab(test_function):
-        """Runs the test with the PylabBackend plotting backend if available,
-        otherwise skips the test.
-        """
-        pylab_backend = pytest.importorskip("sherpa.plot.pylab_backend")
-        plt = pytest.importorskip("matplotlib.pyplot")
-
-        with TemporaryPlottingBackend(pylab_backend.PylabBackend()):
-            yield
-
-        plt.close(fig="all")
-
     def requires_fits(test_function):
         """Returns True if a working backend for FITS I/O is importable.
 
@@ -215,8 +202,6 @@ else:
         return wrapper
 
     requires_data = make_fake()
-
-    requires_pylab = make_fake()
 
     requires_fits = make_fake()
 
