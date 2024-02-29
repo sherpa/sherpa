@@ -730,13 +730,16 @@ class Model(NoNewAttributesAfterInit):
                 p._val = v
 
     thawedpars = property(_get_thawed_pars, _set_thawed_pars,
-                          doc='The thawed parameters of the model.\n\n' +
-                          'Get or set the thawed parameters of the model as a list of\n' +
-                          'numbers. If there are no thawed parameters then [] is used.\n' +
-                          'The ordering matches that of the pars attribute.\n\n' +
-                          'See Also\n' +
-                          '--------\n' +
-                          'thawedparmaxes, thawedparmins\n')
+                          doc="""The thawed parameters of the model.
+
+Get or set the thawed parameters of the model as a list of
+numbers. If there are no thawed parameters then [] is used.
+The ordering matches that of the pars attribute.
+
+See Also
+--------
+thawedparmaxes, thawedparmins
+""")
 
     def _get_thawed_par_mins(self) -> list[SupportsFloat]:
         return [p.min for p in self.pars if not p.frozen]
@@ -765,14 +768,17 @@ class Model(NoNewAttributesAfterInit):
                 p._min = v
 
     thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins,
-                             doc='The minimum limits of the thawed parameters.\n\n' +
-                             'Get or set the minimum limits of the thawed parameters\n' +
-                             'of the model as a list of numbers. If there are no\n' +
-                             'thawed parameters then [] is used. The ordering matches\n' +
-                             'that of the pars attribute.\n\n' +
-                             'See Also\n' +
-                             '--------\n' +
-                             'thawedpars, thawedarhardmins, thawedparmaxes\n')
+                             doc="""The minimum limits of the thawed parameters.
+
+Get or set the minimum limits of the thawed parameters
+of the model as a list of numbers. If there are no
+thawed parameters then [] is used. The ordering matches
+that of the pars attribute.
+
+See Also
+--------
+thawedpars, thawedarhardmins, thawedparmaxes
+""")
 
     def _get_thawed_par_maxes(self) -> list[SupportsFloat]:
         return [p.max for p in self.pars if not p.frozen]
@@ -801,40 +807,49 @@ class Model(NoNewAttributesAfterInit):
                 p._max = v
 
     thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes,
-                              doc='The maximum limits of the thawed parameters.\n\n' +
-                              'Get or set the maximum limits of the thawed parameters\n' +
-                              'of the model as a list of numbers. If there are no\n' +
-                              'thawed parameters then [] is used. The ordering matches\n' +
-                              'that of the pars attribute.\n\n' +
-                              'See Also\n' +
-                              '--------\n' +
-                              'thawedpars, thawedarhardmaxes, thawedparmins\n')
+                              doc="""The maximum limits of the thawed parameters.
+
+Get or set the maximum limits of the thawed parameters
+of the model as a list of numbers. If there are no
+thawed parameters then [] is used. The ordering matches
+that of the pars attribute.
+
+See Also
+--------
+thawedpars, thawedarhardmaxes, thawedparmins
+""")
 
     def _get_thawed_par_hardmins(self) -> list[SherpaFloat]:
         return [p.hard_min for p in self.pars if not p.frozen]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
-                                 doc='The hard minimum values for the thawed parameters.\n\n' +
-                                 'The minimum and maximum range of the parameters can be\n' +
-                                 'changed with thawedparmins and thawedparmaxes but only\n' +
-                                 'within the range given by thawedparhardmins\n' +
-                                 'to thawparhardmaxes.\n\n' +
-                                 'See Also\n' +
-                                 '--------\n' +
-                                 'thawedparhardmaxes, thawedparmins\n')
+                                 doc="""The hard minimum values for the thawed parameters.
+
+The minimum and maximum range of the parameters can be
+changed with thawedparmins and thawedparmaxes but only
+within the range given by thawedparhardmins
+to thawparhardmaxes.
+
+See Also
+--------
+thawedparhardmaxes, thawedparmins
+""")
 
     def _get_thawed_par_hardmaxes(self) -> list[SherpaFloat]:
         return [p.hard_max for p in self.pars if not p.frozen]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
-                                  doc='The hard maximum values for the thawed parameters.\n\n' +
-                                 'The minimum and maximum range of the parameters can be\n' +
-                                 'changed with thawedparmins and thawedparmaxes but only\n' +
-                                 'within the range given by thawedparhardmins\n' +
-                                 'to thawparhardmaxes.\n\n' +
-                                  'See Also\n' +
-                                  '--------\n' +
-                                  'thawedparhardmins, thawedparmaxes\n')
+                                  doc="""The hard maximum values for the thawed parameters.
+
+The minimum and maximum range of the parameters can be
+changed with thawedparmins and thawedparmaxes but only
+within the range given by thawedparhardmins
+to thawparhardmaxes.
+
+See Also
+--------
+thawedparhardmins, thawedparmaxes
+""")
 
     def reset(self) -> None:
         """Reset the parameter values.

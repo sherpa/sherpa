@@ -346,18 +346,22 @@ class Parameter(NoNewAttributesAfterInit):
     def _get_hard_min(self) -> SherpaFloat:
         return self._hard_min
     hard_min = property(_get_hard_min,
-                        doc='The hard minimum of the parameter.\n\n' +
-                        'See Also\n' +
-                        '--------\n' +
-                        'hard_max')
+                        doc="""The hard minimum of the parameter.
+
+See Also
+--------
+hard_max
+""")
 
     def _get_hard_max(self) -> SherpaFloat:
         return self._hard_max
     hard_max = property(_get_hard_max,
-                        doc='The hard maximum of the parameter.\n\n' +
-                        'See Also\n' +
-                        '--------\n' +
-                        'hard_min')
+                        doc="""The hard maximum of the parameter.
+
+See Also
+--------
+hard_min
+""")
 
     # 'val' property
     #
@@ -399,13 +403,16 @@ class Parameter(NoNewAttributesAfterInit):
             self._default_val = val
 
     val = property(_get_val, _set_val,
-                   doc='The current value of the parameter.\n\n' +
-                   'If the parameter is a link then it is possible that accessing\n' +
-                   'the value will raise a ParameterErr in cases where the link\n' +
-                   'expression falls outside the soft limits of the parameter.\n\n' +
-                   'See Also\n' +
-                   '--------\n' +
-                   'default_val, link, max, min')
+                   doc="""The current value of the parameter.
+
+If the parameter is a link then it is possible that accessing
+the value will raise a ParameterErr in cases where the link
+expression falls outside the soft limits of the parameter.
+
+See Also
+--------
+default_val, link, max, min
+""")
 
     #
     # '_default_val' property
@@ -437,10 +444,12 @@ class Parameter(NoNewAttributesAfterInit):
         self._default_val = default_val
 
     default_val = property(_get_default_val, _set_default_val,
-                           doc='The default value of the parameter.\n\n' +
-                           'See Also\n' +
-                           '--------\n' +
-                           'val')
+                           doc="""The default value of the parameter.
+
+See Also
+--------
+val
+""")
 
     #
     # 'min' and 'max' properties
@@ -449,20 +458,26 @@ class Parameter(NoNewAttributesAfterInit):
     def _get_min(self) -> SupportsFloat:
         return self._min
     min = property(_get_min, _make_set_limit('_min'),
-                   doc='The minimum value of the parameter.\n\n' +
-                   'The minimum must lie between the hard_min and hard_max limits.\n\n' +
-                   'See Also\n' +
-                   '--------\n' +
-                   'max, val')
+                   doc="""The minimum value of the parameter.
+
+The minimum must lie between the hard_min and hard_max limits.
+
+See Also
+--------
+max, val
+""")
 
     def _get_max(self) -> SupportsFloat:
         return self._max
     max = property(_get_max, _make_set_limit('_max'),
-                   doc='The maximum value of the parameter.\n\n' +
-                   'The maximum must lie between the hard_min and hard_max limits.\n\n' +
-                   'See Also\n' +
-                   '--------\n' +
-                   'min, val')
+                   doc="""The maximum value of the parameter.
+
+The maximum must lie between the hard_min and hard_max limits.
+
+See Also
+--------
+min, val
+""")
 
     #
     # 'default_min' and 'default_max' properties
@@ -496,12 +511,15 @@ class Parameter(NoNewAttributesAfterInit):
         self._frozen = val
 
     frozen = property(_get_frozen, _set_frozen,
-                      doc='Is the parameter currently frozen?\n\n' +
-                      'Those parameters created with `alwaysfrozen` set can not\n' +
-                      'be changed.\n\n' +
-                      'See Also\n' +
-                      '--------\n' +
-                      'alwaysfrozen\n')
+                      doc="""Is the parameter currently frozen?
+
+Those parameters created with `alwaysfrozen` set can not
+be changed.
+
+See Also
+--------
+alwaysfrozen
+""")
 
     #
     # 'link' property'
@@ -540,22 +558,27 @@ class Parameter(NoNewAttributesAfterInit):
 
         self._link = link
     link = property(_get_link, _set_link,
-                    doc='The link expression to other parameters, if set.\n\n' +
-                    'The link expression defines if the parameter is not\n' +
-                    'a free parameter but is actually defined in terms of\n'
-                    'other parameters.\n\n' +
-                    'See Also\n' +
-                    '--------\n' +
-                    'val\n\n' +
-                    'Examples\n' +
-                    '--------\n\n' +
-                    '>>> a = Parameter("mdl", "a", 2)\n' +
-                    '>>> b = Parameter("mdl", "b", 1)\n' +
-                    '>>> b.link = 10 - a\n' +
-                    '>>> a.val\n' +
-                    '2.0\n' +
-                    '>>> b.val\n' +
-                    '8.0\n')
+                    doc="""The link expression to other parameters, if set.
+
+The link expression defines if the parameter is not
+a free parameter but is actually defined in terms of
+other parameters.
+
+See Also
+--------
+val
+
+Examples
+--------
+
+>>> a = Parameter("mdl", "a", 2)
+>>> b = Parameter("mdl", "b", 1)
+>>> b.link = 10 - a
+>>> a.val
+2.0
+>>> b.val
+8.0
+""")
 
     #
     # Methods
