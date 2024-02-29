@@ -256,10 +256,15 @@ def _make_set_limit(name):
            self._NoNewAttributesAfterInit__initialized:
             if name == "_min" and (val > self.val):
                 self.val = val
-                warning(('parameter %s less than new minimum; %s reset to %g') % (self.fullname, self.fullname, self.val))
+                warning('parameter %s less than new minimum; '
+                        '%s reset to %g', self.fullname, self.fullname,
+                        self.val)
+
             if name == "_max" and (val < self.val):
                 self.val = val
-                warning(('parameter %s greater than new maximum; %s reset to %g') % (self.fullname, self.fullname, self.val))
+                warning('parameter %s greater than new maximum; '
+                        '%s reset to %g', self.fullname, self.fullname,
+                        self.val)
 
         setattr(self, name, val)
 
@@ -553,7 +558,7 @@ Examples
                  frozen=False, alwaysfrozen=False, hidden=False, aliases=None):
         self.modelname = modelname
         self.name = name
-        self.fullname = '%s.%s' % (modelname, name)
+        self.fullname = f'{modelname}.{name}'
 
         self._hard_min = SherpaFloat(hard_min)
         self._hard_max = SherpaFloat(hard_max)
@@ -586,9 +591,9 @@ Examples
         return iter([self])
 
     def __repr__(self):
-        r = "<%s '%s'" % (type(self).__name__, self.name)
+        r = f"<{type(self).__name__} '{self.name}'"
         if self.modelname:
-            r += " of model '%s'" % self.modelname
+            r += f" of model '{self.modelname}'"
         r += '>'
         return r
 
@@ -598,18 +603,17 @@ Examples
         else:
             linkstr = str(None)
 
-        return (('val         = %s\n' +
-                 'min         = %s\n' +
-                 'max         = %s\n' +
-                 'units       = %s\n' +
-                 'frozen      = %s\n' +
-                 'link        = %s\n'
-                 'default_val = %s\n' +
-                 'default_min = %s\n' +
-                 'default_max = %s') %
-                (str(self.val), str(self.min), str(self.max), self.units,
-                 self.frozen, linkstr, str(self.default_val),
-                 str(self.default_min), str(self.default_max)))
+        return "\n".join(
+            [f'val         = {self.val}',
+             f'min         = {self.min}',
+             f'max         = {self.max}',
+             f'units       = {self.units}',
+             f'frozen      = {self.frozen}',
+             f'link        = {linkstr}',
+             f'default_val = {self.default_val}',
+             f'default_min = {self.default_min}',
+             f'default_max = {self.default_max}'
+             ])
 
     # Support 'rich display' representations
     #
@@ -627,11 +631,14 @@ Examples
         #
         if v == hugeval:
             return 'MAX'
-        elif v == -hugeval:
+
+        if v == -hugeval:
             return '-MAX'
-        elif v == tinyval:
+
+        if v == tinyval:
             return 'TINY'
-        elif v == -tinyval:
+
+        if v == -tinyval:
             return '-TINY'
 
         if self.units in ['radian', 'radians']:
@@ -639,11 +646,14 @@ Examples
 
             if v == tau:
                 return '2&#960;'
-            elif v == -tau:
+
+            if v == -tau:
                 return '-2&#960;'
-            elif v == numpy.pi:
+
+            if v == numpy.pi:
                 return '&#960;'
-            elif v == -numpy.pi:
+
+            if v == -numpy.pi:
                 return '-&#960;'
 
         return str(v)
@@ -830,8 +840,8 @@ class CompositeParameter(Parameter):
 
         for p in self.parts:
             # A CompositeParameter should not hold a reference to itself
-            assert (p is not self), (("'%s' object holds a reference to " +
-                                      "itself") % type(self).__name__)
+            assert (p is not self), (f"'{type(self).__name__}' object "
+                                     "holds a reference to itself")
 
             parts.append(p)
             if isinstance(p, CompositeParameter):
@@ -943,19 +953,19 @@ def html_parameter(par):
     #
     def addtd(val):
         "Use the parameter to convert to HTML"
-        return '<td>{}</td>'.format(par._val_to_html(val))
+        return f'<td>{par._val_to_html(val)}</td>'
 
     out = '<table class="model">'
     out += '<thead><tr>'
     cols = ['Component', 'Parameter', 'Thawed', 'Value',
             'Min', 'Max', 'Units']
     for col in cols:
-        out += '<th>{}</th>'.format(col)
+        out += f'<th>{col}</th>'
 
     out += '</tr></thead><tbody><tr>'
 
-    out += '<th class="model-odd">{}</th>'.format(par.modelname)
-    out += '<td>{}</td>'.format(par.name)
+    out += f'<th class="model-odd">{par.modelname}</th>'
+    out += f'<td>{par.name}</td>'
 
     linked = par.link is not None
     if linked:
@@ -972,13 +982,13 @@ def html_parameter(par):
         # 8656 is double left arrow
         #
         val = formatting.clean_bracket(par.link.fullname)
-        out += '<td colspan="2">&#8656; {}</td>'.format(val)
+        out += f'<td colspan="2">&#8656; {val}</td>'
 
     else:
         out += addtd(par.min)
         out += addtd(par.max)
 
-    out += '<td>{}</td>'.format(par._units_to_html())
+    out += f'<td>{par._units_to_html()}</td>'
     out += '</tr>'
 
     out += '</tbody></table>'
