@@ -701,8 +701,9 @@ class Model(NoNewAttributesAfterInit):
         # A bit of trickery, to make model creation
         # in IPython happen without raising errors, when
         # model is made automatically callable
-        if (len(args) == 0 and len(kwargs) == 0):
+        if len(args) == 0 and len(kwargs) == 0:
             return self
+
         return self.calc([p.val for p in self.pars], *args, **kwargs)
 
     def _get_thawed_pars(self) -> list[SherpaFloat]:
@@ -1381,7 +1382,8 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         name = f'{opstr}({self.arg.name})'
         CompositeModel.__init__(self, name, (self.arg,))
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
@@ -1473,7 +1475,8 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.rhs.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         # Note that the kwargs are sent to both model components.
         #
         nlhs = len(self.lhs.pars)
@@ -1553,7 +1556,8 @@ class ArithmeticFunctionModel(Model):
         self.func = func
         Model.__init__(self, func.__name__)
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         return self.func(*args, **kwargs)
 
     def startup(self, cache: bool = False) -> None:
@@ -1612,7 +1616,8 @@ class NestedModel(CompositeModel, ArithmeticModel):
         self.outer.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         nouter = len(self.outer.pars)
         return self.outer.calc(p[:nouter],
                                self.inner.calc(p[nouter:], *args, **kwargs),
@@ -1653,7 +1658,8 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
                                 f"{self.wrapper.name}({self.model.name})",
                                 (self.model, ))
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
 
     def get_center(self):

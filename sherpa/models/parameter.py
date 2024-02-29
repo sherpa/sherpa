@@ -265,12 +265,15 @@ def _make_set_limit(name: str) -> Callable[[Any, SupportsFloat], None]:
            self._NoNewAttributesAfterInit__initialized:
             if name == "_min" and (val > self.val):
                 self.val = val
-                warning('parameter %s less than new minimum; %s reset to %g',
-                        self.fullname, self.fullname, self.val)
+                warning('parameter %s less than new minimum; '
+                        '%s reset to %g', self.fullname, self.fullname,
+                        self.val)
+
             if name == "_max" and (val < self.val):
                 self.val = val
-                warning('parameter %s greater than new maximum; %s reset to %g',
-                        self.fullname, self.fullname, self.val)
+                warning('parameter %s greater than new maximum; '
+                        '%s reset to %g', self.fullname, self.fullname,
+                        self.val)
 
         setattr(self, name, val)
 
@@ -388,19 +391,20 @@ hard_min
     def _set_val(self, val: Union[Parameter, SupportsFloat]) -> None:
         if isinstance(val, Parameter):
             self.link = val
-        else:
-            # Reset link
-            self.link = None
+            return
 
-            # Validate new value
-            val = SherpaFloat(val)
-            if val < self.min:
-                raise ParameterErr('edge', self.fullname, 'minimum', self.min)
-            if val > self.max:
-                raise ParameterErr('edge', self.fullname, 'maximum', self.max)
+        # Reset link
+        self.link = None
 
-            self._val = val
-            self._default_val = val
+        # Validate new value
+        val = SherpaFloat(val)
+        if val < self.min:
+            raise ParameterErr('edge', self.fullname, 'minimum', self.min)
+        if val > self.max:
+            raise ParameterErr('edge', self.fullname, 'maximum', self.max)
+
+        self._val = val
+        self._default_val = val
 
     val = property(_get_val, _set_val,
                    doc="""The current value of the parameter.
@@ -596,7 +600,7 @@ Examples
                  frozen: bool = False,
                  alwaysfrozen: bool = False,
                  hidden: bool = False,
-                 aliases: Optional[list[str]] = None) -> None:
+                 aliases: Optional[Sequence[str]] = None) -> None:
         self.modelname = modelname
         self.name = name
         self.fullname = f"{modelname}.{name}"
@@ -628,17 +632,17 @@ Examples
 
         NoNewAttributesAfterInit.__init__(self)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Parameter]:
         return iter([self])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         r = f"<{type(self).__name__} '{self.name}'"
         if self.modelname:
             r += f" of model '{self.modelname}'"
         r += '>'
         return r
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.link is not None:
             linkstr = self.link.fullname
         else:
@@ -657,7 +661,7 @@ Examples
 
     # Support 'rich display' representations
     #
-    def _val_to_html(self, v):
+    def _val_to_html(self, v: SupportsFloat) -> str:
         """Convert a value to a string for use by the HTML output.
 
         The conversion to a string uses the Python defaults for most
@@ -673,6 +677,7 @@ Examples
             return 'MAX'
         if v == -hugeval:
             return '-MAX'
+
         if v == tinyval:
             return 'TINY'
         if v == -tinyval:
@@ -685,6 +690,7 @@ Examples
                 return '2&#960;'
             if v == -tau:
                 return '-2&#960;'
+
             if v == np.pi:
                 return '&#960;'
             if v == -np.pi:
@@ -692,7 +698,7 @@ Examples
 
         return str(v)
 
-    def _units_to_html(self):
+    def _units_to_html(self) -> str:
         """Convert the unit to HTML.
 
         This is provided for future expansion/experimentation,
@@ -701,7 +707,7 @@ Examples
 
         return self.units
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the parameter
         """
         return html_parameter(self)
@@ -741,7 +747,7 @@ Examples
                                      strformat='{opstr}({lhs}, {rhs})')
         return NotImplemented
 
-    def freeze(self):
+    def freeze(self) -> None:
         """Set the `frozen` attribute for the parameter.
 
         See Also
@@ -750,8 +756,13 @@ Examples
         """
         self.frozen = True
 
-    def thaw(self):
+    def thaw(self) -> None:
         """Unset the `frozen` attribute for the parameter.
+
+        Raises
+        ------
+        ParameterErr
+           The parameter is marked as always frozen.
 
         See Also
         --------
@@ -759,11 +770,11 @@ Examples
         """
         self.frozen = False
 
-    def unlink(self):
+    def unlink(self) -> None:
         """Remove any link to other parameters."""
         self.link = None
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the parameter value and limits to their default values."""
         # circumvent the attr checks for simplicity, as the defaults have
         # already passed (defaults either set by user or through self.set).
@@ -774,10 +785,17 @@ Examples
             self._min = self.default_min
             self._max = self.default_max
             self._guessed = False
+
         self._val = self.default_val
 
-    def set(self, val=None, min=None, max=None, frozen=None,
-            default_val=None, default_min=None, default_max=None):
+    def set(self,
+            val: Optional[SupportsFloat] = None,
+            min: Optional[SupportsFloat] = None,
+            max: Optional[SupportsFloat] = None,
+            frozen: Optional[bool] = None,
+            default_val: Optional[SupportsFloat] = None,
+            default_min: Optional[SupportsFloat] = None,
+            default_max: Optional[SupportsFloat] = None) -> None:
         """Change a parameter setting.
 
         Parameters
@@ -877,8 +895,8 @@ class CompositeParameter(Parameter):
 
         for p in self.parts:
             # A CompositeParameter should not hold a reference to itself
-            assert (p is not self), (("'%s' object holds a reference to " +
-                                      "itself") % type(self).__name__)
+            assert (p is not self), (f"'{type(self).__name__}' object "
+                                     "holds a reference to itself")
 
             parts.append(p)
             if isinstance(p, CompositeParameter):

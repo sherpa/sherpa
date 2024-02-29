@@ -1065,8 +1065,8 @@ class DoNotUseModel(Model):
 
     # We need this for modelCacher1d
     _use_caching = True
-    _cache = {}
-    _cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
+    _cache: dict[bytes, numpy.ndarray] = {}
+    _cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
     _queue = ['']
 
     @modelCacher1d
