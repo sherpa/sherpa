@@ -1253,7 +1253,7 @@ def test_cache_status_multiple(caplog):
     assert toks[6] == '0'
 
 
-def test_cache_clear_single(caplog):
+def test_cache_clear_single():
     """Check cache_clear for a single model."""
 
     p = Polynom1D()
@@ -1283,7 +1283,7 @@ def test_cache_clear_single(caplog):
     assert p._cache_ctr['misses'] == 0
 
 
-def test_cache_clear_multiple(caplog):
+def test_cache_clear_multiple():
     """Check cache_clear for a combined model."""
 
     p = Polynom1D()
@@ -1732,3 +1732,226 @@ def test_guess_then_reset_manual():
 
     assert not mdl.mean._guessed
     assert not mdl.ampl._guessed
+
+
+def test_model_simple_pars():
+    """what do .pars/.thawedpars contain?"""
+
+    mdl = Box1D("xx")
+    mdl.xlow = -5
+    mdl.xhi = 10
+    mdl.ampl = 3
+    assert len(mdl.pars) == 3
+    assert mdl.pars[0].fullname == "xx.xlow"
+    assert mdl.pars[1].fullname == "xx.xhi"
+    assert mdl.pars[2].fullname == "xx.ampl"
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 3
+    assert tpars[0] == -5
+    assert tpars[1] == 10
+    assert tpars[2] == 3
+
+
+def test_model_complex_pars():
+    """what do .pars/.thawedpars contain?"""
+
+    # It's not a particularly complex model
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mdl = ma * (2 + mb)
+    ma.c0 = 5
+    mb.xlow.set(2, frozen=True)
+    mb.xhi.set(3, frozen=True)
+    mb.ampl = 15
+
+    assert len(mdl.pars) == 4
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 2
+    assert tpars[0] == 5
+    assert tpars[1] == 15
+
+
+def test_model_frozen_pars():
+    """what do .pars/.thawedpars contain?"""
+
+    # This is the model from test_model_complex_pars as we want
+    # to check that frozen-ness is handled across components.
+    #
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mdl = ma * (2 + mb)
+    ma.c0 = 5
+    mb.xlow.set(2, frozen=True)
+    mb.xhi.set(3, frozen=True)
+    mb.ampl = 15
+
+    mdl.freeze()
+
+    assert len(mdl.pars) == 4
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+
+    assert mdl.thawedpars == []
+
+
+def test_model_with_links_pars():
+    """what do .pars/.thawedpars contain?"""
+
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mother = Const1D("other")
+
+    ma.c0 = 3
+    mb.xlow = 1
+    mb.xhi = 10
+    mother.c0 = 11
+
+    # Add a link in to another model unrelated to mdl
+    mdl = ma * (mb + 2)
+    mb.ampl = 2 * mother.c0
+
+    # mb.ampl is now frozen but .pars does not care
+    assert len(mdl.pars) == 4
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 3
+    assert tpars[0] == 3
+    assert tpars[1] == 1
+    assert tpars[2] == 10
+
+
+def test_model_with_repeated_links1_pars():
+    """what do .pars/.thawedpars contain?
+
+    The linking parameter (mother.c0) is used to represent multiple
+    parameters just to check if it is reported multiple times.
+    Compare with test_model_with_repeated_links2_pars.
+
+    """
+
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mc = Box1D("yy")
+    mother = Const1D("other")
+
+    ma.c0 = 100
+    mb.xlow = 5
+    mb.xhi = 20
+    mc.xlow = 7
+    mc.xhi = 40
+    mc.ampl = 5
+    mother.c0 = 19
+
+    # Add links in to another model unrelated to mdl and ensure we
+    # have a repeated model component, to check how the parameters are
+    # returned.
+    #
+    mdl = ma * (mb + mc) + mb
+    mb.ampl = 2 * mother.c0
+    mc.xlow = mother.c0 - 4
+    mc.ampl.freeze()
+
+    assert len(mdl.pars) == 1 + 3 + 3 + 3
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+    assert mdl.pars[4].fullname == "yy.xlow"
+    assert mdl.pars[5].fullname == "yy.xhi"
+    assert mdl.pars[6].fullname == "yy.ampl"
+    assert mdl.pars[7].fullname == mdl.pars[1].fullname
+    assert mdl.pars[8].fullname == mdl.pars[2].fullname
+    assert mdl.pars[9].fullname == mdl.pars[3].fullname
+
+    # Note that pars 7, 8, 9 are not exact copies of 1, 2, 3
+    # but actually links.
+    #
+    assert mdl.pars[7] != mdl.pars[1]
+    assert mdl.pars[8] != mdl.pars[2]
+    assert mdl.pars[9] != mdl.pars[3]
+
+    assert mdl.pars[7].link == mdl.pars[1]
+    assert mdl.pars[8].link == mdl.pars[2]
+    assert mdl.pars[9].link == mdl.pars[3]
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 4
+    assert tpars[0] == 100
+    assert tpars[1] == 5
+    assert tpars[2] == 20
+    assert tpars[3] == 40
+
+
+def test_model_with_repeated_links2_pars():
+    """what do .pars/.thawedpars contain?
+
+    Unlike test_model_with_repeated_links1_pars we have separate
+    linking parameters.
+
+    """
+
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mc = Box1D("yy")
+    mother1 = Const1D("other1")
+    mother2 = Const1D("other2")
+
+    ma.c0 = 100
+    mb.xlow = 5
+    mb.xhi = 20
+    mc.xlow = 7
+    mc.xhi = 40
+    mc.ampl = 5
+    mother1.c0 = 3.5
+    mother2.c0 = 19
+
+    # Add links in to another model unrelated to mdl and ensure we
+    # have a repeated model component, to check how the parameters are
+    # returned.
+    #
+    mdl = ma * (mb + mc) + mb
+    mb.ampl = 2 * mother1.c0
+    mc.xlow = mother2.c0 - 3
+    mc.ampl.freeze()
+
+    assert len(mdl.pars) == 1 + 3 + 3 + 3
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+    assert mdl.pars[4].fullname == "yy.xlow"
+    assert mdl.pars[5].fullname == "yy.xhi"
+    assert mdl.pars[6].fullname == "yy.ampl"
+    assert mdl.pars[7].fullname == mdl.pars[1].fullname
+    assert mdl.pars[8].fullname == mdl.pars[2].fullname
+    assert mdl.pars[9].fullname == mdl.pars[3].fullname
+
+    # Note that pars 7, 8, 9 are not exact copies of 1, 2, 3
+    # but actually links.
+    #
+    assert mdl.pars[7] != mdl.pars[1]
+    assert mdl.pars[8] != mdl.pars[2]
+    assert mdl.pars[9] != mdl.pars[3]
+
+    assert mdl.pars[7].link == mdl.pars[1]
+    assert mdl.pars[8].link == mdl.pars[2]
+    assert mdl.pars[9].link == mdl.pars[3]
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 4
+    assert tpars[0] == 100
+    assert tpars[1] == 5
+    assert tpars[2] == 20
+    assert tpars[3] == 40
