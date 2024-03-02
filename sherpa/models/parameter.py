@@ -165,7 +165,7 @@ such as being twice the other parameter:
     max         = 30.0
     units       =
     frozen      = True
-    link        = (2 * other.beta)
+    link        = 2 * other.beta
     default_val = 8.0
     default_min = -3.4028234663852886e+38
     default_max = 3.4028234663852886e+38
@@ -173,7 +173,7 @@ such as being twice the other parameter:
 The `link` attribute stores the expression:
 
     >>> p.link
-    <BinaryOpParameter '(2 * other.beta)'>
+    <BinaryOpParameter '2 * other.beta'>
 
 A ParameterErr exception will be raised whenever the linked expression
 is evaluated and the result lies outside the parameters soft limits
@@ -204,9 +204,9 @@ fit.
 
 import logging
 import numpy
-from sherpa.utils import NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit, formatting, \
+    get_precedences_op, get_precedence_expr
 from sherpa.utils.err import ParameterErr
-from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
 
 warning = logging.getLogger(__name__).warning
@@ -640,7 +640,8 @@ class Parameter(NoNewAttributesAfterInit):
         return html_parameter(self)
 
     # Unary operations
-    __neg__ = _make_unop(numpy.negative, '-', strformat='-{arg}')
+    # It is safest to always say -(..) even if arg is a single field
+    __neg__ = _make_unop(numpy.negative, '-', strformat='-({arg})')
     __abs__ = _make_unop(numpy.absolute, 'abs')
 
     # Binary operations
@@ -783,7 +784,7 @@ class CompositeParameter(Parameter):
        >>> q = Parameter('m', 'q', 4)
        >>> c = (p + q) / 2
        >>> c
-       <BinaryOpParameter '((m.p + m.q) / 2)'>
+       <BinaryOpParameter '(m.p + m.q) / 2'>
        >>> for cpt in c:
        ...     print(type(cpt))
        ...
@@ -857,10 +858,10 @@ class UnaryOpParameter(CompositeParameter):
     def __init__(self, arg, op, opstr, strformat='{opstr}({arg})'):
         self.arg = arg
         self.op = op
-        CompositeParameter.__init__(self,
-                                    strformat.format(opstr=opstr,
-                                                     arg=self.arg.fullname),
-                                    (self.arg,))
+
+        fullname = self.arg.fullname
+        name = strformat.format(opstr=opstr, arg=fullname)
+        CompositeParameter.__init__(self, name, (self.arg,))
 
     def eval(self):
         return self.op(self.arg.val)
@@ -896,15 +897,53 @@ class BinaryOpParameter(CompositeParameter):
         return ConstantParameter(obj)
 
     def __init__(self, lhs, rhs, op, opstr,
-                 strformat='({lhs} {opstr} {rhs})'):
+                 strformat='{lhs} {opstr} {rhs}'):
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
-        CompositeParameter.__init__(self,
-                                    strformat.format(lhs=self.lhs.fullname,
-                                                     rhs=self.rhs.fullname,
-                                                     opstr=opstr),
-                                    (self.lhs, self.rhs))
+
+        # Simplify the expression if possible. We could store the
+        # precedences in the object but it doesn't seem worth it.
+        #
+        p, a = get_precedences_op(op)
+        lp = get_precedence_expr(self.lhs)
+        rp = get_precedence_expr(self.rhs)
+
+        # There is no attempt to simplify '-(-x)' to 'x' or similar.
+        # What happens if this hits a recursion error?
+        #
+        lstr = self.lhs.fullname
+        if lp < p:
+            lstr = f"({lstr})"
+        elif a:
+            # We could combine all these into one, but for now keep
+            # them separate.
+            #
+            if lp == p:
+                # For now ensure the left term is bracketed just to be
+                # clear.
+                #
+                lstr = f"({lstr})"
+            elif lstr[0] == "-":
+                # If the term is negative then ensure it is included
+                # in a bracket before passed through to the power
+                # term.  Python has "-a ** 2" actually mapping to "-(a
+                # ** 2)" so we need to say "(-a) ** 2" if we really
+                # want the unary operator before the power term.
+                #
+                lstr = f"({lstr})"
+
+        rstr = self.rhs.fullname
+        if opstr in ["+", "*"]:
+            condition = rp < p
+        else:
+            condition = rp <= p
+
+        if condition:
+            rstr = f"({rstr})"
+
+        name = strformat.format(lhs=lstr, rhs=rstr, opstr=opstr)
+        CompositeParameter.__init__(self, name, (self.lhs, self.rhs))
 
     def eval(self):
         return self.op(self.lhs.val, self.rhs.val)

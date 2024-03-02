@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,6 +22,8 @@
 Objects and utilities used by multiple Sherpa subpackages.
 """
 
+from __future__ import annotations
+
 import inspect
 import logging
 import operator
@@ -30,14 +32,16 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
+from typing import Any, Callable
 
 import numpy
 import numpy.fft
 
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
-from sherpa.utils._utils import hist1d, hist2d
-from sherpa.utils import _utils, _psf
+from sherpa.utils._utils import hist1d, hist2d  # type: ignore
+from sherpa.utils import _utils  # type: ignore
+from sherpa.utils import _psf    # type: ignore
 from sherpa.utils.err import IOErr
 from sherpa.utils.random import poisson_noise
 
@@ -72,7 +76,9 @@ __all__ = ('NoNewAttributesAfterInit',
            'print_fields', 'rebin',
            'sao_arange', 'sao_fcmp', 'send_to_pager',
            'set_origin', 'sum_intervals', 'zeroin',
-           'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile')
+           'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile',
+           'get_precedences_op', 'get_precedence_expr'
+           )
 
 
 _guess_ampl_scale = 1.e+3
@@ -4135,3 +4141,71 @@ def send_to_pager(txt, filename=None, clobber=False):
 
     with open(filename, 'w', encoding="UTF-8") as fh:
         print(txt, file=fh)
+
+
+# Expression terms (used to remove excess brackets from model and
+# parameter expressions).
+#
+def get_precedences_op(op: Callable) -> tuple[int, bool]:
+    """Return precedences for the operation.
+
+    Unrecognized parameters are mapped to (9, False).
+
+    Parameters
+    ----------
+    op : callable
+       The operator (e.g. np.multiply or np.power).
+
+    Returns
+    -------
+    lprec, rprec : (int, bool)
+       The left and right "precedences" (the right case only cares
+       about being set or not hence we use a boolean).
+
+    See Also
+    --------
+    get_precedence_expr
+
+    """
+
+    # We make remainder and floor_divide have the same precedence
+    # as power (aka **) just to make things clear.
+    #
+    lprec = {numpy.power: 4, numpy.remainder: 4,
+             numpy.floor_divide: 4,
+             numpy.multiply: 3, numpy.divide: 3, numpy.true_divide: 3,
+             numpy.add: 2, numpy.subtract: 2}
+
+    rprec = {numpy.power: True, numpy.remainder: True,
+             numpy.floor_divide: True}
+
+    return lprec.get(op, 9), rprec.get(op, False)
+
+
+# Typing is hard to get right here given that
+def get_precedence_expr(expr: Any) -> int:
+    """Return precedence for the expression.
+
+    This is the precedence of the operator in the expression,
+    if one exists.
+
+    Parameters
+    ----------
+    expr : Model or Parameter
+       The expression. It may have a .op field.
+
+    Returns
+    -------
+    prec : int
+       The "precedence".
+
+    See Also
+    --------
+    get_precedences_op
+
+    """
+
+    try:
+        return get_precedences_op(expr.op)[0]
+    except AttributeError:
+        return 9

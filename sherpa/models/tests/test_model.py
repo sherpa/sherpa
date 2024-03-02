@@ -619,7 +619,7 @@ def test_show_model():
     assert toks[3].strip().split() == ['thetestmodel.P1', 'thawed', '1', '0', '10']
     assert toks[4].strip().split() == ['thetestmodel.accent', 'frozen', '2', '0', '10']
     assert toks[5].strip().split() == ['thetestmodel.norm', 'linked', '12',
-                                       'expr:', '(10', '+', 'const1d.c0)']
+                                       'expr:', '10', '+', 'const1d.c0']
 
     # Should hidden parameters be capable of being thawed?
     assert m.notseen.val == 10
