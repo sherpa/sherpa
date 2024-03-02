@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2017, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2017, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -77,10 +77,13 @@ negative:
     >>> p.min
     -3.4028234663852886e+38
 
-Setting a value outside this range will raise a sherpa.utils.err.ParameterErr
+Setting a value outside this range will raise a
+`sherpa.utils.err.ParameterErr` exception:
 
     >>> p.val = 1e40
-    ParameterErr: parameter model.eta has a maximum of 3.40282e+38
+    Traceback (most recent call last):
+      ...
+    sherpa.utils.err.ParameterErr: parameter model.eta has a maximum of 3.40282e+38
 
 These limits can be changed, as shown below, but they must lie
 within the `hard_min` to `hard_max` range of the parameter (the
@@ -132,7 +135,9 @@ changed at once, as it allows for changes to both the value and
 limits, such as changing the value to be 20 and the limits to 8 to 30:
 
     >>> p.val = 20
-    ParameterErr: parameter model.eta has a maximum of 10
+    Traceback (most recent call last):
+      ...
+    sherpa.utils.err.ParameterErr: parameter model.eta has a maximum of 10
     >>> p.set(val=20, min=8, max=30)
     >>> print(p)
     val         = 20.0
@@ -153,7 +158,7 @@ value of the parameter is calculated based on the link expression,
 such as being twice the other parameter:
 
     >>> q = Parameter('other', 'beta', 4)
-    >>> p.val = 2 * p
+    >>> p.val = 2 * q
     >>> print(p)
     val         = 8.0
     min         = 8.0
@@ -179,9 +184,13 @@ but only when parameter p is checked, not when the related parameter
 
     >>> q.val = 3
     >>> print(p)
-    ParameterErr: parameter model.eta has a minimum of 8
+    Traceback (most recent call last):
+      ...
+    sherpa.utils.err.ParameterErr: parameter model.eta has a minimum of 8
     >>> p.val
-    ParameterErr: parameter model.eta has a minimum of 8
+    Traceback (most recent call last):
+      ...
+    sherpa.utils.err.ParameterErr: parameter model.eta has a minimum of 8
 
 Resetting a parameter
 =====================
@@ -778,10 +787,10 @@ class CompositeParameter(Parameter):
        >>> for cpt in c:
        ...     print(type(cpt))
        ...
-       <class 'BinaryOpParameter'>
-       <class 'Parameter'>
-       <class 'Parameter'>
-       <class 'ConstantParameter'>
+       <class 'sherpa.models.parameter.BinaryOpParameter'>
+       <class 'sherpa.models.parameter.Parameter'>
+       <class 'sherpa.models.parameter.Parameter'>
+       <class 'sherpa.models.parameter.ConstantParameter'>
 
     """
 
