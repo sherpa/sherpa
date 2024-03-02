@@ -188,7 +188,7 @@ def test_unop_string():
     printing the model representation.
     '''
     porig = setUp_p()
-    assert repr(-porig) == "<UnaryOpParameter '-model.name'>"
+    assert repr(-porig) == "<UnaryOpParameter '-(model.name)'>"
     assert repr(np.cos(porig)) == "<UnaryOpParameter 'numpy.cos(model.name)'>"
 
 
@@ -223,11 +223,11 @@ def test_binop_string():
     '''
     p, p2 = setUp_composite()
     comp = p + p2
-    assert repr(comp) == "<BinaryOpParameter '(model.p + model.p2)'>"
+    assert repr(comp) == "<BinaryOpParameter 'model.p + model.p2'>"
     comp = 1 + p * 2.7**p2
-    assert repr(comp) == "<BinaryOpParameter '(1 + (model.p * (2.7 ** model.p2)))'>"
+    assert repr(comp) == "<BinaryOpParameter '1 + model.p * 2.7 ** model.p2'>"
     comp = np.logaddexp2(p, p2)
-    assert repr(comp) == "<BinaryOpParameter 'numpy.logaddexp2(model.p, model.p2)'>"
+    assert repr(comp) == "<BinaryOpParameter 'numpy.logaddexp2(model.p, (model.p2))'>"
 
 
 def test_binop_string_with_custom_ufunc():
@@ -238,7 +238,7 @@ def test_binop_string_with_custom_ufunc():
     uf = np.frompyfunc(func, nin=2, nout=1)
     p, p2 = setUp_composite()
     comp = uf(p, p2)
-    assert repr(comp) == "<BinaryOpParameter 'func(model.p, model.p2)'>"
+    assert repr(comp) == "<BinaryOpParameter 'func(model.p, (model.p2))'>"
 
 
 class TestBrackets:
@@ -258,86 +258,86 @@ class TestBrackets:
     @pytest.mark.parametrize("expr,expected",
                              [(a, "a"),  # TODO: should this be m.a?
                               (abs(a), "abs(m.a)"),
-                              (abs(a) + b, "(abs(m.a) + m.b)"),
-                              (b + abs(a), "(m.b + abs(m.a))"),
-                              (abs(a + b), "abs((m.a + m.b))"),
-                              (abs(a + b * c), "abs((m.a + (m.b * m.c)))"),
-                              (abs(a - b * c), "abs((m.a - (m.b * m.c)))"),
-                              (abs((a + b) * c), "abs(((m.a + m.b) * m.c))"),
-                              (abs((a - b) * c), "abs(((m.a - m.b) * m.c))"),
-                              (abs((a - b) / c), "abs(((m.a - m.b) / m.c))"),
-                              (abs((a * b) - c), "abs(((m.a * m.b) - m.c))"),
-                              (abs((a / b) - c), "abs(((m.a / m.b) - m.c))"),
-                              (a * abs(b * (c + d)), "(m.a * abs((m.b * (m.c + m.d))))"),
-                              (abs(b * (c + d)) * (a + d), "(abs((m.b * (m.c + m.d))) * (m.a + m.d))"),
-                              (-a, "-m.a"),
-                              # (+a, "+m.a"),  currently not supported
-                              (-a + b, "(-m.a + m.b)"),
-                              (-a + 2, "(-m.a + 2)"),
+                              (abs(a) + b, "abs(m.a) + m.b"),
+                              (b + abs(a), "m.b + abs(m.a)"),
+                              (abs(a + b), "abs(m.a + m.b)"),
+                              (abs(a + b * c), "abs(m.a + m.b * m.c)"),
+                              (abs(a - b * c), "abs(m.a - m.b * m.c)"),
+                              (abs((a + b) * c), "abs((m.a + m.b) * m.c)"),
+                              (abs((a - b) * c), "abs((m.a - m.b) * m.c)"),
+                              (abs((a - b) / c), "abs((m.a - m.b) / m.c)"),
+                              (abs((a * b) - c), "abs(m.a * m.b - m.c)"),
+                              (abs((a / b) - c), "abs(m.a / m.b - m.c)"),
+                              (a * abs(b * (c + d)), "m.a * abs(m.b * (m.c + m.d))"),
+                              (abs(b * (c + d)) * (a + d), "abs(m.b * (m.c + m.d)) * (m.a + m.d)"),
+                              (-a, "-(m.a)"),
+                              # (+a, "+(m.a)"),  currently not supported
+                              (-a + b, "-(m.a) + m.b"),
+                              (-a + 2, "-(m.a) + 2"),
                               # (+a + b, "+(m.a) + m.b"),  currenly not supported
                               (-(a + b), "-(m.a + m.b)"),
                               (-(a * b), "-(m.a * m.b)"),
                               (-(a - b), "-(m.a - m.b)"),
-                              (-(a * b - c), "-((m.a * m.b) - m.c)"),
-                              (-(a - b * c), "-(m.a - (m.b * m.c))"),
-                              (a - a - b, "((m.a - m.a) - m.b)"),
-                              (a - (a - b), "(m.a - (m.a - m.b))"),
-                              (a - (b - (c - d)), '(m.a - (m.b - (m.c - m.d)))'),
-                              (a - (b + (c - d)), '(m.a - (m.b + (m.c - m.d)))'),
-                              (b - (c + d), '(m.b - (m.c + m.d))'),
-                              ((a - b) - (c + d), '((m.a - m.b) - (m.c + m.d))'),
-                              (a - (b - (c + d)), '(m.a - (m.b - (m.c + m.d)))'),
-                              (a - (b + (c + d)), '(m.a - (m.b + (m.c + m.d)))'),
-                              (2 * (a + b) - c * 3, "((2 * (m.a + m.b)) - (m.c * 3))"),
-                              (abs(2 * (a + b) - c * 3), "abs(((2 * (m.a + m.b)) - (m.c * 3)))"),
-                              (a + a, "(m.a + m.a)"),
-                              (a * b, "(m.a * m.b)"),
-                              (a - a, "(m.a - m.a)"),
-                              (a / b, "(m.a / m.b)"),
-                              (a + b + c, "((m.a + m.b) + m.c)"),
-                              (a * b * c, "((m.a * m.b) * m.c)"),
-                              ((a * b) + c, "((m.a * m.b) + m.c)"),
-                              ((a + b) * c, "((m.a + m.b) * m.c)"),
-                              (a + (b * c), "(m.a + (m.b * m.c))"),
-                              (a * (b + c), "(m.a * (m.b + m.c))"),
-                              ((a + b) * (c + d), "((m.a + m.b) * (m.c + m.d))"),
-                              ((a * b) * (c + d), "((m.a * m.b) * (m.c + m.d))"),
-                              ((a + b) * (c * d), "((m.a + m.b) * (m.c * m.d))"),
-                              ((a + (b * c) + d), "((m.a + (m.b * m.c)) + m.d)"),
-                              (100 * a * (b + c), "((100 * m.a) * (m.b + m.c))"),
-                              (100 * (a * (b + c)), "(100 * (m.a * (m.b + m.c)))"),
-                              (a + b + 2 * c + d + a, "((((m.a + m.b) + (2 * m.c)) + m.d) + m.a)"),
-                              (a + b + c * 2 + d + a, "((((m.a + m.b) + (m.c * 2)) + m.d) + m.a)"),
-                              (a + b * (c - 2) + d + a, "(((m.a + (m.b * (m.c - 2))) + m.d) + m.a)"),
-                              (a + b * (2 - c) + d + a, "(((m.a + (m.b * (2 - m.c))) + m.d) + m.a)"),
-                              ((a + b + c) + (c + b + d + a), "(((m.a + m.b) + m.c) + (((m.c + m.b) + m.d) + m.a))"),
-                              ((a + b + c) + (c + b - d + a), "(((m.a + m.b) + m.c) + (((m.c + m.b) - m.d) + m.a))"),
-                              ((a + b + c) + (c + b - abs(d) + a), "(((m.a + m.b) + m.c) + (((m.c + m.b) - abs(m.d)) + m.a))"),
-                              ((a + b + c) * (c + b + d + a), "(((m.a + m.b) + m.c) * (((m.c + m.b) + m.d) + m.a))"),
-                              ((a + b + c) * (c + b - d + a), "(((m.a + m.b) + m.c) * (((m.c + m.b) - m.d) + m.a))"),
-                              ((a + b + c) * (c + b - abs(d) + a), "(((m.a + m.b) + m.c) * (((m.c + m.b) - abs(m.d)) + m.a))"),
-                              ((a * b * c) * (c + b + d + a), "(((m.a * m.b) * m.c) * (((m.c + m.b) + m.d) + m.a))"),
-                              ((a + b + c) * (c * b * d * a), "(((m.a + m.b) + m.c) * (((m.c * m.b) * m.d) * m.a))"),
-                              ((a + b + c) * (c * b + d * a), "(((m.a + m.b) + m.c) * ((m.c * m.b) + (m.d * m.a)))"),
-                              (2 * a * 2, "((2 * m.a) * 2)"),
-                              (a * 2 * 2, "((m.a * 2) * 2)"),
-                              (2 * a + 2 * (b + c - 4) * 3, "((2 * m.a) + ((2 * ((m.b + m.c) - 4)) * 3))"),
+                              (-(a * b - c), "-(m.a * m.b - m.c)"),
+                              (-(a - b * c), "-(m.a - m.b * m.c)"),
+                              (a - a - b, "m.a - m.a - m.b"),
+                              (a - (a - b), "m.a - (m.a - m.b)"),
+                              (a - (b - (c - d)), 'm.a - (m.b - (m.c - m.d))'),
+                              (a - (b + (c - d)), 'm.a - (m.b + m.c - m.d)'),
+                              (b - (c + d), 'm.b - (m.c + m.d)'),
+                              ((a - b) - (c + d), 'm.a - m.b - (m.c + m.d)'),
+                              (a - (b - (c + d)), 'm.a - (m.b - (m.c + m.d))'),
+                              (a - (b + (c + d)), 'm.a - (m.b + m.c + m.d)'),
+                              (2 * (a + b) - c * 3, "2 * (m.a + m.b) - m.c * 3"),
+                              (abs(2 * (a + b) - c * 3), "abs(2 * (m.a + m.b) - m.c * 3)"),
+                              (a + a, "m.a + m.a"),
+                              (a * b, "m.a * m.b"),
+                              (a - a, "m.a - m.a"),
+                              (a / b, "m.a / m.b"),
+                              (a + b + c, "m.a + m.b + m.c"),
+                              (a * b * c, "m.a * m.b * m.c"),
+                              ((a * b) + c, "m.a * m.b + m.c"),
+                              ((a + b) * c, "(m.a + m.b) * m.c"),
+                              (a + (b * c), "m.a + m.b * m.c"),
+                              (a * (b + c), "m.a * (m.b + m.c)"),
+                              ((a + b) * (c + d), "(m.a + m.b) * (m.c + m.d)"),
+                              ((a * b) * (c + d), "m.a * m.b * (m.c + m.d)"),
+                              ((a + b) * (c * d), "(m.a + m.b) * m.c * m.d"),
+                              ((a + (b * c) + d), "m.a + m.b * m.c + m.d"),
+                              (100 * a * (b + c), "100 * m.a * (m.b + m.c)"),
+                              (100 * (a * (b + c)), "100 * m.a * (m.b + m.c)"),
+                              (a + b + 2 * c + d + a, "m.a + m.b + 2 * m.c + m.d + m.a"),
+                              (a + b + c * 2 + d + a, "m.a + m.b + m.c * 2 + m.d + m.a"),
+                              (a + b * (c - 2) + d + a, "m.a + m.b * (m.c - 2) + m.d + m.a"),
+                              (a + b * (2 - c) + d + a, "m.a + m.b * (2 - m.c) + m.d + m.a"),
+                              ((a + b + c) + (c + b + d + a), "m.a + m.b + m.c + m.c + m.b + m.d + m.a"),
+                              ((a + b + c) + (c + b - d + a), "m.a + m.b + m.c + m.c + m.b - m.d + m.a"),
+                              ((a + b + c) + (c + b - abs(d) + a), "m.a + m.b + m.c + m.c + m.b - abs(m.d) + m.a"),
+                              ((a + b + c) * (c + b + d + a), "(m.a + m.b + m.c) * (m.c + m.b + m.d + m.a)"),
+                              ((a + b + c) * (c + b - d + a), "(m.a + m.b + m.c) * (m.c + m.b - m.d + m.a)"),
+                              ((a + b + c) * (c + b - abs(d) + a), "(m.a + m.b + m.c) * (m.c + m.b - abs(m.d) + m.a)"),
+                              ((a * b * c) * (c + b + d + a), "m.a * m.b * m.c * (m.c + m.b + m.d + m.a)"),
+                              ((a + b + c) * (c * b * d * a), "(m.a + m.b + m.c) * m.c * m.b * m.d * m.a"),
+                              ((a + b + c) * (c * b + d * a), "(m.a + m.b + m.c) * (m.c * m.b + m.d * m.a)"),
+                              (2 * a * 2, "2 * m.a * 2"),
+                              (a * 2 * 2, "m.a * 2 * 2"),
+                              (2 * a + 2 * (b + c - 4) * 3, "2 * m.a + 2 * (m.b + m.c - 4) * 3"),
                               # How about expressions with exponentation
-                              (a**2, "(m.a ** 2)"),
-                              (a**-2, "(m.a ** -2)"),
-                              (a + b**2, "(m.a + (m.b ** 2))"),
-                              (a + (b + c)**2, "(m.a + ((m.b + m.c) ** 2))"),
-                              (a - b**(c - 2) - a, "((m.a - (m.b ** (m.c - 2))) - m.a)"),
-                              ((a ** 2) ** b, "((m.a ** 2) ** m.b)"),
+                              (a**2, "m.a ** 2"),
+                              (a**-2, "m.a ** -2"),
+                              (a + b**2, "m.a + m.b ** 2"),
+                              (a + (b + c)**2, "m.a + (m.b + m.c) ** 2"),
+                              (a - b**(c - 2) - a, "m.a - m.b ** (m.c - 2) - m.a"),
+                              ((a ** 2) ** b, "(m.a ** 2) ** m.b"),
                               (-a ** 2, "-(m.a ** 2)"),
-                              ((-a)**2, "(-m.a ** 2)"),  # test_unary_op_precedence
+                              ((-a)**2, "(-(m.a)) ** 2"),
                               # remainder and integer division, for fun
-                              (a // 2, "(m.a // 2)"),
-                              ((a + b) // 2, "((m.a + m.b) // 2)"),
-                              ((a * b) // 2, "((m.a * m.b) // 2)"),
-                              (a % 2, "(m.a % 2)"),
-                              ((a + b) % 2, "((m.a + m.b) % 2)"),
-                              ((a * b) % 2, "((m.a * m.b) % 2)")
+                              (a // 2, "m.a // 2"),
+                              ((a + b) // 2, "(m.a + m.b) // 2"),
+                              ((a * b) // 2, "(m.a * m.b) // 2"),
+                              (a % 2, "m.a % 2"),
+                              ((a + b) % 2, "(m.a + m.b) % 2"),
+                              ((a * b) % 2, "(m.a * m.b) % 2")
                              ])
     def test_brackets(self, expr, expected):
         """Do we get the expected number of brackets?"""
@@ -353,16 +353,11 @@ def test_unary_op_precedence():
     p = Parameter("m", "x", 3)
 
     expr = p ** 2
-    assert expr.name == "(m.x ** 2)"
+    assert expr.name == "m.x ** 2"
     assert expr.val == pytest.approx(9)
 
     expr = (-p) ** 2
-    # TODO: the string expression is wrong, since as we show below
-    #       -p **2
-    #       actually evaluates to -9, but I treat this as a regression
-    #       test for now
-    #
-    assert expr.name == "(-m.x ** 2)"
+    assert expr.name == "(-(m.x)) ** 2"
     assert expr.val == pytest.approx(9)
 
     expr = -p ** 2
@@ -370,7 +365,7 @@ def test_unary_op_precedence():
     assert expr.val == pytest.approx(-9)
 
     expr = p ** -2
-    assert expr.name == "(m.x ** -2)"
+    assert expr.name == "m.x ** -2"
     assert expr.val == pytest.approx(1 / 9)
 
 

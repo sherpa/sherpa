@@ -1808,7 +1808,7 @@ m1.c0.units   = ""
 m1.c0.frozen  = False
 
 
-link(m2.c0, (m1.c0 + sep.c0))
+link(m2.c0, m1.c0 + sep.c0)
 
 """
 
@@ -3305,7 +3305,7 @@ def test_link_par():
     assert m2.c0.min == 10
     assert m2.c0.max == 500
     assert m2.c0.link is not None
-    assert m2.c0.link.name == "(m1.c0 + sep.c0)"
+    assert m2.c0.link.name == "m1.c0 + sep.c0"
 
     compare(_canonical_link_par)
 
@@ -3315,7 +3315,7 @@ def test_link_par():
     assert m2.c0.min == 10
     assert m2.c0.max == 500
     assert m2.c0.link is not None
-    assert m2.c0.link.name == "(m1.c0 + sep.c0)"
+    assert m2.c0.link.name == "m1.c0 + sep.c0"
 
 
 @pytest.mark.xfail

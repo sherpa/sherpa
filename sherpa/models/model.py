@@ -155,7 +155,7 @@ and the expression is stored in the link attribute:
     >>> m3.ampl.val
     11.0
     >>> m3.ampl.link
-    <BinaryOpParameter '((gauss1d.ampl + gmdl.ampl) / 2)'>
+    <BinaryOpParameter '(gauss1d.ampl + gmdl.ampl) / 2'>
 
 The string representation of the model changes for linked parameters
 to indicate the expression:
@@ -166,7 +166,7 @@ to indicate the expression:
        -----        ----          -----          ---          ---      -----
        m3.fwhm      thawed           10  1.17549e-38  3.40282e+38
        m3.pos       thawed            0 -3.40282e+38  3.40282e+38
-       m3.ampl      linked           11 expr: ((gauss1d.ampl + gmdl.ampl) / 2)
+       m3.ampl      linked           11 expr: (gauss1d.ampl + gmdl.ampl) / 2
 
 Model evaluation
 ================
@@ -325,9 +325,9 @@ import warnings
 import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
-from sherpa.utils import NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit, formatting, \
+    get_precedences_op, get_precedence_expr
 from sherpa.utils.err import ModelErr, ParameterErr
-from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
 
 from .parameter import Parameter
@@ -1337,65 +1337,6 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
-def get_precedences_op(op: Callable) -> tuple[int, bool]:
-    """Return precedences for the operation.
-
-    Unrecognized parameters are mapped to (9, False).
-
-    Parameters
-    ----------
-    op : callable
-       The operator (e.g. np.multiply or np.power).
-
-    Returns
-    -------
-    lprec, rprec : (int, bool)
-       The left and right "precedences" (the right case only cares
-       about being set or not hence we use a boolean).
-
-    """
-
-    # We make remainder and floor_divide have the same precedence
-    # as power (aka **) just to make things clear.
-    #
-    lprec = {numpy.power: 4, numpy.remainder: 4,
-             numpy.floor_divide: 4,
-             numpy.multiply: 3, numpy.divide: 3, numpy.true_divide: 3,
-             numpy.add: 2, numpy.subtract: 2}
-
-    rprec = {numpy.power: True, numpy.remainder: True,
-             numpy.floor_divide: True}
-
-    return lprec.get(op, 9), rprec.get(op, False)
-
-
-def get_precedence_mdl(mdl: Model) -> int:
-    """Return precedence for the model.
-
-    This is the precedence of the operator in the model,
-    if one exists.
-
-    Parameters
-    ----------
-    mdl : Model
-       The model expression.
-
-    Returns
-    -------
-    prec : int
-       The "precedence".
-
-    """
-
-    # Perhaps this should check if this is a BinaryOpModel instance
-    # rather than ask for the op setting?
-    #
-    try:
-        return get_precedences_op(mdl.op)[0]
-    except AttributeError:
-        return 9
-
-
 class BinaryOpModel(CompositeModel, RegriddableModel):
 
     """Combine two model expressions.
@@ -1450,8 +1391,8 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         # precedences in the object but it doesn't seem worth it.
         #
         p, a = get_precedences_op(op)
-        lp = get_precedence_mdl(self.lhs)
-        rp = get_precedence_mdl(self.rhs)
+        lp = get_precedence_expr(self.lhs)
+        rp = get_precedence_expr(self.rhs)
 
         # There is no attempt to simplify '-(-x)' to 'x' or similar.
         # What happens if this hits a recursion error?
