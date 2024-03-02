@@ -326,7 +326,8 @@ import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
 from sherpa.utils import NoNewAttributesAfterInit, formatting, \
-    get_precedences_op, get_precedence_expr
+    get_precedences_op, get_precedence_expr, \
+    get_precedence_lhs, get_precedence_rhs
 from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -1325,12 +1326,12 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
+        self.opprec = get_precedences_op(op)[0]
 
         # We do not simplify this (e.g. remove brackets if self.arg
         # is not a composite model).
         #
         name = f'{opstr}({self.arg.name})'
-
         CompositeModel.__init__(self, name, (self.arg,))
 
     def calc(self, p, *args, **kwargs):
@@ -1387,45 +1388,16 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.op = op
         self.opstr = opstr
 
-        # Simplify the expression if possible. We could store the
-        # precedences in the object but it doesn't seem worth it.
+        p, a =  get_precedences_op(op)
+        self.opprec = p
+
+        # Simplify the expression if possible.
         #
-        p, a = get_precedences_op(op)
         lp = get_precedence_expr(self.lhs)
         rp = get_precedence_expr(self.rhs)
 
-        # There is no attempt to simplify '-(-x)' to 'x' or similar.
-        # What happens if this hits a recursion error?
-        #
-        lstr = self.lhs.name
-        if lp < p:
-            lstr = f"({lstr})"
-        elif a:
-            # We could combine all these into one, but for now keep
-            # them separate.
-            #
-            if lp == p:
-                # For now ensure the left term is bracketed just to be
-                # clear.
-                #
-                lstr = f"({lstr})"
-            elif lstr[0] == "-":
-                # If the term is negative then ensure it is included
-                # in a bracket before passed through to the power
-                # term.  Python has "-a ** 2" actually mapping to "-(a
-                # ** 2)" so we need to say "(-a) ** 2" if we really
-                # want the unary operator before the power term.
-                #
-                lstr = f"({lstr})"
-
-        rstr = self.rhs.name
-        if opstr in ["+", "*"]:
-            condition = rp < p
-        else:
-            condition = rp <= p
-
-        if condition:
-            rstr = f"({rstr})"
+        lstr = get_precedence_lhs(self.lhs.name, lp, p, a)
+        rstr = get_precedence_rhs(self.rhs.name, opstr, rp, p)
 
         name = f'{lstr} {opstr} {rstr}'
         CompositeModel.__init__(self, name, (self.lhs, self.rhs))

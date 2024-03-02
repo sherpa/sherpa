@@ -205,7 +205,8 @@ fit.
 import logging
 import numpy
 from sherpa.utils import NoNewAttributesAfterInit, formatting, \
-    get_precedences_op, get_precedence_expr
+    get_precedences_op, get_precedence_expr, \
+    get_precedence_lhs, get_precedence_rhs
 from sherpa.utils.err import ParameterErr
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -858,6 +859,7 @@ class UnaryOpParameter(CompositeParameter):
     def __init__(self, arg, op, opstr, strformat='{opstr}({arg})'):
         self.arg = arg
         self.op = op
+        self.opprec = get_precedences_op(op)[0]
 
         fullname = self.arg.fullname
         name = strformat.format(opstr=opstr, arg=fullname)
@@ -902,45 +904,16 @@ class BinaryOpParameter(CompositeParameter):
         self.rhs = self.wrapobj(rhs)
         self.op = op
 
-        # Simplify the expression if possible. We could store the
-        # precedences in the object but it doesn't seem worth it.
+        p, a =  get_precedences_op(op)
+        self.opprec = p
+
+        # Simplify the expression if possible.
         #
-        p, a = get_precedences_op(op)
         lp = get_precedence_expr(self.lhs)
         rp = get_precedence_expr(self.rhs)
 
-        # There is no attempt to simplify '-(-x)' to 'x' or similar.
-        # What happens if this hits a recursion error?
-        #
-        lstr = self.lhs.fullname
-        if lp < p:
-            lstr = f"({lstr})"
-        elif a:
-            # We could combine all these into one, but for now keep
-            # them separate.
-            #
-            if lp == p:
-                # For now ensure the left term is bracketed just to be
-                # clear.
-                #
-                lstr = f"({lstr})"
-            elif lstr[0] == "-":
-                # If the term is negative then ensure it is included
-                # in a bracket before passed through to the power
-                # term.  Python has "-a ** 2" actually mapping to "-(a
-                # ** 2)" so we need to say "(-a) ** 2" if we really
-                # want the unary operator before the power term.
-                #
-                lstr = f"({lstr})"
-
-        rstr = self.rhs.fullname
-        if opstr in ["+", "*"]:
-            condition = rp < p
-        else:
-            condition = rp <= p
-
-        if condition:
-            rstr = f"({rstr})"
+        lstr = get_precedence_lhs(self.lhs.fullname, lp, p, a)
+        rstr = get_precedence_rhs(self.rhs.fullname, opstr, rp, p)
 
         name = strformat.format(lhs=lstr, rhs=rstr, opstr=opstr)
         CompositeParameter.__init__(self, name, (self.lhs, self.rhs))
