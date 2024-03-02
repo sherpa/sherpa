@@ -557,3 +557,37 @@ def test_link_manual(attr):
     assert p.link.parts[0].val == 2
     assert isinstance(p.link.parts[1], Parameter)
     assert p.link.parts[1] is q
+
+
+def test_explicit_numpy_combination():
+    """This was a question I wondered when developing test_brackets,
+    so add a check.
+    """
+
+    p1 = Parameter("m1", "a", 4)
+    p2 = Parameter("m2", "b", 2)
+    p3 = Parameter("m4", "xx", 10)
+
+    # These should be the same but check they are.
+    #
+    implicit = p1 * (p2 + p3)
+    explicit = np.multiply(p1,
+                           np.add(p2, p3))
+
+    assert isinstance(implicit, BinaryOpParameter)
+    assert isinstance(explicit, BinaryOpParameter)
+
+    # The model version of this
+    # test_model_op::test_explicit_numpy_combination()
+    # has the names being the same, but they are not here.
+    # Is this related to #1653
+    #
+    # assert explicit.name == implicit.name
+    assert implicit.name == "m1.a * (m2.b + m4.xx)"
+    assert explicit.name == "numpy.multiply(m1.a, (numpy.add(m2.b, m4.xx)))"
+
+    # Check they evaluate to the same values.
+    #
+    yexp = 48
+    assert implicit.val == pytest.approx(yexp)
+    assert explicit.val == pytest.approx(yexp)

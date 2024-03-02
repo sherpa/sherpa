@@ -647,3 +647,48 @@ class TestBrackets:
         ygot = got(x)
 
         assert ygot == pytest.approx(ymdl)
+
+
+def test_explicit_numpy_combination():
+    """This was a question I wondered when developing test_brackets,
+    so add a check.
+    """
+
+    mdl1 = basic.Scale1D("mdl1")
+    mdl2 = basic.Box1D("mdl2")
+    mdl3 = basic.Gauss1D("mdl3")
+
+    mdl1.c0 = 4
+    mdl2.xlow = 5
+    mdl2.xhi = 15
+    mdl2.ampl = 2
+    mdl3.pos = 10
+    mdl3.fwhm = 5
+    mdl3.ampl = 10
+
+    # These should be the same but check they are.
+    #
+    implicit = mdl1 * (mdl2 + mdl3)
+    explicit = np.multiply(mdl1,
+                           np.add(mdl2, mdl3))
+
+    assert isinstance(implicit, BinaryOpModel)
+    assert isinstance(explicit, BinaryOpModel)
+
+    # Check the names are the same.
+    #
+    assert explicit.name == implicit.name
+
+    # Check they evaluate to the same values.
+    #
+    x = np.arange(4, 14, 2)
+    y2 = mdl2(x)
+    y3 = mdl3(x)
+    yexp = 4 * (y2 + y3)
+
+    assert implicit(x) == pytest.approx(yexp)
+    assert explicit(x) == pytest.approx(yexp)
+
+    # Have an actual test, just in case,
+    assert yexp == pytest.approx([0.73812041, 14.78302164,
+                                  33.66851795, 48, 33.66851795])
