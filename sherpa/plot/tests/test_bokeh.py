@@ -31,7 +31,7 @@ from sherpa.utils.testing import requires_data, requires_fits
 def test_bokeh_delchi(caplog, clean_ui):
     """Test a specific multi-panel plot with the bokeh backend.
 
-    This also implictly test setting a line_color, because
+    This also implicitly tests setting a line_color, because
     delchi put a black horizontal line on the plot.
 
     This is a regression test for https://github.com/sherpa/sherpa/issues/1975
