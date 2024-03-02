@@ -354,7 +354,7 @@ __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
 
 # These tests refer to other variables which are just not worth
 # setting up (or would require too much work to create any useful
-# state, such as the cache statis lines).
+# state, such as the cache status lines).
 #
 __doctest_skip__ = ['ArithmeticModel.cache_status',
                     'CompositeModel.cache_status',
