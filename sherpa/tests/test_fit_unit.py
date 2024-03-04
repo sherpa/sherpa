@@ -3252,3 +3252,46 @@ def test_linked_parameter_implicit(setup_ldata):
     assert m3.fwhm.val == pytest.approx(10)
     assert m3.ampl.val == pytest.approx(94.41261426565819)
     assert sigma3.c0.val == pytest.approx(10 / convert)
+
+
+def test_repeated_model_expression(setup_ldata):
+    """What happens if the same model term is used.
+
+    There may be tests of this, but it's hard to be sure so add an
+    explicit check. This is related to issue #777 - how do we handle
+    linked parameters that are not part of the model expression.
+
+    """
+
+    # We can compare against test_linked_parameter_base which fits a
+    # single Gauss1D. Everything should be the same (modulo numeric
+    # effects) apart from the amplitude term, which should be halved.
+    #
+    d = setup_ldata
+
+    mdl1 = Gauss1D("m1")
+    mdl1.pos = 100
+    mdl1.pos.freeze()
+
+    expr = mdl1 + mdl1
+
+    # to ensure we start at the same place as test_linked_parameter_base
+    #
+    mdl1.ampl = 0.5
+
+    f = Fit(d, expr, stat=Cash())
+    res = f.fit()
+
+    # check the fit succeeded
+    assert res.succeeded
+    assert res.statval == pytest.approx(LPAR_STAT)
+    assert res.numpoints == 12
+    assert res.dof == 10  # so, we only have two free params. good!
+    assert len(res.parvals) == 2
+    assert res.parnames == ("m1.fwhm", "m1.ampl")
+    assert res.parvals[0] == pytest.approx(LPAR_FWHM)
+    assert res.parvals[1] == pytest.approx(LPAR_AMPL / 2)
+
+    # Just as a safety check
+    assert mdl1.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert mdl1.ampl.val == pytest.approx(LPAR_AMPL / 2)
