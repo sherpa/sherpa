@@ -1886,6 +1886,32 @@ def test_model_with_repeated_links1_pars():
     assert mdl.pars[8].link == mdl.pars[2]
     assert mdl.pars[9].link == mdl.pars[3]
 
+    # Check the status (the links are frozen).
+    #
+    assert mdl.pars[0].frozen == False
+    assert mdl.pars[1].frozen == False
+    assert mdl.pars[2].frozen == False
+    assert mdl.pars[3].frozen == True
+    assert mdl.pars[4].frozen == True
+    assert mdl.pars[5].frozen == False
+    assert mdl.pars[6].frozen == True
+    assert mdl.pars[7].frozen == True  # unlike pars[1]
+    assert mdl.pars[8].frozen == True  # unlike pars[2]
+    assert mdl.pars[9].frozen == True
+
+    # Check the parameter values.
+    #
+    assert mdl.pars[0].val == 100
+    assert mdl.pars[1].val == 5
+    assert mdl.pars[2].val == 20
+    assert mdl.pars[3].val == 38
+    assert mdl.pars[4].val == 15
+    assert mdl.pars[5].val == 40
+    assert mdl.pars[6].val == 5
+    assert mdl.pars[7].val == mdl.pars[1].val
+    assert mdl.pars[8].val == mdl.pars[2].val
+    assert mdl.pars[9].val == mdl.pars[3].val
+
     tpars = mdl.thawedpars
     assert len(tpars) == 4
     assert tpars[0] == 100
@@ -1948,6 +1974,32 @@ def test_model_with_repeated_links2_pars():
     assert mdl.pars[7].link == mdl.pars[1]
     assert mdl.pars[8].link == mdl.pars[2]
     assert mdl.pars[9].link == mdl.pars[3]
+
+    # Check the status (the links are frozen).
+    #
+    assert mdl.pars[0].frozen == False
+    assert mdl.pars[1].frozen == False
+    assert mdl.pars[2].frozen == False
+    assert mdl.pars[3].frozen == True
+    assert mdl.pars[4].frozen == True
+    assert mdl.pars[5].frozen == False
+    assert mdl.pars[6].frozen == True
+    assert mdl.pars[7].frozen == True  # unlike pars[1]
+    assert mdl.pars[8].frozen == True  # unlike pars[2]
+    assert mdl.pars[9].frozen == True
+
+    # Check the parameter values.
+    #
+    assert mdl.pars[0].val == 100
+    assert mdl.pars[1].val == 5
+    assert mdl.pars[2].val == 20
+    assert mdl.pars[3].val == 7
+    assert mdl.pars[4].val == 16
+    assert mdl.pars[5].val == 40
+    assert mdl.pars[6].val == 5
+    assert mdl.pars[7].val == mdl.pars[1].val
+    assert mdl.pars[8].val == mdl.pars[2].val
+    assert mdl.pars[9].val == mdl.pars[3].val
 
     tpars = mdl.thawedpars
     assert len(tpars) == 4
