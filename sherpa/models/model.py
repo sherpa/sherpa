@@ -333,7 +333,7 @@ from sherpa.utils.numeric_types import SherpaFloat
 
 from .op import get_precedences_op, get_precedence_expr, \
     get_precedence_lhs, get_precedence_rhs
-from .parameter import Parameter
+from .parameter import Parameter, expand_par
 
 # What routine do we use for the hash in modelCacher1d?  As we do not
 # need cryptographic security go for a "quick" algorithm, but md5 is
@@ -486,6 +486,7 @@ def modelCacher1d(func: Callable) -> Callable:
 
     return cache_model
 
+
 # It is tempting to convert the explicit class names below into calls
 # to super(), but this is problematic since it ends up breaking a
 # number of invariants the classes rely on. An example is that
@@ -550,9 +551,90 @@ class Model(NoNewAttributesAfterInit):
            The pars field can no-longer be set directly. Individual
            elements can still be changed.
 
+        See Also
+        --------
+        lpars
+
         """
 
         return tuple(par for par in self._pars)
+
+    @property
+    def lpars(self) -> tuple[Parameter, ...]:
+        """Return any linked parameters.
+
+        This only returns linked parameters that are not related
+        to the model, and each parameter is not repeated.
+
+        .. versionadded:: 4.16.1
+
+        See Also
+        --------
+        pars
+
+        Examples
+        --------
+
+        By default there are no linked parameters:
+
+        >>> from sherpa.models.basic import Gauss2D
+        >>> mdl = Gauss2D("mdl")
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        ()
+
+        Force the model to have identical xpos and ypos parameters.
+        Since the linked parameter value (mdl.xpos) is part of the
+        model it is not included in `lpars`:
+
+        >>> mdl.ypos = mdl.xpos
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        ()
+
+        Add a link to allow the sigma term to be fit rather than
+        FWHM. Since the linked parameter - here from the Const1D
+        model - is not a part of the model it is included in
+        `lpars`:
+
+        >>> import numpy as np
+        >>> from sherpa.models.basic import Const1D
+        >>> sigma = Const1D("sigma")
+        >>> mdl.fwhm = 2 * np.sqrt(2 * np.log(2)) * sigma.c0
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        (<Parameter 'c0' of model 'sigma'>,)
+
+        """
+
+        # Find all the linked parameters, but only report the first
+        # occurrence.
+        #
+        out = []
+        for par in self._pars:
+            if not par.link:
+                continue
+
+            for lpar in expand_par(par.link):
+                # This could be a parameter we've already seen: e.g.
+                #    mdl.x2 = mdl.x1 + 5
+                #
+                if lpar in self._pars:
+                    continue
+
+                # The parameter could be used in several expressions: e.g.
+                #    mdl.x1 = other.c0 + 5
+                #    mdl.x2 = other.c0 + 7
+                #
+                if lpar in out:
+                    continue
+
+                out.append(lpar)
+
+        return tuple(out)
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} model instance '{self.name}'>"

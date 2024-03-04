@@ -26,7 +26,7 @@ import pytest
 
 from sherpa.models.basic import Gauss1D, Const1D, PowLaw1D
 from sherpa.models.parameter import Parameter, UnaryOpParameter, \
-    BinaryOpParameter, ConstantParameter, hugeval
+    BinaryOpParameter, ConstantParameter, hugeval, expand_par
 from sherpa.utils.err import ParameterErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa import ui
@@ -1060,3 +1060,36 @@ def test_link_expression_sub():
     assert expr.lhs.lhs.rhs.name == "a"
     assert expr.lhs.lhs.rhs.val == pytest.approx(10)
     assert not expr.lhs.lhs.rhs.frozen
+
+
+a = Parameter("m", "a", 5)
+b = Parameter("n", "b", 10)
+fb = Parameter("fn", "b", 10)
+fb.freeze()
+
+
+@pytest.mark.parametrize("expr,expected",
+                         [(a, [a]),
+                          (2 + a, [a]),
+                          (a / 2, [a]),
+                          (a * b, [a, b]),
+                          (a + b + 2 * a, [a, b]),
+                          (fb, [fb]),
+                          (2 + fb, [fb]),
+                          (fb + a, [fb, a]),
+                          (fb - 2 * (a + fb + b), [fb, a, b]),
+                          (2 ** a, [a]),
+                          (a ** 2, [a]),
+                          (a ** b, [a, b]),
+                          (fb ** (1 + b), [fb, b]),
+                          (a ** fb, [a, fb]),
+                          (fb ** fb, [fb])
+                          ])
+def test_expand_par(expr, expected):
+    """check the expansion."""
+
+    res = expand_par(expr)
+    for gterm, eterm in zip(res, expected):
+        assert gterm == eterm
+
+    assert len(res) == len(expected)

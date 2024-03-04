@@ -1035,6 +1035,81 @@ class BinaryOpParameter(CompositeParameter):
         return self.op(self.lhs.val, self.rhs.val)
 
 
+def expand_par(expr: Parameter) -> list[Parameter]:
+    """Return the individual parameter components referenced in expt
+
+    The aim is that changing any of the return values should
+    change the supplied parameter expression.
+
+    Parameters
+    ----------
+    expr : Parameter
+
+    Returns
+    -------
+    pars : list of Parameter
+       The unique parameters in the expression (thawed and frozen).
+
+    Examples
+    --------
+
+    >>> p1 = Parameter("m", "a", 5)
+    >>> expand_par(p1)
+    [<Parameter 'a' of model 'm'>]
+
+    >>> expand_par(p1 + p1)
+    [<Parameter 'a' of model 'm'>]
+
+    >>> p2 = Parameter("n", "b", 2)
+    >>> expand_par(p1 + p2 + 2)
+    [<Parameter 'a' of model 'm'>, <Parameter 'b' of model 'n'>]
+
+    >>> p2.freeze()
+    >>> expand_par(p1 + p2 + 2)
+    [<Parameter 'a' of model 'm'>, <Parameter 'b' of model 'n'>]
+
+    >>> p3 = Parameter("m", "x", 2)
+    >>> p2.link = 3 * p3
+    >>> expand_par(p1 + p2 + 2)
+    [<Parameter 'a' of model 'm'>, <Parameter 'x' of model 'm'>]
+
+    """
+
+    # The link expression may just be a parameter, or a composite
+    # parameter. However iter should handle this.
+    #
+    out = []
+    for par in iter(expr):
+        # For some reason we include the composite terms too in the
+        # iteration, so just skip then. This also skips
+        # ConstantParameter terms, as they happen to extend
+        # CompositeParameter.
+        #
+        if isinstance(par, CompositeParameter):
+            continue
+
+        # If par is a link we need to expand the link.
+        #
+        if par.link:
+            try:
+                out.extend(expand_par(par.link))
+            except RecursionError:
+                # Not sure what to do here so include the
+                # "problematic" parameter.
+                #
+                if par not in out:
+                    out.append(par)
+
+            continue
+
+        if par in out:
+            continue
+
+        out.append(par)
+
+    return out
+
+
 # Notebook representation
 #
 def html_parameter(par: Parameter) -> str:
