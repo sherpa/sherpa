@@ -1848,16 +1848,18 @@ def test_model_with_links_pars():
     assert mdl.lpars[0].fullname == "other.c0"
 
     tpars = mdl.get_thawed_pars()
-    assert len(tpars) == 3
+    assert len(tpars) == 4
     assert tpars[0].fullname == "sc.c0"
     assert tpars[1].fullname == "xx.xlow"
     assert tpars[2].fullname == "xx.xhi"
+    assert tpars[3].fullname == "other.c0"
 
     tpars = mdl.thawedpars
-    assert len(tpars) == 3
+    assert len(tpars) == 4
     assert tpars[0] == 3
     assert tpars[1] == 1
     assert tpars[2] == 10
+    assert tpars[3] == 11
 
 
 def test_model_with_repeated_links1_pars():
@@ -1947,18 +1949,20 @@ def test_model_with_repeated_links1_pars():
     assert mdl.lpars[0].val == 19
 
     tpars = mdl.get_thawed_pars()
-    assert len(tpars) == 4
+    assert len(tpars) == 5
     assert tpars[0].fullname == "sc.c0"
     assert tpars[1].fullname == "xx.xlow"
     assert tpars[2].fullname == "xx.xhi"
     assert tpars[3].fullname == "yy.xhi"
+    assert tpars[4].fullname == "other.c0"
 
     tpars = mdl.thawedpars
-    assert len(tpars) == 4
+    assert len(tpars) == 5
     assert tpars[0] == 100
     assert tpars[1] == 5
     assert tpars[2] == 20
     assert tpars[3] == 40
+    assert tpars[4] == 19
 
 
 def test_model_with_repeated_links2_pars():
@@ -2053,18 +2057,22 @@ def test_model_with_repeated_links2_pars():
     assert mdl.lpars[1].val == 19
 
     tpars = mdl.get_thawed_pars()
-    assert len(tpars) == 4
+    assert len(tpars) == 6
     assert tpars[0].fullname == "sc.c0"
     assert tpars[1].fullname == "xx.xlow"
     assert tpars[2].fullname == "xx.xhi"
     assert tpars[3].fullname == "yy.xhi"
+    assert tpars[4].fullname == "other1.c0"
+    assert tpars[5].fullname == "other2.c0"
 
     tpars = mdl.thawedpars
-    assert len(tpars) == 4
+    assert len(tpars) == 6
     assert tpars[0] == 100
     assert tpars[1] == 5
     assert tpars[2] == 20
     assert tpars[3] == 40
+    assert tpars[4] == 3.5
+    assert tpars[5] == 19
 
 
 def test_model_can_not_change_pars():
@@ -2087,3 +2095,43 @@ def test_model_can_not_change_pars():
 
     with pytest.raises(AttributeError):
         mdl.pars = [Parameter("x", "y", 2)]
+
+
+def test_model_linked_par_outside_limit():
+    """What happens if a linked par is outside it's limits"""
+
+    mdl = Box1D("mdl")
+    ampl = Scale1D("ampl")
+    mdl.ampl.min = 0
+    mdl.ampl = 5 - ampl.c0
+
+    mdl.xlow = 3
+    mdl.xlow.freeze()
+    mdl.xhi = 20
+    ampl.c0 = 2
+
+    assert len(mdl.pars) == 3
+    assert len(mdl.lpars) == 1
+
+    # mdl.xhi and ampl.c0
+    assert len(mdl.thawedpars) == 2
+    assert mdl.thawedpars[0] == 20
+    assert mdl.thawedpars[1] == 2
+
+    assert mdl.xlow.val == 3
+    assert mdl.xhi.val == 20
+    assert mdl.ampl.val == 3
+    assert ampl.c0.val == 2
+
+    # ampl.c0 -> 4 means mdl.ampl -> 1
+    mdl.thawedpars = [15, 4]
+
+    assert mdl.xlow.val == 3
+    assert mdl.xhi.val == 15
+    assert mdl.ampl.val == 1
+    assert ampl.c0.val == 4
+
+    # ampl.c0 -> 6 means mdl.ampl -> -1, which is outside the min/max range
+    with pytest.raises(ParameterErr,
+                       match="parameter mdl.ampl has a minimum of 0"):
+        mdl.thawedpars = [12, 6]

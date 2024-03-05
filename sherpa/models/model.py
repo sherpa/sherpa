@@ -809,13 +809,18 @@ class Model(NoNewAttributesAfterInit):
     def get_thawed_pars(self) -> list[Parameter]:
         """Return the thawed parameter objects.
 
-        This does not include linked parameters.
+        This includes linked parameters, which complicates the min/max
+        settings, since the range on the components of a linked
+        parameter does not match that of the original parameter, which
+        is an issue when the limits are exceeded.
 
         .. versionadded:: 4.16.1
 
         """
 
-        return [p for p in self.pars if not p.frozen]
+        pars = [p for p in self.pars if not p.frozen]
+        pars.extend(p for p in self.lpars if not p.frozen)
+        return pars
 
     def _get_thawed_par_vals(self) -> list[SupportsFloat]:
         return [p.val for p in self.get_thawed_pars()]
@@ -828,6 +833,10 @@ class Model(NoNewAttributesAfterInit):
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
+        # Note that this check ignores the soft limits. However,
+        # it sets the limits to min/max and not hard_min/max,
+        # which is issue #1980.
+        #
         for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
@@ -839,7 +848,34 @@ class Model(NoNewAttributesAfterInit):
                 warning('value of parameter %s is above maximum; '
                         'setting to maximum', p.fullname)
             else:
+                # We do not want to set val directly because we do not
+                # want the default field to change.
+                #
                 p._val = v
+
+        # Check that each linked parameter lies within it's limits
+        # (since we can not guarantee it from the limits of the
+        # linking parameters).
+        #
+        # Unfortunately, as noted in #1981, it's not obvious what we
+        # should do if a linked parameter is now out of range. For now
+        # we just evaluate the parameter value, which will trigger a
+        # ParameterErr.  This triggers if the *soft* limits are
+        # exceeded, rather than the hard limits, which is slightly
+        # different to the above check.
+        #
+        for par in self.pars:
+            if par.link is None:
+                continue
+
+            # This relies on the parameter validation logic and we do
+            # not care about the return value.
+            #
+            # We could change par._val but we can not "feed" that
+            # value back to the system to know what the linked
+            # parameter should be.
+            #
+            _ = par.val
 
     thawedpars = property(_get_thawed_par_vals, _set_thawed_par_vals,
                           doc="""The thawed parameters of the model.
@@ -963,6 +999,9 @@ See Also
 thawedparhardmins, thawedparmaxes
 """)
 
+    # TODO: should this reset linked parameters? Or does a reset clear
+    # the link?
+    #
     def reset(self) -> None:
         """Reset the parameter values.
 
@@ -974,12 +1013,14 @@ thawedparhardmins, thawedparmaxes
         for p in self.pars:
             p.reset()
 
+    # TODO: should this freeze linked parameters?
     def freeze(self) -> None:
         """Freeze any thawed parameters of the model."""
 
         for p in self.pars:
             p.freeze()
 
+    # TODO: should this thaw linked parameters?
     def thaw(self) -> None:
         """Thaw any frozen parameters of the model.
 

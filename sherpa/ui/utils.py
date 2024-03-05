@@ -28,7 +28,7 @@ import logging
 import os
 import pickle
 import sys
-from typing import Union
+from typing import Optional, Union
 
 import numpy as np
 
@@ -62,6 +62,10 @@ __all__ = ('ModelWrapper', 'Session')
 
 BUILTINS = sys.modules["builtins"]
 _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
+
+
+IdType = Union[int, str]
+ModelType = Union[Model, str]
 
 
 ###############################################################################
@@ -710,7 +714,7 @@ def set_filter(data, val, ignore=False):
 class FitStore:
     """Store per-dataset information for a fit"""
 
-    idval : Union[int, str]
+    idval : IdType
     data : Data
     model : Model
 
@@ -2054,7 +2058,7 @@ class Session(NoNewAttributesAfterInit):
         _check_type(item, itemtype, itemname, itemdesc)
         itemdict[id] = item
 
-    def get_default_id(self):
+    def get_default_id(self) -> IdType:
         """Return the default data set identifier.
 
         The Sherpa data id ties data, model, fit, and plotting
@@ -6488,7 +6492,7 @@ class Session(NoNewAttributesAfterInit):
         except Exception as exc:
             raise ArgumentErr('badexpr', typestr, sys.exc_info()[1]) from exc
 
-    def list_model_ids(self):
+    def list_model_ids(self) -> list[IdType]:
         """List of all the data sets with a source expression.
 
         Returns
@@ -6951,7 +6955,7 @@ class Session(NoNewAttributesAfterInit):
         self._models.pop(id, None)
         self._sources.pop(id, None)
 
-    def _check_model(self, model):
+    def _check_model(self, model: ModelType) -> Model:
         """Return a Model instance.
 
         Converts a string to the model instance if necessary.
@@ -6973,10 +6977,12 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if _is_str(model):
-            model = self._eval_model_expression(model)
-        _check_type(model, Model, 'model',
+            mdl = self._eval_model_expression(model)
+        else:
+            mdl = model
+        _check_type(mdl, Model, 'model',
                     'a model object or model expression string')
-        return model
+        return mdl
 
     def get_model_type(self, model):
         """Describe a model expression.
@@ -7024,8 +7030,12 @@ class Session(NoNewAttributesAfterInit):
         model = self._check_model(model)
         return type(model).__name__.lower()
 
-    def get_model_pars(self, model):
+    def get_model_pars(self, model: ModelType) -> list[str]:
         """Return the names of the parameters of a model.
+
+        .. versionadded:: 4.16.1
+           Linked components are now included without having to
+           include them in the model expression.
 
         Parameters
         ----------
@@ -7047,19 +7057,45 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> set_source(gauss2d.src + const2d.bgnd)
-        >>> get_model_pars(get_source())
+        >>> mdl = gauss2d.src + const2d.bgnd
+        >>> get_model_pars(mdl)
         ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0']
 
-        """
-        model = self._check_model(model)
-        return [p.name for p in model.pars]
+        The return value is unchanged if the two models are linked
+        together, such as setting the background amplitude to 1% of
+        the source amplitude:
 
-    def get_num_par(self, id=None):
+        >>> bgnd.c0 = 0.01 * src.ampl
+        >>> get_model_pars(mdl)
+        ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0']
+
+        If a model expression contaoins linked parameters that are not
+        part of the model expression then they will also be included
+        (in this case both the const2d and scale1d parameters are
+        named 'c0', hence the duplication):
+
+        >>> scale1d.sep
+        <Scale1D model instance 'scale1d.sep'>
+        >>> src.ypos = src.xpos + sep.c0
+        >>> get_model_pars(mdl)
+        ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0', 'c0']
+
+        """
+        mdl = self._check_model(model)
+        # TODO: we could add the component name
+        names = [p.name for p in mdl.pars]
+        names.extend(p.name for p in mdl.lpars)
+        return names
+
+    def get_num_par(self, id: Optional[IdType] = None) -> int:
         """Return the number of parameters in a model expression.
 
         The `get_num_par` function returns the number of parameters,
         both frozen and thawed, in the model assigned to a data set.
+
+        .. versionadded:: 4.16.1
+           Linked components are now included without having to
+           include them in the model expression.
 
         Parameters
         ----------
@@ -7100,13 +7136,18 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par('jet')
 
         """
-        return len(self.get_source(id).pars)
+        mdl = self.get_source(id)
+        return len(mdl.pars) + len(mdl.lpars)
 
-    def get_num_par_thawed(self, id=None):
+    def get_num_par_thawed(self, id: Optional[IdType] = None) -> int:
         """Return the number of thawed parameters in a model expression.
 
         The `get_num_par_thawed` function returns the number of
         thawed parameters in the model assigned to a data set.
+
+        .. versionadded:: 4.16.1
+           Linked components are now included without having to
+           include them in the model expression.
 
         Parameters
         ----------
@@ -7147,13 +7188,18 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par_thawed('jet')
 
         """
-        return len(self.get_source(id).thawedpars)
+        mdl = self.get_source(id)
+        return len(mdl.thawedpars)
 
-    def get_num_par_frozen(self, id=None):
+    def get_num_par_frozen(self, id: Optional[IdType] = None) -> int:
         """Return the number of frozen parameters in a model expression.
 
         The `get_num_par_frozen` function returns the number of
         frozen parameters in the model assigned to a data set.
+
+        .. versionadded:: 4.16.1
+           Linked components are now included without having to
+           include them in the model expression.
 
         Parameters
         ----------
@@ -7194,8 +7240,7 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par_frozen('jet')
 
         """
-        model = self.get_source(id)
-        return len(model.pars) - len(model.thawedpars)
+        return self.get_num_par(id) - self.get_num_par_thawed(id)
 
     #
     # "Special" models (user and table models)
@@ -8390,6 +8435,9 @@ class Session(NoNewAttributesAfterInit):
         As the linked-to values change, the parameter value will
         change.
 
+        .. versionchanged:: 4.16.1
+           Source models no-longer have to contain the linked parameter.
+
         Parameters
         ----------
         par : str or Parameter
@@ -8410,22 +8458,20 @@ class Session(NoNewAttributesAfterInit):
         The ``link`` attribute of the parameter is set to match the
         mathematical expression used for `val`.
 
-        For a parameter value to be varied during a fit, it must be
-        part of one of the source expressions involved in the fit.
-        So, in the following, the ``src1.xpos`` parameter will not
-        be varied because the ``src2`` model - from which it takes
-        its value - is not included in the source expression of any
-        of the data sets being fit.
+        In the following, the fit will vary the ``pos`` parameter
+        even though the ``src2`` component is not part of the source
+        expression (this behavior changed in the 4.16.1 release):
 
         >>> set_source(1, gauss1d.src1)
         >>> gauss1d.src2
-        >>> link(src1.xpos, src2.xpos)
+        >>> link(src1.pos, src2.pos)
         >>> fit(1)
 
-        One way to work around this is to include the model but
-        with zero signal: for example
+        The ``lpars`` attribute of a source model will include these
+        "extra" parameters:
 
-        >>> set_source(1, gauss1d.src1 + 0 * gauss1d.src2)
+        >>> get_source(1).lpars
+        (<Parameter 'pos' of model 'src2'>,)
 
         Examples
         --------

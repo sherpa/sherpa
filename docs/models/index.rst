@@ -13,7 +13,7 @@ section::
 
     >>> import numpy as np
     >>> import matplotlib.pyplot as plt
-    >>> from sherpa import models
+    >>> from sherpa.models import basic
 
 Creating a model instance
 =========================
@@ -22,7 +22,7 @@ Models must be created before there parameter values can
 be set. In this case a one-dimensional gaussian using the
 :py:class:`~sherpa.models.basic.Gauss1D` class::
 
-    >>> g = models.Gauss1D()
+    >>> g = basic.Gauss1D()
     >>> print(g)
     gauss1d
        Param        Type          Value          Min          Max      Units
@@ -51,7 +51,7 @@ of the class name.
 
     >>> g.name
     'gauss1d'
-    >>> h = models.Gauss1D('other')
+    >>> h = basic.Gauss1D('other')
     >>> print(h)
     other
        Param        Type          Value          Min          Max      Units
@@ -78,8 +78,8 @@ plus a flat background - using the
 :py:class:`~sherpa.models.basic.Const1D` class - would be
 represented by the following model::
 
-    >>> src1 = models.Gauss1D('src1')
-    >>> back = models.Const1D('back')
+    >>> src1 = basic.Gauss1D('src1')
+    >>> back = basic.Const1D('back')
     >>> mdl1 = src1 + back
     >>> print(mdl1)
     (src1 + back)
@@ -93,7 +93,7 @@ represented by the following model::
 Now consider fitting a second dataset where it is known that the background
 is two times higher than the first::
 
-    >>> src2 = models.Gauss1D('src2')
+    >>> src2 = basic.Gauss1D('src2')
     >>> mdl2 = src2 + 2 * back
     >>> print(mdl2)
     (src2 + (2 * back))
@@ -341,8 +341,8 @@ Linking parameters also reduces the number of free parameters in a fit.
 
 The following examples use the same two model components::
 
-    >>> g1 = models.Gauss1D('g1')
-    >>> g2 = models.Gauss1D('g2')
+    >>> g1 = basic.Gauss1D('g1')
+    >>> g2 = basic.Gauss1D('g2')
 
 Linking parameter values requires referring to the parameter, rather
 than via the :py:attr:`~sherpa.models.parameter.Parameter.val` attribute.
@@ -398,34 +398,55 @@ Including another parameter
 ---------------------------
 
 It is possible to include other parameters in a link expression,
-which can lead to further constraints on the fit. For instance,
-rather than using a fixed separation, a range can be used. One
-way to do this is to use a :py:class:`~sherpa.models.basic.Const1D`
-model, restricting the value its one parameter can vary.
+which can lead to further constraints on the fit. For example,
+we can fit using the sigma value instead of the FWHM of a
+gaussian::
 
-::
-
-    >>> sep = models.Const1D('sep')
-    >>> print(sep)
+    >>> sigma = basic.Scale1D('sigma')
+    >>> sigma.c0 = 10
+    >>> print(sigma)
     sep
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       sep.c0       thawed            1 -3.40282e+38  3.40282e+38
-    >>> g2.fwhm = g1.fwhm + sep.c0
-    >>> sep.c0 = 1200
-    >>> sep.c0.min = 800
-    >>> sep.c0.max = 1600
+       sigma.c0     thawed           10 -3.40282e+38  3.40282e+38
+    >>> g1.fwhm = 2 * np.sqrt(2 * np.log(2)) * sigma.c0
 
-In this example, the separation of the two components is restricted
-to lie in the range 800 to 1600.
+which creates
 
-In order for the optimiser to recognize that it needs to vary the
-new parameter (``sep.c0``), the component *must* be included in the
-model expression. As it does not contribute to the model output
-directly, it should be multiplied by zero. So, for this example
-the model to be fit would be given by an expression like::
+::
 
-   >>> mdl = g1 + g2 + 0 * sep
+    >>> print(g1)
+    g1
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       g1.fwhm      linked      23.5482 expr: numpy.multiply(2.3548200450309493, sigma.c0)
+       g1.pos       thawed         1200 -3.40282e+38  3.40282e+38
+       g1.ampl      thawed            1 -3.40282e+38  3.40282e+38
+
+and, because ``g2.fwhm`` is still linked to ``g1.fwhm``
+
+::
+
+    >>> print(g2)
+    g2
+       Param        Type          Value          Min          Max      Units
+       -----        ----          -----          ---          ---      -----
+       g2.fwhm      linked      23.5482            expr: g1.fwhm
+       g2.pos       linked         9434    expr: (g1.pos + 8234)
+       g2.ampl      thawed            1 -3.40282e+38  3.40282e+38
+
+.. note::
+
+   Prior to Sherpa 4.16.1 you had to explicitly include any linked
+   parameters into the model expression - e.g. by saying::
+
+       >>> mdl = g1 + g2 * 0 * sigma
+
+   where the ``sigma`` component is multiplied by zero to ensure it
+   does not directly add to the model. This step is **no longer**
+   needed, so you can just fit the model directly.
+
+       >>> mdl = g1 + g2
 
 Complex functional relationships
 --------------------------------
@@ -498,16 +519,108 @@ to see how robust the optimiser is by:
 Inspecting models and parameters
 ================================
 
-Models, whether a single component or composite, contain a
-``pars`` attribute which is a tuple of all the parameters
-for that model. This can be used to programatically query
-or change the parameter values.
-There are several attributes that return arrays of values
-for the thawed parameters of the model expression: the most
-useful is :py:attr:`~sherpa.models.model.Model.thawedpars`,
-which gives the current values.
+.. note::
 
-Composite models can be queried to find the individual
-components using the ``parts`` attribute, which contains
-a tuple of the components (these components can themselves
-be composite objects).
+   Access to model parameters has been extended in 4.16.1 by
+   adding the ``lpars`` attribute and the ``get_thawed_pars`` method.
+
+Models, whether a single component or composite, contain a
+:py:attr:`~sherpa.models.model.Model.pars` attribute which is a tuple
+of all the parameters for that model, and the
+:py:attr:`~sherpa.models.model.Model.lpars` attribute, which contains
+any linked parameters in the model which are not a direct member of
+the source expression. These two can be used to programatically query
+or change the parameter values.
+
+The :py:attr:`~sherpa.models.model.Model.get_thawed_pars` routine
+provides access to all the thawed parameters of a model expression,
+including any linked parameters.  There are a number of attributes
+that provide access to this data, such as:
+:py:attr:`~sherpa.models.model.Model.thawedpars`, which gives the
+current value; and the
+:py:attr:`~sherpa.models.model.Model.thawedparmins` and
+:py:attr:`~sherpa.models.model.Model.thawedparmaxes`, which give the
+soft limits of these parameters.
+
+::
+
+    >>> g1 = basic.Gauss1D('g1')
+    >>> g2 = basic.Gauss1D('g2')
+    >>> g2.fwhm = g1.fwhm
+    >>> sep = basic.Scale1D('sep')
+    >>> g2.pos = 10 + sep.c0
+    >>> sep.c0.min = 0
+    >>> mdl = g1 + g2
+    >>> g1.pars
+    (<Parameter 'fwhm' of model 'g1'>, <Parameter 'pos' of model 'g1'>, <Parameter 'ampl' of model 'g1'>)
+    >>> g1.lpars
+    ()
+    >>> g2.pars
+    (<Parameter 'fwhm' of model 'g2'>, <Parameter 'pos' of model 'g2'>, <Parameter 'ampl' of model 'g2'>)
+    >>> g2.lpars
+    (<Parameter 'fwhm' of model 'g1'>, <Parameter 'c0' of model 'sep'>)
+    >>> for idx, par in enumerate(mdl.pars, 1):
+    ...     print(idx, fullname)
+    ...
+    1 g1.fwhm
+    2 g1.pos
+    3 g1.ampl
+    4 g2.fwhm
+    5 g2.pos
+    6 g2.ampl
+    >>> mdl.lpars
+    (<Parameter 'c0' of model 'sep'>,)
+    >>> for idx, par in enumerate(mdl.get_thawed_pars(), 1):
+    ...     print(idx, fullname)
+    ...
+    1 g1.fwhm
+    2 g1.pos
+    3 g1.ampl
+    4 g2.ampl
+    5 sep.c0
+
+Composite models can be queried to find the individual components
+using the ``parts`` attribute, which contains a tuple of the
+components. These components can themselves be composite objects, and
+so can be further explored using ``parts``. Alternatively, models can
+be iterated over to access the individual components - but note that
+this may include composite models.
+
+    >>> for cpt in iter(mdl):
+    ...     print(cpt.name, type(cpt))
+    ...
+    g1 <class 'sherpa.models.basic.Gauss1D'>
+    g2 <class 'sherpa.models.basic.Gauss1D'>
+    >>> for cpt in iter(g1 + 2 * g2):
+    ...     print(cpt.name, type(cpt))
+    ...
+    g1 <class 'sherpa.models.basic.Gauss1D'>
+    (2.0 * g2) <class 'sherpa.models.model.BinaryOpModel'>
+    2.0 <class 'sherpa.models.model.ArithmeticConstantModel'>
+    g2 <class 'sherpa.models.basic.Gauss1D'>
+
+When analysing composite models, note that the
+:py:attr:`~sherpa.models.model.Model.pars` attribute will contain
+repeated copies of model parameters if the model appears multiple
+times. The repeat values are actually links to the original version::
+
+    >>> scale = basic.Scale1D("scale")
+    >>> b1 = basic.Box1D("box1")
+    >>> b2 = basic.Box1D("box2")
+    >>> mdl = scale * b1 + scale * b2
+    >>> scale.c0 = 5
+    >>> b1.xhi = 10
+    >>> b2.xlow = -1
+    >>> for idx, par in enumerate(mdl.pars, 1):
+    ...     print(f"{idx} {par.model:5s} {par.name:6s} {par.val}  {par.link is not None}")
+    ...
+    1 scale c0       5.0  False
+    2 box1  xlow     0.0  False
+    3 box1  xhi     10.0  False
+    4 box1  ampl     1.0  False
+    5 scale c0       5.0  True
+    6 box2  xlow    -1.0  False
+    7 box2  xhi      1.0  False
+    8 box2  ampl     1.0  False
+    >>> mdl.pars[4] == mdl.pars[0]
+    False
