@@ -3229,29 +3229,18 @@ def test_linked_parameter_implicit(setup_ldata):
     # check the fit succeeded
     assert res.succeeded
 
-    # Unfortunately the fit does not know about sigma3 so it has only
-    # fit the amplitude term.
-    #
-    # assert res.statval == pytest.approx(LPAR_STAT)
-    assert res.statval == pytest.approx(-634.5941622240598)
+    assert res.statval == pytest.approx(LPAR_STAT)
     assert res.numpoints == 12
-    # assert res.dof == 10
-    assert res.dof == 11
-    # assert len(res.parvals) == 2
-    assert len(res.parvals) == 1
-    # assert res.parnames == ("fit3.ampl", "sigma3.c0")
-    assert res.parnames == ("fit3.ampl", )
+    assert res.dof == 10
+    assert len(res.parvals) == 2
+    assert res.parnames == ("fit3.ampl", "sigma3.c0")
 
-    # assert res.parvals[0] == pytest.approx(LPAR_AMPL)
-    # assert res.parvals[1] == pytest.approx(LPAR_SIGMA)
-    assert res.parvals[0] == pytest.approx(94.41261426565819)
+    assert res.parvals[0] == pytest.approx(LPAR_AMPL)
+    assert res.parvals[1] == pytest.approx(LPAR_SIGMA)
 
-    # assert m3.fwhm.val == pytest.approx(LPAR_FWHM)
-    # assert m3.ampl.val == pytest.approx(LPAR_AMPL)
-    # assert sigma3.c0.val == pytest.approx(LPAR_SIGMA)
-    assert m3.fwhm.val == pytest.approx(10)
-    assert m3.ampl.val == pytest.approx(94.41261426565819)
-    assert sigma3.c0.val == pytest.approx(10 / convert)
+    assert m3.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert m3.ampl.val == pytest.approx(LPAR_AMPL)
+    assert sigma3.c0.val == pytest.approx(LPAR_SIGMA)
 
 
 def test_repeated_model_expression(setup_ldata):

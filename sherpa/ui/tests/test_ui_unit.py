@@ -1376,7 +1376,7 @@ def test_num_pars_links(clean_ui):
     gmdl.fwhm = 2.4 * smdl.c0  # approximate the sigma/FWHM scaling here
     ui.set_source(gmdl + bmdl)
 
-    # The linked parameter is not included here.
-    assert ui.get_num_par() == 4
-    assert ui.get_num_par_thawed() == 2
+    # The linked parameter is included here.
+    assert ui.get_num_par() == 5
+    assert ui.get_num_par_thawed() == 3
     assert ui.get_num_par_frozen() == 2

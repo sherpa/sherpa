@@ -1538,30 +1538,20 @@ def test_linked_parameter_implicit():
 
     s.set_model(m3)
 
-    # assert s.get_num_par() == 4
-    # assert s.get_num_par_thawed() == 2
-    assert s.get_num_par() == 3
-    assert s.get_num_par_thawed() == 1
+    assert s.get_num_par() == 4
+    assert s.get_num_par_thawed() == 2
 
     s.fit()
     res = s.get_fit_results()
 
-    # assert s.calc_stat() == pytest.approx(LPAR_STAT)
-    # assert m3.fwhm.val == pytest.approx(LPAR_FWHM)
-    # assert s3.c0.val == pytest.approx(LPAR_SIGMA)
-    # assert m3.ampl.val == pytest.approx(LPAR_AMPL)
-    assert s.calc_stat() == pytest.approx(-634.5941622240598)
-    assert m3.fwhm.val == pytest.approx(10)
-    assert s3.c0.val == pytest.approx(10 / convert)
-    assert m3.ampl.val == pytest.approx(94.41261426565819)
+    assert s.calc_stat() == pytest.approx(LPAR_STAT)
+    assert m3.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert s3.c0.val == pytest.approx(LPAR_SIGMA)
+    assert m3.ampl.val == pytest.approx(LPAR_AMPL)
 
-    # assert res.statval == pytest.approx(LPAR_STAT)
-    assert res.statval == pytest.approx(-634.5941622240598)
+    assert res.statval == pytest.approx(LPAR_STAT)
     assert res.numpoints == 12
-    # assert res.dof == 10
-    assert res.dof == 11
-    # assert res.parnames == ('fit3.ampl', 'sigma3.c0')
-    assert res.parnames == ('fit3.ampl', )
-    assert res.parvals[0] == pytest.approx(94.41261426565819)
-    # assert res.parvals[0] == pytest.approx(LPAR_AMPL)
-    # assert res.parvals[1] == pytest.approx(LPAR_SIGMA)
+    assert res.dof == 10
+    assert res.parnames == ('fit3.ampl', 'sigma3.c0')
+    assert res.parvals[0] == pytest.approx(LPAR_AMPL)
+    assert res.parvals[1] == pytest.approx(LPAR_SIGMA)
