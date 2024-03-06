@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2023
+#  Copyright (C) 2010, 2015, 2023, 2024
 #  Smithsonian Astrophysical Observator
 #
 #
@@ -120,7 +120,7 @@ class RMFModel(CompositeModel, ArithmeticModel):
         self.model = model
 
         # Logic for ArithmeticModel.__init__
-        self.pars = ()
+        self._pars = ()
 
         # FIXME: group pairs of coordinates with one attribute
 
@@ -181,7 +181,7 @@ class ARFModel(CompositeModel, ArithmeticModel):
         self.arfargs = ()
 
         # Logic for ArithmeticModel.__init__
-        self.pars = ()
+        self._pars = ()
 
         CompositeModel.__init__(self, f'apply_arf({model.name})', (model,))
         self.filter()
@@ -232,7 +232,7 @@ class RSPModel(CompositeModel, ArithmeticModel):
         self.arfargs = ()
 
         # Logic for ArithmeticModel.__init__
-        self.pars = ()
+        self._pars = ()
 
         CompositeModel.__init__(self, f'apply_rmf(apply_arf({model.name}))',
                                 (model,))
@@ -1045,7 +1045,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         self.model = model
         self.otherargs = None
         self.otherkwargs = None
-        self.pars = ()
+        self._pars = ()
         CompositeModel.__init__(self,
                                 f'apply_rmf({self.model.name})',
                                 (self.model,))
