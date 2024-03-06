@@ -1746,6 +1746,12 @@ def test_model_simple_pars():
     assert mdl.pars[1].fullname == "xx.xhi"
     assert mdl.pars[2].fullname == "xx.ampl"
 
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 3
+    assert tpars[0].fullname == "xx.xlow"
+    assert tpars[1].fullname == "xx.xhi"
+    assert tpars[2].fullname == "xx.ampl"
+
     tpars = mdl.thawedpars
     assert len(tpars) == 3
     assert tpars[0] == -5
@@ -1770,6 +1776,11 @@ def test_model_complex_pars():
     assert mdl.pars[1].fullname == "xx.xlow"
     assert mdl.pars[2].fullname == "xx.xhi"
     assert mdl.pars[3].fullname == "xx.ampl"
+
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 2
+    assert tpars[0].fullname == "sc.c0"
+    assert tpars[1].fullname == "xx.ampl"
 
     tpars = mdl.thawedpars
     assert len(tpars) == 2
@@ -1799,6 +1810,7 @@ def test_model_frozen_pars():
     assert mdl.pars[2].fullname == "xx.xhi"
     assert mdl.pars[3].fullname == "xx.ampl"
 
+    assert mdl.get_thawed_pars() == []
     assert mdl.thawedpars == []
 
 
@@ -1824,6 +1836,12 @@ def test_model_with_links_pars():
     assert mdl.pars[1].fullname == "xx.xlow"
     assert mdl.pars[2].fullname == "xx.xhi"
     assert mdl.pars[3].fullname == "xx.ampl"
+
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 3
+    assert tpars[0].fullname == "sc.c0"
+    assert tpars[1].fullname == "xx.xlow"
+    assert tpars[2].fullname == "xx.xhi"
 
     tpars = mdl.thawedpars
     assert len(tpars) == 3
@@ -1911,6 +1929,13 @@ def test_model_with_repeated_links1_pars():
     assert mdl.pars[7].val == mdl.pars[1].val
     assert mdl.pars[8].val == mdl.pars[2].val
     assert mdl.pars[9].val == mdl.pars[3].val
+
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 4
+    assert tpars[0].fullname == "sc.c0"
+    assert tpars[1].fullname == "xx.xlow"
+    assert tpars[2].fullname == "xx.xhi"
+    assert tpars[3].fullname == "yy.xhi"
 
     tpars = mdl.thawedpars
     assert len(tpars) == 4
@@ -2001,9 +2026,38 @@ def test_model_with_repeated_links2_pars():
     assert mdl.pars[8].val == mdl.pars[2].val
     assert mdl.pars[9].val == mdl.pars[3].val
 
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 4
+    assert tpars[0].fullname == "sc.c0"
+    assert tpars[1].fullname == "xx.xlow"
+    assert tpars[2].fullname == "xx.xhi"
+    assert tpars[3].fullname == "yy.xhi"
+
     tpars = mdl.thawedpars
     assert len(tpars) == 4
     assert tpars[0] == 100
     assert tpars[1] == 5
     assert tpars[2] == 20
     assert tpars[3] == 40
+
+
+def test_model_can_not_change_pars():
+    """This was changed in 4.16.1 to disallow this.
+
+    Very minimal checks as this is a basic Python feature.
+    """
+
+    # We want to check a Model and a CompositeModel.
+    #
+    mdl1 = Scale1D("a")
+    mdl2 = Box1D("b")
+    mdl = mdl2 + mdl1
+
+    # We do not check the actual error string as it could vary with
+    # Python version.
+    #
+    with pytest.raises(AttributeError):
+        mdl1.pars = ()
+
+    with pytest.raises(AttributeError):
+        mdl.pars = [Parameter("x", "y", 2)]

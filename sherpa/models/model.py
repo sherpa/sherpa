@@ -536,9 +536,23 @@ class Model(NoNewAttributesAfterInit):
                  pars: Sequence[Parameter] = ()) -> None:
         self.name = name
         self.type = self.__class__.__name__.lower()
-        self.pars = tuple(pars)
+        self._pars = tuple(pars)
         self.is_discrete = False
         NoNewAttributesAfterInit.__init__(self)
+
+    @property
+    def pars(self) -> tuple[Parameter, ...]:
+        """Return the parameters of the model.
+
+        This does not include any linked parameters.
+
+        .. versionchanged:: 4.16.1
+           The pars field can no-longer be set directly. Individual
+           elements can still be changed.
+
+        """
+
+        return tuple(par for par in self._pars)
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} model instance '{self.name}'>"
@@ -704,13 +718,28 @@ class Model(NoNewAttributesAfterInit):
         if len(args) == 0 and len(kwargs) == 0:
             return self
 
+        # By accessing the val field of each parameter in self.pars we
+        # process all the linked parameters (if there are any) and so
+        # do not need to worry about the lpars field.
+        #
         return self.calc([p.val for p in self.pars], *args, **kwargs)
 
-    def _get_thawed_pars(self) -> list[SherpaFloat]:
-        return [p.val for p in self.pars if not p.frozen]
+    def get_thawed_pars(self) -> list[Parameter]:
+        """Return the thawed parameter objects.
 
-    def _set_thawed_pars(self, vals: Sequence[SupportsFloat]) -> None:
-        tpars = [p for p in self.pars if not p.frozen]
+        This does not include linked parameters.
+
+        .. versionadded:: 4.16.1
+
+        """
+
+        return [p for p in self.pars if not p.frozen]
+
+    def _get_thawed_par_vals(self) -> list[SupportsFloat]:
+        return [p.val for p in self.get_thawed_pars()]
+
+    def _set_thawed_par_vals(self, vals: Sequence[SupportsFloat]) -> None:
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
@@ -730,7 +759,7 @@ class Model(NoNewAttributesAfterInit):
             else:
                 p._val = v
 
-    thawedpars = property(_get_thawed_pars, _set_thawed_pars,
+    thawedpars = property(_get_thawed_par_vals, _set_thawed_par_vals,
                           doc="""The thawed parameters of the model.
 
 Get or set the thawed parameters of the model as a list of
@@ -743,10 +772,10 @@ thawedparmaxes, thawedparmins
 """)
 
     def _get_thawed_par_mins(self) -> list[SupportsFloat]:
-        return [p.min for p in self.pars if not p.frozen]
+        return [p.min for p in self.get_thawed_pars()]
 
     def _set_thawed_pars_mins(self, vals: Sequence[SupportsFloat]) -> None:
-        tpars = [p for p in self.pars if not p.frozen]
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
@@ -782,10 +811,10 @@ thawedpars, thawedarhardmins, thawedparmaxes
 """)
 
     def _get_thawed_par_maxes(self) -> list[SupportsFloat]:
-        return [p.max for p in self.pars if not p.frozen]
+        return [p.max for p in self.get_thawed_pars()]
 
     def _set_thawed_pars_maxes(self, vals: Sequence[SupportsFloat]) -> None:
-        tpars = [p for p in self.pars if not p.frozen]
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
@@ -820,8 +849,8 @@ See Also
 thawedpars, thawedarhardmaxes, thawedparmins
 """)
 
-    def _get_thawed_par_hardmins(self) -> list[SherpaFloat]:
-        return [p.hard_min for p in self.pars if not p.frozen]
+    def _get_thawed_par_hardmins(self) -> list[SupportsFloat]:
+        return [p.hard_min for p in self.get_thawed_pars()]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
                                  doc="""The hard minimum values for the thawed parameters.
@@ -836,8 +865,8 @@ See Also
 thawedparhardmaxes, thawedparmins
 """)
 
-    def _get_thawed_par_hardmaxes(self) -> list[SherpaFloat]:
-        return [p.hard_max for p in self.pars if not p.frozen]
+    def _get_thawed_par_hardmaxes(self) -> list[SupportsFloat]:
+        return [p.hard_max for p in self.get_thawed_pars()]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
                                   doc="""The hard maximum values for the thawed parameters.
