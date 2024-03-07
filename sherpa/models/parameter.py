@@ -202,8 +202,14 @@ fit.
 
 """
 
+from __future__ import annotations
+
 import logging
+from typing import Callable, Iterator, Optional, Sequence, SupportsFloat, \
+    Union
+
 import numpy
+
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.err import ParameterErr
 from sherpa.utils import formatting
@@ -319,13 +325,19 @@ class Parameter(NoNewAttributesAfterInit):
     #
     # Read-only properties
     #
+    # mypy wants these explicitly typed
+    _val : SherpaFloat
+    _default_min : SupportsFloat
+    _default_max : SupportsFloat
+    _frozen : bool
+    _link : Optional[Parameter]
 
-    def _get_alwaysfrozen(self):
+    def _get_alwaysfrozen(self) -> bool:
         return self._alwaysfrozen
     alwaysfrozen = property(_get_alwaysfrozen,
                             doc='Is the parameter always frozen?')
 
-    def _get_hard_min(self):
+    def _get_hard_min(self) -> SherpaFloat:
         return self._hard_min
     hard_min = property(_get_hard_min,
                         doc="""The hard minimum of the parameter.
@@ -335,7 +347,7 @@ See Also
 hard_max
 """)
 
-    def _get_hard_max(self):
+    def _get_hard_max(self) -> SherpaFloat:
         return self._hard_max
     hard_max = property(_get_hard_max,
                         doc="""The hard maximum of the parameter.
@@ -351,7 +363,7 @@ hard_min
     # is a link, to ensure that it isn't outside the parameter's
     # min/max range. See issue #742.
     #
-    def _get_val(self):
+    def _get_val(self) -> SupportsFloat:
         if hasattr(self, 'eval'):
             return self.eval()
         if self.link is None:
@@ -365,22 +377,23 @@ hard_min
 
         return val
 
-    def _set_val(self, val):
+    def _set_val(self, val: Union[Parameter, SupportsFloat]) -> None:
         if isinstance(val, Parameter):
             self.link = val
-        else:
-            # Reset link
-            self.link = None
+            return
 
-            # Validate new value
-            val = SherpaFloat(val)
-            if val < self.min:
-                raise ParameterErr('edge', self.fullname, 'minimum', self.min)
-            if val > self.max:
-                raise ParameterErr('edge', self.fullname, 'maximum', self.max)
+        # Reset link
+        self.link = None
 
-            self._val = val
-            self._default_val = val
+        # Validate new value
+        val = SherpaFloat(val)
+        if val < self.min:
+            raise ParameterErr('edge', self.fullname, 'minimum', self.min)
+        if val > self.max:
+            raise ParameterErr('edge', self.fullname, 'maximum', self.max)
+
+        self._val = val
+        self._default_val = val
 
     val = property(_get_val, _set_val,
                    doc="""The current value of the parameter.
@@ -398,14 +411,14 @@ default_val, link, max, min
     # '_default_val' property
     #
 
-    def _get_default_val(self):
+    def _get_default_val(self) -> SupportsFloat:
         if hasattr(self, 'eval'):
             return self.eval()
         if self.link is not None:
             return self.link.default_val
         return self._default_val
 
-    def _set_default_val(self, default_val):
+    def _set_default_val(self, default_val: SupportsFloat) -> None:
         if isinstance(default_val, Parameter):
             self.link = default_val
         else:
@@ -433,7 +446,7 @@ val
     # 'min' and 'max' properties
     #
 
-    def _get_min(self):
+    def _get_min(self) -> SupportsFloat:
         return self._min
     min = property(_get_min, _make_set_limit('_min'),
                    doc="""The minimum value of the parameter.
@@ -445,7 +458,7 @@ See Also
 max, val
 """)
 
-    def _get_max(self):
+    def _get_max(self) -> SupportsFloat:
         return self._max
     max = property(_get_max, _make_set_limit('_max'),
                    doc="""The maximum value of the parameter.
@@ -461,11 +474,11 @@ min, val
     # 'default_min' and 'default_max' properties
     #
 
-    def _get_default_min(self):
+    def _get_default_min(self) -> SupportsFloat:
         return self._default_min
     default_min = property(_get_default_min, _make_set_limit('_default_min'))
 
-    def _get_default_max(self):
+    def _get_default_max(self) -> SupportsFloat:
         return self._default_max
     default_max = property(_get_default_max, _make_set_limit('_default_max'))
 
@@ -473,12 +486,12 @@ min, val
     # 'frozen' property
     #
 
-    def _get_frozen(self):
+    def _get_frozen(self) -> bool:
         if self.link is not None:
             return True
         return self._frozen
 
-    def _set_frozen(self, val):
+    def _set_frozen(self, val: bool) -> None:
         val = bool(val)
         if self._alwaysfrozen and (not val):
             raise ParameterErr('alwaysfrozen', self.fullname)
@@ -498,10 +511,10 @@ alwaysfrozen
     # 'link' property'
     #
 
-    def _get_link(self):
+    def _get_link(self) -> Optional[Parameter]:
         return self._link
 
-    def _set_link(self, link):
+    def _set_link(self, link: Parameter) -> None:
         if link is not None:
             if self._alwaysfrozen:
                 raise ParameterErr('frozennolink', self.fullname)
@@ -553,9 +566,19 @@ Examples
     # Methods
     #
 
-    def __init__(self, modelname, name, val, min=-hugeval, max=hugeval,
-                 hard_min=-hugeval, hard_max=hugeval, units='',
-                 frozen=False, alwaysfrozen=False, hidden=False, aliases=None):
+    def __init__(self,
+                 modelname: str,
+                 name: str,
+                 val: SupportsFloat,
+                 min: SupportsFloat = -hugeval,
+                 max: SupportsFloat = hugeval,
+                 hard_min: SupportsFloat = -hugeval,
+                 hard_max: SupportsFloat = hugeval,
+                 units: str = '',
+                 frozen: bool = False,
+                 alwaysfrozen: bool = False,
+                 hidden: bool = False,
+                 aliases: Optional[Sequence[str]] = None) -> None:
         self.modelname = modelname
         self.name = name
         self.fullname = f'{modelname}.{name}'
@@ -587,17 +610,17 @@ Examples
 
         NoNewAttributesAfterInit.__init__(self)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Parameter]:
         return iter([self])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         r = f"<{type(self).__name__} '{self.name}'"
         if self.modelname:
             r += f" of model '{self.modelname}'"
         r += '>'
         return r
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.link is not None:
             linkstr = self.link.fullname
         else:
@@ -617,7 +640,7 @@ Examples
 
     # Support 'rich display' representations
     #
-    def _val_to_html(self, v):
+    def _val_to_html(self, v: SupportsFloat) -> str:
         """Convert a value to a string for use by the HTML output.
 
         The conversion to a string uses the Python defaults for most
@@ -658,7 +681,7 @@ Examples
 
         return str(v)
 
-    def _units_to_html(self):
+    def _units_to_html(self) -> str:
         """Convert the unit to HTML.
 
         This is provided for future expansion/experimentation,
@@ -667,7 +690,7 @@ Examples
 
         return self.units
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the parameter
         """
         return html_parameter(self)
@@ -706,7 +729,7 @@ Examples
                                      strformat='{opstr}({lhs}, {rhs})')
         return NotImplemented
 
-    def freeze(self):
+    def freeze(self) -> None:
         """Set the `frozen` attribute for the parameter.
 
         See Also
@@ -715,8 +738,13 @@ Examples
         """
         self.frozen = True
 
-    def thaw(self):
+    def thaw(self) -> None:
         """Unset the `frozen` attribute for the parameter.
+
+        Raises
+        ------
+        ParameterErr
+           The parameter is marked as always frozen.
 
         See Also
         --------
@@ -724,11 +752,11 @@ Examples
         """
         self.frozen = False
 
-    def unlink(self):
+    def unlink(self) -> None:
         """Remove any link to other parameters."""
         self.link = None
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the parameter value and limits to their default values."""
         # circumvent the attr checks for simplicity, as the defaults have
         # already passed (defaults either set by user or through self.set).
@@ -739,10 +767,17 @@ Examples
             self._min = self.default_min
             self._max = self.default_max
             self._guessed = False
+
         self._val = self.default_val
 
-    def set(self, val=None, min=None, max=None, frozen=None,
-            default_val=None, default_min=None, default_max=None):
+    def set(self,
+            val: Optional[SupportsFloat] = None,
+            min: Optional[SupportsFloat] = None,
+            max: Optional[SupportsFloat] = None,
+            frozen: Optional[bool] = None,
+            default_val: Optional[SupportsFloat] = None,
+            default_min: Optional[SupportsFloat] = None,
+            default_max: Optional[SupportsFloat] = None) -> None:
         """Change a parameter setting.
 
         Parameters
@@ -827,15 +862,15 @@ class CompositeParameter(Parameter):
 
     """
 
-    def __init__(self, name, parts):
+    def __init__(self, name: str, parts: Sequence[Parameter]) -> None:
         self.parts = tuple(parts)
         Parameter.__init__(self, '', name, 0.0)
         self.fullname = name
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Parameter]:
         return iter(self._get_parts())
 
-    def _get_parts(self):
+    def _get_parts(self) -> list[Parameter]:
         parts = []
 
         for p in self.parts:
@@ -851,7 +886,7 @@ class CompositeParameter(Parameter):
 
         return parts
 
-    def eval(self):
+    def eval(self) -> SupportsFloat:
         """Evaluate the composite expression."""
         raise NotImplementedError
 
@@ -859,7 +894,7 @@ class CompositeParameter(Parameter):
 class ConstantParameter(CompositeParameter):
     """Represent an expression containing 1 or more parameters."""
 
-    def __init__(self, value):
+    def __init__(self, value: SupportsFloat) -> None:
         self.value = SherpaFloat(value)
         CompositeParameter.__init__(self, str(value), ())
 
@@ -867,7 +902,7 @@ class ConstantParameter(CompositeParameter):
         self._alwaysfrozen = True
         self.frozen = True
 
-    def eval(self):
+    def eval(self) -> SupportsFloat:
         return self.value
 
 
@@ -891,7 +926,11 @@ class UnaryOpParameter(CompositeParameter):
     BinaryOpParameter
     """
 
-    def __init__(self, arg, op, opstr, strformat='{opstr}({arg})'):
+    def __init__(self,
+                 arg: Parameter,
+                 op: Callable,
+                 opstr: str,
+                 strformat: str ='{opstr}({arg})') -> None:
         self.arg = arg
         self.op = op
         CompositeParameter.__init__(self,
@@ -899,7 +938,7 @@ class UnaryOpParameter(CompositeParameter):
                                                      arg=self.arg.fullname),
                                     (self.arg,))
 
-    def eval(self):
+    def eval(self) -> SupportsFloat:
         return self.op(self.arg.val)
 
 
@@ -932,8 +971,12 @@ class BinaryOpParameter(CompositeParameter):
             return obj
         return ConstantParameter(obj)
 
-    def __init__(self, lhs, rhs, op, opstr,
-                 strformat='({lhs} {opstr} {rhs})'):
+    def __init__(self,
+                 lhs,
+                 rhs,
+                 op: Callable,
+                 opstr: str,
+                 strformat: str = '({lhs} {opstr} {rhs})') -> None:
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
@@ -943,13 +986,13 @@ class BinaryOpParameter(CompositeParameter):
                                                      opstr=opstr),
                                     (self.lhs, self.rhs))
 
-    def eval(self):
+    def eval(self) -> SupportsFloat:
         return self.op(self.lhs.val, self.rhs.val)
 
 
 # Notebook representation
 #
-def html_parameter(par):
+def html_parameter(par: Parameter) -> str:
     """Construct the HTML to display the parameter."""
 
     # Note that as this is a specialized table we do not use
