@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2016, 2017, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,6 +28,7 @@ import logging
 import pickle
 from unittest.mock import patch
 
+import numpy as np
 from numpy.testing import assert_array_equal
 
 import pytest
@@ -38,6 +39,7 @@ from sherpa import estmethods as est
 from sherpa import optmethods as opt
 from sherpa import stats
 from sherpa.ui.utils import Session, ModelWrapper
+from sherpa.utils import poisson_noise
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     IdentifierErr, IOErr, SessionErr
 from sherpa.utils.logging import SherpaVerbosity
@@ -1428,3 +1430,128 @@ def test_save_filter_simple(idval, tmp_path):
         s.save_filter(idval, str(outfile), comment="P ", linebreak="+")
 
     assert outfile.read_text() == "P X FILTER+1 1+2 0+3 1+"
+
+
+def setup_linked_data(s):
+    """A simple 'random' dataset."""
+
+    # We don't care about randomness as much as repeatability here
+    rng = np.random.RandomState(123)
+
+    base = s.create_model_component("gauss1d", "base")
+    base.pos = 100
+    base.ampl = 50
+    base.fwhm = 20
+
+    x = np.arange(70, 130, 5)
+    y_base = base(x)
+    y = poisson_noise(y_base, rng=rng)
+
+    s.load_arrays(1, x, y)
+
+
+LPAR_STAT = -949.8639549430894
+LPAR_FWHM = 19.910836513919275
+LPAR_SIGMA = 19.910836513919275 / 2.3548200450309493
+LPAR_AMPL = 47.4433673308311
+
+
+def test_linked_parameter_explicit():
+    """See sherpa/tests/test_fit_unit.py::test_linked_parameter_explicit
+
+    We do not include test_fit_unit.py::test_linked_parameter_base as
+    we expect this to work correctly thanks to the other tests.
+    """
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    setup_linked_data(s)
+    s.set_stat("cash")
+
+    m2 = s.create_model_component("gauss1d", "fit2")
+    s2 = s.create_model_component("scale1d", "sigma2")
+
+    m2.pos = 100
+    m2.pos.freeze()
+
+    convert = 2 * np.sqrt(2 * np.log(2))
+    m2.fwhm = convert * sigma2.c0
+
+    # Adjust c0 to better match the FWHM=10 value (just so we can
+    # check we end up in the same location as the
+    # sherpa/tests/test_fit_unit.py tests). It's important to use the
+    # .val field here so we are not accidentally setting up another
+    # link.
+    #
+    sigma2.c0.val = 4.2466090014400955
+
+    s.set_model(m2 + 0 * s2)
+
+    assert s.get_num_par() == 4
+    assert s.get_num_par_thawed() == 2
+
+    s.fit()
+    res = s.get_fit_results()
+
+    assert s.calc_stat() == pytest.approx(LPAR_STAT)
+    assert m2.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert s2.c0.val == pytest.approx(LPAR_SIGMA)
+    assert m2.ampl.val == pytest.approx(LPAR_AMPL)
+
+    assert res.statval == pytest.approx(LPAR_STAT)
+    assert res.numpoints == 12
+    assert res.dof == 10
+    assert res.parnames == ('fit2.ampl', 'sigma2.c0')
+    assert res.parvals[0] == pytest.approx(LPAR_AMPL)
+    assert res.parvals[1] == pytest.approx(LPAR_SIGMA)
+
+
+def test_linked_parameter_implicit():
+    """See test_linked_parameter_explicit
+
+    What happens if we do not link the parameter to the model expression.
+    """
+
+    s = Session()
+    s._add_model_types(sherpa.models.basic)
+
+    setup_linked_data(s)
+    s.set_stat("cash")
+
+    m3 = s.create_model_component("gauss1d", "fit3")
+    s3 = s.create_model_component("scale1d", "sigma3")
+
+    m3.pos = 100
+    m3.pos.freeze()
+
+    convert = 2 * np.sqrt(2 * np.log(2))
+    m3.fwhm = convert * sigma3.c0
+
+    # Adjust c0 to better match the FWHM=10 value (just so we can
+    # check we end up in the same location as the
+    # sherpa/tests/test_fit_unit.py tests). It's important to use the
+    # .val field here so we are not accidentally setting up another
+    # link.
+    #
+    sigma3.c0.val = 4.2466090014400955
+
+    s.set_model(m3)
+
+    assert s.get_num_par() == 4
+    assert s.get_num_par_thawed() == 2
+
+    s.fit()
+    res = s.get_fit_results()
+
+    assert s.calc_stat() == pytest.approx(LPAR_STAT)
+    assert m3.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert s3.c0.val == pytest.approx(LPAR_SIGMA)
+    assert m3.ampl.val == pytest.approx(LPAR_AMPL)
+
+    assert res.statval == pytest.approx(LPAR_STAT)
+    assert res.numpoints == 12
+    assert res.dof == 10
+    assert res.parnames == ('fit3.ampl', 'sigma3.c0')
+    assert res.parvals[0] == pytest.approx(LPAR_AMPL)
+    assert res.parvals[1] == pytest.approx(LPAR_SIGMA)

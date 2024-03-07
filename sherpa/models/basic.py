@@ -32,7 +32,7 @@ from sherpa.utils import bool_cast, get_position, guess_amplitude, \
 from .parameter import Parameter, tinyval
 from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
     ArithmeticFunctionModel, RegriddableModel2D, RegriddableModel1D
-from . import _modelfcts
+from . import _modelfcts  # type: ignore
 
 warning = logging.getLogger(__name__).warning
 

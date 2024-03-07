@@ -316,9 +316,12 @@ non-integrated and integrated datasets of any dimensionality (see
 
 """
 
+from __future__ import annotations
 
 import functools
 import logging
+from typing import TYPE_CHECKING, Callable, Iterator, Optional, Sequence, \
+    SupportsIndex, SupportsFloat, Union
 import warnings
 
 import numpy
@@ -329,7 +332,7 @@ from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
 
-from .parameter import Parameter
+from .parameter import Parameter, expand_par
 
 # What routine do we use for the hash in modelCacher1d?  As we do not
 # need cryptographic security go for a "quick" algorithm, but md5 is
@@ -361,7 +364,7 @@ __doctest_skip__ = ['ArithmeticModel.cache_status',
                     'SimulFitModel']
 
 
-def boolean_to_byte(boolean_value):
+def boolean_to_byte(boolean_value: bool) -> bytes:
     """Convert a boolean to a byte value.
 
     Parameters
@@ -482,6 +485,7 @@ def modelCacher1d(func):
 
     return cache_model
 
+
 # It is tempting to convert the explicit class names below into calls
 # to super(), but this is problematic since it ends up breaking a
 # number of invariants the classes rely on. An example is that
@@ -524,20 +528,117 @@ class Model(NoNewAttributesAfterInit):
 
     """
 
-    ndim = None
+    ndim: Optional[int] = None
     "The dimensionality of the model, if defined, or None."
 
-    def __init__(self, name, pars=()):
+    def __init__(self,
+                 name: str,
+                 pars: Sequence[Parameter] = ()) -> None:
         self.name = name
         self.type = self.__class__.__name__.lower()
-        self.pars = tuple(pars)
+        self._pars = tuple(pars)
         self.is_discrete = False
         NoNewAttributesAfterInit.__init__(self)
 
-    def __repr__(self):
+    @property
+    def pars(self) -> tuple[Parameter, ...]:
+        """Return the parameters of the model.
+
+        This does not include any linked parameters.
+
+        .. versionchanged:: 4.16.1
+           The pars field can no-longer be set directly. Individual
+           elements can still be changed.
+
+        See Also
+        --------
+        lpars
+
+        """
+
+        return tuple(par for par in self._pars)
+
+    @property
+    def lpars(self) -> tuple[Parameter, ...]:
+        """Return any linked parameters.
+
+        This only returns linked parameters that are not related
+        to the model, and each parameter is not repeated.
+
+        .. versionadded:: 4.16.1
+
+        See Also
+        --------
+        pars
+
+        Examples
+        --------
+
+        By default there are no linked parameters:
+
+        >>> from sherpa.models.basic import Gauss2D
+        >>> mdl = Gauss2D("mdl")
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        ()
+
+        Force the model to have identical xpos and ypos parameters.
+        Since the linked parameter value (mdl.xpos) is part of the
+        model it is not included in `lpars`:
+
+        >>> mdl.ypos = mdl.xpos
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        ()
+
+        Add a link to allow the sigma term to be fit rather than
+        FWHM. Since the linked parameter - here from the Const1D
+        model - is not a part of the model it is included in
+        `lpars`:
+
+        >>> import numpy as np
+        >>> from sherpa.models.basic import Const1D
+        >>> sigma = Const1D("sigma")
+        >>> mdl.fwhm = 2 * np.sqrt(2 * np.log(2)) * sigma.c0
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        (<Parameter 'c0' of model 'sigma'>,)
+
+        """
+
+        # Find all the linked parameters, but only report the first
+        # occurrence.
+        #
+        out = []
+        for par in self._pars:
+            if not par.link:
+                continue
+
+            for lpar in expand_par(par.link):
+                # This could be a parameter we've already seen: e.g.
+                #    mdl.x2 = mdl.x1 + 5
+                #
+                if lpar in self._pars:
+                    continue
+
+                # The parameter could be used in several expressions: e.g.
+                #    mdl.x1 = other.c0 + 5
+                #    mdl.x2 = other.c0 + 7
+                #
+                if lpar in out:
+                    continue
+
+                out.append(lpar)
+
+        return tuple(out)
+
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} model instance '{self.name}'>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = self.name
         sep5 = '-' * 5
         sep4 = '-' * 4
@@ -567,14 +668,14 @@ class Model(NoNewAttributesAfterInit):
 
         return s
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model
         """
         return html_model(self)
 
     # This allows all models to be used in iteration contexts, whether or
     # not they're composite
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Model]:
         return iter([self])
 
     def __getattr__(self, name):
@@ -631,7 +732,7 @@ class Model(NoNewAttributesAfterInit):
         for alias in val.aliases:
             self._par_index[alias] = val
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         """Called before a model may be evaluated multiple times.
 
         Parameters
@@ -645,7 +746,8 @@ class Model(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> numpy.ndarray:
         """Evaluate the model on a grid.
 
         Parameters
@@ -663,7 +765,7 @@ class Model(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
-    def teardown(self):
+    def teardown(self) -> None:
         """Called after a model may be evaluated multiple times.
 
         See Also
@@ -672,7 +774,7 @@ class Model(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
-    def guess(self, dep, *args, **kwargs):
+    def guess(self, dep, *args, **kwargs) -> None:
         """Set an initial guess for the parameter values.
 
         Attempt to set the parameter values, and ranges, for
@@ -688,25 +790,50 @@ class Model(NoNewAttributesAfterInit):
     def set_center(self, *args, **kwargs):
         raise NotImplementedError
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Union[Model, numpy.ndarray]:
         # A bit of trickery, to make model creation
         # in IPython happen without raising errors, when
         # model is made automatically callable
-        if (len(args) == 0 and len(kwargs) == 0):
+        if len(args) == 0 and len(kwargs) == 0:
             return self
+
+        # By accessing the val field of each parameter in self.pars we
+        # process all the linked parameters (if there are any) and so
+        # do not need to worry about the lpars field.
+        #
         return self.calc([p.val for p in self.pars], *args, **kwargs)
 
-    def _get_thawed_pars(self):
-        return [p.val for p in self.pars if not p.frozen]
+    def get_thawed_pars(self) -> list[Parameter]:
+        """Return the thawed parameter objects.
 
-    def _set_thawed_pars(self, vals):
-        tpars = [p for p in self.pars if not p.frozen]
+        This includes linked parameters, which complicates the min/max
+        settings, since the range on the components of a linked
+        parameter does not match that of the original parameter, which
+        is an issue when the limits are exceeded.
+
+        .. versionadded:: 4.16.1
+
+        """
+
+        pars = [p for p in self.pars if not p.frozen]
+        pars.extend(p for p in self.lpars if not p.frozen)
+        return pars
+
+    def _get_thawed_par_vals(self) -> list[SupportsFloat]:
+        return [p.val for p in self.get_thawed_pars()]
+
+    def _set_thawed_par_vals(self, vals: Sequence[SupportsFloat]) -> None:
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
+        # Note that this check ignores the soft limits. However,
+        # it sets the limits to min/max and not hard_min/max,
+        # which is issue #1980.
+        #
         for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
@@ -718,22 +845,52 @@ class Model(NoNewAttributesAfterInit):
                 warning('value of parameter %s is above maximum; '
                         'setting to maximum', p.fullname)
             else:
+                # We do not want to set val directly because we do not
+                # want the default field to change.
+                #
                 p._val = v
 
-    thawedpars = property(_get_thawed_pars, _set_thawed_pars,
-                          doc='The thawed parameters of the model.\n\n' +
-                          'Get or set the thawed parameters of the model as a list of\n' +
-                          'numbers. If there are no thawed parameters then [] is used.\n' +
-                          'The ordering matches that of the pars attribute.\n\n' +
-                          'See Also\n' +
-                          '--------\n' +
-                          'thawedparmaxes, thawedparmins\n')
+        # Check that each linked parameter lies within it's limits
+        # (since we can not guarantee it from the limits of the
+        # linking parameters).
+        #
+        # Unfortunately, as noted in #1981, it's not obvious what we
+        # should do if a linked parameter is now out of range. For now
+        # we just evaluate the parameter value, which will trigger a
+        # ParameterErr.  This triggers if the *soft* limits are
+        # exceeded, rather than the hard limits, which is slightly
+        # different to the above check.
+        #
+        for par in self.pars:
+            if par.link is None:
+                continue
 
-    def _get_thawed_par_mins(self):
-        return [p.min for p in self.pars if not p.frozen]
+            # This relies on the parameter validation logic and we do
+            # not care about the return value.
+            #
+            # We could change par._val but we can not "feed" that
+            # value back to the system to know what the linked
+            # parameter should be.
+            #
+            _ = par.val
 
-    def _set_thawed_pars_mins(self, vals):
-        tpars = [p for p in self.pars if not p.frozen]
+    thawedpars = property(_get_thawed_par_vals, _set_thawed_par_vals,
+                          doc="""The thawed parameters of the model.
+
+Get or set the thawed parameters of the model as a list of
+numbers. If there are no thawed parameters then [] is used.
+The ordering matches that of the pars attribute.
+
+See Also
+--------
+thawedparmaxes, thawedparmins
+""")
+
+    def _get_thawed_par_mins(self) -> list[SupportsFloat]:
+        return [p.min for p in self.get_thawed_pars()]
+
+    def _set_thawed_pars_mins(self, vals: Sequence[SupportsFloat]) -> None:
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
@@ -756,20 +913,23 @@ class Model(NoNewAttributesAfterInit):
                 p._min = v
 
     thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins,
-                             doc='The minimum limits of the thawed parameters.\n\n' +
-                             'Get or set the minimum limits of the thawed parameters\n' +
-                             'of the model as a list of numbers. If there are no\n' +
-                             'thawed parameters then [] is used. The ordering matches\n' +
-                             'that of the pars attribute.\n\n' +
-                             'See Also\n' +
-                             '--------\n' +
-                             'thawedpars, thawedarhardmins, thawedparmaxes\n')
+                             doc="""The minimum limits of the thawed parameters.
 
-    def _get_thawed_par_maxes(self):
-        return [p.max for p in self.pars if not p.frozen]
+Get or set the minimum limits of the thawed parameters
+of the model as a list of numbers. If there are no
+thawed parameters then [] is used. The ordering matches
+that of the pars attribute.
 
-    def _set_thawed_pars_maxes(self, vals):
-        tpars = [p for p in self.pars if not p.frozen]
+See Also
+--------
+thawedpars, thawedarhardmins, thawedparmaxes
+""")
+
+    def _get_thawed_par_maxes(self) -> list[SupportsFloat]:
+        return [p.max for p in self.get_thawed_pars()]
+
+    def _set_thawed_pars_maxes(self, vals: Sequence[SupportsFloat]) -> None:
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
@@ -792,42 +952,54 @@ class Model(NoNewAttributesAfterInit):
                 p._max = v
 
     thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes,
-                              doc='The maximum limits of the thawed parameters.\n\n' +
-                              'Get or set the maximum limits of the thawed parameters\n' +
-                              'of the model as a list of numbers. If there are no\n' +
-                              'thawed parameters then [] is used. The ordering matches\n' +
-                              'that of the pars attribute.\n\n' +
-                              'See Also\n' +
-                              '--------\n' +
-                              'thawedpars, thawedarhardmaxes, thawedparmins\n')
+                              doc="""The maximum limits of the thawed parameters.
 
-    def _get_thawed_par_hardmins(self):
-        return [p.hard_min for p in self.pars if not p.frozen]
+Get or set the maximum limits of the thawed parameters
+of the model as a list of numbers. If there are no
+thawed parameters then [] is used. The ordering matches
+that of the pars attribute.
+
+See Also
+--------
+thawedpars, thawedarhardmaxes, thawedparmins
+""")
+
+    def _get_thawed_par_hardmins(self) -> list[SupportsFloat]:
+        return [p.hard_min for p in self.get_thawed_pars()]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
-                                 doc='The hard minimum values for the thawed parameters.\n\n' +
-                                 'The minimum and maximum range of the parameters can be\n' +
-                                 'changed with thawedparmins and thawedparmaxes but only\n' +
-                                 'within the range given by thawedparhardmins\n' +
-                                 'to thawparhardmaxes.\n\n' +
-                                 'See Also\n' +
-                                 '--------\n' +
-                                 'thawedparhardmaxes, thawedparmins\n')
+                                 doc="""The hard minimum values for the thawed parameters.
 
-    def _get_thawed_par_hardmaxes(self):
-        return [p.hard_max for p in self.pars if not p.frozen]
+The minimum and maximum range of the parameters can be
+changed with thawedparmins and thawedparmaxes but only
+within the range given by thawedparhardmins
+to thawparhardmaxes.
+
+See Also
+--------
+thawedparhardmaxes, thawedparmins
+""")
+
+    def _get_thawed_par_hardmaxes(self) -> list[SupportsFloat]:
+        return [p.hard_max for p in self.get_thawed_pars()]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
-                                  doc='The hard maximum values for the thawed parameters.\n\n' +
-                                 'The minimum and maximum range of the parameters can be\n' +
-                                 'changed with thawedparmins and thawedparmaxes but only\n' +
-                                 'within the range given by thawedparhardmins\n' +
-                                 'to thawparhardmaxes.\n\n' +
-                                  'See Also\n' +
-                                  '--------\n' +
-                                  'thawedparhardmins, thawedparmaxes\n')
+                                  doc="""The hard maximum values for the thawed parameters.
 
-    def reset(self):
+The minimum and maximum range of the parameters can be
+changed with thawedparmins and thawedparmaxes but only
+within the range given by thawedparhardmins
+to thawparhardmaxes.
+
+See Also
+--------
+thawedparhardmins, thawedparmaxes
+""")
+
+    # TODO: should this reset linked parameters? Or does a reset clear
+    # the link?
+    #
+    def reset(self) -> None:
         """Reset the parameter values.
 
         Restores each parameter to the last value it was set to.
@@ -838,13 +1010,15 @@ class Model(NoNewAttributesAfterInit):
         for p in self.pars:
             p.reset()
 
-    def freeze(self):
+    # TODO: should this freeze linked parameters?
+    def freeze(self) -> None:
         """Freeze any thawed parameters of the model."""
 
         for p in self.pars:
             p.freeze()
 
-    def thaw(self):
+    # TODO: should this thaw linked parameters?
+    def thaw(self) -> None:
         """Thaw any frozen parameters of the model.
 
         Those parameters that are marked as "always frozen" are
@@ -903,7 +1077,7 @@ class CompositeModel(Model):
 
     """
 
-    def __init__(self, name, parts):
+    def __init__(self, name: str, parts: Sequence[Model]) -> None:
         self.parts = tuple(parts)
         allpars = []
         model_with_dim = None
@@ -915,8 +1089,12 @@ class CompositeModel(Model):
                     self.ndim = ndim
                     model_with_dim = part
                 elif self.ndim != ndim:
-                    raise ModelErr('Models do not match: ' +
-                                   f'{self.ndim}D ({model_with_dim.name}) and ' +
+                    if TYPE_CHECKING:
+                        # Help the type checker out here
+                        assert model_with_dim is not None
+
+                    raise ModelErr('Models do not match: '
+                                   f'{self.ndim}D ({model_with_dim.name}) and '
                                    f'{ndim}D ({part.name})')
 
             for p in part.pars:
@@ -945,10 +1123,10 @@ class CompositeModel(Model):
                         "Falling back to assuming that the model is continuous.\n")
                 self.is_discrete = False
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Model]:
         return iter(self._get_parts())
 
-    def _get_parts(self):
+    def _get_parts(self) -> list[Model]:
         parts = []
 
         for p in self.parts:
@@ -968,13 +1146,13 @@ class CompositeModel(Model):
 
         return parts
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pass
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass
 
-    def cache_clear(self):
+    def cache_clear(self) -> None:
         """Clear the cache for each component."""
         for p in self.parts:
             try:
@@ -982,7 +1160,7 @@ class CompositeModel(Model):
             except AttributeError:
                 pass
 
-    def cache_status(self):
+    def cache_status(self) -> None:
         """Display the cache status of each component.
 
         Information on the cache - the number of "hits", "misses", and
@@ -1038,17 +1216,17 @@ class SimulFitModel(CompositeModel):
 
     """
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Model]:
         return iter(self.parts)
 
     # Why is this not defined in CompositeModel?
     #
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         for part in self:
             part.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         for part in self:
             part.teardown()
         CompositeModel.teardown(self)
@@ -1070,19 +1248,30 @@ class ArithmeticConstantModel(Model):
         is a scalar, otherwise it indicates an array of elements.
     """
 
-    def __init__(self, val, name=None):
-        val = SherpaFloat(val)
+    def __init__(self,
+                 # Use SupportsIndex rather than Sequence[SupportFloat] to
+                 # avoid mypy warnings.
+                 val: Union[SupportsFloat, SupportsIndex],
+                 name: Optional[str] = None) -> None:
+
+        store = SherpaFloat(val)
         if name is None:
-            if numpy.isscalar(val):
-                name = str(val)
+            if numpy.isscalar(store):
+                name = str(store)
             else:
-                nstr = ','.join([str(s) for s in val.shape])
-                name = f'{val.dtype.name}[{nstr}]'
+                if TYPE_CHECKING:
+                    assert isinstance(val, numpy.ndarray)  # for mypy
+
+                # For some reason mypy didn't like
+                # '[str(s) for s in store.shape]`
+                dims = map(str, store.shape)
+                nstr = ','.join(dims)
+                name = f'{store.dtype.name}[{nstr}]'
 
         self.name = name
-        self.val = val
+        self.val = store
 
-        # val has to be a scalar or 1D array, even if used with a 2D
+        # store has to be a scalar or 1D array, even if used with a 2D
         # model, due to the way model evaluation works, so as we
         # can't easily define the dimensionality of this model, we
         # remove any dimensionality checking for this class.
@@ -1091,10 +1280,10 @@ class ArithmeticConstantModel(Model):
 
         Model.__init__(self, self.name)
 
-    def _get_val(self):
+    def _get_val(self) -> Union[SherpaFloat, numpy.ndarray]:
         return self._val
 
-    def _set_val(self, val):
+    def _set_val(self, val: Union[SupportsFloat, SupportsIndex]) -> None:
         val = SherpaFloat(val)
         if val.ndim > 1:
             raise ModelErr('The constant must be a scalar or 1D, not 2D')
@@ -1104,14 +1293,17 @@ class ArithmeticConstantModel(Model):
     val = property(_get_val, _set_val,
                    doc='The constant value (scalar or 1D).')
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pass
 
+    # This doesn't match superclass, as we can return a scalar here
+    # and the superclass assumes it returns a ndarray, so we do not
+    # type this routine.
+    #
     def calc(self, p, *args, **kwargs):
-        # Shouldn't this return p[0]?
         return self.val
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass
 
 
@@ -1137,7 +1329,7 @@ class ArithmeticModel(Model):
     cache = 5
     """The maximum size of the cache."""
 
-    def __init__(self, name, pars=()):
+    def __init__(self, name: str, pars: Sequence[Parameter] = ()) -> None:
         self.integrate = True
 
         # Model caching ability
@@ -1146,14 +1338,14 @@ class ArithmeticModel(Model):
         self.cache_clear()
         Model.__init__(self, name, pars)
 
-    def cache_clear(self):
+    def cache_clear(self) -> None:
         """Clear the cache."""
         # It is not obvious what to set the queue length to
         self._queue = ['']
-        self._cache = {}
-        self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
+        self._cache: dict[bytes, numpy.ndarray] = {}
+        self._cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
 
-    def cache_status(self):
+    def cache_status(self) -> None:
         """Display the cache status.
 
         Information on the cache - the number of "hits", "misses", and
@@ -1204,7 +1396,7 @@ class ArithmeticModel(Model):
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.cache_clear()
         self._use_caching = cache
         if int(self.cache) <= 0:
@@ -1215,7 +1407,7 @@ class ArithmeticModel(Model):
         if len(frozen) > 0 and frozen.all():
             self._use_caching = cache
 
-    def teardown(self):
+    def teardown(self) -> None:
         self._use_caching = False
 
     def apply(self, outer, *otherargs, **otherkwargs):
@@ -1319,14 +1511,15 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     def wrapobj(obj):
         return _wrapobj(obj, ArithmeticConstantModel)
 
-    def __init__(self, arg, op, opstr):
+    def __init__(self, arg, op: Callable, opstr: str) -> None:
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
         CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
                                 (self.arg,))
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> numpy.ndarray:
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
@@ -1373,7 +1566,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
     def wrapobj(obj):
         return _wrapobj(obj, ArithmeticConstantModel)
 
-    def __init__(self, lhs, rhs, op, opstr):
+    def __init__(self, lhs, rhs, op: Callable, opstr: str) -> None:
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
@@ -1392,17 +1585,18 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
             return part.__class__.regrid(self, *args, **kwargs)
         raise ModelErr('Neither component supports regrid method')
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.lhs.startup(cache)
         self.rhs.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.lhs.teardown()
         self.rhs.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> numpy.ndarray:
         # Note that the kwargs are sent to both model components.
         #
         nlhs = len(self.lhs.pars)
@@ -1474,7 +1668,7 @@ class ArithmeticFunctionModel(Model):
 
     """
 
-    def __init__(self, func):
+    def __init__(self, func: Callable) -> None:
         if isinstance(func, Model):
             raise ModelErr('badinstance', type(self).__name__)
         if not callable(func):
@@ -1482,13 +1676,14 @@ class ArithmeticFunctionModel(Model):
         self.func = func
         Model.__init__(self, func.__name__)
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> numpy.ndarray:
         return self.func(*args, **kwargs)
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pass
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass
 
 
@@ -1523,7 +1718,7 @@ class NestedModel(CompositeModel, ArithmeticModel):
     def wrapobj(obj):
         return _wrapobj(obj, ArithmeticFunctionModel)
 
-    def __init__(self, outer, inner, *otherargs, **otherkwargs):
+    def __init__(self, outer, inner, *otherargs, **otherkwargs) -> None:
         self.outer = self.wrapobj(outer)
         self.inner = self.wrapobj(inner)
         self.otherargs = otherargs
@@ -1531,17 +1726,18 @@ class NestedModel(CompositeModel, ArithmeticModel):
         CompositeModel.__init__(self, f'{self.outer.name}({self.inner.name})',
                                 (self.outer, self.inner))
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.inner.startup(cache)
         self.outer.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.inner.teardown()
         self.outer.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> numpy.ndarray:
         nouter = len(self.outer.pars)
         return self.outer.calc(p[:nouter],
                                self.inner.calc(p[nouter:], *args, **kwargs),
@@ -1552,12 +1748,13 @@ class NestedModel(CompositeModel, ArithmeticModel):
 #
 class MultigridSumModel(CompositeModel, ArithmeticModel):
 
-    def __init__(self, models):
+    def __init__(self, models: Sequence[Model]) -> None:
         self.models = tuple(models)
         arg = ','.join([m.name for m in models])
         name = f'{type(self).__name__}({arg})'
         CompositeModel.__init__(self, name, self.models)
 
+    # This does not match the superclass so do not type it
     def calc(self, p, arglist):
         vals = []
         for model, args in zip(self.models, arglist):
@@ -1570,7 +1767,7 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
 
 class RegridWrappedModel(CompositeModel, ArithmeticModel):
 
-    def __init__(self, model, wrapper):
+    def __init__(self, model, wrapper: Model) -> None:
         self.model = self.wrapobj(model)
         self.wrapper = wrapper
 
@@ -1581,7 +1778,8 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
                                 f"{self.wrapper.name}({self.model.name})",
                                 (self.model, ))
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> numpy.ndarray:
         return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
 
     def get_center(self):
@@ -1643,7 +1841,7 @@ def _wrapobj(obj, wrapper):
 
 # Notebook representation
 #
-def modelcomponents_to_list(model):
+def modelcomponents_to_list(model: Model) -> list[Model]:
     if hasattr(model, 'parts'):
         modellist = []
         for p in model.parts:
@@ -1653,7 +1851,7 @@ def modelcomponents_to_list(model):
     return [model]
 
 
-def html_model(mdl):
+def html_model(mdl: Model) -> str:
     """Construct the HTML to display the model."""
 
     # Note that as this is a specialized table we do not use
@@ -1666,8 +1864,9 @@ def html_model(mdl):
         for par in comp.pars:
             if par.hidden:
                 continue
-            else:
-                this_comp_nrows +=1
+
+            this_comp_nrows +=1
+
         if this_comp_nrows > 0:
             complist.append(comp)
             nrows.append(this_comp_nrows)
