@@ -123,6 +123,38 @@ def _check_hist_bins(xlo: np.ndarray,
     return xlo, xhi
 
 
+def calc_x(data: DataPHA) -> tuple[np.ndarray, np.ndarray]:
+    """Calculate the X axis values
+
+    Parameters
+    ----------
+    data : DataPHA
+       The data object.
+
+    Returns
+    -------
+    xlo, xhi : tuple of ndarray
+       The low and high edges of each bin.
+
+    """
+
+    # Get the X axis data.
+    #
+    if data.units != 'channel':
+        elo, ehi = data._get_ebins(group=False)
+    else:
+        elo, ehi = (data.channel, data.channel + 1.)
+
+    xlo = data.apply_filter(elo, data._min)
+    xhi = data.apply_filter(ehi, data._max)
+    if data.units == 'wavelength':
+        # Should this swap xlo and xhi here?
+        xlo = hc / xlo
+        xhi = hc / xhi
+
+    return _check_hist_bins(xlo, xhi)
+
+
 class DataPHAPlot(shplot.DataHistogramPlot):
     """Plot a PHA dataset."""
 
@@ -149,20 +181,7 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 
         self.title = data.name
 
-        # Get the X axis data.
-        #
-        if data.units != 'channel':
-            elo, ehi = data._get_ebins(group=False)
-        else:
-            elo, ehi = (data.channel, data.channel + 1.)
-
-        self.xlo = data.apply_filter(elo, data._min)
-        self.xhi = data.apply_filter(ehi, data._max)
-        if data.units == 'wavelength':
-            self.xlo = hc / self.xlo
-            self.xhi = hc / self.xhi
-
-        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
+        self.xlo, self.xhi = calc_x(data)
 
 
 class ModelPHAHistogram(shplot.HistogramPlot):
@@ -190,18 +209,7 @@ class ModelPHAHistogram(shplot.HistogramPlot):
         (_, ys, _, _, self.xlabel, self.ylabel) = plot
         self.y = ys[1]
 
-        if data.units != 'channel':
-            elo, ehi = data._get_ebins(group=False)
-        else:
-            elo, ehi = (data.channel, data.channel + 1.)
-
-        self.xlo = data.apply_filter(elo, data._min)
-        self.xhi = data.apply_filter(ehi, data._max)
-        if data.units == 'wavelength':
-            self.xlo = hc / self.xlo
-            self.xhi = hc / self.xhi
-
-        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
+        self.xlo, self.xhi = calc_x(data)
 
 
 class ModelHistogram(ModelPHAHistogram):
@@ -875,6 +883,10 @@ class OrderPlot(ModelHistogram):
             plot = data.to_plot(model)
             (xlo, y, yerr, _, self.xlabel, self.ylabel) = plot
             y = y[1]
+
+            # TODO: should this use calc_x? The logic isn't quite the
+            # same but that may be a logical error in the following.
+            #
             if data.units != 'channel':
                 elo, ehi = data._get_ebins(group=False)
                 xlo = data.apply_filter(elo, data._min)
