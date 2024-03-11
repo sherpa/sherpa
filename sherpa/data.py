@@ -115,9 +115,11 @@ dependent axis (``y``) then filter to select only those values between
 >>> d1.ignore(520, 530)
 
 """
-import logging
-import warnings
+
 from abc import ABCMeta
+import logging
+from typing import Optional
+import warnings
 
 import numpy
 
@@ -810,6 +812,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     """
 
+    _fields: tuple[str, ...]
     _fields = ("name", "indep", "dep", "staterror", "syserror")
     """The main data values stored by the object (as a tuple).
 
@@ -818,9 +821,11 @@ class Data(NoNewAttributesAfterInit, BaseData):
     field. Other fields are listed in _extra_fields.
     """
 
+    _extra_fields: tuple[str, ...]
     _extra_fields = ()
     """Any extra fields that should be displayed by str(object)."""
 
+    _related_fields: tuple[str, ...]
     _related_fields = ("y", "staterror", "syserror")
     """What fields must match the size of the independent axis.
 
@@ -831,6 +836,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     _y = None
     _size = None
 
+    ndim : Optional[int]
     ndim = None
     "The dimensionality of the dataset, if defined, or None."
 
@@ -1053,18 +1059,6 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
         return self._data_space.get().grid
 
-    def _clear_filter(self):
-        """Clear out the existing filter.
-
-        This is designed for use by @indep.setter.
-
-        """
-
-        # This is currently a no-op. It may beover-ridden by a
-        # subclass.
-        #
-        pass
-
     @indep.setter
     def indep(self, val):
 
@@ -1079,6 +1073,18 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         self._data_space = self._init_data_space(self._data_space.filter, *val)
         self._clear_filter()
+
+    def _clear_filter(self) -> None:
+        """Clear out the existing filter.
+
+        This is designed for use by @indep.setter.
+
+        """
+
+        # This is currently a no-op. It may be over-ridden by a
+        # subclass.
+        #
+        pass
 
     def get_indep(self, filter=False):
         """Return the independent axes of a data set.
@@ -1526,7 +1532,10 @@ class Data1D(Data):
     syserror : array-like
         the systematic error associated with the data
     '''
+
+    _fields: tuple[str, ...]
     _fields = ("name", "x", "y", "staterror", "syserror")
+
     ndim = 1
 
     def __init__(self, name, x, y, staterror=None, syserror=None):
@@ -1812,6 +1821,7 @@ class Data1DAsymmetricErrs(Data1D):
     Note: elo and ehi shall be stored as delta values from y
     """
 
+    _fields: tuple[str, ...]
     _fields = ("name", "x", "y", "staterror", "syserror", "elo", "ehi")
 
     def __init__(self, name, x, y, elo, ehi, staterror=None, syserror=None):
@@ -1844,6 +1854,8 @@ class Data1DInt(Data1D):
     syserror : array-like
         the systematic error associated with the data
     """
+
+    _fields: tuple[str, ...]
     _fields = ("name", "xlo", "xhi", "y", "staterror", "syserror")
 
     def __init__(self, name, xlo, xhi, y, staterror=None, syserror=None):
@@ -2100,7 +2112,10 @@ class Data2D(Data):
         Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
         regularly-gridded data more easily.
     '''
+
+    _fields: tuple[str, ...]
     _fields = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
+
     ndim = 2
 
     # Why should we add shape to extra-fields instead? See #1359 to
@@ -2341,7 +2356,11 @@ class Data2DInt(Data2D):
         Sherpa provides the `~sherpa.astro.data.DataIMGInt` class to make it easier
         to work with regularly-gridded data.
     '''
+
+    _fields: tuple[str, ...]
     _fields = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "staterror", "syserror")
+
+    _extra_fields: tuple[str, ...]
     _extra_fields = ("shape", )
 
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None, staterror=None, syserror=None):

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2020, 2021, 2022
+#  Copyright (C) 2008, 2016, 2020 - 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,17 +18,31 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING, Callable, Optional, Union, \
+    cast, overload
 
 import numpy
 
+from sherpa.astro import hc, charge_e
 from sherpa.utils import get_position, filter_bins
 from sherpa.utils.err import IOErr, DataErr
 
-from ._utils import arf_fold, do_group, expand_grouped_mask, \
-    filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
-from ._pileup import apply_pileup
-from sherpa.astro import hc, charge_e
+if TYPE_CHECKING:
+    # Needed for annotations but would cause an import error.
+    from sherpa.data import Data1D
+    from sherpa.models.model import Model
+
+
+# To tell mypy not to track the _utils routines we need the type
+# statement on the import line, but then it can't handle the
+# "import ... \ # type: ignore" syntax, so stick all the symbols
+# on a single line, which is not ideal.
+#
+from ._utils import arf_fold, do_group, expand_grouped_mask, filter_resp, is_in, resp_init, rmf_fold, shrink_effarea    # type: ignore
+from ._pileup import apply_pileup  # type: ignore
 
 
 __all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
@@ -122,7 +136,26 @@ def compile_energy_grid(arglist):
     return [elo, ehi, htable]
 
 
-def bounds_check(lo, hi):
+# Use overloads to point out that the return type depends on the input
+# types.
+#
+@overload
+def bounds_check(lo: None, hi: None) -> tuple[None, None]: ...
+
+@overload
+def bounds_check(lo: float,
+                 hi: Optional[float]
+                 ) -> tuple[float, float]: ...
+
+@overload
+def bounds_check(lo: Optional[float],
+                 hi: float
+                 ) -> tuple[float, float]: ...
+
+def bounds_check(lo: Optional[float],
+                 hi: Optional[float]
+                 ) -> Union[tuple[float, float],
+                            tuple[None, None]]:
     """Ensure that the limits of a filter make sense.
 
     Note that if only one of them is given we always return
@@ -133,16 +166,23 @@ def bounds_check(lo, hi):
     # units are energy when the values could be wavelengths,
     # channels, or for a non PHA dataset. See issue #1443
     #
-    if lo is not None and hi is not None and lo > hi:
-        raise IOErr('boundscheck', lo, hi)
+    # mypy has real trouble inferring the different options,
+    # that is all are None, one is None, or neither are None,
+    # which makes writing a nicely-typed version a bit verbose.
+    #
+    if lo is not None and hi is not None:
+        if lo > hi:
+            raise IOErr('boundscheck', lo, hi)
+
+        return (lo, hi)
 
     if lo is not None and hi is None:
-        hi = lo
+        return (lo, lo)
 
-    if hi is not None and lo is None:
-        lo = hi
+    if hi is not None:
+        return (hi, hi)
 
-    return (lo, hi)
+    return (None, None)
 
 
 def range_overlap_1dint(axislist, lo, hi):
@@ -298,7 +338,12 @@ def range_overlap_1dint(axislist, lo, hi):
     return scale if ascending else scale[::-1]
 
 
-def _flux(data, lo, hi, src, eflux=False, srcflux=False):
+def _flux(data: Data1D,
+          lo: Optional[float],
+          hi: Optional[float],
+          src: Model,
+          eflux: bool = False,
+          srcflux: bool = False) -> float:
 
     if data.ndim != 1:
         raise DataErr("wrongdim", data.name, 1)
@@ -306,7 +351,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     lo, hi = bounds_check(lo, hi)
 
     try:
-        method = data._get_indep
+        method = data._get_indep  # type: ignore
     except AttributeError:
         method = data.get_indep
 
@@ -382,7 +427,11 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     return flux
 
 
-def _counts(data, lo, hi, func, *args):
+def _counts(data: Data1D,
+            lo: Optional[float],
+            hi: Optional[float],
+            func: Callable[..., numpy.ndarray],
+            *args) -> float:
     """Sum up the data for the range lo to hi.
 
     The routine starts by saving the current filter, which is a
@@ -462,7 +511,10 @@ def _counts2d(data, reg, func, *args):
     return counts
 
 
-def calc_energy_flux(data, src, lo=None, hi=None):
+def calc_energy_flux(data: Data1D,
+                     src: Model,
+                     lo: Optional[float] = None,
+                     hi: Optional[float] = None) -> float:
     """Integrate the source model over a pass band.
 
     Calculate the integral of E * S(E) over a pass band, where E is
@@ -535,7 +587,10 @@ def calc_energy_flux(data, src, lo=None, hi=None):
     return _flux(data, lo, hi, src, eflux=True)
 
 
-def calc_photon_flux(data, src, lo=None, hi=None):
+def calc_photon_flux(data: Data1D,
+                     src: Model,
+                     lo: Optional[float] = None,
+                     hi: Optional[float] = None) -> float:
     """Integrate the source model over a pass band.
 
     Calculate the integral of S(E) over a pass band, where S(E) is the
@@ -612,7 +667,10 @@ def calc_photon_flux(data, src, lo=None, hi=None):
 
 
 # ## DOC-TODO: compare to calc_photon_flux ?
-def calc_source_sum(data, src, lo=None, hi=None):
+def calc_source_sum(data: Data1D,
+                    src: Model,
+                    lo: Optional[float] = None,
+                    hi: Optional[float] = None) -> float:
     """Sum up the source model over a pass band.
 
     Sum up S(E) over a pass band, where S(E) is the spectral model
@@ -671,7 +729,9 @@ def calc_source_sum(data, src, lo=None, hi=None):
 # def calc_source_sum2d( data, src, reg=None):
 #     return _counts2d(data, reg, data.eval_model_to_fit, src)
 
-def calc_data_sum(data, lo=None, hi=None):
+def calc_data_sum(data: Data1D,
+                  lo: Optional[float] = None,
+                  hi: Optional[float] = None) -> float:
     """Sum up the data values over a pass band.
 
     Parameters
@@ -855,20 +915,20 @@ def calc_model_sum2d(data, model, reg=None):
     return _counts2d(data, reg, data.eval_model_to_fit, model)
 
 
-def eqwidth(data, model, combo, lo=None, hi=None):
+def eqwidth(data: Data1D,
+            model: Model,
+            combo: Model,
+            lo: Optional[float] = None,
+            hi: Optional[float] = None) -> float:
 
     lo, hi = bounds_check(lo, hi)
 
-    my = None
-    cy = None
-    xlo = None
-    xhi = None
-    num = None
-    eqw = 0.0
     if hasattr(data, 'get_response'):
-        xlo, xhi = data._get_indep(filter=False)
-        my = model(xlo, xhi)
-        cy = combo(xlo, xhi)
+        xlo, xhi = data._get_indep(filter=False)  # type: ignore
+        # Evaluating a model returns a ndarray but the type checker does
+        # not know that at the moment.
+        my = cast(numpy.ndarray, model(xlo, xhi))
+        cy = cast(numpy.ndarray, combo(xlo, xhi))
         num = len(xlo)
     else:
         my = data.eval_model_to_fit(model)
@@ -886,6 +946,7 @@ def eqwidth(data, model, combo, lo=None, hi=None):
         xlo = xlo[mask]
         num = len(xlo)
 
+    eqw = 0.0
     for ebin, val in enumerate(xlo):
         if ebin < (num - 1):
             eave = numpy.abs(xlo[ebin + 1] - xlo[ebin])

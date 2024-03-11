@@ -145,7 +145,7 @@ warning = logging.getLogger(__name__).warning
 
 regstatus = False
 try:
-    from sherpa.astro.utils._region import Region
+    from sherpa.astro.utils._region import Region  # type: ignore
     regstatus = True
 except ImportError:
     warning('failed to import sherpa.astro.utils._region; Region routines ' +
@@ -153,7 +153,7 @@ except ImportError:
 
 groupstatus = False
 try:
-    import group as pygroup
+    import group as pygroup  # type: ignore
     groupstatus = True
 except ImportError:
     groupstatus = False
@@ -1767,7 +1767,7 @@ will be removed. The identifiers can be integers or strings.
     # Override the mask handling because the mask matches the grouped
     # data length, not the independent axis.
     #
-    @Data1D.mask.setter
+    @Data1D.mask.setter  # type: ignore
     def mask(self, val):
 
         # We only need to over-ride the behavior if the data is
@@ -5046,7 +5046,7 @@ class DataIMG(Data2D):
 
         super().__init__(name, x0, x1, y, shape, staterror, syserror)
 
-    def _clear_filter(self):
+    def _clear_filter(self) -> None:
         if self._region is None:
             return
 
