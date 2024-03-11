@@ -649,6 +649,7 @@ class Histogram(NoNewAttributesAfterInit):
 
 
 class HistogramPlot(Histogram):
+    """Base class for histogram-style plots with a prepare method."""
 
     def __init__(self):
         self.xlo = None
@@ -675,20 +676,13 @@ class HistogramPlot(Histogram):
             y = np.array2string(np.asarray(self.y), separator=',',
                                 precision=4, suppress_small=False)
 
-        return (('xlo    = %s\n' +
-                 'xhi    = %s\n' +
-                 'y      = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'histo_prefs = %s') %
-                (xlo,
-                 xhi,
-                 y,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.histo_prefs))
+        return f"""xlo    = {xlo}
+xhi    = {xhi}
+y      = {y}
+xlabel = {self.xlabel}
+ylabel = {self.ylabel}
+title  = {self.title}
+histo_prefs = {self.histo_prefs}"""
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the histogram plot."""
@@ -818,6 +812,11 @@ class DataHistogramPlot(HistogramPlot):
 
         self.title = data.name
 
+    # This extends the superclass by also plotting yerr but the
+    # current design means we need to re-write this routine rather
+    # than identifying this programatically (over moving yerr support
+    # to the superclass).
+    #
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
@@ -900,7 +899,7 @@ class PDFPlot(HistogramPlot):
                                      separator=',', precision=4,
                                      suppress_small=False)
 
-        return ('points = %s\n' % (points) + HistogramPlot.__str__(self))
+        return (f'points = {points}\n' + HistogramPlot.__str__(self))
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the PDF plot."""
@@ -934,7 +933,7 @@ class PDFPlot(HistogramPlot):
         self.xhi = xx[1:]
         self.ylabel = "probability density"
         self.xlabel = xlabel
-        self.title = "PDF: {}".format(name)
+        self.title = f"PDF: {name}"
 
 
 class CDFPlot(Plot):
@@ -1044,8 +1043,8 @@ plot_prefs = {self.plot_prefs}"""
         xsize = len(self.x)
         self.y = (np.arange(xsize) + 1.0) / xsize
         self.xlabel = xlabel
-        self.ylabel = "p(<={})".format(xlabel)
-        self.title = "CDF: {}".format(name)
+        self.ylabel = f"p(<={xlabel})"
+        self.title = f"CDF: {name}"
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
@@ -1101,8 +1100,8 @@ class LRHistogram(HistogramPlot):
                                      separator=',', precision=4,
                                      suppress_small=False)
 
-        return '\n'.join(['ratios = %s' % ratios,
-                          'lr = %s' % str(self.lr),
+        return '\n'.join([f'ratios = {ratios}',
+                          f'lr = {self.lr}',
                           HistogramPlot.__str__(self)])
 
     def _repr_html_(self):
@@ -1501,7 +1500,7 @@ class TracePlot(DataPlot):
         self.y = points
         self.xlabel = "iteration"
         self.ylabel = name
-        self.title = "Trace: {}".format(name)
+        self.title = f"Trace: {name}"
 
 
 class ScatterPlot(DataPlot):
@@ -1527,7 +1526,7 @@ class ScatterPlot(DataPlot):
         self.y = np.asarray(y, dtype=SherpaFloat)
         self.xlabel = xlabel
         self.ylabel = ylabel
-        self.title = "Scatter: {}".format(name)
+        self.title = f"Scatter: {name}"
 
 
 class PSFKernelPlot(DataPlot):
@@ -1805,7 +1804,7 @@ class ComponentModelPlot(ModelPlot):
 
     def prepare(self, data, model, stat=None):
         ModelPlot.prepare(self, data, model, stat)
-        self.title = 'Model component: %s' % model.name
+        self.title = f'Model component: {model.name}'
 
 
 class ComponentModelHistogramPlot(ModelHistogramPlot):
@@ -1816,7 +1815,7 @@ class ComponentModelHistogramPlot(ModelHistogramPlot):
 
     def prepare(self, data, model, stat=None):
         super().prepare(data, model, stat)
-        self.title = 'Model component: {}'.format(model.name)
+        self.title = f'Model component: {model.name}'
 
 
 class ComponentTemplateModelPlot(ComponentModelPlot):
@@ -1826,7 +1825,7 @@ class ComponentTemplateModelPlot(ComponentModelPlot):
         self.y = model.get_y()
         self.xlabel = data.get_xlabel()
         self.ylabel = data.get_ylabel()
-        self.title = 'Model component: {}'.format(model.name)
+        self.title = f'Model component: {model.name}'
 
 
 class SourcePlot(ModelPlot):
@@ -1860,7 +1859,7 @@ class ComponentSourcePlot(SourcePlot):
         (self.x, self.y, self.yerr, self.xerr,
          self.xlabel, self.ylabel) = data.to_component_plot(yfunc=model)
         self.y = self.y[1]
-        self.title = 'Source model component: {}'.format(model.name)
+        self.title = f'Source model component: {model.name}'
 
 
 class ComponentSourceHistogramPlot(SourceHistogramPlot):
@@ -1881,7 +1880,7 @@ class ComponentSourceHistogramPlot(SourceHistogramPlot):
         self.y = y[1]
         assert self.y.size == self.xlo.size
 
-        self.title = 'Source model component: {}'.format(model.name)
+        self.title = f'Source model component: {model.name}'
 
 
 class ComponentTemplateSourcePlot(ComponentSourcePlot):
@@ -1898,7 +1897,7 @@ class ComponentTemplateSourcePlot(ComponentSourcePlot):
 
         self.xlabel = data.get_xlabel()
         self.ylabel = data.get_ylabel()
-        self.title = 'Source model component: {}'.format(model.name)
+        self.title = f'Source model component: {model.name}'
 
 
 class PSFPlot(DataPlot):
