@@ -955,10 +955,10 @@ class Session(NoNewAttributesAfterInit):
             'source_component': [sherpa.plot.ComponentSourcePlot(), sherpa.plot.ComponentSourceHistogramPlot()],
             'source_components': [sherpa.plot.MultiPlot()],
             'fit': [sherpa.plot.FitPlot()],
-            'resid': [sherpa.plot.ResidPlot()],
-            'ratio': [sherpa.plot.RatioPlot()],
-            'delchi': [sherpa.plot.DelchiPlot()],
-            'chisqr': [sherpa.plot.ChisqrPlot()],
+            'resid': [sherpa.plot.ResidPlot(), sherpa.plot.ResidHistogramPlot()],
+            'ratio': [sherpa.plot.RatioPlot(), sherpa.plot.RatioHistogramPlot()],
+            'delchi': [sherpa.plot.DelchiPlot(), sherpa.plot.DelchiHistogramPlot()],
+            'chisqr': [sherpa.plot.ChisqrPlot(), sherpa.plot.ChisqrHistogramPlot()],
             'psf': [sherpa.plot.PSFPlot()],
             'kernel': [sherpa.plot.PSFKernelPlot()]
         }
@@ -12396,9 +12396,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_types["resid"][0]
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_delchi_plot was last called.
+        #
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["resid"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -12458,9 +12471,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_types["delchi"][0]
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_delchi_plot was last called.
+        #
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["delchi"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -12520,9 +12546,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_types["chisqr"][0]
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_delchi_plot was last called.
+        #
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["chisqr"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -12582,9 +12621,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_types["ratio"][0]
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_delchi_plot was last called.
+        #
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["ratio"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 

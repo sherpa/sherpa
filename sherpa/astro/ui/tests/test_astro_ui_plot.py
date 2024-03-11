@@ -893,7 +893,8 @@ def test_get_bkg_resid_plot(idval, clean_astro_ui):
     else:
         bp = ui.get_bkg_resid_plot(idval)
 
-    assert bp.x == pytest.approx(_data_chan)
+    assert bp.xlo == pytest.approx(_data_chan)
+    assert bp.xhi == pytest.approx(_data_chan + 1)
 
     # correct the counts by the bin width and exposure time
     #
@@ -1082,6 +1083,8 @@ def check_bkg_resid(plotfunc, idval, isfit=True):
             continue
         else:
             pd = get(idval, recalc=False)
+            assert pd.xlo is None
+            assert pd.xhi is None
             assert pd.x is None
             assert pd.y is None
 
@@ -1112,7 +1115,8 @@ def check_bkg_resid(plotfunc, idval, isfit=True):
     else:
         assert False  # check I've caught everything
 
-    assert plot.x == pytest.approx(_data_chan)
+    assert plot.xlo == pytest.approx(_data_chan)
+    assert plot.xhi == pytest.approx(_data_chan + 1)
     assert plot.y is not None
 
     # the way the data and model are constructed, all residual values
@@ -1132,10 +1136,14 @@ def check_bkg_chisqr(plotfunc, idval, isfit=True):
                 ui.get_bkg_ratio_plot,
                 ui.get_bkg_resid_plot]:
         pd = get(idval, recalc=False)
+        assert pd.xlo is None
+        assert pd.xhi is None
         assert pd.x is None
         assert pd.y is None
 
     plot = ui.get_bkg_chisqr_plot(idval, recalc=False)
+    assert plot.xlo is not None
+    assert plot.xhi is not None
     assert plot.x is not None
     assert plot.y is not None
 
@@ -1159,6 +1167,8 @@ def check_bkg_model(plotfunc, idval, isfit=True):
                 ui.get_bkg_resid_plot,
                 ui.get_bkg_chisqr_plot]:
         pd = get(idval, recalc=False)
+        assert pd.xlo is None
+        assert pd.xhi is None
         assert pd.x is None
         assert pd.y is None
 
@@ -1189,6 +1199,8 @@ def check_bkg_source(plotfunc, idval, isfit=True):
                 ui.get_bkg_resid_plot,
                 ui.get_bkg_chisqr_plot]:
         pd = get(idval, recalc=False)
+        assert pd.xlo is None
+        assert pd.xhi is None
         assert pd.x is None
         assert pd.y is None
 
@@ -3599,8 +3611,8 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc, all_plot_backends):
     mdl.c1 = 1
     s.set_source(mdl)
 
-    plot = getattr(s, 'plot_{}'.format(plotfunc))
-    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+    plot = getattr(s, f'plot_{plotfunc}')
+    pdata = getattr(s, f'get_{plotfunc}_plot')
 
     # Create the plot
     plot()
@@ -3612,8 +3624,6 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc, all_plot_backends):
         else:
             assert p1.dataplot.plot_prefs['xlog']
             assert p1.modelplot.plot_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi']:
-        assert p1.plot_prefs['xlog']
     elif is_int:
         assert p1.histo_prefs['xlog']
     else:
@@ -3631,8 +3641,6 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc, all_plot_backends):
         else:
             assert not p2.dataplot.plot_prefs['xlog']
             assert not p2.modelplot.plot_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi']:
-        assert not p2.plot_prefs['xlog']
     elif is_int:
         assert not p2.histo_prefs['xlog']
     else:
@@ -3676,8 +3684,8 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     mdl.c1 = 1
     s.set_source(mdl)
 
-    plot = getattr(s, 'plot_{}'.format(plotfunc))
-    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+    plot = getattr(s, f'plot_{plotfunc}')
+    pdata = getattr(s, f'get_{plotfunc}_plot')
 
     plot()
     p1 = pdata()
@@ -3688,12 +3696,6 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
         else:
             assert p1.dataplot.plot_prefs['ylog'] == answer
             assert p1.modelplot.plot_prefs['ylog'] == answer
-    elif plotfunc in ['resid', 'ratio', 'delchi']:
-        # We use plot_prefs even if is_int is True for
-        # the residual-style plots. That is, the ordering
-        # of the checks here is important.
-        #
-        assert p1.plot_prefs['ylog'] == answer
     elif is_int:
         assert p1.histo_prefs['ylog'] == answer
     else:
@@ -3711,8 +3713,6 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
         else:
             assert not p2.dataplot.plot_prefs['ylog']
             assert not p2.modelplot.plot_prefs['ylog']
-    elif plotfunc in ['resid', 'ratio', 'delchi']:
-        assert not p2.plot_prefs['ylog']
     elif is_int:
         assert not p2.histo_prefs['ylog']
     else:
@@ -3761,8 +3761,8 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     s.set_source(mdl)
     s.set_bkg_source(mdl)
 
-    plot = getattr(s, 'plot_{}'.format(plotfunc))
-    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+    plot = getattr(s, f'plot_{plotfunc}')
+    pdata = getattr(s, f'get_{plotfunc}_plot')
 
     # Create the plot
     plot()
@@ -3779,8 +3779,6 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
         # actually required for the plot to work.
         #
         assert not p1.modelplot.histo_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
-        assert p1.plot_prefs['xlog']
     else:
         assert p1.histo_prefs['xlog']
 
@@ -3792,8 +3790,6 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     if plotfunc in ['fit', 'bkg_fit']:
         assert not p2.dataplot.histo_prefs['xlog']
         assert not p2.modelplot.histo_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
-        assert not p2.plot_prefs['xlog']
     else:
         assert not p2.histo_prefs['xlog']
 
@@ -3837,8 +3833,8 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     s.set_source(mdl)
     s.set_bkg_source(mdl)
 
-    plot = getattr(s, 'plot_{}'.format(plotfunc))
-    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+    plot = getattr(s, f'plot_{plotfunc}')
+    pdata = getattr(s, f'get_{plotfunc}_plot')
 
     plot()
     p1 = pdata()
@@ -3846,8 +3842,6 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
         assert p1.dataplot.histo_prefs['ylog'] == answer
         # Check the current behavior of the model plot in case it changes
         assert not p1.modelplot.histo_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
-        assert p1.plot_prefs['ylog'] == answer
     else:
         assert p1.histo_prefs['ylog'] == answer
 
@@ -3859,8 +3853,6 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     if plotfunc in ['fit', 'bkg_fit']:
         assert not p2.dataplot.histo_prefs['ylog']
         assert not p2.modelplot.histo_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
-        assert not p2.plot_prefs['ylog']
     else:
         assert not p2.histo_prefs['ylog']
 
