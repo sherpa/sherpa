@@ -36,15 +36,16 @@ from sherpa.data import Data1DInt
 from sherpa.models.basic import Delta1D
 from sherpa.models.model import Model
 from sherpa import plot as shplot
-from sherpa.stats import Stat
+from sherpa.stats import Stat, Chi2XspecVar
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
-from sherpa.utils.err import PlotErr, IOErr
+from sherpa.utils.err import IOErr, PlotErr, StatErr
 
 warning = logging.getLogger(__name__).warning
 
 __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
            'SourcePlot', 'ComponentModelPlot', 'ComponentSourcePlot',
+           'RatioPHAPlot', 'ResidPHAPlot', 'DelchiPHAPlot', 'ChisqrPHAPlot',
            'ARFPlot', 'RMFPlot',
            'BkgDataPlot', 'BkgModelPHAHistogram', 'BkgModelHistogram',
            'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
@@ -180,6 +181,59 @@ class DataPHAPlot(shplot.DataHistogramPlot):
             self.yerr = shplot.calculate_errors(data, stat, yerrorbars)
 
         self.title = data.name
+
+        self.xlo, self.xhi = calc_x(data)
+
+
+class RatioPHAPlot(shplot.RatioHistogramPlot):
+    """Plot ratio for a PHA dataset."""
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+
+class ResidPHAPlot(shplot.ResidHistogramPlot):
+    """Plot residuals for a PHA dataset."""
+
+    # Turn on yerrorbars by default. What is the best way to do this?
+    #
+    histo_prefs = shplot.ResidHistogramPlot.histo_prefs | {"yerrorbars": True}
+    "The preferences for the plot."
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+
+class DelchiPHAPlot(shplot.DelchiHistogramPlot):
+    """Plot delchi residuals for a PHA dataset."""
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+
+class ChisqrPHAPlot(shplot.ChisqrHistogramPlot):
+    """Plot residuals for a PHA dataset."""
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
 
         self.xlo, self.xhi = calc_x(data)
 
@@ -432,6 +486,8 @@ class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
     def _merge_settings(self, kwargs: dict) -> dict:
         return {**self.histo_prefs, **kwargs}
 
+    # Specify which superclass handles this.
+    #
     def plot(self,  # type: ignore[override]
              overplot: bool = False,
              clearwindow: bool = True,
@@ -466,6 +522,8 @@ class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
     def _merge_settings(self, kwargs: dict) -> dict:
         return {**self.histo_prefs, **kwargs}
 
+    # Specify which superclass handles this.
+    #
     def plot(self,  # type: ignore[override]
              overplot: bool = False,
              clearwindow: bool = True,
@@ -781,13 +839,13 @@ class BkgFitPlot(shplot.FitPlot):
     pass
 
 
-class BkgDelchiPlot(shplot.DelchiPlot):
-    "Derived class for creating background plots of 1D delchi chi ((data-model)/error)"
+class BkgDelchiPlot(DelchiPHAPlot):
+    "Derived class for creating background plots of PHA delchi chi ((data-model)/error)"
     pass
 
 
-class BkgResidPlot(shplot.ResidPlot):
-    "Derived class for creating background plots of 1D residual (data-model)"
+class BkgResidPlot(ResidPHAPlot):
+    "Derived class for creating background plots of PHA residual (data-model)"
 
     def prepare(self,  # type: ignore[override]
                 data: Data1DInt,
@@ -797,8 +855,8 @@ class BkgResidPlot(shplot.ResidPlot):
         self.title = f'Residuals of {data.name} - Bkg Model'
 
 
-class BkgRatioPlot(shplot.RatioPlot):
-    "Derived class for creating background plots of 1D ratio (data:model)"
+class BkgRatioPlot(RatioPHAPlot):
+    "Derived class for creating background plots of PHA ratio (data:model)"
 
     def prepare(self,  # type: ignore[override]
                 data: Data1DInt,
@@ -808,8 +866,8 @@ class BkgRatioPlot(shplot.RatioPlot):
         self.title = f'Ratio of {data.name} : Bkg Model'
 
 
-class BkgChisqrPlot(shplot.ChisqrPlot):
-    "Derived class for creating background plots of 1D chi**2 ((data-model)/error)**2"
+class BkgChisqrPlot(ChisqrPHAPlot):
+    "Derived class for creating background plots of chi**2 ((data-model)/error)**2"
     pass
 
 
