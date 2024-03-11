@@ -35,15 +35,16 @@ from sherpa.data import Data1DInt
 from sherpa.models.basic import Delta1D
 from sherpa.models.model import Model
 from sherpa import plot as shplot
-from sherpa.stats import Stat
+from sherpa.stats import Stat, Chi2XspecVar
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
-from sherpa.utils.err import PlotErr, IOErr
+from sherpa.utils.err import IOErr, PlotErr, StatErr
 
 warning = logging.getLogger(__name__).warning
 
 __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
            'SourcePlot', 'ComponentModelPlot', 'ComponentSourcePlot',
+           'RatioPHAPlot', 'ResidPHAPlot', 'DelchiPHAPlot', 'ChisqrPHAPlot',
            'ARFPlot', 'RMFPlot',
            'BkgDataPlot', 'BkgModelPHAHistogram', 'BkgModelHistogram',
            'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
@@ -183,6 +184,154 @@ class DataPHAPlot(shplot.DataHistogramPlot):
         self.title = data.name
 
         self.xlo, self.xhi = calc_x(data, self)
+
+
+class RatioPHAPlot(shplot.RatioHistogramPlot):
+    """Plot ratio for a PHA dataset."""
+
+    def prepare(self,
+                data: Data1DInt,
+                model: Model,
+                stat: Optional[Stat] = None) -> None:
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        # Need a better way of accessing the binning of the data.
+        # Maybe to_plot should return the lo/hi edges as a pair
+        # here.
+        #
+        plot = data.to_plot(model)
+        (_, y, self.yerr, _, self.xlabel, self.ylabel) = plot
+
+        self.xlo, self.xhi = calc_x(data, self)
+
+        self.y = self._calc_ratio(y)
+
+        # See the discussion in DataPlot.prepare
+        try:
+            yerrorbars = self.histo_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
+        if stat.name in shplot._stats_noerr:
+            yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
+            if yerrorbars:
+                warning(shplot._errorbar_warning(stat))
+        else:
+            yerr = data.get_yerr(True, stat.calc_staterror)
+
+        self.yerr = yerr / y[1]
+
+        self.ylabel = 'Data / Model'
+        self.title = shplot._make_title('Ratio of Data to Model', data.name)
+
+
+class ResidPHAPlot(shplot.ResidHistogramPlot):
+    """Plot residuals for a PHA dataset."""
+
+    # Turn on yerrorbars by default. What is the best way to do this?
+    #
+    histo_prefs = shplot.ResidHistogramPlot.histo_prefs | {"yerrorbars": True}
+    "The preferences for the plot."
+
+    def prepare(self,
+                data: Data1DInt,
+                model: Model,
+                stat: Optional[Stat] = None) -> None:
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        # Need a better way of accessing the binning of the data.
+        # Maybe to_plot should return the lo/hi edges as a pair
+        # here.
+        #
+        plot = data.to_plot(model)
+        (_, y, self.yerr, _, self.xlabel, self.ylabel) = plot
+
+        self.xlo, self.xhi = calc_x(data, self)
+
+        self.y = self._calc_resid(y)
+
+        # See the discussion in DataPlot.prepare
+        try:
+            yerrorbars = self.histo_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
+        if stat.name in shplot._stats_noerr:
+            yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
+            if yerrorbars:
+                warning(shplot._errorbar_warning(stat))
+        else:
+            yerr = data.get_yerr(True, stat.calc_staterror)
+
+        self.yerr = yerr
+
+        self.title = shplot._make_title('Residuals', data.name)
+
+
+class DelchiPHAPlot(shplot.DelchiHistogramPlot):
+    """Plot delchi residuals for a PHA dataset."""
+
+    def prepare(self,
+                data: Data1DInt,
+                model: Model,
+                stat: Optional[Stat] = None) -> None:
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        # Need a better way of accessing the binning of the data.
+        # Maybe to_plot should return the lo/hi edges as a pair
+        # here.
+        #
+        plot = data.to_plot(model)
+        (_, y, staterr, _, self.xlabel, self.ylabel) = plot
+
+        if staterr is None:
+            if stat.name in shplot._stats_noerr:
+                raise StatErr('badstat', "DelchiHistogramPlot", stat.name)
+            staterr = data.get_yerr(True, stat.calc_staterror)
+
+        self.xlo, self.xhi = calc_x(data, self)
+
+        self.y = self._calc_delchi(y, staterr)
+        self.yerr = staterr / staterr
+        self.ylabel = 'Sigma'
+        self.title = shplot._make_title('Sigma Residuals', data.name)
+
+
+class ChisqrPHAPlot(shplot.ChisqrHistogramPlot):
+    """Plot residuals for a PHA dataset."""
+
+    def prepare(self,
+                data: Data1DInt,
+                model: Model,
+                stat: Optional[Stat] = None) -> None:
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        # Need a better way of accessing the binning of the data.
+        # Maybe to_plot should return the lo/hi edges as a pair
+        # here.
+        #
+        plot = data.to_plot(model)
+        (_, y, _, _, self.xlabel, self.ylabel) = plot
+
+        if stat.name in shplot._stats_noerr:
+            raise StatErr('badstat', "DelchiHistogramPlot", stat.name)
+
+        self.xlo, self.xhi = calc_x(data, self)
+
+        staterr = data.get_yerr(True, stat.calc_staterror)
+        self.y = self._calc_chisqr(y, staterr)
+
+        self.ylabel = shplot.backend.get_latex_for_string(r'\chi^2')
+        self.title = shplot._make_title(
+            shplot.backend.get_latex_for_string(r'\chi^2'), data.name)
 
 
 class ModelPHAHistogram(shplot.HistogramPlot):
@@ -759,13 +908,13 @@ class BkgFitPlot(shplot.FitPlot):
     pass
 
 
-class BkgDelchiPlot(shplot.DelchiPlot):
-    "Derived class for creating background plots of 1D delchi chi ((data-model)/error)"
+class BkgDelchiPlot(DelchiPHAPlot):
+    "Derived class for creating background plots of PHA delchi chi ((data-model)/error)"
     pass
 
 
-class BkgResidPlot(shplot.ResidPlot):
-    "Derived class for creating background plots of 1D residual (data-model)"
+class BkgResidPlot(ResidPHAPlot):
+    "Derived class for creating background plots of PHA residual (data-model)"
 
     def prepare(self,  # type: ignore[override]
                 data: Data1DInt,
@@ -775,8 +924,8 @@ class BkgResidPlot(shplot.ResidPlot):
         self.title = f'Residuals of {data.name} - Bkg Model'
 
 
-class BkgRatioPlot(shplot.RatioPlot):
-    "Derived class for creating background plots of 1D ratio (data:model)"
+class BkgRatioPlot(RatioPHAPlot):
+    "Derived class for creating background plots of PHA ratio (data:model)"
 
     def prepare(self,  # type: ignore[override]
                 data: Data1DInt,
@@ -786,8 +935,8 @@ class BkgRatioPlot(shplot.RatioPlot):
         self.title = f'Ratio of {data.name} : Bkg Model'
 
 
-class BkgChisqrPlot(shplot.ChisqrPlot):
-    "Derived class for creating background plots of 1D chi**2 ((data-model)/error)**2"
+class BkgChisqrPlot(ChisqrPHAPlot):
+    "Derived class for creating background plots of chi**2 ((data-model)/error)**2"
     pass
 
 
