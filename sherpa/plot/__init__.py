@@ -37,16 +37,17 @@ from typing import Any, Literal, Optional, Sequence, Union
 
 import numpy as np
 
-from sherpa.utils import NoNewAttributesAfterInit, erf, \
-    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
-from sherpa.utils.err import PlotErr, StatErr, ConfidenceErr
-from sherpa.utils.numeric_types import SherpaFloat
+from sherpa import get_config
 from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
-from sherpa import get_config
-from sherpa.utils.err import ArgumentTypeErr, IdentifierErr
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
+from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
+from sherpa.utils import NoNewAttributesAfterInit, erf, \
+    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
+from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
+    IdentifierErr, PlotErr, StatErr
+from sherpa.utils.numeric_types import SherpaFloat
+
 # PLOT_BACKENDS only contains backends in modules that are imported successfully
 # but modules are not discovered by itself. Entrypoints would solve this problem
 # but the current implementation does not have this capability.
