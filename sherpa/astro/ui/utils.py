@@ -30,7 +30,8 @@ import numpy as np
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
-from sherpa.ui.utils import _check_type, _check_str_type, _is_str
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
+    get_plot_prefs
 from sherpa.utils import sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
@@ -13523,25 +13524,28 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
+        # See sherpa.ui.utils.Session._jointplot2
+        #
         self._jointplot.reset()
 
         with sherpa.plot.backend:
             self._jointplot.plottop(plot1, overplot=overplot,
                                     clearwindow=clearwindow, **kwargs)
 
-            # Unlike the plot version we can assume we are dealing
-            # with histogram plots here.
+            # We know the plot types here but still use get_plot_prefs
+            # to keep the encapsulation.
             #
-            oldval = plot2.plot_prefs['xlog']
-            dprefs = plot1.dataplot.histo_prefs
-            mprefs = plot1.modelplot.histo_prefs
+            p2prefs = get_plot_prefs(plot2)
+            oldval = p2prefs['xlog']
+            dprefs = get_plot_prefs(plot1.dataplot)
+            mprefs = get_plot_prefs(plot1.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
+                p2prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
-            plot2.plot_prefs['xlog'] = oldval
+            p2prefs['xlog'] = oldval
 
     def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True, **kwargs):

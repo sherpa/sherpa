@@ -14519,16 +14519,17 @@ class Session(NoNewAttributesAfterInit):
             # plot preferences of plot1, and then check for different
             # types of plot objects.
             #
-            oldval = plot2.plot_prefs['xlog']
+            p2prefs = get_plot_prefs(plot2)
+            oldval = p2prefs['xlog']
             dprefs = get_plot_prefs(plot1.dataplot)
             mprefs = get_plot_prefs(plot1.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
+                p2prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
-            plot2.plot_prefs['xlog'] = oldval
+            p2prefs['xlog'] = oldval
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True, **kwargs):
