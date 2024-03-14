@@ -27,7 +27,7 @@ import logging
 import numpy as np
 
 from sherpa.astro import hc
-from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.data import DataARF, DataIMG, DataPHA, DataRMF
 from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import bounds_check
 from sherpa.models.basic import Delta1D
@@ -125,6 +125,9 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 
     def prepare(self, data, stat=None):
 
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         # Need a better way of accessing the binning of the data.
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
@@ -172,9 +175,9 @@ class ModelPHAHistogram(shplot.HistogramPlot):
         if not isinstance(data, DataPHA):
             raise IOErr('notpha', data.name)
 
-        (_, self.y, _, _,
-         self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
-        self.y = self.y[1]
+        plot = data.to_plot(yfunc=model)
+        (_, ys, _, _, self.xlabel, self.ylabel) = plot
+        self.y = ys[1]
 
         if data.units != 'channel':
             elo, ehi = data._get_ebins(group=False)
@@ -199,6 +202,9 @@ class ModelHistogram(ModelPHAHistogram):
     """
 
     def prepare(self, data, model, stat=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
 
         # We could fit this into a single try/finally group but
         # it makes it harder to see what is going on so split
@@ -355,14 +361,15 @@ class SourcePlot(shplot.HistogramPlot):
         self.ylabel = f'{pre}  Photons{tlabel}/cm{sqr}{post}'
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
-        xlo = self.xlo
-        xhi = self.xhi
-        y = self.y
+
+        xlo = shplot.check_not_none(self.xlo)
+        xhi = shplot.check_not_none(self.xhi)
+        y = shplot.check_not_none(self.y)
 
         if self.mask is not None:
-            xlo = self.xlo[self.mask]
-            xhi = self.xhi[self.mask]
-            y = self.y[self.mask]
+            xlo = xlo[self.mask]
+            xhi = xhi[self.mask]
+            y = y[self.mask]
 
         shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
                               xlabel=self.xlabel, ylabel=self.ylabel,
@@ -671,8 +678,8 @@ class RMFPlot(shplot.HistogramPlot):
 
         """
 
-        y_array = self.y
-        labels = self.labels
+        y_array = shplot.check_not_none(self.y)
+        labels = shplot.check_not_none(self.labels)
 
         # Override the self.y array with each "energy".
         #
@@ -683,6 +690,7 @@ class RMFPlot(shplot.HistogramPlot):
                 clearwindow=clearwindow if n == 0 else False,
                 label=label,
                 **kwargs)
+
         self.y = y_array
 
 
@@ -771,6 +779,10 @@ class OrderPlot(ModelHistogram):
 
     # Note: this does not accept a stat parameter.
     def prepare(self, data, model, orders=None, colors=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         self.orders = data.response_ids
 
         if orders is not None:
@@ -778,6 +790,8 @@ class OrderPlot(ModelHistogram):
                 self.orders = list(orders)
             else:
                 self.orders = [orders]
+
+        norders = len(self.orders)
 
         if colors is not None:
             self.use_default_colors = False
@@ -788,8 +802,10 @@ class OrderPlot(ModelHistogram):
         else:
             self.colors = shplot.backend.colorlist(len(self.orders))
 
-        if not self.use_default_colors and len(self.colors) != len(self.orders):
-            raise PlotErr('ordercolors', len(self.orders), len(self.colors))
+        ncolors = len(self.colors)
+
+        if not self.use_default_colors and ncolors != norders:
+            raise PlotErr('ordercolors', norders, ncolors)
 
         old_filter = parse_expr(data.get_filter())
         old_group = data.grouped
@@ -800,11 +816,11 @@ class OrderPlot(ModelHistogram):
                 for interval in old_filter:
                     data.notice(*interval)
 
-            self.xlo = []
-            self.xhi = []
-            self.y = []
-            (xlo, y, yerr, _,
-             self.xlabel, self.ylabel) = data.to_plot(model)
+            xlos = []
+            xhis = []
+            ys = []
+            plot = data.to_plot(model)
+            (xlo, y, yerr, _, self.xlabel, self.ylabel) = plot
             y = y[1]
             if data.units != 'channel':
                 elo, ehi = data._get_ebins(group=False)
@@ -817,8 +833,8 @@ class OrderPlot(ModelHistogram):
                 xhi = xlo + 1.
 
             for order in self.orders:
-                self.xlo.append(xlo)
-                self.xhi.append(xhi)
+                xlos.append(xlo)
+                xhis.append(xhi)
                 # QUS: why check that response_ids > 2 and not 1 here?
                 #
                 if len(data.response_ids) > 2:
@@ -828,7 +844,8 @@ class OrderPlot(ModelHistogram):
                     y = data._fix_y_units(y, True)
                     if data.exposure:
                         y = data.exposure * y
-                self.y.append(y)
+
+                ys.append(y)
 
         finally:
             if old_group:
@@ -837,16 +854,25 @@ class OrderPlot(ModelHistogram):
                 for interval in old_filter:
                     data.notice(*interval)
 
+        self.xlo = np.asarray(xlos)
+        self.xhi = np.asarray(xhis)
+        self.y = np.asarray(ys)
         self.title = f'Model Orders {self.orders}'
 
         if len(self.xlo) != len(self.y):
             raise PlotErr("orderarrfail")
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+
+        xlo_a = shplot.check_not_none(self.xlo)
+        xhi_a = shplot.check_not_none(self.xhi)
+        y_a = shplot.check_not_none(self.y)
+        # This is not None by design but it's tricky to confirm this.
+        colors_a = self.colors
+
         default_color = self.histo_prefs['color']
         count = 0
-        for xlo, xhi, y, color in \
-                zip(self.xlo, self.xhi, self.y, self.colors):
+        for xlo, xhi, y, color in zip(xlo_a, xhi_a, y_a, colors_a):
             if count != 0:
                 overplot = True
                 self.histo_prefs['color'] = color
@@ -942,6 +968,10 @@ class DataIMGPlot(shplot.Image):
     x1 = None
 
     def prepare(self, img):
+
+        if not isinstance(img, DataIMG):
+            raise IOErr('notimage', img.name)
+
         # Apply filter and coordinate system
         #
         self.y = img.get_img()
@@ -995,8 +1025,10 @@ class DataIMGPlot(shplot.Image):
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
 
-        super().plot(self.x0, self.x1, self.y, title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        aspect=self.aspect,
-                        overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
+        x0 = shplot.check_not_none(self.x0)
+        x1 = shplot.check_not_none(self.x1)
+        y = shplot.check_not_none(self.y)
+        super().plot(x0, x1, y, title=self.title, xlabel=self.xlabel,
+                     ylabel=self.ylabel, aspect=self.aspect,
+                     overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)

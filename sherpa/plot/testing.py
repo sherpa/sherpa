@@ -102,6 +102,7 @@ def check_full(r, summary, label='', title='', nsummary=0, test_other=None):
             assert "<svg " in r
         elif (HAS_BOKEH and isinstance(plot.backend, BokehBackend)):
             assert "BokehJS library" in r
+
         return
 
     assert '<svg ' not in r
