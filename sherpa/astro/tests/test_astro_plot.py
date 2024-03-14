@@ -1135,3 +1135,103 @@ def test_data_model_plot_with_backend(all_plot_backends):
 
     with splot.backend:
         fplot.plot()
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", pytest.param("wavelength", marks=pytest.mark.xfail)])
+def test_pha_data_plot_xerr(units):
+    """What is the xerr field for DataPHA data.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    dplot = aplot.DataPHAPlot()
+    dplot.prepare(pha)
+
+    # XFAIL for wavelength this returns the energy xerr values!
+    assert dplot.xerr == pytest.approx(dplot.xhi - dplot.xlo)
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_source_plot_xerr(units):
+    """What is the xerr field for DataPHA source.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+
+    mplot = aplot.SourcePlot()
+    mplot.prepare(pha, model)
+
+    # There is no xerr atrribute
+    with pytest.raises(AttributeError):
+        mplot.xerr
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_model_plot_xerr(units):
+    """What is the xerr field for DataPHA model.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+    resp = pha.get_full_response()
+    full_model = resp(model)
+
+    mplot = aplot.ModelPHAHistogram()
+    mplot.prepare(pha, full_model)
+
+    # There is no xerr atrribute
+    with pytest.raises(AttributeError):
+        mplot.xerr
+
+
+@pytest.mark.parametrize("cls", [splot.ResidPlot,
+                                 splot.RatioPlot,
+                                 splot.DelchiPlot,
+                                 splot.ChisqrPlot])
+@pytest.mark.parametrize("units", ["channel", "energy", pytest.param("wavelength", marks=pytest.mark.xfail)])
+def test_pha_resid_plot_xerr(cls, units):
+    """What is the xerr field for DataPHA residual.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+    resp = pha.get_full_response()
+    full_model = resp(model)
+
+    # We want a chi-square plot for some of these classes, and pick
+    # one that doesn't trigger warnings.
+    #
+    rplot = cls()
+    rplot.prepare(pha, full_model, stat=stats.Chi2Gehrels())
+
+    if units == "channel":
+        assert rplot.xerr == pytest.approx([1, 2, 1, 2, 2, 1, 1])
+    else:
+        assert rplot.xerr == pytest.approx([0.15, 0.15, 0.1, 0.2, 0.2, 0.1, 0.1])
+        # XFAIL: these values are in keV not Angstroms
+        if units == "wavelength":
+            assert False

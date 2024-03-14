@@ -608,6 +608,23 @@ def test_errors_with_no_stat():
     assert dp.yerr is None
 
 
+def test_data1d_xerr_is_none_by_default():
+    """Do we have an xerr field for Data1D.
+
+    It's not clear what the xerr field from the Data1DInt class
+    is meant to "be", so just check the Data1D classs.
+    """
+
+    x = [10, 20, 40, 80]
+    y = [1, 2, 3, 4]
+    d = Data1D('xx', x, y)
+
+    dp = sherpaplot.DataPlot()
+    dp.prepare(d)
+
+    assert dp.xerr is None
+
+
 def test_histogram_returns_x():
     """We support x accessor for histogram plots."""
 
@@ -654,6 +671,59 @@ def test_histogram_empty_x():
 
     dp = sherpaplot.DataHistogramPlot()
     assert dp.x is None
+
+
+def test_histogram_returns_xerr():
+    """What is xerr for histograms? Related to issue #1817.
+
+    It is not clear what we mean by xerr here, but let's just check
+    what is returned.
+
+    """
+
+    xlo = [10, 20, 40, 80]
+    xhi = [20, 40, 60, 90]
+    y = [1, 2, 3, 4]
+    d = Data1DInt('xx', xlo, xhi, y)
+
+    dp = sherpaplot.DataHistogramPlot()
+    dp.prepare(d)
+
+    xlo = numpy.asarray(xlo)
+    xhi = numpy.asarray(xhi)
+
+    assert dp.xerr == pytest.approx(xhi - xlo)
+
+    # check xerr is not in the str output
+    #
+    for line in str(dp).split('\n'):
+        toks = line.split()
+        assert len(toks) > 2
+        assert toks[0] != 'xerr'
+
+
+@pytest.mark.xfail
+def test_histogram_can_not_set_xerr():
+    """We cannot change the xerr accessor"""
+
+    xlo = [10, 20, 40, 80]
+    xhi = [20, 40, 60, 90]
+    y = [1, 2, 3, 4]
+    d = Data1DInt('xx', xlo, xhi, y)
+
+    dp = sherpaplot.DataHistogramPlot()
+    dp.prepare(d)
+
+    # XFAIL: at the moment we can change xerr
+    with pytest.raises(AttributeError):
+        dp.xerr = xlo
+
+
+def test_histogram_empty_xerr():
+    """xerr accessor is None if there's no data"""
+
+    dp = sherpaplot.DataHistogramPlot()
+    assert dp.xerr is None
 
 
 @pytest.mark.parametrize("cls", [sherpaplot.RegionUncertainty,
