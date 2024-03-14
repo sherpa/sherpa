@@ -414,8 +414,7 @@ def display_fields(obj: Union[BasePlot, BaseHistogram, BaseContour],
     Parameters
     ----------
     obj
-       The object to convert to a string. It is expected to be
-       derived from one of the plot classes.
+       The object to convert to a string.
     fields
        The fields to diplay. A field name ending in ! means display
        directly, otherwise the value is passed through arr2str.
@@ -3295,6 +3294,10 @@ class Confidence1D(DataPlot):
         if self.log:
             self.plot_prefs['xlog'] = True
 
+        # This repeats the check_not_none calls, but we know they
+        # will pass. It also will display xerr/yerr vlaues which is
+        # why they were cleared in the prepare call.
+        #
         super().plot(overplot=overplot, clearwindow=clearwindow,
                      **kwargs)
 
