@@ -1262,13 +1262,13 @@ def test_pha_data_fails_not_pha(cls):
     d = Data1D("not-a-pha", [1, 2], [0, 2])
     plotobj = cls()
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'units'"):
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
         plotobj.prepare(d, stat=stats.LeastSq())
 
 
-@pytest.mark.parametrize("cls", [ModelPHAHistogram,
-                                 BkgModelPHAHistogram,
-                                 ComponentSourcePlot])
+@pytest.mark.parametrize("cls", [ModelPHAHistogram, ModelHistogram,
+                                 BkgModelPHAHistogram, BkgModelHistogram,
+                                 ComponentSourcePlot, ComponentModelPlot])
 def test_pha_model_checks_not_pha(cls):
     """Check if error out with an invalid data message for Model classes"""
 
@@ -1280,24 +1280,7 @@ def test_pha_model_checks_not_pha(cls):
         plotobj.prepare(d, m, stat=stats.LeastSq())
 
 
-@pytest.mark.parametrize("cls", [ModelHistogram,
-                                 BkgModelHistogram,
-                                 ComponentModelPlot])
-def test_pha_model_fails_not_pha(cls):
-    """Check if error out with an invalid data message for Model classes
-
-    These should get merged into test_pha_model_checks_pha
-    """
-
-    d = Data1D("not-a-pha", [1, 2], [0, 2])
-    m = Const1D("mdl")
-    plotobj = cls()
-
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'grouped'"):
-        plotobj.prepare(d, m, stat=stats.LeastSq())
-
-
-@pytest.mark.parametrize("cls", [SourcePlot])
+@pytest.mark.parametrize("cls", [SourcePlot, OrderPlot])
 def test_pha_model_no_stat_checks_not_pha(cls):
     """Check if error out with an invalid data message for Model classes
 
@@ -1312,28 +1295,13 @@ def test_pha_model_no_stat_checks_not_pha(cls):
         plotobj.prepare(d, m)
 
 
-@pytest.mark.parametrize("cls", [OrderPlot])
-def test_pha_model_no_stat_fails_not_pha(cls):
-    """Check if error out with an invalid data message for Model classes
-
-    These classes do not take a stat argument for the prepare method.
-    """
-
-    d = Data1D("not-a-pha", [1, 2], [0, 2])
-    m = Const1D("mdl")
-    plotobj = cls()
-
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'response_ids'"):
-        plotobj.prepare(d, m)
-
-
 def test_arf_checks_arf():
     """Do we ensure it's an ARF?"""
 
     plotobj = ARFPlot()
     d = Data1D("x", [1, 2], [2, 3])
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'energ_lo'"):
+    with pytest.raises(IOErr, match="data set 'x' does not contain an ARF"):
         plotobj.prepare(arf=d)
 
 
@@ -1348,13 +1316,13 @@ def test_arf_checks_data_is_pha():
         plotobj.prepare(arf=arf, data=d)
 
 
-def test_rmf_checks_arf():
+def test_rmf_checks_rmf():
     """Do we ensure it's an RMF?"""
 
     plotobj = RMFPlot()
     d = Data1D("x", [1, 2], [2, 3])
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'e_min'"):
+    with pytest.raises(IOErr, match="data set 'x' does not contain a RMF"):
         plotobj.prepare(rmf=d)
 
 
