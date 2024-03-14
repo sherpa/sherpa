@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -92,7 +92,7 @@ def test_lrhist(all_plot_backends):
 def test_data(all_plot_backends):
     p = plot.DataPlot()
     r = p._repr_html_()
-    check_full(r, 'DataPlot', 'None', 'None', nsummary=7)  # NOT empty
+    check_empty(r, 'DataPlot', nsummary=7)
 
     x = np.arange(5, 8, 0.5)
     y = np.ones(x.size)

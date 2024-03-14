@@ -27,7 +27,8 @@ import logging
 import numpy as np
 
 from sherpa.astro import hc
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataARF, DataIMG, DataPHA, DataRMF
+from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import bounds_check
 from sherpa.models.basic import Delta1D
 from sherpa import plot as shplot
@@ -124,6 +125,9 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 
     def prepare(self, data, stat=None):
 
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         # Need a better way of accessing the binning of the data.
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
@@ -198,6 +202,9 @@ class ModelHistogram(ModelPHAHistogram):
     """
 
     def prepare(self, data, model, stat=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
 
         # We could fit this into a single try/finally group but
         # it makes it harder to see what is going on so split
@@ -354,14 +361,15 @@ class SourcePlot(shplot.HistogramPlot):
         self.ylabel = f'{pre}  Photons{tlabel}/cm{sqr}{post}'
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
-        xlo = self.xlo
-        xhi = self.xhi
-        y = self.y
+
+        xlo = shplot.check_not_none(self.xlo)
+        xhi = shplot.check_not_none(self.xhi)
+        y = shplot.check_not_none(self.y)
 
         if self.mask is not None:
-            xlo = self.xlo[self.mask]
-            xhi = self.xhi[self.mask]
-            y = self.y[self.mask]
+            xlo = xlo[self.mask]
+            xhi = xhi[self.mask]
+            y = y[self.mask]
 
         shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
                               xlabel=self.xlabel, ylabel=self.ylabel,
@@ -454,6 +462,10 @@ class ARFPlot(shplot.HistogramPlot):
            in Angstrom instead of KeV (the default).
 
         """
+
+        if not isinstance(arf, (DataARF, ARF1D)):
+            raise IOErr(f"data set '{arf.name}' does not contain an ARF")
+
         self.xlo = arf.energ_lo
         self.xhi = arf.energ_hi
         self.y = arf.specresp
@@ -528,6 +540,10 @@ class RMFPlot(shplot.HistogramPlot):
            in Angstrom instead of KeV (the default).
 
         """
+
+        if not isinstance(rmf, (DataRMF, RMF1D)):
+            raise IOErr(f"data set '{rmf.name}' does not contain a RMF")
+
         # X access
         if rmf.e_min is None:
             self.x_lo = np.arange(rmf.offset, rmf.detchans + rmf.offset) - 0.5
@@ -588,7 +604,9 @@ class RMFPlot(shplot.HistogramPlot):
         prepare, overplot
 
         """
-        y_array = self.y
+
+        y_array = shplot.check_not_none(self.y)
+
         for n in range(self.n_lines):
             self.y = y_array[n, :]
             super().plot(
@@ -684,6 +702,10 @@ class OrderPlot(ModelHistogram):
 
     # Note: this does not accept a stat parameter.
     def prepare(self, data, model, orders=None, colors=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         self.orders = data.response_ids
 
         if orders is not None:
@@ -756,10 +778,15 @@ class OrderPlot(ModelHistogram):
             raise PlotErr("orderarrfail")
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+
+        xlo_a = shplot.check_not_none(self.xlo)
+        xhi_a = shplot.check_not_none(self.xhi)
+        y_a = shplot.check_not_none(self.y)
+        colors_a = self.colors  # this is not None by design
+
         default_color = self.histo_prefs['color']
         count = 0
-        for xlo, xhi, y, color in \
-                zip(self.xlo, self.xhi, self.y, self.colors):
+        for xlo, xhi, y, color in zip(xlo_a, xhi_a, y_a, colors_a):
             if count != 0:
                 overplot = True
                 self.histo_prefs['color'] = color
@@ -855,6 +882,10 @@ class DataIMGPlot(shplot.Image):
     x1 = None
 
     def prepare(self, img):
+
+        if not isinstance(img, DataIMG):
+            raise IOErr('notimage', img.name)
+
         # Apply filter and coordinate system
         #
         self.y = img.get_img()
@@ -908,8 +939,10 @@ class DataIMGPlot(shplot.Image):
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
 
-        super().plot(self.x0, self.x1, self.y, title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        aspect=self.aspect,
-                        overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
+        x0 = shplot.check_not_none(self.x0)
+        x1 = shplot.check_not_none(self.x1)
+        y = shplot.check_not_none(self.y)
+        super().plot(x0, x1, y, title=self.title, xlabel=self.xlabel,
+                     ylabel=self.ylabel, aspect=self.aspect,
+                     overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
