@@ -55,7 +55,7 @@ import contextlib
 import copy
 import logging
 import importlib
-from typing import Any, Literal, Optional, Sequence, Union
+from typing import Any, Literal, Optional, Sequence, TypeVar, Union
 
 import numpy as np
 
@@ -457,6 +457,40 @@ def display_fields(obj: Union[BasePlot, BaseHistogram, BaseContour],
     return "\n".join(fmt.format(*vals) for vals in out)
 
 
+T = TypeVar("T")
+
+
+def check_not_none(arg: Optional[T], method: str = "prepare") -> T:
+    """Ensure the argument is not None.
+
+    This is primarily for type-checking, which is why the input
+    argument is returned when it's not None.
+
+    Parameters
+    ----------
+    arg : T or None
+       The argument to check.
+    message : str
+       The method to be reported in the execption if arg is None.
+
+    Returns
+    -------
+    arg : T
+
+    Raises
+    ------
+    PlotErr
+       arg is None. The message argument is used to create the
+       text if the exception.
+
+    """
+
+    if arg is not None:
+        return arg
+
+    raise PlotErr(f"{method} has not been called")
+
+
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
 
@@ -603,6 +637,7 @@ class Contour(NoNewAttributesAfterInit):
         overcontour
 
         """
+
         opts = self._merge_settings(kwargs)
         backend.contour(x0, x1, y, title=title,
                         xlabel=xlabel, ylabel=ylabel,
@@ -713,6 +748,7 @@ class Image(NoNewAttributesAfterInit):
         backend.image(x0, x1, y,
                      overplot=overplot, clearwindow=clearwindow,
                      **opts)
+
 
 class Histogram(NoNewAttributesAfterInit):
     "Base class for histogram plots"
@@ -859,10 +895,11 @@ class BasePlot(Plot):
 
         """
 
-        super().plot(self.x, self.y, title=self.title,
-                     xlabel=self.xlabel, ylabel=self.ylabel,
-                     overplot=overplot, clearwindow=clearwindow,
-                     **kwargs)
+        x = check_not_none(self.x)
+        y = check_not_none(self.y)
+        super().plot(x, y, title=self.title, xlabel=self.xlabel,
+                     ylabel=self.ylabel, overplot=overplot,
+                     clearwindow=clearwindow, **kwargs)
 
 
 class BaseHistogram(Histogram):
@@ -958,7 +995,10 @@ class BaseHistogram(Histogram):
 
         """
 
-        super().plot(self.xlo, self.xhi, self.y, title=self.title,
+        xlo = check_not_none(self.xlo)
+        xhi = check_not_none(self.xhi)
+        y = check_not_none(self.y)
+        super().plot(xlo, xhi, y, title=self.title,
                      xlabel=self.xlabel, ylabel=self.ylabel,
                      overplot=overplot, clearwindow=clearwindow,
                      **kwargs)
@@ -1099,10 +1139,15 @@ class DataHistogramPlot(BaseHistogram):
 
         """
 
-        Histogram.plot(self, self.xlo, self.xhi, self.y,
-                       yerr=self.yerr, title=self.title,
-                       xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+        xlo = check_not_none(self.xlo)
+        xhi = check_not_none(self.xhi)
+        y = check_not_none(self.y)
+        Histogram.plot(self, xlo, xhi, y,
+                       # Note: the superclass does not recognize yerr
+                       yerr=self.yerr,
+                       title=self.title, xlabel=self.xlabel,
+                       ylabel=self.ylabel, overplot=overplot,
+                       clearwindow=clearwindow, **kwargs)
 
 
 class ModelHistogramPlot(BaseHistogram):
@@ -1677,11 +1722,12 @@ class DataPlot(BasePlot):
         # As we include the yerr and xerr fields we can not just call
         # super().plot.
         #
-        Plot.plot(self, self.x, self.y, yerr=self.yerr,
-                  xerr=self.xerr, title=self.title,
-                  xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow,
-                  **kwargs)
+        x = check_not_none(self.x)
+        y = check_not_none(self.y)
+        Plot.plot(self, x, y, yerr=self.yerr, xerr=self.xerr,
+                  title=self.title, xlabel=self.xlabel,
+                  ylabel=self.ylabel, overplot=overplot,
+                  clearwindow=clearwindow, **kwargs)
 
 
 class TracePlot(DataPlot):
@@ -1847,10 +1893,12 @@ class BaseContour(Contour):
 
         """
 
-        super().contour(self.x0, self.x1, self.y,
-                        levels=self.levels, title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        overcontour=overcontour,
+        x0 = check_not_none(self.x0)
+        x1 = check_not_none(self.x1)
+        y = check_not_none(self.y)
+        super().contour(x0, x1, y, levels=self.levels,
+                        title=self.title, xlabel=self.xlabel,
+                        ylabel=self.ylabel, overcontour=overcontour,
                         clearwindow=clearwindow, **kwargs)
 
 
@@ -3237,6 +3285,13 @@ class Confidence1D(DataPlot):
         self.yerr = None
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+
+        # This is to be done before the same checks are made in
+        # super().plot.
+        #
+        check_not_none(self.x, "calc")
+        check_not_none(self.y, "calc")
+
         if self.log:
             self.plot_prefs['xlog'] = True
 
@@ -3584,6 +3639,13 @@ class Confidence2D(DataContour, Point):
 
     # TODO: should this be overcontour rather than overplot?
     def contour(self, overplot=False, clearwindow=True, **kwargs):
+
+        # This is to be done before the same checks are made in
+        # super().contour.
+        #
+        check_not_none(self.x0, "calc")
+        check_not_none(self.x1, "calc")
+        check_not_none(self.y, "calc")
 
         if self.log[0]:
             self.contour_prefs['xlog'] = True

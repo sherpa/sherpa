@@ -40,7 +40,8 @@ from sherpa.data import Data1D, Data1DInt, Data2D
 from sherpa.models import basic
 import sherpa.plot
 from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr, PlotErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr, \
+    PlotErr
 
 
 _data_x = [10, 20, 40, 90]
@@ -1635,7 +1636,7 @@ def test_get_cdf_plot_empty(session):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_cdf_replot_no_data(session, requires_pylab):
+def test_plot_cdf_replot_no_data(session):
     """what does replot=True do for plot_cdf?
 
     The code doesn't check for this evantuality,
@@ -1646,8 +1647,7 @@ def test_plot_cdf_replot_no_data(session, requires_pylab):
 
     x = np.asarray([2, 8, 4, 6])
 
-    # error can depend on matplotlib version
-    with pytest.raises(ValueError):
+    with pytest.raises(PlotErr, match="prepare has not been called"):
         s.plot_cdf(x, replot=True)
 
 
@@ -1835,7 +1835,7 @@ def test_plot_pdf(session):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_pdf_replot_no_data(session, requires_pylab):
+def test_plot_pdf_replot_no_data(session):
     """what does replot=True do for plot_pdf?
 
     The code doesn't check for this evantuality,
@@ -1847,10 +1847,8 @@ def test_plot_pdf_replot_no_data(session, requires_pylab):
     x = np.asarray([2, 8, 4, 6])
 
     # check on the error so we know when the code has changed
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(PlotErr, match="prepare has not been called"):
         s.plot_pdf(x, replot=True)
-
-    assert "'NoneType' has no len" in str(exc.value)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -2365,36 +2363,18 @@ def test_get_model_component_plot_model(session):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_pylab_plot_scatter_empty_replot(session, requires_pylab):
+def test_pylab_plot_scatter_empty_replot(session):
     """plot_scatter with replot=False and no data
 
     Just check the current behavior
     """
 
-    from matplotlib import pyplot as plt
-
     s = session()
 
     x = np.arange(3)
     y = x + 5
-    s.plot_scatter(x, y, replot=True)
-
-    fig = plt.gcf()
-
-    assert len(fig.axes) == 1
-
-    ax = fig.axes[0]
-
-    assert ax.xaxis.get_label().get_text() == ''
-    assert ax.yaxis.get_label().get_text() == ''
-
-    assert len(ax.lines) == 1
-    line = ax.lines[0]
-
-    assert line.get_xdata() == [None]
-    assert line.get_ydata() == [None]
-
-    plt.close()
+    with pytest.raises(PlotErr, match="prepare has not been called"):
+        s.plot_scatter(x, y, replot=True)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -2444,8 +2424,7 @@ def test_pylab_plot_trace_empty_replot(session, requires_pylab):
 
     y = np.arange(100, 104)
 
-    # error can depend on matplotlib version
-    with pytest.raises(ValueError):
+    with pytest.raises(PlotErr, match="prepare has not been called"):
         s.plot_trace(y, replot=True)
 
 
