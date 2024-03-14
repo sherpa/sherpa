@@ -762,9 +762,29 @@ class DataHistogramPlot(HistogramPlot):
     "The preferences for the plot."
 
     def __init__(self):
-        self.xerr = None
         self.yerr = None
         super().__init__()
+
+    @property
+    def xerr(self):
+        """Return abs(xhi - xlow) / 2
+
+        The plotting backends actually calculate the xerr values
+        explicitly rather than use this field, so it is provided as a
+        property in case users need it.
+
+        .. versionchanged:: 4.16.1
+           This field is now a property.
+
+        """
+
+        if self.xlo is None or self.xhi is None:
+            return None
+
+        # As we do not (yet) require NumPy arrays, enforce it.
+        xlo = np.asarray(self.xlo)
+        xhi = np.asarray(self.xhi)
+        return np.abs(xhi - xlo) / 2
 
     def prepare(self, data, stat=None):
         """Create the data to plot
@@ -787,8 +807,8 @@ class DataHistogramPlot(HistogramPlot):
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
         #
-        (_, self.y, self.yerr, self.xerr, self.xlabel,
-         self.ylabel) = data.to_plot()
+        plot = data.to_plot()
+        (_, self.y, self.yerr, _, self.xlabel, self.ylabel) = plot
 
         self.xlo, self.xhi = data.get_indep(True)
 

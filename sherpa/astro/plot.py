@@ -128,8 +128,8 @@ class DataPHAPlot(shplot.DataHistogramPlot):
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
         #
-        (_, self.y, self.yerr, self.xerr, self.xlabel,
-         self.ylabel) = data.to_plot()
+        plot = data.to_plot()
+        (_, self.y, self.yerr, _, self.xlabel, self.ylabel) = plot
 
         if stat is not None:
             yerrorbars = self.histo_prefs.get('yerrorbars', True)
@@ -704,7 +704,7 @@ class OrderPlot(ModelHistogram):
             self.xlo = []
             self.xhi = []
             self.y = []
-            (xlo, y, yerr, xerr,
+            (xlo, y, yerr, _,
              self.xlabel, self.ylabel) = data.to_plot(model)
             y = y[1]
             if data.units != 'channel':
