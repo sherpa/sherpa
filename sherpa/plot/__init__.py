@@ -367,7 +367,7 @@ class Plot(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes)
         """
         self.plot_prefs = self.plot_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     @staticmethod
     def vline(x, ymin=0, ymax=1,
@@ -462,7 +462,7 @@ class Contour(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes)
         """
         self.contour_prefs = self.contour_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -499,7 +499,7 @@ class Point(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes)
         """
         self.point_prefs = self.point_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -550,7 +550,7 @@ class Image(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes.)
         """
         self.image_prefs = self.image_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -599,7 +599,7 @@ class Histogram(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes)
         """
         self.histo_prefs = self.histo_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -657,7 +657,7 @@ class HistogramPlot(Histogram):
         self.xlabel = None
         self.ylabel = None
         self.title = None
-        Histogram.__init__(self)
+        super().__init__()
 
     def __str__(self):
         xlo = self.xlo
@@ -871,7 +871,7 @@ class PDFPlot(HistogramPlot):
 
     def __init__(self):
         self.points = None
-        HistogramPlot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         points = self.points
@@ -968,7 +968,7 @@ class CDFPlot(Plot):
         self.xlabel = None
         self.ylabel = None
         self.title = None
-        Plot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x = self.x
@@ -1072,7 +1072,7 @@ class LRHistogram(HistogramPlot):
         self.ratios = None
         self.lr = None
         self.ppp = None
-        HistogramPlot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         ratios = self.ratios
@@ -1157,8 +1157,7 @@ class SplitPlot(Plot, Contour):
 
     def __init__(self, rows=2, cols=1):
         self.reset(rows, cols)
-        Plot.__init__(self)
-        Contour.__init__(self)
+        super().__init__()
 
     def __str__(self):
         return (('rows   = %s\n' +
@@ -1266,7 +1265,7 @@ class JointPlot(SplitPlot):
     """
 
     def __init__(self):
-        SplitPlot.__init__(self)
+        super().__init__()
 
     def plottop(self, plot, *args, overplot=False, clearwindow=True,
                 **kwargs):
@@ -1359,7 +1358,7 @@ class DataPlot(Plot):
         self.xlabel = None
         self.ylabel = None
         self.title = None
-        Plot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x = self.x
@@ -1567,7 +1566,7 @@ class DataContour(Contour):
         self.ylabel = None
         self.title = None
         self.levels = None
-        Contour.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x0 = self.x0
@@ -1685,7 +1684,7 @@ class ModelPlot(Plot):
         self.xlabel = None
         self.ylabel = None
         self.title = 'Model'
-        Plot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x = self.x
@@ -1829,7 +1828,7 @@ class SourcePlot(ModelPlot):
     """
 
     def __init__(self):
-        ModelPlot.__init__(self)
+        super().__init__()
         self.title = 'Source'
 
 
@@ -1921,7 +1920,7 @@ class ModelContour(Contour):
         self.ylabel = None
         self.title = 'Model'
         self.levels = None
-        Contour.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x0 = self.x0
@@ -1985,7 +1984,7 @@ class SourceContour(ModelContour):
     "Derived class for creating 2D model contours"
 
     def __init__(self):
-        ModelContour.__init__(self)
+        super().__init__()
         self.title = 'Source'
 
 
@@ -2039,7 +2038,7 @@ class FitPlot(Plot):
     def __init__(self):
         self.dataplot = None
         self.modelplot = None
-        Plot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         data_title = None
@@ -2123,7 +2122,7 @@ class FitContour(Contour):
     def __init__(self):
         self.datacontour = None
         self.modelcontour = None
-        Contour.__init__(self)
+        super().__init__()
 
     def __str__(self):
         data_title = None
@@ -2538,7 +2537,7 @@ class Confidence1D(DataPlot):
         self.parval = None
         self.stat = None
         self.numcores = None
-        DataPlot.__init__(self)
+        super().__init__()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -2788,7 +2787,7 @@ class Confidence2D(DataContour, Point):
         self.parval1 = None
         self.stat = None
         self.numcores = None
-        DataContour.__init__(self)
+        super().__init__()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -3181,7 +3180,7 @@ class IntervalProjection(Confidence1D):
 
     def __init__(self):
         self.fast = True
-        Confidence1D.__init__(self)
+        super().__init__()
 
     def prepare(self, fast=True, min=None, max=None, nloop=20,
                 delv=None, fac=1, log=False, numcores=None):
@@ -3377,7 +3376,7 @@ class RegionProjection(Confidence2D):
 
     def __init__(self):
         self.fast = True
-        Confidence2D.__init__(self)
+        super().__init__()
 
     def prepare(self, fast=True, min=None, max=None, nloop=(10, 10),
                 delv=None, fac=4, log=(False, False),
