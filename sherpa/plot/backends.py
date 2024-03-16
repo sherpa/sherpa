@@ -53,6 +53,8 @@ backend_indep_kwargs = {
 '''List of keyword argument and possible values allowed in all backends'''
 
 
+# DOC-NOTE: can xerr be asymmetric (i.e. be 2D)?
+#
 kwargs_doc = {'xerr': ['float or array-like, shape(N,) or shape(2, N)',
                        '''The errorbar sizes can be:
   - scalar: Symmetric +/- values for all data points.
@@ -417,6 +419,11 @@ class BaseBackend(metaclass=MetaBaseBackend):
            This backend is a non-functional dummy. The documentation is provided
            as a template only.
 
+        .. versionchanged:: 4.16.1
+           The `xerr` setting now matches the `yerr` setting and
+           represents the distance from the center to the edge,
+           rather than twice this value.
+
         Parameters
         ----------
         x : array-like or scalar number
@@ -424,6 +431,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
         y : array-like or scalar number
             y values, same dimension as `x`.
         {kwargs}
+
         """
         pass
 

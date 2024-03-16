@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023
+#  Copyright (C) 2023, 2024
 #  MIT
 #
 #
@@ -300,6 +300,8 @@ class BokehBackend(BasicBackend):
         # Use the color used for the data plot: should it
         # also be used for marker[face]color and ecolor?
         #
+        # NOTE: this ignores any xerr parameter.
+        #
         xmid = 0.5 * (xlo + xhi)
         xerr = (xhi - xlo) / 2 if xerrorbars else None
         yerr = yerr if yerrorbars else None
@@ -506,7 +508,6 @@ class BokehBackend(BasicBackend):
             objs.append(glyph)
 
         if xerrorbars and xerr is not None:
-            xerr = xerr / 2.
             source = ColumnDataSource({'x': np.atleast_1d(x),
                                        'y': np.atleast_1d(y),
                                        'lower': np.atleast_1d(x - xerr),

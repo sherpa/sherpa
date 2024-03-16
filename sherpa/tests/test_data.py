@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022
+#  Copyright (C) 2019 - 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -758,7 +758,7 @@ def test_data1d_get_xerr(data):
 
 @pytest.mark.parametrize("data", (Data1DInt, ), indirect=True)
 def test_data_1d_int_get_xerr(data):
-    numpy.testing.assert_array_equal(data.get_xerr(), [1] * X_ARRAY.size)
+    assert data.get_xerr() == pytest.approx([0.5] * X_ARRAY.size)
 
 
 @pytest.mark.parametrize("data", (Data1D, Data1DInt), indirect=True)
@@ -1455,7 +1455,7 @@ def test_data1dint_get_x_xerr():
     d = Data1DInt('data', xlos, xhis, ys)
 
     x = [3.5, 6.5, 11, 13.5, 15.5, 18.5, 22.5]
-    xerr = xhis - xlos
+    xerr = (xhis - xlos) / 2
     assert d.get_x() == pytest.approx(x)
     assert d.get_xerr() == pytest.approx(xerr)
 

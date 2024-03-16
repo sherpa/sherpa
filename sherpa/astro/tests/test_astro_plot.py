@@ -1140,7 +1140,7 @@ def test_data_model_plot_with_backend(all_plot_backends):
         fplot.plot()
 
 
-@pytest.mark.parametrize("units", ["channel", "energy", pytest.param("wavelength", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
 def test_pha_data_plot_xerr(units):
     """What is the xerr field for DataPHA data.
 
@@ -1155,8 +1155,12 @@ def test_pha_data_plot_xerr(units):
     dplot = aplot.DataPHAPlot()
     dplot.prepare(pha)
 
-    # XFAIL for wavelength this returns the energy xerr values!
-    assert dplot.xerr == pytest.approx(dplot.xhi - dplot.xlo)
+    if units == "wavelength":
+        xdiff = dplot.xlo - dplot.xhi
+    else:
+        xdiff = dplot.xhi - dplot.xlo
+
+    assert dplot.xerr == pytest.approx(xdiff / 2)
 
 
 @pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
@@ -1209,7 +1213,7 @@ def test_pha_model_plot_xerr(units):
                                  splot.RatioPlot,
                                  splot.DelchiPlot,
                                  splot.ChisqrPlot])
-@pytest.mark.parametrize("units", ["channel", "energy", pytest.param("wavelength", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
 def test_pha_resid_plot_xerr(cls, units):
     """What is the xerr field for DataPHA residual.
 
@@ -1232,9 +1236,17 @@ def test_pha_resid_plot_xerr(cls, units):
     rplot.prepare(pha, full_model, stat=stats.Chi2Gehrels())
 
     if units == "channel":
-        assert rplot.xerr == pytest.approx([1, 2, 1, 2, 2, 1, 1])
-    else:
-        assert rplot.xerr == pytest.approx([0.15, 0.15, 0.1, 0.2, 0.2, 0.1, 0.1])
-        # XFAIL: these values are in keV not Angstroms
-        if units == "wavelength":
-            assert False
+        xerr_chan = np.asarray([1, 2, 1, 2, 2, 1, 1]) / 2
+        assert rplot.xerr == pytest.approx(xerr_chan)
+        return
+
+    en_lo = np.asarray([0.5, 0.65, 0.8, 0.9, 1.1, 1.3, 1.4])
+    en_hi = np.asarray([0.65, 0.8, 0.9, 1.1, 1.3, 1.4, 1.5])
+
+    if units == "energy":
+        xerr_kev = (en_hi - en_lo) / 2
+        assert rplot.xerr == pytest.approx(xerr_kev)
+        return
+
+    xerr_lam = (hc / en_lo - hc / en_hi) / 2
+    assert rplot.xerr == pytest.approx(xerr_lam)

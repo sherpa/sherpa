@@ -692,7 +692,7 @@ def test_histogram_returns_xerr():
     xlo = numpy.asarray(xlo)
     xhi = numpy.asarray(xhi)
 
-    assert dp.xerr == pytest.approx(xhi - xlo)
+    assert dp.xerr == pytest.approx((xhi - xlo) / 2)
 
     # check xerr is not in the str output
     #
