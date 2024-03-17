@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2009, 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -33,7 +33,7 @@ import logging
 import importlib
 from typing import Optional
 
-import numpy
+import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit, erf, \
     bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
@@ -62,7 +62,7 @@ config.read(get_config())
 warning = logging.getLogger(__name__).warning
 
 # TODO: why is this module globally changing the invalid mode of NumPy?
-_ = numpy.seterr(invalid='ignore')
+_ = np.seterr(invalid='ignore')
 
 backend = None
 '''Currently active backend module for plotting.'''
@@ -645,18 +645,18 @@ class HistogramPlot(Histogram):
     def __str__(self):
         xlo = self.xlo
         if self.xlo is not None:
-            xlo = numpy.array2string(numpy.asarray(self.xlo), separator=',',
-                                     precision=4, suppress_small=False)
+            xlo = np.array2string(np.asarray(self.xlo), separator=',',
+                                  precision=4, suppress_small=False)
 
         xhi = self.xhi
         if self.xhi is not None:
-            xhi = numpy.array2string(numpy.asarray(self.xhi), separator=',',
-                                     precision=4, suppress_small=False)
+            xhi = np.array2string(np.asarray(self.xhi), separator=',',
+                                  precision=4, suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(numpy.asarray(self.y), separator=',',
-                                   precision=4, suppress_small=False)
+            y = np.array2string(np.asarray(self.y), separator=',',
+                                precision=4, suppress_small=False)
 
         return (('xlo    = %s\n' +
                  'xhi    = %s\n' +
@@ -690,8 +690,8 @@ class HistogramPlot(Histogram):
             return None
 
         # As we do not (yet) require NumPy arrays, enforce it.
-        xlo = numpy.asarray(self.xlo)
-        xhi = numpy.asarray(self.xhi)
+        xlo = np.asarray(self.xlo)
+        xhi = np.asarray(self.xhi)
         return (xlo + xhi) / 2
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
@@ -859,9 +859,9 @@ class PDFPlot(HistogramPlot):
     def __str__(self):
         points = self.points
         if self.points is not None:
-            points = numpy.array2string(numpy.asarray(self.points),
-                                        separator=',', precision=4,
-                                        suppress_small=False)
+            points = np.array2string(np.asarray(self.points),
+                                     separator=',', precision=4,
+                                     suppress_small=False)
 
         return ('points = %s\n' % (points) + HistogramPlot.__str__(self))
 
@@ -892,7 +892,7 @@ class PDFPlot(HistogramPlot):
         """
 
         self.points = points
-        self.y, xx = numpy.histogram(points, bins=bins, density=normed)
+        self.y, xx = np.histogram(points, bins=bins, density=normed)
         self.xlo = xx[:-1]
         self.xhi = xx[1:]
         self.ylabel = "probability density"
@@ -956,17 +956,17 @@ class CDFPlot(Plot):
     def __str__(self):
         x = self.x
         if self.x is not None:
-            x = numpy.array2string(self.x, separator=',', precision=4,
-                                   suppress_small=False)
+            x = np.array2string(self.x, separator=',', precision=4,
+                                suppress_small=False)
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         points = self.points
         if self.points is not None:
-            points = numpy.array2string(self.points, separator=',',
-                                        precision=4, suppress_small=False)
+            points = np.array2string(self.points, separator=',',
+                                     precision=4, suppress_small=False)
 
         return f"""points = {points}
 x      = {x}
@@ -1000,12 +1000,12 @@ plot_prefs = {self.plot_prefs}"""
         plot
         """
 
-        self.points = numpy.asarray(points)
-        self.x = numpy.sort(points)
+        self.points = np.asarray(points)
+        self.x = np.sort(points)
         (self.median, self.lower,
          self.upper) = get_error_estimates(self.x, True)
         xsize = len(self.x)
-        self.y = (numpy.arange(xsize) + 1.0) / xsize
+        self.y = (np.arange(xsize) + 1.0) / xsize
         self.xlabel = xlabel
         self.ylabel = "p(<={})".format(xlabel)
         self.title = "CDF: {}".format(name)
@@ -1060,9 +1060,9 @@ class LRHistogram(HistogramPlot):
     def __str__(self):
         ratios = self.ratios
         if self.ratios is not None:
-            ratios = numpy.array2string(numpy.asarray(self.ratios),
-                                        separator=',', precision=4,
-                                        suppress_small=False)
+            ratios = np.array2string(np.asarray(self.ratios),
+                                     separator=',', precision=4,
+                                     suppress_small=False)
 
         return '\n'.join(['ratios = %s' % ratios,
                           'lr = %s' % str(self.lr),
@@ -1077,7 +1077,7 @@ class LRHistogram(HistogramPlot):
 
         self.ppp = float(ppp)
         self.lr = float(lr)
-        y = numpy.asarray(ratios)
+        y = np.asarray(ratios)
         self.ratios = y
         self.xlo, self.xhi = dataspace1d(y.min(), y.max(),
                                          numbins=bins + 1)[:2]
@@ -1165,10 +1165,10 @@ class SplitPlot(Plot, Contour):
             self._cleared_window = True
 
     def _reset_used(self):
-        self._used = numpy.zeros((self.rows, self.cols), numpy.bool_)
+        self._used = np.zeros((self.rows, self.cols), np.bool_)
 
     def _next_subplot(self):
-        row, col = numpy.where(~self._used)
+        row, col = np.where(~self._used)
         if row.size != 0:
             row, col = row[0], col[0]
         else:
@@ -1347,23 +1347,23 @@ class DataPlot(Plot):
     def __str__(self):
         x = self.x
         if self.x is not None:
-            x = numpy.array2string(self.x, separator=',', precision=4,
-                                   suppress_small=False)
+            x = np.array2string(self.x, separator=',', precision=4,
+                                suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         yerr = self.yerr
         if self.yerr is not None:
-            yerr = numpy.array2string(self.yerr, separator=',', precision=4,
-                                      suppress_small=False)
+            yerr = np.array2string(self.yerr, separator=',', precision=4,
+                                   suppress_small=False)
 
         xerr = self.xerr
         if self.xerr is not None:
-            xerr = numpy.array2string(self.xerr, separator=',', precision=4,
-                                      suppress_small=False)
+            xerr = np.array2string(self.xerr, separator=',', precision=4,
+                                   suppress_small=False)
 
         return (('x      = %s\n' +
                  'y      = %s\n' +
@@ -1461,7 +1461,7 @@ class TracePlot(DataPlot):
         --------
         plot
         """
-        self.x = numpy.arange(len(points), dtype=SherpaFloat)
+        self.x = np.arange(len(points), dtype=SherpaFloat)
         self.y = points
         self.xlabel = "iteration"
         self.ylabel = name
@@ -1487,8 +1487,8 @@ class ScatterPlot(DataPlot):
         --------
         plot
         """
-        self.x = numpy.asarray(x, dtype=SherpaFloat)
-        self.y = numpy.asarray(y, dtype=SherpaFloat)
+        self.x = np.asarray(x, dtype=SherpaFloat)
+        self.y = np.asarray(y, dtype=SherpaFloat)
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.title = "Scatter: {}".format(name)
@@ -1555,18 +1555,18 @@ class DataContour(Contour):
     def __str__(self):
         x0 = self.x0
         if self.x0 is not None:
-            x0 = numpy.array2string(self.x0, separator=',', precision=4,
-                                    suppress_small=False)
+            x0 = np.array2string(self.x0, separator=',', precision=4,
+                                 suppress_small=False)
 
         x1 = self.x1
         if self.x1 is not None:
-            x1 = numpy.array2string(self.x1, separator=',', precision=4,
-                                    suppress_small=False)
+            x1 = np.array2string(self.x1, separator=',', precision=4,
+                                 suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         return (('x0     = %s\n' +
                  'x1     = %s\n' +
@@ -1673,23 +1673,23 @@ class ModelPlot(Plot):
     def __str__(self):
         x = self.x
         if self.x is not None:
-            x = numpy.array2string(self.x, separator=',', precision=4,
-                                   suppress_small=False)
+            x = np.array2string(self.x, separator=',', precision=4,
+                                suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         yerr = self.yerr
         if self.yerr is not None:
-            yerr = numpy.array2string(self.yerr, separator=',', precision=4,
-                                      suppress_small=False)
+            yerr = np.array2string(self.yerr, separator=',', precision=4,
+                                   suppress_small=False)
 
         xerr = self.xerr
         if self.xerr is not None:
-            xerr = numpy.array2string(self.xerr, separator=',', precision=4,
-                                      suppress_small=False)
+            xerr = np.array2string(self.xerr, separator=',', precision=4,
+                                   suppress_small=False)
 
         return (('x      = %s\n' +
                  'y      = %s\n' +
@@ -1854,7 +1854,7 @@ class ComponentTemplateSourcePlot(ComponentSourcePlot):
         self.x = model.get_x()
         self.y = model.get_y()
 
-        if numpy.iterable(data.mask):
+        if np.iterable(data.mask):
             x = data.to_plot()[0]
             mask = (self.x > x.min()) & (self.x <= x.max())
             self.x = self.x[mask]
@@ -1909,18 +1909,18 @@ class ModelContour(Contour):
     def __str__(self):
         x0 = self.x0
         if self.x0 is not None:
-            x0 = numpy.array2string(self.x0, separator=',', precision=4,
-                                    suppress_small=False)
+            x0 = np.array2string(self.x0, separator=',', precision=4,
+                                 suppress_small=False)
 
         x1 = self.x1
         if self.x1 is not None:
-            x1 = numpy.array2string(self.x1, separator=',', precision=4,
-                                    suppress_small=False)
+            x1 = np.array2string(self.x1, separator=',', precision=4,
+                                 suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         return (('x0     = %s\n' +
                  'x1     = %s\n' +
@@ -2361,9 +2361,9 @@ class RatioPlot(ModelPlot):
     "The preferences for the plot."
 
     def _calc_ratio(self, ylist):
-        data = numpy.array(ylist[0])
-        model = numpy.asarray(ylist[1])
-        bad = numpy.where(model == 0.0)
+        data = np.array(ylist[0])
+        model = np.asarray(ylist[1])
+        bad = np.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
         return data / model
@@ -2409,9 +2409,9 @@ class RatioContour(ModelContour):
     "The preferences for the plot."
 
     def _calc_ratio(self, ylist):
-        data = numpy.array(ylist[0])
-        model = numpy.asarray(ylist[1])
-        bad = numpy.where(model == 0.0)
+        data = np.array(ylist[0])
+        model = np.asarray(ylist[1])
+        bad = np.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
         return data / model
@@ -2435,7 +2435,7 @@ def calc_par_range(minval: float,
                    maxval: float,
                    nloop: int,
                    delv: Optional[float] = None,
-                   log: Optional[bool] = False) -> numpy.ndarray:
+                   log: Optional[bool] = False) -> np.ndarray:
     """Calculate the parameter range to use.
 
     This assumes that the arguments have already been checked for
@@ -2471,7 +2471,7 @@ def calc_par_range(minval: float,
     if delv is not None:
         # This assumes that delv > eps, but this should be safe.
         #
-        eps = numpy.finfo(numpy.float32).eps
+        eps = np.finfo(np.float32).eps
         maxval = maxval + eps
 
     if log:
@@ -2479,13 +2479,13 @@ def calc_par_range(minval: float,
             raise ConfidenceErr('badarg', 'Log scale',
                                 'on positive boundaries')
 
-        minval = numpy.log10(minval)
-        maxval = numpy.log10(maxval)
+        minval = np.log10(minval)
+        maxval = np.log10(maxval)
 
     if delv is None:
-        x = numpy.linspace(minval, maxval, nloop)
+        x = np.linspace(minval, maxval, nloop)
     else:
-        x = numpy.arange(minval, maxval, delv)
+        x = np.arange(minval, maxval, delv)
 
     if log:
         x = 10**x
@@ -2537,13 +2537,13 @@ class Confidence1D(DataPlot):
     def __str__(self):
         x = self.x
         if self.x is not None:
-            x = numpy.array2string(self.x, separator=',', precision=4,
-                                   suppress_small=False)
+            x = np.array2string(self.x, separator=',', precision=4,
+                                suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         return (f'x      = {x}\n' +
                 f'y      = {y}\n' +
@@ -2625,10 +2625,10 @@ class Confidence1D(DataPlot):
 
         # Validate the values first (as much as we can).
         #
-        if self.min is not None and not numpy.isscalar(self.min):
+        if self.min is not None and not np.isscalar(self.min):
             raise ConfidenceErr('badarg', 'Parameter limits', 'scalars')
 
-        if self.max is not None and not numpy.isscalar(self.max):
+        if self.max is not None and not np.isscalar(self.max):
             raise ConfidenceErr('badarg', 'Parameter limits', 'scalars')
 
         if self.nloop <= 1:
@@ -2652,17 +2652,17 @@ class Confidence1D(DataPlot):
             if self.min is None:
                 self.min = par.min
                 minval = r.parmins[index]
-                if minval is not None and not numpy.isnan(minval):
+                if minval is not None and not np.isnan(minval):
                     self.min = par.val + minval
 
             if self.max is None:
                 self.max = par.max
                 maxval = r.parmaxes[index]
-                if maxval is not None and not numpy.isnan(maxval):
+                if maxval is not None and not np.isnan(maxval):
                     self.max = par.val + maxval
 
             v = (self.max + self.min) / 2.
-            dv = numpy.fabs(v - self.min)
+            dv = np.fabs(v - self.min)
             self.min = v - self.fac * dv
             self.max = v + self.fac * dv
 
@@ -2784,18 +2784,18 @@ class Confidence2D(DataContour, Point):
     def __str__(self):
         x0 = self.x0
         if self.x0 is not None:
-            x0 = numpy.array2string(self.x0, separator=',', precision=4,
-                                    suppress_small=False)
+            x0 = np.array2string(self.x0, separator=',', precision=4,
+                                 suppress_small=False)
 
         x1 = self.x1
         if self.x1 is not None:
-            x1 = numpy.array2string(self.x1, separator=',', precision=4,
-                                    suppress_small=False)
+            x1 = np.array2string(self.x1, separator=',', precision=4,
+                                 suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         return (f'x0      = {x0}\n' +
                 f'x1      = {x1}\n' +
@@ -2900,14 +2900,14 @@ class Confidence2D(DataContour, Point):
             if opt and value is None:
                 return None
 
-            if numpy.isscalar(value):
+            if np.isscalar(value):
                 raise ConfidenceErr('badarg', pname, 'a list')
 
             if len(value) != 2:
                 raise ConfidenceErr('badarg', pname, 'a list of size 2')
 
             # Ensure we return an ndarray
-            return numpy.asarray(value)
+            return np.asarray(value)
 
         # Issue #1093 points out that if min or max is a tuple we can
         # have a problem, as below the code can assign to an element
@@ -2938,11 +2938,11 @@ class Confidence2D(DataContour, Point):
         nloop = check2(self.nloop, "Nloop parameter", opt=False)
         delv = check2(self.delv, "delv parameter")
 
-        if numpy.any(nloop <= 1):
+        if np.any(nloop <= 1):
             raise ConfidenceErr('badarg', 'Nloop parameter',
                                 'a list with elements > 1')
 
-        if delv is not None and numpy.any(delv <= 0):
+        if delv is not None and np.any(delv <= 0):
             raise ConfidenceErr('badarg', 'delv parameter',
                                 'a list with elements > 0')
 
@@ -2954,12 +2954,12 @@ class Confidence2D(DataContour, Point):
 
         if self.levels is None:
             stat = self.stat
-            if self.sigma is None or numpy.isscalar(self.sigma):
+            if self.sigma is None or np.isscalar(self.sigma):
                 raise ConfidenceErr('needlist', 'sigma bounds')
 
-            sigma = numpy.asarray(self.sigma)
-            lvls = stat - (2. * numpy.log(1. - erf(sigma / numpy.sqrt(2.))))
-            self.levels = numpy.asarray(lvls, dtype=SherpaFloat)
+            sigma = np.asarray(self.sigma)
+            lvls = stat - (2. * np.log(1. - erf(sigma / np.sqrt(2.))))
+            self.levels = np.asarray(lvls, dtype=SherpaFloat)
 
         if self.min is None or self.max is None:
             oldestmethod = fit.estmethod
@@ -2972,35 +2972,35 @@ class Confidence2D(DataContour, Point):
             index1 = list(r.parnames).index(par1.fullname)
 
             if self.min is None:
-                self.min = numpy.array([par0.min, par1.min])
+                self.min = np.array([par0.min, par1.min])
                 min0 = r.parmins[index0]
                 min1 = r.parmins[index1]
 
-                if min0 is not None and not numpy.isnan(min0):
+                if min0 is not None and not np.isnan(min0):
                     self.min[0] = par0.val + min0
 
-                if min1 is not None and not numpy.isnan(min1):
+                if min1 is not None and not np.isnan(min1):
                     self.min[1] = par1.val + min1
 
             if self.max is None:
-                self.max = numpy.array([par0.max, par1.max])
+                self.max = np.array([par0.max, par1.max])
                 max0 = r.parmaxes[index0]
                 max1 = r.parmaxes[index1]
 
-                if max0 is not None and not numpy.isnan(max0):
+                if max0 is not None and not np.isnan(max0):
                     self.max[0] = par0.val + max0
 
-                if max1 is not None and not numpy.isnan(max1):
+                if max1 is not None and not np.isnan(max1):
                     self.max[1] = par1.val + max1
 
             # This assumes that self.min/max are ndarray
             v = (self.max + self.min) / 2.
-            dv = numpy.fabs(v - self.min)
+            dv = np.fabs(v - self.min)
             self.min = v - self.fac * dv
             self.max = v + self.fac * dv
 
-        hmin = numpy.array([par0.min, par1.min])
-        hmax = numpy.array([par0.max, par1.max])
+        hmin = np.array([par0.min, par1.min])
+        hmax = np.array([par0.max, par1.max])
 
         for i in [0, 1]:
             # check user limits for errors
@@ -3028,11 +3028,11 @@ class Confidence2D(DataContour, Point):
         # plotting may care (but at least self.x0 and self.x1 should
         # match the ordering of self.y).
         #
-        x0g, x1g = numpy.meshgrid(x0, x1)
+        x0g, x1g = np.meshgrid(x0, x1)
         self.x0 = x0g.flatten()
         self.x1 = x1g.flatten()
 
-        return numpy.array([self.x0, self.x1]).T
+        return np.array([self.x0, self.x1]).T
 
     def calc(self, fit, par0, par1):
         """Evaluate the statistic for the parameter range.
@@ -3222,7 +3222,7 @@ class IntervalProjection(Confidence1D):
 
             worker = IntervalProjectionWorker(par, fit, otherpars)
             res = parallel_map(worker, xvals, self.numcores)
-            self.y = numpy.asarray(res)
+            self.y = np.asarray(res)
 
         finally:
             # Set back data that we changed
@@ -3290,7 +3290,7 @@ class IntervalUncertainty(Confidence1D):
 
             worker = IntervalUncertaintyWorker(par, fit)
             res = parallel_map(worker, xvals, self.numcores)
-            self.y = numpy.asarray(res)
+            self.y = np.asarray(res)
 
         finally:
             # Set back data that we changed
@@ -3419,7 +3419,7 @@ class RegionProjection(Confidence2D):
 
             worker = RegionProjectionWorker(par0, par1, fit, otherpars)
             results = parallel_map(worker, grid, self.numcores)
-            self.y = numpy.asarray(results)
+            self.y = np.asarray(results)
 
         finally:
             # Set back data after we changed it
@@ -3491,7 +3491,7 @@ class RegionUncertainty(Confidence2D):
 
             worker = RegionUncertaintyWorker(par0, par1, fit)
             result = parallel_map(worker, grid, self.numcores)
-            self.y = numpy.asarray(result)
+            self.y = np.asarray(result)
 
         finally:
             # Set back data after we changed it
