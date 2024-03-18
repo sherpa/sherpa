@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -205,7 +205,7 @@ def test_sourceplot(caplog, make_basic_datapha):
 
 def test_sourceplot_filtered(caplog, make_basic_datapha):
     """Filtering only changes the mask attribute"""
-    
+
     data = make_basic_datapha
     data.units = "energy"
 
@@ -343,7 +343,7 @@ def test_sourceplot_wavelength(caplog, make_basic_datapha):
 
 def test_sourceplot_wavelength_filtered(caplog, make_basic_datapha):
     """Filtering only changes the mask attribute"""
-    
+
     data = make_basic_datapha
     data.units = "wave"
 
@@ -576,6 +576,7 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
 
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
 
     # can we access the "pseudo" x attribute?
     assert plot.x[0] > plot.x[-1]
@@ -618,6 +619,7 @@ def test_modelphahistogram_prepare_wavelength(make_data_path):
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
     assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
     assert np.all(plot.y > 0)
     assert plot.y.size == 9
 
@@ -653,6 +655,7 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
     assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
     assert np.all(plot.y > 0)
     assert plot.y.size == 1090
 
