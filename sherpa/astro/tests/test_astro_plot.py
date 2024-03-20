@@ -30,7 +30,9 @@ from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.plot import SourcePlot, ComponentSourcePlot, \
     DataPHAPlot, ModelPHAHistogram, ModelHistogram, OrderPlot, \
-    EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
+    EnergyFluxHistogram, PhotonFluxHistogram, _check_hist_bins, \
+    BkgModelPHAHistogram, BkgModelHistogram, BkgDataPlot, \
+    ComponentModelPlot, ARFPlot, RMFPlot
 from sherpa.astro import plot as aplot
 from sherpa.astro import hc
 from sherpa.data import Data1D
@@ -1250,3 +1252,118 @@ def test_pha_resid_plot_xerr(cls, units):
 
     xerr_lam = (hc / en_lo - hc / en_hi) / 2
     assert rplot.xerr == pytest.approx(xerr_lam)
+
+
+@pytest.mark.parametrize("cls", [DataPHAPlot, BkgDataPlot,
+                                 ])
+def test_pha_data_fails_not_pha(cls):
+    """Check if error out with an invalid data message for Data classes"""
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    plotobj = cls()
+
+    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'units'"):
+        plotobj.prepare(d, stat=stats.LeastSq())
+
+
+@pytest.mark.parametrize("cls", [ModelPHAHistogram,
+                                 BkgModelPHAHistogram,
+                                 ComponentSourcePlot])
+def test_pha_model_checks_not_pha(cls):
+    """Check if error out with an invalid data message for Model classes"""
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    m = Const1D("mdl")
+    plotobj = cls()
+
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
+        plotobj.prepare(d, m, stat=stats.LeastSq())
+
+
+@pytest.mark.parametrize("cls", [ModelHistogram,
+                                 BkgModelHistogram,
+                                 ComponentModelPlot])
+def test_pha_model_fails_not_pha(cls):
+    """Check if error out with an invalid data message for Model classes
+
+    These should get merged into test_pha_model_checks_pha
+    """
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    m = Const1D("mdl")
+    plotobj = cls()
+
+    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'grouped'"):
+        plotobj.prepare(d, m, stat=stats.LeastSq())
+
+
+@pytest.mark.parametrize("cls", [SourcePlot])
+def test_pha_model_no_stat_checks_not_pha(cls):
+    """Check if error out with an invalid data message for Model classes
+
+    These classes do not take a stat argument for the prepare method.
+    """
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    m = Const1D("mdl")
+    plotobj = cls()
+
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
+        plotobj.prepare(d, m)
+
+
+@pytest.mark.parametrize("cls", [OrderPlot])
+def test_pha_model_no_stat_fails_not_pha(cls):
+    """Check if error out with an invalid data message for Model classes
+
+    These classes do not take a stat argument for the prepare method.
+    """
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    m = Const1D("mdl")
+    plotobj = cls()
+
+    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'response_ids'"):
+        plotobj.prepare(d, m)
+
+
+def test_arf_checks_arf():
+    """Do we ensure it's an ARF?"""
+
+    plotobj = ARFPlot()
+    d = Data1D("x", [1, 2], [2, 3])
+
+    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'energ_lo'"):
+        plotobj.prepare(arf=d)
+
+
+def test_arf_checks_data_is_pha():
+    """Do we ensure ARF is sent a DataPHA object?"""
+
+    plotobj = ARFPlot()
+    arf = DataARF("arf", np.asarray([1, 2]), np.asarray([2, 3]), [100, 200])
+    d = Data1D("not-a-pha", [1, 2, 3], [2, 3, 4])
+
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
+        plotobj.prepare(arf=arf, data=d)
+
+
+def test_rmf_checks_arf():
+    """Do we ensure it's an RMF?"""
+
+    plotobj = RMFPlot()
+    d = Data1D("x", [1, 2], [2, 3])
+
+    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'e_min'"):
+        plotobj.prepare(rmf=d)
+
+
+def test_rmf_checks_data_is_pha():
+    """Do we ensure RMF is sent a DataPHA object?"""
+
+    plotobj = RMFPlot()
+    rmf = create_delta_rmf(np.asarray([1, 2]), np.asarray([2, 3]))
+    d = Data1D("x", [1, 2, 3], [2, 3, 4])
+
+    # At the moment there is no error check.
+    plotobj.prepare(rmf=rmf, data=d)
