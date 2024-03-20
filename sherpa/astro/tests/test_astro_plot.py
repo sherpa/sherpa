@@ -1333,5 +1333,5 @@ def test_rmf_checks_data_is_pha():
     rmf = create_delta_rmf(np.asarray([1, 2]), np.asarray([2, 3]))
     d = Data1D("x", [1, 2, 3], [2, 3, 4])
 
-    # At the moment there is no error check.
-    plotobj.prepare(rmf=rmf, data=d)
+    with pytest.raises(IOErr, match="data set 'x' does not contain a PHA spectrum"):
+        plotobj.prepare(rmf=rmf, data=d)
