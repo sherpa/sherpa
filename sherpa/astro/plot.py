@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015, 2016, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,16 +25,15 @@ Classes for plotting, analysis of astronomical data sets
 import logging
 
 import numpy as np
-from numpy import iterable, array2string, asarray
 
-from sherpa.models.basic import Delta1D
+from sherpa.astro import hc
 from sherpa.astro.data import DataPHA
-from sherpa import plot as shplot
 from sherpa.astro.utils import bounds_check
-from sherpa.utils.err import PlotErr, IOErr
+from sherpa.models.basic import Delta1D
+from sherpa import plot as shplot
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
-from sherpa.astro import hc
+from sherpa.utils.err import PlotErr, IOErr
 
 warning = logging.getLogger(__name__).warning
 
@@ -453,7 +452,7 @@ class ARFPlot(shplot.HistogramPlot):
 
         if data is not None:
             if not isinstance(data, DataPHA):
-                raise PlotErr('notpha', data.name)
+                raise IOErr('notpha', data.name)
             if data.units == "wavelength":
                 self.xlabel = 'Wavelength (Angstrom)'
                 self.xlo = hc / self.xlo
@@ -671,18 +670,19 @@ class OrderPlot(ModelHistogram):
         self.use_default_colors = True
         super().__init__()
 
+    # Note: this does not accept a stat parameter.
     def prepare(self, data, model, orders=None, colors=None):
         self.orders = data.response_ids
 
         if orders is not None:
-            if iterable(orders):
+            if np.iterable(orders):
                 self.orders = list(orders)
             else:
                 self.orders = [orders]
 
         if colors is not None:
             self.use_default_colors = False
-            if iterable(colors):
+            if np.iterable(colors):
                 self.colors = list(colors)
             else:
                 self.colors = [colors]
@@ -777,20 +777,20 @@ class FluxHistogram(ModelHistogram):
     def __str__(self):
         vals = self.modelvals
         if self.modelvals is not None:
-            vals = array2string(asarray(self.modelvals), separator=',',
-                                precision=4, suppress_small=False)
+            vals = np.array2string(np.asarray(self.modelvals), separator=',',
+                                   precision=4, suppress_small=False)
 
         clip = self.clipped
         if self.clipped is not None:
             # Could convert to boolean, but it is surprising for
             # anyone trying to access the clipped field
-            clip = array2string(asarray(self.clipped), separator=',',
-                                precision=4, suppress_small=False)
+            clip = np.array2string(np.asarray(self.clipped), separator=',',
+                                   precision=4, suppress_small=False)
 
         flux = self.flux
         if self.flux is not None:
-            flux = array2string(asarray(self.flux), separator=',',
-                                precision=4, suppress_small=False)
+            flux = np.array2string(np.asarray(self.flux), separator=',',
+                                   precision=4, suppress_small=False)
 
         return '\n'.join([f'modelvals = {vals}',
                           f'clipped = {clip}',
@@ -813,7 +813,7 @@ class FluxHistogram(ModelHistogram):
 
         """
 
-        fluxes = asarray(fluxes)
+        fluxes = np.asarray(fluxes)
         y = fluxes[:, 0]
         self.flux = y
         self.modelvals = fluxes[:, 1:-1]
