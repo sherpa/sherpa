@@ -27,7 +27,8 @@ import logging
 import numpy as np
 
 from sherpa.astro import hc
-from sherpa.astro.data import DataPHA
+from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import bounds_check
 from sherpa.models.basic import Delta1D
 from sherpa import plot as shplot
@@ -437,11 +438,16 @@ class ARFPlot(shplot.HistogramPlot):
         arf :
            The ARF to plot
         data : DataPHA instance, optional
-           The `units` attribute of this object is used
-           to determine whether the X axis should be
-           in Angstrom instead of KeV (the default).
+           The `units` attribute of this object is used to determine
+           whether the X axis should be in Angstrom instead of KeV
+           (the default). If the units setting is "channel" then the
+           X axis is shown using keV.
 
         """
+
+        if not isinstance(arf, (DataARF, ARF1D)):
+            raise IOErr(f"data set '{arf.name}' does not contain an ARF")
+
         self.xlo = arf.energ_lo
         self.xhi = arf.energ_hi
         self.y = arf.specresp
@@ -450,13 +456,19 @@ class ARFPlot(shplot.HistogramPlot):
         self.xlabel = arf.get_xlabel()
         self.ylabel = arf.get_ylabel()
 
-        if data is not None:
-            if not isinstance(data, DataPHA):
-                raise IOErr('notpha', data.name)
-            if data.units == "wavelength":
-                self.xlabel = 'Wavelength (Angstrom)'
-                self.xlo = hc / self.xlo
-                self.xhi = hc / self.xhi
+        if data is None:
+            return
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        # There is no sensible X axis when data.units is channel, so
+        # leave as an energy. The alternative is to error out.
+        #
+        if data.units == "wavelength":
+            self.xlabel = 'Wavelength (Angstrom)'
+            self.xlo = hc / arf.energ_hi
+            self.xhi = hc / arf.energ_lo
 
 
 class RMFPlot(shplot.HistogramPlot):
@@ -465,6 +477,12 @@ class RMFPlot(shplot.HistogramPlot):
     A full RMF is a matrix that is hard to visualize.
     Here, we select a few specific energies and show
     the response function for those energies as histograms.
+
+    .. versionchanged:: 4.16.1
+       The plot will now display with the analysis setting of the data
+       argument sent to `prepare`. Previously it would always use
+       energies for the X axis.
+
     """
 
    # Because this derived from NoNewAttributesAfterInit we need to
@@ -491,7 +509,6 @@ class RMFPlot(shplot.HistogramPlot):
     rmf_plot_prefs = shplot.basicbackend.get_rmf_plot_defaults()
     'Plot preferences'
 
-
     # TODO: Make that a plot preference
     # How many monochromatic lines to use
     n_lines = 5
@@ -511,24 +528,51 @@ class RMFPlot(shplot.HistogramPlot):
         RMF :
            The RMF to plot
         data : DataPHA instance, optional
-           The `units` attribute of this object is used
-           to determine whether the X axis should be
-           in Angstrom instead of KeV (the default).
+           The `units` attribute of this object is used to determine
+           whether the X axis should be in Angstrom or channels,
+           instead of KeV (the default).
 
         """
-        # X access
-        if rmf.e_min is None:
-            self.x_lo = np.arange(rmf.offset, rmf.detchans + rmf.offset) - 0.5
-            self.x_hi = self.x_lo + 1
-            self.xlabel = 'Channel'
+
+        if not isinstance(rmf, (DataRMF, RMF1D)):
+            raise IOErr(f"data set '{rmf.name}' does not contain a RMF")
+
+        # X access: unlike the ARF case it is possible to display in
+        # channel units here.
+        #
+        if data is not None:
+            if not isinstance(data, DataPHA):
+                raise IOErr('notpha', data.name)
+
+            units = data.units
+        elif rmf.e_min is not None:
+            units = "energy"
         else:
+            units = "channel"
+
+        # Assume that if the units are not channel then the RMF
+        # contains the needed data.
+        #
+        if units == "energy":
             self.xlo = rmf.e_min
             self.xhi = rmf.e_max
-            self.xlabel = 'Energy (keV)'
+            self.xlabel = "Energy (keV)"
 
-        # TODO copy ARFPlot logic to decide if x axis should be in wavelength
+        elif units == "wavelength":
+            self.xlo = hc / rmf.e_max
+            self.xhi = hc / rmf.e_min
+            self.xlabel = "Wavelength (Angstrom)"
 
-        # for now let's just create log-spaced energies
+        else:
+            self.xlo = np.arange(rmf.offset, rmf.detchans + rmf.offset)
+            self.xhi = self.xlo + 1
+            self.xlabel = "Channel"
+
+        # For now let's just create log-spaced energies. There is no way
+        # to select an intelligent range, so we can use something that
+        # goes across most of the energ_lo/hi range. This is okay for
+        # a Chandra ACIS response. The spacing calculation could use
+        # wavelength limits for units=wavelength, but is it worth it?
         #
         elo, ehi = rmf.energ_lo, rmf.energ_hi
         l1 = np.log10(elo[0])
@@ -545,10 +589,14 @@ class RMFPlot(shplot.HistogramPlot):
         for energy in energies:
             mdl.pos = energy
             y.append(rmf.apply_rmf(mdl(elo, ehi)))
-            self.labels.append(f'{energy:.2g} keV')
+            if units == "wavelength":
+                self.labels.append(f'{hc / energy:.2g} Angstrom')
+            else:
+                # Note: use energy labels for channel space
+                self.labels.append(f'{energy:.2g} keV')
 
         # __str__ and similar functions in the superclass
-        # expect this to be and array, not a list
+        # expect this to be an array, not a list
         self.y = np.stack(y)
         self.title = rmf.name
 

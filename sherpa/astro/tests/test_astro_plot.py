@@ -1333,7 +1333,7 @@ def test_arf_checks_arf():
     plotobj = ARFPlot()
     d = Data1D("x", [1, 2], [2, 3])
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'energ_lo'"):
+    with pytest.raises(IOErr, match="data set 'x' does not contain an ARF"):
         plotobj.prepare(arf=d)
 
 
@@ -1354,7 +1354,7 @@ def test_rmf_checks_arf():
     plotobj = RMFPlot()
     d = Data1D("x", [1, 2], [2, 3])
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'e_min'"):
+    with pytest.raises(IOErr, match="data set 'x' does not contain a RMF"):
         plotobj.prepare(rmf=d)
 
 
@@ -1365,5 +1365,5 @@ def test_rmf_checks_data_is_pha():
     rmf = create_delta_rmf(np.asarray([1, 2]), np.asarray([2, 3]))
     d = Data1D("x", [1, 2, 3], [2, 3, 4])
 
-    # At the moment there is no error check.
-    plotobj.prepare(rmf=rmf, data=d)
+    with pytest.raises(IOErr, match="data set 'x' does not contain a PHA spectrum"):
+        plotobj.prepare(rmf=rmf, data=d)
