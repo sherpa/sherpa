@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2017, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015, 2017, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -300,6 +300,8 @@ class PylabBackend(BasicBackend):
         # Use the color used for the data plot: should it
         # also be used for marker[face]color and ecolor?
         #
+        # NOTE: this ignores any xerr parameter.
+        #
         xmid = 0.5 * (xlo + xhi)
         xerr = (xhi - xlo) / 2 if xerrorbars else None
         yerr = yerr if yerrorbars else None
@@ -491,8 +493,6 @@ class PylabBackend(BasicBackend):
         if xerrorbars or yerrorbars:
             if markerfacecolor is None:
                 markerfacecolor = color
-            if xerr is not None:
-                xerr = xerr / 2.
             xerr = xerr if xerrorbars else None
             yerr = yerr if yerrorbars else None
             obj = axes.errorbar(x, y, yerr, xerr,

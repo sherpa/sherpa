@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2008, 2015 - 2017, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1302,8 +1302,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
                                 self.get_syserror(filter))
 
     def get_yerr(self, filter=False, staterrfunc=None):
-        """
-        Return errors in dependent axis in N-D view of dependent variable
+        """Return errors in dependent axis in N-D view of dependent variable.
 
         Parameters
         ----------
@@ -1317,8 +1316,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self.get_error(filter, staterrfunc)
 
     def get_ylabel(self, yfunc=None):
-        """
-        Return label for dependent axis in N-D view of dependent variable"
+        """Return label for dependent axis in N-D view of dependent variable.
 
         Parameters
         ----------
@@ -1558,8 +1556,7 @@ class Data1D(Data):
         return self.get_evaluation_indep(filter, model, use_evaluation_space)[0]
 
     def get_xerr(self, filter=False, yfunc=None):
-        """
-        Return linear view of bin size in independent axis/axes"
+        """Return linear view of bin size in independent axis/axes.
 
         Parameters
         ----------
@@ -1568,15 +1565,17 @@ class Data1D(Data):
 
         Returns
         -------
+        xerr : array or None
 
         """
         return None
 
     def get_xlabel(self):
-        """
-        Return label for linear view of independent axis/axes
+        """Return label for linear view of independent axis/axes
+
         Returns
         -------
+        label : str
 
         """
         return 'x'
@@ -1585,8 +1584,7 @@ class Data1D(Data):
         return len(self.get_x(filter)),
 
     def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
-        """
-        Return dependent axis in N-D view of dependent variable"
+        """Return dependent axis in N-D view of dependent variable.
 
         Parameters
         ----------
@@ -1596,6 +1594,7 @@ class Data1D(Data):
 
         Returns
         -------
+        y : array or None
 
         """
         y = self.get_dep(filter)
@@ -1620,8 +1619,7 @@ class Data1D(Data):
         return mask, size
 
     def get_img(self, yfunc=None):
-        """
-        Return 1D dependent variable as a 1 x N image
+        """Return 1D dependent variable as a 1 x N image.
 
         Parameters
         ----------
@@ -1874,13 +1872,35 @@ class Data1DInt(Data1D):
         return (indep[0] + indep[1]) / 2.0
 
     def get_xerr(self, filter=False, model=None):
+        """Returns an X "error".
+
+        The error value for the independent axis is not well defined
+        in Sherpa.
+
+        .. versionchanged:: 4.16.1
+           The return value is now half the bin width instead of the
+           full bin width.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the values be filtered to the current notice range?
+        model : Model or None, optional
+
+        Returns
+        -------
+        xerr : ndarray
+           The half-width of each bin.
+
+        """
         indep = self.get_evaluation_indep(filter, model)
         if len(indep) == 1:
             # assume all data has been filtered out
             return numpy.asarray([])
 
+        # Return the half-width: see #748 #1817
         xlo, xhi = indep
-        return xhi - xlo
+        return (xhi - xlo) / 2
 
     def get_filter(self, format='%.4f', delim=':'):
         """Return the data filter as a string.
@@ -2116,8 +2136,7 @@ class Data2D(Data):
         return self._data_space.get(filter).x1
 
     def get_x0label(self):
-        """
-        Return label for first dimension in 2-D view of independent axis/axes
+        """Return label for first dimension in 2-D view of independent axis/axes.
 
         Returns
         -------
@@ -2126,8 +2145,7 @@ class Data2D(Data):
         return 'x0'
 
     def get_x1label(self):
-        """
-        Return label for second dimension in 2-D view of independent axis/axes
+        """Return label for second dimension in 2-D view of independent axis/axes.
         """
         return 'x1'
 

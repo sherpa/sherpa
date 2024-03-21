@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -205,7 +205,7 @@ def test_sourceplot(caplog, make_basic_datapha):
 
 def test_sourceplot_filtered(caplog, make_basic_datapha):
     """Filtering only changes the mask attribute"""
-    
+
     data = make_basic_datapha
     data.units = "energy"
 
@@ -343,7 +343,7 @@ def test_sourceplot_wavelength(caplog, make_basic_datapha):
 
 def test_sourceplot_wavelength_filtered(caplog, make_basic_datapha):
     """Filtering only changes the mask attribute"""
-    
+
     data = make_basic_datapha
     data.units = "wave"
 
@@ -576,6 +576,7 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
 
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
 
     # can we access the "pseudo" x attribute?
     assert plot.x[0] > plot.x[-1]
@@ -618,6 +619,7 @@ def test_modelphahistogram_prepare_wavelength(make_data_path):
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
     assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
     assert np.all(plot.y > 0)
     assert plot.y.size == 9
 
@@ -653,6 +655,7 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
     assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
     assert np.all(plot.y > 0)
     assert plot.y.size == 1090
 
@@ -1135,3 +1138,115 @@ def test_data_model_plot_with_backend(all_plot_backends):
 
     with splot.backend:
         fplot.plot()
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_data_plot_xerr(units):
+    """What is the xerr field for DataPHA data.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    dplot = aplot.DataPHAPlot()
+    dplot.prepare(pha)
+
+    if units == "wavelength":
+        xdiff = dplot.xlo - dplot.xhi
+    else:
+        xdiff = dplot.xhi - dplot.xlo
+
+    assert dplot.xerr == pytest.approx(xdiff / 2)
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_source_plot_xerr(units):
+    """What is the xerr field for DataPHA source.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+
+    mplot = aplot.SourcePlot()
+    mplot.prepare(pha, model)
+
+    # There is no xerr atrribute
+    with pytest.raises(AttributeError):
+        mplot.xerr
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_model_plot_xerr(units):
+    """What is the xerr field for DataPHA model.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+    resp = pha.get_full_response()
+    full_model = resp(model)
+
+    mplot = aplot.ModelPHAHistogram()
+    mplot.prepare(pha, full_model)
+
+    # There is no xerr atrribute
+    with pytest.raises(AttributeError):
+        mplot.xerr
+
+
+@pytest.mark.parametrize("cls", [splot.ResidPlot,
+                                 splot.RatioPlot,
+                                 splot.DelchiPlot,
+                                 splot.ChisqrPlot])
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_resid_plot_xerr(cls, units):
+    """What is the xerr field for DataPHA residual.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+    resp = pha.get_full_response()
+    full_model = resp(model)
+
+    # We want a chi-square plot for some of these classes, and pick
+    # one that doesn't trigger warnings.
+    #
+    rplot = cls()
+    rplot.prepare(pha, full_model, stat=stats.Chi2Gehrels())
+
+    if units == "channel":
+        xerr_chan = np.asarray([1, 2, 1, 2, 2, 1, 1]) / 2
+        assert rplot.xerr == pytest.approx(xerr_chan)
+        return
+
+    en_lo = np.asarray([0.5, 0.65, 0.8, 0.9, 1.1, 1.3, 1.4])
+    en_hi = np.asarray([0.65, 0.8, 0.9, 1.1, 1.3, 1.4, 1.5])
+
+    if units == "energy":
+        xerr_kev = (en_hi - en_lo) / 2
+        assert rplot.xerr == pytest.approx(xerr_kev)
+        return
+
+    xerr_lam = (hc / en_lo - hc / en_hi) / 2
+    assert rplot.xerr == pytest.approx(xerr_lam)

@@ -237,11 +237,11 @@ def test_pha_get_xerr_all_bad_channel_no_group():
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
                   quality=[2, 2, 2])
 
-    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+    assert pha.get_xerr() == pytest.approx([0.5, 0.5, 0.5])
 
     pha.ignore_bad()
     assert pha.get_filter() == ''
-    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+    assert pha.get_xerr() == pytest.approx([0.5, 0.5, 0.5])
 
 
 def test_pha_get_xerr_all_bad_channel_group():
@@ -255,7 +255,7 @@ def test_pha_get_xerr_all_bad_channel_group():
                   grouping=[1, 1, 1],
                   quality=[2, 2, 2])
 
-    assert pha.get_xerr() == pytest.approx([1, 1, 1])
+    assert pha.get_xerr() == pytest.approx([0.5, 0.5, 0.5])
 
     assert pha.grouped
     pha.ignore_bad()
@@ -279,11 +279,11 @@ def test_pha_get_xerr_all_bad_energy_no_group():
     pha.set_rmf(rmf)
     pha.units = 'energy'
 
-    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+    assert pha.get_xerr() == pytest.approx([1.0, 1.5, 2.0])
 
     pha.ignore_bad()
     assert pha.get_filter() == ''
-    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+    assert pha.get_xerr() == pytest.approx([1.0, 1.5, 2.0])
 
 
 def test_pha_get_xerr_all_bad_energy_group():
@@ -304,7 +304,7 @@ def test_pha_get_xerr_all_bad_energy_group():
     pha.set_rmf(rmf)
     pha.units = 'energy'
 
-    assert pha.get_xerr() == pytest.approx([2.0, 3.0, 4.0])
+    assert pha.get_xerr() == pytest.approx([1.0, 1.5, 2.0])
 
     assert pha.grouped
     pha.ignore_bad()

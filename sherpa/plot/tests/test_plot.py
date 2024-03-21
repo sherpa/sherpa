@@ -29,7 +29,8 @@ from sherpa.astro.models import Voigt1D
 from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.models import basic
 from sherpa import plot as sherpaplot
-from sherpa.data import Data1D, Data1DInt
+from sherpa.data import Data1D, Data1DInt, Data2D
+from sherpa.stats import LeastSq
 from sherpa.utils.err import ConfidenceErr
 from sherpa.utils.testing import requires_data
 
@@ -607,6 +608,23 @@ def test_errors_with_no_stat():
     assert dp.yerr is None
 
 
+def test_data1d_xerr_is_none_by_default():
+    """Do we have an xerr field for Data1D.
+
+    It's not clear what the xerr field from the Data1DInt class
+    is meant to "be", so just check the Data1D classs.
+    """
+
+    x = [10, 20, 40, 80]
+    y = [1, 2, 3, 4]
+    d = Data1D('xx', x, y)
+
+    dp = sherpaplot.DataPlot()
+    dp.prepare(d)
+
+    assert dp.xerr is None
+
+
 def test_histogram_returns_x():
     """We support x accessor for histogram plots."""
 
@@ -653,6 +671,59 @@ def test_histogram_empty_x():
 
     dp = sherpaplot.DataHistogramPlot()
     assert dp.x is None
+
+
+def test_histogram_returns_xerr():
+    """What is xerr for histograms? Related to issue #1817.
+
+    It is not clear what we mean by xerr here, but let's just check
+    what is returned.
+
+    """
+
+    xlo = [10, 20, 40, 80]
+    xhi = [20, 40, 60, 90]
+    y = [1, 2, 3, 4]
+    d = Data1DInt('xx', xlo, xhi, y)
+
+    dp = sherpaplot.DataHistogramPlot()
+    dp.prepare(d)
+
+    xlo = numpy.asarray(xlo)
+    xhi = numpy.asarray(xhi)
+
+    assert dp.xerr == pytest.approx((xhi - xlo) / 2)
+
+    # check xerr is not in the str output
+    #
+    for line in str(dp).split('\n'):
+        toks = line.split()
+        assert len(toks) > 2
+        assert toks[0] != 'xerr'
+
+
+@pytest.mark.xfail
+def test_histogram_can_not_set_xerr():
+    """We cannot change the xerr accessor"""
+
+    xlo = [10, 20, 40, 80]
+    xhi = [20, 40, 60, 90]
+    y = [1, 2, 3, 4]
+    d = Data1DInt('xx', xlo, xhi, y)
+
+    dp = sherpaplot.DataHistogramPlot()
+    dp.prepare(d)
+
+    # XFAIL: at the moment we can change xerr
+    with pytest.raises(AttributeError):
+        dp.xerr = xlo
+
+
+def test_histogram_empty_xerr():
+    """xerr accessor is None if there's no data"""
+
+    dp = sherpaplot.DataHistogramPlot()
+    assert dp.xerr is None
 
 
 @pytest.mark.parametrize("cls", [sherpaplot.RegionUncertainty,
@@ -844,3 +915,399 @@ def test_confidence1d_log(cls, expected):
     # tolerance.
     #
     assert plotobj.y == pytest.approx(expected, rel=4e-4)
+
+
+def test_dataplot_data1d_no_err_str(check_str):
+    """Basic check"""
+
+    d = Data1D("foo", [12, 20], [3, -2])
+    dp = sherpaplot.DataPlot()
+    dp.prepare(d)
+
+    # The plot preferences output depends on the backend, so do a
+    # minimal check.
+    #
+    out = str(dp).split("\n")
+    assert out[-1].startswith("plot_prefs = {")
+
+    out = out[:-1]
+    check_str("\n".join(out),
+              ["x      = [12,20]",
+               "y      = [ 3,-2]",
+               "yerr   = None",
+               "xerr   = None",
+               "xlabel = x",
+               "ylabel = y",
+               "title  = foo"
+               ])
+
+
+def test_dataplot_data1d_yerr_str(check_str):
+    """Basic check"""
+
+    d = Data1D("foo", [12, 20], [3, -2], staterror=[1, 0.5])
+    dp = sherpaplot.DataPlot()
+    dp.prepare(d)
+
+    # The plot preferences output depends on the backend, so do a
+    # minimal check.
+    #
+    out = str(dp).split("\n")
+    assert out[-1].startswith("plot_prefs = {")
+
+    out = out[:-1]
+    check_str("\n".join(out),
+              ["x      = [12,20]",
+               "y      = [ 3,-2]",
+               "yerr   = [1. ,0.5]",
+               "xerr   = None",
+               "xlabel = x",
+               "ylabel = y",
+               "title  = foo"
+               ])
+
+
+def test_dataplot_data1d_xerr_str(check_str):
+    """Basic check
+
+    Note: the only way to set xerr is to set it directly. It is
+    not clear whether we want/need this, but check it for now.
+    """
+
+    d = Data1D("foo", [12, 20], [3, -2])
+    dp = sherpaplot.DataPlot()
+    dp.prepare(d)
+
+    # NOTE: changing the plot object directly since Data1D
+    # has no xerr
+    dp.xerr = numpy.asarray([3, 4])  # NOTE: needs to be ndarray
+
+    # The plot preferences output depends on the backend, so do a
+    # minimal check.
+    #
+    out = str(dp).split("\n")
+    assert out[-1].startswith("plot_prefs = {")
+
+    out = out[:-1]
+    check_str("\n".join(out),
+              ["x      = [12,20]",
+               "y      = [ 3,-2]",
+               "yerr   = None",
+               "xerr   = [3,4]",
+               "xlabel = x",
+               "ylabel = y",
+               "title  = foo"
+               ])
+
+
+def test_modelplot_data1d_no_err_str(check_str):
+    """Basic check"""
+
+    d = Data1D("foo", [12, 20], [3, -2])
+    m = basic.Polynom1D("poly")
+    m.c0 = 5
+    m.c1 = 2
+    mp = sherpaplot.ModelPlot()
+    mp.prepare(d, m)
+
+    # The plot preferences output depends on the backend, so do a
+    # minimal check.
+    #
+    out = str(mp).split("\n")
+    assert out[-1].startswith("plot_prefs = {")
+
+    out = out[:-1]
+    print(out)
+    check_str("\n".join(out),
+              ["x      = [12,20]",
+               "y      = [29.,45.]",
+               "yerr   = None",
+               "xerr   = None",
+               "xlabel = x",
+               "ylabel = y",
+               "title  = Model"
+               ])
+
+
+def test_modelplot_data1d_yerr_str(check_str):
+    """Basic check
+
+    Note: the only way to set yerr is to set it directly. It is
+    not clear whether we want/need this, but check it for now.
+    """
+
+    d = Data1D("foo", [12, 20], [3, -2])
+    m = basic.Polynom1D("poly")
+    m.c0 = 5
+    m.c1 = 2
+    mp = sherpaplot.ModelPlot()
+    mp.prepare(d, m)
+
+    # NOTE: changing the plot object directly since there's no other
+    # say to set it
+    mp.yerr = numpy.asarray([3, 4])  # NOTE: needs to be ndarray
+
+    # The plot preferences output depends on the backend, so do a
+    # minimal check.
+    #
+    out = str(mp).split("\n")
+    assert out[-1].startswith("plot_prefs = {")
+
+    out = out[:-1]
+    print(out)
+    check_str("\n".join(out),
+              ["x      = [12,20]",
+               "y      = [29.,45.]",
+               "yerr   = [3,4]",
+               "xerr   = None",
+               "xlabel = x",
+               "ylabel = y",
+               "title  = Model"
+               ])
+
+
+def test_modelplot_data1d_xerr_str(check_str):
+    """Basic check
+
+    Note: the only way to set xerr is to set it directly. It is
+    not clear whether we want/need this, but check it for now.
+    """
+
+    d = Data1D("foo", [12, 20], [3, -2])
+    m = basic.Polynom1D("poly")
+    m.c0 = 5
+    m.c1 = 2
+    mp = sherpaplot.ModelPlot()
+    mp.prepare(d, m)
+
+    # NOTE: changing the plot object directly since there's no other
+    # say to set it
+    mp.xerr = numpy.asarray([3, 4])  # NOTE: needs to be ndarray
+
+    # The plot preferences output depends on the backend, so do a
+    # minimal check.
+    #
+    out = str(mp).split("\n")
+    assert out[-1].startswith("plot_prefs = {")
+
+    out = out[:-1]
+    print(out)
+    check_str("\n".join(out),
+              ["x      = [12,20]",
+               "y      = [29.,45.]",
+               "yerr   = None",
+               "xerr   = [3,4]",
+               "xlabel = x",
+               "ylabel = y",
+               "title  = Model"
+               ])
+
+
+def test_fitplot_str(check_str):
+    """Basic check"""
+
+    d = Data1D('ex1', [1, 5, 10], [3, 4, 6])
+    m = basic.Scale1D('sc1')
+    m.c0 = 4
+
+    dp = sherpaplot.DataPlot()
+    dp.prepare(d)
+
+    mp = sherpaplot.ModelPlot()
+    mp.prepare(d, m)
+
+    fp = sherpaplot.FitPlot()
+    fp.prepare(dp, mp)
+
+    # Handle the last lines (plot_prefs) separately
+    #
+    out = str(fp).split("\n\n")
+    assert len(out) == 2
+
+    out1 = out[0].split("\n")
+    out2 = out[1].split("\n")
+
+    last1 = out1.pop(-1)
+    last2 = out2.pop(-1)
+
+    check_str("\n".join(out1),
+              ["dataplot   = ex1",
+               "x      = [ 1, 5,10]",
+               "y      = [3,4,6]",
+               "yerr   = None",
+               "xerr   = None",
+               "xlabel = x",
+               "ylabel = y",
+               "title  = ex1"
+               ])
+
+    check_str("\n".join(out2),
+              ["modelplot  = Model",
+               "x      = [ 1, 5,10]",
+               "y      = [4.,4.,4.]",
+               "yerr   = None",
+               "xerr   = None",
+               "xlabel = x",
+               "ylabel = y",
+               "title  = Model"
+               ])
+
+    assert last1.startswith("plot_prefs = {")
+    assert last2.startswith("plot_prefs = {")
+
+
+def test_splitplot_str(check_str):
+    """Basic check"""
+
+    # The plot prefs could depend on the backend, but currently does
+    # not. If it does change we can just drop the check on the
+    # preference settings.
+    #
+    sp = sherpaplot.SplitPlot()
+    check_str(str(sp),
+              ["rows   = 2",
+               "cols   = 1",
+               "plot_prefs = {}"])
+
+
+def test_datacontour_str(check_str):
+    """Basic check of string output of data contour."""
+
+    # TODO: what is the correct ordering of x0 and x1 here
+    #       and does it matter?
+    #
+    x0, x1 = numpy.meshgrid([1, 5, 10], [2, 4])
+    x0 = x0.flatten()
+    x1 = x1.flatten()
+    y = numpy.arange(len(x0))
+
+    d = Data2D('tmp', x0, x1, y, shape=(2, 3))
+    dc = sherpaplot.DataContour()
+    dc.prepare(d)
+
+    # Handle the last line separately
+    out = str(dc).split("\n")
+    last = out.pop(-1)
+
+    check_str("\n".join(out),
+              ["x0     = [ 1, 5,10, 1, 5,10]",
+               "x1     = [2,2,2,4,4,4]",
+               "y      = [0,1,2,3,4,5]",
+               "xlabel = x0",
+               "ylabel = x1",
+               "title  = tmp",
+               "levels = None"
+               ])
+
+    assert last.startswith("contour_prefs = {")
+
+
+def test_modelcontour_empty_str(check_str):
+    """Basic check"""
+
+    mc = sherpaplot.ModelContour()
+
+    # The contour preferences output depends on the backend, so do a
+    # minimal check.
+    #
+    out = str(mc).split("\n")
+    assert out[-1].startswith("contour_prefs = {")
+
+    out = out[:-1]
+    print(out)
+    check_str("\n".join(out),
+              ["x0     = None",
+               "x1     = None",
+               "y      = None",
+               "xlabel = None",
+               "ylabel = None",
+               "title  = Model",
+               "levels = None"
+               ])
+
+
+def test_modelcontour_str(check_str):
+    """Basic check"""
+
+    d = Data2D("ex", [1, 1, 2], [1, 2, 2], [-2] * 3)
+    m = basic.Polynom2D()
+    m.c = 5
+    m.cx1 = 10
+    m.cy1 = 100
+
+    mc = sherpaplot.ModelContour()
+    mc.prepare(d, m, LeastSq())
+
+    # The contour preferences output depends on the backend, so do a
+    # minimal check.
+    #
+    out = str(mc).split("\n")
+    assert out[-1].startswith("contour_prefs = {")
+
+    out = out[:-1]
+    print(out)
+    check_str("\n".join(out),
+              ["x0     = [1,1,2]",
+               "x1     = [1,2,2]",
+               "y      = [115.,215.,225.]",
+               "xlabel = x0",
+               "ylabel = x1",
+               "title  = Model",
+               "levels = None"
+               ])
+
+
+def test_fitcontour_str(check_str):
+    """Basic check - this is for an empty object"""
+
+    fc = sherpaplot.FitContour()
+
+    check_str(str(fc),
+              ["datacontour = None",
+               "None",
+               "",
+               "modelcontour = None",
+               "None"
+               ])
+
+
+def test_lrhist_str(check_str):
+    """Basic checks"""
+
+    p = sherpaplot.LRHistogram()
+
+    out = str(p).split("\n")
+    last = out.pop(-1)
+
+    check_str("\n".join(out),
+              ["ratios = None",
+               "lr = None",
+               "xlo    = None",
+               "xhi    = None",
+               "y      = None",
+               "xlabel = None",
+               "ylabel = None",
+               "title  = None"
+               ])
+
+    assert last.startswith("histo_prefs = {")
+
+    # no idea what sensible values should be
+    x = numpy.arange(10) / 2
+    p.prepare(x, 5, 2, 0.1, 0.2)
+
+    out = str(p).split("\n")
+    last = out.pop(-1)
+
+    check_str("\n".join(out),
+              ["ratios = [0. ,0.5,1. ,1.5,2. ,2.5,3. ,3.5,4. ,4.5]",
+               "lr = 0.1",
+               "xlo    = [0.  ,0.75,1.5 ,2.25,3.  ,3.75]",
+               "xhi    = [0.75,1.5 ,2.25,3.  ,3.75,4.5 ]",
+               "y      = [1. ,0.5,1. ,0.5,1. ,1. ]",
+               "xlabel = Likelihood Ratio",
+               "ylabel = Frequency",
+               "title  = Likelihood Ratio Distribution"
+               ])
+
+    assert last.startswith("histo_prefs = {")
