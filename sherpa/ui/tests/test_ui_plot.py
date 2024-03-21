@@ -40,7 +40,8 @@ from sherpa.data import Data1D, Data1DInt, Data2D
 from sherpa.models import basic
 import sherpa.plot
 from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr, PlotErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr, \
+    PlotErr
 
 
 _data_x = [10, 20, 40, 90]
@@ -217,12 +218,12 @@ def change_fit(idval):
     change_model(idval)
 
 
-def check_example(idval, xlabel='x'):
+def check_example(idval):
     """Check that the data plot has not changed"""
 
     dplot = ui.get_data_plot(id=idval, recalc=False)
 
-    assert dplot.xlabel == xlabel
+    assert dplot.xlabel == 'x'
     assert dplot.ylabel == 'y'
     assert dplot.title == 'example'
     assert dplot.x == pytest.approx(_data_x)
@@ -233,7 +234,7 @@ def check_example(idval, xlabel='x'):
     assert dplot.yerr == pytest.approx(calc_errors(_data_y))
 
 
-def check_example_changed(idval, xlabel='x'):
+def check_example_changed(idval):
     """Check that the data plot has changed
 
     Assumes change_example has been called
@@ -241,7 +242,7 @@ def check_example_changed(idval, xlabel='x'):
 
     dplot = ui.get_data_plot(id=idval, recalc=False)
 
-    assert dplot.xlabel == xlabel
+    assert dplot.xlabel == 'x'
     assert dplot.ylabel == 'y'
     assert dplot.title == 'example'
     assert dplot.x == pytest.approx(_data_x)
@@ -252,10 +253,10 @@ def check_example_changed(idval, xlabel='x'):
     assert dplot.yerr == pytest.approx(calc_errors(_data_y2))
 
 
-def check_model_plot(plot, title='Model', xlabel='x', modelval=35):
+def check_model_plot(plot, title='Model', modelval=35):
     """Helper for check_model/source"""
 
-    assert plot.xlabel == xlabel
+    assert plot.xlabel == 'x'
     assert plot.ylabel == 'y'
     assert plot.title == title
     assert plot.x == pytest.approx(_data_x)
@@ -264,21 +265,21 @@ def check_model_plot(plot, title='Model', xlabel='x', modelval=35):
     assert plot.yerr is None
 
 
-def check_model(idval, xlabel='x'):
+def check_model(idval):
     """Check that the model plot has not changed"""
 
     mplot = ui.get_model_plot(id=idval, recalc=False)
-    check_model_plot(mplot, title='Model', xlabel=xlabel)
+    check_model_plot(mplot, title='Model')
 
 
-def check_model_changed(idval, xlabel='x'):
+def check_model_changed(idval):
     """Check that the model plot has changed
 
     Assumes change_model has been called
     """
 
     mplot = ui.get_model_plot(id=idval, recalc=False)
-    check_model_plot(mplot, title='Model', xlabel=xlabel, modelval=41)
+    check_model_plot(mplot, title='Model', modelval=41)
 
 
 def check_source(idval):
@@ -500,8 +501,8 @@ def check_fit_changed(idval):
 def check_fit_resid(idval):
     """Check that the fit + resid plot has not changed"""
 
-    check_example(idval, xlabel='')
-    check_model(idval, xlabel='')
+    check_example(idval)
+    check_model(idval)
     check_resid(idval, title='')
 
 
@@ -511,16 +512,16 @@ def check_fit_resid_changed(idval):
     Assumes that change_fit has been called
     """
 
-    check_example_changed(idval, xlabel='')
-    check_model_changed(idval, xlabel='')
+    check_example_changed(idval)
+    check_model_changed(idval)
     check_resid_changed2(idval, title='')
 
 
 def check_fit_ratio(idval):
     """Check that the fit + ratio plot has not changed"""
 
-    check_example(idval, xlabel='')
-    check_model(idval, xlabel='')
+    check_example(idval)
+    check_model(idval)
     check_ratio(idval, title='')
 
 
@@ -530,16 +531,16 @@ def check_fit_ratio_changed(idval):
     Assumes that change_fit has been called
     """
 
-    check_example_changed(idval, xlabel='')
-    check_model_changed(idval, xlabel='')
+    check_example_changed(idval)
+    check_model_changed(idval)
     check_ratio_changed2(idval, title='')
 
 
 def check_fit_delchi(idval):
     """Check that the fit + delchi plot has not changed"""
 
-    check_example(idval, xlabel='')
-    check_model(idval, xlabel='')
+    check_example(idval)
+    check_model(idval)
     check_delchi(idval, title='')
 
 
@@ -549,8 +550,8 @@ def check_fit_delchi_changed(idval):
     Assumes that change_fit has been called
     """
 
-    check_example_changed(idval, xlabel='')
-    check_model_changed(idval, xlabel='')
+    check_example_changed(idval)
+    check_model_changed(idval)
     check_delchi_changed2(idval, title='')
 
 
@@ -1635,7 +1636,7 @@ def test_get_cdf_plot_empty(session):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_cdf_replot_no_data(session, requires_pylab):
+def test_plot_cdf_replot_no_data(session):
     """what does replot=True do for plot_cdf?
 
     The code doesn't check for this evantuality,
@@ -1646,8 +1647,7 @@ def test_plot_cdf_replot_no_data(session, requires_pylab):
 
     x = np.asarray([2, 8, 4, 6])
 
-    # error can depend on matplotlib version
-    with pytest.raises(ValueError):
+    with pytest.raises(PlotErr, match="prepare has not been called"):
         s.plot_cdf(x, replot=True)
 
 
@@ -1835,7 +1835,7 @@ def test_plot_pdf(session):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_pdf_replot_no_data(session, requires_pylab):
+def test_plot_pdf_replot_no_data(session):
     """what does replot=True do for plot_pdf?
 
     The code doesn't check for this evantuality,
@@ -1847,10 +1847,8 @@ def test_plot_pdf_replot_no_data(session, requires_pylab):
     x = np.asarray([2, 8, 4, 6])
 
     # check on the error so we know when the code has changed
-    with pytest.raises(TypeError) as exc:
+    with pytest.raises(PlotErr, match="prepare has not been called"):
         s.plot_pdf(x, replot=True)
-
-    assert "'NoneType' has no len" in str(exc.value)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -2365,36 +2363,18 @@ def test_get_model_component_plot_model(session):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_pylab_plot_scatter_empty_replot(session, requires_pylab):
+def test_pylab_plot_scatter_empty_replot(session):
     """plot_scatter with replot=False and no data
 
     Just check the current behavior
     """
 
-    from matplotlib import pyplot as plt
-
     s = session()
 
     x = np.arange(3)
     y = x + 5
-    s.plot_scatter(x, y, replot=True)
-
-    fig = plt.gcf()
-
-    assert len(fig.axes) == 1
-
-    ax = fig.axes[0]
-
-    assert ax.xaxis.get_label().get_text() == ''
-    assert ax.yaxis.get_label().get_text() == ''
-
-    assert len(ax.lines) == 1
-    line = ax.lines[0]
-
-    assert line.get_xdata() == [None]
-    assert line.get_ydata() == [None]
-
-    plt.close()
+    with pytest.raises(PlotErr, match="prepare has not been called"):
+        s.plot_scatter(x, y, replot=True)
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -2444,8 +2424,7 @@ def test_pylab_plot_trace_empty_replot(session, requires_pylab):
 
     y = np.arange(100, 104)
 
-    # error can depend on matplotlib version
-    with pytest.raises(ValueError):
+    with pytest.raises(PlotErr, match="prepare has not been called"):
         s.plot_trace(y, replot=True)
 
 
@@ -2801,7 +2780,7 @@ def test_plot_fit_xxx_pylab(ptype, clean_ui, requires_pylab):
         print('---')
 
     assert len(axes) == 2
-    assert axes[0].xaxis.get_label().get_text() == ''
+    assert axes[0].xaxis.get_label().get_text() == 'x'
 
     assert axes[0].xaxis.get_scale() == 'log'
     assert axes[0].yaxis.get_scale() == 'log'
@@ -2834,7 +2813,7 @@ def test_plot_fit_xxx_overplot_pylab(ptype, caplog, clean_ui, requires_pylab):
     fig = plt.gcf()
     axes = fig.axes
     assert len(axes) == 2
-    assert axes[0].xaxis.get_label().get_text() == ''
+    assert axes[0].xaxis.get_label().get_text() == 'x'
 
     assert axes[0].xaxis.get_scale() == 'log'
     assert axes[0].yaxis.get_scale() == 'log'
@@ -2874,7 +2853,7 @@ def test_plot_fit_resid_handles_data_log(idval, clean_ui, requires_pylab):
     fig = plt.gcf()
     axes = fig.axes
     assert len(axes) == 2
-    assert axes[0].xaxis.get_label().get_text() == ''
+    assert axes[0].xaxis.get_label().get_text() == 'x'
 
     assert axes[0].xaxis.get_scale() == 'log'
     assert axes[0].yaxis.get_scale() == 'linear'
@@ -2904,7 +2883,7 @@ def test_plot_fit_resid_handles_resid_log(idval, clean_ui, requires_pylab):
     fig = plt.gcf()
     axes = fig.axes
     assert len(axes) == 2
-    assert axes[0].xaxis.get_label().get_text() == ''
+    assert axes[0].xaxis.get_label().get_text() == 'x'
 
     assert axes[0].xaxis.get_scale() == 'log'
     assert axes[0].yaxis.get_scale() == 'linear'
