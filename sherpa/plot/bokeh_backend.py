@@ -112,49 +112,64 @@ class BokehBackend(BasicBackend):
 
     """
 
+    translate_colors = {
+        "r": "red",
+        "g": "green",
+        "b": "blue",
+        "k": "black",
+        "w": "white",
+        "c": "cyan",
+        "y": "yellow",
+        "m": "magenta",
+    }
+
     translate_dict = {
-        'linestyle': {
-            'None': 'noline',
-            None: 'solid',
-            'solid': 'solid',
-            'dot': 'dotted',
-            'dash': 'dashed',
-            'longdash': 'dashed',
-            '-' : 'solid',
-            ':' : 'dotted',
-            '--' : 'dashed',
-            '-.' : 'dotdash',
+        "color": translate_colors,
+        "ecolor": translate_colors,
+        "markerfacecolor": translate_colors,
+        "linecolor": translate_colors,
+        "linestyle": {
+            "None": "noline",
+            None: "solid",
+            "solid": "solid",
+            "dot": "dotted",
+            "dash": "dashed",
+            "longdash": "dashed",
+            "-": "solid",
+            ":": "dotted",
+            "--": "dashed",
+            "-.": "dotdash",
         },
-        'linewidth' : {
+        "linewidth": {
             None: 1,
         },
-        'drawstyle': {
-            'steps': 'before',
-            'steps-pre': 'before',
-            'steps-mid': 'center',
-            'steps-post': 'after',
+        "drawstyle": {
+            "steps": "before",
+            "steps-pre": "before",
+            "steps-mid": "center",
+            "steps-post": "after",
         },
-        'marker': {
+        "marker": {
             #'None': 'circle',
-            None: '',
-            '.': 'circle',
-            'o': 'circle',
-            '+': 'cross',
-            's': 'square',
+            None: "",
+            ".": "circle",
+            "o": "circle",
+            "+": "cross",
+            "s": "square",
         },
-        'markersize' : {
+        "markersize": {
             None: 5,
         },
-        'alpha': {
+        "alpha": {
             None: 1.0,
         },
-        'capsize': {
+        "capsize": {
             None: 0,
         },
-        'linewidths': {None: 1},
-        'linestyles': {None: 'solid'},
-        'colors': {None: 'black'},
-        'aspect': {'auto': None, 'equal': 1.},
+        "linewidths": {None: 1},
+        "linestyles": {None: "solid"},
+        "colors": {None: "black"},
+        "aspect": {"auto": None, "equal": 1.0},
     }
     '''Dict of keyword arguments that need to be translated for this backend.
 
@@ -728,22 +743,22 @@ class BokehBackend(BasicBackend):
             self.current_fig = gridplot(figs, ncols=ncols)
             self.current_axis = figs[row * ncols + col]
 
-        # space is dynamically allocated and lots of things can change the
+        # Space is dynamically allocated and lots of things can change the
         # height, e.g. a user may have changed bokeh defaults.
         # It's easy to change the height of a plot, but we first need to find
         # what height we consider "normal".
         # If we simply were to multiply the height of the top row by the ratio,
-        # then the total height of the plot get larger every time this method
+        # then the total height of the plot gets larger every time this method
         # is called, which, for ncols > 1, might be several times.
         # We pick the first plot in the grid that's not in row "top" and use
         # that as the "normal" height. That might fail for more complex grids,
         # but I declare that outside the scope of this function.
         height = None
-        for fig in enumerate(self.current_fig.children):
+        for fig in self.current_fig.children:
             if fig[1] != top:
                 height = fig[0].height
                 break
-        # normal_hight is None if we only have one row, so we don't need to
+        # `height` is None if we only have one row, so we don't need to
         # change anything.
         if height is not None:
             for i in range(ncols):
@@ -751,7 +766,7 @@ class BokehBackend(BasicBackend):
                 # We might have an incomplete grid of plots, and then
                 # plotnum might be None.
                 if plotnum is not None:
-                    self.current_fig[plotnum].height = height * ratio
+                    self.current_fig.children[plotnum][0].height = height * ratio
 
         # Axis sharing
         for c in range(ncols):
@@ -761,16 +776,16 @@ class BokehBackend(BasicBackend):
                 if basenum is None:
                     basenum = index
                 else:
-                    self.current_fig[index].x_range = \
-                        self.current_fig[basenum].x_range
+                    self.current_fig.children[index][
+                        0
+                    ].x_range = self.current_fig.children[basenum][0].x_range
 
         plotnum = self._index_axis(row, col)
         if plotnum is None:
             raise ArgumentErr(f"No plot at row {row} and column {col}." +
                               "Use create=True to create an entirely new, " +
                               "complete grid of plots.") from None
-        self.current_axis = self.current_fig[plotnum]
-
+        self.current_axis = self.current_fig.children[plotnum][0]
 
     # HTML representation
 
