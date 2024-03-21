@@ -39,6 +39,7 @@ import pytest
 from sherpa.astro import ui
 import sherpa.plot
 
+from sherpa.astro import hc
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_arf
 import sherpa.astro.plot
@@ -73,6 +74,9 @@ _energies_lo = _energies[:-1]
 _energies_hi = _energies[1:]
 _energies_mid = (_energies_lo + _energies_hi) / 2
 _energies_width = _energies_hi - _energies_lo
+
+_wavelength_lo = hc / _energies_hi
+_wavelength_hi = hc / _energies_lo
 
 # How much longer is the background exposure compared to the source
 # exposure; chose a non-integer value to make it more obvious when
@@ -326,8 +330,65 @@ def test_get_arf_plot(idval, clean_astro_ui):
 
     setup_example(idval)
     if idval is None:
+        ui.set_analysis("energy")
         ap = ui.get_arf_plot()
     else:
+        ui.set_analysis(idval, "energy")
+        ap = ui.get_arf_plot(idval)
+
+    assert isinstance(ap, sherpa.astro.plot.ARFPlot)
+
+    assert ap.xlo == pytest.approx(_energies_lo)
+    assert ap.xhi == pytest.approx(_energies_hi)
+
+    assert ap.y == pytest.approx(_arf)
+
+    assert ap.title == 'test-arf'
+    assert ap.xlabel == 'Energy (keV)'
+
+    # the y label depends on the backend (due to LaTeX)
+    # assert ap.ylabel == 'cm$^2$'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_arf_plot_wavelength(idval, clean_astro_ui):
+    """Basic testing of get_arf_plot
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.set_analysis("wavelength")
+        ap = ui.get_arf_plot()
+    else:
+        ui.set_analysis(idval, "wavelength")
+        ap = ui.get_arf_plot(idval)
+
+    assert isinstance(ap, sherpa.astro.plot.ARFPlot)
+
+    assert ap.xlo == pytest.approx(_wavelength_lo)
+    assert ap.xhi == pytest.approx(_wavelength_hi)
+
+    assert ap.y == pytest.approx(_arf)
+
+    assert ap.title == 'test-arf'
+    assert ap.xlabel == 'Wavelength (Angstrom)'
+
+    # the y label depends on the backend (due to LaTeX)
+    # assert ap.ylabel == 'cm$^2$'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_arf_plot_channel(idval, clean_astro_ui):
+    """Basic testing of get_arf_plot
+    """
+
+    # Does this error out or display energies?
+    setup_example(idval)
+    if idval is None:
+        ui.set_analysis("channel")
+        ap = ui.get_arf_plot()
+    else:
+        ui.set_analysis(idval, "channel")
         ap = ui.get_arf_plot(idval)
 
     assert isinstance(ap, sherpa.astro.plot.ARFPlot)
@@ -382,13 +443,15 @@ def test_get_rmf_plot_no_rmf(idval, clean_astro_ui):
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_rmf_plot(idval, clean_astro_ui):
-    """Basic testing of get_arf_plot
+    """Basic testing of get_rmf_plot
     """
 
     setup_example(idval)
     if idval is None:
+        ui.set_analysis("energy")
         rp = ui.get_rmf_plot()
     else:
+        ui.set_analysis(idval, "energy")
         rp = ui.get_rmf_plot(idval)
 
     assert isinstance(rp, sherpa.astro.plot.RMFPlot)
@@ -407,6 +470,68 @@ def test_get_rmf_plot(idval, clean_astro_ui):
 
     assert rp.title == 'delta-rmf'
     assert rp.xlabel == 'Energy (keV)'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_rmf_plot_wavelength(idval, clean_astro_ui):
+    """Basic testing of get_rmf_plot
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.set_analysis("wave")
+        rp = ui.get_rmf_plot()
+    else:
+        ui.set_analysis(idval, "wave")
+        rp = ui.get_rmf_plot(idval)
+
+    assert isinstance(rp, sherpa.astro.plot.RMFPlot)
+
+    assert rp.xlo == pytest.approx(_wavelength_lo)
+    assert rp.xhi == pytest.approx(_wavelength_hi)
+
+    # With nlines=5 in the RMF plot we get 5 lines
+    plotted_rmf = np.array(
+        [[1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0., 0., 1., 0., 0.]])
+    assert rp.y == pytest.approx(plotted_rmf)
+
+    assert rp.title == 'delta-rmf'
+    assert rp.xlabel == 'Wavelength (Angstrom)'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_rmf_plot_channel(idval, clean_astro_ui):
+    """Basic testing of get_rmf_plot
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.set_analysis("channel")
+        rp = ui.get_rmf_plot()
+    else:
+        ui.set_analysis(idval, "channel")
+        rp = ui.get_rmf_plot(idval)
+
+    assert isinstance(rp, sherpa.astro.plot.RMFPlot)
+
+    assert rp.xlo == pytest.approx(np.arange(1, 11))
+    assert rp.xhi == pytest.approx(np.arange(2, 12))
+
+    # With nlines=5 in the RMF plot we get 5 lines
+    plotted_rmf = np.array(
+        [[1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0., 0., 1., 0., 0.]])
+    assert rp.y == pytest.approx(plotted_rmf)
+
+    assert rp.title == 'delta-rmf'
+    assert rp.xlabel == 'Channel'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -764,7 +889,8 @@ def test_get_bkg_resid_plot(idval, clean_astro_ui):
     else:
         bp = ui.get_bkg_resid_plot(idval)
 
-    assert bp.x == pytest.approx(_data_chan)
+    assert bp.xlo == pytest.approx(_data_chan)
+    assert bp.xhi == pytest.approx(_data_chan + 1)
 
     # correct the counts by the bin width and exposure time
     #
@@ -909,11 +1035,9 @@ def check_bkg_fit(plotfunc, idval, isfit=True):
     mplot = fplot.modelplot
     assert isinstance(mplot, sherpa.astro.plot.BkgModelPHAHistogram)
 
-    xlabel = 'Channel' if plotfunc == ui.plot_bkg_fit else ''
-
     # check plot basics
     for plot in [dplot, mplot]:
-        assert plot.xlabel == xlabel
+        assert plot.xlabel == 'Channel'
         assert plot.ylabel == 'Counts/sec/channel'
 
     assert dplot.xlo == pytest.approx(_data_chan)
@@ -953,6 +1077,8 @@ def check_bkg_resid(plotfunc, idval, isfit=True):
             continue
         else:
             pd = get(idval, recalc=False)
+            assert pd.xlo is None
+            assert pd.xhi is None
             assert pd.x is None
             assert pd.y is None
 
@@ -983,7 +1109,8 @@ def check_bkg_resid(plotfunc, idval, isfit=True):
     else:
         assert False  # check I've caught everything
 
-    assert plot.x == pytest.approx(_data_chan)
+    assert plot.xlo == pytest.approx(_data_chan)
+    assert plot.xhi == pytest.approx(_data_chan + 1)
     assert plot.y is not None
 
     # the way the data and model are constructed, all residual values
@@ -1003,10 +1130,14 @@ def check_bkg_chisqr(plotfunc, idval, isfit=True):
                 ui.get_bkg_ratio_plot,
                 ui.get_bkg_resid_plot]:
         pd = get(idval, recalc=False)
+        assert pd.xlo is None
+        assert pd.xhi is None
         assert pd.x is None
         assert pd.y is None
 
     plot = ui.get_bkg_chisqr_plot(idval, recalc=False)
+    assert plot.xlo is not None
+    assert plot.xhi is not None
     assert plot.x is not None
     assert plot.y is not None
 
@@ -1030,6 +1161,8 @@ def check_bkg_model(plotfunc, idval, isfit=True):
                 ui.get_bkg_resid_plot,
                 ui.get_bkg_chisqr_plot]:
         pd = get(idval, recalc=False)
+        assert pd.xlo is None
+        assert pd.xhi is None
         assert pd.x is None
         assert pd.y is None
 
@@ -1060,6 +1193,8 @@ def check_bkg_source(plotfunc, idval, isfit=True):
                 ui.get_bkg_resid_plot,
                 ui.get_bkg_chisqr_plot]:
         pd = get(idval, recalc=False)
+        assert pd.xlo is None
+        assert pd.xhi is None
         assert pd.x is None
         assert pd.y is None
 
@@ -3470,8 +3605,8 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc):
     mdl.c1 = 1
     s.set_source(mdl)
 
-    plot = getattr(s, 'plot_{}'.format(plotfunc))
-    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+    plot = getattr(s, f'plot_{plotfunc}')
+    pdata = getattr(s, f'get_{plotfunc}_plot')
 
     # Create the plot
     plot()
@@ -3483,8 +3618,6 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc):
         else:
             assert p1.dataplot.plot_prefs['xlog']
             assert p1.modelplot.plot_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi']:
-        assert p1.plot_prefs['xlog']
     elif is_int:
         assert p1.histo_prefs['xlog']
     else:
@@ -3502,8 +3635,6 @@ def test_set_plot_opt_x(cls, datafunc, plotfunc):
         else:
             assert not p2.dataplot.plot_prefs['xlog']
             assert not p2.modelplot.plot_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi']:
-        assert not p2.plot_prefs['xlog']
     elif is_int:
         assert not p2.histo_prefs['xlog']
     else:
@@ -3547,8 +3678,8 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
     mdl.c1 = 1
     s.set_source(mdl)
 
-    plot = getattr(s, 'plot_{}'.format(plotfunc))
-    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+    plot = getattr(s, f'plot_{plotfunc}')
+    pdata = getattr(s, f'get_{plotfunc}_plot')
 
     plot()
     p1 = pdata()
@@ -3559,12 +3690,6 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
         else:
             assert p1.dataplot.plot_prefs['ylog'] == answer
             assert p1.modelplot.plot_prefs['ylog'] == answer
-    elif plotfunc in ['resid', 'ratio', 'delchi']:
-        # We use plot_prefs even if is_int is True for
-        # the residual-style plots. That is, the ordering
-        # of the checks here is important.
-        #
-        assert p1.plot_prefs['ylog'] == answer
     elif is_int:
         assert p1.histo_prefs['ylog'] == answer
     else:
@@ -3582,8 +3707,6 @@ def test_set_plot_opt_y(cls, datafunc, plotfunc, answer):
         else:
             assert not p2.dataplot.plot_prefs['ylog']
             assert not p2.modelplot.plot_prefs['ylog']
-    elif plotfunc in ['resid', 'ratio', 'delchi']:
-        assert not p2.plot_prefs['ylog']
     elif is_int:
         assert not p2.histo_prefs['ylog']
     else:
@@ -3632,8 +3755,8 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     s.set_source(mdl)
     s.set_bkg_source(mdl)
 
-    plot = getattr(s, 'plot_{}'.format(plotfunc))
-    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+    plot = getattr(s, f'plot_{plotfunc}')
+    pdata = getattr(s, f'get_{plotfunc}_plot')
 
     # Create the plot
     plot()
@@ -3650,8 +3773,6 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
         # actually required for the plot to work.
         #
         assert not p1.modelplot.histo_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
-        assert p1.plot_prefs['xlog']
     else:
         assert p1.histo_prefs['xlog']
 
@@ -3663,8 +3784,6 @@ def test_set_plot_opt_x_astro(cls, datafunc, plotfunc):
     if plotfunc in ['fit', 'bkg_fit']:
         assert not p2.dataplot.histo_prefs['xlog']
         assert not p2.modelplot.histo_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
-        assert not p2.plot_prefs['xlog']
     else:
         assert not p2.histo_prefs['xlog']
 
@@ -3708,8 +3827,8 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     s.set_source(mdl)
     s.set_bkg_source(mdl)
 
-    plot = getattr(s, 'plot_{}'.format(plotfunc))
-    pdata = getattr(s, 'get_{}_plot'.format(plotfunc))
+    plot = getattr(s, f'plot_{plotfunc}')
+    pdata = getattr(s, f'get_{plotfunc}_plot')
 
     plot()
     p1 = pdata()
@@ -3717,8 +3836,6 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
         assert p1.dataplot.histo_prefs['ylog'] == answer
         # Check the current behavior of the model plot in case it changes
         assert not p1.modelplot.histo_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
-        assert p1.plot_prefs['ylog'] == answer
     else:
         assert p1.histo_prefs['ylog'] == answer
 
@@ -3730,8 +3847,6 @@ def test_set_plot_opt_y_astro(cls, datafunc, plotfunc, answer):
     if plotfunc in ['fit', 'bkg_fit']:
         assert not p2.dataplot.histo_prefs['ylog']
         assert not p2.modelplot.histo_prefs['xlog']
-    elif plotfunc in ['resid', 'ratio', 'delchi', 'bkg_resid', 'bkg_ratio', 'bkg_delchi']:
-        assert not p2.plot_prefs['ylog']
     else:
         assert not p2.histo_prefs['ylog']
 
@@ -4137,7 +4252,7 @@ def check_plot2_xscale(xscale):
     fig = plt.gcf()
     axes = fig.axes
     assert len(axes) == 2
-    assert axes[0].xaxis.get_label().get_text() == ''
+    assert axes[0].xaxis.get_label().get_text() == 'Channel'
 
     assert axes[0].xaxis.get_scale() == xscale
     assert axes[0].yaxis.get_scale() == 'linear'

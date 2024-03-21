@@ -33,15 +33,18 @@ from configparser import ConfigParser
 import contextlib
 import logging
 import importlib
-from typing import Any, Literal, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any, Literal, Optional, Sequence, \
+    SupportsFloat, TypeVar, Union
 
 import numpy as np
 
 from sherpa import get_config
+from sherpa.data import Data, Data1DInt
 from sherpa.estmethods import Covariance
+from sherpa.models.model import Model
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
-from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
+from sherpa.stats import Stat, Likelihood, LeastSq, Chi2XspecVar
 from sherpa.utils import NoNewAttributesAfterInit, erf, \
     bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
 from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
@@ -106,13 +109,14 @@ else:
             f"List of backends that have loaded and would be available: {[k for k in PLOT_BACKENDS]}")
 
 __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
+           'BasePlot', 'BaseHistogram',
            'HistogramPlot', 'DataHistogramPlot',
            'ModelHistogramPlot', 'SourceHistogramPlot',
            'PDFPlot', 'CDFPlot', 'LRHistogram',
            'SplitPlot', 'JointPlot',
            'DataPlot', 'TracePlot', 'ScatterPlot',
            'PSFKernelPlot',
-           'DataContour', 'PSFKernelContour',
+           'BaseContour', 'DataContour', 'PSFKernelContour',
            'ModelPlot', 'ComponentModelPlot',
            'ComponentModelHistogramPlot', 'ComponentTemplateModelPlot',
            'SourcePlot', 'ComponentSourcePlot',
@@ -121,9 +125,11 @@ __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
            'ModelContour', 'PSFContour', 'SourceContour',
            'FitPlot',
            'FitContour',
-           'DelchiPlot', 'ChisqrPlot', 'ResidPlot',
+           'DelchiPlot', 'DelchiHistogramPlot',
+           'ChisqrPlot', 'ChisqrHistogramPlot',
+           'ResidPlot', 'ResidHistogramPlot',
+           'RatioPlot', 'RatioHistogramPlot',
            'ResidContour',
-           'RatioPlot',
            'RatioContour',
            'Confidence1D', 'Confidence2D',
            'IntervalProjection', 'IntervalUncertainty',
@@ -245,7 +251,7 @@ class TemporaryPlottingBackend(contextlib.AbstractContextManager):
         return False
 
 
-def _make_title(title, name=''):
+def _make_title(title: str, name: Optional[str] = '') -> str:
     """Return the plot title to use.
 
     Parameters
@@ -269,7 +275,7 @@ def _make_title(title, name=''):
     return f"{title} for {name}"
 
 
-def _errorbar_warning(stat):
+def _errorbar_warning(stat: Stat) -> str:
     """The warning message to display when error bars are being "faked".
 
     Parameters
@@ -288,7 +294,9 @@ def _errorbar_warning(stat):
         f"used in fits with {stat.name}"
 
 
-def calculate_errors(data, stat, yerrorbars=True):
+def calculate_errors(data: Data,
+                     stat: Stat,
+                     yerrorbars: bool = True) -> Optional[np.ndarray]:
     """Calculate errors from the statistics object."""
 
     if stat is None:
@@ -350,13 +358,47 @@ def calculate_errors(data, stat, yerrorbars=True):
         return None
 
 
+T = TypeVar("T")
+
+
+def check_not_none(arg: Optional[T], method: str = "prepare") -> T:
+    """Ensure the argument is not None.
+
+    This is primarily for type-checking, which is why the input
+    argument is returned when it's not None.
+
+    Parameters
+    ----------
+    arg : T or None
+       The argument to check.
+    message : str
+       The method to be reported in the execption if arg is None.
+
+    Returns
+    -------
+    arg : T
+
+    Raises
+    ------
+    PlotErr
+       arg is None. The message argument is used to create the
+       text if the exception.
+
+    """
+
+    if arg is not None:
+        return arg
+
+    raise PlotErr(f"{method} has not been called")
+
+
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
 
     plot_prefs = basicbackend.get_plot_defaults()
     "The preferences for the plot."
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize a Plot object.  All 1D line plot
         instances utilize Plot, which provides a generic
@@ -370,30 +412,48 @@ class Plot(NoNewAttributesAfterInit):
         super().__init__()
 
     @staticmethod
-    def vline(x, ymin=0, ymax=1,
-              linecolor=None, linestyle=None, linewidth=None,
-              overplot=False, clearwindow=True):
+    def vline(x: SupportsFloat,
+              ymin: SupportsFloat = 0,
+              ymax: SupportsFloat = 1,
+              linecolor: Optional[str] = None,
+              linestyle: Optional[str] = None,
+              linewidth: Optional[SupportsFloat] = None,
+              overplot: bool = False,
+              clearwindow: bool = True) -> None:
         "Draw a line at constant x, extending over the plot."
         backend.vline(x, ymin=ymin, ymax=ymax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
                       overplot=overplot, clearwindow=clearwindow)
 
     @staticmethod
-    def hline(y, xmin=0, xmax=1,
-              linecolor=None, linestyle=None, linewidth=None,
-              overplot=False, clearwindow=True):
+    def hline(y: SupportsFloat,
+              xmin: SupportsFloat = 0,
+              xmax: SupportsFloat = 1,
+              linecolor: Optional[str] = None,
+              linestyle: Optional[str] = None,
+              linewidth: Optional[SupportsFloat] = None,
+              overplot: bool = False,
+              clearwindow: bool = True) -> None:
         "Draw a line at constant y, extending over the plot."
         backend.hline(y, xmin=xmin, xmax=xmax, linecolor=linecolor,
                       linestyle=linestyle, linewidth=linewidth,
                       overplot=overplot, clearwindow=clearwindow)
 
-    def _merge_settings(self, kwargs):
+    def _merge_settings(self, kwargs: dict) -> dict:
         """Return the plot preferences merged with user settings."""
         return {**self.plot_prefs, **kwargs}
 
-    def plot(self, x, y, yerr=None, xerr=None, title=None, xlabel=None,
-             ylabel=None, overplot=False, clearwindow=True,
-             **kwargs):
+    def plot(self,
+             x: np.ndarray,
+             y: np.ndarray,
+             yerr: Optional[np.ndarray] = None,
+             xerr: Optional[np.ndarray] = None,
+             title: Optional[str] = None,
+             xlabel: Optional[str] = None,
+             ylabel: Optional[str] = None,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
         """Plot the data.
 
         Parameters
@@ -430,7 +490,7 @@ class Plot(NoNewAttributesAfterInit):
                      overplot=overplot, clearwindow=clearwindow,
                      **opts)
 
-    def overplot(self, *args, **kwargs):
+    def overplot(self, *args, **kwargs) -> None:
         """Add the data to an existing plot.
 
         This is the same as calling the plot method with
@@ -451,7 +511,7 @@ class Contour(NoNewAttributesAfterInit):
     contour_prefs = basicbackend.get_contour_defaults()
     "The preferences for the plot."
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize a Contour object.  All 2D contour plot
         instances utilize Contour, which provides a generic
@@ -464,20 +524,53 @@ class Contour(NoNewAttributesAfterInit):
         self.contour_prefs = self.contour_prefs.copy()
         super().__init__()
 
-    def _merge_settings(self, kwargs):
+    def _merge_settings(self, kwargs: dict) -> dict:
         """Return the plot preferences merged with user settings."""
         return {**self.contour_prefs, **kwargs}
 
-    def contour(self, x0, x1, y, title=None, xlabel=None,
-                ylabel=None, overcontour=False, clearwindow=True,
-                **kwargs):
+    def contour(self,
+                x0: np.ndarray,
+                x1: np.ndarray,
+                y: np.ndarray,
+                title: Optional[str] = None,
+                xlabel: Optional[str] = None,
+                ylabel: Optional[str] = None,
+                overcontour: bool = False,
+                clearwindow: bool = True,
+                **kwargs) -> None:
+        """Display the contour data.
+
+        Parameters
+        ----------
+        x0, x1, y
+           The data values to plot. They should have the same length.
+        title, xlabel, ylabel : optional, string
+           The optional plot title and axis labels. These are ignored
+           if overplot is set to `True`.
+        overcontour : bool, optional
+           If `True` then add the data to an existing plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           contour_prefs dictionary.
+
+        See Also
+        --------
+        overcontour
+
+        """
+
         opts = self._merge_settings(kwargs)
         backend.contour(x0, x1, y, title=title,
                         xlabel=xlabel, ylabel=ylabel,
                         overcontour=overcontour,
                         clearwindow=clearwindow, **opts)
 
-    def overcontour(self, *args, **kwargs):
+    def overcontour(self, *args, **kwargs) -> None:
         kwargs['overcontour'] = True
         self.contour(*args, **kwargs)
 
@@ -488,7 +581,7 @@ class Point(NoNewAttributesAfterInit):
     point_prefs = basicbackend.get_point_defaults()
     "The preferences for the plot."
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize a Point object.  All 1D point plot
         instances utilize Point, which provides a generic
@@ -501,11 +594,16 @@ class Point(NoNewAttributesAfterInit):
         self.point_prefs = self.point_prefs.copy()
         super().__init__()
 
-    def _merge_settings(self, kwargs):
+    def _merge_settings(self, kwargs: dict) -> dict:
         """Return the plot preferences merged with user settings."""
         return {**self.point_prefs, **kwargs}
 
-    def point(self, x, y, overplot=True, clearwindow=False, **kwargs):
+    def point(self,
+              x: SupportsFloat,
+              y: SupportsFloat,
+              overplot: bool = True,
+              clearwindow: bool = False,
+              **kwargs) -> None:
         """Draw a point at the given location.
 
         Parameters
@@ -541,7 +639,7 @@ class Image(NoNewAttributesAfterInit):
     image_prefs = basicbackend.get_image_defaults()
     "The preferences for the plot."
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize a Image object.
 
@@ -552,11 +650,17 @@ class Image(NoNewAttributesAfterInit):
         self.image_prefs = self.image_prefs.copy()
         super().__init__()
 
-    def _merge_settings(self, kwargs):
+    def _merge_settings(self, kwargs: dict) -> dict:
         """Return the plot preferences merged with user settings."""
         return {**self.image_prefs, **kwargs}
 
-    def plot(self, x0, x1, y, overplot=True, clearwindow=False, **kwargs):
+    def plot(self,
+             x0: np.ndarray,
+             x1: np.ndarray,
+             y: np.ndarray,
+             overplot: bool = True,
+             clearwindow: bool = False,
+             **kwargs) -> None:
         """Draw a point at the given location.
 
         Parameters
@@ -588,7 +692,7 @@ class Histogram(NoNewAttributesAfterInit):
     histo_prefs = basicbackend.get_histo_defaults()
     "The preferences for the plot."
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize a Histogram object.  All 1D histogram plot
         instances utilize Histogram, which provides a generic
@@ -601,12 +705,39 @@ class Histogram(NoNewAttributesAfterInit):
         self.histo_prefs = self.histo_prefs.copy()
         super().__init__()
 
-    def _merge_settings(self, kwargs):
+    def _merge_settings(self, kwargs: dict) -> dict:
         """Return the plot preferences merged with user settings."""
         return {**self.histo_prefs, **kwargs}
 
-    def plot(self, xlo, xhi, y, yerr=None, title=None, xlabel=None,
-             ylabel=None, overplot=False, clearwindow=True, **kwargs):
+    @staticmethod
+    def vline(x, ymin=0, ymax=1,
+              linecolor=None, linestyle=None, linewidth=None,
+              overplot=False, clearwindow=True):
+        "Draw a line at constant x, extending over the plot."
+        backend.vline(x, ymin=ymin, ymax=ymax, linecolor=linecolor,
+                      linestyle=linestyle, linewidth=linewidth,
+                      overplot=overplot, clearwindow=clearwindow)
+
+    @staticmethod
+    def hline(y, xmin=0, xmax=1,
+              linecolor=None, linestyle=None, linewidth=None,
+              overplot=False, clearwindow=True):
+        "Draw a line at constant y, extending over the plot."
+        backend.hline(y, xmin=xmin, xmax=xmax, linecolor=linecolor,
+                      linestyle=linestyle, linewidth=linewidth,
+                      overplot=overplot, clearwindow=clearwindow)
+
+    def plot(self,
+             xlo: np.ndarray,
+             xhi: np.ndarray,
+             y: np.ndarray,
+             yerr: Optional[np.ndarray] = None,
+             title: Optional[str] = None,
+             xlabel: Optional[str] = None,
+             ylabel: Optional[str] = None,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
         """Plot the data.
 
         Parameters
@@ -643,16 +774,106 @@ class Histogram(NoNewAttributesAfterInit):
                       xlabel=xlabel, ylabel=ylabel, overplot=overplot,
                       clearwindow=clearwindow, **opts)
 
-    def overplot(self, *args, **kwargs):
+    def overplot(self, *args, **kwargs) -> None:
         kwargs['overplot'] = True
         self.plot(*args, **kwargs)
 
 
-class HistogramPlot(Histogram):
+def arr2str(x: Optional[Sequence]) -> Optional[str]:
+    """Convert an array to a string for __str__ calls
+
+    Parameters
+    ----------
+    x : sequence or None
+
+    Returns
+    -------
+    arrstr : str
+
+    """
+
+    if x is None:
+        return x
+
+    return np.array2string(np.asarray(x), separator=',',
+                              precision=4, suppress_small=False)
+
+
+# This is used in a similar manner to the way that sherpa.data._fields
+# is used to control the string output of the Data objects. We extend
+# that version to allow a decision of whether to display as an array -
+# via arr2str - or as is. Given how our classes are arranged it is
+# not worth trying to share infrastructure between the plot classes
+# and the data classes to handle the similar __str__ handling.
+#
+def display_fields(obj: Union[BasePlot, BaseHistogram],
+                   fields: Sequence[str]) -> str:
+    """Create the __str__ output for the object.
+
+    Parameters
+    ----------
+    obj
+       The object to convert to a string. It is expected to be
+       derived from BasePlot or BaseHistogram.
+    fields
+       The fields to diplay. A field name ending in ! means display
+       directly, otherwise the value is passed through arr2str.
+
+    Returns
+    -------
+    strval
+       The string representation (one field per line)
+
+    Notes
+    -----
+
+    The default length for the labels is 6 but we check the labels so
+    that a larger value is used if need be (except for any xxx_prefs
+    label, just to better match the original output). This is wasted
+    logic, in that it could be calculated at object creation, but it
+    is not that much work to do here.
+
+    """
+
+    out = []
+    size = 6
+    for lbl in fields:
+        if lbl.endswith('!'):
+            lbl = lbl[:-1]
+            scalar = True
+        else:
+            scalar = False
+
+        val = getattr(obj, lbl)
+        if not scalar:
+            val = arr2str(val)
+
+        out.append((lbl, val))
+        if not lbl.endswith("_prefs"):
+            size = max(size, len(lbl))
+
+    fmt = f"{{:{size}s}} = {{}}"
+    return "\n".join(fmt.format(*vals) for vals in out)
+
+
+# The naming of this class is unfortunate, since for histograms we
+# have HistogramPlot for this case, but DataPlot has already been
+# used, hence the name BasePlot.
+#
+class BasePlot(Plot):
+    """Base class for data-style plots with a prepare method."""
+
+    _fields: list[str] = ["x", "y", "xlabel!", "ylabel!", "title!",
+                          "plot_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+
+    """
 
     def __init__(self):
-        self.xlo = None
-        self.xhi = None
+        self.x = None
         self.y = None
         self.xlabel = None
         self.ylabel = None
@@ -660,61 +881,31 @@ class HistogramPlot(Histogram):
         super().__init__()
 
     def __str__(self):
-        xlo = self.xlo
-        if self.xlo is not None:
-            xlo = np.array2string(np.asarray(self.xlo), separator=',',
-                                  precision=4, suppress_small=False)
-
-        xhi = self.xhi
-        if self.xhi is not None:
-            xhi = np.array2string(np.asarray(self.xhi), separator=',',
-                                  precision=4, suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(np.asarray(self.y), separator=',',
-                                precision=4, suppress_small=False)
-
-        return (('xlo    = %s\n' +
-                 'xhi    = %s\n' +
-                 'y      = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'histo_prefs = %s') %
-                (xlo,
-                 xhi,
-                 y,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.histo_prefs))
+        return display_fields(self, self._fields)
 
     def _repr_html_(self):
-        """Return a HTML (string) representation of the histogram plot."""
-        return backend.as_html_histogram(self)
+        """Return a HTML (string) representation of the plot."""
+        return backend.as_html_plot(self)
 
-    @property
-    def x(self):
-        """Return (xlo + xhi) / 2
+    def prepare(self, *args, **kwargs):
+        """Create the data to plot.
 
-        This is intended to make it easier to swap between
-        plot- and histogram-style plots by providing access
-        to an X value.
+        This sets the x, y and related fields so that plot will
+        display the data.
+
+        See Also
+        --------
+        plot
+
         """
-
-        if self.xlo is None or self.xhi is None:
-            return None
-
-        # As we do not (yet) require NumPy arrays, enforce it.
-        xlo = np.asarray(self.xlo)
-        xhi = np.asarray(self.xhi)
-        return (xlo + xhi) / 2
+        # would like to label this @abstractmethod but that would
+        # require significant changes to the class setup.
+        raise NotImplementedError()
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
-        This will plot the data sent to the prepare method.
+        This will plot the data created by the prepare method.
 
         Parameters
         ----------
@@ -735,15 +926,121 @@ class HistogramPlot(Histogram):
 
         """
 
-        Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
+        x = check_not_none(self.x)
+        y = check_not_none(self.y)
+        Plot.plot(self, x, y, title=self.title, xlabel=self.xlabel,
+                  ylabel=self.ylabel, overplot=overplot,
+                  clearwindow=clearwindow, **kwargs)
+
+
+class BaseHistogram(Histogram):
+    """Base class for histogram-style plots with a prepare method."""
+
+    _fields: list[str] = ["xlo", "xhi", "y", "xlabel!", "ylabel!",
+                          "title!", "histo_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+
+    """
+
+    def __init__(self) -> None:
+        self.xlo: Optional[np.ndarray] = None
+        self.xhi: Optional[np.ndarray] = None
+        self.y: Optional[np.ndarray] = None
+        self.xlabel: Optional[str] = None
+        self.ylabel: Optional[str] = None
+        self.title: Optional[str] = None
+        super().__init__()
+
+    def __str__(self) -> str:
+        return display_fields(self, self._fields)
+
+    def _repr_html_(self) -> str:
+        """Return a HTML (string) representation of the histogram plot."""
+        return backend.as_html_histogram(self)
+
+    @property
+    def x(self) -> Optional[np.ndarray]:
+        """Return (xlo + xhi) / 2
+
+        This is intended to make it easier to swap between
+        plot- and histogram-style plots by providing access
+        to an X value.
+        """
+
+        if self.xlo is None or self.xhi is None:
+            return None
+
+        # As we do not (yet) require NumPy arrays, enforce it.
+        xlo = np.asarray(self.xlo)
+        xhi = np.asarray(self.xhi)
+        return (xlo + xhi) / 2
+
+    def prepare(self, *args, **kwargs) -> None:
+        """Create the data to plot.
+
+        This sets the xlo, xhi, y and related fields so that plot will
+        display the data.
+
+        See Also
+        --------
+        plot
+
+        """
+        # would like to label this @abstractmethod but that would
+        # require significant changes to the class setup.
+        raise NotImplementedError()
+
+    def plot(self,  # type: ignore[override]
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
+        """Plot the data.
+
+        This will plot the data created by the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If `True` then add the data to an existing plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+
+        """
+
+        xlo = check_not_none(self.xlo)
+        xhi = check_not_none(self.xhi)
+        y = check_not_none(self.y)
+        Histogram.plot(self, xlo, xhi, y, title=self.title,
                        xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+                       overplot=overplot, clearwindow=clearwindow,
+                       **kwargs)
+
+
+class HistogramPlot(BaseHistogram):
+    """Histogram-style plots where the data is set with prepare.
+
+    This class was created before BaseHistogram was.
+    """
+    pass
 
 
 # I think we want slightly different histogram preferences
 # than most (mark by point rather than line).
 #
-def get_data_hist_prefs():
+def get_data_hist_prefs() -> dict[str, Any]:
     """Copy the data preferences to the histogram class"""
 
     hprefs = basicbackend.get_model_histo_defaults()
@@ -761,12 +1058,34 @@ class DataHistogramPlot(HistogramPlot):
     histo_prefs = get_data_hist_prefs()
     "The preferences for the plot."
 
-    def __init__(self):
-        self.xerr = None
-        self.yerr = None
+    def __init__(self) -> None:
+        self.yerr: Optional[np.ndarray] = None
         super().__init__()
 
-    def prepare(self, data, stat=None):
+    @property
+    def xerr(self) -> Optional[np.ndarray]:
+        """Return abs(xhi - xlow) / 2
+
+        The plotting backends actually calculate the xerr values
+        explicitly rather than use this field, so it is provided as a
+        property in case users need it.
+
+        .. versionchanged:: 4.16.1
+           This field is now a property.
+
+        """
+
+        if self.xlo is None or self.xhi is None:
+            return None
+
+        # As we do not (yet) require NumPy arrays, enforce it.
+        xlo = np.asarray(self.xlo)
+        xhi = np.asarray(self.xhi)
+        return np.abs(xhi - xlo) / 2
+
+    def prepare(self,
+                data: Data1DInt,
+                stat: Optional[Stat] = None) -> None:
         """Create the data to plot
 
         Parameters
@@ -787,8 +1106,8 @@ class DataHistogramPlot(HistogramPlot):
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
         #
-        (_, self.y, self.yerr, self.xerr, self.xlabel,
-         self.ylabel) = data.to_plot()
+        plot = data.to_plot()
+        (_, self.y, self.yerr, _, self.xlabel, self.ylabel) = plot
 
         self.xlo, self.xhi = data.get_indep(True)
 
@@ -798,10 +1117,18 @@ class DataHistogramPlot(HistogramPlot):
 
         self.title = data.name
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    # This extends the superclass by also plotting yerr but the
+    # current design means we need to re-write this routine rather
+    # than identifying this programatically (over moving yerr support
+    # to the superclass).
+    #
+    def plot(self,  # type: ignore[override]
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
         """Plot the data.
 
-        This will plot the data sent to the prepare method.
+        This will plot the data created by the prepare method.
 
         Parameters
         ----------
@@ -822,20 +1149,28 @@ class DataHistogramPlot(HistogramPlot):
 
         """
 
-        Histogram.plot(self, self.xlo, self.xhi, self.y,
-                       yerr=self.yerr, title=self.title,
-                       xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+        xlo = check_not_none(self.xlo)
+        xhi = check_not_none(self.xhi)
+        y = check_not_none(self.y)
+        Histogram.plot(self, xlo, xhi, y,
+                       # Note: the superclass does not recognize yerr
+                       yerr=self.yerr,
+                       title=self.title, xlabel=self.xlabel,
+                       ylabel=self.ylabel, overplot=overplot,
+                       clearwindow=clearwindow, **kwargs)
 
 
 class ModelHistogramPlot(HistogramPlot):
     """Display a model as a histogram."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.title = 'Model'
 
-    def prepare(self, data, model, stat=None):
+    def prepare(self,
+                data: Data1DInt,
+                model: Model,
+                stat: Optional[Stat] = None) -> None:
         """Create the plot.
 
         The stat parameter is ignored.
@@ -850,13 +1185,12 @@ class ModelHistogramPlot(HistogramPlot):
         self.xlo = indep[0]
         self.xhi = indep[1]
         self.y = y[1]
-        assert self.y.size == self.xlo.size
 
 
 class SourceHistogramPlot(ModelHistogramPlot):
     """Display a source model as a histogram."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__()
         self.title = 'Source'
 
@@ -869,24 +1203,23 @@ class PDFPlot(HistogramPlot):
     CDFPlot
     """
 
-    def __init__(self):
-        self.points = None
+    _fields = ["points", "xlo", "xhi", "y", "xlabel!", "ylabel!",
+               "title!", "histo_prefs!"]
+
+    def __init__(self) -> None:
+        self.points: Optional[np.ndarray] = None
         super().__init__()
 
-    def __str__(self):
-        points = self.points
-        if self.points is not None:
-            points = np.array2string(np.asarray(self.points),
-                                     separator=',', precision=4,
-                                     suppress_small=False)
-
-        return ('points = %s\n' % (points) + HistogramPlot.__str__(self))
-
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the PDF plot."""
         return backend.as_html_pdf(self)
 
-    def prepare(self, points, bins=12, normed=True, xlabel="x", name="x"):
+    def prepare(self,
+                points: Sequence[SupportsFloat],
+                bins: int = 12,
+                normed: bool = True,
+                xlabel: str = "x",
+                name: str = "x") -> None:
         """Create the data to plot.
 
         Parameters
@@ -908,16 +1241,17 @@ class PDFPlot(HistogramPlot):
         plot
         """
 
-        self.points = points
-        self.y, xx = np.histogram(points, bins=bins, density=normed)
+        self.points = np.asarray(points)
+        self.y, xx = np.histogram(self.points, bins=bins,
+                                  density=normed)
         self.xlo = xx[:-1]
         self.xhi = xx[1:]
         self.ylabel = "probability density"
         self.xlabel = xlabel
-        self.title = "PDF: {}".format(name)
+        self.title = f"PDF: {name}"
 
 
-class CDFPlot(Plot):
+class CDFPlot(BasePlot):
     """Display the cumulative distribution of an array.
 
     The cumulative distribution of the data is drawn along with
@@ -943,6 +1277,9 @@ class CDFPlot(Plot):
 
     """
 
+    _fields = ["points", "x", "y", "median!", "lower!", "upper!",
+               "xlabel!", "ylabel!", "title!", "plot_prefs!"]
+
     median_defaults = {"linestyle": 'dash', "linecolor": 'orange',
                        "linewidth": 1.5}
     """The options used to draw the median line."""
@@ -959,42 +1296,11 @@ class CDFPlot(Plot):
     """The plot options (the CDF and axes)."""
 
     def __init__(self):
-        self.x = None
-        self.y = None
         self.points = None
         self.median = None
         self.lower = None
         self.upper = None
-        self.xlabel = None
-        self.ylabel = None
-        self.title = None
         super().__init__()
-
-    def __str__(self):
-        x = self.x
-        if self.x is not None:
-            x = np.array2string(self.x, separator=',', precision=4,
-                                suppress_small=False)
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        points = self.points
-        if self.points is not None:
-            points = np.array2string(self.points, separator=',',
-                                     precision=4, suppress_small=False)
-
-        return f"""points = {points}
-x      = {x}
-y      = {y}
-median = {self.median}
-lower  = {self.lower}
-upper  = {self.upper}
-xlabel = {self.xlabel}
-ylabel = {self.ylabel}
-title  = {self.title}
-plot_prefs = {self.plot_prefs}"""
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the CDF plot."""
@@ -1024,13 +1330,13 @@ plot_prefs = {self.plot_prefs}"""
         xsize = len(self.x)
         self.y = (np.arange(xsize) + 1.0) / xsize
         self.xlabel = xlabel
-        self.ylabel = "p(<={})".format(xlabel)
-        self.title = "CDF: {}".format(name)
+        self.ylabel = f"p(<={xlabel})"
+        self.title = f"CDF: {name}"
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
-        This will plot the data sent to the prepare method.
+        This will plot the data created by the prepare method.
 
         Parameters
         ----------
@@ -1051,9 +1357,8 @@ plot_prefs = {self.plot_prefs}"""
 
         """
 
-        Plot.plot(self, self.x, self.y, title=self.title,
-                  xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().plot(overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
         # Note: the user arguments are not applied to the vertical lines
         #
@@ -1068,28 +1373,25 @@ plot_prefs = {self.plot_prefs}"""
 class LRHistogram(HistogramPlot):
     "Derived class for creating 1D likelihood ratio distribution plots"
 
-    def __init__(self):
-        self.ratios = None
-        self.lr = None
-        self.ppp = None
+    _fields = ["ratios", "lr!", "xlo", "xhi", "y", "xlabel!",
+               "ylabel!", "title!", "histo_prefs!"]
+
+    def __init__(self) -> None:
+        self.ratios: Optional[np.ndarray] = None
+        self.lr: Optional[float] = None
+        self.ppp: Optional[float] = None
         super().__init__()
 
-    def __str__(self):
-        ratios = self.ratios
-        if self.ratios is not None:
-            ratios = np.array2string(np.asarray(self.ratios),
-                                     separator=',', precision=4,
-                                     suppress_small=False)
-
-        return '\n'.join(['ratios = %s' % ratios,
-                          'lr = %s' % str(self.lr),
-                          HistogramPlot.__str__(self)])
-
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the LRHistogram plot."""
         return backend.as_html_lr(self)
 
-    def prepare(self, ratios, bins, niter, lr, ppp):
+    def prepare(self,
+                ratios: Sequence[SupportsFloat],
+                bins: int,
+                niter: int,
+                lr: SupportsFloat,
+                ppp: SupportsFloat) -> None:
         "Create the data to plot"
 
         self.ppp = float(ppp)
@@ -1104,10 +1406,13 @@ class LRHistogram(HistogramPlot):
         self.xlabel = "Likelihood Ratio"
         self.ylabel = "Frequency"
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
+    def plot(self,  # type: ignore[override]
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
         """Plot the data.
 
-        This will plot the data sent to the prepare method.
+        This will plot the data created by the prepare method.
 
         Parameters
         ----------
@@ -1128,12 +1433,17 @@ class LRHistogram(HistogramPlot):
 
         """
 
-        Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
-                       xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().plot(overplot=overplot, clearwindow=clearwindow, **kwargs)
 
         if self.lr is None:
             return
+
+        if TYPE_CHECKING:
+            # The super().plot call has already checked this but the type
+            # checker may not recognize this.
+            #
+            assert self.xlo is not None
+            assert self.xhi is not None
 
         # Note: the user arguments are not applied to the vertical line
         #
@@ -1152,20 +1462,24 @@ class SplitPlot(Plot, Contour):
     cols : int
        Number of columns of plots. The default is 1.
     """
+
     plot_prefs = basicbackend.get_split_plot_defaults()
     "The preferences for the plot."
+
+    _fields = ["rows!", "cols!", "plot_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+
+    """
 
     def __init__(self, rows=2, cols=1):
         self.reset(rows, cols)
         super().__init__()
 
     def __str__(self):
-        return (('rows   = %s\n' +
-                 'cols   = %s\n' +
-                 'plot_prefs = %s') %
-                (self.rows,
-                 self.cols,
-                 self.plot_prefs))
+        return display_fields(self, self._fields)
 
     def reset(self, rows=2, cols=1):
         "Prepare for a new set of plots or contours."
@@ -1305,7 +1619,7 @@ class JointPlot(SplitPlot):
         plot.plot(*args, overplot=overplot, **kwargs)
 
 
-class DataPlot(Plot):
+class DataPlot(BasePlot):
     """Create 1D plots of data values.
 
     Attributes
@@ -1347,56 +1661,16 @@ class DataPlot(Plot):
 
     """
 
+    _fields = ["x", "y", "yerr", "xerr", "xlabel!", "ylabel!",
+               "title!", "plot_prefs!"]
+
     plot_prefs = basicbackend.get_data_plot_defaults()
     "The preferences for the plot."
 
     def __init__(self):
-        self.x = None
-        self.y = None
         self.yerr = None
         self.xerr = None
-        self.xlabel = None
-        self.ylabel = None
-        self.title = None
         super().__init__()
-
-    def __str__(self):
-        x = self.x
-        if self.x is not None:
-            x = np.array2string(self.x, separator=',', precision=4,
-                                suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        yerr = self.yerr
-        if self.yerr is not None:
-            yerr = np.array2string(self.yerr, separator=',', precision=4,
-                                   suppress_small=False)
-
-        xerr = self.xerr
-        if self.xerr is not None:
-            xerr = np.array2string(self.xerr, separator=',', precision=4,
-                                   suppress_small=False)
-
-        return (('x      = %s\n' +
-                 'y      = %s\n' +
-                 'yerr   = %s\n' +
-                 'xerr   = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'plot_prefs = %s') %
-                (x,
-                 y,
-                 yerr,
-                 xerr,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.plot_prefs))
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data plot."""
@@ -1451,9 +1725,13 @@ class DataPlot(Plot):
         prepare, overplot
 
         """
-        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
-                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+        x = check_not_none(self.x)
+        y = check_not_none(self.y)
+        Plot.plot(self, x, y, yerr=self.yerr, xerr=self.xerr,
+                  title=self.title, xlabel=self.xlabel,
+                  ylabel=self.ylabel, overplot=overplot,
+                  clearwindow=clearwindow, **kwargs)
 
 
 class TracePlot(DataPlot):
@@ -1481,7 +1759,7 @@ class TracePlot(DataPlot):
         self.y = points
         self.xlabel = "iteration"
         self.ylabel = name
-        self.title = "Trace: {}".format(name)
+        self.title = f"Trace: {name}"
 
 
 class ScatterPlot(DataPlot):
@@ -1507,7 +1785,7 @@ class ScatterPlot(DataPlot):
         self.y = np.asarray(y, dtype=SherpaFloat)
         self.xlabel = xlabel
         self.ylabel = ylabel
-        self.title = "Scatter: {}".format(name)
+        self.title = f"Scatter: {name}"
 
 
 class PSFKernelPlot(DataPlot):
@@ -1537,7 +1815,84 @@ class PSFKernelPlot(DataPlot):
         self.title = 'PSF Kernel'
 
 
-class DataContour(Contour):
+class BaseContour(Contour):
+    """Base class for contour-style plots with a prepare method."""
+
+    _fields: list[str] = ["x0", "x1", "y", "xlabel!", "ylabel!",
+                          "title!", "levels!", "contour_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+
+    """
+
+    # To be over-ridden
+    contour_prefs = None
+
+    def __init__(self):
+        self.x0 = None
+        self.x1 = None
+        self.y = None
+        self.xlabel = None
+        self.ylabel = None
+        self.title = None
+        self.levels = None
+        super().__init__()
+
+    def __str__(self):
+        return display_fields(self, self._fields)
+
+    def _repr_html_(self):
+        """Return a HTML (string) representation of the model contour plot."""
+        raise NotImplementedError()
+
+    def prepare(self, *args, **kwargs):
+        """Create the data to plot.
+
+        This sets the x0, x1, y and related fields so that contour will
+        display the data.
+
+        See Also
+        --------
+        contour
+
+        """
+        # would like to label this @abstractmethod but that would
+        # require significant changes to the class setup.
+        raise NotImplementedError()
+
+    def contour(self, overcontour=False, clearwindow=True, **kwargs):
+        """Display the contour data.
+
+        This will display the data created by the prepare method.
+
+        Parameters
+        ----------
+        overcontour : bool, optional
+           If `True` then add the data to an existing plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           contour_prefs dictionary.
+
+        See Also
+        --------
+        overcontour
+
+        """
+        super().contour(self.x0, self.x1, self.y,
+                        levels=self.levels, title=self.title,
+                        xlabel=self.xlabel, ylabel=self.ylabel,
+                        overcontour=overcontour,
+                        clearwindow=clearwindow, **kwargs)
+
+
+class DataContour(BaseContour):
     """Create contours of 2D data.
 
     Attributes
@@ -1558,49 +1913,6 @@ class DataContour(Contour):
     contour_prefs = basicbackend.get_data_contour_defaults()
     "The preferences for the plot."
 
-    def __init__(self):
-        self.x0 = None
-        self.x1 = None
-        self.y = None
-        self.xlabel = None
-        self.ylabel = None
-        self.title = None
-        self.levels = None
-        super().__init__()
-
-    def __str__(self):
-        x0 = self.x0
-        if self.x0 is not None:
-            x0 = np.array2string(self.x0, separator=',', precision=4,
-                                 suppress_small=False)
-
-        x1 = self.x1
-        if self.x1 is not None:
-            x1 = np.array2string(self.x1, separator=',', precision=4,
-                                 suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        return (('x0     = %s\n' +
-                 'x1     = %s\n' +
-                 'y      = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'levels = %s\n' +
-                 'contour_prefs = %s') %
-                (x0,
-                 x1,
-                 y,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.levels,
-                 self.contour_prefs))
-
     def _repr_html_(self):
         """Return a HTML (string) representation of the contour plot."""
         return backend.as_html_datacontour(self)
@@ -1610,26 +1922,19 @@ class DataContour(Contour):
          self.ylabel) = data.to_contour()
         self.title = data.name
 
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
-        Contour.contour(self, self.x0, self.x1, self.y,
-                        levels=self.levels, title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        overcontour=overcontour,
-                        clearwindow=clearwindow, **kwargs)
-
 
 class PSFKernelContour(DataContour):
     "Derived class for creating 2D PSF Kernel contours"
 
     def prepare(self, psf, data=None, stat=None):
         psfdata = psf.get_kernel(data)
-        DataContour.prepare(self, psfdata)
+        super().prepare(psfdata)
         # self.xlabel = 'PSF Kernel size x0'
         # self.ylabel = 'PSF Kernel size x1'
         self.title = 'PSF Kernel'
 
 
-class ModelPlot(Plot):
+class ModelPlot(BasePlot):
     """Create 1D plots of model values.
 
     Attributes
@@ -1673,56 +1978,17 @@ class ModelPlot(Plot):
 
     """
 
+    _fields = ["x", "y", "yerr", "xerr", "xlabel!", "ylabel!",
+               "title!", "plot_prefs!"]
+
     plot_prefs = basicbackend.get_model_plot_defaults()
     "The preferences for the plot."
 
     def __init__(self):
-        self.x = None
-        self.y = None
-        self.yerr = None
-        self.xerr = None
-        self.xlabel = None
-        self.ylabel = None
-        self.title = 'Model'
+        self.yerr = None  # may be used by subclasses
+        self.xerr = None  # may be used by subclasses
         super().__init__()
-
-    def __str__(self):
-        x = self.x
-        if self.x is not None:
-            x = np.array2string(self.x, separator=',', precision=4,
-                                suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        yerr = self.yerr
-        if self.yerr is not None:
-            yerr = np.array2string(self.yerr, separator=',', precision=4,
-                                   suppress_small=False)
-
-        xerr = self.xerr
-        if self.xerr is not None:
-            xerr = np.array2string(self.xerr, separator=',', precision=4,
-                                   suppress_small=False)
-
-        return (('x      = %s\n' +
-                 'y      = %s\n' +
-                 'yerr   = %s\n' +
-                 'xerr   = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'plot_prefs = %s') %
-                (x,
-                 y,
-                 yerr,
-                 xerr,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.plot_prefs))
+        self.title = 'Model'
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the model plot."""
@@ -1750,33 +2016,6 @@ class ModelPlot(Plot):
          self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
         self.y = self.y[1]
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        """Plot the data.
-
-        This will plot the data sent to the prepare method.
-
-        Parameters
-        ----------
-        overplot : bool, optional
-           If `True` then add the data to an existing plot, otherwise
-           create a new plot.
-        clearwindow : bool, optional
-           Should the existing plot area be cleared before creating this
-           new plot (e.g. for multi-panel plots)?
-        **kwargs
-           These values are passed on to the plot backend, and must
-           match the names of the keys of the object's
-           plot_prefs dictionary.
-
-        See Also
-        --------
-        prepare, overplot
-
-        """
-        Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
-                  ylabel=self.ylabel, overplot=overplot,
-                  clearwindow=clearwindow, **kwargs)
-
 
 class ComponentModelPlot(ModelPlot):
 
@@ -1785,7 +2024,7 @@ class ComponentModelPlot(ModelPlot):
 
     def prepare(self, data, model, stat=None):
         ModelPlot.prepare(self, data, model, stat)
-        self.title = 'Model component: %s' % model.name
+        self.title = f'Model component: {model.name}'
 
 
 class ComponentModelHistogramPlot(ModelHistogramPlot):
@@ -1794,9 +2033,12 @@ class ComponentModelHistogramPlot(ModelHistogramPlot):
     plot_prefs = basicbackend.get_component_plot_defaults()
     "The preferences for the plot."
 
-    def prepare(self, data, model, stat=None):
+    def prepare(self,
+                data: Data1DInt,
+                model: Model,
+                stat: Optional[Stat] = None) -> None:
         super().prepare(data, model, stat)
-        self.title = 'Model component: {}'.format(model.name)
+        self.title = f'Model component: {model.name}'
 
 
 class ComponentTemplateModelPlot(ComponentModelPlot):
@@ -1806,7 +2048,7 @@ class ComponentTemplateModelPlot(ComponentModelPlot):
         self.y = model.get_y()
         self.xlabel = data.get_xlabel()
         self.ylabel = data.get_ylabel()
-        self.title = 'Model component: {}'.format(model.name)
+        self.title = f'Model component: {model.name}'
 
 
 class SourcePlot(ModelPlot):
@@ -1840,7 +2082,7 @@ class ComponentSourcePlot(SourcePlot):
         (self.x, self.y, self.yerr, self.xerr,
          self.xlabel, self.ylabel) = data.to_component_plot(yfunc=model)
         self.y = self.y[1]
-        self.title = 'Source model component: {}'.format(model.name)
+        self.title = f'Source model component: {model.name}'
 
 
 class ComponentSourceHistogramPlot(SourceHistogramPlot):
@@ -1848,7 +2090,10 @@ class ComponentSourceHistogramPlot(SourceHistogramPlot):
     # Is this the correct setting?
     plot_prefs = basicbackend.get_component_plot_defaults()
 
-    def prepare(self, data, model, stat=None):
+    def prepare(self,
+                data: Data1DInt,
+                model: Model,
+                stat: Optional[Stat] = None) -> None:
 
         plot = data.to_component_plot(yfunc=model)
         (_, y, _, _, self.xlabel, self.ylabel) = plot
@@ -1859,9 +2104,8 @@ class ComponentSourceHistogramPlot(SourceHistogramPlot):
         self.xlo = indep[0]
         self.xhi = indep[1]
         self.y = y[1]
-        assert self.y.size == self.xlo.size
 
-        self.title = 'Source model component: {}'.format(model.name)
+        self.title = f'Source model component: {model.name}'
 
 
 class ComponentTemplateSourcePlot(ComponentSourcePlot):
@@ -1878,7 +2122,7 @@ class ComponentTemplateSourcePlot(ComponentSourcePlot):
 
         self.xlabel = data.get_xlabel()
         self.ylabel = data.get_ylabel()
-        self.title = 'Source model component: {}'.format(model.name)
+        self.title = f'Source model component: {model.name}'
 
 
 class PSFPlot(DataPlot):
@@ -1906,54 +2150,15 @@ class PSFPlot(DataPlot):
         self.title = psf.kernel.name
 
 
-class ModelContour(Contour):
+class ModelContour(BaseContour):
     "Derived class for creating 2D model contours"
 
     contour_prefs = basicbackend.get_model_contour_defaults()
     "The preferences for the plot."
 
     def __init__(self):
-        self.x0 = None
-        self.x1 = None
-        self.y = None
-        self.xlabel = None
-        self.ylabel = None
-        self.title = 'Model'
-        self.levels = None
         super().__init__()
-
-    def __str__(self):
-        x0 = self.x0
-        if self.x0 is not None:
-            x0 = np.array2string(self.x0, separator=',', precision=4,
-                                 suppress_small=False)
-
-        x1 = self.x1
-        if self.x1 is not None:
-            x1 = np.array2string(self.x1, separator=',', precision=4,
-                                 suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        return (('x0     = %s\n' +
-                 'x1     = %s\n' +
-                 'y      = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'levels = %s\n' +
-                 'contour_prefs = %s') %
-                (x0,
-                 x1,
-                 y,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.levels,
-                 self.contour_prefs))
+        self.title = 'Model'
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the model contour plot."""
@@ -1964,19 +2169,13 @@ class ModelContour(Contour):
          self.ylabel) = data.to_contour(yfunc=model)
         self.y = self.y[1]
 
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
-        Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
-                        title=self.title, xlabel=self.xlabel,
-                        ylabel=self.ylabel, overcontour=overcontour,
-                        clearwindow=clearwindow, **kwargs)
-
 
 class PSFContour(DataContour):
     "Derived class for creating 2D PSF contours"
 
     def prepare(self, psf, data=None, stat=None):
         psfdata = psf.get_kernel(data, False)
-        DataContour.prepare(self, psfdata)
+        super().prepare(psfdata)
         self.title = psf.kernel.name
 
 
@@ -1988,7 +2187,7 @@ class SourceContour(ModelContour):
         self.title = 'Source'
 
 
-class FitPlot(Plot):
+class FitPlot(BasePlot):
     """Combine data and model plots for 1D data.
 
     Attributes
@@ -2049,11 +2248,11 @@ class FitPlot(Plot):
         if self.modelplot is not None:
             model_title = self.modelplot.title
 
-        return (('dataplot   = %s\n%s\n\nmodelplot  = %s\n%s') %
-                (data_title,
-                 self.dataplot,
-                 model_title,
-                 self.modelplot))
+        return f"""dataplot   = {data_title}
+{self.dataplot}
+
+modelplot  = {model_title}
+{self.modelplot}"""
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the fit plot."""
@@ -2081,7 +2280,7 @@ class FitPlot(Plot):
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
-        This will plot the data sent to the prepare method.
+        This will plot the data created by the prepare method.
 
         Parameters
         ----------
@@ -2113,7 +2312,7 @@ class FitPlot(Plot):
         self.modelplot.overplot(**kwargs)
 
 
-class FitContour(Contour):
+class FitContour(BaseContour):
     "Derived class for creating 2D combination data and model contours"
 
     contour_prefs = basicbackend.get_fit_contour_defaults()
@@ -2132,11 +2331,12 @@ class FitContour(Contour):
         model_title = None
         if self.modelcontour is not None:
             model_title = self.modelcontour.title
-        return (('datacontour = %s\n%s\n\nmodelcontour = %s\n%s') %
-                (data_title,
-                 self.datacontour,
-                 model_title,
-                 self.modelcontour))
+
+        return f"""datacontour = {data_title}
+{self.datacontour}
+
+modelcontour = {model_title}
+{self.modelcontour}"""
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the fit contour plot."""
@@ -2201,9 +2401,79 @@ class DelchiPlot(ModelPlot):
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         self.plot_prefs['ylog'] = False
         kwargs.pop('ylog', True)
+
+        # We can not just call the superclass since that ignores
+        # the xerr and yerr fields.
+        #
+        # super().plot(overplot=overplot, clearwindow=clearwindow, **kwargs)
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().hline(y=0, xmin=0, xmax=1, linecolor='k',
+                      linewidth=.8, overplot=True)
+
+
+class DelchiHistogramPlot(ModelHistogramPlot):
+    """Create plots of the delta-chi value per point.
+
+    Notes
+    -----
+    The ylog setting is ignored, whether given as a preference or
+    a keyword argument, so the Y axis is always drawn with a
+    linear scale.
+    """
+
+    histo_prefs = basicbackend.get_resid_histo_defaults()
+    "The preferences for the delchi plot."
+
+    def __init__(self) -> None:
+        self.yerr = None
+        super().__init__()
+
+    def _calc_delchi(self,
+                     ylist: tuple[np.ndarray, np.ndarray],
+                     staterr: np.ndarray) -> np.ndarray:
+        return (ylist[0] - ylist[1]) / staterr
+
+    def prepare(self,  # type: ignore[override]
+                data: Data1DInt,
+                model: Model,
+                stat: Stat) -> None:
+        plot = data.to_plot(model)
+        (_, y, staterr, _, self.xlabel, self.ylabel) = plot
+
+        if staterr is None:
+            if stat.name in _stats_noerr:
+                raise StatErr('badstat', "DelchiHistogramPlot", stat.name)
+            staterr = data.get_yerr(True, stat.calc_staterror)
+
+        # taken from get_x from Data1DInt
+        indep = data.get_evaluation_indep(filter=True, model=model)
+
+        self.xlo = indep[0]
+        self.xhi = indep[1]
+
+        self.y = self._calc_delchi(y, staterr)
+        self.yerr = staterr / staterr
+        self.ylabel = 'Sigma'
+        self.title = _make_title('Sigma Residuals', data.name)
+
+    def plot(self,  # type: ignore[override]
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
+
+        if TYPE_CHECKING:
+            assert self.xlo is not None
+            assert self.xhi is not None
+            assert self.y is not None
+
+        self.histo_prefs['ylog'] = False
+        kwargs.pop('ylog', True)
+        Histogram.plot(self, self.xlo, self.xhi, self.y,
+                       yerr=self.yerr, title=self.title,
+                       xlabel=self.xlabel, ylabel=self.ylabel,
+                       overplot=overplot, clearwindow=clearwindow, **kwargs)
         super().hline(y=0, xmin=0, xmax=1, linecolor='k',
                       linewidth=.8, overplot=True)
 
@@ -2248,10 +2518,42 @@ class ChisqrPlot(ModelPlot):
         self.title = _make_title(
             backend.get_latex_for_string(r'\chi^2'), data.name)
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        Plot.plot(self, self.x, self.y, title=self.title,
-                  xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
+
+class ChisqrHistogramPlot(ModelHistogramPlot):
+    """Create plot of the ChiSq residuals per point."""
+
+    histo_prefs = basicbackend.get_resid_histo_defaults()
+    "The preferences for the residual plot."
+
+    def _calc_chisqr(self,
+                     ylist: tuple[np.ndarray, np.ndarray],
+                     staterr: np.ndarray) -> np.ndarray:
+        dy = ylist[0] - ylist[1]
+        return dy * dy / (staterr * staterr)
+
+    def prepare(self,  # type: ignore[override]
+                data: Data1DInt,
+                model: Model,
+                stat: Stat) -> None:
+        plot = data.to_plot(model)
+        (_, y, _, _, self.xlabel, self.ylabel) = plot
+
+        # taken from get_x from Data1DInt
+        indep = data.get_evaluation_indep(filter=True, model=model)
+
+        self.xlo = indep[0]
+        self.xhi = indep[1]
+
+        # if staterr is None:
+        if stat.name in _stats_noerr:
+            raise StatErr('badstat', "ChisqrPlot", stat.name)
+
+        staterr = data.get_yerr(True, stat.calc_staterror)
+        self.y = self._calc_chisqr(y, staterr)
+
+        self.ylabel = backend.get_latex_for_string(r'\chi^2')
+        self.title = _make_title(
+            backend.get_latex_for_string(r'\chi^2'), data.name)
 
 
 class ResidPlot(ModelPlot):
@@ -2317,9 +2619,93 @@ class ResidPlot(ModelPlot):
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         self.plot_prefs['ylog'] = False
         kwargs.pop('ylog', True)
+
+        # We can not just call the superclass since that ignores
+        # the xerr and yerr fields.
+        #
+        # super().plot(overplot=overplot, clearwindow=clearwindow, **kwargs)
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().hline(y=0, xmin=0, xmax=1, linecolor='k',
+                      linewidth=.8, overplot=True)
+
+
+class ResidHistogramPlot(ModelHistogramPlot):
+    """Create plots of the residual value per point.
+
+    Notes
+    -----
+    The ylog setting is ignored, whether given as a preference or
+    a keyword argument, so the Y axis is always drawn with a
+    linear scale.
+    """
+
+    histo_prefs = basicbackend.get_resid_histo_defaults()
+    "The preferences for the residual plot."
+
+    def __init__(self) -> None:
+        self.yerr = None
+        super().__init__()
+
+    def _calc_resid(self,
+                    ylist: tuple[np.ndarray, np.ndarray]) -> np.ndarray:
+        return ylist[0] - ylist[1]
+
+    def prepare(self,  # type: ignore[override]
+                data: Data1DInt,
+                model: Model,
+                stat: Stat) -> None:
+        plot = data.to_plot(model)
+        (_, y, self.yerr, _, self.xlabel, self.ylabel) = plot
+
+        # taken from get_x from Data1DInt
+        indep = data.get_evaluation_indep(filter=True, model=model)
+
+        self.xlo = indep[0]
+        self.xhi = indep[1]
+
+        self.y = self._calc_resid(y)
+
+        # See the discussion in DataPlot.prepare
+        try:
+            yerrorbars = self.histo_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
+        if stat.name in _stats_noerr:
+            self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
+            if yerrorbars:
+                warning(_errorbar_warning(stat))
+        else:
+            self.yerr = data.get_yerr(True, stat.calc_staterror)
+
+        # Some data sets (e.g. DataPHA, which shows the units) have a y
+        # label that could (should?) be displayed (or added to the label).
+        # To avoid a change in behavior, the label is only changed if
+        # the "generic" Y axis label is used. To be reviewed.
+        #
+        if self.ylabel == 'y':
+            self.ylabel = 'Data - Model'
+
+        self.title = _make_title('Residuals', data.name)
+
+    def plot(self,  # type: ignore[override]
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
+
+        if TYPE_CHECKING:
+            assert self.xlo is not None
+            assert self.xhi is not None
+            assert self.y is not None
+
+        self.histo_prefs['ylog'] = False
+        kwargs.pop('ylog', True)
+        Histogram.plot(self, self.xlo, self.xhi, self.y,
+                       yerr=self.yerr, title=self.title,
+                       xlabel=self.xlabel, ylabel=self.ylabel,
+                       overplot=overplot, clearwindow=clearwindow, **kwargs)
         super().hline(y=0, xmin=0, xmax=1, linecolor='k',
                       linewidth=.8, overplot=True)
 
@@ -2339,13 +2725,6 @@ class ResidContour(ModelContour):
 
         self.y = self._calc_resid(self.y)
         self.title = _make_title('Residuals', data.name)
-
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
-        Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
-                        title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow,
-                        **kwargs)
 
 
 class RatioPlot(ModelPlot):
@@ -2411,9 +2790,96 @@ class RatioPlot(ModelPlot):
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         self.plot_prefs['ylog'] = False
         kwargs.pop('ylog', True)
+
+        # We can not just call the superclass since that ignores
+        # the xerr and yerr fields.
+        #
+        # super().plot(overplot=overplot, clearwindow=clearwindow, **kwargs)
         Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
                   title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().hline(y=1, xmin=0, xmax=1, linecolor='k',
+                      linewidth=.8, overplot=True)
+
+
+class RatioHistogramPlot(ModelHistogramPlot):
+    """Create plots of the ratio value per point.
+
+    Notes
+    -----
+    The ylog setting is ignored, whether given as a preference or
+    a keyword argument, so the Y axis is always drawn with a
+    linear scale.
+    """
+
+    # Turn on yerrorbars by default. What is the best way to do this?
+    #
+    histo_prefs = basicbackend.get_resid_histo_defaults() | {"yerrorbars": True}
+    "The preferences for the ratio plot."
+
+    def __init__(self) -> None:
+        self.yerr = None
+        super().__init__()
+
+    def _calc_ratio(self,
+                    ylist: tuple[np.ndarray, np.ndarray]) -> np.ndarray:
+        # should not need np.asarray here but leave in for safety
+        data = np.asarray(ylist[0])
+        model = np.asarray(ylist[1])
+        bad = np.where(model == 0.0)
+        data[bad] = 0.0
+        model[bad] = 1.0
+        return data / model
+
+    def prepare(self,  # type: ignore[override]
+                data: Data1DInt,
+                model: Model,
+                stat: Stat) -> None:
+        plot = data.to_plot(model)
+        (_, y, _, _, self.xlabel, self.ylabel) = plot
+
+        # taken from get_x from Data1DInt
+        indep = data.get_evaluation_indep(filter=True, model=model)
+
+        self.xlo = indep[0]
+        self.xhi = indep[1]
+
+        self.y = self._calc_ratio(y)
+
+        # See the discussion in DataPlot.prepare
+        try:
+            yerrorbars = self.histo_prefs['yerrorbars']
+        except KeyError:
+            yerrorbars = True
+
+        if stat.name in _stats_noerr:
+            yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
+            if yerrorbars:
+                warning(_errorbar_warning(stat))
+        else:
+            yerr = data.get_yerr(True, stat.calc_staterror)
+
+        self.yerr = yerr / y[1]
+
+        self.ylabel = 'Data / Model'
+        self.title = _make_title('Ratio of Data to Model', data.name)
+
+    def plot(self,  # type: ignore[override]
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
+
+        if TYPE_CHECKING:
+            assert self.xlo is not None
+            assert self.xhi is not None
+            assert self.y is not None
+
+        self.histo_prefs['ylog'] = False
+        kwargs.pop('ylog', True)
+        Histogram.plot(self, self.xlo, self.xhi, self.y,
+                       yerr=self.yerr, title=self.title,
+                       xlabel=self.xlabel, ylabel=self.ylabel,
+                       overplot=overplot, clearwindow=clearwindow, **kwargs)
         super().hline(y=1, xmin=0, xmax=1, linecolor='k',
                       linewidth=.8, overplot=True)
 
@@ -2438,13 +2904,6 @@ class RatioContour(ModelContour):
 
         self.y = self._calc_ratio(self.y)
         self.title = _make_title('Ratio of Data to Model', data.name)
-
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
-        Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
-                        title=self.title, xlabel=self.xlabel,
-                        ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow,
-                        **kwargs)
 
 
 def calc_par_range(minval: float,
@@ -2527,6 +2986,15 @@ class Confidence1D(DataPlot):
     conf_type = "unknown"
     "The type of confidence analysis."
 
+    _fields = ["x", "y", "min!", "max!", "nloop!", "delv!",
+               "fac!", "log!", "parval!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+
+    """
+
     def __init__(self):
         self.min = None
         self.max = None
@@ -2550,27 +3018,6 @@ class Confidence1D(DataPlot):
 
         if 'numcores' not in state:
             self.__dict__['numcores'] = None
-
-    def __str__(self):
-        x = self.x
-        if self.x is not None:
-            x = np.array2string(self.x, separator=',', precision=4,
-                                suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        return (f'x      = {x}\n' +
-                f'y      = {y}\n' +
-                f'min    = {self.min}\n' +
-                f'max    = {self.max}\n' +
-                f'nloop  = {self.nloop}\n' +
-                f'delv   = {self.delv}\n' +
-                f'fac    = {self.fac}\n' +
-                f'log    = {self.log}\n' +
-                f'parval = {self.parval}')
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the confidence 1D plot."""
@@ -2738,10 +3185,14 @@ class Confidence1D(DataPlot):
             raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
+
+        x = check_not_none(self.x, "calc")
+        y = check_not_none(self.y, "calc")
+
         if self.log:
             self.plot_prefs['xlog'] = True
 
-        Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
+        Plot.plot(self, x, y, title=self.title, xlabel=self.xlabel,
                   ylabel=self.ylabel, overplot=overplot,
                   clearwindow=clearwindow, **kwargs)
 
@@ -2775,6 +3226,16 @@ class Confidence2D(DataContour, Point):
     conf_type = "unknown"
     "The type of confidence analysis."
 
+    _fields = ["x0", "x1", "y", "min!", "max!", "nloop!", "fac!",
+               "delv!", "log!", "sigma!", "parval0!", "parval1!",
+               "levels!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+
+    """
+
     def __init__(self):
         self.min = None
         self.max = None
@@ -2797,36 +3258,6 @@ class Confidence2D(DataContour, Point):
 
         if 'numcores' not in state:
             self.__dict__['numcores'] = None
-
-    def __str__(self):
-        x0 = self.x0
-        if self.x0 is not None:
-            x0 = np.array2string(self.x0, separator=',', precision=4,
-                                 suppress_small=False)
-
-        x1 = self.x1
-        if self.x1 is not None:
-            x1 = np.array2string(self.x1, separator=',', precision=4,
-                                 suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        return (f'x0      = {x0}\n' +
-                f'x1      = {x1}\n' +
-                f'y       = {y}\n' +
-                f'min     = {self.min}\n' +
-                f'max     = {self.max}\n' +
-                f'nloop   = {self.nloop}\n' +
-                f'fac     = {self.fac}\n' +
-                f'delv    = {self.delv}\n' +
-                f'log     = {self.log}\n' +
-                f'sigma   = {self.sigma}\n' +
-                f'parval0 = {self.parval0}\n' +
-                f'parval1 = {self.parval1}\n' +
-                f'levels  = {self.levels}')
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the confidence 2D plot."""
@@ -3096,6 +3527,10 @@ class Confidence2D(DataContour, Point):
     # TODO: should this be overcontour rather than overplot?
     def contour(self, overplot=False, clearwindow=True, **kwargs):
 
+        x0 = check_not_none(self.x0, "calc")
+        x1 = check_not_none(self.x1, "calc")
+        y = check_not_none(self.y, "calc")
+
         if self.log[0]:
             self.contour_prefs['xlog'] = True
         if self.log[1]:
@@ -3109,7 +3544,7 @@ class Confidence2D(DataContour, Point):
         #
         overcontour = kwargs.pop('overcontour', False) or overplot
 
-        Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
+        Contour.contour(self, x0, x1, y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
                         ylabel=self.ylabel, overcontour=overcontour,
                         clearwindow=clearwindow, **kwargs)

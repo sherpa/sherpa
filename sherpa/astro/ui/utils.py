@@ -361,6 +361,11 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['source'].append(sherpa.astro.plot.SourcePlot())
         self._plot_types["source_component"].append(sherpa.astro.plot.ComponentSourcePlot())
 
+        self._plot_types["ratio"].append(sherpa.astro.plot.RatioPHAPlot())
+        self._plot_types["resid"].append(sherpa.astro.plot.ResidPHAPlot())
+        self._plot_types["delchi"].append(sherpa.astro.plot.DelchiPHAPlot())
+        self._plot_types["chisqr"].append(sherpa.astro.plot.ChisqrPHAPlot())
+
         self._plot_types['arf'] = [sherpa.astro.plot.ARFPlot()]
         self._plot_types['rmf'] = [sherpa.astro.plot.RMFPlot()]
         self._plot_types['order'] = [sherpa.astro.plot.OrderPlot()]
@@ -11379,6 +11384,74 @@ class Session(sherpa.ui.utils.Session):
         return super().get_source_component_plot(id, model=model, recalc=recalc)
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
+
+    def get_ratio_plot(self, id=None, recalc=True):
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        if isinstance(data, DataPHA):
+            plotobj = self._plot_types["ratio"][2]
+            if recalc:
+                plotobj.prepare(data, self.get_model(id), self.get_stat())
+
+            return plotobj
+
+        return super().get_ratio_plot(id, recalc=recalc)
+
+    get_ratio_plot.__doc__ = sherpa.ui.utils.Session.get_ratio_plot.__doc__
+
+    def get_resid_plot(self, id=None, recalc=True):
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        if isinstance(data, DataPHA):
+            plotobj = self._plot_types["resid"][2]
+            if recalc:
+                plotobj.prepare(data, self.get_model(id), self.get_stat())
+
+            return plotobj
+
+        return super().get_resid_plot(id, recalc=recalc)
+
+    get_resid_plot.__doc__ = sherpa.ui.utils.Session.get_resid_plot.__doc__
+
+    def get_delchi_plot(self, id=None, recalc=True):
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        if isinstance(data, DataPHA):
+            plotobj = self._plot_types["delchi"][2]
+            if recalc:
+                plotobj.prepare(data, self.get_model(id), self.get_stat())
+
+            return plotobj
+
+        return super().get_delchi_plot(id, recalc=recalc)
+
+    get_delchi_plot.__doc__ = sherpa.ui.utils.Session.get_delchi_plot.__doc__
+
+    def get_chisqr_plot(self, id=None, recalc=True):
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        if isinstance(data, DataPHA):
+            plotobj = self._plot_types["chisqr"][2]
+            if recalc:
+                plotobj.prepare(data, self.get_model(id), self.get_stat())
+
+            return plotobj
+
+        return super().get_chisqr_plot(id, recalc=recalc)
+
+    get_chisqr_plot.__doc__ = sherpa.ui.utils.Session.get_chisqr_plot.__doc__
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id=1, otherids=(), num=500, bins=25, numcores=None,
