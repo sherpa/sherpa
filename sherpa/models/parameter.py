@@ -165,7 +165,7 @@ such as being twice the other parameter:
     max         = 30.0
     units       =
     frozen      = True
-    link        = (2 * other.beta)
+    link        = 2 * other.beta
     default_val = 8.0
     default_min = -3.4028234663852886e+38
     default_max = 3.4028234663852886e+38
@@ -173,7 +173,7 @@ such as being twice the other parameter:
 The `link` attribute stores the expression:
 
     >>> p.link
-    <BinaryOpParameter '(2 * other.beta)'>
+    <BinaryOpParameter '2 * other.beta'>
 
 A ParameterErr exception will be raised whenever the linked expression
 is evaluated and the result lies outside the parameters soft limits
@@ -204,9 +204,10 @@ fit.
 
 import logging
 import numpy
-from sherpa.utils import NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit, formatting, \
+    get_precedences_op, get_precedence_expr, \
+    get_precedence_lhs, get_precedence_rhs
 from sherpa.utils.err import ParameterErr
-from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
 
 warning = logging.getLogger(__name__).warning
@@ -640,7 +641,8 @@ class Parameter(NoNewAttributesAfterInit):
         return html_parameter(self)
 
     # Unary operations
-    __neg__ = _make_unop(numpy.negative, '-', strformat='-{arg}')
+    # It is safest to always say -(..) even if arg is a single field
+    __neg__ = _make_unop(numpy.negative, '-', strformat='-({arg})')
     __abs__ = _make_unop(numpy.absolute, 'abs')
 
     # Binary operations
@@ -783,7 +785,7 @@ class CompositeParameter(Parameter):
        >>> q = Parameter('m', 'q', 4)
        >>> c = (p + q) / 2
        >>> c
-       <BinaryOpParameter '((m.p + m.q) / 2)'>
+       <BinaryOpParameter '(m.p + m.q) / 2'>
        >>> for cpt in c:
        ...     print(type(cpt))
        ...
@@ -857,10 +859,11 @@ class UnaryOpParameter(CompositeParameter):
     def __init__(self, arg, op, opstr, strformat='{opstr}({arg})'):
         self.arg = arg
         self.op = op
-        CompositeParameter.__init__(self,
-                                    strformat.format(opstr=opstr,
-                                                     arg=self.arg.fullname),
-                                    (self.arg,))
+        self.opprec = get_precedences_op(op)[0]
+
+        fullname = self.arg.fullname
+        name = strformat.format(opstr=opstr, arg=fullname)
+        CompositeParameter.__init__(self, name, (self.arg,))
 
     def eval(self):
         return self.op(self.arg.val)
@@ -896,15 +899,24 @@ class BinaryOpParameter(CompositeParameter):
         return ConstantParameter(obj)
 
     def __init__(self, lhs, rhs, op, opstr,
-                 strformat='({lhs} {opstr} {rhs})'):
+                 strformat='{lhs} {opstr} {rhs}'):
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
-        CompositeParameter.__init__(self,
-                                    strformat.format(lhs=self.lhs.fullname,
-                                                     rhs=self.rhs.fullname,
-                                                     opstr=opstr),
-                                    (self.lhs, self.rhs))
+
+        p, a =  get_precedences_op(op)
+        self.opprec = p
+
+        # Simplify the expression if possible.
+        #
+        lp = get_precedence_expr(self.lhs)
+        rp = get_precedence_expr(self.rhs)
+
+        lstr = get_precedence_lhs(self.lhs.fullname, lp, p, a)
+        rstr = get_precedence_rhs(self.rhs.fullname, opstr, rp, p)
+
+        name = strformat.format(lhs=lstr, rhs=rstr, opstr=opstr)
+        CompositeParameter.__init__(self, name, (self.lhs, self.rhs))
 
     def eval(self):
         return self.op(self.lhs.val, self.rhs.val)

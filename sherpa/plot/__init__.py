@@ -31,6 +31,7 @@ from __future__ import annotations
 
 from configparser import ConfigParser
 import contextlib
+import copy
 import logging
 import importlib
 from typing import Any, Literal, Optional, Sequence, Union
@@ -106,6 +107,7 @@ else:
             f"List of backends that have loaded and would be available: {[k for k in PLOT_BACKENDS]}")
 
 __all__ = ('Plot', 'Contour', 'Point', 'Histogram',
+           'MultiPlot',
            'HistogramPlot', 'DataHistogramPlot',
            'ModelHistogramPlot', 'SourceHistogramPlot',
            'PDFPlot', 'CDFPlot', 'LRHistogram',
@@ -3517,3 +3519,82 @@ class RegionUncertainty(Confidence2D):
 
             fit.model.teardown()
             fit.model.thawedpars = oldpars
+
+
+class MultiPlot(NoNewAttributesAfterInit):
+    """Combine multiple line-style plots.
+
+    Allow multiple line-style plots - so those plot classes
+    that use the `plot` method to display - to be drawn in
+    the same area. Each plot is added with the add method.
+
+    """
+
+    def __init__(self) -> None:
+        self.plots: list[Union[Plot, HistogramPlot]] = []
+        self.title = ""
+
+    # The typing here says Plot but we actually want the sub-classes
+    # like DataPlot (i.e.  those that use the prepare method to set up
+    # the data to plot so that the plot method requires no data
+    # arguments) rather than the actual Plot class.
+    #
+    def add(self, plot: Union[Plot, HistogramPlot]) -> None:
+        """Add the plot to the list of data to plot.
+
+        A copy of the plot object is stored, rather than the
+        input argument. The `title` attribute can be set or
+        changed.
+
+        Parameters
+        ----------
+        plot : instance
+           The plot or histogram object to add. It must have
+           a `plot` method.
+
+        """
+
+        # A copy is stored since often the same underlying object is
+        # returned by the UI routines. It also allows the code to
+        # change the self.plots array and not worry about changing the
+        # calling code.
+        #
+        self.plots.append(copy.deepcopy(plot))
+
+    def plot(self,
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
+        """Plot the data.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If `True` then add the data to an existing plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary. Note that the same arguments are
+           passed to each plot.
+
+        """
+
+        for plot in self.plots:
+            plot.plot(overplot=overplot, clearwindow=clearwindow,
+                      **kwargs)
+
+            # To decide whether we draw a title or not we do rely on
+            # the clearwindow setting, since it is not guaranteed to
+            # be set (e.g. if this is being displayed within a
+            # SplitPlot).  So the overplot setting is used to decide
+            # whether to add in the title or not.
+            #
+            if not overplot:
+                backend.set_title(self.title)
+
+            overplot = True
+            clearwindow = False

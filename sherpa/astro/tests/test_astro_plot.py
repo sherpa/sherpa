@@ -473,7 +473,7 @@ def test_sourceplot_component_stringification(make_basic_datapha):
     sp1.prepare(data, src)
     sp2.prepare(data, src)
 
-    mstr = "Source model component: (((100.0 * bgnd) * (1.0 - abs1)) * 10000.0)"
+    mstr = "Source model component: 100.0 * bgnd * (1.0 - abs1) * 10000.0"
     assert sp2.title == mstr
 
     sp1.title = ""
