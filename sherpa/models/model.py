@@ -155,7 +155,7 @@ and the expression is stored in the link attribute:
     >>> m3.ampl.val
     11.0
     >>> m3.ampl.link
-    <BinaryOpParameter '((gauss1d.ampl + gmdl.ampl) / 2)'>
+    <BinaryOpParameter '(gauss1d.ampl + gmdl.ampl) / 2'>
 
 The string representation of the model changes for linked parameters
 to indicate the expression:
@@ -166,7 +166,7 @@ to indicate the expression:
        -----        ----          -----          ---          ---      -----
        m3.fwhm      thawed           10  1.17549e-38  3.40282e+38
        m3.pos       thawed            0 -3.40282e+38  3.40282e+38
-       m3.ampl      linked           11 expr: ((gauss1d.ampl + gmdl.ampl) / 2)
+       m3.ampl      linked           11 expr: (gauss1d.ampl + gmdl.ampl) / 2
 
 Model evaluation
 ================
@@ -319,14 +319,16 @@ non-integrated and integrated datasets of any dimensionality (see
 
 import functools
 import logging
+from typing import Callable, Optional
 import warnings
 
 import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
-from sherpa.utils import NoNewAttributesAfterInit
+from sherpa.utils import NoNewAttributesAfterInit, formatting, \
+    get_precedences_op, get_precedence_expr, \
+    get_precedence_lhs, get_precedence_rhs
 from sherpa.utils.err import ModelErr, ParameterErr
-from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
 
 from .parameter import Parameter
@@ -524,7 +526,7 @@ class Model(NoNewAttributesAfterInit):
 
     """
 
-    ndim = None
+    ndim: Optional[int] = None
     "The dimensionality of the model, if defined, or None."
 
     def __init__(self, name, pars=()):
@@ -890,7 +892,7 @@ class CompositeModel(Model):
     >>> b = Polynom1D('b')
     >>> mdl = l1 + (0.5 * l2) + b
     >>> mdl
-    <BinaryOpModel model instance '((l1 + (0.5 * l2)) + b)'>
+    <BinaryOpModel model instance 'l1 + 0.5 * l2 + b'>
     >>> for cpt in mdl:
     ...     print(type(cpt))
     ...
@@ -1173,6 +1175,7 @@ class ArithmeticModel(Model):
 
     # Unary operations
     __neg__ = _make_unop(numpy.negative, '-')
+    __pos__ = _make_unop(numpy.positive, '+')
     __abs__ = _make_unop(numpy.absolute, 'abs')
 
     # Binary operations
@@ -1323,14 +1326,20 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
-        CompositeModel.__init__(self, f'{opstr}({self.arg.name})',
-                                (self.arg,))
+        self.opprec = get_precedences_op(op)[0]
+
+        # We do not simplify this (e.g. remove brackets if self.arg
+        # is not a composite model).
+        #
+        name = f'{opstr}({self.arg.name})'
+        CompositeModel.__init__(self, name, (self.arg,))
 
     def calc(self, p, *args, **kwargs):
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
 class BinaryOpModel(CompositeModel, RegriddableModel):
+
     """Combine two model expressions.
 
     Parameters
@@ -1379,9 +1388,19 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.op = op
         self.opstr = opstr
 
-        CompositeModel.__init__(self,
-                                f'({self.lhs.name} {opstr} {self.rhs.name})',
-                                (self.lhs, self.rhs))
+        p, a =  get_precedences_op(op)
+        self.opprec = p
+
+        # Simplify the expression if possible.
+        #
+        lp = get_precedence_expr(self.lhs)
+        rp = get_precedence_expr(self.rhs)
+
+        lstr = get_precedence_lhs(self.lhs.name, lp, p, a)
+        rstr = get_precedence_rhs(self.rhs.name, opstr, rp, p)
+
+        name = f'{lstr} {opstr} {rstr}'
+        CompositeModel.__init__(self, name, (self.lhs, self.rhs))
 
     def regrid(self, *args, **kwargs):
         for part in self.parts:

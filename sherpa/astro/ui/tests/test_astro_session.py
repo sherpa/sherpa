@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2016, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1185,7 +1185,7 @@ def test_show_bkg_source_output():
 
     toks = out.getvalue().split("\n")
     assert toks[0] == "Background Model: 1:1"
-    assert toks[1] == "apply_rmf((200.0 * lorentz1d.other))"
+    assert toks[1] == "apply_rmf(200.0 * lorentz1d.other)"
     assert toks[2] == "   Param        Type          Value          Min          Max      Units"
     assert toks[3] == "   -----        ----          -----          ---          ---      -----"
     assert toks[4] == "   other.fwhm   thawed           10            0  3.40282e+38           "
@@ -1202,7 +1202,7 @@ def test_show_bkg_source_output():
 
     toks = out.getvalue().split("\n")
     assert toks[0] == "Background Model: 1:1"
-    assert toks[1] == "apply_rmf((200.0 * lorentz1d.other))"
+    assert toks[1] == "apply_rmf(200.0 * lorentz1d.other)"
     assert toks[2] == "   Param        Type          Value          Min          Max      Units"
     assert toks[3] == "   -----        ----          -----          ---          ---      -----"
     assert toks[4] == "   other.fwhm   thawed           10            0  3.40282e+38           "
@@ -3403,8 +3403,8 @@ def test_check_get_source_and_model_with_background():
     # the models are not normalized by area. Hence the inclusion of
     # the backscal ratio (i.e. 2 / 8) in the model expression.
     #
-    assert s.get_model().name == "apply_rmf((100.0 * (gauss1d.g1 + (0.25 * polynom1d.g2))))"
-    assert s.get_bkg_model().name == "apply_rmf((200.0 * polynom1d.g2))"
+    assert s.get_model().name == "apply_rmf(100.0 * (gauss1d.g1 + 0.25 * polynom1d.g2))"
+    assert s.get_bkg_model().name == "apply_rmf(200.0 * polynom1d.g2)"
 
 
 def test_calc_model_sum_of_bkg():
