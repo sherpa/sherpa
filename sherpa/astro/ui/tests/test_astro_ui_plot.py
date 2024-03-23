@@ -1099,7 +1099,7 @@ def check_bkg_source(plotfunc, idval, isfit=True):
                           (ui.plot_bkg_fit_ratio, [check_bkg_fit, check_bkg_resid]),
                           (ui.plot_bkg_fit_resid, [check_bkg_fit, check_bkg_resid])])
 def test_bkg_plot_xxx(idval, plotfunc, checkfuncs,
-                      clean_astro_ui, requires_pylab):
+                      clean_astro_ui, all_plot_backends_astro_ui):
     """Test background plotting - channel space"""
 
     setup_example_bkg_model(idval)
@@ -1179,7 +1179,7 @@ _basic_plotfuncs = [ui.plot_data,
 
 @requires_fits
 @requires_data
-def test_pha1_plot_function(clean_astro_ui, basic_pha1):
+def test_pha1_plot_function(clean_astro_ui, basic_pha1, all_plot_backends_astro_ui):
     # can we call plot; do not try to be exhaustive
     ui.plot("data", "bkg", "fit", "arf")
 
@@ -1187,7 +1187,7 @@ def test_pha1_plot_function(clean_astro_ui, basic_pha1):
 @requires_fits
 @requires_data
 @pytest.mark.parametrize("plotfunc", _basic_plotfuncs)
-def test_pha1_plot(plotfunc, clean_astro_ui, basic_pha1):
+def test_pha1_plot(plotfunc, clean_astro_ui, basic_pha1, all_plot_backends_astro_ui):
     plotfunc()
 
 
@@ -1264,7 +1264,7 @@ def test_pha1_plot_clearwindow(hide_logging, clean_astro_ui,
                                       ui.plot_bkg_fit_ratio,
                                       ui.plot_bkg_fit_delchi])
 def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1,
-                       hide_logging):
+                       hide_logging, all_plot_backends_astro_ui):
     """Test issue #943 and general check of plot_bkg_xxx"""
 
     ui.unsubtract()
@@ -1276,7 +1276,7 @@ def test_pha1_bkg_plot(plotfunc, clean_astro_ui, basic_pha1,
 @requires_data
 @pytest.mark.parametrize("plotfunc", [ui.plot_model_component,
                                       ui.plot_source_component])
-def test_pha1_plot_component(clean_astro_ui, basic_pha1, plotfunc):
+def test_pha1_plot_component(clean_astro_ui, basic_pha1, plotfunc, all_plot_backends_astro_ui):
     plotfunc("pl")
 
 
@@ -1522,7 +1522,7 @@ def test_pha1_plot_with_model_component_no_response(clean_astro_ui,
 
 @requires_fits
 @requires_data
-def test_pha1_plot_order(clean_astro_ui, basic_pha1):
+def test_pha1_plot_order(clean_astro_ui, basic_pha1, all_plot_backends_astro_ui):
     ui.plot_order()
 
 
@@ -3444,7 +3444,7 @@ def test_datapha_plot_after_clean():
                           'resid',
                           'ratio',
                           'delchi'])
-def test_set_plot_opt_x(cls, datafunc, plotfunc):
+def test_set_plot_opt_x(cls, datafunc, plotfunc, all_plot_backends):
     """Does set_xlog/xlinear work?
 
     We run for both session types here, rather than duplicate
@@ -4393,7 +4393,7 @@ def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path,
 @requires_data
 @requires_wcs
 @pytest.mark.parametrize("coord", ["logical", "image", "physical", "world", "wcs"])
-def test_1380_plot(coord, make_data_path, clean_astro_ui):
+def test_1380_plot(coord, make_data_path, clean_astro_ui, all_plot_backends_astro_ui):
     """The contour data should ideally remain the same.
 
     See also sherpa/astro/tests/test_astro_data2.py::test_1380_data
