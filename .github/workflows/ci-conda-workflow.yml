@@ -53,6 +53,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
+            bokeh-version: 3
             xspec-version: 12.13.1
 
           - name: Linux Full Build (Python 3.10)
@@ -106,6 +107,7 @@ jobs:
         NUMPYVER: ${{ matrix.numpy-version }}
         FITSBUILD: ${{ matrix.fits }}
         MATPLOTLIBVER: ${{ matrix.matplotlib-version }}
+        BOKEHVER: ${{ matrix.bokeh-version }}
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
         source .github/scripts/setup_conda.sh
