@@ -904,7 +904,7 @@ class BinaryOpParameter(CompositeParameter):
         self.rhs = self.wrapobj(rhs)
         self.op = op
 
-        p, a =  get_precedences_op(op)
+        p, a = get_precedences_op(op)
         self.opprec = p
 
         # Simplify the expression if possible.
