@@ -909,13 +909,28 @@ class BinaryOpParameter(CompositeParameter):
         p, a = get_precedences_op(op)
         self.opprec = p
 
-        # Simplify the expression if possible.
+        # Is this an infix or prefix operator? This could be specified
+        # explicitly (and, in fact, could replace the use of the
+        # strformat argument), but for now the behvaiour is inferred
+        # by assuming that a prefix operator has strformat beginning
+        # with '{opstr}(. This heuristic is not perfect, but should be
+        # sufficient for our needs.
         #
-        lp = get_precedence_expr(self.lhs)
-        rp = get_precedence_expr(self.rhs)
+        if strformat.startswith("{opstr}("):
+            # This is a prefix form so we do not need to worry about
+            # adding brackets around the lhs and rhs terms.
+            #
+            lstr = self.lhs.fullname
+            rstr = self.rhs.fullname
 
-        lstr = get_precedence_lhs(self.lhs.fullname, lp, p, a)
-        rstr = get_precedence_rhs(self.rhs.fullname, opstr, rp, p)
+        else:
+            # Simplify the expression if possible.
+            #
+            lp = get_precedence_expr(self.lhs)
+            rp = get_precedence_expr(self.rhs)
+
+            lstr = get_precedence_lhs(self.lhs.fullname, lp, p, a)
+            rstr = get_precedence_rhs(self.rhs.fullname, opstr, rp, p)
 
         name = strformat.format(lhs=lstr, rhs=rstr, opstr=opstr)
         CompositeParameter.__init__(self, name, (self.lhs, self.rhs))

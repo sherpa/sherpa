@@ -227,7 +227,7 @@ def test_binop_string():
     comp = 1 + p * 2.7**p2
     assert repr(comp) == "<BinaryOpParameter '1 + model.p * 2.7 ** model.p2'>"
     comp = np.logaddexp2(p, p2)
-    assert repr(comp) == "<BinaryOpParameter 'numpy.logaddexp2(model.p, (model.p2))'>"
+    assert repr(comp) == "<BinaryOpParameter 'numpy.logaddexp2(model.p, model.p2)'>"
 
 
 def test_binop_string_with_custom_ufunc():
@@ -238,7 +238,7 @@ def test_binop_string_with_custom_ufunc():
     uf = np.frompyfunc(func, nin=2, nout=1)
     p, p2 = setUp_composite()
     comp = uf(p, p2)
-    assert repr(comp) == "<BinaryOpParameter 'func(model.p, (model.p2))'>"
+    assert repr(comp) == "<BinaryOpParameter 'func(model.p, model.p2)'>"
 
 
 class TestBrackets:
@@ -347,11 +347,11 @@ class TestBrackets:
                               (np.cos(a)**2 + np.sin(a)**2,
                                "numpy.cos(m.a) ** 2 + numpy.sin(m.a) ** 2"),
                               (np.logaddexp(a, b),
-                               "numpy.logaddexp(m.a, (m.b))"),
+                               "numpy.logaddexp(m.a, m.b)"),
                               (2 + np.logaddexp(a, b * 2),
-                               "2 + numpy.logaddexp(m.a, (m.b * 2))"),
+                               "2 + numpy.logaddexp(m.a, m.b * 2)"),
                               (np.logaddexp(2 / a, b * 2) - (2 * c),
-                               "numpy.logaddexp((2 / m.a), (m.b * 2)) - 2 * m.c"),
+                               "numpy.logaddexp(2 / m.a, m.b * 2) - 2 * m.c"),
                              ])
     def test_brackets(self, expr, expected):
         """Do we get the expected number of brackets?"""
@@ -598,7 +598,7 @@ def test_explicit_numpy_combination():
     #
     # assert explicit.name == implicit.name
     assert implicit.name == "m1.a * (m2.b + m4.xx)"
-    assert explicit.name == "numpy.multiply(m1.a, (numpy.add(m2.b, m4.xx)))"
+    assert explicit.name == "numpy.multiply(m1.a, numpy.add(m2.b, m4.xx))"
 
     # Check they evaluate to the same values.
     #
