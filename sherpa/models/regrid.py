@@ -34,7 +34,7 @@ import logging
 import warnings
 
 import numpy as np
-from sherpa.utils._utils import rebin
+from sherpa.utils._utils import rebin  # type: ignore
 from sherpa.utils.akima import akima
 
 from sherpa.astro.utils import reshape_2d_arrays

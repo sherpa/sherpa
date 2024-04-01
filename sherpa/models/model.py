@@ -316,10 +316,12 @@ non-integrated and integrated datasets of any dimensionality (see
 
 """
 
+from __future__ import annotations
 
 import functools
 import logging
-from typing import Callable, Optional
+from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, \
+    Sequence, SupportsFloat, SupportsIndex, Type, TypeVar, Union
 import warnings
 
 import numpy as np
@@ -363,7 +365,7 @@ __doctest_skip__ = ['ArithmeticModel.cache_status',
                     'SimulFitModel']
 
 
-def boolean_to_byte(boolean_value):
+def boolean_to_byte(boolean_value: bool) -> bytes:
     """Convert a boolean to a byte value.
 
     Parameters
@@ -382,7 +384,7 @@ def boolean_to_byte(boolean_value):
     return bmap.get(boolean_value, b'0')
 
 
-def modelCacher1d(func):
+def modelCacher1d(func: Callable) -> Callable:
     """A decorater to cache 1D ArithmeticModel evalutions.
 
     Apply to the `calc` method of a 1D model to allow the model
@@ -529,17 +531,19 @@ class Model(NoNewAttributesAfterInit):
     ndim: Optional[int] = None
     "The dimensionality of the model, if defined, or None."
 
-    def __init__(self, name, pars=()):
+    def __init__(self,
+                 name: str,
+                 pars: Sequence[Parameter] = ()) -> None:
         self.name = name
         self.type = self.__class__.__name__.lower()
         self.pars = tuple(pars)
         self.is_discrete = False
         NoNewAttributesAfterInit.__init__(self)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} model instance '{self.name}'>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = self.name
         sep5 = '-' * 5
         sep4 = '-' * 4
@@ -569,14 +573,14 @@ class Model(NoNewAttributesAfterInit):
 
         return s
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model
         """
         return html_model(self)
 
     # This allows all models to be used in iteration contexts, whether or
     # not they're composite
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Model]:
         return iter([self])
 
     def __getattr__(self, name):
@@ -633,7 +637,7 @@ class Model(NoNewAttributesAfterInit):
         for alias in val.aliases:
             self._par_index[alias] = val
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         """Called before a model may be evaluated multiple times.
 
         Parameters
@@ -647,7 +651,10 @@ class Model(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self,
+             p: Sequence[SupportsFloat],
+             *args,
+             **kwargs) -> np.ndarray:
         """Evaluate the model on a grid.
 
         Parameters
@@ -665,7 +672,7 @@ class Model(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
-    def teardown(self):
+    def teardown(self) -> None:
         """Called after a model may be evaluated multiple times.
 
         See Also
@@ -690,7 +697,7 @@ class Model(NoNewAttributesAfterInit):
     def set_center(self, *args, **kwargs):
         raise NotImplementedError
 
-    def __call__(self, *args, **kwargs):
+    def __call__(self, *args, **kwargs) -> Union[Model, np.ndarray]:
         # A bit of trickery, to make model creation
         # in IPython happen without raising errors, when
         # model is made automatically callable
@@ -698,10 +705,10 @@ class Model(NoNewAttributesAfterInit):
             return self
         return self.calc([p.val for p in self.pars], *args, **kwargs)
 
-    def _get_thawed_pars(self):
+    def _get_thawed_pars(self) -> list[SherpaFloat]:
         return [p.val for p in self.pars if not p.frozen]
 
-    def _set_thawed_pars(self, vals):
+    def _set_thawed_pars(self, vals: Sequence[SupportsFloat]) -> None:
         tpars = [p for p in self.pars if not p.frozen]
 
         ngot = len(vals)
@@ -731,10 +738,10 @@ class Model(NoNewAttributesAfterInit):
                           '--------\n' +
                           'thawedparmaxes, thawedparmins\n')
 
-    def _get_thawed_par_mins(self):
+    def _get_thawed_par_mins(self) -> list[SupportsFloat]:
         return [p.min for p in self.pars if not p.frozen]
 
-    def _set_thawed_pars_mins(self, vals):
+    def _set_thawed_pars_mins(self, vals: Sequence[SupportsFloat]) -> None:
         tpars = [p for p in self.pars if not p.frozen]
 
         ngot = len(vals)
@@ -767,10 +774,10 @@ class Model(NoNewAttributesAfterInit):
                              '--------\n' +
                              'thawedpars, thawedarhardmins, thawedparmaxes\n')
 
-    def _get_thawed_par_maxes(self):
+    def _get_thawed_par_maxes(self) -> list[SupportsFloat]:
         return [p.max for p in self.pars if not p.frozen]
 
-    def _set_thawed_pars_maxes(self, vals):
+    def _set_thawed_pars_maxes(self, vals: Sequence[SupportsFloat]) -> None:
         tpars = [p for p in self.pars if not p.frozen]
 
         ngot = len(vals)
@@ -803,7 +810,7 @@ class Model(NoNewAttributesAfterInit):
                               '--------\n' +
                               'thawedpars, thawedarhardmaxes, thawedparmins\n')
 
-    def _get_thawed_par_hardmins(self):
+    def _get_thawed_par_hardmins(self) -> list[SherpaFloat]:
         return [p.hard_min for p in self.pars if not p.frozen]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
@@ -816,7 +823,7 @@ class Model(NoNewAttributesAfterInit):
                                  '--------\n' +
                                  'thawedparhardmaxes, thawedparmins\n')
 
-    def _get_thawed_par_hardmaxes(self):
+    def _get_thawed_par_hardmaxes(self) -> list[SherpaFloat]:
         return [p.hard_max for p in self.pars if not p.frozen]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
@@ -829,7 +836,7 @@ class Model(NoNewAttributesAfterInit):
                                   '--------\n' +
                                   'thawedparhardmins, thawedparmaxes\n')
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the parameter values.
 
         Restores each parameter to the last value it was set to.
@@ -840,13 +847,13 @@ class Model(NoNewAttributesAfterInit):
         for p in self.pars:
             p.reset()
 
-    def freeze(self):
+    def freeze(self) -> None:
         """Freeze any thawed parameters of the model."""
 
         for p in self.pars:
             p.freeze()
 
-    def thaw(self):
+    def thaw(self) -> None:
         """Thaw any frozen parameters of the model.
 
         Those parameters that are marked as "always frozen" are
@@ -905,7 +912,7 @@ class CompositeModel(Model):
 
     """
 
-    def __init__(self, name, parts):
+    def __init__(self, name: str, parts: Sequence[Model]) -> None:
         self.parts = tuple(parts)
         allpars = []
         model_with_dim = None
@@ -917,6 +924,10 @@ class CompositeModel(Model):
                     self.ndim = ndim
                     model_with_dim = part
                 elif self.ndim != ndim:
+                    if TYPE_CHECKING:
+                        # help the type checker out
+                        assert model_with_dim is not None
+
                     raise ModelErr('Models do not match: ' +
                                    f'{self.ndim}D ({model_with_dim.name}) and ' +
                                    f'{ndim}D ({part.name})')
@@ -947,10 +958,10 @@ class CompositeModel(Model):
                         "Falling back to assuming that the model is continuous.\n")
                 self.is_discrete = False
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Model]:
         return iter(self._get_parts())
 
-    def _get_parts(self):
+    def _get_parts(self) -> list[Model]:
         parts = []
 
         for p in self.parts:
@@ -970,13 +981,13 @@ class CompositeModel(Model):
 
         return parts
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pass
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass
 
-    def cache_clear(self):
+    def cache_clear(self) -> None:
         """Clear the cache for each component."""
         for p in self.parts:
             try:
@@ -984,7 +995,7 @@ class CompositeModel(Model):
             except AttributeError:
                 pass
 
-    def cache_status(self):
+    def cache_status(self) -> None:
         """Display the cache status of each component.
 
         Information on the cache - the number of "hits", "misses", and
@@ -1040,17 +1051,17 @@ class SimulFitModel(CompositeModel):
 
     """
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Model]:
         return iter(self.parts)
 
     # Why is this not defined in CompositeModel?
     #
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         for part in self:
             part.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         for part in self:
             part.teardown()
         CompositeModel.teardown(self)
@@ -1072,19 +1083,30 @@ class ArithmeticConstantModel(Model):
         is a scalar, otherwise it indicates an array of elements.
     """
 
-    def __init__(self, val, name=None):
-        val = SherpaFloat(val)
+    def __init__(self,
+                 # Use SupportsIndex rather than Sequence[SupportsFloat] to
+                 # avoid mypy warnings.
+                 val: Union[SupportsFloat, SupportsIndex],
+                 name: Optional[str] = None) -> None:
+
+        store = SherpaFloat(val)
         if name is None:
-            if np.isscalar(val):
-                name = str(val)
+            if np.isscalar(store):
+                name = str(store)
             else:
-                nstr = ','.join([str(s) for s in val.shape])
-                name = f'{val.dtype.name}[{nstr}]'
+                if TYPE_CHECKING:
+                    assert isinstance(val, np.ndarray)
+
+                # For some reason mypy didn't like
+                # '[str(s) for s in store.shape]`
+                dims = map(str, store.shape)
+                nstr = ','.join(dims)
+                name = f'{store.dtype.name}[{nstr}]'
 
         self.name = name
-        self.val = val
+        self.val = store
 
-        # val has to be a scalar or 1D array, even if used with a 2D
+        # store has to be a scalar or 1D array, even if used with a 2D
         # model, due to the way model evaluation works, so as we
         # can't easily define the dimensionality of this model, we
         # remove any dimensionality checking for this class.
@@ -1093,10 +1115,10 @@ class ArithmeticConstantModel(Model):
 
         Model.__init__(self, self.name)
 
-    def _get_val(self):
+    def _get_val(self) -> Union[SherpaFloat, np.ndarray]:
         return self._val
 
-    def _set_val(self, val):
+    def _set_val(self, val:Union[SupportsFloat, SupportsIndex]) -> None:
         val = SherpaFloat(val)
         if val.ndim > 1:
             raise ModelErr('The constant must be a scalar or 1D, not 2D')
@@ -1106,24 +1128,27 @@ class ArithmeticConstantModel(Model):
     val = property(_get_val, _set_val,
                    doc='The constant value (scalar or 1D).')
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pass
 
+    # This doesn't match superclass, as we can return a scalar here
+    # and the superclass assumes it returns a ndarray, so we do not
+    # type this routine.
+    #
     def calc(self, p, *args, **kwargs):
-        # Shouldn't this return p[0]?
         return self.val
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass
 
 
-def _make_unop(op, opstr):
+def _make_unop(op: Callable, opstr: str) -> Callable:
     def func(self):
         return UnaryOpModel(self, op, opstr)
     return func
 
 
-def _make_binop(op, opstr):
+def _make_binop(op: Callable, opstr: str) -> tuple[Callable, Callable]:
     def func(self, rhs):
         return BinaryOpModel(self, rhs, op, opstr)
 
@@ -1139,7 +1164,9 @@ class ArithmeticModel(Model):
     cache = 5
     """The maximum size of the cache."""
 
-    def __init__(self, name, pars=()):
+    def __init__(self,
+                 name: str,
+                 pars: Sequence[Parameter] = ()) -> None:
         self.integrate = True
 
         # Model caching ability
@@ -1148,14 +1175,15 @@ class ArithmeticModel(Model):
         self.cache_clear()
         Model.__init__(self, name, pars)
 
-    def cache_clear(self):
+    def cache_clear(self) -> None:
         """Clear the cache."""
         # It is not obvious what to set the queue length to
         self._queue = ['']
-        self._cache = {}
+
+        self._cache: dict[bytes, np.ndarray] = {}
         self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
 
-    def cache_status(self):
+    def cache_status(self) -> None:
         """Display the cache status.
 
         Information on the cache - the number of "hits", "misses", and
@@ -1207,7 +1235,7 @@ class ArithmeticModel(Model):
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.cache_clear()
         self._use_caching = cache
         if int(self.cache) <= 0:
@@ -1218,7 +1246,7 @@ class ArithmeticModel(Model):
         if len(frozen) > 0 and frozen.all():
             self._use_caching = cache
 
-    def teardown(self):
+    def teardown(self) -> None:
         self._use_caching = False
 
     def apply(self, outer, *otherargs, **otherkwargs):
@@ -1312,6 +1340,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     Examples
     --------
 
+    >>> import numpy
     >>> from sherpa.models.basic import Gauss1D
     >>> m1 = Gauss1D()
     >>> m2 = UnaryOpModel(m1, numpy.negative, '-')
@@ -1319,10 +1348,13 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
     """
 
     @staticmethod
-    def wrapobj(obj):
+    def wrapobj(obj) -> Model:
         return _wrapobj(obj, ArithmeticConstantModel)
 
-    def __init__(self, arg, op, opstr):
+    def __init__(self,
+                 arg: Any,
+                 op: Callable,
+                 opstr: str) -> None:
         self.arg = self.wrapobj(arg)
         self.op = op
         self.opstr = opstr
@@ -1334,7 +1366,7 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         name = f'{opstr}({self.arg.name})'
         CompositeModel.__init__(self, name, (self.arg,))
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
@@ -1371,6 +1403,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
     Examples
     --------
 
+    >>> import numpy
     >>> from sherpa.models.basic import Gauss1D, Polynom1D
     >>> m1 = Gauss1D()
     >>> m2 = Polynom1D()
@@ -1379,10 +1412,14 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
     """
 
     @staticmethod
-    def wrapobj(obj):
+    def wrapobj(obj) -> Model:
         return _wrapobj(obj, ArithmeticConstantModel)
 
-    def __init__(self, lhs, rhs, op, opstr):
+    def __init__(self,
+                 lhs: Any,
+                 rhs: Any,
+                 op: Callable,
+                 opstr: str) -> None:
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
@@ -1411,17 +1448,17 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
             return part.__class__.regrid(self, *args, **kwargs)
         raise ModelErr('Neither component supports regrid method')
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.lhs.startup(cache)
         self.rhs.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.lhs.teardown()
         self.rhs.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
         # Note that the kwargs are sent to both model components.
         #
         nlhs = len(self.lhs.pars)
@@ -1493,7 +1530,7 @@ class ArithmeticFunctionModel(Model):
 
     """
 
-    def __init__(self, func):
+    def __init__(self, func: Callable) -> None:
         if isinstance(func, Model):
             raise ModelErr('badinstance', type(self).__name__)
         if not callable(func):
@@ -1501,13 +1538,13 @@ class ArithmeticFunctionModel(Model):
         self.func = func
         Model.__init__(self, func.__name__)
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
         return self.func(*args, **kwargs)
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pass
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass
 
 
@@ -1539,10 +1576,10 @@ class NestedModel(CompositeModel, ArithmeticModel):
     """
 
     @staticmethod
-    def wrapobj(obj):
+    def wrapobj(obj) -> Model:
         return _wrapobj(obj, ArithmeticFunctionModel)
 
-    def __init__(self, outer, inner, *otherargs, **otherkwargs):
+    def __init__(self, outer, inner, *otherargs, **otherkwargs) -> None:
         self.outer = self.wrapobj(outer)
         self.inner = self.wrapobj(inner)
         self.otherargs = otherargs
@@ -1550,17 +1587,17 @@ class NestedModel(CompositeModel, ArithmeticModel):
         CompositeModel.__init__(self, f'{self.outer.name}({self.inner.name})',
                                 (self.outer, self.inner))
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.inner.startup(cache)
         self.outer.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.inner.teardown()
         self.outer.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
         nouter = len(self.outer.pars)
         return self.outer.calc(p[:nouter],
                                self.inner.calc(p[nouter:], *args, **kwargs),
@@ -1571,12 +1608,13 @@ class NestedModel(CompositeModel, ArithmeticModel):
 #
 class MultigridSumModel(CompositeModel, ArithmeticModel):
 
-    def __init__(self, models):
+    def __init__(self, models: Sequence[Model]) -> None:
         self.models = tuple(models)
         arg = ','.join([m.name for m in models])
         name = f'{type(self).__name__}({arg})'
         CompositeModel.__init__(self, name, self.models)
 
+    # This does not match the superclass so do not type it
     def calc(self, p, arglist):
         vals = []
         for model, args in zip(self.models, arglist):
@@ -1589,7 +1627,7 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
 
 class RegridWrappedModel(CompositeModel, ArithmeticModel):
 
-    def __init__(self, model, wrapper):
+    def __init__(self, model, wrapper: Model) -> None:
         self.model = self.wrapobj(model)
         self.wrapper = wrapper
 
@@ -1600,7 +1638,7 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
                                 f"{self.wrapper.name}({self.model.name})",
                                 (self.model, ))
 
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
         return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
 
     def get_center(self):
@@ -1625,13 +1663,13 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
         return self.wrapper.evaluation_space
 
     @staticmethod
-    def wrapobj(obj):
+    def wrapobj(obj) -> Model:
         # TODO: choice of ArithmeticConstandModel or
         #       ArithmeticFunctionModel?
         return _wrapobj(obj, ArithmeticFunctionModel)
 
 
-def _wrapobj(obj, wrapper):
+def _wrapobj(obj, wrapper: Callable[..., Model]) -> Model:
     """Wrap an object with the wrapper if needed.
 
     Parameters
@@ -1662,7 +1700,7 @@ def _wrapobj(obj, wrapper):
 
 # Notebook representation
 #
-def modelcomponents_to_list(model):
+def modelcomponents_to_list(model: Model) -> list[Model]:
     if hasattr(model, 'parts'):
         modellist = []
         for p in model.parts:
@@ -1672,7 +1710,7 @@ def modelcomponents_to_list(model):
     return [model]
 
 
-def html_model(mdl):
+def html_model(mdl: Model) -> str:
     """Construct the HTML to display the model."""
 
     # Note that as this is a specialized table we do not use
@@ -1685,8 +1723,9 @@ def html_model(mdl):
         for par in comp.pars:
             if par.hidden:
                 continue
-            else:
-                this_comp_nrows +=1
+
+            this_comp_nrows +=1
+
         if this_comp_nrows > 0:
             complist.append(comp)
             nrows.append(this_comp_nrows)

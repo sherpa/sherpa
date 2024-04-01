@@ -202,7 +202,12 @@ fit.
 
 """
 
+from __future__ import annotations
+
 import logging
+from typing import Any, Callable, Iterator, Optional, \
+    Sequence, SupportsFloat, Union
+
 import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit, formatting
@@ -230,8 +235,9 @@ tinyval = float(np.finfo(np.float32).tiny)
 hugeval = float(np.finfo(np.float32).max)
 
 
-def _make_set_limit(name):
-    def _set_limit(self, val):
+def _make_set_limit(name: str) -> Callable[[Any, SupportsFloat], None]:
+    def _set_limit(self: Any,
+                   val: SupportsFloat) -> None:
         val = SherpaFloat(val)
         # Ensure that we don't try to set any value that is outside
         # the hard parameter limits.
@@ -271,18 +277,30 @@ def _make_set_limit(name):
     return _set_limit
 
 
-def _make_unop(op, opstr, **kwargs):
-    def func(self):
-        return UnaryOpParameter(self, op, opstr, **kwargs)
+# It's hard to come up with a sensible typing rule for the operator
+# in _make_unop/binop so we just use Callable.
+#
+def _make_unop(op: Callable,
+               opstr: str,
+               strformat: Optional[str] = None) -> Callable:
+
+    if strformat is None:
+        def func(self):
+            return UnaryOpParameter(self, op, opstr)
+    else:
+        def func(self):
+            return UnaryOpParameter(self, op, opstr, strformat=strformat)
+
     return func
 
 
-def _make_binop(op, opstr, **kwargs):
+def _make_binop(op: Callable,
+                opstr: str) -> tuple[Callable, Callable]:
     def func(self, rhs):
-        return BinaryOpParameter(self, rhs, op, opstr, **kwargs)
+        return BinaryOpParameter(self, rhs, op, opstr)
 
     def rfunc(self, lhs):
-        return BinaryOpParameter(lhs, self, op, opstr, **kwargs)
+        return BinaryOpParameter(lhs, self, op, opstr)
 
     return (func, rfunc)
 
@@ -320,12 +338,12 @@ class Parameter(NoNewAttributesAfterInit):
     # Read-only properties
     #
 
-    def _get_alwaysfrozen(self):
+    def _get_alwaysfrozen(self) -> bool:
         return self._alwaysfrozen
     alwaysfrozen = property(_get_alwaysfrozen,
                             doc='Is the parameter always frozen?')
 
-    def _get_hard_min(self):
+    def _get_hard_min(self) -> SherpaFloat:
         return self._hard_min
     hard_min = property(_get_hard_min,
                         doc='The hard minimum of the parameter.\n\n' +
@@ -333,7 +351,7 @@ class Parameter(NoNewAttributesAfterInit):
                         '--------\n' +
                         'hard_max')
 
-    def _get_hard_max(self):
+    def _get_hard_max(self) -> SherpaFloat:
         return self._hard_max
     hard_max = property(_get_hard_max,
                         doc='The hard maximum of the parameter.\n\n' +
@@ -347,7 +365,9 @@ class Parameter(NoNewAttributesAfterInit):
     # is a link, to ensure that it isn't outside the parameter's
     # min/max range. See issue #742.
     #
-    def _get_val(self):
+    _val: SherpaFloat  # needed for typing
+
+    def _get_val(self) -> SherpaFloat:
         if hasattr(self, 'eval'):
             return self.eval()
         if self.link is None:
@@ -361,7 +381,7 @@ class Parameter(NoNewAttributesAfterInit):
 
         return val
 
-    def _set_val(self, val):
+    def _set_val(self, val: Union[Parameter, SupportsFloat]) -> None:
         if isinstance(val, Parameter):
             self.link = val
         else:
@@ -391,28 +411,30 @@ class Parameter(NoNewAttributesAfterInit):
     # '_default_val' property
     #
 
-    def _get_default_val(self):
+    def _get_default_val(self) -> SherpaFloat:
         if hasattr(self, 'eval'):
             return self.eval()
         if self.link is not None:
             return self.link.default_val
         return self._default_val
 
-    def _set_default_val(self, default_val):
+    def _set_default_val(self,
+                         default_val: Union[Parameter, SupportsFloat]) -> None:
         if isinstance(default_val, Parameter):
             self.link = default_val
-        else:
-            # Reset link
-            self.link = None
+            return
 
-            # Validate new value
-            default_val = SherpaFloat(default_val)
-            if default_val < self.min:
-                raise ParameterErr('edge', self.fullname, 'minimum', self.min)
-            if default_val > self.max:
-                raise ParameterErr('edge', self.fullname, 'maximum', self.max)
+        # Reset link
+        self.link = None
 
-            self._default_val = default_val
+        # Validate new value
+        default_val = SherpaFloat(default_val)
+        if default_val < self.min:
+            raise ParameterErr('edge', self.fullname, 'minimum', self.min)
+        if default_val > self.max:
+            raise ParameterErr('edge', self.fullname, 'maximum', self.max)
+
+        self._default_val = default_val
 
     default_val = property(_get_default_val, _set_default_val,
                            doc='The default value of the parameter.\n\n' +
@@ -424,7 +446,7 @@ class Parameter(NoNewAttributesAfterInit):
     # 'min' and 'max' properties
     #
 
-    def _get_min(self):
+    def _get_min(self) -> SupportsFloat:
         return self._min
     min = property(_get_min, _make_set_limit('_min'),
                    doc='The minimum value of the parameter.\n\n' +
@@ -433,7 +455,7 @@ class Parameter(NoNewAttributesAfterInit):
                    '--------\n' +
                    'max, val')
 
-    def _get_max(self):
+    def _get_max(self) -> SupportsFloat:
         return self._max
     max = property(_get_max, _make_set_limit('_max'),
                    doc='The maximum value of the parameter.\n\n' +
@@ -445,29 +467,34 @@ class Parameter(NoNewAttributesAfterInit):
     #
     # 'default_min' and 'default_max' properties
     #
+    _default_min: SupportsFloat  # needed for typnig
+    _default_max: SupportsFloat
 
-    def _get_default_min(self):
+    def _get_default_min(self) -> SupportsFloat:
         return self._default_min
     default_min = property(_get_default_min, _make_set_limit('_default_min'))
 
-    def _get_default_max(self):
+    def _get_default_max(self) -> SupportsFloat:
         return self._default_max
+
     default_max = property(_get_default_max, _make_set_limit('_default_max'))
 
     #
     # 'frozen' property
     #
+    _frozen: bool  # needed for typing
 
-    def _get_frozen(self):
+    def _get_frozen(self) -> bool:
         if self.link is not None:
             return True
         return self._frozen
 
-    def _set_frozen(self, val):
+    def _set_frozen(self, val: bool) -> None:
         val = bool(val)
         if self._alwaysfrozen and (not val):
             raise ParameterErr('alwaysfrozen', self.fullname)
         self._frozen = val
+
     frozen = property(_get_frozen, _set_frozen,
                       doc='Is the parameter currently frozen?\n\n' +
                       'Those parameters created with `alwaysfrozen` set can not\n' +
@@ -480,32 +507,36 @@ class Parameter(NoNewAttributesAfterInit):
     # 'link' property'
     #
 
-    def _get_link(self):
+    def _get_link(self) -> Optional[Parameter]:
         return self._link
 
-    def _set_link(self, link):
-        if link is not None:
-            if self._alwaysfrozen:
-                raise ParameterErr('frozennolink', self.fullname)
-            if not isinstance(link, Parameter):
-                raise ParameterErr('notlink')
+    def _set_link(self, link: Optional[Parameter]) -> None:
+        if link is None:
+            self._link = None
+            return
 
-            # Short cycles produce error
-            # e.g. par = 2*par+3
-            if self in link:
-                raise ParameterErr('linkcycle')
+        if self._alwaysfrozen:
+            raise ParameterErr('frozennolink', self.fullname)
 
-            # Correctly test for link cycles in long trees.
-            cycle = False
-            ll = link
-            while isinstance(ll, Parameter):
-                if ll == self or self in ll:
-                    cycle = True
-                ll = ll.link
+        if not isinstance(link, Parameter):
+            raise ParameterErr('notlink')
 
-            # Long cycles are overwritten BUG #12287
-            if cycle and isinstance(link, Parameter):
-                link.link = None
+        # Short cycles produce error
+        # e.g. par = 2*par+3
+        if self in link:
+            raise ParameterErr('linkcycle')
+
+        # Correctly test for link cycles in long trees.
+        cycle = False
+        ll = link
+        while isinstance(ll, Parameter):
+            if ll == self or self in ll:
+                cycle = True
+            ll = ll.link
+
+        # Long cycles are overwritten BUG #12287
+        if cycle and isinstance(link, Parameter):
+            link.link = None
 
         self._link = link
     link = property(_get_link, _set_link,
@@ -530,9 +561,19 @@ class Parameter(NoNewAttributesAfterInit):
     # Methods
     #
 
-    def __init__(self, modelname, name, val, min=-hugeval, max=hugeval,
-                 hard_min=-hugeval, hard_max=hugeval, units='',
-                 frozen=False, alwaysfrozen=False, hidden=False, aliases=None):
+    def __init__(self,
+                 modelname: str,
+                 name: str,
+                 val: SupportsFloat,
+                 min: SupportsFloat = -hugeval,
+                 max: SupportsFloat = hugeval,
+                 hard_min: SupportsFloat = -hugeval,
+                 hard_max: SupportsFloat = hugeval,
+                 units: str = '',
+                 frozen: bool = False,
+                 alwaysfrozen: bool = False,
+                 hidden: bool = False,
+                 aliases: Optional[list[str]] = None) -> None:
         self.modelname = modelname
         self.name = name
         self.fullname = f"{modelname}.{name}"
@@ -798,15 +839,17 @@ class CompositeParameter(Parameter):
 
     """
 
-    def __init__(self, name, parts):
+    def __init__(self,
+                 name: str,
+                 parts: Sequence[Parameter]) -> None:
         self.parts = tuple(parts)
         Parameter.__init__(self, '', name, 0.0)
         self.fullname = name
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Parameter]:
         return iter(self._get_parts())
 
-    def _get_parts(self):
+    def _get_parts(self) -> list[Parameter]:
         parts = []
 
         for p in self.parts:
@@ -822,7 +865,7 @@ class CompositeParameter(Parameter):
 
         return parts
 
-    def eval(self):
+    def eval(self) -> SupportsFloat:
         """Evaluate the composite expression."""
         raise NotImplementedError
 
@@ -830,11 +873,11 @@ class CompositeParameter(Parameter):
 class ConstantParameter(CompositeParameter):
     """Represent an expression containing 1 or more parameters."""
 
-    def __init__(self, value):
+    def __init__(self, value: SupportsFloat) -> None:
         self.value = SherpaFloat(value)
         CompositeParameter.__init__(self, str(value), ())
 
-    def eval(self):
+    def eval(self) -> SherpaFloat:
         return self.value
 
 
@@ -858,7 +901,11 @@ class UnaryOpParameter(CompositeParameter):
     BinaryOpParameter
     """
 
-    def __init__(self, arg, op, opstr, strformat='{opstr}({arg})'):
+    def __init__(self,
+                 arg: Parameter,
+                 op: Callable[[SupportsFloat], SupportsFloat],
+                 opstr: str,
+                 strformat: str = '{opstr}({arg})') -> None:
         self.arg = arg
         self.op = op
         self.opprec = get_precedences_op(op)[0]
@@ -867,7 +914,7 @@ class UnaryOpParameter(CompositeParameter):
         name = strformat.format(opstr=opstr, arg=fullname)
         CompositeParameter.__init__(self, name, (self.arg,))
 
-    def eval(self):
+    def eval(self) -> SupportsFloat:
         return self.op(self.arg.val)
 
 
@@ -895,13 +942,17 @@ class BinaryOpParameter(CompositeParameter):
     """
 
     @staticmethod
-    def wrapobj(obj):
+    def wrapobj(obj: Any) -> Parameter:
         if isinstance(obj, Parameter):
             return obj
         return ConstantParameter(obj)
 
-    def __init__(self, lhs, rhs, op, opstr,
-                 strformat='{lhs} {opstr} {rhs}'):
+    def __init__(self,
+                 lhs: Any,
+                 rhs: Any,
+                 op: Callable[[SupportsFloat, SupportsFloat], SupportsFloat],
+                 opstr: str,
+                 strformat: str = '{lhs} {opstr} {rhs}') -> None:
         self.lhs = self.wrapobj(lhs)
         self.rhs = self.wrapobj(rhs)
         self.op = op
@@ -935,13 +986,13 @@ class BinaryOpParameter(CompositeParameter):
         name = strformat.format(lhs=lstr, rhs=rstr, opstr=opstr)
         CompositeParameter.__init__(self, name, (self.lhs, self.rhs))
 
-    def eval(self):
+    def eval(self) -> SupportsFloat:
         return self.op(self.lhs.val, self.rhs.val)
 
 
 # Notebook representation
 #
-def html_parameter(par):
+def html_parameter(par: Parameter) -> str:
     """Construct the HTML to display the parameter."""
 
     # Note that as this is a specialized table we do not use

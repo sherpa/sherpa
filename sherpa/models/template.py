@@ -108,11 +108,13 @@ array([5.34, 6.12, 6.  ])
 
 """
 
+from typing import Callable
 import operator
 
 import numpy as np
 
 from sherpa.utils.err import ModelErr
+
 from .parameter import Parameter
 from .model import ArithmeticModel, modelCacher1d
 from .basic import TableModel
@@ -123,7 +125,7 @@ __all__ = ('TemplateModel', 'InterpolatingTemplateModel',
 
 
 # This is reset by reset_interpolators below.
-interpolators = {}
+interpolators: dict[str, tuple[Callable, dict]] = {}
 
 
 def create_template_model(modelname, names, parvals, templates,
@@ -456,7 +458,7 @@ class TemplateModel(ArithmeticModel):
         return table_model(x0, x1, *args, **kwargs)
 
 
-def reset_interpolators():
+def reset_interpolators() -> None:
     """Reset the list of interpolators to the default.
 
     If the list does not exist then recreate it.
@@ -473,7 +475,7 @@ def reset_interpolators():
     }
 
 
-def add_interpolator(name, interpolator, **kwargs):
+def add_interpolator(name: str, interpolator: Callable, **kwargs) -> None:
     """Add the interpolator to the list.
 
     Parameters
