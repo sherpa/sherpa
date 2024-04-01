@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2011, 2016, 2019 -2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -110,7 +110,7 @@ array([5.34, 6.12, 6.  ])
 
 import operator
 
-import numpy
+import numpy as np
 
 from sherpa.utils.err import ModelErr
 from .parameter import Parameter
@@ -302,7 +302,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
         """What are the distances for the given set of parameters?"""
         distances = []
         for i, t_point in enumerate(self.template_model.parvals):
-            dist = numpy.linalg.norm(point - t_point, self.order)
+            dist = np.linalg.norm(point - t_point, self.order)
             distances.append((i, dist))
 
         return sorted(distances, key=operator.itemgetter(1))
@@ -313,8 +313,8 @@ class KNNInterpolator(InterpolatingTemplateModel):
             return self.template_model.templates[distances[0][0]]
 
         k_distances = distances[:self.k]
-        weights = [(idx, 1/numpy.array(distance)) for idx, distance in k_distances]
-        y_out = numpy.zeros(len(x_out))
+        weights = [(idx, 1/np.array(distance)) for idx, distance in k_distances]
+        y_out = np.zeros(len(x_out))
         for idx, weight in weights:
             y_out += self.template_model.templates[idx].calc((weight,), x_out)
 

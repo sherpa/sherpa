@@ -322,7 +322,7 @@ import logging
 from typing import Callable, Optional
 import warnings
 
-import numpy
+import numpy as np
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
 from sherpa.utils import NoNewAttributesAfterInit, formatting
@@ -443,18 +443,18 @@ def modelCacher1d(func):
             #
             integrate = kwargs.get('integrate', False)
 
-        data = [numpy.array(pars).tobytes(),
+        data = [np.array(pars).tobytes(),
                 boolean_to_byte(integrate),
-                numpy.asarray(xlo).tobytes()]
+                np.asarray(xlo).tobytes()]
         if args:
-            data.append(numpy.asarray(args[0]).tobytes())
+            data.append(np.asarray(args[0]).tobytes())
 
         # Add any keyword arguments to the list. This will
         # include the xhi named argument if given. Can the
         # value field fail here?
         #
         for k, v in kwargs.items():
-            data.extend([k.encode(), numpy.asarray(v).tobytes()])
+            data.extend([k.encode(), np.asarray(v).tobytes()])
 
         # Is the value cached?
         #
@@ -1075,7 +1075,7 @@ class ArithmeticConstantModel(Model):
     def __init__(self, val, name=None):
         val = SherpaFloat(val)
         if name is None:
-            if numpy.isscalar(val):
+            if np.isscalar(val):
                 name = str(val)
             else:
                 nstr = ','.join([str(s) for s in val.shape])
@@ -1174,19 +1174,19 @@ class ArithmeticModel(Model):
              f"check: {c['check']:5d}")
 
     # Unary operations
-    __neg__ = _make_unop(numpy.negative, '-')
-    __pos__ = _make_unop(numpy.positive, '+')
-    __abs__ = _make_unop(numpy.absolute, 'abs')
+    __neg__ = _make_unop(np.negative, '-')
+    __pos__ = _make_unop(np.positive, '+')
+    __abs__ = _make_unop(np.absolute, 'abs')
 
     # Binary operations
-    __add__, __radd__ = _make_binop(numpy.add, '+')
-    __sub__, __rsub__ = _make_binop(numpy.subtract, '-')
-    __mul__, __rmul__ = _make_binop(numpy.multiply, '*')
-    __div__, __rdiv__ = _make_binop(numpy.divide, '/')
-    __floordiv__, __rfloordiv__ = _make_binop(numpy.floor_divide, '//')
-    __truediv__, __rtruediv__ = _make_binop(numpy.true_divide, '/')
-    __mod__, __rmod__ = _make_binop(numpy.remainder, '%')
-    __pow__, __rpow__ = _make_binop(numpy.power, '**')
+    __add__, __radd__ = _make_binop(np.add, '+')
+    __sub__, __rsub__ = _make_binop(np.subtract, '-')
+    __mul__, __rmul__ = _make_binop(np.multiply, '*')
+    __div__, __rdiv__ = _make_binop(np.divide, '/')
+    __floordiv__, __rfloordiv__ = _make_binop(np.floor_divide, '//')
+    __truediv__, __rtruediv__ = _make_binop(np.true_divide, '/')
+    __mod__, __rmod__ = _make_binop(np.remainder, '%')
+    __pow__, __rpow__ = _make_binop(np.power, '**')
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -1214,7 +1214,7 @@ class ArithmeticModel(Model):
             return
 
         self._queue = [''] * int(self.cache)
-        frozen = numpy.array([par.frozen for par in self.pars], dtype=bool)
+        frozen = np.array([par.frozen for par in self.pars], dtype=bool)
         if len(frozen) > 0 and frozen.all():
             self._use_caching = cache
 
