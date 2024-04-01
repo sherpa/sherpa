@@ -274,7 +274,7 @@ class TestBrackets:
                               # (+a, "+(m.a)"),  currently not supported
                               (-a + b, "-(m.a) + m.b"),
                               (-a + 2, "-(m.a) + 2"),
-                              # (+a + b, "+(m.a) + m.b"),  currenly not supported
+                              # (+a + b, "+(m.a) + m.b"),  currently not supported
                               (-(a + b), "-(m.a + m.b)"),
                               (-(a * b), "-(m.a * m.b)"),
                               (-(a - b), "-(m.a - m.b)"),
@@ -337,7 +337,21 @@ class TestBrackets:
                               ((a * b) // 2, "(m.a * m.b) // 2"),
                               (a % 2, "m.a % 2"),
                               ((a + b) % 2, "(m.a + m.b) % 2"),
-                              ((a * b) % 2, "(m.a * m.b) % 2")
+                              ((a * b) % 2, "(m.a * m.b) % 2"),
+                              # abs is special, how about other functions
+                              (np.sin(a), "numpy.sin(m.a)"),
+                              (np.sin(a + b), "numpy.sin(m.a + m.b)"),
+                              (np.sin(((a) * (b))), "numpy.sin(m.a * m.b)"),
+                              (np.cos((np.sin(a) * ((2) + np.tan(b)))),
+                               "numpy.cos(numpy.sin(m.a) * (2 + numpy.tan(m.b)))"),
+                              (np.cos(a)**2 + np.sin(a)**2,
+                               "numpy.cos(m.a) ** 2 + numpy.sin(m.a) ** 2"),
+                              (np.logaddexp(a, b),
+                               "numpy.logaddexp(m.a, (m.b))"),
+                              (2 + np.logaddexp(a, b * 2),
+                               "2 + numpy.logaddexp(m.a, (m.b * 2))"),
+                              (np.logaddexp(2 / a, b * 2) - (2 * c),
+                               "numpy.logaddexp((2 / m.a), (m.b * 2)) - 2 * m.c"),
                              ])
     def test_brackets(self, expr, expected):
         """Do we get the expected number of brackets?"""

@@ -512,6 +512,9 @@ class TestBrackets:
                               (abs(b * (c + d)) * (a + d), "abs(b * (c + d)) * (a + d)"),
                               (-a, "-(a)"),
                               (+a, "+(a)"),
+                              ((-a) + ((b)), "-(a) + b"),
+                              # the following is ugly but is valid Python
+                              ((-(a)) + ((+b)), "-(a) + +(b)"),
                               (-a + b, "-(a) + b"),
                               (-a + 2, "-(a) + 2.0"),
                               (+a + b, "+(a) + b"),
