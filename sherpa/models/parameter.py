@@ -203,7 +203,7 @@ fit.
 """
 
 import logging
-import numpy
+import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit, formatting
 from sherpa.utils.err import ParameterErr
@@ -226,8 +226,8 @@ __all__ = ('Parameter', 'CompositeParameter', 'ConstantParameter',
 # hugeval = 1.0e+38
 #
 # Use FLT_TINY and FLT_MAX
-tinyval = float(numpy.finfo(numpy.float32).tiny)
-hugeval = float(numpy.finfo(numpy.float32).max)
+tinyval = float(np.finfo(np.float32).tiny)
+hugeval = float(np.finfo(np.float32).max)
 
 
 def _make_set_limit(name):
@@ -259,10 +259,12 @@ def _make_set_limit(name):
            self._NoNewAttributesAfterInit__initialized:
             if name == "_min" and (val > self.val):
                 self.val = val
-                warning(('parameter %s less than new minimum; %s reset to %g') % (self.fullname, self.fullname, self.val))
+                warning('parameter %s less than new minimum; %s reset to %g',
+                        self.fullname, self.fullname, self.val)
             if name == "_max" and (val < self.val):
                 self.val = val
-                warning(('parameter %s greater than new maximum; %s reset to %g') % (self.fullname, self.fullname, self.val))
+                warning('parameter %s greater than new maximum; %s reset to %g',
+                        self.fullname, self.fullname, self.val)
 
         setattr(self, name, val)
 
@@ -533,7 +535,7 @@ class Parameter(NoNewAttributesAfterInit):
                  frozen=False, alwaysfrozen=False, hidden=False, aliases=None):
         self.modelname = modelname
         self.name = name
-        self.fullname = '%s.%s' % (modelname, name)
+        self.fullname = f"{modelname}.{name}"
 
         self._hard_min = SherpaFloat(hard_min)
         self._hard_max = SherpaFloat(hard_max)
@@ -566,9 +568,9 @@ class Parameter(NoNewAttributesAfterInit):
         return iter([self])
 
     def __repr__(self):
-        r = "<%s '%s'" % (type(self).__name__, self.name)
+        r = f"<{type(self).__name__} '{self.name}'"
         if self.modelname:
-            r += " of model '%s'" % self.modelname
+            r += f" of model '{self.modelname}'"
         r += '>'
         return r
 
@@ -578,18 +580,16 @@ class Parameter(NoNewAttributesAfterInit):
         else:
             linkstr = str(None)
 
-        return (('val         = %s\n' +
-                 'min         = %s\n' +
-                 'max         = %s\n' +
-                 'units       = %s\n' +
-                 'frozen      = %s\n' +
-                 'link        = %s\n'
-                 'default_val = %s\n' +
-                 'default_min = %s\n' +
-                 'default_max = %s') %
-                (str(self.val), str(self.min), str(self.max), self.units,
-                 self.frozen, linkstr, str(self.default_val),
-                 str(self.default_min), str(self.default_max)))
+        out = [f'val         = {self.val}',
+               f'min         = {self.min}',
+               f'max         = {self.max}',
+               f'units       = {self.units}',
+               f'frozen      = {self.frozen}',
+               f'link        = {linkstr}',
+               f'default_val = {self.default_val}',
+               f'default_min = {self.default_min}',
+               f'default_max = {self.default_max}']
+        return "\n".join(out)
 
     # Support 'rich display' representations
     #
@@ -607,23 +607,23 @@ class Parameter(NoNewAttributesAfterInit):
         #
         if v == hugeval:
             return 'MAX'
-        elif v == -hugeval:
+        if v == -hugeval:
             return '-MAX'
-        elif v == tinyval:
+        if v == tinyval:
             return 'TINY'
-        elif v == -tinyval:
+        if v == -tinyval:
             return '-TINY'
 
         if self.units in ['radian', 'radians']:
-            tau = 2 * numpy.pi
+            tau = 2 * np.pi
 
             if v == tau:
                 return '2&#960;'
-            elif v == -tau:
+            if v == -tau:
                 return '-2&#960;'
-            elif v == numpy.pi:
+            if v == np.pi:
                 return '&#960;'
-            elif v == -numpy.pi:
+            if v == -np.pi:
                 return '-&#960;'
 
         return str(v)
@@ -644,23 +644,23 @@ class Parameter(NoNewAttributesAfterInit):
 
     # Unary operations
     # It is safest to always say -(..) even if arg is a single field
-    __neg__ = _make_unop(numpy.negative, '-', strformat='-({arg})')
-    __abs__ = _make_unop(numpy.absolute, 'abs')
+    __neg__ = _make_unop(np.negative, '-', strformat='-({arg})')
+    __abs__ = _make_unop(np.absolute, 'abs')
 
     # Binary operations
-    __add__, __radd__ = _make_binop(numpy.add, '+')
-    __sub__, __rsub__ = _make_binop(numpy.subtract, '-')
-    __mul__, __rmul__ = _make_binop(numpy.multiply, '*')
-    __div__, __rdiv__ = _make_binop(numpy.divide, '/')
-    __floordiv__, __rfloordiv__ = _make_binop(numpy.floor_divide, '//')
-    __truediv__, __rtruediv__ = _make_binop(numpy.true_divide, '/')
-    __mod__, __rmod__ = _make_binop(numpy.remainder, '%')
-    __pow__, __rpow__ = _make_binop(numpy.power, '**')
+    __add__, __radd__ = _make_binop(np.add, '+')
+    __sub__, __rsub__ = _make_binop(np.subtract, '-')
+    __mul__, __rmul__ = _make_binop(np.multiply, '*')
+    __div__, __rdiv__ = _make_binop(np.divide, '/')
+    __floordiv__, __rfloordiv__ = _make_binop(np.floor_divide, '//')
+    __truediv__, __rtruediv__ = _make_binop(np.true_divide, '/')
+    __mod__, __rmod__ = _make_binop(np.remainder, '%')
+    __pow__, __rpow__ = _make_binop(np.power, '**')
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
         if not method == '__call__':
             return NotImplemented
-        if hasattr(numpy, ufunc.__name__):
+        if hasattr(np, ufunc.__name__):
             name = f"numpy.{ufunc.__name__}"
         else:
             # Unfortunately, there is no ufunc.__module__ we could use
@@ -934,19 +934,19 @@ def html_parameter(par):
     #
     def addtd(val):
         "Use the parameter to convert to HTML"
-        return '<td>{}</td>'.format(par._val_to_html(val))
+        return f'<td>{par._val_to_html(val)}</td>'
 
     out = '<table class="model">'
     out += '<thead><tr>'
     cols = ['Component', 'Parameter', 'Thawed', 'Value',
             'Min', 'Max', 'Units']
     for col in cols:
-        out += '<th>{}</th>'.format(col)
+        out += f'<th>{col}</th>'
 
     out += '</tr></thead><tbody><tr>'
 
-    out += '<th class="model-odd">{}</th>'.format(par.modelname)
-    out += '<td>{}</td>'.format(par.name)
+    out += f'<th class="model-odd">{par.modelname}</th>'
+    out += f'<td>{par.name}</td>'
 
     linked = par.link is not None
     if linked:
@@ -963,13 +963,13 @@ def html_parameter(par):
         # 8656 is double left arrow
         #
         val = formatting.clean_bracket(par.link.fullname)
-        out += '<td colspan="2">&#8656; {}</td>'.format(val)
+        out += f'<td colspan="2">&#8656; {val}</td>'
 
     else:
         out += addtd(par.min)
         out += addtd(par.max)
 
-    out += '<td>{}</td>'.format(par._units_to_html())
+    out += f'<td>{par._units_to_html()}</td>'
     out += '</tr>'
 
     out += '</tbody></table>'
