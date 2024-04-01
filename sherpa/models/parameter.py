@@ -204,11 +204,13 @@ fit.
 
 import logging
 import numpy
-from sherpa.utils import NoNewAttributesAfterInit, formatting, \
-    get_precedences_op, get_precedence_expr, \
-    get_precedence_lhs, get_precedence_rhs
+
+from sherpa.utils import NoNewAttributesAfterInit, formatting
 from sherpa.utils.err import ParameterErr
 from sherpa.utils.numeric_types import SherpaFloat
+
+from .op import get_precedences_op, get_precedence_expr, \
+    get_precedence_lhs, get_precedence_rhs
 
 warning = logging.getLogger(__name__).warning
 

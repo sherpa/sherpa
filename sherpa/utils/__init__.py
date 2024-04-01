@@ -22,8 +22,6 @@
 Objects and utilities used by multiple Sherpa subpackages.
 """
 
-from __future__ import annotations
-
 import inspect
 import logging
 import operator
@@ -32,7 +30,6 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Callable
 
 import numpy
 import numpy.fft
@@ -77,8 +74,6 @@ __all__ = ('NoNewAttributesAfterInit',
            'sao_arange', 'sao_fcmp', 'send_to_pager',
            'set_origin', 'sum_intervals', 'zeroin',
            'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile',
-           'get_precedences_op', 'get_precedence_expr',
-           'get_precedence_lhs', 'get_precedence_rhs',
            )
 
 
@@ -4142,156 +4137,3 @@ def send_to_pager(txt, filename=None, clobber=False):
 
     with open(filename, 'w', encoding="UTF-8") as fh:
         print(txt, file=fh)
-
-
-# Expression terms (used to remove excess brackets from model and
-# parameter expressions).
-#
-def get_precedences_op(op: Callable) -> tuple[int, bool]:
-    """Return precedences for the operation.
-
-    Unrecognized parameters are mapped to (9, False).
-
-    Parameters
-    ----------
-    op : callable
-       The operator (e.g. np.multiply or np.power).
-
-    Returns
-    -------
-    lprec, rprec : (int, bool)
-       The left and right "precedences" (the right case only cares
-       about being set or not hence we use a boolean).
-
-    See Also
-    --------
-    get_precedence_expr, get_precedence_lhs, get_precedence_rhs
-
-    """
-
-    # We make remainder and floor_divide have the same precedence
-    # as power (aka **) just to make things clear.
-    #
-    lprec = {numpy.power: 4, numpy.remainder: 4,
-             numpy.floor_divide: 4,
-             numpy.multiply: 3, numpy.divide: 3, numpy.true_divide: 3,
-             numpy.add: 2, numpy.subtract: 2}
-
-    rprec = {numpy.power: True, numpy.remainder: True,
-             numpy.floor_divide: True}
-
-    return lprec.get(op, 9), rprec.get(op, False)
-
-
-# Typing is hard to get right here given that
-def get_precedence_expr(expr: Any) -> int:
-    """Return precedence for the expression.
-
-    This is the precedence of the operator in the expression,
-    if one exists.
-
-    Parameters
-    ----------
-    expr : Model or Parameter
-       The expression. It may have a .opprec field.
-
-    Returns
-    -------
-    prec : int
-       The "precedence"; 9 is returned if expr has an unknown
-       operator or it does not contain an operator.
-
-    See Also
-    --------
-    get_precedences_op, get_precedence_lhs, get_precedence_rhs
-
-    """
-
-    try:
-        return expr.opprec
-    except AttributeError:
-        return 9
-
-
-def get_precedence_lhs(lstr: str, lp: int, p: int, a: bool) -> str:
-    """Return the string to use for the left side of a binary operator.
-
-    Parameters
-    ----------
-    lstr : str
-       The term to the left of the operator.
-    lp, p : int
-       Precedences of any operator in lstr and the current operator.
-    a : bool
-       Do we care about power-like terms.
-
-    Returns
-    -------
-    term : str
-       Either lstr or (lstr).
-
-    See Also
-    --------
-    get_precedences_op, get_precedence_expr, get_precedence_rhsx
-
-    """
-
-    if lp < p:
-        return f"({lstr})"
-
-    if not a:
-        return lstr
-
-    # We could combine all these into one, but for now keep
-    # them separate.
-    #
-    if lp == p:
-        # For now ensure the left term is bracketed just to be
-        # clear.
-        #
-        return f"({lstr})"
-
-    if lstr[0] == "-":
-        # If the term is negative then ensure it is included
-        # in a bracket before passed through to the power
-        # term.  Python has "-a ** 2" actually mapping to "-(a
-        # ** 2)" so we need to say "(-a) ** 2" if we really
-        # want the unary operator before the power term.
-        #
-        return f"({lstr})"
-
-    return lstr
-
-
-def get_precedence_rhs(rstr: str, opstr: str, rp: int, p: int) -> str:
-    """Return the string to use for the right side of a binary operator.
-
-    Parameters
-    ----------
-    rstr : str
-       The term to the right of the operator.
-    opstr : str
-       The string representing the operator.
-    rp, p : int
-       Precedences of any operator in rstr and the current operator.
-
-    Returns
-    -------
-    term : str
-       Either rstr or (rstr).
-
-    See Also
-    --------
-    get_precedences_op, get_precedence_expr, get_precedence_lhs
-
-    """
-
-    if opstr in ["+", "*"]:
-        condition = rp < p
-    else:
-        condition = rp <= p
-
-    if condition:
-        return f"({rstr})"
-
-    return rstr

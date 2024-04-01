@@ -325,12 +325,12 @@ import warnings
 import numpy
 
 from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
-from sherpa.utils import NoNewAttributesAfterInit, formatting, \
-    get_precedences_op, get_precedence_expr, \
-    get_precedence_lhs, get_precedence_rhs
+from sherpa.utils import NoNewAttributesAfterInit, formatting
 from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.utils.numeric_types import SherpaFloat
 
+from .op import get_precedences_op, get_precedence_expr, \
+    get_precedence_lhs, get_precedence_rhs
 from .parameter import Parameter
 
 # What routine do we use for the hash in modelCacher1d?  As we do not
