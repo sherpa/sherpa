@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -36,8 +36,9 @@ import numpy.fft
 
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
-from sherpa.utils._utils import hist1d, hist2d
-from sherpa.utils import _utils, _psf
+from sherpa.utils._utils import hist1d, hist2d  # type: ignore
+from sherpa.utils import _utils  # type: ignore
+from sherpa.utils import _psf    # type: ignore
 from sherpa.utils.err import IOErr
 from sherpa.utils.random import poisson_noise
 
@@ -72,7 +73,8 @@ __all__ = ('NoNewAttributesAfterInit',
            'print_fields', 'rebin',
            'sao_arange', 'sao_fcmp', 'send_to_pager',
            'set_origin', 'sum_intervals', 'zeroin',
-           'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile')
+           'multinormal_pdf', 'multit_pdf', 'get_error_estimates', 'quantile',
+           )
 
 
 _guess_ampl_scale = 1.e+3

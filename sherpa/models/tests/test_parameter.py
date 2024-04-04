@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -180,6 +180,7 @@ def test_unop(op):
     assert isinstance(p, UnaryOpParameter)
     assert p.val == op(p.val)
 
+
 def test_unop_string():
     '''Check that the string output is sensible.
 
@@ -187,7 +188,7 @@ def test_unop_string():
     printing the model representation.
     '''
     porig = setUp_p()
-    assert repr(-porig) == "<UnaryOpParameter '-model.name'>"
+    assert repr(-porig) == "<UnaryOpParameter '-(model.name)'>"
     assert repr(np.cos(porig)) == "<UnaryOpParameter 'numpy.cos(model.name)'>"
 
 
@@ -195,6 +196,7 @@ def custom_func(a, b):
    return a + b
 
 custom_ufunc = np.frompyfunc(custom_func, nin=2, nout=1)
+
 
 @pytest.mark.parametrize("op", [operator.add, operator.sub, operator.mul,
                                 operator.floordiv, operator.truediv, operator.mod,
@@ -212,6 +214,7 @@ def test_binop(op):
         assert isinstance(comb, BinaryOpParameter)
         assert comb.val == op(p.val, p2.val)
 
+
 def test_binop_string():
     '''Check that the string output is sensible.
 
@@ -220,11 +223,12 @@ def test_binop_string():
     '''
     p, p2 = setUp_composite()
     comp = p + p2
-    assert repr(comp) == "<BinaryOpParameter '(model.p + model.p2)'>"
+    assert repr(comp) == "<BinaryOpParameter 'model.p + model.p2'>"
     comp = 1 + p * 2.7**p2
-    assert repr(comp) == "<BinaryOpParameter '(1 + (model.p * (2.7 ** model.p2)))'>"
+    assert repr(comp) == "<BinaryOpParameter '1 + model.p * 2.7 ** model.p2'>"
     comp = np.logaddexp2(p, p2)
     assert repr(comp) == "<BinaryOpParameter 'numpy.logaddexp2(model.p, model.p2)'>"
+
 
 def test_binop_string_with_custom_ufunc():
     '''Repeat the previous test, but with a custom ufunc.'''
@@ -235,6 +239,148 @@ def test_binop_string_with_custom_ufunc():
     p, p2 = setUp_composite()
     comp = uf(p, p2)
     assert repr(comp) == "<BinaryOpParameter 'func(model.p, model.p2)'>"
+
+
+class TestBrackets:
+    """Provide a set of model instances for the tests."""
+
+    a = Parameter('m', 'a', 2)
+    b = Parameter('m', 'b', 3)
+    c = Parameter('m', 'c', 4)
+    d = Parameter('m', 'd', 5)
+
+    # It would be nice to instead use a principled set of states,
+    # but let's just try a somewhat-random set of expressions.
+    #
+    # This uses many of the same expressions from test_model_op.py
+    # because why re-invent the wheel. Although there are differences.
+    #
+    @pytest.mark.parametrize("expr,expected",
+                             [(a, "a"),  # TODO: should this be m.a?
+                              (abs(a), "abs(m.a)"),
+                              (abs(a) + b, "abs(m.a) + m.b"),
+                              (b + abs(a), "m.b + abs(m.a)"),
+                              (abs(a + b), "abs(m.a + m.b)"),
+                              (abs(a + b * c), "abs(m.a + m.b * m.c)"),
+                              (abs(a - b * c), "abs(m.a - m.b * m.c)"),
+                              (abs((a + b) * c), "abs((m.a + m.b) * m.c)"),
+                              (abs((a - b) * c), "abs((m.a - m.b) * m.c)"),
+                              (abs((a - b) / c), "abs((m.a - m.b) / m.c)"),
+                              (abs((a * b) - c), "abs(m.a * m.b - m.c)"),
+                              (abs((a / b) - c), "abs(m.a / m.b - m.c)"),
+                              (a * abs(b * (c + d)), "m.a * abs(m.b * (m.c + m.d))"),
+                              (abs(b * (c + d)) * (a + d), "abs(m.b * (m.c + m.d)) * (m.a + m.d)"),
+                              (-a, "-(m.a)"),
+                              # (+a, "+(m.a)"),  currently not supported
+                              (-a + b, "-(m.a) + m.b"),
+                              (-a + 2, "-(m.a) + 2"),
+                              # (+a + b, "+(m.a) + m.b"),  currently not supported
+                              (-(a + b), "-(m.a + m.b)"),
+                              (-(a * b), "-(m.a * m.b)"),
+                              (-(a - b), "-(m.a - m.b)"),
+                              (-(a * b - c), "-(m.a * m.b - m.c)"),
+                              (-(a - b * c), "-(m.a - m.b * m.c)"),
+                              (a - a - b, "m.a - m.a - m.b"),
+                              (a - (a - b), "m.a - (m.a - m.b)"),
+                              (a - (b - (c - d)), 'm.a - (m.b - (m.c - m.d))'),
+                              (a - (b + (c - d)), 'm.a - (m.b + m.c - m.d)'),
+                              (b - (c + d), 'm.b - (m.c + m.d)'),
+                              ((a - b) - (c + d), 'm.a - m.b - (m.c + m.d)'),
+                              (a - (b - (c + d)), 'm.a - (m.b - (m.c + m.d))'),
+                              (a - (b + (c + d)), 'm.a - (m.b + m.c + m.d)'),
+                              (2 * (a + b) - c * 3, "2 * (m.a + m.b) - m.c * 3"),
+                              (abs(2 * (a + b) - c * 3), "abs(2 * (m.a + m.b) - m.c * 3)"),
+                              (a + a, "m.a + m.a"),
+                              (a * b, "m.a * m.b"),
+                              (a - a, "m.a - m.a"),
+                              (a / b, "m.a / m.b"),
+                              (a + b + c, "m.a + m.b + m.c"),
+                              (a * b * c, "m.a * m.b * m.c"),
+                              ((a * b) + c, "m.a * m.b + m.c"),
+                              ((a + b) * c, "(m.a + m.b) * m.c"),
+                              (a + (b * c), "m.a + m.b * m.c"),
+                              (a * (b + c), "m.a * (m.b + m.c)"),
+                              ((a + b) * (c + d), "(m.a + m.b) * (m.c + m.d)"),
+                              ((a * b) * (c + d), "m.a * m.b * (m.c + m.d)"),
+                              ((a + b) * (c * d), "(m.a + m.b) * m.c * m.d"),
+                              ((a + (b * c) + d), "m.a + m.b * m.c + m.d"),
+                              (100 * a * (b + c), "100 * m.a * (m.b + m.c)"),
+                              (100 * (a * (b + c)), "100 * m.a * (m.b + m.c)"),
+                              (a + b + 2 * c + d + a, "m.a + m.b + 2 * m.c + m.d + m.a"),
+                              (a + b + c * 2 + d + a, "m.a + m.b + m.c * 2 + m.d + m.a"),
+                              (a + b * (c - 2) + d + a, "m.a + m.b * (m.c - 2) + m.d + m.a"),
+                              (a + b * (2 - c) + d + a, "m.a + m.b * (2 - m.c) + m.d + m.a"),
+                              ((a + b + c) + (c + b + d + a), "m.a + m.b + m.c + m.c + m.b + m.d + m.a"),
+                              ((a + b + c) + (c + b - d + a), "m.a + m.b + m.c + m.c + m.b - m.d + m.a"),
+                              ((a + b + c) + (c + b - abs(d) + a), "m.a + m.b + m.c + m.c + m.b - abs(m.d) + m.a"),
+                              ((a + b + c) * (c + b + d + a), "(m.a + m.b + m.c) * (m.c + m.b + m.d + m.a)"),
+                              ((a + b + c) * (c + b - d + a), "(m.a + m.b + m.c) * (m.c + m.b - m.d + m.a)"),
+                              ((a + b + c) * (c + b - abs(d) + a), "(m.a + m.b + m.c) * (m.c + m.b - abs(m.d) + m.a)"),
+                              ((a * b * c) * (c + b + d + a), "m.a * m.b * m.c * (m.c + m.b + m.d + m.a)"),
+                              ((a + b + c) * (c * b * d * a), "(m.a + m.b + m.c) * m.c * m.b * m.d * m.a"),
+                              ((a + b + c) * (c * b + d * a), "(m.a + m.b + m.c) * (m.c * m.b + m.d * m.a)"),
+                              (2 * a * 2, "2 * m.a * 2"),
+                              (a * 2 * 2, "m.a * 2 * 2"),
+                              (2 * a + 2 * (b + c - 4) * 3, "2 * m.a + 2 * (m.b + m.c - 4) * 3"),
+                              # How about expressions with exponentation
+                              (a**2, "m.a ** 2"),
+                              (a**-2, "m.a ** -2"),
+                              (a + b**2, "m.a + m.b ** 2"),
+                              (a + (b + c)**2, "m.a + (m.b + m.c) ** 2"),
+                              (a - b**(c - 2) - a, "m.a - m.b ** (m.c - 2) - m.a"),
+                              ((a ** 2) ** b, "(m.a ** 2) ** m.b"),
+                              (-a ** 2, "-(m.a ** 2)"),
+                              ((-a)**2, "(-(m.a)) ** 2"),
+                              # remainder and integer division, for fun
+                              (a // 2, "m.a // 2"),
+                              ((a + b) // 2, "(m.a + m.b) // 2"),
+                              ((a * b) // 2, "(m.a * m.b) // 2"),
+                              (a % 2, "m.a % 2"),
+                              ((a + b) % 2, "(m.a + m.b) % 2"),
+                              ((a * b) % 2, "(m.a * m.b) % 2"),
+                              # abs is special, how about other functions
+                              (np.sin(a), "numpy.sin(m.a)"),
+                              (np.sin(a + b), "numpy.sin(m.a + m.b)"),
+                              (np.sin(((a) * (b))), "numpy.sin(m.a * m.b)"),
+                              (np.cos((np.sin(a) * ((2) + np.tan(b)))),
+                               "numpy.cos(numpy.sin(m.a) * (2 + numpy.tan(m.b)))"),
+                              (np.cos(a)**2 + np.sin(a)**2,
+                               "numpy.cos(m.a) ** 2 + numpy.sin(m.a) ** 2"),
+                              (np.logaddexp(a, b),
+                               "numpy.logaddexp(m.a, m.b)"),
+                              (2 + np.logaddexp(a, b * 2),
+                               "2 + numpy.logaddexp(m.a, m.b * 2)"),
+                              (np.logaddexp(2 / a, b * 2) - (2 * c),
+                               "numpy.logaddexp(2 / m.a, m.b * 2) - 2 * m.c"),
+                             ])
+    def test_brackets(self, expr, expected):
+        """Do we get the expected number of brackets?"""
+
+        assert isinstance(expr, Parameter)
+        assert expr.name == expected
+
+
+def test_unary_op_precedence():
+    """In checking precedences (adding TestBrackets case) DJB found
+    this case so check the result."""
+
+    p = Parameter("m", "x", 3)
+
+    expr = p ** 2
+    assert expr.name == "m.x ** 2"
+    assert expr.val == pytest.approx(9)
+
+    expr = (-p) ** 2
+    assert expr.name == "(-(m.x)) ** 2"
+    assert expr.val == pytest.approx(9)
+
+    expr = -p ** 2
+    assert expr.name == "-(m.x ** 2)"
+    assert expr.val == pytest.approx(-9)
+
+    expr = p ** -2
+    assert expr.name == "m.x ** -2"
+    assert expr.val == pytest.approx(1 / 9)
 
 
 def test_iter_composite():
@@ -425,3 +571,37 @@ def test_link_manual(attr):
     assert p.link.parts[0].val == 2
     assert isinstance(p.link.parts[1], Parameter)
     assert p.link.parts[1] is q
+
+
+def test_explicit_numpy_combination():
+    """This was a question I wondered when developing test_brackets,
+    so add a check.
+    """
+
+    p1 = Parameter("m1", "a", 4)
+    p2 = Parameter("m2", "b", 2)
+    p3 = Parameter("m4", "xx", 10)
+
+    # These should be the same but check they are.
+    #
+    implicit = p1 * (p2 + p3)
+    explicit = np.multiply(p1,
+                           np.add(p2, p3))
+
+    assert isinstance(implicit, BinaryOpParameter)
+    assert isinstance(explicit, BinaryOpParameter)
+
+    # The model version of this
+    # test_model_op::test_explicit_numpy_combination()
+    # has the names being the same, but they are not here.
+    # Is this related to #1653
+    #
+    # assert explicit.name == implicit.name
+    assert implicit.name == "m1.a * (m2.b + m4.xx)"
+    assert explicit.name == "numpy.multiply(m1.a, numpy.add(m2.b, m4.xx))"
+
+    # Check they evaluate to the same values.
+    #
+    yexp = 48
+    assert implicit.val == pytest.approx(yexp)
+    assert explicit.val == pytest.approx(yexp)

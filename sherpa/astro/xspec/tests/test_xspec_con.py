@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2023
+#  Copyright (C) 2020, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -587,7 +587,7 @@ def test_xspec_con_ui_cflux(make_data_path, clean_astro_ui, restore_xspec_settin
     ui.set_source('random', 'xsphabs.gal * xscflux.sflux(powlaw1d.pl)')
     mdl = ui.get_source('random')
 
-    assert mdl.name == '(xsphabs.gal * xscflux.sflux(powlaw1d.pl))'
+    assert mdl.name == 'xsphabs.gal * xscflux.sflux(powlaw1d.pl)'
     assert len(mdl.pars) == 7
     assert mdl.pars[0].fullname == 'gal.nH'
     assert mdl.pars[1].fullname == 'sflux.Emin'
@@ -663,7 +663,7 @@ def test_xspec_con_ui_shift(make_data_path, clean_astro_ui, restore_xspec_settin
     ui.set_source(ui.xsphabs.gal * ui.xszashift.zsh(msource))
     mdl = ui.get_source()
 
-    assert mdl.name == '(xsphabs.gal * xszashift.zsh((box1d.box + const1d.bgnd)))'
+    assert mdl.name == 'xsphabs.gal * xszashift.zsh(box1d.box + const1d.bgnd)'
     assert len(mdl.pars) == 6
     assert mdl.pars[0].fullname == 'gal.nH'
     assert mdl.pars[1].fullname == 'zsh.Redshift'
@@ -760,7 +760,7 @@ def test_xspec_con_ui_shift_regrid(make_data_path, clean_astro_ui, restore_xspec
 
     # What should the string representation be?
     #
-    assert mdl.name == '(xsphabs.gal * regrid1d(xszashift.zsh((box1d.box + const1d.bgnd))))'
+    assert mdl.name == 'xsphabs.gal * regrid1d(xszashift.zsh(box1d.box + const1d.bgnd))'
 
     assert len(mdl.pars) == 6
     assert mdl.pars[0].fullname == 'gal.nH'
