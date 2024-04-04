@@ -481,7 +481,8 @@ class RMFPlot(shplot.HistogramPlot):
     .. versionchanged:: 4.16.1
        The plot will now display with the analysis setting of the data
        argument sent to `prepare`. Previously it would always use
-       energies for the X axis.
+       energies for the X axis. The `energies` setting can be used to
+       control what energies are chosen for the plot.
 
     """
 
@@ -496,6 +497,13 @@ class RMFPlot(shplot.HistogramPlot):
 
     y  = None
     "array_like: The response for a specific energy or channel."
+
+    energies = None
+    """The energies at which to draw the response (in keV).
+
+    If set  to None then `n_lines` energies will be selected to span
+    the energy range of the response.
+    """
 
     xlabel = ''
     "Label for X axis"
@@ -512,16 +520,24 @@ class RMFPlot(shplot.HistogramPlot):
     # TODO: Make that a plot preference
     # How many monochromatic lines to use
     n_lines = 5
+    "The number of lines to draw (only used when `energies` is `None`)."
 
     labels = None
     "List of strings: The labels for each line."
-
 
     def _merge_settings(self, kwargs):
         return {**self.rmf_plot_prefs, **kwargs}
 
     def prepare(self, rmf, data=None):
         """Fill the fields given the RMF.
+
+        The `n_lines` and `energies` fields can be set to control
+        what lines are shown.
+
+        .. versionchanged:: 4.16.1
+           The `energies` field, when set, is used to select the
+           energies to display (if left as `None` then `n_lines`
+           energies are chosen automatically).
 
         Parameters
         ----------
@@ -577,10 +593,28 @@ class RMFPlot(shplot.HistogramPlot):
         elo, ehi = rmf.energ_lo, rmf.energ_hi
         l1 = np.log10(elo[0])
         l2 = np.log10(ehi[-1])
-        dl = (l2 - l1) / (self.n_lines + 1)
 
-        lines = l1 + dl * np.arange(1, self.n_lines + 1)
-        energies = np.power(10, lines)
+        # NOTE: we do not actually record the chosen energies other
+        # than in self.labels, which is a lossy transform.
+        #
+        if self.energies is None:
+            if self.n_lines < 1:
+                raise ValueError("n_lines must be >= 1")
+
+            dl = (l2 - l1) / (self.n_lines + 1)
+            lines = l1 + dl * np.arange(1, self.n_lines + 1)
+            energies = np.power(10, lines)
+
+        else:
+            # Minimal checks. We do not re-order this list as the user
+            # may want the ordering for a particular reason.  This is
+            # liable to change.
+            #
+            energies = [energy for energy in self.energies
+                        if energy >= elo[0] and energy < ehi[-1]]
+            if len(energies) == 0:
+                raise ValueError("energies must be "
+                                 f">= {elo[0]} and < {ehi[-1]} keV")
 
         mdl = Delta1D()
 
@@ -624,13 +658,18 @@ class RMFPlot(shplot.HistogramPlot):
         prepare, overplot
 
         """
+
         y_array = self.y
-        for n in range(self.n_lines):
+        labels = self.labels
+
+        # Override the self.y array with each "energy".
+        #
+        for n, label in enumerate(labels):
             self.y = y_array[n, :]
             super().plot(
                 overplot=overplot if n == 0 else True,
                 clearwindow=clearwindow if n == 0 else False,
-                label=self.labels[n],
+                label=label,
                 **kwargs)
         self.y = y_array
 

@@ -1367,3 +1367,96 @@ def test_rmf_checks_data_is_pha():
 
     with pytest.raises(IOErr, match="data set 'x' does not contain a PHA spectrum"):
         plotobj.prepare(rmf=rmf, data=d)
+
+
+def test_rmf_checks_nlines_is_positive():
+    """We make sure there's at least one line."""
+
+    plotobj = RMFPlot()
+    assert plotobj.n_lines == 5  # just check current behaviour
+    assert plotobj.energies is None
+
+    rmf = create_delta_rmf(np.asarray([1, 2]), np.asarray([2, 3]))
+    d = DataPHA("x", [1, 2], [2, 3])
+
+    plotobj.n_lines = 0
+    with pytest.raises(ValueError,
+                       match="n_lines must be >= 1"):
+        plotobj.prepare(rmf=rmf, data=d)
+
+
+@pytest.mark.parametrize("energies", [[],
+                                      [0.5, 0.7],
+                                      [20, 21, 22],
+                                      [0.7, 14]
+                                      ])
+def test_rmfplot_energies_is_empty(energies):
+    """Basic check of prepare when energies ends up being empty."""
+
+    plotobj = RMFPlot()
+
+    egrid = np.arange(1, 15, 1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi)
+    d = DataPHA("x", np.arange(1, 15, dtype=np.int16), [0] * 14)
+
+    plotobj.energies = energies
+    with pytest.raises(ValueError,
+                       match="energies must be >= 1 and < 14 keV"):
+        plotobj.prepare(rmf=rmf, data=d)
+
+
+def test_rmfplot_default_energies():
+    """What is the expected data here?"""
+
+    plotobj = RMFPlot()
+
+    egrid = np.arange(0, 15, 1) + 0.4
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi)
+
+    chans = np.arange(1, 15, dtype=np.int16)
+    d = DataPHA("x", chans, [0] * 14)
+
+    plotobj.prepare(rmf=rmf, data=d)
+
+    assert plotobj.xlabel == "Channel"
+    assert plotobj.xlo == pytest.approx(chans)
+    assert plotobj.xhi == pytest.approx(chans + 1)
+    assert plotobj.y.shape == (5, 14)
+
+    assert plotobj.labels == ['0.73 keV',
+                              '1.3 keV',
+                              '2.4 keV',
+                              '4.4 keV',
+                              '7.9 keV']
+
+
+def test_rmfplot_selected_energies():
+    """What is the expected data here?"""
+
+    plotobj = RMFPlot()
+
+    egrid = np.arange(0, 15, 1) + 0.4
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi)
+
+    chans = np.arange(1, 15, dtype=np.int16)
+    d = DataPHA("x", chans, [0] * 14)
+
+    # Note: not all energies are not valid
+    plotobj.energies = [0.2, 0.4, 2, 5, 14, 15]
+    plotobj.prepare(rmf=rmf, data=d)
+
+    assert plotobj.xlabel == "Channel"
+    assert plotobj.xlo == pytest.approx(chans)
+    assert plotobj.xhi == pytest.approx(chans + 1)
+    assert plotobj.y.shape == (4, 14)
+
+    assert plotobj.labels == ['0.4 keV',
+                              '2 keV',
+                              '5 keV',
+                              '14 keV']
