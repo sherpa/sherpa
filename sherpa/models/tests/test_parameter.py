@@ -730,7 +730,7 @@ def test_set_default_to_parameter(check_str):
 def test_set_default_to_parameter_to_parameter(check_str):
     """We support this, so make sure it is tested.
 
-    Maybe I shouldn't have watched Inception. There is the question of
+   There is the question of
     whether it makes sense to support this, but that's a different
     issue.
 
