@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2017, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -42,7 +42,8 @@ import sherpa.models.basic
 from sherpa.utils import poisson_noise
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, StatErr
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_region, requires_wcs
 
 
 def backend_is(name):
@@ -208,7 +209,7 @@ def test_check_ids_not_none(func):
 
 @pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
 @pytest.mark.parametrize("bid", [None, 1])
-def test_set_filter_mismatch(f, bid):
+def test_set_filter_mismatch(f, bid, clean_astro_ui):
     """Does set_filter error when there's a mis-match?
     """
 
@@ -222,7 +223,7 @@ def test_set_filter_mismatch(f, bid):
 
 @pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
 @pytest.mark.parametrize("bid", [None, 1])
-def test_set_filter_mismatch_with_filter(f, bid):
+def test_set_filter_mismatch_with_filter(f, bid, clean_astro_ui):
     """Does set_filter error when there's a mis-match after a filter?
 
     test_set_filter_mismatch checks when .mask is a scalar,
@@ -241,7 +242,7 @@ def test_set_filter_mismatch_with_filter(f, bid):
 
 
 @pytest.mark.parametrize("bid", [None, 1])
-def test_get_syserror_missing(bid):
+def test_get_syserror_missing(bid, clean_astro_ui):
     """Does get_syserror error out?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
@@ -422,7 +423,7 @@ def test_save_table_pha(ascii, reader, tmp_path, clean_astro_ui):
 
 
 @pytest.mark.parametrize("bid", [None, 1])
-def test_save_filter_ignored(bid, tmp_path):
+def test_save_filter_ignored(bid, tmp_path, clean_astro_ui):
     """Does save_filter error out if everything is masked?
 
     We should be able to write out the filter in this case,
@@ -480,7 +481,7 @@ def test_save_xxx_nodata(func, etype, emsg, tmp_path, clean_astro_ui):
 
 
 @requires_fits
-def test_save_image_nodata(tmp_path):
+def test_save_image_nodata(tmp_path, clean_astro_ui):
     """Does save_image error out if there's no data to save? DataPHA
 
     Unlike the other calls, this requires a FITS library
@@ -517,7 +518,7 @@ def test_save_image_nodata(tmp_path):
                            "background model 1 for data set 1 has not been set"),
                           (ui.save_delchi,  ModelErr,
                            "background model 1 for data set 1 has not been set")])
-def test_save_xxx_bkg_nodata(func, etype, emsg, tmp_path):
+def test_save_xxx_bkg_nodata(func, etype, emsg, tmp_path, clean_astro_ui):
     """Does save_xxx error out if there's no data to save? DataPHA + bkg
 
     Note that save_image does not support a bkg_id parameter so is
@@ -552,7 +553,7 @@ def test_save_xxx_bkg_nodata(func, etype, emsg, tmp_path):
                            "model 1 has not been set"),
                           (ui.save_delchi,  IdentifierErr,
                            "model 1 has not been set")])
-def test_save_xxx_data1d_nodata(func, etype, emsg, tmp_path):
+def test_save_xxx_data1d_nodata(func, etype, emsg, tmp_path, clean_astro_ui):
     """Does save_xxx error out if there's no data to save? Data1D
     """
 
@@ -565,7 +566,7 @@ def test_save_xxx_data1d_nodata(func, etype, emsg, tmp_path):
 
 
 @requires_fits
-def test_save_image_data1d_nodata(tmp_path):
+def test_save_image_data1d_nodata(tmp_path, clean_astro_ui):
     """Does save_image error out if there's no data to save? Data1D
 
     Unlike the other cases we need a FITS backend.
@@ -585,7 +586,7 @@ def test_save_image_data1d_nodata(tmp_path):
                                       ui.save_quality,
                                       ui.save_image,
                                       ui.save_resid])
-def test_save_xxx_not_a_string(savefunc, tmp_path):
+def test_save_xxx_not_a_string(savefunc, tmp_path, clean_astro_ui):
     """Does save_xxx error out if not given a filename?
 
     There are times it would be nice to give a non-string filename
@@ -603,7 +604,7 @@ def test_save_xxx_not_a_string(savefunc, tmp_path):
         savefunc(out)
 
 
-def test_save_delchi_image_fails(tmp_path):
+def test_save_delchi_image_fails(tmp_path, clean_astro_ui):
     """save_delchi doesn't work for image datasets
 
     Only test out DataIMG
@@ -646,7 +647,7 @@ def check_clobber(outpath, func):
 
 
 @requires_fits
-def test_save_data_data1d_no_clobber(tmp_path):
+def test_save_data_data1d_no_clobber(tmp_path, clean_astro_ui):
     """save_data: does clobber=False work? Data1D"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
@@ -659,7 +660,7 @@ def test_save_data_data1d_no_clobber(tmp_path):
 
 
 @requires_fits
-def test_save_data_datapha_no_clobber(tmp_path):
+def test_save_data_datapha_no_clobber(tmp_path, clean_astro_ui):
     """save_data: does clobber=False work? DataPHA"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
@@ -669,7 +670,7 @@ def test_save_data_datapha_no_clobber(tmp_path):
 
 
 @requires_fits
-def test_save_pha_no_clobber(tmp_path):
+def test_save_pha_no_clobber(tmp_path, clean_astro_ui):
     """save_pha: does clobber=False work?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
@@ -681,7 +682,7 @@ def test_save_pha_no_clobber(tmp_path):
 
 @requires_fits
 @pytest.mark.parametrize("writer", [ui.save_data, ui.save_image])
-def test_save_image_no_clobber(writer, tmp_path):
+def test_save_image_no_clobber(writer, tmp_path, clean_astro_ui):
     """save_image: does clobber=False work?"""
 
     y, x = np.mgrid[10:12, 20:23]
@@ -741,7 +742,7 @@ def check_output(out, colnames, rows):
 
 
 @requires_fits
-def test_save_data_data1d_clobber(tmp_path):
+def test_save_data_data1d_clobber(tmp_path, clean_astro_ui):
     """save_data: does clobber=True work?"""
 
     ui.load_arrays(1, [1], [5], ui.Data1D)
@@ -757,7 +758,7 @@ def test_save_data_data1d_clobber(tmp_path):
 
 
 @requires_fits
-def test_save_data_data1d(tmp_path):
+def test_save_data_data1d(tmp_path, clean_astro_ui):
     """Does save_data work for Data1D?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.Data1D)
@@ -771,7 +772,7 @@ def test_save_data_data1d(tmp_path):
 
 
 @requires_fits
-def test_save_data_data1d_fits(tmp_path):
+def test_save_data_data1d_fits(tmp_path, clean_astro_ui):
     """Does save_data work for Data1D? FITS"""
 
     from sherpa.astro.io import read_table_blocks
@@ -791,7 +792,7 @@ def test_save_data_data1d_fits(tmp_path):
 
 
 @requires_fits
-def test_save_data_data1dint(tmp_path):
+def test_save_data_data1dint(tmp_path, clean_astro_ui):
     """Does save_data work for Data1DInt?"""
 
     ui.load_arrays(1, [1, 2, 4], [2, 3, 5], [5, 4, 3], ui.Data1DInt)
@@ -806,7 +807,7 @@ def test_save_data_data1dint(tmp_path):
 
 
 @requires_fits
-def test_save_data_data1dint_fits(tmp_path):
+def test_save_data_data1dint_fits(tmp_path, clean_astro_ui):
     """Does save_data work for Data1DInt? FITS"""
 
     from sherpa.astro.io import read_table_blocks
@@ -827,7 +828,7 @@ def test_save_data_data1dint_fits(tmp_path):
 
 
 @requires_fits
-def test_save_data_data2d(tmp_path):
+def test_save_data_data2d(tmp_path, clean_astro_ui):
     """Does save_data work for Data2D?"""
 
     y, x = np.mgrid[20:22, 10:13]
@@ -861,7 +862,7 @@ def test_save_data_data2d(tmp_path):
 
 
 @requires_fits
-def test_save_data_data2d_fits(tmp_path):
+def test_save_data_data2d_fits(tmp_path, clean_astro_ui):
     """Does save_data work for Data2D? FITS"""
 
     from sherpa.astro.io import read_image
@@ -888,7 +889,7 @@ def test_save_data_data2d_fits(tmp_path):
 
 
 @requires_fits
-def test_save_data_dataimg(tmp_path):
+def test_save_data_dataimg(tmp_path, clean_astro_ui):
     """Does save_data work for DataIMG? ASCII"""
 
     # Can not write out an ASCII image with crates
@@ -911,7 +912,7 @@ def test_save_data_dataimg(tmp_path):
 
 
 @requires_fits
-def test_save_data_dataimg_fits(tmp_path):
+def test_save_data_dataimg_fits(tmp_path, clean_astro_ui):
     """Does save_data work for DataIMG? FITS"""
 
     from sherpa.astro.io import read_image
@@ -938,9 +939,10 @@ def test_save_data_dataimg_fits(tmp_path):
 
 
 @requires_data
-@requires_fits  # assume this means we have WCS too
+@requires_fits
+@requires_wcs
 @pytest.mark.parametrize("writer", [ui.save_image, ui.save_data])
-def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path):
+def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path, clean_astro_ui):
     """Does save_image work for a FITS image with WCS
 
     We also check the input file, is read in, for fun.
@@ -1015,7 +1017,7 @@ def test_save_image_dataimg_fits_wcs(writer, make_data_path, tmp_path):
 
 
 @requires_fits
-def test_save_data_datapha(tmp_path):
+def test_save_data_datapha(tmp_path, clean_astro_ui):
     """Does save_data work for DataPHA?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
@@ -1030,7 +1032,7 @@ def test_save_data_datapha(tmp_path):
 
 @requires_fits
 @pytest.mark.parametrize("idval", [None, 2])
-def test_save_data_datapha_bkg(idval, tmp_path):
+def test_save_data_datapha_bkg(idval, tmp_path, clean_astro_ui):
     """Does save_data work for DataPHA [bkg]?"""
 
     idarg = 1 if idval is None else idval
@@ -1050,7 +1052,7 @@ def test_save_data_datapha_bkg(idval, tmp_path):
 
 
 @requires_fits
-def test_save_pha(tmp_path):
+def test_save_pha(tmp_path, clean_astro_ui):
     """Does save_pha work for DataPHA?"""
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
@@ -1067,7 +1069,7 @@ def test_save_pha(tmp_path):
 
 @requires_fits
 @pytest.mark.parametrize("idval", [None, 2])
-def test_save_pha_bkg(idval, tmp_path):
+def test_save_pha_bkg(idval, tmp_path, clean_astro_ui):
     """Does save_pha work for DataPHA (bkg, ascii)?"""
 
     idarg = 1 if idval is None else idval
@@ -1321,7 +1323,7 @@ def test_save_model_pha_fits(clean_astro_ui, tmp_path):
 
 
 @requires_fits
-def test_save_resid_data1d(tmp_path):
+def test_save_resid_data1d(clean_astro_ui, tmp_path):
     """Residual, Data1D, ASCII"""
 
     ui.load_arrays(1, [100, 200], [20, 230], ui.Data1D)
@@ -1337,7 +1339,7 @@ def test_save_resid_data1d(tmp_path):
 
 
 @requires_fits
-def test_save_resid_data1d_fits(tmp_path):
+def test_save_resid_data1d_fits(clean_astro_ui, tmp_path):
     """Residual, Data1D, FITS"""
 
     from sherpa.astro.io import read_table_blocks
@@ -1359,7 +1361,7 @@ def test_save_resid_data1d_fits(tmp_path):
 
 
 @requires_fits
-def test_save_resid_datapha(tmp_path):
+def test_save_resid_datapha(clean_astro_ui, tmp_path):
     """Residual, DataPHA, ASCII"""
 
     ui.load_arrays(1, [1, 2], [5, 10], ui.DataPHA)
@@ -1387,7 +1389,7 @@ def test_save_resid_datapha(tmp_path):
 
 
 @requires_fits
-def test_save_resid_datapha_fits(tmp_path):
+def test_save_resid_datapha_fits(clean_astro_ui, tmp_path):
     """Residual, DataPHA, FITS"""
 
     from sherpa.astro.io import read_table_blocks
@@ -1421,7 +1423,7 @@ def test_save_resid_datapha_fits(tmp_path):
 
 
 @requires_fits
-def test_save_resid_dataimg(tmp_path):
+def test_save_resid_dataimg(clean_astro_ui, tmp_path):
     """Residual, DataIMG, ASCII"""
 
     # Can not write out an ASCII image with crates
@@ -1447,7 +1449,7 @@ def test_save_resid_dataimg(tmp_path):
 
 
 @requires_fits
-def test_save_resid_dataimg_fits(tmp_path):
+def test_save_resid_dataimg_fits(clean_astro_ui, tmp_path):
     """Residual, DataIMG, FITS"""
 
     from sherpa.astro.io import read_image
@@ -1595,7 +1597,7 @@ def test_bkg_id_get_bkg_source(clean_astro_ui):
         ui.get_bkg_source()
 
 
-def test_fix_background_id_error_checks1():
+def test_fix_background_id_error_checks1(clean_astro_ui):
     """Check error handling of background id"""
 
     ui.load_arrays(2, [1, 2, 3], [5, 4, 3], ui.DataPHA)
@@ -1607,7 +1609,7 @@ def test_fix_background_id_error_checks1():
         ui.get_bkg_source(id=2, bkg_id=bkg)
 
 
-def test_fix_background_id_error_checks2():
+def test_fix_background_id_error_checks2(clean_astro_ui):
     """Check error handling of background id"""
 
     ui.load_arrays(2, [1, 2, 3], [5, 4, 3], ui.DataPHA)
@@ -1619,24 +1621,24 @@ def test_fix_background_id_error_checks2():
         ui.get_bkg_source(id=2, bkg_id="bkg")
 
 
-@pytest.mark.parametrize("id", [1, "x"])
-def test_delete_bkg_model_with_bkgid(id, clean_astro_ui):
+@pytest.mark.parametrize("idval", [1, "x"])
+def test_delete_bkg_model_with_bkgid(idval, clean_astro_ui):
     """Check we call delete_bkg_model with non-default bkg_id"""
 
-    ui.load_arrays(id, [1, 2, 3], [5, 4, 3], ui.DataPHA)
+    ui.load_arrays(idval, [1, 2, 3], [5, 4, 3], ui.DataPHA)
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
-    ui.set_bkg(id, bkg, bkg_id=2)
+    ui.set_bkg(idval, bkg, bkg_id=2)
 
-    ui.set_bkg_source(id, ui.const1d.bmdl, bkg_id=2)
+    ui.set_bkg_source(idval, ui.const1d.bmdl, bkg_id=2)
     assert ui.list_model_components() == ["bmdl"]
-    assert ui.get_bkg_source(id, 2).name == "const1d.bmdl"
+    assert ui.get_bkg_source(idval, 2).name == "const1d.bmdl"
 
-    ui.delete_bkg_model(id, bkg_id=2)
+    ui.delete_bkg_model(idval, bkg_id=2)
     assert ui.list_model_components() == ["bmdl"]
 
     with pytest.raises(ModelErr,
-                       match=f"background model 2 for data set {id} has not been set"):
-        ui.get_bkg_source(id, 2)
+                       match=f"background model 2 for data set {idval} has not been set"):
+        ui.get_bkg_source(idval, 2)
 
 
 @requires_fits
@@ -1784,7 +1786,7 @@ def test_load_quality(idval, clean_astro_ui, tmp_path, caplog):
 
 
 @pytest.mark.parametrize("idval", [None, 1, "xx"])
-def test_group_already_grouped(idval, caplog):
+def test_group_already_grouped(idval, clean_astro_ui, caplog):
     """Does group still work if the data is already grouped?"""
 
     x = [1, 2, 3]
@@ -1834,7 +1836,7 @@ def test_group_already_grouped(idval, caplog):
 
 
 @pytest.mark.parametrize("idval", [None, 1, "xx"])
-def test_subtract_already_subtracted(idval):
+def test_subtract_already_subtracted(idval, clean_astro_ui):
     """Does subtract still work if the data is already subtracted?"""
 
     x = [1, 2, 3]
@@ -1860,7 +1862,7 @@ def test_subtract_already_subtracted(idval):
 
 
 @pytest.mark.parametrize("callfunc", [ui.group, ui.subtract])
-def test_xxx_not_pha(callfunc):
+def test_xxx_not_pha(callfunc, clean_astro_ui):
     """Just check that these commands require a PHA dataset"""
 
     ui.load_arrays(1, [1, 2, 3], [4, 5, 6])
@@ -1870,14 +1872,14 @@ def test_xxx_not_pha(callfunc):
         callfunc()
 
 
-def test_get_axes_data1d():
+def test_get_axes_data1d(clean_astro_ui):
     ui.load_arrays(1, [2, 10, 20], [1, 2, 3])
     ax = ui.get_axes()
     assert len(ax) == 1
     assert ax[0] == pytest.approx([2, 10, 20])
 
 
-def test_get_axes_data1dint():
+def test_get_axes_data1dint(clean_astro_ui):
     ui.load_arrays(1, [2, 10, 20], [10, 12, 22], [1, 2, 3], ui.Data1DInt)
     ax = ui.get_axes()
     assert len(ax) == 2
@@ -1885,7 +1887,7 @@ def test_get_axes_data1dint():
     assert ax[1] == pytest.approx([10, 12, 22])
 
 
-def test_get_axes_datapha_no_response():
+def test_get_axes_datapha_no_response(clean_astro_ui):
     """Since we have no response this is a bit odd.
 
     I have noted that it's unclear whether the bin edges are
@@ -1902,7 +1904,7 @@ def test_get_axes_datapha_no_response():
     assert ax[1] == pytest.approx([2, 3, 4])
 
 
-def test_get_axes_datapha_rmf():
+def test_get_axes_datapha_rmf(clean_astro_ui):
     """RMF only"""
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
@@ -1918,7 +1920,7 @@ def test_get_axes_datapha_rmf():
     assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
 
 
-def test_get_axes_datapha_arf():
+def test_get_axes_datapha_arf(clean_astro_ui):
     """ARF only"""
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
@@ -1934,7 +1936,7 @@ def test_get_axes_datapha_arf():
     assert ax[1] == pytest.approx([0.2, 0.4, 0.8])
 
 
-def test_get_axes_datapha_rsp():
+def test_get_axes_datapha_rsp(clean_astro_ui):
     """Let's have a RMF and ARF for fun"""
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
@@ -1975,7 +1977,7 @@ def test_get_axes_datapha_rsp_bkg(clean_astro_ui):
     assert ax[1] == pytest.approx([2, 3, 4])
 
 
-def test_get_axes_dataimg_logical():
+def test_get_axes_dataimg_logical(clean_astro_ui):
     """We don't set up a coordinate system so we just get logical back"""
 
     y, x = np.mgrid[-5:-1, 5:8]
@@ -2003,7 +2005,7 @@ def test_get_rate_data1d(clean_astro_ui):
         ui.get_rate()
 
 
-def test_get_rate_datapha_rsp():
+def test_get_rate_datapha_rsp(clean_astro_ui):
     """Let's have a RMF and ARF for fun"""
 
     ui.load_arrays(1, [1, 2, 3], [1, 2, 3], ui.DataPHA)
@@ -2290,6 +2292,8 @@ def test_pha_what_does_get_dep_return_when_grouped(clean_astro_ui, caplog):
 
 @requires_fits
 @requires_data
+@requires_region
+@requires_wcs
 def test_image_filter_coord_change_same(make_data_path, clean_astro_ui, caplog):
     """What happens to the mask after a coordinate change? NO CHANGE
 
@@ -2335,6 +2339,8 @@ def test_image_filter_coord_change_same(make_data_path, clean_astro_ui, caplog):
 
 @requires_fits
 @requires_data
+@requires_region
+@requires_wcs
 def test_image_filter_coord_change(make_data_path, clean_astro_ui, caplog):
     """What happens to the mask after a coordinate change?
 
@@ -2389,6 +2395,8 @@ def test_image_filter_coord_change(make_data_path, clean_astro_ui, caplog):
 
 @requires_fits
 @requires_data
+@requires_region
+@requires_wcs
 def test_image_filter_coord_change_same_negate(make_data_path, clean_astro_ui, caplog):
     """A ignore2d case of test_image_filter_coord_change_same
 
@@ -2429,6 +2437,8 @@ def test_image_filter_coord_change_same_negate(make_data_path, clean_astro_ui, c
 
 @requires_fits
 @requires_data
+@requires_region
+@requires_wcs
 def test_image_filter_coord_change_negate(make_data_path, clean_astro_ui, caplog):
     """negate the filter used in test_image_filter_coord_change
 
@@ -3166,6 +3176,7 @@ def test_set_bkg_not_a_background(clean_astro_ui):
 
 @requires_fits
 @requires_data
+@requires_wcs  # only needed for physical / world
 @pytest.mark.parametrize("incoord,outcoord,x0,x1",
                          [("logical", None, 1, 1),
                           ("image", "logical", 1, 1),

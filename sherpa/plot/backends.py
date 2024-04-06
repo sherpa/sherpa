@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -53,6 +53,8 @@ backend_indep_kwargs = {
 '''List of keyword argument and possible values allowed in all backends'''
 
 
+# DOC-NOTE: can xerr be asymmetric (i.e. be 2D)?
+#
 kwargs_doc = {'xerr': ['float or array-like, shape(N,) or shape(2, N)',
                        '''The errorbar sizes can be:
   - scalar: Symmetric +/- values for all data points.
@@ -142,7 +144,6 @@ uses the backend-specific default.'''],
               'levels': ['array-like', 'Levels at which to draw the contours'],
               'aspect': ['str or float', 'Aspect ratio of the plot. Strings "equal" or "auto" are accepted.'],
               'label': ['str', 'Label this dataset for use in a legend'],
-              'levels': ['array-like', 'Levels at which to draw the contours'],
               'ymin' : ['float', '''Beginning of the vertical line in axes coordinates,
 i.e. from 0 (bottom) to 1 (top).'''],
               'ymax' : ['float', '''End of the vertical line in axes coordinates,
@@ -191,7 +192,8 @@ class MetaBaseBackend(type):
             PLOT_BACKENDS[n] = cls
         else:
             warning(
-                f'{n} is already a registered name for {PLOT_BACKENDS[n]}: Not adding {cls}.')
+                '%s is already a registered name for %s: Not adding %s.',
+                n, PLOT_BACKENDS[n], cls)
 
 
 class BaseBackend(metaclass=MetaBaseBackend):
@@ -417,6 +419,11 @@ class BaseBackend(metaclass=MetaBaseBackend):
            This backend is a non-functional dummy. The documentation is provided
            as a template only.
 
+        .. versionchanged:: 4.16.1
+           The `xerr` setting now matches the `yerr` setting and
+           represents the distance from the center to the edge,
+           rather than twice this value.
+
         Parameters
         ----------
         x : array-like or scalar number
@@ -424,6 +431,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
         y : array-like or scalar number
             y values, same dimension as `x`.
         {kwargs}
+
         """
         pass
 
@@ -597,7 +605,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
             will be displayed properly.
 
         """
-        return "${}$".format(txt)
+        return f"${txt}$"
 
     # HTML representation as tabular data
     #
@@ -626,7 +634,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
             try:
                 val = getattr(data, name)
             except Exception as e:
-                lgr.debug("Skipping field {}: {}".format(name, e))
+                lgr.debug("Skipping field %s: %s", name, e)
                 continue
 
             meta.append((name, val))
@@ -865,8 +873,8 @@ class BasicBackend(BaseBackend):
         if 'ratioline' in kwargs:
             warning('Keyword "ratioline" is deprecated and has no effect. Ratio lines are always drawn for ratio plots.')
 
-        warning(f'{self.__class__} does not implement line/symbol plotting. ' +
-                'No plot will be produced.')
+        warning('%s does not implement line/symbol plotting. '
+                'No plot will be produced.', self.name)
 
     @translate_args
     def histo(self, xlo, xhi, y, *,
@@ -894,8 +902,8 @@ class BasicBackend(BaseBackend):
            No output will be produced by this backend, since the implementation
            is incomplete.
         '''
-        warning(f'{self.__class__} does not implement histogram plotting. ' +
-                'No histogram will be produced.')
+        warning('%s does not implement histogram plotting. '
+                'No histogram will be produced.', self.name)
 
     @translate_args
     def contour(self, x0, x1, y, *,
@@ -915,8 +923,8 @@ class BasicBackend(BaseBackend):
            No output will be produced by this backend, since the implementation
            is incomplete.
         '''
-        warning(f'{self.__class__} does not implement contour plotting. ' +
-                'No contour will be produced.')
+        warning('%s does not implement contour plotting. '
+                'No contour will be produced.', self.name)
 
     @add_kwargs_to_doc(kwargs_doc)
     @translate_args
@@ -940,8 +948,8 @@ class BasicBackend(BaseBackend):
             x position of the vertical line in data units
         {kwargs}
         """
-        warning(f'{self.__class__} does not implement line plotting. ' +
-                'No line will be produced.')
+        warning('%s does not implement line plotting. '
+                'No line will be produced.', self.name)
 
     @add_kwargs_to_doc(kwargs_doc)
     @translate_args
@@ -965,8 +973,8 @@ class BasicBackend(BaseBackend):
             x position of the vertical line in data units
         {kwargs}
            """
-        warning(f'{self.__class__} does not implement line plotting. ' +
-                'No line will be produced.')
+        warning('%s does not implement line plotting. '
+                'No line will be produced.', self.name)
 
 
 class IndepOnlyBackend(BasicBackend):

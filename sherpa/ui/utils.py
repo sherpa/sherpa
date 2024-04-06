@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,7 @@ import pickle
 import sys
 from typing import Union
 
-import numpy
+import numpy as np
 
 from sherpa import get_config
 import sherpa.all
@@ -54,9 +54,9 @@ warning = logging.getLogger(__name__).warning
 config = ConfigParser()
 config.read(get_config())
 
-numpy.set_printoptions(threshold=int(config.get('verbosity',
-                                                'arraylength',
-                                                fallback=1000000)))
+np.set_printoptions(threshold=int(config.get('verbosity',
+                                             'arraylength',
+                                             fallback=1000000)))
 
 __all__ = ('ModelWrapper', 'Session')
 
@@ -87,7 +87,7 @@ def _check_str_type(arg: str, argname: str) -> None:
 
 
 def _is_integer(val):
-    return isinstance(val, (int, numpy.integer))
+    return isinstance(val, (int, np.integer))
 
 
 def _is_str(val):
@@ -331,7 +331,7 @@ def reduce_ufunc(func):
 
 
 copy_reg.constructor(construct_ufunc)
-copy_reg.pickle(numpy.ufunc, reduce_ufunc)
+copy_reg.pickle(np.ufunc, reduce_ufunc)
 
 
 ###############################################################################
@@ -408,9 +408,9 @@ def read_template_model(modelname, templatefile,
             parnames.remove(name)
             continue
 
-        parvals.append(numpy.array(col, dtype=SherpaFloat))
+        parvals.append(np.array(col, dtype=SherpaFloat))
 
-    parvals = numpy.asarray(parvals).T
+    parvals = np.asarray(parvals).T
 
     if len(parvals) == 0:
         raise IOErr("noparamcols", templatefile)
@@ -613,11 +613,11 @@ def set_dep(data, val):
 
     """
 
-    if numpy.iterable(val):
-        dep = numpy.asarray(val, SherpaFloat)
+    if np.iterable(val):
+        dep = np.asarray(val, SherpaFloat)
     else:
         val = SherpaFloat(val)
-        dep = numpy.array([val] * data.size)
+        dep = np.array([val] * data.size)
 
     data.dep = dep
 
@@ -645,15 +645,15 @@ def set_error(data, field, val, fractional=False):
     if val is None:
         err = None
 
-    elif numpy.iterable(val):
-        err = numpy.asarray(val, SherpaFloat)
+    elif np.iterable(val):
+        err = np.asarray(val, SherpaFloat)
 
     else:
         val = SherpaFloat(val)
         if sherpa.utils.bool_cast(fractional):
             err = val * data.get_dep()
         else:
-            err = numpy.array([val] * data.size)
+            err = np.array([val] * data.size)
 
     setattr(data, field, err)
 
@@ -678,7 +678,7 @@ def set_filter(data, val, ignore=False):
 
     """
 
-    val = numpy.asarray(val, dtype=numpy.bool_)
+    val = np.asarray(val, dtype=np.bool_)
     nval = len(val)
 
     # Note that we do not use data.size as the check, as that fails
@@ -686,7 +686,7 @@ def set_filter(data, val, ignore=False):
     # size" value?
     #
     nexp = len(data.get_y(False))
-    if numpy.iterable(data.mask):
+    if np.iterable(data.mask):
         if nexp != nval:
             raise sherpa.utils.err.DataErr('mismatchn', 'data', 'filter',
                                            nexp, nval)
@@ -729,7 +729,7 @@ class Session(NoNewAttributesAfterInit):
     def __init__(self):
         self.clean()
         self._model_types = {}
-        self._model_globals = numpy.__dict__.copy()
+        self._model_globals = np.__dict__.copy()
         NoNewAttributesAfterInit.__init__(self)
         global _session
         _session = self
@@ -740,7 +740,7 @@ class Session(NoNewAttributesAfterInit):
         return state
 
     def __setstate__(self, state):
-        self._model_globals = numpy.__dict__.copy()
+        self._model_globals = np.__dict__.copy()
 
         self._model_globals.update(state['_model_types'])
 
@@ -1036,8 +1036,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         if rng is not None and not isinstance(rng,
-                                              (numpy.random.Generator,
-                                               numpy.random.RandomState)):
+                                              (np.random.Generator,
+                                               np.random.RandomState)):
             # Do not include RandomState in the error message as it is
             # really meant for testing/old code.
             raise ArgumentTypeErr("badarg", "rng", "a Generator or None")
@@ -5124,11 +5124,11 @@ class Session(NoNewAttributesAfterInit):
 
         if d.mask is False:
             raise sherpa.utils.err.DataErr('notmask')
-        if not numpy.iterable(d.mask):
+        if not np.iterable(d.mask):
             raise sherpa.utils.err.DataErr('nomask', id)
 
         x = d.get_indep(filter=False)[0]
-        mask = numpy.asarray(d.mask, int)
+        mask = np.asarray(d.mask, int)
         self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
                          clobber=clobber, sep=sep, comment=comment,
                          linebreak=linebreak, format=format)
@@ -5511,7 +5511,7 @@ class Session(NoNewAttributesAfterInit):
             raise IdentifierErr("nodatasets")
 
         # TODO: do we still expect to get bytes here?
-        if lo is not None and isinstance(lo, (str, numpy.bytes_)):
+        if lo is not None and isinstance(lo, (str, np.bytes_)):
             return self._notice_expr(lo, **kwargs)
 
         # Jump through the data sets in "order".
@@ -5731,7 +5731,7 @@ class Session(NoNewAttributesAfterInit):
                                       'an identifier or list of identifiers') from None
 
         # TODO: do we still expect to get bytes here?
-        if lo is not None and isinstance(lo, (str, numpy.bytes_)):
+        if lo is not None and isinstance(lo, (str, np.bytes_)):
             return self._notice_expr_id(ids, lo, **kwargs)
 
         # Unlike notice() we do not sort the id list as this
@@ -8036,11 +8036,11 @@ class Session(NoNewAttributesAfterInit):
                 psf.model is not None and isinstance(psf.model, sherpa.instrument.PSFKernel)):
 
             psf_center = psf.center
-            if numpy.isscalar(psf_center):
+            if np.isscalar(psf_center):
                 psf_center = [psf_center]
             try:
                 center = psf.kernel.get_center()
-                if (numpy.asarray(center) == 0.0).all():
+                if (np.asarray(center) == 0.0).all():
                     psf.kernel.set_center(*psf_center, values=True)
             except NotImplementedError:
                 pass
@@ -14519,16 +14519,17 @@ class Session(NoNewAttributesAfterInit):
             # plot preferences of plot1, and then check for different
             # types of plot objects.
             #
-            oldval = plot2.plot_prefs['xlog']
+            p2prefs = get_plot_prefs(plot2)
+            oldval = p2prefs['xlog']
             dprefs = get_plot_prefs(plot1.dataplot)
             mprefs = get_plot_prefs(plot1.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
+                p2prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
-            plot2.plot_prefs['xlog'] = oldval
+            p2prefs['xlog'] = oldval
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True, **kwargs):
@@ -15605,6 +15606,9 @@ class Session(NoNewAttributesAfterInit):
         are ignored and the results of the last `int_proj` call are
         returned.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
+
         Parameters
         ----------
         par
@@ -15717,6 +15721,9 @@ class Session(NoNewAttributesAfterInit):
         are ignored and the results of the last `int_unc` call are
         returned.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
+
         Parameters
         ----------
         par
@@ -15824,6 +15831,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `reg_proj` call are
         returned.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True` for one or both
+           parameters.
 
         Parameters
         ----------
@@ -15950,6 +15961,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `reg_unc` call are
         returned.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True` for one or both
+           parameters.
 
         Parameters
         ----------
@@ -16081,6 +16096,9 @@ class Session(NoNewAttributesAfterInit):
         after a successful fit, so that the parameter values identify
         the best-fit location.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
+
         Parameters
         ----------
         par
@@ -16199,6 +16217,9 @@ class Session(NoNewAttributesAfterInit):
         the statistic evaluated while holding the other parameters
         fixed. It is expected that this is run after a successful fit,
         so that the parameter values identify the best-fit location.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
 
         Parameters
         ----------

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020, 2021, 2022, 2023
+#  Copyright (C) 2017, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -143,19 +143,6 @@ if HAS_PYTEST:
 
         return decorator
 
-
-    def requires_pylab(test_function):
-        """Runs the test with the PylabBackend plotting backend if available,
-        otherwise skips the test.
-        """
-        pylab_backend = pytest.importorskip("sherpa.plot.pylab_backend")
-        plt  = pytest.importorskip("matplotlib.pyplot")
-
-        with TemporaryPlottingBackend(pylab_backend.PylabBackend()):
-            yield
-
-        plt.close(fig="all")
-
     def requires_fits(test_function):
         """Returns True if a working backend for FITS I/O is importable.
 
@@ -178,9 +165,28 @@ if HAS_PYTEST:
         """Decorator for test functions requiring stk library"""
         return requires_package("stk library required", 'stk')(test_function)
 
+    def requires_region(test_function):
+        """Decorator for test functions requiring 2D region support"""
+        return requires_package("Region required", 'sherpa.astro.utils._region')(test_function)
+
+    def requires_wcs(test_function):
+        """Decorator for test functions requiring WCS support"""
+        return requires_package("WCS required", 'sherpa.astro.utils._wcs')(test_function)
+
     def requires_ds9(test_function):
-        """Decorator for test functions requiring ds9"""
-        return requires_package('ds9 required', 'sherpa.image.ds9_backend')(test_function)
+        """Decorator for test functions requiring ds9
+
+        This also ensures that the test is run in the same xdist
+        'group' as the other DS9 tests, which means they will all be
+        run sequentially, avoiding issue #1704 when using pytest-xdist
+        to run multiple tests in parallel.
+
+        """
+
+        pkg = requires_package('ds9 required', 'sherpa.image.ds9_backend')
+        grp = pytest.mark.xdist_group("ds9-tests")
+
+        return grp(pkg(test_function))
 
     def requires_xspec(test_function):
         return requires_package("xspec required", "sherpa.astro.xspec")(test_function)
@@ -197,13 +203,15 @@ else:
 
     requires_data = make_fake()
 
-    requires_pylab = make_fake()
-
     requires_fits = make_fake()
 
     requires_group = make_fake()
 
     requires_stk = make_fake()
+
+    requires_region = make_fake()
+
+    requires_wcs = make_fake()
 
     requires_ds9 = make_fake()
 

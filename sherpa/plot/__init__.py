@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2009, 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -26,23 +26,28 @@ Sherpa configuration file. Note that plot objects can be created
 and used even when only the `sherpa.plot.backends.BasicBackend` is
 available.
 """
+
+from __future__ import annotations
+
 from configparser import ConfigParser
 import contextlib
 import logging
 import importlib
+from typing import Any, Literal, Optional, Sequence, Union
 
-import numpy
+import numpy as np
 
-from sherpa.utils import NoNewAttributesAfterInit, erf, \
-    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
-from sherpa.utils.err import PlotErr, StatErr, ConfidenceErr
-from sherpa.utils.numeric_types import SherpaFloat
+from sherpa import get_config
 from sherpa.estmethods import Covariance
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
-from sherpa import get_config
-from sherpa.utils.err import ArgumentTypeErr, IdentifierErr
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
+from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
+from sherpa.utils import NoNewAttributesAfterInit, erf, \
+    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
+from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
+    IdentifierErr, PlotErr, StatErr
+from sherpa.utils.numeric_types import SherpaFloat
+
 # PLOT_BACKENDS only contains backends in modules that are imported successfully
 # but modules are not discovered by itself. Entrypoints would solve this problem
 # but the current implementation does not have this capability.
@@ -57,14 +62,10 @@ for name in ["pylab", "pylab_area", "bokeh"]:
 config = ConfigParser()
 config.read(get_config())
 
-lgr = logging.getLogger(__name__)
-warning = lgr.warning
+warning = logging.getLogger(__name__).warning
 
 # TODO: why is this module globally changing the invalid mode of NumPy?
-_ = numpy.seterr(invalid='ignore')
-
-backend = None
-'''Currently active backend module for plotting.'''
+_ = np.seterr(invalid='ignore')
 
 basicbackend = BasicBackend()
 '''This backend has all the defaults that are backend-independent.
@@ -72,6 +73,12 @@ For all the plot classes in this module (e.g. FitPlot, JointPlot, ...)
 the default settings are set in code like `plot_prefs = xxx.get_plot_defaults()`
 where xxx is some backend.
 '''
+
+# This may be over-ridden below, depending on the options.plot_pkg setting.
+#
+backend: BaseBackend = basicbackend
+'''Currently active backend module for plotting.'''
+
 # In the current design, this code is executed when this
 # module imported and then the values are shared between all instances of a class.
 # That allows one to change those default "globally" (i.e. for all instances of the class)
@@ -83,18 +90,16 @@ where xxx is some backend.
 # backend-independent (i.e. those that works for any backend) defaults set.
 
 
-plot_opt = config.get('options', 'plot_pkg', fallback='BasicBackend')
-plot_opt = [o.strip() for o in plot_opt.split()]
+plot_opt_str = config.get('options', 'plot_pkg', fallback='BasicBackend')
+plot_opt = [o.strip() for o in plot_opt_str.split()]
 
 for plottry in plot_opt:
     if plottry in PLOT_BACKENDS:
         backend = PLOT_BACKENDS[plottry]()
         break
-    warning(f"Plotting backend '{plottry}' not found or dependencies missing. Trying next option.")
+    warning("Plotting backend '%s' not found or dependencies missing. Trying next option.", plottry)
 else:
-    # None of the options in the rc file work, e.g. because it's an old file
-    backend = BasicBackend()
-
+    # The backend will default to BasicBackend from above
     warning(f"Tried the following backends listed in {get_config()}: \n" +
             f"{plot_opt}\n" +
             "None of these imported correctly, so using the 'BasicBackend'.\n" +
@@ -131,7 +136,7 @@ _stats_noerr = ('cash', 'cstat', 'leastsq', 'wstat')
 """Statistics that do not make use of uncertainties."""
 
 
-def set_backend(new_backend):
+def set_backend(new_backend: Union[str, BaseBackend, type[BaseBackend]]) -> None:
     '''Set the Sherpa plotting backend.
 
     Plotting backends are registered in Sherpa with a string name.
@@ -172,18 +177,24 @@ def set_backend(new_backend):
     global backend
 
     if isinstance(new_backend, str):
-        if new_backend in PLOT_BACKENDS:
+        try:
             backend = PLOT_BACKENDS[new_backend]()
-        else:
+        except KeyError:
             raise IdentifierErr('noplotbackend', new_backend,
-                                list(PLOT_BACKENDS.keys()))
+                                list(PLOT_BACKENDS.keys())) from None
+
+        return
+
     # It's a class and that class is a subclass of BaseBackend
-    elif isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
+    if isinstance(new_backend, type) and issubclass(new_backend, BaseBackend):
         backend = new_backend()
-    elif isinstance(new_backend, BaseBackend):
+        return
+
+    if isinstance(new_backend, BaseBackend):
         backend = new_backend
-    else:
-        raise ArgumentTypeErr('tempplotbackend', new_backend)
+        return
+
+    raise ArgumentTypeErr('tempplotbackend', new_backend)
 
 
 class TemporaryPlottingBackend(contextlib.AbstractContextManager):
@@ -214,17 +225,24 @@ class TemporaryPlottingBackend(contextlib.AbstractContextManager):
 
     '''
 
-    def __init__(self, new_backend):
+    def __init__(self, new_backend: BaseBackend) -> None:
         self.backend = new_backend
 
-    def __enter__(self):
+    def __enter__(self) -> TemporaryPlottingBackend:
         global backend
         self.old = backend
         set_backend(self.backend)
+        return self
 
-    def __exit__(self, *args):
+    # As exc_type/val/tb are not used here we type them as Any, and the
+    # return value is marked as an explicit False rather than bool since
+    # it avoids warnings from mypy (as __exit__ is special).
+    #
+    def __exit__(self,
+                 exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         global backend
         backend = self.old
+        return False
 
 
 def _make_title(title, name=''):
@@ -247,8 +265,8 @@ def _make_title(title, name=''):
 
     if name in [None, '']:
         return title
-    else:
-        return "{} for {}".format(title, name)
+
+    return f"{title} for {name}"
 
 
 def _errorbar_warning(stat):
@@ -267,7 +285,7 @@ def _errorbar_warning(stat):
 
     return "The displayed errorbars have been supplied with the " + \
         "data or calculated using chi2xspecvar; the errors are not " + \
-        "used in fits with {}".format(stat.name)
+        f"used in fits with {stat.name}"
 
 
 def calculate_errors(data, stat, yerrorbars=True):
@@ -327,7 +345,7 @@ def calculate_errors(data, stat, yerrorbars=True):
         # changed).
         #
         if yerrorbars:
-            warning(msg + "\nzeros or negative values found")
+            warning("%s\nzeros or negative values found", msg)
 
         return None
 
@@ -349,7 +367,7 @@ class Plot(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes)
         """
         self.plot_prefs = self.plot_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     @staticmethod
     def vline(x, ymin=0, ymax=1,
@@ -444,7 +462,7 @@ class Contour(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes)
         """
         self.contour_prefs = self.contour_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -481,7 +499,7 @@ class Point(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes)
         """
         self.point_prefs = self.point_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -532,7 +550,7 @@ class Image(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes.)
         """
         self.image_prefs = self.image_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -581,7 +599,7 @@ class Histogram(NoNewAttributesAfterInit):
         the accidental creation of erroneous attributes)
         """
         self.histo_prefs = self.histo_prefs.copy()
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         """Return the plot preferences merged with user settings."""
@@ -639,23 +657,23 @@ class HistogramPlot(Histogram):
         self.xlabel = None
         self.ylabel = None
         self.title = None
-        Histogram.__init__(self)
+        super().__init__()
 
     def __str__(self):
         xlo = self.xlo
         if self.xlo is not None:
-            xlo = numpy.array2string(numpy.asarray(self.xlo), separator=',',
-                                     precision=4, suppress_small=False)
+            xlo = np.array2string(np.asarray(self.xlo), separator=',',
+                                  precision=4, suppress_small=False)
 
         xhi = self.xhi
         if self.xhi is not None:
-            xhi = numpy.array2string(numpy.asarray(self.xhi), separator=',',
-                                     precision=4, suppress_small=False)
+            xhi = np.array2string(np.asarray(self.xhi), separator=',',
+                                  precision=4, suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(numpy.asarray(self.y), separator=',',
-                                   precision=4, suppress_small=False)
+            y = np.array2string(np.asarray(self.y), separator=',',
+                                precision=4, suppress_small=False)
 
         return (('xlo    = %s\n' +
                  'xhi    = %s\n' +
@@ -689,8 +707,8 @@ class HistogramPlot(Histogram):
             return None
 
         # As we do not (yet) require NumPy arrays, enforce it.
-        xlo = numpy.asarray(self.xlo)
-        xhi = numpy.asarray(self.xhi)
+        xlo = np.asarray(self.xlo)
+        xhi = np.asarray(self.xhi)
         return (xlo + xhi) / 2
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
@@ -853,14 +871,14 @@ class PDFPlot(HistogramPlot):
 
     def __init__(self):
         self.points = None
-        HistogramPlot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         points = self.points
         if self.points is not None:
-            points = numpy.array2string(numpy.asarray(self.points),
-                                        separator=',', precision=4,
-                                        suppress_small=False)
+            points = np.array2string(np.asarray(self.points),
+                                     separator=',', precision=4,
+                                     suppress_small=False)
 
         return ('points = %s\n' % (points) + HistogramPlot.__str__(self))
 
@@ -891,7 +909,7 @@ class PDFPlot(HistogramPlot):
         """
 
         self.points = points
-        self.y, xx = numpy.histogram(points, bins=bins, density=normed)
+        self.y, xx = np.histogram(points, bins=bins, density=normed)
         self.xlo = xx[:-1]
         self.xhi = xx[1:]
         self.ylabel = "probability density"
@@ -925,16 +943,16 @@ class CDFPlot(Plot):
 
     """
 
-    median_defaults = dict(linestyle='dash', linecolor='orange',
-                           linewidth=1.5)
+    median_defaults = {"linestyle": 'dash', "linecolor": 'orange',
+                       "linewidth": 1.5}
     """The options used to draw the median line."""
 
-    lower_defaults = dict(linestyle='dash', linecolor='blue',
-                          linewidth=1.5)
+    lower_defaults = {"linestyle": 'dash', "linecolor": 'blue',
+                      "linewidth": 1.5}
     """The options used to draw the 15.87% line."""
 
-    upper_defaults = dict(linestyle='dash', linecolor='blue',
-                          linewidth=1.5)
+    upper_defaults = {"linestyle": 'dash', "linecolor": 'blue',
+                      "linewidth": 1.5}
     """The options used to draw the 84.13% line."""
 
     plot_prefs = basicbackend.get_cdf_plot_defaults()
@@ -950,22 +968,22 @@ class CDFPlot(Plot):
         self.xlabel = None
         self.ylabel = None
         self.title = None
-        Plot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x = self.x
         if self.x is not None:
-            x = numpy.array2string(self.x, separator=',', precision=4,
-                                   suppress_small=False)
+            x = np.array2string(self.x, separator=',', precision=4,
+                                suppress_small=False)
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         points = self.points
         if self.points is not None:
-            points = numpy.array2string(self.points, separator=',',
-                                        precision=4, suppress_small=False)
+            points = np.array2string(self.points, separator=',',
+                                     precision=4, suppress_small=False)
 
         return f"""points = {points}
 x      = {x}
@@ -999,12 +1017,12 @@ plot_prefs = {self.plot_prefs}"""
         plot
         """
 
-        self.points = numpy.asarray(points)
-        self.x = numpy.sort(points)
+        self.points = np.asarray(points)
+        self.x = np.sort(points)
         (self.median, self.lower,
          self.upper) = get_error_estimates(self.x, True)
         xsize = len(self.x)
-        self.y = (numpy.arange(xsize) + 1.0) / xsize
+        self.y = (np.arange(xsize) + 1.0) / xsize
         self.xlabel = xlabel
         self.ylabel = "p(<={})".format(xlabel)
         self.title = "CDF: {}".format(name)
@@ -1054,14 +1072,14 @@ class LRHistogram(HistogramPlot):
         self.ratios = None
         self.lr = None
         self.ppp = None
-        HistogramPlot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         ratios = self.ratios
         if self.ratios is not None:
-            ratios = numpy.array2string(numpy.asarray(self.ratios),
-                                        separator=',', precision=4,
-                                        suppress_small=False)
+            ratios = np.array2string(np.asarray(self.ratios),
+                                     separator=',', precision=4,
+                                     suppress_small=False)
 
         return '\n'.join(['ratios = %s' % ratios,
                           'lr = %s' % str(self.lr),
@@ -1076,7 +1094,7 @@ class LRHistogram(HistogramPlot):
 
         self.ppp = float(ppp)
         self.lr = float(lr)
-        y = numpy.asarray(ratios)
+        y = np.asarray(ratios)
         self.ratios = y
         self.xlo, self.xhi = dataspace1d(y.min(), y.max(),
                                          numbins=bins + 1)[:2]
@@ -1139,8 +1157,7 @@ class SplitPlot(Plot, Contour):
 
     def __init__(self, rows=2, cols=1):
         self.reset(rows, cols)
-        Plot.__init__(self)
-        Contour.__init__(self)
+        super().__init__()
 
     def __str__(self):
         return (('rows   = %s\n' +
@@ -1164,10 +1181,10 @@ class SplitPlot(Plot, Contour):
             self._cleared_window = True
 
     def _reset_used(self):
-        self._used = numpy.zeros((self.rows, self.cols), numpy.bool_)
+        self._used = np.zeros((self.rows, self.cols), np.bool_)
 
     def _next_subplot(self):
-        row, col = numpy.where(~self._used)
+        row, col = np.where(~self._used)
         if row.size != 0:
             row, col = row[0], col[0]
         else:
@@ -1248,7 +1265,7 @@ class JointPlot(SplitPlot):
     """
 
     def __init__(self):
-        SplitPlot.__init__(self)
+        super().__init__()
 
     def plottop(self, plot, *args, overplot=False, clearwindow=True,
                 **kwargs):
@@ -1341,28 +1358,28 @@ class DataPlot(Plot):
         self.xlabel = None
         self.ylabel = None
         self.title = None
-        Plot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x = self.x
         if self.x is not None:
-            x = numpy.array2string(self.x, separator=',', precision=4,
-                                   suppress_small=False)
+            x = np.array2string(self.x, separator=',', precision=4,
+                                suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         yerr = self.yerr
         if self.yerr is not None:
-            yerr = numpy.array2string(self.yerr, separator=',', precision=4,
-                                      suppress_small=False)
+            yerr = np.array2string(self.yerr, separator=',', precision=4,
+                                   suppress_small=False)
 
         xerr = self.xerr
         if self.xerr is not None:
-            xerr = numpy.array2string(self.xerr, separator=',', precision=4,
-                                      suppress_small=False)
+            xerr = np.array2string(self.xerr, separator=',', precision=4,
+                                   suppress_small=False)
 
         return (('x      = %s\n' +
                  'y      = %s\n' +
@@ -1460,7 +1477,7 @@ class TracePlot(DataPlot):
         --------
         plot
         """
-        self.x = numpy.arange(len(points), dtype=SherpaFloat)
+        self.x = np.arange(len(points), dtype=SherpaFloat)
         self.y = points
         self.xlabel = "iteration"
         self.ylabel = name
@@ -1486,8 +1503,8 @@ class ScatterPlot(DataPlot):
         --------
         plot
         """
-        self.x = numpy.asarray(x, dtype=SherpaFloat)
-        self.y = numpy.asarray(y, dtype=SherpaFloat)
+        self.x = np.asarray(x, dtype=SherpaFloat)
+        self.y = np.asarray(y, dtype=SherpaFloat)
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.title = "Scatter: {}".format(name)
@@ -1549,23 +1566,23 @@ class DataContour(Contour):
         self.ylabel = None
         self.title = None
         self.levels = None
-        Contour.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x0 = self.x0
         if self.x0 is not None:
-            x0 = numpy.array2string(self.x0, separator=',', precision=4,
-                                    suppress_small=False)
+            x0 = np.array2string(self.x0, separator=',', precision=4,
+                                 suppress_small=False)
 
         x1 = self.x1
         if self.x1 is not None:
-            x1 = numpy.array2string(self.x1, separator=',', precision=4,
-                                    suppress_small=False)
+            x1 = np.array2string(self.x1, separator=',', precision=4,
+                                 suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         return (('x0     = %s\n' +
                  'x1     = %s\n' +
@@ -1667,28 +1684,28 @@ class ModelPlot(Plot):
         self.xlabel = None
         self.ylabel = None
         self.title = 'Model'
-        Plot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x = self.x
         if self.x is not None:
-            x = numpy.array2string(self.x, separator=',', precision=4,
-                                   suppress_small=False)
+            x = np.array2string(self.x, separator=',', precision=4,
+                                suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         yerr = self.yerr
         if self.yerr is not None:
-            yerr = numpy.array2string(self.yerr, separator=',', precision=4,
-                                      suppress_small=False)
+            yerr = np.array2string(self.yerr, separator=',', precision=4,
+                                   suppress_small=False)
 
         xerr = self.xerr
         if self.xerr is not None:
-            xerr = numpy.array2string(self.xerr, separator=',', precision=4,
-                                      suppress_small=False)
+            xerr = np.array2string(self.xerr, separator=',', precision=4,
+                                   suppress_small=False)
 
         return (('x      = %s\n' +
                  'y      = %s\n' +
@@ -1811,7 +1828,7 @@ class SourcePlot(ModelPlot):
     """
 
     def __init__(self):
-        ModelPlot.__init__(self)
+        super().__init__()
         self.title = 'Source'
 
 
@@ -1853,7 +1870,7 @@ class ComponentTemplateSourcePlot(ComponentSourcePlot):
         self.x = model.get_x()
         self.y = model.get_y()
 
-        if numpy.iterable(data.mask):
+        if np.iterable(data.mask):
             x = data.to_plot()[0]
             mask = (self.x > x.min()) & (self.x <= x.max())
             self.x = self.x[mask]
@@ -1903,23 +1920,23 @@ class ModelContour(Contour):
         self.ylabel = None
         self.title = 'Model'
         self.levels = None
-        Contour.__init__(self)
+        super().__init__()
 
     def __str__(self):
         x0 = self.x0
         if self.x0 is not None:
-            x0 = numpy.array2string(self.x0, separator=',', precision=4,
-                                    suppress_small=False)
+            x0 = np.array2string(self.x0, separator=',', precision=4,
+                                 suppress_small=False)
 
         x1 = self.x1
         if self.x1 is not None:
-            x1 = numpy.array2string(self.x1, separator=',', precision=4,
-                                    suppress_small=False)
+            x1 = np.array2string(self.x1, separator=',', precision=4,
+                                 suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
         return (('x0     = %s\n' +
                  'x1     = %s\n' +
@@ -1967,7 +1984,7 @@ class SourceContour(ModelContour):
     "Derived class for creating 2D model contours"
 
     def __init__(self):
-        ModelContour.__init__(self)
+        super().__init__()
         self.title = 'Source'
 
 
@@ -2021,7 +2038,7 @@ class FitPlot(Plot):
     def __init__(self):
         self.dataplot = None
         self.modelplot = None
-        Plot.__init__(self)
+        super().__init__()
 
     def __str__(self):
         data_title = None
@@ -2105,7 +2122,7 @@ class FitContour(Contour):
     def __init__(self):
         self.datacontour = None
         self.modelcontour = None
-        Contour.__init__(self)
+        super().__init__()
 
     def __str__(self):
         data_title = None
@@ -2360,12 +2377,12 @@ class RatioPlot(ModelPlot):
     "The preferences for the plot."
 
     def _calc_ratio(self, ylist):
-        data = numpy.array(ylist[0])
-        model = numpy.asarray(ylist[1])
-        bad = numpy.where(model == 0.0)
+        data = np.array(ylist[0])
+        model = np.asarray(ylist[1])
+        bad = np.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
-        return (data / model)
+        return data / model
 
     def prepare(self, data, model, stat):
         (self.x, y, self.yerr, self.xerr,
@@ -2408,12 +2425,12 @@ class RatioContour(ModelContour):
     "The preferences for the plot."
 
     def _calc_ratio(self, ylist):
-        data = numpy.array(ylist[0])
-        model = numpy.asarray(ylist[1])
-        bad = numpy.where(model == 0.0)
+        data = np.array(ylist[0])
+        model = np.asarray(ylist[1])
+        bad = np.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
-        return (data / model)
+        return data / model
 
     def prepare(self, data, model, stat):
         (self.x0, self.x1, self.y, self.xlabel,
@@ -2430,10 +2447,85 @@ class RatioContour(ModelContour):
                         **kwargs)
 
 
+def calc_par_range(minval: float,
+                   maxval: float,
+                   nloop: int,
+                   delv: Optional[float] = None,
+                   log: Optional[bool] = False) -> np.ndarray:
+    """Calculate the parameter range to use.
+
+    This assumes that the arguments have already been checked for
+    validity.
+
+    Parameters
+    ----------
+    minval, maxval : number
+       The requested parameter range, with maxval > minval.
+    nloop : int
+       The number of values to create. This is not used if delv is
+       set.
+    delv : float or None, optional
+       If set this is the spacing to use (and over-rides the nloop
+       parameter). It must be positive and, when `log` is set, the
+       spacing is 10**delv.
+    log : bool, optional
+       Should the spacing be linear or logarithmic?
+
+    Returns
+    -------
+    pars : ndarray
+       The parameter values.
+
+    Raises
+    ------
+    ConfidenceErr
+       If either minval or maxval are not positive definite when the
+       `log` option is set.
+
+    """
+
+    if delv is not None:
+        # This assumes that delv > eps, but this should be safe.
+        # The float(eps) term is for mypy.
+        #
+        eps = np.finfo(np.float32).eps
+        maxval = maxval + float(eps)
+
+    if log:
+        if minval <= 0.0 or maxval <= 0.0:
+            raise ConfidenceErr('badarg', 'Log scale',
+                                'on positive boundaries')
+
+        minval = np.log10(minval)
+        maxval = np.log10(maxval)
+
+    if delv is None:
+        x = np.linspace(minval, maxval, nloop)
+    else:
+        x = np.arange(minval, maxval, delv)
+
+    if log:
+        x = 10**x
+
+    return x
+
+
 class Confidence1D(DataPlot):
+    """The base class for 1D confidence plots.
+
+    .. versionchanged:: 4.16.1
+       Handling of log-scaled axes and use of the delv argument has
+       been improved, and the string output now includes the parameter
+       value (if available).
+
+    """
 
     plot_prefs = basicbackend.get_confid_plot_defaults()
     "The preferences for the plot."
+
+    # This is only used for an error message
+    conf_type = "unknown"
+    "The type of confidence analysis."
 
     def __init__(self):
         self.min = None
@@ -2445,7 +2537,7 @@ class Confidence1D(DataPlot):
         self.parval = None
         self.stat = None
         self.numcores = None
-        DataPlot.__init__(self)
+        super().__init__()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -2462,30 +2554,23 @@ class Confidence1D(DataPlot):
     def __str__(self):
         x = self.x
         if self.x is not None:
-            x = numpy.array2string(self.x, separator=',', precision=4,
-                                   suppress_small=False)
+            x = np.array2string(self.x, separator=',', precision=4,
+                                suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
-        return (('x     = %s\n' +
-                 'y     = %s\n' +
-                 'min   = %s\n' +
-                 'max   = %s\n' +
-                 'nloop = %s\n' +
-                 'delv  = %s\n' +
-                 'fac   = %s\n' +
-                 'log   = %s') %
-                (x,
-                 y,
-                 self.min,
-                 self.max,
-                 self.nloop,
-                 self.delv,
-                 self.fac,
-                 self.log))
+        return (f'x      = {x}\n' +
+                f'y      = {y}\n' +
+                f'min    = {self.min}\n' +
+                f'max    = {self.max}\n' +
+                f'nloop  = {self.nloop}\n' +
+                f'delv   = {self.delv}\n' +
+                f'fac    = {self.fac}\n' +
+                f'log    = {self.log}\n' +
+                f'parval = {self.parval}')
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the confidence 1D plot."""
@@ -2495,12 +2580,39 @@ class Confidence1D(DataPlot):
                 delv=None, fac=1, log=False, numcores=None):
         """Set the data to plot.
 
-        This defines the range over which the statistic will
-        be calculated, but does not perform the evaluation.
+        This defines the range over which the statistic will be
+        calculated, but does not perform the evaluation.
+
+        Parameters
+        ----------
+        min, max : number or None, optional
+            The minimum and maximum parameter value to used. If either
+            is not set then the range is calculated using the fac
+            parameter.
+        nloop : int, optional
+            The number of points at which to evaluate the
+            statistic. It must be greater than 1. This is used when
+            delv is set to None.
+        delv : number or None, optional
+            The spacing of the parameter grid. This takes precedence
+            over nloop.
+        fac : number, optional
+            Used when either min or max are not set. The parameter
+            range in this case is taken to be fac times the separation
+            of the covariance limits for the parameter (unless
+            explicitly given).
+        log : bool, optional
+            Should the parameter be evaluated on a
+            logarithmically-spaced grid rather than a linearly-spaced
+            one?
+        numcores : int or None, optional
+            Should the parameter evaluation use multiple CPU cores if
+            available?
 
         See Also
         --------
         calc
+
         """
 
         self.min = min
@@ -2512,6 +2624,35 @@ class Confidence1D(DataPlot):
         self.numcores = numcores
 
     def _interval_init(self, fit, par):
+        """Calculate the grid to use for the parameter.
+
+        Parameters
+        ----------
+        fit : sherpa.fit.Fit instance
+            The current fit.
+        par : sherpa.models.parameter.Parameter instance
+            The parameter to analyze.
+
+        Returns
+        -------
+        x : ndarray
+            The parameter values to use (also set to self.x)
+
+        """
+
+        # Validate the values first (as much as we can).
+        #
+        if self.min is not None and not np.isscalar(self.min):
+            raise ConfidenceErr('badarg', 'Parameter limits', 'scalars')
+
+        if self.max is not None and not np.isscalar(self.max):
+            raise ConfidenceErr('badarg', 'Parameter limits', 'scalars')
+
+        if self.nloop <= 1:
+            raise ConfidenceErr('badarg', 'Nloop parameter', '> 1')
+
+        if self.delv is not None and self.delv <= 0:
+            raise ConfidenceErr('badarg', 'delv parameter', '> 0')
 
         self.stat = fit.calc_stat()
         self.parval = par.val
@@ -2527,54 +2668,33 @@ class Confidence1D(DataPlot):
 
             if self.min is None:
                 self.min = par.min
-                min = r.parmins[index]
-                if min is not None and not numpy.isnan(min):
-                    self.min = par.val + min
+                minval = r.parmins[index]
+                if minval is not None and not np.isnan(minval):
+                    self.min = par.val + minval
 
             if self.max is None:
                 self.max = par.max
-                max = r.parmaxes[index]
-                if max is not None and not numpy.isnan(max):
-                    self.max = par.val + max
+                maxval = r.parmaxes[index]
+                if maxval is not None and not np.isnan(maxval):
+                    self.max = par.val + maxval
 
             v = (self.max + self.min) / 2.
-            dv = numpy.fabs(v - self.min)
+            dv = np.fabs(v - self.min)
             self.min = v - self.fac * dv
             self.max = v + self.fac * dv
-
-        if not numpy.isscalar(self.min) or not numpy.isscalar(self.max):
-            raise ConfidenceErr('badarg', 'Parameter limits', 'scalars')
-
-        # check user limits for errors
-        if self.min >= self.max:
-            raise ConfidenceErr('badlimits')
-
-        if self.nloop <= 1:
-            raise ConfidenceErr('badarg', 'Nloop parameter', '> 1')
 
         if self.min < par.min:
             self.min = par.min
         if self.max > par.max:
             self.max = par.max
 
-        if self.delv is None:
-            self.x = numpy.linspace(self.min, self.max, self.nloop)
-        else:
-            eps = numpy.finfo(numpy.float32).eps
-            self.x = numpy.arange(self.min, self.max + self.delv - eps,
-                                  self.delv)
+        # check user limits for errors
+        if self.min >= self.max:
+            raise ConfidenceErr('badlimits')
 
-        x = self.x
-        if self.log:
-            if self.max <= 0.0 or self.min <= 0.0:
-                raise ConfidenceErr('badarg', 'Log scale',
-                                    'on positive boundaries')
-            self.max = numpy.log10(self.max)
-            self.min = numpy.log10(self.min)
-
-            x = numpy.linspace(self.min, self.max, len(x))
-
-        return x
+        self.x = calc_par_range(self.min, self.max, self.nloop,
+                                delv=self.delv, log=self.log)
+        return self.x
 
     def calc(self, fit, par):
         """Evaluate the statistic for the parameter range.
@@ -2593,10 +2713,29 @@ class Confidence1D(DataPlot):
         See Also
         --------
         plot, prepare
+
+        Notes
+        -----
+        This method is assumed to be over-ridden in derived classes,
+        where it will perform the statistic calculations needed to
+        create the visualization. This version should be called from
+        these classes as it validates the fit and par arguments.
+
         """
 
-        if type(fit.stat) in (LeastSq,):
+        if isinstance(fit.stat, LeastSq):
             raise ConfidenceErr('badargconf', fit.stat.name)
+
+        # Check the parameter
+        #  - is thawed
+        #  - is part of the model expression
+        #
+        if par.frozen:
+            raise ConfidenceErr('frozen', par.fullname,
+                                f'interval {self.conf_type}')
+
+        if par not in fit.model.pars:
+            raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         if self.log:
@@ -2621,9 +2760,20 @@ class Confidence1D(DataPlot):
 
 
 class Confidence2D(DataContour, Point):
+    """The base class for 2D confidence contours.
+
+    .. versionchanged:: 4.16.1
+       Handling of log-scaled axes and use of the delv argument has
+       been improved.
+
+    """
 
     contour_prefs = basicbackend.get_confid_contour_defaults()
     point_prefs = basicbackend.get_confid_point_defaults()
+
+    # This is only used for an error message
+    conf_type = "unknown"
+    "The type of confidence analysis."
 
     def __init__(self):
         self.min = None
@@ -2637,7 +2787,7 @@ class Confidence2D(DataContour, Point):
         self.parval1 = None
         self.stat = None
         self.numcores = None
-        DataContour.__init__(self)
+        super().__init__()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -2651,45 +2801,32 @@ class Confidence2D(DataContour, Point):
     def __str__(self):
         x0 = self.x0
         if self.x0 is not None:
-            x0 = numpy.array2string(self.x0, separator=',', precision=4,
-                                    suppress_small=False)
+            x0 = np.array2string(self.x0, separator=',', precision=4,
+                                 suppress_small=False)
 
         x1 = self.x1
         if self.x1 is not None:
-            x1 = numpy.array2string(self.x1, separator=',', precision=4,
-                                    suppress_small=False)
+            x1 = np.array2string(self.x1, separator=',', precision=4,
+                                 suppress_small=False)
 
         y = self.y
         if self.y is not None:
-            y = numpy.array2string(self.y, separator=',', precision=4,
-                                   suppress_small=False)
+            y = np.array2string(self.y, separator=',', precision=4,
+                                suppress_small=False)
 
-        return (('x0      = %s\n' +
-                 'x1      = %s\n' +
-                 'y       = %s\n' +
-                 'min     = %s\n' +
-                 'max     = %s\n' +
-                 'nloop   = %s\n' +
-                 'fac     = %s\n' +
-                 'delv    = %s\n' +
-                 'log     = %s\n' +
-                 'sigma   = %s\n' +
-                 'parval0 = %s\n' +
-                 'parval1 = %s\n' +
-                 'levels  = %s') %
-                (x0,
-                 x1,
-                 y,
-                 self.min,
-                 self.max,
-                 self.nloop,
-                 self.fac,
-                 self.delv,
-                 self.log,
-                 self.sigma,
-                 self.parval0,
-                 self.parval1,
-                 self.levels))
+        return (f'x0      = {x0}\n' +
+                f'x1      = {x1}\n' +
+                f'y       = {y}\n' +
+                f'min     = {self.min}\n' +
+                f'max     = {self.max}\n' +
+                f'nloop   = {self.nloop}\n' +
+                f'fac     = {self.fac}\n' +
+                f'delv    = {self.delv}\n' +
+                f'log     = {self.log}\n' +
+                f'sigma   = {self.sigma}\n' +
+                f'parval0 = {self.parval0}\n' +
+                f'parval1 = {self.parval1}\n' +
+                f'levels  = {self.levels}')
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the confidence 2D plot."""
@@ -2698,6 +2835,50 @@ class Confidence2D(DataContour, Point):
     def prepare(self, min=None, max=None, nloop=(10, 10),
                 delv=None, fac=4, log=(False, False),
                 sigma=(1, 2, 3), levels=None, numcores=None):
+        """Set the data to plot.
+
+        This defines the ranges over which the statistic will be
+        calculated, but does not perform the evaluation.
+
+        Parameters
+        ----------
+        min, max : sequence of number or None, optional
+            The minimum and maximum parameter values to used. If set
+            then they must contain two elements, and if not then the
+            range is calculated using the fac parameter.
+        nloop : sequence of int, optional
+            The number of points at which to evaluate the statistic,
+            where each value must be greater than 1. This is used when
+            delv is set to None.
+        delv : sequence of number or None, optional
+            The spacing of the parameter grids, and if set it must
+            contain two values each greater than 0. This takes
+            precedence over nloop.
+        fac : number, optional
+            Used when either min or max are not set. The parameter
+            range in this case is taken to be fac times the separation
+            of the covariance limits for the parameter (unless
+            explicitly given).
+        log : sequence of bool, optional
+            Should each parameter be evaluated on a
+            logarithmically-spaced grid rather than a linearly-spaced
+            one?
+        sigma : sequence of number, optional
+            The sigma values at which to draw contours. This is only
+            used if levels is set to None.
+        levels : sequence of number or None, optional
+            The levels at which the contours are drawn. This over-rides
+            the sigma setting.
+        numcores : int or None, optional
+            Should the parameter evaluation use multiple CPU cores if
+            available?
+
+        See Also
+        --------
+        calc
+
+        """
+
         self.min = min
         self.max = max
         self.nloop = nloop
@@ -2711,11 +2892,48 @@ class Confidence2D(DataContour, Point):
         self.numcores = numcores
 
     def _region_init(self, fit, par0, par1):
+        """Calculate the grid to use for the parameters.
 
-        # Issue #1093 points out that if min or max is a tuple
-        # we can have a problem, as below the code can assign
-        # to an element of one of them. So ensure we have a list
-        # not a tuple.
+        Parameters
+        ----------
+        fit : sherpa.fit.Fit instance
+            The current fit.
+        par0, par1 : sherpa.models.parameter.Parameter instance
+            The parameters to analyze.
+
+        Returns
+        -------
+        x : 2D ndarray
+            The parameter values to use. Unlike the Confidence1D case
+            this is not just self.x0 or self.x1, but is a 2D array
+            where each row represent each pair of parameters, so the
+            first column is par0 and the second column is par1.
+
+        """
+
+        def check2(value, pname, opt=True):
+            """Check value is None (when opt set) or has size of 2"""
+
+            if opt and value is None:
+                return None
+
+            if np.isscalar(value):
+                raise ConfidenceErr('badarg', pname, 'a list')
+
+            if len(value) != 2:
+                raise ConfidenceErr('badarg', pname, 'a list of size 2')
+
+            # Ensure we return an ndarray
+            return np.asarray(value)
+
+        # Issue #1093 points out that if min or max is a tuple we can
+        # have a problem, as below the code can assign to an element
+        # of one of them. So ensure we have a list not a tuple. The
+        # exact setting of min/max (whether a tuple, list, or ndarray)
+        # makes the following code a bit messy.
+        #
+        # See also #1967 which discusses what type we should accept
+        # for fields like min and max.
         #
         if self.min is not None:
             try:
@@ -2731,6 +2949,20 @@ class Confidence2D(DataContour, Point):
                 raise ConfidenceErr(
                     'badarg', 'Parameter limits', 'a list') from None
 
+        # We ignore the return value for min/max
+        check2(self.min, "Parameter limits")
+        check2(self.max, "Parameter limits")
+        nloop = check2(self.nloop, "Nloop parameter", opt=False)
+        delv = check2(self.delv, "delv parameter")
+
+        if np.any(nloop <= 1):
+            raise ConfidenceErr('badarg', 'Nloop parameter',
+                                'a list with elements > 1')
+
+        if delv is not None and np.any(delv <= 0):
+            raise ConfidenceErr('badarg', 'delv parameter',
+                                'a list with elements > 0')
+
         self.stat = fit.calc_stat()
         self.xlabel = par0.fullname
         self.ylabel = par1.fullname
@@ -2739,13 +2971,12 @@ class Confidence2D(DataContour, Point):
 
         if self.levels is None:
             stat = self.stat
-            if self.sigma is None or numpy.isscalar(self.sigma):
+            if self.sigma is None or np.isscalar(self.sigma):
                 raise ConfidenceErr('needlist', 'sigma bounds')
-            thelevels = numpy.zeros(len(self.sigma), SherpaFloat)
-            for i in range(len(self.sigma)):
-                thelevels[i] = stat - (2. * numpy.log(1. - erf(
-                    self.sigma[i] / numpy.sqrt(2.))))
-            self.levels = thelevels
+
+            sigma = np.asarray(self.sigma)
+            lvls = stat - (2. * np.log(1. - erf(sigma / np.sqrt(2.))))
+            self.levels = np.asarray(lvls, dtype=SherpaFloat)
 
         if self.min is None or self.max is None:
             oldestmethod = fit.estmethod
@@ -2758,88 +2989,109 @@ class Confidence2D(DataContour, Point):
             index1 = list(r.parnames).index(par1.fullname)
 
             if self.min is None:
-                self.min = numpy.array([par0.min, par1.min])
+                self.min = np.array([par0.min, par1.min])
                 min0 = r.parmins[index0]
                 min1 = r.parmins[index1]
 
-                if min0 is not None and not numpy.isnan(min0):
+                if min0 is not None and not np.isnan(min0):
                     self.min[0] = par0.val + min0
 
-                if min1 is not None and not numpy.isnan(min1):
+                if min1 is not None and not np.isnan(min1):
                     self.min[1] = par1.val + min1
 
             if self.max is None:
-                self.max = numpy.array([par0.max, par1.max])
+                self.max = np.array([par0.max, par1.max])
                 max0 = r.parmaxes[index0]
                 max1 = r.parmaxes[index1]
 
-                if max0 is not None and not numpy.isnan(max0):
+                if max0 is not None and not np.isnan(max0):
                     self.max[0] = par0.val + max0
 
-                if max1 is not None and not numpy.isnan(max1):
+                if max1 is not None and not np.isnan(max1):
                     self.max[1] = par1.val + max1
 
-            for i in [0, 1]:
-                v = (self.max[i] + self.min[i]) / 2.
-                dv = numpy.fabs(v - self.min[i])
-                self.min[i] = v - self.fac * dv
-                self.max[i] = v + self.fac * dv
+            # This assumes that self.min/max are ndarray
+            v = (self.max + self.min) / 2.
+            dv = np.fabs(v - self.min)
+            self.min = v - self.fac * dv
+            self.max = v + self.fac * dv
 
-        hmin = numpy.array([par0.min, par1.min])
-        hmax = numpy.array([par0.max, par1.max])
+        hmin = np.array([par0.min, par1.min])
+        hmax = np.array([par0.max, par1.max])
 
         for i in [0, 1]:
             # check user limits for errors
-            if numpy.isscalar(self.min) or numpy.isscalar(self.max):
-                raise ConfidenceErr('badarg', 'Parameter limits', 'a list')
-
             if self.min[i] >= self.max[i]:
                 raise ConfidenceErr('badlimits')
-
-            if numpy.isscalar(self.nloop) or self.nloop[i] <= 1:
-                raise ConfidenceErr('badarg', 'Nloop parameter',
-                                    'a list with elements > 1')
 
             if self.min[i] < hmin[i]:
                 self.min[i] = hmin[i]
             if self.max[i] > hmax[i]:
                 self.max[i] = hmax[i]
 
-        if self.delv is None:
-            self.x0 = numpy.linspace(self.min[0], self.max[0], self.nloop[0])
-            self.x1 = numpy.linspace(self.min[1], self.max[1], self.nloop[1])
+        if delv is None:
+            # Just make the following code easier to write
+            delv = [None, None]
 
-        else:
-            eps = numpy.finfo(numpy.float32).eps
-            self.x0 = numpy.arange(self.min[0],
-                                   self.max[0] + self.delv[0] - eps,
-                                   self.delv[0])
-            self.x1 = numpy.arange(self.min[1],
-                                   self.max[1] + self.delv[1] - eps,
-                                   self.delv[1])
+        x0 = calc_par_range(self.min[0], self.max[0],
+                            self.nloop[0], delv=delv[0],
+                            log=self.log[0])
+        x1 = calc_par_range(self.min[1], self.max[1],
+                            self.nloop[1], delv=delv[1],
+                            log=self.log[1])
 
-        # x = numpy.array([self.x0, self.x1])
-        x = [self.x0, self.x1]
+        # Does it matter whether this is x0,x1 or x1,x0? Not for the
+        # calculation of the parameter values, but the contour
+        # plotting may care (but at least self.x0 and self.x1 should
+        # match the ordering of self.y).
+        #
+        x0g, x1g = np.meshgrid(x0, x1)
+        self.x0 = x0g.flatten()
+        self.x1 = x1g.flatten()
 
-        self.x0, self.x1 = numpy.meshgrid(self.x0, self.x1)
-        self.x0 = self.x0.ravel()
-        self.x1 = self.x1.ravel()
-
-        for i in [0, 1]:
-            if self.log[i]:
-                if self.max[i] <= 0.0 or self.min[i] <= 0.0:
-                    raise ConfidenceErr('badarg', 'Log scale',
-                                        'on positive boundaries')
-                self.max[i] = numpy.log10(self.max[i])
-                self.min[i] = numpy.log10(self.min[i])
-                x[i] = numpy.linspace(self.min[i], self.max[i], len(x[i]))
-
-        x0, x1 = numpy.meshgrid(x[0], x[1])
-        return numpy.array([x0.ravel(), x1.ravel()]).T
+        return np.array([self.x0, self.x1]).T
 
     def calc(self, fit, par0, par1):
-        if type(fit.stat) in (LeastSq,):
+        """Evaluate the statistic for the parameter range.
+
+        This requires prepare to have been called, and must be
+        called before contour is called.
+
+        Parameters
+        ----------
+        fit
+            The Sherpa fit instance to use (defines the statistic
+            and optimiser to use).
+        par0, par1
+            The parameters to iterate over.
+
+        See Also
+        --------
+        contour, prepare
+
+        Notes
+        -----
+        This method is assumed to be over-ridden in derived classes,
+        where it will perform the statistic calculations needed to
+        create the visualization. This version should be called from
+        these classes as it validates the fit and par arguments.
+
+        """
+
+        if isinstance(fit.stat, LeastSq):
             raise ConfidenceErr('badargconf', fit.stat.name)
+
+        # Check that each parameter
+        #  - is thawed
+        #  - is part of the model expression
+        #
+        for par in [par0, par1]:
+            if par.frozen:
+                raise ConfidenceErr('frozen', par.fullname,
+                                    f'region {self.conf_type}')
+
+            if par not in fit.model.pars:
+                raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
     # TODO: should this be overcontour rather than overplot?
     def contour(self, overplot=False, clearwindow=True, **kwargs):
@@ -2876,27 +3128,59 @@ class Confidence2D(DataContour, Point):
 
 
 class IntervalProjectionWorker():
-    def __init__(self, log, par, thawed, fit):
-        self.log = log
+    """Used to evaluate the model by IntervalProjection.
+
+    .. versionchanged:: 4.16.1
+       The calling convention was changed.
+
+    See Also
+    --------
+    IntervalUncertaintyWorker
+
+    """
+
+    def __init__(self, par, fit, otherpars):
         self.par = par
-        self.thawed = thawed
         self.fit = fit
+        self.otherpars = otherpars
 
     def __call__(self, val):
-        if self.log:
-            val = numpy.power(10, val)
         self.par.val = val
-        if len(self.thawed) > 1:
+
+        # It there are other parameters then we need to fit to get the
+        # best-fit statistic.
+        #
+        if self.otherpars:
             r = self.fit.fit()
             return r.statval
+
+        # If this was the only free parameter we can just calculate
+        # the statistic value.
+        #
         return self.fit.calc_stat()
 
 
 class IntervalProjection(Confidence1D):
+    """The Interval-Projection method.
+
+    Evaluate the parameter value on a grid of points, allowing the
+    other thawed parameters to be fit.
+
+    .. versionchanged:: 4.16.1
+       Handling of log-scaled axes has been improved and the string
+       output now includes the parameter value (if available).
+
+    See Also
+    --------
+    IntervalUncertainty
+
+    """
+
+    conf_type = "projection"
 
     def __init__(self):
         self.fast = True
-        Confidence1D.__init__(self)
+        super().__init__()
 
     def prepare(self, fast=True, min=None, max=None, nloop=20,
                 delv=None, fac=1, log=False, numcores=None):
@@ -2905,16 +3189,7 @@ class IntervalProjection(Confidence1D):
 
     def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Projection'
-
         Confidence1D.calc(self, fit, par)
-
-        if par.frozen:
-            raise ConfidenceErr('frozen', par.fullname, 'interval projection')
-
-        thawed = [i for i in fit.model.pars if not i.frozen]
-
-        if par not in thawed:
-            raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
         # If "fast" option enabled, set fitting method to
         # lmdif if stat is chi-squared,
@@ -2922,41 +3197,49 @@ class IntervalProjection(Confidence1D):
 
         # If current method is not LM or NM, warn it is not a good
         # method for estimating parameter limits.
-        if type(fit.method) not in (NelderMead, LevMar):
-            warning(fit.method.name + " is inappropriate for confidence " +
-                    "limit estimation")
+        #
+        if not isinstance(fit.method, (NelderMead, LevMar)):
+            warning("%s is inappropriate for confidence limit "
+                    "estimation", fit.method.name)
 
         oldfitmethod = fit.method
-        if (bool_cast(self.fast) is True and methoddict is not None):
-            if (isinstance(fit.stat, Likelihood)):
-                if (type(fit.method) is not NelderMead):
+        if bool_cast(self.fast) is True and methoddict is not None:
+            if isinstance(fit.stat, Likelihood):
+                if not isinstance(fit.method, NelderMead):
                     fit.method = methoddict['neldermead']
-                    warning("Setting optimization to " + fit.method.name +
-                            " for interval projection plot")
-            else:
-                if (type(fit.method) is not LevMar):
-                    fit.method = methoddict['levmar']
-                    warning("Setting optimization to " + fit.method.name +
-                            " for interval projection plot")
+                    warning("Setting optimization to %s for interval "
+                            "projection plot", fit.method.name)
+
+            elif not isinstance(fit.method, LevMar):
+                fit.method = methoddict['levmar']
+                warning("Setting optimization to %s for interval "
+                        "projection plot", fit.method.name)
 
         xvals = self._interval_init(fit, par)
         oldpars = fit.model.thawedpars
         par.freeze()
 
+        # We know that par is thawed, so we can check to see whether a fit
+        # is needed by looking for other parameters.
+        #
+        otherpars = len(oldpars) > 1
+
+        # Store these before we enter the try block as they are used
+        # in the finally block.
+        #
+        startup = fit.model.startup
+        teardown = fit.model.teardown
+
         try:
             fit.model.startup(cache)
 
-            # store the class methods for startup and teardown
             # these calls are unnecessary for every fit
-            startup = fit.model.startup
             fit.model.startup = return_none
-            teardown = fit.model.teardown
             fit.model.teardown = return_none
 
-            self.y = numpy.asarray(parallel_map(IntervalProjectionWorker(self.log, par, thawed, fit),
-                                                xvals,
-                                                self.numcores)
-                                   )
+            worker = IntervalProjectionWorker(par, fit, otherpars)
+            res = parallel_map(worker, xvals, self.numcores)
+            self.y = np.asarray(res)
 
         finally:
             # Set back data that we changed
@@ -2971,85 +3254,129 @@ class IntervalProjection(Confidence1D):
 
 
 class IntervalUncertaintyWorker():
-    def __init__(self, log, par, fit):
-        self.log = log
+    """Used to evaluate the model by IntervalUncertainty.
+
+    .. versionchanged:: 4.16.1
+       The calling convention was changed.
+
+    See Also
+    --------
+    IntervalProjectionWorker
+
+    """
+
+    def __init__(self, par, fit):
         self.par = par
         self.fit = fit
 
     def __call__(self, val):
-        if self.log:
-            val = numpy.power(10, val)
         self.par.val = val
         return self.fit.calc_stat()
 
 
 class IntervalUncertainty(Confidence1D):
+    """The Interval-Projection method.
+
+    Evaluate the parameter value on a grid of points, where the other
+    thawed parameters are *not* changed from their current values.
+
+    .. versionchanged:: 4.16.1
+       Handling of log-scaled axes has been improved and the string
+       output now includes the parameter value (if available).
+
+    See Also
+    --------
+    IntervalProjection
+
+    """
+
+    conf_type = "uncertainty"
 
     def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Uncertainty'
-
         Confidence1D.calc(self, fit, par)
-        if par.frozen:
-            raise ConfidenceErr('frozen', par.fullname, 'interval uncertainty')
 
-        thawed = [i for i in fit.model.pars if not i.frozen]
-
-        if par not in thawed:
-            raise ConfidenceErr('thawed', par.fullname, fit.model.name)
-
+        thawed = [p for p in fit.model.pars if not p.frozen]
         oldpars = fit.model.thawedpars
-
         xvals = self._interval_init(fit, par)
-
-        for i in thawed:
-            i.freeze()
+        for p in thawed:
+            p.freeze()
 
         try:
             fit.model.startup(cache)
-            self.y = numpy.asarray(parallel_map(IntervalUncertaintyWorker(self.log, par, fit),
-                                                xvals,
-                                                self.numcores)
-                                   )
+
+            worker = IntervalUncertaintyWorker(par, fit)
+            res = parallel_map(worker, xvals, self.numcores)
+            self.y = np.asarray(res)
 
         finally:
             # Set back data that we changed
-            for i in thawed:
-                i.thaw()
+            for p in thawed:
+                p.thaw()
+
             fit.model.teardown()
             fit.model.thawedpars = oldpars
 
 
 class RegionProjectionWorker():
-    def __init__(self, log, par0, par1, thawed, fit):
-        self.log = log
+    """Used to evaluate the model by RegionProjection.
+
+    .. versionchanged:: 4.16.1
+       The calling convention was changed.
+
+    See Also
+    --------
+    RegionUncertaintyWorker
+
+    """
+
+    def __init__(self, par0, par1, fit, otherpars):
         self.par0 = par0
         self.par1 = par1
-        self.thawed = thawed
         self.fit = fit
+        self.otherpars = otherpars
 
     def __call__(self, pars):
-        for ii in [0, 1]:
-            if self.log[ii]:
-                pars[ii] = numpy.power(10, pars[ii])
         (self.par0.val, self.par1.val) = pars
-        if len(self.thawed) > 2:
+
+        # It there are other parameters then we need to fit to get the
+        # best-fit statistic.
+        #
+        if self.otherpars:
             r = self.fit.fit()
             return r.statval
+
+        # If these were the only two free parameters we can just
+        # calculate the statistic value.
+        #
         return self.fit.calc_stat()
 
 
 def return_none(cache=None):
-    """
-    dummy implementation of callback for multiprocessing
-    """
+    """dummy implementation of callback for multiprocessing"""
     return None
 
 
 class RegionProjection(Confidence2D):
+    """The Region-Projection method.
+
+    Evaluate the statistic on a grid of points for two parameters,
+    where the other thawed parameters are fit for each location.
+
+    .. versionchanged:: 4.16.1
+       Support for logarithmically-spaced grids has been improved.
+
+    See Also
+    --------
+    RegionUncertainty
+
+    """
+
+    conf_type = "projection"
 
     def __init__(self):
         self.fast = True
-        Confidence2D.__init__(self)
+        super().__init__()
 
     def prepare(self, fast=True, min=None, max=None, nloop=(10, 10),
                 delv=None, fac=4, log=(False, False),
@@ -3060,19 +3387,7 @@ class RegionProjection(Confidence2D):
 
     def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Projection'
-
         Confidence2D.calc(self, fit, par0, par1)
-        if par0.frozen:
-            raise ConfidenceErr('frozen', par0.fullname, 'region projection')
-        if par1.frozen:
-            raise ConfidenceErr('frozen', par1.fullname, 'region projection')
-
-        thawed = [i for i in fit.model.pars if not i.frozen]
-
-        if par0 not in thawed:
-            raise ConfidenceErr('thawed', par0.fullname, fit.model.name)
-        if par1 not in thawed:
-            raise ConfidenceErr('thawed', par1.fullname, fit.model.name)
 
         # If "fast" option enabled, set fitting method to
         # lmdif if stat is chi-squared,
@@ -3080,33 +3395,38 @@ class RegionProjection(Confidence2D):
 
         # If current method is not LM or NM, warn it is not a good
         # method for estimating parameter limits.
-        if type(fit.method) not in (NelderMead, LevMar):
-            warning(fit.method.name + " is inappropriate for confidence " +
-                    "limit estimation")
+        #
+        if not isinstance(fit.method, (NelderMead, LevMar)):
+            warning("%s is inappropriate for confidence limit "
+                    "estimation", fit.method.name)
 
         oldfitmethod = fit.method
-        if (bool_cast(self.fast) is True and methoddict is not None):
-            if (isinstance(fit.stat, Likelihood)):
-                if (type(fit.method) is not NelderMead):
+        if bool_cast(self.fast) is True and methoddict is not None:
+            if isinstance(fit.stat, Likelihood):
+                if not isinstance(fit.method, NelderMead):
                     fit.method = methoddict['neldermead']
-                    warning("Setting optimization to " + fit.method.name +
-                            " for region projection plot")
-            else:
-                if (type(fit.method) is not LevMar):
-                    fit.method = methoddict['levmar']
-                    warning("Setting optimization to " + fit.method.name +
-                            " for region projection plot")
+                    warning("Setting optimization to %s for region "
+                            "projection plot", fit.method.name)
+
+            elif not isinstance(fit.method, LevMar):
+                fit.method = methoddict['levmar']
+                warning("Setting optimization to %s for region "
+                        "projection plot", fit.method.name)
 
         oldpars = fit.model.thawedpars
+        otherpars = len(oldpars) > 2
+
+        # Store these before we enter the try block as they are used
+        # in the finally block.
+        #
+        startup = fit.model.startup
+        teardown = fit.model.teardown
 
         try:
             fit.model.startup(cache)
 
-            # store the class methods for startup and teardown
             # these calls are unnecessary for every fit
-            startup = fit.model.startup
             fit.model.startup = return_none
-            teardown = fit.model.teardown
             fit.model.teardown = return_none
 
             grid = self._region_init(fit, par0, par1)
@@ -3114,10 +3434,9 @@ class RegionProjection(Confidence2D):
             par0.freeze()
             par1.freeze()
 
-            self.y = numpy.asarray(parallel_map(RegionProjectionWorker(self.log, par0, par1, thawed, fit),
-                                                grid,
-                                                self.numcores)
-                                   )
+            worker = RegionProjectionWorker(par0, par1, fit, otherpars)
+            results = parallel_map(worker, grid, self.numcores)
+            self.y = np.asarray(results)
 
         finally:
             # Set back data after we changed it
@@ -3133,38 +3452,50 @@ class RegionProjection(Confidence2D):
 
 
 class RegionUncertaintyWorker():
-    def __init__(self, log, par0, par1, fit):
-        self.log = log
+    """Used to evaluate the model by RegionUncertainty.
+
+    .. versionchanged:: 4.16.1
+       The calling convention was changed.
+
+    See Also
+    --------
+    RegionProjectionWorker
+
+    """
+
+    def __init__(self, par0, par1, fit):
         self.par0 = par0
         self.par1 = par1
         self.fit = fit
 
     def __call__(self, pars):
-        for ii in [0, 1]:
-            if self.log[ii]:
-                pars[ii] = numpy.power(10, pars[ii])
         (self.par0.val, self.par1.val) = pars
         return self.fit.calc_stat()
 
 
 class RegionUncertainty(Confidence2D):
+    """The Region-Projection method.
+
+    Evaluate the statistic on a grid of points for two parameters,
+    where the other thawed parameters are *not* changed from their
+    current values.
+
+    .. versionchanged:: 4.16.1
+       Support for logarithmically-spaced grids has been improved.
+
+    See Also
+    --------
+    RegionProjection
+
+    """
+
+    conf_type = "uncertainty"
 
     def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Uncertainty'
-
         Confidence2D.calc(self, fit, par0, par1)
-        if par0.frozen:
-            raise ConfidenceErr('frozen', par0.fullname, 'region uncertainty')
-        if par1.frozen:
-            raise ConfidenceErr('frozen', par1.fullname, 'region uncertainty')
 
         thawed = [i for i in fit.model.pars if not i.frozen]
-
-        if par0 not in thawed:
-            raise ConfidenceErr('thawed', par0.fullname, fit.model.name)
-        if par1 not in thawed:
-            raise ConfidenceErr('thawed', par1.fullname, fit.model.name)
-
         oldpars = fit.model.thawedpars
 
         try:
@@ -3172,17 +3503,17 @@ class RegionUncertainty(Confidence2D):
 
             grid = self._region_init(fit, par0, par1)
 
-            for i in thawed:
-                i.freeze()
+            for p in thawed:
+                p.freeze()
 
-            self.y = numpy.asarray(parallel_map(RegionUncertaintyWorker(self.log, par0, par1, fit),
-                                                grid,
-                                                self.numcores)
-                                   )
+            worker = RegionUncertaintyWorker(par0, par1, fit)
+            result = parallel_map(worker, grid, self.numcores)
+            self.y = np.asarray(result)
 
         finally:
             # Set back data after we changed it
-            for i in thawed:
-                i.thaw()
+            for p in thawed:
+                p.thaw()
+
             fit.model.teardown()
             fit.model.thawedpars = oldpars

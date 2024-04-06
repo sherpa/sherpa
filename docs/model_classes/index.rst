@@ -48,6 +48,7 @@ contains the classes that implement various models.
 
    model
    parameters
+   op
    regrid
    instrument
    template

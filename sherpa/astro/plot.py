@@ -604,7 +604,7 @@ class BkgModelPHAHistogram(ModelPHAHistogram):
     """
 
     def __init__(self):
-        ModelPHAHistogram.__init__(self)
+        super().__init__()
         self.title = 'Background Model Contribution'
 
 
@@ -619,7 +619,7 @@ class BkgModelHistogram(ModelHistogram):
     """
 
     def __init__(self):
-        ModelPHAHistogram.__init__(self)
+        super().__init__()
         self.title = 'Background Model Contribution'
 
 

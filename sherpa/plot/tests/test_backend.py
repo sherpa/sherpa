@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2022, 2023
+#  Copyright (C) 2022 - 2024
 #  MIT
 #
 #
@@ -131,3 +131,21 @@ def test_colorlist():
     clist = back.colorlist(25)
     assert len(clist) == 25
     assert all([c in backend_indep_colors for c in clist])
+
+
+def test_dummy_backend_warning(caplog):
+    """Check we get a warning message that no plotting is available.
+
+    This is related to #1964. We could check all methods but that
+    seems excessive.
+    """
+
+    with TemporaryPlottingBackend(IndepOnlyBackend):
+        assert len(caplog.record_tuples) == 0
+        plot.backend.plot(1, 1)
+        assert len(caplog.record_tuples) == 1
+
+    (lname, llevel, lmsg) = caplog.record_tuples[0]
+    assert lname == "sherpa.plot.backends"
+    assert llevel == logging.WARNING
+    assert lmsg == "IndepOnlyBackend does not implement line/symbol plotting. No plot will be produced."

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,12 +25,13 @@ import sys
 from typing import Optional, Union
 import warnings
 
-import numpy
+import numpy as np
 
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
-from sherpa.ui.utils import _check_type, _check_str_type, _is_str
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
+    get_plot_prefs
 from sherpa.utils import sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
@@ -134,7 +135,7 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
 
 
 def _check_pha_tabstops(data: DataPHA,
-                        tabStops: Optional[Union[str, list, numpy.ndarray]]) -> Union[None, numpy.ndarray]:
+                        tabStops: Optional[Union[str, list, np.ndarray]]) -> Union[None, np.ndarray]:
     """Validate the tabStops argument for the group_xxx calls.
 
     This converts from "nofilter" to numpy.zeros(nchan), where
@@ -161,7 +162,7 @@ def _check_pha_tabstops(data: DataPHA,
         # This might error out, but if so let it as it indicates a
         # user error.
         #
-        return numpy.asarray(tabStops)
+        return np.asarray(tabStops)
 
     if tabStops != "nofilter":
         raise ArgumentErr("bad", "tabStops", tabStops)
@@ -169,7 +170,7 @@ def _check_pha_tabstops(data: DataPHA,
     if data.size is None or data.size == 0:
         raise DataErr("The DataPHA object has no data")
 
-    return numpy.zeros(data.size)
+    return np.zeros(data.size)
 
 
 def _save_errorcol(session, idval, filename, bkg_id,
@@ -525,7 +526,7 @@ class Session(sherpa.ui.utils.Session):
                         data_str += f' {bkg_id}'
 
                     data_str += ': '
-                    if numpy.isscalar(scale):
+                    if np.isscalar(scale):
                         data_str += f'{float(scale):g}'
                     else:
                         # would like to use sherpa.utils/print_fields style output
@@ -1038,7 +1039,7 @@ class Session(sherpa.ui.utils.Session):
 
         is_pha = issubclass(dstype, DataPHA)
         if is_pha:
-            channel = numpy.arange(1, len(xlo) + 1, dtype=float)
+            channel = np.arange(1, len(xlo) + 1, dtype=float)
             args = [channel, y]
             # kwargs['bin_lo'] = xlo
             # kwargs['bin_hi'] = xhi
@@ -1723,7 +1724,7 @@ class Session(sherpa.ui.utils.Session):
                     return self.unpack_ascii(filename, *args, **kwargs)
 
     def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ',
-                               comment='#', func=numpy.average, delta=False):
+                               comment='#', func=np.average, delta=False):
         """Load an ASCII file with asymmetric errors as a data set.
 
         Parameters
@@ -1822,7 +1823,7 @@ class Session(sherpa.ui.utils.Session):
             data.elo = data.y - data.elo
             data.ehi = data.ehi - data.y
 
-        if func is numpy.average:
+        if func is np.average:
             staterror = func([data.elo, data.ehi], axis=0)
         else:
             staterror = func(data.elo, data.ehi)
@@ -1849,7 +1850,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if not numpy.iterable(datasets):
+        if not np.iterable(datasets):
             self.set_data(id, datasets)
             return
 
@@ -3170,8 +3171,8 @@ class Session(sherpa.ui.utils.Session):
         if backscale is None:
             backscale, id = id, backscale
 
-        if numpy.iterable(backscale):
-            backscale = numpy.asarray(backscale)
+        if np.iterable(backscale):
+            backscale = np.asarray(backscale)
         elif backscale is not None:
             backscale = SherpaFloat(backscale)
 
@@ -4706,7 +4707,7 @@ class Session(sherpa.ui.utils.Session):
         #
         if d.mask is False:
             raise DataErr('notmask')
-        if not numpy.iterable(d.mask):
+        if not np.iterable(d.mask):
             raise DataErr('nomask', idval)
 
         if isinstance(d, DataPHA):
@@ -4714,7 +4715,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             x = d.get_indep(filter=False)[0]
 
-        mask = numpy.asarray(d.mask, int)
+        mask = np.asarray(d.mask, int)
 
         self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
                          ascii=ascii, clobber=clobber)
@@ -7919,7 +7920,7 @@ class Session(sherpa.ui.utils.Session):
 
         bkgsets = self.unpack_bkg(arg, use_errors)
 
-        if numpy.iterable(bkgsets):
+        if np.iterable(bkgsets):
             for bkgid, bkg in enumerate(bkgsets):
                 self.set_bkg(id, bkg, bkgid + 1)
         else:
@@ -9538,11 +9539,11 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('normffake', idval)
 
         # TODO: do we still expect to get bytes here?
-        if isinstance(rmf, (str, numpy.bytes_)):
+        if isinstance(rmf, (str, np.bytes_)):
             rmf = self.unpack_rmf(rmf)
 
         # TODO: do we still expect to get bytes here?
-        if isinstance(arf, (str, numpy.bytes_)):
+        if isinstance(arf, (str, np.bytes_)):
             arf = self.unpack_arf(arf)
 
         if not (rmf is None and arf is None):
@@ -9559,7 +9560,7 @@ class Session(sherpa.ui.utils.Session):
         # is not in the error messaage).
         if rmf is None:
             rmf0 = pha.get_rmf()
-        elif numpy.iterable(rmf):
+        elif np.iterable(rmf):
             rmf0 = self.unpack_rmf(rmf[0])
         else:
             rmf0 = rmf
@@ -9573,7 +9574,7 @@ class Session(sherpa.ui.utils.Session):
         # at this point, we can be sure that arf is not a string, because
         # if it was, it would have gone through load_arf already above.
         if not (rmf is None and arf is None):
-            if numpy.iterable(arf):
+            if np.iterable(arf):
                 resp_ids = range(1, len(arf) + 1)
                 self.load_multi_arfs(idval, arf, resp_ids=resp_ids)
             elif arf is None:
@@ -9584,7 +9585,7 @@ class Session(sherpa.ui.utils.Session):
             else:
                 self.set_arf(idval, arf)
 
-            if numpy.iterable(rmf):
+            if np.iterable(rmf):
                 resp_ids = range(1, len(rmf) + 1)
                 self.load_multi_rmfs(idval, rmf, resp_ids=resp_ids)
             else:
@@ -11135,7 +11136,7 @@ class Session(sherpa.ui.utils.Session):
         if 'filter_nan' in kwargs and kwargs.pop('filter_nan'):
             for idval in ids:
                 data = self.get_data(idval)
-                data.mask &= numpy.isfinite(data.get_x())
+                data.mask &= np.isfinite(data.get_x())
 
         res = f.fit(**kwargs)
         res.datasets = ids
@@ -13594,25 +13595,28 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
+        # See sherpa.ui.utils.Session._jointplot2
+        #
         self._jointplot.reset()
 
         with sherpa.plot.backend:
             self._jointplot.plottop(plot1, overplot=overplot,
                                     clearwindow=clearwindow, **kwargs)
 
-            # Unlike the plot version we can assume we are dealing
-            # with histogram plots here.
+            # We know the plot types here but still use get_plot_prefs
+            # to keep the encapsulation.
             #
-            oldval = plot2.plot_prefs['xlog']
-            dprefs = plot1.dataplot.histo_prefs
-            mprefs = plot1.modelplot.histo_prefs
+            p2prefs = get_plot_prefs(plot2)
+            oldval = p2prefs['xlog']
+            dprefs = get_plot_prefs(plot1.dataplot)
+            mprefs = get_plot_prefs(plot1.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
+                p2prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
-            plot2.plot_prefs['xlog'] = oldval
+            p2prefs['xlog'] = oldval
 
     def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True, **kwargs):
@@ -14764,7 +14768,7 @@ class Session(sherpa.ui.utils.Session):
         if error:
 
             def is_numpy_ndarray(arg, name, npars, dim1=None):
-                if not isinstance(arg, numpy.ndarray):
+                if not isinstance(arg, np.ndarray):
                     msg = name + ' must be of type numpy.ndarray'
                     raise IOErr(msg)
                 shape = arg.shape
@@ -14783,7 +14787,7 @@ class Session(sherpa.ui.utils.Session):
             fit_results = self.get_fit_results()
             parnames = fit_results.parnames
             npar = len(parnames)
-            orig_par_vals = numpy.array(fit_results.parvals)
+            orig_par_vals = np.array(fit_results.parvals)
 
             if params is None:
                 # run get_draws or normal distribution depending on fit stat
@@ -14813,7 +14817,7 @@ class Session(sherpa.ui.utils.Session):
 
             mins = fit.model._get_thawed_par_mins()
             maxs = fit.model._get_thawed_par_maxes()
-            eqw = numpy.zeros_like(params[0, :])
+            eqw = np.zeros_like(params[0, :])
             for params_index in range(len(params[0, :])):
                 for parnames_index, parname in enumerate(parnames):
                     val = params[parnames_index, params_index]

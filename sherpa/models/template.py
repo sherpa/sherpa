@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2011, 2016, 2019 -2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -108,11 +108,13 @@ array([5.34, 6.12, 6.  ])
 
 """
 
+from typing import Callable
 import operator
 
-import numpy
+import numpy as np
 
 from sherpa.utils.err import ModelErr
+
 from .parameter import Parameter
 from .model import ArithmeticModel, modelCacher1d
 from .basic import TableModel
@@ -123,7 +125,7 @@ __all__ = ('TemplateModel', 'InterpolatingTemplateModel',
 
 
 # This is reset by reset_interpolators below.
-interpolators = {}
+interpolators: dict[str, tuple[Callable, dict]] = {}
 
 
 def create_template_model(modelname, names, parvals, templates,
@@ -302,7 +304,7 @@ class KNNInterpolator(InterpolatingTemplateModel):
         """What are the distances for the given set of parameters?"""
         distances = []
         for i, t_point in enumerate(self.template_model.parvals):
-            dist = numpy.linalg.norm(point - t_point, self.order)
+            dist = np.linalg.norm(point - t_point, self.order)
             distances.append((i, dist))
 
         return sorted(distances, key=operator.itemgetter(1))
@@ -313,8 +315,8 @@ class KNNInterpolator(InterpolatingTemplateModel):
             return self.template_model.templates[distances[0][0]]
 
         k_distances = distances[:self.k]
-        weights = [(idx, 1/numpy.array(distance)) for idx, distance in k_distances]
-        y_out = numpy.zeros(len(x_out))
+        weights = [(idx, 1/np.array(distance)) for idx, distance in k_distances]
+        y_out = np.zeros(len(x_out))
         for idx, weight in weights:
             y_out += self.template_model.templates[idx].calc((weight,), x_out)
 
@@ -456,7 +458,7 @@ class TemplateModel(ArithmeticModel):
         return table_model(x0, x1, *args, **kwargs)
 
 
-def reset_interpolators():
+def reset_interpolators() -> None:
     """Reset the list of interpolators to the default.
 
     If the list does not exist then recreate it.
@@ -473,7 +475,7 @@ def reset_interpolators():
     }
 
 
-def add_interpolator(name, interpolator, **kwargs):
+def add_interpolator(name: str, interpolator: Callable, **kwargs) -> None:
     """Add the interpolator to the list.
 
     Parameters

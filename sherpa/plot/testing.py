@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023
+#  Copyright (C) 2023, 2024
 #  MIT
 #
 #
@@ -94,13 +94,13 @@ def check_full(r, summary, label='', title='', nsummary=0, test_other=None):
 
     assert r is not None
 
-    if HAS_PYLAB and isinstance(plot.backend, PylabBackend) or \
+    if (HAS_PYLAB and isinstance(plot.backend, PylabBackend)) or \
         (HAS_BOKEH and isinstance(plot.backend, BokehBackend)):
         assert f"<summary>{summary}</summary>" in r
 
-        if isinstance(plot.backend, PylabBackend):
+        if (HAS_PYLAB and isinstance(plot.backend, PylabBackend)):
             assert "<svg " in r
-        elif isinstance(plot.backend, BokehBackend):
+        elif (HAS_BOKEH and isinstance(plot.backend, BokehBackend)):
             assert "BokehJS library" in r
         return
 
