@@ -108,7 +108,7 @@ from sherpa.utils.numeric_types import SherpaFloat
 # Note that utils also imports _xspec so it will error out if it is
 # not available.
 #
-from .utils import ModelMeta, version_at_least
+from .utils import ModelMeta, version_at_least, equal_or_greater_than
 from . import _xspec  # type: ignore
 
 
@@ -3390,7 +3390,7 @@ class XScemekl(XSAdditiveModel):
 
     """
 
-    __function__ = "cemekl"
+    __function__ = "C_cemMekal" if equal_or_greater_than("12.14.0") else "cemekl"
 
     def __init__(self, name='cemekl'):
         self.alpha = XSParameter(name, 'alpha', 1.0, 0.01, 10, 0.01, 20, frozen=True)

@@ -713,7 +713,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(C_c6pvmkl, 24),             // XSc6pvmkl
   XSPECMODELFCT_C_NORM(C_c6vmekl, 24),             // XSc6vmekl
   XSPECMODELFCT_C_NORM(C_carbatm, 4),              // XScarbatm
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_cemMekal, 7),             // XScemekl
+#else
   XSPECMODELFCT_NORM(cemekl, 7),                   // XScemekl
+#endif
   XSPECMODELFCT_C_NORM(C_cemVMekal, 20),           // XScevmkl
   XSPECMODELFCT_C_NORM(C_xscflw, 6),               // XScflow
   XSPECMODELFCT_NORM(compbb, 4),                   // XScompbb
