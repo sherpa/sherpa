@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2017, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,12 +34,13 @@ import numpy
 
 import pytest
 
+from sherpa.data import Data1D
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
-    Scale1D, Integrate1D, Const2D, Gauss2D, Scale2D
+    Scale1D, Integrate1D, Const2D, Gauss2D, Scale2D, Poisson
 from sherpa.utils.err import ModelErr, ParameterErr
 
 
@@ -1630,3 +1631,104 @@ def test_model1d_cache_xhi_named():
     y3 = mdl(xlo, xhi=xhi)
     assert len(store) == 2
     assert y3 == pytest.approx(10, 10, 10)
+
+
+def test_guess_then_reset_defaults():
+    """What is meant to happen after resetting a guess?
+
+    This is mainly a regression test, to check the current behaviour.
+    """
+
+    # We create a data object just to make the calling convention
+    # "correct" / explain the setup.
+    #
+    data = Data1D("x", [1, 2, 3, 4, 5], [12, 2, 7, 3, 4])
+    mdl = Poisson()
+
+    # These will need changing if the default settings change.
+    assert mdl.mean.val == 1
+    assert mdl.mean.min == pytest.approx(1e-5)
+    assert mdl.mean.max > 3.4e38
+    assert not mdl.mean.frozen
+    assert mdl.ampl.val == 1
+    assert mdl.ampl.min < -3.4e38
+    assert mdl.ampl.max > -3.4e38
+    assert not mdl.ampl.frozen
+
+    # Internal check. This is not a user API.
+    assert not mdl.mean._guessed
+    assert not mdl.ampl._guessed
+
+    mdl.guess(*data.to_guess())
+
+    # These values will need changing if the guess logic changes.
+    assert mdl.mean.val == 1
+    assert mdl.mean.min == 1
+    assert mdl.mean.max == 5
+    assert mdl.ampl.val == 12
+    assert mdl.ampl.min == pytest.approx(0.012)
+    assert mdl.ampl.max == pytest.approx(12000)
+    assert not mdl.ampl.frozen
+
+    assert mdl.mean._guessed
+    assert mdl.ampl._guessed
+
+    mdl.reset()
+
+    assert mdl.mean.val == 1
+    assert mdl.mean.min == pytest.approx(1e-5)
+    assert mdl.mean.max > 3.4e38
+    assert not mdl.mean.frozen
+    assert mdl.ampl.val == 1
+    assert mdl.ampl.min < -3.4e38
+    assert mdl.ampl.max > -3.4e38
+    assert not mdl.ampl.frozen
+
+    assert not mdl.mean._guessed
+    assert not mdl.ampl._guessed
+
+
+def test_guess_then_reset_manual():
+    """What is meant to happen after resetting a guess after changing things?
+
+    This is mainly a regression test, to check the current behaviour.
+    """
+
+    data = Data1D("x", [1, 2, 3, 4, 5], [12, 2, 7, 3, 4])
+    mdl = Poisson()
+
+    mdl.mean.set(2, min=0.1, max=10)
+    mdl.ampl.set(2, min=1, max=3)
+
+    # Internal check. This is not a user API.
+    assert not mdl.mean._guessed
+    assert not mdl.ampl._guessed
+
+    mdl.guess(*data.to_guess())
+
+    # These values will need changing if the guess logic changes.
+    assert mdl.mean.val == 1
+    assert mdl.mean.min == 1
+    assert mdl.mean.max == 5
+    assert not mdl.mean.frozen
+    assert mdl.ampl.val == 12
+    assert mdl.ampl.min == pytest.approx(0.012)
+    assert mdl.ampl.max == pytest.approx(12000)
+    assert not mdl.ampl.frozen
+
+    assert mdl.mean._guessed
+    assert mdl.ampl._guessed
+
+    mdl.reset()
+
+    assert mdl.mean.val == 2
+    assert mdl.mean.min == pytest.approx(0.1)
+    assert mdl.mean.max == 10
+    assert not mdl.mean.frozen
+    assert mdl.ampl.val == 2
+    assert mdl.ampl.min == 1
+    assert mdl.ampl.max == 3
+    assert not mdl.ampl.frozen
+
+    assert not mdl.mean._guessed
+    assert not mdl.ampl._guessed
