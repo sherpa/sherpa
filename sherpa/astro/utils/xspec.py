@@ -975,7 +975,11 @@ def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
         wrapcode += '_NORM'
 
     elif mdl.modeltype == "Mul":
-        if not is_fortran:
+        # Do we have any double-precision C/C++ models to worry about?
+        if is_fortran:
+            if mdl.language == 'Fortran - double precision':
+                wrapcode += '_DBL'
+        else:
             wrapcode += '_C'
 
     else:
