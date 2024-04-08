@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015-2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1728,7 +1728,7 @@ class XSConvolutionModel(CompositeModel, XSModel):
                                  *args, **kwargs)
 
 
-# Models from model.dat - try to follow the ordering of that file
+# Models from model.dat, in the same order as that file
 #
 
 class XSagauss(XSAdditiveModel):
