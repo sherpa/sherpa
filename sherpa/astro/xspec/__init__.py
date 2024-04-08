@@ -20,9 +20,10 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.13.1, 12.13.0, 12.12.1, and 12.12.0 of XSPEC [1]_,
-and can be built against the model library or the full application.
-There is no guarantee of support for older or newer versions of XSPEC.
+Sherpa supports versions 12.14.0, 12.13.1, 12.13.0, 12.12.1, and
+12.12.0 of XSPEC [1]_, and can be built against the model library or
+the full application.  There is no guarantee of support for older or
+newer versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -30,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.13.0'
+   '12.14.0b'
 
 Initializing XSPEC
 ------------------
@@ -59,6 +60,15 @@ from the XSPEC model library are supported, except for the `smaug`
 model [5]_, since it requires use of information from the XFLT keywords
 in the data file).
 
+XSPEC version
+-------------
+
+The intention is to keep the model parameters up to date with the
+highest-supported version of XSPEC. However, there is no way to
+know from the XSPEC API [6]_ whether these parameter values will
+work correctly with the installed XSPEC version, such as when using
+an older version of XSPEC.
+
 Parameter values
 ----------------
 
@@ -86,6 +96,8 @@ References
 .. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Convolution.html
 
 .. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
+
+.. [6] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
 
 """
 
@@ -1450,6 +1462,18 @@ def mknorm(name: str, **kwargs) -> Parameter:
 
     return Parameter(name, 'norm', 1.0, min=0.0, max=1.0e24,
                      hard_min=0.0, hard_max=hugeval, **kwargs)
+
+
+def mkswitch(name: str,
+             default: int = 2,
+             maxval: int = 3) -> XSParameter:
+    """Make a switch parameter.
+
+    This is for the common case for values between 0 and 3 inclusive.
+    """
+
+    return XSParameter(name, 'switch', default, 0, maxval,
+                       hard_min=0, hard_max=maxval, alwaysfrozen=True)
 
 
 class XSAdditiveModel(XSModel):
@@ -3069,6 +3093,10 @@ class XSc6mekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -3080,10 +3108,11 @@ class XSc6mekl(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3110,7 +3139,7 @@ class XSc6mekl(XSAdditiveModel):
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
@@ -3124,6 +3153,10 @@ class XSc6pmekl(XSAdditiveModel):
     The model is described at [1]_. It differs from ``XSc6mekl`` by
     using the exponential of the 6th order Chebyshev polynomial.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -3135,10 +3168,11 @@ class XSc6pmekl(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3165,7 +3199,7 @@ class XSc6pmekl(XSAdditiveModel):
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
@@ -3179,6 +3213,10 @@ class XSc6pvmkl(XSAdditiveModel):
     The model is described at [1]_. It differs from ``XSc6vmekl`` by
     using the exponential of the 6th order Chebyshev polynomial.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -3190,10 +3228,11 @@ class XSc6pvmkl(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3233,7 +3272,7 @@ class XSc6pvmkl(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
@@ -3248,6 +3287,10 @@ class XSc6vmekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -3259,10 +3302,11 @@ class XSc6vmekl(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3302,7 +3346,7 @@ class XSc6vmekl(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
@@ -3359,6 +3403,10 @@ class XScemekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     Attributes
     ----------
     alpha
@@ -3372,10 +3420,11 @@ class XScemekl(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3398,7 +3447,7 @@ class XScemekl(XSAdditiveModel):
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.alpha, self.Tmax, self.nH, self.abundanc,
                 self.redshift, self.switch)
@@ -3409,6 +3458,10 @@ class XScevmkl(XSAdditiveModel):
     """The XSPEC cevmkl model: plasma emission, multi-temperature using mekal.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
 
     Attributes
     ----------
@@ -3423,10 +3476,11 @@ class XScevmkl(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3462,7 +3516,7 @@ class XScevmkl(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.alpha, self.Tmax, self.nH, self.He, self.C,
                 self.N, self.O, self.Ne, self.Na, self.Mg, self.Al,
@@ -3984,6 +4038,10 @@ class XScph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     .. versionchanged:: 4.14.0
        The default Redshift parameter value has changed from 0.1 to 0
        to match XSPEC.
@@ -3997,7 +4055,11 @@ class XScph(XSAdditiveModel):
     Redshift
         The redshift.
     switch
-        If 0 calculate, if 1 interpolate, if 2 use AtomDB data.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The mass accretion rate, in solar mass per year.
 
@@ -4021,8 +4083,7 @@ class XScph(XSAdditiveModel):
                                  frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0.0, 0.0, 50, 0.0, 50,
                                     frozen=True)
-        self.switch = XSParameter(name, 'switch', 1,
-                                  alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.peakT, self.Abund, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
@@ -4893,6 +4954,9 @@ class XSgadem(XSAdditiveModel):
     abundances of the metals. See the ``XSapec`` documentation for settings
     relevant to the APEC model (i.e. when ``switch=2``).
 
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
+
     Attributes
     ----------
     Tmean
@@ -4909,10 +4973,11 @@ class XSgadem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -4935,7 +5000,7 @@ class XSgadem(XSAdditiveModel):
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmean, self.Tsigma, self.nH, self.abundanc,
                 self.Redshift, self.switch)
@@ -6028,7 +6093,7 @@ class XSmekal(XSAdditiveModel):
         self.nH = XSParameter(name, 'nH', 1., 1.e-5, 1.e19, 1e-6, 1e20, units='cm-3', frozen=True)
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.switch = mkswitch(name, default=1, maxval=2)
 
         pars = (self.kT, self.nH, self.Abundanc, self.redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
@@ -6039,6 +6104,11 @@ class XSmkcflow(XSAdditiveModel):
 
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
+
+    .. versionchanged:: 4.16.1
+       The redshift parameter default has changed from 0 to 0.1 and
+       for the switch parameter from 1 to 2 to match XSPEC 12.14.0
+       and the maximum value is now 3.
 
     Attributes
     ----------
@@ -6051,10 +6121,11 @@ class XSmkcflow(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The mass accretion rate (solar mass per year).
 
@@ -6075,8 +6146,8 @@ class XSmkcflow(XSAdditiveModel):
         self.lowT = XSParameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.highT = XSParameter(name, 'highT', 4., 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.redshift = XSParameter(name, 'redshift', 0.1, -0.999, 10., -0.999, 10, frozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.lowT, self.highT, self.Abundanc, self.redshift,
                 self.switch)
@@ -7962,6 +8033,10 @@ class XSvcph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     .. versionchanged:: 4.14.0
        The default Redshift parameter value has changed from 0.1 to 0
        to match XSPEC.
@@ -7975,7 +8050,11 @@ class XSvcph(XSAdditiveModel):
     Redshift
         The redshift.
     switch
-        If 0 calculate, if 1 interpolate, if 2 use AtomDB data.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The mass accretion rate, in solar mass per year.
 
@@ -8026,8 +8105,7 @@ class XSvcph(XSAdditiveModel):
                               frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0.0, 0.0, 50, 0.0, 50,
                                     frozen=True)
-        self.switch = XSParameter(name, 'switch', 1,
-                                  alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.peakT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar,
@@ -8097,6 +8175,9 @@ class XSvgadem(XSAdditiveModel):
     abundances of the metals. See the ``XSapec`` documentation for settings
     relevant to the APEC model (i.e. when ``switch=2``).
 
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
+
     Attributes
     ----------
     Tmean
@@ -8112,10 +8193,11 @@ class XSvgadem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -8151,7 +8233,7 @@ class XSvgadem(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmean, self.Tsigma, self.nH, self.He, self.C,
                 self.N, self.O, self.Ne, self.Na, self.Mg, self.Al,
@@ -8343,7 +8425,7 @@ class XSvmekal(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.switch = mkswitch(name, default=1, maxval=2)
 
         pars = (self.kT, self.nH, self.He, self.C, self.N, self.O,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S,
@@ -8358,6 +8440,11 @@ class XSvmcflow(XSAdditiveModel):
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
 
+    .. versionchanged:: 4.16.1
+       The redshift parameter default has changed from 0 to 0.1 and
+       for the switch parameter from 1 to 2 to match XSPEC 12.14.0
+       and the maximum value is now 3.
+
     Attributes
     ----------
     lowT
@@ -8369,10 +8456,11 @@ class XSvmcflow(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The mass accretion rate (solar mass per year).
 
@@ -8406,8 +8494,8 @@ class XSvmcflow(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0.0, 10., 0, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.redshift = XSParameter(name, 'redshift', 0.1, 0.0, 10., 0, 10, frozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.lowT, self.highT, self.He, self.C, self.N,
                 self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si,
@@ -9581,6 +9669,9 @@ class XSvvwdem(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
+
     Attributes
     ----------
     Tmax
@@ -9598,8 +9689,11 @@ class XSvvwdem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        What model to use: 0 calculates with MEKAL, 1 interpolates
-        with MEKAL, and 2 interpoates with APEC.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
@@ -9653,7 +9747,7 @@ class XSvvwdem(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH, self.H,
                 self.He, self.Li, self.Be, self.B, self.C, self.N,
@@ -9669,6 +9763,9 @@ class XSvwdem(XSAdditiveModel):
     """The XSPEC vwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
 
     Attributes
     ----------
@@ -9686,8 +9783,11 @@ class XSvwdem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        What model to use: 0 calculates with MEKAL, 1 interpolates
-        with MEKAL, and 2 interpoates with APEC.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
@@ -9725,7 +9825,7 @@ class XSvwdem(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH,
                 self.He, self.C, self.N, self.O, self.Ne, self.Na,
@@ -9738,6 +9838,9 @@ class XSwdem(XSAdditiveModel):
     """The XSPEC wdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
 
     Attributes
     ----------
@@ -9755,8 +9858,11 @@ class XSwdem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        What model to use: 0 calculates with MEKAL, 1 interpolates
-        with MEKAL, and 2 interpoates with APEC.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
@@ -9781,7 +9887,7 @@ class XSwdem(XSAdditiveModel):
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
         self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
         self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH,
                 self.abundanc, self.redshift, self.switch)
@@ -13968,6 +14074,7 @@ class XSbwcycl(XSAdditiveModel):
         unities).
     delta
         Ratio between bulk and thermal Comptonization importances.
+        The XSPEC documentation may name this parameter del.
     B
         The magnetic field in units of 10^12 G.
     Mdot

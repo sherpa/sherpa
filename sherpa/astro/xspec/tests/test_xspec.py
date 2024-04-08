@@ -182,21 +182,19 @@ def assert_is_finite(vals, modelcls, label):
 
     import sherpa.astro.xspec as xs
 
-    emsg = "model {} is finite [{}]".format(modelcls, label)
+    emsg = f"model {modelcls} is finite [{label}]"
     assert numpy.isfinite(vals).all(), emsg
 
     # Some models seem to return 0's, so skip them for now:
     # these models have a default redshift parameter of 0 but
     # the code complains if z <= 0 and returns 0's.
     #
-    if modelcls in [xs.XScph, xs.XSvcph, xs.XSmkcflow, xs.XSvmcflow]:
-        # Catch the case when this condition is no longer valid
-        #
+    if modelcls in [xs.XScph, xs.XSvcph]:
         assert (vals == 0.0).all(), \
-            'Expected {} to evaluate to all zeros [{}]'.format(modelcls, label)
+            f'Expected {modelcls} to evaluate to all zeros [{label}]'
         return
 
-    emsg = "model {} has a value > 0 [{}]".format(modelcls, label)
+    emsg = f"model {modelcls} has a value > 0 [{label}]"
     assert (vals > 0.0).any(), emsg
 
 
