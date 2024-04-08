@@ -1661,7 +1661,7 @@ class XSConvolutionModel(CompositeModel, XSModel):
     Display the combined model:
 
     >>> print(mdl1)
-    xscflux((phabs * powerlaw))
+    xscflux(phabs * powerlaw)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        xscflux.Emin frozen          0.5            0        1e+06        keV
@@ -1672,7 +1672,7 @@ class XSConvolutionModel(CompositeModel, XSModel):
        powerlaw.norm frozen            1            0        1e+24
 
     >>> print(mdl2)
-    (phabs * xscflux(powerlaw))
+    phabs * xscflux(powerlaw)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        phabs.nH     thawed            1            0       100000 10^22 atoms / cm^2
