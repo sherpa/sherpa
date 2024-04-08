@@ -37,7 +37,7 @@ from sherpa.utils.err import ParameterErr
 #    '(XSConvolutionKernel)'
 # in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 231
+XSPEC_MODELS_COUNT = 281
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
@@ -88,10 +88,13 @@ def get_xspec_models():
     except ImportError:
         return []
 
+    version = xs.get_xsversion()
+
     # The alternate approach is to use that taken by
     # test_create_model_instances
     #
-    model_names = [model_name for model_name in dir(xs) if model_name.startswith('XS')]
+    model_names = [model_name for model_name in dir(xs)
+                   if model_name.startswith('XS')]
 
     # Could just exclude any names that end in 'Model', but this
     # could remove valid model names, so be explicit.
@@ -105,6 +108,14 @@ def get_xspec_models():
     # skip this model.
     #
     remove_item(model_names, 'XSgrbjet')
+
+    # The bsedov model causes a crashe with XSPEC 12.14.0 to 12.14.0e
+    # (it should be fixed in 12.4.0f and later). The model is not
+    # present before 12.14.0.
+    #
+    if version in ["12.14.0", "12.14.0a", "12.14.0b",
+                   "12.14.0c", "12.14.0d", "12.14.0e"]:
+        remove_item(model_names, 'XSbsedov')
 
     models = [getattr(xs, model_name) for model_name in model_names]
     models = list(filter(lambda mod: mod.version_enabled, models))
@@ -189,12 +200,12 @@ def assert_is_finite(vals, modelcls, label):
     # these models have a default redshift parameter of 0 but
     # the code complains if z <= 0 and returns 0's.
     #
-    if modelcls in [xs.XScph, xs.XSvcph]:
+    if modelcls in [xs.XSbcph, xs.XSbvcph, xs.XScph, xs.XSvcph]:
         assert (vals == 0.0).all(), \
             f'Expected {modelcls} to evaluate to all zeros [{label}]'
         return
 
-    emsg = f"model {modelcls} has a value > 0 [{label}]"
+    emsg = f"Expected model {modelcls} to have a value > 0 [{label}]"
     assert (vals > 0.0).any(), emsg
 
 
