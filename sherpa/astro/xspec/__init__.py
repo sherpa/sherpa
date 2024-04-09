@@ -2703,6 +2703,10 @@ class XSbvtapec(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET parameters, in
     particular the keywords "APECROOT" and "APEC_TRACE_ABUND".
 
+    .. versionchanged:: 4.16.1
+       The Redshift and Velocity parameters are now frozen by default
+       to match XSPEC.
+
     .. versionchanged:: 4.16.0
        The maximum for the Velocity parameter has been changed from
        10^6 to 10^4 km/s.
@@ -2754,8 +2758,8 @@ class XSbvtapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.He, self.C, self.N, self.O,
@@ -2931,6 +2935,10 @@ class XSbvvtapec(XSAdditiveModel):
     functions are used to set and query the XSPEC XSET "APECROOT"
     parameter.
 
+    .. versionchanged:: 4.16.1
+       The Redshift and Velocity parameters are now frozen by default
+       to match XSPEC.
+
     .. versionchanged:: 4.16.0
        The maximum for the Velocity parameter has been changed from
        10^6 to 10^4 km/s.
@@ -2998,8 +3006,8 @@ class XSbvvtapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s')
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s', frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.Velocity, self.norm))
@@ -7699,6 +7707,10 @@ class XStapec(XSAdditiveModel):
     particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
     "APECNOLINES", and "APEC_TRACE_ABUND".
 
+    .. versionchanged:: 4.16.1
+       The Abundanc and Redshift parameters are now frozen by default
+       to match XSPEC.
+
     Attributes
     ----------
     kT
@@ -7731,8 +7743,8 @@ class XStapec(XSAdditiveModel):
     def __init__(self, name='tapec'):
         self.kT = XSParameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.Abundanc, self.Redshift, self.norm))
@@ -8688,6 +8700,9 @@ class XSvtapec(XSAdditiveModel):
     particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
     "APECNOLINES", and "APEC_TRACE_ABUND".
 
+    .. versionchanged:: 4.16.1
+       The Redshift parameter is now frozen by default to match XSPEC.
+
     Attributes
     ----------
     kT
@@ -8733,7 +8748,7 @@ class XSvtapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.He, self.C, self.N, self.O,
@@ -9303,6 +9318,9 @@ class XSvvtapec(XSAdditiveModel):
     particular the keywords "APECROOT", "APECTHERMAL", "APECVELOCITY",
     and "APECNOLINES".
 
+    .. versionchanged:: 4.16.1
+       The Redshift parameter is now frozen by default to match XSPEC.
+
     Attributes
     ----------
     kT
@@ -9364,7 +9382,7 @@ class XSvvtapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
         self.norm = Parameter(name, 'norm', 1.0, 0.0, 1.0e24, 0.0, hugeval)
         XSAdditiveModel.__init__(self, name,
                                  (self.kT, self.kTi, self.H, self.He, self.Li, self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn, self.Redshift, self.norm))
@@ -11139,6 +11157,10 @@ class XSTBfeo(XSMultiplicativeModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The O and Fe parameters are now frozen by default to match
+       XSPEC.
+
     Attributes
     ----------
     nH
@@ -11170,8 +11192,8 @@ class XSTBfeo(XSMultiplicativeModel):
 
     def __init__(self, name='tbfeo'):
         self.nH = XSParameter(name, 'nH', 1., 0., 1.e5, 0.0, 1.0e6, units='10^22')
-        self.O = XSParameter(name, 'O', 1., 0.0, 5.0, -1.0e38, 1.0e38)
-        self.Fe = XSParameter(name, 'Fe', 1., 0.0, 5.0, -1.0e38, 1.0e38)
+        self.O = XSParameter(name, 'O', 1., 0.0, 5.0, -1.0e38, 1.0e38, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1., 0.0, 5.0, -1.0e38, 1.0e38, frozen=True)
         self.redshift = XSParameter(name, 'redshift', 0., 0.0, 10., -1.0, 10.0,
                                     frozen=True)
         XSMultiplicativeModel.__init__(self, name,
@@ -12823,6 +12845,9 @@ class XSireflect(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The `xi` parameter is now thawed by default to match XSPEC.
+
     .. versionadded:: 4.12.2
 
     Attributes
@@ -12881,7 +12906,7 @@ class XSireflect(XSConvolutionKernel):
                                   hard_min=1e4, hard_max=1e6, frozen=True,
                                   units='K')
         self.xi = XSParameter(name, 'xi', 1.0, min=0.0, max=1e3, hard_min=0.0,
-                              hard_max=5e3, frozen=True, units='erg cm/s')
+                              hard_max=5e3, frozen=False, units='erg cm/s')
         XSConvolutionKernel.__init__(self, name, (self.rel_refl,
                                                   self.Redshift,
                                                   self.abund,
@@ -13014,6 +13039,9 @@ class XSkerrconv(XSConvolutionKernel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The `Incl` parameter is now frozen by default to match XSPEC.
+
     .. versionchanged:: 4.14.0
        The first two parameters have been renamed `Index1` and
        `Index2` to match the XSPEC definition (they had been called
@@ -13070,7 +13098,7 @@ class XSkerrconv(XSConvolutionKernel):
         self.a = XSParameter(name, 'a', 0.998, min=0.0, max=0.998,
                              hard_min=0.0, hard_max=0.998, frozen=False)
         self.Incl = XSParameter(name, 'Incl', 30.0, min=0.0, max=90.0,
-                                hard_min=0.0, hard_max=90.0, frozen=False,
+                                hard_min=0.0, hard_max=90.0, frozen=True,
                                 units='deg')
         self.Rin_ms = XSParameter(name, 'Rin_ms', 1.0, min=1.0, max=400.0,
                                   hard_min=1.0, hard_max=400.0, frozen=True)
