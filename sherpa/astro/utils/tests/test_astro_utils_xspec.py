@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023
+#  Copyright (C) 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -434,7 +434,7 @@ class XSapec(XSAdditiveModel):
     def __init__(self, name='apec'):
         self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')
         self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-        XSAdditiveModel.__init__(self, name, (self.kT,self.norm))
+        XSAdditiveModel.__init__(self, name, (self.kT, self.norm))
 
 '''
     assert converted.python == expected
@@ -638,7 +638,7 @@ class XSabcd(XSAdditiveModel):
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
         self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-        XSAdditiveModel.__init__(self, name, (self.xs,self.norm))
+        XSAdditiveModel.__init__(self, name, (self.xs, self.norm))
         self._use_caching = False
         warnings.warn('support for models like xsabcd (recalculated per spectrum) is untested.')
 
@@ -710,7 +710,7 @@ class XSabcd(XSAdditiveModel):
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
         self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-        XSAdditiveModel.__init__(self, name, (self.xs,self.norm))
+        XSAdditiveModel.__init__(self, name, (self.xs, self.norm))
         warnings.warn('support for models like xsabcd (variances are calculated by the model) is untested.')
 
 '''

@@ -852,7 +852,7 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     if len(parnames) == 1:
         pstr = f"({parnames[0]},)"
     else:
-        pstr = f"({','.join(parnames)})"
+        pstr = f"({', '.join(parnames)})"
 
     out += f"{t2}XS{modelname}.__init__(self, name, {pstr})\n"
 
