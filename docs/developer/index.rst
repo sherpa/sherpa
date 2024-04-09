@@ -521,8 +521,10 @@ noted as not being supported::
           self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
           self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
           self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
-          self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-          XSAdditiveModel.__init__(self, name, (self.Tmax,self.beta,self.inv_slope,self.nH,self.abundanc,self.Redshift,self.switch,self.norm))
+
+          # norm parameter is automatically added by XSAdditiveModel
+          pars = (self.Tmax, self.beta, self.inv_slope, self.nH, self.abundanc, self.Redshift, self.switch)
+          XSAdditiveModel.__init__(self, name, pars)
 
 
 This code then can then be added to

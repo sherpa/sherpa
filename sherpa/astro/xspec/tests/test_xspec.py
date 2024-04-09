@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -23,6 +23,7 @@ import numpy
 import pytest
 
 from sherpa.astro import ui
+from sherpa.models import Parameter
 from sherpa.utils.testing import requires_data, \
     requires_fits, requires_xspec
 from sherpa.utils.err import ParameterErr
@@ -608,8 +609,28 @@ def test_xsxset_get(clean_astro_ui):
 
 
 @requires_xspec
+def test_additive_single_norm_model():
+    """Check that we can not sneak in a separate norm parameter"""
+
+    from sherpa.astro.xspec import XSAdditiveModel
+
+    class XSNotAClassName(XSAdditiveModel):
+        __function__ = "foo"
+
+        def __init__(self, name='foo'):
+            self.kT = Parameter(name, 'kT', 1.0)
+            self.norm = False
+            XSAdditiveModel.__init__(self, name, (self.kT, ))
+
+    # Setting self.norm and not including it in the pars array
+    # is an error.
+    with pytest.raises(ParameterErr,
+                       match="norm is set but not included in pars"):
+        XSNotAClassName()
+
+
+@requires_xspec
 def test_nonexistent_model():
-    from sherpa.models import Parameter
     from sherpa.astro.xspec.utils import include_if
     from sherpa.astro.xspec import XSAdditiveModel
 
@@ -619,7 +640,7 @@ def test_nonexistent_model():
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
-            XSAdditiveModel.__init__(self, name, (self.kT))
+            XSAdditiveModel.__init__(self, name, (self.kT, ))
 
     m = XSbtapec()
 
@@ -635,7 +656,6 @@ def test_not_compiled_model():
     Test the error handling case where a model is included according to the conditional decorator, but it wraps a
     function that had not been compiled.
     """
-    from sherpa.models import Parameter
     from sherpa.astro.xspec.utils import include_if, ModelMeta
     from sherpa.astro.xspec import XSAdditiveModel
 
@@ -645,7 +665,7 @@ def test_not_compiled_model():
 
         def __init__(self, name='foo'):
             self.kT = Parameter(name, 'kT', 1.0)
-            XSAdditiveModel.__init__(self, name, (self.kT))
+            XSAdditiveModel.__init__(self, name, (self.kT, ))
 
     m = XSfoo()
 
@@ -660,7 +680,6 @@ def test_old_style_xspec_class():
     """
     We changed the way xspec models are declared, but just in case let's make sure old-style declarations still work.
     """
-    from sherpa.models import Parameter
     from sherpa.astro.xspec import XSzbabs, XSMultiplicativeModel, _xspec
 
     class XSfoo(XSMultiplicativeModel):
