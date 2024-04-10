@@ -231,14 +231,14 @@ src.Abundanc.max     = 5.0
 src.Abundanc.units   = ""
 src.Abundanc.frozen  = True
 
-src.redshift.default_val = 0.0
-src.redshift.default_min = -0.999
-src.redshift.default_max = 10.0
-src.redshift.val     = 0.0
-src.redshift.min     = -0.999
-src.redshift.max     = 10.0
-src.redshift.units   = ""
-src.redshift.frozen  = True
+src.Redshift.default_val = 0.0
+src.Redshift.default_min = -0.999
+src.Redshift.default_max = 10.0
+src.Redshift.val     = 0.0
+src.Redshift.min     = -0.999
+src.Redshift.max     = 10.0
+src.Redshift.units   = ""
+src.Redshift.frozen  = True
 
 src.norm.default_val = 1.0
 src.norm.default_min = 0.0

@@ -1420,8 +1420,7 @@ class XSTableModel(XSModel):
             # XSParameter rather than Parameter so we can change the
             # hard limits if needed.
             #
-            self.redshift = XSParameter(name, 'redshift', 0., 0., 5.,
-                                        0.0, 5, frozen=True)
+            self.redshift = mkRedshift(name, minval=0, maxval=5, lc=True)
             pars.append(self.redshift)
 
         if addmodel:
@@ -1474,6 +1473,19 @@ def mkswitch(name: str,
 
     return XSParameter(name, 'switch', default, 0, maxval,
                        hard_min=0, hard_max=maxval, alwaysfrozen=True)
+
+
+def mkRedshift(name: str,
+               default: float = 0,
+               minval: float = -0.999,
+               maxval: float = 10,
+               lc: bool = False) -> XSParameter:
+    """Make a Redshift parameter."""
+
+    pname = "redshift" if lc else "Redshift"
+    return XSParameter(name, pname, default, minval, maxval,
+                       hard_min=minval, hard_max=maxval, frozen=True)
+
 
 
 class XSAdditiveModel(XSModel):
@@ -1908,8 +1920,7 @@ class XSagnsed(XSAdditiveModel):
         self.reprocess = XSParameter(name, 'reprocess', 1, 0, 1, 0, 1,
                                      '0off/1on', alwaysfrozen=True)
 
-        self.redshift = XSParameter(name, 'redshift', 0, 0, 1, 0, 1,
-                                    frozen=True)
+        self.redshift = mkRedshift(name, default=0, minval=0, maxval=1, lc=True)
 
         pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
                 self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
@@ -2012,8 +2023,7 @@ class XSagnslim(XSAdditiveModel):
         self.rin = XSParameter(name, 'rin', -1, -1, 100, -1, 100,
                                frozen=True)  # TODO: make alwaysfrozen?
 
-        self.redshift = XSParameter(name, 'redshift', 0, 0, 5, 0, 5,
-                                    frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=5, lc=True)
 
         pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
                 self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
@@ -2040,7 +2050,7 @@ class XSapec(XSAdditiveModel):
         The metal abundance of the plasma, as defined by the
         ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
         keyword.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -2061,9 +2071,10 @@ class XSapec(XSAdditiveModel):
     def __init__(self, name='apec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64.0, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.redshift))
+        pars = (self.kT, self.Abundanc, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSbapec(XSAdditiveModel):
@@ -2111,7 +2122,7 @@ class XSbapec(XSAdditiveModel):
     def __init__(self, name='bapec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1e4, 0.0, 1e4, units='km/s', frozen=True)
 
         pars = (self.kT, self.Abundanc, self.Redshift, self.Velocity)
@@ -2166,7 +2177,7 @@ class XSbtapec(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, 'km/s', frozen=True)
 
         pars = (self.kT, self.kTi, self.Abundanc, self.Redshift, self.Velocity)
@@ -2265,7 +2276,7 @@ class XSbexrav(XSAdditiveModel):
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
         the ``set_xsabund`` function.
-    redshift
+    Redshift
         The redshift of the source.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -2300,11 +2311,11 @@ class XSbexrav(XSAdditiveModel):
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
         self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.Gamma1, self.breakE, self.Gamma2, self.foldE,
                 self.rel_refl, self.cosIncl, self.abund, self.Fe_abund,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
     def guess(self, dep, *args, **kwargs):
@@ -2331,7 +2342,7 @@ class XSbexriv(XSAdditiveModel):
     rel_refl
         The reflection scaling parameter (a value of 1 for an
         isotropic source above the disk).
-    redshift
+    Redshift
         The redshift of the source.
     abund
         The abundance of the elements heavier than He relative to their
@@ -2375,7 +2386,7 @@ class XSbexriv(XSAdditiveModel):
         self.Gamma2 = XSParameter(name, 'Gamma2', 2., -9., 9., -10, 10)
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0.0, 1e6)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
@@ -2383,7 +2394,7 @@ class XSbexriv(XSAdditiveModel):
         self.xi = XSParameter(name, 'xi', 1., 0., 1.e3, 0.0, 5e3, units='erg cm/s')
 
         pars = (self.Gamma1, self.breakE, self.Gamma2, self.foldE,
-                self.rel_refl, self.redshift, self.abund, self.Fe_abund,
+                self.rel_refl, self.Redshift, self.abund, self.Fe_abund,
                 self.cosIncl, self.T_disk, self.xi)
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -2613,7 +2624,7 @@ class XSbrnei(XSAdditiveModel):
         self.kT_init = XSParameter(name, 'kT_init', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.Redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4,
                                     units='km/s', frozen=True)
 
@@ -2674,7 +2685,7 @@ class XSbvapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1e4, units='km/s', frozen=True)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
@@ -2742,7 +2753,7 @@ class XSbvrnei(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 10000., frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 10000., frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10., frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1.e4, 'km/s', frozen=True)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.C,
@@ -2814,7 +2825,7 @@ class XSbvtapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s', frozen=True)
 
         pars = (self.kT, self.kTi, self.He, self.C, self.N, self.O,
@@ -2895,7 +2906,7 @@ class XSbvvapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1e4, units='km/s', frozen=True)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
@@ -2985,7 +2996,7 @@ class XSbvvrnei(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, maxval, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, maxval, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10., frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1.e4,
                                     units='km/s', frozen=True)
 
@@ -3076,7 +3087,7 @@ class XSbvvtapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s', frozen=True)
 
         pars = (self.kT, self.kTi, self.H, self.He, self.Li, self.Be,
@@ -3105,7 +3116,7 @@ class XSc6mekl(XSAdditiveModel):
         H density, in cm^-3.
     abundanc
         The abundance relative to Solar, as set by ``set_xsabund``.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1 then
@@ -3138,12 +3149,12 @@ class XSc6mekl(XSAdditiveModel):
         self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, -1, 1, -1, 1)
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
-                self.abundanc, self.redshift, self.switch)
+                self.abundanc, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3165,7 +3176,7 @@ class XSc6pmekl(XSAdditiveModel):
         H density, in cm^-3.
     abundanc
         The abundance relative to Solar, as set by ``set_xsabund``.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1 then
@@ -3198,12 +3209,12 @@ class XSc6pmekl(XSAdditiveModel):
         self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, -1, 1, -1, 1)
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
-                self.abundanc, self.redshift, self.switch)
+                self.abundanc, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3225,7 +3236,7 @@ class XSc6pvmkl(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1 then
@@ -3271,14 +3282,14 @@ class XSc6pvmkl(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
                 self.He, self.C, self.N, self.O, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
-                self.Fe, self.Ni, self.redshift, self.switch)
+                self.Fe, self.Ni, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3299,7 +3310,7 @@ class XSc6vmekl(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1 then
@@ -3345,14 +3356,14 @@ class XSc6vmekl(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
                 self.He, self.C, self.N, self.O, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
-                self.Fe, self.Ni, self.redshift, self.switch)
+                self.Fe, self.Ni, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3446,11 +3457,11 @@ class XScemekl(XSAdditiveModel):
         self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.02725, 1.e2, 0.02725, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.alpha, self.Tmax, self.nH, self.abundanc,
-                self.redshift, self.switch)
+                self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3473,7 +3484,7 @@ class XScevmkl(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1 then
@@ -3515,7 +3526,7 @@ class XScevmkl(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.alpha, self.Tmax, self.nH, self.He, self.C,
@@ -3564,7 +3575,7 @@ class XScflow(XSAdditiveModel):
         self.lowT = XSParameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.highT = XSParameter(name, 'highT', 4., 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0.0, 5., 0.0, 5)
-        self.redshift = XSParameter(name, 'redshift', .1, 1.e-10, 10., 1e-10, 10, frozen=True)
+        self.redshift = mkRedshift(name, default=0.1, minval=1e-10, lc=True)
 
         pars = (self.slope, self.lowT, self.highT, self.Abundanc, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -3788,13 +3799,13 @@ class XScompPS(XSAdditiveModel):
         self.Betor10 = XSParameter(name, 'Betor10', -10., -10., 10., -10, 10, frozen=True)
         self.Rin = XSParameter(name, 'Rin', 10., 6.001, 1.e3, 6.001, 1e4, units='Rs', frozen=True)
         self.Rout = XSParameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, 1e6, units='Rs', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kTe, self.EleIndex, self.Gmin, self.Gmax,
                 self.kTbb, self.tau_y, self.geom, self.HovR_cyl, self.cosIncl,
                 self.cov_frac, self.rel_refl, self.Fe_ab_re, self.Me_ab,
                 self.xi, self.Tdisk, self.Betor10, self.Rin, self.Rout,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3985,7 +3996,7 @@ class XScompth(XSAdditiveModel):
         self.Beta = XSParameter(name, 'Beta', -10., -10., 10., -10, 10, frozen=True)
         self.Rin = XSParameter(name, 'Rin', 10., 6.001, 1.e3, 6.001, 1e4, units='M', frozen=True)
         self.Rout = XSParameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, 1e6, units='M', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0., 4., 0.0, 4, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
 
         pars = (self.theta, self.showbb, self.kT_bb, self.RefOn, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.Ab_met, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -4023,7 +4034,7 @@ class XScompTT(XSAdditiveModel):
     __function__ = "xstitg"
 
     def __init__(self, name='comptt'):
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.T0 = XSParameter(name, 'T0', 0.1, .01, 100., 1e-3, 100, units='keV')
         self.kT = XSParameter(name, 'kT', 50., 2.0, 500., 2.0, 500, units='keV')
         self.taup = XSParameter(name, 'taup', 1., .01, 100., 0.01, 200)
@@ -4081,8 +4092,7 @@ class XScph(XSAdditiveModel):
                                  units='keV')
         self.Abund = XSParameter(name, 'Abund', 1, 0, 1000, 0, 1000,
                                  frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, 0.0, 50, 0.0, 50,
-                                    frozen=True)
+        self.Redshift = mkRedshift(name, minval=0, maxval=50)
         self.switch = mkswitch(name)
 
         pars = (self.peakT, self.Abund, self.Redshift, self.switch)
@@ -4680,7 +4690,7 @@ class XSeqpair(XSAdditiveModel):
         self.Beta = XSParameter(name, 'Beta', -10., -10., 10., -10, 10, frozen=True)
         self.Rin = XSParameter(name, 'Rin', 10., 6.001, 1.e3, 6.001, 1e4, units='M', frozen=True)
         self.Rout = XSParameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, 1e6, units='M', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0., 4., 0.0, 4, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
 
         pars = (self.l_hovl_s, self.l_bb, self.kT_bb, self.l_ntol_h,
                 self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj,
@@ -4801,7 +4811,7 @@ class XSeqtherm(XSAdditiveModel):
         self.Beta = XSParameter(name, 'Beta', -10., -10., 10., -10, 10, frozen=True)
         self.Rin = XSParameter(name, 'Rin', 10., 6.001, 1.e3, 6.001, 1e4, units='M', frozen=True)
         self.Rout = XSParameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, 1e6, units='M', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0., 4., 0.0, 4, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
 
         pars = (self.l_hovl_s, self.l_bb, self.kT_bb, self.l_ntol_h,
                 self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj,
@@ -4847,9 +4857,9 @@ class XSequil(XSAdditiveModel):
     def __init__(self, name='equil'):
         self.kT = XSParameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        pars = (self.kT, self.Abundanc, self.redshift)
+        pars = (self.kT, self.Abundanc, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -4999,7 +5009,7 @@ class XSgadem(XSAdditiveModel):
         self.Tsigma = XSParameter(name, 'Tsigma', 0.1, 0.01, 1.e2, 0.01, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
         self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.Tmean, self.Tsigma, self.nH, self.abundanc,
@@ -5055,7 +5065,7 @@ class XSgnei(XSAdditiveModel):
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
         self.meankT = XSParameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV', aliases=["kT_ave"])
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Tau, self.meankT, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -6044,7 +6054,7 @@ class XSmeka(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1., 1.e-3, 1.e2, 1e-3, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1., 1.e-5, 1.e19, 1e-6, 1e20, units='cm-3', frozen=True)
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.nH, self.Abundanc, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -6092,10 +6102,10 @@ class XSmekal(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1., 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.nH = XSParameter(name, 'nH', 1., 1.e-5, 1.e19, 1e-6, 1e20, units='cm-3', frozen=True)
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name, default=1, maxval=2)
 
-        pars = (self.kT, self.nH, self.Abundanc, self.redshift, self.switch)
+        pars = (self.kT, self.nH, self.Abundanc, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6118,7 +6128,7 @@ class XSmkcflow(XSAdditiveModel):
         The maximum temperature, in keV.
     Abundanc
         The abundance relative to Solar, as set by ``set_xsabund``.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1 then
@@ -6146,10 +6156,10 @@ class XSmkcflow(XSAdditiveModel):
         self.lowT = XSParameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.highT = XSParameter(name, 'highT', 4., 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5)
-        self.redshift = XSParameter(name, 'redshift', 0.1, -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name, default=0.1)
         self.switch = mkswitch(name)
 
-        pars = (self.lowT, self.highT, self.Abundanc, self.redshift,
+        pars = (self.lowT, self.highT, self.Abundanc, self.Redshift,
                 self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -6193,7 +6203,7 @@ class XSnei(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Tau, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -6239,9 +6249,9 @@ class XSnlapec(XSAdditiveModel):
     def __init__(self, name='nlapec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        pars = (self.kT, self.Abundanc, self.redshift)
+        pars = (self.kT, self.Abundanc, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6292,10 +6302,10 @@ class XSnpshock(XSAdditiveModel):
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.Abundanc, self.Tau_l,
-                self.Tau_u, self.redshift)
+                self.Tau_u, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6620,12 +6630,12 @@ class XSnteea(XSAdditiveModel):
         self.pair_esc = XSParameter(name, 'pair_esc', 0., 0., 1., 0.0, 1, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.1, 10., 0.1, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.l_nth, self.l_bb, self.f_refl, self.kT_bb,
                 self.g_max, self.l_th, self.tau_p, self.G_inj, self.g_min,
                 self.g_0, self.radius, self.pair_esc, self.cosIncl,
-                self.Fe_abund, self.redshift)
+                self.Fe_abund, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6668,7 +6678,7 @@ class XSnthComp(XSAdditiveModel):
         self.kT_e = XSParameter(name, 'kT_e', 100., 5., 1.e3, 1., 1.e3, units='keV')
         self.kT_bb = XSParameter(name, 'kT_bb', 0.1, 1.e-3, 10., 1.e-3, 10., units='keV', frozen=True)
         self.inp_type = XSParameter(name, 'inp_type', 0., 0., 1., 0., 1., units='0/1', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10., frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.Gamma, self.kT_e, self.kT_bb, self.inp_type,
                 self.redshift)
@@ -6752,7 +6762,7 @@ class XSoptxagn(XSAdditiveModel):
         self.fpl = XSParameter(name, 'fpl', 1.e-4, 0.0, 1.e-1, 0.0, 1e-1)
         self.fcol = XSParameter(name, 'fcol', 2.4, 1.0, 5, 1.0, 5, frozen=True)
         self.tscat = XSParameter(name, 'tscat', 1.e5, 1e4, 1e5, 1e4, 1e5, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., 0., 10., 0.0, 10, frozen=True)
+        self.Redshift = mkRedshift(name, minval=0)
 
         pars = (self.mass, self.dist, self.logLoLEdd, self.astar,
                 self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma,
@@ -6834,7 +6844,7 @@ class XSoptxagnf(XSAdditiveModel):
         self.tau = XSParameter(name, 'tau', 10., 0.1, 100, 0.1, 100)
         self.Gamma = XSParameter(name, 'Gamma', 2.1, 1.05, 5., 1.05, 10.0)
         self.fpl = XSParameter(name, 'fpl', 1.e-4, 0.0, 1., 0.0, 1)
-        self.Redshift = XSParameter(name, 'Redshift', 0., 0., 10., 0.0, 10, frozen=True)
+        self.Redshift = mkRedshift(name, minval=0)
 
         pars = (self.mass, self.dist, self.logLoLEdd, self.astar,
                 self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma,
@@ -6932,7 +6942,7 @@ class XSpexmon(XSAdditiveModel):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 2., 1.1, 2.5, 1.1, 2.5)
         self.foldE = XSParameter(name, 'foldE', 1000., 1., 1.e6, 1.0, 1e6, units='keV', frozen=True)
         self.rel_refl = XSParameter(name, 'rel_refl', -1, -1.e6, 1.e6, -1e6, 1e6, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0., 4., 0.0, 4, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
         self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 100., 0.0, 100, frozen=True)
         self.Incl = XSParameter(name, 'Incl', 60., 0., 85.0, 0.0, 85, units='deg')
@@ -6957,7 +6967,7 @@ class XSpexrav(XSAdditiveModel):
         The reflection scaling parameter (a value between 0 and 1
         for an isotropic source above the disk, less than 0 for no
         reflected component).
-    redshift
+    Redshift
         The redshift of the source.
     abund
         The abundance of the elements heavier than He relative to their
@@ -6995,13 +7005,13 @@ class XSpexrav(XSAdditiveModel):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 2., -9., 9., -10, 10)
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0, 1e6)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
 
         pars = (self.PhoIndex, self.foldE, self.rel_refl,
-                self.redshift, self.abund, self.Fe_abund, self.cosIncl)
+                self.Redshift, self.abund, self.Fe_abund, self.cosIncl)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7020,7 +7030,7 @@ class XSpexriv(XSAdditiveModel):
         The reflection scaling parameter (a value between 0 and 1
         for an isotropic source above the disk, less than 0 for no
         reflected component).
-    redshift
+    Redshift
         The redshift of the source.
     abund
         The abundance of the elements heavier than He relative to their
@@ -7062,7 +7072,7 @@ class XSpexriv(XSAdditiveModel):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 2., -9., 9., -10, 10)
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0, 1e6)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
@@ -7125,11 +7135,11 @@ class XSplcabs(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, frozen=True)
         self.acrit = XSParameter(name, 'acrit', 1., 0.0, 1.0, 0.0, 1, frozen=True)
         self.FAST = XSParameter(name, 'FAST', 0, alwaysfrozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.nH, self.nmax, self.FeAbun, self.FeKedge,
                 self.PhoIndex, self.HighECut, self.foldE, self.acrit,
-                self.FAST, self.redshift)
+                self.FAST, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7232,10 +7242,10 @@ class XSpshock(XSAdditiveModel):
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Tau_l, self.Tau_u,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7287,8 +7297,7 @@ class XSqsosed(XSAdditiveModel):
         self.cosi = XSParameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
                                 frozen=True)
 
-        self.redshift = XSParameter(name, 'redshift', 0, 0, 5, 0, 5,
-                                    frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=5, lc=True)
 
         pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
                 self.redshift)
@@ -7307,7 +7316,7 @@ class XSraymond(XSAdditiveModel):
     Abundanc
         The metal abundance of the plasma, as defined by the
         ``set_xsabund`` function.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -7329,9 +7338,9 @@ class XSraymond(XSAdditiveModel):
     def __init__(self, name='raymond'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        pars = (self.kT, self.Abundanc, self.redshift)
+        pars = (self.kT, self.Abundanc, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7385,7 +7394,7 @@ class XSrefsch(XSAdditiveModel):
         The reflection scaling parameter (a value between 0 and 1
         for an isotropic source above the disk, less than 0 for no
         direct component).
-    redshift
+    Redshift
         The redshift of the source.
     abund
         The abundance of the elements heavier than He relative to their
@@ -7428,7 +7437,7 @@ class XSrefsch(XSAdditiveModel):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 2., -9., 9., -10, 10)
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 2., 0.0, 2)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.abund = XSParameter(name, 'abund', 1., 0.5, 10., 0.5, 10, frozen=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.1, 10., 0.1, 10, frozen=True)
         self.Incl = XSParameter(name, 'Incl', 30., 19., 87., 19, 87, units='deg', frozen=True)
@@ -7488,10 +7497,10 @@ class XSrnei(XSAdditiveModel):
         self.kT_init = XSParameter(name, 'kT_init', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kT_init, self.Abundanc, self.Tau,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7515,7 +7524,7 @@ class XSsedov(XSAdditiveModel):
         ``set_xsabund`` function.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -7539,10 +7548,10 @@ class XSsedov(XSAdditiveModel):
         self.kT_b = XSParameter(name, 'kT_b', 0.5, 0.0100, 79.9, 0.0100, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.Abundanc, self.Tau,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7723,8 +7732,7 @@ class XSsnapec(XSAdditiveModel):
                                          0.0, 125, 0, 125, alwaysfrozen=True)
         self.SNIIModelIndex = XSParameter(name, 'SNIIModelIndex', 1.,
                                           0.0, 125, 0, 125, alwaysfrozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0.0, 10., 0.0, 10.0,
-                                    frozen=True)
+        self.redshift = mkRedshift(name, minval=0, lc=True)
 
         pars = (self.kT, self.N_SNe, self.R, self.SNIModelIndex,
                 self.SNIIModelIndex, self.redshift)
@@ -7926,7 +7934,7 @@ class XStapec(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kTi, self.Abundanc, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -7944,7 +7952,7 @@ class XSvapec(XSAdditiveModel):
         The temperature of the plasma, in keV.
     He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance of the element in solar units.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -7978,11 +7986,11 @@ class XSvapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
-                self.Fe, self.Ni, self.redshift)
+                self.Fe, self.Ni, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8103,8 +8111,7 @@ class XSvcph(XSAdditiveModel):
                               frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000.0,
                               frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, 0.0, 50, 0.0, 50,
-                                    frozen=True)
+        self.Redshift = mkRedshift(name, minval=0, maxval=50)
         self.switch = mkswitch(name)
 
         pars = (self.peakT, self.He, self.C, self.N, self.O, self.Ne,
@@ -8126,7 +8133,7 @@ class XSvequil(XSAdditiveModel):
         The temperature of the plasma, in keV.
     He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
         The abundance of the element in solar units.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8159,11 +8166,11 @@ class XSvequil(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe,
-                self.Ni, self.redshift)
+                self.Ni, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8232,7 +8239,7 @@ class XSvgadem(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.Tmean, self.Tsigma, self.nH, self.He, self.C,
@@ -8268,7 +8275,7 @@ class XSvgnei(XSAdditiveModel):
         The ionization timescale in units of s/cm^3.
     meankT
         The ionization timescale averaged plasma temperature in keV.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8304,12 +8311,12 @@ class XSvgnei(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
         self.meankT = XSParameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV', aliases=["kT_ave"])
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
                 self.Fe, self.Ni, self.Tau, self.meankT,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8326,7 +8333,7 @@ class XSvmeka(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8362,11 +8369,11 @@ class XSvmeka(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.nH, self.He, self.C, self.N, self.O,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S,
-                self.Ar, self.Ca, self.Fe, self.Ni, self.redshift)
+                self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8383,7 +8390,7 @@ class XSvmekal(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1
@@ -8424,12 +8431,12 @@ class XSvmekal(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name, default=1, maxval=2)
 
         pars = (self.kT, self.nH, self.He, self.C, self.N, self.O,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S,
-                self.Ar, self.Ca, self.Fe, self.Ni, self.redshift,
+                self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift,
                 self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -8453,7 +8460,7 @@ class XSvmcflow(XSAdditiveModel):
         The maximum temperature, in keV.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1 then
@@ -8494,13 +8501,13 @@ class XSvmcflow(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0.1, 0.0, 10., 0, 10, frozen=True)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0)
         self.switch = mkswitch(name)
 
         pars = (self.lowT, self.highT, self.He, self.C, self.N,
                 self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si,
                 self.S, self.Ar, self.Ca, self.Fe, self.Ni,
-                self.redshift, self.switch)
+                self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8557,11 +8564,11 @@ class XSvnei(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
-                self.Fe, self.Ni, self.Tau, self.redshift)
+                self.Fe, self.Ni, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8626,12 +8633,12 @@ class XSvnpshock(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.H, self.He, self.C, self.N,
                 self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar,
                 self.Ca, self.Fe, self.Ni, self.Tau_l, self.Tau_u,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8729,12 +8736,12 @@ class XSvpshock(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
                 self.Fe, self.Ni, self.Tau_l, self.Tau_u,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8782,11 +8789,11 @@ class XSvraymond(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe,
-                self.Ni, self.redshift)
+                self.Ni, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8810,7 +8817,7 @@ class XSvrnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8846,12 +8853,12 @@ class XSvrnei(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000.0, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.C,
                 self.N, self.O, self.Ne, self.Mg, self.Si, self.S,
                 self.Ar, self.Ca, self.Fe, self.Ni, self.Tau,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8877,7 +8884,7 @@ class XSvsedov(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8913,11 +8920,11 @@ class XSvsedov(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.H, self.He, self.C, self.N,
                 self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar,
-                self.Ca, self.Fe, self.Ni, self.Tau, self.redshift)
+                self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8977,7 +8984,7 @@ class XSvtapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kTi, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Al, self.Si, self.S, self.Ar,
@@ -9049,7 +9056,7 @@ class XSvvapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na,
@@ -9087,7 +9094,7 @@ class XSvvgnei(XSAdditiveModel):
         The ionization timescale in units of s/cm^3.
     meankT
         The ionization timescale averaged plasma temperature in keV.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9140,14 +9147,14 @@ class XSvvgnei(XSAdditiveModel):
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
         self.meankT = XSParameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV', aliases=["kT_ave"])
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
                 self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
                 self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
-                self.Zn, self.Tau, self.meankT, self.redshift)
+                self.Zn, self.Tau, self.meankT, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9170,7 +9177,7 @@ class XSvvnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9222,14 +9229,14 @@ class XSvvnei(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
                 self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
                 self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
-                self.Zn, self.Tau, self.redshift)
+                self.Zn, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9258,7 +9265,7 @@ class XSvvnpshock(XSAdditiveModel):
         The lower limit on the ionization timescale in s/cm^3.
     Tau_u
         The upper limit on the ionization timescale in s/cm^3.
-    redshift
+    Redshift
         The redshift of the source.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9312,7 +9319,7 @@ class XSvvnpshock(XSAdditiveModel):
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0.0, 5.0e13, 0.0, 5.0e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.0e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.H, self.He, self.Li,
                 self.Be, self.B, self.C, self.N, self.O, self.F,
@@ -9320,7 +9327,7 @@ class XSvvnpshock(XSAdditiveModel):
                 self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc,
                 self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co,
                 self.Ni, self.Cu, self.Zn, self.Tau_l, self.Tau_u,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9345,7 +9352,7 @@ class XSvvpshock(XSAdditiveModel):
         The lower limit on the ionization timescale, in s/cm^3.
     Tau_u
         The upper limit on the ionization timescale, in s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9398,14 +9405,14 @@ class XSvvpshock(XSAdditiveModel):
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0.0, 5.0e13, 0.0, 5.0e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.0e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10.0, -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
                 self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
                 self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
-                self.Zn, self.Tau_l, self.Tau_u, self.redshift)
+                self.Zn, self.Tau_l, self.Tau_u, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9430,7 +9437,7 @@ class XSvvrnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9483,14 +9490,14 @@ class XSvvrnei(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.Li,
                 self.Be, self.B, self.C, self.N, self.O, self.F,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P,
                 self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc,
                 self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co,
-                self.Ni, self.Cu, self.Zn, self.Tau, self.redshift)
+                self.Ni, self.Cu, self.Zn, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9517,7 +9524,7 @@ class XSvvsedov(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9570,14 +9577,14 @@ class XSvvsedov(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.H, self.He, self.Li,
                 self.Be, self.B, self.C, self.N, self.O, self.F,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P,
                 self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc,
                 self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co,
-                self.Ni, self.Cu, self.Zn, self.Tau, self.redshift)
+                self.Ni, self.Cu, self.Zn, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9653,7 +9660,7 @@ class XSvvtapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kTi, self.H, self.He, self.Li, self.Be,
                 self.B, self.C, self.N, self.O, self.F, self.Ne,
@@ -9746,7 +9753,7 @@ class XSvvwdem(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH, self.H,
@@ -9824,7 +9831,7 @@ class XSvwdem(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH,
@@ -9886,7 +9893,7 @@ class XSwdem(XSAdditiveModel):
         self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
         self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH,
@@ -9926,7 +9933,7 @@ class XSzagauss(XSAdditiveModel):
     def __init__(self, name='zagauss'):
         self.LineE = XSParameter(name, 'LineE', 10.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
         self.Sigma = XSParameter(name, 'Sigma', 1.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10.0, -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.LineE, self.Sigma, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -9941,7 +9948,7 @@ class XSzbbody(XSAdditiveModel):
     ----------
     kT
         The temperature of the object, in keV.
-    redshift
+    Redshift
         The redshift of the object.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9962,9 +9969,9 @@ class XSzbbody(XSAdditiveModel):
 
     def __init__(self, name='zbbody'):
         self.kT = XSParameter(name, 'kT', 3.0, 1.e-2, 100., 1e-4, 200, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSAdditiveModel.__init__(self, name, (self.kT, self.redshift))
+        XSAdditiveModel.__init__(self, name, (self.kT, self.Redshift))
 
 
 class XSzbknpower(XSAdditiveModel):
@@ -10004,8 +10011,7 @@ class XSzbknpower(XSAdditiveModel):
         self.PhoIndx1 = XSParameter(name, 'PhoIndx1', 1., -2., 9., -3, 10)
         self.BreakE = XSParameter(name, 'BreakE', 5., 1.e-2, 1.e6, 0.0, 1e6, units='keV')
         self.PhoIndx2 = XSParameter(name, 'PhoIndx2', 2., -2., 9., -3, 10)
-        self.Redshift = XSParameter(name, 'Redshift', 0, -0.999, 10, -0.999, 10,
-                                    frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.PhoIndx1, self.BreakE, self.PhoIndx2, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -10025,7 +10031,7 @@ class XSzbremss(XSAdditiveModel):
     ----------
     kT
         The plasma temperature in keV.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -10046,9 +10052,9 @@ class XSzbremss(XSAdditiveModel):
 
     def __init__(self, name='zbremss'):
         self.kT = XSParameter(name, 'kT', 7.0, 1.e-4, 100., 1e-4, 200, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSAdditiveModel.__init__(self, name, (self.kT, self.redshift))
+        XSAdditiveModel.__init__(self, name, (self.kT, self.Redshift))
 
 
 class XSzcutoffpl(XSAdditiveModel):
@@ -10085,7 +10091,7 @@ class XSzcutoffpl(XSAdditiveModel):
     def __init__(self, name='zcutoffpl'):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 1., -2., 9., -3, 10)
         self.HighECut = XSParameter(name, 'HighECut', 15., 1., 500., 0.01, 500, units='keV')
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10., -0.999, 10., frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.PhoIndex, self.HighECut, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -10102,7 +10108,7 @@ class XSzgauss(XSAdditiveModel):
         The line energy, in keV.
     Sigma
         The line width, in keV. A value of zero means a delta function.
-    redshift
+    Redshift
         The redshift of the line.
     norm
         The flux in the line, in units of photon/cm^2/s.
@@ -10123,9 +10129,9 @@ class XSzgauss(XSAdditiveModel):
     def __init__(self, name='zgauss'):
         self.LineE = XSParameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, 1e6, units='keV')
         self.Sigma = XSParameter(name, 'Sigma', 0.1, 0., 10., 0.0, 20, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        pars = (self.LineE, self.Sigma, self.redshift)
+        pars = (self.LineE, self.Sigma, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
     def guess(self, dep, *args, **kwargs):
@@ -10249,8 +10255,7 @@ class XSzlogpar(XSAdditiveModel):
         self.beta = XSParameter(name, 'beta', 0.2, -4., 4., -4, 4)
         self.pivotE = XSParameter(name, 'pivotE', 1.0, units='keV',
                                   alwaysfrozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0, -0.999, 10, -0.999, 10,
-                                    frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.alpha, self.beta, self.pivotE, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -10265,7 +10270,7 @@ class XSzpowerlw(XSAdditiveModel):
     ----------
     PhoIndex
         The power law photon index.
-    redshift
+    Redshift
         The redshift.
     norm
         The normalization of the model. See [1]_ for details, as its
@@ -10287,9 +10292,9 @@ class XSzpowerlw(XSAdditiveModel):
 
     def __init__(self, name='zpowerlw'):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 1., -2., 9., -3, 10)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.redshift))
+        XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.Redshift))
 
 
 class XSabsori(XSMultiplicativeModel):
@@ -10307,7 +10312,7 @@ class XSabsori(XSMultiplicativeModel):
         The absorber temperature, in K.
     xi
         The absorber ionization state. See [1]_ for more details.
-    redshift
+    Redshift
         The redshift of the absorber.
     Fe_abund
         The iron abundance with respect to solar, as set by the
@@ -10327,9 +10332,12 @@ class XSabsori(XSMultiplicativeModel):
         self.nH = XSParameter(name, 'nH', 1., 0., 100., 0.0, 100, units='10^22 atoms / cm^2')
         self.Temp_abs = XSParameter(name, 'Temp_abs', 3.e4, 1.e4, 1.e6, 1e4, 1e6, units='K', frozen=True)
         self.xi = XSParameter(name, 'xi', 1., 0., 1.e3, 0.0, 5000)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0., 1.e6, 0.0, 1e6, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.PhoIndex, self.nH, self.Temp_abs, self.xi, self.redshift, self.Fe_abund))
+
+        pars = (self.PhoIndex, self.nH, self.Temp_abs, self.xi,
+                self.Redshift, self.Fe_abund)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSacisabs(XSMultiplicativeModel):
@@ -10720,7 +10728,7 @@ class XShrefl(XSMultiplicativeModel):
     covfac
         The normalization of the reflected continuum: see [1]_ for more
         details.
-    redshift
+    Redshift
         The redshift.
 
     References
@@ -10740,8 +10748,12 @@ class XShrefl(XSMultiplicativeModel):
         self.FeKedge = XSParameter(name, 'FeKedge', 7.11, 7.0, 10., 7.0, 10, units='keV', frozen=True)
         self.Escfrac = XSParameter(name, 'Escfrac', 1.0, 0.0, 500., 0.0, 1000)
         self.covfac = XSParameter(name, 'covfac', 1.0, 0.0, 500., 0.0, 1000)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.thetamin, self.thetamax, self.thetaobs, self.Feabun, self.FeKedge, self.Escfrac, self.covfac, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.thetamin, self.thetamax, self.thetaobs,
+                self.Feabun, self.FeKedge, self.Escfrac, self.covfac,
+                self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 # The parameter names for this model have changed over time, with some
@@ -11392,7 +11404,7 @@ class XSswind1(XSMultiplicativeModel):
         The log of xi: see [1]_ for more details.
     sigma
         The gaussian sigma for velocity smearing (v/c).
-    redshift
+    Redshift
         The redshift of the source.
 
     References
@@ -11408,9 +11420,10 @@ class XSswind1(XSMultiplicativeModel):
         self.column = XSParameter(name, 'column', 6., 3., 50., 3.0, 50)
         self.log_xi = XSParameter(name, 'log_xi', 2.5, 2.1, 4.1, 2.1, 4.1, aliases=["logxi"])
         self.sigma = XSParameter(name, 'sigma', 0.1, 0., 0.5, 0.0, 0.5)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSMultiplicativeModel.__init__(self, name, (self.column, self.log_xi, self.sigma, self.redshift))
+        pars = (self.column, self.log_xi, self.sigma, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSTBabs(XSMultiplicativeModel):
@@ -11607,7 +11620,7 @@ class XSTBvarabs(XSMultiplicativeModel):
     H_dep, He_dep, C_dep, N_dep, O_dep, Ne_dep, Na_dep, Mg_dep, Al_dep,
     Si_dep, S_dep, Cl_dep, Ar_dep, Ca_dep, Cr_dep, Fe_dep, Co_dep, Ni_dep
         The grain depletion fraction of the element.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -11670,8 +11683,18 @@ class XSTBvarabs(XSMultiplicativeModel):
         self.Fe_dep = XSParameter(name, 'Fe_dep', 1., 0., 1., 0.0, 1, frozen=True)
         self.Co_dep = XSParameter(name, 'Co_dep', 1., 0., 1., 0.0, 1, frozen=True)
         self.Ni_dep = XSParameter(name, 'Ni_dep', 1., 0., 1., 0.0, 1, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni, self.H2, self.rho, self.amin, self.amax, self.PL, self.H_dep, self.He_dep, self.C_dep, self.N_dep, self.O_dep, self.Ne_dep, self.Na_dep, self.Mg_dep, self.Al_dep, self.Si_dep, self.S_dep, self.Cl_dep, self.Ar_dep, self.Ca_dep, self.Cr_dep, self.Fe_dep, self.Co_dep, self.Ni_dep, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.He, self.C, self.N, self.O, self.Ne,
+                self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl,
+                self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni,
+                self.H2, self.rho, self.amin, self.amax, self.PL,
+                self.H_dep, self.He_dep, self.C_dep, self.N_dep,
+                self.O_dep, self.Ne_dep, self.Na_dep, self.Mg_dep,
+                self.Al_dep, self.Si_dep, self.S_dep, self.Cl_dep,
+                self.Ar_dep, self.Ca_dep, self.Cr_dep, self.Fe_dep,
+                self.Co_dep, self.Ni_dep, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSTBpcf(XSMultiplicativeModel):
@@ -12062,7 +12085,7 @@ class XSxion(XSMultiplicativeModel):
         The outer radius of the disk (in Schwarzschild radii).
     index
         The photon index of the source.
-    redshift
+    Redshift
         The redshift of the absorber.
     Feabun
         The Fe abundance relative to Solar: see [1]_ for more details.
@@ -12092,14 +12115,18 @@ class XSxion(XSMultiplicativeModel):
         self.inner = XSParameter(name, 'inner', 3., 2., 1.e3, 2.0, 1000, units='r_s')
         self.outer = XSParameter(name, 'outer', 100., 2.1, 1.e5, 2.1, 1e5, units='r_s')
         self.index = XSParameter(name, 'index', 2.0, 1.6, 2.2, 1.6, 2.2)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Feabun = XSParameter(name, 'Feabun', 1., 0., 5., 0.0, 5, frozen=True)
         self.E_cut = XSParameter(name, 'E_cut', 150., 20., 300., 20.0, 300, units='keV')
         self.Ref_type = XSParameter(name, 'Ref_type', 1., 1., 3., 1.0, 3, frozen=True)
         self.Rel_smear = XSParameter(name, 'Rel_smear', 4., 1., 4., 1.0, 4, frozen=True)
         self.Geometry = XSParameter(name, 'Geometry', 1., 1., 4., 1.0, 4, frozen=True)
 
-        XSMultiplicativeModel.__init__(self, name, (self.height, self.lxovrld, self.rate, self.cosAng, self.inner, self.outer, self.index, self.redshift, self.Feabun, self.E_cut, self.Ref_type, self.Rel_smear, self.Geometry))
+        pars = (self.height, self.lxovrld, self.rate, self.cosAng,
+                self.inner, self.outer, self.index, self.Redshift,
+                self.Feabun, self.E_cut, self.Ref_type,
+                self.Rel_smear, self.Geometry)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSxscat(XSMultiplicativeModel):
@@ -12201,7 +12228,7 @@ class XSzdust(XSMultiplicativeModel):
         The color excess, E(B-V).
     Rv
         The ratio of total to selective extinction.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     References
@@ -12217,9 +12244,10 @@ class XSzdust(XSMultiplicativeModel):
         self.method = XSParameter(name, 'method', 1, 1, 3, 1, 3, alwaysfrozen=True)
         self.E_BmV = XSParameter(name, 'E_BmV', 0.1, 0.0, 100., 0.0, 100, aliases=["EBV"])
         self.Rv = XSParameter(name, 'Rv', 3.1, 0.0, 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0.0, 0.0, 20., 0.0, 20, frozen=True)
+        self.Redshift = mkRedshift(name, minval=0, maxval=20)
 
-        XSMultiplicativeModel.__init__(self, name, (self.method, self.E_BmV, self.Rv, self.redshift))
+        pars = (self.method, self.E_BmV, self.Rv, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzedge(XSMultiplicativeModel):
@@ -12233,7 +12261,7 @@ class XSzedge(XSMultiplicativeModel):
         The threshold edge, in keV.
     MaxTau
         The absorption depth at the threshold.
-    redshift
+    Redshift
         The redshift of the edge.
 
     See Also
@@ -12252,8 +12280,10 @@ class XSzedge(XSMultiplicativeModel):
     def __init__(self, name='zedge'):
         self.edgeE = XSParameter(name, 'edgeE', 7.0, 0., 100., 0.0, 100, units='keV')
         self.MaxTau = XSParameter(name, 'MaxTau', 1., 0., 5., 0.0, 10)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.edgeE, self.MaxTau, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.edgeE, self.MaxTau, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzhighect(XSMultiplicativeModel):
@@ -12267,7 +12297,7 @@ class XSzhighect(XSMultiplicativeModel):
         The cut-off energy, in keV.
     foldE
         The e-folding energy, in keV.
-    redshift
+    Redshift
         The redshift.
 
     See Also
@@ -12286,8 +12316,10 @@ class XSzhighect(XSMultiplicativeModel):
     def __init__(self, name='zhighect'):
         self.cutoffE = XSParameter(name, 'cutoffE', 10., 1.e-2, 100., 1e-4, 200, units='keV')
         self.foldE = XSParameter(name, 'foldE', 15., 1.e-2, 100., 1e-4, 200, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.cutoffE, self.foldE, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.cutoffE, self.foldE, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
     def guess(self, dep, *args, **kwargs):
         pos = get_xspec_position(dep, *args)
@@ -12339,7 +12371,7 @@ class XSzpcfabs(XSMultiplicativeModel):
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
     CvrFract
         The covering fraction.
-    redshift
+    Redshift
         The redshift.
 
     See Also
@@ -12358,8 +12390,10 @@ class XSzpcfabs(XSMultiplicativeModel):
     def __init__(self, name='zpcfabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
         self.CvrFract = XSParameter(name, 'CvrFract', 0.5, 0.05, 0.95, 0.0, 1)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.CvrFract, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.CvrFract, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzphabs(XSMultiplicativeModel):
@@ -12371,7 +12405,7 @@ class XSzphabs(XSMultiplicativeModel):
     ----------
     nH
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12395,8 +12429,10 @@ class XSzphabs(XSMultiplicativeModel):
 
     def __init__(self, name='zphabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzxipab(XSMultiplicativeModel):
@@ -12433,9 +12469,11 @@ class XSzxipab(XSMultiplicativeModel):
         self.nHmax = XSParameter(name, 'nHmax', 10.0, min=1e-07, max=1000.0, hard_min=1e-07, hard_max=1000000.0, units='10^22')
         self.beta = XSParameter(name, 'beta', 0.0, min=-10.0, max=10.0, hard_min=-10.0, hard_max=10.0)
         self.log_xi = XSParameter(name, 'log_xi', 3.0, min=-3.0, max=6.0, hard_min=-3.0, hard_max=6.0)
-        self.redshift = XSParameter(name, 'redshift', 0.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nHmin, self.nHmax, self.beta,
-                                                    self.log_xi, self.redshift))
+        self.redshift = mkRedshift(name, minval=0, lc=True)
+
+        pars = (self.nHmin, self.nHmax, self.beta, self.log_xi,
+                self.redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzxipcf(XSMultiplicativeModel):
@@ -12457,7 +12495,7 @@ class XSzxipcf(XSMultiplicativeModel):
         The log of xi: see [1]_ for more details.
     CvrFract
         The covering fraction.
-    redshift
+    Redshift
         The redshift of the source.
 
     References
@@ -12473,9 +12511,10 @@ class XSzxipcf(XSMultiplicativeModel):
         self.Nh = XSParameter(name, 'Nh', 10, 0.05, 500, 0.05, 500, units='10^22 atoms / cm^2')
         self.log_xi = XSParameter(name, 'log_xi', 3, -3, 6, -3, 6, aliases=["logxi"])
         self.CvrFract = XSParameter(name, 'CvrFract', 0.5, 0., 1., 0.0, 1)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSMultiplicativeModel.__init__(self, name, (self.Nh, self.log_xi, self.CvrFract, self.redshift))
+        pars = (self.Nh, self.log_xi, self.CvrFract, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzredden(XSMultiplicativeModel):
@@ -12493,7 +12532,7 @@ class XSzredden(XSMultiplicativeModel):
     ----------
     E_BmV
         The value of E(B-V) for the line of sight to the source.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12511,9 +12550,10 @@ class XSzredden(XSMultiplicativeModel):
 
     def __init__(self, name='zredden'):
         self.E_BmV = XSParameter(name, 'E_BmV', 0.05, 0., 10., 0.0, 10, aliases=["EBV"])
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSMultiplicativeModel.__init__(self, name, (self.E_BmV, self.redshift))
+        pars = (self.E_BmV, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzsmdust(XSMultiplicativeModel):
@@ -12565,7 +12605,7 @@ class XSzTBabs(XSMultiplicativeModel):
     ----------
     nH
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12588,8 +12628,10 @@ class XSzTBabs(XSMultiplicativeModel):
 
     def __init__(self, name='ztbabs'):
         self.nH = XSParameter(name, 'nH', 1., 0., 1E5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzvarabs(XSMultiplicativeModel):
@@ -12601,7 +12643,7 @@ class XSzvarabs(XSMultiplicativeModel):
     ----------
     H, He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
         See [1]_ for a description of the units.
-    redshift
+    Redshift
         The redshift of the absorber
 
     See Also
@@ -12642,8 +12684,13 @@ class XSzvarabs(XSMultiplicativeModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 10000, units='sFe22', frozen=True)
         self.Co = XSParameter(name, 'Co', 1., 0., 1000., 0.0, 10000, units='sCo22', frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 10000, units='sNi22', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.H, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.H, self.He, self.C, self.N, self.O, self.Ne,
+                self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl,
+                self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni,
+                self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzvfeabs(XSMultiplicativeModel):
@@ -12661,7 +12708,7 @@ class XSzvfeabs(XSMultiplicativeModel):
         The iron abundance relative to solar.
     FEKedge
         The Fe K edge energy, in keV.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     References
@@ -12678,8 +12725,11 @@ class XSzvfeabs(XSMultiplicativeModel):
         self.metals = XSParameter(name, 'metals', 1., 0.0, 100., 0.0, 100)
         self.FEabun = XSParameter(name, 'FEabun', 1., 0.0, 100., 0.0, 100)
         self.FEKedge = XSParameter(name, 'FEKedge', 7.11, 7.0, 9.5, 7.0, 9.5, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.metals, self.FEabun, self.FEKedge, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.metals, self.FEabun, self.FEKedge,
+                self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzvphabs(XSMultiplicativeModel):
@@ -12693,7 +12743,7 @@ class XSzvphabs(XSMultiplicativeModel):
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
         The abundance of the element in solar units.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12734,8 +12784,13 @@ class XSzvphabs(XSMultiplicativeModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Co = XSParameter(name, 'Co', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.He, self.C, self.N, self.O, self.Ne,
+                self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl,
+                self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni,
+                self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzwabs(XSMultiplicativeModel):
@@ -12747,7 +12802,7 @@ class XSzwabs(XSMultiplicativeModel):
     ----------
     nH
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12765,8 +12820,10 @@ class XSzwabs(XSMultiplicativeModel):
 
     def __init__(self, name='zwabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzwndabs(XSMultiplicativeModel):
@@ -12780,7 +12837,7 @@ class XSzwndabs(XSMultiplicativeModel):
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
     WindowE
         The window energy, in keV.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12799,8 +12856,10 @@ class XSzwndabs(XSMultiplicativeModel):
     def __init__(self, name='zwndabs'):
         self.nH = XSParameter(name, 'nH', 1., 0., 10., 0.0, 20, units='10^22 atoms / cm^2')
         self.WindowE = XSParameter(name, 'WindowE', 1., .05, 20., 0.03, 20, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.WindowE, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.WindowE, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XScflux(XSConvolutionKernel):
@@ -12942,16 +13001,13 @@ class XSclumin(XSConvolutionKernel):
         self.Emax = XSParameter(name, 'Emax', 10.0, min=0.0, max=1e6,
                                 hard_min=0.0, hard_max=1e6, frozen=True,
                                 units='keV')
-        self.Redshift = XSParameter(name, 'Redshift', 0, min=-0.999, max=10,
-                                    hard_min=-0.999, hard_max=10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.lg10Lum = XSParameter(name, 'lg10Lum', 40.0, min=-100.0,
                                    max=100.0, hard_min=-100.0, hard_max=100.0,
                                    frozen=False, units='cgs')
-        XSConvolutionKernel.__init__(self, name, (self.Emin,
-                                                  self.Emax,
-                                                  self.Redshift,
-                                                  self.lg10Lum
-                                                  ))
+
+        pars = (self.Emin, self.Emax, self.Redshift, self.lg10Lum)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 @version_at_least("12.13.0")
@@ -13188,8 +13244,7 @@ class XSireflect(XSConvolutionKernel):
     def __init__(self, name='xsireflect'):
         self.rel_refl = XSParameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6, frozen=False)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
-                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.abund = XSParameter(name, 'abund', 1.0, min=0.0, max=1e6,
                                  hard_min=0.0, hard_max=1e6, frozen=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.0, max=1e6,
@@ -13201,14 +13256,10 @@ class XSireflect(XSConvolutionKernel):
                                   units='K')
         self.xi = XSParameter(name, 'xi', 1.0, min=0.0, max=1e3, hard_min=0.0,
                               hard_max=5e3, frozen=False, units='erg cm/s')
-        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
-                                                  self.Redshift,
-                                                  self.abund,
-                                                  self.Fe_abund,
-                                                  self.cosIncl,
-                                                  self.T_disk,
-                                                  self.xi
-                                                  ))
+
+        pars = (self.rel_refl, self.Redshift, self.abund,
+                self.Fe_abund, self.cosIncl, self.T_disk, self.xi)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 class XSkdblur(XSConvolutionKernel):
@@ -13587,20 +13638,17 @@ class XSreflect(XSConvolutionKernel):
     def __init__(self, name='xsreflect'):
         self.rel_refl = XSParameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6, frozen=False)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
-                                    hard_min=-0.999, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.abund = XSParameter(name, 'abund', 1.0, min=0.0, max=1e6,
                                  hard_min=0.0, hard_max=1e6, frozen=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.0, max=1e6,
                                     hard_min=0.0, hard_max=1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, min=0.05, max=0.95,
                                    hard_min=0.05, hard_max=0.95, frozen=True)
-        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
-                                                  self.Redshift,
-                                                  self.abund,
-                                                  self.Fe_abund,
-                                                  self.cosIncl
-                                                  ))
+
+        pars = (self.rel_refl, self.Redshift, self.abund,
+                self.Fe_abund, self.cosIncl)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 class XSrfxconv(XSConvolutionKernel):
@@ -13652,20 +13700,17 @@ class XSrfxconv(XSConvolutionKernel):
     def __init__(self, name='xsrfxconv'):
         self.rel_refl = XSParameter(name, 'rel_refl', -1.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6)
-        self.redshift = XSParameter(name, 'redshift', 0.0, min=0.0, max=4.0,
-                                    hard_min=0.0, hard_max=4.0, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.5, max=3,
                                     hard_min=0.5, hard_max=3, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.5, min=0.05, max=0.95,
                                    hard_min=0.05, hard_max=0.95, frozen=True)
         self.log_xi = XSParameter(name, 'log_xi', 1.0, min=1.0, max=6.0,
                                   hard_min=1.0, hard_max=6.0)
-        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
-                                                  self.redshift,
-                                                  self.Fe_abund,
-                                                  self.cosIncl,
-                                                  self.log_xi
-                                                  ))
+
+        pars = (self.rel_refl, self.redshift, self.Fe_abund,
+                self.cosIncl, self.log_xi)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 class XSrgsxsrc(XSConvolutionKernel):
@@ -13955,8 +14000,7 @@ class XSxilconv(XSConvolutionKernel):
     def __init__(self, name='xsxilconv'):
         self.rel_refl = XSParameter(name, 'rel_refl', -1.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6)
-        self.redshift = XSParameter(name, 'redshift', 0.0, min=0.0, max=4.0,
-                                    hard_min=0.0, hard_max=4.0, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.5, max=3.0,
                                     hard_min=0.5, hard_max=3.0, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.5, min=0.05, max=0.95,
@@ -13966,13 +14010,10 @@ class XSxilconv(XSConvolutionKernel):
         self.cutoff = XSParameter(name, 'cutoff', 300.0, min=20.0, max=300.0,
                                   hard_min=20.0, hard_max=300.0,
                                   units='keV', frozen=True)
-        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
-                                                  self.redshift,
-                                                  self.Fe_abund,
-                                                  self.cosIncl,
-                                                  self.log_xi,
-                                                  self.cutoff
-                                                  ))
+
+        pars = (self.rel_refl, self.redshift, self.Fe_abund,
+                self.cosIncl, self.log_xi, self.cutoff)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 class XSzashift(XSConvolutionKernel):
@@ -14006,8 +14047,8 @@ class XSzashift(XSConvolutionKernel):
     _calc = _xspec.C_zashift
 
     def __init__(self, name='xszashift'):
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
-                                    hard_min=-0.999, hard_max=10, frozen=True)
+        self.Redshift = mkRedshift(name)
+
         XSConvolutionKernel.__init__(self, name, (self.Redshift,))
 
 
@@ -14042,8 +14083,8 @@ class XSzmshift(XSConvolutionKernel):
     _calc = _xspec.C_zmshift
 
     def __init__(self, name='xszmshift'):
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
-                                    hard_min=-0.999, hard_max=10, frozen=True)
+        self.Redshift = mkRedshift(name)
+
         XSConvolutionKernel.__init__(self, name, (self.Redshift,))
 
 
