@@ -768,3 +768,22 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     assert_is_finite(wvals2, modelcls, "wavelength")
 
     assert wvals2 == pytest.approx(evals2)
+
+
+@requires_xspec
+def test_apec_redshift_parameter_is_case_insensitive():
+    """This should be a given, but just check."""
+
+    import sherpa.astro.xspec as xs
+
+    mdl = xs.XSapec()
+    assert mdl.redshift.val == 0
+    assert mdl.Redshift.val == 0
+
+    mdl.redshift = 0.4
+    assert mdl.redshift.val == 0.4
+    assert mdl.Redshift.val == 0.4
+
+    mdl.REDshift = 0.2
+    assert mdl.redshift.val == 0.2
+    assert mdl.Redshift.val == 0.2
