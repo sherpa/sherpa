@@ -12076,12 +12076,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The function does not follow the normal Python standards for
-        parameter use, since it is designed for easy interactive use.
-        When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
-        respectively.
 
         Unlike get_model_component this routine does not accept
         either model or recalc arguments.
@@ -12206,12 +12200,6 @@ class Session(NoNewAttributesAfterInit):
 
         Notes
         -----
-        The function does not follow the normal Python standards for
-        parameter use, since it is designed for easy interactive use.
-        When called with a single un-named argument, it is taken to be
-        the `model` parameter. If given two un-named arguments, then
-        they are interpreted as the `id` and `model` parameters,
-        respectively.
 
         Unlike get_source_component this routine does not accept
         either model or recalc arguments.

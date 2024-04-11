@@ -2002,7 +2002,7 @@ def model_deconstruct(model: Model) -> list[Model]:
     # lhs for this case.
     #
     if model.op == np.divide:
-        return [BinaryOpModel(lterm, model.rhs, model.op, model.opstr)
+        return [BinaryOpModel(lterm, model.rhs, np.divide, '/')
                 for lterm in lhs]
 
     try:
@@ -2023,7 +2023,7 @@ def model_deconstruct(model: Model) -> list[Model]:
         #     (*, b, c)
         #     (*, a, -d)
         #
-        return [BinaryOpModel(lterm, rterm, model.op, model.opstr)
+        return [BinaryOpModel(lterm, rterm, np.multiply, '*')
                 for lterm, rterm in itertools.product(lhs, rhs)]
 
     # The terms are intended to be summed together, so for subtraction

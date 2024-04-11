@@ -852,7 +852,7 @@ def test_model_deconstruct(model, expecteds):
     all the relevant code paths. Particular care is needed to ensure
     conditions like m1 / (m2 + m3) are included. At some point this
     becomes a regression test, as it's not neessarily important that
-    the best possible" deconstruction is created, just that we get
+    the best possible deconstruction is created, just that we get
     consistent results (e.g. given that the code does not simplify
     expressions, in particular the handling of negation).
 
@@ -861,7 +861,7 @@ def test_model_deconstruct(model, expecteds):
         model(x) = sum_i term_i(x)
 
     for all the terms that model_deconstruct creates. The idea is that
-    the models are set to non-zero values over the range use (ie
+    the models are set to non-zero values over the range they use (ie
     within -10 to 10 for the box components), and that there are some
     components which vary with x just to check everything passes
     through correctly.
