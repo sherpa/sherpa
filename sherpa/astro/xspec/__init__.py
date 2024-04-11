@@ -1495,6 +1495,26 @@ def mkRedshift(name: str,
 
 
 
+def mkAbundanc(name: str,
+               maxval: float = 5,
+               frozen: bool = True,
+               lc: bool = False) -> XSParameter:
+    """Make an Abundanc parameter."""
+
+    pname = "abundanc" if lc else "Abundanc"
+    return XSParameter(name, pname, 1, 0, maxval, hard_min=0,
+                       hard_max=maxval, frozen=frozen)
+
+
+def mkabund(name: str,
+            minval: float = 0,
+            maxval: float = 1e6) -> XSParameter:
+    """Make an abund parameter."""
+
+    return XSParameter(name, "abund", 1, minval, maxval,
+                       hard_min=minval, hard_max=maxval, frozen=True)
+
+
 class XSAdditiveModel(XSModel):
     """The base class for XSPEC additive models.
 
@@ -2077,7 +2097,7 @@ class XSapec(XSAdditiveModel):
 
     def __init__(self, name='apec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64.0, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
+        self.Abundanc = mkAbundanc(name)
         self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Redshift)
@@ -2128,7 +2148,7 @@ class XSbapec(XSAdditiveModel):
 
     def __init__(self, name='bapec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
+        self.Abundanc = mkAbundanc(name)
         self.Redshift = mkRedshift(name)
         self.Velocity = mkVelocity(name)
 
@@ -2183,7 +2203,7 @@ class XSbtapec(XSAdditiveModel):
     def __init__(self, name='btapec'):
         self.kT = XSParameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
+        self.Abundanc = mkAbundanc(name)
         self.Redshift = mkRedshift(name)
         self.Velocity = mkVelocity(name)
 
@@ -2316,7 +2336,7 @@ class XSbexrav(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 10., 0.0, 10)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.Redshift = mkRedshift(name)
 
@@ -2394,7 +2414,7 @@ class XSbexriv(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0.0, 1e6)
         self.Redshift = mkRedshift(name)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
         self.T_disk = XSParameter(name, 'T_disk', 3.e4, 1.e4, 1.e6, 1e4, 1e6, units='K', frozen=True)
@@ -3153,7 +3173,7 @@ class XSc6mekl(XSAdditiveModel):
         self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, -1, 1, -1, 1)
         self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, -1, 1, -1, 1)
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
         self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
@@ -3213,7 +3233,7 @@ class XSc6pmekl(XSAdditiveModel):
         self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, -1, 1, -1, 1)
         self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, -1, 1, -1, 1)
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
         self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
@@ -3461,7 +3481,7 @@ class XScemekl(XSAdditiveModel):
         self.alpha = XSParameter(name, 'alpha', 1.0, 0.01, 10, 0.01, 20, frozen=True)
         self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.02725, 1.e2, 0.02725, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
         self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
@@ -3579,7 +3599,7 @@ class XScflow(XSAdditiveModel):
         self.slope = XSParameter(name, 'slope', 0., -5., 5., -5, 5)
         self.lowT = XSParameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.highT = XSParameter(name, 'highT', 4., 0.0808, 79.9, 0.0808, 79.9, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0.0, 5., 0.0, 5)
+        self.Abundanc = mkAbundanc(name, frozen=False)
         self.redshift = mkRedshift(name, default=0.1, minval=1e-10, lc=True)
 
         pars = (self.slope, self.lowT, self.highT, self.Abundanc, self.redshift)
@@ -5013,7 +5033,7 @@ class XSgadem(XSAdditiveModel):
         self.Tmean = XSParameter(name, 'Tmean', 4.0, 0.01, 10, 0.01, 20, units='keV', frozen=True)
         self.Tsigma = XSParameter(name, 'Tsigma', 0.1, 0.01, 1.e2, 0.01, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
         self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
@@ -6058,7 +6078,7 @@ class XSmeka(XSAdditiveModel):
     def __init__(self, name='meka'):
         self.kT = XSParameter(name, 'kT', 1., 1.e-3, 1.e2, 1e-3, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1., 1.e-5, 1.e19, 1e-6, 1e20, units='cm-3', frozen=True)
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 1000., 0.0, 1000, frozen=True)
+        self.Abundanc = mkAbundanc(name, maxval=1000)
         self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.nH, self.Abundanc, self.redshift)
@@ -6106,7 +6126,7 @@ class XSmekal(XSAdditiveModel):
     def __init__(self, name='mekal'):
         self.kT = XSParameter(name, 'kT', 1., 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.nH = XSParameter(name, 'nH', 1., 1.e-5, 1.e19, 1e-6, 1e20, units='cm-3', frozen=True)
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 1000., 0.0, 1000, frozen=True)
+        self.Abundanc = mkAbundanc(name, maxval=1000)
         self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name, default=1, maxval=2)
 
@@ -6160,7 +6180,7 @@ class XSmkcflow(XSAdditiveModel):
     def __init__(self, name='mkcflow'):
         self.lowT = XSParameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.highT = XSParameter(name, 'highT', 4., 0.0808, 79.9, 0.0808, 79.9, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5)
+        self.Abundanc = mkAbundanc(name, frozen=False)
         self.Redshift = mkRedshift(name, default=0.1)
         self.switch = mkswitch(name)
 
@@ -6253,7 +6273,7 @@ class XSnlapec(XSAdditiveModel):
 
     def __init__(self, name='nlapec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
+        self.Abundanc = mkAbundanc(name)
         self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Redshift)
@@ -6948,7 +6968,7 @@ class XSpexmon(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 1000., 1., 1.e6, 1.0, 1e6, units='keV', frozen=True)
         self.rel_refl = XSParameter(name, 'rel_refl', -1, -1.e6, 1.e6, -1e6, 1e6, frozen=True)
         self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 100., 0.0, 100, frozen=True)
         self.Incl = XSParameter(name, 'Incl', 60., 0., 85.0, 0.0, 85, units='deg')
 
@@ -7011,7 +7031,7 @@ class XSpexrav(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0, 1e6)
         self.Redshift = mkRedshift(name)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
 
@@ -7078,7 +7098,7 @@ class XSpexriv(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0, 1e6)
         self.Redshift = mkRedshift(name)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
         self.T_disk = XSParameter(name, 'T_disk', 3.e4, 1.e4, 1.e6, 1e4, 1e6, units='K', frozen=True)
@@ -7342,7 +7362,7 @@ class XSraymond(XSAdditiveModel):
 
     def __init__(self, name='raymond'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
+        self.Abundanc = mkAbundanc(name)
         self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Redshift)
@@ -7443,7 +7463,7 @@ class XSrefsch(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 2., 0.0, 2)
         self.Redshift = mkRedshift(name)
-        self.abund = XSParameter(name, 'abund', 1., 0.5, 10., 0.5, 10, frozen=True)
+        self.abund = mkabund(name, minval=0.5, maxval=10)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.1, 10., 0.1, 10, frozen=True)
         self.Incl = XSParameter(name, 'Incl', 30., 19., 87., 19, 87, units='deg', frozen=True)
         self.T_disk = XSParameter(name, 'T_disk', 3.e4, 1.e4, 1.e6, 1e4, 1e6, units='K', frozen=True)
@@ -7938,7 +7958,7 @@ class XStapec(XSAdditiveModel):
     def __init__(self, name='tapec'):
         self.kT = XSParameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
+        self.Abundanc = mkAbundanc(name)
         self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kTi, self.Abundanc, self.Redshift)
@@ -9897,7 +9917,7 @@ class XSwdem(XSAdditiveModel):
         # can not use p for the name as it conflicts with P for the XSvvwdem model
         self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
         self.Redshift = mkRedshift(name)
         self.switch = mkswitch(name)
 
@@ -13250,8 +13270,7 @@ class XSireflect(XSConvolutionKernel):
         self.rel_refl = XSParameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6, frozen=False)
         self.Redshift = mkRedshift(name)
-        self.abund = XSParameter(name, 'abund', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, frozen=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.0, max=1e6,
                                     hard_min=0.0, hard_max=1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, min=0.05, max=0.95,
@@ -13644,8 +13663,7 @@ class XSreflect(XSConvolutionKernel):
         self.rel_refl = XSParameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6, frozen=False)
         self.Redshift = mkRedshift(name)
-        self.abund = XSParameter(name, 'abund', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, frozen=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.0, max=1e6,
                                     hard_min=0.0, hard_max=1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, min=0.05, max=0.95,
