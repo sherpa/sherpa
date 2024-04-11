@@ -1475,6 +1475,13 @@ def mkswitch(name: str,
                        hard_min=0, hard_max=maxval, alwaysfrozen=True)
 
 
+def mkVelocity(name: str) -> XSParameter:
+    """Make a Velocity parameter."""
+
+    return XSParameter(name, 'Velocity', 0., 0., 1e4, hard_min=0.0,
+                       hard_max=1e4, units='km/s', frozen=True)
+
+
 def mkRedshift(name: str,
                default: float = 0,
                minval: float = -0.999,
@@ -2123,7 +2130,7 @@ class XSbapec(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1e4, 0.0, 1e4, units='km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.Abundanc, self.Redshift, self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
@@ -2178,7 +2185,7 @@ class XSbtapec(XSAdditiveModel):
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, 'km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kTi, self.Abundanc, self.Redshift, self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
@@ -2625,8 +2632,7 @@ class XSbrnei(XSAdditiveModel):
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4,
-                                    units='km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kT_init, self.Abundanc, self.Tau,
                 self.Redshift, self.Velocity)
@@ -2686,7 +2692,7 @@ class XSbvapec(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1e4, units='km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe,
@@ -2754,7 +2760,7 @@ class XSbvrnei(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 10000., frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1.e4, 'km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.C,
                 self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar,
@@ -2826,7 +2832,7 @@ class XSbvtapec(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kTi, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Al, self.Si,
@@ -2907,7 +2913,7 @@ class XSbvvapec(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1e4, units='km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg,
@@ -2997,8 +3003,7 @@ class XSbvvrnei(XSAdditiveModel):
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, maxval, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1.e4,
-                                    units='km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.Li,
                 self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne,
@@ -3088,7 +3093,7 @@ class XSbvvtapec(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Redshift = mkRedshift(name)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s', frozen=True)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kTi, self.H, self.He, self.Li, self.Be,
                 self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na,
