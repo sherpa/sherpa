@@ -99,8 +99,10 @@ from sherpa.data import Data1D, Data2D, DataSimulFit
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.models.model import SimulFitModel
-from sherpa.models.basic import Const1D, Const2D, Gauss1D, Polynom1D, StepLo1D
+from sherpa.models.basic import Const1D, Const2D, Gauss1D, Polynom1D,\
+    Scale1D, StepLo1D
 from sherpa.utils.err import DataErr, EstErr, FitErr, StatErr
+from sherpa.utils import poisson_noise
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
     Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Likelihood, \
@@ -3063,3 +3065,222 @@ def test_fit_outfile_simple_check(tmp_path, check_str):
                "9.000000e+00 -4.079456e+00 3.333329e+00",
                "1.000000e+01 -4.079456e+00 3.333329e+00",
                ""])
+
+
+@pytest.fixture
+def setup_ldata():
+    """Create the data for the GAUSS1D linked-parameter test."""
+
+    # We don't care about randomness as much as repeatability here
+    rng = np.random.RandomState(123)
+
+    base = Gauss1D("base")
+    base.pos = 100
+    base.ampl = 50
+    base.fwhm = 20
+
+    x = np.arange(70, 130, 5)
+    y_base = base(x)
+    y = poisson_noise(y_base, rng=rng)
+
+    return Data1D("x", x, y)
+
+
+LPAR_STAT = -949.8639549430894
+LPAR_FWHM = 19.910836513919275
+LPAR_SIGMA = 19.910836513919275 / 2.3548200450309493
+LPAR_AMPL = 47.4433673308311
+
+
+def test_linked_parameter_base(setup_ldata):
+    """What happens if link parameter is not in the model?
+
+    e.g. fit a gaussian and want to fit with sigma and not fwhm?
+    (hopefuly we can add something to Gauss1D to support this
+    automatically, we can also do it manually).
+
+    This is the base case. See the other test_linked_parameter_xxx
+    calls.
+
+    """
+
+    d = setup_ldata
+
+    m1 = Gauss1D("fit1")
+    m1.pos = 100
+    m1.pos.freeze()
+
+    assert m1.fwhm.val == pytest.approx(10)
+    assert m1.ampl.val == pytest.approx(1)
+
+    f = Fit(d, m1, stat=Cash())
+    res = f.fit()
+
+    # check the fit succeeded
+    assert res.succeeded
+    assert res.statval == pytest.approx(LPAR_STAT)
+    assert res.numpoints == 12
+    assert res.dof == 10
+    assert len(res.parvals) == 2
+    assert res.parnames == ("fit1.fwhm", "fit1.ampl")
+    assert res.parvals[0] == pytest.approx(LPAR_FWHM)
+    assert res.parvals[1] == pytest.approx(LPAR_AMPL)
+
+    # I addd checks of the actual parameter values because I saw some
+    # strange behavior, but that turned out to be user error. However,
+    # it makes sense to leave the checks in.
+    #
+    assert m1.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert m1.ampl.val == pytest.approx(LPAR_AMPL)
+
+
+def test_linked_parameter_explicit(setup_ldata):
+    """Include the parameter in the model expression.
+
+    See the other test_linked_parameter_xxx calls.
+
+    """
+
+    d = setup_ldata
+
+    # Now fit with a model expression that uses sigma not FWHM
+    # but that includes the extra component as part of the
+    # model expression
+    #
+    m2 = Gauss1D("fit2")
+    sigma2 = Scale1D("sigma2")
+    m2.pos = 100
+    m2.pos.freeze()
+
+    convert = 2 * np.sqrt(2 * np.log(2))
+    m2.fwhm = convert * sigma2.c0
+
+    # Adjust c0 to better match the FWHM=10 value (just so we can
+    # check we end up in the same location). It's important to use
+    # the .val field here so we are not accidentally setting up
+    # another link.
+    #
+    sigma2.c0.val = 4.2466090014400955
+
+    assert m2.fwhm.val == pytest.approx(10)
+    assert m2.ampl.val == pytest.approx(1)
+    assert sigma2.c0.val == pytest.approx(10 / convert)
+
+    # We add the sigma2 component as a model component (so the
+    # system knows the parameter is part of the fit) but we multiply
+    # by 0 so it doesn't actually directly change the model.
+    #
+    f = Fit(d, m2 + sigma2 * 0, stat=Cash())
+    res = f.fit()
+
+    # check the fit succeeded
+    assert res.succeeded
+    assert res.statval == pytest.approx(LPAR_STAT)
+    assert res.numpoints == 12
+    assert res.dof == 10
+    assert len(res.parvals) == 2
+    assert res.parnames == ("fit2.ampl", "sigma2.c0")
+
+    assert res.parvals[0] == pytest.approx(LPAR_AMPL)
+    assert res.parvals[1] == pytest.approx(LPAR_SIGMA)
+
+    assert m2.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert m2.ampl.val == pytest.approx(LPAR_AMPL)
+    assert sigma2.c0.val == pytest.approx(LPAR_SIGMA)
+
+
+def test_linked_parameter_implicit(setup_ldata):
+    """Do not include the parameter in the model expression.
+
+    See the other test_linked_parameter_xxx calls.
+
+    """
+
+    d = setup_ldata
+
+    # Now fit with a model expression that uses sigma not FWHM
+    # but that includes the extra component as part of the
+    # model expression
+    #
+    m3 = Gauss1D("fit3")
+    sigma3 = Scale1D("sigma3")
+    m3.pos = 100
+    m3.pos.freeze()
+
+    convert = 2 * np.sqrt(2 * np.log(2))
+    m3.fwhm = convert * sigma3.c0
+
+    # Adjust c0 to better match the FWHM=10 value (just so we can
+    # check we end up in the same location). It's important to use
+    # the .val field here so we are not accidentally setting up
+    # another link.
+    #
+    sigma3.c0.val = 10 / convert
+
+    assert m3.fwhm.val == pytest.approx(10)
+    assert m3.ampl.val == pytest.approx(1)
+    assert sigma3.c0.val == pytest.approx(10 / convert)
+
+    # Does the system know about sigma3?
+    #
+    f = Fit(d, m3, stat=Cash())
+    res = f.fit()
+
+    # check the fit succeeded
+    assert res.succeeded
+
+    assert res.statval == pytest.approx(LPAR_STAT)
+    assert res.numpoints == 12
+    assert res.dof == 10
+    assert len(res.parvals) == 2
+    assert res.parnames == ("fit3.ampl", "sigma3.c0")
+
+    assert res.parvals[0] == pytest.approx(LPAR_AMPL)
+    assert res.parvals[1] == pytest.approx(LPAR_SIGMA)
+
+    assert m3.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert m3.ampl.val == pytest.approx(LPAR_AMPL)
+    assert sigma3.c0.val == pytest.approx(LPAR_SIGMA)
+
+
+def test_repeated_model_expression(setup_ldata):
+    """What happens if the same model term is used.
+
+    There may be tests of this, but it's hard to be sure so add an
+    explicit check. This is related to issue #777 - how do we handle
+    linked parameters that are not part of the model expression.
+
+    """
+
+    # We can compare against test_linked_parameter_base which fits a
+    # single Gauss1D. Everything should be the same (modulo numeric
+    # effects) apart from the amplitude term, which should be halved.
+    #
+    d = setup_ldata
+
+    mdl1 = Gauss1D("m1")
+    mdl1.pos = 100
+    mdl1.pos.freeze()
+
+    expr = mdl1 + mdl1
+
+    # to ensure we start at the same place as test_linked_parameter_base
+    #
+    mdl1.ampl = 0.5
+
+    f = Fit(d, expr, stat=Cash())
+    res = f.fit()
+
+    # check the fit succeeded
+    assert res.succeeded
+    assert res.statval == pytest.approx(LPAR_STAT)
+    assert res.numpoints == 12
+    assert res.dof == 10  # so, we only have two free params. good!
+    assert len(res.parvals) == 2
+    assert res.parnames == ("m1.fwhm", "m1.ampl")
+    assert res.parvals[0] == pytest.approx(LPAR_FWHM)
+    assert res.parvals[1] == pytest.approx(LPAR_AMPL / 2)
+
+    # Just as a safety check
+    assert mdl1.fwhm.val == pytest.approx(LPAR_FWHM)
+    assert mdl1.ampl.val == pytest.approx(LPAR_AMPL / 2)

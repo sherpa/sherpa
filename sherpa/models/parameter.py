@@ -265,12 +265,15 @@ def _make_set_limit(name: str) -> Callable[[Any, SupportsFloat], None]:
            self._NoNewAttributesAfterInit__initialized:
             if name == "_min" and (val > self.val):
                 self.val = val
-                warning('parameter %s less than new minimum; %s reset to %g',
-                        self.fullname, self.fullname, self.val)
+                warning('parameter %s less than new minimum; '
+                        '%s reset to %g', self.fullname, self.fullname,
+                        self.val)
+
             if name == "_max" and (val < self.val):
                 self.val = val
-                warning('parameter %s greater than new maximum; %s reset to %g',
-                        self.fullname, self.fullname, self.val)
+                warning('parameter %s greater than new maximum; '
+                        '%s reset to %g', self.fullname, self.fullname,
+                        self.val)
 
         setattr(self, name, val)
 
@@ -346,18 +349,22 @@ class Parameter(NoNewAttributesAfterInit):
     def _get_hard_min(self) -> SherpaFloat:
         return self._hard_min
     hard_min = property(_get_hard_min,
-                        doc='The hard minimum of the parameter.\n\n' +
-                        'See Also\n' +
-                        '--------\n' +
-                        'hard_max')
+                        doc="""The hard minimum of the parameter.
+
+See Also
+--------
+hard_max
+""")
 
     def _get_hard_max(self) -> SherpaFloat:
         return self._hard_max
     hard_max = property(_get_hard_max,
-                        doc='The hard maximum of the parameter.\n\n' +
-                        'See Also\n' +
-                        '--------\n' +
-                        'hard_min')
+                        doc="""The hard maximum of the parameter.
+
+See Also
+--------
+hard_min
+""")
 
     # 'val' property
     #
@@ -384,28 +391,32 @@ class Parameter(NoNewAttributesAfterInit):
     def _set_val(self, val: Union[Parameter, SupportsFloat]) -> None:
         if isinstance(val, Parameter):
             self.link = val
-        else:
-            # Reset link
-            self.link = None
+            return
 
-            # Validate new value
-            val = SherpaFloat(val)
-            if val < self.min:
-                raise ParameterErr('edge', self.fullname, 'minimum', self.min)
-            if val > self.max:
-                raise ParameterErr('edge', self.fullname, 'maximum', self.max)
+        # Reset link
+        self.link = None
 
-            self._val = val
-            self._default_val = val
+        # Validate new value
+        val = SherpaFloat(val)
+        if val < self.min:
+            raise ParameterErr('edge', self.fullname, 'minimum', self.min)
+        if val > self.max:
+            raise ParameterErr('edge', self.fullname, 'maximum', self.max)
+
+        self._val = val
+        self._default_val = val
 
     val = property(_get_val, _set_val,
-                   doc='The current value of the parameter.\n\n' +
-                   'If the parameter is a link then it is possible that accessing\n' +
-                   'the value will raise a ParameterErr in cases where the link\n' +
-                   'expression falls outside the soft limits of the parameter.\n\n' +
-                   'See Also\n' +
-                   '--------\n' +
-                   'default_val, link, max, min')
+                   doc="""The current value of the parameter.
+
+If the parameter is a link then it is possible that accessing
+the value will raise a ParameterErr in cases where the link
+expression falls outside the soft limits of the parameter.
+
+See Also
+--------
+default_val, link, max, min
+""")
 
     #
     # '_default_val' property
@@ -437,10 +448,12 @@ class Parameter(NoNewAttributesAfterInit):
         self._default_val = default_val
 
     default_val = property(_get_default_val, _set_default_val,
-                           doc='The default value of the parameter.\n\n' +
-                           'See Also\n' +
-                           '--------\n' +
-                           'val')
+                           doc="""The default value of the parameter.
+
+See Also
+--------
+val
+""")
 
     #
     # 'min' and 'max' properties
@@ -449,20 +462,26 @@ class Parameter(NoNewAttributesAfterInit):
     def _get_min(self) -> SupportsFloat:
         return self._min
     min = property(_get_min, _make_set_limit('_min'),
-                   doc='The minimum value of the parameter.\n\n' +
-                   'The minimum must lie between the hard_min and hard_max limits.\n\n' +
-                   'See Also\n' +
-                   '--------\n' +
-                   'max, val')
+                   doc="""The minimum value of the parameter.
+
+The minimum must lie between the hard_min and hard_max limits.
+
+See Also
+--------
+max, val
+""")
 
     def _get_max(self) -> SupportsFloat:
         return self._max
     max = property(_get_max, _make_set_limit('_max'),
-                   doc='The maximum value of the parameter.\n\n' +
-                   'The maximum must lie between the hard_min and hard_max limits.\n\n' +
-                   'See Also\n' +
-                   '--------\n' +
-                   'min, val')
+                   doc="""The maximum value of the parameter.
+
+The maximum must lie between the hard_min and hard_max limits.
+
+See Also
+--------
+min, val
+""")
 
     #
     # 'default_min' and 'default_max' properties
@@ -496,12 +515,15 @@ class Parameter(NoNewAttributesAfterInit):
         self._frozen = val
 
     frozen = property(_get_frozen, _set_frozen,
-                      doc='Is the parameter currently frozen?\n\n' +
-                      'Those parameters created with `alwaysfrozen` set can not\n' +
-                      'be changed.\n\n' +
-                      'See Also\n' +
-                      '--------\n' +
-                      'alwaysfrozen\n')
+                      doc="""Is the parameter currently frozen?
+
+Those parameters created with `alwaysfrozen` set can not
+be changed.
+
+See Also
+--------
+alwaysfrozen
+""")
 
     #
     # 'link' property'
@@ -540,22 +562,27 @@ class Parameter(NoNewAttributesAfterInit):
 
         self._link = link
     link = property(_get_link, _set_link,
-                    doc='The link expression to other parameters, if set.\n\n' +
-                    'The link expression defines if the parameter is not\n' +
-                    'a free parameter but is actually defined in terms of\n'
-                    'other parameters.\n\n' +
-                    'See Also\n' +
-                    '--------\n' +
-                    'val\n\n' +
-                    'Examples\n' +
-                    '--------\n\n' +
-                    '>>> a = Parameter("mdl", "a", 2)\n' +
-                    '>>> b = Parameter("mdl", "b", 1)\n' +
-                    '>>> b.link = 10 - a\n' +
-                    '>>> a.val\n' +
-                    '2.0\n' +
-                    '>>> b.val\n' +
-                    '8.0\n')
+                    doc="""The link expression to other parameters, if set.
+
+The link expression defines if the parameter is not
+a free parameter but is actually defined in terms of
+other parameters.
+
+See Also
+--------
+val
+
+Examples
+--------
+
+>>> a = Parameter("mdl", "a", 2)
+>>> b = Parameter("mdl", "b", 1)
+>>> b.link = 10 - a
+>>> a.val
+2.0
+>>> b.val
+8.0
+""")
 
     #
     # Methods
@@ -573,7 +600,7 @@ class Parameter(NoNewAttributesAfterInit):
                  frozen: bool = False,
                  alwaysfrozen: bool = False,
                  hidden: bool = False,
-                 aliases: Optional[list[str]] = None) -> None:
+                 aliases: Optional[Sequence[str]] = None) -> None:
         self.modelname = modelname
         self.name = name
         self.fullname = f"{modelname}.{name}"
@@ -605,17 +632,17 @@ class Parameter(NoNewAttributesAfterInit):
 
         NoNewAttributesAfterInit.__init__(self)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Parameter]:
         return iter([self])
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         r = f"<{type(self).__name__} '{self.name}'"
         if self.modelname:
             r += f" of model '{self.modelname}'"
         r += '>'
         return r
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.link is not None:
             linkstr = self.link.fullname
         else:
@@ -634,7 +661,7 @@ class Parameter(NoNewAttributesAfterInit):
 
     # Support 'rich display' representations
     #
-    def _val_to_html(self, v):
+    def _val_to_html(self, v: SupportsFloat) -> str:
         """Convert a value to a string for use by the HTML output.
 
         The conversion to a string uses the Python defaults for most
@@ -650,6 +677,7 @@ class Parameter(NoNewAttributesAfterInit):
             return 'MAX'
         if v == -hugeval:
             return '-MAX'
+
         if v == tinyval:
             return 'TINY'
         if v == -tinyval:
@@ -662,6 +690,7 @@ class Parameter(NoNewAttributesAfterInit):
                 return '2&#960;'
             if v == -tau:
                 return '-2&#960;'
+
             if v == np.pi:
                 return '&#960;'
             if v == -np.pi:
@@ -669,7 +698,7 @@ class Parameter(NoNewAttributesAfterInit):
 
         return str(v)
 
-    def _units_to_html(self):
+    def _units_to_html(self) -> str:
         """Convert the unit to HTML.
 
         This is provided for future expansion/experimentation,
@@ -678,7 +707,7 @@ class Parameter(NoNewAttributesAfterInit):
 
         return self.units
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the parameter
         """
         return html_parameter(self)
@@ -718,7 +747,7 @@ class Parameter(NoNewAttributesAfterInit):
                                      strformat='{opstr}({lhs}, {rhs})')
         return NotImplemented
 
-    def freeze(self):
+    def freeze(self) -> None:
         """Set the `frozen` attribute for the parameter.
 
         See Also
@@ -727,8 +756,13 @@ class Parameter(NoNewAttributesAfterInit):
         """
         self.frozen = True
 
-    def thaw(self):
+    def thaw(self) -> None:
         """Unset the `frozen` attribute for the parameter.
+
+        Raises
+        ------
+        ParameterErr
+           The parameter is marked as always frozen.
 
         See Also
         --------
@@ -736,11 +770,11 @@ class Parameter(NoNewAttributesAfterInit):
         """
         self.frozen = False
 
-    def unlink(self):
+    def unlink(self) -> None:
         """Remove any link to other parameters."""
         self.link = None
 
-    def reset(self):
+    def reset(self) -> None:
         """Reset the parameter value and limits to their default values."""
         # circumvent the attr checks for simplicity, as the defaults have
         # already passed (defaults either set by user or through self.set).
@@ -751,10 +785,17 @@ class Parameter(NoNewAttributesAfterInit):
             self._min = self.default_min
             self._max = self.default_max
             self._guessed = False
+
         self._val = self.default_val
 
-    def set(self, val=None, min=None, max=None, frozen=None,
-            default_val=None, default_min=None, default_max=None):
+    def set(self,
+            val: Optional[SupportsFloat] = None,
+            min: Optional[SupportsFloat] = None,
+            max: Optional[SupportsFloat] = None,
+            frozen: Optional[bool] = None,
+            default_val: Optional[SupportsFloat] = None,
+            default_min: Optional[SupportsFloat] = None,
+            default_max: Optional[SupportsFloat] = None) -> None:
         """Change a parameter setting.
 
         Parameters
@@ -854,8 +895,8 @@ class CompositeParameter(Parameter):
 
         for p in self.parts:
             # A CompositeParameter should not hold a reference to itself
-            assert (p is not self), (("'%s' object holds a reference to " +
-                                      "itself") % type(self).__name__)
+            assert (p is not self), (f"'{type(self).__name__}' object "
+                                     "holds a reference to itself")
 
             parts.append(p)
             if isinstance(p, CompositeParameter):
@@ -876,6 +917,10 @@ class ConstantParameter(CompositeParameter):
     def __init__(self, value: SupportsFloat) -> None:
         self.value = SherpaFloat(value)
         CompositeParameter.__init__(self, str(value), ())
+
+        # Ensure the constant is considered frozen
+        self._alwaysfrozen = True
+        self.frozen = True
 
     def eval(self) -> SherpaFloat:
         return self.value
@@ -988,6 +1033,81 @@ class BinaryOpParameter(CompositeParameter):
 
     def eval(self) -> SupportsFloat:
         return self.op(self.lhs.val, self.rhs.val)
+
+
+def expand_par(expr: Parameter) -> list[Parameter]:
+    """Return the individual parameter components referenced in expt
+
+    The aim is that changing any of the return values should
+    change the supplied parameter expression.
+
+    Parameters
+    ----------
+    expr : Parameter
+
+    Returns
+    -------
+    pars : list of Parameter
+       The unique parameters in the expression (thawed and frozen).
+
+    Examples
+    --------
+
+    >>> p1 = Parameter("m", "a", 5)
+    >>> expand_par(p1)
+    [<Parameter 'a' of model 'm'>]
+
+    >>> expand_par(p1 + p1)
+    [<Parameter 'a' of model 'm'>]
+
+    >>> p2 = Parameter("n", "b", 2)
+    >>> expand_par(p1 + p2 + 2)
+    [<Parameter 'a' of model 'm'>, <Parameter 'b' of model 'n'>]
+
+    >>> p2.freeze()
+    >>> expand_par(p1 + p2 + 2)
+    [<Parameter 'a' of model 'm'>, <Parameter 'b' of model 'n'>]
+
+    >>> p3 = Parameter("m", "x", 2)
+    >>> p2.link = 3 * p3
+    >>> expand_par(p1 + p2 + 2)
+    [<Parameter 'a' of model 'm'>, <Parameter 'x' of model 'm'>]
+
+    """
+
+    # The link expression may just be a parameter, or a composite
+    # parameter. However iter should handle this.
+    #
+    out = []
+    for par in iter(expr):
+        # For some reason we include the composite terms too in the
+        # iteration, so just skip then. This also skips
+        # ConstantParameter terms, as they happen to extend
+        # CompositeParameter.
+        #
+        if isinstance(par, CompositeParameter):
+            continue
+
+        # If par is a link we need to expand the link.
+        #
+        if par.link:
+            try:
+                out.extend(expand_par(par.link))
+            except RecursionError:
+                # Not sure what to do here so include the
+                # "problematic" parameter.
+                #
+                if par not in out:
+                    out.append(par)
+
+            continue
+
+        if par in out:
+            continue
+
+        out.append(par)
+
+    return out
 
 
 # Notebook representation
