@@ -3089,13 +3089,4 @@ def test_plot_xxx_components_simple_bokeh(session, ptype):
     assert fig0.yaxis.axis_label == "y"
     assert fig0.title.text == "Component plot"
 
-    """
-    # How would we check the plotted data?
-
-    assert axes.lines[0].get_xdata() == pytest.approx([1, 10, 50])
-    assert axes.lines[1].get_xdata() == pytest.approx([1, 10, 50])
-
-    # This should be c1 * c2 and c1 * c3
-    assert axes.lines[0].get_ydata() == pytest.approx([1, 1, 1])
-    assert axes.lines[1].get_ydata() == pytest.approx([0, 2, 2])
-    """
+    # Unlike the matplotlib case we do not check the plotted data.

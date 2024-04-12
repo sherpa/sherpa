@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2023, 2024
+#  Copyright (C) 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -882,13 +882,21 @@ def test_model_deconstruct(model, expecteds):
     assert got_terms == pytest.approx(got_model)
 
 
-def test_model_deconstruct_possible_recursion_error_lhs():
+@pytest.mark.parametrize("ntotal", [101, 1001])
+def test_model_deconstruct_possible_recursion_error_lhs(ntotal):
     """Try and test the recursion-handling on the LHS.
 
     It is not obvious if the recursion-handling is always going to
     trigger when 1000 frames are hit, so we try a value which is
     known - for Python 3.11 - to trigger a recursion error, but it
-    may not with other Python cases.
+    may not with other Python cases.  We also have a run where we
+    know we don't hit the recursion error so we can check the
+    fall-over path.
+
+    We could error out if the 1001 case does not trigger a recursion
+    error, but it seems poor form for the tests to fail if Python
+    changes things in the future when Sherpa may not be being
+    developed any more.
 
     """
 
@@ -896,41 +904,50 @@ def test_model_deconstruct_possible_recursion_error_lhs():
         return basic.Scale1D(f"c{n}")
 
     mdl = mk(0)
-    for i in range(1, 1001):
+    for i in range(1, ntotal):
         mdl += mk(i)
 
-    # mdl is (((...(c0 + c1) + .. ) + c999) + c1000)
+    # mdl is "(((...(c0 + c1) + .. ) + c999) + c1000)" where the
+    # brackets are left in to point out the structure, when
+    # ntotal=1001.
     #
     cpts = model_deconstruct(mdl)
 
-    # There are 1001 individual components, so this should return each
-    # of them, unless we hit the recursion-error check, at which point
-    # the deconstruction will stop.
+    # Did we create ntotal individual components?
     #
     ncpts = len(cpts)
-    if ncpts == 1001:
-        # No recursion error found. Is there a nice way to identify
-        # this so we can review? For now, just treat is as a pass.
+    if ncpts == ntotal:
+        for cpt in cpts:
+            assert isinstance(cpt, basic.Scale1D)
+
         return
 
     # Just check we aren't creating too-many components.
     #
-    assert ncpts <= 1001
+    assert ncpts < ntotal
 
     # Check we have the expected break down.
     #
     assert isinstance(cpts[0], BinaryOpModel)
-    for i in range(1, ncpts):
-        assert isinstance(cpts[i], basic.Scale1D)
+    for cpt in cpts[1:]:
+        assert isinstance(cpt, basic.Scale1D)
 
 
-def test_model_deconstruct_possible_recursion_error_rhs():
+@pytest.mark.parametrize("ntotal", [101, 1001])
+def test_model_deconstruct_possible_recursion_error_rhs(ntotal):
     """Try and test the recursion-handling on the LHS.
 
     It is not obvious if the recursion-handling is always going to
     trigger when 1000 frames are hit, so we try a value which is
     known - for Python 3.11 - to trigger a recursion error, but it
-    may not with other Python cases.
+    may not with other Python cases. We also have a run where we
+    know we don't hit the recursion error so we can check the
+    fall-over path.
+
+    We could error out if the 1001 case does not trigger a recursion
+    error, but it seems poor form for the tests to fail if Python
+    changes things in the future when Sherpa may not be being
+    developed any more.
 
     """
 
@@ -938,30 +955,31 @@ def test_model_deconstruct_possible_recursion_error_rhs():
         return basic.Scale1D(f"c{n}")
 
     mdl = mk(0)
-    for i in range(1, 1001):
+    for i in range(1, ntotal):
         mdl = BinaryOpModel(mk(i), mdl, np.add, "+")
 
-    # mdl is (c1000 + (c999 + (... + (c1 + c0)...)))
+    # mdl is "(c1000 + (c999 + (... + (c1 + c0)...)))" where the
+    # brackets are left in to point out the structure, when
+    # ntotal=1001.
     #
     cpts = model_deconstruct(mdl)
 
-    # There are 1001 individual components, so this should return each
-    # of them, unless we hit the recursion-error check, at which point
-    # the deconstruction will stop.
+    # Did we create ntotal individual components?
     #
     ncpts = len(cpts)
-    if ncpts == 1001:
-        # No recursion error found. Is there a nice way to identify
-        # this so we can review? For now, just treat is as a pass.
+    if ncpts == ntotal:
+        for cpt in cpts:
+            assert isinstance(cpt, basic.Scale1D)
+
         return
 
     # Just check we aren't creating too-many components.
     #
-    assert ncpts <= 1001
+    assert ncpts < ntotal
 
     # Check we have the expected break down.
     #
-    for i in range(0, ncpts - 1):
-        assert isinstance(cpts[i], basic.Scale1D)
+    for cpt in cpts[:-1]:
+        assert isinstance(cpt, basic.Scale1D)
 
-    assert isinstance(cpts[ncpts - 1], BinaryOpModel)
+    assert isinstance(cpts[-1], BinaryOpModel)
