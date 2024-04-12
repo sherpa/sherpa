@@ -337,7 +337,7 @@ powerlaw (:py:class:`~sherpa.models.basic.PowLaw1D`)::
    >>> pl.gamma = 1.7
    >>> gal.nh = 0.2
    >>> print(mdl)
-   (phabs * powlaw1d)
+   phabs * powlaw1d
       Param        Type          Value          Min          Max      Units
       -----        ----          -----          ---          ---      -----
       phabs.nH     thawed          0.2            0        1e+06 10^22 atoms / cm^2
@@ -379,7 +379,7 @@ called ``full``, which includes the corrections::
    >>> rsp = Response1D(pha)
    >>> full = rsp(mdl)
    >>> print(full)
-   apply_rmf(apply_arf((75141.227687398 * (phabs * powlaw1d))))
+   apply_rmf(apply_arf(75141.227687398 * phabs * powlaw1d))
       Param        Type          Value          Min          Max      Units
       -----        ----          -----          ---          ---      -----
       phabs.nH     thawed          0.2            0        1e+06 10^22 atoms / cm^2

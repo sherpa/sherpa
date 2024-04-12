@@ -96,9 +96,9 @@ since it has sharp edges and so the convolution is more obvious).
     pt
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       pt.xlow      thawed          9.5 -3.40282e+38  3.40282e+38
-       pt.xhi       thawed         10.5 -3.40282e+38  3.40282e+38
-       pt.ampl      thawed            1           -1            1
+       pt.xlow      thawed          9.5 -3.40282e+38  3.40282e+38           
+       pt.xhi       thawed         10.5 -3.40282e+38  3.40282e+38           
+       pt.ampl      thawed            1 -3.40282e+38  3.40282e+38           
 
 The convolution case is created by applying the `psf1` model
 to the `point` model (the :ref:`2D example <convolution-psf2d-convolve>`
@@ -110,9 +110,9 @@ composite model):
     psf1(pt)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       pt.xlow      thawed          9.5 -3.40282e+38  3.40282e+38
-       pt.xhi       thawed         10.5 -3.40282e+38  3.40282e+38
-       pt.ampl      thawed            1           -1            1
+       pt.xlow      thawed          9.5 -3.40282e+38  3.40282e+38           
+       pt.xhi       thawed         10.5 -3.40282e+38  3.40282e+38           
+       pt.ampl      thawed            1 -3.40282e+38  3.40282e+38           
 
 .. _convolution-1d-fold:
 
@@ -230,19 +230,19 @@ the sum of a single pixel and a line of pixels, using
     >>> box.ampl = 10
     >>> unconvolved_mdl = pt + box
     >>> print(unconvolved_mdl)
-    (pt + box)
+    pt + box
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       pt.xlow      thawed          1.5 -3.40282e+38  3.40282e+38
-       pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38
-       pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38
-       pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38
-       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38
-       box.xlow     thawed            4 -3.40282e+38  3.40282e+38
-       box.xhi      thawed           10 -3.40282e+38  3.40282e+38
-       box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38
-       box.yhi      thawed          7.5 -3.40282e+38  3.40282e+38
-       box.ampl     thawed           10 -3.40282e+38  3.40282e+38
+       pt.xlow      thawed          1.5 -3.40282e+38  3.40282e+38           
+       pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38           
+       pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38           
+       pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38           
+       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38           
+       box.xlow     thawed            4 -3.40282e+38  3.40282e+38           
+       box.xhi      thawed           10 -3.40282e+38  3.40282e+38           
+       box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38           
+       box.yhi      thawed          7.5 -3.40282e+38  3.40282e+38           
+       box.ampl     thawed           10 -3.40282e+38  3.40282e+38           
 
 
 .. note::
@@ -265,19 +265,19 @@ This can be a single model or - as in this case - a composite one::
 
     >>> convolved_mdl = psf(unconvolved_mdl)
     >>> print(convolved_mdl)
-    psfmodel((pt + box))
+    psfmodel(pt + box)
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       pt.xlow      thawed          1.5 -3.40282e+38  3.40282e+38
-       pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38
-       pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38
-       pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38
-       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38
-       box.xlow     thawed            4 -3.40282e+38  3.40282e+38
-       box.xhi      thawed           10 -3.40282e+38  3.40282e+38
-       box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38
-       box.yhi      thawed          7.5 -3.40282e+38  3.40282e+38
-       box.ampl     thawed           10 -3.40282e+38  3.40282e+38
+       pt.xlow      thawed          1.5 -3.40282e+38  3.40282e+38           
+       pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38           
+       pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38           
+       pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38           
+       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38           
+       box.xlow     thawed            4 -3.40282e+38  3.40282e+38           
+       box.xhi      thawed           10 -3.40282e+38  3.40282e+38           
+       box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38           
+       box.yhi      thawed          7.5 -3.40282e+38  3.40282e+38           
+       box.ampl     thawed           10 -3.40282e+38  3.40282e+38           
 
 This new expression can be treated as any other Sherpa model, which means
 that we can apply extra terms to it, such as adding a background
@@ -287,20 +287,20 @@ component that is not affected by the PSF::
     >>> bgnd = Const2D('bgnd')
     >>> bgnd.c0 = 0.25
     >>> print(convolved_mdl + bgnd)
-    (psfmodel((pt + box)) + bgnd)
+    psfmodel(pt + box) + bgnd
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
-       pt.xlow      thawed          1.5 -3.40282e+38  3.40282e+38
-       pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38
-       pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38
-       pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38
-       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38
-       box.xlow     thawed            4 -3.40282e+38  3.40282e+38
-       box.xhi      thawed           10 -3.40282e+38  3.40282e+38
-       box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38
-       box.yhi      thawed          7.5 -3.40282e+38  3.40282e+38
-       box.ampl     thawed           10 -3.40282e+38  3.40282e+38
-       bgnd.c0      thawed         0.25 -3.40282e+38  3.40282e+38
+       pt.xlow      thawed          1.5 -3.40282e+38  3.40282e+38           
+       pt.xhi       thawed          2.5 -3.40282e+38  3.40282e+38           
+       pt.ylow      thawed          2.5 -3.40282e+38  3.40282e+38           
+       pt.yhi       thawed          3.5 -3.40282e+38  3.40282e+38           
+       pt.ampl      thawed            8 -3.40282e+38  3.40282e+38           
+       box.xlow     thawed            4 -3.40282e+38  3.40282e+38           
+       box.xhi      thawed           10 -3.40282e+38  3.40282e+38           
+       box.ylow     thawed          6.5 -3.40282e+38  3.40282e+38           
+       box.yhi      thawed          7.5 -3.40282e+38  3.40282e+38           
+       box.ampl     thawed           10 -3.40282e+38  3.40282e+38           
+       bgnd.c0      thawed         0.25 -3.40282e+38  3.40282e+38           
 
 In the following this extra term (``bgnd``) is not included to simplify
 the comparison between the unconvolved and convolved versions.

@@ -333,7 +333,7 @@ from sherpa.utils.numeric_types import SherpaFloat
 
 from .op import get_precedences_op, get_precedence_expr, \
     get_precedence_lhs, get_precedence_rhs
-from .parameter import Parameter
+from .parameter import Parameter, expand_par
 
 # What routine do we use for the hash in modelCacher1d?  As we do not
 # need cryptographic security go for a "quick" algorithm, but md5 is
@@ -486,6 +486,7 @@ def modelCacher1d(func: Callable) -> Callable:
 
     return cache_model
 
+
 # It is tempting to convert the explicit class names below into calls
 # to super(), but this is problematic since it ends up breaking a
 # number of invariants the classes rely on. An example is that
@@ -536,9 +537,104 @@ class Model(NoNewAttributesAfterInit):
                  pars: Sequence[Parameter] = ()) -> None:
         self.name = name
         self.type = self.__class__.__name__.lower()
-        self.pars = tuple(pars)
+        self._pars = tuple(pars)
         self.is_discrete = False
         NoNewAttributesAfterInit.__init__(self)
+
+    @property
+    def pars(self) -> tuple[Parameter, ...]:
+        """Return the parameters of the model.
+
+        This does not include any linked parameters.
+
+        .. versionchanged:: 4.16.1
+           The pars field can no-longer be set directly. Individual
+           elements can still be changed.
+
+        See Also
+        --------
+        lpars
+
+        """
+
+        return tuple(par for par in self._pars)
+
+    @property
+    def lpars(self) -> tuple[Parameter, ...]:
+        """Return any linked parameters.
+
+        This only returns linked parameters that are not related
+        to the model, and each parameter is not repeated.
+
+        .. versionadded:: 4.16.1
+
+        See Also
+        --------
+        pars
+
+        Examples
+        --------
+
+        By default there are no linked parameters:
+
+        >>> from sherpa.models.basic import Gauss2D
+        >>> mdl = Gauss2D("mdl")
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        ()
+
+        Force the model to have identical xpos and ypos parameters.
+        Since the linked parameter value (mdl.xpos) is part of the
+        model it is not included in `lpars`:
+
+        >>> mdl.ypos = mdl.xpos
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        ()
+
+        Add a link to allow the sigma term to be fit rather than
+        FWHM. Since the linked parameter - here from the Const1D
+        model - is not a part of the model it is included in
+        `lpars`:
+
+        >>> import numpy as np
+        >>> from sherpa.models.basic import Const1D
+        >>> sigma = Const1D("sigma")
+        >>> mdl.fwhm = 2 * np.sqrt(2 * np.log(2)) * sigma.c0
+        >>> len(mdl.pars)
+        6
+        >>> mdl.lpars
+        (<Parameter 'c0' of model 'sigma'>,)
+
+        """
+
+        # Find all the linked parameters, but only report the first
+        # occurrence.
+        #
+        out = []
+        for par in self._pars:
+            if not par.link:
+                continue
+
+            for lpar in expand_par(par.link):
+                # This could be a parameter we've already seen: e.g.
+                #    mdl.x2 = mdl.x1 + 5
+                #
+                if lpar in self._pars:
+                    continue
+
+                # The parameter could be used in several expressions: e.g.
+                #    mdl.x1 = other.c0 + 5
+                #    mdl.x2 = other.c0 + 7
+                #
+                if lpar in out:
+                    continue
+
+                out.append(lpar)
+
+        return tuple(out)
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__} model instance '{self.name}'>"
@@ -701,21 +797,46 @@ class Model(NoNewAttributesAfterInit):
         # A bit of trickery, to make model creation
         # in IPython happen without raising errors, when
         # model is made automatically callable
-        if (len(args) == 0 and len(kwargs) == 0):
+        if len(args) == 0 and len(kwargs) == 0:
             return self
+
+        # By accessing the val field of each parameter in self.pars we
+        # process all the linked parameters (if there are any) and so
+        # do not need to worry about the lpars field.
+        #
         return self.calc([p.val for p in self.pars], *args, **kwargs)
 
-    def _get_thawed_pars(self) -> list[SherpaFloat]:
-        return [p.val for p in self.pars if not p.frozen]
+    def get_thawed_pars(self) -> list[Parameter]:
+        """Return the thawed parameter objects.
 
-    def _set_thawed_pars(self, vals: Sequence[SupportsFloat]) -> None:
-        tpars = [p for p in self.pars if not p.frozen]
+        This includes linked parameters, which complicates the min/max
+        settings, since the range on the components of a linked
+        parameter does not match that of the original parameter, which
+        is an issue when the limits are exceeded.
+
+        .. versionadded:: 4.16.1
+
+        """
+
+        pars = [p for p in self.pars if not p.frozen]
+        pars.extend(p for p in self.lpars if not p.frozen)
+        return pars
+
+    def _get_thawed_par_vals(self) -> list[SupportsFloat]:
+        return [p.val for p in self.get_thawed_pars()]
+
+    def _set_thawed_par_vals(self, vals: Sequence[SupportsFloat]) -> None:
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
         if ngot != nneed:
             raise ModelErr('numthawed', nneed, ngot)
 
+        # Note that this check ignores the soft limits. However,
+        # it sets the limits to min/max and not hard_min/max,
+        # which is issue #1980.
+        #
         for p, v in zip(tpars, vals):
             v = SherpaFloat(v)
             if v < p.hard_min:
@@ -727,22 +848,52 @@ class Model(NoNewAttributesAfterInit):
                 warning('value of parameter %s is above maximum; '
                         'setting to maximum', p.fullname)
             else:
+                # We do not want to set val directly because we do not
+                # want the default field to change.
+                #
                 p._val = v
 
-    thawedpars = property(_get_thawed_pars, _set_thawed_pars,
-                          doc='The thawed parameters of the model.\n\n' +
-                          'Get or set the thawed parameters of the model as a list of\n' +
-                          'numbers. If there are no thawed parameters then [] is used.\n' +
-                          'The ordering matches that of the pars attribute.\n\n' +
-                          'See Also\n' +
-                          '--------\n' +
-                          'thawedparmaxes, thawedparmins\n')
+        # Check that each linked parameter lies within it's limits
+        # (since we can not guarantee it from the limits of the
+        # linking parameters).
+        #
+        # Unfortunately, as noted in #1981, it's not obvious what we
+        # should do if a linked parameter is now out of range. For now
+        # we just evaluate the parameter value, which will trigger a
+        # ParameterErr.  This triggers if the *soft* limits are
+        # exceeded, rather than the hard limits, which is slightly
+        # different to the above check.
+        #
+        for par in self.pars:
+            if par.link is None:
+                continue
+
+            # This relies on the parameter validation logic and we do
+            # not care about the return value.
+            #
+            # We could change par._val but we can not "feed" that
+            # value back to the system to know what the linked
+            # parameter should be.
+            #
+            _ = par.val
+
+    thawedpars = property(_get_thawed_par_vals, _set_thawed_par_vals,
+                          doc="""The thawed parameters of the model.
+
+Get or set the thawed parameters of the model as a list of
+numbers. If there are no thawed parameters then [] is used.
+The ordering matches that of the pars attribute.
+
+See Also
+--------
+thawedparmaxes, thawedparmins
+""")
 
     def _get_thawed_par_mins(self) -> list[SupportsFloat]:
-        return [p.min for p in self.pars if not p.frozen]
+        return [p.min for p in self.get_thawed_pars()]
 
     def _set_thawed_pars_mins(self, vals: Sequence[SupportsFloat]) -> None:
-        tpars = [p for p in self.pars if not p.frozen]
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
@@ -765,20 +916,23 @@ class Model(NoNewAttributesAfterInit):
                 p._min = v
 
     thawedparmins = property(_get_thawed_par_mins, _set_thawed_pars_mins,
-                             doc='The minimum limits of the thawed parameters.\n\n' +
-                             'Get or set the minimum limits of the thawed parameters\n' +
-                             'of the model as a list of numbers. If there are no\n' +
-                             'thawed parameters then [] is used. The ordering matches\n' +
-                             'that of the pars attribute.\n\n' +
-                             'See Also\n' +
-                             '--------\n' +
-                             'thawedpars, thawedarhardmins, thawedparmaxes\n')
+                             doc="""The minimum limits of the thawed parameters.
+
+Get or set the minimum limits of the thawed parameters
+of the model as a list of numbers. If there are no
+thawed parameters then [] is used. The ordering matches
+that of the pars attribute.
+
+See Also
+--------
+thawedpars, thawedarhardmins, thawedparmaxes
+""")
 
     def _get_thawed_par_maxes(self) -> list[SupportsFloat]:
-        return [p.max for p in self.pars if not p.frozen]
+        return [p.max for p in self.get_thawed_pars()]
 
     def _set_thawed_pars_maxes(self, vals: Sequence[SupportsFloat]) -> None:
-        tpars = [p for p in self.pars if not p.frozen]
+        tpars = self.get_thawed_pars()
 
         ngot = len(vals)
         nneed = len(tpars)
@@ -801,41 +955,53 @@ class Model(NoNewAttributesAfterInit):
                 p._max = v
 
     thawedparmaxes = property(_get_thawed_par_maxes, _set_thawed_pars_maxes,
-                              doc='The maximum limits of the thawed parameters.\n\n' +
-                              'Get or set the maximum limits of the thawed parameters\n' +
-                              'of the model as a list of numbers. If there are no\n' +
-                              'thawed parameters then [] is used. The ordering matches\n' +
-                              'that of the pars attribute.\n\n' +
-                              'See Also\n' +
-                              '--------\n' +
-                              'thawedpars, thawedarhardmaxes, thawedparmins\n')
+                              doc="""The maximum limits of the thawed parameters.
 
-    def _get_thawed_par_hardmins(self) -> list[SherpaFloat]:
-        return [p.hard_min for p in self.pars if not p.frozen]
+Get or set the maximum limits of the thawed parameters
+of the model as a list of numbers. If there are no
+thawed parameters then [] is used. The ordering matches
+that of the pars attribute.
+
+See Also
+--------
+thawedpars, thawedarhardmaxes, thawedparmins
+""")
+
+    def _get_thawed_par_hardmins(self) -> list[SupportsFloat]:
+        return [p.hard_min for p in self.get_thawed_pars()]
 
     thawedparhardmins = property(_get_thawed_par_hardmins,
-                                 doc='The hard minimum values for the thawed parameters.\n\n' +
-                                 'The minimum and maximum range of the parameters can be\n' +
-                                 'changed with thawedparmins and thawedparmaxes but only\n' +
-                                 'within the range given by thawedparhardmins\n' +
-                                 'to thawparhardmaxes.\n\n' +
-                                 'See Also\n' +
-                                 '--------\n' +
-                                 'thawedparhardmaxes, thawedparmins\n')
+                                 doc="""The hard minimum values for the thawed parameters.
 
-    def _get_thawed_par_hardmaxes(self) -> list[SherpaFloat]:
-        return [p.hard_max for p in self.pars if not p.frozen]
+The minimum and maximum range of the parameters can be
+changed with thawedparmins and thawedparmaxes but only
+within the range given by thawedparhardmins
+to thawparhardmaxes.
+
+See Also
+--------
+thawedparhardmaxes, thawedparmins
+""")
+
+    def _get_thawed_par_hardmaxes(self) -> list[SupportsFloat]:
+        return [p.hard_max for p in self.get_thawed_pars()]
 
     thawedparhardmaxes = property(_get_thawed_par_hardmaxes,
-                                  doc='The hard maximum values for the thawed parameters.\n\n' +
-                                 'The minimum and maximum range of the parameters can be\n' +
-                                 'changed with thawedparmins and thawedparmaxes but only\n' +
-                                 'within the range given by thawedparhardmins\n' +
-                                 'to thawparhardmaxes.\n\n' +
-                                  'See Also\n' +
-                                  '--------\n' +
-                                  'thawedparhardmins, thawedparmaxes\n')
+                                  doc="""The hard maximum values for the thawed parameters.
 
+The minimum and maximum range of the parameters can be
+changed with thawedparmins and thawedparmaxes but only
+within the range given by thawedparhardmins
+to thawparhardmaxes.
+
+See Also
+--------
+thawedparhardmins, thawedparmaxes
+""")
+
+    # TODO: should this reset linked parameters? Or does a reset clear
+    # the link?
+    #
     def reset(self) -> None:
         """Reset the parameter values.
 
@@ -847,12 +1013,14 @@ class Model(NoNewAttributesAfterInit):
         for p in self.pars:
             p.reset()
 
+    # TODO: should this freeze linked parameters?
     def freeze(self) -> None:
         """Freeze any thawed parameters of the model."""
 
         for p in self.pars:
             p.freeze()
 
+    # TODO: should this thaw linked parameters?
     def thaw(self) -> None:
         """Thaw any frozen parameters of the model.
 
@@ -1366,7 +1534,8 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         name = f'{opstr}({self.arg.name})'
         CompositeModel.__init__(self, name, (self.arg,))
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
@@ -1458,7 +1627,8 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         self.rhs.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         # Note that the kwargs are sent to both model components.
         #
         nlhs = len(self.lhs.pars)
@@ -1538,7 +1708,8 @@ class ArithmeticFunctionModel(Model):
         self.func = func
         Model.__init__(self, func.__name__)
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         return self.func(*args, **kwargs)
 
     def startup(self, cache: bool = False) -> None:
@@ -1597,7 +1768,8 @@ class NestedModel(CompositeModel, ArithmeticModel):
         self.outer.teardown()
         CompositeModel.teardown(self)
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         nouter = len(self.outer.pars)
         return self.outer.calc(p[:nouter],
                                self.inner.calc(p[nouter:], *args, **kwargs),
@@ -1638,7 +1810,8 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
                                 f"{self.wrapper.name}({self.model.name})",
                                 (self.model, ))
 
-    def calc(self, p: Sequence[SupportsFloat], *args, **kwargs) -> np.ndarray:
+    def calc(self, p: Sequence[SupportsFloat],
+             *args, **kwargs) -> np.ndarray:
         return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
 
     def get_center(self):

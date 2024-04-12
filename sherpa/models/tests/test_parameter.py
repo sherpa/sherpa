@@ -26,7 +26,7 @@ import pytest
 
 from sherpa.models.basic import Gauss1D, Const1D, PowLaw1D
 from sherpa.models.parameter import Parameter, UnaryOpParameter, \
-    BinaryOpParameter, ConstantParameter, hugeval
+    BinaryOpParameter, ConstantParameter, hugeval, expand_par
 from sherpa.utils.err import ParameterErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa import ui
@@ -239,6 +239,23 @@ def test_binop_string_with_custom_ufunc():
     p, p2 = setUp_composite()
     comp = uf(p, p2)
     assert repr(comp) == "<BinaryOpParameter 'func(model.p, model.p2)'>"
+
+
+def test_multiop_string_with_custom_ufunc():
+    '''Get an operator which we do not support.'''
+    def func(a, b, c):
+        return a + b + c
+
+    uf = np.frompyfunc(func, nin=3, nout=1)
+    p, p2 = setUp_composite()
+    p3 = Parameter("model", "c", 15)
+
+    # This errors out because we do not suport three parameters.  It
+    # does not seem worth checking the error message as this comes
+    # from upstream code that could change.
+    #
+    with pytest.raises(TypeError):
+        uf(p, p2, p3)
 
 
 class TestBrackets:
@@ -605,3 +622,474 @@ def test_explicit_numpy_combination():
     yexp = 48
     assert implicit.val == pytest.approx(yexp)
     assert explicit.val == pytest.approx(yexp)
+
+
+def test_basic_reset():
+    """Try to understand the default_val setting."""
+
+    p1 = Parameter("m1", "a", 4)
+    assert p1.val == 4
+    assert p1.default_val == 4
+    assert p1.link is None
+
+    p1.reset()
+    assert p1.val == 4
+    assert p1.default_val == 4
+    assert p1.link is None
+
+
+def test_set_default_to_val(check_str):
+    """Try to understand the default_val setting."""
+
+    p1 = Parameter("m1", "a", 4)
+    p1.default_val = 2
+
+    # Note that p1.val has not changed, unlike test_set_default_to_parameter
+    assert p1.val == 4
+    assert p1.default_val == 2
+    assert p1.link is None
+
+    check_str(str(p1),
+              [ "val         = 4.0",
+                "min         = -3.4028234663852886e+38",
+                "max         = 3.4028234663852886e+38",
+                "units       = ",
+                "frozen      = False",
+                "link        = None",
+                "default_val = 2.0",
+                "default_min = -3.4028234663852886e+38",
+                "default_max = 3.4028234663852886e+38"
+               ])
+
+    p1.reset()
+    assert p1.val == 2
+    assert p1.default_val == 2
+    assert p1.link is None
+
+    check_str(str(p1),
+              [ "val         = 2.0",
+                "min         = -3.4028234663852886e+38",
+                "max         = 3.4028234663852886e+38",
+                "units       = ",
+                "frozen      = False",
+                "link        = None",
+                "default_val = 2.0",
+                "default_min = -3.4028234663852886e+38",
+                "default_max = 3.4028234663852886e+38"
+               ])
+
+
+def test_set_default_to_parameter(check_str):
+    """We support this, so make sure it is tested.
+
+    There is the question of whether it makes sense to support this,
+    but that's a different issue.
+    """
+
+    p1 = Parameter("m1", "a", 4)
+    p2 = Parameter("m2", "b", 12)
+
+    p1.default_val = 2 + p2
+
+    # Note that p1.val has changed, unlike test_set_default_to_val
+    assert p1.val == 14
+    assert p1.default_val == 14
+    assert p1.link is not None
+
+    check_str(str(p1),
+              [ "val         = 14.0",
+                "min         = -3.4028234663852886e+38",
+                "max         = 3.4028234663852886e+38",
+                "units       = ",
+                "frozen      = True",
+                "link        = 2 + m2.b",
+                "default_val = 14.0",
+                "default_min = -3.4028234663852886e+38",
+                "default_max = 3.4028234663852886e+38"
+               ])
+
+    p1.reset()
+
+    assert p1.val == 14
+    assert p1.default_val == 14
+    assert p1.link is not None
+
+    check_str(str(p1),
+              [ "val         = 14.0",
+                "min         = -3.4028234663852886e+38",
+                "max         = 3.4028234663852886e+38",
+                "units       = ",
+                "frozen      = True",
+                "link        = 2 + m2.b",
+                "default_val = 14.0",
+                "default_min = -3.4028234663852886e+38",
+                "default_max = 3.4028234663852886e+38"
+               ])
+
+
+def test_set_default_to_parameter_to_parameter(check_str):
+    """We support this, so make sure it is tested.
+
+   There is the question of
+    whether it makes sense to support this, but that's a different
+    issue.
+
+    """
+
+    p1 = Parameter("m1", "a", 4)
+    p2 = Parameter("m2", "b", 12)
+    p3 = Parameter("m2", "b", 200)
+
+    p2.default_val = p3 / 100
+    p1.default_val = p2 - 5
+
+    assert p1.link is not None
+    assert p1.val == -3
+    assert p1.default_val == -3
+
+
+def test_set_default_to_value_after_parameter(check_str):
+    """Check what happens here."""
+
+    p1 = Parameter("m1", "a", 4)
+    p2 = Parameter("m2", "b", 12)
+
+    p1.default_val = 2 + p2
+
+    p1.default_val = 3
+
+    # Note: this is now back to the original value
+    assert p1.val == 4
+    assert p1.default_val == 3
+    assert p1.link is None
+
+    check_str(str(p1),
+              [ "val         = 4.0",
+                "min         = -3.4028234663852886e+38",
+                "max         = 3.4028234663852886e+38",
+                "units       = ",
+                "frozen      = False",
+                "link        = None",
+                "default_val = 3.0",
+                "default_min = -3.4028234663852886e+38",
+                "default_max = 3.4028234663852886e+38"
+               ])
+
+    p1.reset()
+
+    assert p1.val == 3
+    assert p1.default_val == 3
+
+    check_str(str(p1),
+              [ "val         = 3.0",
+                "min         = -3.4028234663852886e+38",
+                "max         = 3.4028234663852886e+38",
+                "units       = ",
+                "frozen      = False",
+                "link        = None",
+                "default_val = 3.0",
+                "default_min = -3.4028234663852886e+38",
+                "default_max = 3.4028234663852886e+38"
+               ])
+
+
+def test_set_value_to_none(check_str):
+    """This really should not be allowed. See #1992
+
+    Treat as a regression test for now, but we could change the
+    behaviour.
+    """
+
+    p1 = Parameter("m1", "a", 4)
+    p1.val = None
+
+    assert np.isnan(p1.val)
+    assert np.isnan(p1.default_val)
+
+    check_str(str(p1),
+              [ "val         = nan",
+                "min         = -3.4028234663852886e+38",
+                "max         = 3.4028234663852886e+38",
+                "units       = ",
+                "frozen      = False",
+                "link        = None",
+                "default_val = nan",
+                "default_min = -3.4028234663852886e+38",
+                "default_max = 3.4028234663852886e+38"
+               ])
+
+    p1.reset()
+
+    assert np.isnan(p1.val)
+    assert np.isnan(p1.default_val)
+
+
+def test_set_default_to_none(check_str):
+    """This really should not be allowed. See #1992
+
+    Treat as a regression test for now, but we could change the
+    behaviour.
+    """
+
+    p1 = Parameter("m1", "a", 4)
+    p1.default_val = None
+
+    assert p1.val == 4
+    assert np.isnan(p1.default_val)
+
+    check_str(str(p1),
+              [ "val         = 4.0",
+                "min         = -3.4028234663852886e+38",
+                "max         = 3.4028234663852886e+38",
+                "units       = ",
+                "frozen      = False",
+                "link        = None",
+                "default_val = nan",
+                "default_min = -3.4028234663852886e+38",
+                "default_max = 3.4028234663852886e+38"
+               ])
+
+    p1.reset()
+
+    assert np.isnan(p1.val)
+    assert np.isnan(p1.default_val)
+
+
+@pytest.mark.parametrize("dval,expected",
+                         [(0, "minimum of 1"),
+                          (20, "maximum of 5")])
+def test_set_default_to_invalid(dval, expected):
+    """Pick a value outside the min/max range."""
+
+    p1 = Parameter("m1", "a", 4, min=1, max=5)
+
+    with pytest.raises(ParameterErr,
+                       match=f"parameter m1.a has a {expected}"):
+        p1.default_val = dval
+
+
+def test_link_check_very_simple():
+    """Check link cycles.
+
+    This is related to the old (pre GitHub) issue 12287 which was
+    related to cycles in links but for which no test was added
+    (at least for the check_simple / check_involved cases).
+
+    """
+
+    p1 = Parameter("m1", "a", 400)
+    p2 = Parameter("m2", "b", 12)
+
+    p2.val = p1
+
+    # Should this report some sort of linked cycle or just clean
+    # out the old setting?
+    #
+    p1.val = p2
+
+    assert p2.link is None
+    assert p1.link is not None
+
+    assert p1.val == 12
+    assert p2.val == 12
+
+
+def test_link_check_simple():
+    """Check link cycles. See issue #1993."""
+
+    p1 = Parameter("m1", "a", 400)
+    p2 = Parameter("m2", "b", 12)
+
+    p2.val = p1 / 100
+
+    # This should report some sort of linked cycle
+    p1.val = p2 - 5
+
+    with pytest.raises(RecursionError):
+        p1.val
+
+
+def test_link_check_involved():
+    """Check link cycles. See issue #1993."""
+
+    p1 = Parameter("m1", "a", 4)
+    p2 = Parameter("m2", "b", 12)
+    p3 = Parameter("m2", "b", 200)
+
+    p3.val = 1 + p1
+    p2.val = p3 / 100
+
+    # This should report some sort of linked cycle
+    p1.val = p2 - 5
+
+    with pytest.raises(RecursionError):
+        p1.val
+
+
+def test_set_for_default_params():
+    """Check some corner cases."""
+
+    p = Parameter("mdl", "a", 5, min=0, max=10)
+    assert p.val == 5
+    assert p.default_val == 5
+    assert p.min == 0
+    assert p.max == 10
+    assert p.default_min == 0
+    assert p.default_max == 10
+
+    p.set(default_min=-5)
+    assert p.val == 5
+    assert p.default_val == 5
+    assert p.min == 0
+    assert p.max == 10
+    assert p.default_min == -5
+    assert p.default_max == 10
+
+    p.set(default_max=20)
+    assert p.val == 5
+    assert p.default_val == 5
+    assert p.min == 0
+    assert p.max == 10
+    assert p.default_min == -5
+    assert p.default_max == 20
+
+    p.set(default_val=2)
+    assert p.val == 5
+    assert p.default_val == 2
+    assert p.min == 0
+    assert p.max == 10
+    assert p.default_min == -5
+    assert p.default_max == 20
+
+
+def test_link_expression_add():
+    """Check that the model expression behaves as expected.
+
+    This encodes a number of checks which should be split out.
+    """
+
+    p1 = Parameter("p", "a", 10)
+    p2 = Parameter("p", "b", -5)
+    p2.frozen = True
+
+    expr = 2 * p1 + p2 + 40
+
+    assert expr.name == "2 * p.a + p.b + 40"
+    assert expr.val == 55
+    assert not expr.frozen
+
+    # Deconstruct the tree
+    assert isinstance(expr, BinaryOpParameter)
+    assert expr.op == np.add
+    assert isinstance(expr.lhs, BinaryOpParameter)
+    assert isinstance(expr.rhs, ConstantParameter)
+
+    # The constant term (40) should be frozen
+    assert expr.rhs.frozen
+    assert expr.rhs.val == pytest.approx(40)
+
+    # Do not use instance on Parameter as the objects we expect here
+    # are all sub-classes of it, so it adds no real power to the test.
+    #
+    assert expr.lhs.op == np.add
+    assert isinstance(expr.lhs.lhs, BinaryOpParameter)
+    assert type(expr.lhs.rhs) == Parameter
+
+    assert expr.lhs.rhs.name == "b"
+    assert expr.lhs.rhs.val == pytest.approx(-5)
+    assert expr.lhs.rhs.frozen
+
+    assert expr.lhs.lhs.op == np.multiply
+    assert isinstance(expr.lhs.lhs.lhs, ConstantParameter)
+    assert type(expr.lhs.lhs.rhs) == Parameter
+
+    # The constant term (2) should be frozen
+    assert expr.lhs.lhs.lhs.frozen
+    assert expr.lhs.lhs.lhs.val == pytest.approx(2)
+
+    assert expr.lhs.lhs.rhs.name == "a"
+    assert expr.lhs.lhs.rhs.val == pytest.approx(10)
+    assert not expr.lhs.lhs.rhs.frozen
+
+
+def test_link_expression_sub():
+    """Check that the model expression behaves as expected.
+
+    This encodes a number of checks which should be split out.
+    """
+
+    p1 = Parameter("p", "a", 10)
+    p2 = Parameter("p", "b", -5)
+    p2.frozen = True
+
+    expr = 2 * p1 - p2 + 40
+
+    assert expr.name == "2 * p.a - p.b + 40"
+    assert expr.val == 65
+    assert not expr.frozen
+
+    # Deconstruct the tree
+    assert isinstance(expr, BinaryOpParameter)
+    assert expr.op == np.add
+    assert isinstance(expr.lhs, BinaryOpParameter)
+    assert isinstance(expr.rhs, ConstantParameter)
+
+    # The constant term (40) should be frozen
+    assert expr.rhs.frozen
+    assert expr.rhs.val == pytest.approx(40)
+
+    # Do not use instance on Parameter as the objects we expect here
+    # are all sub-classes of it, so it adds no real power to the test.
+    #
+    assert expr.lhs.op == np.subtract
+    assert isinstance(expr.lhs.lhs, BinaryOpParameter)
+    assert type(expr.lhs.rhs) == Parameter
+
+    assert expr.lhs.rhs.name == "b"
+    assert expr.lhs.rhs.val == pytest.approx(-5)
+    assert expr.lhs.rhs.frozen
+
+    assert expr.lhs.lhs.op == np.multiply
+    assert isinstance(expr.lhs.lhs.lhs, ConstantParameter)
+    assert type(expr.lhs.lhs.rhs) == Parameter
+
+    # The constant term (2) should be frozen
+    assert expr.lhs.lhs.lhs.frozen
+    assert expr.lhs.lhs.lhs.val == pytest.approx(2)
+
+    assert expr.lhs.lhs.rhs.name == "a"
+    assert expr.lhs.lhs.rhs.val == pytest.approx(10)
+    assert not expr.lhs.lhs.rhs.frozen
+
+
+a = Parameter("m", "a", 5)
+b = Parameter("n", "b", 10)
+fb = Parameter("fn", "b", 10)
+fb.freeze()
+
+
+@pytest.mark.parametrize("expr,expected",
+                         [(a, [a]),
+                          (2 + a, [a]),
+                          (a / 2, [a]),
+                          (a * b, [a, b]),
+                          (a + b + 2 * a, [a, b]),
+                          (fb, [fb]),
+                          (2 + fb, [fb]),
+                          (fb + a, [fb, a]),
+                          (fb - 2 * (a + fb + b), [fb, a, b]),
+                          (2 ** a, [a]),
+                          (a ** 2, [a]),
+                          (a ** b, [a, b]),
+                          (fb ** (1 + b), [fb, b]),
+                          (a ** fb, [a, fb]),
+                          (fb ** fb, [fb])
+                          ])
+def test_expand_par(expr, expected):
+    """check the expansion."""
+
+    res = expand_par(expr)
+    for gterm, eterm in zip(res, expected):
+        assert gterm == eterm
+
+    assert len(res) == len(expected)
