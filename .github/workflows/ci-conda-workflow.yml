@@ -204,7 +204,7 @@ jobs:
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
-        python setup.py -q test -a "--cov sherpa --cov-report xml"
+        python setup.py -q test -a "--cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml"
 
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
@@ -213,11 +213,12 @@ jobs:
         conda activate build
         conda install -yq pytest-cov
         cd $HOME
-        sherpa_test --cov sherpa --cov-report xml
+        sherpa_test --cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml
 
     - name: upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
-        # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
-        files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ${{ github.workspace }}/coverage.xml
         verbose: true
+      
