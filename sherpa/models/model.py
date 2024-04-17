@@ -2021,7 +2021,7 @@ def model_deconstruct(model: Model) -> list[Model]:
         #     (*, a, c)
         #     (*, a, -d)
         #     (*, b, c)
-        #     (*, a, -d)
+        #     (*, b, -d)
         #
         return [BinaryOpModel(lterm, rterm, np.multiply, '*')
                 for lterm, rterm in itertools.product(lhs, rhs)]
