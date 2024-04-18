@@ -375,7 +375,7 @@ version then you can use three helper scripts:
 
    lines of the ``sherpa/astro/xspec/src/_xspec.cc`` file. This
    information is replicated in the output of ``add_xspec_model.py``
-   so it depends on how many models need to be added ot changed as
+   so it depends on how many models need to be added or changed as
    to which to use.
 
    It is strongly suggested that the ordering from this routine
