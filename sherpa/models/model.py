@@ -319,6 +319,7 @@ non-integrated and integrated datasets of any dimensionality (see
 from __future__ import annotations
 
 import functools
+import itertools
 import logging
 from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, \
     Sequence, SupportsFloat, SupportsIndex, Type, TypeVar, Union
@@ -1869,6 +1870,178 @@ def _wrapobj(obj, wrapper: Callable[..., Model]) -> Model:
         return obj
 
     return wrapper(obj)
+
+
+# Simple model "deconstruction" - that is, turn a model expression
+# like "mdl1 * (mdl2 + mdl3)" into "mdl1 * mdl2" and "mdl1 * mdl3".
+#
+# The code could be re-worked to use continuation-passing style to
+# avoid the recursion error, but that would significantly complicate
+# the code. For example
+# https://www.tweag.io/blog/2023-01-19-fp2-dial-m-for-monoid/#what-the-thunk
+# For now we try to catch any recursion errors and treat the model
+# as a "singleton" for that component.
+#
+def model_deconstruct(model: Model) -> list[Model]:
+    """Separate models into additive components.
+
+    Identify the separate "additive" components in the model
+    expression, that is the terms separated by addition or
+    subtraction. The resulting list can be summed together to recreate
+    the original model expression. This is not guaranteed to create
+    the expand the expression completely, and the resulting terms are
+    not guaranteed to be "simplified".
+
+    .. versionadded:: 4.16.1
+
+    Parameters
+    ----------
+    model : Model instance
+       The model expression to separate.
+
+    Returns
+    -------
+    terms : list of Model instances
+       The separated terms (this list may contain a single
+       element).
+
+    Notes
+    -----
+
+    If the model includes a subtracted component, such as:
+
+        a - b
+
+    then the b component will be negated in the output. This negation
+    is applied directly rather than applied to any term combined with
+    it (such as "a * (b - c)", which will create terms
+
+        a * b
+        a * -(c)
+
+    While an expression like
+
+        -(a + b * c + d)
+
+    could be split up, at present it is not. However, when written as
+    part of a binary expression it is split up, so
+
+        x - (a + b * c + d)
+
+    is split into
+
+        x, -(a), -(b * x), -(d)
+
+    Examples
+    --------
+
+    >>> from sherpa.models.basic import Box1D, Gauss1D
+    >>> b1 = Box1D("b1")
+    >>> g1 = Gauss1D("g1")
+    >>> g2 = Gauss1D("g2")
+    >>> model_deconstruct(b1)
+    [<Box1D model instance 'b1'>]
+    >>> model_deconstruct(b1 * (g1 + g2))
+    [<BinaryOpModel model instance 'b1 * g1'>, <BinaryOpModel model instance 'b1 * g2'>]
+    >>> model_deconstruct(b1 * (g1 - g2))
+    [<BinaryOpModel model instance 'b1 * g1'>, <BinaryOpModel model instance 'b1 * -(g2)'>]
+
+    Unary operators are not expanded by this routine, which makes the
+    behaviour a bit different than the binary-operator case, as shown
+    below:
+
+    >>> model_deconstruct(-(g1 + b1 * g2))
+    [<UnaryOpModel model instance '-(g1 + b1 * g2)'>]
+
+    >>> model_deconstruct(b1 - (g1 + b1 * g2))
+    [<Box1D model instance 'b1'>, <UnaryOpModel model instance '-(g1)'>, <UnaryOpModel model instance '-(b1 * g2)'>]
+
+    >>> model_deconstruct(-g1 - g2)
+    [<UnaryOpModel model instance '-(g1)'>, <UnaryOpModel model instance '-(g2)'>]
+
+    """
+
+    # The return is a list of components that add together to match
+    # the input model. So, if we are not a binary operation the result
+    # is simple.
+    #
+    # Note that there is no attempt to simplify an expression, that is,
+    #
+    #     -a * -b
+    #
+    # is not changed to
+    #
+    #     a * b
+    #
+    if not isinstance(model, BinaryOpModel):
+        return [model]
+
+    # The idea is to separate terms for model expressions that users
+    # are expected to write, not to separate all possible
+    # expressions. This means that the code forgoes the possibility of
+    # certain cases to simplify things. Also, the binary operator
+    # could technically be anything, and all that is checked here are
+    # the NumPy versions.
+    #
+    # Note that
+    #     (a + b) / c -> a / b, a / c
+    # but
+    #     (a + b) // c -> unchanged
+    #
+    if model.op not in [np.add, np.multiply,
+                        np.subtract, np.divide]:
+        return [model]
+
+    try:
+        lhs = model_deconstruct(model.lhs)
+    except RecursionError:
+        # If we can not recurse treat this as a single term.
+        lhs = [model.lhs]
+
+    # Special case division, since we do only want to deconstruct the
+    # lhs for this case.
+    #
+    if model.op == np.divide:
+        return [BinaryOpModel(lterm, model.rhs, np.divide, '/')
+                for lterm in lhs]
+
+    try:
+        rhs = model_deconstruct(model.rhs)
+    except RecursionError:
+        # If we can not recurse treat this as a single term.
+        rhs = [model.rhs]
+
+    if model.op == np.multiply:
+        # Expand the term, so
+        #
+        #     (a + b) * (c - d)
+        #
+        # will go to
+        #
+        #     (*, a, c)
+        #     (*, a, -d)
+        #     (*, b, c)
+        #     (*, b, -d)
+        #
+        return [BinaryOpModel(lterm, rterm, np.multiply, '*')
+                for lterm, rterm in itertools.product(lhs, rhs)]
+
+    # The terms are intended to be summed together, so for subtraction
+    # the RHS terms must be negated.
+    #
+    if model.op == np.subtract:
+        # Since we claim that model is a Model and not ArithmeticModel
+        # we explicitly create the UnaryOpModel term (rather than just
+        # say "-term").
+        #
+        rhs = [UnaryOpModel(term, np.negative, '-')
+               for term in rhs]
+
+    # This is either addition or subtraction, so we return the
+    # combined list.
+    #
+    lhs.extend(rhs)
+    return lhs
 
 
 # Notebook representation
