@@ -501,7 +501,7 @@ class RMFPlot(shplot.HistogramPlot):
     energies = None
     """The energies at which to draw the response (in keV).
 
-    If set  to None then `n_lines` energies will be selected to span
+    If set to None then `n_lines` energies will be selected to span
     the energy range of the response.
     """
 
