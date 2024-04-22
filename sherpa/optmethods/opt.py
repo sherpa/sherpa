@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2023
+#  Copyright (C) 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,12 +18,10 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import multiprocessing
-
 import numpy as np
 
 from sherpa.utils import Knuth_close, func_counter
-from sherpa.utils.parallel import multi, run_tasks
+from sherpa.utils.parallel import multi, context, run_tasks
 from sherpa.utils.random import uniform
 
 
@@ -58,12 +56,11 @@ class MyNcores:
         #
 
         # See sherpa.utils.parallel for the logic used here.
-        manager = multiprocessing.Manager()
+        manager = context.Manager()
         out_q = manager.Queue()
         err_q = manager.Queue()
-        # lock = manager.Lock()  # unused
-        procs = [multiprocessing.Process(target=self.my_worker,
-                                         args=(func, ii, out_q, err_q) + args)
+        procs = [context.Process(target=self.my_worker,
+                                 args=(func, ii, out_q, err_q) + args)
                  for ii, func in enumerate(funcs)]
 
         return run_tasks(procs, err_q, out_q)
