@@ -702,7 +702,6 @@ def test_histogram_returns_xerr():
         assert toks[0] != 'xerr'
 
 
-@pytest.mark.xfail
 def test_histogram_can_not_set_xerr():
     """We cannot change the xerr accessor"""
 
@@ -714,7 +713,6 @@ def test_histogram_can_not_set_xerr():
     dp = sherpaplot.DataHistogramPlot()
     dp.prepare(d)
 
-    # XFAIL: at the moment we can change xerr
     with pytest.raises(AttributeError):
         dp.xerr = xlo
 

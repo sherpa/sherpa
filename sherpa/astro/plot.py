@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015, 2016, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,16 +25,15 @@ Classes for plotting, analysis of astronomical data sets
 import logging
 
 import numpy as np
-from numpy import iterable, array2string, asarray
 
-from sherpa.models.basic import Delta1D
+from sherpa.astro import hc
 from sherpa.astro.data import DataPHA
-from sherpa import plot as shplot
 from sherpa.astro.utils import bounds_check
-from sherpa.utils.err import PlotErr, IOErr
+from sherpa.models.basic import Delta1D
+from sherpa import plot as shplot
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
-from sherpa.astro import hc
+from sherpa.utils.err import PlotErr, IOErr
 
 warning = logging.getLogger(__name__).warning
 
@@ -129,8 +128,8 @@ class DataPHAPlot(shplot.DataHistogramPlot):
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
         #
-        (_, self.y, self.yerr, self.xerr, self.xlabel,
-         self.ylabel) = data.to_plot()
+        plot = data.to_plot()
+        (_, self.y, self.yerr, _, self.xlabel, self.ylabel) = plot
 
         if stat is not None:
             yerrorbars = self.histo_prefs.get('yerrorbars', True)
@@ -347,7 +346,7 @@ class SourcePlot(shplot.HistogramPlot):
                 post += pterm
 
         scale = (self.xhi + self.xlo) / 2
-        for ii in range(data.plot_fac):
+        for _ in range(data.plot_fac):
             self.y *= scale
 
         sqr = shplot.backend.get_latex_for_string('^2')
@@ -382,7 +381,7 @@ class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
 
     def prepare(self, data, model, stat=None):
         ModelHistogram.prepare(self, data, model, stat)
-        self.title = 'Model component: %s' % model.name
+        self.title = f'Model component: {model.name}'
 
     def _merge_settings(self, kwargs):
         return {**self.histo_prefs, **kwargs}
@@ -404,7 +403,7 @@ class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
 
     def prepare(self, data, model, stat=None):
         SourcePlot.prepare(self, data, model)
-        self.title = 'Source model component: %s' % model.name
+        self.title = f'Source model component: {model.name}'
 
     def _merge_settings(self, kwargs):
         return {**self.histo_prefs, **kwargs}
@@ -453,7 +452,7 @@ class ARFPlot(shplot.HistogramPlot):
 
         if data is not None:
             if not isinstance(data, DataPHA):
-                raise PlotErr('notpha', data.name)
+                raise IOErr('notpha', data.name)
             if data.units == "wavelength":
                 self.xlabel = 'Wavelength (Angstrom)'
                 self.xlo = hc / self.xlo
@@ -638,7 +637,7 @@ class BkgResidPlot(shplot.ResidPlot):
 
     def prepare(self, data, model, stat):
         super().prepare(data, model, stat)
-        self.title = 'Residuals of %s - Bkg Model' % data.name
+        self.title = f'Residuals of {data.name} - Bkg Model'
 
 
 class BkgRatioPlot(shplot.RatioPlot):
@@ -646,7 +645,7 @@ class BkgRatioPlot(shplot.RatioPlot):
 
     def prepare(self, data, model, stat):
         super().prepare(data, model, stat)
-        self.title = 'Ratio of %s : Bkg Model' % data.name
+        self.title = f'Ratio of {data.name} : Bkg Model'
 
 
 class BkgChisqrPlot(shplot.ChisqrPlot):
@@ -671,18 +670,19 @@ class OrderPlot(ModelHistogram):
         self.use_default_colors = True
         super().__init__()
 
+    # Note: this does not accept a stat parameter.
     def prepare(self, data, model, orders=None, colors=None):
         self.orders = data.response_ids
 
         if orders is not None:
-            if iterable(orders):
+            if np.iterable(orders):
                 self.orders = list(orders)
             else:
                 self.orders = [orders]
 
         if colors is not None:
             self.use_default_colors = False
-            if iterable(colors):
+            if np.iterable(colors):
                 self.colors = list(colors)
             else:
                 self.colors = [colors]
@@ -704,7 +704,7 @@ class OrderPlot(ModelHistogram):
             self.xlo = []
             self.xhi = []
             self.y = []
-            (xlo, y, yerr, xerr,
+            (xlo, y, yerr, _,
              self.xlabel, self.ylabel) = data.to_plot(model)
             y = y[1]
             if data.units != 'channel':
@@ -738,7 +738,7 @@ class OrderPlot(ModelHistogram):
                 for interval in old_filter:
                     data.notice(*interval)
 
-        self.title = 'Model Orders %s' % str(self.orders)
+        self.title = f'Model Orders {self.orders}'
 
         if len(self.xlo) != len(self.y):
             raise PlotErr("orderarrfail")
@@ -777,20 +777,20 @@ class FluxHistogram(ModelHistogram):
     def __str__(self):
         vals = self.modelvals
         if self.modelvals is not None:
-            vals = array2string(asarray(self.modelvals), separator=',',
-                                precision=4, suppress_small=False)
+            vals = np.array2string(np.asarray(self.modelvals), separator=',',
+                                   precision=4, suppress_small=False)
 
         clip = self.clipped
         if self.clipped is not None:
             # Could convert to boolean, but it is surprising for
             # anyone trying to access the clipped field
-            clip = array2string(asarray(self.clipped), separator=',',
-                                precision=4, suppress_small=False)
+            clip = np.array2string(np.asarray(self.clipped), separator=',',
+                                   precision=4, suppress_small=False)
 
         flux = self.flux
         if self.flux is not None:
-            flux = array2string(asarray(self.flux), separator=',',
-                                precision=4, suppress_small=False)
+            flux = np.array2string(np.asarray(self.flux), separator=',',
+                                   precision=4, suppress_small=False)
 
         return '\n'.join([f'modelvals = {vals}',
                           f'clipped = {clip}',
@@ -813,7 +813,7 @@ class FluxHistogram(ModelHistogram):
 
         """
 
-        fluxes = asarray(fluxes)
+        fluxes = np.asarray(fluxes)
         y = fluxes[:, 0]
         self.flux = y
         self.modelvals = fluxes[:, 1:-1]
