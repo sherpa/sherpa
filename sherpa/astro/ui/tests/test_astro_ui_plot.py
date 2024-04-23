@@ -39,6 +39,7 @@ import pytest
 from sherpa.astro import ui
 import sherpa.plot
 
+from sherpa.astro import hc
 from sherpa.astro.data import DataPHA
 from sherpa.astro.instrument import create_arf
 import sherpa.astro.plot
@@ -73,6 +74,9 @@ _energies_lo = _energies[:-1]
 _energies_hi = _energies[1:]
 _energies_mid = (_energies_lo + _energies_hi) / 2
 _energies_width = _energies_hi - _energies_lo
+
+_wavelength_lo = hc / _energies_hi
+_wavelength_hi = hc / _energies_lo
 
 # How much longer is the background exposure compared to the source
 # exposure; chose a non-integer value to make it more obvious when
@@ -326,8 +330,69 @@ def test_get_arf_plot(idval, clean_astro_ui):
 
     setup_example(idval)
     if idval is None:
+        ui.set_analysis("energy")
         ap = ui.get_arf_plot()
     else:
+        ui.set_analysis(idval, "energy")
+        ap = ui.get_arf_plot(idval)
+
+    assert isinstance(ap, sherpa.astro.plot.ARFPlot)
+
+    assert ap.xlo == pytest.approx(_energies_lo)
+    assert ap.xhi == pytest.approx(_energies_hi)
+
+    assert ap.y == pytest.approx(_arf)
+
+    assert ap.title == 'test-arf'
+    assert ap.xlabel == 'Energy (keV)'
+
+    # the y label depends on the backend (due to LaTeX)
+    # assert ap.ylabel == 'cm$^2$'
+    assert 'cm' in ap.ylabel
+    assert '2' in ap.ylabel
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_arf_plot_wavelength(idval, clean_astro_ui):
+    """Basic testing of get_arf_plot
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.set_analysis("wavelength")
+        ap = ui.get_arf_plot()
+    else:
+        ui.set_analysis(idval, "wavelength")
+        ap = ui.get_arf_plot(idval)
+
+    assert isinstance(ap, sherpa.astro.plot.ARFPlot)
+
+    assert ap.xlo == pytest.approx(_wavelength_lo)
+    assert ap.xhi == pytest.approx(_wavelength_hi)
+
+    assert ap.y == pytest.approx(_arf)
+
+    assert ap.title == 'test-arf'
+    assert ap.xlabel == 'Wavelength (Angstrom)'
+
+    # the y label depends on the backend (due to LaTeX)
+    # assert ap.ylabel == 'cm$^2$'
+    assert 'cm' in ap.ylabel
+    assert '2' in ap.ylabel
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_arf_plot_channel(idval, clean_astro_ui):
+    """Basic testing of get_arf_plot
+    """
+
+    # Does this error out or display energies?
+    setup_example(idval)
+    if idval is None:
+        ui.set_analysis("channel")
+        ap = ui.get_arf_plot()
+    else:
+        ui.set_analysis(idval, "channel")
         ap = ui.get_arf_plot(idval)
 
     assert isinstance(ap, sherpa.astro.plot.ARFPlot)
@@ -382,13 +447,15 @@ def test_get_rmf_plot_no_rmf(idval, clean_astro_ui):
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
 def test_get_rmf_plot(idval, clean_astro_ui):
-    """Basic testing of get_arf_plot
+    """Basic testing of get_rmf_plot
     """
 
     setup_example(idval)
     if idval is None:
+        ui.set_analysis("energy")
         rp = ui.get_rmf_plot()
     else:
+        ui.set_analysis(idval, "energy")
         rp = ui.get_rmf_plot(idval)
 
     assert isinstance(rp, sherpa.astro.plot.RMFPlot)
@@ -407,6 +474,68 @@ def test_get_rmf_plot(idval, clean_astro_ui):
 
     assert rp.title == 'delta-rmf'
     assert rp.xlabel == 'Energy (keV)'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_rmf_plot_wavelength(idval, clean_astro_ui):
+    """Basic testing of get_rmf_plot
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.set_analysis("wave")
+        rp = ui.get_rmf_plot()
+    else:
+        ui.set_analysis(idval, "wave")
+        rp = ui.get_rmf_plot(idval)
+
+    assert isinstance(rp, sherpa.astro.plot.RMFPlot)
+
+    assert rp.xlo == pytest.approx(_wavelength_lo)
+    assert rp.xhi == pytest.approx(_wavelength_hi)
+
+    # With nlines=5 in the RMF plot we get 5 lines
+    plotted_rmf = np.array(
+        [[1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0., 0., 1., 0., 0.]])
+    assert rp.y == pytest.approx(plotted_rmf)
+
+    assert rp.title == 'delta-rmf'
+    assert rp.xlabel == 'Wavelength (Angstrom)'
+
+
+@pytest.mark.parametrize("idval", [None, 1, "one", 23])
+def test_get_rmf_plot_channel(idval, clean_astro_ui):
+    """Basic testing of get_rmf_plot
+    """
+
+    setup_example(idval)
+    if idval is None:
+        ui.set_analysis("channel")
+        rp = ui.get_rmf_plot()
+    else:
+        ui.set_analysis(idval, "channel")
+        rp = ui.get_rmf_plot(idval)
+
+    assert isinstance(rp, sherpa.astro.plot.RMFPlot)
+
+    assert rp.xlo == pytest.approx(np.arange(1, 11))
+    assert rp.xhi == pytest.approx(np.arange(2, 12))
+
+    # With nlines=5 in the RMF plot we get 5 lines
+    plotted_rmf = np.array(
+        [[1., 0., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 1., 0., 0., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 1., 0., 0., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 1., 0., 0., 0., 0.],
+         [0., 0., 0., 0., 0., 0., 0., 1., 0., 0.]])
+    assert rp.y == pytest.approx(plotted_rmf)
+
+    assert rp.title == 'delta-rmf'
+    assert rp.xlabel == 'Channel'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
