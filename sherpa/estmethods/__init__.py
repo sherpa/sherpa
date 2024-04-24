@@ -1184,7 +1184,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
                 # catch the EstNewMin exception and include the exception
                 # class and the modified parameter values to the error queue.
                 # These modified parvals determine the new lower statistic.
-                # The exception class will be instaniated re-raised with the
+                # The exception class will be re-raised with the
                 # parameter values attached.  C++ Python exceptions are not
                 # picklable for use in the queue.
                 err_q.put(EstNewMin(pars))
