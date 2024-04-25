@@ -1309,3 +1309,29 @@ def test_lrhist_str(check_str):
                ])
 
     assert last.startswith("histo_prefs = {")
+
+
+@pytest.mark.parametrize("cls", [sherpaplot.Histogram,
+                                 sherpaplot.HistogramPlot,
+                                 sherpaplot.DataHistogramPlot,
+                                 sherpaplot.ModelHistogramPlot,
+                                 sherpaplot.SourceHistogramPlot,
+                                 sherpaplot.PDFPlot,
+                                 sherpaplot.LRHistogram,
+                                 pytest.param(sherpaplot.ComponentModelHistogramPlot, marks=pytest.mark.xfail),
+                                 pytest.param(sherpaplot.ComponentSourceHistogramPlot, marks=pytest.mark.xfail)
+                                 ])
+def test_histo_plot_preferences(cls):
+    """Check we have histo_prefs and not plot_prefs.
+
+    We have had code that accidentally created a plot_prefs
+    field, so we want to check this does not happen.
+    """
+
+    p = cls()
+    assert p.histo_prefs is not None
+    try:
+        p.plot_prefs
+        assert False, f"cls {cls} has a plot_prefs field"
+    except AttributeError:
+        pass
