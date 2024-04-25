@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -21,18 +21,12 @@
 from itertools import chain
 import logging
 
-# Is there ever a case where multiprocessing can fail here?
-try:
-    import multiprocessing
-except ImportError:
-    pass
-
 import numpy
 
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
     is_iterable, list_to_open_interval, mysgn, quad_coef, \
     demuller, zeroin, OutOfBoundErr, func_counter
-from sherpa.utils.parallel import multi, ncpus, process_tasks
+from sherpa.utils.parallel import multi, ncpus, context, process_tasks
 
 import sherpa.estmethods._est_funcs
 
@@ -1156,31 +1150,10 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
 
     """
 
-    def worker(out_q, err_q, parids, parnums, lock):
-        results = []
-        for parid, singleparnum in zip(parids, parnums):
-            try:
-                result = estfunc(parid, singleparnum, lock)
-                results.append((parid, result))
-            except EstNewMin:
-                # catch the EstNewMin exception and include the exception
-                # class and the modified parameter values to the error queue.
-                # These modified parvals determine the new lower statistic.
-                # The exception class will be instaniated re-raised with the
-                # parameter values attached.  C++ Python exceptions are not
-                # picklable for use in the queue.
-                err_q.put(EstNewMin(pars))
-                return
-            except Exception as e:
-                err_q.put(e)
-                return
-
-        out_q.put(results)
-
     # See sherpa.utils.parallel for a discussion of how multiprocessing is
     # being used to run code in parallel.
     #
-    manager = multiprocessing.Manager()
+    manager = context.Manager()
     out_q = manager.Queue()
     err_q = manager.Queue()
 
@@ -1201,8 +1174,28 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
     limit_parnums = numpy.array_split(limit_parnums, numcores)
     parids = numpy.array_split(parids, numcores)
 
-    tasks = [multiprocessing.Process(target=worker,
-                                     args=(out_q, err_q, parid, parnum, lock))
+    def worker(parids, parnums):
+        results = []
+        for parid, singleparnum in zip(parids, parnums):
+            try:
+                result = estfunc(parid, singleparnum, lock)
+                results.append((parid, result))
+            except EstNewMin:
+                # catch the EstNewMin exception and include the exception
+                # class and the modified parameter values to the error queue.
+                # These modified parvals determine the new lower statistic.
+                # The exception class will be re-raised with the
+                # parameter values attached.  C++ Python exceptions are not
+                # picklable for use in the queue.
+                err_q.put(EstNewMin(pars))
+                return
+            except Exception as e:
+                err_q.put(e)
+                return
+
+        out_q.put(results)
+
+    tasks = [context.Process(target=worker, args=(parid, parnum))
              for parid, parnum in zip(parids, limit_parnums)]
 
     return run_tasks(tasks, out_q, err_q, size)
