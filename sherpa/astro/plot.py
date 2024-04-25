@@ -246,7 +246,7 @@ class ModelHistogram(ModelPHAHistogram):
             data.mask = old_mask
 
 
-class SourcePlot(shplot.HistogramPlot):
+class SourcePlot(shplot.SourceHistogramPlot):
     """Create PHA plots of unconvolved model values.
 
     Attributes
@@ -266,7 +266,6 @@ class SourcePlot(shplot.HistogramPlot):
         self.units = None
         self.mask = None
         super().__init__()
-        self.title = 'Source'
 
     def prepare(self, data, src, lo=None, hi=None):
         # Note: src is source model before folding
@@ -370,48 +369,40 @@ class SourcePlot(shplot.HistogramPlot):
                               **kwargs)
 
 
-class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
+# We do not derive from shplot.ComponentModelHistogramPlot to avoid
+# confusion over what behavior is wanted.
+#
+class ComponentModelPlot(ModelHistogram):
+    """The component model plot for DataPHA data.
+
+    .. versionchanged:: 4.16.1
+
+       The class no-longer derives from `sherpa.plot.ComponentSourcePlot`.
+    """
 
     histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
-    def __init__(self):
-        ModelHistogram.__init__(self)
-
-    def __str__(self):
-        return ModelHistogram.__str__(self)
-
     def prepare(self, data, model, stat=None):
-        ModelHistogram.prepare(self, data, model, stat)
+        super().prepare(data=data, model=model, stat=stat)
         self.title = f'Model component: {model.name}'
 
-    def _merge_settings(self, kwargs):
-        return {**self.histo_prefs, **kwargs}
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        ModelHistogram.plot(self, overplot=overplot,
-                            clearwindow=clearwindow, **kwargs)
+# We do not derive from shplot.ComponentSourceHistogramPlot to avoid
+# confusion over what behavior is wanted.
+#
+class ComponentSourcePlot(SourcePlot):
+    """The component source plot for DataPHA data.
 
+    .. versionchanged:: 4.16.1
 
-class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
+       The class no-longer derives from `sherpa.plot.ComponentSourcePlot`.
+    """
 
     histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
-    def __init__(self):
-        SourcePlot.__init__(self)
-
-    def __str__(self):
-        return SourcePlot.__str__(self)
-
     def prepare(self, data, model, stat=None):
-        SourcePlot.prepare(self, data, model)
+        super().prepare(data=data, src=model)
         self.title = f'Source model component: {model.name}'
-
-    def _merge_settings(self, kwargs):
-        return {**self.histo_prefs, **kwargs}
-
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        SourcePlot.plot(self, overplot=overplot,
-                        clearwindow=clearwindow, **kwargs)
 
 
 class ARFPlot(shplot.HistogramPlot):

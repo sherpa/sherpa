@@ -856,6 +856,9 @@ class DataHistogramPlot(HistogramPlot):
 class ModelHistogramPlot(HistogramPlot):
     """Display a model as a histogram."""
 
+    # TODO: should this include
+    # histo_prefs = shplot.basicbackend.get_model_histo_defaults()
+
     def __init__(self):
         super().__init__()
         self.title = 'Model'
@@ -1804,23 +1807,36 @@ class ModelPlot(Plot):
 
 
 class ComponentModelPlot(ModelPlot):
+    """Component model plots."""
 
     plot_prefs = basicbackend.get_component_plot_defaults()
     "The preferences for the plot."
 
+    # TODO: ComponentSourcePlot calls data.to_component_plot but this
+    # just uses data.to_plot. Does it matter?
+    #
     def prepare(self, data, model, stat=None):
-        ModelPlot.prepare(self, data, model, stat)
+        super().prepare(data=data, model=model, stat=stat)
         self.title = f'Model component: {model.name}'
 
 
 class ComponentModelHistogramPlot(ModelHistogramPlot):
+    """Component model plots for histogram data.
 
-    # Is this the correct setting?
-    plot_prefs = basicbackend.get_component_plot_defaults()
+    ..versionchanged:: 4.16.1
+      The `histo_prefs` attribute is now properly set (plot_prefs is
+      also no-longer set).
+
+    """
+
+    histo_prefs = basicbackend.get_component_histo_defaults()
     "The preferences for the plot."
 
+    # TODO: ComponentSourceHistogramPlot calls data.to_component_plot
+    # but this just uses data.to_plot. Does it matter?
+    #
     def prepare(self, data, model, stat=None):
-        super().prepare(data, model, stat)
+        super().prepare(data=data, model=model, stat=stat)
         self.title = f'Model component: {model.name}'
 
 
@@ -1858,6 +1874,7 @@ class SourcePlot(ModelPlot):
 
 
 class ComponentSourcePlot(SourcePlot):
+    """Component source plots."""
 
     plot_prefs = basicbackend.get_component_plot_defaults()
 
@@ -1869,9 +1886,15 @@ class ComponentSourcePlot(SourcePlot):
 
 
 class ComponentSourceHistogramPlot(SourceHistogramPlot):
+    """Component source plots for histogram data.
 
-    # Is this the correct setting?
-    plot_prefs = basicbackend.get_component_plot_defaults()
+    ..versionchanged:: 4.16.1
+      The `histo_prefs` attribute is now properly set (plot_prefs is
+      also no-longer set).
+
+    """
+
+    histo_prefs = basicbackend.get_component_histo_defaults()
 
     def prepare(self, data, model, stat=None):
 

@@ -1318,8 +1318,8 @@ def test_lrhist_str(check_str):
                                  sherpaplot.SourceHistogramPlot,
                                  sherpaplot.PDFPlot,
                                  sherpaplot.LRHistogram,
-                                 pytest.param(sherpaplot.ComponentModelHistogramPlot, marks=pytest.mark.xfail),
-                                 pytest.param(sherpaplot.ComponentSourceHistogramPlot, marks=pytest.mark.xfail)
+                                 sherpaplot.ComponentModelHistogramPlot,
+                                 sherpaplot.ComponentSourceHistogramPlot,
                                  ])
 def test_histo_plot_preferences(cls):
     """Check we have histo_prefs and not plot_prefs.
