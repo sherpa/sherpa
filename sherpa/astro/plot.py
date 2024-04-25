@@ -159,6 +159,9 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 
     def prepare(self, data, stat=None):
 
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         # Need a better way of accessing the binning of the data.
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
@@ -209,6 +212,9 @@ class ModelHistogram(ModelPHAHistogram):
     """
 
     def prepare(self, data, model, stat=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
 
         # We could fit this into a single try/finally group but
         # it makes it harder to see what is going on so split
@@ -760,6 +766,10 @@ class OrderPlot(ModelHistogram):
 
     # Note: this does not accept a stat parameter.
     def prepare(self, data, model, orders=None, colors=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         self.orders = data.response_ids
 
         if orders is not None:

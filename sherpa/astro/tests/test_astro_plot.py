@@ -1262,7 +1262,7 @@ def test_pha_data_fails_not_pha(cls):
     d = Data1D("not-a-pha", [1, 2], [0, 2])
     plotobj = cls()
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'units'"):
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
         plotobj.prepare(d, stat=stats.LeastSq())
 
 
@@ -1293,7 +1293,7 @@ def test_pha_model_fails_not_pha(cls):
     m = Const1D("mdl")
     plotobj = cls()
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'grouped'"):
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
         plotobj.prepare(d, m, stat=stats.LeastSq())
 
 
@@ -1323,7 +1323,7 @@ def test_pha_model_no_stat_fails_not_pha(cls):
     m = Const1D("mdl")
     plotobj = cls()
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'response_ids'"):
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
         plotobj.prepare(d, m)
 
 
