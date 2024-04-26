@@ -22,7 +22,10 @@ jobs:
   tests:
     defaults:
       run:
-        shell: bash
+        # See
+        # https://github.com/marketplace/actions/setup-miniconda#use-a-default-shell
+        # for why we pass the "-el {0}" option
+        shell: bash -el {0}
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
@@ -108,6 +111,14 @@ jobs:
       run: |
         brew install --cask xquartz
 
+    - name: Install Miniforge
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        activate-environment: build
+        miniforge-version: latest
+        python-version: ${{ matrix.python-version }}
+        auto-update-conda: true
+
     - name: Conda Setup
       env:
         PYTHONVER: ${{ matrix.python-version }}
@@ -124,8 +135,6 @@ jobs:
       env:
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
-        conda activate build
         if [ "$RUNNER_OS" != "macOS" ]; then
           source .github/scripts/setup_ds9.sh
           # We need xvfb to run the tests so ensure it's installed
@@ -138,8 +147,6 @@ jobs:
       env:
         PYTHON_LDFLAGS: " "
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
-        conda activate build
         pip install .[test] --verbose
 
     - name: Build Sherpa (develop)
@@ -147,15 +154,11 @@ jobs:
       env:
         PYTHON_LDFLAGS: " "
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
-        conda activate build
         pip install -e .[test] --verbose
 
     - name: Install the test data?
       if: matrix.test-data == 'package'
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
-        conda activate build
         pip install ./sherpa-test-data
 
     - name: Remove submodule
@@ -181,8 +184,6 @@ jobs:
         fi
 
         echo "** smoke test: ${smokevars}"
-        source ${CONDA}/etc/profile.d/conda.sh
-        conda activate build
         cd /home
         sherpa_smoke ${smokevars}
 
@@ -215,16 +216,12 @@ jobs:
           # moment, but leave this in
           export PATH="${PATH}:/opt/X11/bin"
         fi
-        source ${CONDA}/etc/profile.d/conda.sh
-        conda activate build
         conda install -yq pytest-cov
         pytest --pyargs sherpa --cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml
 
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
-        conda activate build
         conda install -yq pytest-cov
         cd $HOME
         sherpa_test --cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml
@@ -235,4 +232,3 @@ jobs:
         token: ${{ secrets.CODECOV_TOKEN }}
         files: ${{ github.workspace }}/coverage.xml
         verbose: true
-      
