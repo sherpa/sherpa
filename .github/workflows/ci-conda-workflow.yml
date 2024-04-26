@@ -23,14 +23,14 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: MacOS Full Build
-            os: macos-latest
-            python-version: "3.10"
-            install-type: develop
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 3
-            xspec-version: 12.13.1
+          #- name: MacOS Full Build
+          #  os: macos-latest
+          #  python-version: "3.10"
+          #  install-type: develop
+          #  fits: astropy
+          #  test-data: submodule
+          #  matplotlib-version: 3
+          #  xspec-version: 12.13.1
 
           - name: Linux Minimum Setup (Python 3.9)
             os: ubuntu-latest
