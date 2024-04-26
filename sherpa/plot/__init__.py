@@ -39,10 +39,12 @@ from typing import Any, Literal, Optional, Sequence, Union
 import numpy as np
 
 from sherpa import get_config
+from sherpa.data import Data1D
 from sherpa.estmethods import Covariance
+from sherpa.models.model import Model
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
-from sherpa.stats import Likelihood, LeastSq, Chi2XspecVar
+from sherpa.stats import Stat, Likelihood, LeastSq, Chi2XspecVar
 from sherpa.utils import NoNewAttributesAfterInit, erf, \
     bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
 from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
@@ -1756,7 +1758,10 @@ class ModelPlot(Plot):
         """Return a HTML (string) representation of the model plot."""
         return backend.as_html_model(self)
 
-    def prepare(self, data, model, stat=None):
+    def prepare(self,
+                data: Data1D,
+                model: Model,
+                stat: Optional[Stat] = None) -> None:
         """Create the data to plot
 
         Parameters
@@ -2201,7 +2206,88 @@ class FitContour(Contour):
         self.modelcontour.overcontour(**kwargs)
 
 
-class DelchiPlot(ModelPlot):
+
+class BaseResidualPlot(ModelPlot):
+    """Residuals of model + data.
+
+    Only subclasses, that implement _calc_y, should be created.
+
+    .. versionadded:: 4.16.1
+
+    Notes
+    -----
+    The ylog setting is ignored, whether given as a preference or
+    a keyword argument, so the Y axis is always drawn with a
+    linear scale.
+
+    Errors are supported on the Y axis.
+    """
+
+    residual_axis: float = 0
+    """At what point on the y axis is the residual line drawn."""
+
+    residual_color: str = 'k'
+    """The color of the residual line."""
+
+    residual_lw: float = 0.8
+    """The line width of the residual line."""
+
+    def _calc_y(self,
+                data: Data1D,
+                stat: Stat,
+                ylist: tuple[np.ndarray, np.ndarray],
+                staterr: Optional[np.ndarray]) -> None:
+        """Define the self.y and self.yerr fields"""
+        raise NotImplementedError()
+
+    def _change_ylabel(self) -> None:
+        """Change the self.ylabel field, if needed."""
+        pass
+
+    def _title(self, data: Data1D) -> None:
+        """Set the self.title field"""
+        raise NotImplementedError()
+
+    def prepare(self,  # type: ignore[override]
+                data: Data1D,
+                model: Model,
+                # Note that the superclass has stat as optional
+                stat: Stat) -> None:
+
+        plot = data.to_plot(yfunc=model)
+        (self.x, y, staterr, self.xerr, self.xlabel, self.ylabel) = plot
+
+        self._calc_y(data, stat, y, staterr)
+        self._change_ylabel()
+        self._title(data)
+
+    def plot(self,  # type: ignore[override]
+             overplot: bool = False,
+             clearwindow: bool = True,
+             **kwargs) -> None:
+
+        x = self.x
+        y = self.y
+
+        # The y axis is only drawn with a linear scale.
+        #
+        self.plot_prefs['ylog'] = False
+        kwargs.pop('ylog', True)
+
+        # The superclass is not called since the y errors are
+        # potentially included in the plot.
+        #
+        Plot.plot(self, x, y, yerr=self.yerr, xerr=self.xerr,
+                  title=self.title, xlabel=self.xlabel,
+                  ylabel=self.ylabel, overplot=overplot,
+                  clearwindow=clearwindow, **kwargs)
+        super().hline(y=self.residual_axis, xmin=0, xmax=1,
+                      linecolor=self.residual_color,
+                      linewidth=self.residual_lw,
+                      overplot=True)
+
+
+class DelchiPlot(BaseResidualPlot):
     """Create plots of the delta-chi value per point.
 
     The value of (data-model)/error is plotted for each point.
@@ -2229,31 +2315,26 @@ class DelchiPlot(ModelPlot):
     plot_prefs = basicbackend.get_resid_plot_defaults()
     "The preferences for the plot."
 
-    def _calc_delchi(self, ylist, staterr):
-        return (ylist[0] - ylist[1]) / staterr
-
-    def prepare(self, data, model, stat):
-        (self.x, y, staterr, self.xerr,
-         self.xlabel, self.ylabel) = data.to_plot(model)
+    def _calc_y(self,
+                data: Data1D,
+                stat: Stat,
+                ylist: tuple[np.ndarray, np.ndarray],
+                staterr: Optional[np.ndarray]) -> None:
+        """Define the self.y and self.yerr fields"""
 
         if staterr is None:
             if stat.name in _stats_noerr:
                 raise StatErr('badstat', "DelchiPlot", stat.name)
             staterr = data.get_yerr(True, stat.calc_staterror)
 
-        self.y = self._calc_delchi(y, staterr)
-        self.yerr = staterr / staterr
-        self.ylabel = 'Sigma'
-        self.title = _make_title('Sigma Residuals', data.name)
+        self.y = (ylist[0] - ylist[1]) / staterr
+        self.yerr = np.ones_like(self.y)
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        self.plot_prefs['ylog'] = False
-        kwargs.pop('ylog', True)
-        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
-                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
-        super().hline(y=0, xmin=0, xmax=1, linecolor='k',
-                      linewidth=.8, overplot=True)
+    def _change_ylabel(self) -> None:
+        self.ylabel = 'Sigma'
+
+    def _title(self, data: Data1D) -> None:
+        self.title = _make_title('Sigma Residuals', data.name)
 
 
 class ChisqrPlot(ModelPlot):
@@ -2283,26 +2364,28 @@ class ChisqrPlot(ModelPlot):
         return dy * dy / (staterr * staterr)
 
     def prepare(self, data, model, stat):
-        (self.x, y, staterr, self.xerr,
+        (self.x, y, _, self.xerr,
          self.xlabel, self.ylabel) = data.to_plot(model)
 
-        # if staterr is None:
         if stat.name in _stats_noerr:
             raise StatErr('badstat', "ChisqrPlot", stat.name)
         staterr = data.get_yerr(True, stat.calc_staterror)
 
         self.y = self._calc_chisqr(y, staterr)
+        # TODO: should this
+        #   self.yerr = staterr * staterr
         self.ylabel = backend.get_latex_for_string(r'\chi^2')
         self.title = _make_title(
             backend.get_latex_for_string(r'\chi^2'), data.name)
 
+    # TODO: should this draw x/y errors?
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         Plot.plot(self, self.x, self.y, title=self.title,
                   xlabel=self.xlabel, ylabel=self.ylabel,
                   overplot=overplot, clearwindow=clearwindow, **kwargs)
 
 
-class ResidPlot(ModelPlot):
+class ResidPlot(BaseResidualPlot):
     """Create plots of the residuals (data - model) per point.
 
     The value of (data-model) is plotted for each point.
@@ -2330,28 +2413,25 @@ class ResidPlot(ModelPlot):
     plot_prefs = basicbackend.get_resid_plot_defaults()
     "The preferences for the plot."
 
-    def _calc_resid(self, ylist):
-        return ylist[0] - ylist[1]
+    def _calc_y(self,
+                data: Data1D,
+                stat: Stat,
+                ylist: tuple[np.ndarray, np.ndarray],
+                staterr: Optional[np.ndarray]) -> None:
+        """Define the self.y and self.yerr fields"""
 
-    def prepare(self, data, model, stat):
-        (self.x, y, self.yerr, self.xerr,
-         self.xlabel, self.ylabel) = data.to_plot(model)
-
-        self.y = self._calc_resid(y)
-
-        # See the discussion in DataPlot.prepare
-        try:
-            yerrorbars = self.plot_prefs['yerrorbars']
-        except KeyError:
-            yerrorbars = True
+        self.y = ylist[0] - ylist[1]
 
         if stat.name in _stats_noerr:
-            self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-            if yerrorbars:
+            calcfn = Chi2XspecVar.calc_staterror
+            if self.plot_prefs.get('yerrorbars', True):
                 warning(_errorbar_warning(stat))
         else:
-            self.yerr = data.get_yerr(True, stat.calc_staterror)
+            calcfn = stat.calc_staterror
 
+        self.yerr = data.get_yerr(True, calcfn)
+
+    def _change_ylabel(self) -> None:
         # Some data sets (e.g. DataPHA, which shows the units) have a y
         # label that could (should?) be displayed (or added to the label).
         # To avoid a change in behavior, the label is only changed if
@@ -2360,16 +2440,8 @@ class ResidPlot(ModelPlot):
         if self.ylabel == 'y':
             self.ylabel = 'Data - Model'
 
+    def _title(self, data: Data1D) -> None:
         self.title = _make_title('Residuals', data.name)
-
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        self.plot_prefs['ylog'] = False
-        kwargs.pop('ylog', True)
-        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
-                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
-        super().hline(y=0, xmin=0, xmax=1, linecolor='k',
-                      linewidth=.8, overplot=True)
 
 
 class ResidContour(ModelContour):
@@ -2396,7 +2468,7 @@ class ResidContour(ModelContour):
                         **kwargs)
 
 
-class RatioPlot(ModelPlot):
+class RatioPlot(BaseResidualPlot):
     """Create plots of the ratio of data to model per point.
 
     The value of data / model is plotted for each point.
@@ -2424,46 +2496,38 @@ class RatioPlot(ModelPlot):
     plot_prefs = basicbackend.get_ratio_plot_defaults()
     "The preferences for the plot."
 
-    def _calc_ratio(self, ylist):
-        data = np.array(ylist[0])
-        model = np.asarray(ylist[1])
-        bad = np.where(model == 0.0)
-        data[bad] = 0.0
-        model[bad] = 1.0
-        return data / model
+    residual_axis = 1
+    """At what point on the y axis is the residual line drawn."""
 
-    def prepare(self, data, model, stat):
-        (self.x, y, self.yerr, self.xerr,
-         self.xlabel, self.ylabel) = data.to_plot(model)
+    def _calc_y(self,
+                data: Data1D,
+                stat: Stat,
+                ylist: tuple[np.ndarray, np.ndarray],
+                staterr: Optional[np.ndarray]) -> None:
+        """Define the self.y and self.yerr fields"""
 
-        self.y = self._calc_ratio(y)
-
-        # See the discussion in DataPlot.prepare
-        try:
-            yerrorbars = self.plot_prefs['yerrorbars']
-        except KeyError:
-            yerrorbars = True
+        dvals = np.array(ylist[0])
+        mvals = np.asarray(ylist[1])
+        bad = np.where(mvals == 0.0)
+        dvals[bad] = 0.0
+        mvals[bad] = 1.0
+        self.y = dvals / mvals
 
         if stat.name in _stats_noerr:
-            self.yerr = data.get_yerr(True, Chi2XspecVar.calc_staterror)
-            self.yerr = self.yerr / y[1]
-            if yerrorbars:
+            calcfn = Chi2XspecVar.calc_staterror
+            if self.plot_prefs.get('yerrorbars', True):
                 warning(_errorbar_warning(stat))
         else:
-            staterr = data.get_yerr(True, stat.calc_staterror)
-            self.yerr = staterr / y[1]
+            calcfn = stat.calc_staterror
 
+        self.yerr = data.get_yerr(True, calcfn)
+        self.yerr = self.yerr / ylist[1]
+
+    def _change_ylabel(self) -> None:
         self.ylabel = 'Data / Model'
-        self.title = _make_title('Ratio of Data to Model', data.name)
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        self.plot_prefs['ylog'] = False
-        kwargs.pop('ylog', True)
-        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
-                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
-        super().hline(y=1, xmin=0, xmax=1, linecolor='k',
-                      linewidth=.8, overplot=True)
+    def _title(self, data: Data1D) -> None:
+        self.title = _make_title('Ratio of Data to Model', data.name)
 
 
 class RatioContour(ModelContour):

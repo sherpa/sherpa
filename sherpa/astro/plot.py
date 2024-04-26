@@ -30,6 +30,7 @@ from sherpa.astro import hc
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import bounds_check
+from sherpa.data import Data1D
 from sherpa.models.basic import Delta1D
 from sherpa import plot as shplot
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
@@ -723,22 +724,24 @@ class BkgFitPlot(shplot.FitPlot):
 
 class BkgDelchiPlot(shplot.DelchiPlot):
     "Derived class for creating background plots of 1D delchi chi ((data-model)/error)"
+
+    # leave the title as the parent, which is
+    # 'Sigma Residuals for <name>'.
+    #
     pass
 
 
 class BkgResidPlot(shplot.ResidPlot):
     "Derived class for creating background plots of 1D residual (data-model)"
 
-    def prepare(self, data, model, stat):
-        super().prepare(data, model, stat)
+    def _title(self, data: Data1D) -> None:
         self.title = f'Residuals of {data.name} - Bkg Model'
 
 
 class BkgRatioPlot(shplot.RatioPlot):
     "Derived class for creating background plots of 1D ratio (data:model)"
 
-    def prepare(self, data, model, stat):
-        super().prepare(data, model, stat)
+    def _title(self, data: Data1D) -> None:
         self.title = f'Ratio of {data.name} : Bkg Model'
 
 
