@@ -32,14 +32,25 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: MacOS Full Build
-            os: macos-12
-            python-version: "3.10"
+          - name: MacOS Intel Full Build (Python 3.11)
+            os: macos-13
+            python-version: "3.11"
             install-type: develop
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
+            bokeh-version: 3
             xspec-version: 12.14.0i
+
+          - name: MacOS ARM Full Build (Python 3.11)
+            os: macos-14
+            python-version: "3.11"
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            bokeh-version: 3
+            xspec-version: 12.13.1e
 
           - name: Linux Minimum Setup (Python 3.10)
             os: ubuntu-latest
