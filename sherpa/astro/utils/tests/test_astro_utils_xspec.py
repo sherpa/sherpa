@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023
+#  Copyright (C) 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -433,8 +433,10 @@ class XSapec(XSAdditiveModel):
 
     def __init__(self, name='apec'):
         self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')
-        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-        XSAdditiveModel.__init__(self, name, (self.kT,self.norm))
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.kT,)
+        XSAdditiveModel.__init__(self, name, pars)
 
 '''
     assert converted.python == expected
@@ -506,7 +508,9 @@ class XSabcd(XSMultiplicativeModel):
 
     def __init__(self, name='abcd'):
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
-        XSMultiplicativeModel.__init__(self, name, (self.nH,))
+
+        pars = (self.nH,)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 '''
     assert converted.python == expected
@@ -572,7 +576,9 @@ class XSrgsxsrc(XSConvolutionKernel):
 
     def __init__(self, name='rgsxsrc'):
         self.order = XSParameter(name, 'order', -1.0, min=-3.0, max=-1.0, hard_min=-3.0, hard_max=-1.0, frozen=True)
-        XSConvolutionKernel.__init__(self, name, (self.order,))
+
+        pars = (self.order,)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 '''
     assert converted.python == expected
@@ -637,8 +643,10 @@ class XSabcd(XSAdditiveModel):
 
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
-        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-        XSAdditiveModel.__init__(self, name, (self.xs,self.norm))
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.xs,)
+        XSAdditiveModel.__init__(self, name, pars)
         self._use_caching = False
         warnings.warn('support for models like xsabcd (recalculated per spectrum) is untested.')
 
@@ -709,8 +717,10 @@ class XSabcd(XSAdditiveModel):
 
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
-        self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-        XSAdditiveModel.__init__(self, name, (self.xs,self.norm))
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.xs,)
+        XSAdditiveModel.__init__(self, name, pars)
         warnings.warn('support for models like xsabcd (variances are calculated by the model) is untested.')
 
 '''

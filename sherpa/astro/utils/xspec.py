@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2013, 2014, 2015, 2016, 2020, 2021, 2023
+#  Copyright (C) 2012 - 2016, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -845,16 +845,29 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     out += f"{t1}def __init__(self, name='{mdl.name}'):\n"
     parnames = []
     for par in mdl.pars:
+        # Skip norm if an additive model
+        if par.name == "norm" and mdl.modeltype == "Add":
+            continue
+
         out += f"{t2}self.{par.name} = {par.param_string()}\n"
         parnames.append(f"self.{par.name}")
 
-    assert len(parnames) > 0, f'Expected at least 1 parameter for {modelname} model'
-    if len(parnames) == 1:
+    npars = len(parnames)
+    if mdl.modeltype != "Add":
+        assert npars > 0, f'Expected at least 1 parameter for {modelname} model'
+
+    if npars == 0:
+        pstr = "()"
+    elif npars == 1:
         pstr = f"({parnames[0]},)"
     else:
-        pstr = f"({','.join(parnames)})"
+        pstr = f"({', '.join(parnames)})"
 
-    out += f"{t2}XS{modelname}.__init__(self, name, {pstr})\n"
+    out += "\n"
+    if mdl.modeltype == "Add":
+        out += f"{t2}# norm parameter is automatically added by XSAdditiveModel\n"
+    out += f"{t2}pars = {pstr}\n"
+    out += f"{t2}XS{modelname}.__init__(self, name, pars)\n"
 
     nflags = len(mdl.flags)
 
@@ -975,7 +988,11 @@ def model_to_compiled(mdl: ModelDefinition) -> tuple[str, str]:
         wrapcode += '_NORM'
 
     elif mdl.modeltype == "Mul":
-        if not is_fortran:
+        # Do we have any double-precision C/C++ models to worry about?
+        if is_fortran:
+            if mdl.language == 'Fortran - double precision':
+                wrapcode += '_DBL'
+        else:
             wrapcode += '_C'
 
     else:

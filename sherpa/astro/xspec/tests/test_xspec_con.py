@@ -47,10 +47,10 @@ XSPEC_CON_MODELS = [('cflux', 1, 2),
                     ('clumin', 1, 3),
                     ('cpflux', 1, 2),
                     ('gsmooth', 1, 1),
-                    ('ireflect', 1, 6),
+                    ('ireflect', 2, 5),
                     ('kdblur', 1, 3),
                     ('kdblur2', 1, 5),
-                    ('kerrconv', 2, 5),
+                    ('kerrconv', 1, 6),
                     ('kyconv', 2, 10),
                     ('lsmooth', 1, 1),
                     ('partcov', 1, 0),
@@ -82,7 +82,7 @@ def test_count_xspec_convolution_models(name, nfree, nfrozen):
 
     # Does the class exist?
     #
-    clsname = 'XS{}'.format(name)
+    clsname = f'XS{name}'
     cls = getattr(xspec, clsname)
 
     # Is it a convolution kernel?
