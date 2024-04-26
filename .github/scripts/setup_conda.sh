@@ -5,7 +5,7 @@ echo "** uname -s: `uname -s`"
 echo "** uname -m: `uname -m`"
 
 if [ "`uname -s`" == "Darwin" ] ; then
-    compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
+    compilers="clang_osx-arm64 clangxx_osx-arm64 gfortran_osx-arm64"
 
     #Download the macOS 11.0 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
     mkdir -p ${GITHUB_WORKSPACE}/11.0SDK
@@ -15,6 +15,13 @@ if [ "`uname -s`" == "Darwin" ] ; then
     fi
     tar -C ${GITHUB_WORKSPACE}/11.0SDK -xf MacOSX11.0.sdk.tar.xz
     #End of Conda compilers section
+
+    # Install miniforge; see
+    # https://github.com/conda-forge/miniforge?tab=readme-ov-file#downloading-the-installer-as-part-of-a-ci-pipeline
+    CONDA="${HOME}/conda"
+    curl -fsSLo Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-$(uname -m).sh"
+    bash Miniforge3.sh -b -p $CONDA
+
 else
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
 
@@ -32,16 +39,26 @@ source ${CONDA}/etc/profile.d/conda.sh
 
 # update and add channels
 conda update --yes conda
-conda config --add channels conda-forge
-#Remove defaults to avoid conflicts with conda-forge
-conda config --remove channels defaults
+
+# miniforge has already done this for us, hence the OS restriction.
+#
+if [ "`uname -s`" != "Darwin" ] ; then
+  conda config --add channels conda-forge
+  #Remove defaults to avoid conflicts with conda-forge
+  conda config --remove channels defaults
+fi
 
 # To avoid issues with non-XSPEC builds (e.g.
 # https://github.com/sherpa/sherpa/pull/794#issuecomment-616570995 )
 # the XSPEC-related channels are only added if needed
 #
 if [ -n "${XSPECVER}" ]; then
- conda config --add channels ${xspec_channel}
+  if [ "`uname -s`" == "Darwin" ] ; then
+    # we need to use the CXC conda channel to get the ARM XSPEC build for now
+    conda config --add channels https://cxc.harvard.edu/conda/ciao
+  else
+    conda config --add channels ${xspec_channel}
+  fi
 fi
 
 # Figure out requested dependencies
@@ -60,9 +77,3 @@ echo "compilers: ${compilers}"
 conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
 
 conda activate build
-
-# Force setuptools earlier than 60 - see issue #1456. At present
-# conda seems to default to a working version, but leave this in
-# to ensure it holds, or we find out once we can no-longer do this.
-#
-conda install 'setuptools < 60'
