@@ -26,6 +26,7 @@ jobs:
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+
     strategy:
       matrix:
         include:
