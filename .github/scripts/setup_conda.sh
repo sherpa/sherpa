@@ -1,5 +1,9 @@
 #!/usr/bin/env bash -e
 
+# Occasionally useful to know what these values are
+echo "** uname -s: `uname -s`"
+echo "** uname -m: `uname -m`"
+
 if [ "`uname -s`" == "Darwin" ] ; then
     compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
 
@@ -49,7 +53,8 @@ if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER}";
 fi
 
-echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${FITS} ${XSPEC}"
+echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD}"
+echo "compilers: ${compilers}"
 
 # Create and activate conda build environment
 conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
