@@ -753,21 +753,21 @@ def test_str_flux_histogram_empty(energy, cls):
     out = str(obj).split('\n')
 
     assert out[0] == 'modelvals = None'
-    assert out[1] == 'clipped = None'
-    assert out[2] == 'flux = None'
-    assert out[3] == 'xlo    = None'
-    assert out[4] == 'xhi    = None'
-    assert out[5] == 'y      = None'
+    assert out[1] == 'clipped   = None'
+    assert out[2] == 'flux      = None'
+    assert out[3] == 'xlo       = None'
+    assert out[4] == 'xhi       = None'
+    assert out[5] == 'y         = None'
 
     # the exact text depends on the plot backend
     if energy:
-        assert out[6].startswith('xlabel = Energy flux ')
-        assert out[8] == 'title  = Energy flux distribution'
+        assert out[6].startswith('xlabel    = Energy flux ')
+        assert out[8] == 'title     = Energy flux distribution'
     else:
-        assert out[6].startswith('xlabel = Photon flux ')
-        assert out[8] == 'title  = Photon flux distribution'
+        assert out[6].startswith('xlabel    = Photon flux ')
+        assert out[8] == 'title     = Photon flux distribution'
 
-    assert out[7] == 'ylabel = Frequency'
+    assert out[7] == 'ylabel    = Frequency'
     assert out[9].startswith('histo_prefs = ')
 
     assert len(out) == 10
@@ -796,21 +796,21 @@ def test_str_flux_histogram_full(energy, cls, old_numpy_printing):
     # lines 1-4 are the modelvals array;assume they are
     # displayed correctly
     assert out[0] == 'modelvals = [[ 0.1, 1.1],'
-    assert out[4] == 'clipped = [ 1., 1., 0., 1.]'
-    assert out[5] == 'flux = [ 1. , 1.5, 2. , 0.5]'
-    assert out[6] == 'xlo    = [ 0.5  , 0.875, 1.25 , 1.625]'
-    assert out[7] == 'xhi    = [ 0.875, 1.25 , 1.625, 2.   ]'
-    assert out[8] == 'y      = [ 1., 1., 1., 1.]'
+    assert out[4] == 'clipped   = [ 1., 1., 0., 1.]'
+    assert out[5] == 'flux      = [ 1. , 1.5, 2. , 0.5]'
+    assert out[6] == 'xlo       = [ 0.5  , 0.875, 1.25 , 1.625]'
+    assert out[7] == 'xhi       = [ 0.875, 1.25 , 1.625, 2.   ]'
+    assert out[8] == 'y         = [ 1., 1., 1., 1.]'
 
     # the exact text depends on the plot backend
     if energy:
-        assert out[9].startswith('xlabel = Energy flux ')
-        assert out[11] == 'title  = Energy flux distribution'
+        assert out[9].startswith('xlabel    = Energy flux ')
+        assert out[11] == 'title     = Energy flux distribution'
     else:
-        assert out[9].startswith('xlabel = Photon flux ')
-        assert out[11] == 'title  = Photon flux distribution'
+        assert out[9].startswith('xlabel    = Photon flux ')
+        assert out[11] == 'title     = Photon flux distribution'
 
-    assert out[10] == 'ylabel = Frequency'
+    assert out[10] == 'ylabel    = Frequency'
     assert out[12].startswith('histo_prefs = ')
 
     assert len(out) == 13
@@ -1262,13 +1262,13 @@ def test_pha_data_fails_not_pha(cls):
     d = Data1D("not-a-pha", [1, 2], [0, 2])
     plotobj = cls()
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'units'"):
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
         plotobj.prepare(d, stat=stats.LeastSq())
 
 
-@pytest.mark.parametrize("cls", [ModelPHAHistogram,
-                                 BkgModelPHAHistogram,
-                                 ComponentSourcePlot])
+@pytest.mark.parametrize("cls", [ModelPHAHistogram, ModelHistogram,
+                                 BkgModelPHAHistogram, BkgModelHistogram,
+                                 ComponentSourcePlot, ComponentModelPlot])
 def test_pha_model_checks_not_pha(cls):
     """Check if error out with an invalid data message for Model classes"""
 
@@ -1280,24 +1280,7 @@ def test_pha_model_checks_not_pha(cls):
         plotobj.prepare(d, m, stat=stats.LeastSq())
 
 
-@pytest.mark.parametrize("cls", [ModelHistogram,
-                                 BkgModelHistogram,
-                                 ComponentModelPlot])
-def test_pha_model_fails_not_pha(cls):
-    """Check if error out with an invalid data message for Model classes
-
-    These should get merged into test_pha_model_checks_pha
-    """
-
-    d = Data1D("not-a-pha", [1, 2], [0, 2])
-    m = Const1D("mdl")
-    plotobj = cls()
-
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'grouped'"):
-        plotobj.prepare(d, m, stat=stats.LeastSq())
-
-
-@pytest.mark.parametrize("cls", [SourcePlot])
+@pytest.mark.parametrize("cls", [SourcePlot, OrderPlot])
 def test_pha_model_no_stat_checks_not_pha(cls):
     """Check if error out with an invalid data message for Model classes
 
@@ -1309,21 +1292,6 @@ def test_pha_model_no_stat_checks_not_pha(cls):
     plotobj = cls()
 
     with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
-        plotobj.prepare(d, m)
-
-
-@pytest.mark.parametrize("cls", [OrderPlot])
-def test_pha_model_no_stat_fails_not_pha(cls):
-    """Check if error out with an invalid data message for Model classes
-
-    These classes do not take a stat argument for the prepare method.
-    """
-
-    d = Data1D("not-a-pha", [1, 2], [0, 2])
-    m = Const1D("mdl")
-    plotobj = cls()
-
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'response_ids'"):
         plotobj.prepare(d, m)
 
 
@@ -1348,7 +1316,7 @@ def test_arf_checks_data_is_pha():
         plotobj.prepare(arf=arf, data=d)
 
 
-def test_rmf_checks_arf():
+def test_rmf_checks_rmf():
     """Do we ensure it's an RMF?"""
 
     plotobj = RMFPlot()
