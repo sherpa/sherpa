@@ -39,7 +39,7 @@ from typing import Any, Literal, Optional, Sequence, Union
 import numpy as np
 
 from sherpa import get_config
-from sherpa.data import Data1D, Data1DInt
+from sherpa.data import Data1D, Data1DInt, Data2D
 from sherpa.estmethods import Covariance
 from sherpa.models.model import Model
 from sherpa.optmethods import LevMar, NelderMead
@@ -1677,7 +1677,7 @@ class PSFKernelContour(DataContour):
 
     def prepare(self, psf, data=None, stat=None):
         psfdata = psf.get_kernel(data)
-        DataContour.prepare(self, psfdata)
+        super().prepare(data=psfdata)
         # self.xlabel = 'PSF Kernel size x0'
         # self.ylabel = 'PSF Kernel size x1'
         self.title = 'PSF Kernel'
@@ -2036,13 +2036,21 @@ class ModelContour(Contour):
         """Return a HTML (string) representation of the model contour plot."""
         return backend.as_html_modelcontour(self)
 
-    def prepare(self, data, model, stat):
+    def prepare(self, data, model, stat=None):
+        """Prepare the data.
+
+        .. versionchanged:: 4.16.1
+           The stat argument is now unused and will likely be removed
+           in a future release.
+
+        """
+
         (self.x0, self.x1, self.y, self.xlabel,
          self.ylabel) = data.to_contour(yfunc=model)
         self.y = self.y[1]
 
     def contour(self, overcontour=False, clearwindow=True, **kwargs):
-        Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
+        super().contour(self.x0, self.x1, self.y, levels=self.levels,
                         title=self.title, xlabel=self.xlabel,
                         ylabel=self.ylabel, overcontour=overcontour,
                         clearwindow=clearwindow, **kwargs)
@@ -2053,7 +2061,7 @@ class PSFContour(DataContour):
 
     def prepare(self, psf, data=None, stat=None):
         psfdata = psf.get_kernel(data, False)
-        DataContour.prepare(self, psfdata)
+        super().prepare(data=psfdata)
         self.title = psf.kernel.name
 
 
@@ -2406,6 +2414,50 @@ class BaseResidualHistogramPlot(ModelHistogramPlot):
                       overplot=True)
 
 
+class BaseResidualContour(ModelContour):
+    """Residuals of model + data for contour data.
+
+    Only subclasses, that implement _calc_y, should be created.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_y(self,
+                ylist: tuple[np.ndarray, np.ndarray]) -> None:
+        """Define the self.y field"""
+        raise NotImplementedError()
+
+    def _title(self, data: Data2D) -> None:
+        """Set the self.title field"""
+        raise NotImplementedError()
+
+    def prepare(self,
+                data: Data2D,
+                model: Model,
+                stat = None) -> None:
+
+        (self.x0, self.x1, ys, self.xlabel,
+         self.ylabel) = data.to_contour(yfunc=model)
+
+        self._calc_y(ys)
+        self._title(data)
+
+    def contour(self,  # type: ignore[override]
+                overcontour: bool = False,
+                clearwindow: bool = True,
+                **kwargs) -> None:
+
+        x0 = self.x0
+        x1 = self.x1
+        y = self.y
+
+        Contour.contour(self, x0, x1, y, levels=self.levels,
+                        title=self.title, xlabel=self.xlabel,
+                        ylabel=self.ylabel, overcontour=overcontour,
+                        clearwindow=clearwindow, **kwargs)
+
+
 class DelchiPlot(BaseResidualPlot):
     """Create plots of the delta-chi value per point.
 
@@ -2662,28 +2714,18 @@ class ResidHistogramPlot(BaseResidualHistogramPlot):
         self.title = _make_title('Residuals', data.name)
 
 
-class ResidContour(ModelContour):
+class ResidContour(BaseResidualContour):
     "Derived class for creating 2D residual contours (data-model)"
 
     contour_prefs = basicbackend.get_resid_contour_defaults()
     "The preferences for the plot."
 
-    def _calc_resid(self, ylist):
-        return ylist[0] - ylist[1]
+    def _calc_y(self,
+                ylist: tuple[np.ndarray, np.ndarray]) -> None:
+        self.y = ylist[0] - ylist[1]
 
-    def prepare(self, data, model, stat):
-        (self.x0, self.x1, self.y, self.xlabel,
-         self.ylabel) = data.to_contour(yfunc=model)
-
-        self.y = self._calc_resid(self.y)
+    def _title(self, data):
         self.title = _make_title('Residuals', data.name)
-
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
-        Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
-                        title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow,
-                        **kwargs)
 
 
 class RatioPlot(BaseResidualPlot):
@@ -2794,33 +2836,24 @@ class RatioHistogramPlot(BaseResidualHistogramPlot):
         self.title = _make_title('Ratio of Data to Model', data.name)
 
 
-class RatioContour(ModelContour):
+class RatioContour(BaseResidualContour):
     "Derived class for creating 2D ratio contours (data divided by model)"
 
     contour_prefs = basicbackend.get_ratio_contour_defaults()
     "The preferences for the plot."
 
-    def _calc_ratio(self, ylist):
+    def _calc_y(self,
+                ylist: tuple[np.ndarray, np.ndarray]) -> None:
+
         data = np.array(ylist[0])
         model = np.asarray(ylist[1])
         bad = np.where(model == 0.0)
         data[bad] = 0.0
         model[bad] = 1.0
-        return data / model
+        self.y = data / model
 
-    def prepare(self, data, model, stat):
-        (self.x0, self.x1, self.y, self.xlabel,
-         self.ylabel) = data.to_contour(yfunc=model)
-
-        self.y = self._calc_ratio(self.y)
+    def _title(self, data: Data2D) -> None:
         self.title = _make_title('Ratio of Data to Model', data.name)
-
-    def contour(self, overcontour=False, clearwindow=True, **kwargs):
-        Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
-                        title=self.title, xlabel=self.xlabel,
-                        ylabel=self.ylabel,
-                        overcontour=overcontour, clearwindow=clearwindow,
-                        **kwargs)
 
 
 def calc_par_range(minval: float,
