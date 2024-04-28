@@ -3928,7 +3928,7 @@ class RegionUncertainty(Confidence2D):
             fit.model.thawedpars = oldpars
 
 
-class MultiPlot(NoNewAttributesAfterInit):
+class MultiPlot:
     """Combine multiple line-style plots.
 
     Allow multiple line-style plots - so those plot classes
@@ -3936,6 +3936,8 @@ class MultiPlot(NoNewAttributesAfterInit):
     the same area. Each plot is added with the add method.
 
     """
+
+    __slots__ = ("plots", "title")
 
     def __init__(self) -> None:
         self.plots: list[Union[Plot, HistogramPlot]] = []
