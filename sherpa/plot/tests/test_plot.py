@@ -30,8 +30,8 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.models import basic
 from sherpa import plot as sherpaplot
 from sherpa.data import Data1D, Data1DInt, Data2D
-from sherpa.stats import LeastSq
-from sherpa.utils.err import ConfidenceErr
+from sherpa.stats import Cash, CStat, LeastSq, WStat
+from sherpa.utils.err import ConfidenceErr, StatErr
 from sherpa.utils.testing import requires_data
 
 
@@ -1335,3 +1335,35 @@ def test_histo_plot_preferences(cls):
         assert False, f"cls {cls} has a plot_prefs field"
     except AttributeError:
         pass
+
+
+@pytest.mark.parametrize("pcls", [sherpa.DelchiPlot,
+                                  sherpa.ChisqrPlot])
+@pytest.mark.parametrize("scls", [Cash, CStat, WStat, LeastSq])
+def test_badstat_data1d(pcls, scls):
+    """Check bad-stat handling."""
+
+    d = Data1D('x', [1, 2], [3, 4])
+    m = basic.Const1D('m')
+    s = scls()
+    p = pcls()
+
+    with pytest.raises(StatErr,
+                       match=f"^{pcls.__name__} not applicable using current statistic: {s.name}$"):
+        p.prepare(data=d, model=m, stat=s)
+
+
+@pytest.mark.parametrize("pcls", [sherpa.DelchiHistogramPlot,
+                                  sherpa.ChisqrHistogramPlot])
+@pytest.mark.parametrize("scls", [Cash, CStat, WStat, LeastSq])
+def test_badstat_data1ding(pcls, scls):
+    """Check bad-stat handling."""
+
+    d = Data1DInt('x', [1, 2], [1.5, 3], [3, 4])
+    m = basic.Const1D('m')
+    s = scls()
+    p = pcls()
+
+    with pytest.raises(StatErr,
+                       match=f"^{pcls.__name__} not applicable using current statistic: {s.name}$"):
+        p.prepare(data=d, model=m, stat=s)
