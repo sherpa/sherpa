@@ -2242,7 +2242,7 @@ class FitContour(Contour):
 class BaseResidualPlot(ModelPlot):
     """Residuals of model + data.
 
-    Only subclasses, that implement _calc_y, should be created.
+    Subclasses need to implement `_calc_y` and `_title`.
 
     .. versionadded:: 4.16.1
 
@@ -2322,7 +2322,7 @@ class BaseResidualPlot(ModelPlot):
 class BaseResidualHistogramPlot(ModelHistogramPlot):
     """Residuals of model + data for histogram data.
 
-    Only subclasses, that implement _calc_y, should be created.
+    Subclasses need to implement `_calc_y` and `_title`.
 
     .. versionadded:: 4.16.1
 
@@ -2417,7 +2417,7 @@ class BaseResidualHistogramPlot(ModelHistogramPlot):
 class BaseResidualContour(ModelContour):
     """Residuals of model + data for contour data.
 
-    Only subclasses, that implement _calc_y, should be created.
+    Subclasses need to implement `_calc_y` and `_title`.
 
     .. versionadded:: 4.16.1
 
