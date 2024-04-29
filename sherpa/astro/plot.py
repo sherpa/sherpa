@@ -182,7 +182,11 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 
 
 class RatioPHAPlot(shplot.RatioHistogramPlot):
-    """Plot ratio for a PHA dataset."""
+    """Plot ratio for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
 
     def _calc_x(self, data: Data1DInt, model: Model) -> None:
         """Define the xlo and xhi fields"""
@@ -194,12 +198,11 @@ class RatioPHAPlot(shplot.RatioHistogramPlot):
 
 
 class ResidPHAPlot(shplot.ResidHistogramPlot):
-    """Plot residuals for a PHA dataset."""
+    """Plot residuals for a PHA dataset.
 
-    # Turn on yerrorbars by default. What is the best way to do this?
-    #
-    histo_prefs = shplot.ResidHistogramPlot.histo_prefs | {"yerrorbars": True}
-    "The preferences for the plot."
+    .. versionadded:: 4.16.1
+
+    """
 
     def _calc_x(self, data: Data1DInt, model: Model) -> None:
         """Define the xlo and xhi fields"""
@@ -217,7 +220,11 @@ class ResidPHAPlot(shplot.ResidHistogramPlot):
 
 
 class DelchiPHAPlot(shplot.DelchiHistogramPlot):
-    """Plot delchi residuals for a PHA dataset."""
+    """Plot delchi residuals for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
 
     def _calc_x(self, data: Data1DInt, model: Model) -> None:
         """Define the xlo and xhi fields"""
@@ -229,7 +236,11 @@ class DelchiPHAPlot(shplot.DelchiHistogramPlot):
 
 
 class ChisqrPHAPlot(shplot.ChisqrHistogramPlot):
-    """Plot residuals for a PHA dataset."""
+    """Plot residuals for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
 
     def _calc_x(self, data: Data1DInt, model: Model) -> None:
         """Define the xlo and xhi fields"""
@@ -326,6 +337,10 @@ class ModelHistogram(ModelPHAHistogram):
 
 class SourcePlot(shplot.SourceHistogramPlot):
     """Create PHA plots of unconvolved model values.
+
+    .. versionchanged:: 4.16.1
+       The parent class is now SourceHistogramPlot rather than
+       HistogramPlot.
 
     Attributes
     ----------
@@ -784,7 +799,13 @@ class BkgFitPlot(shplot.FitPlot):
 
 
 class BkgDelchiPlot(DelchiPHAPlot):
-    "Derived class for creating background plots of PHA delchi chi ((data-model)/error)"
+    """Derived class for creating background plots of PHA delchi chi ((data-model)/error).
+
+    .. versionchanged:: 4.16.1
+       The parent class is now DelchiPHAPlot rather than
+       DelchiPlot.
+
+    """
 
     # leave the title as the parent, which is
     # 'Sigma Residuals for <name>'.
@@ -793,21 +814,40 @@ class BkgDelchiPlot(DelchiPHAPlot):
 
 
 class BkgResidPlot(ResidPHAPlot):
-    "Derived class for creating background plots of PHA residual (data-model)"
+    """Derived class for creating background plots of PHA residual (data-model).
+
+    .. versionchanged:: 4.16.1
+       The parent class is now ResidPHAPlot rather than
+       ResidPlot.
+
+    """
 
     def _title(self, data: Data1DInt) -> None:
         self.title = f'Residuals of {data.name} - Bkg Model'
 
 
 class BkgRatioPlot(RatioPHAPlot):
-    "Derived class for creating background plots of PHA ratio (data:model)"
+    """Derived class for creating background plots of PHA ratio (data:model).
+
+    .. versionchanged:: 4.16.1
+       The parent class is now RatioPHAPlot rather than
+       RatioPlot.
+
+    """
 
     def _title(self, data: Data1DInt) -> None:
         self.title = f'Ratio of {data.name} : Bkg Model'
 
 
 class BkgChisqrPlot(ChisqrPHAPlot):
-    "Derived class for creating background plots of chi**2 ((data-model)/error)**2"
+    """Derived class for creating background plots of chi**2 ((data-model)/error)**2.
+
+    .. versionchanged:: 4.16.1
+       The parent class is now ChisqrPHAPlot rather than
+       ChisqrPlot.
+
+    """
+
     pass
 
 

@@ -17,6 +17,10 @@ The sherpa.astro.plot module
       SourcePlot
       ComponentModelPlot
       ComponentSourcePlot
+      RatioPHAPlot
+      ResidPHAPlot
+      DelchiPHAPlot
+      ChisqrPHAPlot
       ARFPlot
       RMFPlot
       BkgDataPlot
@@ -37,5 +41,5 @@ The sherpa.astro.plot module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::  DataPHAPlot ModelPHAHistogram ModelHistogram SourcePlot ComponentModelPlot ComponentSourcePlot ARFPlot RMFPlot BkgDataPlot BkgModelPHAHistogram BkgModelHistogram BkgFitPlot BkgDelchiPlot BkgResidPlot BkgRatioPlot BkgChisqrPlot BkgSourcePlot OrderPlot FluxHistogram EnergyFluxHistogram PhotonFluxHistogram DataIMGPlot
+.. inheritance-diagram::  DataPHAPlot ModelPHAHistogram ModelHistogram SourcePlot ComponentModelPlot ComponentSourcePlot RatioPHAPlot ResidPHAPlot DelchiPHAPlot ChisqrPHAPlot ARFPlot RMFPlot BkgDataPlot BkgModelPHAHistogram BkgModelHistogram BkgFitPlot BkgDelchiPlot BkgResidPlot BkgRatioPlot BkgChisqrPlot BkgSourcePlot OrderPlot FluxHistogram EnergyFluxHistogram PhotonFluxHistogram DataIMGPlot
    :parts: 1
