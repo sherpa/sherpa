@@ -706,6 +706,7 @@ class BaseBackend(metaclass=MetaBaseBackend):
 
     def get_resid_histo_defaults(self):
         d = self.get_histo_defaults()
+        d['yerrorbars'] = True
         d['capsize'] = 0
         # d['marker'] = '_'
         return d
