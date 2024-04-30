@@ -2978,65 +2978,6 @@ class OutOfBoundErr(Exception):
     pass
 
 
-class QuadEquaRealRoot:
-    """ solve for the real roots of the quadratic equation:
-    a * x^2 + b * x + c = 0"""
-
-    def __call__(self, a, b, c):
-
-        if 0.0 == a:
-            #
-            # 0 * x^2 + b * x + c = 0
-            #
-
-            if 0.0 != b:
-                #
-                # 0 * x^2 + b * x + c = 0
-                # the folowing still works even if c == 0
-                #
-                answer = - c / b
-                return [answer, answer]
-
-            #
-            # 0 * x^2 + 0 * x + c = 0
-            #
-            # a == 0, b == 0, so if c == 0 then all numbers work so
-            # returning nan is not right. However if c != 0 then no
-            # roots exist.
-            #
-            return [None, None]
-
-        if 0.0 == b:
-
-            #
-            # a * x^2 + 0 * x + c = 0
-            #
-            if 0.0 == c:
-
-                # a * x^2 + 0 * x + 0 = 0
-                return [0.0, 0.0]
-
-            # a * x^2 + 0 * x + c = 0
-            if mysgn(a) == mysgn(c):
-                return [None, None]
-
-            answer = np.sqrt(c / a)
-            return [-answer, answer]
-
-        if 0.0 == c:
-
-            #
-            # a * x^2 + b * x + 0 = 0
-            #
-            return [0.0, - b / a]
-
-        discriminant = b * b - 4.0 * a * c
-        debug("disc=%s", discriminant)
-        sqrt_disc = np.sqrt(discriminant)
-        t = - (b + mysgn(b) * sqrt_disc) / 2.0
-        return [c / t, t / a]
-
-
 def quad_coef(x, f):
     """
     p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
@@ -3490,13 +3431,6 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                 x = xplus
             else:
                 x = xminus
-
-            # print 'xa=', xa, '\tx=', x, '\txb=', xb, '\txc=', xc
-
-            # fubar = quad_coef( [xa,xb,xc], [fa,fb,fc] )
-            # quad = QuadEquaRealRoot( )
-            # print quad( fubar[0], fubar[1], fubar[2] )
-            # print
 
             # sanity check
             if not is_sequence(xa, x, xb):
