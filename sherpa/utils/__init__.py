@@ -2909,16 +2909,6 @@ def list_to_open_interval(arg):
     return f'({arg[0]:e}, {arg[1]:e})'
 
 
-def mysgn(arg):
-    if arg == 0.0:
-        return 0
-
-    if arg < 0.0:
-        return -1
-
-    return 1
-
-
 class OutOfBoundErr(Exception):
     """Indicate an out-of-bounds exception in the error analysis"""
     # Should this just move to sherpa.estmethods?
@@ -3119,10 +3109,10 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
 
             if is_nan(B) or is_nan(C) or \
-                    0.0 == C + mysgn(C) * np.sqrt(discriminant):
+                    0.0 == C + np.sign(C) * np.sqrt(discriminant):
                 return [[None, None], [[None, None], [None, None]], nfev[0]]
 
-            xd = xc - 2.0 * fc / (C + mysgn(C) * np.sqrt(discriminant))
+            xd = xc - 2.0 * fc / (C + np.sign(C) * np.sqrt(discriminant))
 
             fd = myfcn(xd, *args)
             # print 'fd(%e)=%e' % (xd, fd)
@@ -3197,7 +3187,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
         if abs(fb) <= tol:
             return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
-        if mysgn(fa) == mysgn(fb):
+        if np.sign(fa) == np.sign(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
@@ -3214,36 +3204,36 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
 
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
 
-            xd = xc - 2.0 * fc / (C + mysgn(C) * np.sqrt(discriminant))
+            xd = xc - 2.0 * fc / (C + np.sign(C) * np.sqrt(discriminant))
 
             fd = myfcn(xd, *args)
             # print 'fd(%e)=%e' % (xd, fd)
             if abs(fd) <= tol:
                 return [[xd, fd], [[xa, fa], [xb, fb]], nfev[0]]
 
-            if mysgn(fa) != mysgn(fc):
+            if np.sign(fa) != np.sign(fc):
                 xb, fb = xc, fc
                 continue
 
-            if mysgn(fd) != mysgn(fc) and xc < xd:
+            if np.sign(fd) != np.sign(fc) and xc < xd:
                 xa, fa = xc, fc
                 xb, fb = xd, fd
                 continue
 
-            if mysgn(fb) != mysgn(fd):
+            if np.sign(fb) != np.sign(fd):
                 xa, fa = xd, fd
                 continue
 
-            if mysgn(fa) != mysgn(fd):
+            if np.sign(fa) != np.sign(fd):
                 xb, fb = xd, fd
                 continue
 
-            if mysgn(fc) != mysgn(fd) and xd < xc:
+            if np.sign(fc) != np.sign(fd) and xd < xc:
                 xa, fa = xd, fd
                 xb, fb = xc, fc
                 continue
 
-            if mysgn(fc) != mysgn(fd):
+            if np.sign(fc) != np.sign(fd):
                 xa, fa = xc, fc
                 continue
 
@@ -3331,7 +3321,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
         if abs(fb) <= tol:
             return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
-        if mysgn(fa) == mysgn(fb):
+        if np.sign(fa) == np.sign(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
@@ -3354,7 +3344,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             B = tran[0]
             C = tran[1]
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
-            den = mysgn(C) * np.sqrt(discriminant)
+            den = np.sign(C) * np.sqrt(discriminant)
             xplus = xc - 2.0 * fc / (C + den)
             if C != den:
                 xminus = xc - 2.0 * fc / (C - den)
@@ -3399,7 +3389,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                 # print 'MullerBound() fmid(%.14e)=%.14e' % (xmid,fmid)
                 if abs(fmid) <= tol:
                     return [[xmid, fmid], [[xa, fa], [xb, fb]], nfev[0]]
-                if mysgn(fa) + mysgn(fmid) == 0:
+                if np.sign(fa) + np.sign(fmid) == 0:
                     xb = xmid
                     fb = fmid
                 else:
@@ -3520,7 +3510,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
         if abs(fb) <= tol:
             return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
-        if mysgn(fa) == mysgn(fb):
+        if np.sign(fa) == np.sign(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], nfev[0]]
 
@@ -3543,13 +3533,13 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
                 return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
             if abs(new_step) <= tol_act:
-                if mysgn(fb) != mysgn(fa):
+                if np.sign(fb) != np.sign(fa):
                     tmp = apache_muller(fcn, xa, xb, fa, fb, args=args,
                                         maxfev=maxfev - nfev[0], tol=tol)
                     tmp[-1] += nfev[0]
                     return tmp
 
-                if mysgn(fb) != mysgn(fc):
+                if np.sign(fb) != np.sign(fc):
                     tmp = apache_muller(fcn, xb, xc, fb, fc, args=args,
                                         maxfev=maxfev - nfev[0], tol=tol)
                     tmp[-1] += nfev[0]
