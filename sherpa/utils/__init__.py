@@ -2902,59 +2902,6 @@ def Knuth_close(x, y, tol, myop=operator.__or__):
     return myop(diff <= tol * abs(x), diff <= tol * abs(y))
 
 
-def safe_div(num, denom):
-
-    dbl_max = sys.float_info.max
-    dbl_min = sys.float_info.min
-
-    # avoid overflow
-    if denom < 1 and num > denom * dbl_max:
-        return dbl_max
-
-    # avoid underflow
-    if 0.0 == num or denom > 1 and num < denom * dbl_min:
-        return 0
-
-    return num / denom
-
-
-def Knuth_boost_close(x, y, tol, myop=operator.__or__):
-    """ The following text was taken verbatim from:
-
-    http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
-
-    In most cases it is unreasonable to use an operator==(...)
-    for a floating-point values equality check. The simple solution
-    like abs(f1-f2) <= e does not work for very small or very big values.
-    This floating-point comparison algorithm is based on the more
-    confident solution presented by D. E. Knuth in 'The art of computer
-    programming (vol II)'. For a given floating point values u and v and
-    a tolerance e:
-
-    | u - v | <= e * |u| and | u - v | <= e * |v|                    (1)
-    defines a "very close with tolerance e" relationship between u and v
-
-    | u - v | <= e * |u| or   | u - v | <= e * |v|                   (2)
-    defines a "close enough with tolerance e" relationship between
-    u and v. Both relationships are commutative but are not transitive.
-    The relationship defined by inequations (1) is stronger that the
-    relationship defined by inequations (2) (i.e. (1) => (2) ).
-    Because of the multiplication in the right side of inequations,
-    that could cause an unwanted underflow condition, the implementation
-    is using modified version of the inequations (1) and (2) where all
-    underflow, overflow conditions could be guarded safely:
-
-    | u - v | / |u| <= e and | u - v | / |v| <= e          	     (1`)
-    | u - v | / |u| <= e or  | u - v | / |v| <= e                    (2`)"""
-
-    diff = abs(x - y)
-    if 0.0 == x or 0.0 == y:
-        return diff <= tol
-    diff_x = safe_div(diff, x)
-    diff_y = safe_div(diff, y)
-    return myop(diff_x <= tol, diff_y <= tol)
-
-
 def list_to_open_interval(arg):
     if not np.iterable(arg):
         return arg
