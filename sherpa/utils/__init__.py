@@ -3234,19 +3234,6 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
         If any of those values is not available, ``None`` will be returned
         instead.
     '''
-    # This function does not appear to be used
-    def regula_falsi(x0, x1, f0, f1):
-        if f0 < f1:
-            xl, fl = x0, f0
-            xh, fh = x1, f1
-        else:
-            xl, fl = x1, f1
-            xh, fh = x0, f0
-        x = xl + (xh - xl) * fl / (fl - fh)
-        if is_sequence(x0, x, x1):
-            return x
-
-        return (x0 + x1) / 2.0
 
     history = [[], []]
     nfev, myfcn = func_counter_history(fcn, history)
