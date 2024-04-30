@@ -704,6 +704,13 @@ class BaseBackend(metaclass=MetaBaseBackend):
         # d['marker'] = '_'
         return d
 
+    def get_resid_histo_defaults(self):
+        d = self.get_histo_defaults()
+        d['yerrorbars'] = True
+        d['capsize'] = 0
+        # d['marker'] = '_'
+        return d
+
     def get_ratio_plot_defaults(self):
         d = self.get_data_plot_defaults()
         d['xerrorbars'] = True

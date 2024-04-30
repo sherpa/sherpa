@@ -30,16 +30,19 @@ from sherpa.astro import hc
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import bounds_check
+from sherpa.data import Data1DInt
 from sherpa.models.basic import Delta1D
+from sherpa.models.model import Model
 from sherpa import plot as shplot
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
-from sherpa.utils.err import PlotErr, IOErr
+from sherpa.utils.err import IOErr, PlotErr, StatErr
 
 warning = logging.getLogger(__name__).warning
 
 __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
            'SourcePlot', 'ComponentModelPlot', 'ComponentSourcePlot',
+           'RatioPHAPlot', 'ResidPHAPlot', 'DelchiPHAPlot', 'ChisqrPHAPlot',
            'ARFPlot', 'RMFPlot',
            'BkgDataPlot', 'BkgModelPHAHistogram', 'BkgModelHistogram',
            'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
@@ -54,7 +57,9 @@ __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
 _tol = np.finfo(np.float32).eps
 
 
-def _check_hist_bins(xlo, xhi):
+def _check_hist_bins(xlo: np.ndarray,
+                     xhi: np.ndarray
+                     ) -> tuple[np.ndarray, np.ndarray]:
     """Ensure lo/hi edges that are "close" are merged.
 
     Ensure that "close-enough" bin edges use the same value.  We do
@@ -117,6 +122,38 @@ def _check_hist_bins(xlo, xhi):
     return xlo, xhi
 
 
+def calc_x(data: DataPHA) -> tuple[np.ndarray, np.ndarray]:
+    """Calculate the X axis values
+
+    Parameters
+    ----------
+    data : DataPHA
+       The data object.
+
+    Returns
+    -------
+    xlo, xhi : tuple of ndarray
+       The low and high edges of each bin.
+
+    """
+
+    # Get the X axis data.
+    #
+    if data.units != 'channel':
+        elo, ehi = data._get_ebins(group=False)
+    else:
+        elo, ehi = (data.channel, data.channel + 1.)
+
+    xlo = data.apply_filter(elo, data._min)
+    xhi = data.apply_filter(ehi, data._max)
+    if data.units == 'wavelength':
+        # Should this swap xlo and xhi here?
+        xlo = hc / xlo
+        xhi = hc / xhi
+
+    return _check_hist_bins(xlo, xhi)
+
+
 class DataPHAPlot(shplot.DataHistogramPlot):
     """Plot a PHA dataset."""
 
@@ -124,6 +161,9 @@ class DataPHAPlot(shplot.DataHistogramPlot):
     "The preferences for the plot."
 
     def prepare(self, data, stat=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
 
         # Need a better way of accessing the binning of the data.
         # Maybe to_plot should return the lo/hi edges as a pair
@@ -138,20 +178,77 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 
         self.title = data.name
 
-        # Get the X axis data.
-        #
-        if data.units != 'channel':
-            elo, ehi = data._get_ebins(group=False)
-        else:
-            elo, ehi = (data.channel, data.channel + 1.)
+        self.xlo, self.xhi = calc_x(data)
 
-        self.xlo = data.apply_filter(elo, data._min)
-        self.xhi = data.apply_filter(ehi, data._max)
-        if data.units == 'wavelength':
-            self.xlo = hc / self.xlo
-            self.xhi = hc / self.xhi
 
-        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
+class RatioPHAPlot(shplot.RatioHistogramPlot):
+    """Plot ratio for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+
+class ResidPHAPlot(shplot.ResidHistogramPlot):
+    """Plot residuals for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+    def _change_ylabel(self) -> None:
+        # The original code had the y label displaying units rather
+        # than 'Data - Model', which is what the super-class sets. So
+        # we override the parent behaviour.
+        pass
+
+
+class DelchiPHAPlot(shplot.DelchiHistogramPlot):
+    """Plot delchi residuals for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+
+class ChisqrPHAPlot(shplot.ChisqrHistogramPlot):
+    """Plot residuals for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
 
 
 class ModelPHAHistogram(shplot.HistogramPlot):
@@ -176,18 +273,7 @@ class ModelPHAHistogram(shplot.HistogramPlot):
          self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
         self.y = self.y[1]
 
-        if data.units != 'channel':
-            elo, ehi = data._get_ebins(group=False)
-        else:
-            elo, ehi = (data.channel, data.channel + 1.)
-
-        self.xlo = data.apply_filter(elo, data._min)
-        self.xhi = data.apply_filter(ehi, data._max)
-        if data.units == 'wavelength':
-            self.xlo = hc / self.xlo
-            self.xhi = hc / self.xhi
-
-        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
+        self.xlo, self.xhi = calc_x(data)
 
 
 class ModelHistogram(ModelPHAHistogram):
@@ -199,6 +285,9 @@ class ModelHistogram(ModelPHAHistogram):
     """
 
     def prepare(self, data, model, stat=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
 
         # We could fit this into a single try/finally group but
         # it makes it harder to see what is going on so split
@@ -246,8 +335,12 @@ class ModelHistogram(ModelPHAHistogram):
             data.mask = old_mask
 
 
-class SourcePlot(shplot.HistogramPlot):
+class SourcePlot(shplot.SourceHistogramPlot):
     """Create PHA plots of unconvolved model values.
+
+    .. versionchanged:: 4.16.1
+       The parent class is now SourceHistogramPlot rather than
+       HistogramPlot.
 
     Attributes
     ----------
@@ -266,7 +359,6 @@ class SourcePlot(shplot.HistogramPlot):
         self.units = None
         self.mask = None
         super().__init__()
-        self.title = 'Source'
 
     def prepare(self, data, src, lo=None, hi=None):
         # Note: src is source model before folding
@@ -370,48 +462,40 @@ class SourcePlot(shplot.HistogramPlot):
                               **kwargs)
 
 
-class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
+# We do not derive from shplot.ComponentModelHistogramPlot to avoid
+# confusion over what behavior is wanted.
+#
+class ComponentModelPlot(ModelHistogram):
+    """The component model plot for DataPHA data.
+
+    .. versionchanged:: 4.16.1
+
+       The class no-longer derives from `sherpa.plot.ComponentSourcePlot`.
+    """
 
     histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
-    def __init__(self):
-        ModelHistogram.__init__(self)
-
-    def __str__(self):
-        return ModelHistogram.__str__(self)
-
     def prepare(self, data, model, stat=None):
-        ModelHistogram.prepare(self, data, model, stat)
+        super().prepare(data=data, model=model, stat=stat)
         self.title = f'Model component: {model.name}'
 
-    def _merge_settings(self, kwargs):
-        return {**self.histo_prefs, **kwargs}
 
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        ModelHistogram.plot(self, overplot=overplot,
-                            clearwindow=clearwindow, **kwargs)
+# We do not derive from shplot.ComponentSourceHistogramPlot to avoid
+# confusion over what behavior is wanted.
+#
+class ComponentSourcePlot(SourcePlot):
+    """The component source plot for DataPHA data.
 
+    .. versionchanged:: 4.16.1
 
-class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
+       The class no-longer derives from `sherpa.plot.ComponentSourcePlot`.
+    """
 
     histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
-    def __init__(self):
-        SourcePlot.__init__(self)
-
-    def __str__(self):
-        return SourcePlot.__str__(self)
-
     def prepare(self, data, model, stat=None):
-        SourcePlot.prepare(self, data, model)
+        super().prepare(data=data, src=model)
         self.title = f'Source model component: {model.name}'
-
-    def _merge_settings(self, kwargs):
-        return {**self.histo_prefs, **kwargs}
-
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        SourcePlot.plot(self, overplot=overplot,
-                        clearwindow=clearwindow, **kwargs)
 
 
 class ARFPlot(shplot.HistogramPlot):
@@ -714,29 +798,56 @@ class BkgFitPlot(shplot.FitPlot):
     pass
 
 
-class BkgDelchiPlot(shplot.DelchiPlot):
-    "Derived class for creating background plots of 1D delchi chi ((data-model)/error)"
+class BkgDelchiPlot(DelchiPHAPlot):
+    """Derived class for creating background plots of PHA delchi chi ((data-model)/error).
+
+    .. versionchanged:: 4.16.1
+       The parent class is now DelchiPHAPlot rather than
+       DelchiPlot.
+
+    """
+
+    # leave the title as the parent, which is
+    # 'Sigma Residuals for <name>'.
+    #
     pass
 
 
-class BkgResidPlot(shplot.ResidPlot):
-    "Derived class for creating background plots of 1D residual (data-model)"
+class BkgResidPlot(ResidPHAPlot):
+    """Derived class for creating background plots of PHA residual (data-model).
 
-    def prepare(self, data, model, stat):
-        super().prepare(data, model, stat)
+    .. versionchanged:: 4.16.1
+       The parent class is now ResidPHAPlot rather than
+       ResidPlot.
+
+    """
+
+    def _title(self, data: Data1DInt) -> None:
         self.title = f'Residuals of {data.name} - Bkg Model'
 
 
-class BkgRatioPlot(shplot.RatioPlot):
-    "Derived class for creating background plots of 1D ratio (data:model)"
+class BkgRatioPlot(RatioPHAPlot):
+    """Derived class for creating background plots of PHA ratio (data:model).
 
-    def prepare(self, data, model, stat):
-        super().prepare(data, model, stat)
+    .. versionchanged:: 4.16.1
+       The parent class is now RatioPHAPlot rather than
+       RatioPlot.
+
+    """
+
+    def _title(self, data: Data1DInt) -> None:
         self.title = f'Ratio of {data.name} : Bkg Model'
 
 
-class BkgChisqrPlot(shplot.ChisqrPlot):
-    "Derived class for creating background plots of 1D chi**2 ((data-model)/error)**2"
+class BkgChisqrPlot(ChisqrPHAPlot):
+    """Derived class for creating background plots of chi**2 ((data-model)/error)**2.
+
+    .. versionchanged:: 4.16.1
+       The parent class is now ChisqrPHAPlot rather than
+       ChisqrPlot.
+
+    """
+
     pass
 
 
@@ -759,6 +870,10 @@ class OrderPlot(ModelHistogram):
 
     # Note: this does not accept a stat parameter.
     def prepare(self, data, model, orders=None, colors=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         self.orders = data.response_ids
 
         if orders is not None:
@@ -794,6 +909,10 @@ class OrderPlot(ModelHistogram):
             (xlo, y, yerr, _,
              self.xlabel, self.ylabel) = data.to_plot(model)
             y = y[1]
+
+            # TODO: should this use calc_x? The logic isn't quite the
+            # same but that may be a logical error in the following.
+            #
             if data.units != 'channel':
                 elo, ehi = data._get_ebins(group=False)
                 xlo = data.apply_filter(elo, data._min)

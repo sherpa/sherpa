@@ -25,6 +25,7 @@ The sherpa.plot module
       LRHistogram
       SplitPlot
       JointPlot
+      MultiPlot
       DataPlot
       TracePlot
       ScatterPlot
@@ -45,11 +46,18 @@ The sherpa.plot module
       SourceContour
       FitPlot
       FitContour
+      BaseResidualPlot
       DelchiPlot
       ChisqrPlot
-      ResidPlot
-      ResidContour
       RatioPlot
+      ResidPlot
+      BaseResidualHistogramPlot
+      DelchiHistogramPlot
+      ChisqrHistogramPlot
+      RatioHistogramPlot
+      ResidHistogramPlot
+      BaseResidualContour
+      ResidContour
       RatioContour
       Confidence1D
       Confidence2D
@@ -69,5 +77,5 @@ The sherpa.plot module
 Class Inheritance Diagram
 =========================
 
-.. inheritance-diagram::   Plot Contour Point Histogram HistogramPlot DataHistogramPlot ModelHistogramPlot SourceHistogramPlot PDFPlot CDFPlot LRHistogram SplitPlot JointPlot DataPlot TracePlot ScatterPlot PSFKernelPlot DataContour PSFKernelContour ModelPlot ComponentModelPlot ComponentModelHistogramPlot ComponentTemplateModelPlot SourcePlot ComponentSourcePlot ComponentSourceHistogramPlot ComponentTemplateSourcePlot PSFPlot ModelContour PSFContour SourceContour FitPlot FitContour DelchiPlot ChisqrPlot ResidPlot ResidContour RatioPlot RatioContour Confidence1D Confidence2D IntervalProjectionWorker IntervalProjection IntervalUncertaintyWorker IntervalUncertainty RegionProjectionWorker RegionProjection RegionUncertaintyWorker RegionUncertainty
+.. inheritance-diagram::   Plot Contour Point Histogram HistogramPlot DataHistogramPlot ModelHistogramPlot SourceHistogramPlot PDFPlot CDFPlot LRHistogram SplitPlot JointPlot MultiPlot DataPlot TracePlot ScatterPlot PSFKernelPlot DataContour PSFKernelContour ModelPlot ComponentModelPlot ComponentModelHistogramPlot ComponentTemplateModelPlot SourcePlot ComponentSourcePlot ComponentSourceHistogramPlot ComponentTemplateSourcePlot PSFPlot ModelContour PSFContour SourceContour FitPlot FitContour BaseResidualPlot DelchiPlot ChisqrPlot RatioPlot ResidPlot BaseResidualHistogramPlot DelchiHistogramPlot ChisqrHistogramPlot RatioHistogramPlot ResidHistogramPlot BaseResidualContour ResidContour RatioContour Confidence1D Confidence2D IntervalProjectionWorker IntervalProjection IntervalUncertaintyWorker IntervalUncertainty RegionProjectionWorker RegionProjection RegionUncertaintyWorker RegionUncertainty
    :parts: 1

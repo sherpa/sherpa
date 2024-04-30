@@ -1211,10 +1211,10 @@ def test_pha_model_plot_xerr(units):
         mplot.xerr
 
 
-@pytest.mark.parametrize("cls", [splot.ResidPlot,
-                                 splot.RatioPlot,
-                                 splot.DelchiPlot,
-                                 splot.ChisqrPlot])
+@pytest.mark.parametrize("cls", [aplot.ResidPHAPlot,
+                                 aplot.RatioPHAPlot,
+                                 aplot.DelchiPHAPlot,
+                                 aplot.ChisqrPHAPlot])
 @pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
 def test_pha_resid_plot_xerr(cls, units):
     """What is the xerr field for DataPHA residual.
@@ -1237,21 +1237,9 @@ def test_pha_resid_plot_xerr(cls, units):
     rplot = cls()
     rplot.prepare(pha, full_model, stat=stats.Chi2Gehrels())
 
-    if units == "channel":
-        xerr_chan = np.asarray([1, 2, 1, 2, 2, 1, 1]) / 2
-        assert rplot.xerr == pytest.approx(xerr_chan)
-        return
-
-    en_lo = np.asarray([0.5, 0.65, 0.8, 0.9, 1.1, 1.3, 1.4])
-    en_hi = np.asarray([0.65, 0.8, 0.9, 1.1, 1.3, 1.4, 1.5])
-
-    if units == "energy":
-        xerr_kev = (en_hi - en_lo) / 2
-        assert rplot.xerr == pytest.approx(xerr_kev)
-        return
-
-    xerr_lam = (hc / en_lo - hc / en_hi) / 2
-    assert rplot.xerr == pytest.approx(xerr_lam)
+    # Should we have an xerr field (to match shplot.DataHistogramPlot)?
+    with pytest.raises(AttributeError):
+        rplot.xerr
 
 
 @pytest.mark.parametrize("cls", [DataPHAPlot, BkgDataPlot,
@@ -1262,13 +1250,20 @@ def test_pha_data_fails_not_pha(cls):
     d = Data1D("not-a-pha", [1, 2], [0, 2])
     plotobj = cls()
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'units'"):
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
         plotobj.prepare(d, stat=stats.LeastSq())
 
 
 @pytest.mark.parametrize("cls", [ModelPHAHistogram,
+                                 ModelHistogram,
                                  BkgModelPHAHistogram,
-                                 ComponentSourcePlot])
+                                 BkgModelHistogram,
+                                 ComponentSourcePlot,
+                                 ComponentModelPlot,
+                                 aplot.ResidPHAPlot, aplot.BkgResidPlot,
+                                 aplot.RatioPHAPlot, aplot.BkgRatioPlot,
+                                 aplot.DelchiPHAPlot, aplot.BkgDelchiPlot,
+                                 aplot.ChisqrPHAPlot, aplot.BkgChisqrPlot])
 def test_pha_model_checks_not_pha(cls):
     """Check if error out with an invalid data message for Model classes"""
 
@@ -1277,23 +1272,6 @@ def test_pha_model_checks_not_pha(cls):
     plotobj = cls()
 
     with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
-        plotobj.prepare(d, m, stat=stats.LeastSq())
-
-
-@pytest.mark.parametrize("cls", [ModelHistogram,
-                                 BkgModelHistogram,
-                                 ComponentModelPlot])
-def test_pha_model_fails_not_pha(cls):
-    """Check if error out with an invalid data message for Model classes
-
-    These should get merged into test_pha_model_checks_pha
-    """
-
-    d = Data1D("not-a-pha", [1, 2], [0, 2])
-    m = Const1D("mdl")
-    plotobj = cls()
-
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'grouped'"):
         plotobj.prepare(d, m, stat=stats.LeastSq())
 
 
@@ -1323,7 +1301,7 @@ def test_pha_model_no_stat_fails_not_pha(cls):
     m = Const1D("mdl")
     plotobj = cls()
 
-    with pytest.raises(AttributeError, match="'Data1D' object has no attribute 'response_ids'"):
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
         plotobj.prepare(d, m)
 
 

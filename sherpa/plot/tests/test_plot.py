@@ -30,8 +30,8 @@ from sherpa.astro.ui.utils import Session as AstroSession
 from sherpa.models import basic
 from sherpa import plot as sherpaplot
 from sherpa.data import Data1D, Data1DInt, Data2D
-from sherpa.stats import LeastSq
-from sherpa.utils.err import ConfidenceErr
+from sherpa.stats import Cash, CStat, LeastSq, WStat
+from sherpa.utils.err import ConfidenceErr, StatErr
 from sherpa.utils.testing import requires_data
 
 
@@ -1309,3 +1309,61 @@ def test_lrhist_str(check_str):
                ])
 
     assert last.startswith("histo_prefs = {")
+
+
+@pytest.mark.parametrize("cls", [sherpaplot.Histogram,
+                                 sherpaplot.HistogramPlot,
+                                 sherpaplot.DataHistogramPlot,
+                                 sherpaplot.ModelHistogramPlot,
+                                 sherpaplot.SourceHistogramPlot,
+                                 sherpaplot.PDFPlot,
+                                 sherpaplot.LRHistogram,
+                                 sherpaplot.ComponentModelHistogramPlot,
+                                 sherpaplot.ComponentSourceHistogramPlot,
+                                 ])
+def test_histo_plot_preferences(cls):
+    """Check we have histo_prefs and not plot_prefs.
+
+    We have had code that accidentally created a plot_prefs
+    field, so we want to check this does not happen.
+    """
+
+    p = cls()
+    assert p.histo_prefs is not None
+    try:
+        p.plot_prefs
+        assert False, f"cls {cls} has a plot_prefs field"
+    except AttributeError:
+        pass
+
+
+@pytest.mark.parametrize("pcls", [sherpa.DelchiPlot,
+                                  sherpa.ChisqrPlot])
+@pytest.mark.parametrize("scls", [Cash, CStat, WStat, LeastSq])
+def test_badstat_data1d(pcls, scls):
+    """Check bad-stat handling."""
+
+    d = Data1D('x', [1, 2], [3, 4])
+    m = basic.Const1D('m')
+    s = scls()
+    p = pcls()
+
+    with pytest.raises(StatErr,
+                       match=f"^{pcls.__name__} not applicable using current statistic: {s.name}$"):
+        p.prepare(data=d, model=m, stat=s)
+
+
+@pytest.mark.parametrize("pcls", [sherpa.DelchiHistogramPlot,
+                                  sherpa.ChisqrHistogramPlot])
+@pytest.mark.parametrize("scls", [Cash, CStat, WStat, LeastSq])
+def test_badstat_data1ding(pcls, scls):
+    """Check bad-stat handling."""
+
+    d = Data1DInt('x', [1, 2], [1.5, 3], [3, 4])
+    m = basic.Const1D('m')
+    s = scls()
+    p = pcls()
+
+    with pytest.raises(StatErr,
+                       match=f"^{pcls.__name__} not applicable using current statistic: {s.name}$"):
+        p.prepare(data=d, model=m, stat=s)
