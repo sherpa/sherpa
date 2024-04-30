@@ -53,7 +53,7 @@ warning = logging.getLogger("sherpa").warning
 debug = logging.getLogger("sherpa").debug
 
 __all__ = ('NoNewAttributesAfterInit',
-           '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
+           '_guess_ampl_scale', 'apache_muller', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'create_expr_integrated',
            'dataspace1d', 'dataspace2d', 'demuller',
@@ -3035,102 +3035,6 @@ class QuadEquaRealRoot:
         sqrt_disc = np.sqrt(discriminant)
         t = - (b + mysgn(b) * sqrt_disc) / 2.0
         return [c / t, t / a]
-
-
-def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
-    """A basic root finding algorithm that uses standard bisection
-
-    Bisection is a relatively slow method for root finding, but it guaranteed to
-    work for a continuous function with a root in a bracketed interval; in other
-    words the function must undergo a sign change between the bracketing values.
-
-    See https://en.wikipedia.org/wiki/Bisection_method for a description of the
-    bisection method.
-
-    Parameters
-    ----------
-    fcn : callable
-        The function with a root. The function signature is ``fcn(x, *args)``.
-    xa : float
-        Lower limit of the bracketing interval
-    xb : float
-        Upper limit of the bracketing interval
-    fa : float or None
-        Function value at ``xa``. This parameter is optional and can be passed
-        to save time in cases where ``fcn(xa, *args)`` is already known and
-        function evaluation takes a long time. If `None`, it will be
-        calculated.
-    fb : float or None
-        Function value at ``xb``. This parameter is optional and can be passed
-        to save time in cases where ``fcn(xb, *args)`` is already known and
-        function evaluation takes a long time. If `None`, it will be
-        calculated.
-    args : tuple
-        Additional parameters that will be passed through to ``fcn``.
-    maxfev : int
-        Maximal number of function evaluations
-    tol : float
-        The root finding algorithm stops if a value x with
-        ``abs(fcn(x)) < tol`` is found.
-
-    Returns
-    -------
-    out : list
-        The output has the form of a list:
-        ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
-        the location of the root, and ``x1`` and ``x2`` are the previous
-        steps. The function value for those steps is returned as well.
-        ``nfev`` is the total number of function evaluations.
-        If any of those values is not available, ``None`` will be returned
-        instead.
-    """
-    history = [[], []]
-    nfev, myfcn = func_counter_history(fcn, history)
-
-    try:
-
-        if fa is None:
-            fa = myfcn(xa, *args)
-        if abs(fa) <= tol:
-            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
-
-        if fb is None:
-            fb = myfcn(xb, *args)
-        if abs(fb) <= tol:
-            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
-
-        if mysgn(fa) == mysgn(fb):
-            # TODO: is this a useful message for the user?
-            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
-            return [[None, None], [[None, None], [None, None]], nfev[0]]
-
-        while nfev[0] < maxfev:
-
-            if abs(fa) > tol and abs(fb) > tol:
-
-                xc = (xa + xb) / 2.0
-                fc = myfcn(xc, *args)
-
-                if abs(xa - xb) < min(tol * abs(xb), tol / 10.0):
-                    return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
-
-                if mysgn(fa) != mysgn(fc):
-                    xb, fb = xc, fc
-                else:
-                    xa, fa = xc, fc
-
-            else:
-                if abs(fa) <= tol:
-                    return [[xa, fa], [[xa, fa], [xb, fb]], nfev[0]]
-
-                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
-
-        xc = (xa + xb) / 2.0
-        fc = myfcn(xc, *args)
-        return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
-
-    except OutOfBoundErr:
-        return [[None, None], [[xa, fa], [xb, fb]], nfev[0]]
 
 
 def quad_coef(x, f):
