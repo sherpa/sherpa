@@ -26,7 +26,7 @@ from numpy.linalg import LinAlgError
 
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
     is_iterable, list_to_open_interval, quad_coef, \
-    demuller, zeroin, OutOfBoundErr, func_counter
+    demuller, zeroin, OutOfBoundErr, FuncCounter
 from sherpa.utils.parallel import multi, ncpus, context, process_tasks
 
 import sherpa.estmethods._est_funcs
@@ -1027,8 +1027,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
     def func(counter, singleparnum, lock=None):
 
-        # nfev contains the number of times it was fitted
-        nfev, counter_cb = func_counter(fit_cb)
+        counter_cb = FuncCounter(fit_cb)
 
         #
         # These are the bounds to be returned by this method
@@ -1101,7 +1100,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         store[par_name] = trial_points
 
         return (conf_int[0][0], conf_int[1][0], error_flags[0],
-                nfev[0], None)
+                counter_cb.nfev, None)
 
     if len(limit_parnums) < 2 or not multi or numcores < 2:
         do_parallel = False
