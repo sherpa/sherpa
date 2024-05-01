@@ -2806,15 +2806,7 @@ def neville2d(xinterp, yinterp, x, y, fval):
     return neville(xinterp, x, tmp)
 
 
-############################### Root of all evil ##############################
-
-
-def printf(format, *args):
-    """Format args with the first argument as format string, and write.
-    Return the last arg, or format itself if there are no args."""
-    sys.stdout.write(str(format) % args)
-    # WARNING: where is if_ meant to be defined?
-    return if_(args, args[-1], format)
+############################### Root finding ##############################
 
 
 def func_counter(func):
