@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1225,8 +1225,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = numpy.asanyarray(stat_cb1(x)).size
 
-    error = []
-
     n = len(x)
     fjac = numpy.empty((m*n,))
 
@@ -1250,9 +1248,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             nfev += nm_result[4]['nfev']
             x = nm_result[1]
             fval = nm_result[2]
-
-    if error:
-        raise error.pop()
 
     if 0 == info:
         info = 1
