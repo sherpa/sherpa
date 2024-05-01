@@ -210,26 +210,6 @@ def _outside_limits(x, xmin, xmax):
     return (numpy.any(x < xmin) or numpy.any(x > xmax))
 
 
-def _same_par(a, b):
-    b = numpy.array(b, numpy.float64)
-    same = numpy.flatnonzero(a < b)
-    if same.size == 0:
-        return 1
-    return 0
-
-
-def _set_limits(x, xmin, xmax):
-    below = numpy.nonzero(x < xmin)
-    if below.size > 0:
-        return 1
-
-    above = numpy.nonzero(x > xmax)
-    if above.size > 0:
-        return 1
-
-    return 0
-
-
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
            seed=2005815, population_size=None, xprob=0.9,
            weighting_factor=0.8):
