@@ -73,7 +73,8 @@ import numpy
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
-from sherpa.utils import parallel_map, func_counter
+from sherpa.utils import FuncCounter
+from sherpa.utils.parallel import parallel_map
 from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import random
 
@@ -1220,7 +1221,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         fjac = parallel_map(fd_jac, params, numcores)
         return numpy.concatenate(fjac)
 
-    num_parallel_map, fcn_parallel_counter = func_counter(fcn_parallel)
+    fcn_parallel_counter = FuncCounter(fcn_parallel)
 
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = numpy.asanyarray(stat_cb1(x)).size
@@ -1262,11 +1263,9 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         info = 3
     status, msg = _get_saofit_msg(maxfev, info)
 
+    imap = {'info': info, 'nfev': nfev,
+            'num_parallel_map': fcn_parallel_counter.nfev}
     if info == 0:
-        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'covar': covar,
-                                     'num_parallel_map': num_parallel_map[0]})
-    else:
-        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'num_parallel_map': num_parallel_map[0]})
-    return rv
+        imap['covar'] = covar
+
+    return (status, x, fval, msg, imap)

@@ -33,6 +33,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
+from typing import Callable, Generic, TypeVar
 import warnings
 
 import numpy as np
@@ -3076,29 +3077,51 @@ def printf(format, *args):
     return if_(args, args[-1], format)
 
 
+# With ParamSpec, added in Python 3.10, we might be able to annotate
+# this so that we can match the arguments that `func` uses are the
+# same as are sent to the __call__ method, although it might be easier
+# to do after the generics changes added in Python 3.12.
+#
+T = TypeVar("T")
+
+
+class FuncCounter(Generic[T]):
+    """Store the number of times the function is called.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    __slots__ = ("nfev", "func")
+
+    def __init__(self, func: Callable[..., T]) -> None:
+        self.nfev = 0
+        self.func = func
+
+    def __call__(self, *args) -> T:
+        self.nfev += 1
+        return self.func(*args)
+
+
 def func_counter(func):
-    '''A function wrapper to count the number of times being called'''
-    nfev = [0]
+    """DEPRECATED.
+
+    .. deprecated:: 4.17.0
+       Use the `FuncCounter` class instead.
+
+    """
+
+    # This is FutureWarning rather than DeprecationWarning to make
+    # sure users see the message.
+    #
+    warnings.warn("func_counter is deprecated in 4.17.0: use FuncCounter instead",
+                  FutureWarning)
 
     def func_counter_wrapper(x, *args):
         nfev[0] += 1
         return func(x, *args)
 
     return nfev, func_counter_wrapper
-
-
-def func_counter_history(func, history):
-    '''A function wrapper to count the number of times being called'''
-    nfev = [0]
-
-    def func_counter_history_wrapper(x, *args):
-        nfev[0] += 1
-        y = func(x, *args)
-        history[0].append(x)
-        history[1].append(y)
-        return y
-
-    return nfev, func_counter_history_wrapper
 
 
 def is_in(arg, seq):
@@ -3344,27 +3367,27 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
         If any of those values is not available, ``None`` will be returned
         instead.
     """
-    history = [[], []]
-    nfev, myfcn = func_counter_history(fcn, history)
+    myfcn = FuncCounter(fcn)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
         if abs(fa) <= tol:
-            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
+            return [[xa, fa], [[xa, fa], [xa, fa]], myfcn.nfev]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
+            return [[xb, fb], [[xb, fb], [xb, fb]], myfcn.nfev]
 
         if np.sign(fa) == np.sign(fb):
             # TODO: is this a useful message for the user?
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
-            return [[None, None], [[None, None], [None, None]], nfev[0]]
+            return [[None, None], [[None, None], [None, None]],
+                    myfcn.nfev]
 
-        while nfev[0] < maxfev:
+        while myfcn.nfev < maxfev:
 
             if abs(fa) > tol and abs(fb) > tol:
 
@@ -3372,7 +3395,7 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
                 fc = myfcn(xc, *args)
 
                 if abs(xa - xb) < min(tol * abs(xb), tol / 10.0):
-                    return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
+                    return [[xc, fc], [[xa, fa], [xb, fb]], myfcn.nfev]
 
                 if np.sign(fa) != np.sign(fc):
                     xb, fb = xc, fc
@@ -3381,16 +3404,16 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
 
             else:
                 if abs(fa) <= tol:
-                    return [[xa, fa], [[xa, fa], [xb, fb]], nfev[0]]
+                    return [[xa, fa], [[xa, fa], [xb, fb]], myfcn.nfev]
 
-                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+                return [[xb, fb], [[xa, fa], [xb, fb]], myfcn.nfev]
 
         xc = (xa + xb) / 2.0
         fc = myfcn(xc, *args)
-        return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
+        return [[xc, fc], [[xa, fa], [xb, fb]], myfcn.nfev]
 
     except OutOfBoundErr:
-        return [[None, None], [[xa, fa], [xb, fb]], nfev[0]]
+        return [[None, None], [[xa, fa], [xb, fb]], myfcn.nfev]
 
 
 def quad_coef(x, f):
@@ -3560,27 +3583,26 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             return True
         return np.isnan(arg)
 
-    history = [[], []]
-    nfev, myfcn = func_counter_history(fcn, history)
+    myfcn = FuncCounter(fcn)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
         if abs(fa) <= tol:
-            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
+            return [[xa, fa], [[xa, fa], [xa, fa]], myfcn.nfev]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
+            return [[xb, fb], [[xb, fb], [xb, fb]], myfcn.nfev]
 
         if fc is None:
             fc = myfcn(xc, *args)
         if abs(fc) <= tol:
-            return [[xc, fc], [[xc, fc], [xc, fc]], nfev[0]]
+            return [[xc, fc], [[xc, fc], [xc, fc]], myfcn.nfev]
 
-        while nfev[0] < maxfev:
+        while myfcn.nfev < maxfev:
 
             [B, C] = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
 
@@ -3588,14 +3610,16 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
 
             if is_nan(B) or is_nan(C) or \
                     0.0 == C + np.sign(C) * np.sqrt(discriminant):
-                return [[None, None], [[None, None], [None, None]], nfev[0]]
+                return [[None, None], [[None, None], [None, None]],
+                        myfcn.nfev]
 
             xd = xc - 2.0 * fc / (C + np.sign(C) * np.sqrt(discriminant))
 
             fd = myfcn(xd, *args)
-            # print 'fd(%e)=%e' % (xd, fd)
+
             if abs(fd) <= tol:
-                return [[xd, fd], [[None, None], [None, None]], nfev[0]]
+                return [[xd, fd], [[None, None], [None, None]],
+                        myfcn.nfev]
 
             xa = xb
             fa = fb
@@ -3604,15 +3628,13 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             xc = xd
             fc = fd
 
-        # print 'demuller(): maxfev exceeded'
-        return [[xd, fd], [[None, None], [None, None]], nfev[0]]
+        return [[xd, fd], [[None, None], [None, None]],
+                myfcn.nfev]
 
     except ZeroDivisionError:
 
-        # print 'demuller(): fixme ZeroDivisionError'
-        # for x, y in zip( history[0], history[1] ):
-        #     print 'f(%e)=%e' % ( x, y )
-        return [[xd, fd], [[None, None], [None, None]], nfev[0]]
+        return [[xd, fd], [[None, None], [None, None]],
+                myfcn.nfev]
 
 
 def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
@@ -3650,31 +3672,31 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
         instead.
     '''
 
-    history = [[], []]
-    nfev, myfcn = func_counter_history(fcn, history)
+    myfcn = FuncCounter(fcn)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
         if abs(fa) <= tol:
-            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
+            return [[xa, fa], [[xa, fa], [xa, fa]], myfcn.nfev]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
+            return [[xb, fb], [[xb, fb], [xb, fb]], myfcn.nfev]
 
         if np.sign(fa) == np.sign(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
-            return [[None, None], [[None, None], [None, None]], nfev[0]]
+            return [[None, None], [[None, None], [None, None]],
+                    myfcn.nfev]
 
-        while nfev[0] < maxfev:
+        while myfcn.nfev < maxfev:
 
             xc = (xa + xb) / 2.0
             fc = myfcn(xc, *args)
             if abs(fc) <= tol:
-                return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
+                return [[xc, fc], [[xa, fa], [xb, fb]], myfcn.nfev]
 
             tran = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
             B = tran[0]
@@ -3685,9 +3707,9 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
             xd = xc - 2.0 * fc / (C + np.sign(C) * np.sqrt(discriminant))
 
             fd = myfcn(xd, *args)
-            # print 'fd(%e)=%e' % (xd, fd)
+
             if abs(fd) <= tol:
-                return [[xd, fd], [[xa, fa], [xb, fb]], nfev[0]]
+                return [[xd, fd], [[xa, fa], [xb, fb]], myfcn.nfev]
 
             if np.sign(fa) != np.sign(fc):
                 xb, fb = xc, fc
@@ -3715,15 +3737,11 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
                 xa, fa = xc, fc
                 continue
 
-        # print 'new_muller(): maxfev exceeded'
-        return [[xd, fd], [[xa, fa], [xb, fb]], nfev[0]]
+        return [[xd, fd], [[xa, fa], [xb, fb]], myfcn.nfev]
 
     except (ZeroDivisionError, OutOfBoundErr):
 
-        # print 'new_muller(): fixme ZeroDivisionError'
-        # for x, y in zip( history[0], history[1] ):
-        #     print 'f(%e)=%e' % ( x, y )
-        return [[xd, fd], [[xa, fa], [xb, fb]], nfev[0]]
+        return [[xd, fd], [[xa, fa], [xb, fb]], myfcn.nfev]
 
 #
 # /*
@@ -3784,30 +3802,30 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
         If any of those values is not available, ``None`` will be returned
         instead.
     '''
-    history = [[], []]
-    nfev, myfcn = func_counter_history(fcn, history)
+
+    myfcn = FuncCounter(fcn)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
         if abs(fa) <= tol:
-            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
+            return [[xa, fa], [[xa, fa], [xa, fa]], myfcn.nfev]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
+            return [[xb, fb], [[xb, fb], [xb, fb]], myfcn.nfev]
 
         if np.sign(fa) == np.sign(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
-            return [[None, None], [[None, None], [None, None]], nfev[0]]
+            return [[None, None], [[None, None], [None, None]],
+                    myfcn.nfev]
 
         xc = (xa + xb) / 2.0
         fc = myfcn(xc, *args)
-        # print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
         if abs(fc) <= tol:
-            return [[xc, fc], [[xc, fc], [xc, fc]], nfev[0]]
+            return [[xc, fc], [[xc, fc], [xc, fc]], myfcn.nfev]
 
         xbest, fbest = xa, fa
         if abs(fb) < abs(fa):
@@ -3816,7 +3834,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             xbest, fbest = xc, fc
 
         oldx = 1.0e128
-        while nfev[0] < maxfev:
+        while myfcn.nfev < maxfev:
 
             tran = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
             B = tran[0]
@@ -3846,12 +3864,12 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                 x = (xa + xb) / 2.0
 
             y = myfcn(x, *args)
-            # print 'MullerBound() y(%.14e)=%.14e' % (x,y)
+
             if abs(y) < abs(fbest):
                 xbest, fbest = x, y
             tolerance = min(tol * abs(x), tol)
             if abs(y) <= tol or abs(x - oldx) <= tolerance:
-                return [[x, y], [[xa, fa], [xb, fb]], nfev[0]]
+                return [[x, y], [[xa, fa], [xb, fb]], myfcn.nfev]
 
             mybisect = (x < xc and (xc - xa) > 0.95 * (xb - xa)) or \
                        (x > xc and (xb - xc) > 0.95 * (xb - xa)) or \
@@ -3866,40 +3884,42 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                     fb = fc
                 xc, fc = x, y
                 oldx = x
+
             else:
                 xmid = (xa + xb) / 2.0
                 fmid = myfcn(xmid, *args)
                 if abs(fmid) < abs(fbest):
                     xbest, fbest = xmid, fmid
-                # print 'MullerBound() fmid(%.14e)=%.14e' % (xmid,fmid)
+
                 if abs(fmid) <= tol:
-                    return [[xmid, fmid], [[xa, fa], [xb, fb]], nfev[0]]
+                    return [[xmid, fmid], [[xa, fa], [xb, fb]], myfcn.nfev]
                 if np.sign(fa) + np.sign(fmid) == 0:
                     xb = xmid
                     fb = fmid
                 else:
                     xa = xmid
                     fa = fmid
+
                 xc = (xa + xb) / 2.0
                 fc = myfcn(xc, *args)
                 if abs(fc) < abs(fbest):
                     xbest, fbest = xc, fc
-                # print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
+
                 if abs(fc) <= tol:
-                    return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
+                    return [[xc, fc], [[xa, fa], [xb, fb]], myfcn.nfev]
                 oldx = 1.0e128
 
         #
         # maxfev has exceeded, return the minimum so far
         #
-        return [[xbest, fbest], [[xa, fa], [xb, fb]], nfev[0]]
+        return [[xbest, fbest], [[xa, fa], [xb, fb]], myfcn.nfev]
 
     #
     # Something drastic has happened
     #
     except (ZeroDivisionError, OutOfBoundErr):
 
-        return [[xbest, fbest], [[xa, fa], [xb, fb]], nfev[0]]
+        return [[xbest, fbest], [[xa, fa], [xb, fb]], myfcn.nfev]
 
 
 def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
@@ -3980,29 +4000,28 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
     """
 
-    history = [[], []]
-    nfev, myfcn = func_counter_history(fcn, history)
+    myfcn = FuncCounter(fcn)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
             if abs(fa) <= tol:
-                return [[xa, fa], [[xa, fa], [xb, fb]], nfev[0]]
+                return [[xa, fa], [[xa, fa], [xb, fb]], myfcn.nfev]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+            return [[xb, fb], [[xa, fa], [xb, fb]], myfcn.nfev]
 
         if np.sign(fa) == np.sign(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
-            return [[None, None], [[None, None], [None, None]], nfev[0]]
+            return [[None, None], [[None, None], [None, None]], myfcn.nfev]
 
         xc = xa
         fc = fa
         DBL_EPSILON = np.finfo(np.float32).eps
-        while nfev[0] < maxfev:
+        while myfcn.nfev < maxfev:
 
             prev_step = xb - xa
 
@@ -4015,22 +4034,24 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
             new_step = (xc - xb) / 2.0
 
             if abs(fb) <= tol:
-                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+                return [[xb, fb], [[xa, fa], [xb, fb]], myfcn.nfev]
 
             if abs(new_step) <= tol_act:
                 if np.sign(fb) != np.sign(fa):
                     tmp = apache_muller(fcn, xa, xb, fa, fb, args=args,
-                                        maxfev=maxfev - nfev[0], tol=tol)
-                    tmp[-1] += nfev[0]
+                                        maxfev=maxfev - myfcn.nfev,
+                                        tol=tol)
+                    tmp[-1] += myfcn.nfev
                     return tmp
 
                 if np.sign(fb) != np.sign(fc):
                     tmp = apache_muller(fcn, xb, xc, fb, fc, args=args,
-                                        maxfev=maxfev - nfev[0], tol=tol)
-                    tmp[-1] += nfev[0]
+                                        maxfev=maxfev - myfcn.nfev,
+                                        tol=tol)
+                    tmp[-1] += myfcn.nfev
                     return tmp
 
-                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+                return [[xb, fb], [[xa, fa], [xb, fb]], myfcn.nfev]
 
             if abs(prev_step) >= tol_act and abs(fa) > abs(fb):
 
@@ -4064,15 +4085,15 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
             fa = fb
             xb += new_step
             fb = myfcn(xb, *args)
-            # print 'fa(%f)=%f\tfb(%f)=%f\tfc(%f)=%f' % (xa,fa,xb,fb,xc,fc)
+
             if fb > 0 and fc > 0 or fb < 0 and fc < 0:
                 xc = xa
                 fc = fa
 
-        return [[xb, fb], [[xa, fa], [xc, fc]], nfev[0]]
+        return [[xb, fb], [[xa, fa], [xc, fc]], myfcn.nfev]
 
     except (ZeroDivisionError, OutOfBoundErr):
-        return [[xb, fb], [[xa, fa], [xc, fc]], nfev[0]]
+        return [[xb, fb], [[xa, fa], [xc, fc]], myfcn.nfev]
 
 
 def public(f):
@@ -4092,7 +4113,7 @@ def public(f):
     return f
 
 
-def send_to_pager(txt, filename=None, clobber=False):
+def send_to_pager(txt: str, filename=None, clobber: bool = False) -> None:
     """Write out the given string, using pagination if supported.
 
     This used to call out to using less/more but now is handled
