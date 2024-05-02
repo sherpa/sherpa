@@ -33,7 +33,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Callable, Generic, TypeVar
+from typing import Any, Callable, Generic, Sequence, TypeVar
 import warnings
 
 import numpy as np
@@ -56,7 +56,7 @@ from sherpa.utils.parallel import multi as _multi, ncpus as _ncpus, \
 warning = logging.getLogger("sherpa").warning
 debug = logging.getLogger("sherpa").debug
 
-__all__ = ('NoNewAttributesAfterInit',
+__all__ = ('NoNewAttributesAfterInit', 'CallbackN',
            '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'create_expr_integrated',
@@ -3141,6 +3141,26 @@ def is_in(arg, seq):
             return True
 
     return False
+
+
+class CallbackN:
+    """Call a function of a single argument and return a given element.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    __slots__ = ("func", "element")
+
+    def __init__(self,
+                 # it's hard to give a good type for func
+                 func: Callable[[Any], Sequence],
+                 element: int) -> None:
+        self.func = func
+        self.element = element
+
+    def __call__(self, arg) -> Any:
+        return self.func(arg)[self.element]
 
 
 def is_iterable(arg):
