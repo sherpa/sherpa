@@ -24,15 +24,16 @@ import logging
 import os
 from pathlib import Path
 import signal
-from typing import Optional, Protocol, Sequence, Union, \
-    runtime_checkable
+from typing import Any, Mapping, Optional, Protocol, Sequence, \
+    Union, runtime_checkable
 
 import numpy as np
 
 from sherpa.data import Data, DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
-from sherpa.models import SimulFitModel
-from sherpa.optmethods import LevMar, NelderMead
+from sherpa.models import Model, SimulFitModel
+from sherpa.models.parameter import Parameter
+from sherpa.optmethods import OptMethod, LevMar, NelderMead
 from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
@@ -647,18 +648,30 @@ class IterCallback:
 # issue #2063
 #
 class IterFit:
-    """Support iterative fitting schemes.
+    """Handle possibly iterated fits.
 
-    This class is highly coupled to `Fit`.
+    This is tightly coupled with `Fit`.
 
     .. versionchanged:: 4.17.0
-       Several internal fields have been removed as they are now
-       handled by the IterCallback class and the changes to the
-       _get_callback routine.
+       A number of internal variables have been removed as they are
+       now handled by the `IterCallback` class. The class now uses
+       ``__slots__`` to mark this object as having no user fields.
 
     """
 
-    def __init__(self, data, model, stat, method, itermethod_opts=None):
+    __slots__ = ("data", "model", "stat", "method", "_dep",
+                 "_staterror", "_syserror", "itermethod_opts",
+                 "iterate", "funcs", "current_func")
+
+    def __init__(self,
+                 # note that DataSimulFit does not derive from Data but
+                 # SimulFitModel does derive from Model.
+                 data: Union[Data, DataSimulFit],
+                 model: Model,
+                 stat: Stat,
+                 method: OptMethod,
+                 itermethod_opts: Optional[Mapping[str, Any]] = None
+                 ) -> None:
         if itermethod_opts is None:
             itermethod_opts = {'name': 'none'}
 
@@ -702,6 +715,8 @@ class IterFit:
             except KeyError:
                 raise ValueError(f"{iname} is not an iterative fitting method") from None
 
+            self.iterate = True
+
     # SIGINT (i.e., typing ctrl-C) can dump the user to the Unix prompt,
     # when signal is sent from G95 compiled code.  What we want is to
     # get to the Sherpa prompt instead.  Typically the user only thinks
@@ -734,6 +749,8 @@ class IterFit:
         except ValueError as e:
             warning(e)
 
+        # Store the original set of data that is to be fit.
+        #
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
@@ -999,6 +1016,126 @@ def _add_fit_stats(outfile: Optional[Union[str, Path, WriteableTextFile]],
         return nullcontext(fh)
 
     return fh
+
+
+# FreezePar needs to know about all the thawed parameters so it can
+# return the values of all-but-the-selected parameter, but ThawPar and
+# ParName could be sent the parameter object.
+#
+class FreezePar:
+    """Allow a parameter to be frozen.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    ThawPar, ParName, ReportProgress
+
+    """
+
+    def __init__(self,
+                 thawedpars: list[Parameter],
+                 parent) -> None:
+        self.thawedpars = thawedpars
+        # We need to be able to change the current_frozen setting
+        self.parent = parent
+
+    def __call__(self, pars, parmins, parmaxes, idx):
+        # Freeze the indicated parameter; return
+        # its place in the list of all parameters,
+        # and the current values of the parameters,
+        # and the hard mins amd maxs of the parameters
+        self.thawedpars[idx].val = pars[idx]
+        self.thawedpars[idx].frozen = True
+        self.parent.current_frozen = idx
+
+        keep_pars = np.ones_like(pars)
+        keep_pars[idx] = 0
+        keep_idx = np.where(keep_pars)
+        current_pars = pars[keep_idx]
+        current_parmins = parmins[keep_idx]
+        current_parmaxes = parmaxes[keep_idx]
+        return (current_pars, current_parmins, current_parmaxes)
+
+
+class ThawPar:
+    """Allow a parameter to be thawed.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ParName, ReportProgress
+
+    """
+
+    def __init__(self,
+                 thawedpars: list[Parameter],
+                 parent):
+        self.thawedpars = thawedpars
+        # We need to be able to change the current_frozen setting
+        self.parent = parent
+
+    def __call__(self, idx):
+        if idx < 0:
+            return
+
+        self.thawedpars[idx].frozen = False
+        self.parent.current_frozen = -1
+
+
+class ParName:
+    """Return the name of the given parmeter.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ReportProgress, ThawPar
+
+    """
+
+    def __init__(self, thawedpars):
+        self.thawedpars = thawedpars
+
+    def __call__(self, idx):
+        return self.thawedpars[idx].fullname
+
+
+class ReportProgress:
+    """Log the current parameter limits.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ParName, ThawPar
+
+    """
+
+    def __init__(self, thawedpars: list[Parameter]) -> None:
+        self.thawedpars = thawedpars
+
+    def report_bound(self, name: str, label: str, value) -> None:
+        if np.isnan(value) or np.isinf(value):
+            info("%s \t$%s bound: -----", name, label)
+        else:
+            info("%s \t%s bound: %g", name, label, value[0])
+
+    # Call from a parameter estimation method, to report that
+    # limits for a given parameter have been found At present (mid
+    # 2023) it looks like lower/upper are both single-element
+    # ndarrays, hence the need to convert to a scalar by accessing
+    # the first element (otherwise there's a deprecation warning
+    # from NumPy 1.25).
+    #
+    def __call__(self, idx: int, lower, upper) -> None:
+        if idx < 0:
+            return
+
+        name = self.thawedpars[idx].fullname
+        self.report_bound(name, "lower", lower)
+        self.report_bound(name, "upper", upper)
 
 
 class Fit(NoNewAttributesAfterInit):
@@ -1450,58 +1587,10 @@ class Fit(NoNewAttributesAfterInit):
         #
         thawedpars = self.model.get_thawed_pars()
 
-        # Define functions to freeze and thaw a parameter before
-        # we call fit function -- projection can call fit several
-        # times, for each parameter -- that parameter must be frozen
-        # while the others freely vary.
-        def freeze_par(pars, parmins, parmaxes, idx):
-            # Freeze the indicated parameter; return
-            # its place in the list of all parameters,
-            # and the current values of the parameters,
-            # and the hard mins amd maxs of the parameters
-            thawedpars[idx].val = pars[idx]
-            thawedpars[idx].frozen = True
-            self.current_frozen = idx
-
-            keep_pars = np.ones_like(pars)
-            keep_pars[idx] = 0
-            pars_idx = np.where(keep_pars)
-            current_pars = pars[pars_idx]
-            current_parmins = parmins[pars_idx]
-            current_parmaxes = parmaxes[pars_idx]
-            return (current_pars, current_parmins, current_parmaxes)
-
-        def thaw_par(idx):
-            if idx < 0:
-                return
-
-            thawedpars[idx].frozen = False
-            self.current_frozen = -1
-
-        # confidence needs to know which parameter it is working on.
-        def get_par_name(idx):
-            return thawedpars[idx].fullname
-
-        # Call from a parameter estimation method, to report that
-        # limits for a given parameter have been found At present (mid
-        # 2023) it looks like lower/upper are both single-element
-        # ndarrays, hence the need to convert to a scalar by accessing
-        # the first element (otherwise there's a deprecation warning
-        # from NumPy 1.25).
-        #
-        def report_progress(idx, lower, upper):
-            if idx < 0:
-                return
-
-            name = thawedpars[idx].fullname
-            if np.isnan(lower) or np.isinf(lower):
-                info("%s \tlower bound: -----", name)
-            else:
-                info("%s \tlower bound: %g", name, lower[0])
-            if np.isnan(upper) or np.isinf(upper):
-                info("%s \tupper bound: -----", name)
-            else:
-                info("%s \tupper bound: %g", name, upper[0])
+        freeze_par = FreezePar(thawedpars, self)
+        thaw_par = ThawPar(thawedpars, self)
+        get_par_name = ParName(thawedpars)
+        report_progress = ReportProgress(thawedpars)
 
         # If starting fit statistic is chi-squared or C-stat,
         # can calculate reduced fit statistic -- if it is
