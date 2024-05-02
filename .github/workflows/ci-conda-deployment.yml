@@ -9,7 +9,6 @@ on:
     - main
     - ciaox
     - 'release/**'
-    - conda-up-down-action
 
 #Reduces GH Action duplication:
 # Cancels the previous pipeline for this ref it is still running
@@ -29,7 +28,7 @@ jobs:
   check-skip:
     name: Skip the Pipeline if tagged and NOT on the release branch
     runs-on: ubuntu-latest
-#    if: github.repository == 'sherpa/sherpa'
+    if: github.repository == 'sherpa/sherpa'
     outputs:
       skip_pipeline: ${{ steps.skip_check.outputs.skip_pipeline }}
 
