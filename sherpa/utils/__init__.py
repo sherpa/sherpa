@@ -33,6 +33,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
+import warnings
 
 import numpy as np
 
@@ -3101,6 +3102,17 @@ def func_counter_history(func, history):
 
 
 def is_in(arg, seq):
+    """DEPRECATED.
+
+    .. deprecated:: 4.17.0
+       Use the Python `in` operator instead.
+
+    """
+    # This is FutureWarning rather than DeprecationWarning to make
+    # sure users see the message.
+    #
+    warnings.warn("is_in is deprecated in 4.17.0: use Python's in instead",
+                  FutureWarning)
     for x in seq:
         if arg == x:
             return True
