@@ -35,7 +35,7 @@ jobs:
     steps:
     #Checkout the code with a depth of 0 to grab the tags/branches as well
     - name: Checkout Code
-      uses: actions/checkout@v3.1.0
+      uses: actions/checkout@v4.1.1
       with:
         fetch-depth: 0
 
@@ -87,7 +87,7 @@ jobs:
 
     #Checkout the code with a depth of 0 to grab the tags/branches as well
     - name: Checkout Code
-      uses: actions/checkout@v3.1.0
+      uses: actions/checkout@v4.1.1
       with:
         fetch-depth: 0
         path: sherpa
@@ -111,9 +111,9 @@ jobs:
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
         conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os-dir }}
+        name: ${{ matrix.os-dir }}-${{ python-version }}
         path: ${{ github.workspace }}/packages/*/sherpa*bz2
         if-no-files-found: error
         retention-days: 3
@@ -154,7 +154,7 @@ jobs:
         sudo tar -C /opt -xf MacOSX10.14.sdk.tar.xz
 
     - name: Checkout Code
-      uses: actions/checkout@v3.1.0
+      uses: actions/checkout@v4.1.1
       with:
         fetch-depth: 0
         path: sherpa
@@ -178,9 +178,9 @@ jobs:
         echo "conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda"
         conda build --python ${SHERPA_PYTHON_VERSION} --output-folder ${GITHUB_WORKSPACE}/packages recipes/conda
 
-    - uses: actions/upload-artifact@v3
+    - uses: actions/upload-artifact@v4
       with:
-        name: ${{ matrix.os-dir }}
+        name: ${{ matrix.os-dir }}-${{ python-version }}
         path: ${{ github.workspace }}/packages/*/sherpa*bz2
         if-no-files-found: error
         retention-days: 3
@@ -207,11 +207,12 @@ jobs:
 
     steps:
     #Download all artifacts
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       id: download
       with:
-        name: ${{ matrix.os-dir }}
+        name: ${{ matrix.os-dir }}-*
         path: packages
+        merge-multiple: true
 
     - name: Conda Setup & Index Artifacts
       env:
