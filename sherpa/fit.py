@@ -22,20 +22,21 @@ from functools import wraps
 import logging
 import os
 import signal
-from typing import Optional, Sequence, Union
+from typing import Any, IO, Mapping, Optional, Sequence, SupportsFloat, \
+    Union
 
 import numpy as np
 
 from sherpa.data import Data, DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
-from sherpa.models import SimulFitModel
-from sherpa.optmethods import LevMar, NelderMead
+from sherpa.models import Model, SimulFitModel
+from sherpa.models.parameter import Parameter
+from sherpa.optmethods import OptMethod, LevMar, NelderMead
 from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_iterable, list_to_open_interval, sao_fcmp, formatting
 from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
-
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -572,9 +573,67 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         return "\n".join(out) + myformat(hfmt, lowstr, lownum, highstr, highnum)
 
 
-class IterFit(NoNewAttributesAfterInit):
+class IterCallback:
+    """Return the statistic for the new set of parameters.
 
-    def __init__(self, data, model, stat, method, itermethod_opts=None):
+    This will also write the current iteration parameter values and
+    statistic value to the requested file handle.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    def __init__(self, *,
+                 data: DataSimulFit,
+                 model: SimulFitModel,
+                 stat: Stat,
+                 fh: Optional[IO]) -> None:
+        self.data = data
+        self.model = model
+        self.stat = stat
+        self.fh = fh
+        self.nfev = 0
+
+    def __call__(self,
+                 pars: Sequence[SupportsFloat]) -> float:
+
+        self.model.thawedpars = pars
+        stat = self.stat.calc_stat(self.data, self.model)
+
+        if self.fh is not None:
+            vals = [f'{self.nfev:5e} {stat[0]:5e}']
+            vals.extend([f'{val:5e}' for val in self.model.thawedpars])
+            print(' '.join(vals), file=self.fh)
+
+        self.nfev += 1
+        return stat
+
+
+class IterFit:
+    """Handle possibly iterated fits.
+
+    This is tightly coupled with `Fit`.
+
+    .. versionchanged:: 4.17.0
+       A number of internal variables have been removed as they are
+       now handled by the `IterCallback` class. The class now uses
+       ``__slots__`` to mark this object as having no user fields.
+
+    """
+
+    __slots__ = ("data", "model", "stat", "method", "_dep",
+                 "_staterror", "_syserror", "itermethod_opts",
+                 "iterate", "funcs", "current_func")
+
+    def __init__(self,
+                 # note that DataSimulFit does not derive from Data but
+                 # SimulFitModel does derive from Model.
+                 data: Union[Data, DataSimulFit],
+                 model: Model,
+                 stat: Stat,
+                 method: OptMethod,
+                 itermethod_opts: Optional[Mapping[str, Any]] = None
+                 ) -> None:
         if itermethod_opts is None:
             itermethod_opts = {'name': 'none'}
 
@@ -583,12 +642,14 @@ class IterFit(NoNewAttributesAfterInit):
         # collections of data and models -- so, put data and
         # models into the objects needed for simultaneous fitting,
         # if they are not already in such objects.
-        self.data = data
-        if type(data) is not DataSimulFit:
+        if isinstance(data, DataSimulFit):
+            self.data = data
+        else:
             self.data = DataSimulFit('simulfit data', (data,))
 
-        self.model = model
-        if type(model) is not SimulFitModel:
+        if isinstance(model, SimulFitModel):
+            self.model = model
+        else:
             self.model = SimulFitModel('simulfit model', (model,))
 
         self.stat = stat
@@ -599,8 +660,6 @@ class IterFit(NoNewAttributesAfterInit):
         # self.extra_args = None
         self._staterror = None
         self._syserror = None
-        self._nfev = 0
-        self._file = None
 
         # Options to send to iterative fitting method
         self.itermethod_opts = itermethod_opts
@@ -620,9 +679,6 @@ class IterFit(NoNewAttributesAfterInit):
 
             self.iterate = True
 
-        # TODO: should this call
-        # NoNewAttributesAfterInit.__init__(self)
-
     # SIGINT (i.e., typing ctrl-C) can dump the user to the Unix prompt,
     # when signal is sent from G95 compiled code.  What we want is to
     # get to the Sherpa prompt instead.  Typically the user only thinks
@@ -632,7 +688,9 @@ class IterFit(NoNewAttributesAfterInit):
     def _sig_handler(self, signum, frame):
         raise KeyboardInterrupt()
 
-    def _get_callback(self, outfile=None, clobber=False):
+    def _get_callback(self,
+                      outfile: Optional[str] = None,
+                      clobber: bool = False) -> IterCallback:
         if len(self.model.thawedpars) == 0:
             raise FitErr('nothawedpar')
 
@@ -642,37 +700,25 @@ class IterFit(NoNewAttributesAfterInit):
         except ValueError as e:
             warning(e)
 
+        # Store the original set of data that is to be fit.
+        #
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
-        # self.extra_args = self.get_extra_args(self._dep)
-        self._nfev = 0
-        if outfile is not None:
+        if outfile is None:
+            fh = None
+        else:
             if not clobber and os.path.isfile(outfile):
                 raise FitErr('noclobererr', outfile)
 
             names = ['# nfev statistic']
             names.extend(par.fullname
                          for par in self.model.get_thawed_pars())
-            self._file = open(outfile, 'w', encoding="ascii")
-            print(' '.join(names), file=self._file)
+            fh = open(outfile, 'w', encoding="ascii")
+            print(' '.join(names), file=fh)
 
-        def cb(pars):
-            # We need to store the new parameter values in order to support
-            # linked parameters
-
-            self.model.thawedpars = pars
-            stat = self.stat.calc_stat(self.data, self.model)
-
-            if self._file is not None:
-                vals = [f'{self._nfev:5e} {stat[0]:5e}']
-                vals.extend([f'{val:5e}' for val in self.model.thawedpars])
-                print(' '.join(vals), file=self._file)
-
-            self._nfev += 1
-            return stat
-
-        return cb
+        return IterCallback(data=self.data, model=self.model,
+                            stat=self.stat, fh=fh)
 
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs=(),
                  statkwargs=None, cache=True):
@@ -896,6 +942,126 @@ class IterFit(NoNewAttributesAfterInit):
 
         return self.current_func(statfunc, pars, parmins, parmaxes,
                                  statargs, statkwargs)
+
+
+# FreezePar needs to know about all the thawed parameters so it can
+# return the values of all-but-the-selected parameter, but ThawPar and
+# ParName could be sent the parameter object.
+#
+class FreezePar:
+    """Allow a parameter to be frozen.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    ThawPar, ParName, ReportProgress
+
+    """
+
+    def __init__(self,
+                 thawedpars: list[Parameter],
+                 parent) -> None:
+        self.thawedpars = thawedpars
+        # We need to be able to change the current_frozen setting
+        self.parent = parent
+
+    def __call__(self, pars, parmins, parmaxes, idx):
+        # Freeze the indicated parameter; return
+        # its place in the list of all parameters,
+        # and the current values of the parameters,
+        # and the hard mins amd maxs of the parameters
+        self.thawedpars[idx].val = pars[idx]
+        self.thawedpars[idx].frozen = True
+        self.parent.current_frozen = idx
+
+        keep_pars = np.ones_like(pars)
+        keep_pars[idx] = 0
+        keep_idx = np.where(keep_pars)
+        current_pars = pars[keep_idx]
+        current_parmins = parmins[keep_idx]
+        current_parmaxes = parmaxes[keep_idx]
+        return (current_pars, current_parmins, current_parmaxes)
+
+
+class ThawPar:
+    """Allow a parameter to be thawed.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ParName, ReportProgress
+
+    """
+
+    def __init__(self,
+                 thawedpars: list[Parameter],
+                 parent):
+        self.thawedpars = thawedpars
+        # We need to be able to change the current_frozen setting
+        self.parent = parent
+
+    def __call__(self, idx):
+        if idx < 0:
+            return
+
+        self.thawedpars[idx].frozen = False
+        self.parent.current_frozen = -1
+
+
+class ParName:
+    """Return the name of the given parmeter.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ReportProgress, ThawPar
+
+    """
+
+    def __init__(self, thawedpars):
+        self.thawedpars = thawedpars
+
+    def __call__(self, idx):
+        return self.thawedpars[idx].fullname
+
+
+class ReportProgress:
+    """Log the current parameter limits.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ParName, ThawPar
+
+    """
+
+    def __init__(self, thawedpars: list[Parameter]) -> None:
+        self.thawedpars = thawedpars
+
+    def report_bound(self, name: str, label: str, value) -> None:
+        if np.isnan(value) or np.isinf(value):
+            info("%s \t$%s bound: -----", name, label)
+        else:
+            info("%s \t%s bound: %g", name, label, value[0])
+
+    # Call from a parameter estimation method, to report that
+    # limits for a given parameter have been found At present (mid
+    # 2023) it looks like lower/upper are both single-element
+    # ndarrays, hence the need to convert to a scalar by accessing
+    # the first element (otherwise there's a deprecation warning
+    # from NumPy 1.25).
+    #
+    def __call__(self, idx: int, lower, upper) -> None:
+        if idx < 0:
+            return
+
+        name = self.thawedpars[idx].fullname
+        self.report_bound(name, "lower", lower)
+        self.report_bound(name, "upper", upper)
 
 
 class Fit(NoNewAttributesAfterInit):
@@ -1140,19 +1306,19 @@ class Fit(NoNewAttributesAfterInit):
             raise FitErr('binhas0')
 
         init_stat = self.calc_stat()
-        # output = self.method.fit ...
-        tmp = self._iterfit._get_callback(outfile, clobber)
-        output = self._iterfit.fit(tmp,
+
+        cb = self._iterfit._get_callback(outfile, clobber)
+        output = self._iterfit.fit(cb,
                                    self.model.thawedpars,
                                    self.model.thawedparmins,
                                    self.model.thawedparmaxes)
+
         # LevMar always calculate chisquare, so call calc_stat
         # just in case statistics is something other then chisquare
         self.model.thawedpars = output[1]
         tmp = list(output)
         tmp[2] = self.calc_stat()
         output = tuple(tmp)
-        # end of the gymnastics 'cause one cannot write to a tuple
 
         # Check if any parameter values are at boundaries, and warn
         # user. This does not include any linked parameters.
@@ -1166,12 +1332,11 @@ class Fit(NoNewAttributesAfterInit):
                 if sao_fcmp(par.val, par.max, tol) == 0:
                     param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
 
-        if self._iterfit._file is not None:
-            vals = [f'{self._iterfit._nfev:5e}', f'{tmp[2]:5e}']
+        if cb.fh is not None:
+            vals = [f'{cb.nfev:5e}', f'{tmp[2]:5e}']
             vals.extend([f'{val:5e}' for val in self.model.thawedpars])
-            print(' '.join(vals), file=self._iterfit._file)
-            self._iterfit._file.close()
-            self._iterfit._file = None
+            print(' '.join(vals), file=cb.fh)
+            cb.fh.close()
 
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
@@ -1265,58 +1430,10 @@ class Fit(NoNewAttributesAfterInit):
         #
         thawedpars = self.model.get_thawed_pars()
 
-        # Define functions to freeze and thaw a parameter before
-        # we call fit function -- projection can call fit several
-        # times, for each parameter -- that parameter must be frozen
-        # while the others freely vary.
-        def freeze_par(pars, parmins, parmaxes, idx):
-            # Freeze the indicated parameter; return
-            # its place in the list of all parameters,
-            # and the current values of the parameters,
-            # and the hard mins amd maxs of the parameters
-            thawedpars[idx].val = pars[idx]
-            thawedpars[idx].frozen = True
-            self.current_frozen = idx
-
-            keep_pars = np.ones_like(pars)
-            keep_pars[idx] = 0
-            pars_idx = np.where(keep_pars)
-            current_pars = pars[pars_idx]
-            current_parmins = parmins[pars_idx]
-            current_parmaxes = parmaxes[pars_idx]
-            return (current_pars, current_parmins, current_parmaxes)
-
-        def thaw_par(idx):
-            if idx < 0:
-                return
-
-            thawedpars[idx].frozen = False
-            self.current_frozen = -1
-
-        # confidence needs to know which parameter it is working on.
-        def get_par_name(idx):
-            return thawedpars[idx].fullname
-
-        # Call from a parameter estimation method, to report that
-        # limits for a given parameter have been found At present (mid
-        # 2023) it looks like lower/upper are both single-element
-        # ndarrays, hence the need to convert to a scalar by accessing
-        # the first element (otherwise there's a deprecation warning
-        # from NumPy 1.25).
-        #
-        def report_progress(idx, lower, upper):
-            if idx < 0:
-                return
-
-            name = thawedpars[idx].fullname
-            if np.isnan(lower) or np.isinf(lower):
-                info("%s \tlower bound: -----", name)
-            else:
-                info("%s \tlower bound: %g", name, lower[0])
-            if np.isnan(upper) or np.isinf(upper):
-                info("%s \tupper bound: -----", name)
-            else:
-                info("%s \tupper bound: %g", name, upper[0])
+        freeze_par = FreezePar(thawedpars, self)
+        thaw_par = ThawPar(thawedpars, self)
+        get_par_name = ParName(thawedpars)
+        report_progress = ReportProgress(thawedpars)
 
         # If starting fit statistic is chi-squared or C-stat,
         # can calculate reduced fit statistic -- if it is
