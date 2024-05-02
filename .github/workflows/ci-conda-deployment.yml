@@ -211,7 +211,7 @@ jobs:
     - uses: actions/download-artifact@v4
       id: download
       with:
-        name: ${{ matrix.os-dir }}-*
+        pattern: ${{ matrix.os-dir }}-*
         path: packages
         merge-multiple: true
 
