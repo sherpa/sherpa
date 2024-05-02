@@ -9,6 +9,7 @@ on:
     - main
     - ciaox
     - 'release/**'
+    - conda-up-down-action
 
 #Reduces GH Action duplication:
 # Cancels the previous pipeline for this ref it is still running
