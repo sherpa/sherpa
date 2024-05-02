@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019, 2020, 2021, 2024
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -21,6 +22,7 @@ import pytest
 from sherpa.optmethods import _tstoptfct
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.ncoresde import ncoresDifEvo
+from sherpa.utils import CallbackN
 
 
 NCORES_NM = ncoresNelderMead()
@@ -33,10 +35,9 @@ def init(name, npar):
 
 
 def tst_opt(opt, fcn, npar, reltol=1.0e-3, abstol=1.0e-3):
-    def func(arg):
-        return fcn(arg)[0]
+
     x0, xmin, xmax, fmin = init(fcn.__name__, npar)
-    nfev, fval, par = opt(func, x0, xmin, xmax)
+    nfev, fval, par = opt(CallbackN(fcn, 0), x0, xmin, xmax)
     assert fmin == pytest.approx(fval, rel=reltol, abs=abstol)
 
 
