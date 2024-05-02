@@ -2831,14 +2831,6 @@ class FuncCounter(Generic[T]):
         return self.func(*args)
 
 
-def is_in(arg, seq):
-    for x in seq:
-        if arg == x:
-            return True
-
-    return False
-
-
 def is_iterable(arg):
     return isinstance(arg, (list, tuple, np.ndarray)) or np.iterable(arg)
 
