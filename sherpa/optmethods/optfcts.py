@@ -68,14 +68,13 @@ Best-fit value: 4.0
 
 """
 
-from typing import Sequence, SupportsFloat
+from typing import Any, Callable, Sequence, SupportsFloat
 
 import numpy as np
 
 from sherpa.utils._utils import sao_fcmp  # type: ignore
-from sherpa.utils import FuncCounter
+from sherpa.utils import CallbackN, FuncCounter, random
 from sherpa.utils.parallel import parallel_map
-from sherpa.utils import random
 from sherpa.utils.types import ArrayType, OptReturn, StatFunc
 
 from . import _saoopt  # type: ignore
@@ -335,8 +334,6 @@ def difevo_nm(fcn: StatFunc,
               weighting_factor: float
               ) -> OptReturn:
 
-    stat_cb0 = Callback(fcn)
-
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     # make sure that the cross over prob is within [0.1,1.0]
@@ -351,6 +348,7 @@ def difevo_nm(fcn: StatFunc,
     if maxfev is None:
         maxfev = 1024 * population_size
 
+    stat_cb0 = CallbackN(fcn, 0)
     de = _saoopt.nm_difevo(verbose, maxfev, seed, population_size,
                            ftol, xprob, weighting_factor, xmin, xmax,
                            x, stat_cb0)
@@ -363,6 +361,65 @@ def difevo_nm(fcn: StatFunc,
 
     status, msg = _get_saofit_msg(maxfev, ierr)
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
+
+
+def make_sequence(npar, ranges, N):
+
+    list_ranges = list(ranges)
+    for ii in range(npar):
+        list_ranges[ii] = tuple(list_ranges[ii]) + (complex(N),)
+        list_ranges[ii] = slice(*list_ranges[ii])
+
+    grid = numpy.mgrid[list_ranges]
+    mynfev = pow(N, npar)
+    grid = list(map(numpy.ravel, grid))
+    sequence = []
+    for index in range(mynfev):
+        tmp = []
+        for xx in range(npar):
+            tmp.append(grid[xx][index])
+        sequence.append(tmp)
+
+    return sequence
+
+
+class ReportValue:
+    """Report the value of the function evaluation if verbose is set.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    __slots__ = ("func", "verbose")
+
+    def __init__(self,
+                 func: Callable[[Any], SupportsFloat],
+                 verbose: bool) -> None:
+        self.func = func
+        self.verbose = verbose
+
+    def __call__(self, pars) -> SupportsFloat:
+        out = self.func(pars)
+        if self.verbose:
+            print(f'f{pars}={out:g}')
+
+        return out
+
+
+class AppendArgument:
+    """Append the argument to the function call.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    __slots__ = ("func", )
+
+    def __init__(self, func: Callable) -> None:
+        self.func = func
+
+    def __call__(self, pars) -> numpy.ndarray:
+        return numpy.append(self.func(pars), pars)
 
 
 def grid_search(fcn: StatFunc,
@@ -428,44 +485,22 @@ def grid_search(fcn: StatFunc,
 
     npar = len(x)
 
-    def func(pars):
-        aaa = fcn(pars)[0]
-        if verbose:
-            print(f'f{pars}={aaa:g}')
-        return aaa
-
-    def make_sequence(ranges, N):
-        list_ranges = list(ranges)
-        for ii in range(npar):
-            list_ranges[ii] = tuple(list_ranges[ii]) + (complex(N),)
-            list_ranges[ii] = slice(*list_ranges[ii])
-
-        grid = np.mgrid[list_ranges]
-        mynfev = pow(N, npar)
-        grid = list(map(np.ravel, grid))
-        sequence = []
-        for index in range(mynfev):
-            tmp = []
-            for xx in range(npar):
-                tmp.append(grid[xx][index])
-            sequence.append(tmp)
-        return sequence
-
-    def eval_stat_func(xxx):
-        return np.append(func(xxx), xxx)
+    stat_cb0 = CallbackN(fcn, 0)
+    func = ReportValue(stat_cb0, bool(verbose))
+    eval_stat_func = AppendArgument(func)
 
     if sequence is None:
         ranges = []
         for index in range(npar):
             ranges.append([xmin[index], xmax[index]])
-        sequence = make_sequence(ranges, num)
-    else:
-        if not np.iterable(sequence):
-            raise TypeError("sequence option must be iterable")
-
+        sequence = make_sequence(npar, ranges, num)
+    elif numpy.iterable(sequence):
         for seq in sequence:
             if npar != len(seq):
                 raise TypeError(f"{seq} must be of length {npar}")
+
+    else:
+        raise TypeError("sequence option must be iterable")
 
     answer = eval_stat_func(x)
     sequence_results = parallel_map(eval_stat_func, sequence, numcores)
@@ -499,6 +534,38 @@ def grid_search(fcn: StatFunc,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
+# This is essentially the same as .opt.FuncBoundsCheck
+# except that the exact logic for identifying the bounds
+# is written differenly.
+#
+class FuncBoundsCheck:
+    """Ensure the parameter values stay within the bounds.
+
+    The aim is to bound the values to [xmin, xmax] by acting like an
+    infinite potential well, so any values outside this range end up
+    returning the "maximum" float64 value.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    __slots__ = ("func", "xmin", "xmax")
+
+    def __init__(self,
+                 func: Callable[[Any], SupportsFloat],
+                 xmin: numpy.ndarray,
+                 xmax: numpy.ndarray) -> None:
+        self.func = func
+        self.xmin = xmin
+        self.xmax = xmax
+
+    def __call__(self, x) -> SupportsFloat:
+        if _my_is_nan(x) or _outside_limits(x, self.xmin, self.xmax):
+            return FUNC_MAX
+
+        return self.func(x)
+
+
 #
 # C-version of minim
 #
@@ -517,6 +584,8 @@ def minim(fcn: StatFunc,
           ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
+    orig_fcn = CallbackN(fcn, 0)
+    stat_cb0 = FuncBoundsCheck(orig_fcn, xmin, xmax)
 
     if step is None:
         step = np.full(x.shape, 0.4, dtype=np.float64)
@@ -526,8 +595,6 @@ def minim(fcn: StatFunc,
 
     if maxfev is None:
         maxfev = 512 * len(x)
-
-    stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
     init = 0
     x, fval, neval, ifault = _saoopt.minim(reflect, verbose, maxfev, init, \
@@ -651,7 +718,7 @@ def montecarlo(fcn: StatFunc,
 
     """
 
-    stat_cb0 = Callback(fcn)
+    stat_cb0 = CallbackN(fcn, 0)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -800,6 +867,36 @@ def montecarlo(fcn: StatFunc,
 #
 # Nelder Mead
 #
+def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
+            myfcn, debug, ofval=FUNC_MAX):
+    """Simplex implementation for neldermead.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    if len(final) >= 3:
+        # get rid of the last entry in the list
+        tmpfinal = final[0:-1]
+    else:
+        tmpfinal = final[:]
+
+    xx, ff, nf, er = _saoopt.neldermead(verbose, maxfev, init, tmpfinal,
+                                        tol, step, xmin, xmax, x, myfcn)
+
+    if debug:
+        print(f'finalsimplex={tmpfinal}, nfev={nf}:\tf{xx}={ff:.20e}')
+
+    if len(final) >= 3 and ff < 0.995 * ofval and nf < maxfev:
+        myfinal = [final[-1]]
+        x, fval, nfev, err = simplex(verbose, maxfev-nf, init, myfinal, tol,
+                                     step, xmin, xmax, x, myfcn, debug,
+                                     ofval=ff)
+        return x, fval, nfev + nf, err
+
+    return xx, ff, nf, er
+
+
 def neldermead(fcn: StatFunc,
                x0: ArrayType,
                xmin: ArrayType,
@@ -1017,14 +1114,14 @@ def neldermead(fcn: StatFunc,
 
     """
 
+    # A safeguard just in case the initial simplex is outside the bounds
+    #
     x, xmin, xmax = _check_args(x0, xmin, xmax)
+    orig_fcn = CallbackN(fcn, 0)
+    stat_cb0 = FuncBoundsCheck(orig_fcn, xmin, xmax)
 
     if step is None:
         step = np.full(x.shape, 1.2, dtype=np.float64)
-
-    # A safeguard just in case the initial simplex is outside the bounds
-    #
-    stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
     if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
         farg = int(finalsimplex)
@@ -1070,28 +1167,8 @@ def neldermead(fcn: StatFunc,
     if maxfev is None:
         maxfev = 1024 * len(x)
 
-    def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
-                myfcn, ofval=FUNC_MAX):
-
-        tmpfinal = final[:]
-        if len(final) >= 3:
-            # get rid of the last entry in the list
-            tmpfinal = final[0:-1]
-
-        xx, ff, nf, er = _saoopt.neldermead(verbose, maxfev, init, tmpfinal,
-                                            tol, step, xmin, xmax, x, myfcn)
-
-        if len(final) >= 3 and ff < 0.995 * ofval and nf < maxfev:
-            myfinal = [final[-1]]
-            x, fval, nfev, err = simplex(verbose, maxfev-nf, init, myfinal, tol,
-                                         step, xmin, xmax, x, myfcn,
-                                         ofval=ff)
-            return x, fval, nfev + nf, err
-
-        return xx, ff, nf, er
-
-    x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, fsimplex,
-                                 ftol, step, xmin, xmax, x, stat_cb0)
+    x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, finalsimplex,
+                                 ftol, step, xmin, xmax, x, stat_cb0, debug)
 
     covarerr = None
     if len(fsimplex) >= 3 and 0 != iquad:
@@ -1128,6 +1205,70 @@ def neldermead(fcn: StatFunc,
         imap['covarerr'] = covarerr
 
     return (status, x, fval, msg, imap)
+
+
+class FdJac:
+    """Jacobian calculation.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    def __init__(self, func, fvec, pars, epsfcn, xmax):
+        self.func = func
+        self.fvec = fvec
+        epsmch = numpy.finfo(float).eps
+        self.eps = numpy.sqrt(max(epsmch, epsfcn))
+        self.h = self.calc_h(pars, xmax)
+        self.pars = numpy.copy(pars)
+
+    def __call__(self, param):
+        wa = self.func(param[1:])
+        return (wa - self.fvec) / self.h[int(param[0])]
+
+    def calc_h(self, pars, xmax):
+        nn = len(pars)
+        h = numpy.empty((nn,))
+        for ii in range(nn):
+            h[ii] = self.eps * pars[ii]
+            if h[ii] == 0.0:
+                h[ii] = self.eps
+            if pars[ii] + h[ii] > xmax[ii]:
+                h[ii] = - h[ii]
+        return h
+
+    def calc_params(self):
+        params = []
+        for ii in range(len(self.h)):
+            tmp_pars = numpy.copy(self.pars)
+            tmp_pars[ii] += self.h[ii]
+            tmp_pars = numpy.append(ii, tmp_pars)
+            params.append(tmp_pars)
+        return tuple(params)
+
+
+class ParallelizeFdJac:
+    """Parallelize the FdJac calls.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    __slots__ = ("func", "epsfcn", "xmax", "numcores")
+
+    def __init__(self, func: Callable,
+                 *, epsfcn, xmax, numcores) -> None:
+        self.func = func
+        self.epsfcn = epsfcn
+        self.xmax = xmax
+        self.numcores = numcores
+
+    def __call__(self, pars, fvec) -> numpy.ndarray:
+        fd_jac = FdJac(self.func, fvec, pars,
+                       epsfcn=self.epsfcn, xmax=self.xmax)
+        params = fd_jac.calc_params()
+        fjac = parallel_map(fd_jac, params, self.numcores)
+        return numpy.concatenate(fjac)
 
 
 def lmdif(fcn: StatFunc,
@@ -1212,56 +1353,19 @@ def lmdif(fcn: StatFunc,
 
     """
 
-    class fdJac:
-
-        def __init__(self, func, fvec, pars):
-            self.func = func
-            self.fvec = fvec
-            epsmch = np.finfo(float).eps
-            self.eps = np.sqrt(max(epsmch, epsfcn))
-            self.h = self.calc_h(pars)
-            self.pars = np.copy(pars)
-
-        def __call__(self, param):
-            wa = self.func(param[1:])
-            return (wa - self.fvec) / self.h[int(param[0])]
-
-        def calc_h(self, pars):
-            nn = len(pars)
-            h = np.empty((nn,))
-            for ii in range(nn):
-                h[ii] = self.eps * pars[ii]
-                if h[ii] == 0.0:
-                    h[ii] = self.eps
-                if pars[ii] + h[ii] > xmax[ii]:
-                    h[ii] = - h[ii]
-            return h
-
-        def calc_params(self):
-            params = []
-            for idx, h in enumerate(self.h):
-                hadj = np.copy(self.pars)
-                hadj[idx] += h
-                pars = np.append(idx, hadj)
-                params.append(pars)
-
-            return tuple(params)
-
     x, xmin, xmax = _check_args(x0, xmin, xmax)
+
+    # Note that the counter does not count the parallelization in
+    # ParallelizedFdJac (i.e. the parallel_map call within that
+    # routine).
+    #
+    stat_cb1 = CallbackN(fcn, 1)
+    fcn_parallel = ParallelizeFdJac(stat_cb1, epsfcn=epsfcn,
+                                    xmax=xmax, numcores=numcores)
+    fcn_parallel_counter = FuncCounter(fcn_parallel)
 
     if maxfev is None:
         maxfev = 256 * len(x)
-
-    def stat_cb1(pars):
-        return fcn(pars)[1]
-
-    def fcn_parallel(pars, fvec):
-        fd_jac = fdJac(stat_cb1, fvec, pars)
-        params = fd_jac.calc_params()
-        fjac = parallel_map(fd_jac, params, numcores)
-        return np.concatenate(fjac)
-
-    fcn_parallel_counter = FuncCounter(fcn_parallel)
 
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = np.asanyarray(stat_cb1(x)).size

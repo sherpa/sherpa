@@ -82,76 +82,65 @@ class MyNcores:
         raise NotImplementedError("my_worker has not been implemented")
 
 
+class FuncBoundsCheck:
+    """Ensure the parameter values stay within the bounds.
+
+    The aim is to bound the values to [xmin, xmax] by acting like an
+    infinite potential well, so any values outside this range end up
+    returning the "maximum" float64 value.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    __slots__ = ("func", "xmin", "xmax")
+
+    def __init__(self,
+                 func: Callable[..., SupportsFloat],
+                 xmin: np.ndarray,
+                 xmax: np.ndarray) -> None:
+        self.func = func
+        self.xmin = xmin
+        self.xmax = xmax
+
+    def __call__(self, x, *args) -> SupportsFloat:
+        if np.any(x < self.xmin) or np.any(x > self.xmax):
+            return np.finfo(np.float64).max
+
+        return self.func(x, *args)
+
+
 class Opt:
     """Base optimisation class.
 
     .. versionchanged:: 4.17.0
        The class structure has been changed (e.g. `nfev` is now a
-       scalar and not a single-element list).
+       scalar and not a single-element list and `func_bounds` has
+       been removed).
 
     """
 
     def __init__(self,
-                 func: Callable,
+                 func: Callable[..., SupportsFloat],
                  xmin: ArrayType,
                  xmax: ArrayType
                  ) -> None:
-        self.npar = len(xmin)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
+        self.npar = len(xmin)
+        if self.npar != len(xmax):
+            raise ValueError("xmin and xmax must be the same size")
+
+        # The function counter is done before the bounds check, to
+        # make sure we count "valid" model evaluations (i.e. only
+        # those within bounds).
         self.func_count = FuncCounter(func)
-        self.func = self.func_bounds(self.func_count, self.npar, xmin, xmax)
+        self.func = FuncBoundsCheck(self.func_count, self.xmin, self.xmax)
 
     @property
     def nfev(self) -> int:
+        """How many evaluations as the function made?"""
         return self.func_count.nfev
-
-    def _outside_limits(self,
-                        x: np.ndarray,
-                        xmin: np.ndarray,
-                        xmax: np.ndarray
-                        ) -> bool:
-        return bool(np.any(x < xmin) or np.any(x > xmax))
-
-    # We should be able to take these parameters from the class, or
-    # re-write this logic.
-    #
-    def func_bounds(self,
-                    func: Callable,
-                    npar: int,
-                    xmin: ArrayType | None = None,
-                    xmax: ArrayType | None = None
-                    ) -> Callable:
-        """In order to keep the current number of function evaluations:
-        func_counter should be called before func_bounds. For example,
-        the following code
-          x0 = [-1.2, 1.0]
-          xmin = [-10.0, -10.0]
-          xmax = [10.0, 10.0]
-          nfev, rosen = func_counter(Rosenbrock)
-          rosenbrock = func_bounds(rosen, xmin, xmax)
-          print rosenbrock([-15.0, 1.0]), nfev[0]
-        should output:
-        inf 0"""
-        if xmin is not None and xmax is not None:
-            xmin = np.asarray(xmin)
-            xmax = np.asarray(xmax)
-        elif xmin is not None:
-            xmin = np.asarray(xmin)
-            xmax = np.asarray([np.inf for ii in xmin])
-        elif xmax is not None:
-            xmax = np.asarray(xmax)
-            xmin = np.asarray([- np.inf for ii in xmax])
-        else:
-            xmin = np.asarray([- np.inf for ii in range(npar)])
-            xmax = np.asarray([np.inf for ii in range(npar)])
-
-        def func_bounds_wrapper(x, *args):
-            if self._outside_limits(x, xmin, xmax):
-                return np.finfo(np.float64).max
-            return func(x, *args)
-
-        return func_bounds_wrapper
 
 
 class SimplexBase:

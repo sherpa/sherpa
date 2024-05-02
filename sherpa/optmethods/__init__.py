@@ -113,7 +113,7 @@ const1d
 """
 
 import logging
-from typing import Any, Callable, Sequence
+from typing import Any, Callable, Sequence, SupportsFloat
 
 import numpy as np
 
@@ -128,6 +128,27 @@ warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead')
+
+
+class Callback:
+    """Allow a function to use preset arguments when called.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    __slots__ = ("func", "args", "kwargs")
+
+    def __init__(self,
+                 func: Callable[..., SupportsFloat],
+                 args,
+                 kwargs) -> None:
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, args) -> SupportsFloat:
+        return self.func(args, *self.args, **self.kwargs)
 
 
 class OptMethod(NoNewAttributesAfterInit):
@@ -286,8 +307,7 @@ class OptMethod(NoNewAttributesAfterInit):
         if statkwargs is None:
             statkwargs = {}
 
-        def cb(pars):
-            return statfunc(pars, *statargs, **statkwargs)
+        cb = Callback(statfunc, statargs, statkwargs)
 
         output = self._optfunc(cb, pars, parmins, parmaxes, **self.config)
         (success, pars, fval, msg, imsg) = output
