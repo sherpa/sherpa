@@ -29,7 +29,7 @@ from typing import Optional, Protocol, Sequence, Union, \
 
 import numpy as np
 
-from sherpa.data import DataSimulFit
+from sherpa.data import Data, DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
@@ -38,6 +38,8 @@ from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_iterable, list_to_open_interval, sao_fcmp, formatting
 from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
+from sherpa.utils.types import IdType
+
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -60,70 +62,80 @@ def evaluates_model(func):
     return run
 
 
-class StatInfoResults(NoNewAttributesAfterInit):
+class StatInfoResults:
     """A summary of the current statistic value for one or more data sets.
 
-    Attributes
-    ----------
-    name : str
-       The name of the data set, or sets.
-    ids : sequence of int or str
-       The data set ids (it may be a tuple or array) included in the
-       results.
-    bkg_ids: sequence of int or str, or None
-       The background data set ids (it may be a tuple or array)
-       included in the results, if any.
-    statname : str
-       The name of the statistic function.
-    statval : number
-       The statistic value.
-    numpoints : int
-       The number of bins used in the fits.
-    dof: int
-       The number of degrees of freedom in the fit (the number of
-       bins minus the number of free parameters).
-    qval: number or None
-       The Q-value (probability) that one would observe the reduced
-       statistic value, or a larger value, if the assumed model is
-       true and the current model parameters are the true parameter
-       values. This will be `None` if the value can not be calculated
-       with the current statistic (e.g. the Cash statistic).
-    rstat: number or None
-       The reduced statistic value (the `statval` field divided by
-       `dof`). This is not calculated for all statistics.
+    .. versionchanged:: 4.17.0
+       The class now uses ``__slots__`` to mark this object as having
+       no user fields.
+
     """
+
+    __slots__ = ("name", "ids", "bkg_ids", "statname", "statval",
+                 "numpoints", "model", "dof", "qval", "rstat")
 
     # The fields to include in the __str__ output.
     _fields = ('name', 'ids', 'bkg_ids', 'statname', 'statval',
                'numpoints', 'dof', 'qval', 'rstat')
 
-    def __init__(self, statname, statval, numpoints, model, dof,
-                 qval=None, rstat=None):
-        self.name = ''
-        self.ids = None
-        self.bkg_ids = None
+    def __init__(self,
+                 statname: str,
+                 statval: float,
+                 numpoints: int,
+                 model,  # Why do we have this?
+                 dof: int,
+                 qval: Optional[float] = None,
+                 rstat: Optional[float] = None) -> None:
+        self.name: str = ''
+        """The name of the data set, or sets."""
 
-        self.statname = statname
-        self.statval = statval
-        self.numpoints = numpoints
+        self.ids: Optional[Sequence[IdType]] = None
+        """The data set ids (it may be a tuple or array) included
+        in the results."""
+
+        self.bkg_ids: Optional[Sequence[IdType]] = None
+        """The background data set ids (it may be a tuple or array)
+        included in the results, if any."""
+
+        self.statname: str = statname
+        """The name of the statistic function."""
+
+        self.statval: float = statval
+        """The statistic value."""
+
+        self.numpoints: int = numpoints
+        """The number of bins used in the fits."""
+
         self.model = model
-        self.dof = dof
-        self.qval = qval
-        self.rstat = rstat
 
-        super().__init__()
+        self.dof: int = dof
+        """The number of degrees of freedom in the fit (the number of
+        bins minus the number of free parameters)."""
 
-    def __repr__(self):
+        self.qval: Optional[float] = qval
+        """The Q-value (probability) that one would observe the reduced
+        statistic value, or a larger value, if the assumed model is
+        true and the current model parameters are the true parameter
+        values. This will be `None` if the value can not be calculated
+        with the current statistic (e.g. the Cash statistic).
+        """
+
+        self.rstat: Optional[float] = rstat
+        """The reduced statistic value (the `statval` field divided by
+        `dof`). This is not calculated for all statistics."""
+
+    def __repr__(self) -> str:
         return '<Statistic information results instance>'
 
-    def __str__(self):
-        return print_fields(self._fields, vars(self))
+    def __str__(self) -> str:
+        return print_fields(self._fields,
+                            {k: getattr(self, k) for k in self._fields})
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the statistics."""
         return html_statinfo(self)
 
-    def format(self):
+    def format(self) -> str:
         """Return a string representation of the statistic.
 
         Returns
@@ -165,7 +177,8 @@ class StatInfoResults(NoNewAttributesAfterInit):
         return "\n".join(out)
 
 
-def _cleanup_chi2_name(stat, data):
+def _cleanup_chi2_name(stat: Stat,
+                       data: Union[Data, DataSimulFit]) -> str:
     """Simplify the chi-square name if possible.
 
     Returns the statistic name for reporting fit results, simplifying
@@ -208,7 +221,6 @@ class FitResults(NoNewAttributesAfterInit):
        The ``covarerr`` attribute has been renamed to ``covar``
        and now contains the covariance matrix estimated at the
        best-fit location, if provided by the optimiser.
-
 
     Attributes
     ----------
@@ -1453,9 +1465,10 @@ class Fit(NoNewAttributesAfterInit):
 
             keep_pars = np.ones_like(pars)
             keep_pars[idx] = 0
-            current_pars = pars[np.where(keep_pars)]
-            current_parmins = parmins[np.where(keep_pars)]
-            current_parmaxes = parmaxes[np.where(keep_pars)]
+            pars_idx = np.where(keep_pars)
+            current_pars = pars[pars_idx]
+            current_parmins = parmins[pars_idx]
+            current_parmaxes = parmaxes[pars_idx]
             return (current_pars, current_parmins, current_parmaxes)
 
         def thaw_par(idx):
