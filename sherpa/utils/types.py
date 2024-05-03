@@ -26,8 +26,8 @@ in Python matures.
 
 """
 
-from collections.abc import Callable, Sequence
-from typing import Any, Concatenate, ParamSpec
+from collections.abc import Callable, Mapping, Sequence
+from typing import Any, Concatenate, ParamSpec, Protocol
 
 import numpy as np
 
@@ -91,3 +91,17 @@ OptFunc = Callable[Concatenate[StatFunc,
 # - models could return a sequence rather than a ndarray
 #
 ModelFunc = Callable[..., ArrayType]
+
+
+# Fit-like function used by both the optimisation and fit modules.
+#
+class FitFunc(Protocol):
+    def __call__(self,
+                 statfunc: StatFunc,
+                 pars: ArrayType,
+                 parmins: ArrayType,
+                 parmaxes: ArrayType,
+                 statargs: Sequence[Any] = (),
+                 statkwargs: Mapping[str, Any] | None = None
+                 ) -> OptReturn:
+        ...
