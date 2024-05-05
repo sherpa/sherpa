@@ -24,6 +24,7 @@ import numpy
 
 import pytest
 
+from sherpa import estmethods
 from sherpa.estmethods import Confidence, Covariance, Projection
 
 
@@ -64,23 +65,32 @@ minpars = numpy.array([1, 0, 0])
 hardmaxpars = numpy.array([1.0e+120, 1.0e+120, 1.0e+120])
 hardminpars = numpy.array([1.0e-120, -1.0e+120, -1.0e+120])
 
+# Avoid accidentally changing these values during the tests.
+#
+for ary in [x, y, fittedpars, limit_parnums, maxpars, minpars,
+            hardmaxpars, hardminpars]:
+    ary.setflags(write=False)
+
+del ary
+
+
 gfactor = 4.0 * 0.6931471805599453094172321214581766
 
 
-def freeze_par(pars, parmins, parmaxes, i):
+def freeze_par(pars, parmins, parmaxes, idx):
     return (pars, parmins, parmaxes)
 
 
-def thaw_par(i):
+def thaw_par(idx):
     pass
 
 
-def report_progress(i, lower, upper):
+def report_progress(idx, lower, upper):
     pass
 
 
-def get_par_name(ii):
-    pass
+def get_par_name(idx):
+    assert False, "should not be called"
 
 
 # Here's the 1D Gaussian function to use to generate predicted
@@ -189,9 +199,6 @@ def test_covar():
     kwargs = get_working_kwargs()
     results = cov.compute(stat, None, **kwargs)
 
-    # These tests used to have a tolerance of 1e-4 but it appears to
-    # be able to use a more-restrictive tolerance.
-    #
     expected = standard.diagonal()
     assert results[1] == pytest.approx(expected)
 
@@ -210,10 +217,6 @@ def test_projection(parallel):
     kwargs = get_working_kwargs()
     results = proj.compute(stat, fitter, **kwargs)
 
-    # These tests used to have a tolerance of 1e-4 but it appears to
-    # be able to use a more-restrictive tolerance (given that the
-    # "fitter" doesn't do a fit here).
-    #
     assert results[0] == pytest.approx(standard_elo)
     assert results[1] == pytest.approx(standard_ehi)
 
