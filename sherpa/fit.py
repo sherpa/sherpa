@@ -30,7 +30,8 @@ from typing import Any, Callable, Mapping, Optional, Protocol, Sequence, \
 import numpy as np
 
 from sherpa.data import Data, DataSimulFit
-from sherpa.estmethods import Covariance, EstNewMin
+from sherpa.estmethods import Covariance, EstNewMin, FreezePar, \
+    ParName, ReportProgress, ThawPar
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.parameter import Parameter
 from sherpa.optmethods import OptMethod, LevMar, NelderMead
@@ -1024,126 +1025,6 @@ def _add_fit_stats(outfile: Optional[Union[str, Path, WriteableTextFile]],
     return fh
 
 
-# FreezePar needs to know about all the thawed parameters so it can
-# return the values of all-but-the-selected parameter, but ThawPar and
-# ParName could be sent the parameter object.
-#
-class FreezePar:
-    """Allow a parameter to be frozen.
-
-    .. versionadded:: 4.17.0
-
-    See Also
-    --------
-    ThawPar, ParName, ReportProgress
-
-    """
-
-    def __init__(self,
-                 thawedpars: list[Parameter],
-                 parent) -> None:
-        self.thawedpars = thawedpars
-        # We need to be able to change the current_frozen setting
-        self.parent = parent
-
-    def __call__(self, pars, parmins, parmaxes, idx):
-        # Freeze the indicated parameter; return
-        # its place in the list of all parameters,
-        # and the current values of the parameters,
-        # and the hard mins amd maxs of the parameters
-        self.thawedpars[idx].val = pars[idx]
-        self.thawedpars[idx].frozen = True
-        self.parent.current_frozen = idx
-
-        keep_pars = np.ones_like(pars)
-        keep_pars[idx] = 0
-        keep_idx = np.where(keep_pars)
-        current_pars = pars[keep_idx]
-        current_parmins = parmins[keep_idx]
-        current_parmaxes = parmaxes[keep_idx]
-        return (current_pars, current_parmins, current_parmaxes)
-
-
-class ThawPar:
-    """Allow a parameter to be thawed.
-
-    .. versionadded:: 4.17.0
-
-    See Also
-    --------
-    FreezePar, ParName, ReportProgress
-
-    """
-
-    def __init__(self,
-                 thawedpars: list[Parameter],
-                 parent):
-        self.thawedpars = thawedpars
-        # We need to be able to change the current_frozen setting
-        self.parent = parent
-
-    def __call__(self, idx):
-        if idx < 0:
-            return
-
-        self.thawedpars[idx].frozen = False
-        self.parent.current_frozen = -1
-
-
-class ParName:
-    """Return the name of the given parmeter.
-
-    .. versionadded:: 4.17.0
-
-    See Also
-    --------
-    FreezePar, ReportProgress, ThawPar
-
-    """
-
-    def __init__(self, thawedpars):
-        self.thawedpars = thawedpars
-
-    def __call__(self, idx):
-        return self.thawedpars[idx].fullname
-
-
-class ReportProgress:
-    """Log the current parameter limits.
-
-    .. versionadded:: 4.17.0
-
-    See Also
-    --------
-    FreezePar, ParName, ThawPar
-
-    """
-
-    def __init__(self, thawedpars: list[Parameter]) -> None:
-        self.thawedpars = thawedpars
-
-    def report_bound(self, name: str, label: str, value) -> None:
-        if np.isnan(value) or np.isinf(value):
-            info("%s \t$%s bound: -----", name, label)
-        else:
-            info("%s \t%s bound: %g", name, label, value[0])
-
-    # Call from a parameter estimation method, to report that
-    # limits for a given parameter have been found At present (mid
-    # 2023) it looks like lower/upper are both single-element
-    # ndarrays, hence the need to convert to a scalar by accessing
-    # the first element (otherwise there's a deprecation warning
-    # from NumPy 1.25).
-    #
-    def __call__(self, idx: int, lower, upper) -> None:
-        if idx < 0:
-            return
-
-        name = self.thawedpars[idx].fullname
-        self.report_bound(name, "lower", lower)
-        self.report_bound(name, "upper", upper)
-
-
 def _check_contains_data(dep) -> None:
     """Check we have data to fit."""
 
@@ -1734,14 +1615,16 @@ class Fit(NoNewAttributesAfterInit):
         try:
             output = self.estmethod.compute(self._iterfit._get_callback(),
                                             self._iterfit.fit,
-                                            self.model.thawedpars,
-                                            startsoftmins,
-                                            startsoftmaxs,
-                                            starthardmins,
-                                            starthardmaxs,
-                                            parnums,
-                                            freeze_par, thaw_par,
-                                            report_progress, get_par_name)
+                                            pars=self.model.thawedpars,
+                                            parmins=startsoftmins,
+                                            parmaxes=startsoftmaxs,
+                                            parhardmins=starthardmins,
+                                            parhardmaxes=starthardmaxs,
+                                            limit_parnums=parnums,
+                                            freeze_par=freeze_par,
+                                            thaw_par=thaw_par,
+                                            report_progress=report_progress,
+                                            get_par_name=get_par_name)
         except EstNewMin as e:
             # If maximum number of refits has occurred, don't
             # try to reminimize again.

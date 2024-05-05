@@ -20,18 +20,21 @@
 
 from itertools import chain
 import logging
-from typing import Callable, Generic, TypeVar
+from typing import Any, Callable, Generic, Optional, Protocol, \
+    Sequence, SupportsFloat, TypeVar, Union
 
 import numpy as np
 from numpy.linalg import LinAlgError
 
 from sherpa.estmethods import _est_funcs  # type: ignore
+from sherpa.models.parameter import Parameter
 from sherpa.utils import NoNewAttributesAfterInit, CallbackN, \
     FuncCounter, print_fields, Knuth_close, \
     is_iterable, list_to_open_interval, quad_coef, \
     demuller, zeroin, OutOfBoundErr
 from sherpa.utils.parallel import multi, ncpus, context, process_tasks
 
+info = logging.getLogger(__name__).info
 
 # TODO: this should not be set globally
 _ = np.seterr(invalid='ignore')
@@ -41,6 +44,13 @@ __all__ = ('EstNewMin', 'Covariance', 'Confidence',
            'Projection', 'est_success', 'est_failure', 'est_hardmin',
            'est_hardmax', 'est_hardminmax', 'est_newmin', 'est_maxiter',
            'est_hitnan')
+
+
+# The return type for the estimation routines.
+#
+ArrayVal = Union[Sequence[SupportsFloat], np.ndarray]
+EstReturn = tuple[ArrayVal, ArrayVal, ArrayVal, int, Optional[np.ndarray]]
+
 
 est_success = 0
 est_failure = 1
@@ -134,7 +144,165 @@ class DropExtraArgs(Generic[T]):
         return self.func(arg)
 
 
+class FreezeParCallback(Protocol):
+    """Represent the freeze-par callable."""
+
+    def __call__(self,
+                 pars: np.ndarray,
+                 parmins: np.ndarray,
+                 parmaxes: np.ndarray,
+                 idx: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        ...
+
+
+class ThawParCallback(Protocol):
+    """Represent the thaw-par callable."""
+
+    def __call__(self, idx: int) -> None:
+        ...
+
+
+class ParNameCallback(Protocol):
+    """Represent the par-name callable."""
+
+    def __call__(self, idx: int) -> str:
+        ...
+
+
+class ReportCallback(Protocol):
+    """Represent the report-progress callable."""
+
+    def __call__(self, idx: int, lower, upper) -> None:
+        ...
+
+
+# FreezePar needs to know about all the thawed parameters so it can
+# return the values of all-but-the-selected parameter, but ThawPar and
+# ParName could be sent the parameter object.
+#
+class FreezePar:
+    """Allow a parameter to be frozen.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    ThawPar, ParName, ReportProgress
+
+    """
+
+    def __init__(self,
+                 thawedpars: list[Parameter],
+                 parent) -> None:
+        self.thawedpars = thawedpars
+        # We need to be able to change the current_frozen setting
+        self.parent = parent
+
+    def __call__(self,
+                 pars: np.ndarray,
+                 parmins: np.ndarray,
+                 parmaxes: np.ndarray,
+                 idx: int) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+        # Freeze the indicated parameter; return
+        # its place in the list of all parameters,
+        # and the current values of the parameters,
+        # and the hard mins amd maxs of the parameters
+        self.thawedpars[idx].val = pars[idx]
+        self.thawedpars[idx].frozen = True
+        self.parent.current_frozen = idx
+
+        keep_pars = np.ones_like(pars)
+        keep_pars[idx] = 0
+        keep_idx = np.where(keep_pars)
+        current_pars = pars[keep_idx]
+        current_parmins = parmins[keep_idx]
+        current_parmaxes = parmaxes[keep_idx]
+        return (current_pars, current_parmins, current_parmaxes)
+
+
+class ThawPar:
+    """Allow a parameter to be thawed.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ParName, ReportProgress
+
+    """
+
+    def __init__(self,
+                 thawedpars: list[Parameter],
+                 parent) -> None:
+        self.thawedpars = thawedpars
+        # We need to be able to change the current_frozen setting
+        self.parent = parent
+
+    def __call__(self, idx: int) -> None:
+        if idx < 0:
+            return
+
+        self.thawedpars[idx].frozen = False
+        self.parent.current_frozen = -1
+
+
+class ParName:
+    """Return the name of the given parmeter.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ReportProgress, ThawPar
+
+    """
+
+    def __init__(self, thawedpars: list[Parameter]) -> None:
+        self.thawedpars = thawedpars
+
+    def __call__(self, idx: int) -> str:
+        return self.thawedpars[idx].fullname
+
+
+class ReportProgress:
+    """Log the current parameter limits.
+
+    .. versionadded:: 4.17.0
+
+    See Also
+    --------
+    FreezePar, ParName, ThawPar
+
+    """
+
+    def __init__(self, thawedpars: list[Parameter]) -> None:
+        self.thawedpars = thawedpars
+
+    def report_bound(self, name: str, label: str, value) -> None:
+        if np.isnan(value) or np.isinf(value):
+            info("%s \t$%s bound: -----", name, label)
+        else:
+            info("%s \t%s bound: %g", name, label, value[0])
+
+    # Call from a parameter estimation method, to report that
+    # limits for a given parameter have been found At present (mid
+    # 2023) it looks like lower/upper are both single-element
+    # ndarrays, hence the need to convert to a scalar by accessing
+    # the first element (otherwise there's a deprecation warning
+    # from NumPy 1.25).
+    #
+    def __call__(self, idx: int, lower, upper) -> None:
+        if idx < 0:
+            return
+
+        name = self.thawedpars[idx].fullname
+        self.report_bound(name, "lower", lower)
+        self.report_bound(name, "upper", upper)
+
+
 class EstMethod(NoNewAttributesAfterInit):
+    """Estimate errors on a set of parameters."""
 
     # defined pre-instantiation for pickling
     config = {'sigma': 1,
@@ -142,7 +310,7 @@ class EstMethod(NoNewAttributesAfterInit):
               'maxiters': 200,
               'soft_limits': False}
 
-    def __init__(self, name, estfunc):
+    def __init__(self, name, estfunc) -> None:
         self._estfunc = estfunc
         self.name = name
 
@@ -164,10 +332,10 @@ class EstMethod(NoNewAttributesAfterInit):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} error-estimation method instance '{self.name}'>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         # Put name first always
         keylist = list(self.config.keys())
         keylist = ['name'] + keylist
@@ -187,15 +355,26 @@ class EstMethod(NoNewAttributesAfterInit):
         # update new config dict with user defined from old
         self.__dict__['config'].update(state.get('config', {}))
 
-    def compute(self, statfunc, fitfunc, pars,
-                parmins, parmaxes, parhardmins,
-                parhardmaxes, limit_parnums, freeze_par, thaw_par,
-                report_progress, get_par_name,
-                statargs=(), statkwargs=None):
+    def compute(self,
+                statfunc: Callable,
+                fitfunc: Callable,
+                *,
+                pars: np.ndarray,
+                parmins: np.ndarray,
+                parmaxes: np.ndarray,
+                parhardmins: np.ndarray,
+                parhardmaxes: np.ndarray,
+                limit_parnums: np.ndarray,
+                freeze_par: FreezeParCallback,
+                thaw_par: ThawParCallback,
+                report_progress: ReportCallback,
+                get_par_name: ParNameCallback,
+                statargs=(), statkwargs=None) -> EstReturn:
         """
 
         .. versionchanged:: 4.17.0
-           The statkwargs now defaults to ``None``.
+           The statkwargs now defaults to ``None`` and most of the
+           arguments are now marked keyword only.
 
         """
         if statkwargs is None:
@@ -221,12 +400,14 @@ class EstMethod(NoNewAttributesAfterInit):
 
 
 class Covariance(EstMethod):
+    """The covariance method for estimating errors."""
 
-    def __init__(self, name='covariance'):
+    def __init__(self, name='covariance') -> None:
         super().__init__(name=name, estfunc=covariance)
 
 
 class Confidence(EstMethod):
+    """The confidence method for estimating errors."""
 
     # defined pre-instantiation for pickling
     _added_config = {'remin': 0.01,
@@ -239,21 +420,32 @@ class Confidence(EstMethod):
                      'verbose': False,
                      'openinterval': False}
 
-    def __init__(self, name='confidence'):
+    def __init__(self, name='confidence') -> None:
         super().__init__(name=name, estfunc=confidence)
 
         # Update EstMethod.config dict with Confidence specifics
         self.config.update(self._added_config)
 
-    def compute(self, statfunc, fitfunc, pars,
-                parmins, parmaxes, parhardmins,
-                parhardmaxes, limit_parnums, freeze_par, thaw_par,
-                report_progress, get_par_name,
-                statargs=(), statkwargs=None):
+    def compute(self,
+                statfunc: Callable,
+                fitfunc: Callable,
+                *,
+                pars: np.ndarray,
+                parmins: np.ndarray,
+                parmaxes: np.ndarray,
+                parhardmins: np.ndarray,
+                parhardmaxes: np.ndarray,
+                limit_parnums: np.ndarray,
+                freeze_par: FreezeParCallback,
+                thaw_par: ThawParCallback,
+                report_progress: ReportCallback,
+                get_par_name: ParNameCallback,
+                statargs=(), statkwargs=None) -> EstReturn:
         """
 
         .. versionchanged:: 4.17.0
-           The statkwargs now defaults to ``None``.
+           The statkwargs now defaults to ``None`` and most of the
+           arguments are now marked keyword only.
 
         """
         if statkwargs is None:
@@ -262,6 +454,7 @@ class Confidence(EstMethod):
         # Retain the setup of the original code (stat_cb and statcb).
         stat_cb = CallbackN(statfunc, 0)
         statcb = DropExtraArgs(stat_cb)
+        fitcb: Union[DropExtraArgs, FitCallback]
         if len(pars) == 1:
             fitcb = statcb
         else:
@@ -283,13 +476,21 @@ class FitCallback:
 
     """
 
-    def __init__(self, fitfunc, statfunc, freeze_par, thaw_par):
+    def __init__(self,
+                 fitfunc,
+                 statfunc,
+                 freeze_par: FreezeParCallback,
+                 thaw_par: ThawParCallback) -> None:
         self.fitfunc = fitfunc
         self.statfunc = statfunc
         self.freeze_par = freeze_par
         self.thaw_par = thaw_par
 
-    def __call__(self, pars, parmins, parmaxes, i):
+    def __call__(self,
+                 pars: np.ndarray,
+                 parmins: np.ndarray,
+                 parmaxes: np.ndarray,
+                 i: int) -> SupportsFloat:
 
         # freeze model parameter i
         (current_pars,
@@ -310,6 +511,7 @@ class FitCallback:
 
 
 class Projection(EstMethod):
+    """The projection method for estimating errors."""
 
     # defined pre-instantiation for pickling
     _added_config = {'remin': 0.01,
@@ -320,21 +522,32 @@ class Projection(EstMethod):
                      'max_rstat': 3,
                      'tol': 0.2}
 
-    def __init__(self, name='projection'):
+    def __init__(self, name='projection') -> None:
         super().__init__(name=name, estfunc=projection)
 
         # Update EstMethod.config dict with Projection specifics
         self.config.update(self._added_config)
 
-    def compute(self, statfunc, fitfunc, pars,
-                parmins, parmaxes, parhardmins,
-                parhardmaxes, limit_parnums, freeze_par, thaw_par,
-                report_progress, get_par_name,
-                statargs=(), statkwargs=None):
+    def compute(self,
+                statfunc: Callable,
+                fitfunc: Callable,
+                *,
+                pars: np.ndarray,
+                parmins: np.ndarray,
+                parmaxes: np.ndarray,
+                parhardmins: np.ndarray,
+                parhardmaxes: np.ndarray,
+                limit_parnums: np.ndarray,
+                freeze_par: FreezeParCallback,
+                thaw_par: ThawParCallback,
+                report_progress: ReportCallback,
+                get_par_name: ParNameCallback,
+                statargs=(), statkwargs=None) -> EstReturn:
         """
 
         .. versionchanged:: 4.17.0
-           The statkwargs now defaults to ``None``.
+           The statkwargs now defaults to ``None`` and most of the
+           arguments are now marked keyword only.
 
         """
         if statkwargs is None:
@@ -356,7 +569,7 @@ class Projection(EstMethod):
 
 def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
                tol, maxiters, remin, limit_parnums, stat_cb, fit_cb,
-               report_progress):
+               report_progress) -> EstReturn:
     # Do nothing with tol
     # Do nothing with report_progress (generally fast enough we don't
     # need to report back per-parameter progress)
@@ -394,8 +607,6 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     # of order 1.0, and an error of order 10^-30, for example.  The
     # simpler inv function for inverting matrices does not appear to
     # have the same issue.
-
-    inv_info = None
 
     try:
         inv_info = np.linalg.inv(info)
@@ -512,7 +723,8 @@ class ProjWorker:
 
 def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
                tol, maxiters, remin, limit_parnums, stat_cb, fit_cb,
-               report_progress, get_par_name, do_parallel, numcores):
+               report_progress, get_par_name, do_parallel,
+               numcores) -> EstReturn:
 
     # Number of parameters to be searched on (*not* number of thawed
     # parameters, just number we are searching on)
@@ -1189,7 +1401,7 @@ class ConfidenceWorker:
 def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
                tol, maxiters, remin, verbose, limit_parnums, stat_cb,
                fit_cb, report_progress, get_par_name, do_parallel, numcores,
-               open_interval):
+               open_interval) -> EstReturn:
 
     sherpablog = logging.getLogger('sherpa')  # where to print progress report
 
@@ -1231,7 +1443,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
     # TODO: this dictionary is used to store a value, but the value is
     # never used. Do we need it?
-    store = {}
+    store: dict[str, Any] = {}
 
     if len(limit_parnums) < 2 or not multi or numcores < 2:
         do_parallel = False
