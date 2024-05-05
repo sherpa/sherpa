@@ -32,7 +32,8 @@ from typing import Any, Protocol, runtime_checkable
 import numpy as np
 
 from sherpa.data import Data, DataSimulFit
-from sherpa.estmethods import EstMethod, Covariance, EstNewMin
+from sherpa.estmethods import EstMethod, Covariance, EstNewMin, \
+    FreezePar, ParName, ReportProgress, ThawPar
 from sherpa.models import Model, SimulFitModel
 from sherpa.models.parameter import Parameter
 from sherpa.optmethods import OptMethod, LevMar, NelderMead
@@ -1084,133 +1085,6 @@ def _check_length(dep) -> int:
         pass
 
     raise FitErr('nobins')
-
-
-# FreezePar needs to know about all the thawed parameters so it can
-# return the values of all-but-the-selected parameter, but ThawPar and
-# ParName could be sent the parameter object.
-#
-class FreezePar:
-    """Allow a parameter to be frozen.
-
-    .. versionadded:: 4.17.1
-
-    See Also
-    --------
-    ThawPar, ParName, ReportProgress
-
-    """
-
-    def __init__(self,
-                 thawedpars: list[Parameter],
-                 parent) -> None:
-        self.thawedpars = thawedpars
-        # We need to be able to change the current_frozen setting
-        self.parent = parent
-
-    def __call__(self,
-                 pars: np.ndarray,
-                 parmins: np.ndarray,
-                 parmaxes: np.ndarray,
-                 idx: int
-                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        # Freeze the indicated parameter; return
-        # its place in the list of all parameters,
-        # and the current values of the parameters,
-        # and the hard mins amd maxs of the parameters
-        self.thawedpars[idx].val = pars[idx]
-        self.thawedpars[idx].frozen = True
-        self.parent.current_frozen = idx
-
-        # Identify those parameters that are not frozen.
-        keep_pars = np.ones_like(pars)
-        keep_pars[idx] = 0
-        keep_idx = np.where(keep_pars)
-
-        current_pars = pars[keep_idx]
-        current_parmins = parmins[keep_idx]
-        current_parmaxes = parmaxes[keep_idx]
-        return (current_pars, current_parmins, current_parmaxes)
-
-
-class ThawPar:
-    """Allow a parameter to be thawed.
-
-    .. versionadded:: 4.17.1
-
-    See Also
-    --------
-    FreezePar, ParName, ReportProgress
-
-    """
-
-    def __init__(self,
-                 thawedpars: list[Parameter],
-                 parent):
-        self.thawedpars = thawedpars
-        # We need to be able to change the current_frozen setting
-        self.parent = parent
-
-    def __call__(self, idx: int) -> None:
-        if idx < 0:
-            return
-
-        self.thawedpars[idx].frozen = False
-        self.parent.current_frozen = -1
-
-
-class ParName:
-    """Return the name of the given parmeter.
-
-    .. versionadded:: 4.17.1
-
-    See Also
-    --------
-    FreezePar, ReportProgress, ThawPar
-
-    """
-
-    def __init__(self, thawedpars: list[Parameter]):
-        self.thawedpars = thawedpars
-
-    def __call__(self, idx: int) -> str:
-        return self.thawedpars[idx].fullname
-
-
-class ReportProgress:
-    """Log the current parameter limits.
-
-    .. versionadded:: 4.17.1
-
-    See Also
-    --------
-    FreezePar, ParName, ThawPar
-
-    """
-
-    def __init__(self, thawedpars: list[Parameter]) -> None:
-        self.thawedpars = thawedpars
-
-    def report_bound(self, name: str, label: str, value) -> None:
-        if np.isnan(value) or np.isinf(value):
-            info("%s \t$%s bound: -----", name, label)
-        else:
-            info("%s \t%s bound: %g", name, label, value[0])
-
-    # Call from a parameter estimation method, to report that
-    # limits for a given parameter have been found At present (mid
-    # 2023) it looks like lower/upper are both single-element
-    # ndarrays, hence the need to convert to a scalar by accessing
-    # the first element (otherwise there's a deprecation warning
-    # from NumPy 1.25).
-    #
-    def __call__(self, idx: int, lower, upper) -> None:
-        if idx < 0:
-            return
-
-        name = self.thawedpars[idx].fullname
-        self.report_bound(name, "lower", lower)
-        self.report_bound(name, "upper", upper)
 
 
 class Fit(NoNewAttributesAfterInit):
