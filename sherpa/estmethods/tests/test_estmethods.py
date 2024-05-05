@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2018, 2021, 2023
+#  Copyright (C) 2007, 2018, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,6 +24,7 @@ import numpy
 
 import pytest
 
+from sherpa import estmethods
 from sherpa.estmethods import Confidence, Covariance, Projection
 
 
@@ -64,23 +65,32 @@ minpars = numpy.array([1, 0, 0])
 hardmaxpars = numpy.array([1.0e+120, 1.0e+120, 1.0e+120])
 hardminpars = numpy.array([1.0e-120, -1.0e+120, -1.0e+120])
 
+# Avoid accidentally changing these values during the tests.
+#
+for ary in [x, y, fittedpars, limit_parnums, maxpars, minpars,
+            hardmaxpars, hardminpars]:
+    ary.setflags(write=False)
+
+del ary
+
+
 gfactor = 4.0 * 0.6931471805599453094172321214581766
 
 
-def freeze_par(pars, parmins, parmaxes, i):
+def freeze_par(pars, parmins, parmaxes, idx):
     return (pars, parmins, parmaxes)
 
 
-def thaw_par(i):
+def thaw_par(idx):
     pass
 
 
-def report_progress(i, lower, upper):
+def report_progress(idx, lower, upper):
     pass
 
 
-def get_par_name(ii):
-    pass
+def get_par_name(idx):
+    assert False, "should not be called"
 
 
 # Here's the 1D Gaussian function to use to generate predicted
@@ -107,64 +117,77 @@ def fitter(scb, pars, parmins, parmaxs):
     return (1, pars, scb(pars)[0])
 
 
+# There are a number of tests that check what happens if an argument
+# is missing or invalid. As compute now requires most of the arguments
+# to be given by name, and to avoid repetition, use a dict to send in
+# the arguments.
+#
+def get_compute_kwargs():
+    return { "statfunc": stat, "fitfunc": fitter, "pars": fittedpars,
+             "parmins": minpars, "parmaxes": maxpars, "parhardmins":
+             hardminpars, "parhardmaxes": hardmaxpars,
+             "limit_parnums": limit_parnums, "freeze_par": freeze_par,
+             "thaw_par": thaw_par, "report_progress": report_progress,
+             "get_par_name": get_par_name }
+
+
 def test_covar_failures1():
+    """Is this meant to fail because get_par_name is not defined?"""
+
+    kw = get_compute_kwargs()
+    kw["statfunc"] = None
+    del kw["get_par_name"]
     with pytest.raises(TypeError):
-        Covariance().compute(None, fitter, fittedpars,
-                             minpars, maxpars,
-                             hardminpars, hardmaxpars,
-                             limit_parnums, freeze_par, thaw_par,
-                             report_progress)
+        Covariance().compute(**kw)
 
 
 def test_covar_failures2():
+    kw = get_compute_kwargs()
+    kw["pars"] = None
     with pytest.raises(RuntimeError):
-        Covariance().compute(stat, fitter, None, minpars, maxpars,
-                             hardminpars, hardmaxpars, limit_parnums, freeze_par,
-                             thaw_par, report_progress, get_par_name)
+        Covariance().compute(**kw)
 
 
 def test_covar_failures3():
+    kw = get_compute_kwargs()
+    kw["pars"] = numpy.array([1, 2])
     with pytest.raises(RuntimeError):
-        Covariance().compute(stat, fitter, numpy.array([1, 2]),
-                             minpars, maxpars, hardminpars, hardmaxpars,
-                             limit_parnums, freeze_par, thaw_par,
-                             report_progress, get_par_name)
+        Covariance().compute(**kw)
 
 
 def test_covar_failures4():
+    kw = get_compute_kwargs()
+    kw["parmins"] = numpy.array([1, 2])
     with pytest.raises(RuntimeError):
-        Covariance().compute(stat, fitter, fittedpars, numpy.array([1, 2]),
-                             maxpars, hardminpars, hardmaxpars, limit_parnums,
-                             freeze_par, thaw_par, report_progress, get_par_name)
+        Covariance().compute(**kw)
 
 
 def test_projection_failures1():
+    kw = get_compute_kwargs()
+    kw["fitfunc"] = None
     with pytest.raises(TypeError):
-        Projection().compute(stat, None, fittedpars, minpars, maxpars,
-                             hardminpars, hardmaxpars, limit_parnums, freeze_par,
-                             thaw_par, report_progress, get_par_name)
+        Projection().compute(**kw)
 
 
 def test_projection_failures2():
+    kw = get_compute_kwargs()
+    kw["pars"] = None
     with pytest.raises(RuntimeError):
-        Projection().compute(stat, fitter, None, minpars, maxpars,
-                             hardminpars, hardmaxpars, limit_parnums,
-                             freeze_par, thaw_par, report_progress, get_par_name)
+        Projection().compute(**kw)
 
 
 def test_projection_failures3():
+    kw = get_compute_kwargs()
+    kw["pars"] = numpy.array([1, 2])
     with pytest.raises(RuntimeError):
-        Projection().compute(stat, fitter, numpy.array([1, 2]),
-                             minpars, maxpars, hardminpars, hardmaxpars,
-                             limit_parnums, freeze_par, thaw_par,
-                             report_progress, get_par_name)
+        Projection().compute(**kw)
 
 
 def test_projection_failures4():
+    kw = get_compute_kwargs()
+    kw["parmins"] = numpy.array([1, 2])
     with pytest.raises(RuntimeError):
-        Projection().compute(stat, fitter, fittedpars, numpy.array([1, 2]),
-                             maxpars, hardminpars, hardmaxpars, limit_parnums,
-                             freeze_par, thaw_par, report_progress, get_par_name)
+        Projection().compute(**kw)
 
 
 # Unlike projection, covariance does not have a "parallel" option.
@@ -175,15 +198,10 @@ def test_covar():
                             [numpy.nan,  numpy.nan,  2.58857314]])
 
     cov = Covariance()
-    results = cov.compute(stat, None, fittedpars,
-                          minpars, maxpars,
-                          hardminpars, hardmaxpars,
-                          limit_parnums, freeze_par, thaw_par,
-                          report_progress, get_par_name)
+    kw = get_compute_kwargs()
+    kw["fitfunc"] = None
+    results = cov.compute(**kw)
 
-    # These tests used to have a tolerance of 1e-4 but it appears to
-    # be able to use a more-restrictive tolerance.
-    #
     expected = standard.diagonal()
     assert results[1] == pytest.approx(expected)
 
@@ -199,16 +217,9 @@ def test_projection(parallel):
     proj.parallel = parallel
     assert proj.parallel == parallel
 
-    results = proj.compute(stat, fitter, fittedpars,
-                           minpars, maxpars,
-                           hardminpars, hardmaxpars,
-                           limit_parnums, freeze_par, thaw_par,
-                           report_progress, get_par_name)
+    kw = get_compute_kwargs()
+    results = proj.compute(**kw)
 
-    # These tests used to have a tolerance of 1e-4 but it appears to
-    # be able to use a more-restrictive tolerance (given that the
-    # "fitter" doesn't do a fit here).
-    #
     assert results[0] == pytest.approx(standard_elo)
     assert results[1] == pytest.approx(standard_ehi)
 
