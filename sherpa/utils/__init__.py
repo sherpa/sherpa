@@ -1794,8 +1794,8 @@ def multinormal_pdf(x, mu, sigma):
     rank = mu.size
     coeff = 1.0 / (numpy.power(2.0 * numpy.pi, rank / 2.0) *
                    numpy.sqrt(numpy.abs(numpy.linalg.det(sigma))))
-    xmu = numpy.mat(x - mu)
-    invsigma = numpy.mat(numpy.linalg.inv(sigma))
+    xmu = numpy.asmatrix(x - mu)
+    invsigma = numpy.asmatrix(numpy.linalg.inv(sigma))
 
     # The matrix multiplication looks backwards, but mu and x
     # are passed in already transposed.
@@ -1852,8 +1852,8 @@ def multit_pdf(x, mu, sigma, dof):
              (gamma(n / 2.0) * numpy.power(n, rank / 2.0) *
                  numpy.power(numpy.pi, rank / 2.0) *
                  numpy.sqrt(numpy.abs(numpy.linalg.det(sigma)))))
-    xmu = numpy.mat(x - mu)
-    invsigma = numpy.mat(numpy.linalg.inv(sigma))
+    xmu = numpy.asmatrix(x - mu)
+    invsigma = numpy.asmattix(numpy.linalg.inv(sigma))
 
     # The matrix multiplication looks backwards, but mu and x
     # are passed in already transposed.
@@ -2857,7 +2857,7 @@ class NumDerivCentralOrdinary(NumDeriv):
 
     def __call__(self, x, h):
         if 0.0 == h:
-            return numpy.Inf
+            return numpy.inf
         return (self.func(x + h) - self.func(x - h)) / (2.0 * h)
 
 
