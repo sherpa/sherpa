@@ -28,6 +28,7 @@ import warnings
 import numpy as np
 from numpy.linalg import LinAlgError
 
+from sherpa.models.parameter import Parameter
 from sherpa.stats import StatCallback
 from sherpa.utils import NoNewAttributesAfterInit, \
     FuncCounter, OutOfBoundErr, Knuth_close, \
@@ -39,6 +40,7 @@ from sherpa.utils.types import ArrayType, FitFunc, StatFunc
 
 from . import _est_funcs  # type: ignore
 
+info = logging.getLogger(__name__).info
 
 # TODO: this should not be set globally
 _ = np.seterr(invalid='ignore')
@@ -113,6 +115,167 @@ class CallbackDropArgs:
 
     def __call__(self, arg, *args):
         return self.func(arg)[0]
+
+
+class FreezeParCallback(Protocol):
+    """Represent the freeze-par callable."""
+
+    def __call__(self,
+                 pars: np.ndarray,
+                 parmins: np.ndarray,
+                 parmaxes: np.ndarray,
+                 idx: int
+                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+        ...
+
+
+class ThawParCallback(Protocol):
+    """Represent the thaw-par callable."""
+
+    def __call__(self, idx: int) -> None:
+        ...
+
+
+class ParNameCallback(Protocol):
+    """Represent the par-name callable."""
+
+    def __call__(self, idx: int) -> str:
+        ...
+
+
+class ReportCallback(Protocol):
+    """Represent the report-progress callable."""
+
+    def __call__(self, idx: int, lower, upper) -> None:
+        ...
+
+
+# FreezePar needs to know about all the thawed parameters so it can
+# return the values of all-but-the-selected parameter, but ThawPar and
+# ParName could be sent the parameter object.
+#
+class FreezePar:
+    """Allow a parameter to be frozen.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    ThawPar, ParName, ReportProgress
+
+    """
+
+    def __init__(self,
+                 thawedpars: list[Parameter],
+                 parent) -> None:
+        self.thawedpars = thawedpars
+        # We need to be able to change the current_frozen setting
+        self.parent = parent
+
+    def __call__(self,
+                 pars: np.ndarray,
+                 parmins: np.ndarray,
+                 parmaxes: np.ndarray,
+                 idx: int
+                 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+
+        # Freeze the indicated parameter; return
+        # its place in the list of all parameters,
+        # and the current values of the parameters,
+        # and the hard mins amd maxs of the parameters
+        self.thawedpars[idx].val = pars[idx]
+        self.thawedpars[idx].frozen = True
+        self.parent.current_frozen = idx
+
+        # Identify those parameters that are not frozen.
+        keep_pars = np.ones_like(pars)
+        keep_pars[idx] = 0
+        keep_idx = np.where(keep_pars)
+
+        current_pars = pars[keep_idx]
+        current_parmins = parmins[keep_idx]
+        current_parmaxes = parmaxes[keep_idx]
+        return (current_pars, current_parmins, current_parmaxes)
+
+
+class ThawPar:
+    """Allow a parameter to be thawed.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    FreezePar, ParName, ReportProgress
+
+    """
+
+    def __init__(self,
+                 thawedpars: list[Parameter],
+                 parent) -> None:
+        self.thawedpars = thawedpars
+        # We need to be able to change the current_frozen setting
+        self.parent = parent
+
+    def __call__(self, idx: int) -> None:
+        if idx < 0:
+            return
+
+        self.thawedpars[idx].frozen = False
+        self.parent.current_frozen = -1
+
+
+class ParName:
+    """Return the name of the given parmeter.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    FreezePar, ReportProgress, ThawPar
+
+    """
+
+    def __init__(self, thawedpars: list[Parameter]) -> None:
+        self.thawedpars = thawedpars
+
+    def __call__(self, idx: int) -> str:
+        return self.thawedpars[idx].fullname
+
+
+class ReportProgress:
+    """Log the current parameter limits.
+
+    .. versionadded:: 4.17.1
+
+    See Also
+    --------
+    FreezePar, ParName, ThawPar
+
+    """
+
+    def __init__(self, thawedpars: list[Parameter]) -> None:
+        self.thawedpars = thawedpars
+
+    def report_bound(self, name: str, label: str, value) -> None:
+        if np.isnan(value) or np.isinf(value):
+            info("%s \t$%s bound: -----", name, label)
+        else:
+            info("%s \t%s bound: %g", name, label, value[0])
+
+    # Call from a parameter estimation method, to report that
+    # limits for a given parameter have been found At present (mid
+    # 2023) it looks like lower/upper are both single-element
+    # ndarrays, hence the need to convert to a scalar by accessing
+    # the first element (otherwise there's a deprecation warning
+    # from NumPy 1.25).
+    #
+    def __call__(self, idx: int, lower, upper) -> None:
+        if idx < 0:
+            return
+
+        name = self.thawedpars[idx].fullname
+        self.report_bound(name, "lower", lower)
+        self.report_bound(name, "upper", upper)
 
 
 class EstMethod(NoNewAttributesAfterInit):
@@ -191,10 +354,10 @@ class EstMethod(NoNewAttributesAfterInit):
                 parhardmins: np.ndarray,
                 parhardmaxes: np.ndarray,
                 limit_parnums: np.ndarray,  # integers
-                freeze_par: Callable,
-                thaw_par: Callable,
-                report_progress: Callable,
-                get_par_name: Callable,
+                freeze_par: FreezeParCallback,
+                thaw_par: ThawParCallback,
+                report_progress: ReportCallback,
+                get_par_name: ParNameCallback,
                 statargs: Any = None,
                 statkwargs: Any = None
                 ) -> EstReturn:
@@ -313,10 +476,10 @@ class Confidence(EstMethod):
                 parhardmins: np.ndarray,
                 parhardmaxes: np.ndarray,
                 limit_parnums: np.ndarray,  # integers
-                freeze_par: Callable,
-                thaw_par: Callable,
-                report_progress: Callable,
-                get_par_name: Callable,
+                freeze_par: FreezeParCallback,
+                thaw_par: ThawParCallback,
+                report_progress: ReportCallback,
+                get_par_name: ParNameCallback,
                 statargs: Any = None,
                 statkwargs: Any = None
                 ) -> EstReturn:
@@ -337,6 +500,7 @@ class Confidence(EstMethod):
 
         # stat_cb = StatCallback(statfunc)
         statcb = CallbackDropArgs(statfunc)  # is this the correct one?
+        fitcb: CallbackDropArgs | FitCallback
         if len(pars) == 1:
             fitcb = statcb
         else:
@@ -372,13 +536,21 @@ class FitCallback:
 
     """
 
-    def __init__(self, fitfunc, statfunc, freeze_par, thaw_par):
+    def __init__(self,
+                 fitfunc,
+                 statfunc,
+                 freeze_par: FreezeParCallback,
+                 thaw_par: ThawParCallback) -> None:
         self.fitfunc = fitfunc
         self.statfunc = statfunc
         self.freeze_par = freeze_par
         self.thaw_par = thaw_par
 
-    def __call__(self, pars, parmins, parmaxes, i):
+    def __call__(self,
+                 pars: np.ndarray,
+                 parmins: np.ndarray,
+                 parmaxes: np.ndarray,
+                 i: int) -> SupportsFloat:
 
         # freeze model parameter i
         (current_pars,
@@ -427,10 +599,10 @@ class Projection(EstMethod):
                 parhardmins: np.ndarray,
                 parhardmaxes: np.ndarray,
                 limit_parnums: np.ndarray,  # integers
-                freeze_par: Callable,
-                thaw_par: Callable,
-                report_progress: Callable,
-                get_par_name: Callable,
+                freeze_par: FreezeParCallback,
+                thaw_par: ThawParCallback,
+                report_progress: ReportCallback,
+                get_par_name: ParNameCallback,
                 statargs: Any = None,
                 statkwargs: Any = None
                 ) -> EstReturn:
@@ -1405,7 +1577,7 @@ def confidence(pars: np.ndarray,
 
     # TODO: this dictionary is used to store a value, but the value is
     # never used. Do we need it?
-    store = {}
+    store: dict[str, Any] = {}
 
     if len(limit_parnums) < 2 or not multi or numcores < 2:
         do_parallel = False
