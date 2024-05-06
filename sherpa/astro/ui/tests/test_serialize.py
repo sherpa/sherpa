@@ -3452,7 +3452,7 @@ def test_load_data_basic(make_data_path):
     assert len(x[0]) == 1000
     assert x[0][0] == pytest.approx(0)
     assert x[0][-1] == pytest.approx(99.9)
-    assert ui.get_dep().ptp() == pytest.approx(ptp)
+    assert numpy.ptp(ui.get_dep()) == pytest.approx(ptp)
 
     with pytest.raises(StatErr,
                        match="^If you select chi2 as the statistic, all datasets must provide a staterror column$"):
@@ -3475,7 +3475,7 @@ def test_load_data_basic(make_data_path):
     assert len(x[0]) == 1000
     assert x[0][0] == pytest.approx(0)
     assert x[0][-1] == pytest.approx(99.9)
-    assert ui.get_dep().ptp() == pytest.approx(ptp)
+    assert numpy.ptp(ui.get_dep()) == pytest.approx(ptp)
 
     with pytest.raises(StatErr,
                        match="^If you select chi2 as the statistic, all datasets must provide a staterror column$"):

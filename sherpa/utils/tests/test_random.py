@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,12 @@ from sherpa.utils.numeric_types import SherpaFloat
 def test_poisson_noise_checks_dtype():
 
     with pytest.raises(ValueError,
-                       match="could not convert string to float: 'ham'"):
+                       # pre NumPy 2.0 this ends with
+                       #    'ham'
+                       # and for >= 2.0 it is
+                       #    np.str_('ham')
+                       #
+                       match="could not convert string to float: .*'ham'.*"):
         poisson_noise('ham')
 
 

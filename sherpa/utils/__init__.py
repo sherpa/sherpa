@@ -31,7 +31,7 @@ import string
 import sys
 from types import FunctionType, MethodType
 
-import numpy
+import numpy as np
 import numpy.fft
 
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
@@ -954,7 +954,7 @@ def pad_bounding_box(kernel, mask):
 
 
 # at what precisions do we assume equality in energy grids?
-eps = numpy.finfo(numpy.float32).eps
+eps = np.finfo(np.float32).eps
 
 
 def filter_bins(mins, maxes, axislist, integrated=False):
@@ -1039,8 +1039,8 @@ def filter_bins(mins, maxes, axislist, integrated=False):
         if (lo is None) and (hi is None):
             continue
 
-        axis = numpy.asarray(axis)
-        axismask = numpy.ones(axis.size, dtype=bool)
+        axis = np.asarray(axis)
+        axismask = np.ones(axis.size, dtype=bool)
 
         if lo is not None:
             axismask &= locheck(lo, axis)
@@ -1082,8 +1082,8 @@ def bool_cast(val):
 
     """
 
-    if type(val) in (tuple, list, numpy.ndarray):
-        return numpy.asarray([bool_cast(item) for item in val], bool)
+    if type(val) in (tuple, list, np.ndarray):
+        return np.asarray([bool_cast(item) for item in val], bool)
 
     if type(val) == str:
         # since built in bool() only returns false for empty strings
@@ -1300,33 +1300,33 @@ def print_fields(names, vals, converters=None):
     # excluding the complex mapping which where wrong in typeNA.
     # Note only the class -> string mappings have been copied over.
     if converters is None:
-        converters = {numpy.bool_: 'Bool',
-                      numpy.bytes_: 'Bytes0',
-                      numpy.complex128: 'Complex128',
-                      numpy.complex64: 'Complex64',
-                      numpy.datetime64: 'Datetime64',
-                      numpy.float16: 'Float16',
-                      numpy.float32: 'Float32',
-                      numpy.float64: 'Float64',
-                      numpy.int16: 'Int16',
-                      numpy.int32: 'Int32',
-                      numpy.int64: 'Int64',
-                      numpy.int8: 'Int8',
-                      numpy.object_: 'Object0',
-                      numpy.str_: 'Str0',
-                      numpy.timedelta64: 'Timedelta64',
-                      numpy.uint16: 'UInt16',
-                      numpy.uint32: 'UInt32',
-                      numpy.uint64: 'UInt64',
-                      numpy.uint8: 'UInt8',
-                      numpy.void: 'Void0'
+        converters = {np.bool_: 'Bool',
+                      np.bytes_: 'Bytes0',
+                      np.complex128: 'Complex128',
+                      np.complex64: 'Complex64',
+                      np.datetime64: 'Datetime64',
+                      np.float16: 'Float16',
+                      np.float32: 'Float32',
+                      np.float64: 'Float64',
+                      np.int16: 'Int16',
+                      np.int32: 'Int32',
+                      np.int64: 'Int64',
+                      np.int8: 'Int8',
+                      np.object_: 'Object0',
+                      np.str_: 'Str0',
+                      np.timedelta64: 'Timedelta64',
+                      np.uint16: 'UInt16',
+                      np.uint32: 'UInt32',
+                      np.uint64: 'UInt64',
+                      np.uint8: 'UInt8',
+                      np.void: 'Void0'
                       }
         try:
-            converters[numpy.complex256] = 'Complex256'
+            converters[np.complex256] = 'Complex256'
         except AttributeError:
             pass
         try:
-            converters[numpy.float128] = 'Float128'
+            converters[np.float128] = 'Float128'
         except AttributeError:
             pass
 
@@ -1336,7 +1336,7 @@ def print_fields(names, vals, converters=None):
     for n in names:
         v = vals[n]
 
-        if isinstance(v, numpy.ndarray):
+        if isinstance(v, np.ndarray):
             v = f'{converters[v.dtype.type]}[{v.size}]'
         else:
             v = str(v)
@@ -1412,7 +1412,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         # Ensure we have a boolean array to make indexing behave sensibly
         # (NumPy 1.17 or so changed behavior related to this).
         #
-        mask = numpy.asarray(mask, dtype=bool)
+        mask = np.asarray(mask, dtype=bool)
 
         # Ensure that the vals and mask array match: the number of
         # mask=True elements should equal the number of input values.
@@ -1423,7 +1423,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         # We only care about the difference between two consecutive
         # values, so it doesn't matter if index starts at 0 or 1.
         #
-        index = numpy.arange(len(mask))
+        index = np.arange(len(mask))
         seq = index[mask]
 
     exprs = []
@@ -1435,8 +1435,8 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
     startbins = vals[1:]
     endbins = vals[:-1]
 
-    diffs = numpy.diff(seq)
-    idxs, = numpy.where(diffs != 1)
+    diffs = np.diff(seq)
+    idxs, = np.where(diffs != 1)
     for idx in idxs:
         exprs.append((start, endbins[idx]))
         start = startbins[idx]
@@ -1455,7 +1455,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
 
 def create_expr_integrated(lovals, hivals, mask=None,
                            format='%s', delim='-',
-                           eps=numpy.finfo(numpy.float32).eps):
+                           eps=np.finfo(np.float32).eps):
     """Create a string representation of a filter (integrated).
 
     Use the mask to convert the input values into a set of
@@ -1543,14 +1543,14 @@ def create_expr_integrated(lovals, hivals, mask=None,
     # integers that have missing data masked out.
     #
     if mask is None:
-        seq = numpy.arange(len(lovals))
+        seq = np.arange(len(lovals))
     else:
-        mask = numpy.asarray(mask, dtype=bool)
+        mask = np.asarray(mask, dtype=bool)
 
         if sum(mask) != len(lovals):
             raise ValueError("mask array mis-match with lovals")
 
-        seq = numpy.arange(len(mask))
+        seq = np.arange(len(mask))
         seq = seq[mask]
 
     out = format % lovals[0]
@@ -1558,8 +1558,8 @@ def create_expr_integrated(lovals, hivals, mask=None,
     startbins = lovals[1:]
     endbins = hivals[:-1]
 
-    diffs = numpy.diff(seq)
-    idxs, = numpy.where(diffs != 1)
+    diffs = np.diff(seq)
+    idxs, = np.where(diffs != 1)
     for idx in idxs:
         out += f"{delim}{format % endbins[idx]},{format % startbins[idx]}"
 
@@ -1693,7 +1693,7 @@ def calc_total_error(staterror=None, syserror=None):
     elif (staterror is None) and (syserror is not None):
         error = syserror
     else:
-        error = numpy.sqrt(staterror * staterror + syserror * syserror)
+        error = np.sqrt(staterror * staterror + syserror * syserror)
     return error
 
 
@@ -1708,14 +1708,14 @@ def quantile(sorted_array, f):
 
     sorted_array is assumed to be 1D and sorted.
     """
-    sorted_array = numpy.asarray(sorted_array)
+    sorted_array = np.asarray(sorted_array)
 
     if len(sorted_array.shape) != 1:
         raise RuntimeError("Error: input array is not 1D")
     n = sorted_array.size
 
     q = (n - 1) * f
-    i = int(numpy.floor(q))
+    i = int(np.floor(q))
     delta = q - i
 
     return (1.0 - delta) * sorted_array[i] + delta * sorted_array[i + 1]
@@ -1742,10 +1742,10 @@ def get_error_estimates(x, sorted=False):
     >>> (m, l, h) = get_error_estimates(x)
 
     """
-    xs = numpy.asarray(x)
+    xs = np.asarray(x)
     if not sorted:
         xs.sort()
-        xs = numpy.array(xs)
+        xs = np.array(xs)
 
     sigfrac = 0.682689
     median = quantile(xs, 0.5)
@@ -1780,22 +1780,22 @@ def multinormal_pdf(x, mu, sigma):
     .. [1] http://en.wikipedia.org/wiki/Multivariate_normal_distribution
 
     """
-    x = numpy.asarray(x)
-    mu = numpy.asarray(mu)
-    sigma = numpy.asarray(sigma)
+    x = np.asarray(x)
+    mu = np.asarray(mu)
+    sigma = np.asarray(sigma)
     if x.size != mu.size:
         raise TypeError("x and mu sizes do not match")
     if mu.size != sigma.diagonal().size:
         raise TypeError("sigma shape does not match x")
-    if numpy.min(numpy.linalg.eigvalsh(sigma)) <= 0:
+    if np.min(np.linalg.eigvalsh(sigma)) <= 0:
         raise ValueError("sigma is not positive definite")
-    if numpy.max(numpy.abs(sigma - sigma.T)) >= 1.e-9:
+    if np.max(np.abs(sigma - sigma.T)) >= 1.e-9:
         raise ValueError("sigma is not symmetric")
     rank = mu.size
-    coeff = 1.0 / (numpy.power(2.0 * numpy.pi, rank / 2.0) *
-                   numpy.sqrt(numpy.abs(numpy.linalg.det(sigma))))
-    xmu = numpy.mat(x - mu)
-    invsigma = numpy.mat(numpy.linalg.inv(sigma))
+    coeff = 1.0 / (np.power(2.0 * np.pi, rank / 2.0) *
+                   np.sqrt(np.abs(np.linalg.det(sigma))))
+    xmu = np.asmatrix(x - mu)
+    invsigma = np.asmatrix(np.linalg.inv(sigma))
 
     # The matrix multiplication looks backwards, but mu and x
     # are passed in already transposed.
@@ -1803,7 +1803,7 @@ def multinormal_pdf(x, mu, sigma):
     #  mu = [[a,b,c]]
     #   x = [[d,e,f]]
     #
-    return float(coeff * numpy.exp(-0.5 * ((xmu * invsigma) * xmu.T)))
+    return float(coeff * np.exp(-0.5 * ((xmu * invsigma) * xmu.T)))
 
 
 def multit_pdf(x, mu, sigma, dof):
@@ -1833,27 +1833,27 @@ def multit_pdf(x, mu, sigma, dof):
 
     """
     n = float(dof)
-    x = numpy.asarray(x)
-    mu = numpy.asarray(mu)
-    sigma = numpy.asarray(sigma)
+    x = np.asarray(x)
+    mu = np.asarray(mu)
+    sigma = np.asarray(sigma)
 
     if x.size != mu.size:
         raise TypeError("x and mu sizes do not match")
     if mu.size != sigma.diagonal().size:
         raise TypeError("sigma shape does not match x")
-    if numpy.min(numpy.linalg.eigvalsh(sigma)) <= 0:
+    if np.min(np.linalg.eigvalsh(sigma)) <= 0:
         raise ValueError("sigma is not positive definite")
-    if numpy.max(numpy.abs(sigma - sigma.T)) >= 1.e-9:
+    if np.max(np.abs(sigma - sigma.T)) >= 1.e-9:
         raise ValueError("sigma is not symmetric")
 
     rank = mu.size
     np = float(n + rank)
     coeff = (gamma(np / 2.0) /
-             (gamma(n / 2.0) * numpy.power(n, rank / 2.0) *
-                 numpy.power(numpy.pi, rank / 2.0) *
-                 numpy.sqrt(numpy.abs(numpy.linalg.det(sigma)))))
-    xmu = numpy.mat(x - mu)
-    invsigma = numpy.mat(numpy.linalg.inv(sigma))
+             (gamma(n / 2.0) * np.power(n, rank / 2.0) *
+                 np.power(np.pi, rank / 2.0) *
+                 np.sqrt(np.abs(np.linalg.det(sigma)))))
+    xmu = np.asmatrix(x - mu)
+    invsigma = np.asmattix(np.linalg.inv(sigma))
 
     # The matrix multiplication looks backwards, but mu and x
     # are passed in already transposed.
@@ -1862,7 +1862,7 @@ def multit_pdf(x, mu, sigma, dof):
     #   x = [[d,e,f]]
     #
     term = 1.0 + 1.0 / n * ((xmu * invsigma) * xmu.T)
-    return float(coeff * numpy.power(term, -np / 2.0))
+    return float(coeff * np.power(term, -np / 2.0))
 
 
 def dataspace1d(start, stop, step=1, numbins=None):
@@ -1885,7 +1885,7 @@ def dataspace1d(start, stop, step=1, numbins=None):
             raise TypeError(
                 f"input has produced less than 2 bins, found start={start} stop={stop} step={step}")
 
-    # xx = numpy.arange(start, stop, step, dtype=float)
+    # xx = np.arange(start, stop, step, dtype=float)
     # xx = sao_arange(start, stop, step)
     xx = None
     if numbins is not None:
@@ -1893,13 +1893,13 @@ def dataspace1d(start, stop, step=1, numbins=None):
             raise TypeError(
                 f"input should be numbins > 1, found numbins={numbins}")
 
-        xx = numpy.linspace(start, stop, numbins + 1)
+        xx = np.linspace(start, stop, numbins + 1)
     else:
         xx = sao_arange(start, stop, step)
 
-    xlo = numpy.array(xx[:-1])
-    xhi = numpy.array(xx[1:])
-    y = numpy.zeros(len(xlo), dtype=float)
+    xlo = np.array(xx[:-1])
+    xhi = np.array(xx[1:])
+    y = np.zeros(len(xlo), dtype=float)
 
     return xlo, xhi, y
 
@@ -1908,7 +1908,7 @@ def dataspace2d(dim):
     """
     Populates a blank image dataset
     """
-    if not numpy.iterable(dim):
+    if not np.iterable(dim):
         raise TypeError("dim must be an array of dimensions")
 
     if len(dim) < 2:
@@ -1917,14 +1917,14 @@ def dataspace2d(dim):
     if dim[0] < 1 or dim[1] < 1:
         raise TypeError(f"dimensions should be > 0, found dim0 {dim[0]} dim1 {dim[1]}")
 
-    x0 = numpy.arange(dim[0], dtype=float) + 1.0
-    x1 = numpy.arange(dim[1], dtype=float) + 1.0
+    x0 = np.arange(dim[0], dtype=float) + 1.0
+    x1 = np.arange(dim[1], dtype=float) + 1.0
 
-    x0, x1 = numpy.meshgrid(x0, x1)
+    x0, x1 = np.meshgrid(x0, x1)
     shape = tuple(x0.shape)
     x0 = x0.ravel()
     x1 = x1.ravel()
-    y = numpy.zeros(numpy.prod(dim))
+    y = np.zeros(np.prod(dim))
 
     return x0, x1, y, shape
 
@@ -1978,13 +1978,13 @@ def histogram1d(x, x_lo, x_hi):
 
     """
 
-    x_lo = numpy.asarray(x_lo).copy()
-    x_hi = numpy.asarray(x_hi).copy()
+    x_lo = np.asarray(x_lo).copy()
+    x_hi = np.asarray(x_hi).copy()
 
     x_lo.sort()
     x_hi.sort()
 
-    return hist1d(numpy.asarray(x), x_lo, x_hi)
+    return hist1d(np.asarray(x), x_lo, x_hi)
 
 
 def histogram2d(x, y, x_grid, y_grid):
@@ -2028,20 +2028,20 @@ def histogram2d(x, y, x_grid, y_grid):
     >>> set_dep(n)
 
     """
-    x_grid = numpy.asarray(x_grid).copy()
-    y_grid = numpy.asarray(y_grid).copy()
+    x_grid = np.asarray(x_grid).copy()
+    y_grid = np.asarray(y_grid).copy()
 
     x_grid.sort()
     y_grid.sort()
 
-    vals = hist2d(numpy.asarray(x), numpy.asarray(y), x_grid, y_grid)
+    vals = hist2d(np.asarray(x), np.asarray(y), x_grid, y_grid)
     return vals.reshape((len(x_grid), len(y_grid)))
 
 
 def interp_util(xout, xin, yin):
     lenxin = len(xin)
 
-    i1 = numpy.searchsorted(xin, xout)
+    i1 = np.searchsorted(xin, xout)
 
     i1[i1 == 0] = 1
     i1[i1 == lenxin] = lenxin - 1
@@ -2092,7 +2092,7 @@ def linear_interp(xout, xin, yin):
 
     x0, x1, y0, y1 = interp_util(xout, xin, yin)
     val = (xout - x0) / (x1 - x0) * (y1 - y0) + y0
-    if numpy.isnan(val).any():
+    if np.isnan(val).any():
         # to handle the case where two adjacent elements of xout are equal
         return nearest_interp(xout, xin, yin)
     return val
@@ -2131,7 +2131,7 @@ def nearest_interp(xout, xin, yin):
     """
 
     x0, x1, y0, y1 = interp_util(xout, xin, yin)
-    return numpy.where((numpy.abs(xout - x0) < numpy.abs(xout - x1)), y0, y1)
+    return np.where((np.abs(xout - x0) < np.abs(xout - x1)), y0, y1)
 
 
 def interpolate(xout, xin, yin, function=linear_interp):
@@ -2250,8 +2250,8 @@ def get_midpoint(a):
     the distribution of the points.
     """
 
-    # return numpy.abs(a.max() - a.min())/2. + a.min()
-    return numpy.abs(a.max() + a.min()) / 2.0
+    # return np.abs(a.max() - a.min())/2. + a.min()
+    return np.abs(a.max() + a.min()) / 2.0
 
 
 def get_peak(y, x, xhi=None):
@@ -2524,7 +2524,7 @@ def get_amplitude_position(arr, mean=False):
        (amax > 0.0 and amin < 0.0 and (abs(amin) <= amax))):
         xpos = arr.argmax()
         if mean:
-            xpos = numpy.where(arr == amax)
+            xpos = np.where(arr == amax)
 
         xmax = amax * _guess_ampl_scale
         xmin = amax / _guess_ampl_scale
@@ -2534,7 +2534,7 @@ def get_amplitude_position(arr, mean=False):
          (amax == 0.0 and amin < 0.0) or (amax < 0.0)):
         xpos = arr.argmin()
         if mean:
-            xpos = numpy.where(arr == amin)
+            xpos = np.where(arr == amin)
 
         xmax = amin / _guess_ampl_scale
         xmin = amin * _guess_ampl_scale
@@ -2542,7 +2542,7 @@ def get_amplitude_position(arr, mean=False):
     elif (amax == 0.0 and amin == 0.0):
         xpos = arr.argmax()
         if mean:
-            xpos = numpy.where(arr == amax)
+            xpos = np.where(arr == amax)
 
         xmax = 100.0 / _guess_ampl_scale
         xmin = 0.0
@@ -2565,7 +2565,7 @@ def guess_amplitude(y, x, xhi=None):
         amax = ymax
 
     if xhi is not None:
-        binsize = numpy.abs(xhi[pos] - x[pos])
+        binsize = np.abs(xhi[pos] - x[pos])
         if amin is not None:
             amin /= binsize
         if amax is not None:
@@ -2585,17 +2585,17 @@ def guess_amplitude_at_ref(r, y, x, xhi=None):
 
     t = 1.0
     if x[1] > x[0] and r < x[0]:
-        t = numpy.abs(y[0] + y[1]) / 2.0
+        t = np.abs(y[0] + y[1]) / 2.0
     elif x[1] > x[0] and r > x[-1]:
-        t = numpy.abs(y[-1] + y[-2]) / 2.0
+        t = np.abs(y[-1] + y[-2]) / 2.0
     elif x[1] < x[0] and r > x[0]:
-        t = numpy.abs(y[0] + y[1]) / 2.0
+        t = np.abs(y[0] + y[1]) / 2.0
     elif x[1] < x[0] and r < x[-1]:
-        t = numpy.abs(y[-1] + y[-2]) / 2.0
+        t = np.abs(y[-1] + y[-2]) / 2.0
     else:
         for i in range(len(x) - 1):
             if ((r >= x[i] and r < x[i + 1]) or (r >= x[i + 1] and r < x[i])):
-                t = numpy.abs(y[i] + y[i + 1]) / 2.0
+                t = np.abs(y[i] + y[i + 1]) / 2.0
                 break
 
     if t == 0.0:
@@ -2622,7 +2622,7 @@ def guess_amplitude2d(y, x0lo, x1lo, x0hi=None, x1hi=None):
     limits = guess_amplitude(y, x0lo)
 
     # if (x0hi is not None and x1hi is not None):
-    #     binsize = numpy.abs((x0hi[0]-x0lo[0])*(x1hi[0]-x1lo[0]))
+    #     binsize = np.abs((x0hi[0]-x0lo[0])*(x1hi[0]-x1lo[0]))
     #     if limits['min'] is not None:
     #         limits['min'] /= binsize
     #     if limits['max'] is not None:
@@ -2650,7 +2650,7 @@ def guess_reference(pmin, pmax, x, xhi=None):
     if xmin < 1.0 and xmax > 1.0:
         val = 1.0
     else:
-        refval = numpy.floor((xmin + xmax) / 2.0)
+        refval = np.floor((xmin + xmax) / 2.0)
         if refval < pmin or refval > pmax:
             refval = (xmin + xmax) / 2.0
         val = refval
@@ -2666,7 +2666,7 @@ def get_position(y, x, xhi=None):
     pos = get_amplitude_position(y, mean=True)
     xpos = pos[3]
 
-    val = numpy.mean(x[xpos])
+    val = np.mean(x[xpos])
     xmin = x.min()
     xmax = x.max()
     if xhi is not None:
@@ -2684,11 +2684,11 @@ def guess_position(y, x0lo, x1lo, x0hi=None, x1hi=None):
 
     # pos = int(y.argmax())
     # return the average of location of brightest pixels
-    pos = numpy.where(y == y.max())
+    pos = np.where(y == y.max())
 
     x0, x1 = x0lo, x1lo
-    r1 = {'val': numpy.mean(x0[pos]), 'min': x0.min()}
-    r2 = {'val': numpy.mean(x1[pos]), 'min': x1.min()}
+    r1 = {'val': np.mean(x0[pos]), 'min': x0.min()}
+    r2 = {'val': np.mean(x1[pos]), 'min': x1.min()}
     if x0hi is None and x1hi is None:
         r1['max'] = x0.max()
         r2['max'] = x1.max()
@@ -2774,8 +2774,8 @@ def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
     #     x0, x1 = x0lo, x1lo
     x0 = x0lo
 
-    delta = numpy.apply_along_axis(numpy.diff, 0, x0)[0]
-    rad = numpy.abs(10 * delta)
+    delta = np.apply_along_axis(np.diff, 0, x0)[0]
+    rad = np.abs(10 * delta)
 
     return {'val': rad,
             'min': rad / _guess_ampl_scale, 'max': rad * _guess_ampl_scale}
@@ -2800,7 +2800,7 @@ def neville2d(xinterp, yinterp, x, y, fval):
 
     nrow = fval.shape[0]
     # ncol = fval.shape[1]
-    tmp = numpy.zeros(nrow)
+    tmp = np.zeros(nrow)
     for row in range(nrow):
         tmp[row] = neville(yinterp, y, fval[row])
     return neville(xinterp, x, tmp)
@@ -2857,7 +2857,7 @@ class NumDerivCentralOrdinary(NumDeriv):
 
     def __call__(self, x, h):
         if 0.0 == h:
-            return numpy.Inf
+            return np.inf
         return (self.func(x + h) - self.func(x - h)) / (2.0 * h)
 
 
@@ -2869,13 +2869,13 @@ class NumDerivFowardPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.finfo(numpy.float32).eps, 1.0 / 3.0)
+            h = pow(np.finfo(np.float32).eps, 1.0 / 3.0)
 
         ith = args[0]
         jth = args[1]
 
-        ei = numpy.zeros(len(x), float)
-        ej = numpy.zeros(len(x), float)
+        ei = np.zeros(len(x), float)
+        ej = np.zeros(len(x), float)
 
         deltai = h * abs(x[ith])
         if 0.0 == deltai:
@@ -2934,12 +2934,12 @@ class NumDerivCentralPartial(NumDeriv):
     def __call__(self, x, h, *args):
 
         if 0.0 == h:
-            h = pow(numpy.finfo(numpy.float32).eps, 1.0 / 3.0)
+            h = pow(np.finfo(np.float32).eps, 1.0 / 3.0)
 
         ith = args[0]
         jth = args[1]
 
-        ei = numpy.zeros(len(x), float)
+        ei = np.zeros(len(x), float)
 
         if ith == jth:
 
@@ -2953,7 +2953,7 @@ class NumDerivCentralPartial(NumDeriv):
             fval /= delta * delta
             return fval
 
-        ej = numpy.zeros(len(x), float)
+        ej = np.zeros(len(x), float)
 
         deltai = h * abs(x[ith])
         if 0.0 == deltai:
@@ -2999,7 +2999,7 @@ class RichardsonExtrapolation(NoRichardsonExtrapolation):
 
     def __call__(self, x, t, tol, maxiter, h, *args):
 
-        richardson = numpy.zeros((maxiter, maxiter), dtype=numpy.float64)
+        richardson = np.zeros((maxiter, maxiter), dtype=np.float64)
         richardson[0, 0] = self.sequence(x, h, *args)
 
         t_sqr = t * t
@@ -3034,7 +3034,7 @@ def hessian(func, par, extrapolation, algorithm, maxiter, h, tol, t):
     num_dif = algorithm(func, func(par))
     deriv = extrapolation(num_dif)
     npar = len(par)
-    Hessian = numpy.zeros((npar, npar), dtype=numpy.float64)
+    Hessian = np.zeros((npar, npar), dtype=np.float64)
     for ii in range(npar):
         for jj in range(ii + 1):
             answer = deriv(par, t, tol, maxiter, h, ii, jj)
@@ -3107,7 +3107,7 @@ def is_in(arg, seq):
 
 
 def is_iterable(arg):
-    return isinstance(arg, (list, tuple, numpy.ndarray)) or numpy.iterable(arg)
+    return isinstance(arg, (list, tuple, np.ndarray)) or np.iterable(arg)
 
 
 def is_sequence(start, mid, end):
@@ -3212,7 +3212,7 @@ def Knuth_boost_close(x, y, tol, myop=operator.__or__):
 
 
 def list_to_open_interval(arg):
-    if not numpy.iterable(arg):
+    if not np.iterable(arg):
         return arg
 
     return f'({arg[0]:e}, {arg[1]:e})'
@@ -3276,7 +3276,7 @@ class QuadEquaRealRoot:
             if mysgn(a) == mysgn(c):
                 return [None, None]
 
-            answer = numpy.sqrt(c / a)
+            answer = np.sqrt(c / a)
             return [-answer, answer]
 
         if 0.0 == c:
@@ -3288,7 +3288,7 @@ class QuadEquaRealRoot:
 
         discriminant = b * b - 4.0 * a * c
         debug("disc=%s", discriminant)
-        sqrt_disc = numpy.sqrt(discriminant)
+        sqrt_disc = np.sqrt(discriminant)
         t = - (b + mysgn(b) * sqrt_disc) / 2.0
         return [c / t, t / a]
 
@@ -3552,9 +3552,9 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
     def is_nan(arg):
         if arg != arg:
             return True
-        if arg is numpy.nan:
+        if arg is np.nan:
             return True
-        return numpy.isnan(arg)
+        return np.isnan(arg)
 
     history = [[], []]
     nfev, myfcn = func_counter_history(fcn, history)
@@ -3583,10 +3583,10 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
 
             if is_nan(B) or is_nan(C) or \
-                    0.0 == C + mysgn(C) * numpy.sqrt(discriminant):
+                    0.0 == C + mysgn(C) * np.sqrt(discriminant):
                 return [[None, None], [[None, None], [None, None]], nfev[0]]
 
-            xd = xc - 2.0 * fc / (C + mysgn(C) * numpy.sqrt(discriminant))
+            xd = xc - 2.0 * fc / (C + mysgn(C) * np.sqrt(discriminant))
 
             fd = myfcn(xd, *args)
             # print 'fd(%e)=%e' % (xd, fd)
@@ -3691,7 +3691,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
 
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
 
-            xd = xc - 2.0 * fc / (C + mysgn(C) * numpy.sqrt(discriminant))
+            xd = xc - 2.0 * fc / (C + mysgn(C) * np.sqrt(discriminant))
 
             fd = myfcn(xd, *args)
             # print 'fd(%e)=%e' % (xd, fd)
@@ -3831,7 +3831,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             B = tran[0]
             C = tran[1]
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
-            den = mysgn(C) * numpy.sqrt(discriminant)
+            den = mysgn(C) * np.sqrt(discriminant)
             xplus = xc - 2.0 * fc / (C + den)
             if C != den:
                 xminus = xc - 2.0 * fc / (C - den)
@@ -4010,7 +4010,7 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
         xc = xa
         fc = fa
-        DBL_EPSILON = numpy.finfo(numpy.float32).eps
+        DBL_EPSILON = np.finfo(np.float32).eps
         while nfev[0] < maxfev:
 
             prev_step = xb - xa

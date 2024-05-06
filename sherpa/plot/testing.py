@@ -20,7 +20,6 @@
 '''Helper functions for testing the plots
 
 '''
-import numpy as np
 
 from sherpa import plot
 # This not the most elegant solution, but it makes sense to
