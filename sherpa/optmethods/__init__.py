@@ -248,9 +248,7 @@ class OptMethod(NoNewAttributesAfterInit):
         # only one, it might be returned as a bare float.)
         output = list(output)
         output[1] = np.asarray(output[1]).ravel()
-        output = tuple(output)
-
-        return output
+        return tuple(output)
 
 
 # ## DOC-TODO: better description of the sequence argument; what happens
