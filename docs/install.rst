@@ -175,21 +175,21 @@ Obtaining the source package
 
 The source code can be obtained as a release package from
 Zenodo - e.g.
-`the Sherpa 4.10.0 release <https://zenodo.org/record/1245678>`_ -
+`the Sherpa 4.16.0 release <https://zenodo.org/record/825839>`_ -
 or from
 `the Sherpa repository on GitHub <https://github.com/sherpa/sherpa>`_,
 either a release version,
 such as the
-`4.10.0 <https://github.com/sherpa/sherpa/tree/4.10.0>`_ tag,
+`4.16.0 <https://github.com/sherpa/sherpa/tree/4.16.0>`_ tag,
 or the ``main`` branch (which is not guaranteed to be stable).
 
 For example::
 
-    git clone git://github.com/sherpa/sherpa.git
+    git clone https://github.com/sherpa/sherpa.git
     cd sherpa
-    git checkout 4.10.0
+    git checkout 4.16.0
 
-will use the ``4.10.0`` tag (although we strongly suggest using a
+will use the ``4.16.0`` tag (although we strongly suggest using a
 newer release now!).
 
 Configuring the build
