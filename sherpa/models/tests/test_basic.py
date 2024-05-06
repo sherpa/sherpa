@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,10 +22,11 @@ import numpy as np
 
 import pytest
 
-import sherpa.models.basic as basic
+from sherpa.models import basic
 from sherpa.models.parameter import hugeval
 from sherpa.models.model import ArithmeticModel, RegriddableModel1D, \
     RegriddableModel2D
+from sherpa.utils.err import ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
 
 
@@ -249,3 +250,21 @@ def test_polynom2d_guess_y0():
 
     for par in mdl.pars:
         check(par, 0)
+
+
+def test_tablemodel_invalid_x():
+    """We error out if X is invalid."""
+
+    tbl = basic.TableModel()
+    with pytest.raises(ModelErr,
+                       match="Unable to treat array as numeric"):
+        tbl.load([1, 2, "x"], [3, 4, 5])
+
+
+def test_tablemodel_invalid_y():
+    """We error out if y is invalid."""
+
+    tbl = basic.TableModel()
+    with pytest.raises(ModelErr,
+                       match="Unable to treat array as numeric"):
+        tbl.load([3, 4, 5], [1, 2, "x"])

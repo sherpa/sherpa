@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021
+#  Copyright (C) 2017, 2018, 2020, 2021, 2023
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -165,20 +165,16 @@ def test_load_pha2(loader, id0, ids, make_data_path, caplog, clean_astro_ui):
         assert b.name == infile
 
     # Test Log messages
-    msg_one = "systematic errors were not found in file '{}'".format(infile)
+    msg_one = f"systematic errors were not found in file '{infile}'"
 
-    # Editors can remove trailing spaces from lines, so split into
-    # separate lines so the space after the file name is included.
-    # Perhaps this space should be removed from the warning message?
-    #
-    msg_two = "statistical errors were found in file '{}' \n".format(infile) + \
+    msg_two = f"statistical errors were found in file '{infile}'\n" + \
               "but not used; to use them, re-read with use_errors=True"
 
-    msg_three = "read background_up into a dataset from file {}".format(infile)
-    msg_four = "read background_down into a dataset from file {}".format(infile)
+    msg_three = f"read background_up into a dataset from file {infile}"
+    msg_four = f"read background_down into a dataset from file {infile}"
 
     msg_five = "Multiple data sets have been input: " + \
-               "{}-{}".format(ids[0], ids[11])
+               f"{ids[0]}-{ids[11]}"
 
     assert caplog.record_tuples == [
         ('sherpa.astro.io', logging.WARNING, msg_one),
@@ -212,7 +208,7 @@ def test_load_pha2_compare_meg_order1(make_data_path, clean_astro_ui):
     ui.load_pha(pha2file)
 
     for n, lbl in zip([9, 10], ["-1", "1"]):
-        h = '3c120_meg_{}'.format(lbl)
+        h = f'3c120_meg_{lbl}'
         ui.load_arf(n, make_data_path(h + '.arf'))
         ui.load_rmf(n, make_data_path(h + '.rmf'))
 

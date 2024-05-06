@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,9 @@ from sherpa.astro.data import DataARF, DataPHA
 from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro.plot import SourcePlot, ComponentSourcePlot, \
     DataPHAPlot, ModelPHAHistogram, ModelHistogram, OrderPlot, \
-    EnergyFluxHistogram, PhotonFluxHistogram,  _check_hist_bins
+    EnergyFluxHistogram, PhotonFluxHistogram, _check_hist_bins, \
+    BkgModelPHAHistogram, BkgModelHistogram, BkgDataPlot, \
+    ComponentModelPlot, ARFPlot, RMFPlot
 from sherpa.astro import plot as aplot
 from sherpa.astro import hc
 from sherpa.data import Data1D
@@ -205,7 +207,7 @@ def test_sourceplot(caplog, make_basic_datapha):
 
 def test_sourceplot_filtered(caplog, make_basic_datapha):
     """Filtering only changes the mask attribute"""
-    
+
     data = make_basic_datapha
     data.units = "energy"
 
@@ -343,7 +345,7 @@ def test_sourceplot_wavelength(caplog, make_basic_datapha):
 
 def test_sourceplot_wavelength_filtered(caplog, make_basic_datapha):
     """Filtering only changes the mask attribute"""
-    
+
     data = make_basic_datapha
     data.units = "wave"
 
@@ -473,7 +475,7 @@ def test_sourceplot_component_stringification(make_basic_datapha):
     sp1.prepare(data, src)
     sp2.prepare(data, src)
 
-    mstr = "Source model component: (((100.0 * bgnd) * (1.0 - abs1)) * 10000.0)"
+    mstr = "Source model component: 100.0 * bgnd * (1.0 - abs1) * 10000.0"
     assert sp2.title == mstr
 
     sp1.title = ""
@@ -576,6 +578,7 @@ def test_dataphahistogram_prepare_wavelength(make_data_path):
 
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
 
     # can we access the "pseudo" x attribute?
     assert plot.x[0] > plot.x[-1]
@@ -618,6 +621,7 @@ def test_modelphahistogram_prepare_wavelength(make_data_path):
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
     assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
     assert np.all(plot.y > 0)
     assert plot.y.size == 9
 
@@ -653,6 +657,7 @@ def test_sourceplot_prepare_wavelength(make_data_path):
     # data is inverted
     assert plot.xlo[0] > plot.xlo[-1]
     assert plot.xlo[0] > plot.xhi[0]
+    assert np.all(plot.xlo > plot.xhi)  # see issue #1986
     assert np.all(plot.y > 0)
     assert plot.y.size == 1090
 
@@ -1135,3 +1140,301 @@ def test_data_model_plot_with_backend(all_plot_backends):
 
     with splot.backend:
         fplot.plot()
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_data_plot_xerr(units):
+    """What is the xerr field for DataPHA data.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    dplot = aplot.DataPHAPlot()
+    dplot.prepare(pha)
+
+    if units == "wavelength":
+        xdiff = dplot.xlo - dplot.xhi
+    else:
+        xdiff = dplot.xhi - dplot.xlo
+
+    assert dplot.xerr == pytest.approx(xdiff / 2)
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_source_plot_xerr(units):
+    """What is the xerr field for DataPHA source.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+
+    mplot = aplot.SourcePlot()
+    mplot.prepare(pha, model)
+
+    # There is no xerr atrribute
+    with pytest.raises(AttributeError):
+        mplot.xerr
+
+
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_model_plot_xerr(units):
+    """What is the xerr field for DataPHA model.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+    resp = pha.get_full_response()
+    full_model = resp(model)
+
+    mplot = aplot.ModelPHAHistogram()
+    mplot.prepare(pha, full_model)
+
+    # There is no xerr atrribute
+    with pytest.raises(AttributeError):
+        mplot.xerr
+
+
+@pytest.mark.parametrize("cls", [aplot.ResidPHAPlot,
+                                 aplot.RatioPHAPlot,
+                                 aplot.DelchiPHAPlot,
+                                 aplot.ChisqrPHAPlot])
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
+def test_pha_resid_plot_xerr(cls, units):
+    """What is the xerr field for DataPHA residual.
+
+    This is a minimal check, as it's not clear what the xerr
+    field is really meant to be (e.g. see issue #1817).
+    """
+
+    pha = example_pha_data_with_grouping()
+    pha.grouped = True
+    pha.set_analysis(units)
+
+    model = PowLaw1D('example-pl')
+    resp = pha.get_full_response()
+    full_model = resp(model)
+
+    # We want a chi-square plot for some of these classes, and pick
+    # one that doesn't trigger warnings.
+    #
+    rplot = cls()
+    rplot.prepare(pha, full_model, stat=stats.Chi2Gehrels())
+
+    # Should we have an xerr field (to match shplot.DataHistogramPlot)?
+    with pytest.raises(AttributeError):
+        rplot.xerr
+
+
+@pytest.mark.parametrize("cls", [DataPHAPlot, BkgDataPlot,
+                                 ])
+def test_pha_data_fails_not_pha(cls):
+    """Check if error out with an invalid data message for Data classes"""
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    plotobj = cls()
+
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
+        plotobj.prepare(d, stat=stats.LeastSq())
+
+
+@pytest.mark.parametrize("cls", [ModelPHAHistogram,
+                                 ModelHistogram,
+                                 BkgModelPHAHistogram,
+                                 BkgModelHistogram,
+                                 ComponentSourcePlot,
+                                 ComponentModelPlot,
+                                 aplot.ResidPHAPlot, aplot.BkgResidPlot,
+                                 aplot.RatioPHAPlot, aplot.BkgRatioPlot,
+                                 aplot.DelchiPHAPlot, aplot.BkgDelchiPlot,
+                                 aplot.ChisqrPHAPlot, aplot.BkgChisqrPlot])
+def test_pha_model_checks_not_pha(cls):
+    """Check if error out with an invalid data message for Model classes"""
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    m = Const1D("mdl")
+    plotobj = cls()
+
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
+        plotobj.prepare(d, m, stat=stats.LeastSq())
+
+
+@pytest.mark.parametrize("cls", [SourcePlot])
+def test_pha_model_no_stat_checks_not_pha(cls):
+    """Check if error out with an invalid data message for Model classes
+
+    These classes do not take a stat argument for the prepare method.
+    """
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    m = Const1D("mdl")
+    plotobj = cls()
+
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
+        plotobj.prepare(d, m)
+
+
+@pytest.mark.parametrize("cls", [OrderPlot])
+def test_pha_model_no_stat_fails_not_pha(cls):
+    """Check if error out with an invalid data message for Model classes
+
+    These classes do not take a stat argument for the prepare method.
+    """
+
+    d = Data1D("not-a-pha", [1, 2], [0, 2])
+    m = Const1D("mdl")
+    plotobj = cls()
+
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
+        plotobj.prepare(d, m)
+
+
+def test_arf_checks_arf():
+    """Do we ensure it's an ARF?"""
+
+    plotobj = ARFPlot()
+    d = Data1D("x", [1, 2], [2, 3])
+
+    with pytest.raises(IOErr, match="data set 'x' does not contain an ARF"):
+        plotobj.prepare(arf=d)
+
+
+def test_arf_checks_data_is_pha():
+    """Do we ensure ARF is sent a DataPHA object?"""
+
+    plotobj = ARFPlot()
+    arf = DataARF("arf", np.asarray([1, 2]), np.asarray([2, 3]), [100, 200])
+    d = Data1D("not-a-pha", [1, 2, 3], [2, 3, 4])
+
+    with pytest.raises(IOErr, match="data set 'not-a-pha' does not contain a PHA spectrum"):
+        plotobj.prepare(arf=arf, data=d)
+
+
+def test_rmf_checks_arf():
+    """Do we ensure it's an RMF?"""
+
+    plotobj = RMFPlot()
+    d = Data1D("x", [1, 2], [2, 3])
+
+    with pytest.raises(IOErr, match="data set 'x' does not contain a RMF"):
+        plotobj.prepare(rmf=d)
+
+
+def test_rmf_checks_data_is_pha():
+    """Do we ensure RMF is sent a DataPHA object?"""
+
+    plotobj = RMFPlot()
+    rmf = create_delta_rmf(np.asarray([1, 2]), np.asarray([2, 3]))
+    d = Data1D("x", [1, 2, 3], [2, 3, 4])
+
+    with pytest.raises(IOErr, match="data set 'x' does not contain a PHA spectrum"):
+        plotobj.prepare(rmf=rmf, data=d)
+
+
+def test_rmf_checks_nlines_is_positive():
+    """We make sure there's at least one line."""
+
+    plotobj = RMFPlot()
+    assert plotobj.n_lines == 5  # just check current behaviour
+    assert plotobj.energies is None
+
+    rmf = create_delta_rmf(np.asarray([1, 2]), np.asarray([2, 3]))
+    d = DataPHA("x", [1, 2], [2, 3])
+
+    plotobj.n_lines = 0
+    with pytest.raises(ValueError,
+                       match="n_lines must be >= 1"):
+        plotobj.prepare(rmf=rmf, data=d)
+
+
+@pytest.mark.parametrize("energies", [[],
+                                      [0.5, 0.7],
+                                      [20, 21, 22],
+                                      [0.7, 14]
+                                      ])
+def test_rmfplot_energies_is_empty(energies):
+    """Basic check of prepare when energies ends up being empty."""
+
+    plotobj = RMFPlot()
+
+    egrid = np.arange(1, 15, 1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi)
+    d = DataPHA("x", np.arange(1, 15, dtype=np.int16), [0] * 14)
+
+    plotobj.energies = energies
+    with pytest.raises(ValueError,
+                       match="energies must be >= 1 and < 14 keV"):
+        plotobj.prepare(rmf=rmf, data=d)
+
+
+def test_rmfplot_default_energies():
+    """What is the expected data here?"""
+
+    plotobj = RMFPlot()
+
+    egrid = np.arange(0, 15, 1) + 0.4
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi)
+
+    chans = np.arange(1, 15, dtype=np.int16)
+    d = DataPHA("x", chans, [0] * 14)
+
+    plotobj.prepare(rmf=rmf, data=d)
+
+    assert plotobj.xlabel == "Channel"
+    assert plotobj.xlo == pytest.approx(chans)
+    assert plotobj.xhi == pytest.approx(chans + 1)
+    assert plotobj.y.shape == (5, 14)
+
+    assert plotobj.labels == ['0.73 keV',
+                              '1.3 keV',
+                              '2.4 keV',
+                              '4.4 keV',
+                              '7.9 keV']
+
+
+def test_rmfplot_selected_energies():
+    """What is the expected data here?"""
+
+    plotobj = RMFPlot()
+
+    egrid = np.arange(0, 15, 1) + 0.4
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi)
+
+    chans = np.arange(1, 15, dtype=np.int16)
+    d = DataPHA("x", chans, [0] * 14)
+
+    # Note: not all energies are not valid
+    plotobj.energies = [0.2, 0.4, 2, 5, 14, 15]
+    plotobj.prepare(rmf=rmf, data=d)
+
+    assert plotobj.xlabel == "Channel"
+    assert plotobj.xlo == pytest.approx(chans)
+    assert plotobj.xhi == pytest.approx(chans + 1)
+    assert plotobj.y.shape == (4, 14)
+
+    assert plotobj.labels == ['0.4 keV',
+                              '2 keV',
+                              '5 keV',
+                              '14 keV']

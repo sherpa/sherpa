@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015, 2016, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,21 +25,24 @@ Classes for plotting, analysis of astronomical data sets
 import logging
 
 import numpy as np
-from numpy import iterable, array2string, asarray
 
-from sherpa.models.basic import Delta1D
-from sherpa.astro.data import DataPHA
-from sherpa import plot as shplot
+from sherpa.astro import hc
+from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import bounds_check
-from sherpa.utils.err import PlotErr, IOErr
+from sherpa.data import Data1DInt
+from sherpa.models.basic import Delta1D
+from sherpa.models.model import Model
+from sherpa import plot as shplot
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
-from sherpa.astro import hc
+from sherpa.utils.err import IOErr, PlotErr, StatErr
 
 warning = logging.getLogger(__name__).warning
 
 __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
            'SourcePlot', 'ComponentModelPlot', 'ComponentSourcePlot',
+           'RatioPHAPlot', 'ResidPHAPlot', 'DelchiPHAPlot', 'ChisqrPHAPlot',
            'ARFPlot', 'RMFPlot',
            'BkgDataPlot', 'BkgModelPHAHistogram', 'BkgModelHistogram',
            'BkgFitPlot', 'BkgDelchiPlot', 'BkgResidPlot', 'BkgRatioPlot',
@@ -54,7 +57,9 @@ __all__ = ('DataPHAPlot', 'ModelPHAHistogram', 'ModelHistogram',
 _tol = np.finfo(np.float32).eps
 
 
-def _check_hist_bins(xlo, xhi):
+def _check_hist_bins(xlo: np.ndarray,
+                     xhi: np.ndarray
+                     ) -> tuple[np.ndarray, np.ndarray]:
     """Ensure lo/hi edges that are "close" are merged.
 
     Ensure that "close-enough" bin edges use the same value.  We do
@@ -117,6 +122,38 @@ def _check_hist_bins(xlo, xhi):
     return xlo, xhi
 
 
+def calc_x(data: DataPHA) -> tuple[np.ndarray, np.ndarray]:
+    """Calculate the X axis values
+
+    Parameters
+    ----------
+    data : DataPHA
+       The data object.
+
+    Returns
+    -------
+    xlo, xhi : tuple of ndarray
+       The low and high edges of each bin.
+
+    """
+
+    # Get the X axis data.
+    #
+    if data.units != 'channel':
+        elo, ehi = data._get_ebins(group=False)
+    else:
+        elo, ehi = (data.channel, data.channel + 1.)
+
+    xlo = data.apply_filter(elo, data._min)
+    xhi = data.apply_filter(ehi, data._max)
+    if data.units == 'wavelength':
+        # Should this swap xlo and xhi here?
+        xlo = hc / xlo
+        xhi = hc / xhi
+
+    return _check_hist_bins(xlo, xhi)
+
+
 class DataPHAPlot(shplot.DataHistogramPlot):
     """Plot a PHA dataset."""
 
@@ -125,12 +162,15 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 
     def prepare(self, data, stat=None):
 
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         # Need a better way of accessing the binning of the data.
         # Maybe to_plot should return the lo/hi edges as a pair
         # here.
         #
-        (_, self.y, self.yerr, self.xerr, self.xlabel,
-         self.ylabel) = data.to_plot()
+        plot = data.to_plot()
+        (_, self.y, self.yerr, _, self.xlabel, self.ylabel) = plot
 
         if stat is not None:
             yerrorbars = self.histo_prefs.get('yerrorbars', True)
@@ -138,20 +178,77 @@ class DataPHAPlot(shplot.DataHistogramPlot):
 
         self.title = data.name
 
-        # Get the X axis data.
-        #
-        if data.units != 'channel':
-            elo, ehi = data._get_ebins(group=False)
-        else:
-            elo, ehi = (data.channel, data.channel + 1.)
+        self.xlo, self.xhi = calc_x(data)
 
-        self.xlo = data.apply_filter(elo, data._min)
-        self.xhi = data.apply_filter(ehi, data._max)
-        if data.units == 'wavelength':
-            self.xlo = hc / self.xlo
-            self.xhi = hc / self.xhi
 
-        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
+class RatioPHAPlot(shplot.RatioHistogramPlot):
+    """Plot ratio for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+
+class ResidPHAPlot(shplot.ResidHistogramPlot):
+    """Plot residuals for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+    def _change_ylabel(self) -> None:
+        # The original code had the y label displaying units rather
+        # than 'Data - Model', which is what the super-class sets. So
+        # we override the parent behaviour.
+        pass
+
+
+class DelchiPHAPlot(shplot.DelchiHistogramPlot):
+    """Plot delchi residuals for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
+
+
+class ChisqrPHAPlot(shplot.ChisqrHistogramPlot):
+    """Plot residuals for a PHA dataset.
+
+    .. versionadded:: 4.16.1
+
+    """
+
+    def _calc_x(self, data: Data1DInt, model: Model) -> None:
+        """Define the xlo and xhi fields"""
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        self.xlo, self.xhi = calc_x(data)
 
 
 class ModelPHAHistogram(shplot.HistogramPlot):
@@ -176,18 +273,7 @@ class ModelPHAHistogram(shplot.HistogramPlot):
          self.xlabel, self.ylabel) = data.to_plot(yfunc=model)
         self.y = self.y[1]
 
-        if data.units != 'channel':
-            elo, ehi = data._get_ebins(group=False)
-        else:
-            elo, ehi = (data.channel, data.channel + 1.)
-
-        self.xlo = data.apply_filter(elo, data._min)
-        self.xhi = data.apply_filter(ehi, data._max)
-        if data.units == 'wavelength':
-            self.xlo = hc / self.xlo
-            self.xhi = hc / self.xhi
-
-        self.xlo, self.xhi = _check_hist_bins(self.xlo, self.xhi)
+        self.xlo, self.xhi = calc_x(data)
 
 
 class ModelHistogram(ModelPHAHistogram):
@@ -199,6 +285,9 @@ class ModelHistogram(ModelPHAHistogram):
     """
 
     def prepare(self, data, model, stat=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
 
         # We could fit this into a single try/finally group but
         # it makes it harder to see what is going on so split
@@ -246,8 +335,12 @@ class ModelHistogram(ModelPHAHistogram):
             data.mask = old_mask
 
 
-class SourcePlot(shplot.HistogramPlot):
+class SourcePlot(shplot.SourceHistogramPlot):
     """Create PHA plots of unconvolved model values.
+
+    .. versionchanged:: 4.16.1
+       The parent class is now SourceHistogramPlot rather than
+       HistogramPlot.
 
     Attributes
     ----------
@@ -266,7 +359,6 @@ class SourcePlot(shplot.HistogramPlot):
         self.units = None
         self.mask = None
         super().__init__()
-        self.title = 'Source'
 
     def prepare(self, data, src, lo=None, hi=None):
         # Note: src is source model before folding
@@ -347,7 +439,7 @@ class SourcePlot(shplot.HistogramPlot):
                 post += pterm
 
         scale = (self.xhi + self.xlo) / 2
-        for ii in range(data.plot_fac):
+        for _ in range(data.plot_fac):
             self.y *= scale
 
         sqr = shplot.backend.get_latex_for_string('^2')
@@ -370,48 +462,40 @@ class SourcePlot(shplot.HistogramPlot):
                               **kwargs)
 
 
-class ComponentModelPlot(shplot.ComponentSourcePlot, ModelHistogram):
+# We do not derive from shplot.ComponentModelHistogramPlot to avoid
+# confusion over what behavior is wanted.
+#
+class ComponentModelPlot(ModelHistogram):
+    """The component model plot for DataPHA data.
+
+    .. versionchanged:: 4.16.1
+
+       The class no-longer derives from `sherpa.plot.ComponentSourcePlot`.
+    """
 
     histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
-    def __init__(self):
-        ModelHistogram.__init__(self)
-
-    def __str__(self):
-        return ModelHistogram.__str__(self)
-
     def prepare(self, data, model, stat=None):
-        ModelHistogram.prepare(self, data, model, stat)
-        self.title = 'Model component: %s' % model.name
-
-    def _merge_settings(self, kwargs):
-        return {**self.histo_prefs, **kwargs}
-
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        ModelHistogram.plot(self, overplot=overplot,
-                            clearwindow=clearwindow, **kwargs)
+        super().prepare(data=data, model=model, stat=stat)
+        self.title = f'Model component: {model.name}'
 
 
-class ComponentSourcePlot(shplot.ComponentSourcePlot, SourcePlot):
+# We do not derive from shplot.ComponentSourceHistogramPlot to avoid
+# confusion over what behavior is wanted.
+#
+class ComponentSourcePlot(SourcePlot):
+    """The component source plot for DataPHA data.
+
+    .. versionchanged:: 4.16.1
+
+       The class no-longer derives from `sherpa.plot.ComponentSourcePlot`.
+    """
 
     histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
-    def __init__(self):
-        SourcePlot.__init__(self)
-
-    def __str__(self):
-        return SourcePlot.__str__(self)
-
     def prepare(self, data, model, stat=None):
-        SourcePlot.prepare(self, data, model)
-        self.title = 'Source model component: %s' % model.name
-
-    def _merge_settings(self, kwargs):
-        return {**self.histo_prefs, **kwargs}
-
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        SourcePlot.plot(self, overplot=overplot,
-                        clearwindow=clearwindow, **kwargs)
+        super().prepare(data=data, src=model)
+        self.title = f'Source model component: {model.name}'
 
 
 class ARFPlot(shplot.HistogramPlot):
@@ -438,11 +522,16 @@ class ARFPlot(shplot.HistogramPlot):
         arf :
            The ARF to plot
         data : DataPHA instance, optional
-           The `units` attribute of this object is used
-           to determine whether the X axis should be
-           in Angstrom instead of KeV (the default).
+           The `units` attribute of this object is used to determine
+           whether the X axis should be in Angstrom instead of KeV
+           (the default). If the units setting is "channel" then the
+           X axis is shown using keV.
 
         """
+
+        if not isinstance(arf, (DataARF, ARF1D)):
+            raise IOErr(f"data set '{arf.name}' does not contain an ARF")
+
         self.xlo = arf.energ_lo
         self.xhi = arf.energ_hi
         self.y = arf.specresp
@@ -451,13 +540,19 @@ class ARFPlot(shplot.HistogramPlot):
         self.xlabel = arf.get_xlabel()
         self.ylabel = arf.get_ylabel()
 
-        if data is not None:
-            if not isinstance(data, DataPHA):
-                raise PlotErr('notpha', data.name)
-            if data.units == "wavelength":
-                self.xlabel = 'Wavelength (Angstrom)'
-                self.xlo = hc / self.xlo
-                self.xhi = hc / self.xhi
+        if data is None:
+            return
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
+        # There is no sensible X axis when data.units is channel, so
+        # leave as an energy. The alternative is to error out.
+        #
+        if data.units == "wavelength":
+            self.xlabel = 'Wavelength (Angstrom)'
+            self.xlo = hc / arf.energ_hi
+            self.xhi = hc / arf.energ_lo
 
 
 class RMFPlot(shplot.HistogramPlot):
@@ -466,6 +561,13 @@ class RMFPlot(shplot.HistogramPlot):
     A full RMF is a matrix that is hard to visualize.
     Here, we select a few specific energies and show
     the response function for those energies as histograms.
+
+    .. versionchanged:: 4.16.1
+       The plot will now display with the analysis setting of the data
+       argument sent to `prepare`. Previously it would always use
+       energies for the X axis. The `energies` setting can be used to
+       control what energies are chosen for the plot.
+
     """
 
    # Because this derived from NoNewAttributesAfterInit we need to
@@ -480,6 +582,13 @@ class RMFPlot(shplot.HistogramPlot):
     y  = None
     "array_like: The response for a specific energy or channel."
 
+    energies = None
+    """The energies at which to draw the response (in keV).
+
+    If set to None then `n_lines` energies will be selected to span
+    the energy range of the response.
+    """
+
     xlabel = ''
     "Label for X axis"
 
@@ -492,14 +601,13 @@ class RMFPlot(shplot.HistogramPlot):
     rmf_plot_prefs = shplot.basicbackend.get_rmf_plot_defaults()
     'Plot preferences'
 
-
     # TODO: Make that a plot preference
     # How many monochromatic lines to use
     n_lines = 5
+    "The number of lines to draw (only used when `energies` is `None`)."
 
     labels = None
     "List of strings: The labels for each line."
-
 
     def _merge_settings(self, kwargs):
         return {**self.rmf_plot_prefs, **kwargs}
@@ -507,37 +615,90 @@ class RMFPlot(shplot.HistogramPlot):
     def prepare(self, rmf, data=None):
         """Fill the fields given the RMF.
 
+        The `n_lines` and `energies` fields can be set to control
+        what lines are shown.
+
+        .. versionchanged:: 4.16.1
+           The `energies` field, when set, is used to select the
+           energies to display (if left as `None` then `n_lines`
+           energies are chosen automatically).
+
         Parameters
         ----------
         RMF :
            The RMF to plot
         data : DataPHA instance, optional
-           The `units` attribute of this object is used
-           to determine whether the X axis should be
-           in Angstrom instead of KeV (the default).
+           The `units` attribute of this object is used to determine
+           whether the X axis should be in Angstrom or channels,
+           instead of KeV (the default).
 
         """
-        # X access
-        if rmf.e_min is None:
-            self.x_lo = np.arange(rmf.offset, rmf.detchans + rmf.offset) - 0.5
-            self.x_hi = self.x_lo + 1
-            self.xlabel = 'Channel'
+
+        if not isinstance(rmf, (DataRMF, RMF1D)):
+            raise IOErr(f"data set '{rmf.name}' does not contain a RMF")
+
+        # X access: unlike the ARF case it is possible to display in
+        # channel units here.
+        #
+        if data is not None:
+            if not isinstance(data, DataPHA):
+                raise IOErr('notpha', data.name)
+
+            units = data.units
+        elif rmf.e_min is not None:
+            units = "energy"
         else:
+            units = "channel"
+
+        # Assume that if the units are not channel then the RMF
+        # contains the needed data.
+        #
+        if units == "energy":
             self.xlo = rmf.e_min
             self.xhi = rmf.e_max
-            self.xlabel = 'Energy (keV)'
+            self.xlabel = "Energy (keV)"
 
-        # TODO copy ARFPlot logic to decide if x axis should be in wavelength
+        elif units == "wavelength":
+            self.xlo = hc / rmf.e_max
+            self.xhi = hc / rmf.e_min
+            self.xlabel = "Wavelength (Angstrom)"
 
-        # for now let's just create log-spaced energies
+        else:
+            self.xlo = np.arange(rmf.offset, rmf.detchans + rmf.offset)
+            self.xhi = self.xlo + 1
+            self.xlabel = "Channel"
+
+        # For now let's just create log-spaced energies. There is no way
+        # to select an intelligent range, so we can use something that
+        # goes across most of the energ_lo/hi range. This is okay for
+        # a Chandra ACIS response. The spacing calculation could use
+        # wavelength limits for units=wavelength, but is it worth it?
         #
         elo, ehi = rmf.energ_lo, rmf.energ_hi
         l1 = np.log10(elo[0])
         l2 = np.log10(ehi[-1])
-        dl = (l2 - l1) / (self.n_lines + 1)
 
-        lines = l1 + dl * np.arange(1, self.n_lines + 1)
-        energies = np.power(10, lines)
+        # NOTE: we do not actually record the chosen energies other
+        # than in self.labels, which is a lossy transform.
+        #
+        if self.energies is None:
+            if self.n_lines < 1:
+                raise ValueError("n_lines must be >= 1")
+
+            dl = (l2 - l1) / (self.n_lines + 1)
+            lines = l1 + dl * np.arange(1, self.n_lines + 1)
+            energies = np.power(10, lines)
+
+        else:
+            # Minimal checks. We do not re-order this list as the user
+            # may want the ordering for a particular reason.  This is
+            # liable to change.
+            #
+            energies = [energy for energy in self.energies
+                        if energy >= elo[0] and energy < ehi[-1]]
+            if len(energies) == 0:
+                raise ValueError("energies must be "
+                                 f">= {elo[0]} and < {ehi[-1]} keV")
 
         mdl = Delta1D()
 
@@ -546,10 +707,14 @@ class RMFPlot(shplot.HistogramPlot):
         for energy in energies:
             mdl.pos = energy
             y.append(rmf.apply_rmf(mdl(elo, ehi)))
-            self.labels.append(f'{energy:.2g} keV')
+            if units == "wavelength":
+                self.labels.append(f'{hc / energy:.2g} Angstrom')
+            else:
+                # Note: use energy labels for channel space
+                self.labels.append(f'{energy:.2g} keV')
 
         # __str__ and similar functions in the superclass
-        # expect this to be and array, not a list
+        # expect this to be an array, not a list
         self.y = np.stack(y)
         self.title = rmf.name
 
@@ -577,13 +742,18 @@ class RMFPlot(shplot.HistogramPlot):
         prepare, overplot
 
         """
+
         y_array = self.y
-        for n in range(self.n_lines):
+        labels = self.labels
+
+        # Override the self.y array with each "energy".
+        #
+        for n, label in enumerate(labels):
             self.y = y_array[n, :]
             super().plot(
                 overplot=overplot if n == 0 else True,
                 clearwindow=clearwindow if n == 0 else False,
-                label=self.labels[n],
+                label=label,
                 **kwargs)
         self.y = y_array
 
@@ -604,7 +774,7 @@ class BkgModelPHAHistogram(ModelPHAHistogram):
     """
 
     def __init__(self):
-        ModelPHAHistogram.__init__(self)
+        super().__init__()
         self.title = 'Background Model Contribution'
 
 
@@ -619,7 +789,7 @@ class BkgModelHistogram(ModelHistogram):
     """
 
     def __init__(self):
-        ModelPHAHistogram.__init__(self)
+        super().__init__()
         self.title = 'Background Model Contribution'
 
 
@@ -628,29 +798,56 @@ class BkgFitPlot(shplot.FitPlot):
     pass
 
 
-class BkgDelchiPlot(shplot.DelchiPlot):
-    "Derived class for creating background plots of 1D delchi chi ((data-model)/error)"
+class BkgDelchiPlot(DelchiPHAPlot):
+    """Derived class for creating background plots of PHA delchi chi ((data-model)/error).
+
+    .. versionchanged:: 4.16.1
+       The parent class is now DelchiPHAPlot rather than
+       DelchiPlot.
+
+    """
+
+    # leave the title as the parent, which is
+    # 'Sigma Residuals for <name>'.
+    #
     pass
 
 
-class BkgResidPlot(shplot.ResidPlot):
-    "Derived class for creating background plots of 1D residual (data-model)"
+class BkgResidPlot(ResidPHAPlot):
+    """Derived class for creating background plots of PHA residual (data-model).
 
-    def prepare(self, data, model, stat):
-        super().prepare(data, model, stat)
-        self.title = 'Residuals of %s - Bkg Model' % data.name
+    .. versionchanged:: 4.16.1
+       The parent class is now ResidPHAPlot rather than
+       ResidPlot.
 
+    """
 
-class BkgRatioPlot(shplot.RatioPlot):
-    "Derived class for creating background plots of 1D ratio (data:model)"
-
-    def prepare(self, data, model, stat):
-        super().prepare(data, model, stat)
-        self.title = 'Ratio of %s : Bkg Model' % data.name
+    def _title(self, data: Data1DInt) -> None:
+        self.title = f'Residuals of {data.name} - Bkg Model'
 
 
-class BkgChisqrPlot(shplot.ChisqrPlot):
-    "Derived class for creating background plots of 1D chi**2 ((data-model)/error)**2"
+class BkgRatioPlot(RatioPHAPlot):
+    """Derived class for creating background plots of PHA ratio (data:model).
+
+    .. versionchanged:: 4.16.1
+       The parent class is now RatioPHAPlot rather than
+       RatioPlot.
+
+    """
+
+    def _title(self, data: Data1DInt) -> None:
+        self.title = f'Ratio of {data.name} : Bkg Model'
+
+
+class BkgChisqrPlot(ChisqrPHAPlot):
+    """Derived class for creating background plots of chi**2 ((data-model)/error)**2.
+
+    .. versionchanged:: 4.16.1
+       The parent class is now ChisqrPHAPlot rather than
+       ChisqrPlot.
+
+    """
+
     pass
 
 
@@ -671,18 +868,23 @@ class OrderPlot(ModelHistogram):
         self.use_default_colors = True
         super().__init__()
 
+    # Note: this does not accept a stat parameter.
     def prepare(self, data, model, orders=None, colors=None):
+
+        if not isinstance(data, DataPHA):
+            raise IOErr('notpha', data.name)
+
         self.orders = data.response_ids
 
         if orders is not None:
-            if iterable(orders):
+            if np.iterable(orders):
                 self.orders = list(orders)
             else:
                 self.orders = [orders]
 
         if colors is not None:
             self.use_default_colors = False
-            if iterable(colors):
+            if np.iterable(colors):
                 self.colors = list(colors)
             else:
                 self.colors = [colors]
@@ -704,9 +906,13 @@ class OrderPlot(ModelHistogram):
             self.xlo = []
             self.xhi = []
             self.y = []
-            (xlo, y, yerr, xerr,
+            (xlo, y, yerr, _,
              self.xlabel, self.ylabel) = data.to_plot(model)
             y = y[1]
+
+            # TODO: should this use calc_x? The logic isn't quite the
+            # same but that may be a logical error in the following.
+            #
             if data.units != 'channel':
                 elo, ehi = data._get_ebins(group=False)
                 xlo = data.apply_filter(elo, data._min)
@@ -738,7 +944,7 @@ class OrderPlot(ModelHistogram):
                 for interval in old_filter:
                     data.notice(*interval)
 
-        self.title = 'Model Orders %s' % str(self.orders)
+        self.title = f'Model Orders {self.orders}'
 
         if len(self.xlo) != len(self.y):
             raise PlotErr("orderarrfail")
@@ -777,20 +983,20 @@ class FluxHistogram(ModelHistogram):
     def __str__(self):
         vals = self.modelvals
         if self.modelvals is not None:
-            vals = array2string(asarray(self.modelvals), separator=',',
-                                precision=4, suppress_small=False)
+            vals = np.array2string(np.asarray(self.modelvals), separator=',',
+                                   precision=4, suppress_small=False)
 
         clip = self.clipped
         if self.clipped is not None:
             # Could convert to boolean, but it is surprising for
             # anyone trying to access the clipped field
-            clip = array2string(asarray(self.clipped), separator=',',
-                                precision=4, suppress_small=False)
+            clip = np.array2string(np.asarray(self.clipped), separator=',',
+                                   precision=4, suppress_small=False)
 
         flux = self.flux
         if self.flux is not None:
-            flux = array2string(asarray(self.flux), separator=',',
-                                precision=4, suppress_small=False)
+            flux = np.array2string(np.asarray(self.flux), separator=',',
+                                   precision=4, suppress_small=False)
 
         return '\n'.join([f'modelvals = {vals}',
                           f'clipped = {clip}',
@@ -813,7 +1019,7 @@ class FluxHistogram(ModelHistogram):
 
         """
 
-        fluxes = asarray(fluxes)
+        fluxes = np.asarray(fluxes)
         y = fluxes[:, 0]
         self.flux = y
         self.modelvals = fluxes[:, 1:-1]

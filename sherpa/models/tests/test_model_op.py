@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2023
+#  Copyright (C) 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,7 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""Do the unary and binary operators work for models?"""
+"""Do the unary and binary operators work for models?
+
+Other tests related to model expressions are also made here.
+
+"""
 
 from functools import reduce
 import operator
@@ -28,10 +32,13 @@ import numpy as np
 
 import pytest
 
+from sherpa.astro.instrument import ARF1D, RMF1D, RSPModelNoPHA, create_arf, create_delta_rmf
 from sherpa.astro.ui.utils import Session
+from sherpa.instrument import PSFModel
 from sherpa.models import basic
 from sherpa.models.model import ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, UnaryOpModel
+    ArithmeticFunctionModel, BinaryOpModel, UnaryOpModel, Model, \
+    model_deconstruct
 from sherpa.utils.err import ModelErr
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
 
@@ -55,6 +62,17 @@ def test_basic_unop_neg():
     assert mdl.name == '-(polynom2d)'
     assert mdl.op == np.negative
     assert mdl.opstr == '-'
+    assert mdl.ndim == 2
+
+
+def test_basic_unop_pos():
+
+    cpt = basic.Polynom2D()
+    mdl = +cpt
+
+    assert mdl.name == '+(polynom2d)'
+    assert mdl.op == np.positive
+    assert mdl.opstr == '+'
     assert mdl.ndim == 2
 
 
@@ -90,7 +108,7 @@ def test_basic_binop_raw(op):
     mdl = BinaryOpModel(l, r, op, 'xOx')
 
     assert isinstance(mdl, BinaryOpModel)
-    assert mdl.name == '(polynom2d xOx gauss2d)'
+    assert mdl.name == 'polynom2d xOx gauss2d'
     assert mdl.op == op
     assert mdl.opstr == 'xOx'
     assert len(mdl.parts) == 2
@@ -111,7 +129,7 @@ def test_basic_binop(op, opstr):
     mdl = op(l, r)
 
     assert isinstance(mdl, BinaryOpModel)
-    assert mdl.name == f'(polynom2d {opstr} gauss2d)'
+    assert mdl.name == f'polynom2d {opstr} gauss2d'
     assert mdl.op == op
     assert mdl.opstr == opstr
     assert len(mdl.parts) == 2
@@ -147,6 +165,33 @@ def test_eval_op():
 
     got = mdl(x)
     assert got == pytest.approx(expected)
+
+
+def test_eval_add_sub_op():
+    """Another version of test_eval_op focussed on + and - unary ops"""
+
+    x = np.asarray([2, 4, 5, 6, 7])
+
+    m1 = basic.Const1D("c")
+    m1.c0 = 10
+
+    m2 = basic.Polynom1D("p")
+    m2.c0 = 5
+    m2.c1 = 1
+
+    m3 = basic.Box1D("b")
+    m3.xlow = 5
+    m3.xhi = 6
+
+    mdl = m1 - (+m2 - m3)
+    assert mdl.ndim == 1
+
+    assert mdl.name == "c - (+(p) - b)"
+
+    bins = np.arange(2, 10, 2)
+    yexp = m1(bins) + m3(bins) - m2(bins)
+    y = mdl(bins)
+    assert y == pytest.approx(yexp)
 
 
 def test_combine_models1d():
@@ -410,3 +455,531 @@ def test_binop_arithmeticfunction_works(m1, m2):
 
     expected = 2 * np.sin(grid)
     assert y == pytest.approx(expected)
+
+
+class FakeResponse1D:
+    """sherpa.astro.instrument.Response1D requires a PHA. This doesn't.
+
+    This has limited functionality.
+    """
+
+    def __init__(self, arf, rmf):
+        self.arf = arf
+        self.rmf = rmf
+
+    def __call__(self, model):
+        return RSPModelNoPHA(self.arf, self.rmf,
+                             self.arf.exposure * model)
+
+
+class TestBrackets:
+    """Provide a set of model instances for the tests."""
+
+    a = basic.Const1D('a')
+    b = basic.Const1D('b')
+    c = basic.Const1D('c')
+    d = basic.Const1D('d')
+
+    # We don't need to 'load' the model data to use it here
+    tm = basic.TableModel('tm')
+
+    # Convolution-style model (PSF)
+    cm = PSFModel('cm', basic.Const1D('cmflat'))
+
+    # Convolution-style model (PHA)
+    #
+    egrid = np.arange(0.1, 0.5, 0.1)
+    chans = np.arange(1, egrid.size)
+    fake_arf = create_arf(egrid[:-1], egrid[1:], exposure=100.0)
+    fake_rmf = create_delta_rmf(egrid[:-1], egrid[1:])
+
+    arf = ARF1D(fake_arf)
+    rmf = RMF1D(fake_rmf)
+    rsp = FakeResponse1D(fake_arf, fake_rmf)
+
+    # It would be nice to instead use a principled set of states,
+    # but let's just try a somewhat-random set of expressions.
+    #
+    @pytest.mark.parametrize("model,expected",
+                             [(a, "a"),
+                              (abs(a), "abs(a)"),
+                              (abs(a) + b, "abs(a) + b"),
+                              (b + abs(a), "b + abs(a)"),
+                              (abs(a + b), "abs(a + b)"),
+                              (abs(a + b * c), "abs(a + b * c)"),
+                              (abs(a - b * c), "abs(a - b * c)"),
+                              (abs((a + b) * c), "abs((a + b) * c)"),
+                              (abs((a - b) * c), "abs((a - b) * c)"),
+                              (abs((a - b) / c), "abs((a - b) / c)"),
+                              (abs((a * b) - c), "abs(a * b - c)"),
+                              (abs((a / b) - c), "abs(a / b - c)"),
+                              (a * abs(b * (c + d)), "a * abs(b * (c + d))"),
+                              (abs(b * (c + d)) * (a + d), "abs(b * (c + d)) * (a + d)"),
+                              (-a, "-(a)"),
+                              (+a, "+(a)"),
+                              ((-a) + ((b)), "-(a) + b"),
+                              # the following is ugly but is valid Python
+                              ((-(a)) + ((+b)), "-(a) + +(b)"),
+                              (-a + b, "-(a) + b"),
+                              (-a + 2, "-(a) + 2.0"),
+                              (+a + b, "+(a) + b"),
+                              (-(a + b), "-(a + b)"),
+                              (-(a * b), "-(a * b)"),
+                              (-(a - b), "-(a - b)"),
+                              (-(a * b - c), "-(a * b - c)"),
+                              (-(a - b * c), "-(a - b * c)"),
+                              (a - a - b, "a - a - b"),
+                              (a - (a - b), "a - (a - b)"),
+                              (a - (b - (c - d)), 'a - (b - (c - d))'),
+                              (a - (b + (c - d)), 'a - (b + c - d)'),
+                              (b - (c + d), 'b - (c + d)'),
+                              ((a - b) - (c + d), 'a - b - (c + d)'),
+                              (a - (b - (c + d)), 'a - (b - (c + d))'),
+                              (a - (b + (c + d)), 'a - (b + c + d)'),
+                              (2 * (a + b) - c * 3, "2.0 * (a + b) - c * 3.0"),
+                              (abs(2 * (a + b) - c * 3), "abs(2.0 * (a + b) - c * 3.0)"),
+                              (a + a, "a + a"),
+                              (a * b, "a * b"),
+                              (a - a, "a - a"),
+                              (a / b, "a / b"),
+                              (a + b + c, "a + b + c"),
+                              (a * b * c, "a * b * c"),
+                              ((a * b) + c, "a * b + c"),
+                              ((a + b) * c, "(a + b) * c"),
+                              (a + (b * c), "a + b * c"),
+                              (a * (b + c), "a * (b + c)"),
+                              ((a + b) * (c + d), "(a + b) * (c + d)"),
+                              ((a * b) * (c + d), "a * b * (c + d)"),
+                              ((a + b) * (c * d), "(a + b) * c * d"),
+                              ((a + (b * c) + d), "a + b * c + d"),
+                              (100 * a * (b + c), "100.0 * a * (b + c)"),
+                              (100 * (a * (b + c)), "100.0 * a * (b + c)"),
+                              (a + b + 2 * c + d + a, "a + b + 2.0 * c + d + a"),
+                              (a + b + c * 2 + d + a, "a + b + c * 2.0 + d + a"),
+                              (a + b * (c - 2) + d + a, "a + b * (c - 2.0) + d + a"),
+                              (a + b * (2 - c) + d + a, "a + b * (2.0 - c) + d + a"),
+                              ((a + b + c) + (c + b + d + a), "a + b + c + c + b + d + a"),
+                              ((a + b + c) + (c + b - d + a), "a + b + c + c + b - d + a"),
+                              ((a + b + c) + (c + b - abs(d) + a), "a + b + c + c + b - abs(d) + a"),
+                              ((a + b + c) * (c + b + d + a), "(a + b + c) * (c + b + d + a)"),
+                              ((a + b + c) * (c + b - d + a), "(a + b + c) * (c + b - d + a)"),
+                              ((a + b + c) * (c + b - abs(d) + a), "(a + b + c) * (c + b - abs(d) + a)"),
+                              ((a * b * c) * (c + b + d + a), "a * b * c * (c + b + d + a)"),
+                              ((a + b + c) * (c * b * d * a), "(a + b + c) * c * b * d * a"),
+                              ((a + b + c) * (c * b + d * a), "(a + b + c) * (c * b + d * a)"),
+                              (2 * a * 2, "2.0 * a * 2.0"),
+                              (a * 2 * 2, "a * 2.0 * 2.0"),
+                              (2 * a + 2 * (b + c - 4) * 3, "2.0 * a + 2.0 * (b + c - 4.0) * 3.0"),
+                              (tm * (a + b) + tm * (a * b),
+                               'tm * (a + b) + tm * a * b'),
+                              (tm * (a + b) + tm * (a * (b + 3)),
+                               'tm * (a + b) + tm * a * (b + 3.0)'),
+                              (cm(a) + b, 'cm(a) + b'),
+                              (a * cm(b + c), 'a * cm(b + c)'),
+                              (a + cm(b + 2 * d + c),
+                               'a + cm(b + 2.0 * d + c)'),
+                              (arf(b * (c * d)) + d,
+                               "apply_arf(100.0 * b * c * d) + d"),
+                              (a + 2 * arf(b * (c + d)),
+                               "a + 2.0 * apply_arf(100.0 * b * (c + d))"),
+                              (a + 2 * rmf(b * (c + d)),
+                               "a + 2.0 * apply_rmf(b * (c + d))"),
+                              # Manually combining RMF1D and ARF1D is interesting as we would normally
+                              # use RSPModelNoPHA
+                              (a * rmf(arf(a * (b + c * d))) + d * arf(a + b),
+                               'a * apply_rmf(apply_arf(100.0 * a * (b + c * d))) + d * apply_arf(100.0 * (a + b))'),
+                              # Repeat but with rsp instead
+                              (a * rsp(a * (b + c * d)) + d * arf(a + b),
+                               'a * apply_rmf(apply_arf(100.0 * a * (b + c * d))) + d * apply_arf(100.0 * (a + b))'),
+                              (arf(b * (c + d)),
+                               "apply_arf(100.0 * b * (c + d))"),
+                              # How about expressions with exponentation
+                              (a**2, "a ** 2.0"),
+                              (a**-2, "a ** -2.0"),
+                              (a + b**2, "a + b ** 2.0"),
+                              (a + (b + c)**2, "a + (b + c) ** 2.0"),
+                              (a - b**(c - 2) - a, "a - b ** (c - 2.0) - a"),
+                              ((a ** 2) ** b, "(a ** 2.0) ** b"),
+                              (-a ** 2, "-(a ** 2.0)"),
+                              ((-a)**2, "(-(a)) ** 2.0"),
+                              # remainder and integer division, for fun
+                              (a // 2, "a // 2.0"),
+                              ((a + b) // 2, "(a + b) // 2.0"),
+                              ((a * b) // 2, "(a * b) // 2.0"),
+                              (a % 2, "a % 2.0"),
+                              ((a + b) % 2, "(a + b) % 2.0"),
+                              ((a * b) % 2, "(a * b) % 2.0")
+                             ])
+    def test_brackets(self, model, expected):
+        """Do we get the expected number of brackets?"""
+
+        assert model.name == expected
+
+        # Can we check that the string expression, when evaluated
+        # as a model, returns the same result?
+        #
+        # Now, thanks to how models are converted to strings, the
+        # ARF/RMF cases do not work, so skip if any expected string
+        # contains "apply".
+        #
+        if expected.find("apply") != -1:
+            return
+
+        got = eval(expected, None,
+                   {"a": self.a,
+                    "b": self.b,
+                    "c": self.c,
+                    "d": self.d,
+                    "tm": self.tm,
+                    "cm": self.cm})
+        assert isinstance(got, Model)
+
+        # Just because we can
+        assert got.name == expected
+
+        # Evaluate the two models and check they get the same. Since
+        # most of the models are very simple (e.g. return 1 for each
+        # bin) this does not test that much, but should be sufficient
+        # here.
+        #
+        # However, those models that include convolution-style
+        # expressions need to be folded through a data object which we
+        # do not want to set up here, so we skip those tests. There is
+        # a similar issue with the table model.
+        #
+        if expected.find("cm") != -1 or expected.find("tm") != -1:
+            return
+
+        x = [2, 5, 7]
+        ymdl = model(x)
+        ygot = got(x)
+
+        assert ygot == pytest.approx(ymdl)
+
+
+def test_explicit_numpy_combination():
+    """This was a question I wondered when developing test_brackets,
+    so add a check.
+    """
+
+    mdl1 = basic.Scale1D("mdl1")
+    mdl2 = basic.Box1D("mdl2")
+    mdl3 = basic.Gauss1D("mdl3")
+
+    mdl1.c0 = 4
+    mdl2.xlow = 5
+    mdl2.xhi = 15
+    mdl2.ampl = 2
+    mdl3.pos = 10
+    mdl3.fwhm = 5
+    mdl3.ampl = 10
+
+    # These should be the same but check they are.
+    #
+    implicit = mdl1 * (mdl2 + mdl3)
+    explicit = np.multiply(mdl1,
+                           np.add(mdl2, mdl3))
+
+    assert isinstance(implicit, BinaryOpModel)
+    assert isinstance(explicit, BinaryOpModel)
+
+    # Check the names are the same.
+    #
+    assert explicit.name == implicit.name
+
+    # Check they evaluate to the same values.
+    #
+    x = np.arange(4, 14, 2)
+    y2 = mdl2(x)
+    y3 = mdl3(x)
+    yexp = 4 * (y2 + y3)
+
+    assert implicit(x) == pytest.approx(yexp)
+    assert explicit(x) == pytest.approx(yexp)
+
+    # Have an actual test, just in case,
+    assert yexp == pytest.approx([0.73812041, 14.78302164,
+                                  33.66851795, 48, 33.66851795])
+
+
+# Models for testing model_deconstruct. It is tempting to add these as
+# attributes in a class, as is done above for TestBrackets, but we
+# need to call methods and set attributes for these which would
+# complicate things, so leave as module-level symbols.
+#
+BOX1 = basic.Box1D("b1")
+BOX2 = basic.Box1D("b2")
+GAUSS1 = basic.Gauss1D("g1")
+GAUSS2 = basic.Gauss1D("g2")
+SCALE1 = basic.Scale1D("s1")
+
+BOX1.xlow = -10
+BOX1.xhi = 10
+BOX1.ampl.set(5, max=5)
+
+BOX2.xlow = -10
+BOX2.xhi = 10
+BOX2.ampl.set(4, max=4)
+
+GAUSS1.pos = -2
+GAUSS1.fwhm = 5
+GAUSS1.ampl = 8
+
+GAUSS2.pos = 1
+GAUSS2.fwhm = 5
+GAUSS2.ampl = 6
+
+# This isn't really needed, but do it to point out we expect these
+# models not to change.
+#
+BOX1.freeze()
+BOX2.freeze()
+GAUSS1.freeze()
+GAUSS2.freeze()
+SCALE1.freeze()
+
+
+@pytest.mark.parametrize("model,expecteds",
+                         [(BOX1, ["b1"]),
+                          # unary operator
+                          (-BOX1, ["-(b1)"]),
+                          (-(-BOX1), ["-(-(b1))"]),
+                          # binary operator of singletons
+                          (GAUSS1 + GAUSS2, ["g1", "g2"]),
+                          (GAUSS1 - GAUSS2, ["g1", "-(g2)"]),
+                          (GAUSS1 * GAUSS2, ["g1 * g2"]),
+                          (GAUSS1 / GAUSS2, ["g1 / g2"]),
+                          (GAUSS1 // GAUSS2, ["g1 // g2"]),
+                          # sneaky test with a constant
+                          (BOX1 + 2, ["b1", "2.0"]),
+                          (2 + BOX1, ["2.0", "b1"]),
+                          (BOX1 * 2, ["b1 * 2.0"]),
+                          (2 * BOX1, ["2.0 * b1"]),
+                          # more-complex binary operator, but still 1 term on one side
+                          #
+                          (BOX1 + (GAUSS1 + GAUSS2), ["b1", "g1", "g2"]),
+                          ((BOX1 + GAUSS1) + GAUSS2, ["b1", "g1", "g2"]),
+                          (BOX1 + (GAUSS1 * GAUSS2), ["b1", "g1 * g2"]),
+                          ((BOX1 + GAUSS1) * GAUSS2, ["b1 * g2", "g1 * g2"]),
+                          (BOX1 * (GAUSS1 + GAUSS2), ["b1 * g1", "b1 * g2"]),
+                          ((BOX1 * GAUSS1) + GAUSS2, ["b1 * g1", "g2"]),
+                          (BOX1 * (GAUSS1 * GAUSS2), ["b1 * g1 * g2"]),
+                          ((BOX1 * GAUSS1) * GAUSS2, ["b1 * g1 * g2"]),
+                          # add in negation and divison
+                          (BOX1 - (GAUSS1 + GAUSS2), ["b1", "-(g1)", "-(g2)"]),
+                          ((BOX1 - GAUSS1) + GAUSS2, ["b1", "-(g1)", "g2"]),
+                          (BOX1 - (GAUSS1 * GAUSS2), ["b1", "-(g1 * g2)"]),
+                          ((BOX1 * GAUSS1) - GAUSS2, ["b1 * g1", "-(g2)"]),
+                          (BOX1 + (BOX2 / GAUSS1), ["b1", "b2 / g1"]),
+                          ((BOX1 + BOX2) / GAUSS1, ["b1 / g1", "b2 / g1"]),
+                          (GAUSS1 / (BOX1 * BOX2), ["g1 / (b1 * b2)"]),
+                          ((GAUSS1 / BOX1) * BOX2, ["g1 / b1 * b2"]),
+                          (GAUSS1 / (BOX1 + BOX2), ["g1 / (b1 + b2)"]),
+                          # What happens with a unary term applied to a complex
+                          # expression? There is no expansion, which is not
+                          # ideal but safest. However, if written as a BinOp
+                          # it does get expanded, which is a bit surprising!
+                          (-(BOX1 + BOX2 * GAUSS1 + GAUSS2),
+                           ["-(b1 + b2 * g1 + g2)"]),
+                          (BOX2 - (BOX1 + BOX2 * GAUSS1 + GAUSS2),
+                           ["b2", "-(b1)", "-(b2 * g1)", "-(g2)"]),
+                          # note that we do not try to simplify the expressions
+                          ((1 / GAUSS1) * (BOX1 - BOX2),
+                           ["1.0 / g1 * b1", "1.0 / g1 * -(b2)"]),
+                          # try combining binary operators
+                          # - addition
+                          ((BOX1 + BOX2) + (GAUSS1 + GAUSS2),
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + (BOX2 + GAUSS1) + GAUSS2,
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + ((BOX2 + GAUSS1) + GAUSS2),
+                           ["b1", "b2", "g1", "g2"]),
+                          (BOX1 + (BOX2 + GAUSS1) + GAUSS2,
+                           ["b1", "b2", "g1", "g2"]),
+                          # - addition and multiplication
+                          ((BOX1 + BOX2) * (GAUSS1 + GAUSS2),
+                           ["b1 * g1", "b1 * g2", "b2 * g1", "b2 * g2"]),
+                          ((BOX1 - BOX2) * (GAUSS1 - GAUSS2),
+                           ["b1 * g1", "b1 * -(g2)", "-(b2) * g1", "-(b2) * -(g2)"]),
+                          ((BOX1 * BOX2) - (GAUSS1 * GAUSS2),
+                           ["b1 * b2", "-(g1 * g2)"]),
+                          # - division
+                          (GAUSS1 * GAUSS2 / (BOX1 * BOX2), ["g1 * g2 / (b1 * b2)"]),
+                          (GAUSS1 * GAUSS2 // (BOX1 * BOX2), ["(g1 * g2) // (b1 * b2)"]),
+                          ((GAUSS1 + GAUSS2) / (BOX1 + BOX2), ["g1 / (b1 + b2)", "g2 / (b1 + b2)"]),
+                          ((GAUSS1 + GAUSS2) // (BOX1 + BOX2), ["(g1 + g2) // (b1 + b2)"]),
+                          ((GAUSS1 - GAUSS2) / (BOX1 + BOX2), ["g1 / (b1 + b2)", "-(g2) / (b1 + b2)"]),
+                          ((GAUSS1 - GAUSS2) // (BOX1 + BOX2), ["(g1 - g2) // (b1 + b2)"]),
+                          # - other combinations
+                          (GAUSS1 * GAUSS2 ** (BOX1 * BOX2), ["g1 * g2 ** (b1 * b2)"]),
+                          (GAUSS1 * GAUSS2 % (BOX1 * BOX2), ["(g1 * g2) % (b1 * b2)"]),
+                          # - more realistic options
+                          (BOX1 * (BOX2 * GAUSS1 + GAUSS2) * BOX1,
+                           ["b1 * b2 * g1 * b1", "b1 * g2 * b1"]),
+                          (BOX1 * (BOX2 * GAUSS1 - GAUSS2) + BOX1,
+                           ["b1 * b2 * g1", "b1 * -(g2)", "b1"]),
+                          (BOX1 * BOX2 * (GAUSS1 + BOX2 * GAUSS2),
+                           ["b1 * b2 * g1", "b1 * b2 * b2 * g2"]),
+                          ((GAUSS1 + BOX2 * GAUSS2) * BOX1 * BOX2,
+                           ["g1 * b1 * b2", "b2 * g2 * b1 * b2"]),
+                          ((GAUSS1 + GAUSS2 - BOX2) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "g2 * b1", "g2 * b2", "-(b2) * b1", "-(b2) * b2"]),
+                          ((GAUSS1 + (GAUSS2 - BOX2)) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "g2 * b1", "g2 * b2", "-(b2) * b1", "-(b2) * b2"]),
+                          ((GAUSS1 + GAUSS2 * GAUSS1 - BOX2) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "g2 * g1 * b1", "g2 * g1 * b2", "-(b2) * b1", "-(b2) * b2"]),
+                          (((1 + GAUSS2) * GAUSS1 - BOX2) * (BOX1 + BOX2),
+                           ["1.0 * g1 * b1", "1.0 * g1 * b2", "g2 * g1 * b1", "g2 * g1 * b2", "-(b2) * b1", "-(b2) * b2"]),
+                          ((GAUSS1 + (1 + (GAUSS2 / BOX1))) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "1.0 * b1", "1.0 * b2", "g2 / b1 * b1", "g2 / b1 * b2"]),
+                          ((GAUSS1 + (1 + (GAUSS2 / (BOX1 + BOX2)))) * (BOX1 + BOX2),
+                           ["g1 * b1", "g1 * b2", "1.0 * b1", "1.0 * b2", "g2 / (b1 + b2) * b1", "g2 / (b1 + b2) * b2"]),
+                          (((GAUSS1 + GAUSS2 - 4) / (BOX1 + BOX2) * SCALE1),
+                           ["g1 / (b1 + b2) * s1",
+                            "g2 / (b1 + b2) * s1",
+                            "-(4.0) / (b1 + b2) * s1"]),
+                           ((BOX1 + BOX2) ** 2 / 2 + GAUSS1,
+                            ["(b1 + b2) ** 2.0 / 2.0",
+                             "g1"]),
+                           (GAUSS1 + (BOX1 - BOX2) ** 2 / 2,
+                            ["g1",
+                             "(b1 - b2) ** 2.0 / 2.0"])
+                          ])
+def test_model_deconstruct(model, expecteds):
+    """Check model deconstruction using the model name and evaluation.
+
+    This uses a set of known models in the assumption we have covered
+    all the relevant code paths. Particular care is needed to ensure
+    conditions like m1 / (m2 + m3) are included. At some point this
+    becomes a regression test, as it's not neessarily important that
+    the best possible deconstruction is created, just that we get
+    consistent results (e.g. given that the code does not simplify
+    expressions, in particular the handling of negation).
+
+    The evaluation test checks that
+
+        model(x) = sum_i term_i(x)
+
+    for all the terms that model_deconstruct creates. The idea is that
+    the models are set to non-zero values over the range they use (ie
+    within -10 to 10 for the box components), and that there are some
+    components which vary with x just to check everything passes
+    through correctly.
+
+    """
+
+    terms = model_deconstruct(model)
+    assert len(terms) == len(expecteds)
+    for term, expected in zip(terms, expecteds):
+        assert term.name == expected
+
+    x = np.arange(-9, 9, 1)
+    got_model = model(x)
+    got_terms = np.zeros_like(got_model)
+    for term in terms:
+        got_terms += term(x)
+
+    assert got_terms == pytest.approx(got_model)
+
+
+@pytest.mark.parametrize("ntotal", [101, 1001])
+def test_model_deconstruct_possible_recursion_error_lhs(ntotal):
+    """Try and test the recursion-handling on the LHS.
+
+    It is not obvious if the recursion-handling is always going to
+    trigger when 1000 frames are hit, so we try a value which is
+    known - for Python 3.11 - to trigger a recursion error, but it
+    may not with other Python cases.  We also have a run where we
+    know we don't hit the recursion error so we can check the
+    fall-over path.
+
+    We could error out if the 1001 case does not trigger a recursion
+    error, but it seems poor form for the tests to fail if Python
+    changes things in the future when Sherpa may not be being
+    developed any more.
+
+    """
+
+    def mk(n):
+        return basic.Scale1D(f"c{n}")
+
+    mdl = mk(0)
+    for i in range(1, ntotal):
+        mdl += mk(i)
+
+    # mdl is "(((...(c0 + c1) + .. ) + c999) + c1000)" where the
+    # brackets are left in to point out the structure, when
+    # ntotal=1001.
+    #
+    cpts = model_deconstruct(mdl)
+
+    # Did we create ntotal individual components?
+    #
+    ncpts = len(cpts)
+    if ncpts == ntotal:
+        for cpt in cpts:
+            assert isinstance(cpt, basic.Scale1D)
+
+        return
+
+    # Just check we aren't creating too-many components.
+    #
+    assert ncpts < ntotal
+
+    # Check we have the expected break down.
+    #
+    assert isinstance(cpts[0], BinaryOpModel)
+    for cpt in cpts[1:]:
+        assert isinstance(cpt, basic.Scale1D)
+
+
+@pytest.mark.parametrize("ntotal", [101, 1001])
+def test_model_deconstruct_possible_recursion_error_rhs(ntotal):
+    """Try and test the recursion-handling on the LHS.
+
+    It is not obvious if the recursion-handling is always going to
+    trigger when 1000 frames are hit, so we try a value which is
+    known - for Python 3.11 - to trigger a recursion error, but it
+    may not with other Python cases. We also have a run where we
+    know we don't hit the recursion error so we can check the
+    fall-over path.
+
+    We could error out if the 1001 case does not trigger a recursion
+    error, but it seems poor form for the tests to fail if Python
+    changes things in the future when Sherpa may not be being
+    developed any more.
+
+    """
+
+    def mk(n):
+        return basic.Scale1D(f"c{n}")
+
+    mdl = mk(0)
+    for i in range(1, ntotal):
+        mdl = BinaryOpModel(mk(i), mdl, np.add, "+")
+
+    # mdl is "(c1000 + (c999 + (... + (c1 + c0)...)))" where the
+    # brackets are left in to point out the structure, when
+    # ntotal=1001.
+    #
+    cpts = model_deconstruct(mdl)
+
+    # Did we create ntotal individual components?
+    #
+    ncpts = len(cpts)
+    if ncpts == ntotal:
+        for cpt in cpts:
+            assert isinstance(cpt, basic.Scale1D)
+
+        return
+
+    # Just check we aren't creating too-many components.
+    #
+    assert ncpts < ntotal
+
+    # Check we have the expected break down.
+    #
+    for cpt in cpts[:-1]:
+        assert isinstance(cpt, basic.Scale1D)
+
+    assert isinstance(cpts[-1], BinaryOpModel)

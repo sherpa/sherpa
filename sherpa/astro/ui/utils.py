@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,16 +25,17 @@ import sys
 from typing import Optional, Union
 import warnings
 
-import numpy
+import numpy as np
 
 import sherpa.ui.utils
 from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
-from sherpa.ui.utils import _check_type, _check_str_type, _is_str
+from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
+    get_plot_prefs
 from sherpa.utils import sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
-from sherpa.utils.numeric_types import SherpaFloat, SherpaInt
+from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
@@ -134,7 +135,7 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
 
 
 def _check_pha_tabstops(data: DataPHA,
-                        tabStops: Optional[Union[str, list, numpy.ndarray]]) -> Union[None, numpy.ndarray]:
+                        tabStops: Optional[Union[str, list, np.ndarray]]) -> Union[None, np.ndarray]:
     """Validate the tabStops argument for the group_xxx calls.
 
     This converts from "nofilter" to numpy.zeros(nchan), where
@@ -161,7 +162,7 @@ def _check_pha_tabstops(data: DataPHA,
         # This might error out, but if so let it as it indicates a
         # user error.
         #
-        return numpy.asarray(tabStops)
+        return np.asarray(tabStops)
 
     if tabStops != "nofilter":
         raise ArgumentErr("bad", "tabStops", tabStops)
@@ -169,7 +170,7 @@ def _check_pha_tabstops(data: DataPHA,
     if data.size is None or data.size == 0:
         raise DataErr("The DataPHA object has no data")
 
-    return numpy.zeros(data.size)
+    return np.zeros(data.size)
 
 
 def _save_errorcol(session, idval, filename, bkg_id,
@@ -360,6 +361,11 @@ class Session(sherpa.ui.utils.Session):
         self._plot_types['source'].append(sherpa.astro.plot.SourcePlot())
         self._plot_types["source_component"].append(sherpa.astro.plot.ComponentSourcePlot())
 
+        self._plot_types["ratio"].append(sherpa.astro.plot.RatioPHAPlot())
+        self._plot_types["resid"].append(sherpa.astro.plot.ResidPHAPlot())
+        self._plot_types["delchi"].append(sherpa.astro.plot.DelchiPHAPlot())
+        self._plot_types["chisqr"].append(sherpa.astro.plot.ChisqrPHAPlot())
+
         self._plot_types['arf'] = [sherpa.astro.plot.ARFPlot()]
         self._plot_types['rmf'] = [sherpa.astro.plot.RMFPlot()]
         self._plot_types['order'] = [sherpa.astro.plot.OrderPlot()]
@@ -525,7 +531,7 @@ class Session(sherpa.ui.utils.Session):
                         data_str += f' {bkg_id}'
 
                     data_str += ': '
-                    if numpy.isscalar(scale):
+                    if np.isscalar(scale):
                         data_str += f'{float(scale):g}'
                     else:
                         # would like to use sherpa.utils/print_fields style output
@@ -1038,7 +1044,7 @@ class Session(sherpa.ui.utils.Session):
 
         is_pha = issubclass(dstype, DataPHA)
         if is_pha:
-            channel = numpy.arange(1, len(xlo) + 1, dtype=float)
+            channel = np.arange(1, len(xlo) + 1, dtype=float)
             args = [channel, y]
             # kwargs['bin_lo'] = xlo
             # kwargs['bin_hi'] = xhi
@@ -1712,18 +1718,18 @@ class Session(sherpa.ui.utils.Session):
         """
         try:
             return self.unpack_pha(filename, *args, **kwargs)
-        except:
+        except Exception:
             try:
                 return self.unpack_image(filename, *args, **kwargs)
-            except:
+            except Exception:
                 try:
                     return self.unpack_table(filename, *args, **kwargs)
-                except:
+                except Exception:
                     # If this errors out then so be it
                     return self.unpack_ascii(filename, *args, **kwargs)
 
     def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ',
-                               comment='#', func=numpy.average, delta=False):
+                               comment='#', func=np.average, delta=False):
         """Load an ASCII file with asymmetric errors as a data set.
 
         Parameters
@@ -1822,7 +1828,7 @@ class Session(sherpa.ui.utils.Session):
             data.elo = data.y - data.elo
             data.ehi = data.ehi - data.y
 
-        if func is numpy.average:
+        if func is np.average:
             staterror = func([data.elo, data.ehi], axis=0)
         else:
             staterror = func(data.elo, data.ehi)
@@ -1849,7 +1855,7 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        if not numpy.iterable(datasets):
+        if not np.iterable(datasets):
             self.set_data(id, datasets)
             return
 
@@ -1874,10 +1880,10 @@ class Session(sherpa.ui.utils.Session):
             ids.append(idval)
 
         if num > 1:
-            info("Multiple data sets have been input: " +
-                 "{}-{}".format(ids[0], ids[-1]))
+            info("Multiple data sets have been input: %s-%s",
+                 ids[0], ids[-1])
         else:
-            info("One data set has been input: {}".format(ids[0]))
+            info("One data set has been input: %s", ids[0])
 
     # DOC-NOTE: also in sherpa.utils without the support for
     #           multiple datasets.
@@ -3170,8 +3176,8 @@ class Session(sherpa.ui.utils.Session):
         if backscale is None:
             backscale, id = id, backscale
 
-        if numpy.iterable(backscale):
-            backscale = numpy.asarray(backscale)
+        if np.iterable(backscale):
+            backscale = np.asarray(backscale)
         elif backscale is not None:
             backscale = SherpaFloat(backscale)
 
@@ -4706,7 +4712,7 @@ class Session(sherpa.ui.utils.Session):
         #
         if d.mask is False:
             raise DataErr('notmask')
-        if not numpy.iterable(d.mask):
+        if not np.iterable(d.mask):
             raise DataErr('nomask', idval)
 
         if isinstance(d, DataPHA):
@@ -4714,7 +4720,7 @@ class Session(sherpa.ui.utils.Session):
         else:
             x = d.get_indep(filter=False)[0]
 
-        mask = numpy.asarray(d.mask, int)
+        mask = np.asarray(d.mask, int)
 
         self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
                          ascii=ascii, clobber=clobber)
@@ -7041,7 +7047,7 @@ class Session(sherpa.ui.utils.Session):
             else:
                 fstring = f"{nfilter} {data.get_xlabel()}"
 
-            info(f"dataset {idval}: {fstring}")
+            info("dataset %s: %s", idval, fstring)
 
     def get_analysis(self, id=None):
         """Return the units used when fitting spectral data.
@@ -7919,7 +7925,7 @@ class Session(sherpa.ui.utils.Session):
 
         bkgsets = self.unpack_bkg(arg, use_errors)
 
-        if numpy.iterable(bkgsets):
+        if np.iterable(bkgsets):
             for bkgid, bkg in enumerate(bkgsets):
                 self.set_bkg(id, bkg, bkgid + 1)
         else:
@@ -9516,14 +9522,14 @@ class Session(sherpa.ui.utils.Session):
             raise DataErr('normffake', id)
 
         # TODO: do we still expect to get bytes here?
-        if isinstance(rmf, (str, numpy.bytes_)):
+        if isinstance(rmf, (str, np.bytes_)):
             if not os.path.isfile(rmf):
                 raise IOErr("filenotfound", rmf)
 
             rmf = self.unpack_rmf(rmf)
 
         # TODO: do we still expect to get bytes here?
-        if isinstance(arf, (str, numpy.bytes_)):
+        if isinstance(arf, (str, np.bytes_)):
             if not os.path.isfile(arf):
                 raise IOErr("filenotfound", arf)
 
@@ -9539,7 +9545,7 @@ class Session(sherpa.ui.utils.Session):
         # is not in the error messaage).
         if rmf is None:
             rmf0 = d.get_rmf()
-        elif numpy.iterable(rmf):
+        elif np.iterable(rmf):
             rmf0 = self.unpack_rmf(rmf[0])
         else:
             rmf0 = rmf
@@ -9554,18 +9560,18 @@ class Session(sherpa.ui.utils.Session):
         # at this point, we can be sure that arf is not a string, because
         # if it was, it would have gone through load_arf already above.
         if not (rmf is None and arf is None):
-            if numpy.iterable(arf):
+            if np.iterable(arf):
                 resp_ids = range(1, len(arf) + 1)
                 self.load_multi_arfs(id, arf, resp_ids=resp_ids)
             elif arf is None:
-               # In some cases, arf is None, but rmf is not.
-               # For example, XMM/RGS does uses only a single file (the RMF)
-               # to hold all information.
-               pass
+                # In some cases, arf is None, but rmf is not.
+                # For example, XMM/RGS uses only a single file (the RMF)
+                # to hold all information.
+                pass
             else:
-               self.set_arf(id, arf)
+                self.set_arf(id, arf)
 
-            if numpy.iterable(rmf):
+            if np.iterable(rmf):
                 resp_ids = range(1, len(rmf) + 1)
                 self.load_multi_rmfs(id, rmf, resp_ids=resp_ids)
             else:
@@ -9622,7 +9628,7 @@ class Session(sherpa.ui.utils.Session):
         if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
-            except:
+            except Exception:
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
@@ -9736,12 +9742,11 @@ class Session(sherpa.ui.utils.Session):
                     if sherpa.ui.utils._is_subclass(type(part), instruments):
                         do_warning = False
                 if do_warning:
-                    warning("PHA source model '%s' \ndoes not" %
-                            model.name +
-                            " have an associated instrument model; " +
-                            "consider using \nset_source() instead of" +
-                            " set_full_model() to include associated " +
-                            "\ninstrument automatically")
+                    warning("PHA source model '%s' \ndoes not"
+                            " have an associated instrument model; "
+                            "consider using \nset_source() instead of"
+                            " set_full_model() to include associated "
+                            "\ninstrument automatically", model.name)
 
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
 
@@ -10237,10 +10242,10 @@ class Session(sherpa.ui.utils.Session):
                     do_warning = False
             if do_warning:
                 self.delete_bkg_model(id, bkg_id)
-                raise TypeError("PHA background source model '%s' \n" % model.name +
-                                " does not have an associated instrument model;" +
-                                " consider using\n set_bkg_source() instead of" +
-                                " set_bkg_model() to include associated\n instrument" +
+                raise TypeError(f"PHA background source model '{model.name}' \n"
+                                " does not have an associated instrument model;"
+                                " consider using\n set_bkg_source() instead of"
+                                " set_bkg_model() to include associated\n instrument"
                                 " automatically")
 
         self._runparamprompt(model.pars)
@@ -10343,9 +10348,9 @@ class Session(sherpa.ui.utils.Session):
         # Delete any previous model set with set_full_bkg_model()
         bkg_mdl = self._background_models.get(id, {}).pop(bkg_id, None)
         if bkg_mdl is not None:
-            warning("Clearing background convolved model\n'%s'\n" %
-                    (bkg_mdl.name) + "for dataset %s background %s" %
-                    (str(id), str(bkg_id)))
+            warning("Clearing background convolved model\n'%s'\n"
+                    "for dataset %s background %s",
+                    bkg_mdl.name, str(id), str(bkg_id))
 
     set_bkg_source = set_bkg_model
 
@@ -10410,7 +10415,7 @@ class Session(sherpa.ui.utils.Session):
         except TypeError:
             y = sherpa.astro.io.backend.get_ascii_data(filename, *args,
                                                        **kwargs)[1].pop()
-        except:
+        except Exception:
             try:
                 data = self.unpack_table(filename, *args, **kwargs)
                 x = data.get_x()
@@ -10422,7 +10427,7 @@ class Session(sherpa.ui.utils.Session):
             except TypeError:
                 y = sherpa.astro.io.backend.get_table_data(filename, *args,
                                                            **kwargs)[1].pop()
-            except:
+            except Exception:
                 # unpack_data doesn't include a call to try
                 # getting data from image, so try that here.
                 data = self.unpack_image(filename, *args, **kwargs)
@@ -10534,14 +10539,13 @@ class Session(sherpa.ui.utils.Session):
         .. note:: Deprecated in Sherpa 4.9
                   The new `load_xstable_model` routine should be used for
                   loading XSPEC table model files. Support for these files
-                  will be removed from `load_table_model` in the next
+                  will be removed from `load_table_model` in the 4.17
                   release.
 
         A table model is defined on a grid of points which is
-        interpolated onto the independent axis of the data set.  The
-        model will have at least one parameter (the amplitude, or
-        scaling factor to multiply the data by), but may have more
-        (if X-Spec table models are used).
+        interpolated onto the independent axis of the data set. The
+        model has a single parameter, ``ampl``, which is used to scale
+        the data, and it can be fixed or allowed to vary during a fit.
 
         Parameters
         ----------
@@ -10595,35 +10599,34 @@ class Session(sherpa.ui.utils.Session):
         >>> set_source('img', emap * gauss2d)
 
         """
-        tablemodel = TableModel(modelname)
-        # interpolation method
-        tablemodel.method = method
-        tablemodel.filename = filename
 
         try:
-            if not sherpa.utils.is_binary_file(filename):
-                # TODO: use a Sherpa exception
-                raise Exception("Not a FITS file")
-
             self.load_xstable_model(modelname, filename)
-            warnings.warn('Use load_xstable_model to load XSPEC table models',
-                          DeprecationWarning)
+
+            # Since users don't see DeprecationWarnings in ipython
+            # let's be explicit now, as most people are not aware of
+            # this change.
+            #
+            msg = 'Use load_xstable_model to load XSPEC table models'
+            warnings.warn(msg, DeprecationWarning)
+            warning(msg)
             return
-
         except Exception:
-            x = None
-            y = None
-            try:
-                x, y = self._read_user_model(filename, *args, **kwargs)
-            except:
-                # Fall back to reading plain ASCII, if no other
-                # more sophisticated I/O backend loaded (such as
-                # pyfits or crates) SMD 05/29/13
-                data = sherpa.io.read_data(filename, ncols=2)
-                x = data.x
-                y = data.y
-            tablemodel.load(x, y)
+            pass
 
+        x = None
+        y = None
+        try:
+            x, y = self._read_user_model(filename, *args, **kwargs)
+        except Exception:
+            data = sherpa.io.read_data(filename, ncols=2)
+            x = data.x
+            y = data.y
+
+        tablemodel = TableModel(modelname)
+        tablemodel.method = method
+        tablemodel.filename = filename
+        tablemodel.load(x, y)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
 
@@ -10773,16 +10776,18 @@ class Session(sherpa.ui.utils.Session):
             bkg_srcs = self._background_sources.get(s.idval, {})
             if s.data.subtracted:
                 if (bkg_models or bkg_srcs):
-                    warning(f'data set {repr(s.idval)} is background-subtracted; ' +
-                            'background models will be ignored')
+                    warning('data set %s is background-subtracted; '
+                            'background models will be ignored',
+                            repr(s.idval))
 
                 continue
 
             if not (bkg_models or bkg_srcs):
                 if s.data.background_ids and self._current_stat.name != 'wstat':
-                    warning(f'data set {repr(s.idval)} has associated backgrounds, ' +
-                            'but they have not been subtracted, ' +
-                            'nor have background models been set')
+                    warning('data set %s has associated backgrounds, '
+                            'but they have not been subtracted, '
+                            'nor have background models been set',
+                            repr(s.idval))
 
                 continue
 
@@ -11065,7 +11070,7 @@ class Session(sherpa.ui.utils.Session):
         if 'filter_nan' in kwargs and kwargs.pop('filter_nan'):
             for idval in ids:
                 data = self.get_data(idval)
-                data.mask &= numpy.isfinite(data.get_x())
+                data.mask &= np.isfinite(data.get_x())
 
         res = f.fit(**kwargs)
         res.datasets = ids
@@ -11379,6 +11384,74 @@ class Session(sherpa.ui.utils.Session):
         return super().get_source_component_plot(id, model=model, recalc=recalc)
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
+
+    def get_ratio_plot(self, id=None, recalc=True):
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        if isinstance(data, DataPHA):
+            plotobj = self._plot_types["ratio"][2]
+            if recalc:
+                plotobj.prepare(data, self.get_model(id), self.get_stat())
+
+            return plotobj
+
+        return super().get_ratio_plot(id, recalc=recalc)
+
+    get_ratio_plot.__doc__ = sherpa.ui.utils.Session.get_ratio_plot.__doc__
+
+    def get_resid_plot(self, id=None, recalc=True):
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        if isinstance(data, DataPHA):
+            plotobj = self._plot_types["resid"][2]
+            if recalc:
+                plotobj.prepare(data, self.get_model(id), self.get_stat())
+
+            return plotobj
+
+        return super().get_resid_plot(id, recalc=recalc)
+
+    get_resid_plot.__doc__ = sherpa.ui.utils.Session.get_resid_plot.__doc__
+
+    def get_delchi_plot(self, id=None, recalc=True):
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        if isinstance(data, DataPHA):
+            plotobj = self._plot_types["delchi"][2]
+            if recalc:
+                plotobj.prepare(data, self.get_model(id), self.get_stat())
+
+            return plotobj
+
+        return super().get_delchi_plot(id, recalc=recalc)
+
+    get_delchi_plot.__doc__ = sherpa.ui.utils.Session.get_delchi_plot.__doc__
+
+    def get_chisqr_plot(self, id=None, recalc=True):
+        if recalc:
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        if isinstance(data, DataPHA):
+            plotobj = self._plot_types["chisqr"][2]
+            if recalc:
+                plotobj.prepare(data, self.get_model(id), self.get_stat())
+
+            return plotobj
+
+        return super().get_chisqr_plot(id, recalc=recalc)
+
+    get_chisqr_plot.__doc__ = sherpa.ui.utils.Session.get_chisqr_plot.__doc__
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id=1, otherids=(), num=500, bins=25, numcores=None,
@@ -13524,25 +13597,28 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
+        # See sherpa.ui.utils.Session._jointplot2
+        #
         self._jointplot.reset()
 
         with sherpa.plot.backend:
             self._jointplot.plottop(plot1, overplot=overplot,
                                     clearwindow=clearwindow, **kwargs)
 
-            # Unlike the plot version we can assume we are dealing
-            # with histogram plots here.
+            # We know the plot types here but still use get_plot_prefs
+            # to keep the encapsulation.
             #
-            oldval = plot2.plot_prefs['xlog']
-            dprefs = plot1.dataplot.histo_prefs
-            mprefs = plot1.modelplot.histo_prefs
+            p2prefs = get_plot_prefs(plot2)
+            oldval = p2prefs['xlog']
+            dprefs = get_plot_prefs(plot1.dataplot)
+            mprefs = get_plot_prefs(plot1.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
+                p2prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
-            plot2.plot_prefs['xlog'] = oldval
+            p2prefs['xlog'] = oldval
 
     def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
                            overplot=False, clearwindow=True, **kwargs):
@@ -14694,7 +14770,7 @@ class Session(sherpa.ui.utils.Session):
         if error:
 
             def is_numpy_ndarray(arg, name, npars, dim1=None):
-                if not isinstance(arg, numpy.ndarray):
+                if not isinstance(arg, np.ndarray):
                     msg = name + ' must be of type numpy.ndarray'
                     raise IOErr(msg)
                 shape = arg.shape
@@ -14702,19 +14778,18 @@ class Session(sherpa.ui.utils.Session):
                     msg = name + ' must be 2d numpy.ndarray'
                     raise IOErr(msg)
                 if shape[0] != npars:
-                    msg = name + ' must be of dimension (%d, x)' % npars
+                    msg = name + f' must be of dimension ({npars}, x)'
                     raise IOErr(msg)
                 if dim1 is not None:
                     if shape[1] != npars:
-                        msg = name + ' must be of dimension (%d, %d)' % \
-                            (npars, npars)
+                        msg = name + f' must be of dimension ({npars}, {npars})'
                         raise IOErr(msg)
 
             _, fit = self._get_fit(id)
             fit_results = self.get_fit_results()
             parnames = fit_results.parnames
             npar = len(parnames)
-            orig_par_vals = numpy.array(fit_results.parvals)
+            orig_par_vals = np.array(fit_results.parvals)
 
             if params is None:
                 # run get_draws or normal distribution depending on fit stat
@@ -14744,7 +14819,7 @@ class Session(sherpa.ui.utils.Session):
 
             mins = fit.model._get_thawed_par_mins()
             maxs = fit.model._get_thawed_par_maxes()
-            eqw = numpy.zeros_like(params[0, :])
+            eqw = np.zeros_like(params[0, :])
             for params_index in range(len(params[0, :])):
                 for parnames_index, parname in enumerate(parnames):
                     val = params[parnames_index, params_index]
@@ -15768,7 +15843,7 @@ class Session(sherpa.ui.utils.Session):
                 else:
                     raise IOErr('filefound', outfile)
 
-            with open(outfile, 'w') as fh:
+            with open(outfile, 'w', encoding="UTF-8") as fh:
                 serialize.save_all(self, fh)
 
         else:

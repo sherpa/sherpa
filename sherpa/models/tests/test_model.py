@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2017, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,12 +34,13 @@ import numpy
 
 import pytest
 
+from sherpa.data import Data1D
 from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
     UnaryOpModel, RegridWrappedModel, modelCacher1d
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
-    Scale1D, Integrate1D, Const2D, Gauss2D, Scale2D
+    Scale1D, Integrate1D, Const2D, Gauss2D, Scale2D, Poisson
 from sherpa.utils.err import ModelErr, ParameterErr
 
 
@@ -619,7 +620,7 @@ def test_show_model():
     assert toks[3].strip().split() == ['thetestmodel.P1', 'thawed', '1', '0', '10']
     assert toks[4].strip().split() == ['thetestmodel.accent', 'frozen', '2', '0', '10']
     assert toks[5].strip().split() == ['thetestmodel.norm', 'linked', '12',
-                                       'expr:', '(10', '+', 'const1d.c0)']
+                                       'expr:', '10', '+', 'const1d.c0']
 
     # Should hidden parameters be capable of being thawed?
     assert m.notseen.val == 10
@@ -1064,8 +1065,8 @@ class DoNotUseModel(Model):
 
     # We need this for modelCacher1d
     _use_caching = True
-    _cache = {}
-    _cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
+    _cache: dict[bytes, numpy.ndarray] = {}
+    _cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
     _queue = ['']
 
     @modelCacher1d
@@ -1252,7 +1253,7 @@ def test_cache_status_multiple(caplog):
     assert toks[6] == '0'
 
 
-def test_cache_clear_single(caplog):
+def test_cache_clear_single():
     """Check cache_clear for a single model."""
 
     p = Polynom1D()
@@ -1282,7 +1283,7 @@ def test_cache_clear_single(caplog):
     assert p._cache_ctr['misses'] == 0
 
 
-def test_cache_clear_multiple(caplog):
+def test_cache_clear_multiple():
     """Check cache_clear for a combined model."""
 
     p = Polynom1D()
@@ -1630,3 +1631,507 @@ def test_model1d_cache_xhi_named():
     y3 = mdl(xlo, xhi=xhi)
     assert len(store) == 2
     assert y3 == pytest.approx(10, 10, 10)
+
+
+def test_guess_then_reset_defaults():
+    """What is meant to happen after resetting a guess?
+
+    This is mainly a regression test, to check the current behaviour.
+    """
+
+    # We create a data object just to make the calling convention
+    # "correct" / explain the setup.
+    #
+    data = Data1D("x", [1, 2, 3, 4, 5], [12, 2, 7, 3, 4])
+    mdl = Poisson()
+
+    # These will need changing if the default settings change.
+    assert mdl.mean.val == 1
+    assert mdl.mean.min == pytest.approx(1e-5)
+    assert mdl.mean.max > 3.4e38
+    assert not mdl.mean.frozen
+    assert mdl.ampl.val == 1
+    assert mdl.ampl.min < -3.4e38
+    assert mdl.ampl.max > -3.4e38
+    assert not mdl.ampl.frozen
+
+    # Internal check. This is not a user API.
+    assert not mdl.mean._guessed
+    assert not mdl.ampl._guessed
+
+    mdl.guess(*data.to_guess())
+
+    # These values will need changing if the guess logic changes.
+    assert mdl.mean.val == 1
+    assert mdl.mean.min == 1
+    assert mdl.mean.max == 5
+    assert mdl.ampl.val == 12
+    assert mdl.ampl.min == pytest.approx(0.012)
+    assert mdl.ampl.max == pytest.approx(12000)
+    assert not mdl.ampl.frozen
+
+    assert mdl.mean._guessed
+    assert mdl.ampl._guessed
+
+    mdl.reset()
+
+    assert mdl.mean.val == 1
+    assert mdl.mean.min == pytest.approx(1e-5)
+    assert mdl.mean.max > 3.4e38
+    assert not mdl.mean.frozen
+    assert mdl.ampl.val == 1
+    assert mdl.ampl.min < -3.4e38
+    assert mdl.ampl.max > -3.4e38
+    assert not mdl.ampl.frozen
+
+    assert not mdl.mean._guessed
+    assert not mdl.ampl._guessed
+
+
+def test_guess_then_reset_manual():
+    """What is meant to happen after resetting a guess after changing things?
+
+    This is mainly a regression test, to check the current behaviour.
+    """
+
+    data = Data1D("x", [1, 2, 3, 4, 5], [12, 2, 7, 3, 4])
+    mdl = Poisson()
+
+    mdl.mean.set(2, min=0.1, max=10)
+    mdl.ampl.set(2, min=1, max=3)
+
+    # Internal check. This is not a user API.
+    assert not mdl.mean._guessed
+    assert not mdl.ampl._guessed
+
+    mdl.guess(*data.to_guess())
+
+    # These values will need changing if the guess logic changes.
+    assert mdl.mean.val == 1
+    assert mdl.mean.min == 1
+    assert mdl.mean.max == 5
+    assert not mdl.mean.frozen
+    assert mdl.ampl.val == 12
+    assert mdl.ampl.min == pytest.approx(0.012)
+    assert mdl.ampl.max == pytest.approx(12000)
+    assert not mdl.ampl.frozen
+
+    assert mdl.mean._guessed
+    assert mdl.ampl._guessed
+
+    mdl.reset()
+
+    assert mdl.mean.val == 2
+    assert mdl.mean.min == pytest.approx(0.1)
+    assert mdl.mean.max == 10
+    assert not mdl.mean.frozen
+    assert mdl.ampl.val == 2
+    assert mdl.ampl.min == 1
+    assert mdl.ampl.max == 3
+    assert not mdl.ampl.frozen
+
+    assert not mdl.mean._guessed
+    assert not mdl.ampl._guessed
+
+
+def test_model_simple_pars():
+    """what do .pars/.thawedpars contain?"""
+
+    mdl = Box1D("xx")
+    mdl.xlow = -5
+    mdl.xhi = 10
+    mdl.ampl = 3
+
+    assert len(mdl.pars) == 3
+    assert mdl.pars[0].fullname == "xx.xlow"
+    assert mdl.pars[1].fullname == "xx.xhi"
+    assert mdl.pars[2].fullname == "xx.ampl"
+
+    assert len(mdl.lpars) == 0
+
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 3
+    assert tpars[0].fullname == "xx.xlow"
+    assert tpars[1].fullname == "xx.xhi"
+    assert tpars[2].fullname == "xx.ampl"
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 3
+    assert tpars[0] == -5
+    assert tpars[1] == 10
+    assert tpars[2] == 3
+
+
+def test_model_complex_pars():
+    """what do .pars/.thawedpars contain?"""
+
+    # It's not a particularly complex model
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mdl = ma * (2 + mb)
+    ma.c0 = 5
+    mb.xlow.set(2, frozen=True)
+    mb.xhi.set(3, frozen=True)
+    mb.ampl = 15
+
+    assert len(mdl.pars) == 4
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+
+    assert len(mdl.lpars) == 0
+
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 2
+    assert tpars[0].fullname == "sc.c0"
+    assert tpars[1].fullname == "xx.ampl"
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 2
+    assert tpars[0] == 5
+    assert tpars[1] == 15
+
+
+def test_model_frozen_pars():
+    """what do .pars/.thawedpars contain?"""
+
+    # This is the model from test_model_complex_pars as we want
+    # to check that frozen-ness is handled across components.
+    #
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mdl = ma * (2 + mb)
+    ma.c0 = 5
+    mb.xlow.set(2, frozen=True)
+    mb.xhi.set(3, frozen=True)
+    mb.ampl = 15
+
+    mdl.freeze()
+
+    assert len(mdl.pars) == 4
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+
+    assert len(mdl.lpars) == 0
+
+    assert mdl.get_thawed_pars() == []
+    assert mdl.thawedpars == []
+
+
+def test_model_with_links_pars():
+    """what do .pars/.thawedpars contain?"""
+
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mother = Const1D("other")
+
+    ma.c0 = 3
+    mb.xlow = 1
+    mb.xhi = 10
+    mother.c0 = 11
+
+    # Add a link in to another model unrelated to mdl
+    mdl = ma * (mb + 2)
+    mb.ampl = 2 * mother.c0
+
+    # mb.ampl is now frozen but .pars does not care
+    assert len(mdl.pars) == 4
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+
+    assert len(mdl.lpars) == 1
+    assert mdl.lpars[0].fullname == "other.c0"
+
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 4
+    assert tpars[0].fullname == "sc.c0"
+    assert tpars[1].fullname == "xx.xlow"
+    assert tpars[2].fullname == "xx.xhi"
+    assert tpars[3].fullname == "other.c0"
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 4
+    assert tpars[0] == 3
+    assert tpars[1] == 1
+    assert tpars[2] == 10
+    assert tpars[3] == 11
+
+
+def test_model_with_repeated_links1_pars():
+    """what do .pars/.thawedpars contain?
+
+    The linking parameter (mother.c0) is used to represent multiple
+    parameters just to check if it is reported multiple times.
+    Compare with test_model_with_repeated_links2_pars.
+
+    """
+
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mc = Box1D("yy")
+    mother = Const1D("other")
+
+    ma.c0 = 100
+    mb.xlow = 5
+    mb.xhi = 20
+    mc.xlow = 7
+    mc.xhi = 40
+    mc.ampl = 5
+    mother.c0 = 19
+
+    # Add links in to another model unrelated to mdl and ensure we
+    # have a repeated model component, to check how the parameters are
+    # returned.
+    #
+    mdl = ma * (mb + mc) + mb
+    mb.ampl = 2 * mother.c0
+    mc.xlow = mother.c0 - 4
+    mc.ampl.freeze()
+
+    assert len(mdl.pars) == 1 + 3 + 3 + 3
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+    assert mdl.pars[4].fullname == "yy.xlow"
+    assert mdl.pars[5].fullname == "yy.xhi"
+    assert mdl.pars[6].fullname == "yy.ampl"
+    assert mdl.pars[7].fullname == mdl.pars[1].fullname
+    assert mdl.pars[8].fullname == mdl.pars[2].fullname
+    assert mdl.pars[9].fullname == mdl.pars[3].fullname
+
+    # Note that pars 7, 8, 9 are not exact copies of 1, 2, 3
+    # but actually links.
+    #
+    assert mdl.pars[7] != mdl.pars[1]
+    assert mdl.pars[8] != mdl.pars[2]
+    assert mdl.pars[9] != mdl.pars[3]
+
+    assert mdl.pars[7].link == mdl.pars[1]
+    assert mdl.pars[8].link == mdl.pars[2]
+    assert mdl.pars[9].link == mdl.pars[3]
+
+    # Check the status (the links are frozen).
+    #
+    assert mdl.pars[0].frozen == False
+    assert mdl.pars[1].frozen == False
+    assert mdl.pars[2].frozen == False
+    assert mdl.pars[3].frozen == True
+    assert mdl.pars[4].frozen == True
+    assert mdl.pars[5].frozen == False
+    assert mdl.pars[6].frozen == True
+    assert mdl.pars[7].frozen == True  # unlike pars[1]
+    assert mdl.pars[8].frozen == True  # unlike pars[2]
+    assert mdl.pars[9].frozen == True
+
+    # Check the parameter values.
+    #
+    assert mdl.pars[0].val == 100
+    assert mdl.pars[1].val == 5
+    assert mdl.pars[2].val == 20
+    assert mdl.pars[3].val == 38
+    assert mdl.pars[4].val == 15
+    assert mdl.pars[5].val == 40
+    assert mdl.pars[6].val == 5
+    assert mdl.pars[7].val == mdl.pars[1].val
+    assert mdl.pars[8].val == mdl.pars[2].val
+    assert mdl.pars[9].val == mdl.pars[3].val
+
+    assert len(mdl.lpars) == 1
+    assert mdl.lpars[0].fullname == "other.c0"
+    assert mdl.lpars[0].frozen == False
+    assert mdl.lpars[0].link is None
+    assert mdl.lpars[0].val == 19
+
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 5
+    assert tpars[0].fullname == "sc.c0"
+    assert tpars[1].fullname == "xx.xlow"
+    assert tpars[2].fullname == "xx.xhi"
+    assert tpars[3].fullname == "yy.xhi"
+    assert tpars[4].fullname == "other.c0"
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 5
+    assert tpars[0] == 100
+    assert tpars[1] == 5
+    assert tpars[2] == 20
+    assert tpars[3] == 40
+    assert tpars[4] == 19
+
+
+def test_model_with_repeated_links2_pars():
+    """what do .pars/.thawedpars contain?
+
+    Unlike test_model_with_repeated_links1_pars we have separate
+    linking parameters.
+
+    """
+
+    ma = Const1D("sc")
+    mb = Box1D("xx")
+    mc = Box1D("yy")
+    mother1 = Const1D("other1")
+    mother2 = Const1D("other2")
+
+    ma.c0 = 100
+    mb.xlow = 5
+    mb.xhi = 20
+    mc.xlow = 7
+    mc.xhi = 40
+    mc.ampl = 5
+    mother1.c0 = 3.5
+    mother2.c0 = 19
+
+    # Add links in to another model unrelated to mdl and ensure we
+    # have a repeated model component, to check how the parameters are
+    # returned.
+    #
+    mdl = ma * (mb + mc) + mb
+    mb.ampl = 2 * mother1.c0
+    mc.xlow = mother2.c0 - 3
+    mc.ampl.freeze()
+
+    assert len(mdl.pars) == 1 + 3 + 3 + 3
+    assert mdl.pars[0].fullname == "sc.c0"
+    assert mdl.pars[1].fullname == "xx.xlow"
+    assert mdl.pars[2].fullname == "xx.xhi"
+    assert mdl.pars[3].fullname == "xx.ampl"
+    assert mdl.pars[4].fullname == "yy.xlow"
+    assert mdl.pars[5].fullname == "yy.xhi"
+    assert mdl.pars[6].fullname == "yy.ampl"
+    assert mdl.pars[7].fullname == mdl.pars[1].fullname
+    assert mdl.pars[8].fullname == mdl.pars[2].fullname
+    assert mdl.pars[9].fullname == mdl.pars[3].fullname
+
+    # Note that pars 7, 8, 9 are not exact copies of 1, 2, 3
+    # but actually links.
+    #
+    assert mdl.pars[7] != mdl.pars[1]
+    assert mdl.pars[8] != mdl.pars[2]
+    assert mdl.pars[9] != mdl.pars[3]
+
+    assert mdl.pars[7].link == mdl.pars[1]
+    assert mdl.pars[8].link == mdl.pars[2]
+    assert mdl.pars[9].link == mdl.pars[3]
+
+    # Check the status (the links are frozen).
+    #
+    assert mdl.pars[0].frozen == False
+    assert mdl.pars[1].frozen == False
+    assert mdl.pars[2].frozen == False
+    assert mdl.pars[3].frozen == True
+    assert mdl.pars[4].frozen == True
+    assert mdl.pars[5].frozen == False
+    assert mdl.pars[6].frozen == True
+    assert mdl.pars[7].frozen == True  # unlike pars[1]
+    assert mdl.pars[8].frozen == True  # unlike pars[2]
+    assert mdl.pars[9].frozen == True
+
+    # Check the parameter values.
+    #
+    assert mdl.pars[0].val == 100
+    assert mdl.pars[1].val == 5
+    assert mdl.pars[2].val == 20
+    assert mdl.pars[3].val == 7
+    assert mdl.pars[4].val == 16
+    assert mdl.pars[5].val == 40
+    assert mdl.pars[6].val == 5
+    assert mdl.pars[7].val == mdl.pars[1].val
+    assert mdl.pars[8].val == mdl.pars[2].val
+    assert mdl.pars[9].val == mdl.pars[3].val
+
+    assert len(mdl.lpars) == 2
+    assert mdl.lpars[0].fullname == "other1.c0"
+    assert mdl.lpars[0].frozen == False
+    assert mdl.lpars[0].link is None
+    assert mdl.lpars[0].val == 3.5
+    assert mdl.lpars[1].fullname == "other2.c0"
+    assert mdl.lpars[1].frozen == False
+    assert mdl.lpars[1].link is None
+    assert mdl.lpars[1].val == 19
+
+    tpars = mdl.get_thawed_pars()
+    assert len(tpars) == 6
+    assert tpars[0].fullname == "sc.c0"
+    assert tpars[1].fullname == "xx.xlow"
+    assert tpars[2].fullname == "xx.xhi"
+    assert tpars[3].fullname == "yy.xhi"
+    assert tpars[4].fullname == "other1.c0"
+    assert tpars[5].fullname == "other2.c0"
+
+    tpars = mdl.thawedpars
+    assert len(tpars) == 6
+    assert tpars[0] == 100
+    assert tpars[1] == 5
+    assert tpars[2] == 20
+    assert tpars[3] == 40
+    assert tpars[4] == 3.5
+    assert tpars[5] == 19
+
+
+def test_model_can_not_change_pars():
+    """This was changed in 4.16.1 to disallow this.
+
+    Very minimal checks as this is a basic Python feature.
+    """
+
+    # We want to check a Model and a CompositeModel.
+    #
+    mdl1 = Scale1D("a")
+    mdl2 = Box1D("b")
+    mdl = mdl2 + mdl1
+
+    # We do not check the actual error string as it could vary with
+    # Python version.
+    #
+    with pytest.raises(AttributeError):
+        mdl1.pars = ()
+
+    with pytest.raises(AttributeError):
+        mdl.pars = [Parameter("x", "y", 2)]
+
+
+def test_model_linked_par_outside_limit():
+    """What happens if a linked par is outside it's limits"""
+
+    mdl = Box1D("mdl")
+    ampl = Scale1D("ampl")
+    mdl.ampl.min = 0
+    mdl.ampl = 5 - ampl.c0
+
+    mdl.xlow = 3
+    mdl.xlow.freeze()
+    mdl.xhi = 20
+    ampl.c0 = 2
+
+    assert len(mdl.pars) == 3
+    assert len(mdl.lpars) == 1
+
+    # mdl.xhi and ampl.c0
+    assert len(mdl.thawedpars) == 2
+    assert mdl.thawedpars[0] == 20
+    assert mdl.thawedpars[1] == 2
+
+    assert mdl.xlow.val == 3
+    assert mdl.xhi.val == 20
+    assert mdl.ampl.val == 3
+    assert ampl.c0.val == 2
+
+    # ampl.c0 -> 4 means mdl.ampl -> 1
+    mdl.thawedpars = [15, 4]
+
+    assert mdl.xlow.val == 3
+    assert mdl.xhi.val == 15
+    assert mdl.ampl.val == 1
+    assert ampl.c0.val == 4
+
+    # ampl.c0 -> 6 means mdl.ampl -> -1, which is outside the min/max range
+    with pytest.raises(ParameterErr,
+                       match="parameter mdl.ampl has a minimum of 0"):
+        mdl.thawedpars = [12, 6]

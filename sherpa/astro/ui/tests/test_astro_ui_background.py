@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -173,11 +173,11 @@ def test_setup_pha1_file_models(id, make_data_path, clean_astro_ui, hide_logging
     assert ui.list_model_components() == ['bpl', 'pl']
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((1234.5 * (powlaw1d.pl + (0.5 * powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf(1234.5 * (powlaw1d.pl + 0.5 * powlaw1d.bpl)))'
     assert ui.list_model_components() == ['bpl', 'pl']
 
     bmdl = ui.get_bkg_model(id)
-    assert bmdl.name == 'apply_rmf(apply_arf((5432.1 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf(5432.1 * powlaw1d.bpl))'
     assert ui.list_model_components() == ['bpl', 'pl']
 
 
@@ -251,41 +251,31 @@ def test_setup_pha1_file_models_two(id, make_data_path, clean_astro_ui, hide_log
         ui.get_model(id)
 
     bmdl = ui.get_bkg_model(id)
-    assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf(1000.0 * powlaw1d.bpl))'
 
     ui.set_bkg_source(id, ui.polynom1d.bpl2, bkg_id=2)
 
     bmdl = ui.get_bkg_model(id, bkg_id=1)
-    assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf(1000.0 * powlaw1d.bpl))'
 
     bmdl = ui.get_bkg_model(id, bkg_id=2)
-    assert bmdl.name == 'apply_rmf(apply_arf((2000.0 * polynom1d.bpl2)))'
+    assert bmdl.name == 'apply_rmf(apply_arf(2000.0 * polynom1d.bpl2))'
 
     smdl = ui.get_model(id)
 
-    # The string representation can depend on Python version, so break
-    # it up so we can check terms separately.
-    #
     toks = smdl.name.split('(')
     assert toks[0] == 'apply_rmf'
     assert toks[1] == 'apply_arf'
-    assert toks[2] == ''
-    assert toks[3] == '100.0 * '
-    assert toks[4] == ''
-    assert toks[5] == 'powlaw1d.pl + '
+    assert toks[2] == '100.0 * '
 
-    # The scale factors here are half of the values above, as there are
-    # now two background components.
+    # The scale factors here are half of the values above, as there
+    # are now two background components. The ordering used to depend
+    # on the Python version but this should no-longer be an issue.
     #
-    x1 = '0.125 * powlaw1d.bpl)) + '
-    x2 = '0.0625 * polynom1d.bpl2)))))'
+    x1 = 'powlaw1d.pl + 0.125 * powlaw1d.bpl + 0.0625 * polynom1d.bpl2)))'
+    assert toks[3] == x1
 
-    y1 = '0.0625 * polynom1d.bpl2)) + '
-    y2 = '0.125 * powlaw1d.bpl)))))'
-
-    assert toks[6] in [x1, y1]
-    assert toks[7] in [x2, y2]
-    assert len(toks) == 8
+    assert len(toks) == 4
 
     assert ui.list_model_components() == ['bpl', 'bpl2', 'pl']
 
@@ -324,13 +314,13 @@ def test_setup_pha1_file_models_two_single(id, make_data_path, clean_astro_ui, h
     ui.set_bkg_source(id, ui.powlaw1d.bpl, bkg_id=2)
 
     bmdl = ui.get_bkg_model(id, bkg_id=1)
-    assert bmdl.name == 'apply_rmf(apply_arf((1000.0 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf(1000.0 * powlaw1d.bpl))'
 
     bmdl = ui.get_bkg_model(id, bkg_id=2)
-    assert bmdl.name == 'apply_rmf(apply_arf((2000.0 * powlaw1d.bpl)))'
+    assert bmdl.name == 'apply_rmf(apply_arf(2000.0 * powlaw1d.bpl))'
 
     smdl = ui.get_model(id)
-    assert smdl.name == 'apply_rmf(apply_arf((100.0 * (powlaw1d.pl + (0.1875 * powlaw1d.bpl)))))'
+    assert smdl.name == 'apply_rmf(apply_arf(100.0 * (powlaw1d.pl + 0.1875 * powlaw1d.bpl)))'
 
     assert ui.list_model_components() == ['bpl', 'pl']
 
@@ -746,14 +736,14 @@ def test_pha1_eval_vector_show(clean_astro_ui):
     assert ui.list_model_components() == ['bmdl1', 'smdl']
 
     bmdl = ui.get_bkg_model()
-    assert bmdl.name == 'apply_arf((1000.0 * box1d.bmdl1))'
+    assert bmdl.name == 'apply_arf(1000.0 * box1d.bmdl1)'
 
     assert ui.list_model_components() == ['bmdl1', 'smdl']
 
     smdl = ui.get_model()
 
-    src = '(apply_arf((100.0 * box1d.smdl))'
-    src += ' + (scale1 * apply_arf((100.0 * box1d.bmdl1))))'
+    src = 'apply_arf(100.0 * box1d.smdl)' + \
+        ' + scale1 * apply_arf(100.0 * box1d.bmdl1)'
 
     assert smdl.name == src
 
@@ -876,17 +866,17 @@ def test_pha1_eval_vector_show_two(clean_astro_ui):
     assert ui.list_model_components() == ['bmdl1', 'smdl']
 
     bmdl = ui.get_bkg_model()
-    assert bmdl.name == 'apply_arf((1000.0 * box1d.bmdl1))'
+    assert bmdl.name == 'apply_arf(1000.0 * box1d.bmdl1)'
 
     bmdl = ui.get_bkg_model(bkg_id=2)
-    assert bmdl.name == 'apply_arf((750.0 * box1d.bmdl1))'
+    assert bmdl.name == 'apply_arf(750.0 * box1d.bmdl1)'
 
     assert ui.list_model_components() == ['bmdl1', 'smdl']
 
     smdl = ui.get_model()
 
-    src = '(apply_arf((100.0 * box1d.smdl))'
-    src += ' + (scale1 * apply_arf((100.0 * box1d.bmdl1))))'
+    src = 'apply_arf(100.0 * box1d.smdl)' + \
+        ' + scale1 * apply_arf(100.0 * box1d.bmdl1)'
 
     assert smdl.name == src
 
@@ -934,10 +924,10 @@ def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
     assert ui.list_model_components() == ['bmdl1', 'bmdl2', 'smdl']
 
     bmdl = ui.get_bkg_model('foo')
-    assert bmdl.name == 'apply_arf((1000.0 * box1d.bmdl1))'
+    assert bmdl.name == 'apply_arf(1000.0 * box1d.bmdl1)'
 
     bmdl = ui.get_bkg_model('foo', bkg_id=2)
-    assert bmdl.name == 'apply_arf((750.0 * const1d.bmdl2))'
+    assert bmdl.name == 'apply_arf(750.0 * const1d.bmdl2)'
 
     assert ui.list_model_components() == ['bmdl1', 'bmdl2', 'smdl']
 
@@ -946,15 +936,15 @@ def test_pha1_eval_vector_show_two_separate(clean_astro_ui):
     # The ordering of this test can depend on the Python version
     # (before Python 3.7).
     #
-    src = '((apply_arf((100.0 * box1d.smdl))'
+    src = 'apply_arf(100.0 * box1d.smdl)'
 
     src1 = src
-    src1 += ' + (scalefoo_1 * apply_arf((100.0 * box1d.bmdl1))))'
-    src1 += ' + (scalefoo_2 * apply_arf((100.0 * const1d.bmdl2))))'
+    src1 += ' + scalefoo_1 * apply_arf(100.0 * box1d.bmdl1)'
+    src1 += ' + scalefoo_2 * apply_arf(100.0 * const1d.bmdl2)'
 
     src2 = src
-    src2 += ' + (scalefoo_1 * apply_arf((100.0 * const1d.bmdl2))))'
-    src2 += ' + (scalefoo_2 * apply_arf((100.0 * box1d.bmdl1))))'
+    src2 += ' + scalefoo_1 * apply_arf(100.0 * const1d.bmdl2)'
+    src2 += ' + scalefoo_2 * apply_arf(100.0 * box1d.bmdl1)'
 
     assert smdl.name in [src1, src2]
 
@@ -2100,6 +2090,7 @@ def test_fit_bkg_with_bkg_models_missing(clean_astro_ui):
     assert fres.parvals == pytest.approx([15])
 
 
+@requires_group
 @requires_data
 @requires_fits
 def test_get_bkg_stat_info(make_data_path, clean_astro_ui, caplog):

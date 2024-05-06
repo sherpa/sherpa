@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2016, 2018, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2016, 2018 - 2021, 2024
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,7 +24,6 @@ import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_pylab
 from sherpa.data import Data1D, Data1DInt
 from sherpa.models.basic import Const1D
 from sherpa.stats import Chi2DataVar
@@ -31,9 +31,8 @@ from sherpa.plot import DataPlot, ModelHistogramPlot, \
     DelchiPlot, RatioPlot, ResidPlot
 
 
-@requires_pylab
 @pytest.mark.parametrize("plottype", [DelchiPlot, RatioPlot, ResidPlot])
-def test_ignore_ylog_prefs(plottype):
+def test_ignore_ylog_prefs(plottype, requires_pylab):
     """Do the "residual" style plots ignore the ylog preference setting?"""
 
     from matplotlib import pyplot as plt
@@ -56,9 +55,8 @@ def test_ignore_ylog_prefs(plottype):
     assert ax.get_yscale() == 'linear'
 
 
-@requires_pylab
 @pytest.mark.parametrize("plottype", [DelchiPlot, RatioPlot, ResidPlot])
-def test_ignore_ylog_kwarg(plottype):
+def test_ignore_ylog_kwarg(plottype, requires_pylab):
     """Do the "residual" style plots ignore the ylog keyword argument?"""
 
     from matplotlib import pyplot as plt
@@ -79,8 +77,7 @@ def test_ignore_ylog_kwarg(plottype):
     assert ax.get_yscale() == 'linear'
 
 
-@requires_pylab
-def test_warning_dataplot_linecolor(caplog):
+def test_warning_dataplot_linecolor(caplog, requires_pylab):
     """We get a warning when using linecolor: DataPlot"""
 
     data = Data1D('tst', np.asarray([1, 2, 3]), np.asarray([10, 12, 10.5]))
@@ -93,11 +90,10 @@ def test_warning_dataplot_linecolor(caplog):
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == 'sherpa.plot.pylab_backend'
     assert lvl == logging.WARNING
-    assert msg == 'The linecolor attribute, set to mousey, is unused.'
+    assert msg == 'The linecolor attribute (mousey) is unused.'
 
 
-@requires_pylab
-def test_warning_plot_hist_linecolor(caplog):
+def test_warning_plot_hist_linecolor(caplog, requires_pylab):
     """We get a warning when using linecolor: ModelHistogramPlot"""
 
     data = Data1DInt('tst', np.asarray([1, 2, 3]),

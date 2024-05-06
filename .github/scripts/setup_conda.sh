@@ -16,7 +16,7 @@ else
 
     if [ -n "${MATPLOTLIBVER}" ]; then
         #Installed for qt-main deps which is needed for the QtAgg backend to work for matplotlib
-        #This is only an issue on stripped down systems. You can check for this issue by: 
+        #This is only an issue on stripped down systems. You can check for this issue by:
         #  ldd $CONDA_PREFIX/plugins/platforms/libqxcb.so | grep "not found"
         sudo apt-get install -q libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
    fi
@@ -42,16 +42,17 @@ fi
 
 # Figure out requested dependencies
 if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
+if [ -n "${BOKEHVER}" ]; then BOKEH="bokeh=${BOKEHVER}"; fi
 if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
 # Xspec >=12.10.1n Conda package includes wcslib & CCfits and pulls in cfitsio & fftw
 if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER}";
 fi
 
-echo "dependencies: ${MATPLOTLIB} ${NUMPY} ${FITS} ${XSPEC}"
+echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${FITS} ${XSPEC}"
 
 # Create and activate conda build environment
-conda create --yes -n build python="=${PYTHONVER}=*cpython*" pip ${MATPLOTLIB} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
+conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
 
 conda activate build
 

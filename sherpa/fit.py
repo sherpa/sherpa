@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2009, 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -276,8 +276,7 @@ class FitResults(NoNewAttributesAfterInit):
         _rstat, _qval = fit.stat.goodness_of_fit(results[2], _dof)
 
         self.succeeded = results[0]
-        self.parnames = tuple(p.fullname for p in fit.model.pars
-                              if not p.frozen)
+        self.parnames = tuple(p.fullname for p in fit.model.get_thawed_pars())
         self.parvals = tuple(results[1])
         self.istatval = init_stat
         self.statval = results[2]
@@ -424,7 +423,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
     def __init__(self, fit, results, parlist=None):
         if parlist is None:
-            parlist = [p for p in fit.model.pars if not p.frozen]
+            parlist = [p for p in fit.model.get_thawed_pars()]
 
         # TODO: Can we not just import them at the top level?  It may
         # cause an import loop.
@@ -644,8 +643,8 @@ class IterFit(NoNewAttributesAfterInit):
                 raise FitErr('noclobererr', outfile)
 
             names = ['# nfev statistic']
-            names.extend(f'{par.fullname}' for par in self.model.pars
-                         if not par.frozen)
+            names.extend(par.fullname
+                         for par in self.model.get_thawed_pars())
             self._file = open(outfile, 'w', encoding="ascii")
             print(' '.join(names), file=self._file)
 
@@ -943,12 +942,6 @@ class Fit(NoNewAttributesAfterInit):
         self.stat = stat
         self.method = method
         self.estmethod = estmethod
-        # Confidence limit code freezes one parameter
-        # at a time.  Keep a record here of which one
-        # that is, in case an exception is raised and
-        # this parameter needs to be thawed in the
-        # exception handler.
-        self.calc_thaw_indices()
         self.current_frozen = -1
 
         # The number of times that reminimization has occurred
@@ -962,11 +955,6 @@ class Fit(NoNewAttributesAfterInit):
         self._iterfit = IterFit(self.data, self.model, self.stat, self.method,
                                 itermethod_opts)
         NoNewAttributesAfterInit.__init__(self)
-
-    def calc_thaw_indices(self):
-        self.thaw_indices = \
-            tuple(i for i, par in enumerate(self.model.pars)
-                  if not par.frozen)
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -1157,8 +1145,9 @@ class Fit(NoNewAttributesAfterInit):
         output = tuple(tmp)
         # end of the gymnastics 'cause one cannot write to a tuple
 
-        # check if any parameter values are at boundaries,
-        # and warn user.
+        # Check if any parameter values are at boundaries, and warn
+        # user. This does not include any linked parameters.
+        #
         tol = np.finfo(np.float32).eps
         param_warnings = ""
         for par in self.model.pars:
@@ -1174,11 +1163,6 @@ class Fit(NoNewAttributesAfterInit):
             print(' '.join(vals), file=self._iterfit._file)
             self._iterfit._file.close()
             self._iterfit._file = None
-
-        # if a re-fit was performed with more/less thawed pars then
-        # self.thaw_indices must be re-calculated otherwise Confidence
-        # will get IndexError, see issue #342 for details
-        self.calc_thaw_indices()
 
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
@@ -1267,35 +1251,41 @@ class Fit(NoNewAttributesAfterInit):
         errors.
         """
 
+        # Since the set of thawed parameters can change during this
+        # loop we need to keep the "original" version for use.
+        #
+        thawedpars = self.model.get_thawed_pars()
+
         # Define functions to freeze and thaw a parameter before
         # we call fit function -- projection can call fit several
         # times, for each parameter -- that parameter must be frozen
         # while the others freely vary.
-        def freeze_par(pars, parmins, parmaxes, i):
+        def freeze_par(pars, parmins, parmaxes, idx):
             # Freeze the indicated parameter; return
             # its place in the list of all parameters,
             # and the current values of the parameters,
             # and the hard mins amd maxs of the parameters
-            self.model.pars[self.thaw_indices[i]].val = pars[i]
-            self.model.pars[self.thaw_indices[i]].frozen = True
-            self.current_frozen = self.thaw_indices[i]
+            thawedpars[idx].val = pars[idx]
+            thawedpars[idx].frozen = True
+            self.current_frozen = idx
+
             keep_pars = ones_like(pars)
-            keep_pars[i] = 0
+            keep_pars[idx] = 0
             current_pars = pars[where(keep_pars)]
             current_parmins = parmins[where(keep_pars)]
             current_parmaxes = parmaxes[where(keep_pars)]
             return (current_pars, current_parmins, current_parmaxes)
 
-        def thaw_par(i):
-            if i < 0:
+        def thaw_par(idx):
+            if idx < 0:
                 return
 
-            self.model.pars[self.thaw_indices[i]].frozen = False
+            thawedpars[idx].frozen = False
             self.current_frozen = -1
 
         # confidence needs to know which parameter it is working on.
-        def get_par_name(ii):
-            return self.model.pars[self.thaw_indices[ii]].fullname
+        def get_par_name(idx):
+            return thawedpars[idx].fullname
 
         # Call from a parameter estimation method, to report that
         # limits for a given parameter have been found At present (mid
@@ -1304,11 +1294,11 @@ class Fit(NoNewAttributesAfterInit):
         # the first element (otherwise there's a deprecation warning
         # from NumPy 1.25).
         #
-        def report_progress(i, lower, upper):
-            if i < 0:
+        def report_progress(idx, lower, upper):
+            if idx < 0:
                 return
 
-            name = self.model.pars[self.thaw_indices[i]].fullname
+            name = thawedpars[idx].fullname
             if isnan(lower) or isinf(lower):
                 info("%s \tlower bound: -----", name)
             else:
@@ -1339,7 +1329,7 @@ class Fit(NoNewAttributesAfterInit):
 
             # Degrees of freedom are number of data bins included
             # in fit, minus the number of thawed parameters.
-            dof = len(dep) - len(self.model.thawedpars)
+            dof = len(dep) - len(thawedpars)
             if dof < 1:
                 raise EstErr('nodegfreedom')
 
@@ -1406,7 +1396,7 @@ class Fit(NoNewAttributesAfterInit):
         # is numpars.)
         parnums = []
         if parlist is not None:
-            allpars = [p for p in self.model.pars if not p.frozen]
+            allpars = self.model.get_thawed_pars()
             for p in parlist:
                 count = 0
                 match = False
@@ -1415,11 +1405,13 @@ class Fit(NoNewAttributesAfterInit):
                         parnums.append(count)
                         match = True
                     count = count + 1
+
                 if not match:
                     raise EstErr('noparameter', p.fullname)
+
             parnums = array(parnums)
         else:
-            parlist = [p for p in self.model.pars if not p.frozen]
+            parlist = self.model.get_thawed_pars()
             parnums = arange(len(startpars))
 
         # If we are here, we are ready to try to derive confidence limits.
@@ -1497,6 +1489,7 @@ class Fit(NoNewAttributesAfterInit):
 
         for p in parlist:
             p.frozen = False
+
         self.current_frozen = -1
         self.model.thawedpars = startpars
         self.model.thawedparmins = startsoftmins

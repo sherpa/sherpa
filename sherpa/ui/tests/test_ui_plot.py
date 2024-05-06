@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -41,7 +41,6 @@ from sherpa.models import basic
 import sherpa.plot
 from sherpa.stats import Chi2Gehrels
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr, PlotErr
-from sherpa.utils.testing import requires_pylab
 
 
 _data_x = [10, 20, 40, 90]
@@ -1112,9 +1111,8 @@ def test_plot_contour_error_out_invalid(plottype, session):
         func("fooflan flim flam")
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_single(session):
+def test_plot_single(session, requires_pylab):
     """Can we call plot() with a single plot type?
 
     There's no real way to test this without a backend.
@@ -1159,9 +1157,8 @@ def test_plot_single(session):
     plt.close()
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_multiple(session):
+def test_plot_multiple(session, requires_pylab):
     """Can we call plot() with multiple plot types?
 
     Also tests out sending in a kwarg.
@@ -1215,9 +1212,8 @@ def test_plot_multiple(session):
     plt.close()
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_contour_single(session):
+def test_contour_single(session, requires_pylab):
     """Can we call contour() with a single plot type?
 
     There's no real way to test this without a backend.
@@ -1273,9 +1269,8 @@ def test_contour_single(session):
     plt.close()
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_contour_multiple(session):
+def test_contour_multiple(session, requires_pylab):
     """Can we call contour() with multiple plot types?
 
     There's no real way to test this without a backend.
@@ -1321,7 +1316,6 @@ def test_contour_multiple(session):
     plt.close()
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 @pytest.mark.parametrize("plotfunc,title,pcls",
                          [("data", "", sherpa.plot.DataContour),
@@ -1331,7 +1325,7 @@ def test_contour_multiple(session):
                           ("ratio", "Ratio of Data to Model", sherpa.plot.RatioContour),
                           ("fit", "", sherpa.plot.FitContour),
                           ("fit_resid", None, None)])
-def test_contour_xxx(plotfunc, title, pcls, session):
+def test_contour_xxx(plotfunc, title, pcls, session, requires_pylab):
     """Check we can call contour_xxx()/get_xxx_contour().
 
     There's no real way to test this without a backend.
@@ -1396,16 +1390,16 @@ def test_contour_xxx(plotfunc, title, pcls, session):
     plt.close()
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 @pytest.mark.parametrize("ctype", ["data", "model"])
-def test_get_xxx_contour_prefs_pylab(ctype, session):
+def test_get_xxx_contour_prefs_pylab(ctype, session, requires_pylab):
 
     s = session()
     p = getattr(s, f"get_{ctype}_contour_prefs")()
     assert isinstance(p, dict)
     assert p == {'xlog': False, 'ylog': False,
-                 'alpha': None, 'linewidths': None, 'colors': None}
+                 'alpha': None, 'linewidths': None, 'colors': None,
+                 'label': None, 'levels': None, 'linestyles': 'solid'}
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
@@ -1640,9 +1634,8 @@ def test_get_cdf_plot_empty(session):
         assert getattr(p, f) is None
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_cdf_replot_no_data(session):
+def test_plot_cdf_replot_no_data(session, requires_pylab):
     """what does replot=True do for plot_cdf?
 
     The code doesn't check for this evantuality,
@@ -1658,9 +1651,8 @@ def test_plot_cdf_replot_no_data(session):
         s.plot_cdf(x, replot=True)
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_cdf_replot(session):
+def test_plot_cdf_replot(session, requires_pylab):
     """what does replot=True do for plot_cdf?
 
     """
@@ -1842,9 +1834,8 @@ def test_plot_pdf(session):
     assert p.title == 'PDF: x'
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_pdf_replot_no_data(session):
+def test_plot_pdf_replot_no_data(session, requires_pylab):
     """what does replot=True do for plot_pdf?
 
     The code doesn't check for this evantuality,
@@ -1862,9 +1853,8 @@ def test_plot_pdf_replot_no_data(session):
     assert "'NoneType' has no len" in str(exc.value)
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_plot_pdf_replot(session):
+def test_plot_pdf_replot(session, requires_pylab):
     """what does replot=True do for plot_pdf?
 
     """
@@ -2374,9 +2364,8 @@ def test_get_model_component_plot_model(session):
     assert plot.title == 'Model component: const1d.gmdl'
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_pylab_plot_scatter_empty_replot(session):
+def test_pylab_plot_scatter_empty_replot(session, requires_pylab):
     """plot_scatter with replot=False and no data
 
     Just check the current behavior
@@ -2408,9 +2397,8 @@ def test_pylab_plot_scatter_empty_replot(session):
     plt.close()
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_pylab_plot_scatter(session):
+def test_pylab_plot_scatter(session, requires_pylab):
     """Simple test of plot_scatter"""
 
     from matplotlib import pyplot as plt
@@ -2445,9 +2433,8 @@ def test_pylab_plot_scatter(session):
     plt.close()
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_pylab_plot_trace_empty_replot(session):
+def test_pylab_plot_trace_empty_replot(session, requires_pylab):
     """plot_trace with replot=False and no data
 
     Just check the current behavior
@@ -2462,9 +2449,8 @@ def test_pylab_plot_trace_empty_replot(session):
         s.plot_trace(y, replot=True)
 
 
-@requires_pylab
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
-def test_pylab_plot_trace(session):
+def test_pylab_plot_trace(session, requires_pylab):
     """Simple test of plot_trace"""
 
     from matplotlib import pyplot as plt
@@ -2785,10 +2771,9 @@ def test_fit_contour_recalc(session):
     assert pm.y.min() == pm.y.max()
 
 
-@requires_pylab
 @pytest.mark.parametrize("ptype",
                          ["resid", "ratio", "delchi"])
-def test_plot_fit_xxx_pylab(ptype, clean_ui):
+def test_plot_fit_xxx_pylab(ptype, clean_ui, requires_pylab):
     """Just ensure we can create a plot_fit_xxx call."""
 
     from matplotlib import pyplot as plt
@@ -2832,10 +2817,9 @@ def test_plot_fit_xxx_pylab(ptype, clean_ui):
     assert len(axes[1].lines) == 2
 
 
-@requires_pylab
 @pytest.mark.parametrize("ptype",
                          ["resid", "ratio", "delchi"])
-def test_plot_fit_xxx_overplot_pylab(ptype, caplog, clean_ui):
+def test_plot_fit_xxx_overplot_pylab(ptype, caplog, clean_ui, requires_pylab):
     """Just ensure we can create a plot_fit_xxx(overplot=True) call."""
 
     from matplotlib import pyplot as plt
@@ -2872,9 +2856,8 @@ def test_plot_fit_xxx_overplot_pylab(ptype, caplog, clean_ui):
         assert l0[1].get_xydata() == pytest.approx(l0[3].get_xydata())
 
 
-@requires_pylab
 @pytest.mark.parametrize("idval", [None, "bob"])
-def test_plot_fit_resid_handles_data_log(idval, clean_ui):
+def test_plot_fit_resid_handles_data_log(idval, clean_ui, requires_pylab):
     """Check that log handling is correct: data=log
 
     See also test_plot_fit_resid_handles_resid_log.
@@ -2900,9 +2883,8 @@ def test_plot_fit_resid_handles_data_log(idval, clean_ui):
     assert axes[1].yaxis.get_scale() == 'linear'
 
 
-@requires_pylab
 @pytest.mark.parametrize("idval", [None, "bob"])
-def test_plot_fit_resid_handles_resid_log(idval, clean_ui):
+def test_plot_fit_resid_handles_resid_log(idval, clean_ui, requires_pylab):
     """Check that log handling is correct: resid=log
 
     We need to decide whether we want the residual setting to override
@@ -2970,3 +2952,141 @@ def test_get_foo_component_plot_recalc(session, label, idval):
     # and model values are the same).
     #
     assert plotobj.y == pytest.approx([9, 11, 12])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype,mclass,label",
+                         [("source", sherpa.plot.ComponentSourcePlot,
+                           "Source model"),
+                          ("model", sherpa.plot.ComponentModelPlot,
+                           "Model")
+                          ])
+def test_get_xxx_components_simple(session, ptype, mclass, label):
+    """Simple check of get_xxx_components
+
+    This does not require a backend
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(3, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+
+    c1.c0 = 0.5
+    c2.c0 = 2
+    c3.ampl = 4
+    c3.xhi = 100
+    c3.xlow = 7
+    s.set_source(3, c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"get_{ptype}_components_plot")
+    out = pfunc(3)
+
+    assert isinstance(out, sherpa.plot.MultiPlot)
+    assert len(out.plots) == 2
+    assert isinstance(out.plots[0], mclass)
+    assert isinstance(out.plots[1], mclass)
+
+    assert out.plots[0].x == pytest.approx([1, 10, 50])
+    assert out.plots[1].x == pytest.approx([1, 10, 50])
+
+    # This should be c1 * c2 and c1 * c3
+    assert out.plots[0].y == pytest.approx([1, 1, 1])
+    assert out.plots[1].y == pytest.approx([0, 2, 2])
+
+    assert out.plots[0].title == f"{label} component: scale1d.c1 * const1d.c2"
+    assert out.plots[1].title == f"{label} component: scale1d.c1 * box1d.c3"
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+def test_plot_xxx_components_simple_mpl(session, ptype, requires_pylab):
+    """Simple check of plot_xxx_components using matpotlib"""
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_default_id(3)
+    s.load_arrays(3, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+
+    c1.c0 = 0.5
+    c2.c0 = 2
+    c3.ampl = 4
+    c3.xhi = 100
+    c3.xlow = 7
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    pfunc()
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+
+    axes = fig.axes[0]
+    assert axes.get_xlabel() == 'x'
+    assert axes.get_ylabel() == 'y'
+    assert axes.get_title() == 'Component plot'
+
+    assert len(axes.lines) == 2
+
+    assert axes.lines[0].get_xdata() == pytest.approx([1, 10, 50])
+    assert axes.lines[1].get_xdata() == pytest.approx([1, 10, 50])
+
+    # This should be c1 * c2 and c1 * c3
+    assert axes.lines[0].get_ydata() == pytest.approx([1, 1, 1])
+    assert axes.lines[1].get_ydata() == pytest.approx([0, 2, 2])
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+def test_plot_xxx_components_simple_bokeh(session, ptype):
+    """Simple check of plot_xxx_components using bokeh"""
+
+    backend_mod = pytest.importorskip("sherpa.plot.bokeh_backend")
+    backend = backend_mod.BokehBackend()
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_plot_backend(backend)
+
+    s.set_default_id(3)
+    s.load_arrays(3, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+
+    c1.c0 = 0.5
+    c2.c0 = 2
+    c3.ampl = 4
+    c3.xhi = 100
+    c3.xlow = 7
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    pfunc()
+
+    # What to check? At the moment *very* basic (less than
+    # test_plot_xxx_components_simple_mpl).
+    #
+    fig = backend.current_fig
+    assert len(fig.children) == 1
+
+    fig0 = fig.children[0][0]
+    assert len(fig0.axis) == 2
+    assert fig0.xaxis.axis_label == "x"
+    assert fig0.yaxis.axis_label == "y"
+    assert fig0.title.text == "Component plot"
+
+    # Unlike the matplotlib case we do not check the plotted data.

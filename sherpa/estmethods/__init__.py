@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -21,24 +21,19 @@
 from itertools import chain
 import logging
 
-# Is there ever a case where multiprocessing can fail here?
-try:
-    import multiprocessing
-except ImportError:
-    pass
-
-import numpy
+import numpy as np
+from numpy.linalg import LinAlgError
 
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
     is_iterable, list_to_open_interval, mysgn, quad_coef, \
     demuller, zeroin, OutOfBoundErr, func_counter
-from sherpa.utils.parallel import multi, ncpus, process_tasks
+from sherpa.utils.parallel import multi, ncpus, context, process_tasks
 
 import sherpa.estmethods._est_funcs
 
 
 # TODO: this should not be set globally
-_ = numpy.seterr(invalid='ignore')
+_ = np.seterr(invalid='ignore')
 
 
 __all__ = ('EstNewMin', 'Covariance', 'Confidence',
@@ -357,22 +352,22 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     inv_info = None
 
     try:
-        inv_info = numpy.linalg.inv(info)
+        inv_info = np.linalg.inv(info)
 
-    except numpy.linalg.linalg.LinAlgError:
+    except LinAlgError:
         # catch the SVD exception and exit gracefully
-        inv_info = numpy.zeros_like(info)
-        inv_info[:] = numpy.nan
+        inv_info = np.zeros_like(info)
+        inv_info[:] = np.nan
 
     except:
         try:
-            inv_info = numpy.linalg.pinv(info)
-        except numpy.linalg.linalg.LinAlgError:
+            inv_info = np.linalg.pinv(info)
+        except LinAlgError:
             # catch the SVD exception and exit gracefully
-            inv_info = numpy.zeros_like(info)
-            inv_info[:] = numpy.nan
+            inv_info = np.zeros_like(info)
+            inv_info[:] = np.nan
 
-    diag = (sigma * numpy.sqrt(inv_info)).diagonal()
+    diag = (sigma * np.sqrt(inv_info)).diagonal()
 
     # limit_parnums lists the indices of the array pars, that
     # correspond to the parameters of interest.  We will pick out
@@ -388,12 +383,12 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         if pars[num] + ubound < parhardmaxes[num]:
             pass
         else:
-            ubound = numpy.nan
+            ubound = np.nan
             eflag = est_hardmax
         if pars[num] + lbound > parhardmins[num]:
             pass
         else:
-            lbound = numpy.nan
+            lbound = np.nan
             if eflag == est_hardmax:
                 eflag = est_hardminmax
             else:
@@ -402,8 +397,8 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         lower_bounds.append(lbound)
         error_flags.append(eflag)
 
-    return (numpy.array(lower_bounds), numpy.array(upper_bounds),
-            numpy.array(error_flags), 0, inv_info)
+    return (np.array(lower_bounds), np.array(upper_bounds),
+            np.array(error_flags), 0, inv_info)
 
 
 def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
@@ -457,9 +452,9 @@ def projection(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         do_parallel = False
 
     if not do_parallel:
-        lower_limits = numpy.zeros(numsearched)
-        upper_limits = numpy.zeros(numsearched)
-        eflags = numpy.zeros(numsearched, dtype=int)
+        lower_limits = np.zeros(numsearched)
+        upper_limits = np.zeros(numsearched)
+        eflags = np.zeros(numsearched, dtype=int)
         nfits = 0
         for i, pnum in enumerate(limit_parnums):
             singlebounds = func(i, pnum)
@@ -481,11 +476,11 @@ class ConfArgs:
 
     def __init__(self, xpars, smin, smax, hmin, hmax, target_stat):
         self.ith_par = 0
-        self.xpars = numpy.array(xpars, copy=True)
-        self.slimit = (numpy.array(smin, copy=True),
-                       numpy.array(smax, copy=True))
-        self.hlimit = (numpy.array(hmin, copy=True),
-                       numpy.array(hmax, copy=True))
+        self.xpars = np.array(xpars, copy=True)
+        self.slimit = (np.array(smin, copy=True),
+                       np.array(smax, copy=True))
+        self.hlimit = (np.array(hmin, copy=True),
+                       np.array(hmax, copy=True))
         self.target_stat = target_stat
 
     def __call__(self):
@@ -493,7 +488,7 @@ class ConfArgs:
                 self.target_stat)
 
     def __str__(self):
-        a2s = numpy.array2string
+        a2s = np.array2string
         msg = ''
         msg += '# smin = ' + a2s(self.slimit[0], precision=6) + '\n'
         msg += '# smax = ' + a2s(self.slimit[1], precision=6) + '\n'
@@ -611,7 +606,7 @@ class ConfBracket:
                 else:
                     x = conf_step.quad(dir, iter, step_size, base, bloginfo)
 
-                if x is None or numpy.isnan(x):
+                if x is None or np.isnan(x):
                     return ConfRootNone()
 
                 # Make sure x is not beyond the **hard** limit
@@ -807,12 +802,12 @@ class ConfStep:
         delta *= abs(self.xtrial[-1] - self.xtrial[-2])
         lastx = self.xtrial[-1]
 
-        mroot = demuller(numpy.poly1d(coeffs), lastx + delta,
+        mroot = demuller(np.poly1d(coeffs), lastx + delta,
                          lastx + 2 * delta, lastx + 3 * delta,
                          tol=1.0e-2)
 
         xroot = mroot[0][0]
-        if xroot is None or numpy.isnan(xroot):
+        if xroot is None or np.isnan(xroot):
             return self.covar(dir, iter, step_size, base)
 
         try:
@@ -821,7 +816,7 @@ class ConfStep:
         except ZeroDivisionError:
             xroot = None
 
-        if xroot is not None and not numpy.isnan(xroot) and \
+        if xroot is not None and not np.isnan(xroot) and \
            self.is_same_dir(dir, self.xtrial[-1], xroot):
             return xroot
 
@@ -1010,7 +1005,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
     except EstNewMin as e:
         raise e
     except:
-        error_scales = numpy.array(len(pars) * [est_hardminmax])
+        error_scales = np.full(len(pars), est_hardminmax)
 
     debug = False                                 # for internal use only
 
@@ -1018,7 +1013,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
                       target_stat)
 
     if 0 != verbose:
-        msg = '#\n# f' + numpy.array2string(numpy.asarray(pars), precision=6)
+        msg = '#\n# f' + np.array2string(np.asarray(pars), precision=6)
         msg += ' = %e\n' % orig_min_stat
         msg += '# sigma = %e\n' % sigma
         msg += '# target_stat = %e\n' % target_stat
@@ -1156,7 +1151,31 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
 
     """
 
-    def worker(out_q, err_q, parids, parnums, lock):
+    # See sherpa.utils.parallel for a discussion of how multiprocessing is
+    # being used to run code in parallel.
+    #
+    manager = context.Manager()
+    out_q = manager.Queue()
+    err_q = manager.Queue()
+
+    # Unlike sherpa.utils.parallel.parallel_map, these routines do use a lock
+    # for serializing screen output.
+    #
+    lock = manager.Lock()
+
+    size = len(limit_parnums)
+    parids = np.arange(size)
+
+    # if len(limit_parnums) is less than numcores, only use length number of
+    # processes
+    if size < numcores:
+        numcores = size
+
+    # group limit_parnums into numcores-worth of chunks
+    limit_parnums = np.array_split(limit_parnums, numcores)
+    parids = np.array_split(parids, numcores)
+
+    def worker(parids, parnums):
         results = []
         for parid, singleparnum in zip(parids, parnums):
             try:
@@ -1166,7 +1185,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
                 # catch the EstNewMin exception and include the exception
                 # class and the modified parameter values to the error queue.
                 # These modified parvals determine the new lower statistic.
-                # The exception class will be instaniated re-raised with the
+                # The exception class will be re-raised with the
                 # parameter values attached.  C++ Python exceptions are not
                 # picklable for use in the queue.
                 err_q.put(EstNewMin(pars))
@@ -1177,32 +1196,7 @@ def parallel_est(estfunc, limit_parnums, pars, numcores=ncpus):
 
         out_q.put(results)
 
-    # See sherpa.utils.parallel for a discussion of how multiprocessing is
-    # being used to run code in parallel.
-    #
-    manager = multiprocessing.Manager()
-    out_q = manager.Queue()
-    err_q = manager.Queue()
-
-    # Unlike sherpa.utils.parallel.parallel_map, these routines do use a lock
-    # for serializing screen output.
-    #
-    lock = manager.Lock()
-
-    size = len(limit_parnums)
-    parids = numpy.arange(size)
-
-    # if len(limit_parnums) is less than numcores, only use length number of
-    # processes
-    if size < numcores:
-        numcores = size
-
-    # group limit_parnums into numcores-worth of chunks
-    limit_parnums = numpy.array_split(limit_parnums, numcores)
-    parids = numpy.array_split(parids, numcores)
-
-    tasks = [multiprocessing.Process(target=worker,
-                                     args=(out_q, err_q, parid, parnum, lock))
+    tasks = [context.Process(target=worker, args=(parid, parnum))
              for parid, parnum in zip(parids, limit_parnums)]
 
     return run_tasks(tasks, out_q, err_q, size)

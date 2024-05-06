@@ -422,7 +422,7 @@ def test_write_rmf_fits_chandra_acis(make_data_path, tmp_path):
 
 @requires_data
 @requires_fits
-def test_write_rmf_fits_asca_sis(make_data_path, tmp_path):
+def test_write_rmf_fits_asca_sis(make_data_path, tmp_path, caplog):
     """Check we can write out an RMF as a FITS file.
 
     Use the ASCA SIS as it has a different structure to
@@ -437,7 +437,15 @@ def test_write_rmf_fits_asca_sis(make_data_path, tmp_path):
     NUMELT = 505483
 
     infile = make_data_path("sis0.rmf")
+    assert len(caplog.record_tuples) == 0
     orig = io.read_rmf(infile)
+    assert len(caplog.record_tuples) == 1
+
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == io.backend.__name__
+    assert lvl == logging.ERROR
+    assert msg.startswith("Failed to locate TLMIN keyword for F_CHAN column in RMF file '")
+    assert msg.endswith("sis0.rmf'; Update the offset value in the RMF data set to appropriate TLMIN value prior to fitting")
 
     # Unlike the ACIS case, this does not have NUMELT/GRP and
     # leave in the HDU keys to check they don't get over-written.

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2020, 2021
+#  Copyright (C) 2016, 2020, 2021, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,7 +22,10 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.utils._region import Region
+# Allow the tests to be skipped if region support is not present.
+#
+_region = pytest.importorskip("sherpa.astro.utils._region")
+Region = _region.Region
 
 
 # Use a non-rotational shape so we can swap the

@@ -24,15 +24,13 @@ jobs:
       matrix:
         include:
           - name: MacOS Full Build
-            os: macos-latest
+            os: macos-12
             python-version: "3.10"
             install-type: develop
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
             xspec-version: 12.13.1
-            # run xvfb with this display
-            display: :99
 
           - name: Linux Minimum Setup (Python 3.9)
             os: ubuntu-latest
@@ -55,6 +53,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
+            bokeh-version: 3
             xspec-version: 12.13.1
 
           - name: Linux Full Build (Python 3.10)
@@ -92,7 +91,7 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3.1.0
+      uses: actions/checkout@v4.1.1
       with:
         submodules: 'True'
 
@@ -108,6 +107,7 @@ jobs:
         NUMPYVER: ${{ matrix.numpy-version }}
         FITSBUILD: ${{ matrix.fits }}
         MATPLOTLIBVER: ${{ matrix.matplotlib-version }}
+        BOKEHVER: ${{ matrix.bokeh-version }}
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
         source .github/scripts/setup_conda.sh
@@ -119,15 +119,10 @@ jobs:
       run: |
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
-        source .github/scripts/setup_ds9.sh
+        if [ "$RUNNER_OS" != "macOS" ]; then
+          source .github/scripts/setup_ds9.sh
+        fi
         source .github/scripts/setup_xspec.sh
-
-    - name: Start Xvfb (macOS)
-      if: runner.os == 'macOS'
-      env:
-        DISPLAY: ${{ matrix.display }}
-      run: |
-        sudo /opt/X11/bin/Xvfb ${DISPLAY} -ac -screen 0 1024x768x8 &
 
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'
@@ -169,6 +164,14 @@ jobs:
         if [ -n "${XSPECVER}" ]; then XSPECTEST="-x -d"; fi
         if [ -n "${FITS}" ] ; then FITSTEST="-f ${FITS}"; fi
         smokevars="${XSPECTEST} ${FITSTEST} -v 3"
+
+        # special case the macOS build as we currently do not
+        # include DS9; as we know the XSPECVER/FITS sittings for
+        # this it is hard-coded
+        if [ "$RUNNER_OS" == "macOS" ]; then
+          smokevars="-x -f ${FITS} -v 3"
+        fi
+
         echo "** smoke test: ${smokevars}"
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
@@ -201,7 +204,7 @@ jobs:
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
-        python setup.py -q test -a "--cov sherpa --cov-report xml"
+        python setup.py -q test -a "--cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml"
 
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
@@ -210,11 +213,12 @@ jobs:
         conda activate build
         conda install -yq pytest-cov
         cd $HOME
-        sherpa_test --cov sherpa --cov-report xml
+        sherpa_test --cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml
 
     - name: upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
-        # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
-        files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ${{ github.workspace }}/coverage.xml
         verbose: true
+      

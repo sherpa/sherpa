@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021, 2022
+#  Copyright (C) 2017, 2018, 2020, 2021, 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,8 @@ from sherpa.astro.utils import do_group, expand_grouped_mask, filter_resp, \
     range_overlap_1dint
 from sherpa.data import Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.utils.err import DataErr, IOErr
-from sherpa.utils.testing import requires_data, requires_fits
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_region
 
 
 # See https://github.com/sherpa/sherpa/issues/405
@@ -569,6 +570,7 @@ def test_calc_data_sum2d_no_range_2d(data_class):
 
 
 # XFAIL: We can not use DataIMGInt here because of issue #1379
+@requires_region
 @pytest.mark.parametrize("data_class", ["img", pytest.param("imgint", marks=pytest.mark.xfail)])
 def test_calc_data_sum2d_filtered_2d(data_class):
     """Call calc_data_sum2d(data, region)"""

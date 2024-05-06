@@ -1,4 +1,4 @@
-//  Copyright (C) 2007, 2015-2018, 2019, 2020, 2021, 2022, 2023
+//  Copyright (C) 2007, 2015 - 2024
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -685,309 +685,260 @@ static PyMethodDef XSpecMethods[] = {
     (PyCFunction)get_model_data_path, METH_NOARGS, NULL },
   FCTSPEC(set_xspath_manager, set_manager_data_path),
 
-  XSPECMODELFCT_NORM( agnsed, 16 ),
-  XSPECMODELFCT_NORM( qsosed, 7 ),
+  // Start model definitions
 
-  XSPECMODELFCT_NORM( agnslim, 15 ),
+  XSPECMODELFCT_C_NORM(C_agauss, 3),               // XSagauss
+  XSPECMODELFCT_NORM(agnsed, 16),                  // XSagnsed
+  XSPECMODELFCT_NORM(agnslim, 15),                 // XSagnslim
+  XSPECMODELFCT_C_NORM(C_apec, 4),                 // XSapec
+  XSPECMODELFCT_C_NORM(C_bapec, 5),                // XSbapec
+  XSPECMODELFCT_C_NORM(C_btapec, 6),               // XSbtapec
+  XSPECMODELFCT_NORM(xsblbd, 2),                   // XSbbody
+  XSPECMODELFCT_NORM(xsbbrd, 2),                   // XSbbodyrad
+  XSPECMODELFCT_C_NORM(C_xsbexrav, 10),            // XSbexrav
+  XSPECMODELFCT_C_NORM(C_xsbexriv, 12),            // XSbexriv
+  XSPECMODELFCT_C_NORM(C_brokenPowerLaw, 4),       // XSbknpower
+  XSPECMODELFCT_C_NORM(C_broken2PowerLaw, 6),      // XSbkn2pow
+  XSPECMODELFCT_NORM(xsbmc, 4),                    // XSbmc
+  XSPECMODELFCT_NORM(xsbrms, 2),                   // XSbremss
+  XSPECMODELFCT_C_NORM(C_brnei, 7),                // XSbrnei
+  XSPECMODELFCT_C_NORM(C_bvapec, 17),              // XSbvapec
+  XSPECMODELFCT_C_NORM(C_bvrnei, 19),              // XSbvrnei
+  XSPECMODELFCT_C_NORM(C_bvtapec, 18),             // XSbvtapec
+  XSPECMODELFCT_C_NORM(C_bvvapec, 34),             // XSbvvapec
+  XSPECMODELFCT_C_NORM(C_bvvrnei, 36),             // XSbvvrnei
+  XSPECMODELFCT_C_NORM(C_bvvtapec, 35),            // XSbvvtapec
+  XSPECMODELFCT_C_NORM(C_c6mekl, 11),              // XSc6mekl
+  XSPECMODELFCT_C_NORM(C_c6pmekl, 11),             // XSc6pmekl
+  XSPECMODELFCT_C_NORM(C_c6pvmkl, 24),             // XSc6pvmkl
+  XSPECMODELFCT_C_NORM(C_c6vmekl, 24),             // XSc6vmekl
+  XSPECMODELFCT_C_NORM(C_carbatm, 4),              // XScarbatm
+  XSPECMODELFCT_NORM(cemekl, 7),                   // XScemekl
+  XSPECMODELFCT_C_NORM(C_cemVMekal, 20),           // XScevmkl
+  XSPECMODELFCT_C_NORM(C_xscflw, 6),               // XScflow
+  XSPECMODELFCT_NORM(compbb, 4),                   // XScompbb
+  XSPECMODELFCT_C_NORM(xscompmag, 9),              // XScompmag
+  XSPECMODELFCT_NORM(compls, 3),                   // XScompLS
+  XSPECMODELFCT_C_NORM(C_xscompps, 20),            // XScompPS
+  XSPECMODELFCT_NORM(compst, 3),                   // XScompST
+  XSPECMODELFCT_C_NORM(xscomptb, 7),               // XScomptb
+  XSPECMODELFCT_C_NORM(C_xscompth, 21),            // XScompth
+  XSPECMODELFCT_NORM(xstitg, 6),                   // XScompTT
+  XSPECMODELFCT_C_NORM(C_cph, 5),                  // XScph
+  XSPECMODELFCT_C_NORM(C_cplinear, 21),            // XScplinear
+  XSPECMODELFCT_C_NORM(C_cutoffPowerLaw, 3),       // XScutoffpl
+  XSPECMODELFCT_NORM(disk, 4),                     // XSdisk
+  XSPECMODELFCT_NORM(diskir, 9),                   // XSdiskir
+  XSPECMODELFCT_NORM(xsdskb, 2),                   // XSdiskbb
+  XSPECMODELFCT_C_NORM(C_diskline, 6),             // XSdiskline
+  XSPECMODELFCT_NORM(diskm, 5),                    // XSdiskm
+  XSPECMODELFCT_NORM(disko, 5),                    // XSdisko
+  XSPECMODELFCT_NORM(diskpbb, 3),                  // XSdiskpbb
+  XSPECMODELFCT_NORM(xsdiskpn, 3),                 // XSdiskpn
+  XSPECMODELFCT_NORM(eplogpar, 3),                 // XSeplogpar
+  XSPECMODELFCT_C_NORM(C_xseqpair, 21),            // XSeqpair
+  XSPECMODELFCT_C_NORM(C_xseqth, 21),              // XSeqtherm
+  XSPECMODELFCT_C_NORM(C_equil, 4),                // XSequil
+  XSPECMODELFCT_NORM(xsxpdec, 2),                  // XSexpdec
+  XSPECMODELFCT_NORM(ezdiskbb, 2),                 // XSezdiskbb
+  XSPECMODELFCT_C_NORM(C_gaussianLine, 3),         // XSgaussian
+  XSPECMODELFCT_C_NORM(C_gaussDem, 7),             // XSgadem
+  XSPECMODELFCT_C_NORM(C_gnei, 6),                 // XSgnei
+  XSPECMODELFCT_NORM(grad, 7),                     // XSgrad
+  XSPECMODELFCT_C_NORM(xsgrbcomp, 10),             // XSgrbcomp
+  XSPECMODELFCT_C_NORM(xsgrbjet, 14),              // XSgrbjet
+  XSPECMODELFCT_NORM(xsgrbm, 4),                   // XSgrbm
+  XSPECMODELFCT_C_NORM(C_hatm, 4),                 // XShatm
+  XSPECMODELFCT_NORM(jet, 16),                     // XSjet
+  XSPECMODELFCT_C_NORM(C_kerrbb, 10),              // XSkerrbb
+  XSPECMODELFCT_C_NORM(C_kerrd, 8),                // XSkerrd
+  XSPECMODELFCT_C_NORM(C_spin, 10),                // XSkerrdisk
 
-  XSPECMODELFCT_C_NORM( C_apec, 4 ),
-  XSPECMODELFCT_C_NORM( C_bapec, 5 ),
-  XSPECMODELFCT_NORM( xsblbd, 2 ),
-  XSPECMODELFCT_NORM( xsbbrd, 2 ),
-  XSPECMODELFCT_C_NORM( C_xsbexrav, 10 ),
-  XSPECMODELFCT_C_NORM( C_xsbexriv, 12 ),
-  XSPECMODELFCT_C_NORM( C_brokenPowerLaw, 4 ),
-  XSPECMODELFCT_C_NORM( C_broken2PowerLaw, 6 ),
-  XSPECMODELFCT_C_NORM( C_sirf, 10 ),
-  XSPECMODELFCT_NORM( xsbmc, 4 ),
-  XSPECMODELFCT_NORM( xsbrms, 2 ),
-  XSPECMODELFCT_C_NORM( C_brnei, 7 ),
-  XSPECMODELFCT_C_NORM( C_bvapec, 17 ),
-  XSPECMODELFCT_C_NORM( C_bvrnei, 19 ),
-  XSPECMODELFCT_C_NORM( C_c6mekl, 11 ),
-  XSPECMODELFCT_C_NORM( C_c6pmekl, 11 ),
-  XSPECMODELFCT_C_NORM( C_c6pvmkl, 24 ),
-  XSPECMODELFCT_C_NORM( C_c6vmekl, 24 ),
-  XSPECMODELFCT_NORM( cemekl, 7 ),
-  XSPECMODELFCT_C_NORM( C_cemVMekal, 20 ),
-  XSPECMODELFCT_C_NORM( C_xscflw, 6 ),
-  XSPECMODELFCT_NORM( compbb, 4 ),
-  XSPECMODELFCT_NORM( compls, 3 ),
-  XSPECMODELFCT_C_NORM( C_xscompps, 20 ),
-  XSPECMODELFCT_NORM( compst, 3 ),
-  XSPECMODELFCT_NORM( xstitg, 6 ),
-  XSPECMODELFCT_C_NORM( C_cutoffPowerLaw, 3 ),
-  XSPECMODELFCT_NORM( disk, 4 ),
-  XSPECMODELFCT_NORM( diskir, 9 ),
-  XSPECMODELFCT_NORM( xsdskb, 2 ),
-  XSPECMODELFCT_C_NORM( C_diskline, 6 ),
-  XSPECMODELFCT_NORM( diskm, 5 ),
-  XSPECMODELFCT_NORM( disko, 5 ),
-  XSPECMODELFCT_NORM( diskpbb, 3 ),
-  XSPECMODELFCT_NORM( xsdiskpn, 3 ),
-  XSPECMODELFCT_C_NORM( C_equil, 4 ),
-  XSPECMODELFCT_NORM( xsxpdec, 2 ),
-  XSPECMODELFCT_NORM( ezdiskbb, 2 ),
-  XSPECMODELFCT_C_NORM( C_gaussianLine, 3 ),
-  XSPECMODELFCT_C_NORM( C_gnei, 6 ),
-  XSPECMODELFCT_NORM( grad, 7 ),
-  XSPECMODELFCT_C_NORM( xsgrbcomp, 10 ),
-  XSPECMODELFCT_NORM( xsgrbm, 4 ),
-  XSPECMODELFCT_C_NORM( C_kerrbb, 10 ),
+  XSPECMODELFCT_CON_F77(kyconv, 12),               // XSkyconv
 
-  XSPECMODELFCT_C_NORM( C_zkerrbb, 10 ),
+  XSPECMODELFCT_NORM(kyrline, 12),                 // XSkyrline
+  XSPECMODELFCT_C_NORM(C_laor, 6),                 // XSlaor
+  XSPECMODELFCT_C_NORM(C_laor2, 8),                // XSlaor2
+  XSPECMODELFCT_C_NORM(C_logpar, 4),               // XSlogpar
+  XSPECMODELFCT_C_NORM(C_lorentzianLine, 3),       // XSlorentz
+  XSPECMODELFCT_C_NORM(C_meka, 5),                 // XSmeka
+  XSPECMODELFCT_C_NORM(C_mekal, 6),                // XSmekal
+  XSPECMODELFCT_C_NORM(C_xsmkcf, 6),               // XSmkcflow
+  XSPECMODELFCT_C_NORM(C_nei, 5),                  // XSnei
+  XSPECMODELFCT_C_NORM(C_nlapec, 4),               // XSnlapec
+  XSPECMODELFCT_C_NORM(C_npshock, 7),              // XSnpshock
+  XSPECMODELFCT_NORM(nsa, 5),                      // XSnsa
+  XSPECMODELFCT_NORM(nsagrav, 4),                  // XSnsagrav
+  XSPECMODELFCT_NORM(nsatmos, 5),                  // XSnsatmos
+  XSPECMODELFCT_C_NORM(C_nsmax, 4),                // XSnsmax
+  XSPECMODELFCT_C_NORM(C_nsmaxg, 6),               // XSnsmaxg
+  XSPECMODELFCT_C_NORM(C_nsx, 6),                  // XSnsx
+  XSPECMODELFCT_C_NORM(C_xsnteea, 16),             // XSnteea
+  XSPECMODELFCT_C_NORM(C_nthcomp, 6),              // XSnthComp
+  XSPECMODELFCT_NORM(optxagn, 14),                 // XSoptxagn
+  XSPECMODELFCT_NORM(optxagnf, 12),                // XSoptxagnf
+  XSPECMODELFCT_NORM(xspegp, 4),                   // XSpegpwrlw
+  XSPECMODELFCT_NORM(pexmon, 8),                   // XSpexmon
+  XSPECMODELFCT_C_NORM(C_xspexrav, 8),             // XSpexrav
+  XSPECMODELFCT_C_NORM(C_xspexriv, 10),            // XSpexriv
+  XSPECMODELFCT_NORM(xsp1tr, 11),                  // XSplcabs
+  XSPECMODELFCT_C_NORM(C_powerLaw, 2),             // XSpowerlaw
+  XSPECMODELFCT_NORM(xsposm, 1),                   // XSposm
+  XSPECMODELFCT_C_NORM(C_pshock, 6),               // XSpshock
+  XSPECMODELFCT_NORM(qsosed, 7),                   // XSqsosed
+  XSPECMODELFCT_C_NORM(C_raysmith, 4),             // XSraymond
+  XSPECMODELFCT_NORM(xredge, 3),                   // XSredge
+  XSPECMODELFCT_NORM(xsrefsch, 14),                // XSrefsch
+  XSPECMODELFCT_C_NORM(C_rnei, 6),                 // XSrnei
+  XSPECMODELFCT_C_NORM(C_sedov, 6),                // XSsedov
+  XSPECMODELFCT_C_NORM(C_sirf, 10),                // XSsirf
+  XSPECMODELFCT_C_NORM(slimbbmodel, 10),           // XSslimbh
+  XSPECMODELFCT_C_NORM(C_snapec, 7),               // XSsnapec
+  XSPECMODELFCT_NORM(srcut, 3),                    // XSsrcut
+  XSPECMODELFCT_NORM(sresc, 3),                    // XSsresc
+  XSPECMODELFCT_NORM(ssa, 3),                      // XSssa
+  XSPECMODELFCT_NORM(xsstep, 3),                   // XSstep
+  XSPECMODELFCT_C_NORM(C_tapec, 5),                // XStapec
+  XSPECMODELFCT_C_NORM(C_vapec, 16),               // XSvapec
+  XSPECMODELFCT_NORM(xsbrmv, 3),                   // XSvbremss
+  XSPECMODELFCT_C_NORM(C_vcph, 18),                // XSvcph
+  XSPECMODELFCT_C_NORM(C_vequil, 15),              // XSvequil
+  XSPECMODELFCT_C_NORM(C_vgaussDem, 20),           // XSvgadem
+  XSPECMODELFCT_C_NORM(C_vgnei, 18),               // XSvgnei
+  XSPECMODELFCT_C_NORM(C_vmeka, 18),               // XSvmeka
+  XSPECMODELFCT_C_NORM(C_vmekal, 19),              // XSvmekal
+  XSPECMODELFCT_C_NORM(C_xsvmcf, 19),              // XSvmcflow
+  XSPECMODELFCT_C_NORM(C_vnei, 17),                // XSvnei
+  XSPECMODELFCT_C_NORM(C_vnpshock, 19),            // XSvnpshock
+  XSPECMODELFCT_C_NORM(C_voigtLine, 4),            // XSvoigt
+  XSPECMODELFCT_C_NORM(C_vpshock, 18),             // XSvpshock
+  XSPECMODELFCT_C_NORM(C_vraysmith, 15),           // XSvraymond
+  XSPECMODELFCT_C_NORM(C_vrnei, 18),               // XSvrnei
+  XSPECMODELFCT_C_NORM(C_vsedov, 18),              // XSvsedov
+  XSPECMODELFCT_C_NORM(C_vtapec, 17),              // XSvtapec
+  XSPECMODELFCT_C_NORM(C_vvapec, 33),              // XSvvapec
+  XSPECMODELFCT_C_NORM(C_vvgnei, 35),              // XSvvgnei
+  XSPECMODELFCT_C_NORM(C_vvnei, 34),               // XSvvnei
+  XSPECMODELFCT_C_NORM(C_vvnpshock, 36),           // XSvvnpshock
+  XSPECMODELFCT_C_NORM(C_vvpshock, 35),            // XSvvpshock
+  XSPECMODELFCT_C_NORM(C_vvrnei, 35),              // XSvvrnei
+  XSPECMODELFCT_C_NORM(C_vvsedov, 35),             // XSvvsedov
+  XSPECMODELFCT_C_NORM(C_vvtapec, 34),             // XSvvtapec
+  XSPECMODELFCT_C_NORM(C_vvwDem, 37),              // XSvvwdem
+  XSPECMODELFCT_C_NORM(C_vwDem, 21),               // XSvwdem
+  XSPECMODELFCT_C_NORM(C_wDem, 8),                 // XSwdem
+  XSPECMODELFCT_C_NORM(C_zagauss, 4),              // XSzagauss
+  XSPECMODELFCT_NORM(xszbod, 3),                   // XSzbbody
+  XSPECMODELFCT_C_NORM(C_zBrokenPowerLaw, 5),      // XSzbknpower
+  XSPECMODELFCT_NORM(xszbrm, 3),                   // XSzbremss
+  XSPECMODELFCT_C_NORM(C_zcutoffPowerLaw, 4),      // XSzcutoffpl
+  XSPECMODELFCT_C_NORM(C_xszgau, 4),               // XSzgauss
+  XSPECMODELFCT_C_NORM(C_zkerrbb, 10),             // XSzkerrbb
+  XSPECMODELFCT_C_NORM(C_zLogpar, 5),              // XSzlogpar
+  XSPECMODELFCT_C_NORM(C_zpowerLaw, 3),            // XSzpowerlw
 
-  XSPECMODELFCT_C_NORM( C_kerrd, 8 ),
-  XSPECMODELFCT_C_NORM( C_spin, 10 ),
+  XSPECMODELFCT_C(C_xsabsori, 6),                  // XSabsori
+  XSPECMODELFCT_C(C_acisabs, 8),                   // XSacisabs
+  XSPECMODELFCT(xscnst, 1),                        // XSconstant
+  XSPECMODELFCT(xscabs, 1),                        // XScabs
+  XSPECMODELFCT(xscycl, 5),                        // XScyclabs
+  XSPECMODELFCT(xsdust, 2),                        // XSdust
+  XSPECMODELFCT(xsedge, 2),                        // XSedge
+  XSPECMODELFCT(xsabsc, 1),                        // XSexpabs
+  XSPECMODELFCT(xsexp, 3),                         // XSexpfac
+  XSPECMODELFCT_C(C_gaussianAbsorptionLine, 3),    // XSgabs
+  XSPECMODELFCT(xsphei, 3),                        // XSheilin
+  XSPECMODELFCT(xshecu, 2),                        // XShighecut
+  XSPECMODELFCT(xshrfl, 8),                        // XShrefl
+#ifdef XSPEC_12_12_1
+  XSPECMODELFCT_DBL(ismabs, 31),                   // XSismabs
+  XSPECMODELFCT_DBL(ismdust, 3),                   // XSismdust
+#else
+  XSPECMODELFCT(ismabs, 31),                       // XSismabs
+  XSPECMODELFCT(ismdust, 3),                       // XSismdust
+#endif
+  XSPECMODELFCT_C(C_logconst, 1),                  // XSlogconst
+  XSPECMODELFCT_C(C_log10con, 1),                  // XSlog10con
+  XSPECMODELFCT(xslyman, 4),                       // XSlyman
+  XSPECMODELFCT(xsntch, 3),                        // XSnotch
+#ifdef XSPEC_12_12_1
+  XSPECMODELFCT_DBL(olivineabs, 2),                // XSolivineabs
+#else
+  XSPECMODELFCT(olivineabs, 2),                    // XSolivineabs
+#endif
+  XSPECMODELFCT(xsabsp, 2),                        // XSpcfabs
+  XSPECMODELFCT(xsphab, 1),                        // XSphabs
+  XSPECMODELFCT(xsplab, 2),                        // XSplabs
+  XSPECMODELFCT_C(C_xspwab, 3),                    // XSpwab
+  XSPECMODELFCT(xscred, 1),                        // XSredden
+  XSPECMODELFCT(xssmdg, 4),                        // XSsmedge
+  XSPECMODELFCT_C(C_superExpCutoff, 2),            // XSspexpcut
+  XSPECMODELFCT(xsspln, 6),                        // XSspline
+  XSPECMODELFCT(xssssi, 1),                        // XSSSS_ice
+  XSPECMODELFCT_C(C_swind1, 4),                    // XSswind1
+  XSPECMODELFCT_C(C_tbabs, 1),                     // XSTBabs
+  XSPECMODELFCT_C(C_tbfeo, 4),                     // XSTBfeo
+  XSPECMODELFCT_C(C_tbgas, 2),                     // XSTBgas
+  XSPECMODELFCT_C(C_tbgrain, 6),                   // XSTBgrain
+  XSPECMODELFCT_C(C_tbvabs, 42),                   // XSTBvarabs
+  XSPECMODELFCT_C(C_tbpcf, 3),                     // XSTBpcf
+  XSPECMODELFCT_C(C_tbrel, 42),                    // XSTBrel
+  XSPECMODELFCT(xsred, 1),                         // XSuvred
+  XSPECMODELFCT(xsabsv, 18),                       // XSvarabs
+  XSPECMODELFCT(xsvphb, 18),                       // XSvphabs
+  XSPECMODELFCT(xsabsw, 1),                        // XSwabs
+  XSPECMODELFCT(xswnab, 2),                        // XSwndabs
+  XSPECMODELFCT(xsxirf, 13),                       // XSxion
+  XSPECMODELFCT_C(C_xscatmodel, 4),                // XSxscat
+  XSPECMODELFCT_C(xszbabs, 4),                     // XSzbabs
+  XSPECMODELFCT(mszdst, 4),                        // XSzdust
+  XSPECMODELFCT(xszedg, 3),                        // XSzedge
+  XSPECMODELFCT(xszhcu, 3),                        // XSzhighect
+  XSPECMODELFCT(zigm, 3),                          // XSzigm
+  XSPECMODELFCT(xszabp, 3),                        // XSzpcfabs
+  XSPECMODELFCT(xszphb, 2),                        // XSzphabs
+  XSPECMODELFCT(zxipab, 5),                        // XSzxipab
+  XSPECMODELFCT_C(C_zxipcf, 4),                    // XSzxipcf
+  XSPECMODELFCT(xszcrd, 2),                        // XSzredden
+  XSPECMODELFCT(msldst, 4),                        // XSzsmdust
+  XSPECMODELFCT_C(C_ztbabs, 2),                    // XSzTBabs
+  XSPECMODELFCT(xszvab, 19),                       // XSzvarabs
+  XSPECMODELFCT(xszvfe, 5),                        // XSzvfeabs
+  XSPECMODELFCT(xszvph, 19),                       // XSzvphabs
+  XSPECMODELFCT(xszabs, 2),                        // XSzwabs
+  XSPECMODELFCT(xszwnb, 3),                        // XSzwndabs
 
-  XSPECMODELFCT_NORM( kyrline, 12 ),
+  XSPECMODELFCT_CON(C_cflux, 3),                   // XScflux
+  XSPECMODELFCT_CON(C_clumin, 4),                  // XSclumin
+#ifdef XSPEC_12_13_0
+  XSPECMODELFCT_CON(C_cglumin, 4),                 // XScglumin
+#endif
+  XSPECMODELFCT_CON(C_cpflux, 3),                  // XScpflux
+  XSPECMODELFCT_CON(C_gsmooth, 2),                 // XSgsmooth
+  XSPECMODELFCT_CON(C_ireflct, 7),                 // XSireflect
+  XSPECMODELFCT_CON(C_kdblur, 4),                  // XSkdblur
+  XSPECMODELFCT_CON(C_kdblur2, 6),                 // XSkdblur2
+  XSPECMODELFCT_CON(C_spinconv, 7),                // XSkerrconv
+  XSPECMODELFCT_CON(C_lsmooth, 2),                 // XSlsmooth
+  XSPECMODELFCT_CON(C_PartialCovering, 1),         // XSpartcov
+  XSPECMODELFCT_CON(C_rdblur, 4),                  // XSrdblur
+  XSPECMODELFCT_CON(C_reflct, 5),                  // XSreflect
+  XSPECMODELFCT_CON(C_rfxconv, 5),                 // XSrfxconv
+  XSPECMODELFCT_CON_F77(rgsxsrc, 1),               // XSrgsxsrc
+  XSPECMODELFCT_CON(C_simpl, 3),                   // XSsimpl
+  XSPECMODELFCT_CON_F77(thcompf, 4),               // XSthcomp
+  XSPECMODELFCT_CON(C_vashift, 1),                 // XSvashift
+  XSPECMODELFCT_CON(C_vmshift, 1),                 // XSvmshift
+  XSPECMODELFCT_CON(C_xilconv, 6),                 // XSxilconv
+  XSPECMODELFCT_CON(C_zashift, 1),                 // XSzashift
+  XSPECMODELFCT_CON(C_zmshift, 1),                 // XSzmshift
 
-  XSPECMODELFCT_C_NORM( C_laor, 6 ),
-  XSPECMODELFCT_C_NORM( C_laor2, 8 ),
-  XSPECMODELFCT_C_NORM( C_lorentzianLine, 3 ),
-  XSPECMODELFCT_C_NORM( C_meka, 5 ),
-  XSPECMODELFCT_C_NORM( C_mekal, 6 ),
-  XSPECMODELFCT_C_NORM( C_xsmkcf, 6 ),
-  XSPECMODELFCT_C_NORM( C_nei, 5 ),
-  XSPECMODELFCT_C_NORM( C_nlapec, 4 ),
-  XSPECMODELFCT_C_NORM( C_npshock, 7 ),
-  XSPECMODELFCT_NORM( nsa, 5 ),
-  XSPECMODELFCT_NORM( nsagrav, 4 ),
-  XSPECMODELFCT_NORM( nsatmos, 5 ),
-  XSPECMODELFCT_C_NORM( C_nsmax, 4 ),
-  XSPECMODELFCT_C_NORM( C_xsnteea, 16 ),
-  XSPECMODELFCT_C_NORM( C_nthcomp, 6 ),
-  XSPECMODELFCT_NORM( xspegp, 4 ),
-  XSPECMODELFCT_C_NORM( C_xspexrav, 8 ),
-  XSPECMODELFCT_C_NORM( C_xspexriv, 10 ),
-  XSPECMODELFCT_NORM( xsp1tr, 11 ),
-  XSPECMODELFCT_C_NORM( C_powerLaw, 2 ),
-  XSPECMODELFCT_NORM( xsposm, 1 ),
-  XSPECMODELFCT_C_NORM( C_pshock, 6 ),
-  XSPECMODELFCT_C_NORM(C_raysmith, 4 ),
-  XSPECMODELFCT_NORM( xredge, 3 ),
-  XSPECMODELFCT_NORM( xsrefsch, 14 ),
+  XSPECMODELFCT_C_NORM(beckerwolff, 13),           // XSbwcycl
 
-  XSPECMODELFCT_C_NORM( C_sedov, 6 ),
-  XSPECMODELFCT_NORM( srcut, 3 ),
-  XSPECMODELFCT_NORM( sresc, 3 ),
-  XSPECMODELFCT_NORM( ssa, 3 ),
-  XSPECMODELFCT_NORM( xsstep, 3 ),
-
-  XSPECMODELFCT_C_NORM( C_vapec, 16 ),
-  XSPECMODELFCT_NORM( xsbrmv, 3 ),
-
-  XSPECMODELFCT_C_NORM( C_vcph, 18 ),
-
-  XSPECMODELFCT_C_NORM( C_vequil, 15 ),
-  XSPECMODELFCT_C_NORM( C_vgnei, 18 ),
-  XSPECMODELFCT_C_NORM( C_vmeka, 18 ),
-  XSPECMODELFCT_C_NORM( C_vmekal, 19 ),
-  XSPECMODELFCT_C_NORM( C_xsvmcf, 19 ),
-  XSPECMODELFCT_C_NORM( C_vnei, 17 ),
-  XSPECMODELFCT_C_NORM( C_vnpshock, 19 ),
-  XSPECMODELFCT_C_NORM( C_vpshock, 18 ),
-  XSPECMODELFCT_C_NORM( C_vraysmith, 15 ),
-  XSPECMODELFCT_C_NORM( C_vsedov, 18 ),
-  XSPECMODELFCT_NORM( xszbod, 3 ),
-
-  XSPECMODELFCT_C_NORM( C_zBrokenPowerLaw, 5 ),
-
-  XSPECMODELFCT_NORM( xszbrm, 3 ),
-  XSPECMODELFCT_C_NORM( C_zcutoffPowerLaw, 4),
-  XSPECMODELFCT_C_NORM( C_xszgau, 4 ),
-
-  XSPECMODELFCT_C_NORM( C_zLogpar, 5 ),
-
-  XSPECMODELFCT_C_NORM( C_zpowerLaw, 3 ),
-  XSPECMODELFCT_C( C_xsabsori, 6 ),
-
-  XSPECMODELFCT_C( C_acisabs, 8 ),
-
-  XSPECMODELFCT( xscnst, 1 ),
-  XSPECMODELFCT( xscabs, 1 ),
-  XSPECMODELFCT( xscycl, 5 ),
-  XSPECMODELFCT( xsdust, 2 ),
-  XSPECMODELFCT( xsedge, 2 ),
-  XSPECMODELFCT( xsabsc, 1 ),
-  XSPECMODELFCT( xsexp, 3 ),
-  XSPECMODELFCT_C( C_gaussianAbsorptionLine, 3 ),
-  XSPECMODELFCT( xshecu, 2 ),
-  XSPECMODELFCT( xshrfl, 8 ),
-  XSPECMODELFCT( xsntch, 3 ),
-  XSPECMODELFCT( xsabsp, 2 ),
-  XSPECMODELFCT( xsphab, 1 ),
-  XSPECMODELFCT( xsplab, 2 ),
-  XSPECMODELFCT_C( C_xspwab, 3 ),
-  XSPECMODELFCT( xscred, 1 ),
-  XSPECMODELFCT( xssmdg, 4 ),
-  XSPECMODELFCT_C( C_superExpCutoff, 2 ),
-  XSPECMODELFCT( xsspln, 6 ),
-  XSPECMODELFCT( xssssi, 1 ),
-
-  XSPECMODELFCT_C( C_swind1, 4 ),
-
-  XSPECMODELFCT_C( C_tbabs, 1 ),
-  XSPECMODELFCT_C( C_tbgrain, 6 ),
-  XSPECMODELFCT_C( C_tbvabs, 42 ),
-  XSPECMODELFCT( xsred, 1 ),
-  XSPECMODELFCT( xsabsv, 18 ),
-  XSPECMODELFCT( xsvphb, 18 ),
-  XSPECMODELFCT( xsabsw, 1 ),
-  XSPECMODELFCT( xswnab, 2 ),
-  XSPECMODELFCT( xsxirf, 13 ),
-  XSPECMODELFCT( mszdst, 4 ),
-  XSPECMODELFCT( xszedg, 3 ),
-  XSPECMODELFCT( xszhcu, 3 ),
-  XSPECMODELFCT( xszabp, 3 ),
-  XSPECMODELFCT( xszphb, 2 ),
-
-  XSPECMODELFCT_C( C_zxipcf, 4 ),
-
-  XSPECMODELFCT( xszcrd, 2 ),
-  XSPECMODELFCT( msldst, 4 ),
-  XSPECMODELFCT_C( C_ztbabs, 2 ),
-  XSPECMODELFCT( xszvab, 19 ),
-  XSPECMODELFCT( xszvfe, 5 ),
-  XSPECMODELFCT( xszvph, 19 ),
-  XSPECMODELFCT( xszabs, 2 ),
-  XSPECMODELFCT( xszwnb, 3 ),
-
-  XSPECMODELFCT_C_NORM( C_cph, 5 ),
-
-  XSPECMODELFCT_C_NORM( C_cplinear, 21 ),
-  XSPECMODELFCT_C_NORM( C_xseqpair, 21 ),
-  XSPECMODELFCT_C_NORM( C_xseqth, 21 ),
-  XSPECMODELFCT_C_NORM( C_xscompth, 21 ),
-  XSPECMODELFCT_C_NORM( C_bvvapec, 34 ),
-  XSPECMODELFCT_C_NORM( C_vvapec, 33 ),
-  XSPECMODELFCT_C_NORM( C_bvvrnei, 36 ),
-  XSPECMODELFCT( zigm, 3 ),
-  // New XSPEC 12.7.1 models
-  XSPECMODELFCT_C_NORM( C_gaussDem, 7 ),
-  XSPECMODELFCT_C_NORM( C_vgaussDem, 20 ),
-  XSPECMODELFCT_NORM( eplogpar, 3 ),
-  XSPECMODELFCT_C_NORM( C_logpar, 4 ),
-  XSPECMODELFCT_NORM( optxagn, 14 ),
-  XSPECMODELFCT_NORM( optxagnf, 12 ),
-  XSPECMODELFCT_NORM( pexmon, 8 ),
-
-  // Models from 12.8.0, 12.8.1, and 12.8.2
-  //
-  // additive
-  XSPECMODELFCT_C_NORM( C_agauss, 3 ),
-  XSPECMODELFCT_C_NORM( C_zagauss, 4 ),
-  XSPECMODELFCT_C_NORM( xscompmag, 9 ), // DJB thinks it's okay to use the C++ wrapper for C
-  XSPECMODELFCT_C_NORM( xscomptb, 7 ), // DJB thinks it's okay to use the C++ wrapper for C
-
-  XSPECMODELFCT_C_NORM( C_nsmaxg, 6 ),
-  XSPECMODELFCT_C_NORM( C_nsx, 6 ),
-
-  XSPECMODELFCT_C_NORM( C_rnei, 6 ),
-  XSPECMODELFCT_C_NORM( C_vrnei, 18 ),
-  XSPECMODELFCT_C_NORM( C_vvrnei, 35 ),
-  XSPECMODELFCT_C_NORM( C_vvgnei, 35 ),
-  XSPECMODELFCT_C_NORM( C_vvnei, 34 ),
-  XSPECMODELFCT_C_NORM( C_vvnpshock, 36 ),
-  XSPECMODELFCT_C_NORM( C_vvpshock, 35 ),
-  XSPECMODELFCT_C_NORM( C_vvsedov, 35 ),
-
-  // We do not have a direct interface to the c_func routines, so
-  // take advantage of the fact XSPEC provides multiple APIs
-  // and use the C one.
-  // XSPECMODELFCT_C_NORM( c_beckerwolff, 13 ),
-  XSPECMODELFCT_C_NORM( beckerwolff, 13 ),
-
-  //multiplicative
-  XSPECMODELFCT( xsphei, 3 ),
-  XSPECMODELFCT( xslyman, 4 ),
-  XSPECMODELFCT_C( xszbabs, 4 ), // DJB thinks it's okay to use the C++ wrapper for C
+  // End model definitions
 
   // XSPEC table models
   KWSPEC(tabint, sherpa::astro::xspec::xspectablemodel),
-
-  // XSPEC convolution models
-  XSPECMODELFCT_CON(C_cflux, 3),
-  XSPECMODELFCT_CON(C_cpflux, 3),
-
-  XSPECMODELFCT_CON(C_gsmooth, 2),
-
-  XSPECMODELFCT_CON(C_ireflct, 7),
-  XSPECMODELFCT_CON(C_kdblur, 4),
-  XSPECMODELFCT_CON(C_kdblur2, 6),
-  XSPECMODELFCT_CON(C_spinconv, 7),
-
-  XSPECMODELFCT_CON_F77(kyconv, 12),
-
-  XSPECMODELFCT_CON(C_lsmooth, 2),
-
-  XSPECMODELFCT_CON(C_PartialCovering, 1),
-  XSPECMODELFCT_CON(C_rdblur, 4),
-  XSPECMODELFCT_CON(C_reflct, 5),
-
-  XSPECMODELFCT_CON_F77(rgsxsrc, 1),
-  XSPECMODELFCT_CON(C_simpl, 3),
-  XSPECMODELFCT_CON(C_zashift, 1),
-  XSPECMODELFCT_CON(C_zmshift, 1),
-
-  XSPECMODELFCT_CON_F77(thcompf, 4),
-
-  // Models from 12.9.1
-  //
-  //
-  XSPECMODELFCT_C_NORM(C_btapec, 6),
-  XSPECMODELFCT_C_NORM(C_bvtapec, 18),
-  XSPECMODELFCT_C_NORM(C_bvvtapec, 35),
-  XSPECMODELFCT_C_NORM(C_tapec, 5),
-  XSPECMODELFCT_C_NORM(C_vtapec, 17),
-  XSPECMODELFCT_C_NORM(C_vvtapec, 34),
-
-  XSPECMODELFCT_C_NORM(C_carbatm, 4),
-  XSPECMODELFCT_C_NORM(C_hatm, 4),
-
-#ifdef XSPEC_12_12_1
-  XSPECMODELFCT_DBL(ismabs, 31),
-#else
-  XSPECMODELFCT(ismabs, 31),
-#endif
-
-  XSPECMODELFCT_C_NORM(slimbbmodel, 10),
-  XSPECMODELFCT_C_NORM(C_snapec, 7),
-  XSPECMODELFCT_C(C_tbfeo, 4),
-  XSPECMODELFCT_C(C_tbgas, 2),
-  XSPECMODELFCT_C(C_tbpcf, 3),
-  XSPECMODELFCT_C(C_tbrel, 42),
-  XSPECMODELFCT_C_NORM(C_voigtLine, 4),
-  XSPECMODELFCT_C(C_xscatmodel, 4),
-
-  XSPECMODELFCT_CON(C_clumin, 4),
-#ifdef XSPEC_12_13_0
-  XSPECMODELFCT_CON(C_cglumin, 4),
-#endif
-  XSPECMODELFCT_CON(C_rfxconv, 5),
-  XSPECMODELFCT_CON(C_vashift, 1),
-  XSPECMODELFCT_CON(C_vmshift, 1),
-  XSPECMODELFCT_CON(C_xilconv, 6),
-
-  XSPECMODELFCT_NORM(jet, 16),
-
-#ifdef XSPEC_12_12_1
-  XSPECMODELFCT_DBL(ismdust, 3),
-  XSPECMODELFCT_DBL(olivineabs, 2),
-#else
-  XSPECMODELFCT(ismdust, 3),
-  XSPECMODELFCT(olivineabs, 2),
-#endif // XSPEC_12_12_1
-
-  XSPECMODELFCT_C(C_logconst, 1),
-  XSPECMODELFCT_C(C_log10con, 1),
-
-  XSPECMODELFCT_C_NORM( xsgrbjet, 14 ),  // follow xsgrbcomp and drop the leading c_
-  XSPECMODELFCT_C_NORM( C_vvwDem, 37 ),
-  XSPECMODELFCT_C_NORM( C_vwDem, 21 ),
-  XSPECMODELFCT_C_NORM( C_wDem, 8 ),
-
-  XSPECMODELFCT(zxipab, 5),
 
   { NULL, NULL, 0, NULL }
 

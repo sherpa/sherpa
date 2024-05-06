@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -28,9 +28,9 @@ import logging
 import os
 import pickle
 import sys
-from typing import Union
+from typing import Callable, Optional, Union
 
-import numpy
+import numpy as np
 
 from sherpa import get_config
 import sherpa.all
@@ -40,7 +40,7 @@ from sherpa.models.basic import TableModel
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
-from sherpa.plot import set_backend
+from sherpa.plot import Plot, MultiPlot, set_backend
 from sherpa.utils import NoNewAttributesAfterInit, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -54,14 +54,18 @@ warning = logging.getLogger(__name__).warning
 config = ConfigParser()
 config.read(get_config())
 
-numpy.set_printoptions(threshold=int(config.get('verbosity',
-                                                'arraylength',
-                                                fallback=1000000)))
+np.set_printoptions(threshold=int(config.get('verbosity',
+                                             'arraylength',
+                                             fallback=1000000)))
 
 __all__ = ('ModelWrapper', 'Session')
 
 BUILTINS = sys.modules["builtins"]
 _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
+
+
+IdType = Union[int, str]
+ModelType = Union[Model, str]
 
 
 ###############################################################################
@@ -87,7 +91,7 @@ def _check_str_type(arg: str, argname: str) -> None:
 
 
 def _is_integer(val):
-    return isinstance(val, (int, numpy.integer))
+    return isinstance(val, (int, np.integer))
 
 
 def _is_str(val):
@@ -331,7 +335,7 @@ def reduce_ufunc(func):
 
 
 copy_reg.constructor(construct_ufunc)
-copy_reg.pickle(numpy.ufunc, reduce_ufunc)
+copy_reg.pickle(np.ufunc, reduce_ufunc)
 
 
 ###############################################################################
@@ -408,9 +412,9 @@ def read_template_model(modelname, templatefile,
             parnames.remove(name)
             continue
 
-        parvals.append(numpy.array(col, dtype=SherpaFloat))
+        parvals.append(np.array(col, dtype=SherpaFloat))
 
-    parvals = numpy.asarray(parvals).T
+    parvals = np.asarray(parvals).T
 
     if len(parvals) == 0:
         raise IOErr("noparamcols", templatefile)
@@ -437,7 +441,7 @@ def read_template_model(modelname, templatefile,
         tm.ampl.freeze()
         templates.append(tm)
 
-    assert(len(templates) == parvals.shape[0])
+    assert len(templates) == parvals.shape[0]
 
     return create_template_model(modelname, parnames, parvals,
                                  templates,
@@ -613,11 +617,11 @@ def set_dep(data, val):
 
     """
 
-    if numpy.iterable(val):
-        dep = numpy.asarray(val, SherpaFloat)
+    if np.iterable(val):
+        dep = np.asarray(val, SherpaFloat)
     else:
         val = SherpaFloat(val)
-        dep = numpy.array([val] * data.size)
+        dep = np.array([val] * data.size)
 
     data.dep = dep
 
@@ -645,15 +649,15 @@ def set_error(data, field, val, fractional=False):
     if val is None:
         err = None
 
-    elif numpy.iterable(val):
-        err = numpy.asarray(val, SherpaFloat)
+    elif np.iterable(val):
+        err = np.asarray(val, SherpaFloat)
 
     else:
         val = SherpaFloat(val)
         if sherpa.utils.bool_cast(fractional):
             err = val * data.get_dep()
         else:
-            err = numpy.array([val] * data.size)
+            err = np.array([val] * data.size)
 
     setattr(data, field, err)
 
@@ -678,7 +682,7 @@ def set_filter(data, val, ignore=False):
 
     """
 
-    val = numpy.asarray(val, dtype=numpy.bool_)
+    val = np.asarray(val, dtype=np.bool_)
     nval = len(val)
 
     # Note that we do not use data.size as the check, as that fails
@@ -686,7 +690,7 @@ def set_filter(data, val, ignore=False):
     # size" value?
     #
     nexp = len(data.get_y(False))
-    if numpy.iterable(data.mask):
+    if np.iterable(data.mask):
         if nexp != nval:
             raise sherpa.utils.err.DataErr('mismatchn', 'data', 'filter',
                                            nexp, nval)
@@ -710,9 +714,27 @@ def set_filter(data, val, ignore=False):
 class FitStore:
     """Store per-dataset information for a fit"""
 
-    idval : Union[int, str]
+    idval : IdType
     data : Data
     model : Model
+
+
+def get_components_helper(getfunc: Callable[..., Plot],
+                          model: Model,
+                          idval: Union[int, str]) -> MultiPlot:
+    """Handle get_source/model_components_plot.
+
+    Iterate through each term in the source model.
+    """
+
+    out = MultiPlot()
+    cpts = sherpa.models.model.model_deconstruct(model)
+    for cpt in cpts:
+        plotobj = getfunc(id=idval, model=cpt, recalc=True)
+        out.add(plotobj)
+
+    out.title = "Component plot"
+    return out
 
 
 ###############################################################################
@@ -729,7 +751,7 @@ class Session(NoNewAttributesAfterInit):
     def __init__(self):
         self.clean()
         self._model_types = {}
-        self._model_globals = numpy.__dict__.copy()
+        self._model_globals = np.__dict__.copy()
         NoNewAttributesAfterInit.__init__(self)
         global _session
         _session = self
@@ -740,7 +762,7 @@ class Session(NoNewAttributesAfterInit):
         return state
 
     def __setstate__(self, state):
-        self._model_globals = numpy.__dict__.copy()
+        self._model_globals = np.__dict__.copy()
 
         self._model_globals.update(state['_model_types'])
 
@@ -928,13 +950,15 @@ class Session(NoNewAttributesAfterInit):
             'data': [sherpa.plot.DataPlot(), sherpa.plot.DataHistogramPlot()],
             'model': [sherpa.plot.ModelPlot(), sherpa.plot.ModelHistogramPlot()],
             'model_component': [sherpa.plot.ComponentModelPlot(), sherpa.plot.ComponentModelHistogramPlot()],
+            'model_components': [sherpa.plot.MultiPlot()],
             'source': [sherpa.plot.SourcePlot(), sherpa.plot.SourceHistogramPlot()],
             'source_component': [sherpa.plot.ComponentSourcePlot(), sherpa.plot.ComponentSourceHistogramPlot()],
+            'source_components': [sherpa.plot.MultiPlot()],
             'fit': [sherpa.plot.FitPlot()],
-            'resid': [sherpa.plot.ResidPlot()],
-            'ratio': [sherpa.plot.RatioPlot()],
-            'delchi': [sherpa.plot.DelchiPlot()],
-            'chisqr': [sherpa.plot.ChisqrPlot()],
+            'resid': [sherpa.plot.ResidPlot(), sherpa.plot.ResidHistogramPlot()],
+            'ratio': [sherpa.plot.RatioPlot(), sherpa.plot.RatioHistogramPlot()],
+            'delchi': [sherpa.plot.DelchiPlot(), sherpa.plot.DelchiHistogramPlot()],
+            'chisqr': [sherpa.plot.ChisqrPlot(), sherpa.plot.ChisqrHistogramPlot()],
             'psf': [sherpa.plot.PSFPlot()],
             'kernel': [sherpa.plot.PSFKernelPlot()]
         }
@@ -1036,8 +1060,8 @@ class Session(NoNewAttributesAfterInit):
         """
 
         if rng is not None and not isinstance(rng,
-                                              (numpy.random.Generator,
-                                               numpy.random.RandomState)):
+                                              (np.random.Generator,
+                                               np.random.RandomState)):
             # Do not include RandomState in the error message as it is
             # really meant for testing/old code.
             raise ArgumentTypeErr("badarg", "rng", "a Generator or None")
@@ -1208,7 +1232,7 @@ class Session(NoNewAttributesAfterInit):
             ids = [self._fix_id(id)]
         for id in ids:
             data_str += 'Data Set: %s\n' % id
-            data_str += self.get_data(id).__str__() + '\n\n'
+            data_str += str(self.get_data(id)) + '\n\n'
         return data_str
 
     def _get_show_filter(self, id=None):
@@ -1230,7 +1254,7 @@ class Session(NoNewAttributesAfterInit):
         for id in ids:
             if id in mdl_ids:
                 model_str += 'Model: %s\n' % id
-                model_str += self.get_model(id).__str__() + '\n\n'
+                model_str += str(self.get_model(id)) + '\n\n'
         return model_str
 
     def _get_show_source(self, id=None):
@@ -1242,7 +1266,7 @@ class Session(NoNewAttributesAfterInit):
         for id in ids:
             if id in src_ids:
                 model_str += 'Model: %s\n' % id
-                model_str += self.get_source(id).__str__() + '\n\n'
+                model_str += str(self.get_source(id)) + '\n\n'
         return model_str
 
     def _get_show_kernel(self, id=None):
@@ -1254,7 +1278,7 @@ class Session(NoNewAttributesAfterInit):
             if id in self._psf.keys():
                 kernel_str += 'PSF Kernel: %s\n' % id
                 # Show the PSF parameters
-                kernel_str += self.get_psf(id).__str__() + '\n\n'
+                kernel_str += str(self.get_psf(id)) + '\n\n'
         return kernel_str
 
     def _get_show_psf(self, id=None):
@@ -1266,18 +1290,18 @@ class Session(NoNewAttributesAfterInit):
             if id in self._psf.keys():
                 psf_str += 'PSF Model: %s\n' % id
                 # Show the PSF dataset or PSF model
-                psf_str += self.get_psf(id).kernel.__str__() + '\n\n'
+                psf_str += str(self.get_psf(id).kernel) + '\n\n'
         return psf_str
 
     def _get_show_method(self):
         return ('Optimization Method: %s\n%s\n' %
                 (type(self._current_method).__name__,
-                 self._current_method.__str__()))
+                 str(self._current_method)))
 
     def _get_show_stat(self):
         return ('Statistic: %s\n%s\n' %
                 (type(self._current_stat).__name__,
-                 self._current_stat.__str__()))
+                 str(self._current_stat)))
 
     def _get_show_fit(self):
         if self._fit_results is None:
@@ -2018,7 +2042,8 @@ class Session(NoNewAttributesAfterInit):
         # use the logger interface instead. It does mean that the
         # message will be repeated each time it is used.
         #
-        warning(f"The argument '{plottype}' is deprecated and '{answer}' should be used instead")
+        warning("The argument '%s' is deprecated and "
+                "'%s' should be used instead", plottype, answer)
         return answer
 
     def _check_plottype(self, plottype):
@@ -2053,7 +2078,7 @@ class Session(NoNewAttributesAfterInit):
         _check_type(item, itemtype, itemname, itemdesc)
         itemdict[id] = item
 
-    def get_default_id(self):
+    def get_default_id(self) -> IdType:
         """Return the default data set identifier.
 
         The Sherpa data id ties data, model, fit, and plotting
@@ -5123,11 +5148,11 @@ class Session(NoNewAttributesAfterInit):
 
         if d.mask is False:
             raise sherpa.utils.err.DataErr('notmask')
-        if not numpy.iterable(d.mask):
+        if not np.iterable(d.mask):
             raise sherpa.utils.err.DataErr('nomask', id)
 
         x = d.get_indep(filter=False)[0]
-        mask = numpy.asarray(d.mask, int)
+        mask = np.asarray(d.mask, int)
         self.save_arrays(filename, [x, mask], fields=['X', 'FILTER'],
                          clobber=clobber, sep=sep, comment=comment,
                          linebreak=linebreak, format=format)
@@ -5510,7 +5535,7 @@ class Session(NoNewAttributesAfterInit):
             raise IdentifierErr("nodatasets")
 
         # TODO: do we still expect to get bytes here?
-        if lo is not None and isinstance(lo, (str, numpy.bytes_)):
+        if lo is not None and isinstance(lo, (str, np.bytes_)):
             return self._notice_expr(lo, **kwargs)
 
         # Jump through the data sets in "order".
@@ -5730,7 +5755,7 @@ class Session(NoNewAttributesAfterInit):
                                       'an identifier or list of identifiers') from None
 
         # TODO: do we still expect to get bytes here?
-        if lo is not None and isinstance(lo, (str, numpy.bytes_)):
+        if lo is not None and isinstance(lo, (str, np.bytes_)):
             return self._notice_expr_id(ids, lo, **kwargs)
 
         # Unlike notice() we do not sort the id list as this
@@ -5968,8 +5993,8 @@ class Session(NoNewAttributesAfterInit):
         name = modelclass.__name__.lower()
 
         if not _is_subclass(modelclass, sherpa.models.ArithmeticModel):
-            raise TypeError("model class '%s' is not a derived class" % name +
-                            " from sherpa.models.ArithmeticModel")
+            raise TypeError(f"model class '{name}' is not a derived class "
+                            "from sherpa.models.ArithmeticModel")
 
         self._model_types[name] = ModelWrapper(self, modelclass, args, kwargs)
         self._model_globals.update(self._model_types)
@@ -6487,7 +6512,7 @@ class Session(NoNewAttributesAfterInit):
         except Exception as exc:
             raise ArgumentErr('badexpr', typestr, sys.exc_info()[1]) from exc
 
-    def list_model_ids(self):
+    def list_model_ids(self) -> list[IdType]:
         """List of all the data sets with a source expression.
 
         Returns
@@ -6675,7 +6700,7 @@ class Session(NoNewAttributesAfterInit):
                 ntokens = len(tokens)
 
                 if ntokens > 3:
-                    info("Error: Please provide a comma-separated " +
+                    info("Error: Please provide a comma-separated "
                          "list of floats; e.g. val,min,max")
                     continue
 
@@ -6683,21 +6708,21 @@ class Session(NoNewAttributesAfterInit):
                     try:
                         val = float(tokens[0])
                     except Exception as e:
-                        info(f"Please provide a float value; {e}")
+                        info("Please provide a float value; %s", e)
                         continue
 
                 if ntokens > 1 and tokens[1] != '':
                     try:
                         minval = float(tokens[1])
                     except Exception as e:
-                        info(f"Please provide a float value; {e}")
+                        info("Please provide a float value; %s", e)
                         continue
 
                 if ntokens > 2 and tokens[2] != '':
                     try:
                         maxval = float(tokens[2])
                     except Exception as e:
-                        info(f"Please provide a float value; {e}")
+                        info("Please provide a float value; %s", e)
                         continue
 
                 try:
@@ -6950,7 +6975,7 @@ class Session(NoNewAttributesAfterInit):
         self._models.pop(id, None)
         self._sources.pop(id, None)
 
-    def _check_model(self, model):
+    def _check_model(self, model: ModelType) -> Model:
         """Return a Model instance.
 
         Converts a string to the model instance if necessary.
@@ -6972,10 +6997,12 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if _is_str(model):
-            model = self._eval_model_expression(model)
-        _check_type(model, Model, 'model',
+            mdl = self._eval_model_expression(model)
+        else:
+            mdl = model
+        _check_type(mdl, Model, 'model',
                     'a model object or model expression string')
-        return model
+        return mdl
 
     def get_model_type(self, model):
         """Describe a model expression.
@@ -7023,8 +7050,12 @@ class Session(NoNewAttributesAfterInit):
         model = self._check_model(model)
         return type(model).__name__.lower()
 
-    def get_model_pars(self, model):
+    def get_model_pars(self, model: ModelType) -> list[str]:
         """Return the names of the parameters of a model.
+
+        .. versionadded:: 4.16.1
+           Linked components are now included without having to
+           include them in the model expression.
 
         Parameters
         ----------
@@ -7046,19 +7077,45 @@ class Session(NoNewAttributesAfterInit):
         Examples
         --------
 
-        >>> set_source(gauss2d.src + const2d.bgnd)
-        >>> get_model_pars(get_source())
+        >>> mdl = gauss2d.src + const2d.bgnd
+        >>> get_model_pars(mdl)
         ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0']
 
-        """
-        model = self._check_model(model)
-        return [p.name for p in model.pars]
+        The return value is unchanged if the two models are linked
+        together, such as setting the background amplitude to 1% of
+        the source amplitude:
 
-    def get_num_par(self, id=None):
+        >>> bgnd.c0 = 0.01 * src.ampl
+        >>> get_model_pars(mdl)
+        ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0']
+
+        If a model expression contaoins linked parameters that are not
+        part of the model expression then they will also be included
+        (in this case both the const2d and scale1d parameters are
+        named 'c0', hence the duplication):
+
+        >>> scale1d.sep
+        <Scale1D model instance 'scale1d.sep'>
+        >>> src.ypos = src.xpos + sep.c0
+        >>> get_model_pars(mdl)
+        ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0', 'c0']
+
+        """
+        mdl = self._check_model(model)
+        # TODO: we could add the component name
+        names = [p.name for p in mdl.pars]
+        names.extend(p.name for p in mdl.lpars)
+        return names
+
+    def get_num_par(self, id: Optional[IdType] = None) -> int:
         """Return the number of parameters in a model expression.
 
         The `get_num_par` function returns the number of parameters,
         both frozen and thawed, in the model assigned to a data set.
+
+        .. versionadded:: 4.16.1
+           Linked components are now included without having to
+           include them in the model expression.
 
         Parameters
         ----------
@@ -7099,13 +7156,18 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par('jet')
 
         """
-        return len(self.get_source(id).pars)
+        mdl = self.get_source(id)
+        return len(mdl.pars) + len(mdl.lpars)
 
-    def get_num_par_thawed(self, id=None):
+    def get_num_par_thawed(self, id: Optional[IdType] = None) -> int:
         """Return the number of thawed parameters in a model expression.
 
         The `get_num_par_thawed` function returns the number of
         thawed parameters in the model assigned to a data set.
+
+        .. versionadded:: 4.16.1
+           Linked components are now included without having to
+           include them in the model expression.
 
         Parameters
         ----------
@@ -7146,13 +7208,18 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par_thawed('jet')
 
         """
-        return len(self.get_source(id).thawedpars)
+        mdl = self.get_source(id)
+        return len(mdl.thawedpars)
 
-    def get_num_par_frozen(self, id=None):
+    def get_num_par_frozen(self, id: Optional[IdType] = None) -> int:
         """Return the number of frozen parameters in a model expression.
 
         The `get_num_par_frozen` function returns the number of
         frozen parameters in the model assigned to a data set.
+
+        .. versionadded:: 4.16.1
+           Linked components are now included without having to
+           include them in the model expression.
 
         Parameters
         ----------
@@ -7193,8 +7260,7 @@ class Session(NoNewAttributesAfterInit):
         >>> njet = get_num_par_frozen('jet')
 
         """
-        model = self.get_source(id)
-        return len(model.pars) - len(model.thawedpars)
+        return self.get_num_par(id) - self.get_num_par_thawed(id)
 
     #
     # "Special" models (user and table models)
@@ -7367,9 +7433,8 @@ class Session(NoNewAttributesAfterInit):
 
         A table model is defined on a grid of points which is
         interpolated onto the independent axis of the data set. The
-        model has a single parameter, ``ampl``, which is used to
-        scale the data, and it can be fixed or allowed to vary
-        during a fit.
+        model has a single parameter, ``ampl``, which is used to scale
+        the data, and it can be fixed or allowed to vary during a fit.
 
         Parameters
         ----------
@@ -7444,12 +7509,13 @@ class Session(NoNewAttributesAfterInit):
         >>> set_par(filt.ampl, 1e3, min=1, max=1e6)
 
         """
-        tablemodel = TableModel(modelname)
-        # interpolation method
-        tablemodel.method = method
-        tablemodel.filename = filename
+
         x, y = self._read_user_model(filename, ncols, colkeys,
                                      dstype, sep, comment)
+
+        tablemodel = TableModel(modelname)
+        tablemodel.method = method
+        tablemodel.filename = filename
         tablemodel.load(x, y)
         self._tbl_models.append(tablemodel)
         self._add_model_component(tablemodel)
@@ -7554,8 +7620,8 @@ class Session(NoNewAttributesAfterInit):
         usermodel = sherpa.models.UserModel(modelname)
         usermodel.calc = func
         usermodel._file = filename
-        if (filename is not None):
-            x, usermodel._y = self._read_user_model(filename, ncols, colkeys,
+        if filename is not None:
+            _, usermodel._y = self._read_user_model(filename, ncols, colkeys,
                                                     dstype, sep, comment)
         self._add_model_component(usermodel)
 
@@ -7629,7 +7695,7 @@ class Session(NoNewAttributesAfterInit):
 
         usermodel = self._get_model_component(modelname)
         if (usermodel is None or
-                type(usermodel) is not sherpa.models.UserModel):
+            not isinstance(usermodel, sherpa.models.UserModel)):
             raise ArgumentTypeErr('badarg', modelname, "a user model")
 
         pars = []
@@ -7823,7 +7889,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
-            except:
+            except Exception:
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
@@ -7887,7 +7953,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_str(filename_or_model):
             try:
                 kernel = self._eval_model_expression(filename_or_model)
-            except:
+            except Exception:
                 kernel = self.unpack_data(filename_or_model,
                                           *args, **kwargs)
 
@@ -8035,11 +8101,11 @@ class Session(NoNewAttributesAfterInit):
                 psf.model is not None and isinstance(psf.model, sherpa.instrument.PSFKernel)):
 
             psf_center = psf.center
-            if numpy.isscalar(psf_center):
+            if np.isscalar(psf_center):
                 psf_center = [psf_center]
             try:
                 center = psf.kernel.get_center()
-                if (numpy.asarray(center) == 0.0).all():
+                if (np.asarray(center) == 0.0).all():
                     psf.kernel.set_center(*psf_center, values=True)
             except NotImplementedError:
                 pass
@@ -8314,9 +8380,9 @@ class Session(NoNewAttributesAfterInit):
 
             try:
                 par.freeze()
-            except AttributeError:
+            except AttributeError as exc:
                 raise ArgumentTypeErr('badarg', 'par',
-                                      'a parameter or model object or expression string')
+                                      'a parameter or model object or expression string') from exc
 
     def thaw(self, *args):
         """Allow model parameters to be varied during a fit.
@@ -8377,9 +8443,9 @@ class Session(NoNewAttributesAfterInit):
 
             try:
                 par.thaw()
-            except AttributeError:
+            except AttributeError as exc:
                 raise ArgumentTypeErr('badarg', 'par',
-                                      'a parameter or model object or expression string')
+                                      'a parameter or model object or expression string') from exc
 
     def link(self, par, val):
         """Link a parameter to a value.
@@ -8388,6 +8454,9 @@ class Session(NoNewAttributesAfterInit):
         function of that value, rather than be an independent value.
         As the linked-to values change, the parameter value will
         change.
+
+        .. versionchanged:: 4.16.1
+           Source models no-longer have to contain the linked parameter.
 
         Parameters
         ----------
@@ -8409,22 +8478,20 @@ class Session(NoNewAttributesAfterInit):
         The ``link`` attribute of the parameter is set to match the
         mathematical expression used for `val`.
 
-        For a parameter value to be varied during a fit, it must be
-        part of one of the source expressions involved in the fit.
-        So, in the following, the ``src1.xpos`` parameter will not
-        be varied because the ``src2`` model - from which it takes
-        its value - is not included in the source expression of any
-        of the data sets being fit.
+        In the following, the fit will vary the ``pos`` parameter
+        even though the ``src2`` component is not part of the source
+        expression (this behavior changed in the 4.16.1 release):
 
         >>> set_source(1, gauss1d.src1)
         >>> gauss1d.src2
-        >>> link(src1.xpos, src2.xpos)
+        >>> link(src1.pos, src2.pos)
         >>> fit(1)
 
-        One way to work around this is to include the model but
-        with zero signal: for example
+        The ``lpars`` attribute of a source model will include these
+        "extra" parameters:
 
-        >>> set_source(1, gauss1d.src1 + 0 * gauss1d.src2)
+        >>> get_source(1).lpars
+        (<Parameter 'pos' of model 'src2'>,)
 
         Examples
         --------
@@ -11895,9 +11962,9 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'{}'".format(mdl.name) +
-                                "\n is set for dataset {}.".format(id) +
-                                " You should use get_model_plot instead.")
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'\n"
+                                f" is set for dataset {id}. "
+                                "You should use get_model_plot instead.")
 
         if recalc:
             data = self.get_data(id)
@@ -11984,6 +12051,52 @@ class Session(NoNewAttributesAfterInit):
 
         return plotobj
 
+    def get_model_components_plot(self, id=None):
+        """Return the data used by plot_model_components.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        instances : list of objects
+           A list of objects representing the data used to create the
+           plot by `plot_model_components`. The return value depends
+           on the data set (e.g. 1D binned or un-binned).
+
+        See Also
+        --------
+        get_model_plot, plot_model, plot_model_component,
+        plot_model_components
+
+        Notes
+        -----
+
+        Unlike get_model_component this routine does not accept
+        either model or recalc arguments.
+
+        Examples
+        --------
+
+        Return the plot data for the individual components used in the
+        default data set. In this case it will report plots for
+        ``gal * pl`` and ``gal * gline``:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + gauss1d.gline))
+        >>> cplots = get_model_components_plot()
+
+        """
+
+        idval = self._fix_id(id)
+        model = self.get_source(idval)
+        return get_components_helper(self.get_model_component_plot,
+                                     model=model, idval=idval)
+
     # sherpa.astro.utils version copies this docstring
     def get_source_component_plot(self, id, model=None, recalc=True):
         """Return the data used by plot_source_component.
@@ -12061,6 +12174,52 @@ class Session(NoNewAttributesAfterInit):
             plotobj.prepare(data, model, self.get_stat())
 
         return plotobj
+
+    def get_source_components_plot(self, id=None):
+        """Return the data used by plot_source_components.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+
+        Returns
+        -------
+        instances : list of objects
+           A list of objects representing the data used to create the
+           plot by `plot_source_components`. The return value depends
+           on the data set (e.g. 1D binned or un-binned).
+
+        See Also
+        --------
+        get_source_plot, plot_source, plot_source_component,
+        plot_source_components
+
+        Notes
+        -----
+
+        Unlike get_source_component this routine does not accept
+        either model or recalc arguments.
+
+        Examples
+        --------
+
+        Return the plot data for the individual components used in the
+        default data set. In this case it will report plots for
+        ``gal * pl`` and ``gal * gline``:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + gauss1d.gline))
+        >>> cplots = get_source_components_plot()
+
+        """
+
+        idval = self._fix_id(id)
+        model = self.get_source(idval)
+        return get_components_helper(self.get_source_component_plot,
+                                     model=model, idval=idval)
 
     def get_model_plot_prefs(self, id=None):
         """Return the preferences for plot_model.
@@ -12237,9 +12396,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_types["resid"][0]
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_delchi_plot was last called.
+        #
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["resid"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -12299,9 +12471,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_types["delchi"][0]
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_delchi_plot was last called.
+        #
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["delchi"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -12361,9 +12546,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_types["chisqr"][0]
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_delchi_plot was last called.
+        #
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["chisqr"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -12423,9 +12621,22 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        plotobj = self._plot_types["ratio"][0]
+        # Allow an answer to be returned if recalc is False and no
+        # data has been loaded. However, it's not obvious what the
+        # answer should be if recalc=False and the dataset has
+        # changed type since get_delchi_plot was last called.
+        #
         if recalc:
-            plotobj.prepare(self.get_data(id), self.get_model(id), self.get_stat())
+            data = self.get_data(id)
+        else:
+            data = self._get_data(id)
+
+        # This uses the implicit conversion of bool to 0 or 1.
+        #
+        idx = isinstance(data, sherpa.data.Data1DInt)
+        plotobj = self._plot_types["ratio"][idx]
+        if recalc:
+            plotobj.prepare(data, self.get_model(id), self.get_stat())
 
         return plotobj
 
@@ -13477,6 +13688,9 @@ class Session(NoNewAttributesAfterInit):
         ``model_component``
            Part of the full model expression (convolved).
 
+        ``model_components``
+           Parts of the full model expression (convolved).
+
         ``order``
           Plot the model for a selected response
 
@@ -13494,6 +13708,9 @@ class Session(NoNewAttributesAfterInit):
 
         ``source_component``
            Part of the full model expression (un-convolved).
+
+        ``source_components``
+           Parts of the full model expression (un-convolved).
 
         The plots can be specialized for a particular data type,
         such as the `set_analysis` command controlling the units
@@ -13767,6 +13984,7 @@ class Session(NoNewAttributesAfterInit):
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
         plot_model_component : Plot a component of the model for a data set.
+        plot_source_components : Plot all the components of a source.
         plot_source : Plot the source expression for a data set.
         set_xlinear : New plots will display a linear X axis.
         set_xlog : New plots will display a logarithmically-scaled X axis.
@@ -13807,6 +14025,52 @@ class Session(NoNewAttributesAfterInit):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
+    def plot_source_components(self, id=None, overplot=False,
+                               clearwindow=True, **kwargs):
+        """Plot all the components of a source.
+
+        Display the individual components of a source expression.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        overplot : bool, optional
+           If ``True`` then add the data to an existing plot,
+           otherwise create a new plot. The default is ``False``. This
+           is only used for the first component.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating
+           this new plot (e.g. for multi-panel plots)? This is only
+           used for the first component.
+
+        See Also
+        --------
+        get_source_component_plots, plot_model_components, plot_source_component
+
+        Notes
+        -----
+        The additional keyword arguments match the keywords of the
+        dictionary returned by get_model_plot_prefs.
+
+        Examples
+        --------
+
+        Display two plots, the first for the `gal * pl` component and
+        the second for `gal * line`:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
+        >>> plot_source_components(alpha=0.6)
+
+        """
+
+        plots = self.get_source_components_plot(id)
+        self._plot(plots, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
+
     def plot_model_component(self, id, model=None, replot=False,
                              overplot=False, clearwindow=True, **kwargs):
         """Plot a component of the model for a data set.
@@ -13839,6 +14103,7 @@ class Session(NoNewAttributesAfterInit):
         get_model_component_plot : Return the data used to create the model-component plot.
         get_default_id : Return the default data set identifier.
         plot : Create one or more plot types.
+        plot_model_components : Plot all the components of a model.
         plot_source_component : Plot a component of the source expression for a data set.
         plot_model : Plot the model for a data set.
         set_xlinear : New plots will display a linear X axis.
@@ -13895,6 +14160,52 @@ class Session(NoNewAttributesAfterInit):
         #       which is probably surprising to users
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
+
+    def plot_model_components(self, id=None, overplot=False,
+                              clearwindow=True, **kwargs):
+        """Plot all the components of a model.
+
+        Display the individual model components of a source expression.
+
+        .. versionadded:: 4.16.1
+
+        Parameters
+        ----------
+        id : int or str, optional
+           The data set that provides the data. If not given then the
+           default identifier is used, as returned by `get_default_id`.
+        overplot : bool, optional
+           If ``True`` then add the data to an existing plot,
+           otherwise create a new plot. The default is ``False``. This
+           is only used for the first component.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating
+           this new plot (e.g. for multi-panel plots)? This is only
+           used for the first component.
+
+        See Also
+        --------
+        get_model_components_plot, plot_model_component, plot_source_components
+
+        Notes
+        -----
+        The additional keyword arguments match the keywords of the
+        dictionary returned by get_model_plot_prefs.
+
+        Examples
+        --------
+
+        Display two plots, the first for the `gal * pl` component and
+        the second for `gal * line`:
+
+        >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
+        >>> plot_model_components(alpha=0.6)
+
+        """
+
+        plots = self.get_model_components_plot(id)
+        self._plot(plots, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     # DOC-NOTE: also in sherpa.astro.utils, but with extra lo/hi arguments
     def plot_source(self, id=None, replot=False,
@@ -13968,9 +14279,9 @@ class Session(NoNewAttributesAfterInit):
         id = self._fix_id(id)
         mdl = self._models.get(id, None)
         if mdl is not None:
-            raise IdentifierErr("Convolved model\n'{}'".format(mdl.name) +
-                                "\n is set for dataset {}.".format(id) +
-                                " You should use plot_model instead.")
+            raise IdentifierErr(f"Convolved model\n'{mdl.name}'\n"
+                                f" is set for dataset {id}. "
+                                "You should use plot_model instead.")
 
         plotobj = self.get_source_plot(id, recalc=not replot)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
@@ -14518,16 +14829,17 @@ class Session(NoNewAttributesAfterInit):
             # plot preferences of plot1, and then check for different
             # types of plot objects.
             #
-            oldval = plot2.plot_prefs['xlog']
+            p2prefs = get_plot_prefs(plot2)
+            oldval = p2prefs['xlog']
             dprefs = get_plot_prefs(plot1.dataplot)
             mprefs = get_plot_prefs(plot1.modelplot)
 
             if dprefs['xlog'] or mprefs['xlog']:
-                plot2.plot_prefs['xlog'] = True
+                p2prefs['xlog'] = True
 
             self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
 
-            plot2.plot_prefs['xlog'] = oldval
+            p2prefs['xlog'] = oldval
 
     def plot_fit_resid(self, id=None, replot=False, overplot=False,
                        clearwindow=True, **kwargs):
@@ -15604,6 +15916,9 @@ class Session(NoNewAttributesAfterInit):
         are ignored and the results of the last `int_proj` call are
         returned.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
+
         Parameters
         ----------
         par
@@ -15716,6 +16031,9 @@ class Session(NoNewAttributesAfterInit):
         are ignored and the results of the last `int_unc` call are
         returned.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
+
         Parameters
         ----------
         par
@@ -15823,6 +16141,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `reg_proj` call are
         returned.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True` for one or both
+           parameters.
 
         Parameters
         ----------
@@ -15949,6 +16271,10 @@ class Session(NoNewAttributesAfterInit):
         parameter is `False` (the default value) then all other parameters
         are ignored and the results of the last `reg_unc` call are
         returned.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True` for one or both
+           parameters.
 
         Parameters
         ----------
@@ -16080,6 +16406,9 @@ class Session(NoNewAttributesAfterInit):
         after a successful fit, so that the parameter values identify
         the best-fit location.
 
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
+
         Parameters
         ----------
         par
@@ -16198,6 +16527,9 @@ class Session(NoNewAttributesAfterInit):
         the statistic evaluated while holding the other parameters
         fixed. It is expected that this is run after a successful fit,
         so that the parameter values identify the best-fit location.
+
+        .. versionchanged:: 4.16.1
+           The log parameter can now be set to `True`.
 
         Parameters
         ----------

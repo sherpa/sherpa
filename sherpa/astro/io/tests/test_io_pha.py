@@ -859,6 +859,78 @@ def test_write_pha_fits_with_extras_roundtrip(tmp_path, caplog):
 
 
 @requires_fits
+def test_pha_missing_backfile(tmp_path, caplog):
+    """What happens if BACKFILE does not exist.
+
+    This goes through a slightly-different path to the missing
+    ANCRFILE case tested in test_write_pha_fits_with_extras_roundtrip.
+
+    """
+
+    chans = np.arange(1, 5, dtype=np.int32)
+    counts = np.asarray([1, 0, 3, 2], dtype=np.int32)
+    etime = 1023.4
+    bscal = 0.05
+
+    hdr = {"TELESCOP": "CHANDRA", "INSTRUME": "ACIS", "FILTER": "NONE",
+           "CHANTYPE": "PI",
+           "DETCHANS": 5,
+           "OBJECT": "Made up source",
+           "CORRFILE": "None",
+           "BACKFILE": "made-up-backfile.fits",
+           # "structural keywords" which match DETCHANS
+           "TLMIN1": 1, "TLMAX1": 5}
+
+    pha = DataPHA("testy",
+                  chans.astype(np.float64),
+                  counts.astype(np.float32),
+                  exposure=etime,
+                  backscal=bscal,
+                  header=hdr)
+
+    outfile = tmp_path / "out.pi"
+    io.write_pha(str(outfile), pha, ascii=False, clobber=False)
+    pha = None
+
+    assert len(caplog.record_tuples) == 0
+
+    with SherpaVerbosity("INFO"):
+        inpha = io.read_pha(str(outfile))
+
+    assert len(caplog.record_tuples) == 1
+    lname, lvl, msg = caplog.record_tuples[0]
+    assert lname == "sherpa.astro.io"
+    assert lvl == logging.WARNING
+
+    # message depends on the backend
+    if backend_is("crates"):
+        assert msg.startswith("File ")
+        assert msg.endswith("/made-up-backfile.fits does not exist.")
+    elif backend_is("pyfits"):
+        assert msg.startswith("file '")
+        assert msg.endswith("/made-up-backfile.fits' not found")
+
+    assert inpha.channel == pytest.approx(chans)
+    assert inpha.counts == pytest.approx(counts)
+
+    assert inpha.response_ids == []
+    assert inpha.background_ids == []
+
+    # Checks related to issue #1885 (so this is partly a regression
+    # test).
+    #
+    for key in ["ANCRFILE", "BACKFILE", "RESPFILE"]:
+        assert key not in inpha.header
+
+    assert inpha.header["CORRFILE"] == "None"
+
+    # DJB is interested to see when this gets set, so treat this
+    # as a regression test.
+    #
+    assert inpha.header["SYS_ERR"] == 0
+
+
+@requires_fits
 @requires_data
 def test_chandra_phaII_roundtrip(make_data_path, tmp_path):
     """Can we read in/write out/read in a PHA-II dataset.

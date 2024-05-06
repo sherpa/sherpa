@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2008, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -4263,6 +4263,30 @@ It is an integer or string.
         return self._fix_y_units(err, filter, response_id)
 
     def get_xerr(self, filter=False, response_id=None):
+        """Returns an X "error".
+
+        The error value for the independent axis is not well defined
+        in Sherpa.
+
+        .. versionchanged:: 4.16.1
+           The return value is now half the bin width instead of the
+           full bin width and is now calculated correctly when the
+           analysis is set to "wavelength".
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the values be filtered to the current notice range?
+        response_id : int or None, optional
+           What response should be used?
+
+        Returns
+        -------
+        xerr : ndarray
+           The half-width of each bin (or group) in the current
+           analysis units.
+
+        """
         if bool_cast(filter):
             # If we apply a filter, make sure that
             # ebins are ungrouped before applying
@@ -4280,7 +4304,14 @@ It is an integer or string.
                 #
                 return numpy.asarray([])
 
-        return ehi - elo
+        # Issue #748 #1817 noted we should return the half-width
+        # Issue #1985 notes that we need to support wavelength.
+        #
+        if self.units != "wavelength":
+            return (ehi - elo) / 2
+
+        dlam = hc / elo - hc / ehi
+        return dlam / 2
 
     def get_ylabel(self):
         ylabel = 'Counts'
@@ -5399,9 +5430,7 @@ class DataIMG(Data2D):
         return 'x0'
 
     def get_x1label(self):
-        """
-        Return label for second dimension in 2-D view of independent axis/axes
-        """
+        "Return label for second dimension in 2-D view of independent axis/axes."
         if self.coord == 'physical':
             return 'x1 (pixels)'
         if self.coord == 'world':

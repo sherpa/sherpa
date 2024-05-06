@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,8 +18,17 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""
-Routines for running code in parallel.
+"""Routines for running code in parallel.
+
+.. versionchanged:: 4.16.1
+   All `multiprocessing` calls are now done using an explicit context,
+   available as the `context` field, rather than using the global
+   version.
+
+.. versionadded:: 4.16.0
+   Prior to this, these symbols were provided by the
+   :py:mod:`sherpa.utils` module.
+
 """
 
 from configparser import ConfigParser
@@ -50,22 +59,26 @@ try:
 
     multiprocessing_start_method = config.get('multiprocessing', 'multiprocessing_start_method', fallback='fork')
 
-    if multiprocessing_start_method not in ('fork', 'spawn', 'default'):
-        raise ValueError('multiprocessing_start method must be one of "fork", "spawn", or "default"')
+    if multiprocessing_start_method not in ('fork', 'forkserver', 'spawn', 'default'):
+        raise ValueError('multiprocessing_start method must be one of "fork", "forkserver", "spawn", or "default"')
 
-    if multiprocessing_start_method != 'default':
-        multiprocessing.set_start_method(multiprocessing_start_method, force=True)
+
+    if multiprocessing_start_method == "default":
+        _context = multiprocessing.get_context()
+    else:
+        _context = multiprocessing.get_context(multiprocessing_start_method)
 
     _multi = True
 
     if _ncpus is None:
-        _ncpus = multiprocessing.cpu_count()
+        _ncpus = _context.cpu_count()
 
 except Exception as e:
     warning("parallel processing is unavailable,\n"
             f"multiprocessing module failed with \n'{e}'")
     _ncpus = 1
     _multi = False
+    _context = None
 
 del _ncpu_val, config, get_config, ConfigParser
 
@@ -75,20 +88,44 @@ multi: Final[bool] = _multi
 
 The ability to run jobs in parallel depends on whether the Python
 `multiprocessing` module can be configured to use the
-multiprocessing.multiprocessing_start_method setting from the
+``multiprocessing.multiprocessing_start_method`` setting from the
 Sherpa configuration file (returned by `sherpa.get_config()`).
+
+See Also
+--------
+context, ncpus
+
 """
 
 ncpus: Final[int] = _ncpus
 """The number of CPU cores to use when running jobs in parallel.
 
-This is taken from the parallel.numcores setting from the Sherpa
+This is taken from the ``parallel.numcores`` setting from the Sherpa
 configuration file (returned by `sherpa.get_config()`), where the
 default setting of ``None`` will use all available cores.
 """
 
+# This is hard to type given that multiprocessing is not a required
+# module.
+#
+context = _context
+"""The multiprocessing context used to run the processes.
 
-__all__ = ("multi", "ncpus",
+This will be ``None`` when multiprocessing support is not available
+(that is, `multi` is ``False``). It is set by the
+``multiprocessing_start_method`` setting from the ``multiprocessing``
+block in the configuration file (returned by `sherpa.get_config`).
+
+.. versionadded:: 4.16.1
+
+See Also
+--------
+multi
+
+"""
+
+
+__all__ = ("multi", "ncpus", "context",
            "parallel_map", "parallel_map_funcs", "parallel_map_rng",
            "run_tasks")
 
@@ -373,14 +410,13 @@ def parallel_map(function, sequence, numcores=None):
     # objects between processes. The returned manager object corresponds
     # to a spawned child process and has methods which will create shared
     # objects and return corresponding proxies.
-    manager = multiprocessing.Manager()
+    manager = context.Manager()
 
     # Create FIFO queue and lock shared objects and return proxies to them.
     # The managers handles a server process that manages shared objects that
     # each slave process has access to.  Bottom line -- thread-safe.
     out_q = manager.Queue()
     err_q = manager.Queue()
-    # lock = manager.Lock() - currently unused
 
     # if sequence is less than numcores, only use len sequence number of
     # processes
@@ -390,8 +426,8 @@ def parallel_map(function, sequence, numcores=None):
     # group sequence into numcores-worth of chunks
     sequence = split_array(sequence, numcores)
 
-    procs = [multiprocessing.Process(target=worker,
-                                     args=(function, ii, chunk, out_q, err_q))
+    procs = [context.Process(target=worker,
+                             args=(function, ii, chunk, out_q, err_q))
              for ii, chunk in enumerate(sequence)]
 
     return run_tasks(procs, err_q, out_q)
@@ -489,17 +525,16 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     # objects between processes. The returned manager object corresponds
     # to a spawned child process and has methods which will create shared
     # objects and return corresponding proxies.
-    manager = multiprocessing.Manager()
+    manager = context.Manager()
 
     # Create FIFO queue and lock shared objects and return proxies to them.
     # The manager handles a server process that manages shared objects that
     # each slave process has access to.  Bottom line -- thread-safe.
     out_q = manager.Queue()
     err_q = manager.Queue()
-    # lock = manager.Lock() - currently unused
 
-    procs = [multiprocessing.Process(target=worker,
-                                     args=(funcs[ii], ii, chunk, out_q, err_q))
+    procs = [context.Process(target=worker,
+                             args=(funcs[ii], ii, chunk, out_q, err_q))
              for ii, chunk in enumerate(datasets)]
 
     return run_tasks(procs, err_q, out_q)
@@ -592,14 +627,13 @@ def parallel_map_rng(function, sequence, numcores=None, rng=None):
     # objects between processes. The returned manager object corresponds
     # to a spawned child process and has methods which will create shared
     # objects and return corresponding proxies.
-    manager = multiprocessing.Manager()
+    manager = context.Manager()
 
     # Create FIFO queue and lock shared objects and return proxies to them.
     # The managers handles a server process that manages shared objects that
     # each slave process has access to.  Bottom line -- thread-safe.
     out_q = manager.Queue()
     err_q = manager.Queue()
-    # lock = manager.Lock() - currently unused
 
     # if sequence is less than numcores, only use len sequence number of
     # processes
@@ -634,9 +668,9 @@ def parallel_map_rng(function, sequence, numcores=None, rng=None):
     # particular generator) or to get it to use np.random.RandomState
     # if required.
     #
-    procs = [multiprocessing.Process(target=worker_rng,
-                                     args=(function, ii, chunk, out_q, err_q,
-                                           np.random.default_rng(seed)))
+    procs = [context.Process(target=worker_rng,
+                             args=(function, ii, chunk, out_q, err_q,
+                                   np.random.default_rng(seed)))
              for ii, (chunk, seed) in enumerate(zip(sequence, seeds))]
 
     return run_tasks(procs, err_q, out_q)

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2016 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -144,6 +144,12 @@ known_warnings = {
             # Hopefully this can be removed by December 2023.
             #
             r"Conversion of an array with ndim > 0 to a scalar is deprecated, and will error in future. Ensure you extract a single element from your array before performing this operation. \(Deprecated NumPy 1.25.\)",
+
+            # See https://github.com/sherpa/sherpa/issues/1953
+            # Technically this should only be needed if bokeh is installed
+            # but it doesn't seem worth setting up that machinery.
+            #
+            "\nPyarrow will become a required dependency of pandas "
 
         ],
     UserWarning:
@@ -863,3 +869,20 @@ def xsmodel():
         return cls(mname)
 
     return func
+
+
+# Fixtures that control access to the tests, based on the availability
+# of external "features" (normally this is the presence of optional
+# modules). These used to be decorators in sherpa.utils.testing.
+#
+@pytest.fixture
+def requires_pylab():
+    """Runs the test with the pylab plotting backend if available."""
+
+    pylab_backend = pytest.importorskip("sherpa.plot.pylab_backend")
+    plt = pytest.importorskip("matplotlib.pyplot")
+
+    with TemporaryPlottingBackend(pylab_backend.PylabBackend()):
+        yield
+
+    plt.close(fig="all")

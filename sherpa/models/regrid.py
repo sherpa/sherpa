@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2017 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -34,7 +34,7 @@ import logging
 import warnings
 
 import numpy as np
-from sherpa.utils._utils import rebin
+from sherpa.utils._utils import rebin  # type: ignore
 from sherpa.utils.akima import akima
 
 from sherpa.astro.utils import reshape_2d_arrays
@@ -868,6 +868,10 @@ class ModelDomainRegridder2D():
     ``internal_mdl`` on the grid ``x, y`` - but it illustrates
     the approach.
 
+    It is not obvious why this example appears to fail,
+    but it is left in as documentation. See issue 840 at
+    https://github.com/sherpa/sherpa/issues/840
+
     >>> from sherpa.models import Gauss2D, Const2D
     >>> internal_mdl = Gauss2D() + Const2D()
     >>> eval_space = EvaluationSpace2D(np.arange(0, 10, 0.5), np.arange(0, 10, 0.5))
@@ -876,7 +880,8 @@ class ModelDomainRegridder2D():
     >>> x = np.arange(1, 8, 0.7)
     >>> y = np.arange(1, 8, 0.7)
     >>> x, y = reshape_2d_arrays(x, y)
-    >>> z = mdl(x, y)
+    >>> z = mdl(x, y)  # doctest: +SHOW_WARNINGS
+    UserWarning: requested space and evaluation space do not overlap, evaluating model to 0
 
     """
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2020, 2021, 2022, 2023
+#  Copyright (C) 2017, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -62,8 +62,8 @@ def validate_zero_replacement(ws, rtype, label, ethresh):
     w = ws[0]
     assert w.category == UserWarning
 
-    emsg = "The minimum ENERG_LO in the {} '{}' ".format(rtype, label) + \
-           "was 0 and has been replaced by {}".format(ethresh)
+    emsg = f"The minimum ENERG_LO in the {rtype} '{label}' " + \
+           f"was 0 and has been replaced by {ethresh}"
     assert str(w.message) == emsg
 
 
@@ -1213,10 +1213,10 @@ def test_rsp_matrix_call(analysis, arfexp, phaexp):
 
     if phaexp:
         exposure = pha_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = f'{exposure} * flat'
     elif arfexp:
         exposure = arf_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = f'{exposure} * flat'
     else:
         exposure = 1.0
         mdl_label = 'flat'
@@ -1251,7 +1251,7 @@ def test_rsp_matrix_call(analysis, arfexp, phaexp):
 
     assert isinstance(wrapped, ArithmeticModel)
 
-    expname = 'apply_rmf(apply_arf({}))'.format(mdl_label)
+    expname = f'apply_rmf(apply_arf({mdl_label}))'
     assert wrapped.name == expname
 
     modvals = exposure * constant * specresp
@@ -1290,10 +1290,10 @@ def test_rsp_normf_call(arfexp, phaexp):
 
     if phaexp:
         exposure = pha_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = f'{exposure} * flat'
     elif arfexp:
         exposure = arf_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = f'{exposure} * flat'
     else:
         exposure = 1.0
         mdl_label = 'flat'
@@ -1328,7 +1328,7 @@ def test_rsp_normf_call(arfexp, phaexp):
 
     assert isinstance(wrapped, ArithmeticModel)
 
-    expname = 'apply_arf({})'.format(mdl_label)
+    expname = f'apply_arf({mdl_label})'
     assert wrapped.name == expname
 
     expected = exposure * constant * specresp
@@ -1355,7 +1355,7 @@ def test_rsp_no_arf_matrix_call(analysis, phaexp):
 
     if phaexp:
         exposure = pha_exposure
-        mdl_label = '({} * flat)'.format(exposure)
+        mdl_label = f'{exposure} * flat'
     else:
         exposure = 1.0
         mdl_label = 'flat'
@@ -1384,7 +1384,7 @@ def test_rsp_no_arf_matrix_call(analysis, phaexp):
 
     assert isinstance(wrapped, ArithmeticModel)
 
-    expname = 'apply_rmf({})'.format(mdl_label)
+    expname = f'apply_rmf({mdl_label})'
     assert wrapped.name == expname
 
     modvals = exposure * constant * np.ones(rdata.energ_lo.size)

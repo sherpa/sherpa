@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2021, 2022
+#  Copyright (C) 2021, 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -167,6 +167,15 @@ def compare_xspec_models(models, hard=True):
 
                     if xpar.hard_max != par.hardmax:
                         reports.append(f"par {xpar.name} hardmax: {xpar.hard_max} -> {par.hardmax}")
+
+                # We don't always have a frozen field for par
+                try:
+                    frozen = par.frozen
+                except AttributeError:
+                    frozen = True
+
+                if xpar.frozen != frozen:
+                    reports.append(f"par {xpar.name} frozen: {xpar.frozen} -> {frozen}")
 
             elif xpar.name != 'norm':
                 raise ValueError(f"Unexpected parameter for {mdl.clname}\n{xpar}")

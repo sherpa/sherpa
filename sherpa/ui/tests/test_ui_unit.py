@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2017, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -201,7 +201,7 @@ def test_guess_warns_no_guess_no_argument(caplog, clean_ui):
     lname, lvl, msg = caplog.record_tuples[0]
     assert lname == "sherpa.ui.utils"
     assert lvl == logging.WARNING
-    assert msg == "No guess found for (dummy + dummy)"
+    assert msg == "No guess found for dummy + dummy"
 
 
 class Parameter2(Parameter):
@@ -1306,3 +1306,77 @@ def test_calc_stat_info_output_multi(clean_ui, caplog, check_str):
                "Fit statistic value   = -99.4885",
                "Data points           = 6",
                "Degrees of freedom    = 5"])
+
+
+def test_num_pars_single(clean_ui):
+    """Related to issue #777 and #1982.
+
+    Let's just check what we get
+    """
+
+    gmdl = ui.create_model_component("gauss1d", "gmdl")
+    gmdl.ampl.freeze()
+    ui.set_source(gmdl)
+
+    assert ui.get_num_par() == 3
+    assert ui.get_num_par_thawed() == 2
+    assert ui.get_num_par_frozen() == 1
+
+
+def test_num_pars_combined(clean_ui):
+    """Related to issue #777 and #1982.
+
+    Let's just check what we get
+    """
+
+    gmdl = ui.create_model_component("gauss1d", "gmdl")
+    gmdl.ampl.freeze()
+    bmdl = ui.create_model_component("scale1d", "bmdl")
+    ui.set_source(gmdl + bmdl)
+
+    assert ui.get_num_par() == 4
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 1
+
+
+def test_num_pars_duplicated(clean_ui):
+    """Related to issue #777 and #1982.
+
+    Let's just check what we get
+    """
+
+    # For fun we repeat the gmdl component in the model expression. As
+    # written it does not make much sense but it is a simplified form
+    # for more-complex cases where it might end up having the same
+    # component appear multiple times.
+    #
+    gmdl = ui.create_model_component("gauss1d", "gmdl")
+    gmdl.ampl.freeze()
+    bmdl = ui.create_model_component("scale1d", "bmdl")
+    ui.set_source(gmdl + bmdl + gmdl)
+
+    assert ui.get_num_par() == 7
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 4
+
+
+def test_num_pars_links(clean_ui):
+    """Related to issue #777 and #1982.
+
+    Let's just check what we get
+    """
+
+    # Have a linked parameter that is not part of the model
+    # expression.
+    #
+    gmdl = ui.create_model_component("gauss1d", "gmdl")
+    gmdl.ampl.freeze()
+    bmdl = ui.create_model_component("scale1d", "bmdl")
+    smdl = ui.create_model_component("scale1d", "sigma")
+    gmdl.fwhm = 2.4 * smdl.c0  # approximate the sigma/FWHM scaling here
+    ui.set_source(gmdl + bmdl)
+
+    # The linked parameter is included here.
+    assert ui.get_num_par() == 5
+    assert ui.get_num_par_thawed() == 3
+    assert ui.get_num_par_frozen() == 2

@@ -63,12 +63,12 @@ jobs:
 
     steps:
     - name: Checkout Code
-      uses: actions/checkout@v3.1.0
+      uses: actions/checkout@v4.1.1
       with:
         submodules: 'True'
 
     - name: Pip Testing Setup - Python
-      uses: actions/setup-python@v3
+      uses: actions/setup-python@v5
       with:
         python-version: ${{ matrix.python-version }}
 
@@ -109,21 +109,22 @@ jobs:
       run: |
         git submodule deinit -f .
         pip install pytest-cov
-        sherpa_test --cov=sherpa --cov-report=xml
+        cd $HOME
+        sherpa_test --cov=sherpa --cov-report=xml:${{ github.workspace }}/coverage.xml
 
     - name: Submodule test with pytest
       if: matrix.test-data == 'submodule'
       run: |
         pip install -r test_requirements.txt
         pip install pytest-cov
-
-        pytest --cov=sherpa --cov-report=xml
+        cd $HOME
+        pytest --cov=sherpa --cov-report=xml:${{ github.workspace }}/coverage.xml
 
     - name: upload coverage
-      uses: codecov/codecov-action@v3
+      uses: codecov/codecov-action@v4
       with:
-        # only select the reports that we know are coverage reports, from linux conda, mac conda, and pip
-        files: /home/runner/work/sherpa/sherpa/coverage.xml,/Users/runner/work/sherpa/sherpa/coverage.xml,/home/runner/coverage.xml
+        token: ${{ secrets.CODECOV_TOKEN }}
+        files: ${{ github.workspace }}/coverage.xml
         verbose: true
 
     - name: Smoke Test

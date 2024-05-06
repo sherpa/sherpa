@@ -346,16 +346,44 @@ Other Programs
 and `Appendix C: Adding Models to XSPEC
 <http://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html>`_.
 
+The ``spectral/manager/model.dat`` file provided by XSPEC - normally
+in the parent directory of the ``HEADAS`` environment variable - defines
+the interface for the models. The Sherpa module could be automatically
+generated from this file but it would not be as informative as
+manual generation (in particular the documentation), although this
+could be changed (see the discussion at
+`issue #52 <https://github.com/sherpa/sherpa/issues/52>`_).
+
 Checking against a previous XSPEC version
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 If you have a version of Sherpa compiled with a previous XSPEC
-version then you can use two helper scripts:
+version then you can use three helper scripts:
 
 #. ``scripts/check_xspec_update.py``
 
    This will compare the supported XSPEC model classes to those
    from a ``model.dat`` file, and report on the needed changes.
+
+#. ``scripts/update_xspec_functions.py``
+
+   This will report the text needed to go between the::
+
+      // Start model definitions
+      ...
+      // End model definitions
+
+   lines of the ``sherpa/astro/xspec/src/_xspec.cc`` file. This
+   information is replicated in the output of ``add_xspec_model.py``
+   so it depends on how many models need to be added or changed as
+   to which to use.
+
+   It is strongly suggested that the ordering from this routine
+   is used, as it makes it easier to validate changes over time.
+
+   One issue is that this script can not identify which lines need be
+   enclosed in a ``#if def XSPEC_x_y_z`` block, so care needs to be
+   taken when updating the ``_xspec.cc`` file with this output.
 
 #. ``scripts/add_xspec_model.py``
 
@@ -389,6 +417,23 @@ Sherpa and XSPEC versions)::
    The screen output may differ slightly from that shown above, such
    as including the interface used by the model (e.g. C, C++,
    FORTRAN).
+
+The list of function definitions, needed in ``_xspec.cc``, can be
+generated::
+
+  % ./scripts/update_xspec_functions.py ~/local/heasoft-6.31/spectral/manager/model.dat
+    XSPECMODELFCT_C_NORM(C_agauss, 3),               // XSagauss
+    XSPECMODELFCT_NORM(agnsed, 16),                  // XSagnsed
+    XSPECMODELFCT_NORM(agnslim, 15),                 // XSagnslim
+    XSPECMODELFCT_C_NORM(C_apec, 4),                 // XSapec
+    ...
+    XSPECMODELFCT_CON(C_zashift, 1),                 // XSzashift
+    XSPECMODELFCT_CON(C_zmshift, 1),                 // XSzmshift
+
+    XSPECMODELFCT_C_NORM(beckerwolff, 13),           // XSbwcycl
+
+Please note that this output needs to be reviewed as it can not
+identify which lines are conditional on the XSPEC version.
 
 Although the ``wdem`` model is included in the XSPEC models, here is
 how the ``add_xspec_model.py`` script can be used for those models
@@ -476,8 +521,10 @@ noted as not being supported::
           self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
           self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
           self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
-          self.norm = Parameter(name, 'norm', 1.0, min=0.0, max=1e+24, hard_min=0.0, hard_max=1e+24)
-          XSAdditiveModel.__init__(self, name, (self.Tmax,self.beta,self.inv_slope,self.nH,self.abundanc,self.Redshift,self.switch,self.norm))
+
+          # norm parameter is automatically added by XSAdditiveModel
+          pars = (self.Tmax, self.beta, self.inv_slope, self.nH, self.abundanc, self.Redshift, self.switch)
+          XSAdditiveModel.__init__(self, name, pars)
 
 
 This code then can then be added to
@@ -549,8 +596,10 @@ available.
 #. Identify changes in the XSPEC models.
 
    .. note::
-      The ``scripts/check_xspec_update.py`` and ``scripts/add_xspec_model.py``
-      scripts can be used to automate some - but unfortunately not all - of this.
+      The ``scripts/check_xspec_update.py``,
+      ``scripts/update_xspec_functions.py``, and
+      ``scripts/add_xspec_model.py`` scripts can be used to automate
+      some - but unfortunately not all - of this.
 
    A new XSPEC release can add models, change parameter settings in
    existing models, change how a model is called, or even delete a
@@ -633,7 +682,7 @@ available.
       As an example::
 
         #ifdef XSPEC_12_12_0
-	  XSPECMODELFCT_C_NORM( C_wDem, 8 )
+	  XSPECMODELFCT_C_NORM(C_wDem, 8),                 // XSwdem
         #endif
 
       adds support for the ``C_wDem`` function, but only for XSPEC
@@ -651,9 +700,9 @@ available.
       this particular example has been removed from the code)::
 
         #ifdef XSPEC_12_10_0
-          XSPECMODELFCT_C_NORM( C_nsmaxg, 6 ),
+          XSPECMODELFCT_C_NORM(C_nsmaxg, 6),               // XSnsmaxg
         #else
-          XSPECMODELFCT_NORM( nsmaxg, 6 ),
+          XSPECMODELFCT_NORM(nsmaxg, 6),                   // XSnsmaxg
         #endif
 
       The remaining pieces are the choice of macro
@@ -682,9 +731,22 @@ available.
 
       are encoded as (ignoring any pre-processor directives)::
 
-        XSPECMODELFCT_C_NORM( C_apec, 4 ),
-        XSPECMODELFCT( xsphab, 1 ),
-        XSPECMODELFCT_CON(C_gsmooth, 2),
+        XSPECMODELFCT_C_NORM(C_apec, 4),                 // XSapec
+        XSPECMODELFCT(xsphab, 1),                        // XSphabs
+        XSPECMODELFCT_CON(C_gsmooth, 2),                 // XSgsmooth
+
+      The ``scripts/update_xspec_functions.py`` script will create a
+      list of all the supported models for the supplied ``model.dat``
+      file, and can be used to fill up the text between the::
+
+        // Start model definitions
+	...
+	// End model definitions
+
+      markers. However, the script **can not** determine the state of
+      each symbol (e.g. whether it needs to be protected by a version
+      check, as discussed earlier), or to add further notes, so care
+      needs to be taken to update this information.
 
       Those models that do not use the ``_C`` version of the macro (or,
       for convolution-style models, have to use

@@ -123,7 +123,7 @@ model components - so here ``sim1`` and ``sim2`` - can make it
 easier to follow the logic of more-complicated model combinations)::
 
     >>> print(sim_model)
-    (sim1 + sim2)
+    sim1 + sim2
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        sim1.fwhm    thawed           10  1.17549e-38  3.40282e+38           
@@ -182,7 +182,7 @@ and :py:attr:`~sherpa.models.model.BinaryOpModel.rhs`
 attributes which describe the structure of the combination::
 
     >>> sim_model
-    <BinaryOpModel model instance '(sim1 + sim2)'>
+    <BinaryOpModel model instance 'sim1 + sim2'>
     >>> sim_model.op
     <ufunc 'add'>
     >>> sim_model.lhs
@@ -248,14 +248,14 @@ The display of the combined model shows that the ``g2.pos``
 parameter is now linked to the ``g1.pos`` value::
    
     >>> print(mdl)
-    (g1 + g2)
+    g1 + g2
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        g1.fwhm      thawed          0.1  1.17549e-38  3.40282e+38           
        g1.pos       thawed            0 -3.40282e+38  3.40282e+38           
        g1.ampl      thawed            1 -3.40282e+38  3.40282e+38           
        g2.fwhm      thawed          0.1  1.17549e-38  3.40282e+38           
-       g2.pos       linked          0.5     expr: (g1.pos + 0.5)           
+       g2.pos       linked          0.5       expr: g1.pos + 0.5           
        g2.ampl      thawed            1 -3.40282e+38  3.40282e+38           
 
 .. note::
@@ -315,14 +315,14 @@ As can be seen below, the position of the ``g2`` gaussian remains
 linked to that of ``g1``::
 
     >>> print(mdl)
-    (g1 + g2)
+    g1 + g2
        Param        Type          Value          Min          Max      Units
        -----        ----          -----          ---          ---      -----
        g1.fwhm      thawed     0.515565  1.17549e-38  3.40282e+38           
        g1.pos       thawed   0.00431538 -3.40282e+38  3.40282e+38           
        g1.ampl      thawed     0.985078 -3.40282e+38  3.40282e+38           
        g2.fwhm      thawed     0.250698  1.17549e-38  3.40282e+38           
-       g2.pos       linked     0.504315     expr: (g1.pos + 0.5)           
+       g2.pos       linked     0.504315       expr: g1.pos + 0.5           
        g2.ampl      thawed      2.48416 -3.40282e+38  3.40282e+38           
 
 Accessing the linked parameter
@@ -342,7 +342,7 @@ values:
     g1.pos     -> 0.004
     g1.ampl    -> 0.985
     g2.fwhm    -> 0.251
-    g2.pos     -> link to (g1.pos + 0.5)
+    g2.pos     -> link to g1.pos + 0.5
     g2.ampl    -> 2.484
 
 The linked parameter is actually an instance of the
@@ -358,12 +358,12 @@ manner to models::
     max         = 3.40282346639e+38
     units       = 
     frozen      = True
-    link        = (g1.pos + 0.5)
+    link        = g1.pos + 0.5
     default_val = 0.504315379302
     default_min = -3.40282346639e+38
     default_max = 3.40282346639e+38
     >>> g2.pos.link
-    <BinaryOpParameter '(g1.pos + 0.5)'>
+    <BinaryOpParameter 'g1.pos + 0.5'>
     >>> print(g2.pos.link)
     val         = 0.504315379302
     min         = -3.40282346639e+38
