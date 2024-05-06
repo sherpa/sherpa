@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -248,9 +248,7 @@ class OptMethod(NoNewAttributesAfterInit):
         # only one, it might be returned as a bare float.)
         output = list(output)
         output[1] = numpy.asarray(output[1]).ravel()
-        output = tuple(output)
-
-        return output
+        return tuple(output)
 
 
 # ## DOC-TODO: better description of the sequence argument; what happens

@@ -688,9 +688,15 @@ class IterFit:
     def _sig_handler(self, signum, frame):
         raise KeyboardInterrupt()
 
-    def _get_callback(self,
-                      outfile: Optional[str] = None,
-                      clobber: bool = False) -> IterCallback:
+    def _get_callback(self, fh: Optional[IO] = None) -> IterCallback:
+        """Return the IterCallback function for the fit.
+
+        .. versionchanged:: 4.17.0
+           The signature was changed to be sent the optional file
+           handle rather than an optional filename and clobber
+           parameter.
+
+        """
         if len(self.model.thawedpars) == 0:
             raise FitErr('nothawedpar')
 
@@ -704,18 +710,6 @@ class IterFit:
         #
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
-
-        if outfile is None:
-            fh = None
-        else:
-            if not clobber and os.path.isfile(outfile):
-                raise FitErr('noclobererr', outfile)
-
-            names = ['# nfev statistic']
-            names.extend(par.fullname
-                         for par in self.model.get_thawed_pars())
-            fh = open(outfile, 'w', encoding="ascii")
-            print(' '.join(names), file=fh)
 
         return IterCallback(data=self.data, model=self.model,
                             stat=self.stat, fh=fh)
@@ -1307,18 +1301,30 @@ class Fit(NoNewAttributesAfterInit):
 
         init_stat = self.calc_stat()
 
-        cb = self._iterfit._get_callback(outfile, clobber)
-        output = self._iterfit.fit(cb,
-                                   self.model.thawedpars,
-                                   self.model.thawedparmins,
-                                   self.model.thawedparmaxes)
+        if outfile is None:
+            outfh = None
+        else:
+            if not clobber and os.path.isfile(outfile):
+                raise FitErr('noclobererr', outfile)
+
+            names = ['# nfev statistic']
+            names.extend(par.fullname
+                         for par in self.model.get_thawed_pars())
+            outfh = open(outfile, 'w', encoding="ascii")
+            print(' '.join(names), file=outfh)
+
+        cb = self._iterfit._get_callback(fh=outfh)
+
+        output_orig = self._iterfit.fit(cb,
+                                        self.model.thawedpars,
+                                        self.model.thawedparmins,
+                                        self.model.thawedparmaxes)
+        (status, newpars, fval, msg, imap) = output_orig
 
         # LevMar always calculate chisquare, so call calc_stat
         # just in case statistics is something other then chisquare
-        self.model.thawedpars = output[1]
-        tmp = list(output)
-        tmp[2] = self.calc_stat()
-        output = tuple(tmp)
+        self.model.thawedpars = newpars
+        fval_new = self.calc_stat()
 
         # Check if any parameter values are at boundaries, and warn
         # user. This does not include any linked parameters.
@@ -1332,12 +1338,14 @@ class Fit(NoNewAttributesAfterInit):
                 if sao_fcmp(par.val, par.max, tol) == 0:
                     param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
 
-        if cb.fh is not None:
-            vals = [f'{cb.nfev:5e}', f'{tmp[2]:5e}']
-            vals.extend([f'{val:5e}' for val in self.model.thawedpars])
-            print(' '.join(vals), file=cb.fh)
-            cb.fh.close()
+        if outfh is not None:
+            vals = [f'{cb.nfev:5e}', f'{fval_new:5e}']
+            vals.extend([f'{val:5e}' for val in newpars])
+            outfh.write(' '.join(vals))
+            outfh.write('\n')
+            outfh.close()
 
+        output = (status, newpars, fval_new, msg, imap)
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
     @evaluates_model
