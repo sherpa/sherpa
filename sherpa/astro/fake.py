@@ -42,7 +42,7 @@ def fake_pha(data, model,
     counts drawn from a model with Poisson noise. For the simulations,
     all the details already set up in the PHA dataset will be used,
     including the exposure time, one or more ARFs and RMFs, area and
-    background scalings, grouping, and data quality arrys.
+    background scalings, grouping, and data quality arrays.
 
     .. versionchanged:: 4.16.1
        This routine has seen significant changes, and the is_source,
@@ -191,8 +191,8 @@ def fake_pha(data, model,
 
     if add_bkgs is not None:
         warn("add_bkgs is no-longer used, as the model "
-             "either contains a backgorund term or the "
-             "backgound datasets are used",
+             "either contains a background term or the "
+             "background datasets are used",
              category=DeprecationWarning)
 
     if bkg_models is not None:
