@@ -69,7 +69,7 @@ Best-fit value: 4.0
 """
 
 from collections.abc import Callable, Sequence
-from typing import Any, SupportsFloat
+from typing import TYPE_CHECKING, Any, SupportsFloat
 
 import numpy as np
 
@@ -81,6 +81,7 @@ from sherpa.utils.types import ArrayType, OptReturn, StatFunc
 from . import _saoopt  # type: ignore
 from .ncoresde import ncoresDifEvo
 from .ncoresnm import ncoresNelderMead
+
 
 
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
@@ -389,6 +390,16 @@ def difevo_nm(fcn: StatFunc,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
+def _update_reported_nfev(result: OptReturn, nfev: int) -> None:
+    """Add the extra function evaluations into the dictionary.
+
+    Although the tuple is fixed, the dictionary in it can be
+    manipulated.
+    """
+
+    result[4]['nfev'] += nfev
+
+
 def make_sequence(npar, ranges, N):
 
     list_ranges = list(ranges)
@@ -542,17 +553,15 @@ def grid_search(fcn: StatFunc,
         # re.search( '^[Nn]elder[Mm]ead', method ):
         nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol, maxfev=maxfev,
                                verbose=verbose)
-        (status, x, fval, msg, imap) = nm_result
-        imap['nfev'] += nfev
-        return (status, x, fval, msg, imap)
+        _update_reported_nfev(nm_result, nfev)
+        return nm_result
 
     if method in ['LevMar', 'levmar', 'Levmar', 'levMar']:
         # re.search( '^[Ll]ev[Mm]ar', method ):
         levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol, xtol=ftol,
                               gtol=ftol, maxfev=maxfev, verbose=verbose)
-        (status, x, fval, msg, imap) = levmar_result
-        imap['nfev'] += nfev
-        return (status, x, fval, msg, imap)
+        _update_reported_nfev(levmar_result, nfev)
+        return levmar_result
 
     fval = answer[0]
     ierr = 0
@@ -1103,7 +1112,13 @@ def neldermead(fcn: StatFunc,
     #
     stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
+    # Can we ever call this with a non-scalar finalsimplex?
+    #
     if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
+        if TYPE_CHECKING:
+            # mypy needs this
+            assert isinstance(finalsimplex, int)
+
         farg = int(finalsimplex)
         if 0 == farg:
             finalsimplex_ary = [1]
@@ -1156,7 +1171,7 @@ def neldermead(fcn: StatFunc,
                        maxfev=maxfev - nfev - 12, iquad=1,
                        reflect=reflect)
         nelmea_x = np.asarray(nelmea[1], np.float64)
-        nelmea_nfev = nelmea[4].get('nfev')
+        nelmea_nfev = nelmea[4]['nfev']
         covarerr = nelmea[4].get('covarerr')
         nfev += nelmea_nfev
         minim_fval = nelmea[2]
