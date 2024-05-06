@@ -24,16 +24,17 @@ import logging
 import os
 from pathlib import Path
 import signal
-from typing import Any, Mapping, Optional, Protocol, Sequence, \
+from typing import Any, Callable, Mapping, Optional, Protocol, Sequence, \
     Union, runtime_checkable
 
 import numpy as np
 
 from sherpa.data import Data, DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
-from sherpa.models import Model, SimulFitModel
+from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.parameter import Parameter
 from sherpa.optmethods import OptMethod, LevMar, NelderMead
+from sherpa.optmethods.optfcts import OptReturn
 from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
@@ -967,8 +968,10 @@ class IterFit:
         # Return results from sigma rejection
         return final_fit_results
 
-    def fit(self, statfunc, pars, parmins, parmaxes,
-            statargs=(), statkwargs=None):
+    def fit(self,
+            statfunc: Callable,
+            pars, parmins, parmaxes,
+            statargs=(), statkwargs=None) -> OptReturn:
 
         if statkwargs is None:
             statkwargs = {}
@@ -977,6 +980,9 @@ class IterFit:
             return self.method.fit(statfunc, pars, parmins, parmaxes,
                                    statargs, statkwargs)
 
+        # If iterate is true then we assume current_func is set.
+        #
+        assert self.current_func is not None
         return self.current_func(statfunc, pars, parmins, parmaxes,
                                  statargs, statkwargs)
 
@@ -1136,6 +1142,23 @@ class ReportProgress:
         name = self.thawedpars[idx].fullname
         self.report_bound(name, "lower", lower)
         self.report_bound(name, "upper", upper)
+
+
+def _check_contains_data(dep) -> None:
+    """Check we have data to fit."""
+
+    # This is partly written this way to appease mypy.
+    #
+    try:
+        ndep = len(dep)
+    except TypeError:
+        # Assume does not have a length
+        ndep = 0
+
+    if ndep > 0:
+        return
+
+    raise FitErr('nobins')
 
 
 class Fit(NoNewAttributesAfterInit):
@@ -1448,8 +1471,7 @@ class Fit(NoNewAttributesAfterInit):
         #       investigated if it is possible to pass that check
         #       but fail the following.
         #
-        if not np.iterable(dep) or len(dep) == 0:
-            raise FitErr('nobins')
+        _check_contains_data(dep)
 
         if ((np.iterable(staterror) and 0.0 in staterror) and
                 isinstance(self.stat, Chi2) and
@@ -1498,7 +1520,7 @@ class Fit(NoNewAttributesAfterInit):
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
     @evaluates_model
-    def simulfit(self, *others):
+    def simulfit(self, *others) -> FitResults:
         """Fit multiple data sets and models simultaneously.
 
         The current fit object is combined with the other fit
@@ -1527,11 +1549,13 @@ class Fit(NoNewAttributesAfterInit):
         d = DataSimulFit('simulfit data', tuple(f.data for f in fits))
         m = SimulFitModel('simulfit model', tuple(f.model for f in fits))
 
-        f = Fit(d, m, self.stat, self.method)
-        return f.fit()
+        return Fit(d, m, self.stat, self.method).fit()
 
     @evaluates_model
-    def est_errors(self, methoddict=None, parlist=None):
+    def est_errors(self,
+                   methoddict: Optional[dict[str, OptMethod]] = None,
+                   parlist: Optional[Sequence[Parameter]] = None
+                   ) -> ErrorEstResults:
         """Estimate errors.
 
         Calculate the low and high errors for one or more of the
@@ -1604,8 +1628,7 @@ class Fit(NoNewAttributesAfterInit):
             dep, staterror, syserror = self.data.to_fit(
                 self.stat.calc_staterror)
 
-            if not np.iterable(dep) or len(dep) == 0:
-                raise FitErr('nobins')
+            _check_contains_data(dep)
 
             # For chi-squared and C-stat, reduced statistic is
             # statistic value divided by number of degrees of
@@ -1678,22 +1701,22 @@ class Fit(NoNewAttributesAfterInit):
         # that means get limits for all thawed parameters, so parnums
         # is [0, ... , numpars - 1], if the number of thawed parameters
         # is numpars.)
-        parnums = []
         if parlist is not None:
             allpars = self.model.get_thawed_pars()
+            pnums = []
             for p in parlist:
                 count = 0
                 match = False
                 for par in allpars:
                     if p is par:
-                        parnums.append(count)
+                        pnums.append(count)
                         match = True
                     count = count + 1
 
                 if not match:
                     raise EstErr('noparameter', p.fullname)
 
-            parnums = np.array(parnums)
+            parnums = np.array(pnums)
         else:
             parlist = self.model.get_thawed_pars()
             parnums = np.arange(len(startpars))
@@ -1788,7 +1811,7 @@ class Fit(NoNewAttributesAfterInit):
 
 # Notebook representation
 #
-def html_fitresults(fit):
+def html_fitresults(fit) -> str:
     """Construct the HTML to display the FitResults object."""
 
     has_covar = fit.covar is not None
@@ -1808,7 +1831,7 @@ def html_fitresults(fit):
     if has_covar:
         header.append('Approximate error')
 
-    rows = []
+    rows: list[tuple] = []
     if has_covar:
         for pname, pval, perr in zip(fit.parnames, fit.parvals,
                                      np.sqrt(fit.covar.diagonal())):
@@ -1868,7 +1891,7 @@ def html_fitresults(fit):
     return formatting.html_from_sections(fit, ls)
 
 
-def html_errresults(errs):
+def html_errresults(errs) -> str:
     """Construct the HTML to display the FitResults object."""
 
     ls = []
@@ -1878,7 +1901,7 @@ def html_errresults(errs):
     header = ['Parameter', 'Best-fit value', 'Lower Bound',
               'Upper Bound']
 
-    rows = []
+    rows: list[tuple] = []
 
     def display(limit):
         """Display the limit
@@ -1932,7 +1955,7 @@ def html_errresults(errs):
     return formatting.html_from_sections(errs, ls)
 
 
-def html_statinfo(stats):
+def html_statinfo(stats) -> str:
 
     meta = []
 
