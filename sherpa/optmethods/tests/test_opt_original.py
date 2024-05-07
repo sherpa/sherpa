@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2023
+#  Copyright (C) 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -84,6 +84,8 @@ ncoresNelderMead [0. 0. 0. 0. 0. 0. 0. 0.]  =  0.0 in 4701 nfevs
 
 """
 
+from typing import Any
+
 import numpy as np
 
 import pytest
@@ -91,8 +93,8 @@ import pytest
 from sherpa.optmethods.ncoresde import DifEvo, ncoresDifEvo, ncoresDifEvoNelderMead
 from sherpa.optmethods.ncoresnm import ncoresNelderMead, NelderMead0, NelderMead1, \
     NelderMead2, NelderMead3, NelderMead4, NelderMead5, NelderMead6, NelderMead7
-from sherpa.optmethods.opt import SimplexNoStep, SimplexStep, SimplexRandom
-from sherpa.optmethods import _tstoptfct
+from sherpa.optmethods.opt import Opt, SimplexNoStep, SimplexStep, SimplexRandom
+from sherpa.optmethods import _tstoptfct  # type: ignore
 
 
 def Ackley(x):
@@ -927,6 +929,10 @@ if __name__ == "__main__":
     if options.num % 2 != 0:
         raise ValueError("-N option must be an even number")
 
+    # The classes do not derive from a common ancestor so easier not
+    # to type them.
+    #
+    algo_de: list[Any]
     if options.difevo:
         algo_de = [DifEvo()]
     elif options.combine:
@@ -934,6 +940,10 @@ if __name__ == "__main__":
     else:
         algo_de = [ncoresDifEvo()]
 
+    # The classes do not derive from a common ancestor so easier not
+    # to type them.
+    #
+    algo_nm: list[Any]
     if options.single:
         # midnight = Midnight()
         algo_nm = [ncoresNelderMead()]
