@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import annotations
+
 from contextlib import nullcontext
 from functools import wraps
 import logging
@@ -284,7 +286,11 @@ class FitResults(NoNewAttributesAfterInit):
                'dstatval', 'numpoints', 'dof', 'qval', 'rstat', 'message',
                'nfev')
 
-    def __init__(self, fit, results, init_stat, param_warnings):
+    def __init__(self,
+                 fit: Fit,
+                 results: OptReturn,
+                 init_stat: float,
+                 param_warnings: str) -> None:
         _vals = fit.data.eval_model_to_fit(fit.model)
         _dof = len(_vals) - len(tuple(results[1]))
         _covar = results[4].get('covar')
@@ -295,7 +301,7 @@ class FitResults(NoNewAttributesAfterInit):
         self.parvals = tuple(float(r) for r in results[1])
         self.istatval = init_stat
         self.statval = results[2]
-        self.dstatval = np.abs(results[2] - init_stat)
+        self.dstatval = np.abs(float(results[2]) - init_stat)
         self.numpoints = len(_vals)
         self.dof = _dof
         self.qval = _qval
@@ -437,13 +443,14 @@ class ErrorEstResults(NoNewAttributesAfterInit):
                'sigma', 'percent', 'parnames', 'parvals', 'parmins',
                'parmaxes', 'nfits')
 
-    def __init__(self, fit, results, parlist=None):
+    def __init__(self,
+                 fit: Fit,
+                 results,
+                 parlist: Optional[Sequence[Parameter]] = None) -> None:
         if parlist is None:
             parlist = fit.model.get_thawed_pars()
 
-        # TODO: Can we not just import them at the top level?  It may
-        # cause an import loop.
-        #
+        # Avoid an import loop
         from sherpa.estmethods import est_hardmin, est_hardmax, \
             est_hardminmax
 
@@ -457,8 +464,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
         self.parvals = tuple(float(p.val) for p in parlist if not p.frozen)
 
-        pmins = []
-        pmaxes = []
+        pmins: list[Union[Optional[float]]] = []
+        pmaxes: list[Union[Optional[float]]] = []
         for i in range(len(parlist)):
             if (results[2][i] == est_hardmin or
                 results[2][i] == est_hardminmax or
@@ -491,17 +498,17 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         if 'iterfitname' not in state:
             self.__dict__['iterfitname'] = 'none'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{self.methodname} results instance>'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return print_fields(self._fields, vars(self))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the error estimates."""
         return html_errresults(self)
 
-    def format(self):
+    def format(self) -> str:
         """Return a string representation of the error estimates.
 
         Returns
