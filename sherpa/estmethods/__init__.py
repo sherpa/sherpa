@@ -90,7 +90,7 @@ class EstNewMin(Exception):
     pass
 #
 # class EstMaxIter(EstMethodError):
-#    "Reached maxmimum iterations in scaling function"
+#    "Reached maximum iterations in scaling function"
 #    pass
 #
 # class EstNaN(EstMethodError):
@@ -497,7 +497,7 @@ class ConfArgs:
         msg += '# Note: for the intermediate steps, the notation:\n'
         msg += '         par.name -/+: f( x ) = stat\n'
         msg += '# ==> `stat` is the statistic when parameter `par.name` is frozen at `x`\n'
-        msg += '# while searching for the `lower/upper` confidence level, repectively.\n#'
+        msg += '# while searching for the `lower/upper` confidence level, respectively.\n#'
         return msg
 
     def get_par(self):
@@ -525,7 +525,7 @@ class ConfBlog:
 
 class ConfBracket:
 
-    """The class ConfBracket is reponsible for bracketing the root within
+    """The class ConfBracket is responsible for bracketing the root within
     the interval (a,b) where f(a)*f(b) < 0.0"""
 
     neg_pos = (-1, 1)
@@ -1095,7 +1095,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         error_flags.append(est_success)
 
         #
-        # include the minimum point to seperate the -/+ interval
+        # include the minimum point to separate the -/+ interval
         #
         store[par_name] = trial_points
 

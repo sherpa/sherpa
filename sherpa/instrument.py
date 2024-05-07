@@ -595,7 +595,7 @@ they do not match.
         makes it hard to ensure that everything matches. Setting the
         kernel will clear these fields if ndim changes (or is None)
         but it is still possible to get into cases where the fields do
-        not match. These fields are only really meaningfull after the
+        not match. These fields are only really meaningful after the
         fold method has been called.
 
         Parameters
@@ -1028,7 +1028,7 @@ they do not match.
         as the image.
         Otherwise check the WCS information to determine the relative resolutions.
 
-        We only check the resolution in one dimention and assume they are the same.
+        We only check the resolution in one dimension and assume they are the same.
         """
 
         if not hasattr(self.kernel, "sky"):

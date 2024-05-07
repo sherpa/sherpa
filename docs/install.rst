@@ -48,7 +48,7 @@ if installed:
 * :term:`matplotlib`: for visualisation of
   one-dimensional data or models, one- or two- dimensional
   error analysis, and the results of Monte-Carlo Markov Chain
-  runs. There are no known incompatabilities with matplotlib, but there
+  runs. There are no known incompatibilities with matplotlib, but there
   has only been limited testing. Please
   `report any problems <https://github.com/sherpa/sherpa/issues/>`_
   you find.

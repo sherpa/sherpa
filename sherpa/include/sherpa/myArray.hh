@@ -210,7 +210,7 @@ protected:
 //
 // A simple 2d array class written for NelderMead/MultiDirSearch.
 // Note Array2D as written, using vector of vector, does not guaranteed
-// contiguous data. Check out one of the followings if contiguous
+// contiguous data. Check out one of the following if contiguous
 // in memory is necessary:
 //
 //    http://math.nist.gov/tnt/index.html

@@ -22,7 +22,7 @@
 
 Basic testing is based on the XSPEC wabs and powerlaw models, since
 they are "simple" and unlikely to change significantly. They are
-mutiplicative and additive models respectively.
+multiplicative and additive models respectively.
 
 These tests do not exercise the whole set of regrid options, since
 it is expected that these should just work (from other tests). This

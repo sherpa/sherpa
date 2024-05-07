@@ -3007,7 +3007,7 @@ def test_data1d_get_model_plot(cls, plottype, extraargs, title, plotcls):
 def create_template():
     """Create a simple template model"""
 
-    # Evalation grid
+    # Evaluation grid
     x = np.arange(5, 25, 1)
 
     # The parameter for the grid (FWHM in this case)
@@ -4496,7 +4496,7 @@ def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path,
     # See #1220 for why we don't have a unique value for the filter
     assert ui.get_filter() == expected
 
-    # We can not guarantee what error wil be raised here because of
+    # We can not guarantee what error will be raised here because of
     # issue #1220 so just pick a generic exception which will catch
     # both SherpaErr cases and general Pythonic ones.
     #

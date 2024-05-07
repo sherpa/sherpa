@@ -904,7 +904,7 @@ namespace minpack {
         rdiag[i] = a[i*lda+i];
       }
 
-      /* modify lower trinagular part to look like qrfac's output */
+      /* modify lower triangular part to look like qrfac's output */
       for(i=0 ; i<ltau ; ++i) {
         k = i*lda+i;
         t = tau[i];
@@ -1341,7 +1341,7 @@ namespace minpack {
               qtbpj = -sin * wa[k] + cos * qtbpj;
               wa[k] = temp;
 
-              /*           accumulate the tranformation in the row of s. */
+              /*           accumulate the transformation in the row of s. */
 #                 ifdef USE_CBLAS
               cblas_drot( n-k, &r[k + k * ldr], 1, &sdiag[k], 1, cos, sin );
 #                 else /* !USE_CBLAS */

@@ -2,7 +2,7 @@
 #define DifEvo_hh
 
 //
-// An implementation of the Differential Evolution for continous
+// An implementation of the Differential Evolution for continuous
 // function optimization, an algorithm by Kenneth Price and Rainer Storn.
 // See: http://www.icsi.berkeley.edu/~storn/code.html
 //
@@ -160,7 +160,7 @@ namespace sherpa {
         strategy_func_ptr = &DifEvo<Func, Data, Algo, real>::rand1exp;
         break;
       case RandToBest1Exp:
-        // similiar to DE2 but generally better
+        // similar to DE2 but generally better
         strategy_func_ptr = &DifEvo<Func, Data, Algo, real>::randtobest1exp;
         break;
       case Best2Exp:

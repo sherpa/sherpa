@@ -1139,7 +1139,7 @@ def export_method(meth, name=None, modname=None):
 
     # Make an argument list string, removing 'self'
     #
-    # This code originaly used inspect.getargspec but was
+    # This code originally used inspect.getargspec but was
     # converted to use inspect.signature.
     #
     sig = inspect.signature(meth)
@@ -1350,7 +1350,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
 
     Use the mask to convert the input values into a set of
     comma-separated filters - low value and high value, separated
-    by the delimeter - that represent the data. If the mask is
+    by the delimiter - that represent the data. If the mask is
     not given then the values must be "channel" values (that is,
     two values are consecutive if there difference is 1).
 
@@ -1419,7 +1419,7 @@ def create_expr(vals, mask=None, format='%s', delim='-'):
         # mask=True elements should equal the number of input values.
         #
         if sum(mask) != len(vals):
-            raise ValueError("mask array mis-match with vals")
+            raise ValueError("mask array mismatch with vals")
 
         # We only care about the difference between two consecutive
         # values, so it doesn't matter if index starts at 0 or 1.
@@ -1535,7 +1535,7 @@ def create_expr_integrated(lovals, hivals, mask=None,
     # Follow create_expr.
     #
     if len(lovals) != len(hivals):
-        raise ValueError("hivals array mis-match with lovals")
+        raise ValueError("hivals array mismatch with lovals")
 
     if len(lovals) == 0:
         return ''
@@ -1549,7 +1549,7 @@ def create_expr_integrated(lovals, hivals, mask=None,
         mask = np.asarray(mask, dtype=bool)
 
         if sum(mask) != len(lovals):
-            raise ValueError("mask array mis-match with lovals")
+            raise ValueError("mask array mismatch with lovals")
 
         seq = np.arange(len(mask))
         seq = seq[mask]
@@ -2307,7 +2307,7 @@ def get_valley(y, x, xhi=None):
     Notes
     -----
     If there are multiple minima with the same value then
-    the location of the first minimim is used.
+    the location of the first minimum is used.
     """
     return x[y.argmin()]
 
@@ -2767,7 +2767,7 @@ def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
     # TODO: the following was the original code, but
     #   a) x1 isn't used
     #   b) there's no difference between the two branches
-    # So, x0hi/x1hi are curently unused.
+    # So, x0hi/x1hi are currently unused.
     #
     # if x0hi is None and x1hi is None:
     #     x0, x1 = x0lo, x1lo
@@ -3041,7 +3041,7 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
     maxfev : int
         Maximal number of function evaluations
     tol : float
-        The root finding algorthm stops if the function value a value x with
+        The root finding algorithm stops if the function value a value x with
         ``abs(fcn(x)) < tol`` is found.
 
     Returns
@@ -3137,7 +3137,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
     maxfev : int
         Maximal number of function evaluations
     tol : float
-        The root finding algorthm stops if the function value a value x with
+        The root finding algorithm stops if the function value a value x with
         ``abs(fcn(x)) < tol`` is found.
 
     Returns
@@ -3268,7 +3268,7 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
     maxfev : int
         Maximal number of function evaluations
     tol : float
-        The root finding algorthm stops if the function value a value x with
+        The root finding algorithm stops if the function value a value x with
         ``abs(fcn(x)) < tol`` is found.
 
     Returns

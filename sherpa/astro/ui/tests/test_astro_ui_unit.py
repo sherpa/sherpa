@@ -210,7 +210,7 @@ def test_check_ids_not_none(func):
 @pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
 @pytest.mark.parametrize("bid", [None, 1])
 def test_set_filter_mismatch(f, bid, clean_astro_ui):
-    """Does set_filter error when there's a mis-match?
+    """Does set_filter error when there's a mismatch?
     """
 
     ui.load_arrays(1, [1, 2, 3], [5, 4, 3], ui.DataPHA)
@@ -224,7 +224,7 @@ def test_set_filter_mismatch(f, bid, clean_astro_ui):
 @pytest.mark.parametrize("f", [[False, True], np.asarray([False, True])])
 @pytest.mark.parametrize("bid", [None, 1])
 def test_set_filter_mismatch_with_filter(f, bid, clean_astro_ui):
-    """Does set_filter error when there's a mis-match after a filter?
+    """Does set_filter error when there's a mismatch after a filter?
 
     test_set_filter_mismatch checks when .mask is a scalar,
     so now check when it's a NumPy array.
@@ -1227,7 +1227,7 @@ def test_save_model_pha_bkg_ascii(clean_astro_ui, tmp_path):
 def test_save_model_fits(savefunc, mtype, clean_astro_ui, tmp_path):
     """Can we write out data for save_source/model? Data1D and FITS
 
-    As this is not a PHA dataset, the two shouldbe the same bar the
+    As this is not a PHA dataset, the two should be the same bar the
     header line.
     """
 

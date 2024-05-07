@@ -1036,7 +1036,7 @@ class WStat(Likelihood):
 
             # The AREASCAL values are applied to the exposure
             # times, since this is how XSPEC handles this (at
-            # least that's my undertanding of a conversation with
+            # least that's my understanding of a conversation with
             # Keith Arnaud, for XSPEC ~ version 12.9). This requires
             # turning an exposure into an array if there's no
             # AREASCAl value

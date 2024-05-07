@@ -803,7 +803,7 @@ def test_xspecvar_zero_handling_variable():
     test_xspecvar_zero_handling checks most things, but not a
     variable scaling (that is, some combination of AREASCAL and
     BACKSCAL is not constant for each bin). In this case we handle
-    a single case jsut to check.
+    a single case just to check.
     """
 
     stat = Chi2XspecVar()

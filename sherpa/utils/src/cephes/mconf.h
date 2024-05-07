@@ -64,7 +64,7 @@ Copyright 1984, 1987, 1989, 1995 by Stephen L. Moshier
 
 /*
  * The Cephes Math Library was written before the C99 standards
- * were available as a result: a few math constants and functtions
+ * were available as a result: a few math constants and functions
  * were defined by the library.
  */
 #if (__STDC_VERSION__ >= 199901L)

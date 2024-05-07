@@ -55,7 +55,7 @@
 //
 // Sep 2006 Original version written by D. T. Nguyen
 // Jan 2008 Removed the dependency of an obsolete multi-dimensional
-//          array with one of my own. Modifid code to be called from
+//          array with one of my own. Modified code to be called from
 //          python. Did some work to avoid the 'false convergence'
 //          on a few problems sent in by the users.
 //
@@ -204,7 +204,7 @@ namespace sherpa {
           reflection < simplex[npar]) {
 
         //
-        // 4a. Outside.  If f  <= f  < f    (i.e., x  is stricly better then
+        // 4a. Outside.  If f  <= f  < f    (i.e., x  is strictly better then
         //                   n     r    n+1         r
         // x    ), perform an outside contraction: calculate
         //  n+1

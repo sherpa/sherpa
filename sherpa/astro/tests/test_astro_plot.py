@@ -959,12 +959,12 @@ def validate_1779(pha, mplot, subset, factor):
     mplot.prepare(pha, full_model)
 
     # The model is a constant model, normalisation of 2/keV, which is
-    # appplied to a grid with irregular grid sizes and an ARF that is
+    # applied to a grid with irregular grid sizes and an ARF that is
     # not flat. The PHA exposure time is 1201, and we don't need to
     # worry about AREA/BACKSCAL.
     #
     # Note that we are calculating the per keV values here, so the
-    # un-even bin widths shuold not be relevant, and a rate, not
+    # un-even bin widths should not be relevant, and a rate, not
     # counts, so the exposure time should also not come into it.
     #
     MODEL_UNGROUPED = cval * _arf

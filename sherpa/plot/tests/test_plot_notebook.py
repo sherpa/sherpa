@@ -146,7 +146,7 @@ def test_modelcontour(all_plot_backends):
     y = np.arange(x0.size)
     d = Data2D('n n', x0.flatten(), x1.flatten(), y.flatten())
 
-    # need somethig we can contour
+    # need something we can contour
     m = Gauss2D()
     m.xpos = 21
     m.ypos = 9
@@ -199,7 +199,7 @@ def test_fitcontour(all_plot_backends):
     y = np.arange(x0.size)
     d = Data2D('n n', x0.flatten(), x1.flatten(), y.flatten())
 
-    # need somethig we can contour
+    # need something we can contour
     m = Gauss2D()
     m.xpos = 21
     m.ypos = 9

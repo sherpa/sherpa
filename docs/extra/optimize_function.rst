@@ -3,7 +3,7 @@ Optimizing functions
 ********************
 
 The :py:mod:`sherpa.optmethods` module provides classes that let you
-optimize :doc:`models <../models/index>` when applyed to :doc:`data
+optimize :doc:`models <../models/index>` when applied to :doc:`data
 <../data/index>` instances, and this is handled by the :doc:`fit
 <../fit/index>` module.  You can apply the optimizers directly to
 functions if you do not need to take advantage of Sherpa's model and
@@ -108,7 +108,7 @@ starting point, and the bounds, to the optimizer - in this case the
   >>> hi = [100, 100]
   >>> res = optfcts.minim(to_optimize1, start, lo, hi)
 
-The return value is a tuple which contains a sucess flag,
+The return value is a tuple which contains a success flag,
 the best-fit parameters, the value at this location, a
 message, and a dictionary with optimizer-specific information:
 

@@ -1016,7 +1016,7 @@ def test_write_fake_perfect_rmf(offset, tmp_path):
 @requires_data
 @requires_fits
 def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
-    """This XMM dataset has been useful for edge cases. So re-use it.
+    """This XMM dataset has been useful for edge cases. So reuse it.
 
     See sherpa-test-data/sherpatest/xmm-fit.py
     """

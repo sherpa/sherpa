@@ -1189,7 +1189,7 @@ def test_modelwrapper_getattr_no_hidden(attr):
     """How does attribute access work?
 
     We can't access attributes of the original model or unknown
-    attribues if they start with _.
+    attributes if they start with _.
 
     """
 
@@ -1393,7 +1393,7 @@ def test_show_kernel_multiple(tmp_path):
 def test_load_filter_simple(idval, tmp_path):
     """Although there is a version in astro we only check the non-astro
     version as the behavior is different (e.g. the astro version needs
-    I/O suppport).
+    I/O support).
 
     """
 
@@ -1415,7 +1415,7 @@ def test_load_filter_simple(idval, tmp_path):
 def test_save_filter_simple(idval, tmp_path):
     """Although there is a version in astro we only check the non-astro
     version as the behavior is different (e.g. the astro version needs
-    I/O suppport).
+    I/O support).
 
     """
 

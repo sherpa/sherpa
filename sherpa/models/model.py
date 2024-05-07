@@ -386,7 +386,7 @@ def boolean_to_byte(boolean_value: bool) -> bytes:
 
 
 def modelCacher1d(func: Callable) -> Callable:
-    """A decorater to cache 1D ArithmeticModel evalutions.
+    """A decorator to cache 1D ArithmeticModel evaluations.
 
     Apply to the `calc` method of a 1D model to allow the model
     evaluation to be cached. The decision is based on the

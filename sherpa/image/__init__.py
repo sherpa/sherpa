@@ -162,7 +162,7 @@ class DataImage(Image):
     ----------
     name : str
     y : array_like
-       The image data (pixel valuess) as a 2D array.
+       The image data (pixel values) as a 2D array.
     eqpos :
        Coordinate transform to the "world" system.
     sky :

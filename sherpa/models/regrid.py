@@ -669,7 +669,7 @@ class ModelDomainRegridder1D():
         extrapolation (depending on the method).
 
         It is not clear yet whether the restriction on grid type (i.e.
-        must match between the requested grid and the intenal grid
+        must match between the requested grid and the internal grid
         whether it is integrated or non-integrated) is too restrictive.
 
         """
@@ -930,7 +930,7 @@ class ModelDomainRegridder2D():
         extrapolation (depending on the method).
 
         It is not clear yet whether the restriction on grid type (i.e.
-        must match between the requested grid and the intenal grid
+        must match between the requested grid and the internal grid
         whether it is integrated or non-integrated) is too restrictive.
         """
 

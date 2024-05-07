@@ -50,7 +50,7 @@
 # some of the classes) means that they need to be tested here.
 #
 # As these tests are really a combination of the behavior of the
-# Fit, Data, Model, and Stats classes, perhaps the file name shoule be
+# Fit, Data, Model, and Stats classes, perhaps the file name should be
 # changed.
 #
 # Possible improvements:
@@ -1478,7 +1478,7 @@ def test_fit_calc_stat_wstat_multiple(flo, fhi, expected):
 
 
 # Remember, the filter is only applied to the background for the third
-# dataset, so it is ignored (as only fitler/grouping applied to the
+# dataset, so it is ignored (as only filter/grouping applied to the
 # source is important for WStat).
 #
 wstat_multi_nbins = 9 + 5 + 11
@@ -1596,7 +1596,7 @@ def test_fit_calc_stat_error_on_wstat():
 
 
 # The Fit constructor should probably check, and error out if there
-# is a size mis-match. These should really be a unit test of the
+# is a size mismatch. These should really be a unit test of the
 # stat class.
 #
 @pytest.mark.parametrize("stat", [

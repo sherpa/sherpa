@@ -256,7 +256,7 @@ class Session(sherpa.ui.utils.Session):
             The dataset identifier. This is only used if bkg_id is
             None and must refer to a DataPHA dataset.
         bkg_id : int or str or None
-            The identifier to check. If None then the default backround
+            The identifier to check. If None then the default background
             identifier will be used, taken from the id dataset.
 
         Returns
@@ -2540,7 +2540,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_grouping : Return the gouping array for a PHA data set.
+        get_grouping : Return the grouping array for a PHA data set.
         group : Turn on the grouping for a PHA data set.
         load_quality : Load the quality array from a file and add to a PHA data set.
         save_grouping : Save the grouping scheme to a file.
@@ -3572,7 +3572,7 @@ class Session(sherpa.ui.utils.Session):
         >>> yvals[0:5]
         array([ 1.,  1.,  1.,  1.,  1.])
 
-        The coordinate system for image axes is determinated by the
+        The coordinate system for image axes is determined by the
         `set_coord` setting for the data set:
 
         >>> set_coord('img', 'physical')
@@ -3783,7 +3783,7 @@ class Session(sherpa.ui.utils.Session):
 
         Return an array of count-rate values for each bin in the
         data set. The units of the returned values depends on the
-        values set by the `set_analysis` rountine for the data
+        values set by the `set_analysis` routine for the data
         set.
 
         Parameters
@@ -5255,7 +5255,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_grouping : Return the gouping array for a PHA data set.
+        get_grouping : Return the grouping array for a PHA data set.
         load_quality : Load the quality array from a file and add to a PHA data set.
         set_grouping : Apply a set of grouping flags to a PHA data set.
 
@@ -5755,7 +5755,7 @@ class Session(sherpa.ui.utils.Session):
                    ethresh=None, fname=None, name='delta-rmf'):
         """Create an RMF.
 
-        If fname is set to `None` then this creats a "perfect" RMF,
+        If fname is set to `None` then this creates a "perfect" RMF,
         which has a delta-function response (so each channel uniquely
         maps to a single energy bin), otherwise the RMF is taken from
         the image data stored in the file pointed to by `fname`.
@@ -5839,7 +5839,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         fake_pha : Simulate a PHA data set from a model.
-        get_response: Return the respone information applied to a PHA data set.
+        get_response: Return the response information applied to a PHA data set.
         load_arf : Load an ARF from a file and add it to a PHA data set.
         load_pha : Load a file as a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -6312,7 +6312,7 @@ class Session(sherpa.ui.utils.Session):
         See Also
         --------
         fake_pha : Simulate a PHA data set from a model.
-        get_response: Return the respone information applied to a PHA data set.
+        get_response: Return the response information applied to a PHA data set.
         load_pha : Load a file as a PHA data set.
         load_rmf : Load a RMF from a file and add it to a PHA data set.
         set_full_model : Define the convolved model expression for a data set.
@@ -6892,7 +6892,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         ids : array of int or str
-           The identifiers for the backround data sets for the data
+           The identifiers for the background data sets for the data
            set. In many cases this will just be ``[1]``.
 
         See Also
@@ -7284,7 +7284,7 @@ class Session(sherpa.ui.utils.Session):
         sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter,
                                              data.get_xlabel())
 
-    # There is no need to overide ignore to add unit checking since
+    # There is no need to override ignore to add unit checking since
     # ignore just ends up calling notice anyway.
     #
     def notice(self, lo=None, hi=None, **kwargs):
@@ -9462,7 +9462,7 @@ class Session(sherpa.ui.utils.Session):
         A model expression is created by using the supplied ARF and RMF
         to convolve the source expression for the dataset (the return
         value of `get_source` for the supplied `id` parameter). This
-        expresion is evaluated for each channel to create the expectation
+        expression is evaluated for each channel to create the expectation
         values, which is then passed to a Poisson random number generator
         to determine the observed number of counts per channel. Any
         background component is scaled by appropriate terms (exposure
@@ -10199,7 +10199,7 @@ class Session(sherpa.ui.utils.Session):
 
         # What do we use for the response? If the background has a
         # response we use that, otherwise we fall-back to use the
-        # reponse from the source (in general the response should be
+        # response from the source (in general the response should be
         # set by calls like set_background, but if the response is
         # added after set_background is called it may be needed).
         #
@@ -11061,7 +11061,7 @@ class Session(sherpa.ui.utils.Session):
         # pylint: disable=W1113
         """Fit a model to one or more background PHA data sets.
 
-        Fit only the backgound components of PHA data sets.  This can
+        Fit only the background components of PHA data sets.  This can
         be used to find the best-fit background parameters, which can
         then be frozen before fitting the data, or to ensure that
         these parameters are well defined before performing a
@@ -14648,7 +14648,7 @@ class Session(sherpa.ui.utils.Session):
         Run sample_flux after changing the logging level, so that the
         screen output from sample_flux is not displayed. We use the
         SherpaVerbosity function from `sherpa.utils.logging` to
-        only change the logging level while runnng sample_flux:
+        only change the logging level while running sample_flux:
 
         >>> from sherpa.utils.logging import SherpaVerbosity
         >>> with SherpaVerbosity('WARN'):
@@ -15880,7 +15880,7 @@ class Session(sherpa.ui.utils.Session):
         - data changed from the version on disk - e.g. by calls to
           `set_counts` - will not be restored correctly,
 
-        - any optional keywords to comands such as `load_data`
+        - any optional keywords to commands such as `load_data`
           or `load_pha`,
 
         - user models may not be restored correctly,

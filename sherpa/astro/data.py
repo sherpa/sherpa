@@ -393,7 +393,7 @@ def html_pha(pha):
     #   correction factors
 
     # Display a subset of header values
-    # - maybe don't display the FITLER if NONE
+    # - maybe don't display the FILTER if NONE
     # - how about RESPFILE / PHAFILE
     meta = make_metadata(pha.header,
                          [('TELESCOP', 'Mission or Satellite'),
@@ -550,7 +550,7 @@ def html_arf(arf):
                                       open_block=True))
 
     # Display a subset of header values
-    # - maybe don't display the FITLER if NONE
+    # - maybe don't display the FILTER if NONE
     # - how about RESPFILE / PHAFILE
     meta = make_metadata(arf.header,
                          [('TELESCOP', 'Mission or Satellite'),
@@ -642,7 +642,7 @@ def html_rmf(rmf):
 def html_img(img):
     """HTML representation: IMG
 
-    Special-case of the Data2D handling. It would be nice to re-use
+    Special-case of the Data2D handling. It would be nice to reuse
     parts of the superclass behavior.
     """
     from sherpa.astro.plot import DataIMGPlot
@@ -1074,7 +1074,7 @@ class DataRMF(DataOgipResponse):
                 raise DataErr(f"e_min/max mismatch in size: {nelo} vs {nehi}")
 
             if nelo != self.detchans:
-                raise DataErr(f"detchans mis-match with e_min/max: {self.detchans} vs {nelo}")
+                raise DataErr(f"detchans mismatch with e_min/max: {self.detchans} vs {nelo}")
 
         Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
 
@@ -1362,7 +1362,7 @@ def replace_xspecvar_values(src_counts, bkg_counts,
     # for the check.
     #
     # The XSPEC code uses a value (for the variance) of the
-    # minumum of
+    # minimum of
     #
     #    1 / src_texp^2
     #    scale^2 / bkg_texp^2
@@ -1845,7 +1845,7 @@ will be removed. The identifiers can be integers or strings.
     @grouping.setter
     def grouping(self, val):
         # _set_related checks if it's a scalar value, so we just need
-        # to check it's convertable to ndarray.
+        # to check it's convertible to ndarray.
         #
         if val is not None:
             try:
@@ -1908,7 +1908,7 @@ will be removed. The identifiers can be integers or strings.
     @quality.setter
     def quality(self, val):
         # _set_related checks if it's a scalar value, so we just need
-        # to check it's convertable to ndarray.
+        # to check it's convertible to ndarray.
         #
         if val is not None:
             try:
@@ -2627,7 +2627,7 @@ It is an integer or string.
 """
 
     def _fix_background_id(self, id):
-        """Identify the backround identifier.
+        """Identify the background identifier.
 
         Parameters
         ----------
@@ -3970,7 +3970,7 @@ It is an integer or string.
         # (i.e. the self object).
         #
         def get_error(dataobj):
-            """Get the fitered and grouped error.
+            """Get the filtered and grouped error.
 
             The return value is the error array and then either None
             or the counts array that was used to calculate the errors.
@@ -5125,7 +5125,7 @@ class DataIMG(Data2D):
         else:
             # If the region is "" then str() will produce '' so we want
             # double quotes about it.
-            warning(f'Unable to restore region="{self._region}" as region module is not avaialable.')
+            warning(f'Unable to restore region="{self._region}" as region module is not available.')
 
             self._region = None
 
@@ -5265,7 +5265,7 @@ class DataIMG(Data2D):
         ----------
         coord : {'logical', 'image', 'physical', 'world', 'wcs'}
             The coordinate system to use. Note that "image" is a
-            synomym for "logical" and "wcs" is a synomyn for "world".
+            synonym for "logical" and "wcs" is a synomyn for "world".
 
         """
 

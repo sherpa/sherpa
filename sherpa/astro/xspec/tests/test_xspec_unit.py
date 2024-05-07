@@ -54,7 +54,7 @@ from sherpa.utils.err import ParameterErr
 #  - in-built dfeaults
 #
 # This means that it is now hard to reliably check the default
-# values. So, we now just chcek that the default values are
+# values. So, we now just check that the default values are
 # one of the expected values.
 #
 # Note that a used could set up their own abundance table,

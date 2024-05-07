@@ -139,7 +139,7 @@ typedef float FloatArrayType;
 // so a value of 1 is being used "just in case". This is also the
 // approach that XSPEC (the application) uses. A keyword argument
 // could be added so that the user can override this, but it is
-// only really woth doing once write access to the XFLT keywords
+// only really worth doing once write access to the XFLT keywords
 // is added (and then working out how to take advantage of it; perhaps
 // a wrapper model that provides a parameter-like interface to the value
 // so that a model instance can be associated with a particular dataset).

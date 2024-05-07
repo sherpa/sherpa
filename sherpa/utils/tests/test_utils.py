@@ -576,7 +576,7 @@ def test_create_expr_mask_size_error(mask):
     with pytest.raises(ValueError) as exc:
         utils.create_expr([1, 2, 3, 4], mask)
 
-    assert str(exc.value) == 'mask array mis-match with vals'
+    assert str(exc.value) == 'mask array mismatch with vals'
 
 
 @pytest.mark.parametrize("val,expected",
@@ -831,7 +831,7 @@ def test_create_expr_integrated_size_error():
     with pytest.raises(ValueError) as exc:
         utils.create_expr_integrated([1, 2, 3, 4], [2, 3])
 
-    assert str(exc.value) == 'hivals array mis-match with lovals'
+    assert str(exc.value) == 'hivals array mismatch with lovals'
 
 
 def test_create_expr_integrated_mask_size_error():
@@ -840,7 +840,7 @@ def test_create_expr_integrated_mask_size_error():
     with pytest.raises(ValueError) as exc:
         utils.create_expr_integrated([1, 2, 3, 4], [4, 5, 6, 7], [True, True])
 
-    assert str(exc.value) == 'mask array mis-match with lovals'
+    assert str(exc.value) == 'mask array mismatch with lovals'
 
 
 @pytest.mark.parametrize("expected,lovals,hivals",

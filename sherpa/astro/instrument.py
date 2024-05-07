@@ -1537,10 +1537,10 @@ class RMFMatrix:
 
         nenergy, nchan = self.matrix.shape
         if self.channels.x_axis.size != nchan:
-            raise ValueError("channels and matrix mis-match")
+            raise ValueError("channels and matrix mismatch")
 
         if self.energies.x_axis.size != nenergy:
-            raise ValueError("channels and matrix mis-match")
+            raise ValueError("channels and matrix mismatch")
 
 
 def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:

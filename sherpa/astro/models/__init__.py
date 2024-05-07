@@ -1292,7 +1292,7 @@ class JDPileup(RegriddableModel1D):
         detector and represents the fraction of piled-up events that
         result in a good grade.
     g0
-        The probabilty of assigning a grade of zero. This should
+        The probability of assigning a grade of zero. This should
         remain frozen.
     f
         The fraction of flux falling into the pileup region. This
@@ -1550,7 +1550,7 @@ class Disk2D(RegriddableModel2D):
 # DOC-NOTE: TODO finish the functional form description
 
 class Shell2D(RegriddableModel2D):
-    """A homogenous spherical 3D shell projected onto 2D.
+    """A homogeneous spherical 3D shell projected onto 2D.
 
     Attributes
     ----------

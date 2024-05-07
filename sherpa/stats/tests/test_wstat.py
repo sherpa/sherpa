@@ -223,7 +223,7 @@ def two_scalar_setup(make_data_path):
     # to the data, just to make sure that any statistic
     # calculation doesn't blow-up too much.
     #
-    # Note: the model values for 3c273 are slighly different
+    # Note: the model values for 3c273 are slightly different
     #       to the single-PHA-file case, so stat results are
     #       slightly different
     #

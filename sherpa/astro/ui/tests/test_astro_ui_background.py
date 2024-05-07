@@ -681,7 +681,7 @@ def test_pha1_eval(clean_astro_ui):
     assert bplot1.title == 'Background Model Contribution'
 
     # check the model evaluates correctly
-    # - backgrond is just multiplied by the arf
+    # - background is just multiplied by the arf
     # - source needs to include the scaled background
     #
     sy *= 100
@@ -845,7 +845,7 @@ def test_pha1_eval_vector_show_two(clean_astro_ui):
     """Check we can show the source/bgnd models with vector scaling
 
     test_pha1_eval_vector_show but with two background
-    components with differents scaling (but the same model).
+    components with different scaling (but the same model).
 
     """
 
@@ -1050,7 +1050,7 @@ def test_pha1_eval_vector(clean_astro_ui):
     assert bplot1.title == 'Background Model Contribution'
 
     # check the model evaluates correctly
-    # - backgrond is just multiplied by the arf
+    # - background is just multiplied by the arf
     # - source needs to include the scaled background
     #
     sy *= 100
@@ -1158,7 +1158,7 @@ def test_pha1_eval_vector_two(dofilter, expected, clean_astro_ui):
     assert bplot1.title == 'Background Model Contribution'
 
     # check the model evaluates correctly
-    # - backgrond is just multiplied by the arf
+    # - background is just multiplied by the arf
     # - source needs to include the scaled background
     #
     sy *= 100

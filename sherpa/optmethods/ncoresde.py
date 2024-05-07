@@ -301,7 +301,7 @@ class MyDifEvo(Opt):
 
         # Set the seed if RNG is not sent in. This used to change
         # random.seed but now changes the NumPy version. It is not
-        # clear if the int is needed but leave in for now (Pyton 3.11
+        # clear if the int is needed but leave in for now (Python 3.11
         # needed it when it was random.seed).
         #
         if self.rng is None:

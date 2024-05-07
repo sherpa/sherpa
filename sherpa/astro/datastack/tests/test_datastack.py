@@ -66,7 +66,7 @@ def ds_setup():
 def ds_setup_object():
     """Setup and teardown code for each test.
 
-    Could try and be clever and re-use ds_setup here,
+    Could try and be clever and reuse ds_setup here,
     but just repeat it to be simpler.
     """
 

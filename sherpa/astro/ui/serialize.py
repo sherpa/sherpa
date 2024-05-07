@@ -84,7 +84,7 @@ else:
 # the parameter interface rather than have it be based on a class.
 #
 # For now we use Any to skip this, at the expense of not type checking
-# the module propery
+# the module property
 #
 # ParameterType = Parameter
 ParameterType = Any
@@ -1476,7 +1476,7 @@ def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
     - data sets changed from the version on disk - e.g. by calls to
       `sherpa.astro.ui.set_counts`
 
-    - any optional keywords to comands such as `load_data`
+    - any optional keywords to commands such as `load_data`
       or `load_pha`
 
     - user models may not be restored correctly

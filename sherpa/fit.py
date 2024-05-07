@@ -1325,7 +1325,7 @@ class Fit(NoNewAttributesAfterInit):
             # statistic value divided by number of degrees of
             # freedom.
 
-            # Degress of freedom are number of data bins included
+            # Degrees of freedom are number of data bins included
             # in fit, minus the number of thawed parameters.
             dof = len(dep) - len(thawedpars)
             if dof < 1:

@@ -865,7 +865,7 @@ def test_image_with_id(make_data_path, clean_astro_ui):
 
 
 # DJB notes (2020/02/29) that these tests used to not be run,
-# because the lorentz1d model retrned 1 rather than 4. This
+# because the lorentz1d model returned 1 rather than 4. This
 # has now been included in the test so that we can check
 # the behavior if the PSF centering code is ever changed.
 #
@@ -1395,7 +1395,7 @@ def test_pileup_model(make_data_path, clean_astro_ui):
     assert mlines[11].strip() == 'pl.gamma     thawed         1.97          -10           10'
 
     # Ensure that the statistic has got worse (technically
-    # it coud get better, but not for this case).
+    # it could get better, but not for this case).
     #
     stat1 = ui.calc_stat('pileup')
     assert stat1 > stat0

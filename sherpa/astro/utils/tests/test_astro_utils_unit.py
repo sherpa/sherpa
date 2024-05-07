@@ -479,7 +479,7 @@ def test_calc_data_sum_filtered_pha(frange, expected):
     We test a few more cases than the 1D/1DInt cases because we want
     to include tests of the bad-quality channel case (not relevant
     here with the "pha" test but it is relevant for the "grp" and
-    "qual" data obects we test below in
+    "qual" data objects we test below in
     test_calc_data_sum_filtered_pha_grouped.
 
     """

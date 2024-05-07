@@ -35,7 +35,7 @@ XSPEC version - including patch level - the module is using::
 Initializing XSPEC
 ------------------
 
-The XSPEC model library is initalized so that the cosmology parameters
+The XSPEC model library is initialized so that the cosmology parameters
 are set to H_0=70, q_0=0.0, and lambda_0=0.73 (they can be changed with
 `set_xscosmo`).
 
@@ -529,7 +529,7 @@ def get_xsxset(name: str) -> str:
     -----
     Due to the way X-Spec model settings work, `get_xsxset` will only
     return a value if it has previously been set with a call to
-    `set_xsxset`. There is no way to retrive the default value of a
+    `set_xsxset`. There is no way to retrieve the default value of a
     setting.
 
     Examples
@@ -1114,7 +1114,7 @@ class XSParameter(XSBaseParameter):
             The new default parameter value.
         default_min, default_max : number or None, optional
             The new default parameter limits.
-        hard_min, hard_max : numer or None, optional
+        hard_min, hard_max : number or None, optional
             Changing the hard limits will also change the matching
             soft limit (`min` or `max`).
 
@@ -1515,8 +1515,8 @@ class XSConvolutionKernel(XSModel):
     (`XSConvolutionModel`) that is. This wrapping is done by applying
     the kernel to the model expression using normal function
     application, that is the following creates a model called ``mdl``
-    which aplies the comvolution model (in this case `XScflux`) to the
-    model expression (an absorbed APEC model):
+    which applies the convolution model (in this case `XScflux`) to
+    the model expression (an absorbed APEC model):
 
     >>> cmdl = XScflux()
     >>> src = XSapec()
@@ -1591,9 +1591,9 @@ class XSConvolutionKernel(XSModel):
         ----------
         pars : sequence of numbers
             The parameters of the convolved model. The first npars
-            parameters (where npars is the lenth of the objecs pars
-            attribute) are applied to the convolution model, and the
-            remaining are passed to the rhs model.
+            parameters (where npars is the length of the objects
+            pars attribute) are applied to the convolution model,
+            and the remaining are passed to the rhs model.
         rhs : sherpa.models.model.ArithmeticModel
             The model that is being convolved.
         *args
@@ -7748,7 +7748,7 @@ class XSssa(XSAdditiveModel):
         The electron temperature, in keV.
     y
         A combination of ion density, temperature, and stellar radius.
-        See [1]_ for a decription. The units are 10^42 keV/km/cm^6.
+        See [1]_ for a description. The units are 10^42 keV/km/cm^6.
     norm
         This represents (R/d)^2, where d is the distance to the star in
         units of 10 kpc.

@@ -1251,7 +1251,7 @@ def test_manual_setting_mask():
 
     d.mask = False
     # This test looks like it does not do anything, but in fact "mask"
-    # is a property with complext logic, so the fact that setting it to
+    # is a property with complex logic, so the fact that setting it to
     # False makes is False is non-trivial.
     # I don't want to test for
     # len(d.get_dep(filter=True)) == 0
@@ -1576,7 +1576,7 @@ def test_data1d_get_y_checks_model_dim():
 
 
 def test_ispace2d_mismatch():
-    """There is currently no check for this mis-match.
+    """There is currently no check for this mismatch.
 
     This is a regression test.
     """
@@ -2187,7 +2187,7 @@ def test_check_related_fields_correct_size(column):
 def test_data1d_mismatched_related_fields():
     """Check setting the related fields to different sizes: Data1D
 
-    This is a regression test to check when the mis-match is detected,
+    This is a regression test to check when the mismatch is detected,
     if it is. It is important that we have not set the dependent axis
     here, as there is likely to be better support for checking the
     dependent and independent axes than the related axes.
