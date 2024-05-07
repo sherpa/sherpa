@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2024
+#  Copyright (C) 2019 - 2021, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,7 +19,7 @@
 
 import pytest
 
-from sherpa.optmethods import _tstoptfct
+from sherpa.optmethods import _tstoptfct  # type: ignore
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.utils import CallbackN
