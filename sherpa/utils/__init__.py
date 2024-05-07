@@ -95,6 +95,13 @@ dividing and multiplying the value by ``_guess_ampl_scale``.
 ###############################################################################
 
 
+# This logic was found in several modules so centralize it. Note that
+# this is not added to __all__.
+#
+def is_subclass(t1, t2):
+    """Is t2 a subclass of t1 but not the same as t1?"""
+    return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
+
 
 ###############################################################################
 

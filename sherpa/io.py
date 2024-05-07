@@ -28,17 +28,13 @@ import os
 import numpy as np
 
 from sherpa.data import Data, Data1D
-from sherpa.utils import get_num_args, is_binary_file
+from sherpa.utils import is_subclass, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
 
 __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
            'write_arrays')
-
-
-def _is_subclass(t1, t2):
-    return isinstance(t1, type) and issubclass(t1, t2) and (t1 is not t2)
 
 
 def _check_args(size, dstype):
@@ -383,7 +379,7 @@ def read_arrays(*args):
     if len(largs) == 0:
         raise IOErr('noarrays')
 
-    if _is_subclass(largs[-1], Data):
+    if is_subclass(largs[-1], Data):
         dstype = largs.pop()
     else:
         dstype = Data1D

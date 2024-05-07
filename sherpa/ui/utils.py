@@ -41,7 +41,7 @@ from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
 from sherpa.plot import Plot, MultiPlot, set_backend
-from sherpa.utils import NoNewAttributesAfterInit, \
+from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
@@ -96,10 +96,6 @@ def _is_integer(val):
 
 def _is_str(val):
     return isinstance(val, (str, ))
-
-
-def _is_subclass(t1, t2):
-    return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
 
 
 def get_plot_prefs(plotobj):
@@ -475,7 +471,7 @@ class ModelWrapper(NoNewAttributesAfterInit):
         if not isinstance(session, Session):
             raise ValueError(f"session={session} is not a Session instance")
 
-        if not _is_subclass(modeltype, Model):
+        if not is_subclass(modeltype, Model):
             raise ValueError(f"modeltype={modeltype} is not a Model class")
 
         self._session = session
@@ -866,7 +862,7 @@ class Session(NoNewAttributesAfterInit):
         for mod, base, odict in zip(modules, basetypes, objdicts):
             for name in mod.__all__:
                 cls = getattr(mod, name)
-                if _is_subclass(cls, base):
+                if is_subclass(cls, base):
                     odict[name.lower()] = cls()
 
         # Note: levmar does not support the rng option so this
@@ -5929,7 +5925,7 @@ class Session(NoNewAttributesAfterInit):
             cls = getattr(module, name)
 
             for base in baselist:
-                if _is_subclass(cls, base):
+                if is_subclass(cls, base):
                     break
             else:
                 continue
@@ -5992,7 +5988,7 @@ class Session(NoNewAttributesAfterInit):
         """
         name = modelclass.__name__.lower()
 
-        if not _is_subclass(modelclass, sherpa.models.ArithmeticModel):
+        if not is_subclass(modelclass, sherpa.models.ArithmeticModel):
             raise TypeError(f"model class '{name}' is not a derived class "
                             "from sherpa.models.ArithmeticModel")
 

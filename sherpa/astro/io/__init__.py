@@ -64,6 +64,7 @@ from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.data import Data, Data1D, Data2D, Data2DInt
 from sherpa.io import _check_args
+from sherpa.utils import is_subclass
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -162,7 +163,7 @@ def read_arrays(*args):
     if len(largs) == 0:
         raise IOErr('noarrays')
 
-    if sherpa.io._is_subclass(largs[-1], Data):
+    if is_subclass(largs[-1], Data):
         dstype = largs.pop()
     else:
         dstype = Data1D
