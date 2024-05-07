@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2024
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -23,7 +24,7 @@ import numpy
 
 import pytest
 
-from sherpa.utils import demuller, bisection, new_muller, apache_muller, \
+from sherpa.utils import demuller, new_muller, apache_muller, \
     zeroin
 
 
@@ -252,7 +253,7 @@ def demuller2(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                     tol=tol)
 
 
-@pytest.mark.parametrize('method', [bisection, demuller2, new_muller, apache_muller, zeroin])
+@pytest.mark.parametrize('method', [demuller2, new_muller, apache_muller, zeroin])
 @pytest.mark.parametrize('problem,a,b',
                          [(prob1, 0.0, 1.0),
                           (prob2, -5.0, 1.2),

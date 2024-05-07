@@ -20,7 +20,7 @@
 
 import numpy as np
 
-from sherpa.utils import Knuth_close, func_counter
+from sherpa.utils import Knuth_close, FuncCounter
 from sherpa.utils.parallel import multi, context, run_tasks
 from sherpa.utils.random import uniform
 
@@ -70,17 +70,34 @@ class MyNcores:
 
 
 class Opt:
+    """Base optimisation class.
 
+    .. versionchanged:: 4.16.1
+       The class structure has been changed (e.g. `nfev` is now a
+       scalar and not a single-element list).
+
+    """
+
+    # QUS: we support xmin or xmax being None, but do we ever use
+    # this capability?
+    #
     def __init__(self, func, xmin, xmax):
         self.npar = len(xmin)
-        self.nfev, self.func = \
-            self.func_counter_bounds_wrappers(func, self.npar, xmin, xmax)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
+        self.func_count = FuncCounter(func)
+        self.func = self.func_bounds(self.func_count, self.npar, xmin, xmax)
+
+    @property
+    def nfev(self):
+        return self.func_count.nfev
 
     def _outside_limits(self, x, xmin, xmax):
         return (np.any(x < xmin) or np.any(x > xmax))
 
+    # We should be able to take these parameters from the class, or
+    # re-write this logic.
+    #
     def func_bounds(self, func, npar, xmin=None, xmax=None):
         """In order to keep the current number of function evaluations:
         func_counter should be called before func_bounds. For example,
@@ -112,12 +129,6 @@ class Opt:
             return func(x, *args)
 
         return func_bounds_wrapper
-
-    def func_counter_bounds_wrappers(self, func, npar, xmin, xmax):
-        """Wraps the calls to func_counter then func_bounds"""
-        nfev, afunc = func_counter(func)
-        myfunc = self.func_bounds(afunc, npar, xmin, xmax)
-        return nfev, myfunc
 
 
 class SimplexBase:

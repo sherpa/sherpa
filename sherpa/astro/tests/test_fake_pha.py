@@ -23,11 +23,14 @@
 At present it is *very* limited.
 """
 
+import warnings
+
 import numpy as np
 
 import pytest
 
-from sherpa.astro.instrument import create_arf, create_delta_rmf
+from sherpa.astro.background import get_response_for_pha
+from sherpa.astro.instrument import Response1D, create_arf, create_delta_rmf
 from sherpa.astro.data import DataPHA
 from sherpa.astro.fake import fake_pha
 from sherpa.astro import io
@@ -74,8 +77,8 @@ def test_fake_pha_requires_model():
     pha = DataPHA("x", channels, channels * 0)
     pha.set_rmf(rmf)
     pha.set_arf(arf)
-    with pytest.raises(AttributeError,
-                       match="^'list' object has no attribute 'name'$"):
+    with pytest.raises(TypeError,
+                       match="^'list' object is not callable$"):
         fake_pha(pha, [1, 2, 3])
 
 
@@ -106,14 +109,12 @@ def identity(x, rng=None):
     return x
 
 
-@pytest.mark.parametrize("method,is_source,expected1,expected2",
-                         [(None, True, [184, 423, 427], [428, 773, 800]),
-                          (identity, True, [200, 400, 400], [400, 800, 800]),
-                          (None, False, [1, 1, 0], [2, 2, 0]),
-                          (identity, False, [2, 2, 2], [2, 2, 2])
+@pytest.mark.parametrize("method,expected1,expected2",
+                         [(None, [184, 423, 427], [428, 773, 800]),
+                          (identity, [200, 400, 400], [400, 800, 800]),
                           ])
 @pytest.mark.parametrize("has_bkg", [True, False])
-def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg):
+def test_fake_pha_basic(method, expected1, expected2, has_bkg):
     """No background.
 
     For simplicity we use perfect responses.
@@ -132,11 +133,12 @@ def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg):
 
     data.set_arf(arf)
     data.set_rmf(rmf)
+    resp = data.get_full_response()
 
     mdl = Const1D("mdl")
     mdl.c0 = 2
 
-    fake_pha(data, mdl, is_source=is_source, add_bkgs=False, method=method, rng=rng)
+    fake_pha(data, resp(mdl), method=method, rng=rng)
 
     assert data.exposure == pytest.approx(1000.0)
     assert (data.channel == channels).all()
@@ -158,24 +160,21 @@ def test_fake_pha_basic(method, is_source, expected1, expected2, has_bkg):
     # For reference the predicted source signal is
     #    [200, 400, 400]
     #
-    # When is_source is not set then the values are significantly
-    # smaller as there's no response, in particular no exposure term
-    # or changes due to bin-widths varying with position.
-    #
     assert data.counts == pytest.approx(expected1)
 
     # Essentially double the exposure by having two identical arfs
     #
     data.set_arf(arf, 2)
     data.set_rmf(rmf, 2)
-    fake_pha(data, mdl, is_source=is_source, add_bkgs=False, method=method, rng=rng)
+    resp = data.get_full_response()
+    fake_pha(data, resp(mdl), method=method, rng=rng)
 
     assert data.counts == pytest.approx(expected2)
 
 
 @pytest.mark.parametrize("method,expected1,expected2",
-                         [(None, [186, 197, 212], [9, 4, 6]),  # expected2 is wrong
-                          pytest.param(identity, [200, 200, 200], [202 / 6, 202 / 6, 202 / 6], marks=pytest.mark.xfail)
+                         [(None, [186, 197, 212], [30, 31, 37]),
+                          (identity, [200, 200, 200], [202 / 6, 202 / 6, 202 / 6])
                           ])
 def test_fake_pha_background_pha(method, expected1, expected2):
     """Sample from background pha (no background model)"""
@@ -189,11 +188,15 @@ def test_fake_pha_background_pha(method, expected1, expected2):
     data.set_arf(arf)
     data.set_rmf(rmf)
 
+    resp = data.get_full_response()
+
     mdl = Const1D("mdl")
     mdl.c0 = 0
 
+    full_model = resp(mdl)
+
     # Just make sure that the model does not contribute
-    fake_pha(data, mdl, is_source=True, add_bkgs=False, rng=rng)
+    fake_pha(data, full_model, rng=rng)
     assert data.counts == pytest.approx([0, 0, 0])
 
     # The background signal (as each bin is the same) is
@@ -207,7 +210,7 @@ def test_fake_pha_background_pha(method, expected1, expected2):
     #
     #   1000 / 2 / 2.5 = 1000 / 5 = 200
     #
-    fake_pha(data, mdl, is_source=True, add_bkgs=True, method=method, rng=rng)
+    fake_pha(data, full_model, include_bkg_data=True, method=method, rng=rng)
     assert data.counts == pytest.approx(expected1)
 
     # Add several more backgrounds with, compared to the first
@@ -233,13 +236,14 @@ def test_fake_pha_background_pha(method, expected1, expected2):
                       exposure=1000, backscal=2.5)
         data.set_background(bkg, id=i)
 
-    fake_pha(data, mdl, is_source=True, add_bkgs=True, method=method, rng=rng)
+    fake_pha(data, full_model, include_bkg_data=True, method=method,
+             rng=rng)
     assert data.counts == pytest.approx(expected2)
 
 
 @pytest.mark.parametrize("method,expected1,expected2",
-                         [(None, [186, 411, 405], [197, 396, 389]),
-                          (identity, [200, 400, 400], [200, 400, 400])
+                         [(None, [186, 411, 405], [396, 794, 785]),
+                          (identity, [200, 400, 400], [400, 800, 800])
                           ])
 def test_fake_pha_bkg_model(method, expected1, expected2):
     """Test background model
@@ -265,19 +269,20 @@ def test_fake_pha_bkg_model(method, expected1, expected2):
     bmdl = Const1D("bmdl")
     bmdl.c0 = 2
 
+    bmodels = {"used-bkg": bmdl}
+
     # With no background model the simulated source counts
     # are 0.
     #
-    bmodels = {"used-bkg": bmdl}
-    fake_pha(data, mdl, is_source=True, add_bkgs=False,
-             bkg_models=bmodels, method=method, rng=rng)
+    full_model = get_response_for_pha(data, mdl)
+    fake_pha(data, full_model, method=method, rng=rng)
 
     assert data.counts == pytest.approx([0, 0, 0])
 
     # Check we have created source counts this time.
     #
-    fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models=bmodels, method=method, rng=rng)
+    full_model = get_response_for_pha(data, mdl, bkg_srcs=bmodels)
+    fake_pha(data, full_model, method=method, rng=rng)
 
     assert data.exposure == pytest.approx(1000.0)
     assert (data.channel == channels).all()
@@ -314,21 +319,21 @@ def test_fake_pha_bkg_model(method, expected1, expected2):
     #
     assert data.counts == pytest.approx(expected1)
 
-    # Now add a second set of arf/rmf for the data. However, all the
-    # signal is background, so this does not change any of the
-    # results.
+    # Now add a second set of arf/rmf for the data. Originally this
+    # did nothing, but after fixing #1685 point 2 it doubles the
+    # signal, because we now have "two" responses adding data.
     #
     data.set_arf(arf, 2)
     data.set_rmf(rmf, 2)
-    fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models=bmodels, method=method, rng=rng)
+    full_model = get_response_for_pha(data, mdl, bkg_srcs=bmodels)
+    fake_pha(data, full_model, method=method, rng=rng)
 
     assert data.counts == pytest.approx(expected2)
 
 
 @pytest.mark.parametrize("method,expected1,expected2",
-                         [(None, [388, 777, 755], [479, 957, 785]),  # expected2 values look wrong
-                          pytest.param(identity, [400, 800, 800], [400 + 1000/3, 800 + 1000/3, 800 - 400/3], marks=pytest.mark.xfail)
+                         [(None, [388, 777, 755], [708, 1188, 653]),
+                          (identity, [400, 800, 800], [400 + 1000/3, 800 + 1000/3, 800 - 400/3])
                           ])
 def test_fake_pha_bkg_model_multiple(method, expected1, expected2):
     """Test background model with multiple backgrounds
@@ -339,6 +344,10 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2):
     This test takes advantage of the method argument to allow
     the actual model values to be checked as well as a random
     realisation using poisson_noise).
+
+    With the changes in 4.16.1 this test is less relevant, as
+    it is really just a test of the model evaluation, but is
+    left in.
     """
 
     rng = np.random.RandomState(873)
@@ -394,8 +403,8 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2):
     #
     #   1000 * 4 * [0.1, 0.2, 0.2] = [400, 800, 800]
     #
-    fake_pha(data, mdl, is_source=True, add_bkgs=False,
-             bkg_models=bmodels, method=method, rng=rng)
+    full_model = get_response_for_pha(data, mdl)
+    fake_pha(data, full_model, method=method, rng=rng)
 
     assert data.exposure == pytest.approx(1000.0)
     assert data.counts == pytest.approx(expected1)
@@ -403,8 +412,8 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2):
     # Check we create the expected signal, which is all from the
     # backgrounds and the source.
     #
-    fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models=bmodels, method=method, rng=rng)
+    full_model = get_response_for_pha(data, mdl, bkg_srcs=bmodels)
+    fake_pha(data, full_model, method=method, rng=rng)
 
     # The background identifiers haven't changed.
     #
@@ -417,32 +426,37 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2):
     assert data.get_background(2).exposure == pytest.approx(6000)
     assert data.get_background(3).exposure == pytest.approx(500)
 
-    # The signal is a sum of the source and weighted background
-    # components. The source exposure time should be used, not the
-    # background, so all we care about is the ratio of the backscal
-    # values (as the areascal is None in all cases here).
+    # The signal is a sum of the source and average background
+    # components. We do not care about the background exposure values,
+    # as the background model returns a rate and so we just need to
+    # multiply by the source exposure time. We do however need to
+    # worry about the backscal/areascal differences (here we only have
+    # backscal).
     #
     # In the following we show
     #
-    #     exposure * model * bin-width / (backscal relative to source)
+    #     exposure * model * bin-width / rel_backscal
+    #
+    # where rel_backscal = bkg_backscal / src_backscal
+    # and src_backscal = 1.
     #
     #   Source:
-    #     1000 * 4 * [0.1, 0.2, 0.2] / 1           = [400, 800, 800]
+    #     1000 * 4 * [0.1, 0.2, 0.2]               = [400, 800, 800]
     #
     #   Bkg 1:
     #     1000 * [10, 0, 0] * [0.1, 0.2, 0.2] / 1  = [1000, 0, 0]
     #
     #   Bkg 2:
-    #     1000 * [0, 10, 0] * [0.1, 0.2, 0.2] / 2   = [0, 1000, 0]
+    #     1000 * [0, 10, 0] * [0.1, 0.2, 0.2] / 2 = [0, 1000, 0]
     #
     #   Bkg 1:
-    #     1000 * [0, 0, -8] * [0.1, 0.2, 0.2] / 4  = [0, 0, -400]
+    #     1000 * [0, 0, -8] * [0.1, 0.2, 0.2] / 4 = [0, 0, -400]
     #
     # So the expected total is, because we average the background
     # contributions:
     #
     #     [400, 800, 800] + [1000, 1000, -400] / 3
-    #   = [733.333, 1133.333, 666.66]
+    #   = [733.333, 1133.333, 666.667]
     #
     assert data.counts == pytest.approx(expected2)
 
@@ -453,7 +467,11 @@ def test_fake_pha_bkg_model_multiple(method, expected1, expected2):
                           ])
 @pytest.mark.parametrize("add_bkgs", [False, True])
 def test_fake_pha_with_no_background(method, expected, add_bkgs):
-    """Check add_bkgs keyword does nothing if no background."""
+    """Check add_bkgs keyword does nothing if no background.
+
+    With the change in 4.16.1 this now tests the include_bkg_data flag
+    instead but the parameter name hasn't been changed.
+    """
 
     rng = np.random.RandomState(3567)
 
@@ -465,11 +483,15 @@ def test_fake_pha_with_no_background(method, expected, add_bkgs):
     mdl = Const1D()
     mdl.c0 = 4
 
+    resp = Response1D(data)
+    full_model = resp(mdl)
+
     assert data.exposure == pytest.approx(1000.0)
     assert data.channel == pytest.approx(channels)
     assert data.counts == pytest.approx(counts)
 
-    fake_pha(data, mdl, add_bkgs=add_bkgs, method=method, rng=rng)
+    fake_pha(data, full_model, include_bkg_data=add_bkgs,
+             method=method, rng=rng)
 
     assert data.exposure == pytest.approx(1000.0)
     assert data.channel == pytest.approx(channels)
@@ -503,20 +525,27 @@ def test_fake_pha_has_valid_ogip_keywords_all_fake(tmp_path):
     bmdl = Const1D("bmdl")
     bmdl.c0 = 2
 
-    fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models={"used-bkg": bmdl}, rng=rng)
+    resp = Response1D(data)
+    full_model = resp(mdl + bmdl)
+
+    fake_pha(data, full_model, rng=rng)
+
+    # The simulated data comes from
+    #      mdl
+    #      bmdl
+    #      bcounts
+    #
+    # This is just to check we are getting something that seems
+    # believable.
+    #
+    assert data.counts.sum() == 1003
 
     outfile = tmp_path / "sim.pha"
     io.write_pha(str(outfile), data, ascii=False)
 
     inpha = io.read_pha(str(outfile))
     assert inpha.channel == pytest.approx(channels)
-
-    # it is not required that we check counts (that is, we can drop this
-    # if it turns out not to be repeatable across platforms), but for
-    # now keep the check.
-    #
-    assert inpha.counts == pytest.approx([188, 399, 416])
+    assert inpha.counts == pytest.approx(data.counts)
 
     for field in ["staterror", "syserror", "bin_lo", "bin_hi",
                   "grouping", "quality"]:
@@ -559,32 +588,39 @@ def test_fake_pha_has_valid_ogip_keywords_from_real(make_data_path, tmp_path):
     infile = make_data_path("acisf01575_001N001_r0085_pha3.fits.gz")
     data = io.read_pha(infile)
 
+    # Simulate only using a "background" model, so remove the background
+    # components.
+    #
+    assert data.background_ids == pytest.approx([1])
+    data.delete_background(1)
+    assert data.background_ids == []
+
+    # Not really sure why this model combination was picked, but
+    # setting the model value so that the predicted counts are small,
+    # to make it easier to check.
+    #
     mdl = Const1D("mdl")
     mdl.c0 = 0
 
     bmdl = Const1D("bmdl")
-    bmdl.c0 = 2
+    bmdl.c0 = 2e-6
 
-    fake_pha(data, mdl, is_source=True, add_bkgs=True,
-             bkg_models={"used-bkg": bmdl}, rng=rng)
+    resp = Response1D(data)
+    full_model = resp(mdl + bmdl)
+    fake_pha(data, full_model, rng=rng)
+
+    # This is not really a test of the simulation per say, but just
+    # check we have something that seems sensible.
+    #
+    assert data.counts.sum() == 188
+    assert data.counts[-1] == 0
 
     outfile = tmp_path / "sim.pha"
     io.write_pha(str(outfile), data, ascii=False)
 
     inpha = io.read_pha(str(outfile))
     assert inpha.channel == pytest.approx(np.arange(1, 1025))
-
-    # it is not required that we check counts (that is, we can drop this
-    # if it turns out not to be repeatable across platforms), but for
-    # now keep the check.
-    #
-    expected = np.zeros(1024)
-    for idx in [70, 92, 104, 138, 171, 457, 623, 670, 685, 706, 776,
-                792, 860, 894, 950, 1019]:
-        expected[idx] = 1
-
-    expected[1023] = 3
-    assert inpha.counts == pytest.approx(expected)
+    assert inpha.counts == pytest.approx(data.counts)
 
     for field in ["staterror", "syserror", "bin_lo", "bin_hi",
                   "grouping", "quality"]:
@@ -606,3 +642,32 @@ def test_fake_pha_has_valid_ogip_keywords_from_real(make_data_path, tmp_path):
     for key in ["EXPOSURE", "AREASCAL", "BACKSCAL",
                 "ANCRFILE", "BACKFILE", "RESPFILE"]:
         assert key not in hdr
+
+
+@pytest.mark.parametrize("key", ["is_source", "pileup_model", "add_bkgs", "bkg_models", "id"])
+def test_fake_pha_warns_when_arguments_set(key):
+    """The interface changed in 4.16.0, so note that we get a warning.
+
+    The plan is to remove these arguments, but for now treat them
+    as deprecated.
+    """
+
+    pha = DataPHA("fake", [1, 2], [0, 0])
+    rmf = create_delta_rmf(np.asarray([1, 2]), np.asarray([2, 3]))
+    pha.set_rmf(rmf)
+    mdl = Const1D("mdl")
+
+    # For this check all we care about is if the keyword is set to
+    # anything but None, so it doesn't matter if the value isn't
+    # meaningful for the old meaning of the keyword.
+    #
+    kwarg = {}
+    kwarg[key] = True
+    with warnings.catch_warnings(record=True) as warn:
+        warnings.simplefilter("always", DeprecationWarning)
+        fake_pha(pha, mdl, **kwarg)
+
+        assert len(warn) == 1
+        w = warn[0]
+        assert issubclass(w.category, DeprecationWarning)
+        assert str(w.message).startswith(f"{key} is no-longer used")

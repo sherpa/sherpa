@@ -9364,8 +9364,9 @@ class Session(sherpa.ui.utils.Session):
         if d.subtracted:
             d.unsubtract()
 
-    def fake_pha(self, id, arf, rmf, exposure, backscal=None, areascal=None,
-                 grouping=None, grouped=False, quality=None, bkg=None,
+    def fake_pha(self, id, arf=None, rmf=None, exposure=None,
+                 backscal=None, areascal=None, grouping=None,
+                 grouped=False, quality=None, bkg=None,
                  method=None):
         """Simulate a PHA data set from a model.
 
@@ -9373,6 +9374,13 @@ class Session(sherpa.ui.utils.Session):
         model, instrument response (given as an ARF and RMF), and exposure
         time, along with a Poisson noise term. A background component can
         be included.
+
+        .. versionchanged:: 4.16.1
+           Several bugs have been addressed when simulating data with
+           a background: the background model contribution would be
+           wrong if the source and background exposure times differ or
+           if there were multiple background datasets. The arf, rmf,
+           and exposure arguments are now optional.
 
         .. versionchanged:: 4.16.0
            The method parameter was added.
@@ -9387,23 +9395,22 @@ class Session(sherpa.ui.utils.Session):
            The identifier for the data set to create. If it already
            exists then it is assumed to contain a PHA data set and the
            counts will be over-written.
-        arf : None or filename or ARF object or list of filenames
+        arf : None or filename or ARF object or list of filenames, optional
            The name of the ARF, or an ARF data object (e.g.  as
            returned by `get_arf` or `unpack_arf`). A list of filenames
            can be passed in for instruments that require multiple ARFs.
            Set this to `None` to use any arf that is already set for
            the data set given by id or for instruments that do not use an
            ARF separate from the RMF (e.g. XMM-Newton/RGS).
-        rmf : filename or RMF object or list of filenames
+        rmf : filename or RMF object or list of filenames, optional
            The name of the RMF, or an RMF data object (e.g. as
            returned by `get_rmf` or `unpack_rmf`).  A list of filenames
            can be passed in for instruments that require multiple RMFs.
            Set this to `None` to use any rmf that is already set for
            the data set given by id.
-        exposure : number
-           The exposure time, in seconds.
-           Set this to `None` to use any exposure that is already set for
-           the data set given by id.
+        exposure : number, optional
+           The exposure time, in seconds. If not set (i.e. is `None`) then
+           use the exposure time of the data set given by id.
         backscal : number, optional
            The 'BACKSCAL' value for the data set.
         areascal : number, optional
@@ -9465,6 +9472,21 @@ class Session(sherpa.ui.utils.Session):
 
         Examples
         --------
+
+        Fit a model - an absorbed powerlaw - to the data in the file
+        src.pi and then simulate the data using the fitted model.  The
+        exposure time, ARF, and RMF are taken from the data in src.pi.
+
+        >>> load_pha("src.pi")
+        >>> set_source(xsphabs.gal * powlawd.pl)
+        >>> notice(0.5, 6)
+        >>> fit(1)
+        >>> fake_pha(1)
+
+        Simulate the data but for a 1 Ms observation:
+
+        >>> fake_pha(1, exposure=1e6)
+
         Estimate the signal from a 5000 second observation using the
         ARF and RMF from "src.arf" and "src.rmf" respectively:
 
@@ -9510,114 +9532,163 @@ class Session(sherpa.ui.utils.Session):
         >>> save_pha('sim', 'sim.pi')
 
         """
-        id = self._fix_id(id)
+        idval = self._fix_id(id)
 
-        if id in self._data:
-            d = self._get_pha_data(id)
+        if idval in self._data:
+            pha = self._get_pha_data(idval)
         else:
-            d = DataPHA('', None, None)
-            self.set_data(id, d)
+            pha = DataPHA('', None, None)
+            self.set_data(idval, pha)
 
-        if rmf is None and len(d.response_ids) == 0:
-            raise DataErr('normffake', id)
+        if rmf is None and len(pha.response_ids) == 0:
+            raise DataErr('normffake', idval)
 
         # TODO: do we still expect to get bytes here?
         if isinstance(rmf, (str, np.bytes_)):
-            if not os.path.isfile(rmf):
-                raise IOErr("filenotfound", rmf)
-
             rmf = self.unpack_rmf(rmf)
 
         # TODO: do we still expect to get bytes here?
         if isinstance(arf, (str, np.bytes_)):
-            if not os.path.isfile(arf):
-                raise IOErr("filenotfound", arf)
-
             arf = self.unpack_arf(arf)
 
         if not (rmf is None and arf is None):
-            for resp_id in d.response_ids:
-                d.delete_response(resp_id)
+            # Remove any existing responses if ones are given.  This
+            # means that the rmf and arf arguments can only be used
+            # for "single-response" cases.
+            #
+            for resp_id in pha.response_ids:
+                pha.delete_response(resp_id)
 
         # Get one rmf for testing the channel number
         # This would be a lot simpler if I could just raise the
         # incompatiblersp error on the OO layer (that happens, but the id
         # is not in the error messaage).
         if rmf is None:
-            rmf0 = d.get_rmf()
+            rmf0 = pha.get_rmf()
         elif np.iterable(rmf):
             rmf0 = self.unpack_rmf(rmf[0])
         else:
             rmf0 = rmf
 
-        if d.channel is None:
-            d.channel = sao_arange(1, rmf0.detchans)
+        if pha.channel is None:
+            pha.channel = sao_arange(1, rmf0.detchans)
 
-        else:
-            if len(d.channel) != rmf0.detchans:
-                raise DataErr('incompatibleresp', rmf.name, str(id))
+        elif len(pha.channel) != rmf0.detchans:
+            raise DataErr('incompatibleresp', rmf.name, str(idval))
 
         # at this point, we can be sure that arf is not a string, because
         # if it was, it would have gone through load_arf already above.
         if not (rmf is None and arf is None):
             if np.iterable(arf):
                 resp_ids = range(1, len(arf) + 1)
-                self.load_multi_arfs(id, arf, resp_ids=resp_ids)
+                self.load_multi_arfs(idval, arf, resp_ids=resp_ids)
             elif arf is None:
                 # In some cases, arf is None, but rmf is not.
                 # For example, XMM/RGS uses only a single file (the RMF)
                 # to hold all information.
                 pass
             else:
-                self.set_arf(id, arf)
+                self.set_arf(idval, arf)
 
             if np.iterable(rmf):
                 resp_ids = range(1, len(rmf) + 1)
-                self.load_multi_rmfs(id, rmf, resp_ids=resp_ids)
+                self.load_multi_rmfs(idval, rmf, resp_ids=resp_ids)
             else:
-                self.set_rmf(id, rmf)
+                self.set_rmf(idval, rmf)
 
-        d.exposure = exposure
+        if exposure is not None:
+            pha.exposure = exposure
 
         if backscal is not None:
-            d.backscal = backscal
+            pha.backscal = backscal
 
         if areascal is not None:
-            d.areascal = areascal
+            pha.areascal = areascal
 
         if quality is not None:
-            d.quality = quality
+            pha.quality = quality
 
         if grouping is not None:
-            d.grouping = grouping
+            pha.grouping = grouping
 
-        if d.grouping is not None:
+        if pha.grouping is not None:
             if sherpa.utils.bool_cast(grouped):
-                d.group()
+                pha.group()
             else:
-                d.ungroup()
+                pha.ungroup()
 
-        # Update background here.  bkg contains a new background;
-        # delete the old background (if any) and add the new background
-        # to the simulated data set, BEFORE simulating data, and BEFORE
-        # adding scaled background counts to the simulated data.
-        bkg_models = {}
-        if bkg is not None:
-            if bkg == 'model':
-                bkg_models = {1: self.get_bkg_source(id)}
-            else:
-                for bkg_id in d.background_ids:
-                    d.delete_background(bkg_id)
-                self.set_bkg(id, bkg)
+        # If bkg is None then there is no background component, which
+        # means removing any background dataset or models.  They will
+        # need to be added back after the call to fake_pha.
+        #
+        # If bkg="model" then this is already included (as long as
+        # background models are set, but we do not force this
+        # requirement here).
+        #
+        # If bkg is a DataPHA object (and so not set to "model") then
+        # remove all the existing backgrounds and replace them with
+        # the background, and set include_bkg_data. There is also the
+        # need to restore a background model if set: given that
+        # there's only the possibility of using a single background
+        # dataset this potentially loses information, but it's unclear
+        # what the user really expects here given the existing API.
+        #
+        include_bkg_data = False
+        restore = {}
+        old_model = None
+        if bkg is None:
+            # Remove the background components to try to avoid
+            # potential confusion with downstream processing. There is
+            # an argument to say they should be kept, but it's not
+            # clear what is best.
+            #
+            for bkg_id in pha.background_ids:
+                restore[bkg_id] = {"data": pha.get_background(bkg_id)}
+                try:
+                    restore[bkg_id]["model"] = self.get_bkg_source(idval,
+                                                                   bkg_id)
+                    self.delete_bkg_model(idval, bkg_id)
+                except ModelErr:
+                    pass
 
-        # Calculate the source model, and take a Poisson draw based on
-        # the source model.  That becomes the simulated data.
-        m = self.get_model(id)
+                pha.delete_background(bkg_id)
 
-        fake.fake_pha(d, m, is_source=False, add_bkgs=bkg is not None,
-                      id=str(id), bkg_models=bkg_models, method=method,
-                      rng=self.get_rng())
-        d.name = 'faked'
+        elif bkg != "model":
+            try:
+                # Note: this fails if set_bkg_full_model was used (in
+                # that the old model expression will be lost).
+                #
+                old_model = self.get_bkg_source(idval)
+            except ModelErr as me:
+                old_model = None
+
+            for bkg_id in pha.background_ids:
+                self.delete_bkg_model(idval, bkg_id)
+                pha.delete_background(bkg_id)
+
+            self.set_bkg(idval, bkg)
+            include_bkg_data = True
+
+        mdl = self.get_model(idval)
+        fake.fake_pha(pha, mdl, method=method, rng=self.get_rng(),
+                      include_bkg_data=include_bkg_data)
+        pha.name = 'faked'
+
+        # Restore any background that may have been removed.
+        #
+        for bkg_id, bvals in restore.items():
+            self.set_bkg(idval, bkg=bvals["data"], bkg_id=bkg_id)
+            try:
+                self.set_bkg_source(idval, model=bvals["model"], bkg_id=bkg_id)
+            except KeyError:
+                pass
+
+        if old_model is not None:
+            # The current API only allows there to be a single
+            # background (that is, old_model is only set when the bkg
+            # argument is set to a DataPHA value).
+            #
+            self.set_bkg_source(idval, old_model)
 
     ###########################################################################
     # PSF

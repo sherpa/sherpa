@@ -20,7 +20,6 @@ The sherpa.utils module
       Knuth_close
       _guess_ampl_scale
       apache_muller
-      bisection
       bool_cast
       calc_ftest
       calc_mlr

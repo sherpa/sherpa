@@ -279,7 +279,7 @@ class MyDifEvo(Opt):
 
         mypop = self.polytope
         npop_1 = self.npop - 1
-        while self.nfev[0] < maxnfev:
+        while self.nfev < maxnfev:
             for pop_index in range(self.npop):
                 key = self.calc_key([pop_index])
                 # trial = self.all_strategies(pop_index)
@@ -294,7 +294,7 @@ class MyDifEvo(Opt):
         best_vertex = mypop[0]
         best_par = best_vertex[:-1]
         best_val = best_vertex[-1]
-        return self.nfev[0], best_val, best_par
+        return self.nfev, best_val, best_par
 
     def all_strategies(self, key):
         rand, index = self.key2.parse(key)

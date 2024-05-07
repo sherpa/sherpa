@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -73,7 +73,8 @@ import numpy
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 
-from sherpa.utils import parallel_map, func_counter
+from sherpa.utils import FuncCounter
+from sherpa.utils.parallel import parallel_map
 from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import random
 
@@ -207,26 +208,6 @@ def _par_at_boundary(low, val, high, tol):
 
 def _outside_limits(x, xmin, xmax):
     return (numpy.any(x < xmin) or numpy.any(x > xmax))
-
-
-def _same_par(a, b):
-    b = numpy.array(b, numpy.float64)
-    same = numpy.flatnonzero(a < b)
-    if same.size == 0:
-        return 1
-    return 0
-
-
-def _set_limits(x, xmin, xmax):
-    below = numpy.nonzero(x < xmin)
-    if below.size > 0:
-        return 1
-
-    above = numpy.nonzero(x > xmax)
-    if above.size > 0:
-        return 1
-
-    return 0
 
 
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
@@ -1220,12 +1201,10 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         fjac = parallel_map(fd_jac, params, numcores)
         return numpy.concatenate(fjac)
 
-    num_parallel_map, fcn_parallel_counter = func_counter(fcn_parallel)
+    fcn_parallel_counter = FuncCounter(fcn_parallel)
 
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
     m = numpy.asanyarray(stat_cb1(x)).size
-
-    error = []
 
     n = len(x)
     fjac = numpy.empty((m*n,))
@@ -1251,9 +1230,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             x = nm_result[1]
             fval = nm_result[2]
 
-    if error:
-        raise error.pop()
-
     if 0 == info:
         info = 1
     elif info >= 1 or info <= 4:
@@ -1262,11 +1238,9 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         info = 3
     status, msg = _get_saofit_msg(maxfev, info)
 
+    imap = {'info': info, 'nfev': nfev,
+            'num_parallel_map': fcn_parallel_counter.nfev}
     if info == 0:
-        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'covar': covar,
-                                     'num_parallel_map': num_parallel_map[0]})
-    else:
-        rv = (status, x, fval, msg, {'info': info, 'nfev': nfev,
-                                     'num_parallel_map': num_parallel_map[0]})
-    return rv
+        imap['covar'] = covar
+
+    return (status, x, fval, msg, imap)

@@ -25,8 +25,8 @@ import numpy as np
 from numpy.linalg import LinAlgError
 
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, Knuth_close, \
-    is_iterable, list_to_open_interval, mysgn, quad_coef, \
-    demuller, zeroin, OutOfBoundErr, func_counter
+    is_iterable, list_to_open_interval, quad_coef, \
+    demuller, zeroin, OutOfBoundErr, FuncCounter
 from sherpa.utils.parallel import multi, ncpus, context, process_tasks
 
 import sherpa.estmethods._est_funcs
@@ -719,7 +719,7 @@ class ConfRootBracket(ConfRootNone):
         xxx = self.trial_points[0]
         fff = self.trial_points[1]
 
-        if mysgn(fff[-2]) == mysgn(fff[-1]):
+        if np.sign(fff[-2]) == np.sign(fff[-1]):
             self.root = None
             return None
 
@@ -733,7 +733,7 @@ class ConfRootBracket(ConfRootNone):
             xbfb = answer[1][1]
             xb = xbfb[0]
             fb = xbfb[1]
-            if mysgn(fa) != mysgn(fb):
+            if np.sign(fa) != np.sign(fb):
                 if not self.open_interval:
                     warn_user_about_open_interval([xa, xb])
                     return (xa + xb) / 2.0
@@ -793,7 +793,7 @@ class ConfStep:
 
     def is_same_dir(self, dir, current_pos, proposed_pos):
         delta = proposed_pos - current_pos
-        return mysgn(delta) == ConfBracket.neg_pos[dir]
+        return np.sign(delta) == ConfBracket.neg_pos[dir]
 
     def quad(self, dir, iter, step_size, base, bloginfo):
 
@@ -1027,8 +1027,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
 
     def func(counter, singleparnum, lock=None):
 
-        # nfev contains the number of times it was fitted
-        nfev, counter_cb = func_counter(fit_cb)
+        counter_cb = FuncCounter(fit_cb)
 
         #
         # These are the bounds to be returned by this method
@@ -1101,7 +1100,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         store[par_name] = trial_points
 
         return (conf_int[0][0], conf_int[1][0], error_flags[0],
-                nfev[0], None)
+                counter_cb.nfev, None)
 
     if len(limit_parnums) < 2 or not multi or numcores < 2:
         do_parallel = False

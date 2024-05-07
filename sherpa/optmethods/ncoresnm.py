@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2023
+#  Copyright (C) 2019- 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -42,16 +42,13 @@ class MyNelderMead(Opt):
 
     def __call__(self, xpar, maxnfev, tol, step, finalsimplex, verbose):
 
-        # print('MyNelderMead::__call__ xpar =', xpar)
         npar = len(xpar)
         simplex = SimplexStep(func=self.func, npop=npar + 1,
                               xpar=xpar, xmin=self.xmin,
                               xmax=self.xmax, step=step, seed=None,
                               factor=None)
-        result = self.optimize(xpar, simplex, maxnfev, tol,
-                               finalsimplex, verbose)
-        # print('MyNelderMead::__call__ result =', result)
-        return result
+        return self.optimize(xpar, simplex, maxnfev, tol,
+                             finalsimplex, verbose)
 
     def contract_in_out(self, simplex, centroid, reflection_pt, rho_gamma,
                         contraction_coef, badindex, maxnfev, verbose):
@@ -95,7 +92,7 @@ class MyNelderMead(Opt):
         rho_gamma = self.reflection_coef * self.contraction_coef
         bad_index = len(xpar)
 
-        while self.nfev[0] < maxnfev:
+        while self.nfev < maxnfev:
 
             simplex.sort()
             if verbose > 2:
@@ -135,7 +132,7 @@ class MyNelderMead(Opt):
         best_vertex = simplex[0]
         best_par = best_vertex[:-1]
         best_val = best_vertex[-1]
-        return self.nfev[0], best_val, best_par
+        return self.nfev, best_val, best_par
 
 
 class NelderMeadBase:
@@ -167,10 +164,8 @@ class NelderMead0(NelderMeadBase):
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None, step=None,
                  finalsimplex=1, verbose=0):
-        nfev, fmin, par = \
-            self.neldermead0(fcn, x, xmin, xmax, step, finalsimplex, maxnfev,
-                             tol, verbose)
-        return nfev, fmin, par
+        return self.neldermead0(fcn, x, xmin, xmax, step, finalsimplex, maxnfev,
+                                tol, verbose)
 
     def calc_step(self, x):
         return 1.2 * x
@@ -183,10 +178,8 @@ class NelderMead0(NelderMeadBase):
         my_nm = MyNelderMead(fcn, xmin, xmax)
         if step is None:
             step = self.calc_step(x0)
-        nfev, fmin, par = my_nm(x0, maxnfev, tol, step, finalsimplex, verbose)
-        # print('f', par, '=', fmin, '@', nfev, 'nfevs')
-        # print('neldermead0 covar=\n', my_nm.calc_covar())
-        return nfev, fmin, par
+
+        return my_nm(x0, maxnfev, tol, step, finalsimplex, verbose)
 
 
 class NelderMead1(NelderMead0):
@@ -279,18 +272,15 @@ class NelderMead6(NelderMeadBase):
                                     xpar=x, xmin=self.xmin,
                                     xmax=self.xmax, step=None,
                                     seed=None, factor=None)
-            result = self.optimize(x, simplex, maxnfev, tol,
-                                   finalsimplex, verbose)
-            # print('MyNelderMead6::__call__ result =', result)
-            return result
+            return self.optimize(x, simplex, maxnfev, tol,
+                                 finalsimplex, verbose)
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
         my_nm_6 = NelderMead6.MyNelderMead6(fcn, xmin, xmax)
         if maxnfev is None:
             maxnfev = 512 * len(x)
-        result = my_nm_6(x, maxnfev, tol, step, finalsimplex, verbose)
-        return result
+        return my_nm_6(x, maxnfev, tol, step, finalsimplex, verbose)
 
 
 class NelderMead7(NelderMeadBase):
@@ -304,18 +294,15 @@ class NelderMead7(NelderMeadBase):
             simplex = SimplexRandom(func=self.func, npop=npar + 1, xpar=x,
                                     xmin=self.xmin, xmax=self.xmax,
                                     step=None, seed=None, factor=factor)
-            result = self.optimize(x, simplex, maxnfev, tol,
-                                   finalsimplex, verbose)
-            # print('MyNelderMead7::__call__ result =', result)
-            return result
+            return self.optimize(x, simplex, maxnfev, tol,
+                                 finalsimplex, verbose)
 
     def __call__(self, fcn, x, xmin, xmax, tol=1.0e-6,  maxnfev=None,
                  step=None, finalsimplex=1, verbose=0):
         my_nm_7 = NelderMead7.MyNelderMead7(fcn, xmin, xmax)
         if maxnfev is None:
             maxnfev = 512 * len(x)
-        result = my_nm_7(x, maxnfev, tol, step, finalsimplex, verbose)
-        return result
+        return my_nm_7(x, maxnfev, tol, step, finalsimplex, verbose)
 
 
 class nmNcores(MyNcores):
