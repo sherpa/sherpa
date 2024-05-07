@@ -28,7 +28,7 @@ from numpy import arange, array, iterable, sqrt, where, \
     ones_like, isnan, isinf
 
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
-    bool_cast, is_in, is_iterable, list_to_open_interval, sao_fcmp
+    bool_cast, is_iterable, list_to_open_interval, sao_fcmp
 from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
 from sherpa.utils import formatting
 from sherpa.data import DataSimulFit
@@ -530,10 +530,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
             return out
 
-        low = map(is_iterable, self.parmins)
-        high = map(is_iterable, self.parmaxes)
-        in_low = is_in(True, low)
-        in_high = is_in(True, high)
+        in_low = True in map(is_iterable, self.parmins)
+        in_high = True in map(is_iterable, self.parmaxes)
         mymethod = self.methodname == 'confidence'
 
         lowstr = '%12s '
