@@ -92,9 +92,6 @@ else:
     if ogip_emin <= 0.0:
         raise ValueError(emsg)
 
-backend = None
-'''Currently active backend module for astronomy specific I/O.'''
-
 for iotry in io_opt:
     try:
         backend = importlib.import_module('.' + iotry,
