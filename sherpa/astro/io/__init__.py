@@ -54,7 +54,7 @@ import importlib
 import logging
 import os
 import re
-from typing import Any, Optional, Sequence
+from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 
@@ -506,7 +506,42 @@ def _read_ancillary(data, key, label, dname,
     return out
 
 
-def read_pha(arg, use_errors=False, use_background=False):
+def _read_bkgs(filename: str,
+               arf: Optional[DataARF],
+               rmf: Optional[DataRMF],
+               *,
+               use_errors: bool,
+               output_once: bool) -> list[DataPHA]:
+    """Read in the background files.
+
+    This will set up the response if the files do not have
+    one set.
+    """
+
+    dsets = read_pha(filename, use_errors=use_errors,
+                     use_background=True)
+    if output_once:
+        info("read background file %s", filename)
+
+    # read_pha can return a single item or a list.
+    if isinstance(dsets, list):
+        bkgs = dsets
+    else:
+        bkgs = [dsets]
+
+    # Add in the response if needed.
+    #
+    for bkg in bkgs:
+        if rmf is not None and bkg.get_response() == (None, None):
+            bkg.set_response(arf, rmf)
+
+    return bkgs
+
+
+def read_pha(arg,
+             use_errors: bool = False,
+             use_background: bool = False
+             ) -> Union[DataPHA, list[DataPHA]]:
     """Create a DataPHA object.
 
     Parameters
@@ -570,32 +605,28 @@ def read_pha(arg, use_errors=False, use_background=False):
 
         backgrounds = []
 
+        # We could include the use_background check here, but this
+        # could have subtle knock-on issues (namely, that the
+        # 'backfile' key of the data dictionary can get changed, even
+        # when use_background is set), and it's not clear whether
+        # anything relies on this (it probably should not, but hard to
+        # check for, so leave as is).
+        #
         if data['backfile'] and data['backfile'].lower() != 'none':
             try:
                 if os.path.dirname(data['backfile']) == '':
                     data['backfile'] = os.path.join(os.path.dirname(filename),
                                                     data['backfile'])
 
-                bkg_datasets = []
-                # Do not read backgrounds of backgrounds
+                # Do not read backgrounds of backgrounds.
+                # Is the use_background variable well named?
+                #
                 if not use_background:
-                    bkg_datasets = read_pha(data['backfile'],
-                                            use_errors=use_errors,
-                                            use_background=True)
-                    if output_once:
-                        info("read background file %s", data['backfile'])
-
-                if np.iterable(bkg_datasets):
-                    for bkg_dataset in bkg_datasets:
-                        if bkg_dataset.get_response() == (None, None) and \
-                           rmf is not None:
-                            bkg_dataset.set_response(arf, rmf)
-                        backgrounds.append(bkg_dataset)
-                else:
-                    if bkg_datasets.get_response() == (None, None) and \
-                       rmf is not None:
-                        bkg_datasets.set_response(arf, rmf)
-                    backgrounds.append(bkg_datasets)
+                    bfile = data['backfile']
+                    bkgs = _read_bkgs(bfile, arf, rmf,
+                                      use_errors=use_errors,
+                                      output_once=output_once)
+                    backgrounds.extend(bkgs)
 
             except Exception as exc:
                 if output_once:
