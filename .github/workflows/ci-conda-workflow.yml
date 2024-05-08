@@ -121,6 +121,8 @@ jobs:
         conda activate build
         if [ "$RUNNER_OS" != "macOS" ]; then
           source .github/scripts/setup_ds9.sh
+          # We need xvfb to run the tests so ensure it's installed
+          pip install pytest-xvfb
         fi
         source .github/scripts/setup_xspec.sh
 
@@ -202,6 +204,8 @@ jobs:
       run: |
         if [ "$RUNNER_OS" == "macOS" ]; then
           # make sure pytext-xvfb can find Xvfb
+          # Note that it looks like macOS does not install DS9 at the
+          # moment, but leave this in
           export PATH="${PATH}:/opt/X11/bin"
         fi
         source ${CONDA}/etc/profile.d/conda.sh

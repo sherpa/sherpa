@@ -151,9 +151,10 @@ It is *highly* recommended that `matplotlib` and `astropy` be installed
 before building Sherpa, to avoid skipping a number of tests in the
 test suite.
 
-The full Sherpa test suite requires `pytest` and `pytest-xvfb`. These
-packages should be installed automatically for you by the test suite
-if they do not already exist.
+The full Sherpa test suite requires `pytest`, which is included when
+using the ``.[test]`` option with ``pip``. The `pytest-xvfb` package
+can be useful if :term:`DS9` is installed, as it hides the DS9 windows
+created during the tests.
 
 .. warning::
 
@@ -380,7 +381,7 @@ A development build
 
 The code can be built locally, which is useful when adding new
 functionality or fixing a bug (the ``[test]`` term just ensures that
-``pytest`` and ``pytest-xvfb`` are installed)::
+``pytest`` is also installed)::
 
   pip install -e .[test]
 
@@ -433,7 +434,7 @@ Sherpa. This causes several copies of the DS9 viewer to be created,
 which can be distracting, as it can cause loss of mouse focus (depending
 on how X-windows is set up). This can be avoided by installing the
 `X virtual-frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_
-and ensuring the ``pytest-xvfb`` Python package is installed.
+and ensuring that the ``pytest-xvfb`` Python package is installed.
 
 Tests can be run in parallel with the `pytest-xdist
 <https://pytest-xdist.readthedocs.io/>`_ package installed. The safest
