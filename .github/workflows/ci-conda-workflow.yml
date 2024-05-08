@@ -121,6 +121,8 @@ jobs:
         conda activate build
         if [ "$RUNNER_OS" != "macOS" ]; then
           source .github/scripts/setup_ds9.sh
+          # We need xvfb to run the tests so ensure it's installed
+          pip install pytest-xvfb
         fi
         source .github/scripts/setup_xspec.sh
 
@@ -131,7 +133,7 @@ jobs:
       run: |
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
-        pip install . --verbose
+        pip install .[test] --verbose
 
     - name: Build Sherpa (develop)
       if: matrix.install-type == 'develop'
@@ -140,7 +142,7 @@ jobs:
       run: |
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
-        pip install -e . --verbose
+        pip install -e .[test] --verbose
 
     - name: Install the test data?
       if: matrix.test-data == 'package'
@@ -148,7 +150,6 @@ jobs:
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         pip install ./sherpa-test-data
-        pip install pytest-xvfb
 
     - name: Remove submodule
       if: matrix.test-data == 'none' || matrix.test-data == 'package'
@@ -183,11 +184,15 @@ jobs:
       env:
         INSTALLTYPE: ${{ matrix.install-type }}
       run: |
-        # At the moment "Submodule Tests" requires the develop
-        # install-type, otherwise the "python setup.py test" call will
-        # lead to the develop build to be re-run, meaning that the
-        # install option is not tested. When we change to pytest we
-        # can switch to something like 'cd $HOME; pytest sherpa'
+        # This may not be relevant any more but left in as a
+        # warning note. We could change this to say something
+        # like the following, but with a way of pointing to
+        # the test-data directory
+        #
+        #    cd $HOME
+        #    pytest --pyargs sherpa --cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml
+        #
+        # but is it worth it?
         #
         echo "ERROR: submodule test can not be run with install-type=${INSTALLTYPE}"
         exit 1
@@ -199,12 +204,14 @@ jobs:
       run: |
         if [ "$RUNNER_OS" == "macOS" ]; then
           # make sure pytext-xvfb can find Xvfb
+          # Note that it looks like macOS does not install DS9 at the
+          # moment, but leave this in
           export PATH="${PATH}:/opt/X11/bin"
         fi
         source ${CONDA}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
-        python setup.py -q test -a "--cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml"
+        pytest --pyargs sherpa --cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml
 
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'

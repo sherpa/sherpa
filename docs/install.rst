@@ -127,8 +127,6 @@ command::
 
     pip install sherpa
 
-The NumPy package must already have been installed for this to work.
-
 .. _build-from-source:
 
 Building from source
@@ -153,9 +151,10 @@ It is *highly* recommended that `matplotlib` and `astropy` be installed
 before building Sherpa, to avoid skipping a number of tests in the
 test suite.
 
-The full Sherpa test suite requires `pytest` and `pytest-xvfb`. These
-packages should be installed automatically for you by the test suite
-if they do not already exist.
+The full Sherpa test suite requires `pytest`, which is included when
+using the ``.[test]`` option with ``pip``. The `pytest-xvfb` package
+can be useful if :term:`DS9` is installed, as it hides the DS9 windows
+created during the tests.
 
 .. warning::
 
@@ -370,23 +369,39 @@ From the root of the Sherpa source tree, Sherpa can be built with
 
   pip install .
 
+Although it may still work, the use of ``python setup.py`` to build,
+install, or test Sherpa is no-longer officially supported. Please
+report any problems to the
+`Sherpa issues page <https://github.com/sherpa/sherpa/issues/>`_.
+
 .. _developer-build:
 
 A development build
 ^^^^^^^^^^^^^^^^^^^
 
-Use::
+The code can be built locally, which is useful when adding new
+functionality or fixing a bug (the ``[test]`` term just ensures that
+``pytest`` is also installed)::
 
-  pip install -e . --verbose
+  pip install -e .[test]
 
-when developing Sherpa (the ``--verbose`` option is optional).
-Tests can then be run with::
+This will need to be re-run when any of the extension models - that is,
+any compiled code - is changed.
+
+The ``--verbose`` flag is useful when diagnosing problems when building Sherpa::
+
+  pip install -e .[test] --verbose
+
+Testing Sherpa
+^^^^^^^^^^^^^^
+
+Tests can be run directly for the development build with::
 
   pytest
 
-You can pass additional arguments to ``pytest``.  As examples, the
+You can pass additional arguments to ``pytest``. As examples, the
 following two commands run all the tests in ``test_data.py`` and then
-a single named test in this file::
+a single named test in the file::
 
   pytest sherpa/tests/test_data.py
   pytest sherpa/tests/test_data.py::test_data_eval_model
@@ -395,13 +410,13 @@ The full set of options, including those added by the Sherpa test
 suite - which are listed at the end of the ``custom options``
 section - can be found with::
 
-  pytest sherpa --help
+  pytest --pyargs sherpa --help
 
 and to pass an argument to the Sherpa test suite (there are currently
 three options, namely ``--test-data``, ``--runslow``, and
 ``--runzenodo``)::
 
-    pytest sherpa --runslow
+  pytest --pyargs sherpa --runslow
 
 The
 `Sherpa test data suite <https://github.com/sherpa/sherpa-test-data>`_
@@ -419,7 +434,7 @@ Sherpa. This causes several copies of the DS9 viewer to be created,
 which can be distracting, as it can cause loss of mouse focus (depending
 on how X-windows is set up). This can be avoided by installing the
 `X virtual-frame buffer (Xvfb) <https://en.wikipedia.org/wiki/Xvfb>`_
-and the ``pytest-xvfb`` package.
+and ensuring that the ``pytest-xvfb`` Python package is installed.
 
 Tests can be run in parallel with the `pytest-xdist
 <https://pytest-xdist.readthedocs.io/>`_ package installed. The safest
@@ -496,17 +511,15 @@ will include additional warning messages if the ``astropy`` or
 without support for the XSPEC model library.
 
 The Sherpa installation also includes the ``sherpa_test`` command-line
-tool which will run through the Sherpa test suite (the number of
-tests depends on what optional packages are available and how
-Sherpa was configured when built)::
+tool which will run through the Sherpa test suite (the number of tests
+depends on what optional packages are available and how Sherpa was
+configured when built)::
 
     sherpa_test
 
-.. note::
-
-   The `sherpa_test` command accepts the ``--test-data``, ``--runslow``,
-   and ``--runzenodo`` arguments from the
-   :ref:`development build <developer-build>` section.
+The ``sherpa_test`` command supports the same optional arguments as
+``pytest`` does (the ``--pyargs sherpa`` option is, however, not
+needed).
 
 The
 `Sherpa test data suite <https://github.com/sherpa/sherpa-test-data>`_
@@ -519,4 +532,5 @@ As an example, the 4.15.1 version of the test data can be installed with pip::
 
    pip install https://github.com/sherpa/sherpa-test-data/archive/4.15.1.zip
 
-The test data will be automatically picked up by the Python tests and the ``sherpa_test`` script.
+The test data will automatically be picked up by the ``sherpa_test``
+script once it is installed.
