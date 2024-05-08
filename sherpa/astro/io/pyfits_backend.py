@@ -55,8 +55,8 @@ from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
 from sherpa.io import get_ascii_data, write_arrays
 
-from .types import ColumnsType, DataType, HdrType, HdrTypeArg, \
-    KeyType, NamesType
+from .types import ColumnsType, DataType, DataTypeArg, \
+    HdrType, HdrTypeArg, KeyType, NamesType
 from .xstable import HeaderItem, TableHDU
 
 warning = logging.getLogger(__name__).warning
@@ -83,7 +83,11 @@ DatasetType = Union[str, fits.HDUList]
 HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU]
 
 
-def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
+def _try_key(hdu: HDUType,
+             name: str,
+             *,
+             fix_type: bool = False,
+             dtype: type = SherpaFloat) -> Optional[KeyType]:
 
     value = hdu.header.get(name, None)
     if value is None:
@@ -101,7 +105,11 @@ def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
     return dtype(value)
 
 
-def _require_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
+def _require_key(hdu: HDUType,
+                 name: str,
+                 *,
+                 fix_type: bool = False,
+                 dtype: type = SherpaFloat) -> KeyType:
     value = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
     if value is None:
         raise IOErr('nokeyword',
@@ -484,7 +492,8 @@ def get_table_data(arg: DatasetType,
 
 
 def get_image_data(arg: DatasetType,
-                   make_copy: bool = False
+                   make_copy: bool = False,
+                   fix_type: bool = True  # Unused
                    ) -> tuple[DataType, str]:
     """Read image data."""
 
@@ -650,7 +659,7 @@ def get_arf_data(arg: DatasetType,
             if hdu is None:
                 raise IOErr('notrsp', filename, 'an ARF')
 
-        data = {}
+        data: DataType = {}
 
         data['exposure'] = _try_key(hdu, 'EXPOSURE', fix_type=True)
 
@@ -1184,9 +1193,9 @@ def _create_table(names: NamesType,
                   data: Mapping[str, Optional[np.ndarray]]) -> Table:
     """Create a Table.
 
-    The idea is that by going via a Table we let the AstroPy
-    code deal with all the conversions (e.g. to get the FITS
-    data types on columns correct).
+    The idea is that by going via a Table we let the AstroPy code deal
+    with all the conversions (e.g. to get the correct FITS data types
+    on columns).
 
     Parameters
     ----------
@@ -1223,7 +1232,9 @@ def check_clobber(filename: str, clobber: bool) -> None:
     raise IOErr("filefound", filename)
 
 
-def pack_table_data(data, col_names, header=None) -> fits.BinTableHDU:
+def pack_table_data(data: ColumnsType,
+                    col_names: NamesType,
+                    header: Optional[HdrTypeArg] = None) -> fits.BinTableHDU:
     """Pack up the table data."""
 
     tbl = _create_table(col_names, data)
@@ -1245,7 +1256,9 @@ def pack_table_data(data, col_names, header=None) -> fits.BinTableHDU:
 
 
 def set_table_data(filename: str,
-                   data, col_names, header=None,
+                   data: ColumnsType,
+                   col_names: NamesType,
+                   header: Optional[HdrTypeArg] = None,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the table data."""
@@ -1287,7 +1300,7 @@ def _update_header(hdu: HDUType,
     Parameters
     ----------
     hdu : HDU
-    header : dict[str, Any]
+    header : dict
 
     """
 
@@ -1295,20 +1308,28 @@ def _update_header(hdu: HDUType,
         if key in hdu.header:
             continue
 
+        # The value is not expected to be None but check anyway.
         if value is None:
             continue
 
         hdu.header[key] = value
 
 
-def pack_arf_data(data, col_names, header) -> fits.BinTableHDU:
+def pack_arf_data(data: ColumnsType,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None) -> fits.BinTableHDU:
     """Pack the ARF"""
+
+    if header is None:
+        raise ArgumentTypeErr("badarg", "header", "set")
 
     return pack_table_data(data, col_names, header)
 
 
 def set_arf_data(filename: str,
-                 data, col_names, header=None,
+                 data: ColumnsType,
+                 col_names: NamesType,
+                 header: Optional[HdrTypeArg] = None,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the ARF"""
@@ -1323,14 +1344,21 @@ def set_arf_data(filename: str,
                    ascii=ascii, clobber=clobber)
 
 
-def pack_pha_data(data, col_names, header) -> fits.BinTableHDU:
+def pack_pha_data(data: ColumnsType,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None) -> fits.BinTableHDU:
     """Pack the PHA data."""
+
+    if header is None:
+        raise ArgumentTypeErr("badarg", "header", "set")
 
     return pack_table_data(data, col_names, header)
 
 
 def set_pha_data(filename: str,
-                 data, col_names, header=None,
+                 data: ColumnsType,
+                 col_names: NamesType,
+                 header: Optional[HdrTypeArg] = None,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """ Write out the PHA."""
@@ -1474,7 +1502,8 @@ def set_rmf_data(filename: str,
     hdus.writeto(filename, overwrite=True)
 
 
-def pack_image_data(data, header) -> fits.PrimaryHDU:
+def pack_image_data(data: DataTypeArg,
+                    header: HdrTypeArg) -> fits.PrimaryHDU:
     """Pack up the image data."""
 
     hdrlist = _create_header(header)
@@ -1527,7 +1556,8 @@ def pack_image_data(data, header) -> fits.PrimaryHDU:
 
 
 def set_image_data(filename: str,
-                   data, header,
+                   data: DataTypeArg,
+                   header: HdrTypeArg,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the image data."""
@@ -1541,7 +1571,6 @@ def set_image_data(filename: str,
 
     img = pack_image_data(data, header)
     img.writeto(filename, overwrite=True)
-    return
 
 
 def set_arrays(filename: str,
