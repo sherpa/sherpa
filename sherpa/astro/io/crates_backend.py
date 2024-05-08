@@ -21,7 +21,7 @@
 from collections import defaultdict
 import logging
 import os
-from typing import Any, Mapping, Optional, Sequence, Union
+from typing import Any, Optional, Sequence, Union
 
 import numpy as np
 
@@ -35,8 +35,8 @@ from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
 
-from .types import ColumnsType, DataType, HdrType, HdrTypeArg, \
-    KeyType, NamesType
+from .types import ColumnsType, DataType, DataTypeArg, \
+    HdrType, HdrTypeArg, KeyType, NamesType
 from .xstable import HeaderItem, TableHDU
 
 warning = logging.getLogger(__name__).warning
@@ -1215,7 +1215,8 @@ def write_dataset(dataset: Union[TABLECrate, IMAGECrate, CrateDataset],
     dataset.write(filename, clobber=True)
 
 
-def pack_image_data(data, header) -> IMAGECrate:
+def pack_image_data(data: DataTypeArg,
+                    header: HdrTypeArg) -> IMAGECrate:
     """Pack up the image data."""
 
     img = IMAGECrate()
@@ -1272,7 +1273,11 @@ def pack_image_data(data, header) -> IMAGECrate:
     return img
 
 
-def set_image_data(filename, data, header, ascii=False, clobber=False) -> None:
+def set_image_data(filename: str,
+                   data: DataTypeArg,
+                   header: HdrTypeArg,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
     """Write out the image data."""
 
     if ascii and '[' not in filename and ']' not in filename:
@@ -1282,7 +1287,9 @@ def set_image_data(filename, data, header, ascii=False, clobber=False) -> None:
     write_dataset(img, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_table_data(data, col_names, header=None) -> TABLECrate:
+def pack_table_data(data: ColumnsType,
+                    col_names: NamesType,
+                    header: Optional[HdrTypeArg] = None) -> TABLECrate:
     """Pack up the table data."""
 
     tbl = TABLECrate()
@@ -1294,15 +1301,21 @@ def pack_table_data(data, col_names, header=None) -> TABLECrate:
     return tbl
 
 
-def set_table_data(filename, data, col_names, header=None,
-                   ascii=False, clobber=False) -> None:
+def set_table_data(filename: str,
+                   data: ColumnsType,
+                   col_names: NamesType,
+                   header: Optional[HdrTypeArg] = None,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
     """Write out the table data."""
 
     tbl = pack_table_data(data, col_names, header=header)
     write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_arf_data(data, col_names, header=None) -> TABLECrate:
+def pack_arf_data(data: ColumnsType,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None) -> TABLECrate:
     """Pack the ARF"""
 
     if header is None:
@@ -1311,15 +1324,22 @@ def pack_arf_data(data, col_names, header=None) -> TABLECrate:
     return pack_table_data(data, col_names, header)
 
 
-def set_arf_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False) -> None:
+def set_arf_data(filename: str,
+                 data: ColumnsType,
+                 col_names: NamesType,
+                 header: Optional[HdrTypeArg] = None,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
     """Write out the ARF"""
 
     arf = pack_arf_data(data, col_names, header)
     write_dataset(arf, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_pha_data(data, col_names, header=None) -> pycrates.PHACrateDataset:
+def pack_pha_data(data: ColumnsType,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None
+                  ) -> pycrates.PHACrateDataset:
     """Pack the PHA data."""
 
     if header is None:
@@ -1345,8 +1365,12 @@ def pack_pha_data(data, col_names, header=None) -> pycrates.PHACrateDataset:
     return phadataset
 
 
-def set_pha_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False) -> None:
+def set_pha_data(filename: str,
+                 data: ColumnsType,
+                 col_names: NamesType,
+                 header: Optional[HdrTypeArg] = None,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
     """Create a PHA dataset/file"""
 
     pha = pack_pha_data(data, col_names, header)
