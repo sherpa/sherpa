@@ -24,6 +24,7 @@ These routines are currently restricted to reading from ASCII files.
 """
 
 import os
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -37,16 +38,24 @@ __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
            'write_arrays')
 
 
-def _check_args(size, dstype):
+NamesType = Sequence[str]
+
+
+def _check_args(size: int, dstype) -> None:
     # Find the number of required args minus self, filename
     req_args = get_num_args(dstype.__init__)[1] - 2
+    if size >= req_args:
+        return
 
-    if size < req_args:
-        # raise IOErr('badargs', dstype.__name__, req_args)
-        raise TypeError(f"data set '{dstype.__name__}' takes at least {req_args} args")
+    raise TypeError(f"data set '{dstype.__name__}' takes at "
+                    f"least {req_args} args")
 
 
-def read_file_data(filename, sep=' ', comment='#', require_floats=True):
+def read_file_data(filename: str,
+                   sep: str = ' ',
+                   comment: str = '#',
+                   require_floats: bool = True
+                   ) -> tuple[list[str], list[np.ndarray]]:
     """Read in column data from a file."""
 
     bad_chars = '\t\n\r,;: |'
@@ -97,14 +106,13 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
 
     names = [name.strip(bad_chars)
              for name in raw_names if name != '']
-
     if len(names) == 0:
         names = [f'col{i}' for i, _ in enumerate(args, 1)]
 
     return names, args
 
 
-def get_column_data(*args):
+def get_column_data(*args) -> list[Optional[np.ndarray]]:
     """
     get_column_data( *NumPy_args )
     """
@@ -128,8 +136,14 @@ def get_column_data(*args):
     return cols
 
 
-def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
-                   comment='#', require_floats=True):
+def get_ascii_data(filename: str,
+                   ncols: int = 1,
+                   colkeys: Optional[NamesType] = None,
+                   sep: str = ' ',
+                   dstype: type = Data1D,
+                   comment: str = '#',
+                   require_floats: bool = True
+                   ) -> tuple[list[str], list[np.ndarray], str]:
     r"""Read in columns from an ASCII file.
 
     Parameters
@@ -253,8 +267,13 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     return (colkeys, kwargs, filename)
 
 
-def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
-              comment='#', require_floats=True):
+def read_data(filename: str,
+              ncols: int = 2,
+              colkeys: Optional[NamesType] = None,
+              sep: str = ' ',
+              dstype=Data1D,
+              comment: str = '#',
+              require_floats: bool = True) -> Data:
     """Create a data object from an ASCII file.
 
     Parameters
@@ -333,7 +352,7 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
     return dstype(name, *args)
 
 
-def read_arrays(*args):
+def read_arrays(*args) -> Data:
     """Create a data object from arrays.
 
     Parameters
@@ -392,8 +411,14 @@ def read_arrays(*args):
     return dstype('', *dargs)
 
 
-def write_arrays(filename, args, fields=None, sep=' ', comment='#',
-                 clobber=False, linebreak='\n', format='%g'):
+def write_arrays(filename: str,
+                 args: Sequence[Sequence],
+                 fields: Optional[NamesType] = None,
+                 sep: str = ' ',
+                 comment: str = '#',
+                 clobber: bool = False,
+                 linebreak: str = '\n',
+                 format: str = '%g') -> None:
     """Write a list of arrays to an ASCII file.
 
     Parameters
@@ -446,23 +471,22 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
     if os.path.isfile(filename) and not clobber:
         raise IOErr("filefound", filename)
 
-    if not np.iterable(args) or len(args) == 0:
+    # We assume the values are numeric but we never test for this
+    # explicitly, nor do we require it in the types. This can make the
+    # typing code get confused about what is allowed.
+    #
+    try:
+        cols = np.column_stack(np.asarray(args))  # type: ignore[call-overload]
+    except ValueError as ve:
+        # Assume the column sizes do not match
+        raise IOErr('arraysnoteq') from ve
+
+    if cols.ndim < 2:
         raise IOErr('noarrayswrite')
 
-    if not np.iterable(args[0]):
-        raise IOErr('noarrayswrite')
-
-    size = len(args[0])
-    for arg in args:
-        if not np.iterable(arg):
-            raise IOErr('noarrayswrite')
-        if len(arg) != size:
-            raise IOErr('arraysnoteq')
-
-    args = np.column_stack(np.asarray(args))
     lines = []
-    for arg in args:
-        line = [format % elem for elem in arg]
+    for col in cols:
+        line = [format % elem for elem in col]
         lines.append(sep.join(line))
 
     with open(filename, 'w', encoding="utf-8") as fh:

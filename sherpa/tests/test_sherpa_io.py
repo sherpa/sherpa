@@ -58,8 +58,7 @@ def test_write_arrays_no_data(tmp_path):
     """Regression test"""
 
     tfile = tmp_path / 'x.dat'
-    with pytest.raises(IOErr,
-                       match=r"^please supply array\(s\) to write to file$"):
+    with pytest.raises(TypeError):
         write_arrays(str(tfile), 23, fields=["x"])
 
 
@@ -277,9 +276,8 @@ def test_write_arrays_single_column(tmp_path):
     """
 
     tfile = tmp_path / "not-changed.dat"
-    with pytest.raises(IOErr,
-                       match=r"^please supply array\(s\) to write to file$"):
-        write_arrays(str(tfile), [1, 2, 3], format="<%02d>", clobber=True)
+    write_arrays(str(tfile), [1, 2, 3], format="<%02d>", clobber=True)
+    assert tfile.read_text() == "<01> <02> <03>\n"
 
 
 def test_write_data_no_fields(tmp_path):
