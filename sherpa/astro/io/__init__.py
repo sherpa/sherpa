@@ -1319,7 +1319,7 @@ def _make_int_vlf(rows: Sequence[Sequence[int]]) -> np.ndarray:
     return np.asarray(out, dtype=object)
 
 
-def _reconstruct_rmf(rmf):
+def _reconstruct_rmf(rmf: DataRMF) -> DataType:
     """Recreate the structure needed to write out as a FITS file.
 
     This does not guarantee to create byte-identical data in a round
@@ -1349,9 +1349,9 @@ def _reconstruct_rmf(rmf):
     """
 
     n_grp = []
-    f_chan = []
-    n_chan = []
-    matrix = []
+    f_chan: list[list[int]] = []
+    n_chan: list[list[int]] = []
+    matrix: list[list[float]] = []
 
     # Used to reconstruct the original data
     idx = 0
@@ -1372,12 +1372,10 @@ def _reconstruct_rmf(rmf):
 
         # Short-cut when no data
         if ng == 0:
+            # Record we have a zero-element row. Should we instead
+            # remove the last element of f_chan, n_chan, matrix?
+            #
             matrix_size.add(0)
-
-            # Convert from [] to numpy empty list
-            f_chan[-1] = np.asarray([], dtype=np.int32)
-            n_chan[-1] = np.asarray([], dtype=np.int32)
-            matrix[-1] = np.asarray([], dtype=np.float32)
             continue
 
         # Grab the next ng elements from rmf.f_chan/n_chan
@@ -1393,53 +1391,56 @@ def _reconstruct_rmf(rmf):
 
             f_chan[-1].append(rmf.f_chan[idx])
             n_chan[-1].append(rmf.n_chan[idx])
-            matrix[-1].extend(mdata)
+            matrix[-1].extend(mdata.astype(np.float32))
 
             idx += 1
             start = end
 
-        # Ensure F_CHAN/N_CHAN is either 2- or 4-byte integer by
-        # converting to 4-byte integer here, which can later be
-        # downcast.
-        #
-        f_chan[-1] = np.asarray(f_chan[-1], dtype=np.int32)
-        n_chan[-1] = np.asarray(n_chan[-1], dtype=np.int32)
-
-        # Ensure the matrix is Real-4
-        matrix[-1] = np.asarray(matrix[-1], dtype=np.float32)
-        matrix_size.add(matrix[-1].size)
-
-        numelt += sum(n_chan[-1])
+        matrix_size.add(len(matrix[-1]))
+        numelt += np.sum(n_chan[-1])
 
     # N_GRP should be 2-byte integer.
     #
-    n_grp = np.asarray(n_grp, dtype=np.int16)
-    numgrp = n_grp.sum()
+    n_grp_out = np.asarray(n_grp, dtype=np.int16)
+    numgrp = n_grp_out.sum()
 
     # Can we convert F_CHAN/N_CHAN to fixed-length if either:
     #  - N_GRP is the same for all rows
     #  - max(N_GRP) < 4
     #
-    if len(set(n_grp)) == 1 or n_grp.max() < 4:
-        ny = n_grp.max()
-        f_chan = _make_int_array(f_chan, ny)
-        n_chan = _make_int_array(n_chan, ny)
+    # The decision to convert to the int16 or int32 types is made
+    # within the _make_int_xxx routines (the maximum value is used to
+    # decide what type to use).
+    #
+    if len(set(n_grp_out)) == 1 or n_grp_out.max() < 4:
+        ny = n_grp_out.max()
+        f_chan_out = _make_int_array(f_chan, ny)
+        n_chan_out = _make_int_array(n_chan, ny)
     else:
-        f_chan = _make_int_vlf(f_chan)
-        n_chan = _make_int_vlf(n_chan)
+        f_chan_out = _make_int_vlf(f_chan)
+        n_chan_out = _make_int_vlf(n_chan)
 
     # We can convert the matrix to fixed size if each row in matrix
     # has the same size.
+    #
+    # The individual matrix elements are of type np.float32 so we
+    # should not need to do any conversion, but we are explicit in
+    # the fixed-length case.
     #
     if len(matrix_size) == 1:
         ny = matrix_size.pop()
         matrix_out = _make_float32_array(matrix, ny)
     else:
-        matrix_out = np.asarray(matrix, dtype=object)
+        # Since the elements can be lists, ensure they get converted
+        # to ndarray.
+        #
+        matrix_out = np.asarray([np.asarray(m, dtype=np.float32)
+                                 for m in matrix],
+                                dtype=object)
 
-    return {"N_GRP": n_grp,
-            "F_CHAN": f_chan,
-            "N_CHAN": n_chan,
+    return {"N_GRP": n_grp_out,
+            "F_CHAN": f_chan_out,
+            "N_CHAN": n_chan_out,
             "MATRIX": matrix_out,
             "NUMGRP": numgrp,
             "NUMELT": numelt}
