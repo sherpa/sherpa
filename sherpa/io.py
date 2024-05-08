@@ -24,6 +24,7 @@ These routines are currently restricted to reading from ASCII files.
 """
 
 import os
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -31,22 +32,31 @@ from sherpa.data import Data, Data1D
 from sherpa.utils import is_subclass, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import ArrayType
 
 
 __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
            'write_arrays')
 
 
-def _check_args(size, dstype):
+NamesType = Sequence[str]
+
+
+def _check_args(size: int, dstype) -> None:
     # Find the number of required args minus self, filename
     req_args = get_num_args(dstype.__init__)[1] - 2
+    if size >= req_args:
+        return
 
-    if size < req_args:
-        # raise IOErr('badargs', dstype.__name__, req_args)
-        raise TypeError(f"data set '{dstype.__name__}' takes at least {req_args} args")
+    raise TypeError(f"data set '{dstype.__name__}' takes at "
+                    f"least {req_args} args")
 
 
-def read_file_data(filename, sep=' ', comment='#', require_floats=True):
+def read_file_data(filename: str,
+                   sep: str = ' ',
+                   comment: str = '#',
+                   require_floats: bool = True
+                   ) -> tuple[list[str], list[np.ndarray]]:
     """Read in column data from a file."""
 
     bad_chars = '\t\n\r,;: |'
@@ -97,14 +107,13 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
 
     names = [name.strip(bad_chars)
              for name in raw_names if name != '']
-
     if len(names) == 0:
         names = [f'col{i}' for i, _ in enumerate(args, 1)]
 
     return names, args
 
 
-def get_column_data(*args):
+def get_column_data(*args) -> list[Optional[np.ndarray]]:
     """
     get_column_data( *NumPy_args )
     """
@@ -128,8 +137,14 @@ def get_column_data(*args):
     return cols
 
 
-def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
-                   comment='#', require_floats=True):
+def get_ascii_data(filename: str,
+                   ncols: int = 1,
+                   colkeys: Optional[NamesType] = None,
+                   sep: str = ' ',
+                   dstype: type = Data1D,
+                   comment: str = '#',
+                   require_floats: bool = True
+                   ) -> tuple[list[str], list[np.ndarray], str]:
     r"""Read in columns from an ASCII file.
 
     Parameters
@@ -253,8 +268,13 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     return (colkeys, kwargs, filename)
 
 
-def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
-              comment='#', require_floats=True):
+def read_data(filename: str,
+              ncols: int = 2,
+              colkeys: Optional[NamesType] = None,
+              sep: str = ' ',
+              dstype=Data1D,
+              comment: str = '#',
+              require_floats: bool = True) -> Data:
     """Create a data object from an ASCII file.
 
     Parameters
@@ -333,7 +353,7 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
     return dstype(name, *args)
 
 
-def read_arrays(*args):
+def read_arrays(*args) -> Data:
     """Create a data object from arrays.
 
     Parameters
@@ -392,8 +412,14 @@ def read_arrays(*args):
     return dstype('', *dargs)
 
 
-def write_arrays(filename, args, fields=None, sep=' ', comment='#',
-                 clobber=False, linebreak='\n', format='%g'):
+def write_arrays(filename: str,
+                 args: Sequence[ArrayType],
+                 fields: Optional[NamesType] = None,
+                 sep: str = ' ',
+                 comment: str = '#',
+                 clobber: bool = False,
+                 linebreak: str = '\n',
+                 format: str = '%g') -> None:
     """Write a list of arrays to an ASCII file.
 
     Parameters
@@ -476,8 +502,15 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
         fh.write(linebreak)
 
 
-def write_data(filename, dataset, fields=None, sep=' ', comment='#',
-               clobber=False, linebreak='\n', format='%g'):
+def write_data(filename: str,
+               dataset: Data,
+               fields: Optional[NamesType] = None,
+               sep: str = ' ',
+               comment: str = '#',
+               clobber: bool = False,
+               linebreak: str = '\n',
+               format: str = '%g'
+               ) -> None:
     """Write out a dataset as an ASCII file.
 
     Parameters

@@ -1620,7 +1620,7 @@ def set_arrays(filename: str,
         # The fields setting can be None here, which means that
         # write_arrays will not write out a header line.
         #
-        write_arrays(filename, args, fields,
+        write_arrays(filename, args, fields=fields,
                      comment="# ", clobber=clobber)
         return
 
