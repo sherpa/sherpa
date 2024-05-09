@@ -416,6 +416,36 @@ def test_fits_file_missing_column(make_data_path):
         io.read_table(infile, colkeys=["ra", "Foo"])
 
 
+@requires_fits
+@requires_data
+def test_get_header_data_missing_key(make_data_path):
+    """What happens if a requested key is missing?
+
+    TODO: If get_header_data is useful should we export if from
+    the io, and not backend, level?
+    """
+
+    infile = make_data_path("1838_rprofile_rmid.fits")
+    with pytest.raises(IOErr,
+                       match=" does not have a 'NOTAKEYWORD' keyword$"):
+        io.backend.get_header_data(infile, hdrkeys=["NOTAKEYWORD"])
+
+
+@requires_fits
+def test_set_arrays_not_sequence_of_seqence(tmp_path):
+    """Check this error condition.
+
+    TODO: Should set_arrays be part of the backend API?
+    """
+
+    outpath = tmp_path / 'do-not-edit.dat'
+    with pytest.raises(IOErr,
+                       match=r"^please supply array\(s\) to write to file$"):
+        io.backend.set_arrays(str(outpath),
+                              args=[np.arange(3), True],
+                              clobber=True)
+
+
 def test_read_arrays_no_data():
     """This can run even with the dummy backend"""
 
