@@ -83,7 +83,11 @@ def open_crate(filename: str,
     when crates can not read a file because of an unknown datatype.
 
     """
-    dataset = CrateDataset(filename, mode=mode)
+    try:
+        dataset = CrateDataset(filename, mode=mode)
+    except OSError as oe:
+        raise IOErr('openfailed', f"unable to open {filename}: {oe}") from oe
+
     current = dataset.get_current_crate()
     try:
         return dataset.get_crate(current)
@@ -494,7 +498,11 @@ def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
         dataset = arg
     elif isinstance(arg, str):
         filename = arg
-        dataset = CrateDataset(arg)
+        try:
+            dataset = CrateDataset(arg)
+        except OSError as oe:
+            raise IOErr('openfailed', f"unable to open {arg}: {oe}") from oe
+
     else:
         raise IOErr('badfile', arg, "CrateDataset obj")
 
@@ -828,7 +836,11 @@ def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
     """Read a RMF from a file or crate"""
 
     if isinstance(arg, str):
-        rmfdataset = pycrates.RMFCrateDataset(arg, mode="r")
+        try:
+            rmfdataset = pycrates.RMFCrateDataset(arg, mode="r")
+        except OSError as oe:
+            raise IOErr('openfailed', f"unable to open {arg}: {oe}") from oe
+
         if pycrates.is_rmf(rmfdataset) != 1:
             raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
@@ -958,7 +970,11 @@ def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
     """Read PHA data from a file or crate"""
 
     if isinstance(arg, str):
-        phadataset = pycrates.PHACrateDataset(arg, mode="r")
+        try:
+            phadataset = pycrates.PHACrateDataset(arg, mode="r")
+        except OSError as oe:
+            raise IOErr('openfailed', f"unable to open {arg}: {oe}") from oe
+
         if pycrates.is_pha(phadataset) != 1:
             raise IOErr('badfile', arg, "PHACrateDataset obj")
 
