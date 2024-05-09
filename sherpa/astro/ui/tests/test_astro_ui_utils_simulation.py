@@ -65,20 +65,23 @@ def test_fake_pha_missing_rmf(idval, clean_astro_ui, tmp_path):
 
     rmf = tmp_path / 'rmf'
 
+    # the error message depends on the backend:
+    # - pyfits: file '{arf}' not found
+    # - crates: unable to open ...: File ... does not exist.
+    #
     # Wrap this so we don't repeat the logic below in the
     # backend-specific code.
     #
     def call_fake():
         ui.fake_pha(idval, None, str(rmf), 1000.0)
 
-    # The error message depends on the backend.
     if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
         with pytest.raises(IOErr,
                            match=f"file '{rmf}' not found"):
             call_fake()
 
     elif io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        with pytest.raises(OSError,
+        with pytest.raises(IOErr,
                            match=f"File {rmf} does not exist"):
             call_fake()
 
@@ -105,20 +108,23 @@ def test_fake_pha_missing_arf(idval, clean_astro_ui, tmp_path):
 
     arf = tmp_path / 'arf'
 
+    # the error message depends on the backend:
+    # - pyfits: file '{arf}' not found
+    # - crates: unable to open ...: File ... does not exist.
+    #
     # Wrap this so we don't repeat the logic below in the
     # backend-specific code.
     #
     def call_fake():
         ui.fake_pha(idval, str(arf), rmf, 1000.0)
 
-    # The error message depends on the backend.
     if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
         with pytest.raises(IOErr,
                            match=f"file '{arf}' not found"):
             call_fake()
 
     elif io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        with pytest.raises(OSError,
+        with pytest.raises(IOErr,
                            match=f"File {arf} does not exist"):
             call_fake()
 

@@ -48,7 +48,6 @@ from astropy.io import fits  # type: ignore
 from astropy.io.fits.column import _VLF  # type: ignore
 from astropy.table import Table  # type: ignore
 
-
 import sherpa.utils
 from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
@@ -105,6 +104,13 @@ def _try_key(hdu: HDUType,
     return dtype(value)
 
 
+def _get_filename_from_hdu(hdu: fits.hdu.base._ValidHDU) -> str:
+    """A filename for error reporting"""
+
+    fobj = hdu.fileinfo()["file"]
+    return "unknown" if fobj.name is None else fobj.name
+
+
 def _require_key(hdu: HDUType,
                  name: str,
                  *,
@@ -112,9 +118,8 @@ def _require_key(hdu: HDUType,
                  dtype: type = SherpaFloat) -> KeyType:
     value = _try_key(hdu, name, fix_type=fix_type, dtype=dtype)
     if value is None:
-        raise IOErr('nokeyword',
-                    hdu._file.name if hdu._file is not None else "unknown",
-                    name)
+        raise IOErr('nokeyword', _get_filename_from_hdu(hdu), name)
+
     return value
 
 
@@ -213,7 +218,7 @@ def _require_col(hdu,
                  fix_type: bool = False) -> np.ndarray:
     col = _try_col(hdu, name, dtype=dtype, fix_type=fix_type)
     if col is None:
-        raise IOErr('reqcol', name, hdu._file.name)
+        raise IOErr('reqcol', name, _get_filename_from_hdu(hdu))
 
     return col
 
@@ -225,7 +230,7 @@ def _require_tbl_col(hdu,
                      fix_type: bool = False) -> np.ndarray:
     col = _try_tbl_col(hdu, name, dtype=dtype, fix_type=fix_type)
     if col is None:
-        raise IOErr('reqcol', name, hdu._file.name)
+        raise IOErr('reqcol', name, _get_filename_from_hdu(hdu))
 
     return col
 
@@ -237,7 +242,7 @@ def _require_vec(hdu,
                  fix_type: bool = False) -> np.ndarray:
     col = _try_vec(hdu, name, dtype=dtype, fix_type=fix_type)
     if col is None:
-        raise IOErr('reqcol', name, hdu._file.name)
+        raise IOErr('reqcol', name, _get_filename_from_hdu(hdu))
 
     return col
 
@@ -332,9 +337,10 @@ def open_fits(filename: str) -> fits.HDUList:
     # Note that this is not thread safe.
     with warnings.catch_warnings():
         warnings.filterwarnings('ignore', module='astropy.io.fits')
-        out = fits.open(fname)
-
-    return out
+        try:
+            return fits.open(fname)
+        except OSError as oe:
+            raise IOErr('openfailed', f"unable to open {fname}: {oe}") from oe
 
 
 def read_table_blocks(arg: DatasetType,
@@ -394,7 +400,9 @@ def _get_file_contents(arg: DatasetType,
     elif isinstance(arg, fits.HDUList) and len(arg) > 0 and \
             isinstance(arg[0], fits.PrimaryHDU):
         tbl = arg
-        filename = arg._file.name if arg._file is not None else "unknown"
+        filename = arg.filename()
+        if filename is None:
+            filename = "unknown"
         close = False
     else:
         msg = f"a binary FITS table or a {exptype} list"
@@ -727,7 +735,7 @@ def _read_col(hdu: fits.BinTableHDU, name: str) -> np.ndarray:
     try:
         return hdu.data[name]
     except KeyError:
-        raise IOErr("reqcol", name, hdu._file.name) from None
+        raise IOErr("reqcol", name, _get_filename_from_hdu(hdu)) from None
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -1155,9 +1163,7 @@ def _read_multi_pha(hdu,
     staterror = _try_vec(hdu, 'STAT_ERR')
     if counts is None:
         if exposure is None:
-            raise IOErr('nokeyword',
-                        hdu._file.name if hdu._file is not None else "unknown",
-                        "EXPOSURE")
+            raise IOErr('nokeyword', _get_filename_from_hdu(hdu), "EXPOSURE")
 
         counts = req_sfloat("RATE") * exposure
         if staterror is not None:
