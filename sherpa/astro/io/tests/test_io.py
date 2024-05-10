@@ -595,11 +595,11 @@ def test_read_table_object(make_data_path):
     close = False
 
     if io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        import pycrates
+        import pycrates  # type: ignore
         arg = pycrates.read_file(infile)
 
     elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
-        from astropy.io import fits
+        from astropy.io import fits  # type: ignore
         arg = fits.open(infile)
         close = True
 

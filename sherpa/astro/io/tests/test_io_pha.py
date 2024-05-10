@@ -467,7 +467,7 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
 
 
 def check_write_pha_fits_basic_roundtrip_crates(path):
-    import pycrates
+    import pycrates  # type: ignore
     ds = pycrates.CrateDataset(str(path), mode="r")
 
     assert ds.get_ncrates() == 2
@@ -527,7 +527,7 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
 
 
 def check_write_pha_fits_basic_roundtrip_pyfits(path):
-    from astropy.io import fits
+    from astropy.io import fits  # type: ignore
     hdus = fits.open(str(path))
     try:
         assert len(hdus) == 2
@@ -635,7 +635,7 @@ def test_write_pha_fits_basic_roundtrip(tmp_path):
 
 
 def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
-    import pycrates
+    import pycrates  # type: ignore
     ds = pycrates.CrateDataset(str(path), mode="r")
 
     assert ds.get_ncrates() == 2
@@ -709,7 +709,7 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
 
 
 def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
-    from astropy.io import fits
+    from astropy.io import fits  # type: ignore
     hdus = fits.open(str(path))
     try:
         assert len(hdus) == 2
@@ -1035,7 +1035,7 @@ def test_chandra_phaII_roundtrip(make_data_path, tmp_path):
 
 
 def check_csc_pha_roundtrip_crates(path):
-    import pycrates
+    import pycrates  # type: ignore
     ds = pycrates.CrateDataset(str(path), mode="r")
 
     assert ds.get_ncrates() == 2
@@ -1089,7 +1089,7 @@ def check_csc_pha_roundtrip_crates(path):
 
 
 def check_csc_pha_roundtrip_pyfits(path):
-    from astropy.io import fits
+    from astropy.io import fits  # type: ignore
     hdus = fits.open(str(path))
     try:
         assert len(hdus) == 2
@@ -1393,11 +1393,11 @@ def test_read_pha_object(make_data_path):
     close = False
 
     if io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        import pycrates
+        import pycrates  # type: ignore
         arg = pycrates.PHACrateDataset(infile, mode="r")
 
     elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
-        from astropy.io import fits
+        from astropy.io import fits  # type: ignore
         arg = fits.open(infile)
         close = True
 
