@@ -31,14 +31,140 @@
 
 """
 
+from abc import abstractmethod
 from configparser import ConfigParser
 import inspect
 import logging
-from typing import Final
+from typing import Any, Final, Optional, Protocol, Sequence, TypeVar
 
 import numpy as np
 
 from sherpa import get_config
+from .random import RandomType
+
+# A numer of symbols has been added to this module in release 4.17.0
+# to allow typing statements to be made. This is partly because the
+# multiprocessing module, which provides a number of symbols that
+# would be used in such statements, is optional (and so is the
+# threading module which multiprocessing often uses to define
+# symbols).  Therefore a number of protocols have been added to allow
+# statements to make statements like "this requires a queue which
+# handles exceptions".
+#
+I_contra = TypeVar("I_contra", contravariant=True)
+O_co = TypeVar("O_co", covariant=True)
+T = TypeVar("T")
+
+
+class Callback(Protocol[I_contra, O_co]):
+    """Simple callback of a single argument."""
+
+    def __call__(self, arg: I_contra) -> O_co:
+        ...
+
+
+class CallbackWithRNG(Protocol[I_contra, O_co]):
+    """Simple callback of a single argument plus RNG argument."""
+
+    def __call__(self,
+                 arg: I_contra,
+                 rng: Optional[RandomType]) -> O_co:
+        ...
+
+
+# Since importing multiprocessing and threading are allowed to fail it
+# is hard to type things with a class defined in these modules.
+#
+class SupportsProcess(Protocol):
+    """Label those methods from mulltiprocessing.Process we need."""
+
+    exitcode: Optional[int]
+
+    @abstractmethod
+    def start(self) -> None:
+        ...
+
+    # Technically join accepts an optional timeout argument but we do
+    # not need that.
+    #
+    @abstractmethod
+    def join(self) -> None:
+        ...
+
+    @abstractmethod
+    def terminate(self) -> None:
+        ...
+
+# This typing rule is actually less generic than the actual queue
+# type, since there's no guarantee that it is only used to
+# send/receive a single type. However, the use here does have the
+# queues having a fixed type.
+#
+class SupportsQueue(Protocol[T]):
+    """Represent the multiprocessing Queue class"""
+
+    @abstractmethod
+    def empty(self) -> bool:
+        ...
+
+    # we do not need the block or timeout options
+    @abstractmethod
+    def put(self, obj: T) -> None:
+        ...
+
+    # we do not need the block or timeout options
+    @abstractmethod
+    def get(self) -> T:
+        ...
+
+
+class SupportsLock(Protocol):
+    """Represent the multiprocessing Lock class"""
+
+    @abstractmethod
+    def acquire(self,
+                block: bool = True,
+                timeout: Optional[float] = None) -> bool:
+        ...
+
+    @abstractmethod
+    def release(self) -> None:
+        ...
+
+
+class SupportsManager(Protocol):
+    """Represent the multiprocessing Manager class"""
+
+    @abstractmethod
+    def Queue(self) -> SupportsQueue:
+        ...
+
+    @abstractmethod
+    def Lock(self) -> SupportsLock:
+        ...
+
+
+class SupportsContext(Protocol):
+    """The multiprocessing context.
+
+    Note that the BaseContext does not provide the Process symbol but
+    all the "runnable" variants do.
+
+    """
+
+    @property
+    @abstractmethod
+    def Process(self):
+        ...
+
+    @abstractmethod
+    def Manager(self) -> SupportsManager:
+        ...
+
+    @abstractmethod
+    def cpu_count(self) -> int:
+        ...
+
 
 debug = logging.getLogger(__name__).debug
 warning = logging.getLogger(__name__).warning
@@ -54,28 +180,39 @@ if not _ncpu_val.startswith('NONE'):
 
 _multi = False
 
+# This should be Optional[multiprocessing.context.BaseContext] but
+# we do not require multiprocessing to be available.
+#
+_context : Optional[SupportsContext]
+
 try:
     import multiprocessing
 
-    multiprocessing_start_method = config.get('multiprocessing', 'multiprocessing_start_method', fallback='fork')
+    multiprocessing_start_method = config.get('multiprocessing',
+                                              'multiprocessing_start_method',
+                                              fallback='fork')
 
-    if multiprocessing_start_method not in ('fork', 'forkserver', 'spawn', 'default'):
+    if multiprocessing_start_method not in ('fork', 'forkserver',
+                                            'spawn', 'default'):
         raise ValueError('multiprocessing_start method must be one of "fork", "forkserver", "spawn", or "default"')
 
 
     if multiprocessing_start_method == "default":
-        _context = multiprocessing.get_context()
+        _context = multiprocessing.get_context()  # type: ignore[assignment]
     else:
-        _context = multiprocessing.get_context(multiprocessing_start_method)
+        _context = multiprocessing.get_context(multiprocessing_start_method)  # type: ignore[assignment]
 
     _multi = True
 
-    if _ncpus is None:
+    # The '_context is not None' check is added to simplify the type
+    # checking.
+    #
+    if _ncpus is None and _context is not None:
         _ncpus = _context.cpu_count()
 
 except Exception as e:
     warning("parallel processing is unavailable,\n"
-            f"multiprocessing module failed with \n'{e}'")
+            "multiprocessing module failed with \n'%s'", str(e))
     _ncpus = 1
     _multi = False
     _context = None
@@ -97,6 +234,7 @@ context, ncpus
 
 """
 
+assert _ncpus is not None  # to please typing
 ncpus: Final[int] = _ncpus
 """The number of CPU cores to use when running jobs in parallel.
 
@@ -168,7 +306,11 @@ def split_array(arr, m):
     return [arr[idx[i]:idx[i + 1]] for i in range(m)]
 
 
-def worker(f, ii, chunk, out_q, err_q):
+def worker(f: Callback[I_contra, O_co],
+           idx: int,
+           chunk: Sequence[I_contra],
+           out_q: SupportsQueue[tuple[int, list[O_co]]],
+           err_q: SupportsQueue[Exception]) -> None:
     """Evaluate a function for each element, add response to queue.
 
     Parameters
@@ -193,10 +335,16 @@ def worker(f, ii, chunk, out_q, err_q):
         return
 
     # output the result and task ID to output queue
-    out_q.put((ii, vals))
+    out_q.put((idx, vals))
 
 
-def worker_rng(func, idx, chunk, out_q, err_q, rng):
+def worker_rng(func: CallbackWithRNG[I_contra, O_co],
+               idx: int,
+               chunk: Sequence[I_contra],
+               out_q: SupportsQueue[tuple[int, list[O_co]]],
+               err_q: SupportsQueue[Exception],
+               rng: Optional[RandomType]
+               ) -> None:
     """Evaluate a function for each element, add response to queue.
 
     Unlike worker(), this also sends in a RNG.
@@ -232,7 +380,16 @@ def worker_rng(func, idx, chunk, out_q, err_q, rng):
     out_q.put((idx, vals))
 
 
-def process_tasks(procs, err_q):
+def cleanup_tasks(procs: Sequence[SupportsProcess]) -> None:
+    """Clean up processes that are still running"""
+    for proc in procs:
+        if proc.exitcode is None:
+            proc.terminate()
+
+
+def process_tasks(procs: Sequence[SupportsProcess],
+                  err_q: SupportsQueue[Exception]
+                  ) -> None:
     """Ensure all the processes are run error-ing out if needed.
 
     Parameters
@@ -244,12 +401,6 @@ def process_tasks(procs, err_q):
 
     """
 
-    def die():
-        """Clean up processes that are still running"""
-        for proc in procs:
-            if proc.exitcode is None:
-                proc.terminate()
-
     try:
         for proc in procs:
             proc.start()
@@ -259,15 +410,18 @@ def process_tasks(procs, err_q):
 
     except KeyboardInterrupt as e:
         # kill all slave processes on ctrl-C
-        die()
+        cleanup_tasks(procs)
         raise e
 
     if not err_q.empty():
-        die()
+        cleanup_tasks(procs)
         raise err_q.get()
 
 
-def run_tasks(procs, err_q, out_q, num=None):
+def run_tasks(procs: Sequence[SupportsProcess],
+              err_q: SupportsQueue[Exception],
+              out_q: SupportsQueue[tuple[int, list[O_co]]],
+              num: Optional[Any] = None) -> list[O_co]:
     """Run the processes, exiting early if necessary, and return the results.
 
     .. versionchanged:: 4.16.0
@@ -302,7 +456,7 @@ def run_tasks(procs, err_q, out_q, num=None):
 
     # Loop through and insert the results to match the original order.
     #
-    results = [None] * len(procs)
+    results: list = [None] * len(procs)
     while not out_q.empty():
         idx, result = out_q.get()
         results[idx] = result
@@ -310,14 +464,22 @@ def run_tasks(procs, err_q, out_q, num=None):
     # Since each process may contain multiple results, flatten the
     # results.
     #
-    vals = []
+    vals: list = []
     for r in results:
+        # The assumption is that this task worked (i.e. returned a value).
+        if r is None:
+            raise RuntimeError("task failed")
         vals.extend(r)
 
     return vals
 
 
-def parallel_map(function, sequence, numcores=None):
+
+
+def parallel_map(function: Callback[I_contra, O_co],
+                 sequence: Sequence[I_contra],
+                 numcores: Optional[int] = None
+                 ) -> list[O_co]:
     """Run a function on a sequence of inputs in parallel.
 
     A parallelized version of the native Python map function that
@@ -399,12 +561,18 @@ def parallel_map(function, sequence, numcores=None):
     if not np.iterable(sequence):
         raise TypeError(f"input '{repr(sequence)}' is not iterable")
 
-    if numcores is None:
-        numcores = _ncpus
+    # Using np.iterable does not imply to mypy that you can use len,
+    # so add the ignore call.
+    #
+    size = len(sequence)  # type: ignore[arg-type]
 
-    size = len(sequence)
-    if not _multi or size == 1 or numcores < 2:
+    ncores = ncpus if numcores is None else numcores
+    if not _multi or size == 1 or ncores < 2:
         return list(map(function, sequence))
+
+    # At this point we know context is not None but the typing code
+    # does not.
+    assert context is not None
 
     # Returns a started SyncManager object which can be used for sharing
     # objects between processes. The returned manager object corresponds
@@ -420,11 +588,11 @@ def parallel_map(function, sequence, numcores=None):
 
     # if sequence is less than numcores, only use len sequence number of
     # processes
-    if size < numcores:
-        numcores = size
+    if size < ncores:
+        ncores = size
 
     # group sequence into numcores-worth of chunks
-    sequence = split_array(sequence, numcores)
+    sequence = split_array(sequence, ncores)
 
     procs = [context.Process(target=worker,
                              args=(function, ii, chunk, out_q, err_q))
@@ -540,7 +708,13 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     return run_tasks(procs, err_q, out_q)
 
 
-def parallel_map_rng(function, sequence, numcores=None, rng=None):
+# The typing is not quite right for function
+#
+def parallel_map_rng(function: CallbackWithRNG[I_contra, O_co],
+                     sequence: Sequence[I_contra],
+                     numcores: Optional[int] = None,
+                     rng: Optional[RandomType] = None
+                     ) -> list[O_co]:
     """Run a function on a sequence of inputs in parallel with a RNG.
 
     Similar to parallel_map, but the function takes two arguments,
@@ -610,18 +784,21 @@ def parallel_map_rng(function, sequence, numcores=None, rng=None):
     if not np.iterable(sequence):
         raise TypeError(f"input '{repr(sequence)}' is not iterable")
 
-    size = len(sequence)
+    size = len(sequence)  # type: ignore[arg-type]
 
     if not _multi or size == 1 or (numcores is not None and numcores < 2):
         # As this is not in parallel the supplied generator can be
         # used.
         #
         debug("parallel_map_rng: running %d items in serial with rng=%s",
-              len(sequence), rng)
+              size, rng)
         return [function(s, rng=rng) for s in sequence]
 
-    if numcores is None:
-        numcores = _ncpus
+    # At this point we know context is not None but the typing code
+    # does not.
+    assert context is not None
+
+    ncores = ncpus if numcores is None else numcores
 
     # Returns a started SyncManager object which can be used for sharing
     # objects between processes. The returned manager object corresponds
@@ -637,11 +814,11 @@ def parallel_map_rng(function, sequence, numcores=None, rng=None):
 
     # if sequence is less than numcores, only use len sequence number of
     # processes
-    if size < numcores:
-        numcores = size
+    if size < ncores:
+        ncores = size
 
     # group sequence into numcores-worth of chunks
-    sequence = split_array(sequence, numcores)
+    sequence = split_array(sequence, ncores)
 
     debug("parallel_map_rng: running %d items in parallel (%d processes) with rng=%s",
           size, len(sequence), rng)
@@ -657,9 +834,12 @@ def parallel_map_rng(function, sequence, numcores=None, rng=None):
         root_seed = np.random.randint(maxval, dtype=np.uint64)
     else:
         try:
-            root_seed = rng.integers(maxval, endpoint=False, dtype=np.uint64)
+            root_seed = rng.integers(maxval,  # type: ignore[union-attr]
+                                     endpoint=False,
+                                     dtype=np.uint64)
         except AttributeError:
-            root_seed = rng.randint(maxval, dtype=np.uint64)
+            root_seed = rng.randint(maxval,  # type: ignore[union-attr]
+                                    dtype=np.uint64)
 
     seeds = np.random.SeedSequence(root_seed).spawn(len(sequence))
 
