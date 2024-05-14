@@ -381,9 +381,13 @@ def read_image(arg,
     # What are the independent axes?
     #
     if issubclass(dstype, (Data2DInt, DataIMGInt)):
-        indep = [x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5]
+        data['x0lo'] = x0 - 0.5
+        data['x1lo'] = x1 - 0.5
+        data['x0hi'] = x0 + 0.5
+        data['x1hi'] = x1 + 0.5
     elif issubclass(dstype, Data2D):
-        indep = [x0, x1]
+        data['x0'] = x0
+        data['x1'] = x1
     else:
         raise ArgumentErr("bad", "dstype argument",
                           "dstype is not derived from Data2D")
@@ -397,7 +401,7 @@ def read_image(arg,
     # not behave sensibly (likely due to #1414 which was to address
     # issue #1380).
     #
-    dataset = dstype(filename, *indep, **data)
+    dataset = dstype(filename, **data)
     if isinstance(dataset, DataIMG):
         dataset.set_coord(coord)
 
@@ -1579,6 +1583,14 @@ def _pack_rmf(dataset: DataRMF) -> list[tuple[DataType, HdrType]]:
     # TODO: is this correct?
     nchan = dataset.offset + dataset.detchans - 1
     dchan = np.int32 if nchan > 32767 else np.int16
+
+    # Technically e_min/max can be empty, but we not expect
+    # this, and this support should probably be removed. For
+    # now error out if we are sent such data.
+    #
+    if dataset.e_min is None or dataset.e_max is None:
+        raise IOErr(f"RMF {dataset.name} has no E_MIN or E_MAX data")
+
     ebounds_data = {
         "CHANNEL": np.arange(dataset.offset, nchan + 1, dtype=dchan),
         "E_MIN": dataset.e_min.astype(np.float32),
