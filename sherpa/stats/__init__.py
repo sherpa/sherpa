@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019, 2020, 2022
+#  Copyright (C) 2009, 2015 - 2020, 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,19 +19,18 @@
 #
 
 
-import warnings
 from configparser import ConfigParser
+import warnings
 
-import numpy
-from sherpa.utils import NoNewAttributesAfterInit, igamc
-from sherpa.utils.err import FitErr, StatErr
-from sherpa.data import DataSimulFit
-from sherpa.models import SimulFitModel
-
-from . import _statfcts
+import numpy as np
 
 from sherpa import get_config
+from sherpa.data import DataSimulFit
+from sherpa.models import SimulFitModel
+from sherpa.utils import NoNewAttributesAfterInit, igamc
+from sherpa.utils.err import FitErr, StatErr
 
+from . import _statfcts
 
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
            'Chi2Gehrels', 'Chi2ConstVar', 'Chi2DataVar', 'Chi2ModVar',
@@ -67,13 +66,12 @@ class Stat(NoNewAttributesAfterInit):
 
     def __init__(self, name):
         self.name = name
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __repr__(self):
         if self.__doc__ is not None:
             return self.__doc__
-        return ("<%s statistic instance '%s'>" %
-                (type(self).__name__, self.name))
+        return f"<{type(self).__name__} statistic instance '{self.name}'>"
 
     @staticmethod
     def _bundle_inputs(data, model):
@@ -137,7 +135,7 @@ class Stat(NoNewAttributesAfterInit):
             # calculated for this check, so staterrfunc can be
             # None.
             dep, _, _ = dset.to_fit(staterrfunc=None)
-            if numpy.iterable(dep) and len(dep) > 0:
+            if np.iterable(dep) and len(dep) > 0:
                 return
 
         raise FitErr('nobins')
@@ -300,20 +298,20 @@ class Stat(NoNewAttributesAfterInit):
             rstat = statval / dof
             return rstat, qval
 
-        return numpy.nan, numpy.nan
+        return np.nan, np.nan
 
 
 class Likelihood(Stat):
     """Likelihood functions"""
 
     def __init__(self, name='likelihood'):
-        Stat.__init__(self, name)
+        super().__init__(name=name)
 
     @staticmethod
     def calc_staterror(data):
         # Likelihood stats do not have 'errors' associated with them.
         # return 1 to avoid dividing by 0 by some optimization methods.
-        return numpy.ones_like(data)
+        return np.ones_like(data)
 
     def _check_background_subtraction(self, data):
         """Raise an error if any dataset has been background subtracted.
@@ -425,7 +423,7 @@ class Cash(Likelihood):
     _calc = _statfcts.calc_cash_stat
 
     def __init__(self, name='cash'):
-        Likelihood.__init__(self, name)
+        super().__init__(name=name)
 
 
 class CStat(Likelihood):
@@ -498,7 +496,7 @@ class CStat(Likelihood):
     _can_calculate_rstat = True
 
     def __init__(self, name='cstat'):
-        Likelihood.__init__(self, name)
+        super().__init__(name=name)
 
 
 class Chi2(Stat):
@@ -565,7 +563,7 @@ class Chi2(Stat):
     _can_calculate_rstat = True
 
     def __init__(self, name='chi2'):
-        Stat.__init__(self, name)
+        super().__init__(name=name)
 
     @staticmethod
     def calc_staterror(data):
@@ -615,11 +613,11 @@ class LeastSq(Chi2):
     _can_calculate_rstat = False
 
     def __init__(self, name='leastsq'):
-        Stat.__init__(self, name)
+        super().__init__(name=name)
 
     @staticmethod
     def calc_staterror(data):
-        return numpy.ones_like(data)
+        return np.ones_like(data)
 
 
 class Chi2Gehrels(Chi2):
@@ -674,7 +672,7 @@ class Chi2Gehrels(Chi2):
     """
 
     def __init__(self, name='chi2gehrels'):
-        Chi2.__init__(self, name)
+        super().__init__(name=name)
 
     @staticmethod
     def calc_staterror(data):
@@ -696,7 +694,7 @@ class Chi2ConstVar(Chi2):
     """
 
     def __init__(self, name='chi2constvar'):
-        Chi2.__init__(self, name)
+        super().__init__(name=name)
 
     @staticmethod
     def calc_staterror(data):
@@ -735,7 +733,7 @@ class Chi2DataVar(Chi2):
     """
 
     def __init__(self, name='chi2datavar'):
-        Chi2.__init__(self, name)
+        super().__init__(name=name)
 
     @staticmethod
     def calc_staterror(data):
@@ -778,12 +776,12 @@ class Chi2ModVar(Chi2):
     _calc = _statfcts.calc_chi2modvar_stat
 
     def __init__(self, name='chi2modvar'):
-        Chi2.__init__(self, name)
+        super().__init__(name=name)
 
     # Statistical errors are not used
     @staticmethod
     def calc_staterror(data):
-        return numpy.zeros_like(data)
+        return np.zeros_like(data)
 
 
 class Chi2XspecVar(Chi2):
@@ -806,7 +804,7 @@ class Chi2XspecVar(Chi2):
     """
 
     def __init__(self, name='chi2xspecvar'):
-        Chi2.__init__(self, name)
+        super().__init__(name=name)
 
     @staticmethod
     def calc_staterror(data):
@@ -842,7 +840,7 @@ class UserStat(Stat):
             self.errfunc = errfunc
             self._staterrfuncset = True
 
-        Stat.__init__(self, name)
+        super().__init__(name=name)
 
     def __getstate__(self):
         state = self.__dict__.copy()
@@ -953,7 +951,7 @@ class WStat(Likelihood):
     _can_calculate_rstat = True
 
     def __init__(self, name='wstat'):
-        Likelihood.__init__(self, name)
+        super().__init__(name=name)
 
     def calc_stat(self, data, model):
 
@@ -996,9 +994,10 @@ class WStat(Likelihood):
             if nbkg == 0:
                 raise StatErr('usecstat')
 
-            elif nbkg > 1:
+            if nbkg > 1:
                 # TODO: improve warning
-                warnings.warn("Only using first background component for data set {}".format(dset.name))
+                warnings.warn("Only using first background component "
+                              f"for data set {dset.name}")
 
             bid = bids[0]
 
@@ -1011,7 +1010,7 @@ class WStat(Likelihood):
             #
 
             data_bkg.append(dset.apply_filter(bset.get_dep(False),
-                                              groupfunc=numpy.sum))
+                                              groupfunc=np.sum))
 
             # The assumption is that the source and background datasets
             # have the same number of channels (before any grouping or
@@ -1020,7 +1019,7 @@ class WStat(Likelihood):
             # Since the backscal values can be a scalar or array, it is
             # easiest just to convert everything to an array.
             #
-            dummy = numpy.ones(dset.get_dep(False).size)
+            dummy = np.ones(dset.get_dep(False).size)
 
             # Combine the BACKSCAL values (use the default _middle
             # scheme as this is used elsewhere when combining
@@ -1061,11 +1060,11 @@ class WStat(Likelihood):
 
             exp_bkg.append(bset.exposure * ascal)
 
-        data_src = numpy.concatenate(data_src)
-        exp_src = numpy.concatenate(exp_src)
-        exp_bkg = numpy.concatenate(exp_bkg)
-        data_bkg = numpy.concatenate(data_bkg)
-        backscales = numpy.concatenate(backscales)
+        data_src = np.concatenate(data_src)
+        exp_src = np.concatenate(exp_src)
+        exp_bkg = np.concatenate(exp_bkg)
+        data_bkg = np.concatenate(data_bkg)
+        backscales = np.concatenate(backscales)
 
         return self._calc(data_src, data_model, nelems,
                           exp_src, exp_bkg,
