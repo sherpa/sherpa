@@ -503,7 +503,7 @@ def _get_citation_zenodo_latest():
         hit = jsdata['success']['hits']['hits'][0]
     except (KeyError, IndexError):
         dbg("Unable to find hits/hits[0]")
-        return _get_citation_zenodo_failure({'failed': 'Unable to parse the Zenodo response'})
+        return _get_citation_zenodo_failure('Unable to parse the Zenodo response')
 
     out = _make_zenodo_citation(hit)
     if 'failed' in out:
