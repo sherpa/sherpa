@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2014, 2015, 2016, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2014 - 2016, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -41,11 +41,11 @@ import os.path
 import subprocess
 import sys
 
-
-__all__ = ('citation', 'get_config', 'get_include', 'smoke')
-
 from . import _version
 __version__ = _version.get_versions()['version']
+
+
+__all__ = ('citation', 'get_config', 'get_include', 'smoke')
 
 
 class Formatter(logging.Formatter):
@@ -953,7 +953,7 @@ def _install_test_deps() -> list[str]:
     # though the current list of required plugins is empty.
     #
     deps: list[dict[str, str]] = [{'name': 'pytest',
-                                   'constraint': 'pytest>=5.0,!=5.2.3'}]
+                                   'constraint': 'pytest>=8.0'}]
     pytest_plugins: list[dict[str, str]] = []
 
     def get(dep: dict[str, str]) -> tuple[str, str, str]:
