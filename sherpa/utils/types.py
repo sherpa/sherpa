@@ -41,9 +41,17 @@ import numpy as np
 #
 ArrayType = Union[Sequence[float], np.ndarray]
 
-# Represent statistic evaluation, per-bin.
+# Represent statistic evaluation.
+#
+# Ideally the callable routines would be labelled as accepting
+# [ArrayType] and return np.ndarray, but we do not enforce this yet
+# (and it is not entirely clear whether the stat functions may accept
+# multiple arguments).
 #
 StatErrFunc = Callable[..., ArrayType]
+StatResults = tuple[float, np.ndarray]
+StatFunc = Callable[..., StatResults]
+
 
 # Represent model evaluation. Using a Protocol may be better, but
 # for now keep with a Callable. Ideally the model would just
