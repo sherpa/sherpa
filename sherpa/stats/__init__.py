@@ -825,55 +825,50 @@ class UserStat(Stat):
     """
 
     def __init__(self, statfunc=None, errfunc=None, name='userstat'):
+        # These two could be checked by comparing
         self._statfuncset = False
-        self.statfunc = (lambda x: None)
-
         self._staterrfuncset = False
-        self.errfunc = (lambda x: None)
+
+        # statfunc and _calc serve the same purpose but leave as is
+        # in case users use the statfunc field
+        self.statfunc = None
+        self.errfunc = None
 
         if statfunc is not None:
             self.statfunc = statfunc
             self._calc = statfunc
-            self._statfuncset = True
 
         if errfunc is not None:
             self.errfunc = errfunc
-            self._staterrfuncset = True
 
         super().__init__(name=name)
 
     def __getstate__(self):
+        # TODO: Do we still need to do this?
         state = self.__dict__.copy()
-        # Function pointers to methods of the class
-        # (of type 'instancemethod') are NOT picklable
-        # remove them and restore later with a coord init
         del state['statfunc']
         del state['errfunc']
-
         return state
 
     def __setstate__(self, state):
-        # Populate the function pointers we deleted at pickle time with
-        # no-ops.
-        self.__dict__['statfunc'] = (lambda x: None)
-        self.__dict__['errfunc'] = (lambda x: None)
+        # TODO: Do we still need to do this?
+        self.__dict__['statfunc'] = None
+        self.__dict__['errfunc'] = None
         self.__dict__.update(state)
 
     def set_statfunc(self, func):
         self.statfunc = func
-        self._statfuncset = True
 
     def set_errfunc(self, func):
         self.errfunc = func
-        self._staterrfuncset = True
 
     def calc_staterror(self, data):
-        if not self._staterrfuncset:
+        if self.errfunc is None:
             raise StatErr('nostat', self.name, 'calc_staterror()')
         return self.errfunc(data)
 
     def calc_stat(self, data, model):
-        if not self._statfuncset:
+        if self.statfunc is None:
             raise StatErr('nostat', self.name, 'calc_stat()')
 
         fitdata, modeldata = self._get_fit_model_data(data, model)
