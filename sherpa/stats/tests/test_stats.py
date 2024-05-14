@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015, 2016, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,22 +19,24 @@
 #
 
 import logging
+from typing import Union
 
-import numpy
+import numpy as np
 
 import pytest
 
-from sherpa.data import Data1D
+from sherpa.data import Data, Data1D, DataSimulFit
 from sherpa.astro.data import DataPHA
 
 from sherpa.astro import ui
 from sherpa.astro.instrument import Response1D
 from sherpa.data import DataSimulFit
 from sherpa.fit import Fit
-from sherpa.models import Const1D, PowLaw1D, SimulFitModel
+from sherpa.models import Model, Const1D, PowLaw1D, SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Cash, CStat, WStat, LeastSq, UserStat, \
-    Chi2Gehrels, Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Chi2DataVar
+    Chi2Gehrels, Chi2ConstVar, Chi2ModVar, Chi2XspecVar, Chi2DataVar, \
+    StatResults
 from sherpa.utils.err import StatErr
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
@@ -42,40 +44,32 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 logger = logging.getLogger("sherpa")
 
 
+# Note that these tests extend UserStat in a way not intended, in that
+# they overload methods directly rather than taking advantage of
+# set_statfnuc/set_errfunc. Perhaps they should just extend Stat
+# directly instead?
+#
 class MySimulStat(UserStat):
 
-    def __init__(self, name='mysimulstat'):
-        UserStat.__init__(self, name)
+    def __init__(self, name: str = 'mysimulstat') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def mycal_staterror(data):
-        return numpy.ones_like(data)
-
-    """
-    @staticmethod
-    def my_simulstat(data, model, staterror, *args, **kwargs):
-        data_size = kwargs['extra_args']['data_size']
-        data1 = data[:data_size[0]]
-        data2 = data[data_size[0]:]
-        model1 = model[:data_size[0]]
-        model2 = model[data_size[0]:]
-        staterror1 = staterror[:data_size[0]]
-        staterror2 = staterror[data_size[0]:]
-        mystat1 = Chi2DataVar()
-        mystat2 = Chi2DataVar()
-        stat1, fvec1 = mystat1.calc_stat(data1, model1, staterror1)
-        stat2, fvec2 = mystat2.calc_stat(data2, model2, staterror2)
-        fvec = numpy.power((data - model) / staterror, 2)
-        stat = numpy.sum(fvec)
-        # print stat1 + stat2 - stat
-        return (stat, fvec)
-        return (stat1 + stat2, numpy.append(fvec1, fvec2))
-    """
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
+        return np.ones_like(data)
 
     # This is based on the original code, but it's not 100% clear
     # why some of the values are being calculated.
     #
-    def my_simulstat(self, data, model, *args, **kwargs):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
+
+        # This is not generic code, so we can assume we have a
+        # simulfit object.
+        #
+        assert isinstance(data, DataSimulFit)
 
         tofit = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
@@ -83,8 +77,8 @@ class MySimulStat(UserStat):
         fitdata = tofit[0]
         staterror = tofit[1]
 
-        fvec = numpy.power((fitdata - modeldata) / staterror, 2)
-        stat = numpy.sum(fvec)
+        fvec = np.power((fitdata - modeldata) / staterror, 2)
+        stat = np.sum(fvec)
 
         mstat = 0.0
         mfvec = []
@@ -99,68 +93,44 @@ class MySimulStat(UserStat):
             mstat += thisstat
             mfvec.append(thisvec)
 
-        # return (mstat, numpy.concatenate(mfvec))
         return (stat, fvec)
-
-    calc_stat = my_simulstat
-    calc_staterror = mycal_staterror
 
 
 class MyCashWithBkg(UserStat):
 
-    def __init__(self, name='mycash'):
-        UserStat.__init__(self, name)
+    def __init__(self, name: str = 'mycashwithbkg') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def mycal_staterror(data):
-        return None
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
+        return np.zeros_like(data)
 
-    """
-    @staticmethod
-    def cash_withbkg(data, model, staterror, *args, **kwargs):
-        fvec = model - (data * numpy.log(model))
-        weight = kwargs.get('weight')
-        if weight is not None:
-            fvec = fvec * weight
-        return 2.0 * sum(fvec), fvec
-    """
-
-    @staticmethod
-    def cash_withbkg(data, model, *args, **kwargs):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
 
         tofit = data.to_fit(staterrfunc=None)
         modeldata = data.eval_model_to_fit(model)
 
         fitdata = tofit[0]
-        fvec = modeldata - (fitdata * numpy.log(modeldata))
-        weight = kwargs.get('weight')
-        if weight is not None:
-            fvec = fvec * weight
-
+        fvec = modeldata - (fitdata * np.log(modeldata))
         return 2.0 * fvec.sum(), fvec
-
-    calc_stat = cash_withbkg
-    calc_staterror = mycal_staterror
 
 
 class MyChiWithBkg(UserStat):
 
-    def __init__(self, name='mychi'):
-        UserStat.__init__(self, name)
+    def __init__(self, name: str = 'mychiwithbkg') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def mycal_staterror(data):
-        return numpy.ones_like(data)
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
+        return np.ones_like(data)
 
-    """
-    @staticmethod
-    def chi_withbkg(data, model, staterror, *args, **kwargs):
-        fvec = ((data - model) / staterror)**2
-        stat = fvec.sum()
-        return (stat, fvec)
-    """
-
-    def chi_withbkg(self, data, model, *args, **kwargs):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
 
         tofit = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
@@ -171,65 +141,44 @@ class MyChiWithBkg(UserStat):
         fvec = ((fitdata - modeldata) / staterror)**2
         return fvec.sum(), fvec
 
-    calc_stat = chi_withbkg
-    calc_staterror = mycal_staterror
-
 
 class MyCashNoBkg(UserStat):
 
-    def __init__(self, name='mycash'):
-        UserStat.__init__(self, name)
+    def __init__(self, name: str = 'mycashnobkg') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def mycal_staterror(data):
-        return None
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
+        return np.zeros_like(data)
 
-    """
-    @staticmethod
-    def cash_nobkg(data, model, staterror, *args, **kwargs):
-        fvec = model - (data * numpy.log(model))
-        weight = kwargs.get('weight')
-        if weight is not None:
-            fvec = fvec * weight
-        return 2.0 * sum(fvec), fvec
-    """
-
-    @staticmethod
-    def cash_nobkg(data, model, *args, **kwargs):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
 
         tofit = data.to_fit(staterrfunc=None)
         modeldata = data.eval_model_to_fit(model)
 
         fitdata = tofit[0]
-        fvec = modeldata - (fitdata * numpy.log(modeldata))
-        weight = kwargs.get('weight')
-        if weight is not None:
-            fvec = fvec * weight
+        fvec = modeldata - (fitdata * np.log(modeldata))
 
         return 2.0 * fvec.sum(), fvec
 
-    calc_stat = cash_nobkg
-    calc_staterror = mycal_staterror
 
 
 class MyChiNoBkg(UserStat):
 
-    def __init__(self, name='mychi'):
-        UserStat.__init__(self, name)
+    def __init__(self, name: str = 'mychinobkg') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def mycal_staterror(data):
-        return numpy.ones_like(data)
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
+        return np.ones_like(data)
 
-    """
-    @staticmethod
-    def chi_nobkg(data, model, staterror, *args, **kwargs):
-        fvec = ((data - model) / staterror)**2
-        stat = fvec.sum()
-        return (stat, fvec)
-    """
-
-    def chi_nobkg(self, data, model, *args, **kwargs):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
 
         tofit = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
@@ -239,9 +188,6 @@ class MyChiNoBkg(UserStat):
 
         fvec = ((fitdata - modeldata) / staterror)**2
         return fvec.sum(), fvec
-
-    calc_stat = chi_nobkg
-    calc_staterror = mycal_staterror
 
 
 @pytest.fixture
@@ -303,7 +249,7 @@ def setup(make_data_path):
     # If you don't do this then the fit can fail because a value
     # outside the abs1.nh but within factor.c0 can be picked.
     #
-    factor.c0.max = numpy.log10(abs1.nh.max)
+    factor.c0.max = np.log10(abs1.nh.max)
 
     rsp = Response1D(data)
     return {'data': data, 'model': rsp(model)}
@@ -397,8 +343,8 @@ def compare_results(expected, got, tol=1e-6):
     # tuple, which got.parvals is, can lead to less-than-useful
     # diagnostic errors when this test fails).
     #
-    assert numpy.asarray(got.parvals) == pytest.approx(expected['parvals'],
-                                                       rel=tol)
+    assert np.asarray(got.parvals) == pytest.approx(expected['parvals'],
+                                                    rel=tol)
 
 
 @requires_fits
@@ -415,7 +361,7 @@ def test_chi2xspecvar_stat(hide_logging, reset_xspec, setup_group):
         'dof': 140,
         'istatval': 3386.3567560855163,
         'statval': 145.28136361814595,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.7780969509842395, 5.359332855712486, -1.9150879306302135]
             )
     }
@@ -437,7 +383,7 @@ def test_chi2modvar_stat(hide_logging, reset_xspec, setup_group):
         'dof': 140,
         'istatval': 87612.31084053952,
         'statval': 151.57751844595734,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.7348189936236909, 5.530307076686988, -2.0533493383033363]
             )
     }
@@ -459,7 +405,7 @@ def test_chi2constvar_stat(hide_logging, reset_xspec, setup_group):
         'dof': 140,
         'istatval': 3903.1647954751857,
         'statval': 140.1384389790626,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.8081424949164122, 5.461611041944607, -1.9077365276482876]
         )
     }
@@ -481,7 +427,7 @@ def test_chi2gehrels_stat(hide_logging, reset_xspec, setup_group):
         'dof': 140,
         'istatval': 2410.6724538404405,
         'statval': 100.22120218142433,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.7831198951601808, 5.376678702350025, -1.9152513828120412]
             )
     }
@@ -503,7 +449,7 @@ def test_leastsq_stat(hide_logging, reset_xspec, setup_group):
         'dof': 140,
         'istatval': 117067.64900554597,
         'statval': 4203.173180288109,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.808142494916457, 5.461611041944977, -1.907736527635154]
         )
     }
@@ -524,7 +470,7 @@ def test_cstat_stat(hide_logging, reset_xspec, setup):
         'dof': 457,
         'istatval': 21647.62293983995,
         'statval': 472.6585691450068,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.75021021282262, 5.474614304244775, -1.9985761873334102]
         )
     }
@@ -546,7 +492,7 @@ def test_cash_stat(stat, hide_logging, reset_xspec, setup):
         'dof': 457,
         'istatval': 4594.094357753832,
         'statval': -16580.870007925594,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.7502119905435731, 5.474756852726033, -1.998450403564366]
         )
     }
@@ -569,7 +515,7 @@ def test_mychi_data(stat, hide_logging, reset_xspec, setup_group):
         'dof': 140,
         'istatval': 117067.64900554594,
         'statval': 4211.349359724583,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.8177747886737923, 5.448440759203273, -1.8728780046411722]
         )
     }
@@ -591,7 +537,7 @@ def test_mycash(stat, hide_logging, reset_xspec, setup_bkg):
         'dof': 443,
         'istatval': 16800.126444958027,
         'statval': -995.672570978315,
-        'parvals': numpy.array(
+        'parvals': np.array(
             # note: 'nh, gamma, norm' not 'gamma, norm, lognh'
             [0.10852102397785003, 2.163584294153897, 1.7059851092468952]
         )
@@ -615,7 +561,7 @@ def test_mychi_bkg(stat, hide_logging, reset_xspec, setup_bkg_group):
         'dof': 67,
         'istatval': 12368.806484278228,
         'statval': 799.9399745311307,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [0.1904013138796835, 2.497496167887353, 2.111511871780941]
         )
     }
@@ -637,7 +583,7 @@ def test_wstat(hide_logging, reset_xspec, setup):
         'dof': 457,
         'istatval': 21647.48285025895,
         'statval': 472.6585709918982,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [1.750204250228727, 5.47466040324842, -1.9983562007031974]
         )
     }
@@ -658,7 +604,7 @@ def test_wstat(hide_logging, reset_xspec, setup):
 #     pl.norm = 1e-4
 #     ui.set_source(src)
 #     ui.set_stat('wstat')
-#     assert numpy.allclose(46.455049531, ui.calc_stat(), 1.e-7, 1.e-7)
+#     assert np.allclose(46.455049531, ui.calc_stat(), 1.e-7, 1.e-7)
 
 
 @requires_fits
@@ -673,11 +619,11 @@ def test_wstat_error(hide_logging, reset_xspec, setup_bkg):
 
 def test_chi2datavar(hide_logging):
     num = 3
-    xy = numpy.array(range(num))
+    xy = np.array(range(num))
     ui.load_arrays(1, xy, xy, Data1D)
     ui.set_stat('chi2datavar')
     err = ui.get_staterror()
-    assert err == pytest.approx(numpy.sqrt(xy))
+    assert err == pytest.approx(np.sqrt(xy))
 
 
 @requires_fits
@@ -716,7 +662,7 @@ def test_simul_stat_fit(stat, hide_logging, reset_xspec, setup_two):
         'dof': 15,
         'istatval': 56609.70689926489,
         'statval': 126.1509268988255,
-        'parvals': numpy.array(
+        'parvals': np.array(
             [0.8417576197443695, 1.6496933246579941, 0.2383939869443424]
         )
     }
@@ -782,9 +728,9 @@ def test_xspecvar_zero_handling(sexp, bexp, sscal, bscal, yexp, dyexp):
     """
 
     stat = Chi2XspecVar()
-    chans = numpy.arange(1, 10, dtype=numpy.int16)
-    scnts = numpy.asarray([0, 0, 0, 1, 3, 1, 1, 3, 3], dtype=numpy.int16)
-    bcnts = numpy.asarray([0, 1, 3, 0, 0, 1, 3, 1, 3], dtype=numpy.int16)
+    chans = np.arange(1, 10, dtype=np.int16)
+    scnts = np.asarray([0, 0, 0, 1, 3, 1, 1, 3, 3], dtype=np.int16)
+    bcnts = np.asarray([0, 1, 3, 0, 0, 1, 3, 1, 3], dtype=np.int16)
 
     s = DataPHA('src', chans, scnts, exposure=sexp, backscal=sscal)
     b = DataPHA('bkg', chans, bcnts, exposure=bexp, backscal=bscal)
@@ -807,18 +753,18 @@ def test_xspecvar_zero_handling_variable():
     """
 
     stat = Chi2XspecVar()
-    chans = numpy.arange(1, 5, dtype=numpy.int16)
-    cnts = numpy.zeros(4, dtype=numpy.int16)
+    chans = np.arange(1, 5, dtype=np.int16)
+    cnts = np.zeros(4, dtype=np.int16)
 
-    sscal = numpy.asarray([0.1, 0.2, 2, 5])
-    bscal = numpy.asarray([0.1, 0.1, 4, 20])
+    sscal = np.asarray([0.1, 0.2, 2, 5])
+    bscal = np.asarray([0.1, 0.1, 4, 20])
     s = DataPHA('src', chans, cnts, exposure=100, backscal=sscal)
     b = DataPHA('bkg', chans, cnts, exposure=125, backscal=bscal)
     s.set_background(b)
     s.subtract()
 
-    yexp = numpy.asarray([0, 0, 0, 0])
-    dyexp = numpy.asarray([0.8, 1.0, 0.4, 0.2])
+    yexp = np.asarray([0, 0, 0, 0])
+    dyexp = np.asarray([0.8, 1.0, 0.4, 0.2])
 
     y, dy, other = s.to_fit(staterrfunc=stat.calc_staterror)
     assert other is None
