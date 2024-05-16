@@ -30,7 +30,6 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Callable, Generic, TypeVar
 
 import numpy as np
 import numpy.fft
@@ -54,7 +53,7 @@ warning = logging.getLogger("sherpa").warning
 debug = logging.getLogger("sherpa").debug
 
 __all__ = ('NoNewAttributesAfterInit',
-           '_guess_ampl_scale', 'apache_muller', 'bool_cast',
+           '_guess_ampl_scale', 'apache_muller', 'bisection', 'bool_cast',
            'calc_ftest', 'calc_mlr', 'calc_total_error', 'create_expr',
            'create_expr_integrated',
            'dataspace1d', 'dataspace2d', 'demuller',
@@ -2806,29 +2805,305 @@ def neville2d(xinterp, yinterp, x, y, fval):
         tmp[row] = neville(yinterp, y, fval[row])
     return neville(xinterp, x, tmp)
 
-
-############################### Root finding ##############################
-
-# Will be easier with the generics support in Python 3.12
-T = TypeVar("T")
+################################## Hessian ####################################
 
 
-class FuncCounter(Generic[T]):
-    """Store the number of times the function is called.
+class NumDeriv:
 
-    .. versionadded:: 4.16.1
+    def __init__(self, func, fval0):
+        self.nfev, self.func = func_counter(func)
+        self.fval_0 = fval0
+
+
+class NumDerivCentralOrdinary(NumDeriv):
+    """
+    Subtract the following Taylor series expansion::
+
+                                             2
+                                  '         h  ''            3
+    f( x +/- h ) = f( x ) +/-  h f  ( x ) + - f  ( x ) + O( h  )
+                                            2
+
+    gives::
+
+                                              '            3
+               f( x + h ) - f( x - h ) = 2 h f ( x ) + O( h  )
+
+                 '
+    solving for f ( x )::
+
+                     '        f( x + h ) - f( x - h )       2
+                    f ( x ) = ----------------------- + O( h  )
+                                        2 h
+
+    In addition to the truncation error of order h^2, there is a round off
+    error due to the finite numerical precision ~ r f( x )::
+
+             '        f( x + h ) - f( x - h )    r f( x )         2
+            f ( x ) = ----------------------- + ---------  +  O( h  )
+                                2 h                h
+
+                            r      2
+                 Error  ~=  -  + h
+                            h
+    minimizing the error by differentiating wrt h, the solve for h::
+
+        h ~ r^1/3
 
     """
 
-    __slots__ = ("nfev", "func")
+    def __init__(self, func, fval0=None):
+        NumDeriv.__init__(self, func, fval0)
 
-    def __init__(self, func: Callable[..., T]) -> None:
-        self.nfev = 0
-        self.func = func
+    def __call__(self, x, h):
+        if 0.0 == h:
+            return np.inf
+        return (self.func(x + h) - self.func(x - h)) / (2.0 * h)
 
-    def __call__(self, *args) -> T:
-        self.nfev += 1
-        return self.func(*args)
+
+class NumDerivFowardPartial(NumDeriv):
+
+    def __init__(self, func, fval0):
+        NumDeriv.__init__(self, func, fval0)
+
+    def __call__(self, x, h, *args):
+
+        if 0.0 == h:
+            h = pow(np.finfo(np.float32).eps, 1.0 / 3.0)
+
+        ith = args[0]
+        jth = args[1]
+
+        ei = np.zeros(len(x), float)
+        ej = np.zeros(len(x), float)
+
+        deltai = h * abs(x[ith])
+        if 0.0 == deltai:
+            deltai = h
+        ei[ith] = deltai
+
+        deltaj = h * abs(x[jth])
+        if 0.0 == deltaj:
+            deltaj = h
+        ej[jth] = deltaj
+
+        fval = self.fval_0
+        fval += self.func(x + ei + ej)
+        fval -= self.func(x + ei)
+        fval -= self.func(x + ej)
+        fval /= deltai * deltaj
+        return fval
+
+
+class NumDerivCentralPartial(NumDeriv):
+    """Add the following Taylor series expansion::
+
+                                             2
+                                  '         h  ''            3
+    f( x +/- h ) = f( x ) +/-  h f  ( x ) + - f  ( x ) + O( h  )
+                                            2
+                   ''
+    and solve for f  ( x ), gives::
+
+              ''         f( x + h ) + f( x - h ) - 2 f( x )        2
+             f  ( x ) = ------------------------------------ + O( h  )
+                                         2
+                                        h
+
+    In addition to the truncation error of order h^2, there is a round off
+    error due to the finite numerical precision ~ r f( x )::
+
+     ''         f( x + h ) + f( x - h ) - 2 f( x )    r f( x )       2
+    f  ( x ) = ------------------------------------ + -------- + O( h  )
+                                2                        2
+                               h                        h
+
+                            r      2
+                 Error  ~=  -  + h
+                             2
+                            h
+
+    minimizing the error by differentiating wrt h, the solve for h::
+
+        h ~ r^1/4
+    """
+
+    def __init__(self, func, fval0):
+        NumDeriv.__init__(self, func, fval0)
+
+    def __call__(self, x, h, *args):
+
+        if 0.0 == h:
+            h = pow(np.finfo(np.float32).eps, 1.0 / 3.0)
+
+        ith = args[0]
+        jth = args[1]
+
+        ei = np.zeros(len(x), float)
+
+        if ith == jth:
+
+            delta = h * abs(x[ith])
+            if 0.0 == delta:
+                delta = h
+            ei[ith] = delta
+
+            fval = - 2.0 * self.fval_0
+            fval += self.func(x + ei) + self.func(x - ei)
+            fval /= delta * delta
+            return fval
+
+        ej = np.zeros(len(x), float)
+
+        deltai = h * abs(x[ith])
+        if 0.0 == deltai:
+            deltai = h
+        ei[ith] = deltai
+
+        deltaj = h * abs(x[jth])
+        if 0.0 == deltaj:
+            deltaj = h
+        ej[jth] = deltaj
+
+        fval = self.func(x + ei + ej)
+        fval -= self.func(x + ei - ej)
+        fval -= self.func(x - ei + ej)
+        fval += self.func(x - ei - ej)
+        fval /= (4.0 * deltai * deltaj)
+        return fval
+
+
+class NoRichardsonExtrapolation:
+
+    def __init__(self, sequence, verbose=False):
+        self.sequence = sequence
+        self.verbose = verbose
+
+    def __call__(self, x, t, tol, maxiter, h, *args):
+        self.sequence(x, h, *args)
+
+
+class RichardsonExtrapolation(NoRichardsonExtrapolation):
+    """From Wikipedia, the free encyclopedia
+    In numerical analysis, Richardson extrapolation is a sequence acceleration
+    method, used to improve the rate of convergence of a sequence. It is named
+    after Lewis Fry Richardson, who introduced the technique in the early 20th
+    century.[1][2] In the words of Birkhoff and Rota, '... its usefulness for
+    practical computations can hardly be overestimated.'
+    1. Richardson, L. F. (1911). \"The approximate arithmetical solution by
+    finite differences of physical problems including differential equations,
+    with an application to the stresses in a masonry dam \". Philosophical
+    Transactions of the Royal Society of London, Series A 210.
+    2. Richardson, L. F. (1927). \" The deferred approach to the limit \".
+    Philosophical Transactions of the Royal Society of London, Series A 226:"""
+
+    def __call__(self, x, t, tol, maxiter, h, *args):
+
+        richardson = np.zeros((maxiter, maxiter), dtype=np.float64)
+        richardson[0, 0] = self.sequence(x, h, *args)
+
+        t_sqr = t * t
+        for ii in range(1, maxiter):
+            h /= t
+            richardson[ii, 0] = self.sequence(x, h, *args)
+            ii_1 = ii - 1
+            for jj in range(1, ii + 1):
+                # jjp1 = jj + 1  -- this variable is not used
+                jj_1 = jj - 1
+                factor = pow(t_sqr, jj)
+                factor_1 = factor - 1
+                richardson[ii, jj] = (factor * richardson[ii, jj_1] -
+                                      richardson[ii_1, jj_1]) / factor_1
+                arg_jj = richardson[ii, jj]
+                arg_jj -= richardson[ii, jj_1]
+                arg_ii = richardson[ii, jj]
+                arg_ii -= richardson[ii_1, jj_1]
+                if Knuth_close(richardson[ii, ii],
+                               richardson[ii_1, ii_1], tol):
+                    if self.verbose:
+                        print_low_triangle(richardson, jj)
+                    return richardson[ii, ii]
+
+        if self.verbose:
+            print_low_triangle(richardson, maxiter - 1)
+        return richardson[maxiter - 1, maxiter - 1]
+
+
+def hessian(func, par, extrapolation, algorithm, maxiter, h, tol, t):
+
+    num_dif = algorithm(func, func(par))
+    deriv = extrapolation(num_dif)
+    npar = len(par)
+    Hessian = np.zeros((npar, npar), dtype=np.float64)
+    for ii in range(npar):
+        for jj in range(ii + 1):
+            answer = deriv(par, t, tol, maxiter, h, ii, jj)
+            Hessian[ii, jj] = answer / 2.0
+            Hessian[jj, ii] = Hessian[ii, jj]
+    return Hessian, num_dif.nfev[0]
+
+
+def print_low_triangle(matrix, num):
+    # print matrix
+    for ii in range(num):
+        print(matrix[ii, 0], end=' ')
+        for jj in range(1, ii + 1):
+            print(matrix[ii, jj], end=' ')
+        print()
+
+
+def symmetric_to_low_triangle(matrix, num):
+    low_triangle = []
+    for ii in range(num):
+        for jj in range(ii + 1):
+            low_triangle.append(matrix[ii, jj])
+    # print_low_triangle( matrix, num )
+    # print low_triangle
+    return low_triangle
+
+
+############################### Root of all evil ##############################
+
+
+def printf(format, *args):
+    """Format args with the first argument as format string, and write.
+    Return the last arg, or format itself if there are no args."""
+    sys.stdout.write(str(format) % args)
+    # WARNING: where is if_ meant to be defined?
+    return if_(args, args[-1], format)
+
+
+def func_counter(func):
+    '''A function wrapper to count the number of times being called'''
+    nfev = [0]
+
+    def func_counter_wrapper(x, *args):
+        nfev[0] += 1
+        return func(x, *args)
+
+    return nfev, func_counter_wrapper
+
+
+def func_counter_history(func, history):
+    '''A function wrapper to count the number of times being called'''
+    nfev = [0]
+
+    def func_counter_history_wrapper(x, *args):
+        nfev[0] += 1
+        y = func(x, *args)
+        history[0].append(x)
+        history[1].append(y)
+        return y
+
+    return nfev, func_counter_history_wrapper
+
+
+def is_in(arg, seq):
+    for x in seq:
+        if arg == x:
+            return True
+
+    return False
 
 
 def is_iterable(arg):
@@ -2883,6 +3158,59 @@ def Knuth_close(x, y, tol, myop=operator.__or__):
     return myop(diff <= tol * abs(x), diff <= tol * abs(y))
 
 
+def safe_div(num, denom):
+
+    dbl_max = sys.float_info.max
+    dbl_min = sys.float_info.min
+
+    # avoid overflow
+    if denom < 1 and num > denom * dbl_max:
+        return dbl_max
+
+    # avoid underflow
+    if 0.0 == num or denom > 1 and num < denom * dbl_min:
+        return 0
+
+    return num / denom
+
+
+def Knuth_boost_close(x, y, tol, myop=operator.__or__):
+    """ The following text was taken verbatim from:
+
+    http://www.boost.org/doc/libs/1_35_0/libs/test/doc/components/test_tools/floating_point_comparison.html#Introduction
+
+    In most cases it is unreasonable to use an operator==(...)
+    for a floating-point values equality check. The simple solution
+    like abs(f1-f2) <= e does not work for very small or very big values.
+    This floating-point comparison algorithm is based on the more
+    confident solution presented by D. E. Knuth in 'The art of computer
+    programming (vol II)'. For a given floating point values u and v and
+    a tolerance e:
+
+    | u - v | <= e * |u| and | u - v | <= e * |v|                    (1)
+    defines a "very close with tolerance e" relationship between u and v
+
+    | u - v | <= e * |u| or   | u - v | <= e * |v|                   (2)
+    defines a "close enough with tolerance e" relationship between
+    u and v. Both relationships are commutative but are not transitive.
+    The relationship defined by inequations (1) is stronger that the
+    relationship defined by inequations (2) (i.e. (1) => (2) ).
+    Because of the multiplication in the right side of inequations,
+    that could cause an unwanted underflow condition, the implementation
+    is using modified version of the inequations (1) and (2) where all
+    underflow, overflow conditions could be guarded safely:
+
+    | u - v | / |u| <= e and | u - v | / |v| <= e          	     (1`)
+    | u - v | / |u| <= e or  | u - v | / |v| <= e                    (2`)"""
+
+    diff = abs(x - y)
+    if 0.0 == x or 0.0 == y:
+        return diff <= tol
+    diff_x = safe_div(diff, x)
+    diff_y = safe_div(diff, y)
+    return myop(diff_x <= tol, diff_y <= tol)
+
+
 def list_to_open_interval(arg):
     if not np.iterable(arg):
         return arg
@@ -2890,10 +3218,175 @@ def list_to_open_interval(arg):
     return f'({arg[0]:e}, {arg[1]:e})'
 
 
+def mysgn(arg):
+    if arg == 0.0:
+        return 0
+
+    if arg < 0.0:
+        return -1
+
+    return 1
+
+
 class OutOfBoundErr(Exception):
     """Indicate an out-of-bounds exception in the error analysis"""
     # Should this just move to sherpa.estmethods?
     pass
+
+
+class QuadEquaRealRoot:
+    """ solve for the real roots of the quadratic equation:
+    a * x^2 + b * x + c = 0"""
+
+    def __call__(self, a, b, c):
+
+        if 0.0 == a:
+            #
+            # 0 * x^2 + b * x + c = 0
+            #
+
+            if 0.0 != b:
+                #
+                # 0 * x^2 + b * x + c = 0
+                # the folowing still works even if c == 0
+                #
+                answer = - c / b
+                return [answer, answer]
+
+            #
+            # 0 * x^2 + 0 * x + c = 0
+            #
+            # a == 0, b == 0, so if c == 0 then all numbers work so
+            # returning nan is not right. However if c != 0 then no
+            # roots exist.
+            #
+            return [None, None]
+
+        if 0.0 == b:
+
+            #
+            # a * x^2 + 0 * x + c = 0
+            #
+            if 0.0 == c:
+
+                # a * x^2 + 0 * x + 0 = 0
+                return [0.0, 0.0]
+
+            # a * x^2 + 0 * x + c = 0
+            if mysgn(a) == mysgn(c):
+                return [None, None]
+
+            answer = np.sqrt(c / a)
+            return [-answer, answer]
+
+        if 0.0 == c:
+
+            #
+            # a * x^2 + b * x + 0 = 0
+            #
+            return [0.0, - b / a]
+
+        discriminant = b * b - 4.0 * a * c
+        debug("disc=%s", discriminant)
+        sqrt_disc = np.sqrt(discriminant)
+        t = - (b + mysgn(b) * sqrt_disc) / 2.0
+        return [c / t, t / a]
+
+
+def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
+    """A basic root finding algorithm that uses standard bisection
+
+    Bisection is a relatively slow method for root finding, but it guaranteed to
+    work for a continuous function with a root in a bracketed interval; in other
+    words the function must undergo a sign change between the bracketing values.
+
+    See https://en.wikipedia.org/wiki/Bisection_method for a description of the
+    bisection method.
+
+    Parameters
+    ----------
+    fcn : callable
+        The function with a root. The function signature is ``fcn(x, *args)``.
+    xa : float
+        Lower limit of the bracketing interval
+    xb : float
+        Upper limit of the bracketing interval
+    fa : float or None
+        Function value at ``xa``. This parameter is optional and can be passed
+        to save time in cases where ``fcn(xa, *args)`` is already known and
+        function evaluation takes a long time. If `None`, it will be
+        calculated.
+    fb : float or None
+        Function value at ``xb``. This parameter is optional and can be passed
+        to save time in cases where ``fcn(xb, *args)`` is already known and
+        function evaluation takes a long time. If `None`, it will be
+        calculated.
+    args : tuple
+        Additional parameters that will be passed through to ``fcn``.
+    maxfev : int
+        Maximal number of function evaluations
+    tol : float
+        The root finding algorithm stops if a value x with
+        ``abs(fcn(x)) < tol`` is found.
+
+    Returns
+    -------
+    out : list
+        The output has the form of a list:
+        ``[[x, fcn(x)], [x1, fcn(x1)], [x2, fcn(x2)], nfev]`` where ``x`` is
+        the location of the root, and ``x1`` and ``x2`` are the previous
+        steps. The function value for those steps is returned as well.
+        ``nfev`` is the total number of function evaluations.
+        If any of those values is not available, ``None`` will be returned
+        instead.
+    """
+    history = [[], []]
+    nfev, myfcn = func_counter_history(fcn, history)
+
+    try:
+
+        if fa is None:
+            fa = myfcn(xa, *args)
+        if abs(fa) <= tol:
+            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
+
+        if fb is None:
+            fb = myfcn(xb, *args)
+        if abs(fb) <= tol:
+            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
+
+        if mysgn(fa) == mysgn(fb):
+            # TODO: is this a useful message for the user?
+            warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
+            return [[None, None], [[None, None], [None, None]], nfev[0]]
+
+        while nfev[0] < maxfev:
+
+            if abs(fa) > tol and abs(fb) > tol:
+
+                xc = (xa + xb) / 2.0
+                fc = myfcn(xc, *args)
+
+                if abs(xa - xb) < min(tol * abs(xb), tol / 10.0):
+                    return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
+
+                if mysgn(fa) != mysgn(fc):
+                    xb, fb = xc, fc
+                else:
+                    xa, fa = xc, fc
+
+            else:
+                if abs(fa) <= tol:
+                    return [[xa, fa], [[xa, fa], [xb, fb]], nfev[0]]
+
+                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
+
+        xc = (xa + xb) / 2.0
+        fc = myfcn(xc, *args)
+        return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
+
+    except OutOfBoundErr:
+        return [[None, None], [[xa, fa], [xb, fb]], nfev[0]]
 
 
 def quad_coef(x, f):
@@ -3063,43 +3556,42 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             return True
         return np.isnan(arg)
 
-    myfcn = FuncCounter(fcn)
+    history = [[], []]
+    nfev, myfcn = func_counter_history(fcn, history)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
         if abs(fa) <= tol:
-            return [[xa, fa], [[xa, fa], [xa, fa]], myfcn.nfev]
+            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xb, fb], [xb, fb]], myfcn.nfev]
+            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
         if fc is None:
             fc = myfcn(xc, *args)
         if abs(fc) <= tol:
-            return [[xc, fc], [[xc, fc], [xc, fc]], myfcn.nfev]
+            return [[xc, fc], [[xc, fc], [xc, fc]], nfev[0]]
 
-        while myfcn.nfev < maxfev:
+        while nfev[0] < maxfev:
 
             [B, C] = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
 
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
 
             if is_nan(B) or is_nan(C) or \
-                    0.0 == C + np.sign(C) * np.sqrt(discriminant):
-                return [[None, None], [[None, None], [None, None]],
-                        myfcn.nfev]
+                    0.0 == C + mysgn(C) * np.sqrt(discriminant):
+                return [[None, None], [[None, None], [None, None]], nfev[0]]
 
-            xd = xc - 2.0 * fc / (C + np.sign(C) * np.sqrt(discriminant))
+            xd = xc - 2.0 * fc / (C + mysgn(C) * np.sqrt(discriminant))
 
             fd = myfcn(xd, *args)
-
+            # print 'fd(%e)=%e' % (xd, fd)
             if abs(fd) <= tol:
-                return [[xd, fd], [[None, None], [None, None]],
-                        myfcn.nfev]
+                return [[xd, fd], [[None, None], [None, None]], nfev[0]]
 
             xa = xb
             fa = fb
@@ -3108,13 +3600,15 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
             xc = xd
             fc = fd
 
-        return [[xd, fd], [[None, None], [None, None]],
-                myfcn.nfev]
+        # print 'demuller(): maxfev exceeded'
+        return [[xd, fd], [[None, None], [None, None]], nfev[0]]
 
     except ZeroDivisionError:
 
-        return [[xd, fd], [[None, None], [None, None]],
-                myfcn.nfev]
+        # print 'demuller(): fixme ZeroDivisionError'
+        # for x, y in zip( history[0], history[1] ):
+        #     print 'f(%e)=%e' % ( x, y )
+        return [[xd, fd], [[None, None], [None, None]], nfev[0]]
 
 
 def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
@@ -3151,32 +3645,45 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
         If any of those values is not available, ``None`` will be returned
         instead.
     '''
+    # This function does not appear to be used
+    def regula_falsi(x0, x1, f0, f1):
+        if f0 < f1:
+            xl, fl = x0, f0
+            xh, fh = x1, f1
+        else:
+            xl, fl = x1, f1
+            xh, fh = x0, f0
+        x = xl + (xh - xl) * fl / (fl - fh)
+        if is_sequence(x0, x, x1):
+            return x
 
-    myfcn = FuncCounter(fcn)
+        return (x0 + x1) / 2.0
+
+    history = [[], []]
+    nfev, myfcn = func_counter_history(fcn, history)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
         if abs(fa) <= tol:
-            return [[xa, fa], [[xa, fa], [xa, fa]], myfcn.nfev]
+            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xb, fb], [xb, fb]], myfcn.nfev]
+            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
-        if np.sign(fa) == np.sign(fb):
+        if mysgn(fa) == mysgn(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
-            return [[None, None], [[None, None], [None, None]],
-                    myfcn.nfev]
+            return [[None, None], [[None, None], [None, None]], nfev[0]]
 
-        while myfcn.nfev < maxfev:
+        while nfev[0] < maxfev:
 
             xc = (xa + xb) / 2.0
             fc = myfcn(xc, *args)
             if abs(fc) <= tol:
-                return [[xc, fc], [[xa, fa], [xb, fb]], myfcn.nfev]
+                return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
 
             tran = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
             B = tran[0]
@@ -3184,44 +3691,48 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
 
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
 
-            xd = xc - 2.0 * fc / (C + np.sign(C) * np.sqrt(discriminant))
+            xd = xc - 2.0 * fc / (C + mysgn(C) * np.sqrt(discriminant))
 
             fd = myfcn(xd, *args)
-
+            # print 'fd(%e)=%e' % (xd, fd)
             if abs(fd) <= tol:
-                return [[xd, fd], [[xa, fa], [xb, fb]], myfcn.nfev]
+                return [[xd, fd], [[xa, fa], [xb, fb]], nfev[0]]
 
-            if np.sign(fa) != np.sign(fc):
+            if mysgn(fa) != mysgn(fc):
                 xb, fb = xc, fc
                 continue
 
-            if np.sign(fd) != np.sign(fc) and xc < xd:
+            if mysgn(fd) != mysgn(fc) and xc < xd:
                 xa, fa = xc, fc
                 xb, fb = xd, fd
                 continue
 
-            if np.sign(fb) != np.sign(fd):
+            if mysgn(fb) != mysgn(fd):
                 xa, fa = xd, fd
                 continue
 
-            if np.sign(fa) != np.sign(fd):
+            if mysgn(fa) != mysgn(fd):
                 xb, fb = xd, fd
                 continue
 
-            if np.sign(fc) != np.sign(fd) and xd < xc:
+            if mysgn(fc) != mysgn(fd) and xd < xc:
                 xa, fa = xd, fd
                 xb, fb = xc, fc
                 continue
 
-            if np.sign(fc) != np.sign(fd):
+            if mysgn(fc) != mysgn(fd):
                 xa, fa = xc, fc
                 continue
 
-        return [[xd, fd], [[xa, fa], [xb, fb]], myfcn.nfev]
+        # print 'new_muller(): maxfev exceeded'
+        return [[xd, fd], [[xa, fa], [xb, fb]], nfev[0]]
 
     except (ZeroDivisionError, OutOfBoundErr):
 
-        return [[xd, fd], [[xa, fa], [xb, fb]], myfcn.nfev]
+        # print 'new_muller(): fixme ZeroDivisionError'
+        # for x, y in zip( history[0], history[1] ):
+        #     print 'f(%e)=%e' % ( x, y )
+        return [[xd, fd], [[xa, fa], [xb, fb]], nfev[0]]
 
 #
 # /*
@@ -3282,30 +3793,30 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
         If any of those values is not available, ``None`` will be returned
         instead.
     '''
-
-    myfcn = FuncCounter(fcn)
+    history = [[], []]
+    nfev, myfcn = func_counter_history(fcn, history)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
         if abs(fa) <= tol:
-            return [[xa, fa], [[xa, fa], [xa, fa]], myfcn.nfev]
+            return [[xa, fa], [[xa, fa], [xa, fa]], nfev[0]]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xb, fb], [xb, fb]], myfcn.nfev]
+            return [[xb, fb], [[xb, fb], [xb, fb]], nfev[0]]
 
-        if np.sign(fa) == np.sign(fb):
+        if mysgn(fa) == mysgn(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
-            return [[None, None], [[None, None], [None, None]],
-                    myfcn.nfev]
+            return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         xc = (xa + xb) / 2.0
         fc = myfcn(xc, *args)
+        # print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
         if abs(fc) <= tol:
-            return [[xc, fc], [[xc, fc], [xc, fc]], myfcn.nfev]
+            return [[xc, fc], [[xc, fc], [xc, fc]], nfev[0]]
 
         xbest, fbest = xa, fa
         if abs(fb) < abs(fa):
@@ -3314,13 +3825,13 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             xbest, fbest = xc, fc
 
         oldx = 1.0e128
-        while myfcn.nfev < maxfev:
+        while nfev[0] < maxfev:
 
             tran = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
             B = tran[0]
             C = tran[1]
             discriminant = max(C * C - 4.0 * fc * B, 0.0)
-            den = np.sign(C) * np.sqrt(discriminant)
+            den = mysgn(C) * np.sqrt(discriminant)
             xplus = xc - 2.0 * fc / (C + den)
             if C != den:
                 xminus = xc - 2.0 * fc / (C - den)
@@ -3332,17 +3843,24 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
             else:
                 x = xminus
 
+            # print 'xa=', xa, '\tx=', x, '\txb=', xb, '\txc=', xc
+
+            # fubar = quad_coef( [xa,xb,xc], [fa,fb,fc] )
+            # quad = QuadEquaRealRoot( )
+            # print quad( fubar[0], fubar[1], fubar[2] )
+            # print
+
             # sanity check
             if not is_sequence(xa, x, xb):
                 x = (xa + xb) / 2.0
 
             y = myfcn(x, *args)
-
+            # print 'MullerBound() y(%.14e)=%.14e' % (x,y)
             if abs(y) < abs(fbest):
                 xbest, fbest = x, y
             tolerance = min(tol * abs(x), tol)
             if abs(y) <= tol or abs(x - oldx) <= tolerance:
-                return [[x, y], [[xa, fa], [xb, fb]], myfcn.nfev]
+                return [[x, y], [[xa, fa], [xb, fb]], nfev[0]]
 
             mybisect = (x < xc and (xc - xa) > 0.95 * (xb - xa)) or \
                        (x > xc and (xb - xc) > 0.95 * (xb - xa)) or \
@@ -3357,42 +3875,40 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                     fb = fc
                 xc, fc = x, y
                 oldx = x
-
             else:
                 xmid = (xa + xb) / 2.0
                 fmid = myfcn(xmid, *args)
                 if abs(fmid) < abs(fbest):
                     xbest, fbest = xmid, fmid
-
+                # print 'MullerBound() fmid(%.14e)=%.14e' % (xmid,fmid)
                 if abs(fmid) <= tol:
-                    return [[xmid, fmid], [[xa, fa], [xb, fb]], myfcn.nfev]
-                if np.sign(fa) + np.sign(fmid) == 0:
+                    return [[xmid, fmid], [[xa, fa], [xb, fb]], nfev[0]]
+                if mysgn(fa) + mysgn(fmid) == 0:
                     xb = xmid
                     fb = fmid
                 else:
                     xa = xmid
                     fa = fmid
-
                 xc = (xa + xb) / 2.0
                 fc = myfcn(xc, *args)
                 if abs(fc) < abs(fbest):
                     xbest, fbest = xc, fc
-
+                # print 'MullerBound() fc(%.14e)=%.14e' % (xc,fc)
                 if abs(fc) <= tol:
-                    return [[xc, fc], [[xa, fa], [xb, fb]], myfcn.nfev]
+                    return [[xc, fc], [[xa, fa], [xb, fb]], nfev[0]]
                 oldx = 1.0e128
 
         #
         # maxfev has exceeded, return the minimum so far
         #
-        return [[xbest, fbest], [[xa, fa], [xb, fb]], myfcn.nfev]
+        return [[xbest, fbest], [[xa, fa], [xb, fb]], nfev[0]]
 
     #
     # Something drastic has happened
     #
     except (ZeroDivisionError, OutOfBoundErr):
 
-        return [[xbest, fbest], [[xa, fa], [xb, fb]], myfcn.nfev]
+        return [[xbest, fbest], [[xa, fa], [xb, fb]], nfev[0]]
 
 
 def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
@@ -3473,28 +3989,29 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
 
     """
 
-    myfcn = FuncCounter(fcn)
+    history = [[], []]
+    nfev, myfcn = func_counter_history(fcn, history)
 
     try:
 
         if fa is None:
             fa = myfcn(xa, *args)
             if abs(fa) <= tol:
-                return [[xa, fa], [[xa, fa], [xb, fb]], myfcn.nfev]
+                return [[xa, fa], [[xa, fa], [xb, fb]], nfev[0]]
 
         if fb is None:
             fb = myfcn(xb, *args)
         if abs(fb) <= tol:
-            return [[xb, fb], [[xa, fa], [xb, fb]], myfcn.nfev]
+            return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
-        if np.sign(fa) == np.sign(fb):
+        if mysgn(fa) == mysgn(fb):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
-            return [[None, None], [[None, None], [None, None]], myfcn.nfev]
+            return [[None, None], [[None, None], [None, None]], nfev[0]]
 
         xc = xa
         fc = fa
         DBL_EPSILON = np.finfo(np.float32).eps
-        while myfcn.nfev < maxfev:
+        while nfev[0] < maxfev:
 
             prev_step = xb - xa
 
@@ -3507,24 +4024,22 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
             new_step = (xc - xb) / 2.0
 
             if abs(fb) <= tol:
-                return [[xb, fb], [[xa, fa], [xb, fb]], myfcn.nfev]
+                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
             if abs(new_step) <= tol_act:
-                if np.sign(fb) != np.sign(fa):
+                if mysgn(fb) != mysgn(fa):
                     tmp = apache_muller(fcn, xa, xb, fa, fb, args=args,
-                                        maxfev=maxfev - myfcn.nfev,
-                                        tol=tol)
-                    tmp[-1] += myfcn.nfev
+                                        maxfev=maxfev - nfev[0], tol=tol)
+                    tmp[-1] += nfev[0]
                     return tmp
 
-                if np.sign(fb) != np.sign(fc):
+                if mysgn(fb) != mysgn(fc):
                     tmp = apache_muller(fcn, xb, xc, fb, fc, args=args,
-                                        maxfev=maxfev - myfcn.nfev,
-                                        tol=tol)
-                    tmp[-1] += myfcn.nfev
+                                        maxfev=maxfev - nfev[0], tol=tol)
+                    tmp[-1] += nfev[0]
                     return tmp
 
-                return [[xb, fb], [[xa, fa], [xb, fb]], myfcn.nfev]
+                return [[xb, fb], [[xa, fa], [xb, fb]], nfev[0]]
 
             if abs(prev_step) >= tol_act and abs(fa) > abs(fb):
 
@@ -3558,15 +4073,15 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
             fa = fb
             xb += new_step
             fb = myfcn(xb, *args)
-
+            # print 'fa(%f)=%f\tfb(%f)=%f\tfc(%f)=%f' % (xa,fa,xb,fb,xc,fc)
             if fb > 0 and fc > 0 or fb < 0 and fc < 0:
                 xc = xa
                 fc = fa
 
-        return [[xb, fb], [[xa, fa], [xc, fc]], myfcn.nfev]
+        return [[xb, fb], [[xa, fa], [xc, fc]], nfev[0]]
 
     except (ZeroDivisionError, OutOfBoundErr):
-        return [[xb, fb], [[xa, fa], [xc, fc]], myfcn.nfev]
+        return [[xb, fb], [[xa, fa], [xc, fc]], nfev[0]]
 
 
 def public(f):
@@ -3586,7 +4101,7 @@ def public(f):
     return f
 
 
-def send_to_pager(txt: str, filename=None, clobber: bool = False) -> None:
+def send_to_pager(txt, filename=None, clobber=False):
     """Write out the given string, using pagination if supported.
 
     This used to call out to using less/more but now is handled
