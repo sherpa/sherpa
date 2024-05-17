@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 - 2021, 2023, 2024
+#  Copyright (C) 2016 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,6 +24,7 @@
 import copy
 import logging
 import os
+from pathlib import Path
 import re
 
 import pytest
@@ -981,7 +982,8 @@ def test_set_xsstate_path_manager():
 @requires_data
 @requires_fits
 @requires_xspec
-def test_read_xstable_model(make_data_path):
+@pytest.mark.parametrize("usepath", [True, False])
+def test_read_xstable_model(usepath, make_data_path):
     """Limited test (only one file).
 
     Evaluation tests using this model are in
@@ -991,7 +993,8 @@ def test_read_xstable_model(make_data_path):
     from sherpa.astro import xspec
 
     path = make_data_path('xspec-tablemodel-RCS.mod')
-    tbl = xspec.read_xstable_model('bar', path)
+    filename = Path(path) if usepath else path
+    tbl = xspec.read_xstable_model('bar', filename)
 
     assert tbl.name == 'bar'
     assert isinstance(tbl, xspec.XSTableModel)
