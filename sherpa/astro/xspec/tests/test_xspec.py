@@ -392,9 +392,10 @@ def test_checks_input_length():
 @requires_xspec
 @requires_data
 @requires_fits
-@pytest.mark.parametrize('loadfunc', [ui.load_xstable_model, ui.load_table_model])
-def test_xstablemodel_checks_input_length(loadfunc, clean_astro_ui, make_data_path):
+@pytest.mark.parametrize('loadname', ["xstable", "table"])
+def test_xstablemodel_checks_input_length(loadname, clean_astro_ui, make_data_path):
 
+    loadfunc = getattr(ui, f"load_{loadname}_model")
     loadfunc('mdl', make_data_path('xspec-tablemodel-RCS.mod'))
     mdl = ui.get_model_component('mdl')
 
@@ -423,8 +424,11 @@ def test_xstablemodel_checks_input_length(loadfunc, clean_astro_ui, make_data_pa
 @requires_xspec
 @requires_data
 @requires_fits
-@pytest.mark.parametrize('loadfunc', [ui.load_xstable_model, ui.load_table_model])
-def test_xspec_xstablemodel(loadfunc, clean_astro_ui, make_data_path):
+@pytest.mark.parametrize('loadname', ["xstable", "table"])
+def test_xspec_xstablemodel(loadname, clean_astro_ui, make_data_path):
+
+    loadfunc = getattr(ui, f"load_{loadname}_model")
+
     # Just test one table model; use the same scheme as
     # test_xspec_models_noncontiguous().
     #
@@ -452,8 +456,10 @@ def test_xspec_xstablemodel(loadfunc, clean_astro_ui, make_data_path):
 @requires_xspec
 @requires_data
 @requires_fits
-@pytest.mark.parametrize('loadfunc', [ui.load_xstable_model, ui.load_table_model])
-def test_xspec_xstablemodel_noncontiguous2(loadfunc, clean_astro_ui, make_data_path):
+@pytest.mark.parametrize('loadname', ["xstable", "table"])
+def test_xspec_xstablemodel_noncontiguous2(loadname, clean_astro_ui, make_data_path):
+
+    loadfunc = getattr(ui, f"load_{loadname}_model")
     loadfunc('tmod', make_data_path('xspec-tablemodel-RCS.mod'))
     tmod = ui.get_model_component('tmod')
 
