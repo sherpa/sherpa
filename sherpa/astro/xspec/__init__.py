@@ -101,6 +101,7 @@ References
 
 """
 
+from __future__ import annotations
 
 import logging
 from pathlib import Path
@@ -1411,11 +1412,17 @@ def set_xsstate(state: dict[str, Any]) -> None:
         pass
 
 
-def read_xstable_model(modelname, filename, etable=False):
+def read_xstable_model(modelname: str,
+                       filename: Union[Path, str],
+                       etable: bool = False
+                       ) -> XSTableModel:
     """Create a XSPEC table model.
 
     XSPEC additive (atable, [1]_), multiplicative (mtable, [2]_), and
     exponential (etable, [3]_) table models are supported.
+
+    .. versionchanged:: 4.17.0
+       The filename argument can now be sent a Path object.
 
     .. versionchanged:: 4.16.0
        Parameters with negative DELTA values are now made frozen, to
@@ -1433,7 +1440,7 @@ def read_xstable_model(modelname, filename, etable=False):
     ----------
     modelname : str
        The identifier for this model component.
-    filename : str
+    filename : str or Path
        The name of the FITS file containing the data, which should
        match the XSPEC table model definition [4]_.
     etable : bool, optional
@@ -1476,6 +1483,8 @@ def read_xstable_model(modelname, filename, etable=False):
 
     """
 
+    fname = str(filename) if isinstance(filename, Path) else filename
+
     # TODO: how to avoid loading this if no backend is available
     import sherpa.astro.io
     read_tbl = sherpa.astro.io.backend.get_table_data
@@ -1484,12 +1493,12 @@ def read_xstable_model(modelname, filename, etable=False):
     # Not all keywords are going to be present, so check what are.
     #
     blkname = 'PRIMARY'
-    hdr = read_hdr(filename, blockname=blkname, hdrkeys=None)
+    hdr = read_hdr(fname, blockname=blkname, hdrkeys=None)
 
     try:
         hduclas1 = hdr["HDUCLAS1"].upper()
     except KeyError:
-        raise IOErr("nokeyword", filename, "HDUCLAS1") from None
+        raise IOErr("nokeyword", fname, "HDUCLAS1") from None
 
     if hduclas1 != 'XSPEC TABLE MODEL':
         # TODO: change Exception to something more useful
@@ -1498,12 +1507,12 @@ def read_xstable_model(modelname, filename, etable=False):
     try:
         addredshift = bool_cast(hdr["REDSHIFT"])
     except KeyError:
-        raise IOErr("nokeyword", filename, "REDSHIFT") from None
+        raise IOErr("nokeyword", fname, "REDSHIFT") from None
 
     try:
         addmodel = bool_cast(hdr["ADDMODEL"])
     except KeyError:
-        raise IOErr("nokeyword", filename, "ADDMODEL") from None
+        raise IOErr("nokeyword", fname, "ADDMODEL") from None
 
     # ESCALE may not exist in the header, as it is relatively new.
     #
@@ -1521,20 +1530,23 @@ def read_xstable_model(modelname, filename, etable=False):
         nxfltexp = 1
 
     if nxfltexp > 1:
-        raise IOErr(f"No support for NXFLTEXP={nxfltexp} in {filename}")
+        raise IOErr(f"No support for NXFLTEXP={nxfltexp} in {fname}")
 
     blkname = 'PARAMETERS'
     colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
                'MINIMUM', 'MAXIMUM']
     hdrkeys = ['NINTPARM', 'NADDPARM']
 
-    (colnames, cols,
-     name, hdr) = read_tbl(filename, colkeys=colkeys, hdrkeys=hdrkeys,
-                           blockname=blkname, fix_type=False)
+    coldata = read_tbl(fname, colkeys=colkeys, hdrkeys=hdrkeys,
+                       blockname=blkname, fix_type=False)
+    cols = coldata[1]
+    hdr = coldata[3]
     nint = int(hdr["NINTPARM"])
-    return XSTableModel(filename, modelname, *cols,
-                        nint=nint, addmodel=addmodel,
-                        addredshift=addredshift,
+    return XSTableModel(fname, name=modelname, parnames=cols[0],
+                        initvals=cols[1], delta=cols[2], mins=cols[3],
+                        maxes=cols[4], hardmins=cols[5],
+                        hardmaxes=cols[6], nint=nint,
+                        addmodel=addmodel, addredshift=addredshift,
                         addescale=addescale, etable=etable)
 
 
