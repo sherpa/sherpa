@@ -297,7 +297,7 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
     weighting_factor = min(weighting_factor, 1.0)
 
     if population_size is None:
-        population_size = max(population_size, 16 * x.size)
+        population_size = 16 * x.size
 
     if maxfev is None:
         maxfev = 1024 * population_size
