@@ -68,7 +68,8 @@ Best-fit value: 4.0
 
 """
 
-from typing import Any, Optional, Sequence, SupportsFloat, Union
+from typing import Any, Callable, Optional, Sequence, SupportsFloat, \
+    Union
 
 import numpy as np
 
@@ -106,9 +107,10 @@ EPSILON = np.float64(np.finfo(np.float32).eps)
 FUNC_MAX = np.finfo(np.float64).max
 
 
-# Approx type to represent a Sherpa array.
+# Approx type to represent a Sherpa array and the statistic call-back.
 #
 ArrayType = Union[Sequence[SupportsFloat], np.ndarray]
+StatCallback = Callable[[ArrayType], tuple[float, np.ndarray]]
 
 
 def _check_args(x0: ArrayType,
@@ -226,14 +228,17 @@ def _outside_limits(x: np.ndarray,
     return bool(np.any(x < xmin) or np.any(x > xmax))
 
 
-def difevo(fcn, x0, xmin, xmax,
-           ftol=EPSILON,
+def difevo(fcn: StatCallback,
+           x0: ArrayType,
+           xmin: ArrayType,
+           xmax: ArrayType,
+           ftol: SupportsFloat = EPSILON,
            maxfev: Optional[int] = None,
-           verbose=0,
-           seed=2005815,
+           verbose: int = 0,
+           seed: int = 2005815,
            population_size: Optional[int] = None,
-           xprob=0.9,
-           weighting_factor=0.8
+           xprob: float = 0.9,
+           weighting_factor: float = 0.8
            ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
@@ -265,14 +270,17 @@ def difevo(fcn, x0, xmin, xmax,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def difevo_lm(fcn, x0, xmin, xmax,
-              ftol=EPSILON,
+def difevo_lm(fcn: StatCallback,
+              x0: ArrayType,
+              xmin: ArrayType,
+              xmax: ArrayType,
+              ftol: SupportsFloat = EPSILON,
               maxfev: Optional[int] = None,
-              verbose=0,
-              seed=2005815,
+              verbose: int = 0,
+              seed: int = 2005815,
               population_size: Optional[int] = None,
-              xprob=0.9,
-              weighting_factor=0.8
+              xprob: float = 0.9,
+              weighting_factor: float = 0.8
               ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
@@ -305,14 +313,17 @@ def difevo_lm(fcn, x0, xmin, xmax,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def difevo_nm(fcn, x0, xmin, xmax,
-              ftol,
+def difevo_nm(fcn: StatCallback,
+              x0: ArrayType,
+              xmin: ArrayType,
+              xmax: ArrayType,
+              ftol: SupportsFloat,
               maxfev: Optional[int],
-              verbose,
-              seed,
+              verbose: int,
+              seed: int,
               population_size: Optional[int],
-              xprob,
-              weighting_factor
+              xprob: float,
+              weighting_factor: float
               ) -> OptReturn:
 
     def stat_cb0(pars):
@@ -348,8 +359,17 @@ def difevo_nm(fcn, x0, xmin, xmax,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
-                maxfev=None, ftol=EPSILON, method=None, verbose=0
+def grid_search(fcn: StatCallback,
+                x0: ArrayType,
+                xmin: ArrayType,
+                xmax: ArrayType,
+                num: int = 16,
+                sequence: Optional[Sequence[ArrayType]] = None,
+                numcores: Optional[int] = 1,
+                maxfev: Optional[int] = None,
+                ftol: SupportsFloat = EPSILON,
+                method: Optional[str] = None,
+                verbose: int = 0
                 ) -> OptReturn:
     """Grid Search optimization method.
 
@@ -476,8 +496,18 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 #
 # C-version of minim
 #
-def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
-          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True
+def minim(fcn: StatCallback,
+          x0: ArrayType,
+          xmin: ArrayType,
+          xmax: ArrayType,
+          ftol: SupportsFloat = EPSILON,
+          maxfev: Optional[int] = None,
+          step: Optional[ArrayType] = None,
+          nloop: int = 1,
+          iquad: int = 1,
+          simp: Optional[SupportsFloat] = None,
+          verbose: int = -1,
+          reflect: bool = True
           ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
@@ -522,16 +552,20 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 #
 # Monte Carlo
 #
-def montecarlo(fcn, x0, xmin, xmax,
-               ftol=EPSILON,
+def montecarlo(fcn: StatCallback,
+               x0: ArrayType,
+               xmin: ArrayType,
+               xmax: ArrayType,
+               ftol: SupportsFloat = EPSILON,
                maxfev: Optional[int] = None,
-               verbose=0,
-               seed=74815,
+               verbose: int = 0,
+               seed: int = 74815,
                population_size: Optional[int] = None,
-               xprob=0.9,
-               weighting_factor=0.8,
-               numcores=1,
-               rng=None
+               xprob: float = 0.9,
+               weighting_factor: float = 0.8,
+               numcores: int = 1,
+               rng: Optional[Union[np.random.Generator,
+                                   np.random.RandomState]] = None
                ) -> OptReturn:
     """Monte Carlo optimization method.
 
@@ -763,9 +797,18 @@ def montecarlo(fcn, x0, xmin, xmax,
 #
 # Nelder Mead
 #
-def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
-               initsimplex=0, finalsimplex=9, step=None, iquad=1,
-               verbose=0, reflect=True
+def neldermead(fcn: StatCallback,
+               x0: ArrayType,
+               xmin: ArrayType,
+               xmax: ArrayType,
+               ftol: SupportsFloat = EPSILON,
+               maxfev: Optional[int] = None,
+               initsimplex: int = 0,
+               finalsimplex: int = 9,
+               step: Optional[ArrayType] = None,
+               iquad: int = 1,
+               verbose: int = 0,
+               reflect: bool = True
                ) -> OptReturn:
     r"""Nelder-Mead Simplex optimization method.
 
@@ -1093,8 +1136,18 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     return (status, x, fval, msg, imap)
 
 
-def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0
+def lmdif(fcn: StatCallback,
+          x0: ArrayType,
+          xmin: ArrayType,
+          xmax: ArrayType,
+          ftol: SupportsFloat = EPSILON,
+          xtol: SupportsFloat = EPSILON,
+          gtol: SupportsFloat = EPSILON,
+          maxfev: Optional[int] = None,
+          epsfcn: SupportsFloat = EPSILON,
+          factor: float = 100.0,
+          numcores: int = 1,
+          verbose: int = 0
           ) -> OptReturn:
     """Levenberg-Marquardt optimization method.
 
