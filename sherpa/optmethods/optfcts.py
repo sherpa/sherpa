@@ -77,7 +77,7 @@ from sherpa.utils import FuncCounter
 from sherpa.utils.parallel import parallel_map
 from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import random
-from sherpa.utils.types import ArrayType
+from sherpa.utils.types import ArrayType, OptReturn
 
 from . import _saoopt  # type: ignore
 
@@ -85,12 +85,10 @@ __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
            'minim', 'montecarlo', 'neldermead')
 
 
-#
 # Use FLT_EPSILON as default tolerance
 #
 EPSILON = np.float64(np.finfo(np.float32).eps)
 
-#
 # Maximum callback function value, used to indicate that the optimizer
 # has exceeded parameter boundaries.  All the optimizers expect double
 # precision arguments, so we use np.float64 instead of SherpaFloat.
@@ -180,7 +178,8 @@ def _outside_limits(x, xmin, xmax):
 
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
            seed=2005815, population_size=None, xprob=0.9,
-           weighting_factor=0.8):
+           weighting_factor=0.8
+           ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -211,7 +210,8 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
 def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
               seed=2005815, population_size=None, xprob=0.9,
-              weighting_factor=0.8):
+              weighting_factor=0.8
+              ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -242,7 +242,8 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
 
 def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
-              population_size, xprob, weighting_factor):
+              population_size, xprob, weighting_factor
+              ) -> OptReturn:
 
     def stat_cb0(pars):
         return fcn(pars)[0]
@@ -276,7 +277,8 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
 
 
 def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
-                maxfev=None, ftol=EPSILON, method=None, verbose=0):
+                maxfev=None, ftol=EPSILON, method=None, verbose=0
+                ) -> OptReturn:
     """Grid Search optimization method.
 
     This method evaluates the fit statistic for each point in the
@@ -403,7 +405,8 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 # C-version of minim
 #
 def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
-          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True):
+          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True
+          ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -444,7 +447,8 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 #
 def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                seed=74815, population_size=None, xprob=0.9,
-               weighting_factor=0.8, numcores=1, rng=None):
+               weighting_factor=0.8, numcores=1, rng=None
+               ) -> OptReturn:
     """Monte Carlo optimization method.
 
     This is an implementation of the differential-evolution algorithm
@@ -677,7 +681,8 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 #
 def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
                initsimplex=0, finalsimplex=9, step=None, iquad=1,
-               verbose=0, reflect=True):
+               verbose=0, reflect=True
+               ) -> OptReturn:
     r"""Nelder-Mead Simplex optimization method.
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
@@ -1000,7 +1005,8 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
 
 def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0):
+          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0
+          ) -> OptReturn:
     """Levenberg-Marquardt optimization method.
 
     The Levenberg-Marquardt method is an interface to the MINPACK
