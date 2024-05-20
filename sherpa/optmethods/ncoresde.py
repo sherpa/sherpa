@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2023
+#  Copyright (C) 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,10 +20,11 @@
 
 import numpy
 
-from sherpa.optmethods.ncoresnm import ncoresNelderMead
-from sherpa.optmethods.opt import Opt, SimplexRandom
 from sherpa.utils.parallel import parallel_map, ncpus
 from sherpa.utils import random
+
+from .ncoresnm import ncoresNelderMead
+from .opt import Opt, SimplexRandom
 
 
 class Key2:
