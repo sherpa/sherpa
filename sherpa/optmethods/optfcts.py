@@ -68,7 +68,7 @@ Best-fit value: 4.0
 
 """
 
-import numpy
+import numpy as np
 
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
@@ -87,20 +87,20 @@ __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
 #
 # Use FLT_EPSILON as default tolerance
 #
-EPSILON = numpy.float64(numpy.finfo(numpy.float32).eps)
+EPSILON = np.float64(np.finfo(np.float32).eps)
 
 #
 # Maximum callback function value, used to indicate that the optimizer
 # has exceeded parameter boundaries.  All the optimizers expect double
-# precision arguments, so we use numpy.float64 instead of SherpaFloat.
+# precision arguments, so we use np.float64 instead of SherpaFloat.
 #
-FUNC_MAX = numpy.finfo(numpy.float64).max
+FUNC_MAX = np.finfo(np.float64).max
 
 
 def _check_args(x0, xmin, xmax):
-    x = numpy.array(x0, numpy.float64)  # Make a copy
-    xmin = numpy.asarray(xmin, numpy.float64)
-    xmax = numpy.asarray(xmax, numpy.float64)
+    x = np.array(x0, np.float64)  # Make a copy
+    xmin = np.asarray(xmin, np.float64)
+    xmax = np.asarray(xmax, np.float64)
 
     if (x.shape != xmin.shape) or (x.shape != xmax.shape):
         raise TypeError('input array sizes do not match')
@@ -122,17 +122,17 @@ def _get_saofit_msg(maxfev, ierr):
 
 
 def _move_within_limits(x, xmin, xmax):
-    below = numpy.flatnonzero(x < xmin)
+    below = np.flatnonzero(x < xmin)
     if below.size > 0:
         x[below] = xmin[below]
 
-    above = numpy.flatnonzero(x > xmax)
+    above = np.flatnonzero(x > xmax)
     if above.size > 0:
         x[above] = xmax[above]
 
 
 def _my_is_nan(x):
-    fubar = list(filter(lambda xx: xx != xx or xx is numpy.nan or numpy.isnan(xx) and numpy.isfinite(xx), x))
+    fubar = list(filter(lambda xx: xx != xx or xx is np.nan or np.isnan(xx) and np.isfinite(xx), x))
     return len(fubar) > 0
 
 
@@ -146,12 +146,12 @@ def _narrow_limits(myrange, xxx, debug):
                 print('x = ', my_x, ' is > upper limit = ', my_h)
 
     def raise_min_limit(xrange, xmin, x, debug=False):
-        myxmin = numpy.asarray(list(map(lambda xx: xx - xrange * numpy.abs(xx), x)), numpy.float64)
+        myxmin = np.asarray(list(map(lambda xx: xx - xrange * np.abs(xx), x)), np.float64)
         if debug:
             print()
             print(f'raise_min_limit: myxmin={myxmin}')
             print(f'raise_min_limit: x={x}')
-        below = numpy.flatnonzero(myxmin < xmin)
+        below = np.flatnonzero(myxmin < xmin)
         if below.size > 0:
             myxmin[below] = xmin[below]
         if debug:
@@ -161,12 +161,12 @@ def _narrow_limits(myrange, xxx, debug):
         return myxmin
 
     def lower_max_limit(xrange, x, xmax, debug=False):
-        myxmax = numpy.asarray(list(map(lambda xx: xx + xrange * numpy.abs(xx), x)), numpy.float64)
+        myxmax = np.asarray(list(map(lambda xx: xx + xrange * np.abs(xx), x)), np.float64)
         if debug:
             print()
             print(f'lower_max_limit: x={x}')
             print(f'lower_max_limit: myxmax={myxmax}')
-        above = numpy.flatnonzero(myxmax > xmax)
+        above = np.flatnonzero(myxmax > xmax)
         if above.size > 0:
             myxmax[above] = xmax[above]
         if debug:
@@ -207,7 +207,7 @@ def _par_at_boundary(low, val, high, tol):
 
 
 def _outside_limits(x, xmin, xmax):
-    return (numpy.any(x < xmin) or numpy.any(x > xmax))
+    return (np.any(x < xmin) or np.any(x > xmax))
 
 
 def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
@@ -268,7 +268,7 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     de = _saoopt.lm_difevo(verbose, maxfev, seed, population_size, ftol,
                            xprob, weighting_factor, xmin, xmax,
-                           x, fcn, numpy.asanyarray(fcn(x)).size)
+                           x, fcn, np.asanyarray(fcn(x)).size)
     fval = de[1]
     nfev = de[2]
     ierr = de[3]
@@ -384,9 +384,9 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
             list_ranges[ii] = tuple(list_ranges[ii]) + (complex(N),)
             list_ranges[ii] = slice(*list_ranges[ii])
 
-        grid = numpy.mgrid[list_ranges]
+        grid = np.mgrid[list_ranges]
         mynfev = pow(N, npar)
-        grid = list(map(numpy.ravel, grid))
+        grid = list(map(np.ravel, grid))
         sequence = []
         for index in range(mynfev):
             tmp = []
@@ -396,7 +396,7 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
         return sequence
 
     def eval_stat_func(xxx):
-        return numpy.append(func(xxx), xxx)
+        return np.append(func(xxx), xxx)
 
     if sequence is None:
         ranges = []
@@ -404,7 +404,7 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
             ranges.append([xmin[index], xmax[index]])
         sequence = make_sequence(ranges, num)
     else:
-        if not numpy.iterable(sequence):
+        if not np.iterable(sequence):
             raise TypeError("sequence option must be iterable")
 
         for seq in sequence:
@@ -461,8 +461,8 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if step is None:
-        order = 'F' if numpy.isfortran(x) else 'C'
-        step = 0.4*numpy.ones(x.shape, numpy.float64, order)
+        order = 'F' if np.isfortran(x) else 'C'
+        step = 0.4*np.ones(x.shape, np.float64, order)
     if simp is None:
         simp = 1.0e-2 * ftol
     if maxfev is None:
@@ -613,7 +613,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             xx = []
             for ii in range(len(xmin)):
                 xx.append(random.uniform(rng, xmin[ii], xmax[ii]))
-            return numpy.asarray(xx)
+            return np.asarray(xx)
 
         ############################# NelderMead #############################
         mymaxfev = min(maxfev_per_iter, maxfev)
@@ -624,7 +624,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         if 1 == numcores:
             result = neldermead(myfcn, x, xmin, xmax, maxfev=mymaxfev,
                                 ftol=ftol, finalsimplex=9, step=mystep)
-            x = numpy.asarray(result[1], numpy.float64)
+            x = np.asarray(result[1], np.float64)
             nfval = result[2]
             nfev = result[4].get('nfev')
         else:
@@ -644,7 +644,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             result = difevo_nm(myfcn, x, xmin, xmax, ftol, mymaxfev, verbose,
                                seed, pop, xprob, weight)
             nfev += result[4].get('nfev')
-            x = numpy.asarray(result[1], numpy.float64)
+            x = np.asarray(result[1], np.float64)
             nfval = result[2]
         else:
             ncores_de = ncoresDifEvo()
@@ -678,7 +678,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                 nfev += result[4].get('nfev')
                 if result[2] < nfval:
                     nfval = result[2]
-                    x = numpy.asarray(result[1], numpy.float64)
+                    x = np.asarray(result[1], np.float64)
                 if verbose or debug:
                     print(f'f_de_nm{x}={result[2]:.14e} in {result[4].get("nfev")} nfev')
 
@@ -694,7 +694,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
         return x, nfval, nfev
 
-    x, fval, nfev = myopt(fcn, [x, xmin, xmax], numpy.sqrt(ftol), maxfev,
+    x, fval, nfev = myopt(fcn, [x, xmin, xmax], np.sqrt(ftol), maxfev,
                           seed, population_size, xprob, weighting_factor,
                           factor=2.0, debug=False)
 
@@ -708,7 +708,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
                                 maxfev=min(512*len(x), maxfev - nfev),
                                 ftol=ftol, finalsimplex=9, step=mystep)
 
-            x = numpy.asarray(result[1], numpy.float64)
+            x = np.asarray(result[1], np.float64)
             fval = result[2]
             nfev += result[4].get('nfev')
         else:
@@ -942,11 +942,11 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
-    order = 'F' if numpy.isfortran(x) else 'C'
-    if step is None or (numpy.iterable(step) and len(step) != len(x)):
-        step = 1.2 * numpy.ones(x.shape, numpy.float64, order)
-    elif numpy.isscalar(step):
-        step = step * numpy.ones(x.shape, numpy.float64, order)
+    order = 'F' if np.isfortran(x) else 'C'
+    if step is None or (np.iterable(step) and len(step) != len(x)):
+        step = 1.2 * np.ones(x.shape, np.float64, order)
+    elif np.isscalar(step):
+        step = step * np.ones(x.shape, np.float64, order)
 
     def stat_cb0(pars):
         return fcn(pars)[0]
@@ -965,7 +965,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     # for internal use only
     debug = False
 
-    if numpy.isscalar(finalsimplex) and numpy.iterable(finalsimplex) == 0:
+    if np.isscalar(finalsimplex) and np.iterable(finalsimplex) == 0:
         finalsimplex = int(finalsimplex)
         if 0 == finalsimplex:
             finalsimplex = [1]
@@ -997,21 +997,21 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             finalsimplex = [2, 1, 1]
         else:
             finalsimplex = [2, 2, 2]
-    elif (not numpy.isscalar(finalsimplex) and
-          numpy.iterable(finalsimplex) == 1):
+    elif (not np.isscalar(finalsimplex) and
+          np.iterable(finalsimplex) == 1):
         pass
     else:
         finalsimplex = [2, 2, 2]
 
-    finalsimplex = numpy.asarray(finalsimplex, numpy.int_)
+    finalsimplex = np.asarray(finalsimplex, np.int_)
 
     if maxfev is None:
         maxfev = 1024 * len(x)
 
     if debug:
         print(f'opfcts.py neldermead() finalsimplex={finalsimplex}'
-              f'\tisscalar={numpy.isscalar(finalsimplex)}'
-              f'\titerable={numpy.iterable(finalsimplex)}')
+              f'\tisscalar={np.isscalar(finalsimplex)}'
+              f'\titerable={np.iterable(finalsimplex)}')
 
     def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
                 myfcn, debug, ofval=FUNC_MAX):
@@ -1046,7 +1046,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     if len(finalsimplex) >= 3 and 0 != iquad:
         nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
                        maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
-        nelmea_x = numpy.asarray(nelmea[1], numpy.float64)
+        nelmea_x = np.asarray(nelmea[1], np.float64)
         nelmea_nfev = nelmea[4].get('nfev')
         info = nelmea[4].get('info')
         covarerr = nelmea[4].get('covarerr')
@@ -1155,10 +1155,10 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         def __init__(self, func, fvec, pars):
             self.func = func
             self.fvec = fvec
-            epsmch = numpy.finfo(float).eps
-            self.eps = numpy.sqrt(max(epsmch, epsfcn))
+            epsmch = np.finfo(float).eps
+            self.eps = np.sqrt(max(epsmch, epsfcn))
             self.h = self.calc_h(pars)
-            self.pars = numpy.copy(pars)
+            self.pars = np.copy(pars)
 
         def __call__(self, param):
             wa = self.func(param[1:])
@@ -1166,7 +1166,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
         def calc_h(self, pars):
             nn = len(pars)
-            h = numpy.empty((nn,))
+            h = np.empty((nn,))
             for ii in range(nn):
                 h[ii] = self.eps * pars[ii]
                 if h[ii] == 0.0:
@@ -1178,9 +1178,9 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         def calc_params(self):
             params = []
             for ii in range(len(self.h)):
-                tmp_pars = numpy.copy(self.pars)
+                tmp_pars = np.copy(self.pars)
                 tmp_pars[ii] += self.h[ii]
-                tmp_pars = numpy.append(ii, tmp_pars)
+                tmp_pars = np.append(ii, tmp_pars)
                 params.append(tmp_pars)
             return tuple(params)
 
@@ -1199,15 +1199,15 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
         fd_jac = fdJac(stat_cb1, fvec, pars)
         params = fd_jac.calc_params()
         fjac = parallel_map(fd_jac, params, numcores)
-        return numpy.concatenate(fjac)
+        return np.concatenate(fjac)
 
     fcn_parallel_counter = FuncCounter(fcn_parallel)
 
     # TO DO: reduce 1 model eval by passing the resulting 'fvec' to cpp_lmdif
-    m = numpy.asanyarray(stat_cb1(x)).size
+    m = np.asanyarray(stat_cb1(x)).size
 
     n = len(x)
-    fjac = numpy.empty((m*n,))
+    fjac = np.empty((m*n,))
 
     x, fval, nfev, info, fjac = \
         _saoopt.cpp_lmdif(stat_cb1, fcn_parallel_counter, numcores, m, x, ftol,
@@ -1215,7 +1215,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
                           xmax, fjac)
 
     if info > 0:
-        fjac = numpy.reshape(numpy.ravel(fjac, order='F'), (m, n), order='F')
+        fjac = np.reshape(np.ravel(fjac, order='F'), (m, n), order='F')
 
         if m != n:
             covar = fjac[:n, :n]
@@ -1223,7 +1223,7 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             covar = fjac
 
         if _par_at_boundary(xmin, x, xmax, xtol):
-            nm_result = neldermead(fcn, x, xmin, xmax, ftol=numpy.sqrt(ftol),
+            nm_result = neldermead(fcn, x, xmin, xmax, ftol=np.sqrt(ftol),
                                    maxfev=maxfev-nfev, finalsimplex=2, iquad=0,
                                    verbose=0)
             nfev += nm_result[4]['nfev']
