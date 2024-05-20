@@ -68,7 +68,7 @@ Best-fit value: 4.0
 
 """
 
-from typing import Any, Optional
+from typing import Any, Optional, Sequence, SupportsFloat, Union
 
 import numpy as np
 
@@ -106,7 +106,17 @@ EPSILON = np.float64(np.finfo(np.float32).eps)
 FUNC_MAX = np.finfo(np.float64).max
 
 
-def _check_args(x0, xmin, xmax):
+# Approx type to represent a Sherpa array.
+#
+ArrayType = Union[Sequence[SupportsFloat], np.ndarray]
+
+
+def _check_args(x0: ArrayType,
+                xmin: ArrayType,
+                xmax: ArrayType
+                ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Ensure the values match in shape and are valid."""
+
     x = np.array(x0, np.float64)  # Make a copy
     xmin = np.asarray(xmin, np.float64)
     xmax = np.asarray(xmax, np.float64)
@@ -132,7 +142,17 @@ def _get_saofit_msg(maxfev: int,
     return key.get(ierr, (False, f'unknown status flag ({ierr})'))
 
 
-def _move_within_limits(x, xmin, xmax):
+def _move_within_limits(x: np.ndarray,
+                        xmin: np.ndarray,
+                        xmax: np.ndarray
+                        ) -> None:
+    """Ensure x values lie >= xmin and <= xmax.
+
+    The x argument will be changed if any element lies outside the
+    xmin/max range.
+
+    """
+
     below = np.flatnonzero(x < xmin)
     if below.size > 0:
         x[below] = xmin[below]
@@ -208,21 +228,37 @@ def _narrow_limits(myrange, xxx, debug):
     return myxmin, myxmax
 
 
-def _par_at_boundary(low, val, high, tol):
+def _par_at_boundary(low: np.ndarray,
+                     val: np.ndarray,
+                     high: np.ndarray,
+                     tol: SupportsFloat
+                     ) -> bool:
+    """Are any val elements equal to low or high?"""
+
     for par_min, par_val, par_max in zip(low, val, high):
         if sao_fcmp(par_val, par_min, tol) == 0:
             return True
         if sao_fcmp(par_val, par_max, tol) == 0:
             return True
+
     return False
 
 
-def _outside_limits(x, xmin, xmax):
-    return (np.any(x < xmin) or np.any(x > xmax))
+def _outside_limits(x: np.ndarray,
+                    xmin: np.ndarray,
+                    xmax: np.ndarray
+                    ) -> bool:
+    """Are any x values outside the xmin/max range?"""
+    return bool(np.any(x < xmin) or np.any(x > xmax))
 
 
-def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-           seed=2005815, population_size=None, xprob=0.9,
+def difevo(fcn, x0, xmin, xmax,
+           ftol=EPSILON,
+           maxfev: Optional[int] = None,
+           verbose=0,
+           seed=2005815,
+           population_size: Optional[int] = None,
+           xprob=0.9,
            weighting_factor=0.8
            ) -> OptReturn:
 
@@ -255,8 +291,13 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-              seed=2005815, population_size=None, xprob=0.9,
+def difevo_lm(fcn, x0, xmin, xmax,
+              ftol=EPSILON,
+              maxfev: Optional[int] = None,
+              verbose=0,
+              seed=2005815,
+              population_size: Optional[int] = None,
+              xprob=0.9,
               weighting_factor=0.8
               ) -> OptReturn:
 
@@ -287,8 +328,14 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
-              population_size, xprob, weighting_factor
+def difevo_nm(fcn, x0, xmin, xmax,
+              ftol,
+              maxfev: Optional[int],
+              verbose,
+              seed,
+              population_size: Optional[int],
+              xprob,
+              weighting_factor
               ) -> OptReturn:
 
     def stat_cb0(pars):
@@ -495,9 +542,16 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 #
 # Monte Carlo
 #
-def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-               seed=74815, population_size=None, xprob=0.9,
-               weighting_factor=0.8, numcores=1, rng=None
+def montecarlo(fcn, x0, xmin, xmax,
+               ftol=EPSILON,
+               maxfev: Optional[int] = None,
+               verbose=0,
+               seed=74815,
+               population_size: Optional[int] = None,
+               xprob=0.9,
+               weighting_factor=0.8,
+               numcores=1,
+               rng=None
                ) -> OptReturn:
     """Monte Carlo optimization method.
 
