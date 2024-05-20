@@ -18,8 +18,11 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-"""
-Objects and utilities used by multiple Sherpa subpackages.
+"""Objects and utilities used by multiple Sherpa subpackages.
+
+Code in this module should not be considered stable, as it may be
+moved, changed, or removed.
+
 """
 
 import inspect
