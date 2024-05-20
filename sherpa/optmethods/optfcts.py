@@ -110,7 +110,9 @@ def _check_args(x0, xmin, xmax):
     return x, xmin, xmax
 
 
-def _get_saofit_msg(maxfev, ierr):
+def _get_saofit_msg(maxfev: int,
+                    ierr: int
+                    ) -> tuple[bool, str]:
     key = {
         0: (True, 'successful termination'),
         1: (False, 'improper input parameters'),
@@ -440,11 +442,6 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
           nloop=1, iquad=1, simp=None, verbose=-1, reflect=True):
 
-    # TODO: rework so do not have two stat_cb0 functions which
-    #       are both used
-    def stat_cb0(pars):
-        return fcn(pars)[0]
-
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if step is None:
@@ -455,7 +452,8 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     if maxfev is None:
         maxfev = 512 * len(x)
 
-    orig_fcn = stat_cb0
+    def orig_fcn(pars):
+        return fcn(pars)[0]
 
     def stat_cb0(x_new):
         if _my_is_nan(x_new) or _outside_limits(x_new, xmin, xmax):
@@ -933,14 +931,10 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     elif np.isscalar(step):
         step = step * np.ones(x.shape, np.float64, order)
 
-    def stat_cb0(pars):
-        return fcn(pars)[0]
-
-    # TODO: should be able to avoid the redefinition
-    #
     # A safeguard just in case the initial simplex is outside the bounds
     #
-    orig_fcn = stat_cb0
+    def orig_fcn(pars):
+        return fcn(pars)[0]
 
     def stat_cb0(x_new):
         if _my_is_nan(x_new) or _outside_limits(x_new, xmin, xmax):
@@ -950,53 +944,52 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     # for internal use only
     debug = False
 
-    if np.isscalar(finalsimplex) and np.iterable(finalsimplex) == 0:
-        finalsimplex = int(finalsimplex)
-        if 0 == finalsimplex:
+    if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
+        farg = int(finalsimplex)
+        if 0 == farg:
             finalsimplex = [1]
-        elif 1 == finalsimplex:
+        elif 1 == farg:
             finalsimplex = [2]
-        elif 2 == finalsimplex:
+        elif 2 == farg:
             finalsimplex = [0, 0]
-        elif 3 == finalsimplex:
+        elif 3 == farg:
             finalsimplex = [0, 1]
-        elif 4 == finalsimplex:
+        elif 4 == farg:
             finalsimplex = [0, 1, 0]
-        elif 5 == finalsimplex:
+        elif 5 == farg:
             finalsimplex = [0, 2, 0]
-        elif 6 == finalsimplex:
+        elif 6 == farg:
             finalsimplex = [1, 1, 0]
-        elif 7 == finalsimplex:
+        elif 7 == farg:
             finalsimplex = [2, 1, 0]
-        elif 8 == finalsimplex:
+        elif 8 == farg:
             finalsimplex = [1, 2, 0]
-        elif 9 == finalsimplex:
+        elif 9 == farg:
             finalsimplex = [0, 1, 1]
-        elif 10 == finalsimplex:
+        elif 10 == farg:
             finalsimplex = [0, 2, 1]
-        elif 11 == finalsimplex:
+        elif 11 == farg:
             finalsimplex = [1, 1, 1]
-        elif 12 == finalsimplex:
+        elif 12 == farg:
             finalsimplex = [1, 2, 1]
-        elif 13 == finalsimplex:
+        elif 13 == farg:
             finalsimplex = [2, 1, 1]
         else:
             finalsimplex = [2, 2, 2]
-    elif (not np.isscalar(finalsimplex) and
-          np.iterable(finalsimplex) == 1):
+    elif (not np.isscalar(finalsimplex) and np.iterable(finalsimplex)):
         pass
     else:
         finalsimplex = [2, 2, 2]
 
-    finalsimplex = np.asarray(finalsimplex, np.int_)
+    fsimplex = np.asarray(finalsimplex, np.int_)
 
     if maxfev is None:
         maxfev = 1024 * len(x)
 
     if debug:
-        print(f'opfcts.py neldermead() finalsimplex={finalsimplex}'
-              f'\tisscalar={np.isscalar(finalsimplex)}'
-              f'\titerable={np.iterable(finalsimplex)}')
+        print(f'opfcts.py neldermead() finalsimplex={fsimplex}'
+              f'\tisscalar={np.isscalar(fsimplex)}'
+              f'\titerable={np.iterable(fsimplex)}')
 
     def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
                 myfcn, debug, ofval=FUNC_MAX):
@@ -1021,14 +1014,14 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
         return xx, ff, nf, er
 
-    x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, finalsimplex,
+    x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, fsimplex,
                                  ftol, step, xmin, xmax, x, stat_cb0, debug)
     if debug:
         print(f'f{x}={fval:e} in {nfev} nfev')
 
     info = 1
     covarerr = None
-    if len(finalsimplex) >= 3 and 0 != iquad:
+    if len(fsimplex) >= 3 and 0 != iquad:
         nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
                        maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
         nelmea_x = np.asarray(nelmea[1], np.float64)
@@ -1172,9 +1165,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     if maxfev is None:
         maxfev = 256 * len(x)
-
-    def stat_cb0(pars):
-        return fcn(pars)[0]
 
     def stat_cb1(pars):
         return fcn(pars)[1]
