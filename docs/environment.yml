@@ -19,3 +19,4 @@ dependencies:
     - sphinx-astropy
     - sphinx_rtd_theme>=1.0.0
     - bokeh
+    - git+https://github.com/sherpa/sherpa-test-data.git
