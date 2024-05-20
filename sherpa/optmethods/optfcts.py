@@ -212,10 +212,7 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         print(f'difevo: f{x}={fval:e} in {nfev} nfev')
 
     status, msg = _get_saofit_msg(maxfev, ierr)
-    rv = (status, x, fval)
-    rv += (msg, {'info': ierr, 'nfev': nfev})
-
-    return rv
+    return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
 def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
@@ -244,10 +241,7 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     ierr = de[3]
 
     status, msg = _get_saofit_msg(maxfev, ierr)
-    rv = (status, x, fval)
-    rv += (msg, {'info': ierr, 'nfev': nfev})
-
-    return rv
+    return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
 def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
@@ -281,10 +275,7 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
         print('difevo_nm: f{x}={fval:e} in {nfev} nfev')
 
     status, msg = _get_saofit_msg(maxfev, ierr)
-    rv = (status, x, fval)
-    rv += (msg, {'info': ierr, 'nfev': nfev})
-
-    return rv
+    return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
 def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
@@ -385,34 +376,30 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
         if xresult[0] < answer[0]:
             answer = xresult
 
-    fval = answer[0]
     x = answer[1:]
     nfev = len(sequence_results) + 1
-    ierr = 0
-    status, msg = _get_saofit_msg(ierr, ierr)
-    rv = (status, x, fval)
-    rv += (msg, {'info': ierr, 'nfev': nfev})
 
     # TODO: should we just use case-insensitive comparison?
     if method in ['NelderMead', 'neldermead', 'Neldermead', 'nelderMead']:
         # re.search( '^[Nn]elder[Mm]ead', method ):
         nm_result = neldermead(fcn, x, xmin, xmax, ftol=ftol, maxfev=maxfev,
                                verbose=verbose)
-        tmp_nm_result = list(nm_result)
-        tmp_nm_result_4 = tmp_nm_result[4]
-        tmp_nm_result_4['nfev'] += nfev
-        rv = tuple(tmp_nm_result)
+        (status, x, fval, msg, imap) = nm_result
+        imap['nfev'] += nfev
+        return (status, x, fval, msg, imap)
 
     if method in ['LevMar', 'levmar', 'Levmar', 'levMar']:
         # re.search( '^[Ll]ev[Mm]ar', method ):
         levmar_result = lmdif(fcn, x, xmin, xmax, ftol=ftol, xtol=ftol,
                               gtol=ftol, maxfev=maxfev, verbose=verbose)
-        tmp_levmar_result = list(levmar_result)
-        tmp_levmar_result_4 = tmp_levmar_result[4]
-        tmp_levmar_result_4['nfev'] += nfev
-        rv = tuple(tmp_levmar_result)
+        (status, x, fval, msg, imap) = levmar_result
+        imap['nfev'] += nfev
+        return (status, x, fval, msg, imap)
 
-    return rv
+    fval = answer[0]
+    ierr = 0
+    status, msg = _get_saofit_msg(ierr, ierr)
+    return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
 #
@@ -450,8 +437,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
         }
     status, msg = key.get(ifault, (False, f'unknown status flag ({ifault})'))
 
-    rv = (status, x, fval, msg, {'info': ifault, 'nfev': neval})
-    return rv
+    return (status, x, fval, msg, {'info': ifault, 'nfev': neval})
 
 
 #
@@ -684,8 +670,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     if nfev >= maxfev:
         ierr = 3
     status, msg = _get_saofit_msg(maxfev, ierr)
-    rv = (status, x, fval, msg, {'info': status, 'nfev': nfev})
-    return rv
+    return (status, x, fval, msg, {'info': status, 'nfev': nfev})
 
 
 #
@@ -1004,13 +989,12 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     status, msg = key.get(ier,
                           (False, f'unknown status flag ({ier})'))
 
-    rv = (status, x, fval)
+    imap = {'info': status, 'nfev': nfev}
     print_covar_err = False
     if print_covar_err and covarerr is not None:
-        rv += (msg, {'covarerr': covarerr, 'info': status, 'nfev': nfev})
-    else:
-        rv += (msg, {'info': status, 'nfev': nfev})
-    return rv
+        imap['covarerr'] = covarerr
+
+    return (status, x, fval, msg, imap)
 
 
 def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
