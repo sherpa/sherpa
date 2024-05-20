@@ -35,7 +35,6 @@ import sys
 from types import FunctionType, MethodType
 
 import numpy as np
-import numpy.fft
 
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
