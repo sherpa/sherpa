@@ -136,64 +136,59 @@ def _my_is_nan(x):
     return len(fubar) > 0
 
 
-def _narrow_limits(myrange, xxx, debug):
+def _double_check_limits(myx: np.ndarray,
+                         myxmin: np.ndarray,
+                         myxmax: np.ndarray) -> None:
+    """Report if any myx outsise myxmin/xmax.
 
-    def double_check_limits(myx, myxmin, myxmax):
-        for my_l, my_x, my_h in zip(myxmin, myx, myxmax):
-            if my_x < my_l:
-                print('x = ', my_x, ' is < lower limit = ', my_l)
-            if my_x > my_h:
-                print('x = ', my_x, ' is > upper limit = ', my_h)
+    TODO: this should probably be logging this at the DEBUG level.
+    """
 
-    def raise_min_limit(xrange, xmin, x, debug=False):
-        myxmin = np.asarray(list(map(lambda xx: xx - xrange * np.abs(xx), x)), np.float64)
-        if debug:
-            print()
-            print(f'raise_min_limit: myxmin={myxmin}')
-            print(f'raise_min_limit: x={x}')
-        below = np.flatnonzero(myxmin < xmin)
-        if below.size > 0:
-            myxmin[below] = xmin[below]
-        if debug:
-            print(f'raise_min_limit: myxmin={myxmin}')
-            print(f'raise_min_limit: x={x}')
-            print()
-        return myxmin
+    for my_l, my_x, my_h in zip(myxmin, myx, myxmax):
+        if my_x < my_l:
+            print('x = ', my_x, ' is < lower limit = ', my_l)
+        if my_x > my_h:
+            print('x = ', my_x, ' is > upper limit = ', my_h)
 
-    def lower_max_limit(xrange, x, xmax, debug=False):
-        myxmax = np.asarray(list(map(lambda xx: xx + xrange * np.abs(xx), x)), np.float64)
-        if debug:
-            print()
-            print(f'lower_max_limit: x={x}')
-            print(f'lower_max_limit: myxmax={myxmax}')
-        above = np.flatnonzero(myxmax > xmax)
-        if above.size > 0:
-            myxmax[above] = xmax[above]
-        if debug:
-            print(f'lower_max_limit: x={x}')
-            print(f'lower_max_limit: myxmax={myxmax}')
-            print()
-        return myxmax
 
-    x = xxx[0]
-    xmin = xxx[1]
-    xmax = xxx[2]
+def _raise_min_limit(factor: float,
+                     xmin: np.ndarray,
+                     x: np.ndarray
+                     ) -> np.ndarray:
+    """Calculate the new minimum limits."""
 
-    if debug:
-        print(f'narrow_limits: xmin={xmin}')
-        print(f'narrow_limits: x={x}')
-        print(f'narrow_limits: xmax={xmax}')
-    myxmin = raise_min_limit(myrange, xmin, x, debug=False)
-    myxmax = lower_max_limit(myrange, x, xmax, debug=False)
+    myxmin = x - factor * np.abs(x)
+    below = np.flatnonzero(myxmin < xmin)
+    if below.size > 0:
+        myxmin[below] = xmin[below]
 
-    if debug:
-        print(f'range = {myrange}')
-        print(f'narrow_limits: myxmin={myxmin}')
-        print(f'narrow_limits: x={x}')
-        print(f'narrow_limits: myxmax={myxmax}\n')
+    return myxmin
 
-    double_check_limits(x, myxmin, myxmax)
 
+def _lower_max_limit(factor: float,
+                     x: np.ndarray,
+                     xmax: np.ndarray
+                     ) -> np.ndarray:
+    """Calculate the new maximum limits."""
+
+    myxmax = x + factor * np.abs(x)
+    above = np.flatnonzero(myxmax > xmax)
+    if above.size > 0:
+        myxmax[above] = xmax[above]
+
+    return myxmax
+
+
+def _narrow_limits(factor: float,
+                   x: np.ndarray,
+                   xmin: np.ndarray,
+                   xmax: np.ndarray
+                   ) -> tuple[np.ndarray, np.ndarray]:
+    """Do we need to change the limits?"""
+
+    myxmin = _raise_min_limit(factor, xmin, x)
+    myxmax = _lower_max_limit(factor, x, xmax)
+    _double_check_limits(x, myxmin, myxmax)
     return myxmin, myxmax
 
 
@@ -638,7 +633,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         ############################# NelderMead #############################
 
         ############################## nmDifEvo #############################
-        xmin, xmax = _narrow_limits(4 * factor, [x, xmin, xmax], debug=False)
+        xmin, xmax = _narrow_limits(4 * factor, x, xmin, xmax)
         mymaxfev = min(maxfev_per_iter, maxfev - nfev)
         if 1 == numcores:
             result = difevo_nm(myfcn, x, xmin, xmax, ftol, mymaxfev, verbose,
@@ -665,7 +660,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         ofval = FUNC_MAX
         while nfev < maxfev:
 
-            xmin, xmax = _narrow_limits(factor, [x, xmin, xmax], debug=False)
+            xmin, xmax = _narrow_limits(factor, x, xmin, xmax)
 
             ############################ nmDifEvo #############################
             y = random_start(xmin, xmax)
