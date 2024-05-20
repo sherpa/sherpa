@@ -110,7 +110,9 @@ def _check_args(x0, xmin, xmax):
     return x, xmin, xmax
 
 
-def _get_saofit_msg(maxfev, ierr):
+def _get_saofit_msg(maxfev: int,
+                    ierr: int
+                    ) -> tuple[bool, str]:
     key = {
         0: (True, 'successful termination'),
         1: (False, 'improper input parameters'),
@@ -233,6 +235,9 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     if maxfev is None:
         maxfev = 1024 * x.size
 
+    # TODO: can we not just call x.size rather than
+    #       np.asanyarray(fcn(x)).size for the last argument?
+    #
     de = _saoopt.lm_difevo(verbose, maxfev, seed, population_size, ftol,
                            xprob, weighting_factor, xmin, xmax,
                            x, fcn, np.asanyarray(fcn(x)).size)
@@ -412,8 +417,10 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 
     if step is None:
         step = np.full(x.shape, 0.4, dtype=np.float64)
+
     if simp is None:
         simp = 1.0e-2 * ftol
+
     if maxfev is None:
         maxfev = 512 * len(x)
 
@@ -897,45 +904,46 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             return FUNC_MAX
         return fcn(x_new)[0]
 
-    if np.isscalar(finalsimplex) and np.iterable(finalsimplex) == 0:
-        finalsimplex = int(finalsimplex)
-        if 0 == finalsimplex:
-            finalsimplex = [1]
-        elif 1 == finalsimplex:
-            finalsimplex = [2]
-        elif 2 == finalsimplex:
-            finalsimplex = [0, 0]
-        elif 3 == finalsimplex:
-            finalsimplex = [0, 1]
-        elif 4 == finalsimplex:
-            finalsimplex = [0, 1, 0]
-        elif 5 == finalsimplex:
-            finalsimplex = [0, 2, 0]
-        elif 6 == finalsimplex:
-            finalsimplex = [1, 1, 0]
-        elif 7 == finalsimplex:
-            finalsimplex = [2, 1, 0]
-        elif 8 == finalsimplex:
-            finalsimplex = [1, 2, 0]
-        elif 9 == finalsimplex:
-            finalsimplex = [0, 1, 1]
-        elif 10 == finalsimplex:
-            finalsimplex = [0, 2, 1]
-        elif 11 == finalsimplex:
-            finalsimplex = [1, 1, 1]
-        elif 12 == finalsimplex:
-            finalsimplex = [1, 2, 1]
-        elif 13 == finalsimplex:
-            finalsimplex = [2, 1, 1]
+    if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
+        farg = int(finalsimplex)
+        if 0 == farg:
+            finalsimplex_ary = [1]
+        elif 1 == farg:
+            finalsimplex_ary = [2]
+        elif 2 == farg:
+            finalsimplex_ary = [0, 0]
+        elif 3 == farg:
+            finalsimplex_ary = [0, 1]
+        elif 4 == farg:
+            finalsimplex_ary = [0, 1, 0]
+        elif 5 == farg:
+            finalsimplex_ary = [0, 2, 0]
+        elif 6 == farg:
+            finalsimplex_ary = [1, 1, 0]
+        elif 7 == farg:
+            finalsimplex_ary = [2, 1, 0]
+        elif 8 == farg:
+            finalsimplex_ary = [1, 2, 0]
+        elif 9 == farg:
+            finalsimplex_ary = [0, 1, 1]
+        elif 10 == farg:
+            finalsimplex_ary = [0, 2, 1]
+        elif 11 == farg:
+            finalsimplex_ary = [1, 1, 1]
+        elif 12 == farg:
+            finalsimplex_ary = [1, 2, 1]
+        elif 13 == farg:
+            finalsimplex_ary = [2, 1, 1]
         else:
-            finalsimplex = [2, 2, 2]
-    elif (not np.isscalar(finalsimplex) and
-          np.iterable(finalsimplex) == 1):
-        pass
+            finalsimplex_ary = [2, 2, 2]
+    elif (not np.isscalar(finalsimplex) and np.iterable(finalsimplex)):
+        # support for finalsimplex being a sequence is not documented
+        # and not tested
+        finalsimplex_ary = finalsimplex
     else:
-        finalsimplex = [2, 2, 2]
+        finalsimplex_ary = [2, 2, 2]
 
-    finalsimplex = np.asarray(finalsimplex, np.int_)
+    fsimplex = np.asarray(finalsimplex_ary, np.int_)
 
     if maxfev is None:
         maxfev = 1024 * len(x)
@@ -960,12 +968,11 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
         return xx, ff, nf, er
 
-    x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, finalsimplex,
+    x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, fsimplex,
                                  ftol, step, xmin, xmax, x, stat_cb0)
 
-    info = 1
     covarerr = None
-    if len(finalsimplex) >= 3 and 0 != iquad:
+    if len(fsimplex) >= 3 and 0 != iquad:
         nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
                        maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
         nelmea_x = np.asarray(nelmea[1], np.float64)
@@ -973,12 +980,15 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         covarerr = nelmea[4].get('covarerr')
         nfev += nelmea_nfev
         minim_fval = nelmea[2]
+
+        # Have we found a better location?
         if minim_fval < fval:
             x = nelmea_x
             fval = minim_fval
 
     if nfev >= maxfev:
         ier = 3
+
     key = {
         0: (True, 'Optimization terminated successfully'),
         1: (False, 'improper input parameters'),
