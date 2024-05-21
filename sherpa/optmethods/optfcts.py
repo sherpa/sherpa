@@ -162,21 +162,6 @@ def _move_within_limits(x: np.ndarray,
         x[above] = xmax[above]
 
 
-def _double_check_limits(myx: np.ndarray,
-                         myxmin: np.ndarray,
-                         myxmax: np.ndarray) -> None:
-    """Report if any myx outsise myxmin/xmax.
-
-    TODO: this should probably be logging this at the DEBUG level.
-    """
-
-    for my_l, my_x, my_h in zip(myxmin, myx, myxmax):
-        if my_x < my_l:
-            print('x = ', my_x, ' is < lower limit = ', my_l)
-        if my_x > my_h:
-            print('x = ', my_x, ' is > upper limit = ', my_h)
-
-
 def _raise_min_limit(factor: float,
                      xmin: np.ndarray,
                      x: np.ndarray
@@ -214,7 +199,6 @@ def _narrow_limits(factor: float,
 
     myxmin = _raise_min_limit(factor, xmin, x)
     myxmax = _lower_max_limit(factor, x, xmax)
-    _double_check_limits(x, myxmin, myxmax)
     return myxmin, myxmax
 
 
@@ -651,7 +635,7 @@ def montecarlo(fcn, x0, xmin, xmax,
         maxfev = 8192 * population_size
 
     def myopt(myfcn, xxx, ftol, maxfev, seed, pop, xprob,
-              weight, factor=4.0, debug=False):
+              weight, factor=4.0):
 
         x = xxx[0]
         xmin = xxx[1]
@@ -681,7 +665,7 @@ def montecarlo(fcn, x0, xmin, xmax,
             nfev, nfval, x = \
                 ncores_nm(stat_cb0, x, xmin, xmax, ftol, mymaxfev, numcores)
 
-        if verbose or debug:
+        if verbose:
             print(f'f_nm{x}={nfval:.14e} in {nfev} nfev')
 
         ############################# NelderMead #############################
@@ -706,7 +690,7 @@ def montecarlo(fcn, x0, xmin, xmax,
                 nfval = tmp_fmin
                 x = tmp_par
 
-        if verbose or debug:
+        if verbose:
             print(f'f_de_nm{x}={nfval:.14e} in {nfev} nfev')
 
         ############################## nmDifEvo #############################
@@ -728,16 +712,14 @@ def montecarlo(fcn, x0, xmin, xmax,
                 if result[2] < nfval:
                     nfval = result[2]
                     x = np.asarray(result[1], np.float64)
-                if verbose or debug:
+                if verbose:
                     print(f'f_de_nm{x}={result[2]:.14e} in {result[4].get("nfev")} nfev')
 
             ############################ nmDifEvo #############################
 
-            if debug:
-                print(f'ofval={ofval:.14e}\tnfval={nfval:.14e}\n')
-
             if sao_fcmp(ofval, nfval, ftol) <= 0:
                 return x, nfval, nfev
+
             ofval = nfval
             factor *= 2
 
@@ -745,7 +727,7 @@ def montecarlo(fcn, x0, xmin, xmax,
 
     x, fval, nfev = myopt(fcn, [x, xmin, xmax], np.sqrt(ftol), maxfev,
                           seed, population_size, xprob, weighting_factor,
-                          factor=2.0, debug=False)
+                          factor=2.0)
 
     if nfev < maxfev:
         if all(x == 0.0):
@@ -1008,9 +990,6 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
             return FUNC_MAX
         return orig_fcn(x_new)
 
-    # for internal use only
-    debug = False
-
     if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
         farg = int(finalsimplex)
         if 0 == farg:
@@ -1055,13 +1034,8 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     if maxfev is None:
         maxfev = 1024 * len(x)
 
-    if debug:
-        print(f'opfcts.py neldermead() finalsimplex={fsimplex}'
-              f'\tisscalar={np.isscalar(fsimplex)}'
-              f'\titerable={np.iterable(fsimplex)}')
-
     def simplex(verbose, maxfev, init, final, tol, step, xmin, xmax, x,
-                myfcn, debug, ofval=FUNC_MAX):
+                myfcn, ofval=FUNC_MAX):
 
         tmpfinal = final[:]
         if len(final) >= 3:
@@ -1071,22 +1045,17 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         xx, ff, nf, er = _saoopt.neldermead(verbose, maxfev, init, tmpfinal,
                                             tol, step, xmin, xmax, x, myfcn)
 
-        if debug:
-            print(f'finalsimplex={tmpfinal}, nfev={nf}:\tf{xx}={ff:.20e}')
-
         if len(final) >= 3 and ff < 0.995 * ofval and nf < maxfev:
             myfinal = [final[-1]]
             x, fval, nfev, err = simplex(verbose, maxfev-nf, init, myfinal, tol,
-                                         step, xmin, xmax, x, myfcn, debug,
+                                         step, xmin, xmax, x, myfcn,
                                          ofval=ff)
             return x, fval, nfev + nf, err
 
         return xx, ff, nf, er
 
     x, fval, nfev, ier = simplex(verbose, maxfev, initsimplex, fsimplex,
-                                 ftol, step, xmin, xmax, x, stat_cb0, debug)
-    if debug:
-        print(f'f{x}={fval:e} in {nfev} nfev')
+                                 ftol, step, xmin, xmax, x, stat_cb0)
 
     covarerr = None
     if len(fsimplex) >= 3 and 0 != iquad:
@@ -1102,10 +1071,6 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         if minim_fval < fval:
             x = nelmea_x
             fval = minim_fval
-
-        if debug:
-            info = nelmea[4].get('info')
-            print(f'minim: f{x}={fval:e} {nelmea_nfev} nfev, info={info}')
 
     if nfev >= maxfev:
         ier = 3
