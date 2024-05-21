@@ -502,6 +502,19 @@ def minim(fcn: StatFunc,
 #
 # Monte Carlo
 #
+def random_start(rng: Optional[random.RandomType],
+                 xmin: np.ndarray,
+                 xmax: np.ndarray
+                 ) -> np.ndarray:
+    """Create an array of values between xmin and xmax."""
+
+    out = np.zeros_like(xmin)
+    for idx, (minval, maxval) in enumerate(zip(xmin, xmax)):
+        out[idx] = random.uniform(rng, minval, maxval)
+
+    return out
+
+
 def montecarlo(fcn: StatFunc,
                x0: ArrayType,
                xmin: ArrayType,
@@ -623,12 +636,6 @@ def montecarlo(fcn: StatFunc,
         xmax = xxx[2]
         maxfev_per_iter = 512 * x.size
 
-        def random_start(xmin, xmax):
-            xx = []
-            for ii in range(len(xmin)):
-                xx.append(random.uniform(rng, xmin[ii], xmax[ii]))
-            return np.asarray(xx)
-
         ############################# NelderMead #############################
         mymaxfev = min(maxfev_per_iter, maxfev)
         if all(x == 0.0):
@@ -683,7 +690,7 @@ def montecarlo(fcn: StatFunc,
             xmin, xmax = _narrow_limits(factor, x, xmin, xmax)
 
             ############################ nmDifEvo #############################
-            y = random_start(xmin, xmax)
+            y = random_start(rng, xmin, xmax)
             mymaxfev = min(maxfev_per_iter, maxfev - nfev)
 
             if numcores == 1:
@@ -1190,11 +1197,12 @@ def lmdif(fcn: StatFunc,
 
         def calc_params(self):
             params = []
-            for ii in range(len(self.h)):
-                tmp_pars = np.copy(self.pars)
-                tmp_pars[ii] += self.h[ii]
-                tmp_pars = np.append(ii, tmp_pars)
-                params.append(tmp_pars)
+            for idx, h in enumerate(self.h):
+                hadj = np.copy(self.pars)
+                hadj[idx] += h
+                pars = np.append(idx, hadj)
+                params.append(pars)
+
             return tuple(params)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
