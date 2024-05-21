@@ -162,12 +162,6 @@ def _move_within_limits(x: np.ndarray,
         x[above] = xmax[above]
 
 
-def _my_is_nan(x):
-    # TODO: can this be replaced by np.isnan(x).any()?
-    fubar = list(filter(lambda xx: xx != xx or xx is np.nan or np.isnan(xx) and np.isfinite(xx), x))
-    return len(fubar) > 0
-
-
 def _double_check_limits(myx: np.ndarray,
                          myxmin: np.ndarray,
                          myxmax: np.ndarray) -> None:
@@ -519,7 +513,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
         return fcn(pars)[0]
 
     def stat_cb0(x_new):
-        if _my_is_nan(x_new) or _outside_limits(x_new, xmin, xmax):
+        if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
             return FUNC_MAX
         return orig_fcn(x_new)
 
@@ -1010,7 +1004,7 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
         return fcn(pars)[0]
 
     def stat_cb0(x_new):
-        if _my_is_nan(x_new) or _outside_limits(x_new, xmin, xmax):
+        if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
             return FUNC_MAX
         return orig_fcn(x_new)
 
