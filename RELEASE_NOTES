@@ -1,5 +1,184 @@
 Release Notes
 
+Sherpa 4.16.1
+=============
+
+This release of Sherpa includes various enhancements, documentation updates, bug fixes, and infrastructure changes.
+
+* enhancements:
+    * minor plotting changes; add support for splitting model expression into
+      additive components and plot the results; support of log scale axes for
+      confidence plots; improved error messages for unavailable plot backends
+    * improved RMF plot display to allow choice of energy units
+* documentation changes:
+    * updates to fake_pha documentation
+    * updates to install.rst to fix incorrect links and outdated version references
+    * updated read the docs documentation to match current code
+* bug fixes:
+    * fixed multi-panel plot issue with Bokeh backend
+
+Details
+-------
+
+#1608 - Remove the test setup.py option
+    Add the test configuration so that we can ensure the necessary testing
+    packages can be installed when the code is built. Support for running the
+    tests with 'python setup.py test' has been removed to match changes in the
+    Python packaging ecosystem.
+
+#1679 - Automatically split a model expression into additive components and plot the results
+    Add plot_source_components and plot_model_components calls that will split
+    up a model like gal * (pl + line) into two lines: one for gal * pl and one
+    for gal * line. There are also corresponding get_source_components_plot and
+    get_model_components_plot calls, and the "source_components" and
+    "model_components" arguments can be used with the plot call.
+
+#1684 -Fix fake_pha docs
+    Fix the documentation and some corner cases of sherpa.astro.fake.fake_pha.
+    There are several times when the simulated PHA output would not be correct
+    if the PHA contains at least one background component or a pileup model
+    was used.
+
+#1926 - Let users know they should use load_xstable_model not load_table_model
+    Support for XSPEC table models in load_table_model was deprecated in the
+    4.9 release. Ensure users know that they should be using load_xstable_model
+    instead by adding a warning message whenever it is used.
+
+#1934 - Zenodo broke the API we were using to request citation details.
+    Ensure that the sherpa.citation() command can query Zenodo for the release
+    information. Fix #1933.
+
+#1938 - CI: temporarily remove ds9 tests on macOS
+    Avoid the DS9 tests on the macOS build to avoid the failure case we
+    currently often, but not always, trigger.
+
+#1941 - Fix various typos
+    Updates from running codespell on source distribution
+
+#1945 - Better error checks for table loads
+    Insure that table models are sent numeric columns, to catch cases like #1943.
+
+#1946 - versioneer: update to version 0.29
+    Update the vendored copy of versioneer from 0.28 to 0.29.
+
+#1947 - Ensure tests can be run when the group library does not exist
+    Annotate several tests with the requires_group decorator.
+
+#1952 - Tests: better support of optional region/wcs dependencies
+    Ensure that the tests can pass if the region or WCS code is not available.
+
+#1954 - CI: avoid failures due to missing pyarrow installation
+    Allow the CI runs to pass with new changes to pandas warning messages
+    (completely unrelated to Sherpa but caused the tests to fail).
+
+#1957 - CI: support pytest 8.0.0
+    Allow the tests to pass when run with pytest 8.0.0.
+
+#1959 - Support logarithmic axes for 1D and 2D confidence plots
+    The projection and uncertainty plots, for both interval (1D) and region (2D),
+    now correctly create a logarithmic scale when requested. Fix #1561.
+
+#1962 - Pick up latest Python micro version in conda workflow
+    This resolves the missing crypt.h issue being seen in the conda test workflow
+    by picking up the latest micro version of the python packages for the conda
+    test build workflows.
+
+#1965 - Improve the error message when a plot backend is not available.
+    Improve the error message when a plot backend is not available. Fix #1964
+
+#1968 - Remove Conda build 3.25 pin from deployments
+    Removes the conda version specification (3.25) to avoid compatibility issues
+
+#1969 - Tests: group the DS9 tests so they can be run with one worker process
+    Ensure those tests that use the requires_ds9 decorator all have the same
+    group marker, so that they will be run within a single worker process when
+    using pytest-xdist to run tests in parallel. There is no change if
+    pytest-xdist is not installed.
+
+#1970 - Bump the minimum pytest version
+    Pytest occasionally changes behavior and it does not seem worth our time to
+    maintain backwards compatibility with old versions of pytest - see #1960
+
+#1972 - Remove excess brackets in model names
+    Remove excess brackets from model and parameter expressions. This is purely
+    a cosmetic change, but hopefully makes complicated model expressions easier
+    to read. Fix #780.
+
+#1973 - Fix the requires_pylab decorator
+    Change the testing code to better-handle those tests that want to check
+    plotting when using the pylab backend. Fix #1971.
+
+#1974 - Allow linked parameters to be fit without including them in the model expression
+    Treat linked parameters as part of the model expression (via the new lpars
+    attribute and get_thawed_pars routine) so that they can be included in a
+    fit without including the linked model as part of the model expression.
+    Fix #777
+
+#1976 - Fix bug in multi-panel plotting in bokeh
+    Fix bug in multi-panel plotting in bokeh
+
+#1977 - model: improve examples in docstrings
+    Allow model.py, parameter.py, and regrid.py to be included in the
+    docstring pytest run.
+
+#1984 - Rework x errorbar support to better-match community expectations
+    Improve the "x errorbar" handling for histogram-style data (including PHA),
+    including support for the wavelength setting (fix #1985), to better match
+    community expectations (e.g. #1817).
+
+#1994 - Tests: improve coverage of parameter module
+    Improve the test coverage of the parameter module.
+
+#1996 - docs: update examples to match current behavior
+    Update the ReadTheDocs documentation to match the current code.
+
+#1998 - Cleanup XSPEC interface
+    A small number of XSPEC model parameter values have been changed to match
+    the default frozen state of XSPEC version 12.13.1.
+
+#2000 - CM-481: update codecov action to v4, add upload token
+    Updates version of codecov being used
+
+#2003 - Minor plot work
+    Internal clean up of the plotting code in preparation for future changes.
+    The ARFPlot class will now generate an IOErr rather than PlotErr if sent
+    a non-PHA dataset (to better match other calls). The DataHistogramPlot
+    class now treats xerr as a property that can not be changed, and is fixed
+    to be the half-width of the X bins, although note that this field is not
+    really used and may be removed at some point in the future.
+
+#2004 - Minor improvements to the RMF plot capability
+    Improve the RMF plot display so that it recognizes the current units
+    setting and allows the choice of energies to be over-ridden by the user.
+
+#2006 - Use a separate context when handling multiprocessing calls
+    Ensure that Sherpa does not change the global multiprocessing state but
+    instead uses the (new) sherpa.utils.parallel.context attribute. Fix #1015.
+
+#2011 - Specialize the residual-style plots for histogram data
+    Improve the display of residual-style plots for integrated datasets.
+    Fix #1817.
+
+#2012 - [CI] Update ci-conda-workflow.yml to pin back to macos-12
+    Pin back to macos-12. This version is specific to macOS-intel. 13 doesn't
+    work as conda is removed from it.
+
+#2019 - update clone link and versions and DOI
+    This is a documentation update to fix the incorrect link in the source
+    install example. I also updated the version and DOI link in the description
+    of the source installation.
+
+#2020 - CI: bump the checkout actions versions
+    Internal change to how the GitHub actions are run for CI.
+
+#2021 - Update Conda Deployment Workflow Action Versions
+    Updates internal actions in the deployment workflow
+
+#2025 - Improve support for NumPy 2.0
+    Improvements for running Sherpa with NumPy 2.0.
+
+#2029 - Swap oldest-supported-numpy with numpy in requirements
+
 Sherpa 4.16.0
 =============
 
