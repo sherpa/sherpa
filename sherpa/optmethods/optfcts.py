@@ -163,6 +163,7 @@ def _move_within_limits(x: np.ndarray,
 
 
 def _my_is_nan(x):
+    # TODO: can this be replaced by np.isnan(x).any()?
     fubar = list(filter(lambda xx: xx != xx or xx is np.nan or np.isnan(xx) and np.isfinite(xx), x))
     return len(fubar) > 0
 
@@ -312,6 +313,9 @@ def difevo_lm(fcn, x0, xmin, xmax,
     if maxfev is None:
         maxfev = 1024 * x.size
 
+    # TODO: can we not just call x.size rather than
+    #       np.asanyarray(fcn(x)).size for the last argument?
+    #
     de = _saoopt.lm_difevo(verbose, maxfev, seed, population_size, ftol,
                            xprob, weighting_factor, xmin, xmax,
                            x, fcn, np.asanyarray(fcn(x)).size)
@@ -501,10 +505,13 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if step is None:
+        # TODO: x should be 1D so do we care about the ordering?
         order = 'F' if np.isfortran(x) else 'C'
-        step = 0.4*np.ones(x.shape, np.float64, order)
+        step = 0.4 * np.ones(x.shape, dtype=np.float64, order=order)
+
     if simp is None:
         simp = 1.0e-2 * ftol
+
     if maxfev is None:
         maxfev = 512 * len(x)
 
@@ -990,11 +997,12 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
+    # TODO: x should be 1D so do we care about the ordering?
     order = 'F' if np.isfortran(x) else 'C'
     if step is None or (np.iterable(step) and len(step) != len(x)):
-        step = 1.2 * np.ones(x.shape, np.float64, order)
+        step = 1.2 * np.ones(x.shape, dtype=np.float64, order=order)
     elif np.isscalar(step):
-        step = step * np.ones(x.shape, np.float64, order)
+        step = step * np.ones(x.shape, dtype=np.float64, order=order)
 
     # A safeguard just in case the initial simplex is outside the bounds
     #
@@ -1012,41 +1020,43 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
         farg = int(finalsimplex)
         if 0 == farg:
-            finalsimplex = [1]
+            finalsimplex_ary = [1]
         elif 1 == farg:
-            finalsimplex = [2]
+            finalsimplex_ary = [2]
         elif 2 == farg:
-            finalsimplex = [0, 0]
+            finalsimplex_ary = [0, 0]
         elif 3 == farg:
-            finalsimplex = [0, 1]
+            finalsimplex_ary = [0, 1]
         elif 4 == farg:
-            finalsimplex = [0, 1, 0]
+            finalsimplex_ary = [0, 1, 0]
         elif 5 == farg:
-            finalsimplex = [0, 2, 0]
+            finalsimplex_ary = [0, 2, 0]
         elif 6 == farg:
-            finalsimplex = [1, 1, 0]
+            finalsimplex_ary = [1, 1, 0]
         elif 7 == farg:
-            finalsimplex = [2, 1, 0]
+            finalsimplex_ary = [2, 1, 0]
         elif 8 == farg:
-            finalsimplex = [1, 2, 0]
+            finalsimplex_ary = [1, 2, 0]
         elif 9 == farg:
-            finalsimplex = [0, 1, 1]
+            finalsimplex_ary = [0, 1, 1]
         elif 10 == farg:
-            finalsimplex = [0, 2, 1]
+            finalsimplex_ary = [0, 2, 1]
         elif 11 == farg:
-            finalsimplex = [1, 1, 1]
+            finalsimplex_ary = [1, 1, 1]
         elif 12 == farg:
-            finalsimplex = [1, 2, 1]
+            finalsimplex_ary = [1, 2, 1]
         elif 13 == farg:
-            finalsimplex = [2, 1, 1]
+            finalsimplex_ary = [2, 1, 1]
         else:
-            finalsimplex = [2, 2, 2]
+            finalsimplex_ary = [2, 2, 2]
     elif (not np.isscalar(finalsimplex) and np.iterable(finalsimplex)):
-        pass
+        # support for finalsimplex being a sequence is not documented
+        # and not tested
+        finalsimplex_ary = finalsimplex
     else:
-        finalsimplex = [2, 2, 2]
+        finalsimplex_ary = [2, 2, 2]
 
-    fsimplex = np.asarray(finalsimplex, np.int_)
+    fsimplex = np.asarray(finalsimplex_ary, np.int_)
 
     if maxfev is None:
         maxfev = 1024 * len(x)
@@ -1084,25 +1094,28 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     if debug:
         print(f'f{x}={fval:e} in {nfev} nfev')
 
-    info = 1
     covarerr = None
     if len(fsimplex) >= 3 and 0 != iquad:
         nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
                        maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
         nelmea_x = np.asarray(nelmea[1], np.float64)
         nelmea_nfev = nelmea[4].get('nfev')
-        info = nelmea[4].get('info')
         covarerr = nelmea[4].get('covarerr')
         nfev += nelmea_nfev
         minim_fval = nelmea[2]
+
+        # Have we found a better location?
         if minim_fval < fval:
             x = nelmea_x
             fval = minim_fval
+
         if debug:
+            info = nelmea[4].get('info')
             print(f'minim: f{x}={fval:e} {nelmea_nfev} nfev, info={info}')
 
     if nfev >= maxfev:
         ier = 3
+
     key = {
         0: (True, 'Optimization terminated successfully'),
         1: (False, 'improper input parameters'),
