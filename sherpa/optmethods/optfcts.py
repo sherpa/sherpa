@@ -189,6 +189,58 @@ def _outside_limits(x: np.ndarray,
     return bool(np.any(x < xmin) or np.any(x > xmax))
 
 
+class Callback:
+    """Handle the callback argument for the optimizers.
+
+    See Also
+    --------
+    InfinitePotential
+
+    """
+
+    __slots__ = ("func",)
+
+    def __init__(self,
+                 func: StatFunc) -> None:
+        self.func = func
+
+    def __call__(self, pars: np.ndarray) -> float:
+        return self.func(pars)[0]
+
+
+class InfinitePotential:
+    """Ensure the parameter values stay within bounds.
+
+    The idea is that if sent a value outside the parameter limits we
+    return "infinity" (here defined to be the maximum value we'd
+    expect rather than inf, to avoid causing problems to the
+    optimizer).
+
+    See Also
+    --------
+    Callback
+
+    """
+
+    __slots__ = ("func", "minval", "maxval")
+
+    def __init__(self,
+                 func: StatFunc,
+                 minval: np.ndarray,
+                 maxval: np.ndarray) -> None:
+        self.func = func
+        self.minval = minval
+        self.maxval = maxval
+
+    def __call__(self, pars: np.ndarray) -> SupportsFloat:
+        if np.isnan(pars).any() or _outside_limits(pars,
+                                                   self.minval,
+                                                   self.maxval):
+            return FUNC_MAX
+
+        return self.func(pars)[0]
+
+
 def difevo(fcn: StatFunc,
            x0: ArrayType,
            xmin: ArrayType,
@@ -283,8 +335,7 @@ def difevo_nm(fcn: StatFunc,
               weighting_factor: float
               ) -> OptReturn:
 
-    def stat_cb0(pars):
-        return fcn(pars)[0]
+    stat_cb0 = Callback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -476,10 +527,7 @@ def minim(fcn: StatFunc,
     if maxfev is None:
         maxfev = 512 * len(x)
 
-    def stat_cb0(x_new):
-        if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
-            return FUNC_MAX
-        return fcn(x_new)[0]
+    stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
     init = 0
     x, fval, neval, ifault = _saoopt.minim(reflect, verbose, maxfev, init, \
@@ -603,8 +651,7 @@ def montecarlo(fcn: StatFunc,
 
     """
 
-    def stat_cb0(pars):
-        return fcn(pars)[0]
+    stat_cb0 = Callback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -979,10 +1026,7 @@ def neldermead(fcn: StatFunc,
 
     # A safeguard just in case the initial simplex is outside the bounds
     #
-    def stat_cb0(x_new):
-        if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
-            return FUNC_MAX
-        return fcn(x_new)[0]
+    stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
     if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
         farg = int(finalsimplex)
