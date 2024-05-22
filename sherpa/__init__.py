@@ -188,6 +188,10 @@ def _get_citation_hardcoded(version: str) -> Optional[str]:
         cite[version] = dict(**kwargs)
         cite[version]['version'] = version
 
+    add(version='4.16.1', title='sherpa/sherpa: Sherpa 4.16.1',
+        date=todate(2024, 5, 21),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner', 'nplee', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
+        idval='11236879')
     add(version='4.16.0', title='sherpa/sherpa: Sherpa 4.16.0',
         date=todate(2023, 10, 26),
         authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner', 'nplee', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
