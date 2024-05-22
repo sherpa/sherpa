@@ -19,14 +19,7 @@ jobs:
       matrix:
         include:
           - arch: aarch64
-
-          # The tests on ppc64le fail rather spectacularly,
-          # and it's not obvious why, so skip for now. AstroPy also
-          # see some interesting errors so maybe there are problems
-          # with the emulation or NumPy or ...
-          # https://github.com/astropy/astropy/pull/11697
-          #
-          # - arch: ppc64le
+          - arch: ppc64le
 
           # We currently do not have any user requests for this
           # architecture.
