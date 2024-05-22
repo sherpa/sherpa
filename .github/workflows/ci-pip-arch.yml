@@ -45,7 +45,9 @@ jobs:
       uses: uraimo/run-on-arch-action@v2
       with:
         arch: ${{ matrix.arch }}
-        distro: ubuntu_rolling
+        # distro: ubuntu_rolling
+        # ubuntu 22.04 uses Python 3.10
+        distro: ubuntu22.04
 
         shell: /bin/bash
 
@@ -82,7 +84,5 @@ jobs:
           #
           sed -i.orig "s|#configure=None|configure=--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib --disable-dependency-tracking|" setup.cfg
 
-          pip3 install -e .
-          pip3 install pytest
-          pip3 install pytest-xdist  # not really needed here
+          pip3 install -e .[test]
           python3 -m pytest
