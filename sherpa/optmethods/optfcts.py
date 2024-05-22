@@ -228,6 +228,35 @@ def _outside_limits(x: np.ndarray,
     return bool(np.any(x < xmin) or np.any(x > xmax))
 
 
+class InfinitePotential:
+    """Ensure the parameter values stay within bounds.
+
+    The idea is that if sent a value outside the parameter limits we
+    return "infinity" (here defined to be the maximum value we'd
+    expect rather than inf, to avoid causing problems to the
+    optimizer).
+
+    """
+
+    __slots__ = ("func", "minval", "maxval")
+
+    def __init__(self,
+                 func: StatCallback,
+                 minval: np.ndarray,
+                 maxval: np.ndarray) -> None:
+        self.func = func
+        self.minval = minval
+        self.maxval = maxval
+
+    def __call__(self, pars: np.ndarray) -> SupportsFloat:
+        if np.isnan(pars).any() or _outside_limits(pars,
+                                                   self.minval,
+                                                   self.maxval):
+            return FUNC_MAX
+
+        return self.func(pars)[0]
+
+
 def difevo(fcn: StatCallback,
            x0: ArrayType,
            xmin: ArrayType,
@@ -517,13 +546,7 @@ def minim(fcn: StatCallback,
     if maxfev is None:
         maxfev = 512 * len(x)
 
-    def orig_fcn(pars):
-        return fcn(pars)[0]
-
-    def stat_cb0(x_new):
-        if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
-            return FUNC_MAX
-        return orig_fcn(x_new)
+    stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
     init = 0
     x, fval, neval, ifault = _saoopt.minim(reflect, verbose, maxfev, init, \
@@ -1025,13 +1048,7 @@ def neldermead(fcn: StatCallback,
 
     # A safeguard just in case the initial simplex is outside the bounds
     #
-    def orig_fcn(pars):
-        return fcn(pars)[0]
-
-    def stat_cb0(x_new):
-        if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
-            return FUNC_MAX
-        return orig_fcn(x_new)
+    stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
     if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
         farg = int(finalsimplex)
