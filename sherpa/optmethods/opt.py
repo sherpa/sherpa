@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2021, 2023, 2024
+#  Copyright (C) 2019 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,11 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from typing import Callable, Sequence, SupportsFloat
+
 import numpy as np
 
 from sherpa.utils import Knuth_close, FuncCounter
 from sherpa.utils.parallel import multi, context, run_tasks
-from sherpa.utils.random import uniform
+from sherpa.utils.random import RandomType, uniform
+from sherpa.utils.types import ArrayType
 
 
 __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
@@ -40,22 +43,27 @@ __all__ = ('Opt', 'MyNcores', 'SimplexRandom', 'SimplexNoStep',
 #     except LinAlgError:
 #         return None
 
+
 class MyNcores:
 
-    def __init__(self):
+    def __init__(self) -> None:
         if multi is False:
             raise TypeError("multicores not available")
 
-    def calc(self, funcs, numcores, *args, **kwargs):
+    def calc(self,
+             funcs: Sequence[Callable],
+             numcores: int,  # TODO: this is currently unused
+             *args, **kwargs) -> list:
 
         for func in funcs:
             if not callable(func):
                 raise TypeError(f"input func '{repr(func)}' is not callable")
 
-        # TODO: the numcores argument is currently unused.
-        #
-
         # See sherpa.utils.parallel for the logic used here.
+        # At this point we can assume that context is not None,
+        # since multi is True.
+        #
+        assert context is not None
         manager = context.Manager()
         out_q = manager.Queue()
         err_q = manager.Queue()
@@ -65,7 +73,12 @@ class MyNcores:
 
         return run_tasks(procs, err_q, out_q)
 
-    def my_worker(self, opt, idval, out_q, err_q, *args):
+    def my_worker(self,
+                  opt: Callable,
+                  idval: int,
+                  out_q,
+                  err_q,
+                  *args):
         raise NotImplementedError("my_worker has not been implemented")
 
 
@@ -78,10 +91,11 @@ class Opt:
 
     """
 
-    # QUS: we support xmin or xmax being None, but do we ever use
-    # this capability?
-    #
-    def __init__(self, func, xmin, xmax):
+    def __init__(self,
+                 func: Callable,
+                 xmin: ArrayType,
+                 xmax: ArrayType
+                 ) -> None:
         self.npar = len(xmin)
         self.xmin = np.asarray(xmin)
         self.xmax = np.asarray(xmax)
@@ -89,16 +103,25 @@ class Opt:
         self.func = self.func_bounds(self.func_count, self.npar, xmin, xmax)
 
     @property
-    def nfev(self):
+    def nfev(self) -> int:
         return self.func_count.nfev
 
-    def _outside_limits(self, x, xmin, xmax):
-        return (np.any(x < xmin) or np.any(x > xmax))
+    def _outside_limits(self,
+                        x: np.ndarray,
+                        xmin: np.ndarray,
+                        xmax: np.ndarray
+                        ) -> bool:
+        return bool(np.any(x < xmin) or np.any(x > xmax))
 
     # We should be able to take these parameters from the class, or
     # re-write this logic.
     #
-    def func_bounds(self, func, npar, xmin=None, xmax=None):
+    def func_bounds(self,
+                    func: Callable,
+                    npar: int,
+                    xmin: ArrayType | None = None,
+                    xmax: ArrayType | None = None
+                    ) -> Callable:
         """In order to keep the current number of function evaluations:
         func_counter should be called before func_bounds. For example,
         the following code
@@ -133,15 +156,24 @@ class Opt:
 
 class SimplexBase:
 
-    def __init__(self, func, npop, xpar, xmin, xmax, step, seed,
-                 factor, rng=None):
+    def __init__(self,
+                 func: Callable,
+                 npop: int,
+                 xpar: ArrayType,
+                 xmin: ArrayType,
+                 xmax: ArrayType,
+                 step,
+                 seed: int,
+                 factor: float,
+                 rng: RandomType | None = None
+                 ) -> None:
         self.func = func
         self.xmin = xmin
         self.xmax = xmax
         self.npar = len(xpar)
         self.rng = rng
-        self.simplex = self.init(npop=npop, xpar=xpar, step=step,
-                                 seed=seed, factor=factor)
+        self.simplex = self.init(npop=npop, xpar=np.asarray(xpar),
+                                 step=step, seed=seed, factor=factor)
 
     def __getitem__(self, index):
         return self.simplex[index]
@@ -149,10 +181,13 @@ class SimplexBase:
     def __setitem__(self, index, val):
         self.simplex[index] = val
 
-    def calc_centroid(self):
+    def calc_centroid(self) -> SupportsFloat:
         return np.mean(self.simplex[:-1, :], 0)
 
-    def check_convergence(self, ftol, method):
+    def check_convergence(self,
+                          ftol: SupportsFloat,
+                          method: int
+                          ) -> bool:
 
         def are_func_vals_close_enough():
             smallest_fct_val = self.simplex[0, -1]
@@ -217,10 +252,22 @@ class SimplexBase:
             simplex[ii][-1] = self.func(simplex[ii][:-1])
         return self.sort_me(simplex)
 
-    def init(self, npop, xpar, step, seed, factor):
+    def init(self,
+             npop: int,
+             xpar: np.ndarray,
+             step,
+             seed: int,
+             factor
+             ) -> np.ndarray:
         raise NotImplementedError("init has not been implemented")
 
-    def init_random_simplex(self, xpar, simplex, start, npop, seed, factor):
+    def init_random_simplex(self,
+                            xpar: np.ndarray,
+                            simplex: np.ndarray,
+                            start: int,
+                            npop: int,
+                            seed: int,
+                            factor) -> np.ndarray:
         # Set the seed when there is no RNG set, otherwise the RNG
         # determines the state.
         #
@@ -249,12 +296,12 @@ class SimplexBase:
 
         return simplex
 
-    def move_vertex(self, centroid, coef):
+    def move_vertex(self, centroid, coef) -> np.ndarray:
         vertex = (1.0 + coef) * centroid - coef * self.simplex[self.npar]
         vertex[-1] = self.func(vertex[:-1])
         return vertex
 
-    def shrink(self, shrink_coef):
+    def shrink(self, shrink_coef) -> None:
         npars_plus_1 = self.npar + 1
         for ii in range(1, npars_plus_1):
             self.simplex[ii] = \
@@ -262,19 +309,25 @@ class SimplexBase:
                 (self.simplex[ii] - self.simplex[0])
             self.simplex[ii, -1] = self.func(self.simplex[ii, :-1])
 
-    def sort_me(self, simp):
+    def sort_me(self, simp) -> np.ndarray:
         myshape = simp.shape
         tmp = np.array(sorted(simp, key=lambda arg: arg[-1]))
         tmp.reshape(myshape)
         return tmp
 
-    def sort(self):
+    def sort(self) -> None:
         self.simplex = self.sort_me(self.simplex)
 
 
 class SimplexNoStep(SimplexBase):
 
-    def init(self, npop, xpar, step, seed, factor):
+    def init(self,
+             npop: int,
+             xpar: np.ndarray,
+             step,
+             seed: int,
+             factor
+             ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
         simplex[0][:-1] = np.copy(xpar)
@@ -294,7 +347,13 @@ class SimplexNoStep(SimplexBase):
 
 class SimplexStep(SimplexBase):
 
-    def init(self, npop, xpar, step, seed, factor):
+    def init(self,
+             npop: int,
+             xpar: np.ndarray,
+             step,
+             seed: int,
+             factor
+             ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
         simplex[0][:-1] = np.copy(xpar)
@@ -309,7 +368,13 @@ class SimplexStep(SimplexBase):
 
 class SimplexRandom(SimplexBase):
 
-    def init(self, npop, xpar, step, seed, factor):
+    def init(self,
+             npop: int,
+             xpar: np.ndarray,
+             step,
+             seed: int,
+             factor
+             ) -> np.ndarray:
         npar1 = self.npar + 1
         simplex = np.empty((npop, npar1))
         simplex[0][:-1] = np.copy(xpar)
