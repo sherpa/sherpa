@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023, 2024
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -43,7 +43,10 @@ match::
 
     callback(pars, *statargs, **statkwargs)
 
-and return the statistic value to minimise.
+and return the statistic value to minimise along with the per-bin
+statistic values (note that per-bin here refers to the independent
+axis of the data being fit, and not the number of parameters being
+fit).
 
 Notes
 -----
@@ -98,7 +101,8 @@ depending on the optimiser:
 >>> print(f"Best-fit value: {res[1][0]}")
 Best-fit value: 4.0
 
-We can see that the model has been updated thanks to this:
+We can see that the model has been updated thanks to the use of
+``cb``, which sets the ``thawedpars`` attribute of ``mdl``:
 
 >>> print(mdl)
 const1d
@@ -109,13 +113,16 @@ const1d
 """
 
 import logging
+from typing import Any, Callable, Sequence
 
 import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit, \
     get_keyword_names, get_keyword_defaults, print_fields
-from sherpa.optmethods.optfcts import grid_search, lmdif, montecarlo, \
-    neldermead
+from sherpa.utils.types import ArrayType, OptReturn, StatFunc
+
+from .optfcts import grid_search, lmdif, montecarlo, neldermead
+
 
 warning = logging.getLogger(__name__).warning
 
@@ -135,29 +142,65 @@ class OptMethod(NoNewAttributesAfterInit):
        a function which evaluates the statistic given a list of parameter
        values, the starting parameters, minima, and maxima, followed
        by keyword arguments matching the configuration data.
+
+    Notes
+    -----
+
+    The optfunc argument is used to define the configuration
+    options: they are taken from the keyword arguments and used
+    to create the `default_config` dictionary which is then
+    used to create the user-editable `config` field.
+
+    The optfunc function must accept the positional arguments::
+
+        fcn:  Callable[[ArrayType, ...], tuple[float, np.ndarray]]
+        x0:   ArrayType
+        xmin: ArrayType
+        xmax: ArrayType
+
+        ArrayType = Sequence[float] | np.ndarray
+
+    and the remaining arguments are sent in as keyword arguments, and
+    so can specific to the optimization function. The x0, xmin, and
+    xmax values specify the starting values and their minimum and
+    maximum limits; they are intended to be sent in as 1D numeric
+    arrays.
+
+    The function returns the statistic value and per-bin statistic
+    values for the given values - which are the first argument it is
+    sent, and then it can take other arguments which are set by the
+    statargs and statkwargs arguments sent to the `fit` call.
+
     """
 
-    def __init__(self, name, optfunc):
+    def __init__(self,
+                 name: str,
+                 optfunc: Callable[..., OptReturn]
+                 ) -> None:
         self.name = name
         self._optfunc = optfunc
-        self.config = self.default_config
-        NoNewAttributesAfterInit.__init__(self)
+        self.config: dict[str, Any] = self.default_config
+        super().__init__()
 
-    def __getattr__(self, name):
+    # Allow direct access to the configuration options.
+    #
+    def __getattr__(self, name: str) -> Any:
         if name in self.__dict__.get('config', ()):
             return self.config[name]
         raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
-    def __setattr__(self, name, val):
+    def __setattr__(self, name: str, val: Any) -> None:
         if name in self.__dict__.get('config', ()):
             self.config[name] = val
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} optimization method instance '{self.name}'>"
 
     # Need to support users who have pickled sessions < CIAO 4.2
+    # TODO: can this be removed as CIAO 4.2 was a long time ago?
+    #
     def __setstate__(self, state):
         new_config = get_keyword_defaults(state.get('_optfunc'))
         old_config = state.get('config', {})
@@ -174,7 +217,7 @@ class OptMethod(NoNewAttributesAfterInit):
 
         self.__dict__.update(state)
 
-    def __str__(self):
+    def __str__(self) -> str:
         names = ['name']
         names.extend(get_keyword_names(self._optfunc))
         # names.remove('full_output')
@@ -186,14 +229,20 @@ class OptMethod(NoNewAttributesAfterInit):
         add_name_config.update(self.config)
         return print_fields(names, add_name_config)
 
-    def _get_default_config(self):
-        args = get_keyword_defaults(self._optfunc)
-        return args
+    def _get_default_config(self) -> dict[str, Any]:
+        return get_keyword_defaults(self._optfunc)
+
     default_config = property(_get_default_config,
                               doc='The default settings for the optimiser.')
 
-    def fit(self, statfunc, pars, parmins, parmaxes, statargs=(),
-            statkwargs=None):
+    def fit(self,
+            statfunc: StatFunc,
+            pars: ArrayType,
+            parmins: ArrayType,
+            parmaxes: ArrayType,
+            statargs: Sequence[Any] = (),
+            statkwargs: dict[str, Any] | None = None
+            ) -> OptReturn:
         """Run the optimiser.
 
         .. versionchanged:: 4.16.0
@@ -231,6 +280,9 @@ class OptMethod(NoNewAttributesAfterInit):
 
         """
 
+        # Mid 2024 we do not have any tests where either statargs or
+        # statkwargs are not empty.
+        #
         if statkwargs is None:
             statkwargs = {}
 
@@ -238,19 +290,16 @@ class OptMethod(NoNewAttributesAfterInit):
             return statfunc(pars, *statargs, **statkwargs)
 
         output = self._optfunc(cb, pars, parmins, parmaxes, **self.config)
-
-        success = output[0]
-        msg = output[3]
+        (success, pars, fval, msg, imsg) = output
         if not success:
             warning('fit failed: %s', msg)
 
-        # Ensure that the best-fit parameters are in an array.  (If there's
-        # only one, it might be returned as a bare float.)
-        output = list(output)
-        output[1] = np.asarray(output[1]).ravel()
-        output = tuple(output)
-
-        return output
+        # Ensure that the best-fit parameters are in an array.  (If
+        # there's only one, it might be returned as a bare float. This
+        # should be reviewed to check if it still happens).
+        #
+        npars = np.asarray(pars).ravel()
+        return (success, npars, fval, msg, imsg)
 
 
 # ## DOC-TODO: better description of the sequence argument; what happens
@@ -291,8 +340,8 @@ class GridSearch(OptMethod):
 
     """
 
-    def __init__(self, name='gridsearch'):
-        OptMethod.__init__(self, name, grid_search)
+    def __init__(self, name='gridsearch') -> None:
+        super().__init__(name=name, optfunc=grid_search)
 
 
 """
@@ -545,8 +594,8 @@ class LevMar(OptMethod):
            Springer-Verlag: Berlin, 1978, pp.105-116.
 
         """
-    def __init__(self, name='levmar'):
-        OptMethod.__init__(self, name, lmdif)
+    def __init__(self, name='levmar') -> None:
+        super().__init__(name=name, optfunc=lmdif)
 
 
 class MonCar(OptMethod):
@@ -610,8 +659,8 @@ class MonCar(OptMethod):
 
     """
 
-    def __init__(self, name='moncar'):
-        OptMethod.__init__(self, name, montecarlo)
+    def __init__(self, name='moncar') -> None:
+        super().__init__(name=name, optfunc=montecarlo)
 
 
 # ## DOC-TODO: finalximplex=4 and 5 list the same conditions, it is likely
@@ -814,8 +863,8 @@ class NelderMead(OptMethod):
            http://citeseer.ist.psu.edu/155516.html
 
     """
-    def __init__(self, name='simplex'):
-        OptMethod.__init__(self, name, neldermead)
+    def __init__(self, name='simplex') -> None:
+        super().__init__(name=name, optfunc=neldermead)
 
 
 ###############################################################################
