@@ -147,6 +147,12 @@ def random(rng: Optional[RandomType]) -> float:
     return rng.random()
 
 
+# The following routines do not add a type for the size parameter
+# because it would have to be something like
+#     int | Sequence[int] | ndarray
+# and it does not seem worth the complexity.
+#
+
 def uniform(rng: Optional[RandomType],
             low: float,
             high: float,

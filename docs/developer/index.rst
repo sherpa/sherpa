@@ -881,7 +881,7 @@ or either). The aim is to try and model the intention of the API
 without matching every single possible type that could be used. The
 typing rules are also currently **not** checked in the Continuous
 Integration runs, or required to be run as part of the review process
-of pul requests.
+of pull requests.
 
 .. _handling_nd:
 
