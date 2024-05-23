@@ -20,17 +20,8 @@ xspec_library_path=${xspec_root}/lib/
 xspec_include_path=${xspec_root}/include/
 
 case "${XSPECVER}" in
-  12.13.1*)
-      xspec_version_string="12.13.1"
-      ;;
-  12.13.0*)
-      xspec_version_string="12.13.0"
-      ;;
-  12.12.1*)
-      xspec_version_string="12.12.1"
-      ;;
-  12.12.0*)
-      xspec_version_string="12.12.0"
+  12.1*.* )
+      xspec_version_string="${XSPECVER:0:7}"
       ;;
   *)
       echo "Xspec version listed currently unsupported in GitHub Actions jobs."
