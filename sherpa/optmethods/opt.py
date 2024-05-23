@@ -162,9 +162,7 @@ class SimplexBase:
 
         def is_fct_stddev_small_enough():
             fval_std = np.std([col[-1] for col in self.simplex])
-            if fval_std < ftol:
-                return True
-            return False
+            return fval_std < ftol
 
         def is_max_length_small_enough():
             """
