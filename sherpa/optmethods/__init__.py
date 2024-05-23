@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -110,7 +110,7 @@ const1d
 
 import logging
 
-import numpy
+import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit, \
     get_keyword_names, get_keyword_defaults, print_fields
@@ -247,7 +247,7 @@ class OptMethod(NoNewAttributesAfterInit):
         # Ensure that the best-fit parameters are in an array.  (If there's
         # only one, it might be returned as a bare float.)
         output = list(output)
-        output[1] = numpy.asarray(output[1]).ravel()
+        output[1] = np.asarray(output[1]).ravel()
         output = tuple(output)
 
         return output
