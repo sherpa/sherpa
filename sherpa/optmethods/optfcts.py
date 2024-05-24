@@ -380,7 +380,7 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
                 raise TypeError(f"{seq} must be of length {npar}")
 
     answer = eval_stat_func(x)
-    sequence_results = list(parallel_map(eval_stat_func, sequence, numcores))
+    sequence_results = parallel_map(eval_stat_func, sequence, numcores)
     for xresult in sequence_results[1:]:
         if xresult[0] < answer[0]:
             answer = xresult
@@ -584,9 +584,10 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         ############################# NelderMead #############################
         mymaxfev = min(maxfev_per_iter, maxfev)
         if all(x == 0.0):
-            mystep = list(map(lambda fubar: 1.2 + fubar, x))
+            mystep = 1.2 + x
         else:
-            mystep = list(map(lambda fubar: 1.2 * fubar, x))
+            mystep = 1.2 * x
+
         if 1 == numcores:
             result = neldermead(myfcn, x, xmin, xmax, maxfev=mymaxfev,
                                 ftol=ftol, finalsimplex=9, step=mystep)
@@ -664,9 +665,10 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     if nfev < maxfev:
         if all(x == 0.0):
-            mystep = list(map(lambda fubar: 1.2 + fubar, x))
+            mystep = 1.2 + x
         else:
-            mystep = list(map(lambda fubar: 1.2 * fubar, x))
+            mystep = 1.2 * x
+
         if 1 == numcores:
             result = neldermead(fcn, x, xmin, xmax,
                                 maxfev=min(512*len(x), maxfev - nfev),
