@@ -1039,12 +1039,10 @@ def neldermead(fcn: StatCallback,
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
-    # TODO: x should be 1D so do we care about the ordering?
-    order = 'F' if np.isfortran(x) else 'C'
-    if step is None or (np.iterable(step) and len(step) != len(x)):
+    if step is None:
+        # TODO: x should be 1D so do we care about the ordering?
+        order = 'F' if np.isfortran(x) else 'C'
         step = 1.2 * np.ones(x.shape, dtype=np.float64, order=order)
-    elif np.isscalar(step):
-        step = step * np.ones(x.shape, dtype=np.float64, order=order)
 
     # A safeguard just in case the initial simplex is outside the bounds
     #
