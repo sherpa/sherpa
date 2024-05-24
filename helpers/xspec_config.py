@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014-2017, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2014 - 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -29,7 +29,8 @@ from .extensions import build_ext
 # "c" in "12.12.0c" as that is not helpful to track here.
 #
 SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1),
-                      (12, 13, 0), (12, 13, 1)]
+                      (12, 13, 0), (12, 13, 1),
+                      (12, 14, 0)]
 
 
 # We could use packaging.versions.Version here, but for our needs we

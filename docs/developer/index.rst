@@ -335,8 +335,8 @@ Update the XSPEC bindings?
 --------------------------
 
 The :py:mod:`sherpa.astro.xspec` module currently supports
-:term:`XSPEC` versions 12.13.1, 12.13.0, 12.12.1, and 12.12.0.  It may
-build against newer versions, but if it does it will not provide
+:term:`XSPEC` versions 12.14.0, 12.13.1, 12.13.0, 12.12.1, and 12.12.0.
+It may build against newer versions, but if it does it will not provide
 access to any new models in the release. The following sections of the
 `XSPEC manual
 <https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XspecManual.html>`__
@@ -797,7 +797,9 @@ available.
 	  https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodel<Name>.html
 
 	where ``<Name>`` is the capitalised version of the model name (e.g.
-	``Agnsed``).
+	``Agnsed``), although it only works for the "default" version of
+	a model name (e.g. ``Apec`` covers the ``vapec``, ``vvapec``,
+	``bapec``, ... variants)..
 
       * Models that are not in older versions of XSPEC should be marked with
 	the ``version_at_least`` decorator (giving it the minimum supported

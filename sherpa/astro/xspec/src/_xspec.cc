@@ -692,6 +692,19 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM(agnslim, 15),                 // XSagnslim
   XSPECMODELFCT_C_NORM(C_apec, 4),                 // XSapec
   XSPECMODELFCT_C_NORM(C_bapec, 5),                // XSbapec
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_bcempow, 8),              // XSbcempow
+  XSPECMODELFCT_C_NORM(C_bcheb6, 12),              // XSbcheb6
+  XSPECMODELFCT_C_NORM(C_bcie, 6),                 // XSbcie
+  XSPECMODELFCT_C_NORM(C_bcoolflow, 7),            // XSbcoolflow
+  XSPECMODELFCT_C_NORM(C_bcph, 6),                 // XSbcph
+  XSPECMODELFCT_C_NORM(C_bequil, 5),               // XSbequil
+  XSPECMODELFCT_C_NORM(C_bexpcheb6, 12),           // XSbexpcheb6
+  XSPECMODELFCT_C_NORM(C_bgaussDem, 8),            // XSbgadem
+  XSPECMODELFCT_C_NORM(C_bgnei, 7),                // XSbgnei
+  XSPECMODELFCT_C_NORM(C_bnei, 6),                 // XSbnei
+  XSPECMODELFCT_C_NORM(C_bsnapec, 8),              // XSbsnapec
+#endif
   XSPECMODELFCT_C_NORM(C_btapec, 6),               // XSbtapec
   XSPECMODELFCT_NORM(xsblbd, 2),                   // XSbbody
   XSPECMODELFCT_NORM(xsbbrd, 2),                   // XSbbodyrad
@@ -700,22 +713,71 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(C_brokenPowerLaw, 4),       // XSbknpower
   XSPECMODELFCT_C_NORM(C_broken2PowerLaw, 6),      // XSbkn2pow
   XSPECMODELFCT_NORM(xsbmc, 4),                    // XSbmc
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_bnpshock, 8),             // XSbnpshock
+  XSPECMODELFCT_C_NORM(C_bpshock, 7),              // XSbpshock
+#endif
   XSPECMODELFCT_NORM(xsbrms, 2),                   // XSbremss
   XSPECMODELFCT_C_NORM(C_brnei, 7),                // XSbrnei
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_bsedov, 7),               // XSbsedov
+#endif
   XSPECMODELFCT_C_NORM(C_bvapec, 17),              // XSbvapec
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_bvcempow, 21),            // XSbvcempow
+  XSPECMODELFCT_C_NORM(C_bvcheb6, 25),             // XSbvcheb6
+  XSPECMODELFCT_C_NORM(C_bvcie, 18),               // XSbvcie
+  XSPECMODELFCT_C_NORM(C_bvcoolflow, 20),          // XSbvcoolflow
+  XSPECMODELFCT_C_NORM(C_bvcph, 19),               // XSbvcph
+  XSPECMODELFCT_C_NORM(C_bvequil, 16),             // XSbvequil
+  XSPECMODELFCT_C_NORM(C_bvexpcheb6, 25),          // XSbvexpcheb6
+  XSPECMODELFCT_C_NORM(C_bvgaussDem, 21),          // XSbvgadem
+  XSPECMODELFCT_C_NORM(C_bvgnei, 19),              // XSbvgnei
+  XSPECMODELFCT_C_NORM(C_bvnei, 18),               // XSbvnei
+  XSPECMODELFCT_C_NORM(C_bvnpshock, 20),           // XSbvnpshock
+  XSPECMODELFCT_C_NORM(C_bvpshock, 19),            // XSbvpshock
+#endif
   XSPECMODELFCT_C_NORM(C_bvrnei, 19),              // XSbvrnei
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_bvsedov, 19),             // XSbvsedov
+#endif
   XSPECMODELFCT_C_NORM(C_bvtapec, 18),             // XSbvtapec
   XSPECMODELFCT_C_NORM(C_bvvapec, 34),             // XSbvvapec
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_bvvcie, 35),              // XSbvvcie
+  XSPECMODELFCT_C_NORM(C_bvvgaussDem, 37),         // XSbvvgadem
+  XSPECMODELFCT_C_NORM(C_bvvgnei, 36),             // XSbvvgnei
+  XSPECMODELFCT_C_NORM(C_bvvnei, 35),              // XSbvvnei
+  XSPECMODELFCT_C_NORM(C_bvvnpshock, 37),          // XSbvvnpshock
+  XSPECMODELFCT_C_NORM(C_bvvpshock, 36),           // XSbvvpshock
+#endif
   XSPECMODELFCT_C_NORM(C_bvvrnei, 36),             // XSbvvrnei
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_bvvsedov, 36),            // XSbvvsedov
+#endif
   XSPECMODELFCT_C_NORM(C_bvvtapec, 35),            // XSbvvtapec
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_bvvwDem, 38),             // XSbvvwdem
+  XSPECMODELFCT_C_NORM(C_bvwDem, 22),              // XSbvwdem
+  XSPECMODELFCT_C_NORM(C_bwDem, 9),                // XSbwdem
+#endif
   XSPECMODELFCT_C_NORM(C_c6mekl, 11),              // XSc6mekl
   XSPECMODELFCT_C_NORM(C_c6pmekl, 11),             // XSc6pmekl
   XSPECMODELFCT_C_NORM(C_c6pvmkl, 24),             // XSc6pvmkl
   XSPECMODELFCT_C_NORM(C_c6vmekl, 24),             // XSc6vmekl
   XSPECMODELFCT_C_NORM(C_carbatm, 4),              // XScarbatm
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_cemMekal, 7),             // XScemekl
+  XSPECMODELFCT_C_NORM(C_cempow, 7),               // XScempow
+#else
   XSPECMODELFCT_NORM(cemekl, 7),                   // XScemekl
+#endif
   XSPECMODELFCT_C_NORM(C_cemVMekal, 20),           // XScevmkl
   XSPECMODELFCT_C_NORM(C_xscflw, 6),               // XScflow
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_cheb6, 11),               // XScheb6
+  XSPECMODELFCT_C_NORM(C_cie, 5),                  // XScie
+#endif
   XSPECMODELFCT_NORM(compbb, 4),                   // XScompbb
   XSPECMODELFCT_C_NORM(xscompmag, 9),              // XScompmag
   XSPECMODELFCT_NORM(compls, 3),                   // XScompLS
@@ -724,6 +786,9 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(xscomptb, 7),               // XScomptb
   XSPECMODELFCT_C_NORM(C_xscompth, 21),            // XScompth
   XSPECMODELFCT_NORM(xstitg, 6),                   // XScompTT
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_coolflow, 6),             // XScoolflow
+#endif
   XSPECMODELFCT_C_NORM(C_cph, 5),                  // XScph
   XSPECMODELFCT_C_NORM(C_cplinear, 21),            // XScplinear
   XSPECMODELFCT_C_NORM(C_cutoffPowerLaw, 3),       // XScutoffpl
@@ -735,11 +800,17 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM(disko, 5),                    // XSdisko
   XSPECMODELFCT_NORM(diskpbb, 3),                  // XSdiskpbb
   XSPECMODELFCT_NORM(xsdiskpn, 3),                 // XSdiskpn
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_eebremss, 4),             // XSeebremss
+#endif
   XSPECMODELFCT_NORM(eplogpar, 3),                 // XSeplogpar
   XSPECMODELFCT_C_NORM(C_xseqpair, 21),            // XSeqpair
   XSPECMODELFCT_C_NORM(C_xseqth, 21),              // XSeqtherm
   XSPECMODELFCT_C_NORM(C_equil, 4),                // XSequil
   XSPECMODELFCT_NORM(xsxpdec, 2),                  // XSexpdec
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_expcheb6, 11),            // XSexpcheb6
+#endif
   XSPECMODELFCT_NORM(ezdiskbb, 2),                 // XSezdiskbb
   XSPECMODELFCT_C_NORM(C_gaussianLine, 3),         // XSgaussian
   XSPECMODELFCT_C_NORM(C_gaussDem, 7),             // XSgadem
@@ -801,7 +872,16 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(C_tapec, 5),                // XStapec
   XSPECMODELFCT_C_NORM(C_vapec, 16),               // XSvapec
   XSPECMODELFCT_NORM(xsbrmv, 3),                   // XSvbremss
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_vcempow, 20),             // XSvcempow
+  XSPECMODELFCT_C_NORM(C_vcheb6, 24),              // XSvcheb6
+  XSPECMODELFCT_C_NORM(C_vcie, 17),                // XSvcie
+  XSPECMODELFCT_C_NORM(C_vcoolflow, 19),           // XSvcoolflow
+#endif
   XSPECMODELFCT_C_NORM(C_vcph, 18),                // XSvcph
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_vexpcheb6, 24),           // XSvexpcheb6
+#endif
   XSPECMODELFCT_C_NORM(C_vequil, 15),              // XSvequil
   XSPECMODELFCT_C_NORM(C_vgaussDem, 20),           // XSvgadem
   XSPECMODELFCT_C_NORM(C_vgnei, 18),               // XSvgnei
@@ -817,6 +897,10 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(C_vsedov, 18),              // XSvsedov
   XSPECMODELFCT_C_NORM(C_vtapec, 17),              // XSvtapec
   XSPECMODELFCT_C_NORM(C_vvapec, 33),              // XSvvapec
+#ifdef XSPEC_12_14_0
+  XSPECMODELFCT_C_NORM(C_vvcie, 34),               // XSvvcie
+  XSPECMODELFCT_C_NORM(C_vvgaussDem, 36),          // XSvvgadem
+#endif
   XSPECMODELFCT_C_NORM(C_vvgnei, 35),              // XSvvgnei
   XSPECMODELFCT_C_NORM(C_vvnei, 34),               // XSvvnei
   XSPECMODELFCT_C_NORM(C_vvnpshock, 36),           // XSvvnpshock

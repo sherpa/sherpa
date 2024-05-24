@@ -20,9 +20,10 @@
 
 """Support for XSPEC models.
 
-Sherpa supports versions 12.13.1, 12.13.0, 12.12.1, and 12.12.0 of XSPEC [1]_,
-and can be built against the model library or the full application.
-There is no guarantee of support for older or newer versions of XSPEC.
+Sherpa supports versions 12.14.0, 12.13.1, 12.13.0, 12.12.1, and
+12.12.0 of XSPEC [1]_, and can be built against the model library or
+the full application.  There is no guarantee of support for older or
+newer versions of XSPEC.
 
 To be able to use most routines from this module, the HEADAS environment
 variable must be set. The `get_xsversion` function can be used to return the
@@ -30,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.13.0'
+   '12.14.0b'
 
 Initializing XSPEC
 ------------------
@@ -55,9 +56,18 @@ Supported models
 ----------------
 
 The additive [2]_, multiplicative [3]_, and convolution [4]_ models
-from the XSPEC model library are supported, except for the `smaug`
-model [5]_, since it requires use of information from the XFLT keywords
-in the data file).
+from the XSPEC model library are supported, except for the `polconst`,
+`pollin`, `polpow`, and `smaug` models [5]_, since they need
+information obtained from the XFLT keywords in the PHA file.
+
+XSPEC version
+-------------
+
+The intention is to keep the model parameters up to date with the
+highest-supported version of XSPEC. However, there is no way to
+know from the XSPEC API [6]_ whether these parameter values will
+work correctly with the installed XSPEC version, such as when using
+an older version of XSPEC.
 
 Parameter values
 ----------------
@@ -87,6 +97,8 @@ References
 
 .. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
 
+.. [6] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
+
 """
 
 
@@ -108,7 +120,7 @@ from sherpa.utils.numeric_types import SherpaFloat
 # Note that utils also imports _xspec so it will error out if it is
 # not available.
 #
-from .utils import ModelMeta, version_at_least
+from .utils import ModelMeta, version_at_least, equal_or_greater_than
 from . import _xspec  # type: ignore
 
 
@@ -1408,8 +1420,7 @@ class XSTableModel(XSModel):
             # XSParameter rather than Parameter so we can change the
             # hard limits if needed.
             #
-            self.redshift = XSParameter(name, 'redshift', 0., 0., 5.,
-                                        0.0, 5, frozen=True)
+            self.redshift = mkRedshift(name, minval=0, maxval=5, lc=True)
             pars.append(self.redshift)
 
         if addmodel:
@@ -1450,6 +1461,58 @@ def mknorm(name: str, **kwargs) -> Parameter:
 
     return Parameter(name, 'norm', 1.0, min=0.0, max=1.0e24,
                      hard_min=0.0, hard_max=hugeval, **kwargs)
+
+
+def mkswitch(name: str,
+             default: int = 2,
+             maxval: int = 3) -> XSParameter:
+    """Make a switch parameter.
+
+    This is for the common case for values between 0 and 3 inclusive.
+    """
+
+    return XSParameter(name, 'switch', default, 0, maxval,
+                       hard_min=0, hard_max=maxval, alwaysfrozen=True)
+
+
+def mkVelocity(name: str) -> XSParameter:
+    """Make a Velocity parameter."""
+
+    return XSParameter(name, 'Velocity', 0., 0., 1e4, hard_min=0.0,
+                       hard_max=1e4, units='km/s', frozen=True)
+
+
+def mkRedshift(name: str,
+               default: float = 0,
+               minval: float = -0.999,
+               maxval: float = 10,
+               lc: bool = False) -> XSParameter:
+    """Make a Redshift parameter."""
+
+    pname = "redshift" if lc else "Redshift"
+    return XSParameter(name, pname, default, minval, maxval,
+                       hard_min=minval, hard_max=maxval, frozen=True)
+
+
+
+def mkAbundanc(name: str,
+               maxval: float = 5,
+               frozen: bool = True,
+               lc: bool = False) -> XSParameter:
+    """Make an Abundanc parameter."""
+
+    pname = "abundanc" if lc else "Abundanc"
+    return XSParameter(name, pname, 1, 0, maxval, hard_min=0,
+                       hard_max=maxval, frozen=frozen)
+
+
+def mkabund(name: str,
+            minval: float = 0,
+            maxval: float = 1e6) -> XSParameter:
+    """Make an abund parameter."""
+
+    return XSParameter(name, "abund", 1, minval, maxval,
+                       hard_min=minval, hard_max=maxval, frozen=True)
 
 
 class XSAdditiveModel(XSModel):
@@ -1884,8 +1947,7 @@ class XSagnsed(XSAdditiveModel):
         self.reprocess = XSParameter(name, 'reprocess', 1, 0, 1, 0, 1,
                                      '0off/1on', alwaysfrozen=True)
 
-        self.redshift = XSParameter(name, 'redshift', 0, 0, 1, 0, 1,
-                                    frozen=True)
+        self.redshift = mkRedshift(name, default=0, minval=0, maxval=1, lc=True)
 
         pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
                 self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
@@ -1988,8 +2050,7 @@ class XSagnslim(XSAdditiveModel):
         self.rin = XSParameter(name, 'rin', -1, -1, 100, -1, 100,
                                frozen=True)  # TODO: make alwaysfrozen?
 
-        self.redshift = XSParameter(name, 'redshift', 0, 0, 5, 0, 5,
-                                    frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=5, lc=True)
 
         pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
                 self.kTe_hot, self.kTe_warm, self.Gamma_hot, self.Gamma_warm,
@@ -2016,7 +2077,7 @@ class XSapec(XSAdditiveModel):
         The metal abundance of the plasma, as defined by the
         ``set_xsabund`` function and the "APEC_TRACE_ABUND" xset
         keyword.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -2024,7 +2085,8 @@ class XSapec(XSAdditiveModel):
 
     See Also
     --------
-    XSbapec, XSbvapec, XSbvvapec, XSnlapec, XSsnapec, XSvapec, XSvvapec, XSwdem
+    XSbapec, XSbvapec, XSbvvapec, XSeebremss, XSnlapec, XSsnapec,
+    XSvapec, XSvvapec, XSwdem
 
     References
     ----------
@@ -2036,10 +2098,11 @@ class XSapec(XSAdditiveModel):
 
     def __init__(self, name='apec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64.0, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
 
-        XSAdditiveModel.__init__(self, name, (self.kT, self.Abundanc, self.redshift))
+        pars = (self.kT, self.Abundanc, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSbapec(XSAdditiveModel):
@@ -2086,11 +2149,652 @@ class XSbapec(XSAdditiveModel):
 
     def __init__(self, name='bapec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1e4, 0.0, 1e4, units='km/s', frozen=True)
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.Abundanc, self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbcempow(XSAdditiveModel):
+    """The XSPEC bcempow model: plasma emission, multi-temperature using a power-law emission measure
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    alpha
+        The power-law index of the emissivity function.
+    Tmax
+        The maximum temperature, in keV.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbvcempow, XScempow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCempow.html
+
+    """
+
+    __function__ = "C_bcempow"
+
+    def __init__(self, name='bcempow'):
+        self.alpha = XSParameter(name, 'alpha', 1.0, 0.01, 10, 0.01, 20, frozen=True)
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.02725, 1.e2, 0.02725, 1e2, units='keV')
+        self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.alpha, self.Tmax, self.nH, self.abundanc,
+                self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbcheb6(XSAdditiveModel):
+    """The XSPEC bcheb6 model: differential emission measure using 6-order Chebyshev polynomial.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbexpcheb6, XSbvcheb6, XScheb6
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCheb6.html
+
+    """
+
+    __function__ = "C_bcheb6"
+
+    def __init__(self, name='bcheb6'):
+        self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, -1, 1, -1, 1)
+        self.CPcoef2 = XSParameter(name, 'CPcoef2', 0.5, -1, 1, -1, 1)
+        self.CPcoef3 = XSParameter(name, 'CPcoef3', 0.5, -1, 1, -1, 1)
+        self.CPcoef4 = XSParameter(name, 'CPcoef4', 0.5, -1, 1, -1, 1)
+        self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, -1, 1, -1, 1)
+        self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, -1, 1, -1, 1)
+        self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
+                self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
+                self.abundanc, self.Redshift, self.Velocity,
+                self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbcie(XSAdditiveModel):
+    """The XSPEC bcie model: Emission spectrum from a plasma in Collisional-ionization equilibrium.
+
+    The model is described at [1]_. Note that ``set_xsxset`` should be
+    used to change the XSET settings.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    kT
+        The plasma temperature in keV.
+    Abundanc
+        The metal abundances (He fixed at that defined by the
+        ``set_xsabund`` command). The elements included are C, N, O,
+        Ne, Mg, Al, Si, S, Ar, Ca, Fe, and Ni. Relative abundances are
+        set by ``set_xsabund``). The trace element abundaces are
+        controlled by the "APEC_TRACE_ABUND" setting and default to
+        1.0.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model. See [1]_ for more details.
+
+    See Also
+    --------
+    XScie, XSbvcie, XSbvvcie
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCie.html
+
+    """
+
+    __function__ = "C_bcie"
+
+    def __init__(self, name='bcie'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.kT, self.Abundanc, self.Redshift, self.Velocity,
+                self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbcoolflow(XSAdditiveModel):
+    """The XSPEC bcoolflow model: cooling flow, mekal.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    lowT
+        The low temperature in keV.
+    highT
+        The high temperature in keV.
+    Abundanc
+        Abundance relative to solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XSbcph, XSbvcoolflow, XScoolflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCoolflow.html
+
+    """
+
+    __function__ = "C_bcoolflow"
+
+    def __init__(self, name='bcoolflow'):
+        self.lowT = XSParameter(name, 'lowT', 0.1, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.highT = XSParameter(name, 'highT', 4.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.Abundanc = mkAbundanc(name, frozen=False)
+        self.Redshift = mkRedshift(name, default=0.1)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.lowT, self.highT, self.Abundanc, self.Redshift,
+                self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbcph(XSAdditiveModel):
+    """The XSPEC bcph model: Cooling + heating model for cool core clusters.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    peakT
+        The peak temperature in keV.
+    Abund
+        Abundance relative to solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XScph, XSbcoolflow, XSbvcph
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCph.html
+
+    """
+
+    __function__ = "C_bcph"
+
+    def __init__(self, name='bcph'):
+        self.peakT = XSParameter(name, 'peakT', 2.2, min=0.1, max=100.0, hard_min=0.1, hard_max=100.0, units='keV')
+        self.Abund = XSParameter(name, 'Abund', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.peakT, self.Abund, self.Redshift, self.Velocity,
+                self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbequil(XSAdditiveModel):
+    """The XSPEC bequil model: collisional plasma, ionization equilibrium,
+
+    The model is described at [1]_. Use the ``set_xsxset`` function
+    to change the "NEIVERS" setting.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    kT
+        The temperature in keV.
+    Abundanc
+        The metal abundances (He fixed at that defined by the
+        ``set_xsabund`` command). The elements included are C, N, O,
+        Ne, Mg, Al, Si, S, Ar, Ca, Fe, and Ni. Relative abundances are
+        set by ``set_xsabund``).
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbvequil, XSequil
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEquil.html
+
+    """
+
+    __function__ = "C_bequil"
+
+    def __init__(self, name='bequil'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.Abundanc, self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbexpcheb6(XSAdditiveModel):
+    """The XSPEC bexpcheb6 model: differential emission measure using exponential of a 6-order Chebyshev polynomial.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcheb6, XSbvexpcheb6, XSexpcheb6
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpcheb6.html
+
+    """
+
+    __function__ = "C_bexpcheb6"
+
+    def __init__(self, name='bexpcheb6'):
+        self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef2 = XSParameter(name, 'CPcoef2', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef3 = XSParameter(name, 'CPcoef3', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef4 = XSParameter(name, 'CPcoef4', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
+                self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
+                self.abundanc, self.Redshift, self.Velocity,
+                self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbgadem(XSAdditiveModel):
+    """The XSPEC bgadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. See the ``XSapec`` documentation for settings
+    relevant to the APEC model (i.e. when ``switch=2``).
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    Tmean
+        The mean temperature for the gaussian emission measure
+        distribution, in keV.
+    Tsigma
+        The sigma of the temperature distribution for the gaussian
+        emission measure, in keV.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbvgadem, XSbvvgadem, XSgadem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGadem.html
+
+    """
+
+    __function__ = "C_bgaussDem"
+
+    def __init__(self, name='bgadem'):
+        self.Tmean = XSParameter(name, 'Tmean', 4.0, 0.01, 10, 0.01, 20, units='keV', frozen=True)
+        self.Tsigma = XSParameter(name, 'Tsigma', 0.1, 0.01, 1.e2, 0.01, 1e2, units='keV')
+        self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.Tmean, self.Tsigma, self.nH, self.abundanc,
+                self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+
+@version_at_least("12.14.0")
+class XSbgnei(XSAdditiveModel):
+    """The XSPEC bgnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundances (He fixed at that defined by the
+        ``set_xsabund`` command). The elements included are C, N, O,
+        Ne, Mg, Al, Si, S, Ar, Ca, Fe, and Ni. Relative abundances are
+        set by ``set_xsabund``).
+    Tau
+        The ionization timescale in units of s/cm^3.
+    meankT
+        The ionization timescale averaged plasma temperature in keV.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbvgnei, XSbvvgnei, XSgnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
+
+    __function__ = "C_bgnei"
+
+    def __init__(self, name='bgnei'):
+        self.kT = XSParameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
+        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
+        self.meankT = XSParameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV', aliases=["kT_ave"])
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.Abundanc, self.Tau, self.meankT,
+                self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbnei(XSAdditiveModel):
+    """The XSPEC bnei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundances (He fixed at that defined by the
+        ``set_xsabund`` command). The elements included are C, N, O,
+        Ne, Mg, Al, Si, S, Ar, Ca, Fe, and Ni. Relative abundances are
+        set by ``set_xsabund``).
+    Tau
+        The ionization timescale in units of s/cm^3.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbvnei, XSbvvnei, XSnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
+
+    __function__ = "C_bnei"
+
+    def __init__(self, name='bnei'):
+        self.kT = XSParameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
+        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.Abundanc, self.Tau, self.Redshift,
+                self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbsnapec(XSAdditiveModel):
+    """The XSPEC snapec model: galaxy cluster spectrum using SN yields.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters to control
+    the APEC model.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    N_SNe
+        The number of SNe (in units of 10^9).
+    R
+        The percentage of SNIa.
+    SNIModelIndex
+        SNIa yield model: see [1]_ for more details.
+    SNIIModelIndex
+        SNII yield model: see [1]_ for more details.
+    redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbsnapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSnapec.html
+
+    """
+
+    __function__ = "C_bsnapec"
+
+    def __init__(self, name='bsnapec'):
+        self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64.0, units='keV')
+        self.N_SNe = XSParameter(name, 'N_SNe', 1., 0.0, 1e20, 0, 1e20, units='10^9')
+        # QUS: if this is a percentage, why is the maximum not 100?
+        self.R = XSParameter(name, 'R', 1., 0.0, 1e20, 0, 1e20)
+        self.SNIModelIndex = XSParameter(name, 'SNIModelIndex', 1.,
+                                         0.0, 125, 0, 125, alwaysfrozen=True)
+        self.SNIIModelIndex = XSParameter(name, 'SNIIModelIndex', 1.,
+                                          0.0, 125, 0, 125, alwaysfrozen=True)
+        self.redshift = XSParameter(name, 'redshift', 0., 0.0, 10., 0.0, 10.0,
+                                    frozen=True)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.N_SNe, self.R, self.SNIModelIndex,
+                self.SNIIModelIndex, self.redshift, self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -2141,9 +2845,9 @@ class XSbtapec(XSAdditiveModel):
     def __init__(self, name='btapec'):
         self.kT = XSParameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, 'km/s', frozen=True)
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kTi, self.Abundanc, self.Redshift, self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
@@ -2241,7 +2945,7 @@ class XSbexrav(XSAdditiveModel):
     Fe_abund
         The iron abundance relative to the solar abundance, as set by
         the ``set_xsabund`` function.
-    redshift
+    Redshift
         The redshift of the source.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -2274,13 +2978,13 @@ class XSbexrav(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 10., 0.0, 10)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.Gamma1, self.breakE, self.Gamma2, self.foldE,
                 self.rel_refl, self.cosIncl, self.abund, self.Fe_abund,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
     def guess(self, dep, *args, **kwargs):
@@ -2307,7 +3011,7 @@ class XSbexriv(XSAdditiveModel):
     rel_refl
         The reflection scaling parameter (a value of 1 for an
         isotropic source above the disk).
-    redshift
+    Redshift
         The redshift of the source.
     abund
         The abundance of the elements heavier than He relative to their
@@ -2351,15 +3055,15 @@ class XSbexriv(XSAdditiveModel):
         self.Gamma2 = XSParameter(name, 'Gamma2', 2., -9., 9., -10, 10)
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0.0, 1e6)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
         self.T_disk = XSParameter(name, 'T_disk', 3.e4, 1.e4, 1.e6, 1e4, 1e6, units='K', frozen=True)
         self.xi = XSParameter(name, 'xi', 1., 0., 1.e3, 0.0, 5e3, units='erg cm/s')
 
         pars = (self.Gamma1, self.breakE, self.Gamma2, self.foldE,
-                self.rel_refl, self.redshift, self.abund, self.Fe_abund,
+                self.rel_refl, self.Redshift, self.abund, self.Fe_abund,
                 self.cosIncl, self.T_disk, self.xi)
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -2509,6 +3213,123 @@ class XSbmc(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.14.0")
+class XSbnpshock(XSAdditiveModel):
+    """The XSPEC bnpshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    Abundanc
+        The metal abundance, as defined by the
+        ``set_xsabund`` function.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    Redshift
+        The redshift of the source.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbvnpshock, XSbvvnpshock, XSnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
+
+    __function__ = "C_bnpshock"
+
+    def __init__(self, name='bnpshock'):
+        self.kT_a = XSParameter(name, 'kT_a', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
+        self.kT_b = XSParameter(name, 'kT_b', 0.5, 0.0100, 79.9, 0.0100, 79.9, units='keV')
+        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
+        self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
+        self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT_a, self.kT_b, self.Abundanc, self.Tau_l,
+                self.Tau_u, self.redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbpshock(XSAdditiveModel):
+    """The XSPEC bpshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbvpshock, XSbvvpshock, XSpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
+
+    __function__ = "C_bpshock"
+
+    def __init__(self, name='bpshock'):
+        self.kT = XSParameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
+        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
+        self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
+        self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.Abundanc, self.Tau_l, self.Tau_u,
+                self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSbremss(XSAdditiveModel):
     """The XSPEC bremss model: thermal bremsstrahlung.
 
@@ -2589,11 +3410,68 @@ class XSbrnei(XSAdditiveModel):
         self.kT_init = XSParameter(name, 'kT_init', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.Redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4,
-                                    units='km/s', frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kT_init, self.Abundanc, self.Tau,
+                self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbsedov(XSAdditiveModel):
+    """The XSPEC bsedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    Abundanc
+        The metal abundance of the plasma, as defined by the
+        ``set_xsabund`` function.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbvsedov, XSbvvsedov, XSsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
+
+    __function__ = "C_bsedov"
+
+    def __init__(self, name='bsedov'):
+        self.kT_a = XSParameter(name, 'kT_a', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
+        self.kT_b = XSParameter(name, 'kT_b', 0.5, 0.0100, 79.9, 0.0100, 79.9, units='keV')
+        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT_a, self.kT_b, self.Abundanc, self.Tau,
                 self.Redshift, self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -2650,12 +3528,872 @@ class XSbvapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1e4, units='km/s', frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe,
                 self.Ni, self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvcempow(XSAdditiveModel):
+    """The XSPEC bvcempow model: plasma emission, multi-temperature using a power-law emission measure.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    alpha
+        The power-law index of the emissivity function.
+    Tmax
+        The maximum temperature, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcempow, XSvcempow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCempow.html
+
+    """
+
+    __function__ = "C_bvcempow"
+
+    def __init__(self, name='bvcempow'):
+        self.alpha = XSParameter(name, 'alpha', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, frozen=True)
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.02725, max=100.0, hard_min=0.02725, hard_max=100.0, units='keV')
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.alpha, self.Tmax, self.nH, self.He, self.C,
+                self.N, self.O, self.Ne, self.Na, self.Mg, self.Al,
+                self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvcheb6(XSAdditiveModel):
+    """The XSPEC bvcheb6 model: differential emission measure using 6-order Chebyshev polynomial.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcheb6, XSvcheb6
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCheb6.html
+
+    """
+
+    __function__ = "C_bvcheb6"
+
+    def __init__(self, name='bvcheb6'):
+        self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef2 = XSParameter(name, 'CPcoef2', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef3 = XSParameter(name, 'CPcoef3', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef4 = XSParameter(name, 'CPcoef4', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
+                self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
+                self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Redshift, self.Velocity,
+                self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvcie(XSAdditiveModel):
+    """The XSPEC bvcie model: Emission spectrum from a plasma in Collisional-ionization equilibrium.
+
+    The model is described at [1]_. Note that ``set_xsxset`` should be
+    used to change the XSET settings.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    kT
+        The plasma temperature in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.  The trace element abundaces
+        are controlled by the "APEC_TRACE_ABUND" setting and default
+        to 1.0.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model. See [1]_ for more details.
+
+    See Also
+    --------
+    XSbcie, XSbvvcie, XSvcie
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCie.html
+
+    """
+
+    __function__ = "C_bvcie"
+
+    def __init__(self, name='bvcie'):
+        self.kT = XSParameter(name, 'kT', 6.5, min=0.0808, max=68.447, hard_min=0.0808, hard_max=68.447, units='keV')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
+                self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca, self.Fe,
+                self.Ni, self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvcoolflow(XSAdditiveModel):
+    """The XSPEC bvcoolflow model: cooling flow, mekal.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    lowT
+        The low temperature in keV.
+    highT
+        The high temperature in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XSbcoolflow, XSbcph, XSvcoolflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCoolflow.html
+
+    """
+
+    __function__ = "C_bvcoolflow"
+
+    def __init__(self, name='bvcoolflow'):
+        self.lowT = XSParameter(name, 'lowT', 0.1, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.highT = XSParameter(name, 'highT', 4.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.lowT, self.highT, self.He, self.C, self.N,
+                self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si,
+                self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvcph(XSAdditiveModel):
+    """The XSPEC bvcph model: Cooling + heating model for cool core clusters.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    peakT
+        The peak temperature in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The mass accretion rate (solar mass per year).
+
+    See Also
+    --------
+    XSbcph, XSvcph
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCph.html
+
+    """
+
+    __function__ = "C_bvcph"
+
+    def __init__(self, name='bvcph'):
+        self.peakT = XSParameter(name, 'peakT', 2.2, min=0.1, max=100.0, hard_min=0.1, hard_max=100.0, units='keV')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=0.0, max=50.0, hard_min=0.0, hard_max=50.0, frozen=True)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.peakT, self.He, self.C, self.N, self.O, self.Ne,
+                self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar,
+                self.Ca, self.Fe, self.Ni, self.Redshift,
+                self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvequil(XSAdditiveModel):
+    """The XSPEC bvequil model: collisional plasma, ionization equilibrium,
+
+    The model is described at [1]_. Use the ``set_xsxset`` function
+    to change the "NEIVERS" setting.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    kT
+        The temperature in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbequil, XSvequil
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEquil.html
+
+    """
+
+    __function__ = "C_bvequil"
+
+    def __init__(self, name='bvequil'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
+                self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe,
+                self.Ni, self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvexpcheb6(XSAdditiveModel):
+    """The XSPEC bvexpcheb6 model: differential emission measure using exponential of a 6-order Chebyshev polynomial.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcheb6, XSbexpcheb6, XSvexpcheb6
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpcheb6.html
+
+    """
+
+    __function__ = "C_bvexpcheb6"
+
+    def __init__(self, name='bvexpcheb6'):
+        self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef2 = XSParameter(name, 'CPcoef2', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef3 = XSParameter(name, 'CPcoef3', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef4 = XSParameter(name, 'CPcoef4', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
+                self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
+                self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Redshift, self.Velocity,
+                self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvgadem(XSAdditiveModel):
+    """The XSPEC bvgadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. See the ``XSapec`` documentation for settings
+    relevant to the APEC model (i.e. when ``switch=2``).
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    Tmean
+        The mean temperature for the gaussian emission measure
+        distribution, in keV.
+    Tsigma
+        The sigma of the temperature distribution for the gaussian
+        emission measure, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbgadem, XSbvvgadem, XSvgadem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGadem.html
+
+    """
+
+    __function__ = "C_bvgaussDem"
+
+    def __init__(self, name='bvgadem'):
+        self.Tmean = XSParameter(name, 'Tmean', 4.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, frozen=True, units='keV')
+        self.Tsigma = XSParameter(name, 'Tsigma', 0.1, min=0.01, max=100.0, hard_min=0.01, hard_max=100.0, units='keV')
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.Tmean, self.Tsigma, self.nH, self.He, self.C,
+                self.N, self.O, self.Ne, self.Na, self.Mg, self.Al,
+                self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvgnei(XSAdditiveModel):
+    """The XSPEC bvgnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    meankT
+        The ionization timescale averaged plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbgnei, XSbvvgnei, XSvgnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
+
+    __function__ = "C_bvgnei"
+
+    def __init__(self, name='bvgnei'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1.0, hard_min=0.0, hard_max=1.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.meankT = XSParameter(name, 'meankT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
+                self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Tau, self.meankT,
+                self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvnei(XSAdditiveModel):
+    """The XSPEC bvnei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbnei, XSbvvnnei, XSvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
+
+    __function__ = "C_bvnei"
+
+    def __init__(self, name='bvnei'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1.0, hard_min=0.0, hard_max=1.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
+                self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Tau, self.Redshift,
+                self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvnpshock(XSAdditiveModel):
+    """The XSPEC bvnpshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        H abundance (set to 0 for no free-free continuum, otherwise
+        1).
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    redshift
+        The redshift of the source.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbnpshock, XSbvvnpshock, XSvnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
+
+    __function__ = "C_bvnpshock"
+
+    def __init__(self, name='bvnpshock'):
+        self.kT_a = XSParameter(name, 'kT_a', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.kT_b = XSParameter(name, 'kT_b', 0.5, min=0.01, max=79.9, hard_min=0.01, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1.0, hard_min=0.0, hard_max=1.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Tau_l = XSParameter(name, 'Tau_l', 0.0, min=0.0, max=50000000000000.0, hard_min=0.0, hard_max=50000000000000.0, frozen=True, units='s/cm^3')
+        self.Tau_u = XSParameter(name, 'Tau_u', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT_a, self.kT_b, self.H, self.He, self.C, self.N,
+                self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar,
+                self.Ca, self.Fe, self.Ni, self.Tau_l, self.Tau_u,
+                self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvpshock(XSAdditiveModel):
+    """The XSPEC bvpshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        H abundance (set to 0 for no free-free continuum, otherwise
+        1).
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbpshock, XSbvvpshock, XSvpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
+
+    __function__ = "C_bvpshock"
+
+    def __init__(self, name='bvpshock'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1.0, hard_min=0.0, hard_max=1.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Tau_l = XSParameter(name, 'Tau_l', 0.0, min=0.0, max=50000000000000.0, hard_min=0.0, hard_max=50000000000000.0, frozen=True, units='s/cm^3')
+        self.Tau_u = XSParameter(name, 'Tau_u', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
+                self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Tau_l, self.Tau_u,
+                self.Redshift, self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -2718,13 +4456,86 @@ class XSbvrnei(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 10000., frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 10000., frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10., frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1.e4, 'km/s', frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.C,
                 self.N, self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar,
                 self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift,
                 self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvsedov(XSAdditiveModel):
+    """The XSPEC bvsedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        H abundance (set to 0 for no free-free continuum, otherwise
+        1).
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbsedov, XSbvvsedov, XSvsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
+
+    __function__ = "C_bvsedov"
+
+    def __init__(self, name='bvsedov'):
+        self.kT_a = XSParameter(name, 'kT_a', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.kT_b = XSParameter(name, 'kT_b', 0.5, min=0.01, max=79.9, hard_min=0.01, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1.0, hard_min=0.0, hard_max=1.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=10000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT_a, self.kT_b, self.H, self.He, self.C, self.N,
+                self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Tau, self.Redshift, self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -2790,8 +4601,8 @@ class XSbvtapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s', frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kTi, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Al, self.Si,
@@ -2871,14 +4682,568 @@ class XSbvvapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1e4, units='km/s', frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na, self.Mg,
                 self.Al, self.Si, self.P, self.S, self.Cl, self.Ar, self.K,
                 self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe,
                 self.Co, self.Ni, self.Cu, self.Zn, self.Redshift,
+                self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvvcie(XSAdditiveModel):
+    """The XSPEC bvvcie model: Emission spectrum from a plasma in Collisional-ionization equilibrium.
+
+    The model is described at [1]_. Note that ``set_xsxset`` should be
+    used to change the XSET settings.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    kT
+        The plasma temperature in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S
+        The abundance of the element in solar units.
+    Cl, Ar, K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model. See [1]_ for more details.
+
+    See Also
+    --------
+    XSbcie, XSbvcie, XSvvcie
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCie.html
+
+    """
+
+    __function__ = "C_bvvcie"
+
+    def __init__(self, name='bvvcie'):
+        self.kT = XSParameter(name, 'kT', 6.5, min=0.0808, max=68.447, hard_min=0.0808, hard_max=68.447, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
+                self.C, self.N, self.O, self.F, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
+                self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
+                self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
+                self.Zn, self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvvgadem(XSAdditiveModel):
+    """The XSPEC bvvgadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. See the ``XSapec`` documentation for settings
+    relevant to the APEC model (i.e. when ``switch=2``).
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    Tmean
+        The mean temperature for the gaussian emission measure
+        distribution, in keV.
+    Tsigma
+        The sigma of the temperature distribution for the gaussian
+        emission measure, in keV.
+    nH
+        H density, in cm^-3.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbgadem, XSbvgadem, XSvvgadem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGadem.html
+
+    """
+
+    __function__ = "C_bvvgaussDem"
+
+    def __init__(self, name='bvvgadem'):
+        self.Tmean = XSParameter(name, 'Tmean', 4.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, frozen=True, units='keV')
+        self.Tsigma = XSParameter(name, 'Tsigma', 0.1, min=0.01, max=100.0, hard_min=0.01, hard_max=100.0, units='keV')
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.Tmean, self.Tsigma, self.nH, self.H, self.He,
+                self.Li, self.Be, self.B, self.C, self.N, self.O, self.F,
+                self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P, self.S,
+                self.Cl, self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
+                self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn,
+                self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvvgnei(XSAdditiveModel):
+    """The XSPEC bvvgnei model: collisional plasma, non-equilibrium, temperature evolution.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    meankT
+        The ionization timescale averaged plasma temperature in keV.
+    redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbgnei, XSbvgnei, XSvvgnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGnei.html
+
+    """
+
+    __function__ = "C_bvvgnei"
+
+    def __init__(self, name='bvvgnei'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.meankT = XSParameter(name, 'meankT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
+                self.C, self.N, self.O, self.F, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
+                self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
+                self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
+                self.Zn, self.Tau, self.meankT, self.Redshift,
+                self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvvnei(XSAdditiveModel):
+    """The XSPEC bvvnei model: collisional plasma, non-equilibrium, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s).
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbnei, XSbvnnei, XSvvnei
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNei.html
+
+    """
+
+    __function__ = "C_bvvnei"
+
+    def __init__(self, name='bvvnei'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
+                self.C, self.N, self.O, self.F, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
+                self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
+                self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
+                self.Zn, self.Tau, self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvvnpshock(XSAdditiveModel):
+    """The XSPEC bvvnpshock model: shocked plasma, plane parallel, separate ion, electron temperatures.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        H abundance (set to 0 for no free-free continuum, otherwise
+        1).
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Tau_l
+        The lower limit on the ionization timescale in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale in s/cm^3.
+    redshift
+        The redshift of the source.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbnpshock, XSbvnpshock, XSvvnpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelNpshock.html
+
+    """
+
+    __function__ = "C_bvvnpshock"
+
+    def __init__(self, name='bvvnpshock'):
+        self.kT_a = XSParameter(name, 'kT_a', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.kT_b = XSParameter(name, 'kT_b', 0.5, min=0.01, max=79.9, hard_min=0.01, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Tau_l = XSParameter(name, 'Tau_l', 0.0, min=0.0, max=50000000000000.0, hard_min=0.0, hard_max=50000000000000.0, frozen=True, units='s/cm^3')
+        self.Tau_u = XSParameter(name, 'Tau_u', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT_a, self.kT_b, self.H, self.He, self.Li,
+                self.Be, self.B, self.C, self.N, self.O, self.F,
+                self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P,
+                self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc,
+                self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co,
+                self.Ni, self.Cu, self.Zn, self.Tau_l, self.Tau_u,
+                self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvvpshock(XSAdditiveModel):
+    """The XSPEC bvvpshock model: plane-parallel shocked plasma, constant temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT
+        The temperature of the plasma, in keV.
+    H
+        H abundance (set to 0 for no free-free continuum, otherwise
+        1).
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Tau_l
+        The lower limit on the ionization timescale, in s/cm^3.
+    Tau_u
+        The upper limit on the ionization timescale, in s/cm^3.
+    redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbpshock, XSbvpshock, XSvvpshock
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPshock.html
+
+    """
+
+    __function__ = "C_bvvpshock"
+
+    def __init__(self, name='bvvpshock'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Tau_l = XSParameter(name, 'Tau_l', 0.0, min=0.0, max=50000000000000.0, hard_min=0.0, hard_max=50000000000000.0, frozen=True, units='s/cm^3')
+        self.Tau_u = XSParameter(name, 'Tau_u', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
+                self.C, self.N, self.O, self.F, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
+                self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
+                self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
+                self.Zn, self.Tau_l, self.Tau_u, self.Redshift,
                 self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -2961,9 +5326,8 @@ class XSbvvrnei(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, maxval, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, maxval, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10., frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0., 0., 1.e4, 0.0, 1.e4,
-                                    units='km/s', frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.Li,
                 self.Be, self.B, self.C, self.N, self.O, self.F, self.Ne,
@@ -2971,6 +5335,101 @@ class XSbvvrnei(XSAdditiveModel):
                 self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V, self.Cr,
                 self.Mn, self.Fe, self.Co, self.Ni, self.Cu, self.Zn,
                 self.Tau, self.Redshift, self.Velocity)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvvsedov(XSAdditiveModel):
+    """The XSPEC bvvsedov model: sedov model, separate ion/electron temperature.
+
+    The model is described at [1]_. The ``set_xsxset`` and ``get_xsxset``
+    functions are used to set and query the XSPEC XSET parameters, in
+    particular the keyword "NEIVERS".
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    kT_a
+        The mean shock temperature, in keV.
+    kT_b
+        The electron temperature immediately behind the shock
+        front, in keV. See [1]_ for a discussion of the behavior
+        of kT_a and kT_b.
+    H
+        H abundance (set to 0 for no free-free continuum, otherwise
+        1).
+    He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Tau
+        The ionization timescale in units of s/cm^3.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma of the velocity broadening, in km/s.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbsedov, XSbvsedov, XSvvsedov
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSedov.html
+
+    """
+
+    __function__ = "C_bvvsedov"
+
+    def __init__(self, name='bvvsedov'):
+        self.kT_a = XSParameter(name, 'kT_a', 1.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.kT_b = XSParameter(name, 'kT_b', 0.5, min=0.01, max=79.9, hard_min=0.01, hard_max=79.9, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Tau = XSParameter(name, 'Tau', 100000000000.0, min=100000000.0, max=50000000000000.0, hard_min=100000000.0, hard_max=50000000000000.0, units='s/cm^3')
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+
+        pars = (self.kT_a, self.kT_b, self.H, self.He, self.Li,
+                self.Be, self.B, self.C, self.N, self.O, self.F,
+                self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P,
+                self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc,
+                self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co,
+                self.Ni, self.Cu, self.Zn, self.Tau, self.Redshift,
+                self.Velocity)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3052,8 +5511,8 @@ class XSbvvtapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
-        self.Velocity = XSParameter(name, 'Velocity', 0.0, 0.0, 1.0e4, 0.0, 1.0e4, units='km/s', frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
 
         pars = (self.kT, self.kTi, self.H, self.He, self.Li, self.Be,
                 self.B, self.C, self.N, self.O, self.F, self.Ne, self.Na,
@@ -3064,10 +5523,255 @@ class XSbvvtapec(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.14.0")
+class XSbvvwdem(XSAdditiveModel):
+    """The XSPEC bvvwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbvwdem, XSbwdem, XSvvwdem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+
+    __function__ = "C_bvvwDem"
+
+    def __init__(self, name='bvvwdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.Tmax, self.beta, self.inv_slope, self.nH, self.H,
+                self.He, self.Li, self.Be, self.B, self.C, self.N,
+                self.O, self.F, self.Ne, self.Na, self.Mg, self.Al,
+                self.Si, self.P, self.S, self.Cl, self.Ar, self.K,
+                self.Ca, self.Sc, self.Ti, self.V, self.Cr, self.Mn,
+                self.Fe, self.Co, self.Ni, self.Cu, self.Zn,
+                self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbvwdem(XSAdditiveModel):
+    """The XSPEC bvwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSbwdem, XSbvvwdem, XSvwdem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+    __function__ = "C_bvwDem"
+
+    def __init__(self, name='bvwdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.Tmax, self.beta, self.inv_slope, self.nH,
+                self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Redshift, self.Velocity,
+                self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSbwdem(XSAdditiveModel):
+    """The XSPEC bwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    Tmax
+        The maximum temperature for power-law emission measure
+        distribution.
+    beta
+        The ratio of minimum to maxmum temperature.
+    inv_slope
+        The inverse of the slope (labelled p in the XSPEC documentation).
+    nH
+        Fixed at 1 for most applications.
+    abundanc
+        The abundance relative to solar.
+    Redshift
+        The redshift of the plasma.
+    Velocity
+        The gaussian sigma for the velocity broadening (in km/s)
+        which is only used when switch > 1.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbwdem, XSmekal, XSvwdem, XSvvdem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelWdem.html
+
+    """
+    __function__ = "C_bwDem"
+
+    def __init__(self, name='bwdem'):
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, units='keV')
+        self.beta = XSParameter(name, 'beta', 0.1, min=0.01, max=1.0, hard_min=0.01, hard_max=1.0)
+        self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.Velocity = mkVelocity(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.Tmax, self.beta, self.inv_slope, self.nH,
+                self.abundanc, self.Redshift, self.Velocity, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSc6mekl(XSAdditiveModel):
     """The XSPEC c6mekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
 
     Attributes
     ----------
@@ -3077,13 +5781,14 @@ class XSc6mekl(XSAdditiveModel):
         H density, in cm^-3.
     abundanc
         The abundance relative to Solar, as set by ``set_xsabund``.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3108,13 +5813,13 @@ class XSc6mekl(XSAdditiveModel):
         self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, -1, 1, -1, 1)
         self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, -1, 1, -1, 1)
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
-                self.abundanc, self.redshift, self.switch)
+                self.abundanc, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3124,6 +5829,10 @@ class XSc6pmekl(XSAdditiveModel):
     The model is described at [1]_. It differs from ``XSc6mekl`` by
     using the exponential of the 6th order Chebyshev polynomial.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -3132,13 +5841,14 @@ class XSc6pmekl(XSAdditiveModel):
         H density, in cm^-3.
     abundanc
         The abundance relative to Solar, as set by ``set_xsabund``.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3163,13 +5873,13 @@ class XSc6pmekl(XSAdditiveModel):
         self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, -1, 1, -1, 1)
         self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, -1, 1, -1, 1)
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
-                self.abundanc, self.redshift, self.switch)
+                self.abundanc, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3179,6 +5889,10 @@ class XSc6pvmkl(XSAdditiveModel):
     The model is described at [1]_. It differs from ``XSc6vmekl`` by
     using the exponential of the 6th order Chebyshev polynomial.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     Attributes
     ----------
     CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
@@ -3187,13 +5901,14 @@ class XSc6pvmkl(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3232,14 +5947,14 @@ class XSc6pvmkl(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
                 self.He, self.C, self.N, self.O, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
-                self.Fe, self.Ni, self.redshift, self.switch)
+                self.Fe, self.Ni, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3247,6 +5962,10 @@ class XSc6vmekl(XSAdditiveModel):
     """The XSPEC c6vmekl model: differential emission measure using Chebyshev representations with multi-temperature mekal.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
 
     Attributes
     ----------
@@ -3256,13 +5975,14 @@ class XSc6vmekl(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -3301,14 +6021,14 @@ class XSc6vmekl(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
                 self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
                 self.He, self.C, self.N, self.O, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
-                self.Fe, self.Ni, self.redshift, self.switch)
+                self.Fe, self.Ni, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3359,6 +6079,10 @@ class XScemekl(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
+
     Attributes
     ----------
     alpha
@@ -3372,16 +6096,17 @@ class XScemekl(XSAdditiveModel):
     redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
     See Also
     --------
-    XScevmkl
+    XScempow, XScevmkl
 
     References
     ----------
@@ -3390,18 +6115,73 @@ class XScemekl(XSAdditiveModel):
 
     """
 
-    __function__ = "cemekl"
+    __function__ = "C_cemMekal" if equal_or_greater_than("12.14.0") else "cemekl"
 
     def __init__(self, name='cemekl'):
         self.alpha = XSParameter(name, 'alpha', 1.0, 0.01, 10, 0.01, 20, frozen=True)
         self.Tmax = XSParameter(name, 'Tmax', 1.0, 0.02725, 1.e2, 0.02725, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.alpha, self.Tmax, self.nH, self.abundanc,
-                self.redshift, self.switch)
+                self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XScempow(XSAdditiveModel):
+    """The XSPEC cempow model: plasma emission, multi-temperature using a power-law emission measure.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    alpha
+        The power-law index of the emissivity function.
+    Tmax
+        The maximum temperature, in keV.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcempow, XScemekl, XSvcempow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCempow.html
+
+    """
+
+    __function__ = "C_cempow"
+
+    def __init__(self, name='cempow'):
+        self.alpha = XSParameter(name, 'alpha', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, frozen=True)
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.02725, max=100.0, hard_min=0.02725, hard_max=100.0, units='keV')
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.alpha, self.Tmax, self.nH, self.abundanc,
+                self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3409,6 +6189,10 @@ class XScevmkl(XSAdditiveModel):
     """The XSPEC cevmkl model: plasma emission, multi-temperature using mekal.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
 
     Attributes
     ----------
@@ -3420,19 +6204,20 @@ class XScevmkl(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
     See Also
     --------
-    XScemekl
+    XScemekl, XSvcempow
 
     References
     ----------
@@ -3461,8 +6246,8 @@ class XScevmkl(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.alpha, self.Tmax, self.nH, self.He, self.C,
                 self.N, self.O, self.Ne, self.Na, self.Mg, self.Al,
@@ -3494,7 +6279,7 @@ class XScflow(XSAdditiveModel):
 
     See Also
     --------
-    XScevmkl, XSmkcflow
+    XScevmkl, XScoolflow, XSmkcflow
 
     References
     ----------
@@ -3509,10 +6294,122 @@ class XScflow(XSAdditiveModel):
         self.slope = XSParameter(name, 'slope', 0., -5., 5., -5, 5)
         self.lowT = XSParameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.highT = XSParameter(name, 'highT', 4., 0.0808, 79.9, 0.0808, 79.9, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0.0, 5., 0.0, 5)
-        self.redshift = XSParameter(name, 'redshift', .1, 1.e-10, 10., 1e-10, 10, frozen=True)
+        self.Abundanc = mkAbundanc(name, frozen=False)
+        self.redshift = mkRedshift(name, default=0.1, minval=1e-10, lc=True)
 
         pars = (self.slope, self.lowT, self.highT, self.Abundanc, self.redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XScheb6(XSAdditiveModel):
+    """The XSPEC cheb6 model: differential emission measure using 6-order Chebyshev polynomial.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcheb6, XSexpcheb6, XSvcheb6
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCheb6.html
+
+    """
+
+    __function__ = "C_cheb6"
+
+    def __init__(self, name='cheb6'):
+        self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef2 = XSParameter(name, 'CPcoef2', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef3 = XSParameter(name, 'CPcoef3', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef4 = XSParameter(name, 'CPcoef4', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
+                self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
+                self.abundanc, self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XScie(XSAdditiveModel):
+    """The XSPEC cie model: Emission spectrum from a plasma in Collisional-ionization equilibrium.
+
+    The model is described at [1]_. Note that ``set_xsxset`` should be
+    used to change the XSET settings.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    kT
+        The plasma temperature in keV.
+    Abundanc
+        The metal abundances (He fixed at that defined by the
+        ``set_xsabund`` command). The elements included are C, N, O,
+        Ne, Mg, Al, Si, S, Ar, Ca, Fe, and Ni. Relative abundances are
+        set by ``set_xsabund``). The trace element abundaces are
+        controlled by the "APEC_TRACE_ABUND" setting and default to
+        1.0.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model. See [1]_ for more details.
+
+    See Also
+    --------
+    XSbcie, XSvcie, XSvvvcie
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCie.html
+
+    """
+
+    __function__ = "C_cie"
+
+    def __init__(self, name='cie'):
+        self.kT = XSParameter(name, 'kT', 1.0, min=0.008, max=64.0, hard_min=0.008, hard_max=64.0, units='keV')
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.kT, self.Abundanc, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3734,13 +6631,13 @@ class XScompPS(XSAdditiveModel):
         self.Betor10 = XSParameter(name, 'Betor10', -10., -10., 10., -10, 10, frozen=True)
         self.Rin = XSParameter(name, 'Rin', 10., 6.001, 1.e3, 6.001, 1e4, units='Rs', frozen=True)
         self.Rout = XSParameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, 1e6, units='Rs', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kTe, self.EleIndex, self.Gmin, self.Gmax,
                 self.kTbb, self.tau_y, self.geom, self.HovR_cyl, self.cosIncl,
                 self.cov_frac, self.rel_refl, self.Fe_ab_re, self.Me_ab,
                 self.xi, self.Tdisk, self.Betor10, self.Rin, self.Rout,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -3931,7 +6828,7 @@ class XScompth(XSAdditiveModel):
         self.Beta = XSParameter(name, 'Beta', -10., -10., 10., -10, 10, frozen=True)
         self.Rin = XSParameter(name, 'Rin', 10., 6.001, 1.e3, 6.001, 1e4, units='M', frozen=True)
         self.Rout = XSParameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, 1e6, units='M', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0., 4., 0.0, 4, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
 
         pars = (self.theta, self.showbb, self.kT_bb, self.RefOn, self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj, self.pairinj, self.cosIncl, self.Refl, self.Fe_abund, self.Ab_met, self.T_disk, self.xi, self.Beta, self.Rin, self.Rout, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -3969,7 +6866,7 @@ class XScompTT(XSAdditiveModel):
     __function__ = "xstitg"
 
     def __init__(self, name='comptt'):
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.T0 = XSParameter(name, 'T0', 0.1, .01, 100., 1e-3, 100, units='keV')
         self.kT = XSParameter(name, 'kT', 50., 2.0, 500., 2.0, 500, units='keV')
         self.taup = XSParameter(name, 'taup', 1., .01, 100., 0.01, 200)
@@ -3979,10 +6876,66 @@ class XScompTT(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.14.0")
+class XScoolflow(XSAdditiveModel):
+    """The XSPEC coolflow model: cooling flow, mekal.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    lowT
+        The low temperature, in keV.
+    highT
+        The high temperature, in keV.
+    Abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcoolflow, XScflow, XSvcoolflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCoolflow.html
+
+    """
+
+    __function__ = "C_coolflow"
+
+    def __init__(self, name='coolflow'):
+        self.lowT = XSParameter(name, 'lowT', 0.1, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.highT = XSParameter(name, 'highT', 4.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.Abundanc = mkAbundanc(name, frozen=False)
+        self.Redshift = mkRedshift(name, default=0.1)
+        self.switch = mkswitch(name)
+
+        pars = (self.lowT, self.highT, self.Abundanc, self.Redshift,
+                self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XScph(XSAdditiveModel):
     """The XSPEC cph model: Cooling + heating model for cool core clusters
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
 
     .. versionchanged:: 4.14.0
        The default Redshift parameter value has changed from 0.1 to 0
@@ -3997,7 +6950,11 @@ class XScph(XSAdditiveModel):
     Redshift
         The redshift.
     switch
-        If 0 calculate, if 1 interpolate, if 2 use AtomDB data.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The mass accretion rate, in solar mass per year.
 
@@ -4019,10 +6976,8 @@ class XScph(XSAdditiveModel):
                                  units='keV')
         self.Abund = XSParameter(name, 'Abund', 1, 0, 1000, 0, 1000,
                                  frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, 0.0, 50, 0.0, 50,
-                                    frozen=True)
-        self.switch = XSParameter(name, 'switch', 1,
-                                  alwaysfrozen=True)
+        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.switch = mkswitch(name)
 
         pars = (self.peakT, self.Abund, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
@@ -4474,6 +7429,48 @@ class XSdiskpn(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.T_max, self.R_in))
 
 
+@version_at_least("12.14.0")
+class XSeebremss(XSAdditiveModel):
+    """The XSPEC eebremss model: electron-electron bremsstrahlung spectrum.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    T
+        The temperature of the plasma, in keV.
+    eperh
+        The number of electrons per H nucleus. The default is 1.2.
+    Redshift
+        The redshift of the plasma.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    See Also
+    --------
+    XSapec, XSbapec
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelEebremss.html
+
+    """
+    __function__ = "C_eebremss"
+
+    def __init__(self, name='eebremss'):
+        self.T = XSParameter(name, 'T', 1.0, min=0.05, max=10000000000.0, hard_min=0.05, hard_max=10000000000.0, units='keV')
+        self.eperh = XSParameter(name, 'eperh', 1.2, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(0)
+
+        pars = (self.T, self.eperh, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSeplogpar(XSAdditiveModel):
     """The XSPEC eplogpar model: log-parabolic blazar model with nu-Fnu normalization.
 
@@ -4619,7 +7616,7 @@ class XSeqpair(XSAdditiveModel):
         self.Beta = XSParameter(name, 'Beta', -10., -10., 10., -10, 10, frozen=True)
         self.Rin = XSParameter(name, 'Rin', 10., 6.001, 1.e3, 6.001, 1e4, units='M', frozen=True)
         self.Rout = XSParameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, 1e6, units='M', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0., 4., 0.0, 4, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
 
         pars = (self.l_hovl_s, self.l_bb, self.kT_bb, self.l_ntol_h,
                 self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj,
@@ -4740,7 +7737,7 @@ class XSeqtherm(XSAdditiveModel):
         self.Beta = XSParameter(name, 'Beta', -10., -10., 10., -10, 10, frozen=True)
         self.Rin = XSParameter(name, 'Rin', 10., 6.001, 1.e3, 6.001, 1e4, units='M', frozen=True)
         self.Rout = XSParameter(name, 'Rout', 1.e3, 0., 1.e6, 0.0, 1e6, units='M', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0., 4., 0.0, 4, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
 
         pars = (self.l_hovl_s, self.l_bb, self.kT_bb, self.l_ntol_h,
                 self.tau_p, self.radius, self.g_min, self.g_max, self.G_inj,
@@ -4786,9 +7783,9 @@ class XSequil(XSAdditiveModel):
     def __init__(self, name='equil'):
         self.kT = XSParameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        pars = (self.kT, self.Abundanc, self.redshift)
+        pars = (self.kT, self.Abundanc, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -4817,6 +7814,64 @@ class XSexpdec(XSAdditiveModel):
         self.factor = XSParameter(name, 'factor', 1.0, 0., 100.0, 0.0, 100)
 
         XSAdditiveModel.__init__(self, name, (self.factor, ))
+
+
+@version_at_least("12.14.0")
+class XSexpcheb6(XSAdditiveModel):
+    """The XSPEC expcheb6 model: differential emission measure using exponential of a 6-order Chebyshev polynomial.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    abundanc
+        The abundance relative to Solar, as set by ``set_xsabund``.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbexpcheb6, XScheb6, XSvexpcheb6
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpcheb6.html
+
+    """
+
+    __function__ = "C_expcheb6"
+
+    def __init__(self, name='expcheb6'):
+        self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef2 = XSParameter(name, 'CPcoef2', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef3 = XSParameter(name, 'CPcoef3', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef4 = XSParameter(name, 'CPcoef4', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
+                self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
+                self.abundanc, self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSezdiskbb(XSAdditiveModel):
@@ -4893,6 +7948,9 @@ class XSgadem(XSAdditiveModel):
     abundances of the metals. See the ``XSapec`` documentation for settings
     relevant to the APEC model (i.e. when ``switch=2``).
 
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
+
     Attributes
     ----------
     Tmean
@@ -4909,10 +7967,11 @@ class XSgadem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -4933,9 +7992,9 @@ class XSgadem(XSAdditiveModel):
         self.Tmean = XSParameter(name, 'Tmean', 4.0, 0.01, 10, 0.01, 20, units='keV', frozen=True)
         self.Tsigma = XSParameter(name, 'Tsigma', 0.1, 0.01, 1.e2, 0.01, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1.0, 1.e-5, 1.e19, 1e-6, 1e20, units='cm^-3', frozen=True)
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmean, self.Tsigma, self.nH, self.abundanc,
                 self.Redshift, self.switch)
@@ -4990,7 +8049,7 @@ class XSgnei(XSAdditiveModel):
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
         self.meankT = XSParameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV', aliases=["kT_ave"])
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Tau, self.meankT, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -5978,8 +9037,8 @@ class XSmeka(XSAdditiveModel):
     def __init__(self, name='meka'):
         self.kT = XSParameter(name, 'kT', 1., 1.e-3, 1.e2, 1e-3, 1e2, units='keV')
         self.nH = XSParameter(name, 'nH', 1., 1.e-5, 1.e19, 1e-6, 1e20, units='cm-3', frozen=True)
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Abundanc = mkAbundanc(name, maxval=1000)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.nH, self.Abundanc, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -6026,11 +9085,11 @@ class XSmekal(XSAdditiveModel):
     def __init__(self, name='mekal'):
         self.kT = XSParameter(name, 'kT', 1., 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.nH = XSParameter(name, 'nH', 1., 1.e-5, 1.e19, 1e-6, 1e20, units='cm-3', frozen=True)
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.Abundanc = mkAbundanc(name, maxval=1000)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name, default=1, maxval=2)
 
-        pars = (self.kT, self.nH, self.Abundanc, self.redshift, self.switch)
+        pars = (self.kT, self.nH, self.Abundanc, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6040,6 +9099,11 @@ class XSmkcflow(XSAdditiveModel):
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
 
+    .. versionchanged:: 4.16.1
+       The redshift parameter default has changed from 0 to 0.1 and
+       for the switch parameter from 1 to 2 to match XSPEC 12.14.0
+       and the maximum value is now 3.
+
     Attributes
     ----------
     lowT
@@ -6048,13 +9112,14 @@ class XSmkcflow(XSAdditiveModel):
         The maximum temperature, in keV.
     Abundanc
         The abundance relative to Solar, as set by ``set_xsabund``.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The mass accretion rate (solar mass per year).
 
@@ -6074,11 +9139,11 @@ class XSmkcflow(XSAdditiveModel):
     def __init__(self, name='mkcflow'):
         self.lowT = XSParameter(name, 'lowT', 0.1, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.highT = XSParameter(name, 'highT', 4., 0.0808, 79.9, 0.0808, 79.9, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, 0, 1, 0, 1, alwaysfrozen=True)
+        self.Abundanc = mkAbundanc(name, frozen=False)
+        self.Redshift = mkRedshift(name, default=0.1)
+        self.switch = mkswitch(name)
 
-        pars = (self.lowT, self.highT, self.Abundanc, self.redshift,
+        pars = (self.lowT, self.highT, self.Abundanc, self.Redshift,
                 self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -6122,7 +9187,7 @@ class XSnei(XSAdditiveModel):
         self.kT = XSParameter(name, 'kT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Tau, self.redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -6167,10 +9232,10 @@ class XSnlapec(XSAdditiveModel):
 
     def __init__(self, name='nlapec'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
 
-        pars = (self.kT, self.Abundanc, self.redshift)
+        pars = (self.kT, self.Abundanc, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6221,10 +9286,10 @@ class XSnpshock(XSAdditiveModel):
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.Abundanc, self.Tau_l,
-                self.Tau_u, self.redshift)
+                self.Tau_u, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6549,12 +9614,12 @@ class XSnteea(XSAdditiveModel):
         self.pair_esc = XSParameter(name, 'pair_esc', 0., 0., 1., 0.0, 1, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.1, 10., 0.1, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.l_nth, self.l_bb, self.f_refl, self.kT_bb,
                 self.g_max, self.l_th, self.tau_p, self.G_inj, self.g_min,
                 self.g_0, self.radius, self.pair_esc, self.cosIncl,
-                self.Fe_abund, self.redshift)
+                self.Fe_abund, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6597,7 +9662,7 @@ class XSnthComp(XSAdditiveModel):
         self.kT_e = XSParameter(name, 'kT_e', 100., 5., 1.e3, 1., 1.e3, units='keV')
         self.kT_bb = XSParameter(name, 'kT_bb', 0.1, 1.e-3, 10., 1.e-3, 10., units='keV', frozen=True)
         self.inp_type = XSParameter(name, 'inp_type', 0., 0., 1., 0., 1., units='0/1', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10., frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.Gamma, self.kT_e, self.kT_bb, self.inp_type,
                 self.redshift)
@@ -6681,7 +9746,7 @@ class XSoptxagn(XSAdditiveModel):
         self.fpl = XSParameter(name, 'fpl', 1.e-4, 0.0, 1.e-1, 0.0, 1e-1)
         self.fcol = XSParameter(name, 'fcol', 2.4, 1.0, 5, 1.0, 5, frozen=True)
         self.tscat = XSParameter(name, 'tscat', 1.e5, 1e4, 1e5, 1e4, 1e5, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., 0., 10., 0.0, 10, frozen=True)
+        self.Redshift = mkRedshift(name, minval=0)
 
         pars = (self.mass, self.dist, self.logLoLEdd, self.astar,
                 self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma,
@@ -6763,7 +9828,7 @@ class XSoptxagnf(XSAdditiveModel):
         self.tau = XSParameter(name, 'tau', 10., 0.1, 100, 0.1, 100)
         self.Gamma = XSParameter(name, 'Gamma', 2.1, 1.05, 5., 1.05, 10.0)
         self.fpl = XSParameter(name, 'fpl', 1.e-4, 0.0, 1., 0.0, 1)
-        self.Redshift = XSParameter(name, 'Redshift', 0., 0., 10., 0.0, 10, frozen=True)
+        self.Redshift = mkRedshift(name, minval=0)
 
         pars = (self.mass, self.dist, self.logLoLEdd, self.astar,
                 self.rcor, self.logrout, self.kT_e, self.tau, self.Gamma,
@@ -6861,8 +9926,8 @@ class XSpexmon(XSAdditiveModel):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 2., 1.1, 2.5, 1.1, 2.5)
         self.foldE = XSParameter(name, 'foldE', 1000., 1., 1.e6, 1.0, 1e6, units='keV', frozen=True)
         self.rel_refl = XSParameter(name, 'rel_refl', -1, -1.e6, 1.e6, -1e6, 1e6, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0., 4., 0.0, 4, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 100., 0.0, 100, frozen=True)
         self.Incl = XSParameter(name, 'Incl', 60., 0., 85.0, 0.0, 85, units='deg')
 
@@ -6886,7 +9951,7 @@ class XSpexrav(XSAdditiveModel):
         The reflection scaling parameter (a value between 0 and 1
         for an isotropic source above the disk, less than 0 for no
         reflected component).
-    redshift
+    Redshift
         The redshift of the source.
     abund
         The abundance of the elements heavier than He relative to their
@@ -6924,13 +9989,13 @@ class XSpexrav(XSAdditiveModel):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 2., -9., 9., -10, 10)
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0, 1e6)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
 
         pars = (self.PhoIndex, self.foldE, self.rel_refl,
-                self.redshift, self.abund, self.Fe_abund, self.cosIncl)
+                self.Redshift, self.abund, self.Fe_abund, self.cosIncl)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -6949,7 +10014,7 @@ class XSpexriv(XSAdditiveModel):
         The reflection scaling parameter (a value between 0 and 1
         for an isotropic source above the disk, less than 0 for no
         reflected component).
-    redshift
+    Redshift
         The redshift of the source.
     abund
         The abundance of the elements heavier than He relative to their
@@ -6991,8 +10056,8 @@ class XSpexriv(XSAdditiveModel):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 2., -9., 9., -10, 10)
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 1.e6, 0, 1e6)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.0, 1.e6, 0.0, 1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, 0.05, 0.95, 0.05, 0.95, frozen=True)
         self.T_disk = XSParameter(name, 'T_disk', 3.e4, 1.e4, 1.e6, 1e4, 1e6, units='K', frozen=True)
@@ -7054,11 +10119,11 @@ class XSplcabs(XSAdditiveModel):
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, frozen=True)
         self.acrit = XSParameter(name, 'acrit', 1., 0.0, 1.0, 0.0, 1, frozen=True)
         self.FAST = XSParameter(name, 'FAST', 0, alwaysfrozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.nH, self.nmax, self.FeAbun, self.FeKedge,
                 self.PhoIndex, self.HighECut, self.foldE, self.acrit,
-                self.FAST, self.redshift)
+                self.FAST, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7161,10 +10226,10 @@ class XSpshock(XSAdditiveModel):
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.Abundanc, self.Tau_l, self.Tau_u,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7216,8 +10281,7 @@ class XSqsosed(XSAdditiveModel):
         self.cosi = XSParameter(name, 'cosi', 0.5, 0.05, 1.0, 0.05, 1.0,
                                 frozen=True)
 
-        self.redshift = XSParameter(name, 'redshift', 0, 0, 5, 0, 5,
-                                    frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=5, lc=True)
 
         pars = (self.mass, self.dist, self.logmdot, self.astar, self.cosi,
                 self.redshift)
@@ -7236,7 +10300,7 @@ class XSraymond(XSAdditiveModel):
     Abundanc
         The metal abundance of the plasma, as defined by the
         ``set_xsabund`` function.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -7257,10 +10321,10 @@ class XSraymond(XSAdditiveModel):
 
     def __init__(self, name='raymond'):
         self.kT = XSParameter(name, 'kT', 1., 0.008, 64.0, 0.008, 64, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1., 0., 5., 0.0, 5, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
 
-        pars = (self.kT, self.Abundanc, self.redshift)
+        pars = (self.kT, self.Abundanc, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7314,7 +10378,7 @@ class XSrefsch(XSAdditiveModel):
         The reflection scaling parameter (a value between 0 and 1
         for an isotropic source above the disk, less than 0 for no
         direct component).
-    redshift
+    Redshift
         The redshift of the source.
     abund
         The abundance of the elements heavier than He relative to their
@@ -7357,8 +10421,8 @@ class XSrefsch(XSAdditiveModel):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 2., -9., 9., -10, 10)
         self.foldE = XSParameter(name, 'foldE', 100., 1., 1.e6, 1.0, 1e6, units='keV')
         self.rel_refl = XSParameter(name, 'rel_refl', 0., 0., 2., 0.0, 2)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1., 0.5, 10., 0.5, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.abund = mkabund(name, minval=0.5, maxval=10)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0.1, 10., 0.1, 10, frozen=True)
         self.Incl = XSParameter(name, 'Incl', 30., 19., 87., 19, 87, units='deg', frozen=True)
         self.T_disk = XSParameter(name, 'T_disk', 3.e4, 1.e4, 1.e6, 1e4, 1e6, units='K', frozen=True)
@@ -7417,10 +10481,10 @@ class XSrnei(XSAdditiveModel):
         self.kT_init = XSParameter(name, 'kT_init', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kT_init, self.Abundanc, self.Tau,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7444,7 +10508,7 @@ class XSsedov(XSAdditiveModel):
         ``set_xsabund`` function.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -7468,10 +10532,10 @@ class XSsedov(XSAdditiveModel):
         self.kT_b = XSParameter(name, 'kT_b', 0.5, 0.0100, 79.9, 0.0100, 79.9, units='keV')
         self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.Abundanc, self.Tau,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7632,7 +10696,7 @@ class XSsnapec(XSAdditiveModel):
 
     See Also
     --------
-    XSapec
+    XSapec, XSbsnapec
 
     References
     ----------
@@ -7652,8 +10716,7 @@ class XSsnapec(XSAdditiveModel):
                                          0.0, 125, 0, 125, alwaysfrozen=True)
         self.SNIIModelIndex = XSParameter(name, 'SNIIModelIndex', 1.,
                                           0.0, 125, 0, 125, alwaysfrozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0.0, 10., 0.0, 10.0,
-                                    frozen=True)
+        self.redshift = mkRedshift(name, minval=0, lc=True)
 
         pars = (self.kT, self.N_SNe, self.R, self.SNIModelIndex,
                 self.SNIIModelIndex, self.redshift)
@@ -7854,8 +10917,8 @@ class XStapec(XSAdditiveModel):
     def __init__(self, name='tapec'):
         self.kT = XSParameter(name, 'kT', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
         self.kTi = XSParameter(name, 'kTi', 1.0, 0.008, 64.0, 0.008, 64.0, units='keV')
-        self.Abundanc = XSParameter(name, 'Abundanc', 1.0, 0.0, 5.0, 0.0, 5.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Abundanc = mkAbundanc(name)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kTi, self.Abundanc, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -7873,7 +10936,7 @@ class XSvapec(XSAdditiveModel):
         The temperature of the plasma, in keV.
     He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance of the element in solar units.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -7907,11 +10970,11 @@ class XSvapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
-                self.Fe, self.Ni, self.redshift)
+                self.Fe, self.Ni, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -7957,10 +11020,289 @@ class XSvbremss(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.kT, self.HeovrH))
 
 
+@version_at_least("12.14.0")
+class XSvcempow(XSAdditiveModel):
+    """The XSPEC vcempow model: plasma emission, multi-temperature using a power-law emission measure.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    alpha
+        The power-law index of the emissivity function.
+    Tmax
+        The maximum temperature, in keV.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XScemekl, XScempow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCempow.html
+
+    """
+
+    __function__ = "C_vcempow"
+
+    def __init__(self, name='vcempow'):
+        self.alpha = XSParameter(name, 'alpha', 1.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, frozen=True)
+        self.Tmax = XSParameter(name, 'Tmax', 1.0, min=0.02725, max=100.0, hard_min=0.02725, hard_max=100.0, units='keV')
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.alpha, self.Tmax, self.nH, self.He, self.C,
+                self.N, self.O, self.Ne, self.Na, self.Mg, self.Al,
+                self.Si, self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSvcheb6(XSAdditiveModel):
+    """The XSPEC vcheb6 model: differential emission measure using 6-order Chebyshev polynomial.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcheb6, XScheb6
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCheb6.html
+
+    """
+
+    __function__ = "C_vcheb6"
+
+    def __init__(self, name='vcheb6'):
+        self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef2 = XSParameter(name, 'CPcoef2', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef3 = XSParameter(name, 'CPcoef3', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef4 = XSParameter(name, 'CPcoef4', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
+                self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
+                self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSvcie(XSAdditiveModel):
+    """The XSPEC vcie model: Emission spectrum from a plasma in Collisional-ionization equilibrium.
+
+    The model is described at [1]_. Note that ``set_xsxset`` should be
+    used to change the XSET settings.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    kT
+        The plasma temperature in keV.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.  The trace element abundaces
+        are controlled by the "APEC_TRACE_ABUND" setting and default
+        to 1.0.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model. See [1]_ for more details.
+
+    See Also
+    --------
+    XSbvcie, XScie, XSvvcie
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCie.html
+
+    """
+
+    __function__ = "C_vcie"
+
+    def __init__(self, name='vcie'):
+        self.kT = XSParameter(name, 'kT', 6.5, min=0.0808, max=68.447, hard_min=0.0808, hard_max=68.447, units='keV')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
+                self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSvcoolflow(XSAdditiveModel):
+    """The XSPEC vcoolflow model: cooling flow, mekal.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    lowT
+        The low temperature, in keV.
+    highT
+        The high temperature, in keV.
+    He, C, N, O, Ne, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbcoolflow, XScflow, XScoolflow
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCoolflow.html
+
+    """
+
+    __function__ = "C_vcoolflow"
+
+    def __init__(self, name='vcoolflow'):
+        self.lowT = XSParameter(name, 'lowT', 0.1, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.highT = XSParameter(name, 'highT', 4.0, min=0.0808, max=79.9, hard_min=0.0808, hard_max=79.9, units='keV')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0)
+        self.switch = mkswitch(name)
+
+        pars = (self.lowT, self.highT, self.He, self.C, self.N,
+                self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si,
+                self.S, self.Ar, self.Ca, self.Fe, self.Ni,
+                self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSvcph(XSAdditiveModel):
     """The XSPEC vcph model: Cooling + heating model for cool core clusters
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The switch parameter default has changed from 1 to 2 to match
+       XSPEC 12.14.0 and the maximum value is now 3.
 
     .. versionchanged:: 4.14.0
        The default Redshift parameter value has changed from 0.1 to 0
@@ -7975,7 +11317,11 @@ class XSvcph(XSAdditiveModel):
     Redshift
         The redshift.
     switch
-        If 0 calculate, if 1 interpolate, if 2 use AtomDB data.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The mass accretion rate, in solar mass per year.
 
@@ -8024,14 +11370,85 @@ class XSvcph(XSAdditiveModel):
                               frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000.0,
                               frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, 0.0, 50, 0.0, 50,
-                                    frozen=True)
-        self.switch = XSParameter(name, 'switch', 1,
-                                  alwaysfrozen=True)
+        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.switch = mkswitch(name)
 
         pars = (self.peakT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Na, self.Mg, self.Al, self.Si, self.S, self.Ar,
                 self.Ca, self.Fe, self.Ni, self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSvexpcheb6(XSAdditiveModel):
+    """The XSPEC vexpcheb6 model: differential emission measure using exponential of a 6-order Chebyshev polynomial.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    CPcoef1, CPcoef2, CPcoef3, CPcoef4, CPcoef5, CPcoef6
+        Chebyshev polynomial coefficients.
+    nH
+        H density, in cm^-3.
+    He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
+        The abundance relative to Solar.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbvexpcheb6, XSexpcheb6
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelExpcheb6.html
+
+    """
+
+    __function__ = "C_vexpcheb6"
+
+    def __init__(self, name='vexpcheb6'):
+        self.CPcoef1 = XSParameter(name, 'CPcoef1', 1.0, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef2 = XSParameter(name, 'CPcoef2', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef3 = XSParameter(name, 'CPcoef3', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef4 = XSParameter(name, 'CPcoef4', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef5 = XSParameter(name, 'CPcoef5', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.CPcoef6 = XSParameter(name, 'CPcoef6', 0.5, min=-1.0, max=1.0, hard_min=-1.0, hard_max=1.0)
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.CPcoef1, self.CPcoef2, self.CPcoef3,
+                self.CPcoef4, self.CPcoef5, self.CPcoef6, self.nH,
+                self.He, self.C, self.N, self.O, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.S, self.Ar, self.Ca,
+                self.Fe, self.Ni, self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8048,7 +11465,7 @@ class XSvequil(XSAdditiveModel):
         The temperature of the plasma, in keV.
     He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe, Ni
         The abundance of the element in solar units.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8081,11 +11498,11 @@ class XSvequil(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe,
-                self.Ni, self.redshift)
+                self.Ni, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8096,6 +11513,9 @@ class XSvgadem(XSAdditiveModel):
     functions change and return the current settings for the relative
     abundances of the metals. See the ``XSapec`` documentation for settings
     relevant to the APEC model (i.e. when ``switch=2``).
+
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
 
     Attributes
     ----------
@@ -8112,10 +11532,11 @@ class XSvgadem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model.
 
@@ -8150,8 +11571,8 @@ class XSvgadem(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 10., 0.0, 10, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 10., 0.0, 10, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmean, self.Tsigma, self.nH, self.He, self.C,
                 self.N, self.O, self.Ne, self.Na, self.Mg, self.Al,
@@ -8186,7 +11607,7 @@ class XSvgnei(XSAdditiveModel):
         The ionization timescale in units of s/cm^3.
     meankT
         The ionization timescale averaged plasma temperature in keV.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8222,12 +11643,12 @@ class XSvgnei(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
         self.meankT = XSParameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV', aliases=["kT_ave"])
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
                 self.Fe, self.Ni, self.Tau, self.meankT,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8244,7 +11665,7 @@ class XSvmeka(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8280,11 +11701,11 @@ class XSvmeka(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.nH, self.He, self.C, self.N, self.O,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S,
-                self.Ar, self.Ca, self.Fe, self.Ni, self.redshift)
+                self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8301,7 +11722,7 @@ class XSvmekal(XSAdditiveModel):
         H density, in cm^-3.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
         If 0, the mekal code is run to evaluate the model; if 1
@@ -8342,12 +11763,12 @@ class XSvmekal(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name, default=1, maxval=2)
 
         pars = (self.kT, self.nH, self.He, self.C, self.N, self.O,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S,
-                self.Ar, self.Ca, self.Fe, self.Ni, self.redshift,
+                self.Ar, self.Ca, self.Fe, self.Ni, self.Redshift,
                 self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
@@ -8358,6 +11779,11 @@ class XSvmcflow(XSAdditiveModel):
     The model is described at [1]_. The results of this model depend
     on the cosmology settings set with ``set_xscosmo``.
 
+    .. versionchanged:: 4.16.1
+       The redshift parameter default has changed from 0 to 0.1 and
+       for the switch parameter from 1 to 2 to match XSPEC 12.14.0
+       and the maximum value is now 3.
+
     Attributes
     ----------
     lowT
@@ -8366,13 +11792,14 @@ class XSvmcflow(XSAdditiveModel):
         The maximum temperature, in keV.
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Ar, Ca, Fe, Ni
         The abundance relative to Solar.
-    redshift
+    Redshift
         The redshift of the plasma.
     switch
-        If 0, the mekal code is run to evaluate the model; if 1
-        then interpolation of the mekal data is used; if 2 then
-        interpolation of APEC data is used. See [1]_ for more details.
-        This parameter can not be thawed.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The mass accretion rate (solar mass per year).
 
@@ -8406,13 +11833,13 @@ class XSvmcflow(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., 0.0, 10., 0, 10, frozen=True)
-        self.switch = XSParameter(name, 'switch', 1, alwaysfrozen=True)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0)
+        self.switch = mkswitch(name)
 
         pars = (self.lowT, self.highT, self.He, self.C, self.N,
                 self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si,
                 self.S, self.Ar, self.Ca, self.Fe, self.Ni,
-                self.redshift, self.switch)
+                self.Redshift, self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8469,11 +11896,11 @@ class XSvnei(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
-                self.Fe, self.Ni, self.Tau, self.redshift)
+                self.Fe, self.Ni, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8538,12 +11965,12 @@ class XSvnpshock(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.H, self.He, self.C, self.N,
                 self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar,
                 self.Ca, self.Fe, self.Ni, self.Tau_l, self.Tau_u,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8641,12 +12068,12 @@ class XSvpshock(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0., 5.e13, 0.0, 5e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Si, self.S, self.Ar, self.Ca,
                 self.Fe, self.Ni, self.Tau_l, self.Tau_u,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8694,11 +12121,11 @@ class XSvraymond(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.He, self.C, self.N, self.O, self.Ne,
                 self.Mg, self.Si, self.S, self.Ar, self.Ca, self.Fe,
-                self.Ni, self.redshift)
+                self.Ni, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8722,7 +12149,7 @@ class XSvrnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8758,12 +12185,12 @@ class XSvrnei(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000.0, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.C,
                 self.N, self.O, self.Ne, self.Mg, self.Si, self.S,
                 self.Ar, self.Ca, self.Fe, self.Ni, self.Tau,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8789,7 +12216,7 @@ class XSvsedov(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -8825,11 +12252,11 @@ class XSvsedov(XSAdditiveModel):
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 10000, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.e8, 5.e13, 1e8, 5e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.H, self.He, self.C, self.N,
                 self.O, self.Ne, self.Mg, self.Si, self.S, self.Ar,
-                self.Ca, self.Fe, self.Ni, self.Tau, self.redshift)
+                self.Ca, self.Fe, self.Ni, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8889,7 +12316,7 @@ class XSvtapec(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kTi, self.He, self.C, self.N, self.O,
                 self.Ne, self.Mg, self.Al, self.Si, self.S, self.Ar,
@@ -8961,7 +12388,7 @@ class XSvvapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na,
@@ -8969,6 +12396,186 @@ class XSvvapec(XSAdditiveModel):
                 self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
                 self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
                 self.Zn, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSvvcie(XSAdditiveModel):
+    """The XSPEC vvcie model: Emission spectrum from a plasma in Collisional-ionization equilibrium.
+
+    The model is described at [1]_. Note that ``set_xsxset`` should be
+    used to change the XSET settings.
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Parameters
+    ----------
+    kT
+        The plasma temperature in keV.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S
+        The abundance of the element in solar units.
+    Cl, Ar, K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model. See [1]_ for more details.
+
+    See Also
+    --------
+    XSbvvcie, XScie, XSvcie
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelCie.html
+
+    """
+
+    __function__ = "C_vvcie"
+
+    def __init__(self, name='vvcie'):
+        self.kT = XSParameter(name, 'kT', 6.5, min=0.0808, max=68.447, hard_min=0.0808, hard_max=68.447, units='keV')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
+                self.C, self.N, self.O, self.F, self.Ne, self.Na,
+                self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
+                self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
+                self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
+                self.Zn, self.Redshift, self.switch)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.0")
+class XSvvgadem(XSAdditiveModel):
+    """The XSPEC vvgadem model: plasma emission, multi-temperature with gaussian distribution of emission measure.
+
+    The model is described at [1]_. The ``set_xsabund`` and ``get_xsabund``
+    functions change and return the current settings for the relative
+    abundances of the metals. See the ``XSapec`` documentation for settings
+    relevant to the APEC model (i.e. when ``switch=2``).
+
+    .. versionadded:: 4.16.1
+       This model requires XSPEC 12.14.0 or later.
+
+    Attributes
+    ----------
+    Tmean
+        The mean temperature for the gaussian emission measure
+        distribution, in keV.
+    Tsigma
+        The sigma of the temperature distribution for the gaussian
+        emission measure, in keV.
+    nH
+        H density, in cm^-3.
+    H, He, Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar,
+    K, Ca, Sc, Ti, V, Cr, Mn, Fe, Co, Ni, Cu, Zn
+        The abundance of the element in solar units.
+    Redshift
+        The redshift of the plasma.
+    switch
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data.  See
+        [1]_ for more details.  This parameter can not be thawed.
+    norm
+        The normalization of the model.
+
+    See Also
+    --------
+    XSbvvgadem, XSbgadem, XSvgadem
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGadem.html
+
+    """
+
+    __function__ = "C_vvgaussDem"
+
+    def __init__(self, name='vvgadem'):
+        self.Tmean = XSParameter(name, 'Tmean', 4.0, min=0.01, max=10.0, hard_min=0.01, hard_max=20.0, frozen=True, units='keV')
+        self.Tsigma = XSParameter(name, 'Tsigma', 0.1, min=0.01, max=100.0, hard_min=0.01, hard_max=100.0, units='keV')
+        self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
+        self.H = XSParameter(name, 'H', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.He = XSParameter(name, 'He', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Li = XSParameter(name, 'Li', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Be = XSParameter(name, 'Be', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.B = XSParameter(name, 'B', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.C = XSParameter(name, 'C', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.N = XSParameter(name, 'N', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.O = XSParameter(name, 'O', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.F = XSParameter(name, 'F', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ne = XSParameter(name, 'Ne', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Na = XSParameter(name, 'Na', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mg = XSParameter(name, 'Mg', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Al = XSParameter(name, 'Al', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Si = XSParameter(name, 'Si', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.P = XSParameter(name, 'P', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.S = XSParameter(name, 'S', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cl = XSParameter(name, 'Cl', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ar = XSParameter(name, 'Ar', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.K = XSParameter(name, 'K', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Sc = XSParameter(name, 'Sc', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ti = XSParameter(name, 'Ti', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.V = XSParameter(name, 'V', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cr = XSParameter(name, 'Cr', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Mn = XSParameter(name, 'Mn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Co = XSParameter(name, 'Co', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
+
+        pars = (self.Tmean, self.Tsigma, self.nH, self.H, self.He,
+                self.Li, self.Be, self.B, self.C, self.N, self.O,
+                self.F, self.Ne, self.Na, self.Mg, self.Al, self.Si,
+                self.P, self.S, self.Cl, self.Ar, self.K, self.Ca,
+                self.Sc, self.Ti, self.V, self.Cr, self.Mn, self.Fe,
+                self.Co, self.Ni, self.Cu, self.Zn, self.Redshift,
+                self.switch)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -8999,7 +12606,7 @@ class XSvvgnei(XSAdditiveModel):
         The ionization timescale in units of s/cm^3.
     meankT
         The ionization timescale averaged plasma temperature in keV.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9052,14 +12659,14 @@ class XSvvgnei(XSAdditiveModel):
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
         self.meankT = XSParameter(name, 'meankT', 1.0, 0.0808, 79.9, 0.0808, 79.9, units='keV', aliases=["kT_ave"])
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
                 self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
                 self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
-                self.Zn, self.Tau, self.meankT, self.redshift)
+                self.Zn, self.Tau, self.meankT, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9082,7 +12689,7 @@ class XSvvnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9134,14 +12741,14 @@ class XSvvnei(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
                 self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
                 self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
-                self.Zn, self.Tau, self.redshift)
+                self.Zn, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9170,7 +12777,7 @@ class XSvvnpshock(XSAdditiveModel):
         The lower limit on the ionization timescale in s/cm^3.
     Tau_u
         The upper limit on the ionization timescale in s/cm^3.
-    redshift
+    Redshift
         The redshift of the source.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9224,7 +12831,7 @@ class XSvvnpshock(XSAdditiveModel):
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0.0, 5.0e13, 0.0, 5.0e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.0e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.H, self.He, self.Li,
                 self.Be, self.B, self.C, self.N, self.O, self.F,
@@ -9232,7 +12839,7 @@ class XSvvnpshock(XSAdditiveModel):
                 self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc,
                 self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co,
                 self.Ni, self.Cu, self.Zn, self.Tau_l, self.Tau_u,
-                self.redshift)
+                self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9257,7 +12864,7 @@ class XSvvpshock(XSAdditiveModel):
         The lower limit on the ionization timescale, in s/cm^3.
     Tau_u
         The upper limit on the ionization timescale, in s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9310,14 +12917,14 @@ class XSvvpshock(XSAdditiveModel):
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau_l = XSParameter(name, 'Tau_l', 0.0, 0.0, 5.0e13, 0.0, 5.0e13, units='s/cm^3', frozen=True)
         self.Tau_u = XSParameter(name, 'Tau_u', 1.0e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10.0, -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.H, self.He, self.Li, self.Be, self.B,
                 self.C, self.N, self.O, self.F, self.Ne, self.Na,
                 self.Mg, self.Al, self.Si, self.P, self.S, self.Cl,
                 self.Ar, self.K, self.Ca, self.Sc, self.Ti, self.V,
                 self.Cr, self.Mn, self.Fe, self.Co, self.Ni, self.Cu,
-                self.Zn, self.Tau_l, self.Tau_u, self.redshift)
+                self.Zn, self.Tau_l, self.Tau_u, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9342,7 +12949,7 @@ class XSvvrnei(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9395,14 +13002,14 @@ class XSvvrnei(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kT_init, self.H, self.He, self.Li,
                 self.Be, self.B, self.C, self.N, self.O, self.F,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P,
                 self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc,
                 self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co,
-                self.Ni, self.Cu, self.Zn, self.Tau, self.redshift)
+                self.Ni, self.Cu, self.Zn, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9429,7 +13036,7 @@ class XSvvsedov(XSAdditiveModel):
         The abundance of the element, with respect to Solar.
     Tau
         The ionization timescale in units of s/cm^3.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9482,14 +13089,14 @@ class XSvvsedov(XSAdditiveModel):
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000.0, frozen=True)
         self.Tau = XSParameter(name, 'Tau', 1.e11, 1.0e8, 5.0e13, 1.0e8, 5.0e13, units='s/cm^3')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT_a, self.kT_b, self.H, self.He, self.Li,
                 self.Be, self.B, self.C, self.N, self.O, self.F,
                 self.Ne, self.Na, self.Mg, self.Al, self.Si, self.P,
                 self.S, self.Cl, self.Ar, self.K, self.Ca, self.Sc,
                 self.Ti, self.V, self.Cr, self.Mn, self.Fe, self.Co,
-                self.Ni, self.Cu, self.Zn, self.Tau, self.redshift)
+                self.Ni, self.Cu, self.Zn, self.Tau, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
 
@@ -9565,7 +13172,7 @@ class XSvvtapec(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10, -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.kT, self.kTi, self.H, self.He, self.Li, self.Be,
                 self.B, self.C, self.N, self.O, self.F, self.Ne,
@@ -9580,6 +13187,9 @@ class XSvvwdem(XSAdditiveModel):
     """The XSPEC vvwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
 
     Attributes
     ----------
@@ -9598,15 +13208,18 @@ class XSvvwdem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        What model to use: 0 calculates with MEKAL, 1 interpolates
-        with MEKAL, and 2 interpoates with APEC.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
 
     See Also
     --------
-    XSvwdem, XSwdem
+    XSbvvwdem, XSvwdem, XSwdem
 
     References
     ----------
@@ -9652,8 +13265,8 @@ class XSvvwdem(XSAdditiveModel):
         self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Cu = XSParameter(name, 'Cu', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Zn = XSParameter(name, 'Zn', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH, self.H,
                 self.He, self.Li, self.Be, self.B, self.C, self.N,
@@ -9669,6 +13282,9 @@ class XSvwdem(XSAdditiveModel):
     """The XSPEC vwdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
 
     Attributes
     ----------
@@ -9686,15 +13302,18 @@ class XSvwdem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        What model to use: 0 calculates with MEKAL, 1 interpolates
-        with MEKAL, and 2 interpoates with APEC.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
 
     See Also
     --------
-    XSvvwdem, XSwdem
+    XSbvwdem, XSvvwdem, XSwdem
 
     References
     ----------
@@ -9724,8 +13343,8 @@ class XSvwdem(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH,
                 self.He, self.C, self.N, self.O, self.Ne, self.Na,
@@ -9738,6 +13357,9 @@ class XSwdem(XSAdditiveModel):
     """The XSPEC wdem model: plasma emission, multi-temperature with power-law distribution of emission measure.
 
     The model is described at [1]_.
+
+    .. versionchanged:: 4.16.1
+       The maximum value of the switch parameter is now 3.
 
     Attributes
     ----------
@@ -9755,15 +13377,18 @@ class XSwdem(XSAdditiveModel):
     Redshift
         The redshift of the plasma.
     switch
-        What model to use: 0 calculates with MEKAL, 1 interpolates
-        with MEKAL, and 2 interpoates with APEC.
+        If 0, the mekal code is run to evaluate the model; if 1 then
+        interpolation of the mekal data is used; if 2 then
+        interpolation of APEC data is used; if 3 then SPEX data (only
+        usable with XSPEC 12.14.0 or later).  See [1]_ for more
+        details.  This parameter can not be thawed.
     norm
         The normalization of the model: see [1]_ for an explanation
         of the units.
 
     See Also
     --------
-    XSapec, XSmekal, XSvwdem, XSvvdem
+    XSapec, XSbwdem, XSmekal, XSvwdem, XSvvdem
 
     References
     ----------
@@ -9779,9 +13404,9 @@ class XSwdem(XSAdditiveModel):
         # can not use p for the name as it conflicts with P for the XSvvwdem model
         self.inv_slope = XSParameter(name, 'inv_slope', 0.25, min=-1.0, max=10.0, hard_min=-1.0, hard_max=10.0)
         self.nH = XSParameter(name, 'nH', 1.0, min=1e-05, max=1e+19, hard_min=1e-06, hard_max=1e+20, frozen=True, units='cm^-3')
-        self.abundanc = XSParameter(name, 'abundanc', 1.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0, hard_min=-0.999, hard_max=10.0, frozen=True)
-        self.switch = XSParameter(name, 'switch', 2, alwaysfrozen=True)
+        self.abundanc = mkAbundanc(name, maxval=10, lc=True)
+        self.Redshift = mkRedshift(name)
+        self.switch = mkswitch(name)
 
         pars = (self.Tmax, self.beta, self.inv_slope, self.nH,
                 self.abundanc, self.redshift, self.switch)
@@ -9820,7 +13445,7 @@ class XSzagauss(XSAdditiveModel):
     def __init__(self, name='zagauss'):
         self.LineE = XSParameter(name, 'LineE', 10.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
         self.Sigma = XSParameter(name, 'Sigma', 1.0, 0.0, 1.0e6, 0.0, 1.0e6, units='A')
-        self.Redshift = XSParameter(name, 'Redshift', 0., -0.999, 10.0, -0.999, 10.0, frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.LineE, self.Sigma, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -9835,7 +13460,7 @@ class XSzbbody(XSAdditiveModel):
     ----------
     kT
         The temperature of the object, in keV.
-    redshift
+    Redshift
         The redshift of the object.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9856,9 +13481,9 @@ class XSzbbody(XSAdditiveModel):
 
     def __init__(self, name='zbbody'):
         self.kT = XSParameter(name, 'kT', 3.0, 1.e-2, 100., 1e-4, 200, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSAdditiveModel.__init__(self, name, (self.kT, self.redshift))
+        XSAdditiveModel.__init__(self, name, (self.kT, self.Redshift))
 
 
 class XSzbknpower(XSAdditiveModel):
@@ -9898,8 +13523,7 @@ class XSzbknpower(XSAdditiveModel):
         self.PhoIndx1 = XSParameter(name, 'PhoIndx1', 1., -2., 9., -3, 10)
         self.BreakE = XSParameter(name, 'BreakE', 5., 1.e-2, 1.e6, 0.0, 1e6, units='keV')
         self.PhoIndx2 = XSParameter(name, 'PhoIndx2', 2., -2., 9., -3, 10)
-        self.Redshift = XSParameter(name, 'Redshift', 0, -0.999, 10, -0.999, 10,
-                                    frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.PhoIndx1, self.BreakE, self.PhoIndx2, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -9919,7 +13543,7 @@ class XSzbremss(XSAdditiveModel):
     ----------
     kT
         The plasma temperature in keV.
-    redshift
+    Redshift
         The redshift of the plasma.
     norm
         The normalization of the model: see [1]_ for an explanation
@@ -9940,9 +13564,9 @@ class XSzbremss(XSAdditiveModel):
 
     def __init__(self, name='zbremss'):
         self.kT = XSParameter(name, 'kT', 7.0, 1.e-4, 100., 1e-4, 200, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSAdditiveModel.__init__(self, name, (self.kT, self.redshift))
+        XSAdditiveModel.__init__(self, name, (self.kT, self.Redshift))
 
 
 class XSzcutoffpl(XSAdditiveModel):
@@ -9979,7 +13603,7 @@ class XSzcutoffpl(XSAdditiveModel):
     def __init__(self, name='zcutoffpl'):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 1., -2., 9., -3, 10)
         self.HighECut = XSParameter(name, 'HighECut', 15., 1., 500., 0.01, 500, units='keV')
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, -0.999, 10., -0.999, 10., frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.PhoIndex, self.HighECut, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -9996,7 +13620,7 @@ class XSzgauss(XSAdditiveModel):
         The line energy, in keV.
     Sigma
         The line width, in keV. A value of zero means a delta function.
-    redshift
+    Redshift
         The redshift of the line.
     norm
         The flux in the line, in units of photon/cm^2/s.
@@ -10017,9 +13641,9 @@ class XSzgauss(XSAdditiveModel):
     def __init__(self, name='zgauss'):
         self.LineE = XSParameter(name, 'LineE', 6.5, 0., 1.e6, 0.0, 1e6, units='keV')
         self.Sigma = XSParameter(name, 'Sigma', 0.1, 0., 10., 0.0, 20, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        pars = (self.LineE, self.Sigma, self.redshift)
+        pars = (self.LineE, self.Sigma, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
 
     def guess(self, dep, *args, **kwargs):
@@ -10143,8 +13767,7 @@ class XSzlogpar(XSAdditiveModel):
         self.beta = XSParameter(name, 'beta', 0.2, -4., 4., -4, 4)
         self.pivotE = XSParameter(name, 'pivotE', 1.0, units='keV',
                                   alwaysfrozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0, -0.999, 10, -0.999, 10,
-                                    frozen=True)
+        self.Redshift = mkRedshift(name)
 
         pars = (self.alpha, self.beta, self.pivotE, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
@@ -10159,7 +13782,7 @@ class XSzpowerlw(XSAdditiveModel):
     ----------
     PhoIndex
         The power law photon index.
-    redshift
+    Redshift
         The redshift.
     norm
         The normalization of the model. See [1]_ for details, as its
@@ -10181,9 +13804,9 @@ class XSzpowerlw(XSAdditiveModel):
 
     def __init__(self, name='zpowerlw'):
         self.PhoIndex = XSParameter(name, 'PhoIndex', 1., -2., 9., -3, 10)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.redshift))
+        XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.Redshift))
 
 
 class XSabsori(XSMultiplicativeModel):
@@ -10201,7 +13824,7 @@ class XSabsori(XSMultiplicativeModel):
         The absorber temperature, in K.
     xi
         The absorber ionization state. See [1]_ for more details.
-    redshift
+    Redshift
         The redshift of the absorber.
     Fe_abund
         The iron abundance with respect to solar, as set by the
@@ -10221,9 +13844,12 @@ class XSabsori(XSMultiplicativeModel):
         self.nH = XSParameter(name, 'nH', 1., 0., 100., 0.0, 100, units='10^22 atoms / cm^2')
         self.Temp_abs = XSParameter(name, 'Temp_abs', 3.e4, 1.e4, 1.e6, 1e4, 1e6, units='K', frozen=True)
         self.xi = XSParameter(name, 'xi', 1., 0., 1.e3, 0.0, 5000)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1., 0., 1.e6, 0.0, 1e6, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.PhoIndex, self.nH, self.Temp_abs, self.xi, self.redshift, self.Fe_abund))
+
+        pars = (self.PhoIndex, self.nH, self.Temp_abs, self.xi,
+                self.Redshift, self.Fe_abund)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSacisabs(XSMultiplicativeModel):
@@ -10614,7 +14240,7 @@ class XShrefl(XSMultiplicativeModel):
     covfac
         The normalization of the reflected continuum: see [1]_ for more
         details.
-    redshift
+    Redshift
         The redshift.
 
     References
@@ -10634,8 +14260,12 @@ class XShrefl(XSMultiplicativeModel):
         self.FeKedge = XSParameter(name, 'FeKedge', 7.11, 7.0, 10., 7.0, 10, units='keV', frozen=True)
         self.Escfrac = XSParameter(name, 'Escfrac', 1.0, 0.0, 500., 0.0, 1000)
         self.covfac = XSParameter(name, 'covfac', 1.0, 0.0, 500., 0.0, 1000)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.thetamin, self.thetamax, self.thetaobs, self.Feabun, self.FeKedge, self.Escfrac, self.covfac, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.thetamin, self.thetamax, self.thetaobs,
+                self.Feabun, self.FeKedge, self.Escfrac, self.covfac,
+                self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 # The parameter names for this model have changed over time, with some
@@ -11286,7 +14916,7 @@ class XSswind1(XSMultiplicativeModel):
         The log of xi: see [1]_ for more details.
     sigma
         The gaussian sigma for velocity smearing (v/c).
-    redshift
+    Redshift
         The redshift of the source.
 
     References
@@ -11302,9 +14932,10 @@ class XSswind1(XSMultiplicativeModel):
         self.column = XSParameter(name, 'column', 6., 3., 50., 3.0, 50)
         self.log_xi = XSParameter(name, 'log_xi', 2.5, 2.1, 4.1, 2.1, 4.1, aliases=["logxi"])
         self.sigma = XSParameter(name, 'sigma', 0.1, 0., 0.5, 0.0, 0.5)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSMultiplicativeModel.__init__(self, name, (self.column, self.log_xi, self.sigma, self.redshift))
+        pars = (self.column, self.log_xi, self.sigma, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSTBabs(XSMultiplicativeModel):
@@ -11501,7 +15132,7 @@ class XSTBvarabs(XSMultiplicativeModel):
     H_dep, He_dep, C_dep, N_dep, O_dep, Ne_dep, Na_dep, Mg_dep, Al_dep,
     Si_dep, S_dep, Cl_dep, Ar_dep, Ca_dep, Cr_dep, Fe_dep, Co_dep, Ni_dep
         The grain depletion fraction of the element.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -11564,8 +15195,18 @@ class XSTBvarabs(XSMultiplicativeModel):
         self.Fe_dep = XSParameter(name, 'Fe_dep', 1., 0., 1., 0.0, 1, frozen=True)
         self.Co_dep = XSParameter(name, 'Co_dep', 1., 0., 1., 0.0, 1, frozen=True)
         self.Ni_dep = XSParameter(name, 'Ni_dep', 1., 0., 1., 0.0, 1, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni, self.H2, self.rho, self.amin, self.amax, self.PL, self.H_dep, self.He_dep, self.C_dep, self.N_dep, self.O_dep, self.Ne_dep, self.Na_dep, self.Mg_dep, self.Al_dep, self.Si_dep, self.S_dep, self.Cl_dep, self.Ar_dep, self.Ca_dep, self.Cr_dep, self.Fe_dep, self.Co_dep, self.Ni_dep, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.He, self.C, self.N, self.O, self.Ne,
+                self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl,
+                self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni,
+                self.H2, self.rho, self.amin, self.amax, self.PL,
+                self.H_dep, self.He_dep, self.C_dep, self.N_dep,
+                self.O_dep, self.Ne_dep, self.Na_dep, self.Mg_dep,
+                self.Al_dep, self.Si_dep, self.S_dep, self.Cl_dep,
+                self.Ar_dep, self.Ca_dep, self.Cr_dep, self.Fe_dep,
+                self.Co_dep, self.Ni_dep, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSTBpcf(XSMultiplicativeModel):
@@ -11956,7 +15597,7 @@ class XSxion(XSMultiplicativeModel):
         The outer radius of the disk (in Schwarzschild radii).
     index
         The photon index of the source.
-    redshift
+    Redshift
         The redshift of the absorber.
     Feabun
         The Fe abundance relative to Solar: see [1]_ for more details.
@@ -11986,14 +15627,18 @@ class XSxion(XSMultiplicativeModel):
         self.inner = XSParameter(name, 'inner', 3., 2., 1.e3, 2.0, 1000, units='r_s')
         self.outer = XSParameter(name, 'outer', 100., 2.1, 1.e5, 2.1, 1e5, units='r_s')
         self.index = XSParameter(name, 'index', 2.0, 1.6, 2.2, 1.6, 2.2)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.Feabun = XSParameter(name, 'Feabun', 1., 0., 5., 0.0, 5, frozen=True)
         self.E_cut = XSParameter(name, 'E_cut', 150., 20., 300., 20.0, 300, units='keV')
         self.Ref_type = XSParameter(name, 'Ref_type', 1., 1., 3., 1.0, 3, frozen=True)
         self.Rel_smear = XSParameter(name, 'Rel_smear', 4., 1., 4., 1.0, 4, frozen=True)
         self.Geometry = XSParameter(name, 'Geometry', 1., 1., 4., 1.0, 4, frozen=True)
 
-        XSMultiplicativeModel.__init__(self, name, (self.height, self.lxovrld, self.rate, self.cosAng, self.inner, self.outer, self.index, self.redshift, self.Feabun, self.E_cut, self.Ref_type, self.Rel_smear, self.Geometry))
+        pars = (self.height, self.lxovrld, self.rate, self.cosAng,
+                self.inner, self.outer, self.index, self.Redshift,
+                self.Feabun, self.E_cut, self.Ref_type,
+                self.Rel_smear, self.Geometry)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSxscat(XSMultiplicativeModel):
@@ -12095,7 +15740,7 @@ class XSzdust(XSMultiplicativeModel):
         The color excess, E(B-V).
     Rv
         The ratio of total to selective extinction.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     References
@@ -12111,9 +15756,10 @@ class XSzdust(XSMultiplicativeModel):
         self.method = XSParameter(name, 'method', 1, 1, 3, 1, 3, alwaysfrozen=True)
         self.E_BmV = XSParameter(name, 'E_BmV', 0.1, 0.0, 100., 0.0, 100, aliases=["EBV"])
         self.Rv = XSParameter(name, 'Rv', 3.1, 0.0, 10., 0.0, 10, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0.0, 0.0, 20., 0.0, 20, frozen=True)
+        self.Redshift = mkRedshift(name, minval=0, maxval=20)
 
-        XSMultiplicativeModel.__init__(self, name, (self.method, self.E_BmV, self.Rv, self.redshift))
+        pars = (self.method, self.E_BmV, self.Rv, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzedge(XSMultiplicativeModel):
@@ -12127,7 +15773,7 @@ class XSzedge(XSMultiplicativeModel):
         The threshold edge, in keV.
     MaxTau
         The absorption depth at the threshold.
-    redshift
+    Redshift
         The redshift of the edge.
 
     See Also
@@ -12146,8 +15792,10 @@ class XSzedge(XSMultiplicativeModel):
     def __init__(self, name='zedge'):
         self.edgeE = XSParameter(name, 'edgeE', 7.0, 0., 100., 0.0, 100, units='keV')
         self.MaxTau = XSParameter(name, 'MaxTau', 1., 0., 5., 0.0, 10)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.edgeE, self.MaxTau, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.edgeE, self.MaxTau, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzhighect(XSMultiplicativeModel):
@@ -12161,7 +15809,7 @@ class XSzhighect(XSMultiplicativeModel):
         The cut-off energy, in keV.
     foldE
         The e-folding energy, in keV.
-    redshift
+    Redshift
         The redshift.
 
     See Also
@@ -12180,8 +15828,10 @@ class XSzhighect(XSMultiplicativeModel):
     def __init__(self, name='zhighect'):
         self.cutoffE = XSParameter(name, 'cutoffE', 10., 1.e-2, 100., 1e-4, 200, units='keV')
         self.foldE = XSParameter(name, 'foldE', 15., 1.e-2, 100., 1e-4, 200, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.cutoffE, self.foldE, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.cutoffE, self.foldE, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
     def guess(self, dep, *args, **kwargs):
         pos = get_xspec_position(dep, *args)
@@ -12233,7 +15883,7 @@ class XSzpcfabs(XSMultiplicativeModel):
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
     CvrFract
         The covering fraction.
-    redshift
+    Redshift
         The redshift.
 
     See Also
@@ -12252,8 +15902,10 @@ class XSzpcfabs(XSMultiplicativeModel):
     def __init__(self, name='zpcfabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
         self.CvrFract = XSParameter(name, 'CvrFract', 0.5, 0.05, 0.95, 0.0, 1)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.CvrFract, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.CvrFract, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzphabs(XSMultiplicativeModel):
@@ -12265,7 +15917,7 @@ class XSzphabs(XSMultiplicativeModel):
     ----------
     nH
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12289,8 +15941,10 @@ class XSzphabs(XSMultiplicativeModel):
 
     def __init__(self, name='zphabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzxipab(XSMultiplicativeModel):
@@ -12327,9 +15981,11 @@ class XSzxipab(XSMultiplicativeModel):
         self.nHmax = XSParameter(name, 'nHmax', 10.0, min=1e-07, max=1000.0, hard_min=1e-07, hard_max=1000000.0, units='10^22')
         self.beta = XSParameter(name, 'beta', 0.0, min=-10.0, max=10.0, hard_min=-10.0, hard_max=10.0)
         self.log_xi = XSParameter(name, 'log_xi', 3.0, min=-3.0, max=6.0, hard_min=-3.0, hard_max=6.0)
-        self.redshift = XSParameter(name, 'redshift', 0.0, min=0.0, max=10.0, hard_min=0.0, hard_max=10.0, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nHmin, self.nHmax, self.beta,
-                                                    self.log_xi, self.redshift))
+        self.redshift = mkRedshift(name, minval=0, lc=True)
+
+        pars = (self.nHmin, self.nHmax, self.beta, self.log_xi,
+                self.redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzxipcf(XSMultiplicativeModel):
@@ -12351,7 +16007,7 @@ class XSzxipcf(XSMultiplicativeModel):
         The log of xi: see [1]_ for more details.
     CvrFract
         The covering fraction.
-    redshift
+    Redshift
         The redshift of the source.
 
     References
@@ -12367,9 +16023,10 @@ class XSzxipcf(XSMultiplicativeModel):
         self.Nh = XSParameter(name, 'Nh', 10, 0.05, 500, 0.05, 500, units='10^22 atoms / cm^2')
         self.log_xi = XSParameter(name, 'log_xi', 3, -3, 6, -3, 6, aliases=["logxi"])
         self.CvrFract = XSParameter(name, 'CvrFract', 0.5, 0., 1., 0.0, 1)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSMultiplicativeModel.__init__(self, name, (self.Nh, self.log_xi, self.CvrFract, self.redshift))
+        pars = (self.Nh, self.log_xi, self.CvrFract, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzredden(XSMultiplicativeModel):
@@ -12387,7 +16044,7 @@ class XSzredden(XSMultiplicativeModel):
     ----------
     E_BmV
         The value of E(B-V) for the line of sight to the source.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12405,9 +16062,10 @@ class XSzredden(XSMultiplicativeModel):
 
     def __init__(self, name='zredden'):
         self.E_BmV = XSParameter(name, 'E_BmV', 0.05, 0., 10., 0.0, 10, aliases=["EBV"])
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
+        self.Redshift = mkRedshift(name)
 
-        XSMultiplicativeModel.__init__(self, name, (self.E_BmV, self.redshift))
+        pars = (self.E_BmV, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzsmdust(XSMultiplicativeModel):
@@ -12459,7 +16117,7 @@ class XSzTBabs(XSMultiplicativeModel):
     ----------
     nH
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12482,8 +16140,10 @@ class XSzTBabs(XSMultiplicativeModel):
 
     def __init__(self, name='ztbabs'):
         self.nH = XSParameter(name, 'nH', 1., 0., 1E5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzvarabs(XSMultiplicativeModel):
@@ -12495,7 +16155,7 @@ class XSzvarabs(XSMultiplicativeModel):
     ----------
     H, He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
         See [1]_ for a description of the units.
-    redshift
+    Redshift
         The redshift of the absorber
 
     See Also
@@ -12536,8 +16196,13 @@ class XSzvarabs(XSMultiplicativeModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 10000, units='sFe22', frozen=True)
         self.Co = XSParameter(name, 'Co', 1., 0., 1000., 0.0, 10000, units='sCo22', frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 10000, units='sNi22', frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.H, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.H, self.He, self.C, self.N, self.O, self.Ne,
+                self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl,
+                self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni,
+                self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzvfeabs(XSMultiplicativeModel):
@@ -12555,7 +16220,7 @@ class XSzvfeabs(XSMultiplicativeModel):
         The iron abundance relative to solar.
     FEKedge
         The Fe K edge energy, in keV.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     References
@@ -12572,8 +16237,11 @@ class XSzvfeabs(XSMultiplicativeModel):
         self.metals = XSParameter(name, 'metals', 1., 0.0, 100., 0.0, 100)
         self.FEabun = XSParameter(name, 'FEabun', 1., 0.0, 100., 0.0, 100)
         self.FEKedge = XSParameter(name, 'FEKedge', 7.11, 7.0, 9.5, 7.0, 9.5, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.metals, self.FEabun, self.FEKedge, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.metals, self.FEabun, self.FEKedge,
+                self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzvphabs(XSMultiplicativeModel):
@@ -12587,7 +16255,7 @@ class XSzvphabs(XSMultiplicativeModel):
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
     He, C, N, O, Ne, Na, Mg, Al, Si, S, Cl, Ar, Ca, Cr, Fe, Co, Ni
         The abundance of the element in solar units.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12628,8 +16296,13 @@ class XSzvphabs(XSMultiplicativeModel):
         self.Fe = XSParameter(name, 'Fe', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Co = XSParameter(name, 'Co', 1., 0., 1000., 0.0, 1000, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1., 0., 1000., 0.0, 1000, frozen=True)
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.He, self.C, self.N, self.O, self.Ne, self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl, self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.He, self.C, self.N, self.O, self.Ne,
+                self.Na, self.Mg, self.Al, self.Si, self.S, self.Cl,
+                self.Ar, self.Ca, self.Cr, self.Fe, self.Co, self.Ni,
+                self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzwabs(XSMultiplicativeModel):
@@ -12641,7 +16314,7 @@ class XSzwabs(XSMultiplicativeModel):
     ----------
     nH
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12659,8 +16332,10 @@ class XSzwabs(XSMultiplicativeModel):
 
     def __init__(self, name='zwabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSzwndabs(XSMultiplicativeModel):
@@ -12674,7 +16349,7 @@ class XSzwndabs(XSMultiplicativeModel):
         The equivalent hydrogen column (in units of 10^22 atoms/cm^2).
     WindowE
         The window energy, in keV.
-    redshift
+    Redshift
         The redshift of the absorber.
 
     See Also
@@ -12693,8 +16368,10 @@ class XSzwndabs(XSMultiplicativeModel):
     def __init__(self, name='zwndabs'):
         self.nH = XSParameter(name, 'nH', 1., 0., 10., 0.0, 20, units='10^22 atoms / cm^2')
         self.WindowE = XSParameter(name, 'WindowE', 1., .05, 20., 0.03, 20, units='keV')
-        self.redshift = XSParameter(name, 'redshift', 0., -0.999, 10., -0.999, 10, frozen=True)
-        XSMultiplicativeModel.__init__(self, name, (self.nH, self.WindowE, self.redshift))
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.nH, self.WindowE, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XScflux(XSConvolutionKernel):
@@ -12836,16 +16513,13 @@ class XSclumin(XSConvolutionKernel):
         self.Emax = XSParameter(name, 'Emax', 10.0, min=0.0, max=1e6,
                                 hard_min=0.0, hard_max=1e6, frozen=True,
                                 units='keV')
-        self.Redshift = XSParameter(name, 'Redshift', 0, min=-0.999, max=10,
-                                    hard_min=-0.999, hard_max=10, frozen=True)
+        self.Redshift = mkRedshift(name)
         self.lg10Lum = XSParameter(name, 'lg10Lum', 40.0, min=-100.0,
                                    max=100.0, hard_min=-100.0, hard_max=100.0,
                                    frozen=False, units='cgs')
-        XSConvolutionKernel.__init__(self, name, (self.Emin,
-                                                  self.Emax,
-                                                  self.Redshift,
-                                                  self.lg10Lum
-                                                  ))
+
+        pars = (self.Emin, self.Emax, self.Redshift, self.lg10Lum)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 @version_at_least("12.13.0")
@@ -12855,6 +16529,7 @@ class XScglumin(XSConvolutionKernel):
     The model is described at [1]_.
 
     .. versionadded:: 4.15.1
+       This model requires XSPEC 12.13.0 or later.
 
     Attributes
     ----------
@@ -13082,10 +16757,8 @@ class XSireflect(XSConvolutionKernel):
     def __init__(self, name='xsireflect'):
         self.rel_refl = XSParameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6, frozen=False)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
-                                    hard_min=-0.999, hard_max=10.0, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.0, max=1e6,
                                     hard_min=0.0, hard_max=1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, min=0.05, max=0.95,
@@ -13095,14 +16768,10 @@ class XSireflect(XSConvolutionKernel):
                                   units='K')
         self.xi = XSParameter(name, 'xi', 1.0, min=0.0, max=1e3, hard_min=0.0,
                               hard_max=5e3, frozen=False, units='erg cm/s')
-        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
-                                                  self.Redshift,
-                                                  self.abund,
-                                                  self.Fe_abund,
-                                                  self.cosIncl,
-                                                  self.T_disk,
-                                                  self.xi
-                                                  ))
+
+        pars = (self.rel_refl, self.Redshift, self.abund,
+                self.Fe_abund, self.cosIncl, self.T_disk, self.xi)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 class XSkdblur(XSConvolutionKernel):
@@ -13481,20 +17150,16 @@ class XSreflect(XSConvolutionKernel):
     def __init__(self, name='xsreflect'):
         self.rel_refl = XSParameter(name, 'rel_refl', 0.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6, frozen=False)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
-                                    hard_min=-0.999, hard_max=10.0, frozen=True)
-        self.abund = XSParameter(name, 'abund', 1.0, min=0.0, max=1e6,
-                                 hard_min=0.0, hard_max=1e6, frozen=True)
+        self.Redshift = mkRedshift(name)
+        self.abund = mkabund(name)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.0, max=1e6,
                                     hard_min=0.0, hard_max=1e6, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.45, min=0.05, max=0.95,
                                    hard_min=0.05, hard_max=0.95, frozen=True)
-        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
-                                                  self.Redshift,
-                                                  self.abund,
-                                                  self.Fe_abund,
-                                                  self.cosIncl
-                                                  ))
+
+        pars = (self.rel_refl, self.Redshift, self.abund,
+                self.Fe_abund, self.cosIncl)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 class XSrfxconv(XSConvolutionKernel):
@@ -13546,20 +17211,17 @@ class XSrfxconv(XSConvolutionKernel):
     def __init__(self, name='xsrfxconv'):
         self.rel_refl = XSParameter(name, 'rel_refl', -1.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6)
-        self.redshift = XSParameter(name, 'redshift', 0.0, min=0.0, max=4.0,
-                                    hard_min=0.0, hard_max=4.0, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.5, max=3,
                                     hard_min=0.5, hard_max=3, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.5, min=0.05, max=0.95,
                                    hard_min=0.05, hard_max=0.95, frozen=True)
         self.log_xi = XSParameter(name, 'log_xi', 1.0, min=1.0, max=6.0,
                                   hard_min=1.0, hard_max=6.0)
-        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
-                                                  self.redshift,
-                                                  self.Fe_abund,
-                                                  self.cosIncl,
-                                                  self.log_xi
-                                                  ))
+
+        pars = (self.rel_refl, self.redshift, self.Fe_abund,
+                self.cosIncl, self.log_xi)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 class XSrgsxsrc(XSConvolutionKernel):
@@ -13849,8 +17511,7 @@ class XSxilconv(XSConvolutionKernel):
     def __init__(self, name='xsxilconv'):
         self.rel_refl = XSParameter(name, 'rel_refl', -1.0, min=-1.0, max=1e6,
                                     hard_min=-1.0, hard_max=1e6)
-        self.redshift = XSParameter(name, 'redshift', 0.0, min=0.0, max=4.0,
-                                    hard_min=0.0, hard_max=4.0, frozen=True)
+        self.redshift = mkRedshift(name, minval=0, maxval=4, lc=True)
         self.Fe_abund = XSParameter(name, 'Fe_abund', 1.0, min=0.5, max=3.0,
                                     hard_min=0.5, hard_max=3.0, frozen=True)
         self.cosIncl = XSParameter(name, 'cosIncl', 0.5, min=0.05, max=0.95,
@@ -13860,13 +17521,10 @@ class XSxilconv(XSConvolutionKernel):
         self.cutoff = XSParameter(name, 'cutoff', 300.0, min=20.0, max=300.0,
                                   hard_min=20.0, hard_max=300.0,
                                   units='keV', frozen=True)
-        XSConvolutionKernel.__init__(self, name, (self.rel_refl,
-                                                  self.redshift,
-                                                  self.Fe_abund,
-                                                  self.cosIncl,
-                                                  self.log_xi,
-                                                  self.cutoff
-                                                  ))
+
+        pars = (self.rel_refl, self.redshift, self.Fe_abund,
+                self.cosIncl, self.log_xi, self.cutoff)
+        XSConvolutionKernel.__init__(self, name, pars)
 
 
 class XSzashift(XSConvolutionKernel):
@@ -13900,8 +17558,8 @@ class XSzashift(XSConvolutionKernel):
     _calc = _xspec.C_zashift
 
     def __init__(self, name='xszashift'):
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
-                                    hard_min=-0.999, hard_max=10, frozen=True)
+        self.Redshift = mkRedshift(name)
+
         XSConvolutionKernel.__init__(self, name, (self.Redshift,))
 
 
@@ -13936,8 +17594,8 @@ class XSzmshift(XSConvolutionKernel):
     _calc = _xspec.C_zmshift
 
     def __init__(self, name='xszmshift'):
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=-0.999, max=10.0,
-                                    hard_min=-0.999, hard_max=10, frozen=True)
+        self.Redshift = mkRedshift(name)
+
         XSConvolutionKernel.__init__(self, name, (self.Redshift,))
 
 
@@ -13968,6 +17626,7 @@ class XSbwcycl(XSAdditiveModel):
         unities).
     delta
         Ratio between bulk and thermal Comptonization importances.
+        The XSPEC documentation may name this parameter del.
     B
         The magnetic field in units of 10^12 G.
     Mdot
