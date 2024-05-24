@@ -1019,10 +1019,8 @@ def neldermead(fcn: StatFunc,
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
-    if step is None or (np.iterable(step) and len(step) != len(x)):
+    if step is None:
         step = np.full(x.shape, 1.2, dtype=np.float64)
-    elif np.isscalar(step):
-        step = np.full(x.shape, step, dtype=np.float64)
 
     # A safeguard just in case the initial simplex is outside the bounds
     #
