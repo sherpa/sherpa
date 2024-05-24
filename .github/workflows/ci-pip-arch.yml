@@ -19,14 +19,7 @@ jobs:
       matrix:
         include:
           - arch: aarch64
-
-          # The tests on ppc64le fail rather spectacularly,
-          # and it's not obvious why, so skip for now. AstroPy also
-          # see some interesting errors so maybe there are problems
-          # with the emulation or NumPy or ...
-          # https://github.com/astropy/astropy/pull/11697
-          #
-          # - arch: ppc64le
+          - arch: ppc64le
 
           # We currently do not have any user requests for this
           # architecture.
@@ -45,7 +38,9 @@ jobs:
       uses: uraimo/run-on-arch-action@v2
       with:
         arch: ${{ matrix.arch }}
-        distro: ubuntu_rolling
+        # distro: ubuntu_rolling
+        # ubuntu 22.04 uses Python 3.10
+        distro: ubuntu22.04
 
         shell: /bin/bash
 
@@ -82,7 +77,5 @@ jobs:
           #
           sed -i.orig "s|#configure=None|configure=--disable-maintainer-mode --enable-stuberrorlib --disable-shared --enable-shared=libgrp,stklib --disable-dependency-tracking|" setup.cfg
 
-          pip3 install -e .
-          pip3 install pytest
-          pip3 install pytest-xdist  # not really needed here
+          pip3 install -e .[test]
           python3 -m pytest
