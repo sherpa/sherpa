@@ -25,16 +25,15 @@ import signal
 
 import numpy as np
 
-from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
-    bool_cast, is_iterable, list_to_open_interval, sao_fcmp
-from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
-from sherpa.utils import formatting
 from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
 from sherpa.stats import Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
+from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
+    bool_cast, is_iterable, list_to_open_interval, sao_fcmp, formatting
+from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -108,8 +107,7 @@ class StatInfoResults(NoNewAttributesAfterInit):
         self.qval = qval
         self.rstat = rstat
 
-        # TODO: should this call
-        # NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __repr__(self):
         return '<Statistic information results instance>'
@@ -296,7 +294,8 @@ class FitResults(NoNewAttributesAfterInit):
         self.statname = statname
         self.datasets = None  # To be filled by calling function
         self.param_warnings = param_warnings
-        NoNewAttributesAfterInit.__init__(self)
+
+        super().__init__()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -421,7 +420,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
 
     def __init__(self, fit, results, parlist=None):
         if parlist is None:
-            parlist = [p for p in fit.model.get_thawed_pars()]
+            parlist = fit.model.get_thawed_pars()
 
         # TODO: Can we not just import them at the top level?  It may
         # cause an import loop.
@@ -438,29 +437,32 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.percent = erf(self.sigma / np.sqrt(2.0)) * 100.0
         self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
         self.parvals = tuple(p.val for p in parlist if not p.frozen)
-        self.parmins = ()
-        self.parmaxes = ()
         self.nfits = 0
 
+        pmins = []
+        pmaxes = []
         for i in range(len(parlist)):
             if (results[2][i] == est_hardmin or
                     results[2][i] == est_hardminmax):
-                self.parmins = self.parmins + (None,)
+                pmins.append(None)
                 warning("hard minimum hit for parameter %s", self.parnames[i])
             else:
-                self.parmins = self.parmins + (results[0][i],)
+                pmins.append(results[0][i])
 
             if (results[2][i] == est_hardmax or
                     results[2][i] == est_hardminmax):
-                self.parmaxes = self.parmaxes + (None,)
+                pmaxes.append(None)
                 warning("hard maximum hit for parameter %s", self.parnames[i])
             else:
-                self.parmaxes = self.parmaxes + (results[1][i],)
+                pmaxes.append(results[1][i])
+
+        self.parmins = tuple(pmins)
+        self.parmaxes = tuple(pmaxes)
 
         self.nfits = results[3]
         self.extra_output = results[4]
 
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -559,7 +561,11 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         return "\n".join(out) + myformat(hfmt, lowstr, lownum, highstr, highnum)
 
 
-class IterFit(NoNewAttributesAfterInit):
+# Since this is an internal class, it's not derived from
+# NoNewAttributesAfterInit.
+#
+class IterFit:
+    """Support iterative fitting schemes."""
 
     def __init__(self, data, model, stat, method, itermethod_opts=None):
         if itermethod_opts is None:
@@ -606,9 +612,6 @@ class IterFit(NoNewAttributesAfterInit):
                 raise ValueError(f"{iname} is not an iterative fitting method") from None
 
             self.iterate = True
-
-        # TODO: should this call
-        # NoNewAttributesAfterInit.__init__(self)
 
     # SIGINT (i.e., typing ctrl-C) can dump the user to the Unix prompt,
     # when signal is sent from G95 compiled code.  What we want is to
@@ -950,7 +953,8 @@ class Fit(NoNewAttributesAfterInit):
         # an iterative fitting option.
         self._iterfit = IterFit(self.data, self.model, self.stat, self.method,
                                 itermethod_opts)
-        NoNewAttributesAfterInit.__init__(self)
+
+        super().__init__()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
