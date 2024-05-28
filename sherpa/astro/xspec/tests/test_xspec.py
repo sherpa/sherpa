@@ -118,7 +118,7 @@ def get_xspec_models():
         remove_item(model_names, 'XSbsedov')
 
     # The bvvnei model causes a crash with XSPEC 12.14.0 to 12.14.0h
-    # (it should be fixed in 12.4.0i and later). The model is not
+    # (it should be fixed in 12.14.0i and later). The model is not
     # present before 12.14.0.
     #
     if version in ["12.14.0", "12.14.0a", "12.14.0b",
