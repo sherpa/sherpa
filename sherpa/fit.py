@@ -24,8 +24,6 @@ import os
 import signal
 
 import numpy as np
-from numpy import arange, array, iterable, sqrt, where, \
-    ones_like, isnan, isinf
 
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_iterable, list_to_open_interval, sao_fcmp
@@ -364,7 +362,7 @@ class FitResults(NoNewAttributesAfterInit):
             out.extend(f'   {name:<12s}   {val:<12g}'
                        for name, val in zip(self.parnames, self.parvals))
         else:
-            covar_err = sqrt(self.covar.diagonal())
+            covar_err = np.sqrt(self.covar.diagonal())
             out.extend(f'   {name:<12s}   {val:<12g} +/- {covarerr:<12g}'
                        for name, val, covarerr in zip(self.parnames,
                                                       self.parvals,
@@ -437,7 +435,7 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.fitname = type(fit.method).__name__.lower()
         self.statname = type(fit.stat).__name__.lower()
         self.sigma = fit.estmethod.sigma
-        self.percent = erf(self.sigma / sqrt(2.0)) * 100.0
+        self.percent = erf(self.sigma / np.sqrt(2.0)) * 100.0
         self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
         self.parvals = tuple(p.val for p in parlist if not p.frozen)
         self.parmins = ()
@@ -758,11 +756,11 @@ class IterFit(NoNewAttributesAfterInit):
         for d in self.data.datasets:
             # If there's no filter, create a filter that is
             # all True
-            if not iterable(d.mask):
+            if not np.iterable(d.mask):
                 mask_original.append(d.mask)
-                d.mask = ones_like(array(d.get_dep(False), dtype=bool))
+                d.mask = np.ones_like(np.array(d.get_dep(False), dtype=bool))
             else:
-                mask_original.append(array(d.mask))
+                mask_original.append(np.array(d.mask))
 
         # QUS: why is teardown being called now when the model can be
         #      evaluated multiple times in the following loop?
@@ -832,7 +830,7 @@ class IterFit(NoNewAttributesAfterInit):
                             hasattr(d, "get_background")):
                         for bid in d.background_ids:
                             b = d.get_background(bid)
-                            if iterable(b.mask) and iterable(d.mask):
+                            if np.iterable(b.mask) and np.iterable(d.mask):
                                 if len(b.mask) == len(d.mask):
                                     b.mask = d.mask
 
@@ -1119,10 +1117,10 @@ class Fit(NoNewAttributesAfterInit):
         #       investigated if it is possible to pass that check
         #       but fail the following.
         #
-        if not iterable(dep) or len(dep) == 0:
+        if not np.iterable(dep) or len(dep) == 0:
             raise FitErr('nobins')
 
-        if ((iterable(staterror) and 0.0 in staterror) and
+        if ((np.iterable(staterror) and 0.0 in staterror) and
                 isinstance(self.stat, Chi2) and
                 type(self.stat) != Chi2 and
                 type(self.stat) != Chi2ModVar):
@@ -1267,11 +1265,11 @@ class Fit(NoNewAttributesAfterInit):
             thawedpars[idx].frozen = True
             self.current_frozen = idx
 
-            keep_pars = ones_like(pars)
+            keep_pars = np.ones_like(pars)
             keep_pars[idx] = 0
-            current_pars = pars[where(keep_pars)]
-            current_parmins = parmins[where(keep_pars)]
-            current_parmaxes = parmaxes[where(keep_pars)]
+            current_pars = pars[np.where(keep_pars)]
+            current_parmins = parmins[np.where(keep_pars)]
+            current_parmaxes = parmaxes[np.where(keep_pars)]
             return (current_pars, current_parmins, current_parmaxes)
 
         def thaw_par(idx):
@@ -1297,11 +1295,11 @@ class Fit(NoNewAttributesAfterInit):
                 return
 
             name = thawedpars[idx].fullname
-            if isnan(lower) or isinf(lower):
+            if np.isnan(lower) or np.isinf(lower):
                 info("%s \tlower bound: -----", name)
             else:
                 info("%s \tlower bound: %g", name, lower[0])
-            if isnan(upper) or isinf(upper):
+            if np.isnan(upper) or np.isinf(upper):
                 info("%s \tupper bound: -----", name)
             else:
                 info("%s \tupper bound: %g", name, upper[0])
@@ -1318,7 +1316,7 @@ class Fit(NoNewAttributesAfterInit):
             dep, staterror, syserror = self.data.to_fit(
                 self.stat.calc_staterror)
 
-            if not iterable(dep) or len(dep) == 0:
+            if not np.iterable(dep) or len(dep) == 0:
                 raise FitErr('nobins')
 
             # For chi-squared and C-stat, reduced statistic is
@@ -1407,10 +1405,10 @@ class Fit(NoNewAttributesAfterInit):
                 if not match:
                     raise EstErr('noparameter', p.fullname)
 
-            parnums = array(parnums)
+            parnums = np.array(parnums)
         else:
             parlist = self.model.get_thawed_pars()
-            parnums = arange(len(startpars))
+            parnums = np.arange(len(startpars))
 
         # If we are here, we are ready to try to derive confidence limits.
         # General rule:  if failure because a hard limit was hit, find
@@ -1525,7 +1523,7 @@ def html_fitresults(fit):
     rows = []
     if has_covar:
         for pname, pval, perr in zip(fit.parnames, fit.parvals,
-                                     sqrt(fit.covar.diagonal())):
+                                     np.sqrt(fit.covar.diagonal())):
             rows.append((pname, f'{pval:12g}',
                          f'&#177; {perr:12g}'))
     else:
