@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2014, 2015, 2016, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2014 - 2016, 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -40,12 +40,13 @@ import os
 import os.path
 import subprocess
 import sys
-
-
-__all__ = ('citation', 'get_config', 'get_include', 'smoke')
+from typing import Any, Optional
 
 from . import _version
 __version__ = _version.get_versions()['version']
+
+
+__all__ = ('citation', 'get_config', 'get_include', 'smoke')
 
 
 class Formatter(logging.Formatter):
@@ -117,7 +118,12 @@ booktitle = {Astronomical Data Analysis Software and Systems XVI},
 """
 
 
-def _make_citation(version, title, date, authors, idval, latest=True):
+def _make_citation(version: str,
+                   title: str,
+                   date: datetime.datetime,
+                   authors: list[str],
+                   idval: str,
+                   latest: bool = True) -> str:
 
     year = date.year
     month = date.strftime('%b').lower()
@@ -151,7 +157,7 @@ def _make_citation(version, title, date, authors, idval, latest=True):
     return out
 
 
-def _get_citation_hardcoded(version):
+def _get_citation_hardcoded(version: str) -> Optional[str]:
     """Retrieve the citation information.
 
     Parameters
@@ -182,6 +188,10 @@ def _get_citation_hardcoded(version):
         cite[version] = dict(**kwargs)
         cite[version]['version'] = version
 
+    add(version='4.16.1', title='sherpa/sherpa: Sherpa 4.16.1',
+        date=todate(2024, 5, 21),
+        authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'luzpaz', 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner', 'nplee', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
+        idval='11236879')
     add(version='4.16.0', title='sherpa/sherpa: Sherpa 4.16.0',
         date=todate(2023, 10, 26),
         authors=['Doug Burke', 'Omar Laurino', 'wmclaugh', 'Hans Moritz Günther', 'Marie-Terrell', 'dtnguyen2', 'Aneta Siemiginowska', 'Harlan Cheer', 'Jamie Budynkiewicz', 'Tom Aldcroft', 'Christoph Deil', 'Brigitta Sipőcz', 'Johannes Buchner', 'nplee', 'Axel Donath', 'Iva Laginja', 'Katrin Leinweber', 'Todd'],
@@ -337,7 +347,7 @@ def _get_citation_hardcoded(version):
     return _make_citation(**kwargs, latest=False)
 
 
-def _download_json(url):
+def _download_json(url: str) -> dict[str, Any]:
     """Return the JSON data or None.
 
     Parameters
@@ -389,7 +399,8 @@ def _download_json(url):
     return {'success': jsdata}
 
 
-def _make_zenodo_citation(jsdata, latest=True):
+def _make_zenodo_citation(jsdata,
+                          latest: bool = True) -> dict[str, str]:
     """Convert Zenodo record to a citation.
 
     Parameters
@@ -435,7 +446,7 @@ def _make_zenodo_citation(jsdata, latest=True):
     return {'success': out}
 
 
-def _get_citation_version():
+def _get_citation_version() -> str:
     """What version of Sherpa are we using?
 
     Returns
@@ -452,7 +463,7 @@ def _get_citation_version():
     return out
 
 
-def _get_citation_zenodo_failure(failed):
+def _get_citation_zenodo_failure(failed: str) -> str:
     """Standard response when there's a problem.
 
     Returns
@@ -468,7 +479,7 @@ def _get_citation_zenodo_failure(failed):
     return out
 
 
-def _get_citation_zenodo_latest():
+def _get_citation_zenodo_latest() -> str:
     """Query Zenodo for the latest release.
 
     Returns
@@ -503,7 +514,7 @@ def _get_citation_zenodo_latest():
         hit = jsdata['success']['hits']['hits'][0]
     except (KeyError, IndexError):
         dbg("Unable to find hits/hits[0]")
-        return _get_citation_zenodo_failure({'failed': 'Unable to parse the Zenodo response'})
+        return _get_citation_zenodo_failure('Unable to parse the Zenodo response')
 
     out = _make_zenodo_citation(hit)
     if 'failed' in out:
@@ -512,7 +523,7 @@ def _get_citation_zenodo_latest():
     return out['success']
 
 
-def _zenodo_missing(version):
+def _zenodo_missing(version: str) -> str:
     """
 
     Parameters
@@ -529,7 +540,7 @@ def _zenodo_missing(version):
     return f'Zenodo has no information for version {version}.'
 
 
-def _parse_zenodo_data(jsdata, version):
+def _parse_zenodo_data(jsdata, version: str) -> dict[str, Any]:
     """Extract data for the given version from a Zenodo query.
 
     Parameters
@@ -573,7 +584,7 @@ def _parse_zenodo_data(jsdata, version):
     return {'success': data}
 
 
-def _download_zenodo_data(version):
+def _download_zenodo_data(version: str) -> dict[str, Any]:
     """Query Zenodo for the specific release.
 
     We have to deal with pagination in the Zenodo response.
@@ -653,7 +664,7 @@ def _download_zenodo_data(version):
             return data
 
 
-def _get_citation_zenodo_version(version):
+def _get_citation_zenodo_version(version: str) -> str:
     """Query Zenodo for the specific release.
 
     As this has to return all Sherpa records it is slow.
@@ -680,7 +691,7 @@ def _get_citation_zenodo_version(version):
     return out['success']
 
 
-def _get_citation(version='current'):
+def _get_citation(version: str = 'current') -> str:
     """Retrieve the citation information.
 
     Parameters
@@ -730,7 +741,9 @@ def _get_citation(version='current'):
     return vstr + _get_citation_zenodo_version(version)
 
 
-def citation(version='current', filename=None, clobber=False):
+def citation(version: str = 'current',
+             filename=None,
+             clobber: bool = False) -> None:
     """Return citatation information for Sherpa.
 
     The citation information is taken from Zenodo [1]_, using the
@@ -800,13 +813,13 @@ def citation(version='current', filename=None, clobber=False):
     send_to_pager(cite, filename=filename, clobber=clobber)
 
 
-def get_include():
+def get_include() -> str:
     "Get the root path for installed Sherpa header files"
 
     return os.path.join(os.path.dirname(__file__), 'include')
 
 
-def get_config():
+def get_config() -> str:
     "Get the path for the installed Sherpa configuration file"
 
     filename = "sherpa-standalone.rc"
@@ -818,8 +831,8 @@ def get_config():
 
         # If SHERPARC is set, try that
         #
-        if 'SHERPARC' in os.environ:
-            config = os.environ.get('SHERPARC')
+        config = os.environ.get('SHERPARC')
+        if config is not None:
             if os.path.isfile(config):
                 return config
 
@@ -835,7 +848,11 @@ def get_config():
     return os.path.join(os.path.dirname(__file__), filename)
 
 
-def smoke(verbosity=0, require_failure=False, fits=None, xspec=False, ds9=False):
+def smoke(verbosity: int = 0,
+          require_failure: bool = False,
+          fits: Optional[str] = None,
+          xspec: bool = False,
+          ds9: bool = False) -> None:
     """Run Sherpa's "smoke" test.
 
     The smoke test is a simple test that ensures the Sherpa
@@ -953,7 +970,7 @@ def _install_test_deps() -> list[str]:
     # though the current list of required plugins is empty.
     #
     deps: list[dict[str, str]] = [{'name': 'pytest',
-                                   'constraint': 'pytest>=5.0,!=5.2.3'}]
+                                   'constraint': 'pytest>=8.0'}]
     pytest_plugins: list[dict[str, str]] = []
 
     def get(dep: dict[str, str]) -> tuple[str, str, str]:
