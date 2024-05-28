@@ -25,7 +25,7 @@
 
 namespace sherpa {
 
-  template <typename T> class ParVal : public Array1D<T> {
+  template <typename T> class ParVal final : public Array1D<T> {
 
     friend std::ostream &operator<<(std::ostream &s, const ParVal<T> &P) {
       return P.print(s);
