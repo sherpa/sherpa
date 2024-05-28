@@ -2,7 +2,8 @@
 #define Simplex_hh
 
 //
-//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021, 2024
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -47,6 +48,9 @@ namespace sherpa {
       return *this;
     }
 
+    // We overload the parent operator with a different signature
+    using Array1D<T>::operator<;
+    
     bool operator<(const ParVal<T> &rhs) const {
       int n = rhs.size() - 1;
       return this->vec[n] < rhs[n];
