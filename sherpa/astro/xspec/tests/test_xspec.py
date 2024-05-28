@@ -117,6 +117,15 @@ def get_xspec_models():
                    "12.14.0c", "12.14.0d", "12.14.0e"]:
         remove_item(model_names, 'XSbsedov')
 
+    # The bvvnei model causes a crash with XSPEC 12.14.0 to 12.14.0h
+    # (it should be fixed in 12.14.0i and later). The model is not
+    # present before 12.14.0.
+    #
+    if version in ["12.14.0", "12.14.0a", "12.14.0b",
+                   "12.14.0c", "12.14.0d", "12.14.0e",
+                   "12.14.0f", "12.14.0g", "12.14.0h"]:
+        remove_item(model_names, 'XSbvvnei')
+
     models = [getattr(xs, model_name) for model_name in model_names]
     models = list(filter(lambda mod: mod.version_enabled, models))
 
