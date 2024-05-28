@@ -21,7 +21,10 @@
 from functools import wraps
 import logging
 import os
+from pathlib import Path
 import signal
+from typing import Optional, Protocol, Union, \
+    runtime_checkable
 
 import numpy as np
 
@@ -29,7 +32,7 @@ from sherpa.data import DataSimulFit
 from sherpa.estmethods import Covariance, EstNewMin
 from sherpa.models import SimulFitModel
 from sherpa.optmethods import LevMar, NelderMead
-from sherpa.stats import Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
+from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_iterable, list_to_open_interval, sao_fcmp, formatting
@@ -561,6 +564,65 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         return "\n".join(out) + myformat(hfmt, lowstr, lownum, highstr, highnum)
 
 
+# Rather than use typing.TextIO just define what operations we
+# need. Follows https://github.com/python/typing/discussions/829
+#
+@runtime_checkable
+class WriteableTextFile(Protocol):
+    """An object that supports write() and close()."""
+
+    def write(self, s: str, /) -> int: ...
+
+    def close(self) -> None: ...
+
+
+class IterCallback:
+    """Update the model with the suggested parameters.
+
+    This defines the interface returned by the _get_callback method
+    for the IterFit class. It is not intended for external use at this
+    time.
+
+    """
+
+    __slots__ = ("data", "model", "stat", "fh", "nfev")
+
+    def __init__(self,
+                 data: DataSimulFit,
+                 model: SimulFitModel,
+                 stat: Stat,
+                 fh: Optional[WriteableTextFile] = None
+                 ) -> None:
+        self.data = data
+        self.model = model
+        self.stat = stat
+        self.fh = fh
+        self.nfev = 0
+
+    def __call__(self,
+                 pars: np.ndarray
+                 ) -> tuple[float, np.ndarray]:
+        "Evaluate the statistic, increase nfev, and maybe update the fh."
+
+        # Update the parameter values
+        self.model.thawedpars = pars
+
+        # The return value
+        output = self.stat.calc_stat(self.data, self.model)
+
+        # Write out the data, if requested. This is done before nfev
+        # is updated.
+        #
+        if self.fh is not None:
+            vals = [f'{self.nfev:5e}', f'{output[0]:5e}']
+            vals.extend([f'{val:5e}' for val in self.model.thawedpars])
+            self.fh.write(' '.join(vals) + '\n')
+
+        # Update the counter and return the results
+        self.nfev += 1
+        return output
+
+
 # Since this is an internal class, it's not derived from
 # NoNewAttributesAfterInit.
 #
@@ -595,8 +657,6 @@ class IterFit:
         # self.extra_args = None
         self._staterror = None
         self._syserror = None
-        self._nfev = 0
-        self._file = None
 
         # Options to send to iterative fitting method
         self.itermethod_opts = itermethod_opts
@@ -625,7 +685,20 @@ class IterFit:
     def _sig_handler(self, signum, frame):
         raise KeyboardInterrupt()
 
-    def _get_callback(self, outfile=None, clobber=False):
+    def _get_callback(self,
+                      fh: Optional[WriteableTextFile] = None
+                      ) -> IterCallback:
+        """Create the function that returns the statistic.
+
+        If fh is set then each set of parameters, along with the
+        statistic, are written out to the handle.
+
+        .. versionchanged:: 4.17.0
+           The routine now accepts an optional fh parameter rather
+           than outfile and clobber. The calling routine is
+           responsible for setting up the argument.
+
+        """
         if len(self.model.thawedpars) == 0:
             raise FitErr('nothawedpar')
 
@@ -638,34 +711,8 @@ class IterFit:
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
-        # self.extra_args = self.get_extra_args(self._dep)
-        self._nfev = 0
-        if outfile is not None:
-            if not clobber and os.path.isfile(outfile):
-                raise FitErr('noclobererr', outfile)
-
-            names = ['# nfev statistic']
-            names.extend(par.fullname
-                         for par in self.model.get_thawed_pars())
-            self._file = open(outfile, 'w', encoding="ascii")
-            print(' '.join(names), file=self._file)
-
-        def cb(pars):
-            # We need to store the new parameter values in order to support
-            # linked parameters
-
-            self.model.thawedpars = pars
-            stat = self.stat.calc_stat(self.data, self.model)
-
-            if self._file is not None:
-                vals = [f'{self._nfev:5e} {stat[0]:5e}']
-                vals.extend([f'{val:5e}' for val in self.model.thawedpars])
-                print(' '.join(vals), file=self._file)
-
-            self._nfev += 1
-            return stat
-
-        return cb
+        return IterCallback(data=self.data, model=self.model,
+                            stat=self.stat, fh=fh)
 
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs=(),
                  statkwargs=None, cache=True):
@@ -1080,16 +1127,26 @@ class Fit(NoNewAttributesAfterInit):
     # TODO: the numcores argument is currently unused.
     #
     @evaluates_model
-    def fit(self, outfile=None, clobber=False, numcores=1):
+    def fit(self,
+            outfile: Optional[Union[str, Path, WriteableTextFile]] = None,
+            clobber: bool = False,
+            numcores: Optional[int] = 1
+            ) -> FitResults:
         """Fit the model to the data.
+
+        .. versionchanged:: 4.17.0
+           The outfile parameter can now be sent a Path object or a
+           file handle instead of a string.
 
         Parameters
         ----------
-        outfile : str or None, optional
+        outfile : str, Path, IO object, or None, optional
            If not `None` then information on the fit is written to
-           this file.
+           this file (as defined by a filename, path, or file
+           handle).
         clobber : bool, optional
-           Determines if the output file can be overwritten.
+           Determines if the output file can be overwritten. This is
+           only used when `outfile` is a string or `Path` object.
         numcores : int or None, optional
            The number of cores to use in fitting simultaneous data.
 
@@ -1113,7 +1170,55 @@ class Fit(NoNewAttributesAfterInit):
         file with a header line containing the text
         "# nfev statistic" and then a list of the thawed parameters,
         and then one line for each iteration, with the values separated
-        by spaces.
+        by spaces. If ``outfile`` is sent a file handle it is not
+        closed by this routine.
+
+        Examples
+        --------
+
+        Fit a very-simple model (a constant value) to a small 1D
+        dataset:
+
+        >>> from sherpa.data import Data1D
+        >>> from sherpa.models.basic import Const1D
+        >>> from sherpa.stats import LeastSq
+        >>> d = Data1D("x", [-3, 5, 17, 22], [12, 3, 8, 5])
+        >>> m = Const1D()
+        >>> s = LeastSq()
+        >>> f = Fit(d, m, stat=s)
+        >>> out = f.fit()
+        >>> if not out.succeeded: print("Fit failed")
+        >>> print(out.format())
+        Method                = levmar
+        Statistic             = leastsq
+        Initial fit statistic = 190
+        Final fit statistic   = 46 at function evaluation 4
+        Data points           = 4
+        Degrees of freedom    = 3
+        Change in statistic   = 144
+           const1d.c0     7            +/- 0.5
+
+        >>> print(m)
+        const1d
+           Param        Type          Value          Min          Max      Units
+           -----        ----          -----          ---          ---      -----
+           const1d.c0   thawed            7 -3.40282e+38  3.40282e+38
+
+        Repeat the fit, after resetting the model, so we can see how
+        the optimiser searched the parameter space:
+
+        >>> from io import StringIO
+        >>> m.reset()
+        >>> optdata = StringIO()
+        >>> out2 = f.fit(outfile=optdata)
+        >>> print(optdata.getvalue())
+        # nfev statistic const1d.c0
+        0.000000e+00 1.900000e+02 1.000000e+00
+        1.000000e+00 1.900000e+02 1.000000e+00
+        2.000000e+00 1.899834e+02 1.000345e+00
+        3.000000e+00 4.600000e+01 7.000000e+00
+        4.000000e+00 4.600002e+01 7.002417e+00
+        5.000000e+00 4.600000e+01 7.000000e+00
 
         """
 
@@ -1134,9 +1239,39 @@ class Fit(NoNewAttributesAfterInit):
             raise FitErr('binhas0')
 
         init_stat = self.calc_stat()
-        # output = self.method.fit ...
-        tmp = self._iterfit._get_callback(outfile, clobber)
-        output = self._iterfit.fit(tmp,
+
+        # Using close_on_exit is not ideal but the output is optional,
+        # and it depends on what the input argument was, so it's
+        # awkward to do this with a context manager.
+        #
+        close_on_exit = True
+        if outfile is not None:
+
+            # If this is a "file handle" then skip the clobber check
+            # and mark as something we do not close on exit.
+            #
+            if isinstance(outfile, WriteableTextFile):
+                fh = outfile
+                close_on_exit = False
+            else:
+                # os.path.isfile and open accepts strings and Path objects
+                if not clobber and os.path.isfile(outfile):
+                    raise FitErr('noclobererr', str(outfile))
+
+                fh = open(outfile, mode='w', encoding="ascii")
+
+            # Write out the header line
+            names = ['#', 'nfev', 'statistic']
+            names.extend(par.fullname
+                         for par in self.model.get_thawed_pars())
+
+            fh.write(' '.join(names) + '\n')
+
+        else:
+            fh = None
+
+        cb = self._iterfit._get_callback(fh=fh)
+        output = self._iterfit.fit(cb,
                                    self.model.thawedpars,
                                    self.model.thawedparmins,
                                    self.model.thawedparmaxes)
@@ -1160,12 +1295,12 @@ class Fit(NoNewAttributesAfterInit):
                 if sao_fcmp(par.val, par.max, tol) == 0:
                     param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
 
-        if self._iterfit._file is not None:
-            vals = [f'{self._iterfit._nfev:5e}', f'{tmp[2]:5e}']
+        if fh is not None:
+            vals = [f'{cb.nfev:5e}', f'{tmp[2]:5e}']
             vals.extend([f'{val:5e}' for val in self.model.thawedpars])
-            print(' '.join(vals), file=self._iterfit._file)
-            self._iterfit._file.close()
-            self._iterfit._file = None
+            fh.write(' '.join(vals) + '\n')
+            if close_on_exit:
+                fh.close()
 
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 

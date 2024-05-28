@@ -90,6 +90,8 @@
 # are just representative tests.
 #
 
+from io import StringIO
+
 import numpy as np
 
 import pytest
@@ -3048,9 +3050,77 @@ def test_fit_outfile_simple_check(tmp_path, check_str):
     data = make_data(Data1D)
     mdl = Const1D("mx")
     fit = Fit(data, mdl, stat=Cash())
+    fit.fit(outfile=str(outfile))
+
+    out = outfile.read_text()
+    check_str(out,
+              ["# nfev statistic mx.c0",
+               "0.000000e+00 6.000000e+00 1.000000e+00",
+               "1.000000e+00 6.000000e+00 1.000000e+00",
+               "2.000000e+00 5.995167e+00 1.000345e+00",
+               "3.000000e+00 -3.230695e+00 2.454143e+00",
+               "4.000000e+00 -3.232515e+00 2.454991e+00",
+               "5.000000e+00 -4.073187e+00 3.250567e+00",
+               "6.000000e+00 -4.073357e+00 3.251690e+00",
+               "7.000000e+00 -4.079456e+00 3.333285e+00",
+               "8.000000e+00 -4.079455e+00 3.334435e+00",
+               "9.000000e+00 -4.079456e+00 3.333329e+00",
+               "1.000000e+01 -4.079456e+00 3.333329e+00",
+               ""])
+
+
+def test_fit_outfile_simple_check_path(tmp_path, check_str):
+    """We can send in a path object as of 4.17.0.
+
+    Actually, you could use a Path object before 4.17.0 but
+    know we make it explicit.
+    """
+
+    # tmp_path is a Path object
+    outfile = tmp_path / "sherpa-path.save"
+
+    data = make_data(Data1D)
+    mdl = Const1D("mx")
+    fit = Fit(data, mdl, stat=Cash())
     fit.fit(outfile=outfile)
 
     out = outfile.read_text()
+    check_str(out,
+              ["# nfev statistic mx.c0",
+               "0.000000e+00 6.000000e+00 1.000000e+00",
+               "1.000000e+00 6.000000e+00 1.000000e+00",
+               "2.000000e+00 5.995167e+00 1.000345e+00",
+               "3.000000e+00 -3.230695e+00 2.454143e+00",
+               "4.000000e+00 -3.232515e+00 2.454991e+00",
+               "5.000000e+00 -4.073187e+00 3.250567e+00",
+               "6.000000e+00 -4.073357e+00 3.251690e+00",
+               "7.000000e+00 -4.079456e+00 3.333285e+00",
+               "8.000000e+00 -4.079455e+00 3.334435e+00",
+               "9.000000e+00 -4.079456e+00 3.333329e+00",
+               "1.000000e+01 -4.079456e+00 3.333329e+00",
+               ""])
+
+
+def test_fit_outfile_simple_check_stringio(check_str):
+    """4.17.0 let's outfile be a file-handle/IO object.
+
+    Before 4.17.0 you could use a StringIO object but only if clobber
+    was not set.
+
+    """
+
+    # NOTE: the existing contents get over-written. In this
+    # case the new text is a lot longer than the existing
+    # text so it is completely replaced.
+    #
+    outfile = StringIO("# EXTRA HEADER LINE \n")
+
+    data = make_data(Data1D)
+    mdl = Const1D("mx")
+    fit = Fit(data, mdl, stat=Cash())
+    fit.fit(outfile=outfile)
+
+    out = outfile.getvalue()
     check_str(out,
               ["# nfev statistic mx.c0",
                "0.000000e+00 6.000000e+00 1.000000e+00",
