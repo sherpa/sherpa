@@ -576,12 +576,15 @@ class IterFit:
         # collections of data and models -- so, put data and
         # models into the objects needed for simultaneous fitting,
         # if they are not already in such objects.
-        self.data = data
-        if type(data) is not DataSimulFit:
+        #
+        if isinstance(data, DataSimulFit):
+            self.data = data
+        else:
             self.data = DataSimulFit('simulfit data', (data,))
 
-        self.model = model
-        if type(model) is not SimulFitModel:
+        if isinstance(model, SimulFitModel):
+            self.model = model
+        else:
             self.model = SimulFitModel('simulfit model', (model,))
 
         self.stat = stat
