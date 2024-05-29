@@ -627,7 +627,16 @@ class IterCallback:
 # NoNewAttributesAfterInit.
 #
 class IterFit:
-    """Support iterative fitting schemes."""
+    """Support iterative fitting schemes.
+
+    This class is highly coupled to `Fit`.
+
+    .. versionchanged:: 4.17.0
+       Several internal fields have been removed as they are now
+       handled by the IterCallback class and the changes to the
+       _get_callback routine.
+
+    """
 
     def __init__(self, data, model, stat, method, itermethod_opts=None):
         if itermethod_opts is None:
@@ -660,7 +669,6 @@ class IterFit:
 
         # Options to send to iterative fitting method
         self.itermethod_opts = itermethod_opts
-        self.iterate = False
         self.funcs = {'sigmarej': self.sigmarej}
         self.current_func = None
         try:
@@ -673,8 +681,6 @@ class IterFit:
                 self.current_func = self.funcs[iname]
             except KeyError:
                 raise ValueError(f"{iname} is not an iterative fitting method") from None
-
-            self.iterate = True
 
     # SIGINT (i.e., typing ctrl-C) can dump the user to the Unix prompt,
     # when signal is sent from G95 compiled code.  What we want is to
@@ -930,7 +936,7 @@ class IterFit:
         if statkwargs is None:
             statkwargs = {}
 
-        if not self.iterate:
+        if self.current_func is None:
             return self.method.fit(statfunc, pars, parmins, parmaxes,
                                    statargs, statkwargs)
 
