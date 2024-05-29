@@ -1271,17 +1271,21 @@ class Fit(NoNewAttributesAfterInit):
             fh = None
 
         cb = self._iterfit._get_callback(fh=fh)
-        output = self._iterfit.fit(cb,
-                                   self.model.thawedpars,
-                                   self.model.thawedparmins,
-                                   self.model.thawedparmaxes)
-        # LevMar always calculate chisquare, so call calc_stat
-        # just in case statistics is something other then chisquare
-        self.model.thawedpars = output[1]
-        tmp = list(output)
-        tmp[2] = self.calc_stat()
-        output = tuple(tmp)
-        # end of the gymnastics 'cause one cannot write to a tuple
+        output_orig = self._iterfit.fit(cb,
+                                        self.model.thawedpars,
+                                        self.model.thawedparmins,
+                                        self.model.thawedparmaxes)
+
+        (status, newpars, fval, msg, imap) = output_orig
+
+        # We can not just call cb(newpars) - which would have meant
+        # that writing out the final statistic below is not necessary
+        # - since the statistic used there does not necessarily match
+        # the user-requested statistic. We could change cb.stat but
+        # that seems more effort than it's worth.
+        #
+        self.model.thawedpars = newpars
+        fval_new = self.calc_stat()
 
         # Check if any parameter values are at boundaries, and warn
         # user. This does not include any linked parameters.
@@ -1296,12 +1300,13 @@ class Fit(NoNewAttributesAfterInit):
                     param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
 
         if fh is not None:
-            vals = [f'{cb.nfev:5e}', f'{tmp[2]:5e}']
+            vals = [f'{cb.nfev:5e}', f'{fval_new:5e}']
             vals.extend([f'{val:5e}' for val in self.model.thawedpars])
             fh.write(' '.join(vals) + '\n')
             if close_on_exit:
                 fh.close()
 
+        output = (status, newpars, fval_new, msg, imap)
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
     @evaluates_model
