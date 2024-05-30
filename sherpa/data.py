@@ -119,7 +119,7 @@ import logging
 import warnings
 from abc import ABCMeta
 
-import numpy
+import numpy as np
 
 from sherpa.models.regrid import EvaluationSpace1D, IntegratedAxis, PointAxis
 from sherpa.utils.err import DataErr
@@ -157,7 +157,7 @@ def _check(array):
 
         return array
 
-    return _check(numpy.asanyarray(array))
+    return _check(np.asanyarray(array))
 
 
 def _check_nomask(array):
@@ -175,7 +175,7 @@ def _check_dep(array):
         return _check(array), True
 
     # We know the mask convention is opposite to sherpa
-    if isinstance(array, numpy.ma.MaskedArray):
+    if isinstance(array, np.ma.MaskedArray):
         return _check(array), ~array.mask
 
     # We don't know what the mask convention is
@@ -587,21 +587,21 @@ class Filter():
         # than just whether val behaves like a boolean - for example
         # 'if val or not val: ...'.
         #
-        if not numpy.isscalar(val):
+        if not np.isscalar(val):
             # Is it possible for the following to throw a conversion
             # error? If so, we could catch it and convert it into a
             # DataErr, but it does not seem worth it (as it's not
             # obvious what the error to catch would be).
             #
-            self._mask = numpy.asarray(val, bool)
+            self._mask = np.asarray(val, bool)
 
-        elif val is numpy.ma.nomask:
+        elif val is np.ma.nomask:
             self._mask = True
 
         elif (val is True) or (val is False):
             self._mask = val
 
-        elif isinstance(val, numpy.bool_):
+        elif isinstance(val, np.bool_):
             # are there other types we could be looking for here?
             self._mask = bool(val)
 
@@ -913,7 +913,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
             setattr(self, f"_{attr}", None)
             return
 
-        if not numpy.iterable(val):
+        if not np.iterable(val):
             raise DataErr("notanarray")
 
         # Check the mask before calling _check, which could call asarray
@@ -922,7 +922,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         if check_mask and hasattr(val, "mask"):
             if not hasattr(self.y, "mask") or \
                len(self.y) != len(val) or \
-                   not numpy.all(self.y.mask == val.mask):
+                   not np.all(self.y.mask == val.mask):
 
                 warnings.warn(f"The mask of {attr} differs from the dependent array, only the mask of the dependent array is used in Sherpa.")
 
@@ -1011,7 +1011,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         # course, isscalar does not think None is a scalar, hence the
         # extra check.
         #
-        if val is not None and not numpy.isscalar(val):
+        if val is not None and not np.isscalar(val):
             if self.size is None:
                 raise DataErr("The independent axis has not been set yet")
 
@@ -1144,15 +1144,15 @@ class Data(NoNewAttributesAfterInit, BaseData):
             If a number then it is used for each element.
 
         """
-        if numpy.iterable(val):
-            dep = numpy.asarray(val, SherpaFloat)
+        if np.iterable(val):
+            dep = np.asarray(val, SherpaFloat)
         else:
             nelem = self.size
             if nelem is None:
                 raise DataErr("sizenotset", self.name)
 
             val = SherpaFloat(val)
-            dep = val * numpy.ones(nelem, dtype=SherpaFloat)
+            dep = val * np.ones(nelem, dtype=SherpaFloat)
 
         self.y = dep
 
@@ -1450,7 +1450,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
                 tmp_model = data.eval_model_to_fit(func)
                 total_model.append(tmp_model)
 
-            return numpy.concatenate(total_model)
+            return np.concatenate(total_model)
 
         # best to make this a different derived class
         funcs = []
@@ -1462,7 +1462,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
         all_model = []
         for model, data in zip(total_model, self.datasets):
             all_model.append(data.apply_filter(model))
-        return numpy.concatenate(all_model)
+        return np.concatenate(all_model)
 
     def to_fit(self, staterrfunc=None):
         total_dep = []
@@ -1484,23 +1484,23 @@ class DataSimulFit(NoNewAttributesAfterInit):
             if syserror is not None:
                 no_syserror = False
             else:
-                syserror = numpy.zeros_like(dep)
+                syserror = np.zeros_like(dep)
             total_syserror.append(syserror)
 
-        total_dep = numpy.concatenate(total_dep)
+        total_dep = np.concatenate(total_dep)
 
         if no_staterror:
             total_staterror = None
-        elif numpy.any([numpy.equal(array, None).any()
-                        for array in total_staterror]):
+        elif np.any([np.equal(array, None).any()
+                     for array in total_staterror]):
             raise DataErr('staterrsimulfit')
         else:
-            total_staterror = numpy.concatenate(total_staterror)
+            total_staterror = np.concatenate(total_staterror)
 
         if no_syserror:
             total_syserror = None
         else:
-            total_syserror = numpy.concatenate(total_syserror)
+            total_syserror = np.concatenate(total_syserror)
 
         return total_dep, total_staterror, total_syserror
 
@@ -1611,9 +1611,9 @@ class Data1D(Data):
     def get_bounding_mask(self):
         mask = self.mask
         size = None
-        if numpy.iterable(self.mask):
+        if np.iterable(self.mask):
             # create bounding box around noticed image regions
-            mask = numpy.array(self.mask)
+            mask = np.array(self.mask)
             size = (mask.size,)
 
         return mask, size
@@ -1684,10 +1684,10 @@ class Data1D(Data):
         """
 
         x = self.get_x(filter=True)
-        if numpy.iterable(self.mask):
+        if np.iterable(self.mask):
             mask = self.mask
         else:
-            mask = numpy.ones(len(x), dtype=bool)
+            mask = np.ones(len(x), dtype=bool)
 
         return create_expr(x, mask=mask, format=format, delim=delim)
 
@@ -1867,7 +1867,7 @@ class Data1DInt(Data1D):
         indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
         if len(indep) == 1:
             # assume all data has been filtered out
-            return numpy.asarray([])
+            return np.asarray([])
 
         return (indep[0] + indep[1]) / 2.0
 
@@ -1896,7 +1896,7 @@ class Data1DInt(Data1D):
         indep = self.get_evaluation_indep(filter, model)
         if len(indep) == 1:
             # assume all data has been filtered out
-            return numpy.asarray([])
+            return np.asarray([])
 
         # Return the half-width: see #748 #1817
         xlo, xhi = indep
@@ -1958,7 +1958,7 @@ class Data1DInt(Data1D):
             # assume all data has been filtered out
             return ''
 
-        if numpy.iterable(self.mask):
+        if np.iterable(self.mask):
             mask = self.mask
         else:
             # Unlike create_expr we do not need to send
@@ -2152,8 +2152,8 @@ class Data2D(Data):
     def get_axes(self):
         self._check_shape()
         # FIXME: how to filter an axis when self.mask is size of self.y?
-        return (numpy.arange(self.shape[1]) + 1,
-                numpy.arange(self.shape[0]) + 1)
+        return (np.arange(self.shape[1]) + 1,
+                np.arange(self.shape[0]) + 1)
 
     def get_dims(self, filter=False):
         # self._check_shape()
@@ -2197,7 +2197,7 @@ class Data2D(Data):
         x1 = self.get_x1(True)
 
         # TODO: Should be able to just use numpy.argmax
-        pos = numpy.asarray(numpy.where(dep == dep.max())).squeeze()
+        pos = np.asarray(np.where(dep == dep.max())).squeeze()
         if pos.ndim == 0:
             pos = int(pos)
             return x0[pos], x1[pos]
