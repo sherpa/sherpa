@@ -118,6 +118,8 @@ dependent axis (``y``) then filter to select only those values between
 
 from abc import ABCMeta
 import logging
+from typing import Any, Literal, Optional, Sequence, Union, \
+    overload
 import warnings
 
 import numpy as np
@@ -129,7 +131,7 @@ from sherpa.utils import NoNewAttributesAfterInit, formatting, \
 from sherpa.utils.err import DataErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.parallel import parallel_map_funcs
-
+from sherpa.utils.types import ArrayType, ModelFunc, StatErrFunc
 
 warning = logging.getLogger(__name__).warning
 
@@ -137,6 +139,20 @@ warning = logging.getLogger(__name__).warning
 __all__ = ('Data', 'DataSimulFit', 'Data1D', 'Data1DInt',
            'Data1DAsymmetricErrs', 'Data2D', 'Data2DInt')
 
+
+# The alias does not really save any characters, but it's used
+# throughout the code so it seems useful.
+#
+FieldsType = tuple[str, ...]
+
+
+@overload
+def _check(array: None) -> None:
+    ...
+
+@overload
+def _check(array: ArrayType) -> np.ndarray:
+    ...
 
 def _check(array):
     """Ensure the data is a 1D array, or can be converted to one."""
@@ -160,6 +176,16 @@ def _check(array):
     return _check(np.asanyarray(array))
 
 
+# Can we get away with assuming array is not None?
+#
+@overload
+def _check_nomask(array: None) -> None:
+    ...
+
+@overload
+def _check_nomask(array: ArrayType) -> np.ndarray:
+    ...
+
 def _check_nomask(array):
     if hasattr(array, 'mask'):
         warnings.warn(f'Input array {array} has a mask attribute. Because masks are supported for dependent variables only the mask attribute of the independent array is ignored and values `behind the mask` are used.')
@@ -169,6 +195,14 @@ def _check_nomask(array):
     #
     return _check(array)
 
+
+@overload
+def _check_dep(array: None) -> tuple[None, Literal[True]]:
+    ...
+
+@overload
+def _check_dep(array: ArrayType) -> tuple[np.ndarray, bool]:
+    ...
 
 def _check_dep(array):
     if not hasattr(array, 'mask'):
@@ -214,9 +248,8 @@ class DataSpace1D(EvaluationSpace1D):
         -------
         DataSpace1D
         """
-        filter = bool_cast(filter)
 
-        if not filter:
+        if not bool_cast(filter):
             return self
 
         data = self.grid[0]
@@ -290,9 +323,8 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
         -------
         IntegratedDataSpace1D
         """
-        filter = bool_cast(filter)
 
-        if not filter:
+        if not bool_cast(filter):
             return self
 
         data = self.grid
@@ -333,7 +365,7 @@ class IntegratedDataSpace1D(EvaluationSpace1D):
 # The code is written to resemble sherpa.models.grid.EvaluationSpace2D
 # though, so that the checks added for that code are run here.
 #
-class DataSpace2D():
+class DataSpace2D:
     """Class for representing 2-D Data Spaces.
 
     Data Spaces are spaces that describe the data domain.
@@ -371,9 +403,8 @@ class DataSpace2D():
         -------
         DataSpace2D
         """
-        filter = bool_cast(filter)
 
-        if not filter:
+        if not bool_cast(filter):
             return self
 
         data = self.grid
@@ -408,7 +439,7 @@ class DataSpace2D():
         return self.y_axis.x
 
 
-class IntegratedDataSpace2D():
+class IntegratedDataSpace2D:
     """Same as DataSpace2D, but for supporting integrated data sets.
 
     Parameters
@@ -446,9 +477,8 @@ class IntegratedDataSpace2D():
         -------
         IntegratedDataSpace2D
         """
-        filter = bool_cast(filter)
 
-        if not filter:
+        if not bool_cast(filter):
             return self
 
         data = self.grid
@@ -494,7 +524,7 @@ class IntegratedDataSpace2D():
         return self.y_axis.hi
 
 
-class DataSpaceND():
+class DataSpaceND:
     """Class for representing arbitrary N-Dimensional data domains
 
     Parameters
@@ -524,9 +554,8 @@ class DataSpaceND():
         -------
         DataSpaceND
         """
-        filter = bool_cast(filter)
 
-        if not filter:
+        if not bool_cast(filter):
             return self
 
         data = tuple(self.filter.apply(axis) for axis in self.indep)
@@ -554,7 +583,7 @@ class DataSpaceND():
 # - in particular the notice method. It is likely that we can document
 # this - i.e. that the mask is going to be 1D.
 #
-class Filter():
+class Filter:
     """A class for representing filters of N-Dimensional datasets.
 
     The filter does not know the size of the dataset or the values of
@@ -810,7 +839,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     """
 
-    _fields = ("name", "indep", "dep", "staterror", "syserror")
+    _fields: FieldsType = ("name", "indep", "dep", "staterror", "syserror")
     """The main data values stored by the object (as a tuple).
 
     This is used to identify the column data - that is values that
@@ -818,23 +847,32 @@ class Data(NoNewAttributesAfterInit, BaseData):
     field. Other fields are listed in _extra_fields.
     """
 
-    _extra_fields = ()
+    _extra_fields: FieldsType = ()
     """Any extra fields that should be displayed by str(object)."""
 
-    _related_fields = ("y", "staterror", "syserror")
+    _related_fields: FieldsType = ("y", "staterror", "syserror")
     """What fields must match the size of the independent axis.
 
     These fields are set to None whenever the independent axis size
     is set or changed.
     """
 
-    _y = None
-    _size = None
+    _y: Optional[np.ndarray] = None
+    _size: Optional[int] = None
+    _staterror: Optional[np.ndarray] = None
+    _syserror: Optional[np.ndarray] = None
 
-    ndim = None
+    ndim: Optional[int] = None
     "The dimensionality of the dataset, if defined, or None."
 
-    def __init__(self, name, indep, y, staterror=None, syserror=None):
+    def __init__(self,
+                 name: str,
+                 indep: Union[Sequence[ArrayType],
+                              Sequence[None]],
+                 y: Optional[ArrayType],
+                 staterror: Optional[ArrayType] = None,
+                 syserror: Optional[ArrayType] = None
+                 ) -> None:
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
         self.y, self.mask = _check_dep(y)
@@ -877,7 +915,10 @@ class Data(NoNewAttributesAfterInit, BaseData):
         if nnew != nold:
             raise DataErr(f"independent axis can not change size: {nold} to {nnew}")
 
-    def _init_data_space(self, filter, *data):
+    def _init_data_space(self,
+                         filter: Filter,
+                         *data: ArrayType
+                         ) -> DataSpaceND:
         """
         Extending classes should implement this method to provide the proper data space construction.
 
@@ -899,7 +940,10 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self._check_data_space(ds)
         return ds
 
-    def _set_related(self, attr, val, check_mask=True):
+    def _set_related(self,
+                     attr: str,
+                     val: Optional[ArrayType],
+                     check_mask: bool = True) -> None:
         """Set a field that must match the independent axes size.
 
         The value can be None or something with the same length as the
@@ -913,37 +957,35 @@ class Data(NoNewAttributesAfterInit, BaseData):
             setattr(self, f"_{attr}", None)
             return
 
-        if not np.iterable(val):
-            raise DataErr("notanarray")
+        # This will check whether val is an array or not.
+        #
+        vals = _check(val)
+        nval = len(val)
 
-        # Check the mask before calling _check, which could call asarray
-        # and so lose the mask setting.
+        # Check the mask value of val, and not vals, since _check
+        # could have called np.asarray and so lost the mask setting.
         #
         if check_mask and hasattr(val, "mask"):
             if not hasattr(self.y, "mask") or \
-               len(self.y) != len(val) or \
+               len(self.y) != nval or \
                    not np.all(self.y.mask == val.mask):
 
                 warnings.warn(f"The mask of {attr} differs from the dependent array, only the mask of the dependent array is used in Sherpa.")
-
-        val = _check(val)
-        nval = len(val)
 
         nelem = self.size
         if nelem is None:
             # We set the object size here
             self._size  = nval
-            setattr(self, f"_{attr}", val)
+            setattr(self, f"_{attr}", vals)
             return
 
-        nval = len(val)
         if nval != nelem:
             raise DataErr('mismatchn', 'independent axis', attr, nelem, nval)
 
-        setattr(self, f"_{attr}", val)
+        setattr(self, f"_{attr}", vals)
 
     @property
-    def y(self):
+    def y(self) -> Optional[np.ndarray]:
         """The dependent axis.
 
         If set, it must match the size of the independent axes.
@@ -951,11 +993,11 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self._y
 
     @y.setter
-    def y(self, val):
+    def y(self, val: ArrayType) -> None:
         self._set_related("y", val, check_mask=False)
 
     @property
-    def size(self):
+    def size(self) -> Optional[int]:
         """The number of elements in the data set.
 
         Returns
@@ -970,25 +1012,25 @@ class Data(NoNewAttributesAfterInit, BaseData):
     # independent axis). Does this make sense for some of the data
     # classes (in particular RMF)?
     #
-    def __len__(self):
+    def __len__(self) -> int:
         if self.size is None:
             return 0
 
         return self.size
 
     @property
-    def dep(self):
+    def dep(self) -> Optional[np.ndarray]:
         """
         Left for compatibility with older versions
         """
         return self.y
 
     @dep.setter
-    def dep(self, val):
+    def dep(self, val: Optional[ArrayType]) -> None:
         self.y = val
 
     @property
-    def mask(self):
+    def mask(self) -> Union[np.ndarray, bool]:
         """
         Mask array for dependent variable
 
@@ -999,24 +1041,24 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self._data_space.filter.mask
 
     @mask.setter
-    def mask(self, val):
+    def mask(self, val: Union[Sequence, np.ndarray, bool]) -> None:
 
         # If we have a scalar then
         # - we do not check sizes (as it's possible to set even though
         #   the independent axis is not set)
         # - we do not want to convert it to a ndarray
         #
-        # Note that numpy.iterable and numpy.isscalar are not inverses,
-        # for instance a string is both iterable and a scalar. Of
-        # course, isscalar does not think None is a scalar, hence the
-        # extra check.
+        # val can not be None but that is caught when setting the
+        # filter.mask attribute.
         #
-        if val is not None and not np.isscalar(val):
+        if val is not None and np.ndim(val) != 0:
             if self.size is None:
                 raise DataErr("The independent axis has not been set yet")
 
-            if len(val) != self.size:
-                raise DataErr("mismatchn", "independent axis", "mask", self.size, len(val))
+            nval = len(val)
+            if nval != self.size:
+                raise DataErr("mismatchn", "independent axis", "mask",
+                              self.size, nval)
 
         self._data_space.filter.mask = val
 
@@ -1030,11 +1072,27 @@ class Data(NoNewAttributesAfterInit, BaseData):
         -------
         tuple
         """
+        # What should this do when the independent or dependent axes
+        # are not set?
         indep_size = tuple(indep.size for indep in self.indep)
         return indep_size, self.dep.size
 
+    def _clear_filter(self) -> None:
+        """Clear out the existing filter.
+
+        This is designed for use by @indep.setter.
+
+        """
+
+        # This is currently a no-op. It may be over-ridden by a
+        # subclass.
+        #
+        pass
+
     @property
-    def indep(self):
+    def indep(self
+              ) -> Union[tuple[np.ndarray, ...],
+                         tuple[None, ...]]:
         """The grid of the data space associated with this data set.
 
         When set, the field must be set to a tuple, even for a
@@ -1048,25 +1106,16 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         Returns
         -------
-        tuple of array_like
+        tuple of array_like or None
 
         """
         return self._data_space.get().grid
 
-    def _clear_filter(self):
-        """Clear out the existing filter.
-
-        This is designed for use by @indep.setter.
-
-        """
-
-        # This is currently a no-op. It may beover-ridden by a
-        # subclass.
-        #
-        pass
-
     @indep.setter
-    def indep(self, val):
+    def indep(self,
+              val: Union[tuple[ArrayType, ...],
+                         tuple[None, ...]]
+              ) -> None:
 
         # This is a low-level check so raise a normal Python error
         # rather than DataErr. Do we want to allow a sequence here,
@@ -1077,10 +1126,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
         if not isinstance(val, tuple):
             raise TypeError(f"independent axis must be sent a tuple, not {type(val).__name__}")
 
-        self._data_space = self._init_data_space(self._data_space.filter, *val)
+        ds = self._init_data_space(self._data_space.filter, *val)
+        self._data_space = ds
         self._clear_filter()
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> Union[tuple[np.ndarray, ...],
+                             tuple[None, ...]]:
         """Return the independent axes of a data set.
 
         Parameters
@@ -1102,10 +1155,15 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
         return self._data_space.get(filter).grid
 
-    def set_indep(self, val):
+    def set_indep(self,
+                  val: Union[tuple[ArrayType, ...],
+                             tuple[None, ...]]
+                  ) -> None:
         self.indep = val
 
-    def get_dep(self, filter=False):
+    def get_dep(self,
+                filter: bool = False
+                ) -> Optional[np.ndarray]:
         """Return the dependent axis of a data set.
 
         Parameters
@@ -1134,7 +1192,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         return dep
 
-    def set_dep(self, val):
+    # Do we want to allow val to be None?
+    def set_dep(self, val: Union[ArrayType, float]) -> None:
         """
         Set the dependent variable values.
 
@@ -1151,10 +1210,28 @@ class Data(NoNewAttributesAfterInit, BaseData):
             if nelem is None:
                 raise DataErr("sizenotset", self.name)
 
-            val = SherpaFloat(val)
-            dep = val * np.ones(nelem, dtype=SherpaFloat)
+            dep = SherpaFloat(val) * np.ones(nelem, dtype=SherpaFloat)
 
         self.y = dep
+
+    # It is not clear when default values need to be given in overload
+    # statements. The current choice is based on mypy 1.10.0.
+    #
+    @overload
+    def get_y(self,
+              filter: bool,
+              yfunc: None,
+              use_evaluation_space: bool = False
+              ) -> np.ndarray:
+        ...
+
+    @overload
+    def get_y(self,
+              filter: bool,
+              yfunc: ModelFunc,
+              use_evaluation_space: bool = False
+              ) -> tuple[np.ndarray, ArrayType]:
+        ...
 
     def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
         """
@@ -1182,7 +1259,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return (y, y2)
 
     @property
-    def staterror(self):
+    def staterror(self) -> Optional[np.ndarray]:
         """The statistical error on the dependent axis, if set.
 
         This must match the size of the independent axis.
@@ -1190,11 +1267,11 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self._staterror
 
     @staterror.setter
-    def staterror(self, val):
+    def staterror(self, val: ArrayType) -> None:
         self._set_related("staterror", val)
 
     @property
-    def syserror(self):
+    def syserror(self) -> Optional[np.ndarray]:
         """The systematic error on the dependent axis, if set.
 
         This must match the size of the independent axis.
@@ -1202,10 +1279,13 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self._syserror
 
     @syserror.setter
-    def syserror(self, val):
+    def syserror(self, val: ArrayType) -> None:
         self._set_related("syserror", val)
 
-    def get_staterror(self, filter=False, staterrfunc=None):
+    def get_staterror(self,
+                      filter: bool = False,
+                      staterrfunc: Optional[StatErrFunc] = None
+                      ) -> Optional[ArrayType]:
         """Return the statistical error on the dependent axis of a data set.
 
         Parameters
@@ -1233,8 +1313,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
         staterror = getattr(self, 'staterror', None)
-        filter = bool_cast(filter)
-        if filter:
+        if bool_cast(filter):
             staterror = self.apply_filter(staterror)
 
         if (staterror is None) and (staterrfunc is not None):
@@ -1243,7 +1322,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         return staterror
 
-    def get_syserror(self, filter=False):
+    def get_syserror(self,
+                     filter: bool = False
+                     ) -> Optional[np.ndarray]:
         """Return the statistical error on the dependent axis of a data set.
 
         Parameters
@@ -1328,6 +1409,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
         return 'y'
 
+    @overload
+    def apply_filter(self, data: None) -> None:
+        ...
+
+    @overload
+    def apply_filter(self, data: ArrayType) -> np.ndarray:
+        ...
+
     def apply_filter(self, data):
         if data is None:
             return None
@@ -1344,43 +1433,60 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         return self._data_space.filter.apply(data)
 
-    def notice(self, mins, maxes, ignore=False, integrated=False):
+    def notice(self, mins, maxes,
+               ignore: bool = False,
+               integrated: bool = False
+               ) -> None:
         self._data_space.filter.notice(mins, maxes, self.get_indep(),
-                                       ignore=ignore, integrated=integrated)
+                                       ignore=ignore,
+                                       integrated=integrated)
 
-    def ignore(self, *args, **kwargs):
+    def ignore(self, *args, **kwargs) -> None:
         kwargs['ignore'] = True
         self.notice(*args, **kwargs)
 
-    def eval_model(self, modelfunc):
-        """Evaluate the model on the independent axis."""
+    def _can_apply_model(self, modelfunc: ModelFunc) -> None:
+        """Check we model dimensions match."""
+
+        # Should this also check whether the independent axis is set?
         mdim = getattr(modelfunc, "ndim", None)
         ddim = getattr(self, "ndim", None)
         if None not in [mdim, ddim] and mdim != ddim:
             raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
 
+    def eval_model(self, modelfunc: ModelFunc) -> ArrayType:
+        """Evaluate the model on the independent axis."""
+
+        self._can_apply_model(modelfunc)
         return modelfunc(*self.get_indep())
 
-    def eval_model_to_fit(self, modelfunc):
+    def eval_model_to_fit(self,
+                          modelfunc: ModelFunc) -> ArrayType:
         """Evaluate the model on the independent axis after filtering."""
-        mdim = getattr(modelfunc, "ndim", None)
-        ddim = getattr(self, "ndim", None)
-        if None not in [mdim, ddim] and mdim != ddim:
-            raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
 
+        self._can_apply_model(modelfunc)
         return modelfunc(*self.get_indep(filter=True))
 
-    def to_guess(self):
-        arrays = [self.get_y(True)]
+    def to_guess(self) -> tuple[Optional[np.ndarray], ...]:
+
+        # Should this also check whether the independent and dependent
+        # axes are set?
+        #
+        arrays: list[Optional[np.ndarray]]
+        arrays = [self.get_y(filter=True, yfunc=None)]
         arrays.extend(self.get_indep(True))
         return tuple(arrays)
 
-    def to_fit(self, staterrfunc=None):
+    def to_fit(self,
+               staterrfunc: Optional[StatErrFunc] = None
+               ) -> tuple[Optional[np.ndarray],
+                          Optional[ArrayType],
+                          Optional[np.ndarray]]:
         return (self.get_dep(True),
                 self.get_staterror(True, staterrfunc),
                 self.get_syserror(True))
 
-    def __str__(self):
+    def __str__(self) -> str:
         """
         Return a listing of the attributes listed in self._fields and,
         if set, self._extra_fields.
@@ -1390,7 +1496,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         fdict = {f: getattr(self, f) for f in fields}
         return print_fields(fields, fdict)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         r = f'<{type(self).__name__} data set instance'
         if hasattr(self, 'name'):
             r += f" '{self.name}'"
@@ -1435,7 +1541,10 @@ class DataSimulFit(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, name, datasets, numcores=1):
+    def __init__(self,
+                 name: str,
+                 datasets: Sequence[Data],
+                 numcores: int = 1) -> None:
         if len(datasets) == 0:
             raise DataErr('zerodatasimulfit', type(self).__name__)
         self.name = name
@@ -1443,7 +1552,9 @@ class DataSimulFit(NoNewAttributesAfterInit):
         self.numcores = numcores
         super().__init__()
 
-    def eval_model_to_fit(self, modelfuncs):
+    def eval_model_to_fit(self,
+                          modelfuncs: Sequence[ModelFunc]
+                          ) -> np.ndarray:
         if self.numcores == 1:
             total_model = []
             for func, data in zip(modelfuncs, self.datasets):
@@ -1464,7 +1575,11 @@ class DataSimulFit(NoNewAttributesAfterInit):
             all_model.append(data.apply_filter(model))
         return np.concatenate(all_model)
 
-    def to_fit(self, staterrfunc=None):
+    def to_fit(self,
+               staterrfunc: Optional[StatErrFunc] = None
+               ) -> tuple[np.ndarray,
+                          Optional[np.ndarray],
+                          Optional[np.ndarray]]:
         total_dep = []
         total_staterror = []
         total_syserror = []
@@ -1505,7 +1620,13 @@ class DataSimulFit(NoNewAttributesAfterInit):
         return total_dep, total_staterror, total_syserror
 
     # DATA-NOTE: this implementation is weird. Is this even used?
-    def to_plot(self, yfunc=None, staterrfunc=None):
+    # Typing of this is a bit hard too since Data does not have
+    # a to_plot method.
+    #
+    def to_plot(self,
+                yfunc=None,
+                staterrfunc: Optional[StatErrFunc] = None
+                ):
         return self.datasets[0].to_plot(yfunc.parts[0], staterrfunc)
 
 
@@ -1526,18 +1647,27 @@ class Data1D(Data):
     syserror : array-like
         the systematic error associated with the data
     '''
-    _fields = ("name", "x", "y", "staterror", "syserror")
+    _fields: FieldsType = ("name", "x", "y", "staterror", "syserror")
     ndim = 1
 
-    def __init__(self, name, x, y, staterror=None, syserror=None):
+    def __init__(self,
+                 name: str,
+                 x: Optional[ArrayType],
+                 y: Optional[ArrayType],
+                 staterror: Optional[ArrayType] = None,
+                 syserror: Optional[ArrayType] = None
+                 ) -> None:
         super().__init__(name, (x, ), y, staterror, syserror)
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data
         """
         return html_data1d(self)
 
-    def _init_data_space(self, filter, *data):
+    def _init_data_space(self,
+                         filter: Filter,
+                         *data: ArrayType
+                         ) -> DataSpace1D:
         ndata = len(data)
         if ndata != 1:
             raise DataErr("wrongaxiscount", self.name, 1, ndata)
@@ -1546,7 +1676,11 @@ class Data1D(Data):
         self._check_data_space(ds)
         return ds
 
-    def get_x(self, filter=False, model=None, use_evaluation_space=False):
+    def get_x(self,
+              filter: bool = False,
+              model: Optional[ModelFunc] = None,
+              use_evaluation_space: bool = False
+              ) -> Optional[np.ndarray]:
 
         if model is not None:
             mdim = getattr(model, "ndim", None)
@@ -1555,7 +1689,10 @@ class Data1D(Data):
 
         return self.get_evaluation_indep(filter, model, use_evaluation_space)[0]
 
-    def get_xerr(self, filter=False, yfunc=None):
+    def get_xerr(self,
+                 filter: bool = False,
+                 yfunc=None
+                 ) -> None:
         """Return linear view of bin size in independent axis/axes.
 
         Parameters
@@ -1570,7 +1707,7 @@ class Data1D(Data):
         """
         return None
 
-    def get_xlabel(self):
+    def get_xlabel(self) -> str:
         """Return label for linear view of independent axis/axes
 
         Returns
@@ -1580,10 +1717,30 @@ class Data1D(Data):
         """
         return 'x'
 
-    def get_dims(self, filter=False):
+    # The superclass suggests returning both the independent and
+    # dependent axis sizes.
+    #
+    def get_dims(self, filter: bool = False) -> tuple[int]:
         return len(self.get_x(filter)),
 
-    def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
+    @overload
+    def get_y(self,
+              filter: bool,
+              yfunc: None = None,
+              use_evaluation_space: bool = False
+              ) -> np.ndarray:
+        ...
+
+    @overload
+    def get_y(self,
+              filter: bool,
+              yfunc: ModelFunc,
+              use_evaluation_space: bool = False
+              ) -> tuple[np.ndarray, ArrayType]:
+        ...
+
+    def get_y(self, filter=False, yfunc=None,
+              use_evaluation_space=False):
         """Return dependent axis in N-D view of dependent variable.
 
         Parameters
@@ -1607,6 +1764,14 @@ class Data1D(Data):
 
         model_evaluation = yfunc(*self.get_evaluation_indep(filter, yfunc, use_evaluation_space))
         return (y, model_evaluation)
+
+    @overload
+    def get_bounding_mask(self) -> tuple[bool, None]:
+        ...
+
+    @overload
+    def get_bounding_mask(self) -> tuple[np.ndarray, tuple[int]]:
+        ...
 
     def get_bounding_mask(self):
         mask = self.mask
@@ -1645,7 +1810,10 @@ class Data1D(Data):
 
         return err.reshape(1, err.size)
 
-    def get_filter(self, format='%.4f', delim=':'):
+    def get_filter(self,
+                   format: str = '%.4f',
+                   delim: str = ':'
+                   ) -> str:
         """Return the data filter as a string.
 
         Parameters
@@ -1691,7 +1859,7 @@ class Data1D(Data):
 
         return create_expr(x, mask=mask, format=format, delim=delim)
 
-    def get_filter_expr(self):
+    def get_filter_expr(self) -> str:
         """Return the data filter as a string along with the units.
 
         This is a specialised version of get_filter which adds the
@@ -1722,7 +1890,11 @@ class Data1D(Data):
         """
         return self.get_filter(delim='-') + ' ' + self.get_xlabel()
 
-    def to_plot(self, yfunc=None, staterrfunc=None):
+    # The return value is hard to type, so it is skipped at the
+    # moment.
+    def to_plot(self,
+                yfunc: Optional[ModelFunc] = None,
+                staterrfunc: Optional[StatErrFunc] = None):
         # As we introduced models defined on arbitrary grids, the x array can also depend on the
         # model function, at least in principle.
         return (self.get_x(True, yfunc),
@@ -1732,7 +1904,11 @@ class Data1D(Data):
                 self.get_xlabel(),
                 self.get_ylabel())
 
-    def to_component_plot(self, yfunc=None, staterrfunc=None):
+    # The return value is hard to type, so it is skipped at the
+    # moment.
+    def to_component_plot(self,
+                          yfunc: Optional[ModelFunc] = None,
+                          staterrfunc: Optional[StatErrFunc] = None):
         # As we introduced models defined on arbitrary grids, the x array can also depend on the
         # model function, at least in principle.
         return (self.get_x(True, yfunc, use_evaluation_space=True),
@@ -1742,14 +1918,21 @@ class Data1D(Data):
                 self.get_xlabel(),
                 self.get_ylabel())
 
-    def get_evaluation_indep(self, filter=False, model=None, use_evaluation_space=False):
+    def get_evaluation_indep(self,
+                             filter: bool = False,
+                             model: Optional[ModelFunc] = None,
+                             use_evaluation_space: bool = False
+                             ) -> Optional[np.ndarray]:
         data_space = self._data_space.get(filter)
         if use_evaluation_space:
             return data_space.for_model(model).grid
 
         return data_space.grid
 
-    def notice(self, xlo=None, xhi=None, ignore=False):
+    def notice(self,
+               xlo: Optional[float] = None,
+               xhi: Optional[float] = None,
+               ignore: bool = False) -> None:
         """Notice or ignore the given range.
 
         Ranges are inclusive for both the lower and upper limits.
@@ -1799,7 +1982,7 @@ class Data1D(Data):
         Data.notice(self, (xlo,), (xhi,), ignore)
 
     @property
-    def x(self):
+    def x(self) -> Optional[np.ndarray]:
         """
         Used for compatibility, in particular for __str__ and __repr__
         """
@@ -1812,9 +1995,17 @@ class Data1DAsymmetricErrs(Data1D):
     Note: elo and ehi shall be stored as delta values from y
     """
 
-    _fields = ("name", "x", "y", "staterror", "syserror", "elo", "ehi")
+    _fields: FieldsType = ("name", "x", "y", "staterror", "syserror", "elo", "ehi")
 
-    def __init__(self, name, x, y, elo, ehi, staterror=None, syserror=None):
+    def __init__(self,
+                 name: str,
+                 x: Optional[ArrayType],
+                 y: Optional[ArrayType],
+                 elo: Optional[ArrayType],
+                 ehi: Optional[ArrayType],
+                 staterror=None,
+                 syserror=None
+                 ) -> None:
         self.elo = elo
         self.ehi = ehi
         super().__init__(name, x, y, staterror=staterror, syserror=syserror)
@@ -1844,17 +2035,27 @@ class Data1DInt(Data1D):
     syserror : array-like
         the systematic error associated with the data
     """
-    _fields = ("name", "xlo", "xhi", "y", "staterror", "syserror")
+    _fields: FieldsType = ("name", "xlo", "xhi", "y", "staterror", "syserror")
 
-    def __init__(self, name, xlo, xhi, y, staterror=None, syserror=None):
+    def __init__(self,
+                 name: str,
+                 xlo: Optional[ArrayType],
+                 xhi: Optional[ArrayType],
+                 y: Optional[ArrayType],
+                 staterror: Optional[ArrayType] = None,
+                 syserror: Optional[ArrayType] = None
+                 ) -> None:
         Data.__init__(self, name, (xlo, xhi), y, staterror, syserror)
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data
         """
         return html_data1dint(self)
 
-    def _init_data_space(self, filter, *data):
+    def _init_data_space(self,
+                         filter: Filter,
+                         *data: ArrayType
+                         ) -> IntegratedDataSpace1D:
         ndata = len(data)
         if ndata != 2:
             raise DataErr("wrongaxiscount", self.name, 2, ndata)
@@ -1863,7 +2064,11 @@ class Data1DInt(Data1D):
         self._check_data_space(ds)
         return ds
 
-    def get_x(self, filter=False, model=None, use_evaluation_space=False):
+    def get_x(self,
+              filter: bool = False,
+              model: Optional[ModelFunc] = None,
+              use_evaluation_space: bool = False
+              ) -> np.ndarray:
         indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
         if len(indep) == 1:
             # assume all data has been filtered out
@@ -1871,7 +2076,10 @@ class Data1DInt(Data1D):
 
         return (indep[0] + indep[1]) / 2.0
 
-    def get_xerr(self, filter=False, model=None):
+    def get_xerr(self,
+                 filter: bool = False,
+                 model: Optional[ModelFunc] = None
+                 ) -> np.ndarray:
         """Returns an X "error".
 
         The error value for the independent axis is not well defined
@@ -1902,7 +2110,7 @@ class Data1DInt(Data1D):
         xlo, xhi = indep
         return (xhi - xlo) / 2
 
-    def get_filter(self, format='%.4f', delim=':'):
+    def get_filter(self, format='%.4f', delim=':') -> str:
         """Return the data filter as a string.
 
         For each noticed range the filter is reported as
@@ -1968,7 +2176,11 @@ class Data1DInt(Data1D):
         return create_expr_integrated(indep[0], indep[1], mask=mask,
                                       format=format, delim=delim)
 
-    def notice(self, xlo=None, xhi=None, ignore=False):
+    def notice(self,
+               xlo: Optional[float] = None,
+               xhi: Optional[float] = None,
+               ignore: bool = False
+               ) -> None:
         """Notice or ignore the given range.
 
         Ranges are inclusive for the lower limit and exclusive
@@ -2027,14 +2239,14 @@ class Data1DInt(Data1D):
                     ignore=ignore, integrated=True)
 
     @property
-    def xlo(self):
+    def xlo(self) -> Optional[np.ndarray]:
         """
         Property kept for compatibility
         """
         return self._data_space.x_axis.lo
 
     @property
-    def xhi(self):
+    def xhi(self) -> Optional[np.ndarray]:
         """
         Property kept for compatibility
         """
@@ -2100,7 +2312,7 @@ class Data2D(Data):
         Sherpa provides the `~sherpa.astro.data.DataIMG` class to handle
         regularly-gridded data more easily.
     '''
-    _fields = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
+    _fields: FieldsType = ("name", "x0", "x1", "y", "shape", "staterror", "syserror")
     ndim = 2
 
     # Why should we add shape to extra-fields instead? See #1359 to
@@ -2111,16 +2323,27 @@ class Data2D(Data):
     #
     # _extra_fields = ("shape", )
 
-    def __init__(self, name, x0, x1, y, shape=None, staterror=None, syserror=None):
+    def __init__(self,
+                 name: str,
+                 x0: Optional[ArrayType],
+                 x1: Optional[ArrayType],
+                 y: Optional[ArrayType],
+                 shape: Optional[tuple[int, int]] = None,
+                 staterror: Optional[ArrayType] = None,
+                 syserror: Optional[ArrayType] = None
+                 ) -> None:
         self.shape = shape
         super().__init__(name, (x0, x1), y, staterror, syserror)
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data
         """
         return html_data2d(self)
 
-    def _init_data_space(self, filter, *data):
+    def _init_data_space(self,
+                         filter: Filter,
+                         *data: ArrayType
+                         ) -> DataSpace2D:
         ndata = len(data)
         if ndata != 2:
             raise DataErr("wrongaxiscount", self.name, 2, ndata)
@@ -2129,13 +2352,13 @@ class Data2D(Data):
         self._check_data_space(ds)
         return ds
 
-    def get_x0(self, filter=False):
+    def get_x0(self, filter: bool = False) -> Optional[np.ndarray]:
         return self._data_space.get(filter).x0
 
-    def get_x1(self, filter=False):
+    def get_x1(self, filter: bool = False) -> Optional[np.ndarray]:
         return self._data_space.get(filter).x1
 
-    def get_x0label(self):
+    def get_x0label(self) -> str:
         """Return label for first dimension in 2-D view of independent axis/axes.
 
         Returns
@@ -2144,31 +2367,34 @@ class Data2D(Data):
         """
         return 'x0'
 
-    def get_x1label(self):
+    def get_x1label(self) -> str:
         """Return label for second dimension in 2-D view of independent axis/axes.
         """
         return 'x1'
 
-    def get_axes(self):
+    def get_axes(self) -> tuple[np.ndarray, np.ndarray]:
         self._check_shape()
         # FIXME: how to filter an axis when self.mask is size of self.y?
         return (np.arange(self.shape[1]) + 1,
                 np.arange(self.shape[0]) + 1)
 
-    def get_dims(self, filter=False):
+    def get_dims(self, filter: bool = False) -> tuple[int, int]:
         # self._check_shape()
         if self.shape is not None:
             return self.shape[::-1]
 
         return len(self.get_x0(filter)), len(self.get_x1(filter))
 
-    def get_filter_expr(self):
+    def get_filter_expr(self) -> str:
         return ''
 
-    def get_filter(self):
+    def get_filter(self) -> str:
         return ''
 
-    def get_max_pos(self, dep=None):
+    def get_max_pos(self,
+                    dep: Optional[np.ndarray] = None
+                    ) -> Union[tuple[float, float],
+                               list[tuple[float, float]]]:
         """Return the coordinates of the maximum value.
 
         Parameters
@@ -2249,25 +2475,31 @@ class Data2D(Data):
                 self.get_x0label(),
                 self.get_x1label())
 
-    def _check_shape(self):
+    def _check_shape(self) -> None:
         if self.shape is None:
             raise DataErr('shape', self.name)
 
     @property
-    def x0(self):
+    def x0(self) -> Optional[np.ndarray]:
         """
         kept for compatibility
         """
         return self.get_x0()
 
     @property
-    def x1(self):
+    def x1(self) -> Optional[np.ndarray]:
         """
         kept for compatibility
         """
         return self.get_x1()
 
-    def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
+    def notice(self,
+               x0lo: Optional[float] = None,
+               x0hi: Optional[float] = None,
+               x1lo: Optional[float] = None,
+               x1hi: Optional[float] = None,
+               ignore: bool = False
+               ) -> None:
         Data.notice(self, (x0lo, x1lo), (x0hi, x1hi),
                     ignore=ignore)
 
@@ -2341,14 +2573,27 @@ class Data2DInt(Data2D):
         Sherpa provides the `~sherpa.astro.data.DataIMGInt` class to make it easier
         to work with regularly-gridded data.
     '''
-    _fields = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "staterror", "syserror")
-    _extra_fields = ("shape", )
+    _fields: FieldsType = ("name", "x0lo", "x1lo", "x0hi", "x1hi", "y", "staterror", "syserror")
+    _extra_fields: FieldsType = ("shape", )
 
-    def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None, staterror=None, syserror=None):
+    def __init__(self,
+                 name: str,
+                 x0lo: Optional[ArrayType],
+                 x1lo: Optional[ArrayType],
+                 x0hi: Optional[ArrayType],
+                 x1hi: Optional[ArrayType],
+                 y: Optional[ArrayType],
+                 shape: Optional[Sequence[int]] = None,
+                 staterror: Optional[ArrayType] = None,
+                 syserror: Optional[ArrayType] = None
+                 ) -> None:
         self.shape = shape
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
-    def _init_data_space(self, filter, *data):
+    def _init_data_space(self,
+                         filter: Filter,
+                         *data: ArrayType
+                         ) -> IntegratedDataSpace2D:
         ndata = len(data)
         if ndata != 4:
             raise DataErr("wrongaxiscount", self.name, 4, ndata)
@@ -2357,45 +2602,51 @@ class Data2DInt(Data2D):
         self._check_data_space(ds)
         return ds
 
-    def get_x0(self, filter=False):
+    def get_x0(self, filter: bool = False) -> Optional[np.ndarray]:
         if self.size is None:
             return None
         indep = self._data_space.get(filter)
         return (indep.x0lo + indep.x0hi) / 2.0
 
-    def get_x1(self, filter=False):
+    def get_x1(self, filter=False) -> Optional[np.ndarray]:
         if self.size is None:
             return None
         indep = self._data_space.get(filter)
         return (indep.x1lo + indep.x1hi) / 2.0
 
-    def notice(self, x0lo=None, x0hi=None, x1lo=None, x1hi=None, ignore=False):
+    def notice(self,
+               x0lo: Optional[float] = None,
+               x0hi: Optional[float] = None,
+               x1lo: Optional[float] = None,
+               x1hi: Optional[float] = None,
+               ignore: bool = False
+               ) -> None:
         Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None),
                     ignore=ignore, integrated=True)
 
     @property
-    def x0lo(self):
+    def x0lo(self) -> Optional[np.ndarray]:
         """
         Property kept for compatibility
         """
         return self._data_space.x0lo
 
     @property
-    def x0hi(self):
+    def x0hi(self) -> Optional[np.ndarray]:
         """
         Property kept for compatibility
         """
         return self._data_space.x0hi
 
     @property
-    def x1lo(self):
+    def x1lo(self) -> Optional[np.ndarray]:
         """
         Property kept for compatibility
         """
         return self._data_space.x1lo
 
     @property
-    def x1hi(self):
+    def x1hi(self) -> Optional[np.ndarray]:
         """
         Property kept for compatibility
         """
@@ -2404,7 +2655,7 @@ class Data2DInt(Data2D):
 
 # Notebook representations
 #
-def html_data1d(data):
+def html_data1d(data: Data1D) -> str:
     """HTML representation: Data1D
 
     If have matplotlib then plot the data, otherwise summarize it.
@@ -2428,7 +2679,7 @@ def html_data1d(data):
 
     # Summary properties
     #
-    meta = []
+    meta: list[tuple[str, Any]] = []
     if data.name is not None and data.name != '':
         meta.append(('Identifier', data.name))
 
@@ -2460,7 +2711,7 @@ def html_data1d(data):
     return formatting.html_from_sections(data, ls)
 
 
-def html_data1dint(data):
+def html_data1dint(data: Data1DInt) -> str:
     """HTML representation: Data1DInt
 
     If have matplotlib then plot the data, otherwise summarize it.
@@ -2484,7 +2735,7 @@ def html_data1dint(data):
 
     # Summary properties
     #
-    meta = []
+    meta: list[tuple[str, Any]] = []
     if data.name is not None and data.name != '':
         meta.append(('Identifier', data.name))
 
@@ -2514,27 +2765,23 @@ def html_data1dint(data):
     return formatting.html_from_sections(data, ls)
 
 
-def html_data2d(data):
+def html_data2d(data: Data2D) -> str:
     """HTML representation: Data2D and derived classes
 
     """
 
     dtype = type(data).__name__
 
-    """
-
-    It would be nice to plot the plot, but there are several questions to
-    resolve, such as:
-
-      - do we plot each point (okay for sparse data) or binned
-      - simple binning, adaptive binning, hexagonal binning?
-      - do we just pick a number, like 100, to bin the data to
-
-    """
+    # It would be nice to plot the plot, but there are several questions to
+    # resolve, such as:
+    #
+    #  - do we plot each point (okay for sparse data) or binned
+    #  - simple binning, adaptive binning, hexagonal binning?
+    #  - do we just pick a number, like 100, to bin the data to
 
     # Summary properties
     #
-    meta = []
+    meta: list[tuple[str, Any]] = []
     if data.name is not None and data.name != '':
         meta.append(('Identifier', data.name))
 
