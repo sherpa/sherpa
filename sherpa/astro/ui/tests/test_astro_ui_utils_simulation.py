@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -56,21 +56,42 @@ def test_fake_pha_no_rmf(idval, clean_astro_ui):
 def test_fake_pha_missing_rmf(idval, clean_astro_ui, tmp_path):
     """Check we error out if RMF is not valid."""
 
+    from sherpa.astro import io
+
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
 
     ui.load_arrays(idval, channels, counts, ui.DataPHA)
 
     rmf = tmp_path / 'rmf'
-    with pytest.raises(IOErr,
-                       match=f"file '{rmf}' not found"):
+
+    # Wrap this so we don't repeat the logic below in the
+    # backend-specific code.
+    #
+    def call_fake():
         ui.fake_pha(idval, None, str(rmf), 1000.0)
+
+    # The error message depends on the backend.
+    if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+        with pytest.raises(IOErr,
+                           match=f"file '{rmf}' not found"):
+            call_fake()
+
+    elif io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        with pytest.raises(OSError,
+                           match=f"File {rmf} does not exist"):
+            call_fake()
+
+    else:
+        assert False, "unknown backend"
 
 
 @requires_fits
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 def test_fake_pha_missing_arf(idval, clean_astro_ui, tmp_path):
     """Check we error out if ARF is not valid."""
+
+    from sherpa.astro import io
 
     channels = np.arange(1, 4, dtype=np.int16)
     counts = np.ones(3, dtype=np.int16)
@@ -84,9 +105,25 @@ def test_fake_pha_missing_arf(idval, clean_astro_ui, tmp_path):
 
     arf = tmp_path / 'arf'
 
-    with pytest.raises(IOErr,
-                       match=f"file '{arf}' not found"):
+    # Wrap this so we don't repeat the logic below in the
+    # backend-specific code.
+    #
+    def call_fake():
         ui.fake_pha(idval, str(arf), rmf, 1000.0)
+
+    # The error message depends on the backend.
+    if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+        with pytest.raises(IOErr,
+                           match=f"file '{arf}' not found"):
+            call_fake()
+
+    elif io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        with pytest.raises(OSError,
+                           match=f"File {arf} does not exist"):
+            call_fake()
+
+    else:
+        assert False, "unknown backend"
 
 
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
