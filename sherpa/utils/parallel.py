@@ -594,9 +594,10 @@ def parallel_map(function: Callback[I_contra, O_co],
     # group sequence into numcores-worth of chunks
     sequence = split_array(sequence, ncores)
 
+    assert context.Process is not None
     procs = [context.Process(target=worker,
-                             args=(function, ii, chunk, out_q, err_q))
-             for ii, chunk in enumerate(sequence)]
+                             args=(function, idx, chunk, out_q, err_q))
+             for idx, chunk in enumerate(sequence)]
 
     return run_tasks(procs, err_q, out_q)
 
@@ -686,6 +687,10 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
         #
         return list(map(funcs[0], datasets))
 
+    # At this point we know context is not None but the typing code
+    # does not.
+    assert context is not None
+
     if numcores is None:
         numcores = _ncpus
 
@@ -701,9 +706,10 @@ def parallel_map_funcs(funcs, datasets, numcores=None):
     out_q = manager.Queue()
     err_q = manager.Queue()
 
+    assert context.Process is not None
     procs = [context.Process(target=worker,
-                             args=(funcs[ii], ii, chunk, out_q, err_q))
-             for ii, chunk in enumerate(datasets)]
+                             args=(funcs[idx], idx, chunk, out_q, err_q))
+             for idx, chunk in enumerate(datasets)]
 
     return run_tasks(procs, err_q, out_q)
 
@@ -848,9 +854,10 @@ def parallel_map_rng(function: CallbackWithRNG[I_contra, O_co],
     # particular generator) or to get it to use np.random.RandomState
     # if required.
     #
+    assert context.Process is not None
     procs = [context.Process(target=worker_rng,
-                             args=(function, ii, chunk, out_q, err_q,
+                             args=(function, idx, chunk, out_q, err_q,
                                    np.random.default_rng(seed)))
-             for ii, (chunk, seed) in enumerate(zip(sequence, seeds))]
+             for idx, (chunk, seed) in enumerate(zip(sequence, seeds))]
 
     return run_tasks(procs, err_q, out_q)
