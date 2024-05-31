@@ -9127,6 +9127,11 @@ class Session(NoNewAttributesAfterInit):
         >>> guess("src", src)
         >>> guess("bgnd", bgnd)
 
+        The above could also have been written as:
+
+        >>> guess("src", src)
+        >>> guess("bgnd")
+
         Set the source model for the default dataset. Guess is run to
         determine the values of the model component "p1" and the limits
         of the model component "g1":
@@ -9136,8 +9141,17 @@ class Session(NoNewAttributesAfterInit):
         >>> guess(g1, values=False)
 
         """
+
+        # We can have
+        #    id=None, model=None
+        #    id=X, model=None
+        #       -> is this id=X or model=X
+        #    id=X, model=Y
+        #
         if model is None:
-            id, model = model, id
+            # Try to find out if this is a known identifier
+            if id not in self.list_data_ids():
+                id, model = model, id
 
         idval = self._fix_id(id)
         kwargs = {'limits': limits, 'values': values}

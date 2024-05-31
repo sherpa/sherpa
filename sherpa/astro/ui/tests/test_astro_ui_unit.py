@@ -3208,7 +3208,7 @@ def test_1762_ui(incoord, outcoord, x0, x1, clean_astro_ui, make_data_path):
 @requires_xspec
 @requires_fits
 @requires_data
-@pytest.mark.parametrize("idval", [None, pytest.param(2, marks=pytest.mark.xfail)])  # guess does not support id=int model=None
+@pytest.mark.parametrize("idval", [None, 2])
 def test_guess_with_response_and_multiple_models(idval, clean_astro_ui, caplog, make_data_path):
     """Check we can call guess on XSPEC models.
 
