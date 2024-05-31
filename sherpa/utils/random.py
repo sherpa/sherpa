@@ -27,7 +27,7 @@ allows both the legacy (pre 1.17) NumPy random API to be used
 
 """
 
-from typing import Optional, Sequence, SupportsFloat, Union, \
+from typing import Literal, Optional, Sequence, SupportsFloat, Union, \
     overload
 
 import numpy as np
@@ -62,9 +62,7 @@ def poisson_noise(x: Sequence[SupportsFloat],
                   ) -> np.ndarray:
     ...
 
-def poisson_noise(x: Union[SupportsFloat, Sequence[SupportsFloat]],
-                  rng: Optional[RandomType] = None
-                  ) -> Union[SherpaFloat, np.ndarray]:
+def poisson_noise(x, rng=None):
     """Draw samples from a Poisson distribution.
 
 
@@ -147,17 +145,27 @@ def random(rng: Optional[RandomType]) -> float:
     return rng.random()
 
 
-# The following routines do not add a type for the size parameter
-# because it would have to be something like
-#     int | Sequence[int] | ndarray
-# and it does not seem worth the complexity.
-#
+# Try to come up with a sensible type for the size field.
+SizeType = Union[int, Sequence[int], np.ndarray]
 
+
+@overload
 def uniform(rng: Optional[RandomType],
             low: float,
             high: float,
-            size=None
+            size: Literal[None]
+            ) -> float:
+    ...
+
+@overload
+def uniform(rng: Optional[RandomType],
+            low: float,
+            high: float,
+            size: SizeType
             ) -> np.ndarray:
+    ...
+
+def uniform(rng, low, high, size=None):
     """Create a random value within a uniform range.
 
     Parameters
@@ -214,11 +222,23 @@ def integers(rng: Optional[RandomType],
         return rng.randint(high)  # type: ignore[union-attr]
 
 
+@overload
 def normal(rng: Optional[RandomType],
-           loc: float = 0,
-           scale: float = 1,
-           size=None
+           loc: float,
+           scale: float,
+           size: Literal[None]
+           ) -> float:
+    ...
+
+@overload
+def normal(rng: Optional[RandomType],
+           loc: float,
+           scale: float,
+           size: SizeType
            ) -> np.ndarray:
+    ...
+
+def normal(rng, loc=0.0, scale=1.0, size=None):
     """Create a random value from a normal distribution.
 
     Parameters
@@ -245,9 +265,19 @@ def normal(rng: Optional[RandomType],
     return rng.normal(loc=loc, scale=scale, size=size)
 
 
+@overload
 def standard_normal(rng: Optional[RandomType],
-                    size=None
+                    size: Optional[None]
+                    ) -> float:
+    ...
+
+@overload
+def standard_normal(rng: Optional[RandomType],
+                    size: SizeType
                     ) -> np.ndarray:
+    ...
+
+def standard_normal(rng, size=None):
     """Create a random value from a normal distribution (mean=0, stdev=1).
 
     Parameters
