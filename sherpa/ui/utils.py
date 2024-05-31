@@ -9048,6 +9048,12 @@ class Session(NoNewAttributesAfterInit):
         the values and sometimes just the limits). The parameters that
         are changed depend on the type of model.
 
+        .. versionchanged:: 4.17.0
+           The guess routine will now work with composite models and
+           those which include an instrumental response, such as an
+           ARF.  It only works on individual models, so the values,
+           and limits, guessed are only approximate.
+
         Parameters
         ----------
         id : int or str, optional
@@ -9096,6 +9102,14 @@ class Session(NoNewAttributesAfterInit):
         guess can be called with no arguments:
 
         >>> set_source(polynom1d.poly)
+        >>> guess()
+
+        Both components - that is, gal and pl - will be passed to the
+        guess routine, but not all models can have their parameters
+        guessed, and there is no attempt to recognize that the models
+        are combined (in this case by multiplication):
+
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
         >>> guess()
 
         In this case, guess is called on each component separately.

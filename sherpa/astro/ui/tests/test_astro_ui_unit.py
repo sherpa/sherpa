@@ -3249,18 +3249,18 @@ def test_guess_with_response_and_multiple_models(idval, clean_astro_ui, caplog, 
     assert cpt1.nH.min == pytest.approx(0)
     assert cpt1.nH.max == pytest.approx(1e6)
 
-    assert cpt2.norm.val == pytest.approx(1)
-    assert cpt2.norm.min == pytest.approx(0)
-    assert cpt2.norm.max == pytest.approx(1e24)
+    expected = 23.984031288696976
+    assert cpt2.norm.val == pytest.approx(expected / 1000)
+    assert cpt2.norm.min == pytest.approx(expected / 1000 / 1000)
+    assert cpt2.norm.max == pytest.approx(expected)
 
-    assert cpt3.norm.val == pytest.approx(1)
-    assert cpt3.norm.min == pytest.approx(0)
-    assert cpt3.norm.max == pytest.approx(1e24)
+    assert cpt3.norm.val == pytest.approx(expected / 1000)
+    assert cpt3.norm.min == pytest.approx(expected / 1000 / 1000)
+    assert cpt3.norm.max == pytest.approx(expected)
 
-    # The only message is from the combination
+    # The only message is from xsphabs
     assert len(caplog.records) == 1
     r = caplog.record_tuples[0]
-    assert r[0] == "sherpa.ui.utils"
+    assert r[0] == "sherpa.models.model"
     assert r[1] == logging.WARN
-    assert r[2].startswith("No guess found for apply_rmf(apply_arf(38564.6")
-    assert r[2].endswith(" * xsphabs.gal * (xsapec.src1 + xsgaussian.src2)))")
+    assert r[2] == "No guess found for xsphabs.gal"
