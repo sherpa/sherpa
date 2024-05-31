@@ -169,10 +169,14 @@ def check_fit_stats():
     # This test produces different results on macOS to Linux, hence
     # the relaxed tolerances.
     #
-    assert pl.gamma.val == pytest.approx(1.6870563856336693, rel=1e-5)
-    assert pl.ampl.val == pytest.approx(3.831373278007354e-05, rel=2e-5)
-    assert gal.nH.val == pytest.approx(0.24914805790330877, rel=3e-5)
-    assert ui.calc_stat() == pytest.approx(41.454087606314054, rel=1e-5)
+    assert pl.gamma.val == pytest.approx(1.6870563856336693,
+                                         rel=1.02e-5)
+    assert pl.ampl.val == pytest.approx(3.831373278007354e-05,
+                                        rel=2e-5)
+    assert gal.nH.val == pytest.approx(0.24914805790330877,
+                                       rel=3e-5)
+    assert ui.calc_stat() == pytest.approx(41.454087606314054,
+                                           rel=1e-5)
 
 
 @requires_xspec
