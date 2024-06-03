@@ -30,7 +30,7 @@ jobs:
             fits: astropy
             test-data: submodule
             matplotlib-version: 3
-            xspec-version: 12.14.0h
+            xspec-version: 12.14.0i
 
           - name: Linux Minimum Setup (Python 3.9)
             os: ubuntu-latest
@@ -54,7 +54,7 @@ jobs:
             test-data: submodule
             matplotlib-version: 3
             bokeh-version: 3
-            xspec-version: 12.14.0h
+            xspec-version: 12.14.0i
 
           - name: Linux Full Build (Python 3.10)
             os: ubuntu-latest
