@@ -42,7 +42,7 @@ import numpy as np
 from sherpa import get_config
 from .random import RandomType
 
-# A number of symbols has been added to this module in release 4.17.0
+# A number of symbols have been added to this module in release 4.17.0
 # to allow typing statements to be made. This is partly because the
 # multiprocessing module, which provides a number of symbols that
 # would be used in such statements, is optional (and so is the
