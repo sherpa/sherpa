@@ -76,7 +76,7 @@ class CallbackWithRNG(Protocol[I_contra, O_co]):
 # is hard to type things with a class defined in these modules.
 #
 class SupportsProcess(Protocol):
-    """Label those methods from mulltiprocessing.Process we need."""
+    """Label those methods from multiprocessing.Process we need."""
 
     exitcode: Optional[int]
 
