@@ -680,33 +680,34 @@ class Model(NoNewAttributesAfterInit):
     def __iter__(self) -> Iterator[Model]:
         return iter([self])
 
-    def __getattr__(self, name):
-        """Access to parameters is case insensitive."""
+    def __getattr__(self, name: str) -> Any:
+        """Access to parameters is case insensitive. Other fields are exact."""
 
+        # Any model that defines a parameter will end up looking for
+        # the _par_index field, and this is done before Model.__init__
+        # is reached (i.e. setting it there does not help), so create
+        # it if needed.
+        #
         if "_par_index" == name:
             if self.__dict__.get('_par_index') is None:
                 self.__dict__['_par_index'] = {}
             return self.__dict__['_par_index']
 
         lowered_name = name.lower()
-
-        def warn(oname, nname):
-            wmsg = f'Parameter name {oname} is deprecated for model ' + \
-                f'{type(self).__name__}, use {nname} instead'
-            warnings.warn(wmsg, DeprecationWarning)
-
         parameter = self._par_index.get(lowered_name)
-
         if parameter is not None:
             if lowered_name in parameter.aliases:
-                warn(lowered_name, parameter.name)
+                wmsg = f'Parameter name {name} is deprecated for model ' + \
+                    f'{type(self).__name__}, use {parameter.name} instead'
+                warnings.warn(wmsg, DeprecationWarning)
+
             return parameter
 
         NoNewAttributesAfterInit.__getattribute__(self, name)
 
-    def __setattr__(self, name, val):
-        lname = name.lower()
-        par = getattr(self, lname, None)
+    def __setattr__(self, name: str, val) -> None:
+        # case sensitivity is handled by getattr
+        par = getattr(self, name, None)
         if isinstance(par, Parameter):
             # When setting an attribute that is a Parameter, set the
             # parameter's value instead.
@@ -714,23 +715,22 @@ class Model(NoNewAttributesAfterInit):
             return
 
         NoNewAttributesAfterInit.__setattr__(self, name, val)
+
+        # If adding a parameter, add the entry to _par_index and
+        # handle any aliases.
+        #
         if not isinstance(val, Parameter):
             return
 
+        # We use lower-case for parameter access in _par_index.
         vname = val.name.lower()
-
-        # Check the parameter names match - as this is a
-        # 'development' error then just make this an assert.
-        # Ideally it should be exact but support lower case
-        # comparison only
-        assert lname == vname, (name, val.name, self.name)
-
-        # Update parameter index
         self._par_index[vname] = val
         if not val.aliases:
             return
 
-        # Update index of aliases, if necessary
+        # Update index of aliases, if necessary. The aliases array
+        # is assumed to be in lower case form.
+        #
         for alias in val.aliases:
             self._par_index[alias] = val
 
