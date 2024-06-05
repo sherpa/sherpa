@@ -40,17 +40,18 @@ import numpy as np
 
 # Note: _utils.gsl_fcmp and _utils.ndtri are not exported from
 #       this module; is this intentional?
-from sherpa.utils._utils import hist1d, hist2d  # type: ignore
-from sherpa.utils import _utils  # type: ignore
-from sherpa.utils import _psf    # type: ignore
-from sherpa.utils.err import IOErr
-from sherpa.utils.random import poisson_noise
+from ._utils import hist1d, hist2d  # type: ignore
+from . import _utils  # type: ignore
+from . import _psf    # type: ignore
 
-# We re-export the symbols from parallel but this will be removed at
-# some point.
+from .err import IOErr
+
+# We re-export symbols from sherpa.utils modules but this will be
+# removed at some point.
 #
-from sherpa.utils.parallel import multi as _multi, ncpus as _ncpus, \
+from .parallel import multi as _multi, ncpus as _ncpus, \
     parallel_map, parallel_map_funcs, run_tasks
+from .random import poisson_noise
 
 
 warning = logging.getLogger("sherpa").warning
