@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -27,8 +27,9 @@ from numpy.testing import assert_almost_equal, assert_array_equal, \
 import pytest
 
 from sherpa.utils import _utils, is_binary_file, pad_bounding_box, \
-    get_fwhm, histogram1d, histogram2d, dataspace1d, dataspace2d, \
+    histogram1d, histogram2d, dataspace1d, dataspace2d, \
     interpolate, bool_cast, multinormal_pdf, multit_pdf
+from sherpa.utils.guess import get_fwhm
 from sherpa.utils.testing import requires_data
 
 

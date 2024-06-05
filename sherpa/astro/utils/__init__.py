@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2020, 2021, 2022
+#  Copyright (C) 2008, 2016, 2020 - 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,8 +22,9 @@ import logging
 
 import numpy
 
-from sherpa.utils import get_position, filter_bins
+from sherpa.utils import filter_bins
 from sherpa.utils.err import IOErr, DataErr
+from sherpa.utils.guess import get_position
 
 from ._utils import arf_fold, do_group, expand_grouped_mask, \
     filter_resp, is_in, resp_init, rmf_fold, shrink_effarea

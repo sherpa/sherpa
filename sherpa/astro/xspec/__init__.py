@@ -113,8 +113,9 @@ from sherpa.astro.utils import get_xspec_position
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
-from sherpa.utils import guess_amplitude, param_apply_limits, bool_cast
+from sherpa.utils import bool_cast
 from sherpa.utils.err import IOErr, ParameterErr
+from sherpa.utils.guess import guess_amplitude, param_apply_limits
 from sherpa.utils.numeric_types import SherpaFloat
 
 # Note that utils also imports _xspec so it will error out if it is

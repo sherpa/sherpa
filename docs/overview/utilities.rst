@@ -91,6 +91,7 @@ Reference/API
    logging
    parallel
    random
+   guess
    utils
    testing
    io
