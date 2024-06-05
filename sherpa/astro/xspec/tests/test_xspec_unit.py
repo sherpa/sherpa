@@ -1055,7 +1055,7 @@ def test_ismabs_parameter_name_clashes():
 
         assert alias != name  # safety check
 
-        emsg = f"^Parameter name {alias.lower()} is deprecated for " + \
+        emsg = f"^Parameter name {alias} is deprecated for " + \
             f"model XSismabs, use {name} instead$"
         with pytest.warns(DeprecationWarning, match=emsg):
             par = getattr(mdl, alias)
