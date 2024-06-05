@@ -612,7 +612,6 @@ def test_multinormal_pdf(x, mu, sigma, expected):
     assert out == pytest.approx(expected)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("x,mu,sigma,eclass,emsg",
                          [([1, 2], 3, [3], TypeError, "x and mu sizes do not match"),
                           ([3], [4, 5], [3], TypeError, "x and mu sizes do not match"),
@@ -637,7 +636,6 @@ def test_multit_pdf_invalid_input(x, mu, sigma, eclass, emsg):
 
 # The values were calculated using CIAO 4.16 on a Linux x86_64 OS.
 #
-@pytest.mark.xfail
 @pytest.mark.parametrize("x,mu,sigma,dof,expected",
                          [([2, 1], [0.5, 0.7], [[1, 0], [0, 1]], 1,
                            0.02607356594580531),
