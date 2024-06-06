@@ -244,9 +244,15 @@ class Stat(NoNewAttributesAfterInit):
     #  - should this be moved out of the base Stat class since
     #    isn't relevant for likelihood statistics?
     #
-    def calc_staterror(self,
-                       data: np.ndarray
-                       ) -> np.ndarray:
+    # This is marked as staticmethod as of 4.17.0 because a number of
+    # subclasses were written like this, and some code (and some
+    # tests) assume this behaviour. So it makes sense to mark all to
+    # match. Which is great **except** that UserStat can not be marked
+    # as static since it needs access to the errfunc field for the
+    # object (i.e. it's not a class variable).
+    #
+    @staticmethod
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
         """Return the statistic error values for the data.
 
         Parameters
@@ -856,6 +862,10 @@ class Chi2XspecVar(Chi2):
     def __init__(self, name: str = 'chi2xspecvar') -> None:
         super().__init__(name=name)
 
+    # DataPHA.get_staterror relies on this being a static method so
+    # that we can easily identify it (as part of the fix for issue
+    # number #356). This may be changed.
+    #
     @staticmethod
     def calc_staterror(data: np.ndarray) -> np.ndarray:
         return _statfcts.calc_chi2xspecvar_errors(data)
@@ -914,6 +924,9 @@ class UserStat(Stat):
     def set_errfunc(self, func) -> None:
         self.errfunc = func
 
+    # This can not be @staticmethod, which means this is likely to be
+    # reported as an error by a type checker (e.g. pyright).
+    #
     def calc_staterror(self, data: np.ndarray) -> np.ndarray:
         if self.errfunc is None:
             raise StatErr('nostat', self.name, 'calc_staterror()')
