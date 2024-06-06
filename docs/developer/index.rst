@@ -863,6 +863,26 @@ Notes
 
 Notes on the design and changes to Sherpa.
 
+.. _typing_statements:
+
+Adding typing statements
+------------------------
+
+Typing rules, such as::
+
+  def random(rng: Optional[RandomType]) -> float:
+
+are being added to the Sherpa code base to see if they improve the
+maintenance and development of Sherpa. This is an incremental process
+and it is likely that existing typing statements will need to be
+updated when new rules are added (for instance, it is not always
+obvious when a routine accepts or returns a sequence, a NumPy array,
+or either). The aim is to try and model the intention of the API
+without matching every single possible type that could be used. The
+typing rules are also currently **not** checked in the Continuous
+Integration runs, or required to be run as part of the review process
+of pull requests.
+
 .. _handling_nd:
 
 N-dimensional data and models

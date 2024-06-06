@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2023
+#  Copyright (C) 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -27,15 +27,40 @@ allows both the legacy (pre 1.17) NumPy random API to be used
 
 """
 
+from typing import Literal, Optional, Sequence, SupportsFloat, Union, \
+    overload
+
 import numpy as np
 
 from .numeric_types import SherpaFloat
+
+# This should probably be an explicit type alias but for now leave it
+# like this. Users are expected to use the Generator rather than
+# RandomState form, but both are kept in (e.g. for testing).
+#
+# Once Python 3.10 or 3.12 is the minimum we can make this an actual
+# alias that we can export. For now this "alias" can be used by other
+# modules but the documentation is not ideal and the name may change.
+#
+RandomType = Union[np.random.Generator, np.random.RandomState]
 
 
 __all__ = ("chisquare", "choice", "integers",
            "multivariate_normal", "normal", "poisson_noise",
            "random", "standard_normal", "uniform")
 
+
+@overload
+def poisson_noise(x: SupportsFloat,
+                  rng: Optional[RandomType] = None
+                  ) -> SherpaFloat:
+    ...
+
+@overload
+def poisson_noise(x: Sequence[SupportsFloat],
+                  rng: Optional[RandomType] = None
+                  ) -> np.ndarray:
+    ...
 
 def poisson_noise(x, rng=None):
     """Draw samples from a Poisson distribution.
@@ -99,7 +124,7 @@ def poisson_noise(x, rng=None):
     return x_out
 
 
-def random(rng):
+def random(rng: Optional[RandomType]) -> float:
     """Create a random value [0, 1.0)
 
     Parameters
@@ -119,6 +144,26 @@ def random(rng):
 
     return rng.random()
 
+
+# Try to come up with a sensible type for the size field.
+SizeType = Union[int, Sequence[int], np.ndarray]
+
+
+@overload
+def uniform(rng: Optional[RandomType],
+            low: float,
+            high: float,
+            size: Literal[None]
+            ) -> float:
+    ...
+
+@overload
+def uniform(rng: Optional[RandomType],
+            low: float,
+            high: float,
+            size: SizeType
+            ) -> np.ndarray:
+    ...
 
 def uniform(rng, low, high, size=None):
     """Create a random value within a uniform range.
@@ -145,7 +190,9 @@ def uniform(rng, low, high, size=None):
     return rng.uniform(low, high, size=size)
 
 
-def integers(rng, high):
+def integers(rng: Optional[RandomType],
+             high: int
+             ) -> int:
     """Create a random integer from [0, high).
 
     Parameters
@@ -169,14 +216,29 @@ def integers(rng, high):
     # method for Generator and RandomState.
     #
     try:
-        # Try Generator first
-        return rng.integers(high)
+        return rng.integers(high)  # type: ignore[union-attr]
     except AttributeError:
-        # Assume RandmoState
-        return rng.randint(high)
+        # Fall back on RandomState
+        return rng.randint(high)  # type: ignore[union-attr]
 
 
-def normal(rng, loc=0, scale=1, size=None):
+@overload
+def normal(rng: Optional[RandomType],
+           loc: float,
+           scale: float,
+           size: Literal[None]
+           ) -> float:
+    ...
+
+@overload
+def normal(rng: Optional[RandomType],
+           loc: float,
+           scale: float,
+           size: SizeType
+           ) -> np.ndarray:
+    ...
+
+def normal(rng, loc=0.0, scale=1.0, size=None):
     """Create a random value from a normal distribution.
 
     Parameters
@@ -203,6 +265,18 @@ def normal(rng, loc=0, scale=1, size=None):
     return rng.normal(loc=loc, scale=scale, size=size)
 
 
+@overload
+def standard_normal(rng: Optional[RandomType],
+                    size: Optional[None]
+                    ) -> float:
+    ...
+
+@overload
+def standard_normal(rng: Optional[RandomType],
+                    size: SizeType
+                    ) -> np.ndarray:
+    ...
+
 def standard_normal(rng, size=None):
     """Create a random value from a normal distribution (mean=0, stdev=1).
 
@@ -226,7 +300,11 @@ def standard_normal(rng, size=None):
     return rng.standard_normal(size=size)
 
 
-def multivariate_normal(rng, mean, cov, size=None):
+def multivariate_normal(rng: Optional[RandomType],
+                        mean,
+                        cov,
+                        size=None
+                        ) -> np.ndarray:
     """Create a random value from a multivariate normal distribution.
 
     Parameters
@@ -251,7 +329,10 @@ def multivariate_normal(rng, mean, cov, size=None):
     return rng.multivariate_normal(mean, cov, size=size)
 
 
-def chisquare(rng, df, size=None):
+def chisquare(rng: Optional[RandomType],
+              df,
+              size=None
+              ) -> np.ndarray:
     """Create a random value from a multivariate normal distribution.
 
     Parameters
@@ -276,7 +357,10 @@ def chisquare(rng, df, size=None):
     return rng.chisquare(df, size=size)
 
 
-def choice(rng, xs, n):
+def choice(rng: Optional[RandomType],
+           xs: Sequence,
+           n
+           ) -> np.ndarray:
     """Create a subset of elements from xs with no duplication.
 
     Parameters
