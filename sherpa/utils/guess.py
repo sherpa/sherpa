@@ -26,6 +26,8 @@ Routines related to estimating initial parameter values and limits.
 
 """
 
+from typing import Any, Optional, Literal, TypedDict, cast, overload
+
 import numpy as np
 
 __all__ = ("_guess_ampl_scale", "get_midpoint", "get_peak",
@@ -37,14 +39,25 @@ __all__ = ("_guess_ampl_scale", "get_midpoint", "get_peak",
            "guess_reference")
 
 
-_guess_ampl_scale = 1.e+3
+# This is liable to be changed at any point (e.g. it could be changed
+# to a dataclass).
+#
+class ValueAndRange(TypedDict):
+    """Represent a value and range as a dict."""
+    val: float
+    min: Optional[float]
+    max: Optional[float]
+
+
+_guess_ampl_scale: float = 1.e+3
 """The scaling applied to a value to create its range.
 
 The minimum and maximum values for a range are calculated by
 dividing and multiplying the value by ``_guess_ampl_scale``.
 """
 
-def get_midpoint(a):
+
+def get_midpoint(a: np.ndarray) -> float:
     """Estimate the middle of the data.
 
     Parameters
@@ -71,7 +84,17 @@ def get_midpoint(a):
     return np.abs(a.max() + a.min()) / 2.0
 
 
-def get_peak(y, x, xhi=None):
+# TODO: the float return values below are "aspirational"
+#
+#   It would be nice to link the type of x to the return value but
+#   that appears to be tricky to do (thanks to the fact we can store
+#   objects as well as numeric values).
+#
+# TODO: xhi is often unused
+#
+def get_peak(y: np.ndarray,
+             x: np.ndarray,
+             xhi: Optional[np.ndarray] = None) -> float:
     """Estimate the peak position of the data.
 
     Parameters
@@ -100,7 +123,9 @@ def get_peak(y, x, xhi=None):
     return x[y.argmax()]
 
 
-def get_valley(y, x, xhi=None):
+def get_valley(y: np.ndarray,
+               x: np.ndarray,
+               xhi: Optional[np.ndarray] = None) -> float:
     """Estimate the position of the minimum of the data.
 
     Parameters
@@ -128,7 +153,9 @@ def get_valley(y, x, xhi=None):
     return x[y.argmin()]
 
 
-def get_fwhm(y, x, xhi=None):
+def get_fwhm(y: np.ndarray,
+             x: np.ndarray,
+             xhi: Optional[np.ndarray] = None) -> float:
     """Estimate the width of the data.
 
     This is only valid for positive data values (``y``).
@@ -223,7 +250,10 @@ def get_fwhm(y, x, xhi=None):
     return guess_fwhm
 
 
-def guess_fwhm(y, x, xhi=None, scale=1000):
+def guess_fwhm(y: np.ndarray,
+               x: np.ndarray,
+               xhi: Optional[np.ndarray] = None,
+               scale: float = 1000) -> ValueAndRange:
     """Estimate the value and valid range for the FWHM of the data.
 
     Parameters
@@ -258,7 +288,10 @@ def guess_fwhm(y, x, xhi=None, scale=1000):
     return {'val': fwhm, 'min': fwhm / scale, 'max': fwhm * scale}
 
 
-def param_apply_limits(param_limits, par, limits=True, values=True):
+def param_apply_limits(param_limits: ValueAndRange,
+                       par,  # sherpa.models.parameter.Parameter
+                       limits: bool = True,
+                       values: bool = True) -> None:
     """Apply the given limits to a parameter.
 
     This is primarily used by the ``guess`` routine of a model
@@ -327,20 +360,29 @@ def param_apply_limits(param_limits, par, limits=True, values=True):
         par._guessed = True
 
 
-def get_amplitude_position(arr, mean=False):
+# TODO: map the return types to the input type
+def get_amplitude_position(arr: np.ndarray,
+                           mean: bool = False
+                           ) -> tuple[float, float, float, Any]:
     """
     Guess model amplitude and position of array
     returns (xval, xmin, xmax, xpos)
 
     """
 
-    xpos = xmin = xmax = xval = 0
+    # TODO: better typing for xpos
+    xpos: Any = 0
+    xmin: float = 0
+    xmax: float = 0
+    xval: float = 0
+
     amax = arr.max()
     amin = arr.min()
     if((amax > 0.0 and amin >= 0.0) or
        (amax > 0.0 and amin < 0.0 and (abs(amin) <= amax))):
         xpos = arr.argmax()
         if mean:
+            # TODO: should this be "xpos, "?
             xpos = np.where(arr == amax)
 
         xmax = amax * _guess_ampl_scale
@@ -351,6 +393,7 @@ def get_amplitude_position(arr, mean=False):
          (amax == 0.0 and amin < 0.0) or (amax < 0.0)):
         xpos = arr.argmin()
         if mean:
+            # TODO: should this be "xpos, "?
             xpos = np.where(arr == amin)
 
         xmax = amin / _guess_ampl_scale
@@ -359,6 +402,7 @@ def get_amplitude_position(arr, mean=False):
     elif (amax == 0.0 and amin == 0.0):
         xpos = arr.argmax()
         if mean:
+            # TODO: should this be "xpos, "?
             xpos = np.where(arr == amax)
 
         xmax = 100.0 / _guess_ampl_scale
@@ -368,7 +412,10 @@ def get_amplitude_position(arr, mean=False):
     return (xval, xmin, xmax, xpos)
 
 
-def guess_amplitude(y, x, xhi=None):
+def guess_amplitude(y: np.ndarray,
+                    x: np.ndarray,
+                    xhi: Optional[np.ndarray] = None
+                    ) -> ValueAndRange:
     """
     Guess model parameter amplitude (val, min, max)
 
@@ -382,7 +429,10 @@ def guess_amplitude(y, x, xhi=None):
         amax = ymax
 
     if xhi is not None:
-        binsize = np.abs(xhi[pos] - x[pos])
+        # pyright needs the cast otherwise it thinks binsize is a
+        # ndarray, presumably because pos is not well typed.
+        #
+        binsize = cast(float, np.abs(xhi[pos] - x[pos]))
         if amin is not None:
             amin /= binsize
         if amax is not None:
@@ -392,7 +442,11 @@ def guess_amplitude(y, x, xhi=None):
     return {'val': val, 'min': amin, 'max': amax}
 
 
-def guess_amplitude_at_ref(r, y, x, xhi=None):
+def guess_amplitude_at_ref(r: float,
+                           y: np.ndarray,
+                           x: np.ndarray,
+                           xhi: Optional[np.ndarray] = None
+                           ) -> ValueAndRange:
     """
     Guess model parameter amplitude (val, min, max)
 
@@ -430,6 +484,24 @@ def guess_amplitude_at_ref(r, y, x, xhi=None):
             'min': t / _guess_ampl_scale, 'max': t * _guess_ampl_scale}
 
 
+@overload
+def guess_amplitude2d(y: np.ndarray,
+                      x0lo: np.ndarray,
+                      x1lo: np.ndarray,
+                      x0hi: Literal[None],
+                      x1hi: Literal[None]
+                      ) -> ValueAndRange:
+    ...
+
+@overload
+def guess_amplitude2d(y: np.ndarray,
+                      x0lo: np.ndarray,
+                      x1lo: np.ndarray,
+                      x0hi: np.ndarray,
+                      x1hi: np.ndarray
+                      ) -> ValueAndRange:
+    ...
+
 def guess_amplitude2d(y, x0lo, x1lo, x0hi=None, x1hi=None):
     """
     Guess 2D model parameter amplitude (val, min, max)
@@ -449,7 +521,11 @@ def guess_amplitude2d(y, x0lo, x1lo, x0hi=None, x1hi=None):
     return limits
 
 
-def guess_reference(pmin, pmax, x, xhi=None):
+def guess_reference(pmin: float,
+                    pmax: float,
+                    x: np.ndarray,
+                    xhi: Optional[np.ndarray] = None
+                    ) -> ValueAndRange:
     """
     Guess model parameter reference (val, min, max)
 
@@ -475,7 +551,10 @@ def guess_reference(pmin, pmax, x, xhi=None):
     return {'val': val, 'min': None, 'max': None}
 
 
-def get_position(y, x, xhi=None):
+def get_position(y: np.ndarray,
+                 x: np.ndarray,
+                 xhi: Optional[np.ndarray] = None
+                 ) -> ValueAndRange:
     """
     Get 1D model parameter positions pos (val, min, max)
 
@@ -483,14 +562,33 @@ def get_position(y, x, xhi=None):
     pos = get_amplitude_position(y, mean=True)
     xpos = pos[3]
 
-    val = np.mean(x[xpos])
+    val = cast(float, np.mean(x[xpos]))
     xmin = x.min()
-    xmax = x.max()
-    if xhi is not None:
+    if xhi is None:
+        xmax = x.max()
+    else:
         xmax = xhi.max()
 
     return {'val': val, 'min': xmin, 'max': xmax}
 
+
+@overload
+def guess_position(y: np.ndarray,
+                   x0lo: np.ndarray,
+                   x1lo: np.ndarray,
+                   x0hi: Literal[None],
+                   x1hi: Literal[None]
+                   ) -> tuple[ValueAndRange, ValueAndRange]:
+    ...
+
+@overload
+def guess_position(y: np.ndarray,
+                   x0lo: np.ndarray,
+                   x1lo: np.ndarray,
+                   x0hi: np.ndarray,
+                   x1hi: np.ndarray
+                   ) -> tuple[ValueAndRange, ValueAndRange]:
+    ...
 
 def guess_position(y, x0lo, x1lo, x0hi=None, x1hi=None):
     """
@@ -503,18 +601,34 @@ def guess_position(y, x0lo, x1lo, x0hi=None, x1hi=None):
     # return the average of location of brightest pixels
     pos = np.where(y == y.max())
 
+    def mkr(x: np.ndarray, xmax: np.ndarray) -> ValueAndRange:
+        return {'val': cast(float, np.mean(x[pos])),
+                'min': x.min(),
+                'max': xmax.max()
+                }
+
     x0, x1 = x0lo, x1lo
-    r1 = {'val': np.mean(x0[pos]), 'min': x0.min()}
-    r2 = {'val': np.mean(x1[pos]), 'min': x1.min()}
-    if x0hi is None and x1hi is None:
-        r1['max'] = x0.max()
-        r2['max'] = x1.max()
+    if x0hi is None or x1hi is None:
+        r1max = x0
+        r2max = x1
     else:
-        r1['max'] = x0hi.max()
-        r2['max'] = x1hi.max()
+        r1max = x0hi
+        r2max = x1hi
 
-    return (r1, r2)
+    return (mkr(x0, r1max), mkr(x1, r2max))
 
+
+@overload
+def guess_bounds(x: np.ndarray,
+                 xhi: Literal[True]
+                 ) -> tuple[ValueAndRange, ValueAndRange]:
+    ...
+
+@overload
+def guess_bounds(x: np.ndarray,
+                 xhi: Literal[False]
+                 ) -> ValueAndRange:
+    ...
 
 def guess_bounds(x, xhi=True):
     """Guess the bounds of a parameter from the independent axis.
@@ -543,15 +657,33 @@ def guess_bounds(x, xhi=True):
 
     xmin = x.min()
     xmax = x.max()
-    lo = xmin + (xmax - xmin) / 2.0
-    if xhi:
-        lo = xmin + (xmax - xmin) / 3.0
-        hi = xmin + 2.0 * (xmax - xmin) / 3.0
-        return ({'val': lo, 'min': xmin, 'max': xmax},
-                {'val': hi, 'min': xmin, 'max': xmax})
+    if not xhi:
+        lo = xmin + (xmax - xmin) / 2.0
+        out: ValueAndRange = {'val': lo, 'min': xmin, 'max': xmax}
+        return out
 
-    return {'val': lo, 'min': xmin, 'max': xmax}
+    lo = xmin + (xmax - xmin) / 3.0
+    hi = xmin + 2.0 * (xmax - xmin) / 3.0
+    out1: ValueAndRange = {'val': lo, 'min': xmin, 'max': xmax}
+    out2: ValueAndRange = {'val': hi, 'min': xmin, 'max': xmax}
+    return (out1, out2)
 
+
+@overload
+def guess_radius(x0lo: np.ndarray,
+                 x1lo: np.ndarray,
+                 x0hi: Literal[None],
+                 x1hi: Literal[None]
+                 ) -> ValueAndRange:
+    ...
+
+@overload
+def guess_radius(x0lo: np.ndarray,
+                 x1lo: np.ndarray,
+                 x0hi: np.ndarray,
+                 x1hi: np.ndarray
+                 ) -> ValueAndRange:
+    ...
 
 def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
     """Guess the radius parameter of a 2D model.
@@ -594,5 +726,7 @@ def guess_radius(x0lo, x1lo, x0hi=None, x1hi=None):
     delta = np.apply_along_axis(np.diff, 0, x0)[0]
     rad = np.abs(10 * delta)
 
-    return {'val': rad,
-            'min': rad / _guess_ampl_scale, 'max': rad * _guess_ampl_scale}
+    out: ValueAndRange = {'val': rad,
+                          'min': rad / _guess_ampl_scale,
+                          'max': rad * _guess_ampl_scale}
+    return out
