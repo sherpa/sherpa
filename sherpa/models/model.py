@@ -1118,10 +1118,14 @@ class CompositeModel(Model):
 
         Model.__init__(self, name, allpars)
 
+        # This check should probably be removed since it refers to
+        # loading a very-old session, and that is unlikely to work due
+        # to other changes in the code base.
+        #
         for part in self.parts:
             try:
                 self.is_discrete = self.is_discrete or part.is_discrete
-            except:
+            except AttributeError:
                 warning("Could not determine whether the model is discrete.\n" +
                         "This probably means that you have restored a session saved with a previous version of Sherpa.\n" +
                         "Falling back to assuming that the model is continuous.\n")
