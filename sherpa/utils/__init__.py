@@ -33,7 +33,7 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Callable, Generic, TypeVar
+from typing import Any, Callable, Generic, Optional, TypeVar
 import warnings
 
 import numpy as np
@@ -1104,7 +1104,14 @@ def bool_cast(val):
     return bool(val)
 
 
-def export_method(meth, name=None, modname=None):
+# Telling the type system that the signature of meth is "the same" as
+# the signature of the return value probably needs Python 3.10 for
+# ParamSpec and then maybe Python 3.12 for the generic support.
+#
+def export_method(meth: Callable,
+                  name: Optional[str] = None,
+                  modname: Optional[str] = None
+                  ) -> Callable:
     """
     Given a bound instance method, return a simple function that wraps
     it.  The only difference between the interface of the original
@@ -1129,6 +1136,28 @@ def export_method(meth, name=None, modname=None):
     if not isinstance(meth, MethodType):
         return meth
 
+    # Most of the functionality here can be provided by
+    # functools.wraps (and in fact would add more functionality, such
+    # as the ability to handle keyword-only or positional-only
+    # arguments). It would also likely require less maintenance.
+    # However, it does not handle two important issues:
+    #
+    # a) when an error is raised it is reported as from Session.<name>
+    #    rather than <name>
+    #
+    #    Attempts to change the __qualname__ field has not been
+    #    successful. The wrapped function can include a check for an
+    #    exception, manually removing any leading "Session."  text
+    #    from the message, but it is not particularly good code.
+    #
+    # b) Error messages related to the number of arguments include the
+    #    self argument (i.e. are 1 more than the user is told to
+    #    expect), which is one of the main reasons for this routine.
+    #
+
+    # The only time name is not None appears to be in the tests, so
+    # can this feature be removed?
+    #
     if name is None:
         name = meth.__name__
 
@@ -1140,13 +1169,6 @@ def export_method(meth, name=None, modname=None):
     defaults = meth.__defaults__
     doc = meth.__doc__
 
-    # Make an argument list string, removing 'self'
-    #
-    # This code originally used inspect.getargspec but was
-    # converted to use inspect.signature.
-    #
-    sig = inspect.signature(meth)
-
     def tostr(p):
         if p.kind == p.VAR_KEYWORD:
             return f"**{p.name}"
@@ -1156,10 +1178,18 @@ def export_method(meth, name=None, modname=None):
 
         return p.name
 
+    # Ideally this would also identify when to add "/" or "*"
+    # to indicate positonal-only or keyword-only arguments.
+    #
+    sig = inspect.signature(meth)
     argspec = ",".join([tostr(p) for p in sig.parameters.values()])
 
     # Create a wrapper function with no default arguments
-    g = {old_name: meth}
+    g: dict[str, Any] = {old_name: meth}
+
+    # The only time modname is None appears to be the test so can we
+    # make it a required argument?
+    #
     if modname is not None:
         g['__name__'] = modname
 
@@ -1167,13 +1197,18 @@ def export_method(meth, name=None, modname=None):
     exec(fdef, g)
 
     # Create another new function from the one we just made, this time
-    # adding the default arguments and doc string from the original method
+    # adding the default arguments, doc string, and any annotations
+    # from the original method.
+    #
+    # Why does this not change the __defaults__ field of new_meth
+    # rather than creating a copy of it?
+    #
     new_meth = g[name]
-
     new_meth = FunctionType(new_meth.__code__, new_meth.__globals__,
                             new_meth.__name__, defaults,
                             new_meth.__closure__)
     new_meth.__doc__ = doc
+    new_meth.__annotations__ = meth.__annotations__
 
     return new_meth
 
