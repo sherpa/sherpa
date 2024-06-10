@@ -336,6 +336,7 @@ class Session(sherpa.ui.utils.Session):
         self._pyblocxs = sherpa.astro.sim.MCMC()
 
     clean.__doc__ = sherpa.ui.utils.Session.clean.__doc__
+    clean.__annotations__ = sherpa.ui.utils.Session.clean.__annotations__
 
     def _set_plot_types(self):
         """Set up the plot types."""
@@ -7302,6 +7303,7 @@ class Session(sherpa.ui.utils.Session):
         super().notice(lo, hi, **kwargs)
 
     notice.__doc__ = sherpa.ui.utils.Session.notice.__doc__
+    notice.__annotations__ = sherpa.ui.utils.Session.notice.__annotations__
 
     # DOC-TODO: how best to document the region support?
     # DOC-TODO: I have not mentioned the support for radii in arcsec/minutes/degrees
@@ -9710,6 +9712,7 @@ class Session(sherpa.ui.utils.Session):
         self._psf_models.append(psf)
 
     load_psf.__doc__ = sherpa.ui.utils.Session.load_psf.__doc__
+    load_psf.__annotations__ = sherpa.ui.utils.Session.load_psf.__annotations__
 
     ###########################################################################
     # Models
@@ -9820,6 +9823,7 @@ class Session(sherpa.ui.utils.Session):
                             "\ninstrument automatically", model.name)
 
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
+    set_full_model.__annotations__ = sherpa.ui.utils.Session.set_full_model.__annotations__
 
     def _add_convolution_models(self, id, data, model, is_source):
         """Add in "hidden" components to the model expression.
@@ -11202,6 +11206,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_data_plot(id, recalc=recalc)
 
     get_data_plot.__doc__ = sherpa.ui.utils.Session.get_data_plot.__doc__
+    get_data_plot.__annotations__ = sherpa.ui.utils.Session.get_data_plot.__annotations__
 
     def get_model_plot(self, id=None, recalc=True):
         if recalc:
@@ -11219,6 +11224,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_model_plot(id, recalc=recalc)
 
     get_model_plot.__doc__ = sherpa.ui.utils.Session.get_model_plot.__doc__
+    get_model_plot.__annotations__ = sherpa.ui.utils.Session.get_model_plot.__annotations__
 
     # also in sherpa.utils, but without the lo/hi arguments
     def get_source_plot(self, id=None, lo=None, hi=None, recalc=True):
@@ -11339,6 +11345,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_fit_plot(id, recalc=recalc)
 
     get_fit_plot.__doc__ = sherpa.ui.utils.Session.get_fit_plot.__doc__
+    get_fit_plot.__annotations__ = sherpa.ui.utils.Session.get_fit_plot.__annotations__
 
     def get_model_component_plot(self, id, model=None, recalc=True):
         """Return the data used to create the model-component plot.
@@ -11455,6 +11462,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_source_component_plot(id, model=model, recalc=recalc)
 
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
+    get_source_component_plot.__annotations__ = sherpa.ui.utils.Session.get_source_component_plot.__annotations__
 
     def get_ratio_plot(self, id=None, recalc=True):
         if recalc:
@@ -11472,6 +11480,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_ratio_plot(id, recalc=recalc)
 
     get_ratio_plot.__doc__ = sherpa.ui.utils.Session.get_ratio_plot.__doc__
+    get_ratio_plot.__annotations__ = sherpa.ui.utils.Session.get_ratio_plot.__annotations__
 
     def get_resid_plot(self, id=None, recalc=True):
         if recalc:
@@ -11489,6 +11498,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_resid_plot(id, recalc=recalc)
 
     get_resid_plot.__doc__ = sherpa.ui.utils.Session.get_resid_plot.__doc__
+    get_resid_plot.__annotations__ = sherpa.ui.utils.Session.get_resid_plot.__annotations__
 
     def get_delchi_plot(self, id=None, recalc=True):
         if recalc:
@@ -11506,6 +11516,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_delchi_plot(id, recalc=recalc)
 
     get_delchi_plot.__doc__ = sherpa.ui.utils.Session.get_delchi_plot.__doc__
+    get_delchi_plot.__annotations__ = sherpa.ui.utils.Session.get_delchi_plot.__annotations__
 
     def get_chisqr_plot(self, id=None, recalc=True):
         if recalc:
@@ -11523,6 +11534,7 @@ class Session(sherpa.ui.utils.Session):
         return super().get_chisqr_plot(id, recalc=recalc)
 
     get_chisqr_plot.__doc__ = sherpa.ui.utils.Session.get_chisqr_plot.__doc__
+    get_chisqr_plot.__annotations__ = sherpa.ui.utils.Session.get_chisqr_plot.__annotations__
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
                         id=1, otherids=(), num=500, bins=25, numcores=None,
@@ -11538,6 +11550,7 @@ class Session(sherpa.ui.utils.Session):
                                        recalc=recalc)
 
     get_pvalue_plot.__doc__ = sherpa.ui.utils.Session.get_pvalue_plot.__doc__
+    get_pvalue_plot.__annotations__ = sherpa.ui.utils.Session.get_pvalue_plot.__annotations__
 
     def get_order_plot(self, id=None, orders=None, recalc=True):
         """Return the data used by plot_order.
