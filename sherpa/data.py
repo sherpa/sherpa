@@ -115,20 +115,20 @@ dependent axis (``y``) then filter to select only those values between
 >>> d1.ignore(520, 530)
 
 """
+
+from abc import ABCMeta
 import logging
 import warnings
-from abc import ABCMeta
 
 import numpy as np
 
 from sherpa.models.regrid import EvaluationSpace1D, IntegratedAxis, PointAxis
+from sherpa.utils import NoNewAttributesAfterInit, formatting, \
+    print_fields, create_expr, create_expr_integrated, \
+    calc_total_error, bool_cast, filter_bins
 from sherpa.utils.err import DataErr
-from sherpa.utils import NoNewAttributesAfterInit, \
-    print_fields, create_expr, create_expr_integrated, calc_total_error, bool_cast, \
-    filter_bins
-from sherpa.utils.parallel import parallel_map_funcs
-from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.parallel import parallel_map_funcs
 
 
 warning = logging.getLogger(__name__).warning
