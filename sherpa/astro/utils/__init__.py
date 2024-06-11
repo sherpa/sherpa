@@ -19,12 +19,15 @@
 #
 """Utility routines for the astronomy code."""
 
+from typing import Optional
+
 import numpy as np
 
 from sherpa.astro import hc, charge_e
 from sherpa.utils import filter_bins
 from sherpa.utils.err import IOErr, DataErr
-from sherpa.utils.guess import get_position
+from sherpa.utils import guess
+from sherpa.utils.guess import ValueAndRange, get_position
 
 from ._utils import arf_fold, do_group, expand_grouped_mask, \
     filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
@@ -38,7 +41,7 @@ __all__ = ('arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
            'calc_source_sum', 'compile_energy_grid',
            'calc_kcorr',
            'expand_grouped_mask', 'resp_init', 'is_in',
-           'get_xspec_position')
+           'get_xspec_position', 'get_xspec_norm')
 
 
 def reshape_2d_arrays(x0, x1):
@@ -46,7 +49,12 @@ def reshape_2d_arrays(x0, x1):
     return new_x0.ravel(), new_x1.ravel()
 
 
-def get_xspec_position(y, x, xhi=None):
+def get_xspec_position(y: np.ndarray,
+                       x: np.ndarray,
+                       xhi: Optional[np.ndarray] = None
+                       ) -> ValueAndRange:
+    """Estimate a position for an XSPEC model."""
+
     if xhi is not None:
         if x[0] > x[-1] and xhi[0] > xhi[-1]:
             lo = hc / xhi
@@ -56,6 +64,33 @@ def get_xspec_position(y, x, xhi=None):
         if x[0] > x[-1]:
             x = hc / x
     return get_position(y, x, xhi)
+
+
+def get_xspec_norm(y: np.ndarray, mdl: np.ndarray) -> ValueAndRange:
+    """Guess model normalization (XSPEC).
+
+    Estimate the normalization based on the data and model.
+
+    Parameters
+    ----------
+    y: ndarray
+       The data
+    mdl: ndarray
+       The model evaluation on the same grid.
+
+    """
+
+    # Use the summation of the data as the comparison rather than pick
+    # an individual value. This is an assumption as to it being a
+    # useful approach, and we may decide to change the approach.
+    #
+    sum_dep = np.sum(y)
+    sum_mdl = np.sum(mdl)
+
+    r = sum_dep / sum_mdl
+    return {'val': r,
+            'min': r / guess._guess_ampl_scale,
+            'max': r * guess._guess_ampl_scale}
 
 
 def compile_energy_grid(arglist):

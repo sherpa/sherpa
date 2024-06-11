@@ -3249,11 +3249,12 @@ def test_guess_with_response_and_multiple_models(idval, clean_astro_ui, caplog, 
     assert cpt1.nH.min == pytest.approx(0)
     assert cpt1.nH.max == pytest.approx(1e6)
 
-    expected = 23.984031288696976
+    expected = 3.539017671368409
     assert cpt2.norm.val == pytest.approx(expected / 1000)
     assert cpt2.norm.min == pytest.approx(expected / 1000 / 1000)
     assert cpt2.norm.max == pytest.approx(expected)
 
+    expected = 9.910362995161027
     assert cpt3.norm.val == pytest.approx(expected / 1000)
     assert cpt3.norm.min == pytest.approx(expected / 1000 / 1000)
     assert cpt3.norm.max == pytest.approx(expected)
