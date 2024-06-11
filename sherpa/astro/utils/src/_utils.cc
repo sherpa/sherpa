@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2017, 2021, 2022
+//  Copyright (C) 2009, 2017, 2021, 2022, 2024
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -567,7 +567,7 @@ static PyMethodDef UtilsFcts[] = {
 	      "    The data to group.\n"
 	      "group : array_like\n"
 	      "    The OGIP grouping data: 1 indicates the start of a group and\n"
-	      "    -1 continues the group. See [OGIP92_007]_ and [OGIP92_007a]_.\n"
+	      "    -1 continues the group.\n"
 	      "name : {'sum', '_sum_sq', '_max', '_min', '_middle', '_make_groups'}\n"
 	      "    The grouping scheme to combine values within a group.\n\n"
 	      "Returns\n"
@@ -608,7 +608,7 @@ static PyMethodDef UtilsFcts[] = {
 	      "    The mask array to expand (treated as a boolean array).\n"
 	      "group : array_like\n"
 	      "    The OGIP grouping data: 1 indicates the start of a group and\n"
-	      "    -1 continues the group. See [OGIP92_007]_ and [OGIP92_007a]_.\n\n"
+	      "    -1 continues the group.\n\n"
 	      "Returns\n"
 	      "-------\n"
 	      "full_mask : array\n"
@@ -636,8 +636,7 @@ static PyMethodDef UtilsFcts[] = {
 
 SHERPAMODDOC(_utils, UtilsFcts,
 	     "Routines for handling Astronomy data.\n\n"
-	     "References\n"
-	     "----------\n\n"
-	     ".. [OGIP92_007] \"The OGIP Spectral File Format\", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html\n\n"
-	     ".. [OGIP92_007a] \"The OGIP Spectral File Format Addendum: Changes log\", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html\n\n"
+	     "OGIP documentation:\n"
+	     " - \"The OGIP Spectral File Format\", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007/ogip_92_007.html\n\n"
+	     " - \"The OGIP Spectral File Format Addendum: Changes log\", https://heasarc.gsfc.nasa.gov/docs/heasarc/ofwg/docs/spectra/ogip_92_007a/ogip_92_007a.html\n\n"
 	     )
