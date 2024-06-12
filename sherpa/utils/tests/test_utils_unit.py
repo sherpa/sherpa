@@ -603,12 +603,7 @@ def test_multinormal_pdf_invalid_input(x, mu, sigma, eclass, emsg):
 def test_multinormal_pdf(x, mu, sigma, expected):
     """Very basic regression test"""
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore",
-                                message="the matrix subclass",
-                                category=PendingDeprecationWarning)
-        out = multinormal_pdf(x, mu, sigma)
-
+    out = multinormal_pdf(x, mu, sigma)
     assert out == pytest.approx(expected)
 
 
@@ -648,10 +643,5 @@ def test_multit_pdf_invalid_input(x, mu, sigma, eclass, emsg):
 def test_multit_pdf(x, mu, sigma, dof, expected):
     """Very basic regression test"""
 
-    with warnings.catch_warnings():
-        warnings.filterwarnings("ignore",
-                                message="the matrix subclass",
-                                category=PendingDeprecationWarning)
-        out = multit_pdf(x, mu, sigma, dof)
-
+    out = multit_pdf(x, mu, sigma, dof)
     assert out == pytest.approx(expected)
