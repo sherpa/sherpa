@@ -37,9 +37,11 @@ the :py:attr:`~sherpa.optmethods.OptMethod.config` dictionary
 field.
 
 Additional optimisers can be built by extending from the
-:py:class:`sherpa.optmethods.OptMethod` class. This can be used
-to provide access to external packages such as
-`CERN's MINUIT optimisation library <https://iminuit.readthedocs.io>`_.
+:py:class:`sherpa.optmethods.OptMethod` class. The `Minuit` class
+is provided as an example: this is only available if the
+``iminuit`` Python package has been installed, and provides
+access to the
+`CERN MINUIT optimisation library <https://iminuit.readthedocs.io>`_.
 
 Choosing an optimiser
 =====================
