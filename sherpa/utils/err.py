@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2017, 2019, 2020, 2022, 2023
+#  Copyright (C) 2010, 2016, 2017, 2019, 2020, 2022 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -213,6 +213,7 @@ class DataErr(SherpaErr):
     dict = {'ismask': "'mask' must be True, False, or a mask array",
             'notmask': 'mask excludes all data',
             'nomask': "data set '%s' has no filter",
+            'emptyaxis': "Axis is empty or has a size of 0",
             # mismatchn is newer and reports the size as well as the fields
             # (reported as strings to allow a value like "None" to be used)
             'mismatch': 'size mismatch between %s and %s',
