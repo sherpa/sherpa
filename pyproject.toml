@@ -35,7 +35,8 @@ classifiers = [
 
 requires-python = ">= 3.10"
 dependencies = [
-  "numpy"
+  "numpy",
+  "typing_extensions>=4.0.0"
 ]
 
 [project.optional-dependencies]
