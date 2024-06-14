@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015 - 2019, 2021 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -163,20 +163,21 @@ def read_arrays(*args):
     >>> d = read_arrays(x0, x1, y, sherpa.data.Data2D)
 
     """
-    args = list(args)
-    if len(args) == 0:
+    largs = list(args)
+    if len(largs) == 0:
         raise IOErr('noarrays')
 
-    dstype = Data1D
-    if sherpa.io._is_subclass(args[-1], BaseData):
-        dstype = args.pop()
+    if sherpa.io._is_subclass(largs[-1], BaseData):
+        dstype = largs.pop()
+    else:
+        dstype = Data1D
 
-    args = backend.get_column_data(*args)
+    dargs = backend.get_column_data(*largs)
 
     # Determine max number of args for dataset constructor
-    sherpa.io._check_args(len(args), dstype)
+    sherpa.io._check_args(len(dargs), dstype)
 
-    return dstype('', *args)
+    return dstype('', *dargs)
 
 
 def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
@@ -498,7 +499,7 @@ def _read_ancillary(data, key, label, dname,
 
         out = read_func(data[key])
         if output_once:
-            info(f'read {label} file {data[key]}')
+            info('read %s file %s', label, data[key])
 
     except Exception as exc:
         if output_once:
@@ -536,26 +537,26 @@ def read_pha(arg, use_errors=False, use_background=False):
     for data in datasets:
         data['header'] = _remove_structural_keywords(data['header'])
 
-        if not use_errors:
-            if data['staterror'] is not None or data['syserror'] is not None:
-                if data['staterror'] is None:
-                    msg = 'systematic'
-                elif data['syserror'] is None:
-                    msg = 'statistical'
-                    if output_once:
-                        warning("systematic errors were not found in "
-                                "file '%s'", filename)
-
-                else:
-                    msg = 'statistical and systematic'
-
+        if not use_errors and (data['staterror'] is not None or
+                               data['syserror'] is not None):
+            if data['staterror'] is None:
+                msg = 'systematic'
+            elif data['syserror'] is None:
+                msg = 'statistical'
                 if output_once:
-                    info("%s errors were found in file '%s'\n"
-                         "but not used; to use them, re-read "
-                         "with use_errors=True", msg, filename)
+                    warning("systematic errors were not found in "
+                            "file '%s'", filename)
 
-                data['staterror'] = None
-                data['syserror'] = None
+            else:
+                msg = 'statistical and systematic'
+
+            if output_once:
+                info("%s errors were found in file '%s'\n"
+                     "but not used; to use them, re-read "
+                     "with use_errors=True", msg, filename)
+
+            data['staterror'] = None
+            data['syserror'] = None
 
         dname = os.path.dirname(filename)
         albl = 'ARF'
@@ -580,9 +581,11 @@ def read_pha(arg, use_errors=False, use_background=False):
                 bkg_datasets = []
                 # Do not read backgrounds of backgrounds
                 if not use_background:
-                    bkg_datasets = read_pha(data['backfile'], use_errors, True)
+                    bkg_datasets = read_pha(data['backfile'],
+                                            use_errors=use_errors,
+                                            use_background=True)
                     if output_once:
-                        info(f"read background file {data['backfile']}")
+                        info("read background file %s", data['backfile'])
 
                 if numpy.iterable(bkg_datasets):
                     for bkg_dataset in bkg_datasets:
@@ -615,7 +618,9 @@ def read_pha(arg, use_errors=False, use_background=False):
                               header=data['header'])
                 bkg.set_response(arf, rmf)
                 if output_once:
-                    info(f"read {bkg_type} into a dataset from file {filename}")
+                    info("read %s into a dataset from file %s",
+                         bkg_type, filename)
+
                 backgrounds.append(bkg)
 
         for k in ['backfile', 'arffile', 'rmffile', 'backscup', 'backscdn',
@@ -624,13 +629,17 @@ def read_pha(arg, use_errors=False, use_background=False):
 
         pha = DataPHA(filename, **data)
         pha.set_response(arf, rmf)
-        for i, bkg in enumerate(backgrounds):
+        for idx, bkg in enumerate(backgrounds, 1):
+            # If the background grouping/quality is not set, copy it
+            # from the source.
+            #
             if bkg.grouping is None:
                 bkg.grouping = pha.grouping
                 bkg.grouped = bkg.grouping is not None
             if bkg.quality is None:
                 bkg.quality = pha.quality
-            pha.set_background(bkg, i + 1)
+
+            pha.set_background(bkg, idx)
 
         # set units *after* bkgs have been set
         pha._set_initial_quantity()
@@ -638,7 +647,7 @@ def read_pha(arg, use_errors=False, use_background=False):
         output_once = False
 
     if len(phasets) == 1:
-        phasets = phasets[0]
+        return phasets[0]
 
     return phasets
 
@@ -1230,7 +1239,6 @@ def _make_int_vlf(rows):
 
     """
 
-    nrows = len(rows)
     maxval = 0
     for row in rows:
         if len(row) == 0:
