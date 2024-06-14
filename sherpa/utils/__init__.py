@@ -1798,8 +1798,9 @@ def multinormal_pdf(x, mu, sigma):
     rank = mu.size
     coeff = 1.0 / (np.power(2.0 * np.pi, rank / 2.0) *
                    np.sqrt(np.abs(np.linalg.det(sigma))))
-    xmu = np.asmatrix(x - mu)
-    invsigma = np.asmatrix(np.linalg.inv(sigma))
+
+    xmu = np.asarray(x - mu)
+    invsigma = np.asarray(np.linalg.inv(sigma))
 
     # The matrix multiplication looks backwards, but mu and x
     # are passed in already transposed.
@@ -1807,7 +1808,8 @@ def multinormal_pdf(x, mu, sigma):
     #  mu = [[a,b,c]]
     #   x = [[d,e,f]]
     #
-    return float(coeff * np.exp(-0.5 * ((xmu * invsigma) * xmu.T)))
+    out = coeff * np.exp(-0.5 * ((xmu @ invsigma) @ xmu.T))
+    return float(out)
 
 
 def multit_pdf(x, mu, sigma, dof):
@@ -1851,13 +1853,14 @@ def multit_pdf(x, mu, sigma, dof):
         raise ValueError("sigma is not symmetric")
 
     rank = mu.size
-    np = float(n + rank)
-    coeff = (gamma(np / 2.0) /
+    npr = float(n + rank)
+    coeff = (gamma(npr / 2.0) /
              (gamma(n / 2.0) * np.power(n, rank / 2.0) *
                  np.power(np.pi, rank / 2.0) *
                  np.sqrt(np.abs(np.linalg.det(sigma)))))
-    xmu = np.asmatrix(x - mu)
-    invsigma = np.asmattix(np.linalg.inv(sigma))
+
+    xmu = np.asarray(x - mu)
+    invsigma = np.asarray(np.linalg.inv(sigma))
 
     # The matrix multiplication looks backwards, but mu and x
     # are passed in already transposed.
@@ -1865,8 +1868,9 @@ def multit_pdf(x, mu, sigma, dof):
     #  mu = [[a,b,c]]
     #   x = [[d,e,f]]
     #
-    term = 1.0 + 1.0 / n * ((xmu * invsigma) * xmu.T)
-    return float(coeff * np.power(term, -np / 2.0))
+    term = 1.0 + 1.0 / n * ((xmu @ invsigma) @ xmu.T)
+    out = coeff * np.power(term, -npr / 2.0)
+    return float(out)
 
 
 def dataspace1d(start, stop, step=1, numbins=None):

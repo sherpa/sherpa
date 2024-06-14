@@ -17,6 +17,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import warnings
+
 import numpy
 from numpy.testing import assert_almost_equal, assert_array_equal, \
     assert_array_almost_equal
@@ -25,7 +28,7 @@ import pytest
 
 from sherpa.utils import _utils, is_binary_file, pad_bounding_box, \
     get_fwhm, histogram1d, histogram2d, dataspace1d, dataspace2d, \
-    interpolate, bool_cast
+    interpolate, bool_cast, multinormal_pdf, multit_pdf
 from sherpa.utils.testing import requires_data
 
 
@@ -566,3 +569,79 @@ def test_bool_cast_invalid(arg, badval):
     emsg = arg if badval is None else badval
     with pytest.raises(TypeError, match=f"^unknown boolean value: '{emsg}'$"):
         bool_cast(arg)
+
+
+@pytest.mark.parametrize("x,mu,sigma,eclass,emsg",
+                         [([1, 2], 3, [3], TypeError, "x and mu sizes do not match"),
+                          ([3], [4, 5], [3], TypeError, "x and mu sizes do not match"),
+                          # This one is not explicitly checked for, so the
+                          # error message may change with NumPy; so we may
+                          # decide not to test it if it needs changing
+                          ([2, 3], [3, 4], [2, 3],
+                           ValueError, "diag requires an array of at least two dimensions"),
+                          ([2, 3, 4], [3, 4, 6], [[2, 3], [3, 4]],
+                           TypeError, "sigma shape does not match x"),
+                          ([2, 3], [3, 4], [[1, 2], [3, 4]],
+                           ValueError, "sigma is not positive definite"),
+                          ([2, 3], [3, 4], [[1, -2j], [2j, 5]],
+                           ValueError, "sigma is not symmetric")
+                          ])
+def test_multinormal_pdf_invalid_input(x, mu, sigma, eclass, emsg):
+    """Minimal test of invalid input"""
+
+    with pytest.raises(eclass, match=emsg):
+        multinormal_pdf(x, mu, sigma)
+
+
+# The values were calculated using CIAO 4.16 on a Linux x86_64 OS.
+#
+@pytest.mark.parametrize("x,mu,sigma,expected",
+                         [([2, 1], [0.5, 0.7], [[1, 0], [0, 1]],
+                           0.049396432874713896),
+                          ([1, 2], [0.5, 0.7], [[1, 0], [0, 1]],
+                           0.06033293935644923)])
+def test_multinormal_pdf(x, mu, sigma, expected):
+    """Very basic regression test"""
+
+    out = multinormal_pdf(x, mu, sigma)
+    assert out == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("x,mu,sigma,eclass,emsg",
+                         [([1, 2], 3, [3], TypeError, "x and mu sizes do not match"),
+                          ([3], [4, 5], [3], TypeError, "x and mu sizes do not match"),
+                          # This one is not explicitly checked for, so the
+                          # error message may change with NumPy; so we may
+                          # decide not to test it if it needs changing
+                          ([2, 3], [3, 4], [2, 3],
+                           ValueError, "diag requires an array of at least two dimensions"),
+                          ([2, 3, 4], [3, 4, 6], [[2, 3], [3, 4]],
+                           TypeError, "sigma shape does not match x"),
+                          ([2, 3], [3, 4], [[1, 2], [3, 4]],
+                           ValueError, "sigma is not positive definite"),
+                          ([2, 3], [3, 4], [[1, -2j], [2j, 5]],
+                           ValueError, "sigma is not symmetric")
+                          ])
+def test_multit_pdf_invalid_input(x, mu, sigma, eclass, emsg):
+    """Minimal test of invalid input"""
+
+    with pytest.raises(eclass, match=emsg):
+        multit_pdf(x, mu, sigma, dof=1)
+
+
+# The values were calculated using CIAO 4.16 on a Linux x86_64 OS.
+#
+@pytest.mark.parametrize("x,mu,sigma,dof,expected",
+                         [([2, 1], [0.5, 0.7], [[1, 0], [0, 1]], 1,
+                           0.02607356594580531),
+                          ([1, 2], [0.5, 0.7], [[1, 0], [0, 1]], 1,
+                           0.03157178495439245),
+                          ([2, 1], [0.5, 0.7], [[1, 0], [0, 1]], 2,
+                           0.033798751957335116),
+                          ([1, 2], [0.5, 0.7], [[1, 0], [0, 1]], 2,
+                           0.04100980264678175)])
+def test_multit_pdf(x, mu, sigma, dof, expected):
+    """Very basic regression test"""
+
+    out = multit_pdf(x, mu, sigma, dof)
+    assert out == pytest.approx(expected)
