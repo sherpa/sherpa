@@ -56,7 +56,7 @@ import os
 import re
 from typing import Any, Optional
 
-import numpy
+import numpy as np
 
 from sherpa import get_config
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
@@ -348,8 +348,8 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     data['header'] = _remove_structural_keywords(data['header'])
     axlens = data['y'].shape
 
-    x0 = numpy.arange(axlens[1], dtype=SherpaFloat) + 1.
-    x1 = numpy.arange(axlens[0], dtype=SherpaFloat) + 1.
+    x0 = np.arange(axlens[1], dtype=SherpaFloat) + 1.
+    x1 = np.arange(axlens[0], dtype=SherpaFloat) + 1.
     x0, x1 = reshape_2d_arrays(x0, x1)
 
     data['y'] = data['y'].ravel()
@@ -587,7 +587,7 @@ def read_pha(arg, use_errors=False, use_background=False):
                     if output_once:
                         info("read background file %s", data['backfile'])
 
-                if numpy.iterable(bkg_datasets):
+                if np.iterable(bkg_datasets):
                     for bkg_dataset in bkg_datasets:
                         if bkg_dataset.get_response() == (None, None) and \
                            rmf is not None:
@@ -694,7 +694,7 @@ def _pack_image(dataset):
     # Data2D does not have a header
     header = getattr(dataset, "header", {})
 
-    data['pixels'] = numpy.asarray(dataset.get_img())
+    data['pixels'] = np.asarray(dataset.get_img())
     data['sky'] = getattr(dataset, 'sky', None)
     data['eqpos'] = getattr(dataset, 'eqpos', None)
 
@@ -958,7 +958,7 @@ def _pack_pha(dataset):
             header[uname] = 1.0
             return
 
-        if numpy.isscalar(val):
+        if np.isscalar(val):
             header[uname] = val
         else:
             data[colname] = val
@@ -1043,18 +1043,18 @@ def _pack_pha(dataset):
         #
         data[column] = vals.astype(dtype)
 
-    convert("CHANNEL", numpy.int32)
-    convert("GROUPING", numpy.int16)
-    convert("QUALITY", numpy.int16)
+    convert("CHANNEL", np.int32)
+    convert("GROUPING", np.int16)
+    convert("QUALITY", np.int16)
 
     # COUNTS has to deal with integer or floating-point.
     #
     try:
         vals = data["COUNTS"]
-        if numpy.issubdtype(vals.dtype, numpy.integer):
-            vals = vals.astype(numpy.int32)
-        elif numpy.issubdtype(vals.dtype, numpy.floating):
-            vals = vals.astype(numpy.float32)
+        if np.issubdtype(vals.dtype, np.integer):
+            vals = vals.astype(np.int32)
+        elif np.issubdtype(vals.dtype, np.floating):
+            vals = vals.astype(np.float32)
         else:
             raise DataErr("ogip-error", "PHA dataset",
                           dataset.name,
@@ -1140,9 +1140,9 @@ def _pack_arf(dataset):
     # data type meets the FITS standard (Real4).
     #
     data = {}
-    data["ENERG_LO"] = dataset.energ_lo.astype(numpy.float32)
-    data["ENERG_HI"] = dataset.energ_hi.astype(numpy.float32)
-    data["SPECRESP"] = dataset.specresp.astype(numpy.float32)
+    data["ENERG_LO"] = dataset.energ_lo.astype(np.float32)
+    data["ENERG_HI"] = dataset.energ_hi.astype(np.float32)
+    data["SPECRESP"] = dataset.specresp.astype(np.float32)
 
     # Chandra files can have BIN_LO/HI values, so copy
     # across if both set.
@@ -1184,8 +1184,8 @@ def _make_int_array(rows, ncols):
 
         maxval = max(maxval, row.max())
 
-    dtype = numpy.int32 if maxval > 32767 else numpy.int16
-    out = numpy.zeros((nrows, ncols), dtype=dtype)
+    dtype = np.int32 if maxval > 32767 else np.int16
+    out = np.zeros((nrows, ncols), dtype=dtype)
     for idx, row in enumerate(rows):
         if len(row) == 0:
             continue
@@ -1215,7 +1215,7 @@ def _make_float32_array(rows, ncols):
     """
 
     nrows = len(rows)
-    out = numpy.zeros((nrows, ncols), dtype=numpy.float32)
+    out = np.zeros((nrows, ncols), dtype=np.float32)
     for idx, row in enumerate(rows):
         out[idx, 0:len(row)] = row
 
@@ -1246,12 +1246,12 @@ def _make_int_vlf(rows):
 
         maxval = max(maxval, row.max())
 
-    dtype = numpy.int32 if maxval > 32767 else numpy.int16
+    dtype = np.int32 if maxval > 32767 else np.int16
     out = []
     for row in rows:
-        out.append(numpy.asarray(row, dtype=dtype))
+        out.append(np.asarray(row, dtype=dtype))
 
-    return numpy.asarray(out, dtype=object)
+    return np.asarray(out, dtype=object)
 
 
 def _reconstruct_rmf(rmf):
@@ -1310,9 +1310,9 @@ def _reconstruct_rmf(rmf):
             matrix_size.add(0)
 
             # Convert from [] to numpy empty list
-            f_chan[-1] = numpy.asarray([], dtype=numpy.int32)
-            n_chan[-1] = numpy.asarray([], dtype=numpy.int32)
-            matrix[-1] = numpy.asarray([], dtype=numpy.float32)
+            f_chan[-1] = np.asarray([], dtype=np.int32)
+            n_chan[-1] = np.asarray([], dtype=np.int32)
+            matrix[-1] = np.asarray([], dtype=np.float32)
             continue
 
         # Grab the next ng elements from rmf.f_chan/n_chan
@@ -1323,7 +1323,7 @@ def _reconstruct_rmf(rmf):
             # ensure this is an integer and not a floating-point number
             # which can happen when rmf.n_chan is stored as Unt64.
             #
-            end = start + rmf.n_chan[idx].astype(numpy.int32)
+            end = start + rmf.n_chan[idx].astype(np.int32)
             mdata = rmf.matrix[start:end]
 
             f_chan[-1].append(rmf.f_chan[idx])
@@ -1337,18 +1337,18 @@ def _reconstruct_rmf(rmf):
         # converting to 4-byte integer here, which can later be
         # downcast.
         #
-        f_chan[-1] = numpy.asarray(f_chan[-1], dtype=numpy.int32)
-        n_chan[-1] = numpy.asarray(n_chan[-1], dtype=numpy.int32)
+        f_chan[-1] = np.asarray(f_chan[-1], dtype=np.int32)
+        n_chan[-1] = np.asarray(n_chan[-1], dtype=np.int32)
 
         # Ensure the matrix is Real-4
-        matrix[-1] = numpy.asarray(matrix[-1], dtype=numpy.float32)
+        matrix[-1] = np.asarray(matrix[-1], dtype=np.float32)
         matrix_size.add(matrix[-1].size)
 
         numelt += sum(n_chan[-1])
 
     # N_GRP should be 2-byte integer.
     #
-    n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
+    n_grp = np.asarray(n_grp, dtype=np.int16)
     numgrp = n_grp.sum()
 
     # Can we convert F_CHAN/N_CHAN to fixed-length if either:
@@ -1370,7 +1370,7 @@ def _reconstruct_rmf(rmf):
         ny = matrix_size.pop()
         matrix = _make_float32_array(matrix, ny)
     else:
-        matrix = numpy.asarray(matrix, dtype=object)
+        matrix = np.asarray(matrix, dtype=object)
 
     return {"N_GRP": n_grp,
             "F_CHAN": f_chan,
@@ -1512,11 +1512,11 @@ def _pack_rmf(dataset):
 
     # TODO: is this correct?
     nchan = dataset.offset + dataset.detchans - 1
-    dchan = numpy.int32 if nchan > 32767 else numpy.int16
+    dchan = np.int32 if nchan > 32767 else np.int16
     ebounds_data = {
-        "CHANNEL": numpy.arange(dataset.offset, nchan + 1, dtype=dchan),
-        "E_MIN": dataset.e_min.astype(numpy.float32),
-        "E_MAX": dataset.e_max.astype(numpy.float32)
+        "CHANNEL": np.arange(dataset.offset, nchan + 1, dtype=dchan),
+        "E_MIN": dataset.e_min.astype(np.float32),
+        "E_MAX": dataset.e_max.astype(np.float32)
         }
 
     return [(matrix_data, matrix_header),

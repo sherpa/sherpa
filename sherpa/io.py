@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,9 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""I/O routines for Sherpa.
+
+These routines are currently restricted to reading from ASCII files.
+"""
+
 import os
 
-import numpy
+import numpy as np
 
 from sherpa.data import Data1D, BaseData
 from sherpa.utils import get_num_args, is_binary_file
@@ -77,7 +82,7 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
                 rows.append(row)
 
     # rotate rows into list of columns
-    cols = numpy.column_stack(rows)
+    cols = np.column_stack(rows)
 
     # cast columns to appropriate type
     args = []
@@ -108,14 +113,14 @@ def get_column_data(*args):
 
     cols = []
     for arg in args:
-        if arg is None or isinstance(arg, (numpy.ndarray, list, tuple)):
+        if arg is None or isinstance(arg, (np.ndarray, list, tuple)):
             vals = arg
         else:
             raise IOErr('badarray', arg)
 
         if arg is not None:
-            vals = numpy.asanyarray(vals)
-            for col in numpy.atleast_2d(vals.T):
+            vals = np.asanyarray(vals)
+            for col in np.atleast_2d(vals.T):
                 cols.append(col)
         else:
             cols.append(vals)
@@ -437,20 +442,20 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
     if os.path.isfile(filename) and not clobber:
         raise IOErr("filefound", filename)
 
-    if not numpy.iterable(args) or len(args) == 0:
+    if not np.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')
 
-    if not numpy.iterable(args[0]):
+    if not np.iterable(args[0]):
         raise IOErr('noarrayswrite')
 
     size = len(args[0])
     for arg in args:
-        if not numpy.iterable(arg):
+        if not np.iterable(arg):
             raise IOErr('noarrayswrite')
         elif len(arg) != size:
             raise IOErr('arraysnoteq')
 
-    args = numpy.column_stack(numpy.asarray(args))
+    args = np.column_stack(np.asarray(args))
     lines = []
     for arg in args:
         line = [format % elem for elem in arg]
