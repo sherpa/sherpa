@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2018, 2020, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -109,18 +109,40 @@ const1d
 """
 
 import logging
+from typing import Callable, Optional, SupportsFloat
 
-import numpy
+import numpy as np
 
 from sherpa.utils import NoNewAttributesAfterInit, \
     get_keyword_names, get_keyword_defaults, print_fields
-from sherpa.optmethods.optfcts import grid_search, lmdif, montecarlo, \
+from .optfcts import OptReturn, grid_search, lmdif, montecarlo, \
     neldermead
 
 warning = logging.getLogger(__name__).warning
 
 
 __all__ = ('GridSearch', 'OptMethod', 'LevMar', 'MonCar', 'NelderMead')
+
+
+class Callback:
+    """Allow a function to use preset arguments when called.
+
+    .. versionadded:: 4.17.0
+
+    """
+
+    __slots__ = ("func", "args", "kwargs")
+
+    def __init__(self,
+                 func: Callable[..., SupportsFloat],
+                 args,
+                 kwargs) -> None:
+        self.func = func
+        self.args = args
+        self.kwargs = kwargs
+
+    def __call__(self, args) -> SupportsFloat:
+        return self.func(args, *self.args, **self.kwargs)
 
 
 class OptMethod(NoNewAttributesAfterInit):
@@ -137,11 +159,13 @@ class OptMethod(NoNewAttributesAfterInit):
        by keyword arguments matching the configuration data.
     """
 
-    def __init__(self, name, optfunc):
+    def __init__(self,
+                 name: str,
+                 optfunc: Callable[..., OptReturn]) -> None:
         self.name = name
         self._optfunc = optfunc
         self.config = self.default_config
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __getattr__(self, name):
         if name in self.__dict__.get('config', ()):
@@ -154,7 +178,7 @@ class OptMethod(NoNewAttributesAfterInit):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} optimization method instance '{self.name}'>"
 
     # Need to support users who have pickled sessions < CIAO 4.2
@@ -174,7 +198,7 @@ class OptMethod(NoNewAttributesAfterInit):
 
         self.__dict__.update(state)
 
-    def __str__(self):
+    def __str__(self) -> str:
         names = ['name']
         names.extend(get_keyword_names(self._optfunc))
         # names.remove('full_output')
@@ -187,13 +211,19 @@ class OptMethod(NoNewAttributesAfterInit):
         return print_fields(names, add_name_config)
 
     def _get_default_config(self):
-        args = get_keyword_defaults(self._optfunc)
-        return args
+        return get_keyword_defaults(self._optfunc)
+
     default_config = property(_get_default_config,
                               doc='The default settings for the optimiser.')
 
-    def fit(self, statfunc, pars, parmins, parmaxes, statargs=(),
-            statkwargs=None):
+    def fit(self,
+            statfunc: Callable[..., SupportsFloat],
+            pars,
+            parmins,
+            parmaxes,
+            statargs=(),
+            statkwargs: Optional[dict] = None
+            ) -> OptReturn:
         """Run the optimiser.
 
         .. versionchanged:: 4.16.0
@@ -234,23 +264,17 @@ class OptMethod(NoNewAttributesAfterInit):
         if statkwargs is None:
             statkwargs = {}
 
-        def cb(pars):
-            return statfunc(pars, *statargs, **statkwargs)
+        cb = Callback(statfunc, statargs, statkwargs)
 
         output = self._optfunc(cb, pars, parmins, parmaxes, **self.config)
-
-        success = output[0]
-        msg = output[3]
+        (success, x, fval, msg, imap) = output
         if not success:
             warning('fit failed: %s', msg)
 
         # Ensure that the best-fit parameters are in an array.  (If there's
         # only one, it might be returned as a bare float.)
-        output = list(output)
-        output[1] = numpy.asarray(output[1]).ravel()
-        output = tuple(output)
-
-        return output
+        newpars = np.asarray(x).ravel()
+        return (success, newpars, fval, msg, imap)
 
 
 # ## DOC-TODO: better description of the sequence argument; what happens
@@ -291,8 +315,8 @@ class GridSearch(OptMethod):
 
     """
 
-    def __init__(self, name='gridsearch'):
-        OptMethod.__init__(self, name, grid_search)
+    def __init__(self, name: str = 'gridsearch') -> None:
+        super().__init__(name=name, optfunc=grid_search)
 
 
 """
@@ -545,8 +569,8 @@ class LevMar(OptMethod):
            Springer-Verlag: Berlin, 1978, pp.105-116.
 
         """
-    def __init__(self, name='levmar'):
-        OptMethod.__init__(self, name, lmdif)
+    def __init__(self, name: str = 'levmar') -> None:
+        super().__init__(name=name, optfunc=lmdif)
 
 
 class MonCar(OptMethod):
@@ -610,8 +634,8 @@ class MonCar(OptMethod):
 
     """
 
-    def __init__(self, name='moncar'):
-        OptMethod.__init__(self, name, montecarlo)
+    def __init__(self, name: str = 'moncar') -> None:
+        super().__init__(name=name, optfunc=montecarlo)
 
 
 # ## DOC-TODO: finalximplex=4 and 5 list the same conditions, it is likely
@@ -814,8 +838,8 @@ class NelderMead(OptMethod):
            http://citeseer.ist.psu.edu/155516.html
 
     """
-    def __init__(self, name='simplex'):
-        OptMethod.__init__(self, name, neldermead)
+    def __init__(self, name: str = 'simplex') -> None:
+        super().__init__(name=name, optfunc=neldermead)
 
 
 ###############################################################################
