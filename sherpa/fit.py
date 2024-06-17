@@ -1250,65 +1250,68 @@ class Fit(NoNewAttributesAfterInit):
         # and it depends on what the input argument was, so it's
         # awkward to do this with a context manager.
         #
-        close_on_exit = True
-        if outfile is not None:
+        close_on_exit = False
+        try:
+            if outfile is not None:
 
-            # If this is a "file handle" then skip the clobber check
-            # and mark as something we do not close on exit.
-            #
-            if isinstance(outfile, WriteableTextFile):
-                fh = outfile
-                close_on_exit = False
+                # If this is a "file handle" then skip the clobber check
+                # and mark as something we do not close on exit.
+                #
+                if isinstance(outfile, WriteableTextFile):
+                    fh = outfile
+                else:
+                    # os.path.isfile and open accepts strings and Path objects
+                    if not clobber and os.path.isfile(outfile):
+                        raise FitErr('noclobererr', str(outfile))
+
+                    fh = open(outfile, mode='w', encoding="ascii")
+                    close_on_exit = True
+
+                # Write out the header line
+                names = ['#', 'nfev', 'statistic']
+                names.extend(par.fullname
+                             for par in self.model.get_thawed_pars())
+
+                fh.write(' '.join(names) + '\n')
+
             else:
-                # os.path.isfile and open accepts strings and Path objects
-                if not clobber and os.path.isfile(outfile):
-                    raise FitErr('noclobererr', str(outfile))
+                fh = None
 
-                fh = open(outfile, mode='w', encoding="ascii")
+            cb = self._iterfit._get_callback(fh=fh)
+            output_orig = self._iterfit.fit(cb,
+                                            self.model.thawedpars,
+                                            self.model.thawedparmins,
+                                            self.model.thawedparmaxes)
 
-            # Write out the header line
-            names = ['#', 'nfev', 'statistic']
-            names.extend(par.fullname
-                         for par in self.model.get_thawed_pars())
+            (status, newpars, fval, msg, imap) = output_orig
 
-            fh.write(' '.join(names) + '\n')
+            # We can not just call cb(newpars) - which would have meant
+            # that writing out the final statistic below is not necessary
+            # - since the statistic used there does not necessarily match
+            # the user-requested statistic. We could change cb.stat but
+            # that seems more effort than it's worth.
+            #
+            self.model.thawedpars = newpars
+            fval_new = self.calc_stat()
 
-        else:
-            fh = None
+            # Check if any parameter values are at boundaries, and warn
+            # user. This does not include any linked parameters.
+            #
+            tol = np.finfo(np.float32).eps
+            param_warnings = ""
+            for par in self.model.pars:
+                if not par.frozen:
+                    if sao_fcmp(par.val, par.min, tol) == 0:
+                        param_warnings += f"WARNING: parameter value {par.fullname} is at its minimum boundary {par.min}\n"
+                    if sao_fcmp(par.val, par.max, tol) == 0:
+                        param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
 
-        cb = self._iterfit._get_callback(fh=fh)
-        output_orig = self._iterfit.fit(cb,
-                                        self.model.thawedpars,
-                                        self.model.thawedparmins,
-                                        self.model.thawedparmaxes)
+            if fh is not None:
+                vals = [f'{cb.nfev:5e}', f'{fval_new:5e}']
+                vals.extend([f'{val:5e}' for val in self.model.thawedpars])
+                fh.write(' '.join(vals) + '\n')
 
-        (status, newpars, fval, msg, imap) = output_orig
-
-        # We can not just call cb(newpars) - which would have meant
-        # that writing out the final statistic below is not necessary
-        # - since the statistic used there does not necessarily match
-        # the user-requested statistic. We could change cb.stat but
-        # that seems more effort than it's worth.
-        #
-        self.model.thawedpars = newpars
-        fval_new = self.calc_stat()
-
-        # Check if any parameter values are at boundaries, and warn
-        # user. This does not include any linked parameters.
-        #
-        tol = np.finfo(np.float32).eps
-        param_warnings = ""
-        for par in self.model.pars:
-            if not par.frozen:
-                if sao_fcmp(par.val, par.min, tol) == 0:
-                    param_warnings += f"WARNING: parameter value {par.fullname} is at its minimum boundary {par.min}\n"
-                if sao_fcmp(par.val, par.max, tol) == 0:
-                    param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
-
-        if fh is not None:
-            vals = [f'{cb.nfev:5e}', f'{fval_new:5e}']
-            vals.extend([f'{val:5e}' for val in self.model.thawedpars])
-            fh.write(' '.join(vals) + '\n')
+        finally:
             if close_on_exit:
                 fh.close()
 
