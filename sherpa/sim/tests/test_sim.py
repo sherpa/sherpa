@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2016, 2018, 2020, 2021, 2023
+#  Copyright (C) 2011, 2016, 2018, 2020, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,8 +19,9 @@
 #
 
 from collections import namedtuple
+from io import StringIO
 
-import numpy
+import numpy as np
 
 import pytest
 
@@ -36,9 +37,9 @@ from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.parallel import _multi, _ncpus
 
 
-_max = numpy.finfo(numpy.float32).max
-_tiny = numpy.finfo(numpy.float32).tiny
-_eps = numpy.finfo(numpy.float32).eps
+_max = np.finfo(np.float32).max
+_tiny = np.finfo(np.float32).tiny
+_eps = np.finfo(np.float32).eps
 
 
 _fit_results_bench = {
@@ -51,7 +52,7 @@ _fit_results_bench = {
     'statval': 8483.0287367571564,
     'parnames': ['p1.gamma', 'p1.ampl', 'g1.fwhm',
                  'g1.pos', 'g1.ampl'],
-    'parvals': numpy.array(
+    'parvals': np.array(
         [1.0701938169914813,
          9.1826254677279469,
          2.5862083052721028,
@@ -59,8 +60,8 @@ _fit_results_bench = {
          47.262657692418749])
     }
 
-_x = numpy.arange(0.1, 10.1, 0.1)
-_y = numpy.array(
+_x = np.arange(0.1, 10.1, 0.1)
+_y = np.array(
     [114, 47, 35, 30, 40, 27, 30, 26, 24, 20, 26, 35,
      29, 28, 34, 36, 43, 39, 33, 47, 44, 46, 53, 56,
      52, 53, 49, 57, 49, 36, 33, 42, 49, 45, 42, 32,
@@ -71,7 +72,7 @@ _y = numpy.array(
      0,  1,  0,  1,  1,  0,  1,  1,  1,  1,  1,  1,
      1,  0,  1,  0]
     )
-_err = numpy.ones(100) * 0.4
+_err = np.ones(100) * 0.4
 
 
 @pytest.fixture
@@ -125,10 +126,10 @@ def setup():
     out.results = results
     out.covresults = fit.est_errors()
     out.dof = results.dof
-    out.mu = numpy.array(results.parvals)
-    out.cov = numpy.array(out.covresults.extra_output)
+    out.mu = np.array(results.parvals)
+    out.cov = np.array(out.covresults.extra_output)
     out.num = 10
-    out.rng = numpy.random.RandomState(23)
+    out.rng = np.random.RandomState(23)
     return out
 
 
@@ -139,7 +140,7 @@ def setup():
 # There are also some tests that check we return a subset of the
 # information (e.g. all-but-the-first column).
 #
-EXPECTED_T = numpy.asarray(
+EXPECTED_T = np.asarray(
     [[8.48554745e+03, 1.06405130, 9.27921234, 2.58664931, 2.59985055, 4.72032018e+01],
      [8.49039767e+03, 1.07407403, 9.05126945, 2.59679740, 2.60386838, 4.73836300e+01],
      [8.48487406e+03, 1.07593411, 9.09514664, 2.59122066, 2.60017483, 4.72314632e+01],
@@ -151,7 +152,7 @@ EXPECTED_T = numpy.asarray(
      [8.48414894e+03, 1.07225846, 9.13799921, 2.58982250, 2.59983239, 4.71818523e+01],
      [8.48467565e+03, 1.07387648, 9.12069098, 2.59440151, 2.60188040, 4.71716468e+01]])
 
-EXPECTED_UNIFORM = numpy.asarray(
+EXPECTED_UNIFORM = np.asarray(
     [[8.92261355e+03, 1.07123512, 8.57093063, 2.61429088, 2.61114484, 4.73497877e+01],
      [9.82725325e+03, 1.09710009, 9.65477406, 2.59719719, 2.60793168, 4.75320785e+01],
      [9.26055735e+03, 1.08617397, 9.65589944, 2.55228604, 2.59058740, 4.74161153e+01],
@@ -163,7 +164,7 @@ EXPECTED_UNIFORM = numpy.asarray(
      [8.50393051e+03, 1.07730034, 8.93027393, 2.61841172, 2.59182705, 4.72459725e+01],
      [8.65618143e+03, 1.06489218, 8.92190134, 2.57999046, 2.60300976, 4.77114146e+01]])
 
-EXPECTED_NORMAL = numpy.asarray(
+EXPECTED_NORMAL = np.asarray(
     [[8.48932906e+03, 1.07521274, 9.12922751, 2.58401110, 2.60674560, 4.72643098e+01],
      [8.51403222e+03, 1.07038805, 9.28561349, 2.59758807, 2.60327743, 4.73778582e+01],
      [8.49257783e+03, 1.06434242, 9.23215258, 2.59206666, 2.60425951, 4.73144299e+01],
@@ -175,7 +176,7 @@ EXPECTED_NORMAL = numpy.asarray(
      [8.75384863e+03, 1.06024498, 8.90014878, 2.58809846, 2.60381520, 4.72108582e+01],
      [8.51787451e+03, 1.08352963, 9.03835426, 2.57289213, 2.60153812, 4.71947163e+01]])
 
-EXPECTED_NORMAL2 = numpy.asarray(
+EXPECTED_NORMAL2 = np.asarray(
     [[8.48548565e+03, 1.06412678, 9.27802554, 2.58664389, 2.59987229, 4.72039324e+01],
      [8.49055139e+03, 1.07411404, 9.04991502, 2.59690659, 2.60389156, 4.73848773e+01],
      [8.48477491e+03, 1.07577639, 9.09755020, 2.59108294, 2.60021453, 4.72323203e+01],
@@ -201,7 +202,7 @@ def test_cauchy(setup):
 
     expected = [1.04452632, 9.58622941, 2.58805112, 2.59422687, 47.01421166]
 
-    assert out == pytest.approx(numpy.asarray(expected))
+    assert out == pytest.approx(np.asarray(expected))
 
 
 def test_parameter_scale_vector_checks_scale_iterable(setup):
@@ -212,7 +213,7 @@ def test_parameter_scale_vector_checks_scale_iterable(setup):
         sim.ParameterScaleVector().get_scales(setup.fit, myscales=3)
 
 
-@pytest.mark.parametrize("scales", [3, numpy.asarray([3])])
+@pytest.mark.parametrize("scales", [3, np.asarray([3])])
 def test_parameter_scale_matrix_checks_scale_iterable(scales, setup):
     """Error check"""
 
@@ -224,7 +225,7 @@ def test_parameter_scale_matrix_checks_scale_iterable(scales, setup):
 def test_parameter_scale_matrix_checks_scale_positive_definite(setup):
     """Error check"""
 
-    scales = numpy.arange(-10, 15).reshape(5, 5)
+    scales = np.arange(-10, 15).reshape(5, 5)
     with pytest.raises(TypeError,
                        match="^The covariance matrix is not positive definite$"):
         sim.ParameterScaleMatrix().get_scales(setup.fit, myscales=scales)
@@ -236,7 +237,7 @@ def test_parameter_scale_vector(setup):
 
     expected = [0.00752475, 0.15368132, 0.01088586, 0.00362169, 0.12308473]
 
-    assert out == pytest.approx(numpy.asarray(expected))
+    assert out == pytest.approx(np.asarray(expected))
 
 
 def test_parameter_scale_matrix(setup):
@@ -249,7 +250,7 @@ def test_parameter_scale_matrix(setup):
                 [-1.41279846e-05,  3.07465479e-04, -1.78172521e-05,  1.31166529e-05,  -8.41924293e-05],
                 [ 3.89927955e-04, -7.64855819e-03, -8.27934918e-05, -8.41924293e-05,   1.51498514e-02]]
 
-    assert out == pytest.approx(numpy.asarray(expected))
+    assert out == pytest.approx(np.asarray(expected))
 
 
 def test_parameter_sample_checks_clip_argument(setup):
@@ -258,7 +259,7 @@ def test_parameter_sample_checks_clip_argument(setup):
     obj = sim.NormalParameterSampleFromScaleVector()
     with pytest.raises(ValueError,
                        match="^invalid clip argument: sent max$"):
-        obj.clip(setup.fit, numpy.arange(20).reshape(4, 5),
+        obj.clip(setup.fit, np.arange(20).reshape(4, 5),
                  clip="max")
 
 
@@ -349,19 +350,19 @@ def test_t_sample(setup):
     assert out == pytest.approx(EXPECTED_T)
 
 
-RATIOS_ONE = numpy.asarray([2.43733721, 3.52628288, 4.18396336, 1.73659659, 3.70862308, 2.19009678,
-                            0.99262327, 2.47817863, 4.29140984, 8.66538795, 0.75845443, 2.19029536,
-                            1.08725896, 1.58262032, 2.91657742, 0.70781436, 0.79954232, 2.5850919,
-                            2.0543363,  0.4747516,  8.69094441, 2.35362447, 2.23331886, 4.20676696,
-                            3.56214367])
+RATIOS_ONE = np.asarray([2.43733721, 3.52628288, 4.18396336, 1.73659659, 3.70862308, 2.19009678,
+                         0.99262327, 2.47817863, 4.29140984, 8.66538795, 0.75845443, 2.19029536,
+                         1.08725896, 1.58262032, 2.91657742, 0.70781436, 0.79954232, 2.5850919,
+                         2.0543363,  0.4747516,  8.69094441, 2.35362447, 2.23331886, 4.20676696,
+                         3.56214367])
 
-RATIOS_TWO = numpy.asarray([1.74752217e+00, 4.15056013,  3.96667032e+00, 1.45119325e+00,
-                            1.99113224e+00, 4.60875346,  2.61179034e+00, 2.52248040e-01,
-                            2.59828000e+00, 3.45398280,  5.44372792e+00, 5.62797204e+00,
-                            6.80978133e+00, 1.06134553, -1.42108547e-12, 2.07549322e+00,
-                            1.14993770e+00, 5.88951206,  2.61912975e+00, 1.31001158e+00,
-                            4.63278539e-01, 2.21026052,  3.12162630e+00, 1.83602835e+00,
-                            6.28386219e+00])
+RATIOS_TWO = np.asarray([1.74752217e+00, 4.15056013,  3.96667032e+00, 1.45119325e+00,
+                         1.99113224e+00, 4.60875346,  2.61179034e+00, 2.52248040e-01,
+                         2.59828000e+00, 3.45398280,  5.44372792e+00, 5.62797204e+00,
+                         6.80978133e+00, 1.06134553, -1.42108547e-12, 2.07549322e+00,
+                         1.14993770e+00, 5.88951206,  2.61912975e+00, 1.31001158e+00,
+                         4.63278539e-01, 2.21026052,  3.12162630e+00, 1.83602835e+00,
+                         6.28386219e+00])
 
 
 def test_lrt(setup):
@@ -442,9 +443,38 @@ def test_mh(setup):
 
     setup.fit.method = NelderMead()
     setup.fit.stat = Cash()
-    setup.fit.fit()
+
+    # As part of investigating #2063 we now check the fit output
+    out = StringIO()
+    setup.fit.fit(outfile=out)
+
     results = setup.fit.est_errors()
     cov = results.extra_output
+
+    # Note when the covariance changes; this is more just as a check
+    # hence not a full check.
+    #
+    diag = np.asarray([5.66172700e-05, 2.36172341e-02,
+                       1.18497835e-04, 1.31162722e-05,
+                       1.51499561e-02])
+    assert np.diag(cov) == pytest.approx(diag)
+
+    # Check outfile; expect
+    #     nfev statistic pl.gamma pl.ampl g1.fwhm g1.pos g1.ampl
+    #
+    # Note that #2063 shows up with the change in stat value in the
+    # last row.
+    #
+    row0 = np.asarray([0, 8483.029, 1.070194, 9.182625, 2.586208, 2.601620, 47.26266])
+    row18 = np.asarray([18, 8483.061, 1.070181, 9.182894, 2.586192, 2.601625, 47.27891])
+    row19 = np.asarray([19, -8975.692, 1.070181, 9.182894, 2.586192, 2.601625, 47.26259])
+
+    out.seek(0)
+    fitvals = np.loadtxt(out)
+    assert fitvals.shape == (20, 7)
+    assert fitvals[0] == pytest.approx(row0)
+    assert fitvals[18] == pytest.approx(row18)
+    assert fitvals[19] == pytest.approx(row19)
 
     mcmc = sim.MCMC()
     for par in setup.fit.model.pars:
@@ -471,7 +501,7 @@ def test_mh(setup):
     assert accept.min() == 0
     assert accept.max() == 1
 
-    means = numpy.asarray([1.06395549, 9.30548196, 2.60004412, 2.60501078, 47.2794224])
+    means = np.asarray([1.06395549, 9.30548196, 2.60004412, 2.60501078, 47.2794224])
     assert params.mean(axis=1) == pytest.approx(means)
 
 
@@ -479,9 +509,38 @@ def test_metropolisMH(setup):
 
     setup.fit.method = NelderMead()
     setup.fit.stat = CStat()
-    results = setup.fit.fit()
+
+    # As part of investigating #2063 we now check the fit output
+    out = StringIO()
+    setup.fit.fit(outfile=out)
+
     results = setup.fit.est_errors()
     cov = results.extra_output
+
+    # Note when the covariance changes; this is more just as a check
+    # hence not a full check.
+    #
+    diag = np.asarray([5.66172700e-05, 2.36172341e-02,
+                       1.18497835e-04, 1.31162722e-05,
+                       1.51499561e-02])
+    assert np.diag(cov) == pytest.approx(diag)
+
+    # Check outfile; expect
+    #     nfev statistic pl.gamma pl.ampl g1.fwhm g1.pos g1.ampl
+    #
+    # Note that #2063 shows up with the change in stat value in the
+    # last row.
+    #
+    row0 = np.asarray([0, 8483.029, 1.070194, 9.182625, 2.586208, 2.601620, 47.26266])
+    row18 = np.asarray([18, 8483.061, 1.070181, 9.182894, 2.586192, 2.601625, 47.27891])
+    row19 = np.asarray([19, 98.8396, 1.070181, 9.182894, 2.586192, 2.601625, 47.26259])
+
+    out.seek(0)
+    fitvals = np.loadtxt(out)
+    assert fitvals.shape == (20, 7)
+    assert fitvals[0] == pytest.approx(row0)
+    assert fitvals[18] == pytest.approx(row18)
+    assert fitvals[19] == pytest.approx(row19)
 
     mcmc = sim.MCMC()
     mcmc.set_sampler('MetropolisMH')
@@ -500,5 +559,5 @@ def test_metropolisMH(setup):
     assert accept.min() == 0
     assert accept.max() == 1
 
-    means = numpy.asarray([1.06662892, 9.11099236, 2.57373044, 2.60959292, 48.00777618])
+    means = np.asarray([1.06662892, 9.11099236, 2.57373044, 2.60959292, 48.00777618])
     assert params.mean(axis=1) == pytest.approx(means)
