@@ -308,7 +308,7 @@ class EvaluationSpace1D():
     @property
     def is_ascending(self):
         """Is the space ascending?"""
-        return self.x_axis.is_empty
+        return self.x_axis.is_ascending
 
     @property
     def grid(self):
