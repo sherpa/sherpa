@@ -1252,7 +1252,7 @@ class Fit(NoNewAttributesAfterInit):
 
         """
 
-        dep, staterror, syserror = self.data.to_fit(self.stat.calc_staterror)
+        dep, staterror, _ = self.data.to_fit(self.stat.calc_staterror)
 
         # TODO: This test may already be handled by data.to_fit(),
         #       which raises DataErr('notmask'), although I have not
@@ -1309,14 +1309,16 @@ class Fit(NoNewAttributesAfterInit):
 
             (status, newpars, fval, msg, imap) = output_orig
 
-            # We can not just call cb(newpars) - which would have meant
-            # that writing out the final statistic below is not necessary
-            # - since the statistic used there does not necessarily match
-            # the user-requested statistic. We could change cb.stat but
-            # that seems more effort than it's worth.
+            # Do a final update. It's not clear if this is because the
+            # optimization interface does not guarantee that the
+            # "best-fit" parameters have been passed to cb, or whether
+            # something else is going on (prior to fixing #2063 we did
+            # have the case that self.stat and self._iterfit.stat were
+            # not guaranteed to be the same).
             #
-            self.model.thawedpars = newpars
-            fval_new = self.calc_stat()
+            # Could we skip this if newpars is them same as thawedpars?
+            #
+            fval_new, _ = cb(newpars)
 
             # Check if any parameter values are at boundaries, and warn
             # user. This does not include any linked parameters.
@@ -1329,11 +1331,6 @@ class Fit(NoNewAttributesAfterInit):
                         param_warnings += f"WARNING: parameter value {par.fullname} is at its minimum boundary {par.min}\n"
                     if sao_fcmp(par.val, par.max, tol) == 0:
                         param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
-
-            if fh is not None:
-                vals = [f'{cb.nfev:5e}', f'{fval_new:5e}']
-                vals.extend([f'{val:5e}' for val in self.model.thawedpars])
-                fh.write(' '.join(vals) + '\n')
 
         finally:
             if close_on_exit:
