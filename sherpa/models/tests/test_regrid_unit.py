@@ -1542,7 +1542,7 @@ def test_evaluationspace_empty_is_integrated(cls):
     assert espace.is_integrated is False
 
 
-@pytest.mark.parametrize("cls", [pytest.param(EvaluationSpace1D, marks=pytest.mark.xfail), EvaluationSpace2D])
+@pytest.mark.parametrize("cls", [EvaluationSpace1D, EvaluationSpace2D])
 def test_evaluationspace_empty_is_ascending(cls):
     """Simple check"""
     espace = cls()
