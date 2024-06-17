@@ -626,6 +626,11 @@ class IterCallback:
 # Since this is an internal class, it's not derived from
 # NoNewAttributesAfterInit.
 #
+# It might be nice to make many of the fields read-only or to
+# be tied to the enclosing Fit object, but that would add extra
+# complexity which does not seem worth it at this time - see
+# issue #2063
+#
 class IterFit:
     """Support iterative fitting schemes.
 
@@ -947,6 +952,10 @@ class IterFit:
 class Fit(NoNewAttributesAfterInit):
     """Fit a model to a data set.
 
+    .. versionchanged:: 4.17.0
+       Changing the stat field now changes the internal IterFit
+       object as well.
+
     Parameters
     ----------
     data : `sherpa.data.Data` or `sherpa.data.DataSimulFit`
@@ -994,7 +1003,6 @@ class Fit(NoNewAttributesAfterInit):
         if estmethod is None:
             estmethod = Covariance()
 
-        self.stat = stat
         self.method = method
         self.estmethod = estmethod
         self.current_frozen = -1
@@ -1007,10 +1015,26 @@ class Fit(NoNewAttributesAfterInit):
 
         # Set up an IterFit object, so that the user can select
         # an iterative fitting option.
-        self._iterfit = IterFit(self.data, self.model, self.stat, self.method,
+        self._iterfit = IterFit(self.data, self.model, stat, self.method,
                                 itermethod_opts)
 
+        # We need to set the statistic *after* creating the _iterfit
+        # attribute
+        #
+        self.stat = stat
+
         super().__init__()
+
+    @property
+    def stat(self) -> Stat:
+        """Return the statistic value"""
+        return self._stat
+
+    @stat.setter
+    def stat(self, stat: Stat) -> None:
+        """Ensure that we use a consistent stat object."""
+        self._stat = stat
+        self._iterfit.stat = stat
 
     def __setstate__(self, state):
         self.__dict__.update(state)

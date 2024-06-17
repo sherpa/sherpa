@@ -454,27 +454,25 @@ def test_mh(setup):
     # Note when the covariance changes; this is more just as a check
     # hence not a full check.
     #
-    diag = np.asarray([5.66172700e-05, 2.36172341e-02,
-                       1.18497835e-04, 1.31162722e-05,
-                       1.51499561e-02])
+    diag = np.asarray([1.68857268e-03, 6.48507899e-01,
+                       9.22029508e-03, 1.88340111e-03,
+                       3.22767792e+00])
     assert np.diag(cov) == pytest.approx(diag)
 
     # Check outfile; expect
     #     nfev statistic pl.gamma pl.ampl g1.fwhm g1.pos g1.ampl
     #
-    # Note that #2063 shows up with the change in stat value in the
-    # last row.
-    #
-    row0 = np.asarray([0, 8483.029, 1.070194, 9.182625, 2.586208, 2.601620, 47.26266])
-    row18 = np.asarray([18, 8483.061, 1.070181, 9.182894, 2.586192, 2.601625, 47.27891])
-    row19 = np.asarray([19, -8975.692, 1.070181, 9.182894, 2.586192, 2.601625, 47.26259])
+    row0 = np.asarray([0, -8975.692, 1.070194, 9.182625, 2.586208, 2.601620, 47.26266])
+    row19 = np.asarray([19, -8975.953, 1.069763, 9.219122,  2.570933, 2.586584,  47.36504])
+    row20 = row19.copy()
+    row20[0] = 20
 
     out.seek(0)
     fitvals = np.loadtxt(out)
-    assert fitvals.shape == (20, 7)
+    assert fitvals.shape == (21, 7)
     assert fitvals[0] == pytest.approx(row0)
-    assert fitvals[18] == pytest.approx(row18)
     assert fitvals[19] == pytest.approx(row19)
+    assert fitvals[20] == pytest.approx(row20)
 
     mcmc = sim.MCMC()
     for par in setup.fit.model.pars:
@@ -496,12 +494,12 @@ def test_mh(setup):
     assert len(accept) == 101
     assert params.shape == (5, 101)
 
-    assert stats.mean() == pytest.approx(-8975.050072981625)
-    assert accept.sum() == 10
+    assert stats.mean() == pytest.approx(-8970.945533198466)
+    assert accept.sum() == 81
     assert accept.min() == 0
     assert accept.max() == 1
 
-    means = np.asarray([1.06395549, 9.30548196, 2.60004412, 2.60501078, 47.2794224])
+    means = np.asarray([1.06497461, 9.2188531, 2.58191838, 2.57882817, 47.5158447])
     assert params.mean(axis=1) == pytest.approx(means)
 
 
@@ -520,27 +518,25 @@ def test_metropolisMH(setup):
     # Note when the covariance changes; this is more just as a check
     # hence not a full check.
     #
-    diag = np.asarray([5.66172700e-05, 2.36172341e-02,
-                       1.18497835e-04, 1.31162722e-05,
-                       1.51499561e-02])
+    diag = np.asarray([1.68857268e-03, 6.48507899e-01,
+                       9.22029508e-03, 1.88340111e-03,
+                       3.22767792e+00])
     assert np.diag(cov) == pytest.approx(diag)
 
     # Check outfile; expect
     #     nfev statistic pl.gamma pl.ampl g1.fwhm g1.pos g1.ampl
     #
-    # Note that #2063 shows up with the change in stat value in the
-    # last row.
-    #
-    row0 = np.asarray([0, 8483.029, 1.070194, 9.182625, 2.586208, 2.601620, 47.26266])
-    row18 = np.asarray([18, 8483.061, 1.070181, 9.182894, 2.586192, 2.601625, 47.27891])
-    row19 = np.asarray([19, 98.8396, 1.070181, 9.182894, 2.586192, 2.601625, 47.26259])
+    row0 = np.asarray([0, 98.83959, 1.070194, 9.182625, 2.586208, 2.601620, 47.26266])
+    row19 = np.asarray([19, 98.5784, 1.069763, 9.219122, 2.570933, 2.586584, 47.36504])
+    row20 = row19.copy()
+    row20[0] = 20
 
     out.seek(0)
     fitvals = np.loadtxt(out)
-    assert fitvals.shape == (20, 7)
+    assert fitvals.shape == (21, 7)
     assert fitvals[0] == pytest.approx(row0)
-    assert fitvals[18] == pytest.approx(row18)
     assert fitvals[19] == pytest.approx(row19)
+    assert fitvals[20] == pytest.approx(row20)
 
     mcmc = sim.MCMC()
     mcmc.set_sampler('MetropolisMH')
@@ -554,10 +550,10 @@ def test_metropolisMH(setup):
     assert len(accept) == 101
     assert params.shape == (5, 101)
 
-    assert stats.mean() == pytest.approx(99.75333600540445)
-    assert accept.sum() == 45
+    assert stats.mean() == pytest.approx(103.81260679391825)
+    assert accept.sum() == 50
     assert accept.min() == 0
     assert accept.max() == 1
 
-    means = np.asarray([1.06662892, 9.11099236, 2.57373044, 2.60959292, 48.00777618])
+    means = np.asarray([1.06278015, 9.21533855, 2.5736483, 2.5853907, 47.27058904])
     assert params.mean(axis=1) == pytest.approx(means)
