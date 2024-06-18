@@ -62,6 +62,7 @@ def read_file_data(filename: str,
     raw_names = []
     rows = []
 
+    ncols = None
     with open(filename, 'r', encoding="utf-8") as fh:
         for line in fh:
             for char in bad_chars:
@@ -88,7 +89,16 @@ def read_file_data(filename: str,
                 # make list of row elements
                 rows.append(row)
 
-    # rotate rows into list of columns
+                if ncols is None:
+                    ncols = len(row)
+                elif ncols != len(row):
+                    raise IOErr('arraysnoteq')
+
+    if ncols is None:
+        # Not quite the right error message
+        raise IOErr('arraysnoteq')
+
+    # Rotate rows into list of columns
     cols = np.column_stack(rows)
 
     # cast columns to appropriate type
@@ -106,9 +116,15 @@ def read_file_data(filename: str,
 
     names = [name.strip(bad_chars)
              for name in raw_names if name != '']
+    nargs = len(args)
     if len(names) == 0:
-        names = [f'col{i}' for i, _ in enumerate(args, 1)]
+        names = [f'col{i}' for i in range(1, nargs + 1)]
 
+    # This could error out if len(names) > nargs, but this might break
+    # existing code, since there is such a check in get_ascii_data but
+    # it's only triggered when the colkeys argument is set. To avoid
+    # breaking code we leave as is for now.
+    #
     return names, args
 
 
@@ -255,8 +271,6 @@ def get_ascii_data(filename: str,
 
     if len(names) > len(args):
         raise IOErr('wrongnumcols', len(args), len(names))
-
-    assert(len(names) <= len(args))
 
     for key in colkeys:
         if key not in names:
@@ -475,17 +489,33 @@ def write_arrays(filename: str,
     # explicitly, nor do we require it in the types. This can make the
     # typing code get confused about what is allowed.
     #
+    # In numpy 1.24 it became an error to pass in irregularly-gridded
+    # data to asarray. Prior to that it would return an ndarray
+    # with a dtype of object (and generate a deprecation warning).
+    #
+    narg = set()
     try:
-        cols = np.column_stack(np.asarray(args))  # type: ignore[call-overload]
-    except ValueError as ve:
-        # Assume the column sizes do not match
-        raise IOErr('arraysnoteq') from ve
+        for arg in args:
+            try:
+                narg.add(len(arg))
+            except TypeError:
+                narg.add(0)
 
-    if cols.ndim < 2:
-        raise IOErr('noarrayswrite')
+    except TypeError:
+        # args is not iterable. We catch this case when checking the
+        # size of narg.
+        pass
+
+    # Allow args to be a sequence of non-sequences or of sequences of
+    # the same size. The former is technically not in the spirit of
+    # the call but users may be taking advantage of it so do not error
+    # out.
+    #
+    if len(narg) != 1:
+        raise IOErr('arraysnoteq')
 
     lines = []
-    for col in cols:
+    for col in np.column_stack(args):
         line = [format % elem for elem in col]
         lines.append(sep.join(line))
 
@@ -500,8 +530,15 @@ def write_arrays(filename: str,
         fh.write(linebreak)
 
 
-def write_data(filename, dataset, fields=None, sep=' ', comment='#',
-               clobber=False, linebreak='\n', format='%g'):
+def write_data(filename: str,
+               dataset: Data,
+               fields: Optional[NamesType] = None,
+               sep: str = ' ',
+               comment: str = '#',
+               clobber: bool = False,
+               linebreak: str = '\n',
+               format: str = '%g'
+               ) -> None:
     """Write out a dataset as an ASCII file.
 
     Parameters
