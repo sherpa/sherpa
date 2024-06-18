@@ -64,7 +64,7 @@ from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
 # leads to circular imports
 # from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import reshape_2d_arrays
-from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
+from sherpa.data import Data, Data1D, Data2D, Data2DInt
 import sherpa.io
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -124,7 +124,7 @@ def read_arrays(*args):
     The return value defaults to a `sherpa.data.Data1D` instance,
     but this can be changed by supplying the required class
     as the last argument (anything that is derived from
-    `sherpa.data.BaseData`).
+    `sherpa.data.Data`).
 
     Parameters
     ----------
@@ -137,7 +137,7 @@ def read_arrays(*args):
 
     Returns
     -------
-    data : a sherpa.data.BaseData derived object
+    data : a sherpa.data.Data derived object
 
     Examples
     --------
@@ -164,7 +164,7 @@ def read_arrays(*args):
     if len(largs) == 0:
         raise IOErr('noarrays')
 
-    if sherpa.io._is_subclass(largs[-1], BaseData):
+    if sherpa.io._is_subclass(largs[-1], Data):
         dstype = largs.pop()
     else:
         dstype = Data1D
@@ -194,11 +194,11 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
         If given, select these columns from the file.
     dstype : optional
         The data type to create (it is expected to follow the
-        `sherpa.data.BaseData` interface).
+        `sherpa.data.Data` interface).
 
     Returns
     -------
-    data : a sherpa.data.BaseData derived object
+    data : a sherpa.data.Data derived object
 
     See Also
     --------
@@ -252,7 +252,7 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
         If given, select these columns from the file.
     dstype : optional
         The data type to create (it is expected to follow the
-        `sherpa.data.BaseData` interface).
+        `sherpa.data.Data` interface).
     **kwargs
         The remaining arguments are passed through to the
         ``get_ascii_data`` routine of the I/O backend. It is
@@ -262,7 +262,7 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
 
     Returns
     -------
-    data : a sherpa.data.BaseData derived object
+    data : a sherpa.data.Data derived object
 
     Examples
     --------
@@ -316,11 +316,11 @@ def read_image(arg, coord='logical', dstype=DataIMG):
         coordinate system.
     dstype : optional
         The data type to create (it is expected to follow the
-        `sherpa.data.BaseData` interface).
+        `sherpa.data.Data` interface).
 
     Returns
     -------
-    data : a sherpa.data.BaseData derived object
+    data : a sherpa.data.Data derived object
 
     See Also
     --------
@@ -482,7 +482,7 @@ def _read_ancillary(data, key, label, dname,
 
     Returns
     -------
-    data : None or a sherpa.data.BaseData derived object
+    data : None or a sherpa.data.Data derived object
 
     """
 

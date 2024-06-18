@@ -27,7 +27,7 @@ import os
 
 import numpy as np
 
-from sherpa.data import Data1D, BaseData
+from sherpa.data import Data, Data1D
 from sherpa.utils import get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -339,7 +339,7 @@ def read_arrays(*args):
        The data columns.
     dstype : optional
        The data type to create. It must be a subclass of
-       `sherpa.data.BaseData` and defaults to `sherpa.data.Data1D`
+       `sherpa.data.Data` and defaults to `sherpa.data.Data1D`
 
     Returns
     -------
@@ -377,7 +377,7 @@ def read_arrays(*args):
         raise IOErr('noarrays')
 
     dstype = Data1D
-    if _is_subclass(args[-1], BaseData):
+    if _is_subclass(args[-1], Data):
         dstype = args.pop()
 
     args = get_column_data(*args)
