@@ -54,18 +54,16 @@ import importlib
 import logging
 import os
 import re
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
 import numpy as np
 
 from sherpa import get_config
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
     DataPHA, DataRosatRMF
-# leads to circular imports
-# from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import reshape_2d_arrays
 from sherpa.data import Data, Data1D, Data2D, Data2DInt
-import sherpa.io
+from sherpa.io import _check_args
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -172,7 +170,7 @@ def read_arrays(*args):
     dargs = backend.get_column_data(*largs)
 
     # Determine max number of args for dataset constructor
-    sherpa.io._check_args(len(dargs), dstype)
+    _check_args(len(dargs), dstype)
 
     return dstype('', *dargs)
 
@@ -232,7 +230,7 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
     name = args[2]
 
     # Determine max number of args for dataset constructor
-    sherpa.io._check_args(len(cols), dstype)
+    _check_args(len(cols), dstype)
 
     return dstype(name, *cols)
 
@@ -293,7 +291,7 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
     name = args[2]
 
     # Determine max number of args for dataset constructor
-    sherpa.io._check_args(len(cols), dstype)
+    _check_args(len(cols), dstype)
 
     return dstype(name, *cols)
 
@@ -369,8 +367,11 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     #
     if issubclass(dstype, (Data2DInt, DataIMGInt)):
         indep = [x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5]
-    else:
+    elif issubclass(dstype, Data2D):
         indep = [x0, x1]
+    else:
+        raise ArgumentErr("bad", "dstype argument",
+                          "dstype is not derived from Data2D")
 
     # Note that we only set the coordinates after creating the
     # dataset, which assumes that data['x'] and data['y'] are always
@@ -382,8 +383,7 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     # issue #1380).
     #
     dataset = dstype(filename, *indep, **data)
-
-    if issubclass(dstype, DataIMG):
+    if isinstance(dataset, DataIMG):
         dataset.set_coord(coord)
 
     return dataset
@@ -633,6 +633,7 @@ def read_pha(arg, use_errors=False, use_background=False):
             if bkg.grouping is None:
                 bkg.grouping = pha.grouping
                 bkg.grouped = bkg.grouping is not None
+
             if bkg.quality is None:
                 bkg.quality = pha.quality
 
@@ -1153,7 +1154,25 @@ def _pack_arf(dataset):
     return data, header
 
 
-def _make_int_array(rows, ncols):
+def _find_int_dtype(rows: Sequence[Sequence[int]]) -> type:
+    """What data type should represent the matrix of integers?
+
+    There is no guarantee that each row has the same number of
+    elements.
+
+    """
+
+    maxval = 0
+    for row in rows:
+        if len(row) == 0:
+            continue
+
+        maxval = max(maxval, np.max(row))
+
+    return np.int32 if maxval > 32767 else np.int16
+
+
+def _make_int_array(rows, ncols) -> np.ndarray:
     """Convert a list of rows into a 2D array of "width" ncols.
 
     The conversion is to a type determined by the maximum value in
@@ -1174,14 +1193,7 @@ def _make_int_array(rows, ncols):
     """
 
     nrows = len(rows)
-    maxval = 0
-    for row in rows:
-        if len(row) == 0:
-            continue
-
-        maxval = max(maxval, row.max())
-
-    dtype = np.int32 if maxval > 32767 else np.int16
+    dtype = _find_int_dtype(rows)
     out = np.zeros((nrows, ncols), dtype=dtype)
     for idx, row in enumerate(rows):
         if len(row) == 0:
@@ -1192,7 +1204,7 @@ def _make_int_array(rows, ncols):
     return out
 
 
-def _make_float32_array(rows, ncols):
+def _make_float32_array(rows, ncols) -> np.ndarray:
     """Convert a list of rows into a 2D array of "width" ncols.
 
     The output has type numpy.float32.
@@ -1219,7 +1231,7 @@ def _make_float32_array(rows, ncols):
     return out
 
 
-def _make_int_vlf(rows):
+def _make_int_vlf(rows) -> np.ndarray:
     """Convert a list of rows into a VLF.
 
     The conversion is to a type determined by the maximum value in
@@ -1236,14 +1248,7 @@ def _make_int_vlf(rows):
 
     """
 
-    maxval = 0
-    for row in rows:
-        if len(row) == 0:
-            continue
-
-        maxval = max(maxval, row.max())
-
-    dtype = np.int32 if maxval > 32767 else np.int16
+    dtype = _find_int_dtype(rows)
     out = []
     for row in rows:
         out.append(np.asarray(row, dtype=dtype))
@@ -1365,14 +1370,14 @@ def _reconstruct_rmf(rmf):
     #
     if len(matrix_size) == 1:
         ny = matrix_size.pop()
-        matrix = _make_float32_array(matrix, ny)
+        matrix_out = _make_float32_array(matrix, ny)
     else:
-        matrix = np.asarray(matrix, dtype=object)
+        matrix_out = np.asarray(matrix, dtype=object)
 
     return {"N_GRP": n_grp,
             "F_CHAN": f_chan,
             "N_CHAN": n_chan,
-            "MATRIX": matrix,
+            "MATRIX": matrix_out,
             "NUMGRP": numgrp,
             "NUMELT": numelt}
 

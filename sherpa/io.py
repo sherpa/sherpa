@@ -51,11 +51,13 @@ def _check_args(size, dstype):
 
 
 def read_file_data(filename, sep=' ', comment='#', require_floats=True):
+    """Read in column data from a file."""
+
     bad_chars = '\t\n\r,;: |'
     raw_names = []
     rows = []
 
-    with open(filename, 'r') as fh:
+    with open(filename, 'r', encoding="utf-8") as fh:
         for line in fh:
             for char in bad_chars:
                 if char in line:
@@ -89,17 +91,19 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
     for col in cols:
         try:
             args.append(col.astype(SherpaFloat))
-        except ValueError:
+        except ValueError as ve:
             if require_floats:
-                raise ValueError(f"The file {filename} could not " +
-                                 "be loaded, probably because it contained " +
-                                 "spurious data and/or strings")
+                raise ValueError(f"The file {filename} could not "
+                                 "be loaded, probably because it "
+                                 "contained spurious data and/or "
+                                 "strings") from ve
             args.append(col)
 
-    names = [name.strip(bad_chars) for name in raw_names if name != '']
+    names = [name.strip(bad_chars)
+             for name in raw_names if name != '']
 
     if len(names) == 0:
-        names = ['col%i' % (i + 1) for i in range(len(args))]
+        names = [f'col{i}' for i, _ in enumerate(args, 1)]
 
     return names, args
 
@@ -226,7 +230,8 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     if is_binary_file(filename):
         raise IOErr('notascii', filename)
 
-    names, args = read_file_data(filename, sep, comment, require_floats)
+    names, args = read_file_data(filename, sep=sep, comment=comment,
+                                 require_floats=require_floats)
 
     if colkeys is None:
         kwargs = []
@@ -325,8 +330,10 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
 
     """
 
-    colnames, args, name = get_ascii_data(filename, ncols, colkeys,
-                                          sep, dstype, comment, require_floats)
+    _, args, name = get_ascii_data(filename, ncols=ncols,
+                                   colkeys=colkeys, sep=sep,
+                                   dstype=dstype, comment=comment,
+                                   require_floats=require_floats)
     return dstype(name, *args)
 
 
@@ -372,20 +379,21 @@ def read_arrays(*args):
     >>> dat = read_arrays(xlo, xhi, y, dstype=sherpa.data.Data1DInt)
 
     """
-    args = list(args)
-    if len(args) == 0:
+    largs = list(args)
+    if len(largs) == 0:
         raise IOErr('noarrays')
 
-    dstype = Data1D
-    if _is_subclass(args[-1], Data):
-        dstype = args.pop()
+    if _is_subclass(largs[-1], Data):
+        dstype = largs.pop()
+    else:
+        dstype = Data1D
 
-    args = get_column_data(*args)
+    dargs = get_column_data(*largs)
 
     # Determine max number of args for dataset constructor
-    _check_args(len(args), dstype)
+    _check_args(len(dargs), dstype)
 
-    return dstype('', *args)
+    return dstype('', *dargs)
 
 
 def write_arrays(filename, args, fields=None, sep=' ', comment='#',
@@ -452,7 +460,7 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
     for arg in args:
         if not np.iterable(arg):
             raise IOErr('noarrayswrite')
-        elif len(arg) != size:
+        if len(arg) != size:
             raise IOErr('arraysnoteq')
 
     args = np.column_stack(np.asarray(args))
@@ -461,7 +469,7 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
         line = [format % elem for elem in arg]
         lines.append(sep.join(line))
 
-    with open(filename, 'w') as fh:
+    with open(filename, 'w', encoding="utf-8") as fh:
 
         if fields is not None:
             fh.write(comment + sep.join(fields) + linebreak)
@@ -535,5 +543,6 @@ def write_data(filename, dataset, fields=None, sep=' ', comment='#',
             col_names.append(name.upper())
             cols.append(field)
 
-    write_arrays(filename, cols, col_names, sep, comment, clobber,
-                 linebreak, format)
+    write_arrays(filename, cols, fields=col_names, sep=sep,
+                 comment=comment, clobber=clobber,
+                 linebreak=linebreak, format=format)
