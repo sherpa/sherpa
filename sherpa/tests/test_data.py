@@ -71,10 +71,11 @@ DATA1DINT_ARGS = NAME, X_ARRAY - 0.5, X_ARRAY + 0.5, Y_ARRAY, STATISTICAL_ERROR_
 DATA2D_ARGS = NAME, X0_2D, X1_2D, Y_2D, SHAPE_2D, STAT_ERROR_2D, SYS_ERROR_2D
 DATA2DINT_ARGS = NAME, X0_2D - 0.5, X1_2D - 0.5, X0_2D + 0.5, X1_2D + 0.5, Y_2D, SHAPE_2D, STAT_ERROR_2D, SYS_ERROR_2D
 
-EMPTY_DATA_OBJECTS = [(Data1D, [None] * 2),
-                      (Data1DInt, [None] * 3),
-                      (Data2D, [None] * 3),
-                      (Data2DInt, [None] * 5)]
+EMPTY_DATA_OBJECTS_1D = [(Data1D, [None] * 2),
+                         (Data1DInt, [None] * 3)]
+EMPTY_DATA_OBJECTS_2D = [(Data2D, [None] * 3),
+                         (Data2DInt, [None] * 5)]
+EMPTY_DATA_OBJECTS = EMPTY_DATA_OBJECTS_1D + EMPTY_DATA_OBJECTS_2D
 
 INSTANCE_ARGS = {
     Data1D: DATA1D_ARGS,
@@ -2413,7 +2414,7 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
         data.set_dep(2)
 
 
-@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[2:])
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
 @pytest.mark.parametrize("index", ["x0", "x1"])
 def test_data_empty_get_x_2d(data_class, args, index):
     """What happens when there's no data?
@@ -2578,3 +2579,171 @@ def test_data1d_compare_mask_and_filter():
 
     assert data.mask == pytest.approx([0, 1, 1, 1, 0])
     assert data.get_dep(filter=True) == pytest.approx([200, 250, 300])
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_1D)
+@pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
+def test_eval_model_when_empty_1d(data_class, args, funcname):
+    """This is a regression test."""
+
+    if data_class == Data1DInt:
+        # Error is
+        # TypeError: IntegratedDataSpace1D.__init__() missing 1 required positional argument: 'xhi'
+        #
+        pytest.xfail("test known to fail with Data1DInt")
+
+    def mdl(*args):
+        assert args[0] is None
+        return [-9]  # easy to check for
+
+    mdl.ndim = 1
+    data = data_class("empty", *args)
+    func = getattr(data, funcname)
+    resp = func(mdl)
+    assert resp == pytest.approx([-9])
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
+@pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
+def test_eval_model_when_empty_2d(data_class, args, funcname):
+    """This is a regression test."""
+
+    def mdl(*args):
+        assert args[0] is None
+        return [-9]  # easy to check for
+
+    mdl.ndim = 2
+    data = data_class("empty", *args)
+    func = getattr(data, funcname)
+    resp = func(mdl)
+    assert resp == pytest.approx([-9])
+
+
+@pytest.mark.parametrize("data_copy", DATA_1D_CLASSES, indirect=True)
+def test_eval_model_when_all_ignored_1d(data_copy):
+    """This is a regression test."""
+
+    def mdl(*args):
+        assert args[0] is not None
+        return [-9]  # easy to check for
+
+    data_copy.ignore()
+    resp = data_copy.eval_model(mdl)
+    assert resp == pytest.approx([-9])
+
+
+@pytest.mark.parametrize("data_copy", DATA_1D_CLASSES, indirect=True)
+def test_eval_model_to_fit_when_all_ignored_1d(data_copy):
+    """This is a regression test."""
+
+    data_copy.ignore()
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
+        _ = data_copy.eval_model_to_fit(Polynom1D())
+
+
+@pytest.mark.parametrize("data_copy", DATA_2D_CLASSES, indirect=True)
+def test_eval_model_when_all_ignored_2d(data_copy):
+    """This is a regression test."""
+
+    def mdl(*args):
+        assert len(args) > 1
+        assert args[0] is not None
+        return [-9]  # easy to check for
+
+    data_copy.ignore()
+    resp = data_copy.eval_model(mdl)
+    assert resp == pytest.approx([-9])
+
+
+@pytest.mark.parametrize("data_copy", DATA_2D_CLASSES, indirect=True)
+def test_eval_model_to_fit_when_all_ignored_2d(data_copy):
+    """This is a regression test."""
+
+    data_copy.ignore()
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
+        _ = data_copy.eval_model_to_fit(Polynom2D())
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS)
+def test_to_guess_when_empty(data_class, args):
+    """This is a regression test."""
+
+    if data_class == Data1DInt:
+        # Error is
+        # TypeError: IntegratedDataSpace1D.__init__() missing 1 required positional argument: 'xhi'
+        #
+        pytest.xfail("test known to fail with Data1DInt")
+
+    data = data_class("empty", *args)
+    resp = data.to_guess()
+
+    # Ensure there are n None values, where n is the number of
+    # independent + dependent axes - ie len(args)
+    #
+    assert len(resp) == len(args)
+    for r in resp:
+        assert r is None
+
+
+@pytest.mark.parametrize("data_copy", ALL_DATA_CLASSES, indirect=True)
+def test_to_guess_when_all_ignored(data_copy):
+    """This is a regression test."""
+
+    data_copy.ignore()
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
+        _ = data_copy.to_guess()
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_1D)
+def test_get_dims_when_empty_1d(data_class, args):
+    """This is a regression test."""
+
+    if data_class == Data1D:
+        # Error is
+        # TypeError: object of type 'NoneType' has no len()
+        pytest.xfail("test known to fail with Data1D")
+
+    # It's not clear what the response should be, but Data1DInt
+    # responds with (0, ) so check that.
+    #
+    data = data_class("empty", *args)
+    resp = data.get_dims()
+    assert resp == (0, )
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
+def test_get_dims_when_empty_2d(data_class, args):
+    """This is a regression test."""
+
+    data = data_class("empty", *args)
+    # This is not a nice error case, so catch it in case we decide to
+    # change the code.
+    #
+    with pytest.raises(TypeError,
+                       match=r"object of type 'NoneType' has no len\(\)"):
+        _ = data.get_dims()
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_1D)
+def test_get_filter_when_empty_1d(data_class, args):
+    """This is a regression test.
+
+    We do not have a 2D version of this since Data1D.get_filter
+    hard-codes the return value to be ''.
+    """
+
+    if data_class == Data1DInt:
+        # Error is
+        # IntegratedDataSpace1D.__init__() missing 1 required positional argument: 'xhi'
+        pytest.xfail("test known to fail with Data1DInt")
+
+    data = data_class("empty", *args)
+    # This is not a nice error case, so catch it in case we decide to
+    # change the code.
+    #
+    with pytest.raises(TypeError,
+                       match=r"object of type 'NoneType' has no len\(\)"):
+        _ = data.get_filter()
