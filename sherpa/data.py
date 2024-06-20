@@ -739,7 +739,7 @@ class Filter():
         ignore = bool_cast(ignore)
         for vals, label in zip([mins, maxes, axislist],
                                ['lower bound', 'upper bound', 'grid']):
-            if any([isinstance(val, str) for val in vals]):
+            if any(isinstance(val, str) for val in vals):
                 raise DataErr('typecheck', label)
 
         mask = filter_bins(mins, maxes, axislist, integrated=integrated)
