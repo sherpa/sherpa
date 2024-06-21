@@ -1145,7 +1145,7 @@ def export_method(meth: Callable,
     # a) when an error is raised it is reported as from Session.<name>
     #    rather than <name>
     #
-    #    Attempts to change the __qualname__ field has not been
+    #    Attempts to change the __qualname__ field have not been
     #    successful. The wrapped function can include a check for an
     #    exception, manually removing any leading "Session."  text
     #    from the message, but it is not particularly good code.
@@ -1179,7 +1179,7 @@ def export_method(meth: Callable,
         return p.name
 
     # Ideally this would also identify when to add "/" or "*"
-    # to indicate positonal-only or keyword-only arguments.
+    # to indicate positional-only or keyword-only arguments.
     #
     sig = inspect.signature(meth)
     argspec = ",".join([tostr(p) for p in sig.parameters.values()])
