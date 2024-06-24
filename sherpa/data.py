@@ -1234,8 +1234,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         ...
 
     def get_y(self, filter=False, yfunc=None, use_evaluation_space=False):
-        """
-        Return dependent axis in N-D view of dependent variable
+        """Return dependent axis in N-D view of dependent variable
 
         Parameters
         ----------
@@ -1245,6 +1244,10 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         Returns
         -------
+        y: array or (array, array) or None
+            If yfunc is not None and the dependent axis is set then
+            the return value is (y, y2) where y2 is yfunc evaluated on
+            the independent axis.
 
         """
         y = self.get_dep(filter)
@@ -1446,7 +1449,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self.notice(*args, **kwargs)
 
     def _can_apply_model(self, modelfunc: ModelFunc) -> None:
-        """Check we model dimensions match."""
+        """Check if model dimensions match data dimensions."""
 
         # Should this also check whether the independent axis is set?
         mdim = getattr(modelfunc, "ndim", None)
@@ -1741,7 +1744,7 @@ class Data1D(Data):
 
     def get_y(self, filter=False, yfunc=None,
               use_evaluation_space=False):
-        """Return dependent axis in N-D view of dependent variable.
+        """Return the dependent axis.
 
         Parameters
         ----------
@@ -1751,7 +1754,10 @@ class Data1D(Data):
 
         Returns
         -------
-        y : array or None
+        y : array or (array, array) or None
+            If yfunc is not None and the dependent axis is set then
+            the return value is (y, y2) where y2 is yfunc evaluated on
+            the independent axis.
 
         """
         y = self.get_dep(filter)
