@@ -3993,7 +3993,7 @@ def test_get_filter_when_empty_2d(data_class, args):
     """This is a regression test.
 
     Although Data2D hard-codes get_filter, the DataIMG class does
-    change the result (techncally only if region support is availablem
+    change the result (technically only if region support is available
     but for this case it doesn't matter).
 
     """

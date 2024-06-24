@@ -20,7 +20,7 @@
 
 """Useful types for Sherpa.
 
-This module should be considered an internal module as its contents is
+This module should be considered an internal module as its contents are
 likely to change as types get added to Sherpa and the typing ecosystem
 in Python matures.
 

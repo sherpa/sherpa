@@ -1084,7 +1084,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         """
 
-        # This is currently a no-op. It may be over-ridden by a
+        # This is currently a no-op. It may be overridden by a
         # subclass.
         #
         pass
