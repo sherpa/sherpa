@@ -791,7 +791,7 @@ class Session(NoNewAttributesAfterInit):
 
         return allnames
 
-    def clean(self):
+    def clean(self) -> None:
         """Clear out the current Sherpa session.
 
         The `clean` function removes all data sets and model
@@ -2118,7 +2118,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._default_id
 
-    def set_default_id(self, id):
+    def set_default_id(self, id: IdType) -> None:
         """Set the default data set identifier.
 
         The Sherpa data id ties data, model, fit, and plotting
@@ -2954,7 +2954,7 @@ class Session(NoNewAttributesAfterInit):
     # Data sets
     ###########################################################################
 
-    def list_data_ids(self):
+    def list_data_ids(self) -> list[IdType]:
         """List the identifiers for the loaded data sets.
 
         Returns
@@ -4007,7 +4007,7 @@ class Session(NoNewAttributesAfterInit):
         """
         return self.get_data(id).get_filter()
 
-    def copy_data(self, fromid, toid):
+    def copy_data(self, fromid: IdType, toid: IdType) -> None:
         """Copy a data set, creating a new identifier.
 
         After copying the data set, any changes made to the
@@ -4027,6 +4027,10 @@ class Session(NoNewAttributesAfterInit):
         sherpa.utils.err.IdentifierErr
            If there is no data set with a ``fromid`` identifier.
 
+        See Also
+        --------
+        delete_data, load_data, set_data
+
         Examples
         --------
 
@@ -4045,7 +4049,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: this does not delete the source expression;
     # is this intended or a bug?
-    def delete_data(self, id=None):
+    def delete_data(self, id: Optional[IdType] = None) -> None:
         """Delete a data set by identifier.
 
         The data set, and any associated structures - such as the ARF
