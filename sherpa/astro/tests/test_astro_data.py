@@ -28,7 +28,7 @@ import pytest
 from sherpa.astro.ui.utils import Session
 from sherpa.astro.data import Data1D, DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
-from sherpa.models.basic import Gauss2D
+from sherpa.models.basic import Gauss1D, Gauss2D
 from sherpa.utils import parse_expr
 from sherpa.utils.err import ArgumentTypeErr, DataErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -36,10 +36,10 @@ from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_region
 
 
-EMPTY_DATA_OBJECTS = [(DataPHA, [None] * 2),
-                      (DataIMG, [None] * 3),
-                      (DataIMGInt, [None] * 5)]
-
+EMPTY_DATA_OBJECTS_1D = [(DataPHA, [None] * 2)]
+EMPTY_DATA_OBJECTS_2D = [(DataIMG, [None] * 3),
+                         (DataIMGInt, [None] * 5)]
+EMPTY_DATA_OBJECTS = EMPTY_DATA_OBJECTS_1D + EMPTY_DATA_OBJECTS_2D
 
 def _monotonic_warning(response_type, filename):
     return UserWarning("The {} '{}' has a non-monotonic ENERG_LO array".format(response_type, filename))
@@ -3205,7 +3205,7 @@ def test_data_can_not_set_dep_to_scalar_when_empty(data_class, args):
         data.set_dep(2)
 
 
-@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS[1:])
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
 @pytest.mark.parametrize("index", ["x0", "x1"])
 def test_data_empty_get_x_2d(data_class, args, index):
     """What happens when there's no data?
@@ -3814,3 +3814,189 @@ def test_pha_group_xxx_with_background(caplog):
     assert bkg.grouped
 
     assert len(caplog.records) == 0
+
+
+def test_eval_model_when_empty_datapha():
+    """This is a regression test."""
+
+    def mdl(*args):
+        assert len(args) == 1
+        assert args[0] is None
+        return [-9]  # easy to check for
+
+    mdl.ndim = 1
+    data = DataPHA("empty", None, None)
+    resp = data.eval_model(mdl)
+    assert resp == pytest.approx([-9])
+
+
+def test_eval_model_to_fit_when_empty_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("empty", None, None)
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
+        _ = data.eval_model_to_fit(Gauss1D())
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
+@pytest.mark.parametrize("funcname", ["eval_model", "eval_model_to_fit"])
+def test_eval_model_when_empty_2d(data_class, args, funcname):
+    """This is a regression test."""
+
+    def mdl(*args):
+        assert len(args) > 1
+        assert args[0] is None
+        return [-9]  # easy to check for
+
+    mdl.ndim = 2
+    data = data_class("empty", *args)
+    func = getattr(data, funcname)
+    resp = func(mdl)
+    assert resp == pytest.approx([-9])
+
+
+def test_eval_model_when_all_ignored_datapha():
+    """This is a regression test."""
+
+    def mdl(*args):
+        assert len(args) == 1
+        assert args[0] is not None
+        return [-9]  # easy to check for
+
+    data = DataPHA("x", [1, 2, 3], [3, 2, 7])
+    data.ignore()
+    resp = data.eval_model(mdl)
+    assert resp == pytest.approx([-9])
+
+
+def test_eval_model_to_fit_when_all_ignored_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("x", [1, 2, 3], [3, 2, 7])
+    data.ignore()
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
+        _ = data.eval_model_to_fit(Gauss1D())
+
+
+def test_eval_model_when_all_ignored_dataimg():
+    """This is a regression test."""
+
+    def mdl(*args):
+        assert len(args) > 1
+        assert args[0] is not None
+        return [-9]  # easy to check for
+
+    data = DataIMG("x", [1, 2, 1, 2], [1, 1, 2, 2], [3, 4, 5, 8])
+    data.ignore()
+    resp = data.eval_model(mdl)
+    assert resp == pytest.approx([-9])
+
+
+def test_eval_model_to_fit_when_all_ignored_dataimg():
+    """This is a regression test."""
+
+    data = DataIMG("x", [1, 2, 1, 2], [1, 1, 2, 2], [3, 4, 5, 8])
+    data.ignore()
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
+        _ = data.eval_model_to_fit(Gauss2D())
+
+
+def test_to_guess_when_empty_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("empty", None, None)
+    # This is not a nice error case, so catch it in case we decide to
+    # change the code.
+    #
+    with pytest.raises(TypeError,
+                       match=r"unsupported operand type\(s\) for \+: 'NoneType' and 'int'"):
+        _ = data.to_guess()
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
+def test_to_guess_when_empty_2d(data_class, args):
+    """This is a regression test."""
+
+    data = data_class("empty", *args)
+    resp = data.to_guess()
+
+    # Ensure there are n None values, where n is the number of
+    # independent + dependent axes - ie len(args)
+    #
+    assert len(resp) == len(args)
+    for r in resp:
+        assert r is None
+
+
+def test_to_guess_when_all_ignored_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("x", [1, 2, 3], [2, 1, 3])
+    data.ignore()
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
+        _ = data.to_guess()
+
+
+def test_to_guess_when_all_ignored_dataimg():
+    """This is a regression test."""
+
+    data = DataIMG("x", [1, 1, 2, 2], [1, 2, 1, 2], [3, 40, 7, 12])
+    data.ignore()
+    with pytest.raises(DataErr,
+                       match="mask excludes all data"):
+        _ = data.to_guess()
+
+
+def test_get_dims_when_empty_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("empty", None, None)
+    # This is not a nice error case, so catch it in case we decide to
+    # change the code.
+    #
+    with pytest.raises(TypeError,
+                       match=r"object of type 'NoneType' has no len\(\)"):
+        _ = data.get_dims()
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
+def test_get_dims_when_empty_2d(data_class, args):
+    """This is a regression test."""
+
+    data = data_class("empty", *args)
+    # This is not a nice error case, so catch it in case we decide to
+    # change the code.
+    #
+    with pytest.raises(TypeError,
+                       match=r"object of type 'NoneType' has no len\(\)"):
+        _ = data.get_dims()
+
+
+def test_get_filter_when_empty_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("empty", None, None)
+    # This is not a nice error case, so catch it in case we decide to
+    # change the code.
+    #
+    with pytest.raises(TypeError,
+                       match=r"object of type 'NoneType' has no len\(\)"):
+        _ = data.get_filter()
+
+
+@pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
+def test_get_filter_when_empty_2d(data_class, args):
+    """This is a regression test.
+
+    Although Data2D hard-codes get_filter, the DataIMG class does
+    change the result (technically only if region support is available
+    but for this case it doesn't matter).
+
+    """
+
+    data = data_class("empty", *args)
+    assert data.get_filter() == ''
