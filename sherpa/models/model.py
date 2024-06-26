@@ -660,7 +660,7 @@ class Model(NoNewAttributesAfterInit):
                 tp = 'thawed'
 
             s += f'\n   {p.fullname:<12s} {tp:<6s} {p.val:12g} '
-            if tp == 'linked':
+            if p.link is not None:
                 linkstr = f'expr: {p.link.fullname}'
                 s += f'{linkstr:>24s}'
             else:
