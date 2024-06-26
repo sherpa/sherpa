@@ -8,9 +8,15 @@ on:
     - '*'
   pull_request:
 
+#Reduces GH Action duplication:
+# Cancels the previous pipeline for this ref it is still running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
   xspec_channel: "xspec/label/test"
-  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/10.14SDK/MacOSX10.14.sdk
+  CONDA_BUILD_SYSROOT: ${{ github.workspace }}/11.0SDK/MacOSX11.0.sdk
 
 jobs:
   tests:
