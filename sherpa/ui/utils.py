@@ -47,6 +47,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import IdType
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -64,7 +65,6 @@ BUILTINS = sys.modules["builtins"]
 _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 
 
-IdType = Union[int, str]
 ModelType = Union[Model, str]
 
 

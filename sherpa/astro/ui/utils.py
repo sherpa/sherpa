@@ -36,6 +36,7 @@ from sherpa.utils import sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import IdType
 from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
@@ -10974,8 +10975,8 @@ class Session(sherpa.ui.utils.Session):
     # at the code it is always set to False.
     #
     def fit(self,
-            id: Optional[sherpa.ui.utils.IdType] = None,
-            *otherids: sherpa.ui.utils.IdType,
+            id: Optional[IdType] = None,
+            *otherids: IdType,
             **kwargs
             ) -> FitResults:
         # pylint: disable=W1113
@@ -11083,8 +11084,8 @@ class Session(sherpa.ui.utils.Session):
         self._fit(id, *otherids, **kwargs)
 
     def fit_bkg(self,
-                id: Optional[sherpa.ui.utils.IdType] = None,
-                *otherids: sherpa.ui.utils.IdType,
+                id: Optional[IdType] = None,
+                *otherids: IdType,
                 **kwargs
                 ) -> FitResults:
         # pylint: disable=W1113

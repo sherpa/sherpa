@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2015, 2016, 2019, 2021, 2023
+#  Copyright (C) 2015, 2016, 2019, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -50,9 +50,9 @@ except ImportError:
 
 from sherpa.data import Data, Data1D, Data1DInt, Data2D, Data2DInt
 from sherpa.models.basic import UserModel
-# from sherpa.models.parameter import Parameter
 import sherpa.utils
 from sherpa.utils.err import ArgumentErr
+from sherpa.utils.types import IdType
 
 
 logger = logging.getLogger(__name__)
@@ -65,7 +65,6 @@ string_types = (str, )
 #
 
 OutType = TypedDict("OutType", {"imports": set[str], "main": list[str]})
-IdType = Union[int, str]
 MaybeIdType = Optional[IdType]
 DataType = Union[Data1D, Data2D]
 
