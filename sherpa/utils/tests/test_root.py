@@ -99,6 +99,7 @@ def prob15(x, *args):
 
 
 def prob16(x, *args):
+    """See also prob35."""
     return (sqr(x) - 2.0) * x - 5.0
 
 
@@ -178,6 +179,10 @@ def prob34(x, *args):
 
 
 def prob35(x, *args):
+    """See also prob16.
+
+    It's not obvious this adds anything to prob16
+    """
     return (x*x - 2.0) * x - 5.0
 
 

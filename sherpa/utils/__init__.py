@@ -3455,6 +3455,7 @@ def bisection(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=48, tol=1.0e-6):
         return [[None, None], [[xa, fa], [xb, fb]], myfcn.nfev]
 
 
+# Is this used at all?
 def quad_coef(x, f):
     """
     p( x ) = f( xc ) + A ( x - xc ) + B ( x - xc ) ( x - xb )
@@ -3527,6 +3528,11 @@ def transformed_quad_coef(x, f):
     xa, xb, xc = x[0], x[1], x[2]
     fa, fb, fc = f[0], f[1], f[2]
 
+    # What happens if xb_xa or xc_xa are 0? That is, either
+    #     xa == xb
+    #     xc == xa
+    # Is the assumption that this just never happen?
+    #
     xc_xb = xc - xb
     fc_fb = fc - fb
     A = fc_fb / xc_xb
@@ -3536,6 +3542,21 @@ def transformed_quad_coef(x, f):
     B = (A - fb_fa / xb_xa) / xc_xa
     C = A + B * xc_xb
     return [B, C]
+
+
+def _get_discriminant(xa, xb, xc, fa, fb, fc):
+    """Wrap up code to transformed_quad_coef.
+
+    This is common code that could be added to transformed_quad_coef
+    but is left out at the moment, to make it easier to look back
+    at code changes. There is no description of the parameters as
+    the existing code has none.
+
+    """
+
+    [B, C] = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
+    discriminant = max(C * C - 4.0 * fc * B, 0.0)
+    return B, C, discriminant
 
 
 def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
@@ -3643,10 +3664,7 @@ def demuller(fcn, xa, xb, xc, fa=None, fb=None, fc=None, args=(),
 
         while myfcn.nfev < maxfev:
 
-            [B, C] = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
-
-            discriminant = max(C * C - 4.0 * fc * B, 0.0)
-
+            B, C, discriminant = _get_discriminant(xa, xb, xc, fa, fb, fc)
             if is_nan(B) or is_nan(C) or \
                     0.0 == C + np.sign(C) * np.sqrt(discriminant):
                 return [[None, None], [[None, None], [None, None]],
@@ -3737,11 +3755,7 @@ def new_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.e-6):
             if abs(fc) <= tol:
                 return [[xc, fc], [[xa, fa], [xb, fb]], myfcn.nfev]
 
-            tran = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
-            B = tran[0]
-            C = tran[1]
-
-            discriminant = max(C * C - 4.0 * fc * B, 0.0)
+            B, C, discriminant = _get_discriminant(xa, xb, xc, fa, fb, fc)
 
             xd = xc - 2.0 * fc / (C + np.sign(C) * np.sqrt(discriminant))
 
@@ -3875,10 +3889,8 @@ def apache_muller(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
         oldx = 1.0e128
         while myfcn.nfev < maxfev:
 
-            tran = transformed_quad_coef([xa, xb, xc], [fa, fb, fc])
-            B = tran[0]
-            C = tran[1]
-            discriminant = max(C * C - 4.0 * fc * B, 0.0)
+
+            B, C, discriminant = _get_discriminant(xa, xb, xc, fa, fb, fc)
             den = np.sign(C) * np.sqrt(discriminant)
             xplus = xc - 2.0 * fc / (C + den)
             if C != den:
