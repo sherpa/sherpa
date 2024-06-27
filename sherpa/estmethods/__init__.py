@@ -380,6 +380,11 @@ def covariance(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
         eflag = est_success
         ubound = diag[num]
         lbound = -diag[num]
+
+        # What happens when lbound or ubound is NaN? This is
+        # presumably why the code is written as it is below (e.g. a
+        # pass if the values can be added to pars[num]).
+        #
         if pars[num] + ubound < parhardmaxes[num]:
             pass
         else:
@@ -1092,6 +1097,7 @@ def confidence(pars, parmins, parmaxes, parhardmins, parhardmaxes, sigma, eps,
             print_status(myblog.blogger.info, verbose, status_prefix[dirn],
                          delta_zero, lock)
 
+        # This should really set the error flag appropriately.
         error_flags.append(est_success)
 
         #
