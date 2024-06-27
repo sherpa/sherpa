@@ -1519,7 +1519,7 @@ def create_expr_integrated(lovals, hivals, mask=None,
     delim : str, optional
         The separator for a range.
     eps : number, optional
-        The tolerance for comparing two numbers with sao_fcmp.
+        This value is unused.
 
     Raises
     ------
@@ -4069,9 +4069,13 @@ def zeroin(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32, tol=1.0e-2):
             warning('%s: %s fa * fb < 0 is not met', __name__, fcn.__name__)
             return [[None, None], [[None, None], [None, None]], myfcn.nfev]
 
+        # With NumPy 2.0 the casting rules changed, leading to some
+        # behavioural changes in this code. The simplest fix was to
+        # make sure DBL_EPSILON did not remain a np.float32 value.
+        #
         xc = xa
         fc = fa
-        DBL_EPSILON = np.finfo(np.float32).eps
+        DBL_EPSILON = float(np.finfo(np.float32).eps)
         while myfcn.nfev < maxfev:
 
             prev_step = xb - xa
