@@ -36,11 +36,12 @@ from sherpa.utils import sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import IdType
 from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
-from sherpa.fit import Fit
+from sherpa.fit import Fit, FitResults
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
@@ -10973,7 +10974,11 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: existing docs suggest that bkg_only can be set, but looking
     # at the code it is always set to False.
     #
-    def fit(self, id=None, *otherids, **kwargs):
+    def fit(self,
+            id: Optional[IdType] = None,
+            *otherids: IdType,
+            **kwargs
+            ) -> FitResults:
         # pylint: disable=W1113
         """Fit a model to one or more data sets.
 
@@ -10986,6 +10991,10 @@ class Session(sherpa.ui.utils.Session):
         fit. The final fit results are displayed to the screen and can
         be retrieved with `get_fit_results`.
 
+        .. versionchanged:: 4.17.0
+           The outfile parameter can now be sent a Path object or a
+           file handle instead of a string.
+
         Parameters
         ----------
         id : int or str, optional
@@ -10993,13 +11002,14 @@ class Session(sherpa.ui.utils.Session):
            all data sets with an associated model are fit simultaneously.
         *otherids : sequence of int or str, optional
            Other data sets to use in the calculation.
-        outfile : str, optional
+        outfile : str, Path, IO object, or None, optional
            If set, then the fit results will be written to a file with
            this name. The file contains the per-iteration fit results.
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (``True``) or if it raises an exception (``False``,
-           the default setting).
+           overwritten (``True``) or if it raises an exception
+           (``False``, the default setting). This is only used if
+           `outfile` is set to a string or Path object.
 
         Raises
         ------
@@ -11035,6 +11045,9 @@ class Session(sherpa.ui.utils.Session):
         `fit_bkg` function can be used to fit models to just the
         background data.
 
+        If outfile is sent a file handle then it is not closed by this
+        routine.
+
         Examples
         --------
 
@@ -11057,11 +11070,24 @@ class Session(sherpa.ui.utils.Session):
 
         >>> fit('jet', outfile='jet.fit', clobber=True)
 
+        Store the per-iteration values in a StringIO object and
+        extract the data into the variable txt (this avoids the need
+        to create a file):
+
+        >>> from io import StringIO
+        >>> out = StringIO()
+        >>> fit(outfile=out)
+        >>> txt = out.getvalue()
+
         """
         kwargs['bkg_only'] = False
         self._fit(id, *otherids, **kwargs)
 
-    def fit_bkg(self, id=None, *otherids, **kwargs):
+    def fit_bkg(self,
+                id: Optional[IdType] = None,
+                *otherids: IdType,
+                **kwargs
+                ) -> FitResults:
         # pylint: disable=W1113
         """Fit a model to one or more background PHA data sets.
 
@@ -11071,6 +11097,10 @@ class Session(sherpa.ui.utils.Session):
         these parameters are well defined before performing a
         simultaneous source and background fit.
 
+        .. versionchanged:: 4.17.0
+           The outfile parameter can now be sent a Path object or a
+           file handle instead of a string.
+
         Parameters
         ----------
         id : int or str, optional
@@ -11079,13 +11109,14 @@ class Session(sherpa.ui.utils.Session):
            model are fit simultaneously.
         *otherids : sequence of int or str, optional
            Other data sets to use in the calculation.
-        outfile : str, optional
+        outfile : str, Path, IO object, or None, optional
            If set, then the fit results will be written to a file with
            this name. The file contains the per-iteration fit results.
         clobber : bool, optional
            This flag controls whether an existing file can be
-           overwritten (``True``) or if it raises an exception (``False``,
-           the default setting).
+           overwritten (``True``) or if it raises an exception
+           (``False``, the default setting). This is only used if
+           `outfile` is set to a string or Path object.
 
         Raises
         ------
@@ -11105,6 +11136,9 @@ class Session(sherpa.ui.utils.Session):
         This is only for PHA data sets where the background is being
         modelled, rather than subtracted from the data.
 
+        If outfile is sent a file handle then it is not closed by this
+        routine.
+
         Examples
         --------
 
@@ -11119,6 +11153,15 @@ class Session(sherpa.ui.utils.Session):
 
         >>> fit_bkg(1, 2)
         >>> fit(1, 2)
+
+        Store the per-iteration values in a StringIO object and
+        extract the data into the variable txt (this avoids the need
+        to create a file):
+
+        >>> from io import StringIO
+        >>> out = StringIO()
+        >>> fit_bkg(outfile=out)
+        >>> txt = out.getvalue()
 
         """
         kwargs['bkg_only'] = True

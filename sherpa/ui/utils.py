@@ -35,7 +35,7 @@ import numpy as np
 from sherpa import get_config
 import sherpa.all
 from sherpa.data import Data, DataSimulFit
-from sherpa.fit import Fit
+from sherpa.fit import Fit, FitResults
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
@@ -47,6 +47,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import IdType
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -64,7 +65,6 @@ BUILTINS = sys.modules["builtins"]
 _builtin_symbols_ = tuple(BUILTINS.__dict__.keys())
 
 
-IdType = Union[int, str]
 ModelType = Union[Model, str]
 
 
@@ -9263,7 +9263,11 @@ class Session(NoNewAttributesAfterInit):
         return f.calc_chisqr()
 
     # also in sherpa.astro.utils
-    def fit(self, id=None, *otherids, **kwargs):
+    def fit(self,
+            id: Optional[IdType] = None,
+            *otherids: IdType,
+            **kwargs
+            ) -> FitResults:
         """Fit a model to one or more data sets.
 
         Use forward fitting to find the best-fit model to one or more
@@ -9275,6 +9279,10 @@ class Session(NoNewAttributesAfterInit):
         fit. The final fit results are displayed to the screen and can
         be retrieved with `get_fit_results`.
 
+        .. versionchanged:: 4.17.0
+           The outfile parameter can now be sent a Path object or a
+           file handle instead of a string.
+
         Parameters
         ----------
         id : int or str, optional
@@ -9282,13 +9290,14 @@ class Session(NoNewAttributesAfterInit):
            all data sets with an associated model are fit simultaneously.
         *otherids : int or str, optional
            Other data sets to use in the calculation.
-        outfile : str, optional
+        outfile : str, Path, IO object, or None, optional
            If set, then the fit results will be written to a file with
            this name. The file contains the per-iteration fit results.
         clobber : bool, optional
            This flag controls whether an existing file can be
            overwritten (``True``) or if it raises an exception
-           (``False``, the default setting).
+           (``False``, the default setting). This is only used if
+           `outfile` is set to a string or Path object.
 
         Raises
         ------
@@ -9313,6 +9322,11 @@ class Session(NoNewAttributesAfterInit):
         show_fit : Summarize the fit results.
         thaw : Allow model parameters to be varied during a fit.
 
+        Notes
+        -----
+        If outfile is sent a file handle then it is not closed by this
+        routine.
+
         Examples
         --------
 
@@ -9334,6 +9348,15 @@ class Session(NoNewAttributesAfterInit):
         'jet.fit', over-writing it if it already exists:
 
         >>> fit('jet', outfile='jet.fit', clobber=True)
+
+        Store the per-iteration values in a StringIO object and
+        extract the data into the variable txt (this avoids the need
+        to create a file):
+
+        >>> from io import StringIO
+        >>> out = StringIO()
+        >>> fit(outfile=out)
+        >>> txt = out.getvalue()
 
         """
         ids, f = self._get_fit(id, otherids)
