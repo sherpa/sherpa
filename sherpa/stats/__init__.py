@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2017, 2018, 2019, 2020, 2022
+#  Copyright (C) 2009, 2015 - 2020, 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,19 +19,20 @@
 #
 
 
-import warnings
 from configparser import ConfigParser
+from typing import Callable, Literal, Optional, Union
+import warnings
 
-import numpy
-from sherpa.utils import NoNewAttributesAfterInit, igamc
-from sherpa.utils.err import FitErr, StatErr
-from sherpa.data import DataSimulFit
-from sherpa.models import SimulFitModel
-
-from . import _statfcts
+import numpy as np
 
 from sherpa import get_config
+from sherpa.data import Data, DataSimulFit
+from sherpa.models import Model, SimulFitModel
+from sherpa.utils import NoNewAttributesAfterInit, igamc
+from sherpa.utils.err import FitErr, StatErr
+from sherpa.utils.types import StatFunc, StatResults
 
+from . import _statfcts  # type: ignore
 
 __all__ = ('Stat', 'Cash', 'CStat', 'LeastSq',
            'Chi2Gehrels', 'Chi2ConstVar', 'Chi2DataVar', 'Chi2ModVar',
@@ -55,28 +56,40 @@ if (bool(truncation_flag) is False or truncation_flag == "FALSE" or
 
 
 class Stat(NoNewAttributesAfterInit):
-    """The base class for calculating a statistic given data and model."""
+    """The base class for calculating a statistic given data and model.
 
-    # Used by calc_stat
+    .. versionchanged:: 4.17.0
+       Code relying on access to private information may need to be
+       updated, as some fields have changed or been renamed.
+
+    """
+
+    # This must be defined in any sub-classes of Stat. How do we tell
+    # the type checkers this fact without numerous asserts (which we
+    # currently do).
     #
-    _calc = None
+    _calc: Optional[StatFunc] = None
 
-    # This should be overridden by derived classes and set to True if the rstat and qvalue
-    # figures can be calculated for that class of statistics.
-    _can_calculate_rstat = None
+    # Can the statistic calculate rstat and qvalue values?
+    #
+    _can_calculate_rstat: bool = False
 
-    def __init__(self, name):
+    def __init__(self, name: str) -> None:
         self.name = name
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
+        # Special case the representation for ease-of-use in the UI
+        # layer when using a REPL. This should be reviewed.
+        #
         if self.__doc__ is not None:
             return self.__doc__
-        return ("<%s statistic instance '%s'>" %
-                (type(self).__name__, self.name))
+        return f"<{type(self).__name__} statistic instance '{self.name}'>"
 
     @staticmethod
-    def _bundle_inputs(data, model):
+    def _bundle_inputs(data: Union[Data, DataSimulFit],
+                       model: Model
+                       ) -> tuple[DataSimulFit, SimulFitModel]:
         """Convert input into SimulFit instances.
 
         Convert the inputs into `sherpa.data.DataSimulFit` and
@@ -112,7 +125,7 @@ class Stat(NoNewAttributesAfterInit):
         return data, model
 
     @staticmethod
-    def _check_has_bins(data):
+    def _check_has_bins(data: DataSimulFit) -> None:
         """Raise an error if there are no noticed bins in the dataset.
 
         Parameters
@@ -137,13 +150,17 @@ class Stat(NoNewAttributesAfterInit):
             # calculated for this check, so staterrfunc can be
             # None.
             dep, _, _ = dset.to_fit(staterrfunc=None)
-            if numpy.iterable(dep) and len(dep) > 0:
-                return
+            try:
+                if len(dep) > 0:
+                    return
+            except TypeError:
+                pass
 
         raise FitErr('nobins')
 
     @staticmethod
-    def _check_sizes_match(data, model):
+    def _check_sizes_match(data: DataSimulFit,
+                           model: SimulFitModel) -> None:
         """Raise an error if number of datasets and models do not match.
 
         Parameters
@@ -168,7 +185,10 @@ class Stat(NoNewAttributesAfterInit):
                           'number of data sets', ndata,
                           'model expressions', nmdl)
 
-    def _validate_inputs(self, data, model):
+    def _validate_inputs(self,
+                         data: Union[Data, DataSimulFit],
+                         model: Model
+                         ) -> tuple[DataSimulFit, SimulFitModel]:
         """Ensure that the inputs are correct for the statistic.
 
         The default behavior is to check that the data contains
@@ -207,7 +227,11 @@ class Stat(NoNewAttributesAfterInit):
         self._check_sizes_match(data, model)
         return data, model
 
-    def _get_fit_model_data(self, data, model):
+    def _get_fit_model_data(self,
+                            data: Union[Data, DataSimulFit],
+                            model: Model
+                            ) -> tuple[tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray]],
+                                       np.ndarray]:
         data, model = self._validate_inputs(data, model)
         fitdata = data.to_fit(staterrfunc=self.calc_staterror)
         modeldata = data.eval_model_to_fit(model)
@@ -220,7 +244,15 @@ class Stat(NoNewAttributesAfterInit):
     #  - should this be moved out of the base Stat class since
     #    isn't relevant for likelihood statistics?
     #
-    def calc_staterror(self, data):
+    # This is marked as staticmethod as of 4.17.0 because a number of
+    # subclasses were written like this, and some code (and some
+    # tests) assume this behaviour. So it makes sense to mark all to
+    # match. Which is great **except** that UserStat can not be marked
+    # as static since it needs access to the errfunc field for the
+    # object (i.e. it's not a class variable).
+    #
+    @staticmethod
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
         """Return the statistic error values for the data.
 
         Parameters
@@ -238,7 +270,10 @@ class Stat(NoNewAttributesAfterInit):
         raise NotImplementedError
 
     # TODO: add *args, **kwargs?
-    def calc_stat(self, data, model):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
         """Return the statistic value for the data and model.
 
         Parameters
@@ -262,7 +297,11 @@ class Stat(NoNewAttributesAfterInit):
 
         raise NotImplementedError
 
-    def goodness_of_fit(self, statval, dof):
+    def goodness_of_fit(self,
+                        statval: float,
+                        dof: int
+                        ) -> Union[tuple[Literal[None], Literal[None]],
+                                   tuple[float, float]]:
         """Return the reduced statistic and q value.
 
         The reduced statisitc is conceptually simple, as it is just
@@ -300,22 +339,23 @@ class Stat(NoNewAttributesAfterInit):
             rstat = statval / dof
             return rstat, qval
 
-        return numpy.nan, numpy.nan
+        return np.nan, np.nan
 
 
 class Likelihood(Stat):
     """Likelihood functions"""
 
-    def __init__(self, name='likelihood'):
-        Stat.__init__(self, name)
+    def __init__(self, name: str = 'likelihood') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def calc_staterror(data):
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
         # Likelihood stats do not have 'errors' associated with them.
         # return 1 to avoid dividing by 0 by some optimization methods.
-        return numpy.ones_like(data)
+        return np.ones_like(data)
 
-    def _check_background_subtraction(self, data):
+    def _check_background_subtraction(self,
+                                      data: DataSimulFit) -> None:
         """Raise an error if any dataset has been background subtracted.
 
         Parameters
@@ -338,14 +378,21 @@ class Likelihood(Stat):
                 #
                 raise FitErr('statnotforbackgsub', self.name)
 
-    def _validate_inputs(self, data, model):
-        data, model = Stat._validate_inputs(self, data, model)
+    def _validate_inputs(self,
+                         data: Union[Data, DataSimulFit],
+                         model: Model
+                         ) -> tuple[DataSimulFit, SimulFitModel]:
+        data, model = super()._validate_inputs(data, model)
         self._check_background_subtraction(data)
         return data, model
 
-    def calc_stat(self, data, model):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
         fitdata, modeldata = self._get_fit_model_data(data, model)
 
+        assert self._calc is not None  # for typing
         return self._calc(fitdata[0], modeldata, None,
                           truncation_value)
 
@@ -424,8 +471,8 @@ class Cash(Likelihood):
 
     _calc = _statfcts.calc_cash_stat
 
-    def __init__(self, name='cash'):
-        Likelihood.__init__(self, name)
+    def __init__(self, name: str = 'cash') -> None:
+        super().__init__(name=name)
 
 
 class CStat(Likelihood):
@@ -497,8 +544,8 @@ class CStat(Likelihood):
     _calc = _statfcts.calc_cstat_stat
     _can_calculate_rstat = True
 
-    def __init__(self, name='cstat'):
-        Likelihood.__init__(self, name)
+    def __init__(self, name: str = 'cstat') -> None:
+        super().__init__(name=name)
 
 
 class Chi2(Stat):
@@ -564,22 +611,29 @@ class Chi2(Stat):
     _calc = _statfcts.calc_chi2_stat
     _can_calculate_rstat = True
 
-    def __init__(self, name='chi2'):
-        Stat.__init__(self, name)
+    def __init__(self, name: str = 'chi2') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def calc_staterror(data):
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
         raise StatErr('chi2noerr')
 
-    def calc_stat(self, data, model):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
         fitdata, modeldata = self._get_fit_model_data(data, model)
 
+        assert self._calc is not None  # for typing
         return self._calc(fitdata[0], modeldata,
                           fitdata[1], fitdata[2],
                           None,  # TODO: weights
                           truncation_value)
 
-    def calc_chisqr(self, data, model):
+    def calc_chisqr(self,
+                    data: Union[Data, DataSimulFit],
+                    model: Model
+                    ) -> np.ndarray:
         """Return the chi-square value for each bin.
 
         Parameters
@@ -614,12 +668,12 @@ class LeastSq(Chi2):
     _calc = _statfcts.calc_lsq_stat
     _can_calculate_rstat = False
 
-    def __init__(self, name='leastsq'):
-        Stat.__init__(self, name)
+    def __init__(self, name: str = 'leastsq') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def calc_staterror(data):
-        return numpy.ones_like(data)
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
+        return np.ones_like(data)
 
 
 class Chi2Gehrels(Chi2):
@@ -673,11 +727,11 @@ class Chi2Gehrels(Chi2):
 
     """
 
-    def __init__(self, name='chi2gehrels'):
-        Chi2.__init__(self, name)
+    def __init__(self, name: str = 'chi2gehrels') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def calc_staterror(data):
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
         return _statfcts.calc_chi2gehrels_errors(data)
 
 
@@ -695,11 +749,11 @@ class Chi2ConstVar(Chi2):
 
     """
 
-    def __init__(self, name='chi2constvar'):
-        Chi2.__init__(self, name)
+    def __init__(self, name: str = 'chi2constvar') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def calc_staterror(data):
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
         return _statfcts.calc_chi2constvar_errors(data)
 
 
@@ -734,11 +788,11 @@ class Chi2DataVar(Chi2):
 
     """
 
-    def __init__(self, name='chi2datavar'):
-        Chi2.__init__(self, name)
+    def __init__(self, name: str = 'chi2datavar') -> None:
+        super().__init__(name=name)
 
     @staticmethod
-    def calc_staterror(data):
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
         return _statfcts.calc_chi2datavar_errors(data)
 
 
@@ -777,13 +831,13 @@ class Chi2ModVar(Chi2):
 
     _calc = _statfcts.calc_chi2modvar_stat
 
-    def __init__(self, name='chi2modvar'):
-        Chi2.__init__(self, name)
+    def __init__(self, name: str = 'chi2modvar') -> None:
+        super().__init__(name=name)
 
     # Statistical errors are not used
     @staticmethod
-    def calc_staterror(data):
-        return numpy.zeros_like(data)
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
+        return np.zeros_like(data)
 
 
 class Chi2XspecVar(Chi2):
@@ -805,11 +859,15 @@ class Chi2XspecVar(Chi2):
 
     """
 
-    def __init__(self, name='chi2xspecvar'):
-        Chi2.__init__(self, name)
+    def __init__(self, name: str = 'chi2xspecvar') -> None:
+        super().__init__(name=name)
 
+    # DataPHA.get_staterror relies on this being a static method so
+    # that we can easily identify it (as part of the fix for issue
+    # number #356). This may be changed.
+    #
     @staticmethod
-    def calc_staterror(data):
+    def calc_staterror(data: np.ndarray) -> np.ndarray:
         return _statfcts.calc_chi2xspecvar_errors(data)
 
 
@@ -826,56 +884,61 @@ class UserStat(Stat):
 
     """
 
-    def __init__(self, statfunc=None, errfunc=None, name='userstat'):
+    def __init__(self,
+                 statfunc: Optional[Callable[..., StatResults]] = None,
+                 errfunc: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+                 name: str = 'userstat') -> None:
         self._statfuncset = False
-        self.statfunc = (lambda x: None)
-
         self._staterrfuncset = False
-        self.errfunc = (lambda x: None)
+
+        # statfunc and _calc serve the same purpose but leave as is
+        # in case users use the statfunc field
+        self.statfunc = None
+        self.errfunc = None
 
         if statfunc is not None:
             self.statfunc = statfunc
             self._calc = statfunc
-            self._statfuncset = True
 
         if errfunc is not None:
             self.errfunc = errfunc
-            self._staterrfuncset = True
 
-        Stat.__init__(self, name)
+        super().__init__(name=name)
 
     def __getstate__(self):
+        # TODO: Do we still need to do this?
         state = self.__dict__.copy()
-        # Function pointers to methods of the class
-        # (of type 'instancemethod') are NOT picklable
-        # remove them and restore later with a coord init
         del state['statfunc']
         del state['errfunc']
-
         return state
 
     def __setstate__(self, state):
-        # Populate the function pointers we deleted at pickle time with
-        # no-ops.
-        self.__dict__['statfunc'] = (lambda x: None)
-        self.__dict__['errfunc'] = (lambda x: None)
+        # TODO: Do we still need to do this?
+        self.__dict__['statfunc'] = None
+        self.__dict__['errfunc'] = None
         self.__dict__.update(state)
 
-    def set_statfunc(self, func):
+    def set_statfunc(self, func) -> None:
         self.statfunc = func
-        self._statfuncset = True
 
-    def set_errfunc(self, func):
+    def set_errfunc(self, func) -> None:
         self.errfunc = func
-        self._staterrfuncset = True
 
-    def calc_staterror(self, data):
-        if not self._staterrfuncset:
+    # This can not be @staticmethod, which means this is likely to be
+    # reported as an error by a type checker (e.g. pyright).
+    #
+    def calc_staterror(self, data: np.ndarray) -> np.ndarray:
+        if self.errfunc is None:
             raise StatErr('nostat', self.name, 'calc_staterror()')
+
         return self.errfunc(data)
 
-    def calc_stat(self, data, model):
-        if not self._statfuncset:
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
+
+        if self.statfunc is None:
             raise StatErr('nostat', self.name, 'calc_stat()')
 
         fitdata, modeldata = self._get_fit_model_data(data, model)
@@ -952,10 +1015,13 @@ class WStat(Likelihood):
     _calc = _statfcts.calc_wstat_stat
     _can_calculate_rstat = True
 
-    def __init__(self, name='wstat'):
-        Likelihood.__init__(self, name)
+    def __init__(self, name: str = 'wstat') -> None:
+        super().__init__(name=name)
 
-    def calc_stat(self, data, model):
+    def calc_stat(self,
+                  data: Union[Data, DataSimulFit],
+                  model: Model
+                  ) -> StatResults:
 
         data, model = self._validate_inputs(data, model)
 
@@ -996,9 +1062,10 @@ class WStat(Likelihood):
             if nbkg == 0:
                 raise StatErr('usecstat')
 
-            elif nbkg > 1:
+            if nbkg > 1:
                 # TODO: improve warning
-                warnings.warn("Only using first background component for data set {}".format(dset.name))
+                warnings.warn("Only using first background component "
+                              f"for data set {dset.name}")
 
             bid = bids[0]
 
@@ -1011,7 +1078,7 @@ class WStat(Likelihood):
             #
 
             data_bkg.append(dset.apply_filter(bset.get_dep(False),
-                                              groupfunc=numpy.sum))
+                                              groupfunc=np.sum))
 
             # The assumption is that the source and background datasets
             # have the same number of channels (before any grouping or
@@ -1020,7 +1087,7 @@ class WStat(Likelihood):
             # Since the backscal values can be a scalar or array, it is
             # easiest just to convert everything to an array.
             #
-            dummy = numpy.ones(dset.get_dep(False).size)
+            dummy = np.ones(dset.get_dep(False).size)
 
             # Combine the BACKSCAL values (use the default _middle
             # scheme as this is used elsewhere when combining
@@ -1061,13 +1128,12 @@ class WStat(Likelihood):
 
             exp_bkg.append(bset.exposure * ascal)
 
-        data_src = numpy.concatenate(data_src)
-        exp_src = numpy.concatenate(exp_src)
-        exp_bkg = numpy.concatenate(exp_bkg)
-        data_bkg = numpy.concatenate(data_bkg)
-        backscales = numpy.concatenate(backscales)
+        data_src = np.concatenate(data_src)
+        exp_src = np.concatenate(exp_src)
+        exp_bkg = np.concatenate(exp_bkg)
+        data_bkg = np.concatenate(data_bkg)
+        backscales = np.concatenate(backscales)
 
-        return self._calc(data_src, data_model, nelems,
-                          exp_src, exp_bkg,
-                          data_bkg, backscales,
-                          truncation_value)
+        assert self._calc is not None  # for typing
+        return self._calc(data_src, data_model, nelems, exp_src, exp_bkg,
+                          data_bkg, backscales, truncation_value)
