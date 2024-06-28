@@ -15,7 +15,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  xspec_channel: "xspec/label/test"
+  xspec_channel: "https://cxc.cfa.harvard.edu/conda/xspec"
   CONDA_BUILD_SYSROOT: ${{ github.workspace }}/11.0SDK/MacOSX11.0.sdk
 
 jobs:
