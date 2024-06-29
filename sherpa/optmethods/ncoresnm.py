@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019- 2021, 2023, 2024
+#  Copyright (C) 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,10 +20,10 @@
 
 import numpy as np
 
-from sherpa.utils.parallel import ncpus
-from sherpa.optmethods import _saoopt
+from sherpa.optmethods import _saoopt  # type: ignore
 from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom
+from sherpa.utils.parallel import ncpus
 
 __all__ = ('ncoresNelderMead', )
 
