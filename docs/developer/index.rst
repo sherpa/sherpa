@@ -100,6 +100,17 @@ files and shows exactly which lines were executed while running the tests.
 
 Run doctests locally
 --------------------
+
+.. note::
+   The documentation tests are known to fail if NumPy 2.0 is installed
+   because the representation of NumPy types such as ``np.float64``
+   have changed, leading to errors like::
+
+       Expected:
+           2.5264364698914e-06
+       Got:
+           np.float64(2.5264364698914e-06)
+
 If `doctestplus <https://pypi.org/project/pytest-doctestplus/>` is installed
 (and it probably is because it's part of
 `sphinx-astropy <https://pypi.org/project/sphinx-astropy/>`,

@@ -276,7 +276,7 @@ class FitResults(NoNewAttributesAfterInit):
 
         self.succeeded = results[0]
         self.parnames = tuple(p.fullname for p in fit.model.get_thawed_pars())
-        self.parvals = tuple(results[1])
+        self.parvals = tuple(float(r) for r in results[1])
         self.istatval = init_stat
         self.statval = results[2]
         self.dstatval = np.abs(results[2] - init_stat)
@@ -439,29 +439,31 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.sigma = fit.estmethod.sigma
         self.percent = erf(self.sigma / np.sqrt(2.0)) * 100.0
         self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
-        self.parvals = tuple(p.val for p in parlist if not p.frozen)
-        self.nfits = 0
+        self.parvals = tuple(float(p.val) for p in parlist if not p.frozen)
 
         pmins = []
         pmaxes = []
         for i in range(len(parlist)):
             if (results[2][i] == est_hardmin or
-                    results[2][i] == est_hardminmax):
+                results[2][i] == est_hardminmax or
+                results[0][i] is None  # It looks like confidence does not set the flag
+                ):
                 pmins.append(None)
                 warning("hard minimum hit for parameter %s", self.parnames[i])
             else:
-                pmins.append(results[0][i])
+                pmins.append(float(results[0][i]))
 
             if (results[2][i] == est_hardmax or
-                    results[2][i] == est_hardminmax):
+                results[2][i] == est_hardminmax or
+                results[1][i] is None  # It looks like confidence does not set the flag
+                ):
                 pmaxes.append(None)
                 warning("hard maximum hit for parameter %s", self.parnames[i])
             else:
-                pmaxes.append(results[1][i])
+                pmaxes.append(float(results[1][i]))
 
         self.parmins = tuple(pmins)
         self.parmaxes = tuple(pmaxes)
-
         self.nfits = results[3]
         self.extra_output = results[4]
 

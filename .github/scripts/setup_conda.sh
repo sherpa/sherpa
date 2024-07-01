@@ -43,7 +43,7 @@ fi
 # Figure out requested dependencies
 if [ -n "${MATPLOTLIBVER}" ]; then MATPLOTLIB="matplotlib=${MATPLOTLIBVER}"; fi
 if [ -n "${BOKEHVER}" ]; then BOKEH="bokeh=${BOKEHVER}"; fi
-if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; else NUMPY="numpy<2.0"; fi
+if [ -n "${NUMPYVER}" ]; then NUMPY="numpy=${NUMPYVER}"; fi
 # Xspec >=12.10.1n Conda package includes wcslib & CCfits and pulls in cfitsio & fftw
 if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER}";

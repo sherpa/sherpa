@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2024
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,7 +28,7 @@ from sherpa.utils import demuller, bisection, new_muller, apache_muller, \
     zeroin
 
 
-def sqr(x, *args):
+def sqr(x):
     return x * x
 
 
@@ -177,9 +178,7 @@ def prob34(x, *args):
     return 1.0 / x - numpy.sin(x) + 1.0
 
 
-def prob35(x, *args):
-    return (x*x - 2.0) * x - 5.0
-
+# prob35 was the same as prob16
 
 def prob36(x, *args):
     return 1.0 / x - 1.0
@@ -288,7 +287,6 @@ def demuller2(fcn, xa, xb, fa=None, fb=None, args=(), maxfev=32,
                           (prob32, 0.1, 0.9),
                           (prob33, 2.8, 3.1),
                           (prob34, -1.3, -0.5),
-                          (prob35, 2.0, 3.0),
                           (prob36, 0.5, 1.5),
                           (prob37, 0.5, 5.0),
                           (prob38, 1.0, 4.0),

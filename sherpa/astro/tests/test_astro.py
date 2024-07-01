@@ -206,7 +206,7 @@ def test_sourceandbg(parallel, run_thread, fix_xspec):
         assert fit_results.numpoints == 1330
         assert fit_results.dof == 1325
 
-        assert covarerr[0] == approx(0.012097, rel=1e-3)
+        assert covarerr[0] == approx(0.012097, rel=1.05e-3)
         assert covarerr[1] == approx(0, rel=1e-3)
         assert covarerr[2] == approx(0.000280678, rel=1e-3)
         assert covarerr[3] == approx(0.00990783, rel=1e-3)

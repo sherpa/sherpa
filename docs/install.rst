@@ -34,17 +34,14 @@ Requirements
 Sherpa has the following requirements:
 
 * Python 3.9 to 3.11
-* NumPy (the exact lower limit has not been determined,
-  1.21.0 or later will work, earlier version may work)
+* NumPy (version 2.0 should work but there has been limited testing)
 * Linux or OS-X (patches to add Windows support are welcome)
 
 Sherpa can take advantage of the following Python packages
 if installed:
 
 * :term:`Astropy`: for reading and writing files in
-  :term:`FITS` format. The minimum required version of astropy
-  is version 1.3, although only versions 2 and higher are used in testing
-  (version 3.2 is known to cause problems, but version 3.2.1 is okay).
+  :term:`FITS` format.
 * :term:`matplotlib`: for visualisation of
   one-dimensional data or models, one- or two- dimensional
   error analysis, and the results of Monte-Carlo Markov Chain
@@ -331,7 +328,7 @@ module, but a quick check of an installed version can be made with
 the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
-    12.14.0b
+    12.14.0i
 
 Other options
 ^^^^^^^^^^^^^
