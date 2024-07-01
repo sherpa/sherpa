@@ -126,12 +126,11 @@ def _get_meta_data(hdu: HDUType) -> dict[str, KeyType]:
 def _add_keyword(hdrlist: fits.Header,
                  name: str,
                  val: Any) -> None:
-    """Add the name,val pair to hdulist."""
+    """Add the name,val pair to hdulist.
 
-    # This used to special case name = { "", "COMMENT", "HEADER" } as
-    # the AstroPy code could return a list of strings, but it turns
-    # out the code does not need to worry about this issue.
-    #
+    Ensures that the name is upper-case.
+    """
+
     name = name.upper()
     hdrlist.append(fits.Card(name, val))
 
@@ -356,11 +355,11 @@ def _find_binary_table(tbl: fits.HDUList,
     is not None then the name of the block has to match (case-insensitive
     match), and any spaces are removed from blockname before checking.
 
-    Throws an exception if there aren't any.
+    Throws an exception if there isn't a matching HDU.
     """
 
     # This behaviour appears odd:
-    # - if blockname is no set then find the first table block
+    # - if blockname is not set then find the first table block
     #   (this seems okay)
     # - if blockname is set then loop through the tables and
     #   find the first block which is either a table or matches

@@ -64,7 +64,7 @@ def test_write_arrays_no_data(tmp_path):
 
 
 def test_get_ascii_data_irregular_data(tmp_path):
-    """What happens when the numbor of columns is not constant?"""
+    """What happens when the number of columns is not constant?"""
 
     tfile = tmp_path / "col.dat"
     tfile.write_text("23 1\n24 2\n25 3 4\n")
@@ -78,7 +78,7 @@ def test_get_ascii_data_irregular_data(tmp_path):
 
 
 def test_write_arrays_irregular_data(tmp_path):
-    """What happens when the numbor of columns is not constant?"""
+    """What happens when the number of columns is not constant?"""
 
     tfile = tmp_path / "col.dat"
     with pytest.raises(IOErr,

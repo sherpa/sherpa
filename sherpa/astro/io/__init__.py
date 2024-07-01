@@ -1163,14 +1163,14 @@ def _find_int_dtype(rows: Sequence[Sequence[int]]) -> type:
 
     """
 
-    maxval = 0
     for row in rows:
         if len(row) == 0:
             continue
 
-        maxval = max(maxval, np.max(row))
+        if np.max(row) > 32767:
+            return np.int32
 
-    return np.int32 if maxval > 32767 else np.int16
+    return np.int16
 
 
 def _make_int_array(rows, ncols) -> np.ndarray:

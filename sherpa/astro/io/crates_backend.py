@@ -93,8 +93,26 @@ def open_crate(filename: str,
 
 
 def get_filename_from_dmsyntax(filename: str) -> str:
-    """What is the filename to use?"""
+    """What is the filename to use?
 
+    When given a non-binary file the routine will attempt to determine
+    what the column names are, to decide whether the CIAO DataModel
+    syntax "[opt colnames=none]" needs to be added to the file name.
+    Other parts of the CIAO virtual file specifier in filename will
+    be dropped.
+
+    .. versionchanged:: 4.17.0
+       The code used to check whether the `colnames=none` option is
+       needed has been revamped and may behave differently with a file
+       using '%' as the comment character (support for such a file has
+       not been documented so it is not clear what the behavior should
+       be).
+
+    """
+
+    # Is this routine still useful? For example, the column-name check
+    # doesn't work for TEXT/DTF or TEXT/TSV file formats.
+    #
     out = filename
     dmsyn = ''
 
@@ -383,18 +401,11 @@ def _require_col(crate: TABLECrate,
     else:
         values = col.values
 
-    if make_copy:
-        # Make a copy if a filename passed in
-        data = np.array(values).ravel()
-
-    else:
-        # Use a reference if a crate passed in
-        data = np.asarray(values).ravel()
-
+    kwargs = {}
     if fix_type:
-        data = data.astype(dtype)
+        kwargs['dtype'] = dtype
 
-    return data
+    return np.array(values, copy=make_copy, **kwargs).ravel()
 
 
 
@@ -548,9 +559,7 @@ def get_column_data(*args):
     cols = []
     for arg in args:
         if isinstance(arg, pycrates.CrateData):
-            # vals = arg.get_values()
             vals = arg.values
-
         elif arg is None or isinstance(arg, (np.ndarray, list, tuple)):
             vals = arg
         else:
