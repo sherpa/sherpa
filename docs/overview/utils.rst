@@ -6,6 +6,11 @@ The sherpa.utils module
 
 .. automodule:: sherpa.utils
 
+.. versionchanged:: 4.17.0
+   The parameter guess routines, such as `guess_amplitude` and
+   `param_apply_limits` should now be taken from the
+   :py:mod:`sherpa.utils.guess` module.
+
 .. versionchanged:: 4.16.0
    The `parallel_map` function should now be taken from the
    :py:mod:`sherpa.utils.parallel` module and the numeric types

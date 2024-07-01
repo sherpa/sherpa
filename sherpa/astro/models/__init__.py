@@ -1,6 +1,6 @@
 # coding: utf-8
 #
-#  Copyright (C) 2007, 2016, 2018, 2019, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2018, 2019, 2021 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,11 +25,12 @@ from sherpa.models.basic import clean_kwargs1d, clean_kwargs2d
 from sherpa.models.parameter import Parameter, tinyval
 from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, modelCacher1d
 from sherpa.astro.utils import apply_pileup
+from sherpa.utils import bool_cast, lgam
 from sherpa.utils.err import ModelErr
-from sherpa.utils import _guess_ampl_scale, bool_cast, get_fwhm, \
+from sherpa.utils.guess import _guess_ampl_scale, get_fwhm, \
     get_peak, get_position, guess_amplitude, guess_amplitude2d, \
     guess_amplitude_at_ref, guess_fwhm, guess_position, \
-    guess_radius, guess_reference, lgam, param_apply_limits
+    guess_radius, guess_reference, param_apply_limits
 
 import sherpa.models._modelfcts
 from . import _modelfcts

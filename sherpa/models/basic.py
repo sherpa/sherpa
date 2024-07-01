@@ -22,12 +22,12 @@ import logging
 
 import numpy
 
-from sherpa.utils.err import ModelErr
-from sherpa.utils import bool_cast, get_position, guess_amplitude, \
-    guess_amplitude_at_ref, \
-    guess_amplitude2d, guess_bounds, guess_fwhm, guess_position, \
-    guess_reference, interpolate, linear_interp, param_apply_limits, \
+from sherpa.utils import bool_cast, interpolate, linear_interp, \
     sao_fcmp
+from sherpa.utils.err import ModelErr
+from sherpa.utils.guess import get_position, guess_amplitude, \
+    guess_amplitude_at_ref, guess_amplitude2d, guess_bounds, \
+    guess_fwhm, guess_position, guess_reference, param_apply_limits
 
 from .parameter import Parameter, tinyval
 from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
