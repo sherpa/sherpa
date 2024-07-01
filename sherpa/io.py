@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,12 +18,18 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""I/O routines for Sherpa.
+
+These routines are currently restricted to reading from ASCII files.
+"""
+
 import os
+from typing import Optional, Sequence
 
-import numpy
+import numpy as np
 
-from sherpa.data import Data1D, BaseData
-from sherpa.utils import get_num_args, is_binary_file
+from sherpa.data import Data, Data1D
+from sherpa.utils import is_subclass, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -32,25 +38,32 @@ __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
            'write_arrays')
 
 
-def _is_subclass(t1, t2):
-    return isinstance(t1, type) and issubclass(t1, t2) and (t1 is not t2)
+NamesType = Sequence[str]
 
 
-def _check_args(size, dstype):
+def _check_args(size: int, dstype) -> None:
     # Find the number of required args minus self, filename
     req_args = get_num_args(dstype.__init__)[1] - 2
+    if size >= req_args:
+        return
 
-    if size < req_args:
-        # raise IOErr('badargs', dstype.__name__, req_args)
-        raise TypeError(f"data set '{dstype.__name__}' takes at least {req_args} args")
+    raise TypeError(f"data set '{dstype.__name__}' takes at "
+                    f"least {req_args} args")
 
 
-def read_file_data(filename, sep=' ', comment='#', require_floats=True):
+def read_file_data(filename: str,
+                   sep: str = ' ',
+                   comment: str = '#',
+                   require_floats: bool = True
+                   ) -> tuple[list[str], list[np.ndarray]]:
+    """Read in column data from a file."""
+
     bad_chars = '\t\n\r,;: |'
     raw_names = []
     rows = []
 
-    with open(filename, 'r') as fh:
+    ncols = None
+    with open(filename, 'r', encoding="utf-8") as fh:
         for line in fh:
             for char in bad_chars:
                 if char in line:
@@ -76,30 +89,46 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
                 # make list of row elements
                 rows.append(row)
 
-    # rotate rows into list of columns
-    cols = numpy.column_stack(rows)
+                if ncols is None:
+                    ncols = len(row)
+                elif ncols != len(row):
+                    raise IOErr('arraysnoteq')
+
+    if ncols is None:
+        # Not quite the right error message
+        raise IOErr('arraysnoteq')
+
+    # Rotate rows into list of columns
+    cols = np.column_stack(rows)
 
     # cast columns to appropriate type
     args = []
     for col in cols:
         try:
             args.append(col.astype(SherpaFloat))
-        except ValueError:
+        except ValueError as ve:
             if require_floats:
-                raise ValueError(f"The file {filename} could not " +
-                                 "be loaded, probably because it contained " +
-                                 "spurious data and/or strings")
+                raise ValueError(f"The file {filename} could not "
+                                 "be loaded, probably because it "
+                                 "contained spurious data and/or "
+                                 "strings") from ve
             args.append(col)
 
-    names = [name.strip(bad_chars) for name in raw_names if name != '']
-
+    names = [name.strip(bad_chars)
+             for name in raw_names if name != '']
+    nargs = len(args)
     if len(names) == 0:
-        names = ['col%i' % (i + 1) for i in range(len(args))]
+        names = [f'col{i}' for i in range(1, nargs + 1)]
 
+    # This could error out if len(names) > nargs, but this might break
+    # existing code, since there is such a check in get_ascii_data but
+    # it's only triggered when the colkeys argument is set. To avoid
+    # breaking code we leave as is for now.
+    #
     return names, args
 
 
-def get_column_data(*args):
+def get_column_data(*args) -> list[Optional[np.ndarray]]:
     """
     get_column_data( *NumPy_args )
     """
@@ -108,14 +137,14 @@ def get_column_data(*args):
 
     cols = []
     for arg in args:
-        if arg is None or isinstance(arg, (numpy.ndarray, list, tuple)):
+        if arg is None or isinstance(arg, (np.ndarray, list, tuple)):
             vals = arg
         else:
             raise IOErr('badarray', arg)
 
         if arg is not None:
-            vals = numpy.asanyarray(vals)
-            for col in numpy.atleast_2d(vals.T):
+            vals = np.asanyarray(vals)
+            for col in np.atleast_2d(vals.T):
                 cols.append(col)
         else:
             cols.append(vals)
@@ -123,8 +152,14 @@ def get_column_data(*args):
     return cols
 
 
-def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
-                   comment='#', require_floats=True):
+def get_ascii_data(filename: str,
+                   ncols: int = 1,
+                   colkeys: Optional[NamesType] = None,
+                   sep: str = ' ',
+                   dstype: type = Data1D,
+                   comment: str = '#',
+                   require_floats: bool = True
+                   ) -> tuple[list[str], list[np.ndarray], str]:
     r"""Read in columns from an ASCII file.
 
     Parameters
@@ -221,7 +256,8 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     if is_binary_file(filename):
         raise IOErr('notascii', filename)
 
-    names, args = read_file_data(filename, sep, comment, require_floats)
+    names, args = read_file_data(filename, sep=sep, comment=comment,
+                                 require_floats=require_floats)
 
     if colkeys is None:
         kwargs = []
@@ -236,8 +272,6 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     if len(names) > len(args):
         raise IOErr('wrongnumcols', len(args), len(names))
 
-    assert(len(names) <= len(args))
-
     for key in colkeys:
         if key not in names:
             raise IOErr('reqcol', key, names)
@@ -247,8 +281,13 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     return (colkeys, kwargs, filename)
 
 
-def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
-              comment='#', require_floats=True):
+def read_data(filename: str,
+              ncols: int = 2,
+              colkeys: Optional[NamesType] = None,
+              sep: str = ' ',
+              dstype=Data1D,
+              comment: str = '#',
+              require_floats: bool = True) -> Data:
     """Create a data object from an ASCII file.
 
     Parameters
@@ -320,12 +359,14 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
 
     """
 
-    colnames, args, name = get_ascii_data(filename, ncols, colkeys,
-                                          sep, dstype, comment, require_floats)
+    _, args, name = get_ascii_data(filename, ncols=ncols,
+                                   colkeys=colkeys, sep=sep,
+                                   dstype=dstype, comment=comment,
+                                   require_floats=require_floats)
     return dstype(name, *args)
 
 
-def read_arrays(*args):
+def read_arrays(*args) -> Data:
     """Create a data object from arrays.
 
     Parameters
@@ -334,7 +375,7 @@ def read_arrays(*args):
        The data columns.
     dstype : optional
        The data type to create. It must be a subclass of
-       `sherpa.data.BaseData` and defaults to `sherpa.data.Data1D`
+       `sherpa.data.Data` and defaults to `sherpa.data.Data1D`
 
     Returns
     -------
@@ -367,24 +408,31 @@ def read_arrays(*args):
     >>> dat = read_arrays(xlo, xhi, y, dstype=sherpa.data.Data1DInt)
 
     """
-    args = list(args)
-    if len(args) == 0:
+    largs = list(args)
+    if len(largs) == 0:
         raise IOErr('noarrays')
 
-    dstype = Data1D
-    if _is_subclass(args[-1], BaseData):
-        dstype = args.pop()
+    if is_subclass(largs[-1], Data):
+        dstype = largs.pop()
+    else:
+        dstype = Data1D
 
-    args = get_column_data(*args)
+    dargs = get_column_data(*largs)
 
     # Determine max number of args for dataset constructor
-    _check_args(len(args), dstype)
+    _check_args(len(dargs), dstype)
 
-    return dstype('', *args)
+    return dstype('', *dargs)
 
 
-def write_arrays(filename, args, fields=None, sep=' ', comment='#',
-                 clobber=False, linebreak='\n', format='%g'):
+def write_arrays(filename: str,
+                 args: Sequence[Sequence],
+                 fields: Optional[NamesType] = None,
+                 sep: str = ' ',
+                 comment: str = '#',
+                 clobber: bool = False,
+                 linebreak: str = '\n',
+                 format: str = '%g') -> None:
     """Write a list of arrays to an ASCII file.
 
     Parameters
@@ -437,26 +485,41 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
     if os.path.isfile(filename) and not clobber:
         raise IOErr("filefound", filename)
 
-    if not numpy.iterable(args) or len(args) == 0:
-        raise IOErr('noarrayswrite')
+    # We assume the values are numeric but we never test for this
+    # explicitly, nor do we require it in the types. This can make the
+    # typing code get confused about what is allowed.
+    #
+    # In numpy 1.24 it became an error to pass in irregularly-gridded
+    # data to asarray. Prior to that it would return an ndarray
+    # with a dtype of object (and generate a deprecation warning).
+    #
+    narg = set()
+    try:
+        for arg in args:
+            try:
+                narg.add(len(arg))
+            except TypeError:
+                narg.add(0)
 
-    if not numpy.iterable(args[0]):
-        raise IOErr('noarrayswrite')
+    except TypeError:
+        # args is not iterable. We catch this case when checking the
+        # size of narg.
+        pass
 
-    size = len(args[0])
-    for arg in args:
-        if not numpy.iterable(arg):
-            raise IOErr('noarrayswrite')
-        elif len(arg) != size:
-            raise IOErr('arraysnoteq')
+    # Allow args to be a sequence of non-sequences or of sequences of
+    # the same size. The former is technically not in the spirit of
+    # the call but users may be taking advantage of it so do not error
+    # out.
+    #
+    if len(narg) != 1:
+        raise IOErr('arraysnoteq')
 
-    args = numpy.column_stack(numpy.asarray(args))
     lines = []
-    for arg in args:
-        line = [format % elem for elem in arg]
+    for col in np.column_stack(args):
+        line = [format % elem for elem in col]
         lines.append(sep.join(line))
 
-    with open(filename, 'w') as fh:
+    with open(filename, 'w', encoding="utf-8") as fh:
 
         if fields is not None:
             fh.write(comment + sep.join(fields) + linebreak)
@@ -467,8 +530,15 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
         fh.write(linebreak)
 
 
-def write_data(filename, dataset, fields=None, sep=' ', comment='#',
-               clobber=False, linebreak='\n', format='%g'):
+def write_data(filename: str,
+               dataset: Data,
+               fields: Optional[NamesType] = None,
+               sep: str = ' ',
+               comment: str = '#',
+               clobber: bool = False,
+               linebreak: str = '\n',
+               format: str = '%g'
+               ) -> None:
     """Write out a dataset as an ASCII file.
 
     Parameters
@@ -530,5 +600,6 @@ def write_data(filename, dataset, fields=None, sep=' ', comment='#',
             col_names.append(name.upper())
             cols.append(field)
 
-    write_arrays(filename, cols, col_names, sep, comment, clobber,
-                 linebreak, format)
+    write_arrays(filename, cols, fields=col_names, sep=sep,
+                 comment=comment, clobber=clobber,
+                 linebreak=linebreak, format=format)

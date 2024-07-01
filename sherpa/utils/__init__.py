@@ -95,6 +95,13 @@ dividing and multiplying the value by ``_guess_ampl_scale``.
 ###############################################################################
 
 
+# This logic was found in several modules so centralize it. Note that
+# this is not added to __all__.
+#
+def is_subclass(t1, t2):
+    """Is t2 a subclass of t1 but not the same as t1?"""
+    return inspect.isclass(t1) and issubclass(t1, t2) and (t1 is not t2)
+
 
 ###############################################################################
 
@@ -2252,20 +2259,24 @@ def is_binary_file(filename):
     # string.printable is kept in, since this is more restrictive
     # than UnicodeDecodeError.
     #
-    with open(filename, 'r') as fd:
-        try:
-            lines = fd.readlines(1024)
-        except UnicodeDecodeError:
-            return True
-
-    if len(lines) == 0:
-        return False
-
-    # Are there any non-printable characters in the buffer?
-    for line in lines:
-        for char in line:
-            if char not in string.printable:
+    try:
+        with open(filename, 'r') as fd:
+            try:
+                lines = fd.readlines(1024)
+            except UnicodeDecodeError:
                 return True
+
+        if len(lines) == 0:
+            return False
+
+        # Are there any non-printable characters in the buffer?
+        for line in lines:
+            for char in line:
+                if char not in string.printable:
+                    return True
+
+    except OSError as oe:
+       raise IOErr('openfailed', f"unable to open {filename}: {oe}") from oe
 
     return False
 
