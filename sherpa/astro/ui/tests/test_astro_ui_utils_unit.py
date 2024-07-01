@@ -32,7 +32,8 @@ import numpy as np
 import pytest
 
 from sherpa.astro import ui
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
+    IOErr
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_xspec
@@ -99,8 +100,8 @@ def test_load_table_model_fails_with_dev_null():
     ui.clean()
     assert ui.list_model_components() == []
 
-    # The error depends on the load function
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError,
+                       match="^need at least one array to concatenate$"):
         ui.load_table_model('devnull', '/dev/null')
 
     assert ui.list_model_components() == []

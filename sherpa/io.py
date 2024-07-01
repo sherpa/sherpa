@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,22 +18,23 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""I/O routines for Sherpa.
+
+These routines are currently restricted to reading from ASCII files.
+"""
+
 import os
 
-import numpy
+import numpy as np
 
-from sherpa.data import Data1D, BaseData
-from sherpa.utils import get_num_args, is_binary_file
+from sherpa.data import Data, Data1D
+from sherpa.utils import is_subclass, get_num_args, is_binary_file
 from sherpa.utils.err import IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
 
 __all__ = ('read_data', 'write_data', 'get_ascii_data', 'read_arrays',
            'write_arrays')
-
-
-def _is_subclass(t1, t2):
-    return isinstance(t1, type) and issubclass(t1, t2) and (t1 is not t2)
 
 
 def _check_args(size, dstype):
@@ -46,11 +47,13 @@ def _check_args(size, dstype):
 
 
 def read_file_data(filename, sep=' ', comment='#', require_floats=True):
+    """Read in column data from a file."""
+
     bad_chars = '\t\n\r,;: |'
     raw_names = []
     rows = []
 
-    with open(filename, 'r') as fh:
+    with open(filename, 'r', encoding="utf-8") as fh:
         for line in fh:
             for char in bad_chars:
                 if char in line:
@@ -77,24 +80,26 @@ def read_file_data(filename, sep=' ', comment='#', require_floats=True):
                 rows.append(row)
 
     # rotate rows into list of columns
-    cols = numpy.column_stack(rows)
+    cols = np.column_stack(rows)
 
     # cast columns to appropriate type
     args = []
     for col in cols:
         try:
             args.append(col.astype(SherpaFloat))
-        except ValueError:
+        except ValueError as ve:
             if require_floats:
-                raise ValueError(f"The file {filename} could not " +
-                                 "be loaded, probably because it contained " +
-                                 "spurious data and/or strings")
+                raise ValueError(f"The file {filename} could not "
+                                 "be loaded, probably because it "
+                                 "contained spurious data and/or "
+                                 "strings") from ve
             args.append(col)
 
-    names = [name.strip(bad_chars) for name in raw_names if name != '']
+    names = [name.strip(bad_chars)
+             for name in raw_names if name != '']
 
     if len(names) == 0:
-        names = ['col%i' % (i + 1) for i in range(len(args))]
+        names = [f'col{i}' for i, _ in enumerate(args, 1)]
 
     return names, args
 
@@ -108,14 +113,14 @@ def get_column_data(*args):
 
     cols = []
     for arg in args:
-        if arg is None or isinstance(arg, (numpy.ndarray, list, tuple)):
+        if arg is None or isinstance(arg, (np.ndarray, list, tuple)):
             vals = arg
         else:
             raise IOErr('badarray', arg)
 
         if arg is not None:
-            vals = numpy.asanyarray(vals)
-            for col in numpy.atleast_2d(vals.T):
+            vals = np.asanyarray(vals)
+            for col in np.atleast_2d(vals.T):
                 cols.append(col)
         else:
             cols.append(vals)
@@ -221,7 +226,8 @@ def get_ascii_data(filename, ncols=1, colkeys=None, sep=' ', dstype=Data1D,
     if is_binary_file(filename):
         raise IOErr('notascii', filename)
 
-    names, args = read_file_data(filename, sep, comment, require_floats)
+    names, args = read_file_data(filename, sep=sep, comment=comment,
+                                 require_floats=require_floats)
 
     if colkeys is None:
         kwargs = []
@@ -320,8 +326,10 @@ def read_data(filename, ncols=2, colkeys=None, sep=' ', dstype=Data1D,
 
     """
 
-    colnames, args, name = get_ascii_data(filename, ncols, colkeys,
-                                          sep, dstype, comment, require_floats)
+    _, args, name = get_ascii_data(filename, ncols=ncols,
+                                   colkeys=colkeys, sep=sep,
+                                   dstype=dstype, comment=comment,
+                                   require_floats=require_floats)
     return dstype(name, *args)
 
 
@@ -334,7 +342,7 @@ def read_arrays(*args):
        The data columns.
     dstype : optional
        The data type to create. It must be a subclass of
-       `sherpa.data.BaseData` and defaults to `sherpa.data.Data1D`
+       `sherpa.data.Data` and defaults to `sherpa.data.Data1D`
 
     Returns
     -------
@@ -367,20 +375,21 @@ def read_arrays(*args):
     >>> dat = read_arrays(xlo, xhi, y, dstype=sherpa.data.Data1DInt)
 
     """
-    args = list(args)
-    if len(args) == 0:
+    largs = list(args)
+    if len(largs) == 0:
         raise IOErr('noarrays')
 
-    dstype = Data1D
-    if _is_subclass(args[-1], BaseData):
-        dstype = args.pop()
+    if is_subclass(largs[-1], Data):
+        dstype = largs.pop()
+    else:
+        dstype = Data1D
 
-    args = get_column_data(*args)
+    dargs = get_column_data(*largs)
 
     # Determine max number of args for dataset constructor
-    _check_args(len(args), dstype)
+    _check_args(len(dargs), dstype)
 
-    return dstype('', *args)
+    return dstype('', *dargs)
 
 
 def write_arrays(filename, args, fields=None, sep=' ', comment='#',
@@ -437,26 +446,26 @@ def write_arrays(filename, args, fields=None, sep=' ', comment='#',
     if os.path.isfile(filename) and not clobber:
         raise IOErr("filefound", filename)
 
-    if not numpy.iterable(args) or len(args) == 0:
+    if not np.iterable(args) or len(args) == 0:
         raise IOErr('noarrayswrite')
 
-    if not numpy.iterable(args[0]):
+    if not np.iterable(args[0]):
         raise IOErr('noarrayswrite')
 
     size = len(args[0])
     for arg in args:
-        if not numpy.iterable(arg):
+        if not np.iterable(arg):
             raise IOErr('noarrayswrite')
-        elif len(arg) != size:
+        if len(arg) != size:
             raise IOErr('arraysnoteq')
 
-    args = numpy.column_stack(numpy.asarray(args))
+    args = np.column_stack(np.asarray(args))
     lines = []
     for arg in args:
         line = [format % elem for elem in arg]
         lines.append(sep.join(line))
 
-    with open(filename, 'w') as fh:
+    with open(filename, 'w', encoding="utf-8") as fh:
 
         if fields is not None:
             fh.write(comment + sep.join(fields) + linebreak)
@@ -530,5 +539,6 @@ def write_data(filename, dataset, fields=None, sep=' ', comment='#',
             col_names.append(name.upper())
             cols.append(field)
 
-    write_arrays(filename, cols, col_names, sep, comment, clobber,
-                 linebreak, format)
+    write_arrays(filename, cols, fields=col_names, sep=sep,
+                 comment=comment, clobber=clobber,
+                 linebreak=linebreak, format=format)
