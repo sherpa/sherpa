@@ -26,7 +26,7 @@ in Python matures.
 
 """
 
-from typing import Callable, Sequence, Union
+from typing import Callable, Sequence, SupportsFloat, Union
 
 import numpy as np
 
@@ -64,4 +64,5 @@ StatFunc = Callable[..., StatResults]
 # - an ArithmeticConstantModel can return a scalar
 # - models could return a sequence rather than a ndarray
 #
-ModelFunc = Callable[..., ArrayType]
+ModelValsType = Union[ArrayType, SupportsFloat]
+ModelFunc = Callable[..., ModelValsType]
