@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2017 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -37,6 +37,7 @@ from sherpa.astro import ui
 
 from sherpa.utils import linear_interp
 from sherpa.utils.err import DataErr, ModelErr
+from sherpa.utils.numeric_types import SherpaFloat
 
 from sherpa.models.regrid import ModelDomainRegridder1D, EvaluationSpace1D, \
     EvaluationSpace2D, PointAxis, IntegratedAxis
@@ -1525,3 +1526,78 @@ def test_non_integrated_model_on_integrated_axis_1d_true():
     #
     expected = [0.6, 0.6, 1, 4, 3.6, 2.2]
     assert got == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("cls", [EvaluationSpace1D, EvaluationSpace2D])
+def test_evaluationspace_empty_is_empty(cls):
+    """Simple check"""
+    espace = cls()
+    assert espace.is_empty is True
+
+
+@pytest.mark.parametrize("cls", [EvaluationSpace1D, EvaluationSpace2D])
+def test_evaluationspace_empty_is_integrated(cls):
+    """Simple check"""
+    espace = cls()
+    assert espace.is_integrated is False
+
+
+@pytest.mark.parametrize("cls", [EvaluationSpace1D, EvaluationSpace2D])
+def test_evaluationspace_empty_is_ascending(cls):
+    """Simple check"""
+    espace = cls()
+    with pytest.raises(DataErr, match="^Axis is empty or has a size of 0$"):
+        # This is a property
+        _ = espace.is_ascending
+
+
+@pytest.mark.parametrize("cls", [EvaluationSpace1D, EvaluationSpace2D])
+@pytest.mark.parametrize("meth", ["start", "end"])
+def test_evaluationspace_empty_range(cls, meth):
+    """Simple check"""
+    espace = cls()
+    with pytest.raises(DataErr, match="^Axis is empty or has a size of 0$"):
+        # These are properties, so accessing the field causes the error
+        _ = getattr(espace, meth)
+
+
+@pytest.mark.parametrize("cls,expected",
+                         [(EvaluationSpace1D, (None, )),
+                          (EvaluationSpace2D, ([None], [None]))
+                          ])
+def test_evaluationspace_empty_grid(cls, expected):
+    """Simple check.
+
+    EvaluationSpace1D has midpoint_grid but the 2D version does
+    not.
+    """
+    espace = cls()
+    assert espace.grid == expected
+
+
+@pytest.mark.parametrize("cls", [EvaluationSpace1D, EvaluationSpace2D])
+def test_evaluationspace_empty_zeroes(cls):
+    """Simple check"""
+    espace = cls()
+    assert espace.zeros_like().shape == (0, )
+
+
+@pytest.mark.parametrize("cls", [EvaluationSpace1D, EvaluationSpace2D])
+def test_evaluationspace_empty_overlaps(cls):
+    """Simple check"""
+    espace1 = cls()
+    espace2 = cls()
+    with pytest.raises(DataErr, match="^Axis is empty or has a size of 0$"):
+        espace1.overlaps(espace2)
+
+
+@pytest.mark.parametrize("cls", [EvaluationSpace1D])
+def test_evaluationspace_empty_contains(cls):
+    """This is a regression test.
+
+    EvaluationSpace2D does not have a __contains__ method.
+    """
+    espace1 = cls()
+    espace2 = cls()
+    with pytest.raises(DataErr, match="^Axis is empty or has a size of 0$"):
+        _ = espace1 in espace2
