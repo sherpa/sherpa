@@ -22,7 +22,7 @@
 Routines related to estimating initial parameter values and limits.
 
 .. versionadded:: 4.17.0
-   In prior routines these routines were provided by sherpa.utils.
+   In prior versions these routines were provided by sherpa.utils.
 
 """
 
