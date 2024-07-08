@@ -3800,7 +3800,6 @@ def test_fake_image_wcs_coord():
     check()
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("defid", ["foo", 2])
 def test_store_default_id(defid):
     "Do we record the default id when it's been changed?"
