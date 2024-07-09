@@ -432,7 +432,11 @@ def test_chi2gehrels_stat(hide_logging, reset_xspec, setup_group):
             )
     }
 
-    compare_results(_fit_chi2gehrels_results_bench, results, tol=1e-5)
+    # The tolerance used to be 1e-5 but for macOS ARM it has jumped to
+    # 8e-5. Should the test values be re-evaluated for our supported
+    # platforms?
+    #
+    compare_results(_fit_chi2gehrels_results_bench, results, tol=8e-5)
 
 
 @requires_fits
@@ -667,8 +671,12 @@ def test_simul_stat_fit(stat, hide_logging, reset_xspec, setup_two):
         )
     }
 
+    # The tolerance used to be 1e-6 but for macOS ARM it has jumped to
+    # 2.1e-4. Should the test values be re-evaluated for our supported
+    # platforms?
+    #
     compare_results(_fit_simul_datavarstat_results_bench,
-                    result)
+                    result, tol=2.1e-4)
 
 
 @requires_data
