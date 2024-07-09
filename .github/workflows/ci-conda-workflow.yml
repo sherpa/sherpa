@@ -130,16 +130,22 @@ jobs:
       run: |
         source .github/scripts/setup_conda.sh
 
-    - name: Conda Setup (Xspec and DS9)
+    # At the moment we use XSPEC as the control for whether to install
+    # DS9 or not. However, the DS9 tests have been shown to be
+    # problematic on macOS/GitHub so we also skip macOS.
+    #
+    - name: Conda Setup (DS9)
+      if: matrix.xspec-version != '' && runner.os != 'macOS'
+      run: |
+        source .github/scripts/setup_ds9.sh
+        # We need xvfb to run the tests so ensure it's installed
+        pip install pytest-xvfb
+
+    - name: Conda Setup (Xspec)
       if: matrix.xspec-version != ''
       env:
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
-        if [ "$RUNNER_OS" != "macOS" ]; then
-          source .github/scripts/setup_ds9.sh
-          # We need xvfb to run the tests so ensure it's installed
-          pip install pytest-xvfb
-        fi
         source .github/scripts/setup_xspec.sh
 
     - name: Build Sherpa (install)
