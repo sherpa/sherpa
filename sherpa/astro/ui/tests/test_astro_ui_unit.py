@@ -39,11 +39,12 @@ from sherpa.astro.instrument import create_arf, create_delta_rmf
 from sherpa.astro import io
 from sherpa.astro import ui
 import sherpa.models.basic
-from sherpa.utils import poisson_noise
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, IOErr, ModelErr, StatErr
+from sherpa.utils.logging import SherpaVerbosity
+from sherpa.utils.random import poisson_noise
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_region, requires_wcs
+    requires_region, requires_wcs, requires_xspec
 
 
 def backend_is(name):
@@ -3202,3 +3203,65 @@ def test_1762_ui(incoord, outcoord, x0, x1, clean_astro_ui, make_data_path):
     i0, i1 = ui.get_indep("img")
     assert i0[0] == pytest.approx(x0)
     assert i1[0] == pytest.approx(x1)
+
+
+@requires_xspec
+@requires_fits
+@requires_data
+@pytest.mark.parametrize("idval", [None, 2])
+def test_guess_with_response_and_multiple_models(idval, clean_astro_ui, caplog, make_data_path):
+    """Check we can call guess on XSPEC models.
+
+    This should really be with made-up responses and data to
+    check they work, but for now read in the data.
+    """
+
+    infile = make_data_path("3c273.pi")
+
+    with SherpaVerbosity("ERROR"):
+        ui.load_pha(id=idval, arg=infile)
+        ui.notice(lo=0.3, hi=6)
+        ui.subtract(id=idval)
+
+    cpt1 = ui.create_model_component("xsphabs", "gal")
+    cpt2 = ui.create_model_component("xsapec", "src1")
+    cpt3 = ui.create_model_component("xsgaussian", "src2")
+    ui.set_model(id=idval, model=cpt1 * (cpt2 + cpt3))
+
+    # A limited check on the parameter values - e.g. this does not
+    # check the other parameters.
+    #
+    assert cpt1.nH.val == pytest.approx(1)
+    assert cpt1.nH.min == pytest.approx(0)
+    assert cpt1.nH.max == pytest.approx(1e6)
+
+    assert cpt2.norm.val == pytest.approx(1)
+    assert cpt2.norm.min == pytest.approx(0)
+    assert cpt2.norm.max == pytest.approx(1e24)
+
+    assert cpt3.norm.val == pytest.approx(1)
+    assert cpt3.norm.min == pytest.approx(0)
+    assert cpt3.norm.max == pytest.approx(1e24)
+
+    ui.guess(id=idval)
+
+    assert cpt1.nH.val == pytest.approx(1)
+    assert cpt1.nH.min == pytest.approx(0)
+    assert cpt1.nH.max == pytest.approx(1e6)
+
+    expected = 3.539017671368409
+    assert cpt2.norm.val == pytest.approx(expected / 1000)
+    assert cpt2.norm.min == pytest.approx(expected / 1000 / 1000)
+    assert cpt2.norm.max == pytest.approx(expected)
+
+    expected = 9.910362995161027
+    assert cpt3.norm.val == pytest.approx(expected / 1000)
+    assert cpt3.norm.min == pytest.approx(expected / 1000 / 1000)
+    assert cpt3.norm.max == pytest.approx(expected)
+
+    # The only message is from xsphabs
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.models.model"
+    assert r[1] == logging.WARN
+    assert r[2] == "No guess found for xsphabs.gal"

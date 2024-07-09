@@ -1184,6 +1184,42 @@ class CompositeModel(Model):
             except AttributeError:
                 pass
 
+    def guess(self, dep, *args, **kwargs):
+        """Call guess on each component.
+
+        At the moment there is no recognition of the full
+        model expression - e.g. cpt1 * cpt2 and cpt1 + cpt2
+        would ideally have different scalings applied here.
+
+        .. versionchanged:: 4.17.0
+           Prior to 4.17.0 the guess method could not be called on
+           composite models.
+
+        """
+
+        # It would be good to apply the various "guess" routines
+        # to the combined model expression, but that would
+        # significantly complicate the analysis.
+        #
+        seen = set()
+        for p in self.parts:
+            # Only call guess the first time a model is seen.
+            #
+            if p in seen:
+                continue
+
+            try:
+                p.guess(dep, *args, **kwargs)
+            except (AttributeError, NotImplementedError):
+                # Skip those models without a guess. This could just
+                # be a call to pass, but follow the behaviour of
+                # sherpa.ui.utils.guess. This is not ideal as it is
+                # better decided at the ui layer than here.
+                #
+                warning('No guess found for %s', p.name)
+
+            seen.add(p)
+
 
 class SimulFitModel(CompositeModel):
     """Store multiple models.
@@ -1308,6 +1344,10 @@ class ArithmeticConstantModel(Model):
         return self.val
 
     def teardown(self) -> None:
+        pass
+
+    def guess(self, dep, *args, **kwargs):
+        """There is nothing to guess here."""
         pass
 
 
@@ -1717,6 +1757,10 @@ class ArithmeticFunctionModel(Model):
         pass
 
     def teardown(self) -> None:
+        pass
+
+    def guess(self, dep, *args, **kwargs):
+        """There is nothing to guess here."""
         pass
 
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2020, 2021, 2022
+#  Copyright (C) 2008, 2016, 2020 - 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -17,39 +17,44 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+"""Utility routines for the astronomy code."""
 
-import logging
+from typing import Optional
 
-import numpy
+import numpy as np
 
-from sherpa.utils import get_position, filter_bins
+from sherpa.astro import hc, charge_e
+from sherpa.utils import filter_bins
 from sherpa.utils.err import IOErr, DataErr
+from sherpa.utils import guess
+from sherpa.utils.guess import ValueAndRange, get_position
 
 from ._utils import arf_fold, do_group, expand_grouped_mask, \
     filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
 from ._pileup import apply_pileup
-from sherpa.astro import hc, charge_e
 
 
-__all__ = ['arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
+__all__ = ('arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
            'eqwidth', 'calc_photon_flux', 'calc_energy_flux',
            'calc_data_sum', 'calc_model_sum', 'shrink_effarea',
            'calc_data_sum2d', 'calc_model_sum2d', 'filter_resp',
            'calc_source_sum', 'compile_energy_grid',
            'calc_kcorr',
            'expand_grouped_mask', 'resp_init', 'is_in',
-           'get_xspec_position']
-
-
-warning = logging.getLogger(__name__).warning
+           'get_xspec_position', 'get_xspec_norm')
 
 
 def reshape_2d_arrays(x0, x1):
-    new_x0, new_x1 = numpy.meshgrid(x0, x1)
+    new_x0, new_x1 = np.meshgrid(x0, x1)
     return new_x0.ravel(), new_x1.ravel()
 
 
-def get_xspec_position(y, x, xhi=None):
+def get_xspec_position(y: np.ndarray,
+                       x: np.ndarray,
+                       xhi: Optional[np.ndarray] = None
+                       ) -> ValueAndRange:
+    """Estimate a position for an XSPEC model."""
+
     if xhi is not None:
         if x[0] > x[-1] and xhi[0] > xhi[-1]:
             lo = hc / xhi
@@ -61,12 +66,39 @@ def get_xspec_position(y, x, xhi=None):
     return get_position(y, x, xhi)
 
 
+def get_xspec_norm(y: np.ndarray, mdl: np.ndarray) -> ValueAndRange:
+    """Guess model normalization (XSPEC).
+
+    Estimate the normalization based on the data and model.
+
+    Parameters
+    ----------
+    y: ndarray
+       The data
+    mdl: ndarray
+       The model evaluation on the same grid.
+
+    """
+
+    # Use the summation of the data as the comparison rather than pick
+    # an individual value. This is an assumption as to it being a
+    # useful approach, and we may decide to change the approach.
+    #
+    sum_dep = np.sum(y)
+    sum_mdl = np.sum(mdl)
+
+    r = sum_dep / sum_mdl
+    return {'val': r,
+            'min': r / guess._guess_ampl_scale,
+            'max': r * guess._guess_ampl_scale}
+
+
 def compile_energy_grid(arglist):
-    '''Combine several grids (energy, channel, wavelength) into one
+    '''Combine several grids (energy, channel, wavelength) into one.
 
     This function combines several grids into one, such that the model
-    does not have to be evaluated several times, just because the same energy
-    point occurs in every grid.
+    does not have to be evaluated several times, just because the same
+    energy point occurs in every grid.
 
     This function works under the assumption that evaluating the model
     is expensive and it is is worthwhile to do some bookkeeping to be
@@ -77,18 +109,17 @@ def compile_energy_grid(arglist):
     ----------
     arglist : list of tuples
         The list contains the input energy grids. Each tuple is a pair
-        of arrays specifying the lower and upper limits for the bins in
-        each input grid.
+        of arrays specifying the lower and upper limits for the bins
+        in each input grid.
 
     Returns
     -------
     out : list
-        The elements of the list are:
-        - elo : array of lower bin values
-        - ehi : array of upper bin values
-        - htable : list of tuples, in the same format as the input.
-             The entries in ``htable`` are indices into ``elo`` and ``ehi``
-             that return the original input arrays.
+        The elements of the list are: elo : array of lower bin values;
+        ehi : array of upper bin values; and htable : list of tuples
+        in the same format as the input. The entries in htable are
+        indices into elo and ehi that return the original input
+        arrays.
 
     Examples
     --------
@@ -100,23 +131,23 @@ def compile_energy_grid(arglist):
       (array([0, 1, 2], dtype=int32), array([0, 1, 2], dtype=int32))]]
 
     '''
-    elo = numpy.unique(numpy.concatenate([indep[0] for indep in arglist]))
-    ehi = numpy.unique(numpy.concatenate([indep[1] for indep in arglist]))
+    elo = np.unique(np.concatenate([indep[0] for indep in arglist]))
+    ehi = np.unique(np.concatenate([indep[1] for indep in arglist]))
 
-    in_elo = numpy.setdiff1d(elo, ehi)
-    in_ehi = numpy.setdiff1d(ehi, elo)
+    in_elo = np.setdiff1d(elo, ehi)
+    in_ehi = np.setdiff1d(ehi, elo)
     if len(in_elo) > 1:
-        ehi = numpy.concatenate((ehi, in_elo[1:]))
+        ehi = np.concatenate((ehi, in_elo[1:]))
         ehi.sort()
     if len(in_ehi) > 1:
-        elo = numpy.concatenate((elo, in_ehi[:- 1]))
+        elo = np.concatenate((elo, in_ehi[:- 1]))
         elo.sort()
 
     # determine index intervals using binary search in large src model
     # for n_th ARF energy bounds and populate a table to use later for
     # integration over said intervals
-    htable = [(numpy.searchsorted(elo, arg[0]).astype(numpy.int32),
-               numpy.searchsorted(ehi, arg[1]).astype(numpy.int32))
+    htable = [(np.searchsorted(elo, arg[0]).astype(np.int32),
+               np.searchsorted(ehi, arg[1]).astype(np.int32))
               for arg in arglist]
 
     return [elo, ehi, htable]
@@ -208,7 +239,7 @@ def range_overlap_1dint(axislist, lo, hi):
     assert axishi[0] > axislo[0]
 
     if lo is None and hi is None:
-        return numpy.ones(axislo.size)
+        return np.ones(axislo.size)
 
     assert lo is not None
     assert hi is not None
@@ -219,9 +250,9 @@ def range_overlap_1dint(axislist, lo, hi):
     #
     ascending = axislo[1] > axislo[0]
     if ascending:
-        edges = numpy.append(axislo, axishi[-1])
+        edges = np.append(axislo, axishi[-1])
     else:
-        edges = numpy.append(axishi[0], axislo)[::-1]
+        edges = np.append(axishi[0], axislo)[::-1]
 
     axmin = edges[0]
     axmax = edges[-1]
@@ -234,7 +265,7 @@ def range_overlap_1dint(axislist, lo, hi):
         return None
 
     if lo <= axmin and hi >= axmax:
-        return numpy.ones(nbins)
+        return np.ones(nbins)
 
     # special case handling of hi == axmin but lo != hi
     #
@@ -256,7 +287,7 @@ def range_overlap_1dint(axislist, lo, hi):
     # points. See the digitize documentation for the
     # meaning of the return values.
     #
-    bins = numpy.digitize([lo, hi], edges, right=False)
+    bins = np.digitize([lo, hi], edges, right=False)
     blo = bins[0]
     bhi = bins[1]
 
@@ -267,7 +298,7 @@ def range_overlap_1dint(axislist, lo, hi):
     assert blo > 0, blo
     # assert bhi <= nbins, (bhi, nbins)
 
-    scale = numpy.zeros(nbins)
+    scale = np.zeros(nbins)
 
     ilo = blo - 1
     if density:
@@ -311,7 +342,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
         method = data.get_indep
 
     axislist = method(filter=False)
-    dim = numpy.asarray(axislist).squeeze().ndim
+    dim = np.asarray(axislist).squeeze().ndim
     if dim > 2:
         raise IOErr('>axes', "2")
 
@@ -323,7 +354,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     y = src(*axislist)
 
     if srcflux and dim == 2:
-        y /= numpy.asarray(axislist[1] - axislist[0])
+        y /= np.asarray(axislist[1] - axislist[0])
 
     if eflux:
         # for energy flux, the sum of grid below must be in keV.
@@ -353,7 +384,7 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
         assert mask is not None
 
         # no bin found
-        if numpy.all(~mask):
+        if np.all(~mask):
             return 0.0
 
         # convert boolean to numbers
@@ -372,8 +403,8 @@ def _flux(data, lo, hi, src, eflux=False, srcflux=False):
     # same (which is set by bounds_check when a density is requested).
     #
     if lo is not None and dim == 2 and lo == hi:
-        assert scale.sum() == 1, 'programmer error: sum={}'.format(scale.sum())
-        y /= numpy.abs(axislist[1] - axislist[0])
+        assert scale.sum() == 1, f'programmer error: sum={scale.sum()}'
+        y /= np.abs(axislist[1] - axislist[0])
 
     flux = (scale * y).sum()
     if eflux:
@@ -888,9 +919,9 @@ def eqwidth(data, model, combo, lo=None, hi=None):
 
     for ebin, val in enumerate(xlo):
         if ebin < (num - 1):
-            eave = numpy.abs(xlo[ebin + 1] - xlo[ebin])
+            eave = np.abs(xlo[ebin + 1] - xlo[ebin])
         else:
-            eave = numpy.abs(xlo[ebin - 1] - xlo[ebin])
+            eave = np.abs(xlo[ebin - 1] - xlo[ebin])
         if my[ebin] != 0.0:
             eqw += eave * (cy[ebin] - my[ebin]) / my[ebin]
 
@@ -979,10 +1010,10 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
     if resthi is None:
         resthi = obshi
 
-    if numpy.isscalar(z):
-        z = numpy.array([z], dtype=float)
+    if np.isscalar(z):
+        z = np.array([z], dtype=float)
     else:
-        z = numpy.asarray(z)
+        z = np.asarray(z)
 
     if 0 != sum(z[z < 0]):
         raise IOErr('z<=0')
@@ -1015,16 +1046,16 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
 
     if obslo * (1.0 + z.min()) < emin:
         raise IOErr('energoverlap', emin, emax, 'observed-frame',
-                    restlo, resthi, "at a redshift of %f" % z.min())
+                    restlo, resthi, f"at a redshift of {z.min():f}")
 
     if obshi * (1.0 + z.max()) > emax:
         raise IOErr('energoverlap', emin, emax, 'rest-frame',
-                    restlo, resthi, "at a redshift of %f" % z.min())
+                    restlo, resthi, f"at a redshift of {z.max():f}")
 
     zplus1 = z + 1.0
     flux_rest = _flux(data, restlo, resthi, model, eflux=True)
-    obs = numpy.asarray([_flux(data, obslo * zz, obshi * zz, model, eflux=True)
-                         for zz in zplus1], dtype=float)
+    obs = np.asarray([_flux(data, obslo * zz, obshi * zz, model, eflux=True)
+                      for zz in zplus1], dtype=float)
     kcorr = flux_rest / obs
 
     if len(kcorr) == 1:

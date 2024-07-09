@@ -199,9 +199,93 @@ def test_guess_warns_no_guess_no_argument(caplog, clean_ui):
 
     assert len(caplog.records) == 1
     lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == "sherpa.ui.utils"
+    assert lname == "sherpa.models.model"
     assert lvl == logging.WARNING
-    assert msg == "No guess found for dummy + dummy"
+    assert msg == "No guess found for dummy"
+
+
+def test_guess_single_model(caplog, clean_ui):
+    """What happens when call guess on a single model?"""
+
+    # Pick a simple model in terms of it's guess behaviour.
+    ui.load_arrays(1, [10, 20, 40], [5, 7, 3])
+    ui.set_source(ui.scale1d.mdl)
+
+    bound = 100000
+
+    assert mdl.c0.val == pytest.approx(1)
+    assert mdl.c0.min < -bound # we just care these change
+    assert mdl.c0.max > bound
+
+    ui.guess()
+
+    assert mdl.c0.val == pytest.approx(5)
+    assert mdl.c0.min == pytest.approx(0.03)
+    assert mdl.c0.max == pytest.approx(700)
+
+    assert len(caplog.records) == 0
+
+
+def test_guess_multiple_model_single(caplog, clean_ui):
+    """What happens when call guess on a single model from a composite?"""
+
+    # Pick a simple model in terms of it's guess behaviour.
+    ui.load_arrays(1, [10, 20, 40], [5, 7, 3])
+    ui.set_source(ui.scale1d.mdl + ui.box1d.bmdl)
+
+    bound = 100000
+
+    assert mdl.c0.val == pytest.approx(1)
+    assert mdl.c0.min < -bound # we just care these change
+    assert mdl.c0.max > bound
+
+    # check this doesn't get changhed
+    assert bmdl.ampl.val == pytest.approx(1)
+    assert bmdl.ampl.min < -bound
+    assert bmdl.ampl.max > bound
+
+    ui.guess(mdl)
+
+    assert mdl.c0.val == pytest.approx(5)
+    assert mdl.c0.min == pytest.approx(0.03)
+    assert mdl.c0.max == pytest.approx(700)
+
+    assert bmdl.ampl.val == pytest.approx(1)
+    assert bmdl.ampl.min < -1000
+    assert bmdl.ampl.max > 1000
+
+    assert len(caplog.records) == 0
+
+
+def test_guess_multiple_model_multiple(caplog, clean_ui):
+    """What happens when call guess on multiple models from a composite?"""
+
+    # Pick a simple model in terms of it's guess behaviour.
+    ui.load_arrays(1, [10, 20, 40], [5, 7, 3])
+    ui.set_source(ui.scale1d.mdl + ui.box1d.bmdl)
+
+    bound = 100000
+
+    assert mdl.c0.val == pytest.approx(1)
+    assert mdl.c0.min < -bound # we just care these change
+    assert mdl.c0.max > bound
+
+    # check this doesn't get changhed
+    assert bmdl.ampl.val == pytest.approx(1)
+    assert bmdl.ampl.min < -bound
+    assert bmdl.ampl.max > bound
+
+    ui.guess()
+
+    assert mdl.c0.val == pytest.approx(5)
+    assert mdl.c0.min == pytest.approx(0.03)
+    assert mdl.c0.max == pytest.approx(700)
+
+    assert bmdl.ampl.val == pytest.approx(7)
+    assert bmdl.ampl.min == pytest.approx(0.007)
+    assert bmdl.ampl.max == pytest.approx(7000)
+
+    assert len(caplog.records) == 0
 
 
 class Parameter2(Parameter):

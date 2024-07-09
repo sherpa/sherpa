@@ -9052,6 +9052,12 @@ class Session(NoNewAttributesAfterInit):
         the values and sometimes just the limits). The parameters that
         are changed depend on the type of model.
 
+        .. versionchanged:: 4.17.0
+           The guess routine will now work with composite models and
+           those which include an instrumental response, such as an
+           ARF.  It only works on individual models, so the values,
+           and limits, guessed are only approximate.
+
         Parameters
         ----------
         id : int or str, optional
@@ -9102,6 +9108,14 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source(polynom1d.poly)
         >>> guess()
 
+        Both components - that is, gal and pl - will be passed to the
+        guess routine, but not all models can have their parameters
+        guessed, and there is no attempt to recognize that the models
+        are combined (in this case by multiplication):
+
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> guess()
+
         In this case, guess is called on each component separately.
 
         >>> set_source(gauss1d.line + powlaw1d.cont)
@@ -9117,6 +9131,11 @@ class Session(NoNewAttributesAfterInit):
         >>> guess("src", src)
         >>> guess("bgnd", bgnd)
 
+        The above could also have been written as:
+
+        >>> guess("src", src)
+        >>> guess("bgnd")
+
         Set the source model for the default dataset. Guess is run to
         determine the values of the model component "p1" and the limits
         of the model component "g1":
@@ -9126,8 +9145,17 @@ class Session(NoNewAttributesAfterInit):
         >>> guess(g1, values=False)
 
         """
+
+        # We can have
+        #    id=None, model=None
+        #    id=X, model=None
+        #       -> is this id=X or model=X
+        #    id=X, model=Y
+        #
         if model is None:
-            id, model = model, id
+            # Try to find out if this is a known identifier
+            if id not in self.list_data_ids():
+                id, model = model, id
 
         idval = self._fix_id(id)
         kwargs = {'limits': limits, 'values': values}
