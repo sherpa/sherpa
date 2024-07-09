@@ -16,12 +16,6 @@ if [ "`uname -s`" == "Darwin" ] ; then
     tar -C ${GITHUB_WORKSPACE}/11.0SDK -xf MacOSX11.0.sdk.tar.xz
     #End of Conda compilers section
 
-    # Install miniforge; see
-    # https://github.com/conda-forge/miniforge?tab=readme-ov-file#downloading-the-installer-as-part-of-a-ci-pipeline
-    CONDA="${HOME}/conda"
-    curl -fsSLo Miniforge3.sh "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-MacOSX-$(uname -m).sh"
-    bash Miniforge3.sh -b -p $CONDA
-
 else
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
 
@@ -31,21 +25,6 @@ else
         #  ldd $CONDA_PREFIX/plugins/platforms/libqxcb.so | grep "not found"
         sudo apt-get install -q libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-render-util0
    fi
-fi
-
-# Ensure we have set up conda
-#
-source ${CONDA}/etc/profile.d/conda.sh
-
-# update and add channels
-conda update --yes conda
-
-# miniforge has already done this for us, hence the OS restriction.
-#
-if [ "`uname -s`" != "Darwin" ] ; then
-  conda config --add channels conda-forge
-  #Remove defaults to avoid conflicts with conda-forge
-  conda config --remove channels defaults
 fi
 
 # To avoid issues with non-XSPEC builds (e.g.
@@ -59,6 +38,10 @@ if [ -n "${XSPECVER}" ]; then
   else
     conda config --add channels ${xspec_channel}
   fi
+
+  # Why is the default channel getting added?
+  conda config --remove channels defaults
+
 fi
 
 # Figure out requested dependencies
@@ -73,7 +56,6 @@ fi
 echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD}"
 echo "compilers: ${compilers}"
 
-# Create and activate conda build environment
-conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
-
-conda activate build
+# Install the required packages
+#
+conda install pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
