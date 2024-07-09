@@ -61,7 +61,7 @@ jobs:
 
           - name: Linux Build (submodule data w/o Matplotlib or Xspec)
             os: ubuntu-latest
-            python-version: "3.9"
+            python-version: "3.12"
             numpy-pkg: 'numpy'
             install-type: develop
             fits-pkg: 'astropy'
