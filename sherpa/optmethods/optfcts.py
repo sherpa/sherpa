@@ -421,11 +421,6 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
           nloop=1, iquad=1, simp=None, verbose=-1, reflect=True):
 
-    # TODO: rework so do not have two stat_cb0 functions which
-    #       are both used
-    def stat_cb0(pars):
-        return fcn(pars)[0]
-
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if step is None:
@@ -436,12 +431,10 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     if maxfev is None:
         maxfev = 512 * len(x)
 
-    orig_fcn = stat_cb0
-
     def stat_cb0(x_new):
         if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
             return FUNC_MAX
-        return orig_fcn(x_new)
+        return fcn(x_new)[0]
 
     init = 0
     x, fval, neval, ifault = _saoopt.minim(reflect, verbose, maxfev, init, \
@@ -914,19 +907,12 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     elif np.isscalar(step):
         step = step * np.ones(x.shape, np.float64, order)
 
-    def stat_cb0(pars):
-        return fcn(pars)[0]
-
-    # TODO: should be able to avoid the redefinition
-    #
     # A safeguard just in case the initial simplex is outside the bounds
     #
-    orig_fcn = stat_cb0
-
     def stat_cb0(x_new):
         if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
             return FUNC_MAX
-        return orig_fcn(x_new)
+        return fcn(x_new)[0]
 
     if np.isscalar(finalsimplex) and np.iterable(finalsimplex) == 0:
         finalsimplex = int(finalsimplex)
@@ -1138,9 +1124,6 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
     if maxfev is None:
         maxfev = 256 * len(x)
-
-    def stat_cb0(pars):
-        return fcn(pars)[0]
 
     def stat_cb1(pars):
         return fcn(pars)[1]
