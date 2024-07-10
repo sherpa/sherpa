@@ -45,8 +45,8 @@ from sherpa.utils.err import ModelErr, ParameterErr
 
 
 def validate_warning(warning_capturer, parameter_name="norm",
-                     model_name="ParameterCase", actual_name="Ampl", num=1):
-    assert num == len(warning_capturer)
+                     model_name="ParameterCase", actual_name="Ampl"):
+    assert len(warning_capturer) == 1
     for warning in warning_capturer:
         assert issubclass(warning.category, DeprecationWarning)
         expected_warning_message = 'Parameter name {} is deprecated for model {}, use {} instead'.format(
@@ -93,7 +93,7 @@ class ParameterCase(ArithmeticModel):
         with warnings.catch_warnings(record=True) as warn:
             warnings.simplefilter("always", DeprecationWarning)
             pars = (self.perioD, self.oFFSEt, self.NORM)
-            validate_warning(warn)
+            validate_warning(warn, parameter_name="NORM")
 
         self._basemodel = Sin()
         super().__init__(name, pars)
@@ -215,18 +215,20 @@ def test_getpar(setup):
 
 
 @pytest.mark.parametrize('setup,warns',
-                         [(setup_renamed, ["norm", "RenamedPars", "ampl"]),
-                          (setup_parametercase, [])])
+                         [(setup_renamed, {"model_name": "RenamedPars",
+                                           "actual_name": "ampl"}),
+                          (setup_parametercase, {})])
 def test_getpar_rename(setup, warns):
     mdl, _ = setup()
 
-    with warnings.catch_warnings(record=True) as warn:
-        warnings.simplefilter("always", DeprecationWarning)
+    for name in ["norm", "NorM", "NOrm"]:
+        with warnings.catch_warnings(record=True) as warn:
+            warnings.simplefilter("always", DeprecationWarning)
 
-        for par in (mdl.norm, mdl.NorM, mdl.NOrm):
+            par = getattr(mdl, name)
             assert par is mdl.pars[2]
 
-        validate_warning(warn, *warns, num=3)
+        validate_warning(warn, **warns, parameter_name=name)
 
 
 @pytest.mark.parametrize('setup',
@@ -250,8 +252,9 @@ def test_setpar(setup):
 
 
 @pytest.mark.parametrize('setup,warns',
-                         [(setup_renamed, ["norm", "RenamedPars", "ampl"]),
-                          (setup_parametercase, [])])
+                         [(setup_renamed, {"model_name": "RenamedPars",
+                                           "actual_name": "ampl"}),
+                          (setup_parametercase, {})])
 def test_setpar_rename(setup, warns):
     mdl, _ = setup()
 
@@ -262,7 +265,7 @@ def test_setpar_rename(setup, warns):
         warnings.simplefilter("always", DeprecationWarning)
 
         mdl.norm = 12
-        validate_warning(warn, *warns)
+        validate_warning(warn, **warns, parameter_name="norm")
 
     assert mdl.ampl.val == 12.0
 
@@ -270,7 +273,7 @@ def test_setpar_rename(setup, warns):
         warnings.simplefilter("always", DeprecationWarning)
 
         mdl.NoRM = 18
-        validate_warning(warn, *warns)
+        validate_warning(warn, **warns, parameter_name="NoRM")
 
     assert mdl.ampl.val == 18.0
     mdl.ampl = 1
