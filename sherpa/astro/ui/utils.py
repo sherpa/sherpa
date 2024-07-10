@@ -32,7 +32,7 @@ from sherpa.astro.instrument import create_arf, create_delta_rmf, \
     create_non_delta_rmf, has_pha_response
 from sherpa.ui.utils import _check_type, _check_str_type, _is_str, \
     get_plot_prefs
-from sherpa.utils import sao_arange, send_to_pager
+from sherpa.utils import is_subclass, sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -9809,12 +9809,12 @@ class Session(sherpa.ui.utils.Session):
                 do_warning = True
                 # if type(model) in instruments:
                 # if isinstance(model, instruments):
-                if sherpa.ui.utils._is_subclass(type(model), instruments):
+                if is_subclass(type(model), instruments):
                     do_warning = False
                 for part in model:
                     # if type(part) in instruments:
                     # if isinstance(part, instruments):
-                    if sherpa.ui.utils._is_subclass(type(part), instruments):
+                    if is_subclass(type(part), instruments):
                         do_warning = False
                 if do_warning:
                     warning("PHA source model '%s' \ndoes not"
@@ -10309,12 +10309,12 @@ class Session(sherpa.ui.utils.Session):
             do_warning = True
             # if type(model) in instruments:
             # if isinstance(model, instruments):
-            if sherpa.ui.utils._is_subclass(type(model), instruments):
+            if is_subclass(type(model), instruments):
                 do_warning = False
             for part in model:
                 # if type(part) in instruments:
                 # if isinstance(part, instruments):
-                if sherpa.ui.utils._is_subclass(type(part), instruments):
+                if is_subclass(type(part), instruments):
                     do_warning = False
             if do_warning:
                 self.delete_bkg_model(id, bkg_id)

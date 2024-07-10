@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020, 2021, 2022, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -467,7 +467,7 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
 
 
 def check_write_pha_fits_basic_roundtrip_crates(path):
-    import pycrates
+    import pycrates  # type: ignore
     ds = pycrates.CrateDataset(str(path), mode="r")
 
     assert ds.get_ncrates() == 2
@@ -527,7 +527,7 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
 
 
 def check_write_pha_fits_basic_roundtrip_pyfits(path):
-    from astropy.io import fits
+    from astropy.io import fits  # type: ignore
     hdus = fits.open(str(path))
     try:
         assert len(hdus) == 2
@@ -635,7 +635,7 @@ def test_write_pha_fits_basic_roundtrip(tmp_path):
 
 
 def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
-    import pycrates
+    import pycrates  # type: ignore
     ds = pycrates.CrateDataset(str(path), mode="r")
 
     assert ds.get_ncrates() == 2
@@ -709,7 +709,7 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
 
 
 def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
-    from astropy.io import fits
+    from astropy.io import fits  # type: ignore
     hdus = fits.open(str(path))
     try:
         assert len(hdus) == 2
@@ -1035,7 +1035,7 @@ def test_chandra_phaII_roundtrip(make_data_path, tmp_path):
 
 
 def check_csc_pha_roundtrip_crates(path):
-    import pycrates
+    import pycrates  # type: ignore
     ds = pycrates.CrateDataset(str(path), mode="r")
 
     assert ds.get_ncrates() == 2
@@ -1089,7 +1089,7 @@ def check_csc_pha_roundtrip_crates(path):
 
 
 def check_csc_pha_roundtrip_pyfits(path):
-    from astropy.io import fits
+    from astropy.io import fits  # type: ignore
     hdus = fits.open(str(path))
     try:
         assert len(hdus) == 2
@@ -1375,3 +1375,77 @@ def test_read_hrci_rmf(make_data_path):
 
     assert rmf.e_min[0] == pytest.approx(0.06)
     assert rmf.e_max[-1] == pytest.approx(10)
+
+
+@requires_fits
+@requires_data
+def test_read_pha_object(make_data_path):
+    """Check we can send in a 'object'.
+
+    This support is not well advertised so it could perhaps be
+    removed, but let's add a basic test at least.
+
+    """
+
+    # Could create the "object" manually, but let's just read one in
+    #
+    infile = make_data_path("acisf01575_001N001_r0085_pha3.fits.gz")
+    close = False
+
+    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        import pycrates  # type: ignore
+        arg = pycrates.PHACrateDataset(infile, mode="r")
+
+    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+        from astropy.io import fits  # type: ignore
+        arg = fits.open(infile)
+        close = True
+
+    else:
+        assert False, f"unknown backend: {io.backend.__name__}"
+
+    try:
+        pha = io.read_pha(arg)
+
+    finally:
+        if close:
+            arg.close()
+
+    assert isinstance(pha, DataPHA)
+
+    # basic test that the data is read in (do not do a complete
+    # test)
+    assert pha.counts.max() == pytest.approx(15.0)
+    assert pha.exposure == pytest.approx(37664.157219191)
+
+    # Check we've loaded in the response and background
+    #
+    # For 4.16.0 and earlier, the crates backend "fails" because it
+    # does not load in the response or background datasets, instead
+    # saying:
+    #
+    # WARNING: File acisf01575_001N001_r0085_arf3.fits does not exist.
+    # WARNING: File acisf01575_001N001_r0085_rmf3.fits does not exist.
+    # WARNING: File acisf01575_001N001_r0085_pha3.fits does not exist.
+    #
+    # So there is an issue in handling compressed files, since the
+    # responses are saved as .gz files, although perhaps its more
+    # that the paths aren't being set up correctly. The background
+    # should be taken from the object itself, but perhaps it's
+    # easiest just to re-read it, and then we hit the same issue.
+    #
+    # For now treat this as a regression test so we can find out
+    # when it's fixed.
+    #
+    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        assert pha.response_ids == []
+        assert pha.background_ids == []
+        return
+
+    assert len(pha.response_ids) == 1
+    assert len(pha.background_ids) == 1
+
+    assert pha.get_arf().specresp.max() == pytest.approx(711.6605834960938)
+    assert pha.get_rmf().matrix.max() == pytest.approx(0.1611403226852417)
+
+    assert pha.get_background().counts[-1] == pytest.approx(59)

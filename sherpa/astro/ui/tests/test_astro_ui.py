@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2012, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -293,6 +293,37 @@ def test_load_data(loader, make_data_path, clean_astro_ui, caplog):
     exact_record(caplog.records[4], "sherpa.astro.io", "WARNING", msg5)
     exact_record(caplog.records[5], "sherpa.astro.io", "INFO", msg6)
     exact_record(caplog.records[6], "sherpa.astro.io", "INFO", msg7)
+
+
+@requires_fits
+def test_pha_read_stat_sys_error_warning(tmp_path, clean_astro_ui, caplog):
+    """Create a PHA file with stat+sys errors and check the warning"""
+
+    tmpfile = tmp_path / 'test.pha'
+    pha = ui.DataPHA("x", [1, 2, 3], [4, 0, 2],
+                     staterror=[0.4, 0.1, 0.2],
+                     syserror=[0.05, 0.2, 0.04],
+                     exposure=10)
+    ui.set_data(1, pha)
+    ui.save_pha(1, str(tmpfile), clobber=True)
+
+    assert len(caplog.records) == 0
+    ui.load_pha("copy", str(tmpfile), use_errors=False)
+    assert len(caplog.records) == 1
+
+    msg = "statistical and systematic errors were found in " + \
+        "file '.*/test.pha'\nbut not used; to use them, " + \
+        "re-read with use_errors=True"
+    match_record(caplog.records[0], "sherpa.astro.io", "INFO", msg)
+
+    # Whilst we are here, check the data we read back in
+    d = ui.get_data("copy")
+    assert isinstance(d, ui.DataPHA)
+    assert d.channel == pytest.approx([1, 2, 3])
+    assert d.counts == pytest.approx([4, 0, 2])
+    assert d.exposure == pytest.approx(10)
+    assert d.staterror is None
+    assert d.syserror is None
 
 
 # Test table model

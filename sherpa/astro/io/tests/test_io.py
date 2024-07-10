@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2017, 2018, 2020, 2021, 2023
+#  Copyright (C) 2016 - 2018, 2020, 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,8 +30,8 @@ from sherpa.astro import ui
 from sherpa.data import Data1D, Data2DInt
 from sherpa.models.basic import Box1D, Const1D
 from sherpa.utils.err import IOErr
-from sherpa.utils.testing import requires_data, requires_fits, requires_group, \
-    requires_xspec
+from sherpa.utils.testing import requires_data, requires_fits, \
+    requires_group, requires_xspec
 
 
 @requires_data
@@ -416,6 +416,36 @@ def test_fits_file_missing_column(make_data_path):
         io.read_table(infile, colkeys=["ra", "Foo"])
 
 
+@requires_fits
+@requires_data
+def test_get_header_data_missing_key(make_data_path):
+    """What happens if a requested key is missing?
+
+    TODO: If get_header_data is useful should we export if from
+    the io, and not backend, level?
+    """
+
+    infile = make_data_path("1838_rprofile_rmid.fits")
+    with pytest.raises(IOErr,
+                       match=" does not have a 'NOTAKEYWORD' keyword$"):
+        io.backend.get_header_data(infile, hdrkeys=["NOTAKEYWORD"])
+
+
+@requires_fits
+def test_set_arrays_not_sequence_of_seqence(tmp_path):
+    """Check this error condition.
+
+    TODO: Should set_arrays be part of the backend API?
+    """
+
+    outpath = tmp_path / 'do-not-edit.dat'
+    with pytest.raises(IOErr,
+                       match=r"^please supply array\(s\) to write to file$"):
+        io.backend.set_arrays(str(outpath),
+                              args=[np.arange(3), True],
+                              clobber=True)
+
+
 def test_read_arrays_no_data():
     """This can run even with the dummy backend"""
 
@@ -559,3 +589,61 @@ def test_read_table_pha(make_data_path):
     assert tbl.y[-1] == pytest.approx(128)
     assert tbl.y[:-1].max() == pytest.approx(78)
     assert np.argmax(tbl.y[:-1]) == 74
+
+
+@requires_data
+@requires_fits
+def test_read_ascii_3_col(make_data_path):
+    """Found when working on #1921 so explicitly test this case."""
+
+    infile = make_data_path("data1.dat")
+    tbl = io.read_ascii(infile, 3)
+    assert isinstance(tbl, Data1D)
+    assert tbl.name.find("/data1.dat")
+    assert tbl.x == pytest.approx(np.arange(0.5, 11.5))
+    assert tbl.y == pytest.approx([1.6454, 1.7236, 1.9472,
+                                   2.2348, 2.6187, 2.8642,
+                                   3.1263, 3.2073, 3.2852,
+                                   3.3092, 3.4496])
+    assert tbl.staterror == pytest.approx(0.04114 * np.ones(11))
+    assert tbl.syserror is None
+
+
+@requires_fits
+@requires_data
+def test_read_table_object(make_data_path):
+    """Check we can send in a 'object'.
+
+    This support is not well advertised so it could perhaps be
+    removed, but let's add a basic test at least.
+
+    """
+
+    # Could create the "object" manually, but let's just read one in
+    #
+    infile = make_data_path("1838_rprofile_rmid.fits")
+    close = False
+
+    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        import pycrates  # type: ignore
+        arg = pycrates.read_file(infile)
+
+    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+        from astropy.io import fits  # type: ignore
+        arg = fits.open(infile)
+        close = True
+
+    else:
+        assert False, f"unknown backend: {io.backend.__name__}"
+
+    try:
+        # this implicitly checks case insensitivity on column names
+        tbl = io.read_table(arg, colkeys=["area", "counts"])
+
+    finally:
+        if close:
+            arg.close()
+
+    assert isinstance(tbl, Data1D)
+    assert tbl.x.sum() == pytest.approx(125349.55)
+    assert tbl.y.sum() == pytest.approx(21962)

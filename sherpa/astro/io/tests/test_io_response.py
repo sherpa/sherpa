@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023
+#  Copyright (C) 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -1254,3 +1254,92 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
 
     assert y == pytest.approx(expected_perfect)
+
+
+@requires_fits
+@requires_data
+def test_read_arf_object(make_data_path):
+    """Check we can send in a 'object'.
+
+    This support is not well advertised so it could perhaps be
+    removed, but let's add a basic test at least.
+
+    """
+
+    # Could create the "object" manually, but let's just read one in
+    #
+    infile = make_data_path("MNLup_2138_0670580101_EMOS1_S001_spec.arf")
+    close = False
+
+    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        import pycrates  # type: ignore
+        arg = pycrates.read_file(infile)
+
+    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+        from astropy.io import fits  # type: ignore
+        arg = fits.open(infile)
+        close = True
+
+    else:
+        assert False, f"unknown backend: {io.backend.__name__}"
+
+    try:
+        with warnings.catch_warnings(record=True) as ws:
+            warnings.simplefilter("always")
+            arf = io.read_arf(arg)
+
+    finally:
+        if close:
+            arg.close()
+
+    assert isinstance(arf, DataARF)
+    assert arf.energ_lo[0:4] == pytest.approx([1e-10, 0.005, 0.01, 0.015])
+    assert arf.energ_hi[0:4] == pytest.approx([0.005, 0.01, 0.015, 0.02])
+    assert arf.specresp.max() == pytest.approx(449.2618408203125)
+
+    assert len(ws) == 1
+    msg = ws[0].message
+    assert isinstance(msg, UserWarning)
+    msg = str(msg)
+    assert msg.startswith("The minimum ENERG_LO in the ARF '")
+    assert msg.endswith("_spec.arf' was 0 and has been replaced by 1e-10")
+
+
+@requires_fits
+@requires_data
+def test_read_rmf_object(make_data_path):
+    """Check we can send in a 'object'.
+
+    This support is not well advertised so it could perhaps be
+    removed, but let's add a basic test at least.
+
+    """
+
+    # Could create the "object" manually, but let's just read one in
+    #
+    infile = make_data_path("source.rmf")
+    close = False
+
+    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+        import pycrates
+        arg = pycrates.RMFCrateDataset(infile, mode='r')
+
+    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+        from astropy.io import fits
+        arg = fits.open(infile)
+        close = True
+
+    else:
+        assert False, f"unknown backend: {io.backend.__name__}"
+
+    try:
+        rmf = io.read_rmf(arg)
+
+    finally:
+        if close:
+            arg.close()
+
+    assert isinstance(rmf, DataRMF)
+    assert rmf.energ_lo[0:4] == pytest.approx([0.1, 0.11, 0.12, 0.13])
+    assert rmf.energ_hi[0:4] == pytest.approx([0.11, 0.12, 0.13, 0.14])
+    assert rmf.matrix.max() == pytest.approx(0.12998242676258087)

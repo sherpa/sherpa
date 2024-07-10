@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2017, 2018, 2019, 2021, 2022, 2023
+#  Copyright (C) 2007, 2015 - 2019, 2021 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -54,18 +54,17 @@ import importlib
 import logging
 import os
 import re
-from typing import Any, Optional
+from typing import Any, Optional, Sequence
 
-import numpy
+import numpy as np
 
 from sherpa import get_config
 from sherpa.astro.data import DataIMG, DataIMGInt, DataARF, DataRMF, \
     DataPHA, DataRosatRMF
-# leads to circular imports
-# from sherpa.astro.instrument import ARF1D, RMF1D
 from sherpa.astro.utils import reshape_2d_arrays
-from sherpa.data import Data2D, Data1D, BaseData, Data2DInt
-import sherpa.io
+from sherpa.data import Data, Data1D, Data2D, Data2DInt
+from sherpa.io import _check_args
+from sherpa.utils import is_subclass
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -91,9 +90,6 @@ else:
 
     if ogip_emin <= 0.0:
         raise ValueError(emsg)
-
-backend = None
-'''Currently active backend module for astronomy specific I/O.'''
 
 for iotry in io_opt:
     try:
@@ -127,7 +123,7 @@ def read_arrays(*args):
     The return value defaults to a `sherpa.data.Data1D` instance,
     but this can be changed by supplying the required class
     as the last argument (anything that is derived from
-    `sherpa.data.BaseData`).
+    `sherpa.data.Data`).
 
     Parameters
     ----------
@@ -140,7 +136,7 @@ def read_arrays(*args):
 
     Returns
     -------
-    data : a sherpa.data.BaseData derived object
+    data : a sherpa.data.Data derived object
 
     Examples
     --------
@@ -163,20 +159,21 @@ def read_arrays(*args):
     >>> d = read_arrays(x0, x1, y, sherpa.data.Data2D)
 
     """
-    args = list(args)
-    if len(args) == 0:
+    largs = list(args)
+    if len(largs) == 0:
         raise IOErr('noarrays')
 
-    dstype = Data1D
-    if sherpa.io._is_subclass(args[-1], BaseData):
-        dstype = args.pop()
+    if is_subclass(largs[-1], Data):
+        dstype = largs.pop()
+    else:
+        dstype = Data1D
 
-    args = backend.get_column_data(*args)
+    dargs = backend.get_column_data(*largs)
 
     # Determine max number of args for dataset constructor
-    sherpa.io._check_args(len(args), dstype)
+    _check_args(len(dargs), dstype)
 
-    return dstype('', *args)
+    return dstype('', *dargs)
 
 
 def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
@@ -196,11 +193,11 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
         If given, select these columns from the file.
     dstype : optional
         The data type to create (it is expected to follow the
-        `sherpa.data.BaseData` interface).
+        `sherpa.data.Data` interface).
 
     Returns
     -------
-    data : a sherpa.data.BaseData derived object
+    data : a sherpa.data.Data derived object
 
     See Also
     --------
@@ -234,7 +231,7 @@ def read_table(arg, ncols=2, colkeys=None, dstype=Data1D):
     name = args[2]
 
     # Determine max number of args for dataset constructor
-    sherpa.io._check_args(len(cols), dstype)
+    _check_args(len(cols), dstype)
 
     return dstype(name, *cols)
 
@@ -254,7 +251,7 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
         If given, select these columns from the file.
     dstype : optional
         The data type to create (it is expected to follow the
-        `sherpa.data.BaseData` interface).
+        `sherpa.data.Data` interface).
     **kwargs
         The remaining arguments are passed through to the
         ``get_ascii_data`` routine of the I/O backend. It is
@@ -264,7 +261,7 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
 
     Returns
     -------
-    data : a sherpa.data.BaseData derived object
+    data : a sherpa.data.Data derived object
 
     Examples
     --------
@@ -295,7 +292,7 @@ def read_ascii(filename, ncols=2, colkeys=None, dstype=Data1D, **kwargs):
     name = args[2]
 
     # Determine max number of args for dataset constructor
-    sherpa.io._check_args(len(cols), dstype)
+    _check_args(len(cols), dstype)
 
     return dstype(name, *cols)
 
@@ -318,11 +315,11 @@ def read_image(arg, coord='logical', dstype=DataIMG):
         coordinate system.
     dstype : optional
         The data type to create (it is expected to follow the
-        `sherpa.data.BaseData` interface).
+        `sherpa.data.Data` interface).
 
     Returns
     -------
-    data : a sherpa.data.BaseData derived object
+    data : a sherpa.data.Data derived object
 
     See Also
     --------
@@ -347,8 +344,8 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     data['header'] = _remove_structural_keywords(data['header'])
     axlens = data['y'].shape
 
-    x0 = numpy.arange(axlens[1], dtype=SherpaFloat) + 1.
-    x1 = numpy.arange(axlens[0], dtype=SherpaFloat) + 1.
+    x0 = np.arange(axlens[1], dtype=SherpaFloat) + 1.
+    x1 = np.arange(axlens[0], dtype=SherpaFloat) + 1.
     x0, x1 = reshape_2d_arrays(x0, x1)
 
     data['y'] = data['y'].ravel()
@@ -371,8 +368,11 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     #
     if issubclass(dstype, (Data2DInt, DataIMGInt)):
         indep = [x0 - 0.5, x1 - 0.5, x0 + 0.5, x1 + 0.5]
-    else:
+    elif issubclass(dstype, Data2D):
         indep = [x0, x1]
+    else:
+        raise ArgumentErr("bad", "dstype argument",
+                          "dstype is not derived from Data2D")
 
     # Note that we only set the coordinates after creating the
     # dataset, which assumes that data['x'] and data['y'] are always
@@ -384,8 +384,7 @@ def read_image(arg, coord='logical', dstype=DataIMG):
     # issue #1380).
     #
     dataset = dstype(filename, *indep, **data)
-
-    if issubclass(dstype, DataIMG):
+    if isinstance(dataset, DataIMG):
         dataset.set_coord(coord)
 
     return dataset
@@ -484,7 +483,7 @@ def _read_ancillary(data, key, label, dname,
 
     Returns
     -------
-    data : None or a sherpa.data.BaseData derived object
+    data : None or a sherpa.data.Data derived object
 
     """
 
@@ -498,7 +497,7 @@ def _read_ancillary(data, key, label, dname,
 
         out = read_func(data[key])
         if output_once:
-            info(f'read {label} file {data[key]}')
+            info('read %s file %s', label, data[key])
 
     except Exception as exc:
         if output_once:
@@ -536,26 +535,26 @@ def read_pha(arg, use_errors=False, use_background=False):
     for data in datasets:
         data['header'] = _remove_structural_keywords(data['header'])
 
-        if not use_errors:
-            if data['staterror'] is not None or data['syserror'] is not None:
-                if data['staterror'] is None:
-                    msg = 'systematic'
-                elif data['syserror'] is None:
-                    msg = 'statistical'
-                    if output_once:
-                        warning("systematic errors were not found in "
-                                "file '%s'", filename)
-
-                else:
-                    msg = 'statistical and systematic'
-
+        if not use_errors and (data['staterror'] is not None or
+                               data['syserror'] is not None):
+            if data['staterror'] is None:
+                msg = 'systematic'
+            elif data['syserror'] is None:
+                msg = 'statistical'
                 if output_once:
-                    info("%s errors were found in file '%s'\n"
-                         "but not used; to use them, re-read "
-                         "with use_errors=True", msg, filename)
+                    warning("systematic errors were not found in "
+                            "file '%s'", filename)
 
-                data['staterror'] = None
-                data['syserror'] = None
+            else:
+                msg = 'statistical and systematic'
+
+            if output_once:
+                info("%s errors were found in file '%s'\n"
+                     "but not used; to use them, re-read "
+                     "with use_errors=True", msg, filename)
+
+            data['staterror'] = None
+            data['syserror'] = None
 
         dname = os.path.dirname(filename)
         albl = 'ARF'
@@ -580,11 +579,13 @@ def read_pha(arg, use_errors=False, use_background=False):
                 bkg_datasets = []
                 # Do not read backgrounds of backgrounds
                 if not use_background:
-                    bkg_datasets = read_pha(data['backfile'], use_errors, True)
+                    bkg_datasets = read_pha(data['backfile'],
+                                            use_errors=use_errors,
+                                            use_background=True)
                     if output_once:
-                        info(f"read background file {data['backfile']}")
+                        info("read background file %s", data['backfile'])
 
-                if numpy.iterable(bkg_datasets):
+                if np.iterable(bkg_datasets):
                     for bkg_dataset in bkg_datasets:
                         if bkg_dataset.get_response() == (None, None) and \
                            rmf is not None:
@@ -615,7 +616,9 @@ def read_pha(arg, use_errors=False, use_background=False):
                               header=data['header'])
                 bkg.set_response(arf, rmf)
                 if output_once:
-                    info(f"read {bkg_type} into a dataset from file {filename}")
+                    info("read %s into a dataset from file %s",
+                         bkg_type, filename)
+
                 backgrounds.append(bkg)
 
         for k in ['backfile', 'arffile', 'rmffile', 'backscup', 'backscdn',
@@ -624,13 +627,18 @@ def read_pha(arg, use_errors=False, use_background=False):
 
         pha = DataPHA(filename, **data)
         pha.set_response(arf, rmf)
-        for i, bkg in enumerate(backgrounds):
+        for idx, bkg in enumerate(backgrounds, 1):
+            # If the background grouping/quality is not set, copy it
+            # from the source.
+            #
             if bkg.grouping is None:
                 bkg.grouping = pha.grouping
                 bkg.grouped = bkg.grouping is not None
+
             if bkg.quality is None:
                 bkg.quality = pha.quality
-            pha.set_background(bkg, i + 1)
+
+            pha.set_background(bkg, idx)
 
         # set units *after* bkgs have been set
         pha._set_initial_quantity()
@@ -638,7 +646,7 @@ def read_pha(arg, use_errors=False, use_background=False):
         output_once = False
 
     if len(phasets) == 1:
-        phasets = phasets[0]
+        return phasets[0]
 
     return phasets
 
@@ -685,7 +693,7 @@ def _pack_image(dataset):
     # Data2D does not have a header
     header = getattr(dataset, "header", {})
 
-    data['pixels'] = numpy.asarray(dataset.get_img())
+    data['pixels'] = np.asarray(dataset.get_img())
     data['sky'] = getattr(dataset, 'sky', None)
     data['eqpos'] = getattr(dataset, 'eqpos', None)
 
@@ -949,7 +957,7 @@ def _pack_pha(dataset):
             header[uname] = 1.0
             return
 
-        if numpy.isscalar(val):
+        if np.isscalar(val):
             header[uname] = val
         else:
             data[colname] = val
@@ -1034,18 +1042,18 @@ def _pack_pha(dataset):
         #
         data[column] = vals.astype(dtype)
 
-    convert("CHANNEL", numpy.int32)
-    convert("GROUPING", numpy.int16)
-    convert("QUALITY", numpy.int16)
+    convert("CHANNEL", np.int32)
+    convert("GROUPING", np.int16)
+    convert("QUALITY", np.int16)
 
     # COUNTS has to deal with integer or floating-point.
     #
     try:
         vals = data["COUNTS"]
-        if numpy.issubdtype(vals.dtype, numpy.integer):
-            vals = vals.astype(numpy.int32)
-        elif numpy.issubdtype(vals.dtype, numpy.floating):
-            vals = vals.astype(numpy.float32)
+        if np.issubdtype(vals.dtype, np.integer):
+            vals = vals.astype(np.int32)
+        elif np.issubdtype(vals.dtype, np.floating):
+            vals = vals.astype(np.float32)
         else:
             raise DataErr("ogip-error", "PHA dataset",
                           dataset.name,
@@ -1131,9 +1139,9 @@ def _pack_arf(dataset):
     # data type meets the FITS standard (Real4).
     #
     data = {}
-    data["ENERG_LO"] = dataset.energ_lo.astype(numpy.float32)
-    data["ENERG_HI"] = dataset.energ_hi.astype(numpy.float32)
-    data["SPECRESP"] = dataset.specresp.astype(numpy.float32)
+    data["ENERG_LO"] = dataset.energ_lo.astype(np.float32)
+    data["ENERG_HI"] = dataset.energ_hi.astype(np.float32)
+    data["SPECRESP"] = dataset.specresp.astype(np.float32)
 
     # Chandra files can have BIN_LO/HI values, so copy
     # across if both set.
@@ -1147,7 +1155,25 @@ def _pack_arf(dataset):
     return data, header
 
 
-def _make_int_array(rows, ncols):
+def _find_int_dtype(rows: Sequence[Sequence[int]]) -> type:
+    """What data type should represent the matrix of integers?
+
+    There is no guarantee that each row has the same number of
+    elements.
+
+    """
+
+    for row in rows:
+        if len(row) == 0:
+            continue
+
+        if np.max(row) > 32767:
+            return np.int32
+
+    return np.int16
+
+
+def _make_int_array(rows, ncols) -> np.ndarray:
     """Convert a list of rows into a 2D array of "width" ncols.
 
     The conversion is to a type determined by the maximum value in
@@ -1168,15 +1194,8 @@ def _make_int_array(rows, ncols):
     """
 
     nrows = len(rows)
-    maxval = 0
-    for row in rows:
-        if len(row) == 0:
-            continue
-
-        maxval = max(maxval, row.max())
-
-    dtype = numpy.int32 if maxval > 32767 else numpy.int16
-    out = numpy.zeros((nrows, ncols), dtype=dtype)
+    dtype = _find_int_dtype(rows)
+    out = np.zeros((nrows, ncols), dtype=dtype)
     for idx, row in enumerate(rows):
         if len(row) == 0:
             continue
@@ -1186,7 +1205,7 @@ def _make_int_array(rows, ncols):
     return out
 
 
-def _make_float32_array(rows, ncols):
+def _make_float32_array(rows, ncols) -> np.ndarray:
     """Convert a list of rows into a 2D array of "width" ncols.
 
     The output has type numpy.float32.
@@ -1206,14 +1225,14 @@ def _make_float32_array(rows, ncols):
     """
 
     nrows = len(rows)
-    out = numpy.zeros((nrows, ncols), dtype=numpy.float32)
+    out = np.zeros((nrows, ncols), dtype=np.float32)
     for idx, row in enumerate(rows):
         out[idx, 0:len(row)] = row
 
     return out
 
 
-def _make_int_vlf(rows):
+def _make_int_vlf(rows) -> np.ndarray:
     """Convert a list of rows into a VLF.
 
     The conversion is to a type determined by the maximum value in
@@ -1230,20 +1249,12 @@ def _make_int_vlf(rows):
 
     """
 
-    nrows = len(rows)
-    maxval = 0
-    for row in rows:
-        if len(row) == 0:
-            continue
-
-        maxval = max(maxval, row.max())
-
-    dtype = numpy.int32 if maxval > 32767 else numpy.int16
+    dtype = _find_int_dtype(rows)
     out = []
     for row in rows:
-        out.append(numpy.asarray(row, dtype=dtype))
+        out.append(np.asarray(row, dtype=dtype))
 
-    return numpy.asarray(out, dtype=object)
+    return np.asarray(out, dtype=object)
 
 
 def _reconstruct_rmf(rmf):
@@ -1302,9 +1313,9 @@ def _reconstruct_rmf(rmf):
             matrix_size.add(0)
 
             # Convert from [] to numpy empty list
-            f_chan[-1] = numpy.asarray([], dtype=numpy.int32)
-            n_chan[-1] = numpy.asarray([], dtype=numpy.int32)
-            matrix[-1] = numpy.asarray([], dtype=numpy.float32)
+            f_chan[-1] = np.asarray([], dtype=np.int32)
+            n_chan[-1] = np.asarray([], dtype=np.int32)
+            matrix[-1] = np.asarray([], dtype=np.float32)
             continue
 
         # Grab the next ng elements from rmf.f_chan/n_chan
@@ -1315,7 +1326,7 @@ def _reconstruct_rmf(rmf):
             # ensure this is an integer and not a floating-point number
             # which can happen when rmf.n_chan is stored as Unt64.
             #
-            end = start + rmf.n_chan[idx].astype(numpy.int32)
+            end = start + rmf.n_chan[idx].astype(np.int32)
             mdata = rmf.matrix[start:end]
 
             f_chan[-1].append(rmf.f_chan[idx])
@@ -1329,18 +1340,18 @@ def _reconstruct_rmf(rmf):
         # converting to 4-byte integer here, which can later be
         # downcast.
         #
-        f_chan[-1] = numpy.asarray(f_chan[-1], dtype=numpy.int32)
-        n_chan[-1] = numpy.asarray(n_chan[-1], dtype=numpy.int32)
+        f_chan[-1] = np.asarray(f_chan[-1], dtype=np.int32)
+        n_chan[-1] = np.asarray(n_chan[-1], dtype=np.int32)
 
         # Ensure the matrix is Real-4
-        matrix[-1] = numpy.asarray(matrix[-1], dtype=numpy.float32)
+        matrix[-1] = np.asarray(matrix[-1], dtype=np.float32)
         matrix_size.add(matrix[-1].size)
 
         numelt += sum(n_chan[-1])
 
     # N_GRP should be 2-byte integer.
     #
-    n_grp = numpy.asarray(n_grp, dtype=numpy.int16)
+    n_grp = np.asarray(n_grp, dtype=np.int16)
     numgrp = n_grp.sum()
 
     # Can we convert F_CHAN/N_CHAN to fixed-length if either:
@@ -1360,14 +1371,14 @@ def _reconstruct_rmf(rmf):
     #
     if len(matrix_size) == 1:
         ny = matrix_size.pop()
-        matrix = _make_float32_array(matrix, ny)
+        matrix_out = _make_float32_array(matrix, ny)
     else:
-        matrix = numpy.asarray(matrix, dtype=object)
+        matrix_out = np.asarray(matrix, dtype=object)
 
     return {"N_GRP": n_grp,
             "F_CHAN": f_chan,
             "N_CHAN": n_chan,
-            "MATRIX": matrix,
+            "MATRIX": matrix_out,
             "NUMGRP": numgrp,
             "NUMELT": numelt}
 
@@ -1504,11 +1515,11 @@ def _pack_rmf(dataset):
 
     # TODO: is this correct?
     nchan = dataset.offset + dataset.detchans - 1
-    dchan = numpy.int32 if nchan > 32767 else numpy.int16
+    dchan = np.int32 if nchan > 32767 else np.int16
     ebounds_data = {
-        "CHANNEL": numpy.arange(dataset.offset, nchan + 1, dtype=dchan),
-        "E_MIN": dataset.e_min.astype(numpy.float32),
-        "E_MAX": dataset.e_max.astype(numpy.float32)
+        "CHANNEL": np.arange(dataset.offset, nchan + 1, dtype=dchan),
+        "E_MIN": dataset.e_min.astype(np.float32),
+        "E_MAX": dataset.e_max.astype(np.float32)
         }
 
     return [(matrix_data, matrix_header),
