@@ -424,8 +424,7 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
     if step is None:
-        order = 'F' if np.isfortran(x) else 'C'
-        step = 0.4*np.ones(x.shape, np.float64, order)
+        step = np.full(x.shape, 0.4, dtype=np.float64)
     if simp is None:
         simp = 1.0e-2 * ftol
     if maxfev is None:
@@ -901,11 +900,10 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
-    order = 'F' if np.isfortran(x) else 'C'
     if step is None or (np.iterable(step) and len(step) != len(x)):
-        step = 1.2 * np.ones(x.shape, np.float64, order)
+        step = np.full(x.shape, 1.2, dtype=np.float64)
     elif np.isscalar(step):
-        step = step * np.ones(x.shape, np.float64, order)
+        step = np.full(x.shape, step, dtype=np.float64)
 
     # A safeguard just in case the initial simplex is outside the bounds
     #
