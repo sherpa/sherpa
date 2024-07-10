@@ -1706,13 +1706,24 @@ class DataPlot(BasePlot):
              clearwindow=clearwindow, **opts)
 
 
-class TracePlot(DataPlot):
-    """Display a 1D array using an x axis starting at 1."""
+class TracePlot(BasePlot):
+    """Display a 1D array using an x axis starting at 1.
+
+    .. versionchanged:: 4.17.0
+       The base class has changed as part of the plot reorganization.
+
+    """
+
+    _fields: list[str] = ["x", "y", "yerr", "xlabel!", "ylabel!",
+                          "title!", "plot_prefs!"]
 
     def __init__(self):
+        self.yerr = None
         super().__init__()
         self.plot_prefs = basicbackend.get_model_plot_defaults()
+        del(self.plot_prefs["xerrorbars"])
 
+    # TODO: should we be able to send in yerr?
     def prepare(self, points, xlabel="x", name="x"):
         """The data to plot.
 
@@ -1736,11 +1747,52 @@ class TracePlot(DataPlot):
         self.ylabel = name
         self.title = f"Trace: {name}"
 
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
 
-class ScatterPlot(DataPlot):
-    """Display x,y data as a scatter plot"""
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If `True` then add the data to an existing plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+        """
+
+        x = check_not_none(self.x)
+        y = check_not_none(self.y)
+        opts = self._merge_settings(kwargs)
+        plot = self._object.plot
+        plot(x, y, yerr=self.yerr, title=self.title,
+             xlabel=self.xlabel, ylabel=self.ylabel,
+             overplot=overplot, clearwindow=clearwindow, **opts)
+
+
+class ScatterPlot(BasePlot):
+    """Display x,y data as a scatter plot
+
+    .. versionchanged:: 4.17.0
+       The base class has changed as part of the plot reorganization.
+
+    """
+
+    _fields: list[str] = ["x", "y", "yerr", "xerr", "xlabel!",
+                          "ylabel!", "title!", "plot_prefs!"]
 
     def __init__(self):
+        self.xerr = None
+        self.yerr = None
         super().__init__()
         self.plot_prefs = basicbackend.get_scatter_plot_defaults()
 
@@ -1764,6 +1816,37 @@ class ScatterPlot(DataPlot):
         self.xlabel = xlabel
         self.ylabel = ylabel
         self.title = f"Scatter: {name}"
+
+    def plot(self, overplot=False, clearwindow=True, **kwargs):
+        """Plot the data.
+
+        This will plot the data sent to the prepare method.
+
+        Parameters
+        ----------
+        overplot : bool, optional
+           If `True` then add the data to an existing plot, otherwise
+           create a new plot.
+        clearwindow : bool, optional
+           Should the existing plot area be cleared before creating this
+           new plot (e.g. for multi-panel plots)?
+        **kwargs
+           These values are passed on to the plot backend, and must
+           match the names of the keys of the object's
+           plot_prefs dictionary.
+
+        See Also
+        --------
+        prepare, overplot
+        """
+
+        x = check_not_none(self.x)
+        y = check_not_none(self.y)
+        opts = self._merge_settings(kwargs)
+        plot = self._object.plot
+        plot(x, y, yerr=self.yerr, xerr=self.xerr, title=self.title,
+             xlabel=self.xlabel, ylabel=self.ylabel,
+             overplot=overplot, clearwindow=clearwindow, **opts)
 
 
 class PSFKernelPlot(DataPlot):

@@ -1544,7 +1544,7 @@ def test_get_trace_plot_empty(session):
     s = session()
     p = s.get_trace_plot()
     assert isinstance(p, sherpa.plot.TracePlot)
-    for f in ['x', 'y', 'xerr', 'yerr', 'xlabel', 'ylabel', 'title']:
+    for f in ['x', 'y', 'yerr', 'xlabel', 'ylabel', 'title']:
         assert getattr(p, f) is None
 
 
@@ -1565,7 +1565,6 @@ def test_get_trace_plot(session):
 
     assert p.x == pytest.approx([0, 1, 2])
     assert p.y == pytest.approx(y)
-    assert p.xerr is None
     assert p.yerr is None
     assert p.xlabel == 'iteration'
     assert p.ylabel == 'x'
@@ -1591,7 +1590,6 @@ def test_get_trace_plot_labels_noname(session):
 
     assert p.x == pytest.approx([0, 1, 2])
     assert p.y == pytest.approx(y)
-    assert p.xerr is None
     assert p.yerr is None
     assert p.xlabel == 'iteration'
     assert p.ylabel == 'x'
@@ -1618,7 +1616,6 @@ def test_get_trace_plot_labels(session):
 
     assert p.x == pytest.approx([0, 1, 2])
     assert p.y == pytest.approx(y)
-    assert p.xerr is None
     assert p.yerr is None
     assert p.xlabel == 'iteration'
     assert p.ylabel == 'Awesome sauce'
