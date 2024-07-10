@@ -106,11 +106,13 @@ to their ``prepare`` methods - normally data and model objects,
 but plot objects themselves can be passed around for "composite"
 plots - but there are several classes that accept the values to
 display directly:
-:py:class:`~sherpa.plot.Plot`,
-:py:class:`~sherpa.plot.Histogram`,
-:py:class:`~sherpa.plot.Point`,
+:py:class:`~sherpa.plot.PlotObject`,
+:py:class:`~sherpa.plot.HistogramOvject`,
+:py:class:`~sherpa.plot.PointObject`,
+:py:class:`~sherpa.plot.ContourObject`,
 and
-:py:class:`~sherpa.plot.Contour`. Here we use the Histogram
+:py:class:`~sherpa.plot.ImageObject`.
+Here we use the HistogramObject
 class directly to display the data directly, on top of the
 existing plot:
 
@@ -118,8 +120,8 @@ existing plot:
    :context: close-figs
    :include-source:
 
-   >>> from sherpa.plot import Histogram
-   >>> hplot = Histogram()
+   >>> from sherpa.plot import HistogramObject
+   >>> hplot = HistogramObject()
    >>> hplot.overplot(d.xlo, d.xhi, d.y)
 
 Creating a model
@@ -279,7 +281,7 @@ before we can replot the fit:
 .. plot::
    :context:
    :include-source:
-   
+
    >>> mplot.prepare(d, mdl)
    >>> fplot.plot()
 

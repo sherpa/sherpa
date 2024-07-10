@@ -29,7 +29,8 @@ There are two types of classes here:
 - ones that accept the actual data to display in the `plot`, `contour`,
   `overplot`, and `overcontour` methods;
 
-  - `Contour`, `Histogram`, `Image`, `Plot`, and `Point`
+  - `ContourObject`, `HistogramObject`, `ImageObject`, `PlotObject`,
+    and `PointObject`
 
 - and the remaining classes, that are sent the data to plot in a
   `prepare` method - often these take Sherpa objects, such as a
@@ -129,8 +130,8 @@ else:
             "None of these imported correctly, so using the 'BasicBackend'.\n" +
             f"List of backends that have loaded and would be available: {[k for k in PLOT_BACKENDS]}")
 
-__all__ = ('Plot', 'Contour', 'Point', 'Histogram',
-           'MultiPlot', 'BasePlot', 'BaseHistogram',
+__all__ = ('PlotObject', 'ContourObject', 'PointObject', 'HistogramObject',
+           'ImageObject', 'MultiPlot', 'BasePlot', 'BaseHistogram',
            'HistogramPlot', 'DataHistogramPlot',
            'ModelHistogramPlot', 'SourceHistogramPlot',
            'PDFPlot', 'CDFPlot', 'LRHistogram',
@@ -490,24 +491,14 @@ def check_not_none(arg: Optional[T], method: str = "prepare") -> T:
     raise PlotErr(f"{method} has not been called")
 
 
-class Plot(NoNewAttributesAfterInit):
-    "Base class for line plots"
+class PlotObject:
+    """Draw a set of point (x, y) data
 
-    plot_prefs = basicbackend.get_plot_defaults()
-    "The preferences for the plot."
+    The preferences are set in the plot_prefs dictionary.
+    """
 
     def __init__(self):
-        """
-        Initialize a Plot object.  All 1D line plot
-        instances utilize Plot, which provides a generic
-        interface to a backend.
-
-        Once an instance of Plot is initialized no new
-        attributes of the class can be made. (To eliminate
-        the accidental creation of erroneous attributes)
-        """
-        self.plot_prefs = self.plot_prefs.copy()
-        super().__init__()
+        self.plot_prefs = basicbackend.get_plot_defaults().copy()
 
     @staticmethod
     def vline(x, ymin=0, ymax=1,
@@ -585,29 +576,20 @@ class Plot(NoNewAttributesAfterInit):
         self.plot(*args, **kwargs)
 
 
-class Contour(NoNewAttributesAfterInit):
-    "Base class for contour plots"
+class ContourObject:
+    """Draw contours on a set of (x0, x1, y) data.
 
-    contour_prefs = basicbackend.get_contour_defaults()
-    "The preferences for the plot."
+    The preferences are set in the contour_prefs dictionary.
+    """
 
     def __init__(self):
-        """
-        Initialize a Contour object.  All 2D contour plot
-        instances utilize Contour, which provides a generic
-        interface to a backend.
-
-        Once an instance of Contour is initialized no new
-        attributes of the class can be made. (To eliminate
-        the accidental creation of erroneous attributes)
-        """
-        self.contour_prefs = self.contour_prefs.copy()
-        super().__init__()
+        self.contour_prefs = basicbackend.get_contour_defaults().copy()
 
     def _merge_settings(self, kwargs):
-        """Return the plot preferences merged with user settings."""
+        """Return the contour preferences merged with user settings."""
         return {**self.contour_prefs, **kwargs}
 
+    # The levels argument should really be included here
     def contour(self, x0, x1, y, title=None, xlabel=None,
                 ylabel=None, overcontour=False, clearwindow=True,
                 **kwargs):
@@ -648,27 +630,17 @@ class Contour(NoNewAttributesAfterInit):
         self.contour(*args, **kwargs)
 
 
-class Point(NoNewAttributesAfterInit):
-    "Base class for point plots"
+class PointObject:
+    """Draw a point (x, y).
 
-    point_prefs = basicbackend.get_point_defaults()
-    "The preferences for the plot."
+    The preferences are set in the point_prefs dictionary.
+    """
 
     def __init__(self):
-        """
-        Initialize a Point object.  All 1D point plot
-        instances utilize Point, which provides a generic
-        interface to a backend.
-
-        Once an instance of Point is initialized no new
-        attributes of the class can be made. (To eliminate
-        the accidental creation of erroneous attributes)
-        """
-        self.point_prefs = self.point_prefs.copy()
-        super().__init__()
+        self.point_prefs = basicbackend.get_point_defaults().copy()
 
     def _merge_settings(self, kwargs):
-        """Return the plot preferences merged with user settings."""
+        """Return the point preferences merged with user settings."""
         return {**self.point_prefs, **kwargs}
 
     def point(self, x, y, overplot=True, clearwindow=False, **kwargs):
@@ -696,30 +668,21 @@ class Point(NoNewAttributesAfterInit):
                      **opts)
 
 
-class Image(NoNewAttributesAfterInit):
-    """Base class for image plots
+class ImageObject:
+    """Draw an image from a set of (x0, x1, y) data.
+
+    The preferences are set in the image_prefs dictionary.
 
     .. warning::
         This class is experimental and subject to change in the future.
         Currently, is is only used within _repr_html_ methods.
     """
 
-    image_prefs = basicbackend.get_image_defaults()
-    "The preferences for the plot."
-
     def __init__(self):
-        """
-        Initialize a Image object.
-
-        Once an instance of Image is initialized no new
-        attributes of the class can be made. (To eliminate
-        the accidental creation of erroneous attributes.)
-        """
-        self.image_prefs = self.image_prefs.copy()
-        super().__init__()
+        self.image_prefs = basicbackend.get_image_defaults().copy()
 
     def _merge_settings(self, kwargs):
-        """Return the plot preferences merged with user settings."""
+        """Return the image preferences merged with user settings."""
         return {**self.image_prefs, **kwargs}
 
     def plot(self, x0, x1, y, overplot=True, clearwindow=False, **kwargs):
@@ -749,27 +712,17 @@ class Image(NoNewAttributesAfterInit):
                      **opts)
 
 
-class Histogram(NoNewAttributesAfterInit):
-    "Base class for histogram plots"
+class HistogramObject:
+    """Draw a set of binned (xlo, xhi, y) data
 
-    histo_prefs = basicbackend.get_histo_defaults()
-    "The preferences for the plot."
+    The preferences are set in the histo_prefs dictionary.
+    """
 
     def __init__(self):
-        """
-        Initialize a Histogram object.  All 1D histogram plot
-        instances utilize Histogram, which provides a generic
-        interface to a backend.
-
-        Once an instance of Histogram is initialized no new
-        attributes of the class can be made. (To eliminate
-        the accidental creation of erroneous attributes)
-        """
-        self.histo_prefs = self.histo_prefs.copy()
-        super().__init__()
+        self.histo_prefs = basicbackend.get_histo_defaults().copy()
 
     def _merge_settings(self, kwargs):
-        """Return the plot preferences merged with user settings."""
+        """Return the histogram preferences merged with user settings."""
         return {**self.histo_prefs, **kwargs}
 
     def plot(self, xlo, xhi, y, yerr=None, title=None, xlabel=None,
@@ -811,6 +764,16 @@ class Histogram(NoNewAttributesAfterInit):
                       clearwindow=clearwindow, **opts)
 
     def overplot(self, *args, **kwargs):
+        """Add the data to an existing plot.
+
+        This is the same as calling the plot method with
+        overplot set to True.
+
+        See Also
+        --------
+        plot
+
+        """
         kwargs['overplot'] = True
         self.plot(*args, **kwargs)
 
@@ -819,7 +782,7 @@ class Histogram(NoNewAttributesAfterInit):
 # have HistogramPlot for this case, but DataPlot has already been
 # used, hence the name BasePlot.
 #
-class BasePlot(Plot):
+class BasePlot(NoNewAttributesAfterInit):
     """Base class for data-style plots with a prepare method.
 
     The data to plot is calculated by the prepare method, and stored
@@ -846,6 +809,8 @@ class BasePlot(Plot):
         self.xlabel = None
         self.ylabel = None
         self.title = None
+        self._object = PlotObject()
+        self.plot_prefs = self._object.plot_prefs.copy()
         super().__init__()
 
     def __str__(self) -> str:
@@ -869,6 +834,10 @@ class BasePlot(Plot):
         # would like to label this @abstractmethod but that would
         # require significant changes to the class setup.
         raise NotImplementedError()
+
+    def _merge_settings(self, kwargs):
+        """Return the plot preferences merged with user settings."""
+        return {**self.plot_prefs, **kwargs}
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
@@ -896,12 +865,27 @@ class BasePlot(Plot):
 
         x = check_not_none(self.x)
         y = check_not_none(self.y)
-        super().plot(x, y, title=self.title, xlabel=self.xlabel,
-                     ylabel=self.ylabel, overplot=overplot,
-                     clearwindow=clearwindow, **kwargs)
+        opts = self._merge_settings(kwargs)
+        plot = self._object.plot
+        plot(x, y, title=self.title, xlabel=self.xlabel,
+             ylabel=self.ylabel, overplot=overplot,
+             clearwindow=clearwindow, **opts)
+
+    def overplot(self, **kwargs):
+        """Add the data to an existing plot.
+
+        This is the same as calling the plot method with
+        overplot set to True.
+
+        See Also
+        --------
+        plot
+        """
+        kwargs['overplot'] = True
+        self.plot(**kwargs)
 
 
-class BaseHistogram(Histogram):
+class BaseHistogram(NoNewAttributesAfterInit):
     """Base class for histogram-style plots with a prepare method.
 
     The data to plot is calculated by the prepare method, and stored
@@ -929,6 +913,8 @@ class BaseHistogram(Histogram):
         self.xlabel = None
         self.ylabel = None
         self.title = None
+        self._object = HistogramObject()
+        self.histo_prefs = self._object.histo_prefs.copy()
         super().__init__()
 
     def __str__(self) -> str:
@@ -970,6 +956,10 @@ class BaseHistogram(Histogram):
         # require significant changes to the class setup.
         raise NotImplementedError()
 
+    def _merge_settings(self, kwargs):
+        """Return the histogram preferences merged with user settings."""
+        return {**self.histo_prefs, **kwargs}
+
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
@@ -997,28 +987,24 @@ class BaseHistogram(Histogram):
         xlo = check_not_none(self.xlo)
         xhi = check_not_none(self.xhi)
         y = check_not_none(self.y)
-        super().plot(xlo, xhi, y, title=self.title,
-                     xlabel=self.xlabel, ylabel=self.ylabel,
-                     overplot=overplot, clearwindow=clearwindow,
-                     **kwargs)
+        opts = self._merge_settings(kwargs)
+        plot = self._object.plot
+        plot(xlo, xhi, y, title=self.title, xlabel=self.xlabel,
+             ylabel=self.ylabel, overplot=overplot,
+             clearwindow=clearwindow, **opts)
 
-    @staticmethod
-    def vline(x, ymin=0, ymax=1,
-              linecolor=None, linestyle=None, linewidth=None,
-              overplot=False, clearwindow=True):
-        "Draw a line at constant x, extending over the plot."
-        backend.vline(x, ymin=ymin, ymax=ymax, linecolor=linecolor,
-                      linestyle=linestyle, linewidth=linewidth,
-                      overplot=overplot, clearwindow=clearwindow)
+    def overplot(self, **kwargs):
+        """Add the data to an existing plot.
 
-    @staticmethod
-    def hline(y, xmin=0, xmax=1,
-              linecolor=None, linestyle=None, linewidth=None,
-              overplot=False, clearwindow=True):
-        "Draw a line at constant y, extending over the plot."
-        backend.hline(y, xmin=xmin, xmax=xmax, linecolor=linecolor,
-                      linestyle=linestyle, linewidth=linewidth,
-                      overplot=overplot, clearwindow=clearwindow)
+        This is the same as calling the plot method with
+        overplot set to True.
+
+        See Also
+        --------
+        plot
+        """
+        kwargs['overplot'] = True
+        self.plot(**kwargs)
 
 
 # This class name was used well before BaseHistogram was created,
@@ -1045,12 +1031,10 @@ def get_data_hist_prefs():
 class DataHistogramPlot(BaseHistogram):
     """Create 1D histogram plots of data values."""
 
-    histo_prefs = get_data_hist_prefs()
-    "The preferences for the plot."
-
     def __init__(self):
         self.yerr = None
         super().__init__()
+        self.histo_prefs = get_data_hist_prefs()
 
     @property
     def xerr(self):
@@ -1105,15 +1089,6 @@ class DataHistogramPlot(BaseHistogram):
 
         self.title = data.name
 
-    # We have
-    #
-    # - the base class Histogram.plot can accept a yerr argument
-    # - the superclass (BaseHistogram.plot) does not know
-    #   anything about yerr
-    #
-    # so the superclass is over-ridden here to basically call
-    # the base class.
-    #
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         """Plot the data.
 
@@ -1141,12 +1116,12 @@ class DataHistogramPlot(BaseHistogram):
         xlo = check_not_none(self.xlo)
         xhi = check_not_none(self.xhi)
         y = check_not_none(self.y)
-        Histogram.plot(self, xlo, xhi, y,
-                       # Note: the superclass does not recognize yerr
-                       yerr=self.yerr,
-                       title=self.title, xlabel=self.xlabel,
-                       ylabel=self.ylabel, overplot=overplot,
-                       clearwindow=clearwindow, **kwargs)
+        opts = self._merge_settings(kwargs)
+        plot = self._object.plot
+        # This adds in the yerr field
+        plot(xlo, xhi, y, yerr=self.yerr, title=self.title,
+             xlabel=self.xlabel, ylabel=self.ylabel,
+             overplot=overplot, clearwindow=clearwindow, **opts)
 
 
 class ModelHistogramPlot(BaseHistogram):
@@ -1288,15 +1263,13 @@ class CDFPlot(BasePlot):
                       "linewidth": 1.5}
     """The options used to draw the 84.13% line."""
 
-    plot_prefs = basicbackend.get_cdf_plot_defaults()
-    """The plot options (the CDF and axes)."""
-
     def __init__(self):
         self.points = None
         self.median = None
         self.lower = None
         self.upper = None
         super().__init__()
+        self.plot_prefs = basicbackend.get_cdf_plot_defaults()
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the CDF plot."""
@@ -1358,12 +1331,12 @@ class CDFPlot(BasePlot):
 
         # Note: the user arguments are not applied to the vertical lines
         #
-        super().vline(self.median, overplot=True, clearwindow=False,
-                      **self.median_defaults)
-        super().vline(self.lower, overplot=True, clearwindow=False,
-                      **self.lower_defaults)
-        super().vline(self.upper, overplot=True, clearwindow=False,
-                      **self.upper_defaults)
+        PlotObject.vline(self.median, overplot=True,
+                         clearwindow=False, **self.median_defaults)
+        PlotObject.vline(self.lower, overplot=True, clearwindow=False,
+                         **self.lower_defaults)
+        PlotObject.vline(self.upper, overplot=True, clearwindow=False,
+                         **self.upper_defaults)
 
 
 class LRHistogram(BaseHistogram):
@@ -1435,13 +1408,16 @@ class LRHistogram(BaseHistogram):
         # Note: the user arguments are not applied to the vertical line
         #
         if self.lr <= self.xhi.max() and self.lr >= self.xlo.min():
-            super().vline(self.lr, linecolor="orange",
-                          linestyle="solid", linewidth=1.5,
-                          overplot=True, clearwindow=False)
+            PlotObject.vline(self.lr, linecolor="orange",
+                             linestyle="solid", linewidth=1.5,
+                             overplot=True, clearwindow=False)
 
 
-class SplitPlot(Plot, Contour):
+class SplitPlot:
     """Create multiple plots.
+
+    .. versionchanged:: 4.17.1
+       The class no-longer derives from `Plot` or `Contour`.
 
     Attributes
     ----------
@@ -1464,6 +1440,7 @@ class SplitPlot(Plot, Contour):
     def __init__(self, rows=2, cols=1):
         self.reset(rows, cols)
         super().__init__()
+        self.plot_prefs = basicbackend.get_split_plot_defaults()
 
     def __str__(self) -> str:
         return display_fields(self, self._fields)
@@ -1656,13 +1633,11 @@ class DataPlot(BasePlot):
     passed through NumPy's array2string.
     """
 
-    plot_prefs = basicbackend.get_data_plot_defaults()
-    "The preferences for the plot."
-
     def __init__(self):
         self.yerr = None
         self.xerr = None
         super().__init__()
+        self.plot_prefs = basicbackend.get_data_plot_defaults().copy()
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data plot."""
@@ -1723,16 +1698,20 @@ class DataPlot(BasePlot):
         #
         x = check_not_none(self.x)
         y = check_not_none(self.y)
-        Plot.plot(self, x, y, yerr=self.yerr, xerr=self.xerr,
-                  title=self.title, xlabel=self.xlabel,
-                  ylabel=self.ylabel, overplot=overplot,
-                  clearwindow=clearwindow, **kwargs)
+        opts = self._merge_settings(kwargs)
+        plot = self._object.plot
+        plot(x, y, yerr=self.yerr, xerr=self.xerr,
+             title=self.title, xlabel=self.xlabel,
+             ylabel=self.ylabel, overplot=overplot,
+             clearwindow=clearwindow, **opts)
 
 
 class TracePlot(DataPlot):
     """Display a 1D array using an x axis starting at 1."""
 
-    plot_prefs = basicbackend.get_model_plot_defaults()
+    def __init__(self):
+        super().__init__()
+        self.plot_prefs = basicbackend.get_model_plot_defaults()
 
     def prepare(self, points, xlabel="x", name="x"):
         """The data to plot.
@@ -1761,7 +1740,9 @@ class TracePlot(DataPlot):
 class ScatterPlot(DataPlot):
     """Display x,y data as a scatter plot"""
 
-    plot_prefs = basicbackend.get_scatter_plot_defaults()
+    def __init__(self):
+        super().__init__()
+        self.plot_prefs = basicbackend.get_scatter_plot_defaults()
 
     def prepare(self, x, y, xlabel="x", ylabel="y", name="(x,y)"):
         """The data to plot.
@@ -1812,7 +1793,7 @@ class PSFKernelPlot(DataPlot):
         self.title = 'PSF Kernel'
 
 
-class BaseContour(Contour):
+class BaseContour(NoNewAttributesAfterInit):
     """Base class for contour-style plots with a prepare method.
 
     The data to plot is calculated by the prepare method, and stored
@@ -1844,6 +1825,7 @@ class BaseContour(Contour):
         self.ylabel = None
         self.title = None
         self.levels = None
+        self._object = ContourObject()
         super().__init__()
 
     def __str__(self) -> str:
@@ -1867,6 +1849,10 @@ class BaseContour(Contour):
         # would like to label this @abstractmethod but that would
         # require significant changes to the class setup.
         raise NotImplementedError()
+
+    def _merge_settings(self, kwargs):
+        """Return the contour preferences merged with user settings."""
+        return {**self.contour_prefs, **kwargs}
 
     def contour(self, overcontour=False, clearwindow=True, **kwargs):
         """Display the contour data.
@@ -1895,10 +1881,28 @@ class BaseContour(Contour):
         x0 = check_not_none(self.x0)
         x1 = check_not_none(self.x1)
         y = check_not_none(self.y)
-        super().contour(x0, x1, y, levels=self.levels,
-                        title=self.title, xlabel=self.xlabel,
-                        ylabel=self.ylabel, overcontour=overcontour,
-                        clearwindow=clearwindow, **kwargs)
+        opts = self._merge_settings(kwargs)
+
+        # The levels are currently assumed to be a preference setting.
+        opts["levels"] = self.levels
+
+        contour = self._object.contour
+        contour(x0, x1, y, title=self.title, xlabel=self.xlabel,
+                ylabel=self.ylabel, overcontour=overcontour,
+                clearwindow=clearwindow, **opts)
+
+    def overcontour(self, **kwargs):
+        """Add the contour to an existing visualization.
+
+        This is the same as calling the contour method with
+        overcontour set to True.
+
+        See Also
+        --------
+        contour
+        """
+        kwargs['overcontour'] = True
+        self.contour(**kwargs)
 
 
 class DataContour(BaseContour):
@@ -1919,8 +1923,9 @@ class DataContour(BaseContour):
 
     """
 
-    contour_prefs = basicbackend.get_data_contour_defaults()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.contour_prefs = basicbackend.get_data_contour_defaults()
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the contour plot."""
@@ -1995,14 +2000,13 @@ class ModelPlot(BasePlot):
     passed through NumPy's array2string.
     """
 
-    plot_prefs = basicbackend.get_model_plot_defaults()
-    "The preferences for the plot."
 
     def __init__(self):
         self.yerr = None  # may be used by subclasses
         self.xerr = None  # may be used by subclasses
         super().__init__()
         self.title = 'Model'
+        self.plot_prefs = basicbackend.get_model_plot_defaults()
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model plot."""
@@ -2057,8 +2061,9 @@ class ComponentModelHistogramPlot(ModelHistogramPlot):
 
     """
 
-    histo_prefs = basicbackend.get_component_histo_defaults()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = basicbackend.get_component_histo_defaults()
 
     # TODO: ComponentSourceHistogramPlot calls data.to_component_plot
     # but this just uses data.to_plot. Does it matter?
@@ -2104,7 +2109,9 @@ class SourcePlot(ModelPlot):
 class ComponentSourcePlot(SourcePlot):
     """Component source plots."""
 
-    plot_prefs = basicbackend.get_component_plot_defaults()
+    def __init__(self):
+        super().__init__()
+        self.plot_prefs = basicbackend.get_component_plot_defaults()
 
     def prepare(self, data, model, stat=None):
         (self.x, self.y, self.yerr, self.xerr,
@@ -2122,7 +2129,9 @@ class ComponentSourceHistogramPlot(SourceHistogramPlot):
 
     """
 
-    histo_prefs = basicbackend.get_component_histo_defaults()
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = basicbackend.get_component_histo_defaults()
 
     def prepare(self, data, model, stat=None):
 
@@ -2184,12 +2193,10 @@ class PSFPlot(DataPlot):
 class ModelContour(BaseContour):
     "Derived class for creating 2D model contours"
 
-    contour_prefs = basicbackend.get_model_contour_defaults()
-    "The preferences for the plot."
-
     def __init__(self):
         super().__init__()
         self.title = 'Model'
+        self.contour_prefs = basicbackend.get_model_contour_defaults()
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model contour plot."""
@@ -2266,17 +2273,12 @@ class FitPlot(BasePlot):
 
     """
 
-    plot_prefs = basicbackend.get_fit_plot_defaults()
-    """The preferences for the plot. Note that the display for the
-    data and model plots are controlled by the preferences for
-    the dataplot and modelplot objects, so this is currently
-    unused.
-    """
-
     def __init__(self):
         self.dataplot = None
         self.modelplot = None
         super().__init__()
+        # The plot_prefs field is currently ignored
+        self.plot_prefs = basicbackend.get_fit_plot_defaults()
 
     def __str__(self) -> str:
         data_title = None
@@ -2354,13 +2356,11 @@ modelplot  = {model_title}
 class FitContour(BaseContour):
     "Derived class for creating 2D combination data and model contours"
 
-    contour_prefs = basicbackend.get_fit_contour_defaults()
-    "The preferences for the plot."
-
     def __init__(self):
         self.datacontour = None
         self.modelcontour = None
         super().__init__()
+        self.contour_prefs = basicbackend.get_fit_contour_defaults()
 
     def __str__(self) -> str:
         data_title = None
@@ -2460,17 +2460,18 @@ class BaseResidualPlot(ModelPlot):
         self.plot_prefs['ylog'] = False
         kwargs.pop('ylog', True)
 
+        opts = self._merge_settings(kwargs)
+
         # The superclass is not called since the y errors are
         # potentially included in the plot.
         #
-        Plot.plot(self, x, y, yerr=self.yerr, xerr=self.xerr,
-                  title=self.title, xlabel=self.xlabel,
-                  ylabel=self.ylabel, overplot=overplot,
-                  clearwindow=clearwindow, **kwargs)
-        super().hline(y=self.residual_axis, xmin=0, xmax=1,
-                      linecolor=self.residual_color,
-                      linewidth=self.residual_lw,
-                      overplot=True)
+        plot = self._object.plot
+        plot(x, y, yerr=self.yerr, xerr=self.xerr,
+             title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
+             overplot=overplot, clearwindow=clearwindow, **opts)
+        PlotObject.hline(y=self.residual_axis, xmin=0, xmax=1,
+                         linecolor=self.residual_color,
+                         linewidth=self.residual_lw, overplot=True)
 
 
 class BaseResidualHistogramPlot(ModelHistogramPlot):
@@ -2555,17 +2556,20 @@ class BaseResidualHistogramPlot(ModelHistogramPlot):
         self.histo_prefs['ylog'] = False
         kwargs.pop('ylog', True)
 
+        opts = self._merge_settings(kwargs)
+
         # The superclass is not called since the y errors are
         # potentially included in the plot.
         #
-        Histogram.plot(self, xlo, xhi, y, yerr=self.yerr,
-                       title=self.title, xlabel=self.xlabel,
-                       ylabel=self.ylabel, overplot=overplot,
-                       clearwindow=clearwindow, **kwargs)
-        super().hline(y=self.residual_axis, xmin=0, xmax=1,
-                      linecolor=self.residual_color,
-                      linewidth=self.residual_lw,
-                      overplot=True)
+        plot = self._object.plot
+        plot(xlo, xhi, y, yerr=self.yerr, title=self.title,
+             xlabel=self.xlabel, ylabel=self.ylabel,
+             overplot=overplot, clearwindow=clearwindow,
+             **opts)
+        PlotObject.hline(y=self.residual_axis, xmin=0, xmax=1,
+                         linecolor=self.residual_color,
+                         linewidth=self.residual_lw,
+                         overplot=True)
 
 
 class BaseResidualContour(ModelContour):
@@ -2623,8 +2627,9 @@ class DelchiPlot(BaseResidualPlot):
     linear scale.
     """
 
-    plot_prefs = basicbackend.get_resid_plot_defaults()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.plot_prefs = basicbackend.get_resid_plot_defaults()
 
     def _calc_y(self,
                 data: Data1D,
@@ -2651,8 +2656,9 @@ class DelchiPlot(BaseResidualPlot):
 class DelchiHistogramPlot(BaseResidualHistogramPlot):
     """Create plots of the delta-chi value per point."""
 
-    histo_prefs = basicbackend.get_resid_histo_defaults()
-    "The preferences for the delchi plot."
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = basicbackend.get_resid_histo_defaults()
 
     def _calc_y(self,
                 data: Data1DInt,
@@ -2695,8 +2701,9 @@ class ChisqrPlot(ModelPlot):
        Plot labels.
     """
 
-    plot_prefs = basicbackend.get_model_plot_defaults()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.plot_prefs = basicbackend.get_model_plot_defaults()
 
     def _calc_chisqr(self, ylist, staterr):
         dy = ylist[0] - ylist[1]
@@ -2722,8 +2729,9 @@ class ChisqrPlot(ModelPlot):
 class ChisqrHistogramPlot(ModelHistogramPlot):
     """Create plot of the ChiSq residuals per point."""
 
-    histo_prefs = basicbackend.get_resid_histo_defaults()
-    "The preferences for the residual plot."
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = basicbackend.get_resid_histo_defaults()
 
     def _calc_x(self, data: Data1DInt, model: Model) -> None:
         """Define the xlo and xhi fields"""
@@ -2785,8 +2793,9 @@ class ResidPlot(BaseResidualPlot):
     linear scale.
     """
 
-    plot_prefs = basicbackend.get_resid_plot_defaults()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.plot_prefs = basicbackend.get_resid_plot_defaults()
 
     def _calc_y(self,
                 data: Data1D,
@@ -2816,8 +2825,9 @@ class ResidPlot(BaseResidualPlot):
 class ResidHistogramPlot(BaseResidualHistogramPlot):
     """Create plots of the residual value per point."""
 
-    histo_prefs = basicbackend.get_resid_histo_defaults()
-    "The preferences for the residual plot."
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = basicbackend.get_resid_histo_defaults()
 
     def _calc_y(self,
                 data: Data1DInt,
@@ -2852,8 +2862,9 @@ class ResidHistogramPlot(BaseResidualHistogramPlot):
 class ResidContour(BaseResidualContour):
     "Derived class for creating 2D residual contours (data-model)"
 
-    contour_prefs = basicbackend.get_resid_contour_defaults()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.contour_prefs = basicbackend.get_resid_contour_defaults()
 
     def _calc_y(self,
                 ylist: tuple[np.ndarray, np.ndarray]) -> None:
@@ -2888,8 +2899,9 @@ class RatioPlot(BaseResidualPlot):
     linear scale.
     """
 
-    plot_prefs = basicbackend.get_ratio_plot_defaults()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.plot_prefs = basicbackend.get_ratio_plot_defaults()
 
     residual_axis = 1
     """At what point on the y axis is the residual line drawn."""
@@ -2930,8 +2942,9 @@ class RatioHistogramPlot(BaseResidualHistogramPlot):
 
     # Turn on yerrorbars by default. What is the best way to do this?
     #
-    histo_prefs = basicbackend.get_resid_histo_defaults() | {"yerrorbars": True}
-    "The preferences for the ratio plot."
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = basicbackend.get_resid_histo_defaults() | {"yerrorbars": True}
 
     residual_axis = 1
 
@@ -2974,8 +2987,9 @@ class RatioHistogramPlot(BaseResidualHistogramPlot):
 class RatioContour(BaseResidualContour):
     "Derived class for creating 2D ratio contours (data divided by model)"
 
-    contour_prefs = basicbackend.get_ratio_contour_defaults()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.contour_prefs = basicbackend.get_ratio_contour_defaults()
 
     def _calc_y(self,
                 ylist: tuple[np.ndarray, np.ndarray]) -> None:
@@ -3054,8 +3068,11 @@ def calc_par_range(minval: float,
     return x
 
 
-class Confidence1D(DataPlot):
+class Confidence1D(BasePlot):
     """The base class for 1D confidence plots.
+
+    .. versionchanged:: 4.17.0
+       The class now derives from `BasePlot` rather than `DataPlot`.
 
     .. versionchanged:: 4.16.1
        Handling of log-scaled axes and use of the delv argument has
@@ -3063,8 +3080,6 @@ class Confidence1D(DataPlot):
        value (if available).
 
     """
-
-
 
     _fields: list[str] = ["x", "y", "min!", "max!", "nloop!", "delv!",
                           "fac!", "log!", "parval!"]
@@ -3074,21 +3089,9 @@ class Confidence1D(DataPlot):
     passed through NumPy's array2string.
     """
 
-    plot_prefs = basicbackend.get_confid_plot_defaults()
-    "The preferences for the plot."
-
     # This is only used for an error message
     conf_type = "unknown"
     "The type of confidence analysis."
-
-    _fields = ["x", "y", "min!", "max!", "nloop!", "delv!",
-               "fac!", "log!", "parval!"]
-    """The fields to include in the string output.
-
-    Names that end in ! are treated as scalars, otherwise they are
-    passed through NumPy's array2string.
-
-    """
 
     def __init__(self):
         self.min = None
@@ -3101,6 +3104,7 @@ class Confidence1D(DataPlot):
         self.stat = None
         self.numcores = None
         super().__init__()
+        self.plot_prefs = basicbackend.get_confid_plot_defaults()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -3279,10 +3283,6 @@ class Confidence1D(DataPlot):
         if par not in fit.model.pars:
             raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
-        # Make sure xerr and yerr are cleared
-        self.xerr = None
-        self.yerr = None
-
     def plot(self, overplot=False, clearwindow=True, **kwargs):
 
         # This is to be done before the same checks are made in
@@ -3294,31 +3294,31 @@ class Confidence1D(DataPlot):
         if self.log:
             self.plot_prefs['xlog'] = True
 
-        # This repeats the check_not_none calls, but we know they
-        # will pass. It also will display xerr/yerr vlaues which is
-        # why they were cleared in the prepare call.
-        #
         super().plot(overplot=overplot, clearwindow=clearwindow,
                      **kwargs)
 
         # Note: the user arguments are not applied to the lines
         #
         if self.stat is not None:
-            super().hline(self.stat, linecolor="green",
-                          linestyle="dash", linewidth=1.5,
-                          overplot=True, clearwindow=False)
+            PlotObject.hline(self.stat, linecolor="green",
+                             linestyle="dash", linewidth=1.5,
+                             overplot=True, clearwindow=False)
 
         if self.parval is not None:
-            super().vline(self.parval, linecolor="orange",
-                          linestyle="dash", linewidth=1.5,
-                          overplot=True, clearwindow=False)
+            PlotObject.vline(self.parval, linecolor="orange",
+                             linestyle="dash", linewidth=1.5,
+                             overplot=True, clearwindow=False)
 
         if self.log:
             self.plot_prefs['xlog'] = False
 
 
-class Confidence2D(DataContour, Point):
+class Confidence2D(BaseContour):
     """The base class for 2D confidence contours.
+
+    .. versionchanged:: 4.17.0
+       The class now derives from `BaseContour` rather than
+       `DataContour` and `Point`.
 
     .. versionchanged:: 4.16.1
        Handling of log-scaled axes and use of the delv argument has
@@ -3326,25 +3326,13 @@ class Confidence2D(DataContour, Point):
 
     """
 
-    _fields: list[str] = ["x0", "x1", "y", "min!", "max!", "nloop!",
-                          "fac!", "delv!", "log!", "sigma!", "parval0!",
-                          "parval1!", "levels!"]
-    """The fields to include in the string output.
-
-    Names that end in ! are treated as scalars, otherwise they are
-    passed through NumPy's array2string.
-    """
-
-    contour_prefs = basicbackend.get_confid_contour_defaults()
-    point_prefs = basicbackend.get_confid_point_defaults()
-
     # This is only used for an error message
     conf_type = "unknown"
     "The type of confidence analysis."
 
-    _fields = ["x0", "x1", "y", "min!", "max!", "nloop!", "fac!",
-               "delv!", "log!", "sigma!", "parval0!", "parval1!",
-               "levels!"]
+    _fields: list[str] = ["x0", "x1", "y", "min!", "max!", "nloop!",
+                          "fac!", "delv!", "log!", "sigma!",
+                          "parval0!", "parval1!", "levels!"]
     """The fields to include in the string output.
 
     Names that end in ! are treated as scalars, otherwise they are
@@ -3364,7 +3352,12 @@ class Confidence2D(DataContour, Point):
         self.parval1 = None
         self.stat = None
         self.numcores = None
+
+        self.point_prefs = basicbackend.get_confid_point_defaults()
+
         super().__init__()
+
+        self.contour_prefs = basicbackend.get_confid_contour_defaults()
 
     def __setstate__(self, state):
         self.__dict__.update(state)
@@ -3668,7 +3661,7 @@ class Confidence2D(DataContour, Point):
 
         # Note: the user arguments are not applied to the point
         #
-        point = Point()
+        point = PointObject()
         point.point_prefs = self.point_prefs
         point.point(self.parval0, self.parval1,
                     overplot=True, clearwindow=False)
@@ -4145,3 +4138,12 @@ class MultiPlot:
 
             overplot = True
             clearwindow = False
+
+
+# Set up some aliases for old code. Is this useful?
+#
+## Plot = PlotObject
+## Histogram = HistogramObject
+## Contour = ContourObject
+## Image = ImageObject
+## Point = PointObject

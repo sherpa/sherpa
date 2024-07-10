@@ -157,8 +157,9 @@ def calc_x(data: DataPHA) -> tuple[np.ndarray, np.ndarray]:
 class DataPHAPlot(shplot.DataHistogramPlot):
     """Plot a PHA dataset."""
 
-    histo_prefs = shplot.get_data_hist_prefs()
-    "The preferences for the plot."
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = shplot.get_data_hist_prefs()
 
     def prepare(self, data, stat=None):
 
@@ -258,10 +259,9 @@ class ModelPHAHistogram(shplot.BaseHistogram):
     are used to create the bins for the model.
     """
 
-    histo_prefs = shplot.basicbackend.get_model_histo_defaults()
-
     def __init__(self):
         super().__init__()
+        self.histo_prefs = shplot.basicbackend.get_model_histo_defaults()
         self.title = 'Model'
 
     def prepare(self, data, model, stat=None):
@@ -353,12 +353,11 @@ class SourcePlot(shplot.SourceHistogramPlot):
 
     """
 
-    histo_prefs = shplot.basicbackend.get_model_histo_defaults()
-
     def __init__(self):
         self.units = None
         self.mask = None
         super().__init__()
+        self.histo_prefs = shplot.basicbackend.get_model_histo_defaults()
 
     def prepare(self, data, src, lo=None, hi=None):
         # Note: src is source model before folding
@@ -463,10 +462,12 @@ class SourcePlot(shplot.SourceHistogramPlot):
         # which would mean this could call super().plot(), or set up
         # the data in prepare and avoid this method completely.
         #
-        shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
-                              xlabel=self.xlabel, ylabel=self.ylabel,
-                              overplot=overplot, clearwindow=clearwindow,
-                              **kwargs)
+        opts = self._merge_settings(kwargs)
+
+        plot = self._object.plot
+        plot(xlo, xhi, y, title=self.title, xlabel=self.xlabel,
+             ylabel=self.ylabel, overplot=overplot,
+             clearwindow=clearwindow, **kwargs)
 
 
 # We do not derive from shplot.ComponentModelHistogramPlot to avoid
@@ -480,7 +481,9 @@ class ComponentModelPlot(ModelHistogram):
        The class no-longer derives from `sherpa.plot.ComponentSourcePlot`.
     """
 
-    histo_prefs = shplot.basicbackend.get_component_histo_defaults()
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
     def prepare(self, data, model, stat=None):
         super().prepare(data=data, model=model, stat=stat)
@@ -498,7 +501,9 @@ class ComponentSourcePlot(SourcePlot):
        The class no-longer derives from `sherpa.plot.ComponentSourcePlot`.
     """
 
-    histo_prefs = shplot.basicbackend.get_component_histo_defaults()
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = shplot.basicbackend.get_component_histo_defaults()
 
     def prepare(self, data, model, stat=None):
         super().prepare(data=data, src=model)
@@ -519,7 +524,9 @@ class ARFPlot(shplot.BaseHistogram):
 
     """
 
-    histo_prefs = shplot.basicbackend.get_model_histo_defaults()
+    def __init__(self):
+        super().__init__()
+        self.histo_prefs = shplot.basicbackend.get_model_histo_defaults()
 
     def prepare(self, arf, data=None):
         """Fill the fields given the ARF.
@@ -605,9 +612,6 @@ class RMFPlot(shplot.BaseHistogram):
     title = ""
     "Title of plot"
 
-    rmf_plot_prefs = shplot.basicbackend.get_rmf_plot_defaults()
-    'Plot preferences'
-
     # TODO: Make that a plot preference
     # How many monochromatic lines to use
     n_lines = 5
@@ -615,6 +619,10 @@ class RMFPlot(shplot.BaseHistogram):
 
     labels = None
     "List of strings: The labels for each line."
+
+    def __init__(self):
+        self.rmf_plot_prefs = shplot.basicbackend.get_rmf_plot_defaults()
+        super().__init__()
 
     def _merge_settings(self, kwargs):
         return {**self.rmf_plot_prefs, **kwargs}
@@ -980,11 +988,13 @@ class OrderPlot(ModelHistogram):
                 overplot = True
                 self.histo_prefs['color'] = color
 
-            # Note: the user settings are sent to each plot
-            shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
-                                  xlabel=self.xlabel, ylabel=self.ylabel,
-                                  overplot=overplot, clearwindow=clearwindow,
-                                  **kwargs)
+            opts = self._merge_settings(kwargs)
+            plot = self._object.plot
+            plot(xlo, xhi, y, title=self.title, xlabel=self.xlabel,
+                 ylabel=self.ylabel,
+                 overplot=overplot,
+                 clearwindow=clearwindow, **kwargs)
+
             count += 1
 
         self.histo_prefs['color'] = default_color
@@ -1057,23 +1067,26 @@ class PhotonFluxHistogram(FluxHistogram):
         self.ylabel = "Frequency"
 
 
-class DataIMGPlot(shplot.Image):
+class DataIMGPlot:
     """Class for DataIMG plots.
 
     .. warning::
         This class is experimental and subject to change in the future.
         Currently, is is only used within _repr_html_ methods.
     """
-    xlabel = 'x'
-    ylabel = 'y'
-    title = ''
-    aspect = 'auto'
 
-    # These are filled with array in the prepare stage, but we need
-    # to define them here with some value because of NoNewAttributesAfterInit
-    y = None
-    x0 = None
-    x1 = None
+    def __init__(self):
+        self.xlabel = 'x'
+        self.ylabel = 'y'
+        self.title = ''
+        self.aspect = 'auto'
+
+        self.y = None
+        self.x0 = None
+        self.x1 = None
+
+        self._object = shplot.ImageObject()
+        self.image_prefs = shplot.basicbackend.get_image_defaults().copy()
 
     def prepare(self, img):
 
@@ -1136,7 +1149,12 @@ class DataIMGPlot(shplot.Image):
         x0 = shplot.check_not_none(self.x0)
         x1 = shplot.check_not_none(self.x1)
         y = shplot.check_not_none(self.y)
-        super().plot(x0, x1, y, title=self.title, xlabel=self.xlabel,
-                     ylabel=self.ylabel, aspect=self.aspect,
-                     overplot=overplot, clearwindow=clearwindow,
-                     **kwargs)
+
+        # Merge the settings
+        opts = {**self.image_prefs, **kwargs}
+
+        plot = self._object.plot
+        plot(x0, x1, y, title=self.title, xlabel=self.xlabel,
+             ylabel=self.ylabel, aspect=self.aspect,
+             overplot=overplot, clearwindow=clearwindow,
+             **opts)

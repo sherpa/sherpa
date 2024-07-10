@@ -1311,8 +1311,7 @@ def test_lrhist_str(check_str):
     assert last.startswith("histo_prefs = {")
 
 
-@pytest.mark.parametrize("cls", [sherpaplot.Histogram,
-                                 sherpaplot.HistogramPlot,
+@pytest.mark.parametrize("cls", [sherpaplot.HistogramPlot,
                                  sherpaplot.DataHistogramPlot,
                                  sherpaplot.ModelHistogramPlot,
                                  sherpaplot.SourceHistogramPlot,
@@ -1390,6 +1389,9 @@ def test_does_fitplot_have_labels():
         aval = getattr(fp, attr)
         assert not callable(aval), attr
 
-    for attr in ["hline", "overplot", "plot", "prepare", "vline"]:
+    for attr in ["overplot", "plot", "prepare"]:
         aval = getattr(fp, attr)
         assert callable(aval), attr
+
+    for attr in ["hline", "vline"]:
+        assert not hasattr(fp, attr)

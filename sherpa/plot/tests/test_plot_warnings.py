@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2019 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -290,8 +290,10 @@ def test_fit_plot_see_errorbar_warnings(caplog, statClass, flag):
     # I am skipping model plot here, since it is assumed that there
     # are no errors on the model.
     #
+    # Prior to 4.17.0 this included checking the FitPlot class.
+    #
     prefname = 'yerrorbars'
-    for plot in [dplot, fplot]:
+    for plot in [dplot]:
         prefs = plot.plot_prefs
         assert (prefname not in prefs) or prefs[prefname]
 
@@ -358,10 +360,12 @@ def test_fit_residstyle_plot_see_errorbar_warnings(caplog, plotClass,
     # I am skipping model plot here, since it is assumed that there
     # are no errors on the model.
     #
+    # Prior to 4.17.0 this included checking the FitPlot class.
+    #
     prefname = 'yerrorbars'
-    for plot in [dplot, fplot, rplot]:
+    for plot in [dplot, rplot]:
         prefs = plot.plot_prefs
-        assert (prefname not in prefs) or prefs[prefname]
+        assert (prefname not in prefs) or prefs[prefname], (type(plot), prefname)
 
     stat = statClass()
 

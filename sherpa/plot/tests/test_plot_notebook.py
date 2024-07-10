@@ -37,9 +37,9 @@ from sherpa.plot.testing import check_empty, check_full
 
 
 def test_histogram(all_plot_backends):
-    p = plot.BaseHistogram()
+    p = plot.DataHistogramPlot()
     r = p._repr_html_()
-    check_empty(r, 'BaseHistogram', nsummary=6)
+    check_empty(r, 'DataHistogramPlot', nsummary=6)
 
     p.xlo = np.asarray([1, 2, 3])
     p.xhi = np.asarray([2, 2.5, 4])
@@ -48,7 +48,7 @@ def test_histogram(all_plot_backends):
     p.ylabel = 'Y'
     p.title = 'Title String'
     r = p._repr_html_()
-    check_full(r, 'BaseHistogram', 'X <sup>2</sup>',
+    check_full(r, 'DataHistogramPlot', 'X <sup>2</sup>',
                'Title String', nsummary=6)
 
 
