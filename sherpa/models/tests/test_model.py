@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020 - 2024
+#  Copyright (C) 2007, 2016, 2017, 2020, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -30,7 +30,7 @@ try:
 except ImportError:
     from hashlib import sha256 as hashfunc
 
-import numpy
+import numpy as np
 
 import pytest
 
@@ -57,7 +57,7 @@ def validate_warning(warning_capturer, parameter_name="norm",
 
 def my_sin(pars, x):
     return (pars[2].val *
-            numpy.sin(2.0 * numpy.pi * (x - pars[1].val) / pars[0].val))
+            np.sin(2.0 * np.pi * (x - pars[1].val) / pars[0].val))
 
 
 # Test support for renamed parameters by sub-classing
@@ -134,13 +134,13 @@ class ReportKeywordsModel(ArithmeticModel):
         # store the index value along with the keyword arguments
         self._keyword_store.append((p[0], kwargs))
         if xhi is None and len(args) == 1:
-            return p[1] * numpy.ones_like(x)
+            return p[1] * np.ones_like(x)
 
         if xhi is None:
             assert len(args) == 2
             xhi = args[1]
 
-        return p[1] * (numpy.asarray(xhi) - numpy.asarray(x))
+        return p[1] * (np.asarray(xhi) - np.asarray(x))
 
 
 def setup_model():
@@ -163,7 +163,7 @@ def setup_composite():
     out.m2.c0 = 4
     out.s = Sin('s')
     out.x = 1.0
-    out.xx = numpy.arange(-10.0, 10.0)
+    out.xx = np.arange(-10.0, 10.0)
     return out
 
 
@@ -285,7 +285,7 @@ def test_setpar_rename(setup, warns):
 def test_calc_and_call(setup):
     mdl, _ = setup()
 
-    x = numpy.arange(10.0)
+    x = np.arange(10.0)
     refvals = my_sin(mdl.pars, x)
 
     pars = [p.val for p in mdl.pars]
@@ -589,13 +589,13 @@ def test_filter():
 
     assert type(m) is FilterModel
 
-    assert numpy.all(m(out.xx) == out.s(out.xx)[::2])
+    assert np.all(m(out.xx) == out.s(out.xx)[::2])
 
 
 def test_nested():
     out = setup_composite()
 
-    for func in (numpy.sin, out.s):
+    for func in (np.sin, out.s):
         m = out.m.apply(func)
 
         assert type(m) is NestedModel
@@ -640,7 +640,7 @@ def test_binop_checks_sizes():
 
     m1 = Const1D()
     m1.c0 = 2
-    m2 = numpy.asarray([2, 3, 4])
+    m2 = np.asarray([2, 3, 4])
     m = m1 + m2
     assert isinstance(m, BinaryOpModel)
 
@@ -674,7 +674,7 @@ def test_functionmodel_check():
 @pytest.mark.parametrize('model,mtype',
                          [(ArithmeticConstantModel(23, name='the-23'),
                            ArithmeticConstantModel),
-                          (ArithmeticFunctionModel(numpy.sin),
+                          (ArithmeticFunctionModel(np.sin),
                            ArithmeticFunctionModel)])
 def test_unop_arithmeticxxx(model, mtype):
     """Can we apply a function to an Arithmetic*Model object?
@@ -686,12 +686,12 @@ def test_unop_arithmeticxxx(model, mtype):
 
     """
 
-    mneg = UnaryOpModel(model, numpy.negative, '-')
+    mneg = UnaryOpModel(model, np.negative, '-')
     assert isinstance(mneg, UnaryOpModel)
-    assert mneg.op == numpy.negative
+    assert mneg.op == np.negative
     assert isinstance(mneg.arg, mtype)
 
-    x = numpy.linspace(0.1, 0.5, 5)
+    x = np.linspace(0.1, 0.5, 5)
     y1 = -1 * model(x)
     y2 = mneg(x)
     assert y2 == pytest.approx(y1)
@@ -701,7 +701,7 @@ def test_unop_arithmeticxxx(model, mtype):
                          [(23, ArithmeticConstantModel),
                           (ArithmeticConstantModel(23, name='the-23'),
                            ArithmeticConstantModel),
-                          (ArithmeticFunctionModel(numpy.sin),
+                          (ArithmeticFunctionModel(np.sin),
                            ArithmeticFunctionModel)])
 def test_binop_arithmeticxxx(model, mtype):
     """Can we create and combine Arithmetic*Model objects?"""
@@ -711,21 +711,21 @@ def test_binop_arithmeticxxx(model, mtype):
 
     mleft = model + m1
     assert isinstance(mleft, BinaryOpModel)
-    assert mleft.op == numpy.add
+    assert mleft.op == np.add
     assert len(mleft.parts) == 2
     assert isinstance(mleft.parts[0], mtype)
     assert isinstance(mleft.parts[1], Const1D)
 
     mright = m1 + model
     assert isinstance(mright, BinaryOpModel)
-    assert mright.op == numpy.add
+    assert mright.op == np.add
     assert len(mright.parts) == 2
     assert isinstance(mright.parts[0], Const1D)
     assert isinstance(mright.parts[1], mtype)
 
-    x = numpy.linspace(0.1, 0.5, 5)
+    x = np.linspace(0.1, 0.5, 5)
     if mtype == ArithmeticConstantModel:
-        y1 = 25 * numpy.ones(5)
+        y1 = 25 * np.ones(5)
     else:
         y1 = model(x) + 2
 
@@ -737,9 +737,9 @@ def test_binop_arithmeticxxx(model, mtype):
 
 @pytest.mark.parametrize('value,name,expected',
                          [(23, None, '23.0'),
-                          (numpy.asarray([3, 5, -1]), None, 'float64[3]'),
+                          (np.asarray([3, 5, -1]), None, 'float64[3]'),
                           (23, '24', '24'),  # this is not a good name
-                          (numpy.asarray([3, 5, -1]), 'arrayval', 'arrayval')])
+                          (np.asarray([3, 5, -1]), 'arrayval', 'arrayval')])
 def test_constant_show(value, name, expected):
     """Does the ArithmeticConstantModel convert names as expected?"""
 
@@ -800,8 +800,8 @@ def test_integrate1d_basic(caplog):
     mdl = imdl(bmdl)
     bmdl.c0 = 4
 
-    xlo = numpy.asarray([1.1, 1.2, 1.4, 1.8, 2.4])
-    xhi = numpy.asarray([1.2, 1.3, 1.8, 2.0, 3.0])
+    xlo = np.asarray([1.1, 1.2, 1.4, 1.8, 2.4])
+    xhi = np.asarray([1.2, 1.3, 1.8, 2.0, 3.0])
 
     # I don't know what the rule is for creating this warning, but
     # check we see it.
@@ -809,7 +809,7 @@ def test_integrate1d_basic(caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         y = mdl(xlo, xhi)
 
-    expected = 4 * numpy.asarray([0.1, 0.1, 0.4, 0.2, 0.6])
+    expected = 4 * np.asarray([0.1, 0.1, 0.4, 0.2, 0.6])
     assert y == pytest.approx(expected)
 
     assert len(caplog.records) == 1
@@ -830,10 +830,10 @@ def test_integrate1d_basic_epsabs(caplog):
     bmdl = Scale1D()
     mdl = imdl(bmdl)
     bmdl.c0 = 4
-    imdl.epsabs = numpy.finfo(numpy.float32).eps
+    imdl.epsabs = np.finfo(np.float32).eps
 
-    xlo = numpy.asarray([1.1, 1.2, 1.4, 1.8, 2.4])
-    xhi = numpy.asarray([1.2, 1.3, 1.8, 2.0, 3.0])
+    xlo = np.asarray([1.1, 1.2, 1.4, 1.8, 2.4])
+    xhi = np.asarray([1.2, 1.3, 1.8, 2.0, 3.0])
 
     # I don't know what the rule is for creating this warning, but
     # check we see it.
@@ -841,7 +841,7 @@ def test_integrate1d_basic_epsabs(caplog):
     with caplog.at_level(logging.INFO, logger='sherpa'):
         y = mdl(xlo, xhi)
 
-    expected = 4 * numpy.asarray([0.1, 0.1, 0.4, 0.2, 0.6])
+    expected = 4 * np.asarray([0.1, 0.1, 0.4, 0.2, 0.6])
     assert y == pytest.approx(expected)
 
     assert len(caplog.records) == 0
@@ -859,7 +859,7 @@ def check_cache(mdl, expected, x, xhi=None):
     assert len(cache) == 1
 
     pars = [p.val for p in mdl.pars]
-    data = [numpy.asarray(pars).tobytes(),
+    data = [np.asarray(pars).tobytes(),
             b'1' if mdl.integrate else b'0',
             x.tobytes()]
     if xhi is not None:
@@ -871,66 +871,55 @@ def check_cache(mdl, expected, x, xhi=None):
     assert cache[digest] == pytest.approx(expected)
 
 
-def test_evaluate_no_cache1d():
-    """Check we can turn off caching: 1d"""
+@pytest.mark.parametrize('cached', [True, False])
+def test_evaluate_cache1d(cached):
+    """Check we run with caching on or off: 1d"""
 
-    xgrid = numpy.arange(2, 10, 1.5)
+    xgrid = np.arange(2, 10, 1.5)
 
     mdl = Polynom1D()
     mdl.integrate = False
-    mdl._use_caching = False
+    mdl._use_caching = cached
     assert len(mdl._cache) == 0
 
     # Check the default values
-    expected = numpy.ones(6)
+    expected = np.ones(6)
     assert mdl(xgrid) == pytest.approx(expected)
-    assert len(mdl._cache) == 0
+
+    if cached:
+        check_cache(mdl, expected, xgrid)
+    else:
+        assert len(mdl._cache) == 0
 
     mdl.c0 = 5
     mdl.c1 = 2
 
     expected = 5 + 2 * xgrid
     assert mdl(xgrid) == pytest.approx(expected)
-    assert len(mdl._cache) == 0
+    if cached:
+        check_cache(mdl, expected, xgrid)
+    else:
+        assert len(mdl._cache) == 0
 
 
-def test_evaluate_cache1d():
-    """Check we run with caching on: 1d"""
+@pytest.mark.parametrize('cached', [True, False])
+def test_evaluate_cache1dint(cached):
+    """Check we run with caching on or off: 1dint"""
 
-    xgrid = numpy.arange(2, 10, 1.5)
-
-    mdl = Polynom1D()
-    mdl.integrate = False
-    mdl._use_caching = True
-    assert len(mdl._cache) == 0
-
-    # Check the default values
-    expected = numpy.ones(6)
-    assert mdl(xgrid) == pytest.approx(expected)
-    check_cache(mdl, expected, xgrid)
-
-    mdl.c0 = 5
-    mdl.c1 = 2
-
-    expected = 5 + 2 * xgrid
-    assert mdl(xgrid) == pytest.approx(expected)
-    check_cache(mdl, expected, xgrid)
-
-
-def test_evaluate_no_cache1dint():
-    """Check we can turn off caching: 1dint"""
-
-    xgrid = numpy.arange(2, 10, 1.5)
+    xgrid = np.arange(2, 10, 1.5)
     xlo, xhi = xgrid[:-1], xgrid[1:]
 
     mdl = Polynom1D()
-    mdl._use_caching = False
+    mdl._use_caching = cached
     assert len(mdl._cache) == 0
 
     # Check the default values
-    expected = numpy.ones(5) * 1.5
+    expected = np.ones(5) * 1.5
     assert mdl(xlo, xhi) == pytest.approx(expected)
-    assert len(mdl._cache) == 0
+    if cached:
+        check_cache(mdl, expected, xlo, xhi)
+    else:
+        assert len(mdl._cache) == 0
 
     mdl.c0 = 5
     mdl.c1 = 2
@@ -944,37 +933,10 @@ def test_evaluate_no_cache1dint():
 
     expected = dx * (yhi + ylo) / 2
     assert mdl(xlo, xhi) == pytest.approx(expected)
-    assert len(mdl._cache) == 0
-
-
-def test_evaluate_cache1dint():
-    """Check we run with caching on: 1dint"""
-
-    xgrid = numpy.arange(2, 10, 1.5)
-    xlo, xhi = xgrid[:-1], xgrid[1:]
-
-    mdl = Polynom1D()
-    mdl._use_caching = True
-    assert len(mdl._cache) == 0
-
-    # Check the default values
-    expected = numpy.ones(5) * 1.5
-    assert mdl(xlo, xhi) == pytest.approx(expected)
-    check_cache(mdl, expected, xlo, xhi)
-
-    mdl.c0 = 5
-    mdl.c1 = 2
-
-    def xval(x):
-        return 5 + 2 * x
-
-    dx = xhi - xlo
-    ylo = xval(xlo)
-    yhi = xval(xhi)
-
-    expected = dx * (yhi + ylo) / 2
-    assert mdl(xlo, xhi) == pytest.approx(expected)
-    check_cache(mdl, expected, xlo, xhi)
+    if cached:
+        check_cache(mdl, expected, xlo, xhi)
+    else:
+        assert len(mdl._cache) == 0
 
 
 def test_evaluate_cache_swap():
@@ -985,7 +947,7 @@ def test_evaluate_cache_swap():
     separate check in case things change.
     """
 
-    xgrid = numpy.arange(2, 10, 1.5)
+    xgrid = np.arange(2, 10, 1.5)
     xlo, xhi = xgrid[:-1], xgrid[1:]
 
     mdl = Polynom1D()
@@ -1051,7 +1013,7 @@ def test_evaluate_cache_regrid1d():
 
     mdl = Polynom1D()
 
-    x = numpy.arange(2, 20, 0.5)
+    x = np.arange(2, 20, 0.5)
     rmdl = mdl.regrid(x)
 
     assert isinstance(rmdl, RegridWrappedModel)
@@ -1068,7 +1030,7 @@ class DoNotUseModel(Model):
 
     # We need this for modelCacher1d
     _use_caching = True
-    _cache: dict[bytes, numpy.ndarray] = {}
+    _cache: dict[bytes, np.ndarray] = {}
     _cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
     _queue = ['']
 
@@ -1076,7 +1038,7 @@ class DoNotUseModel(Model):
     def calc(self, p, *args, **kwargs):
         """p is ignored."""
 
-        return numpy.ones(args[0].size)
+        return np.ones(args[0].size)
 
 
 def test_cache_integrate_fall_through_no_integrate():
@@ -1086,7 +1048,7 @@ def test_cache_integrate_fall_through_no_integrate():
     """
 
     mdl = DoNotUseModel('notme')
-    x = numpy.asarray([2, 3, 7, 100])
+    x = np.asarray([2, 3, 7, 100])
     y = mdl(x)
 
     expected = [1, 1, 1, 1]
@@ -1099,7 +1061,7 @@ def test_cache_integrate_fall_through_no_integrate():
     assert len(cache) == 1
 
     pars = []
-    data = [numpy.asarray(pars).tobytes(),
+    data = [np.asarray(pars).tobytes(),
             b'0', # not integrated
             x.tobytes()]
 
@@ -1113,7 +1075,7 @@ def test_cache_integrate_fall_through_integrate_true():
     """See also test_cache_integrate_fall_through_no_integrate."""
 
     mdl = DoNotUseModel('notme')
-    x = numpy.asarray([2, 3, 7, 100])
+    x = np.asarray([2, 3, 7, 100])
     y = mdl(x, integrate=True)
 
     expected = [1, 1, 1, 1]
@@ -1126,14 +1088,14 @@ def test_cache_integrate_fall_through_integrate_true():
     assert len(cache) == 1
 
     pars = []
-    data = [numpy.asarray(pars).tobytes(),
+    data = [np.asarray(pars).tobytes(),
             b'1', # integrated
             x.tobytes(),
             # The integrate setting is included twice because we can
             # not guarantee it has been sent in with a keyword
             # argument.
             b'integrate',
-            numpy.asarray(True).tobytes()]
+            np.asarray(True).tobytes()]
 
     token = b''.join(data)
     digest = hashfunc(token).digest()
@@ -1145,7 +1107,7 @@ def test_cache_integrate_fall_through_integrate_false():
     """See also test_cache_integrate_fall_through_no_integrate."""
 
     mdl = DoNotUseModel('notme')
-    x = numpy.asarray([2, 3, 7, 100])
+    x = np.asarray([2, 3, 7, 100])
     y = mdl(x, integrate=False)
 
     expected = [1, 1, 1, 1]
@@ -1158,14 +1120,14 @@ def test_cache_integrate_fall_through_integrate_false():
     assert len(cache) == 1
 
     pars = []
-    data = [numpy.asarray(pars).tobytes(),
+    data = [np.asarray(pars).tobytes(),
             b'0', # not integrated
             x.tobytes(),
             # The integrate setting is included twice because we can
             # not guarantee it has been sent in with a keyword
             # argument.
             b'integrate',
-            numpy.asarray(False).tobytes()]
+            np.asarray(False).tobytes()]
 
     token = b''.join(data)
     digest = hashfunc(token).digest()
