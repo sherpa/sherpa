@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015 - 2024
+#  Copyright (C) 2010, 2015, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -113,7 +113,8 @@ import numpy as np
 
 from sherpa.astro.utils import get_xspec_norm, get_xspec_position
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
-    CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
+    CompositeModel, Parameter, modelCacher1d, modelCacher1d_exp, \
+    RegriddableModel1D
 from sherpa.models.parameter import hugeval
 from sherpa.utils import bool_cast
 from sherpa.utils.err import ArgumentErr, IOErr, ParameterErr
@@ -1717,6 +1718,29 @@ class XSMultiplicativeModel(XSModel):
     """
 
     pass
+
+
+class XSAbsorptionModel(XSMultiplicativeModel):
+    """The base class for XSPEC absorption models with just one nH parameter.
+
+    This is a special case of the `XSMultiplicativeModel` class, where
+    the model has a single parameter, `nH`, which is the column density
+    of the absorber.
+    Because absprtion is just :math:`e^{-nH \\sigma(E)}`, the model
+    we can cache the :math:`\\sigma(E)}` and perform the exponential,
+    which avoids an expensive call to the XSPEC model.
+
+    The XSPEC multiplicative models are listed at [1]_.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Multiplivative.html
+
+    """
+    @modelCacher1d_exp
+    def calc(self, p, *args, **kwargs):
+        return XSMultiplicativeModel.calc.__wrapped__(self, p, *args, **kwargs)
 
 
 class XSConvolutionKernel(XSModel):
@@ -14080,7 +14104,7 @@ class XSconstant(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.factor,))
 
 
-class XScabs(XSMultiplicativeModel):
+class XScabs(XSAbsorptionModel):
     """The XSPEC cabs model: Optically-thin Compton scattering.
 
     The model is described at [1]_.
@@ -14101,7 +14125,7 @@ class XScabs(XSMultiplicativeModel):
 
     def __init__(self, name='cabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        XSMultiplicativeModel.__init__(self, name, (self.nH,))
+        XSAbsorptionModel.__init__(self, name, (self.nH,))
 
 
 class XScyclabs(XSMultiplicativeModel):
@@ -14794,7 +14818,7 @@ class XSpcfabs(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, (self.nH, self.CvrFract))
 
 
-class XSphabs(XSMultiplicativeModel):
+class XSphabs(XSAbsorptionModel):
     """The XSPEC phabs model: photoelectric absorption.
 
     The model is described at [1]_.
@@ -14825,7 +14849,7 @@ class XSphabs(XSMultiplicativeModel):
 
     def __init__(self, name='phabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        XSMultiplicativeModel.__init__(self, name, (self.nH,))
+        XSAbsorptionModel.__init__(self, name, (self.nH,))
 
 
 class XSplabs(XSMultiplicativeModel):
@@ -15094,7 +15118,7 @@ class XSswind1(XSMultiplicativeModel):
         XSMultiplicativeModel.__init__(self, name, pars)
 
 
-class XSTBabs(XSMultiplicativeModel):
+class XSTBabs(XSAbsorptionModel):
     """The XSPEC TBabs model: ISM grain absorption.
 
     The model is described at [1]_.
@@ -15124,7 +15148,7 @@ class XSTBabs(XSMultiplicativeModel):
 
     def __init__(self, name='tbabs'):
         self.nH = XSParameter(name, 'nH', 1., 0., 1E5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        XSMultiplicativeModel.__init__(self, name, (self.nH,))
+        XSAbsorptionModel.__init__(self, name, (self.nH,))
 
 
 class XSTBfeo(XSMultiplicativeModel):
@@ -15692,7 +15716,7 @@ class XSwabs(XSMultiplicativeModel):
 
     def __init__(self, name='wabs'):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
-        XSMultiplicativeModel.__init__(self, name, (self.nH,))
+        XSAbsorptionModel.__init__(self, name, (self.nH,))
 
 
 class XSwndabs(XSMultiplicativeModel):

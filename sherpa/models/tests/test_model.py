@@ -35,9 +35,10 @@ import numpy as np
 import pytest
 
 from sherpa.data import Data1D
-from sherpa.models.model import ArithmeticModel, ArithmeticConstantModel, \
-    ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel, \
-    UnaryOpModel, RegridWrappedModel, modelCacher1d
+from sherpa.models.model import (ArithmeticModel, ArithmeticConstantModel,
+    ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel,
+    UnaryOpModel, RegridWrappedModel, modelCacher1d, modelCacher1d_exp,
+    RegriddableModel1D)
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
     Scale1D, Integrate1D, Const2D, Gauss2D, Scale2D, Poisson
@@ -847,7 +848,7 @@ def test_integrate1d_basic_epsabs(caplog):
     assert len(caplog.records) == 0
 
 
-def check_cache(mdl, expected, x, xhi=None):
+def check_cache(mdl, expected, x, xhi=None, pars_in_cache=slice(None, None)):
     """Check the cache contents.
 
     We assume only one value is being cached at a time. The
@@ -859,7 +860,7 @@ def check_cache(mdl, expected, x, xhi=None):
     assert len(cache) == 1
 
     pars = [p.val for p in mdl.pars]
-    data = [np.asarray(pars).tobytes(),
+    data = [np.asarray(pars)[pars_in_cache].tobytes(),
             b'1' if mdl.integrate else b'0',
             x.tobytes()]
     if xhi is not None:
@@ -869,6 +870,24 @@ def check_cache(mdl, expected, x, xhi=None):
     digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
+
+
+class ExpcacheTestModel(RegriddableModel1D):
+    '''A model to test the modelCacher1d_exp decorator.
+
+    Note that a direct calc  gives different values than when
+    using the cache. Obviously, that's not what a real model
+    would do, but it's useful for testing.
+    '''
+
+    def __init__(self, name='expcache'):
+        self.foo = Parameter(name, 'foo', 1, 1e-10, 10)
+        ArithmeticModel.__init__(self, name,
+                                 (self.foo))
+
+    @modelCacher1d_exp
+    def calc(self, p, *args, **kwargs):
+        return p[0] * np.ones_like(args[0])
 
 
 @pytest.mark.parametrize('cached', [True, False])
@@ -899,6 +918,42 @@ def test_evaluate_cache1d(cached):
     if cached:
         check_cache(mdl, expected, xgrid)
     else:
+        assert len(mdl._cache) == 0
+
+
+@pytest.mark.parametrize('cached', [True, False])
+def test_evaluate_cache1dexp(cached):
+    """Check we run with caching on or off: 1d"""
+
+    xgrid = np.arange(2, 10, 1.5)
+
+    mdl = ExpcacheTestModel()
+    mdl.foo = 0.1
+    mdl._use_caching = cached
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = 0.1 * np.ones(6)
+    assert mdl(xgrid) == pytest.approx(expected)
+
+    if cached:
+        check_cache(mdl, np.log(expected), xgrid, pars_in_cache=[False])
+    else:
+        assert len(mdl._cache) == 0
+
+
+    mdl.foo = 1
+
+    # Note that the model is itentiaonally defined such that
+    # the exponential function used in the cache does not match
+    # the direct calculation.
+    # That way, we can see from the value if the cache is being used.
+    if cached:
+        expected = 1e-10 * np.ones(6)
+        assert mdl(xgrid) == pytest.approx(expected)
+        check_cache(mdl, np.log(expected) * 0.1, xgrid, pars_in_cache=[False])
+    else:
+        assert mdl(xgrid) == pytest.approx(np.ones(6))
         assert len(mdl._cache) == 0
 
 
@@ -1034,6 +1089,9 @@ class DoNotUseModel(Model):
     _cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
     _queue = ['']
 
+    def __init__(self, name='expcache'):
+        self.foo = Parameter(name, 'foo', 1, 1e-10, 10)
+        super().__init__(name, (self.foo))
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
         """p is ignored."""
@@ -1041,13 +1099,23 @@ class DoNotUseModel(Model):
         return np.ones(args[0].size)
 
 
-def test_cache_integrate_fall_through_no_integrate():
+class DoNotUseModel_exp(DoNotUseModel):
+
+    @modelCacher1d_exp
+    def calc(self, p, *args, **kwargs):
+        """p is ignored."""
+
+        return np.ones(args[0].size)
+
+
+@pytest.mark.parametrize('donotusemodel', [DoNotUseModel, DoNotUseModel_exp])
+def test_cache_integrate_fall_through_no_integrate(donotusemodel):
     """Try and test the fall-through of the integrate setting.
 
     This is a bit contrived.
     """
 
-    mdl = DoNotUseModel('notme')
+    mdl = donotusemodel('notme')
     x = np.asarray([2, 3, 7, 100])
     y = mdl(x)
 
@@ -1060,10 +1128,14 @@ def test_cache_integrate_fall_through_no_integrate():
     cache = mdl._cache
     assert len(cache) == 1
 
-    pars = []
+    pars = [1.0]
     data = [np.asarray(pars).tobytes(),
             b'0', # not integrated
             x.tobytes()]
+
+    if isinstance(mdl, DoNotUseModel_exp):
+        data.pop(0)
+        expected = np.log(expected)
 
     token = b''.join(data)
     digest = hashfunc(token).digest()
@@ -1071,10 +1143,11 @@ def test_cache_integrate_fall_through_no_integrate():
     assert cache[digest] == pytest.approx(expected)
 
 
-def test_cache_integrate_fall_through_integrate_true():
+@pytest.mark.parametrize('donotusemodel', [DoNotUseModel, DoNotUseModel_exp])
+def test_cache_integrate_fall_through_integrate_true(donotusemodel):
     """See also test_cache_integrate_fall_through_no_integrate."""
 
-    mdl = DoNotUseModel('notme')
+    mdl = donotusemodel('notme')
     x = np.asarray([2, 3, 7, 100])
     y = mdl(x, integrate=True)
 
@@ -1087,7 +1160,7 @@ def test_cache_integrate_fall_through_integrate_true():
     cache = mdl._cache
     assert len(cache) == 1
 
-    pars = []
+    pars = [1.0]
     data = [np.asarray(pars).tobytes(),
             b'1', # integrated
             x.tobytes(),
@@ -1097,16 +1170,21 @@ def test_cache_integrate_fall_through_integrate_true():
             b'integrate',
             np.asarray(True).tobytes()]
 
+    if isinstance(mdl, DoNotUseModel_exp):
+        data.pop(0)
+        expected = np.log(expected)
+
     token = b''.join(data)
     digest = hashfunc(token).digest()
     assert digest in cache
     assert cache[digest] == pytest.approx(expected)
 
 
-def test_cache_integrate_fall_through_integrate_false():
+@pytest.mark.parametrize('donotusemodel', [DoNotUseModel, DoNotUseModel_exp])
+def test_cache_integrate_fall_through_integrate_false(donotusemodel):
     """See also test_cache_integrate_fall_through_no_integrate."""
 
-    mdl = DoNotUseModel('notme')
+    mdl = donotusemodel('notme')
     x = np.asarray([2, 3, 7, 100])
     y = mdl(x, integrate=False)
 
@@ -1119,7 +1197,7 @@ def test_cache_integrate_fall_through_integrate_false():
     cache = mdl._cache
     assert len(cache) == 1
 
-    pars = []
+    pars = [1.0]
     data = [np.asarray(pars).tobytes(),
             b'0', # not integrated
             x.tobytes(),
@@ -1128,6 +1206,9 @@ def test_cache_integrate_fall_through_integrate_false():
             # argument.
             b'integrate',
             np.asarray(False).tobytes()]
+    if isinstance(mdl, DoNotUseModel_exp):
+        data.pop(0)
+        expected = np.log(expected)
 
     token = b''.join(data)
     digest = hashfunc(token).digest()
@@ -1135,10 +1216,12 @@ def test_cache_integrate_fall_through_integrate_false():
     assert cache[digest] == pytest.approx(expected)
 
 
-def test_cache_status_single(caplog):
+@pytest.mark.parametrize('model',
+                            [Polynom1D, ExpcacheTestModel])
+def test_cache_status_single(caplog, model):
     """Check cache_status for a single model."""
 
-    p = Polynom1D()
+    p = model()
     with caplog.at_level(logging.INFO, logger='sherpa'):
         p.cache_status()
 
@@ -1147,7 +1230,10 @@ def test_cache_status_single(caplog):
     assert lname == 'sherpa.models.model'
     assert lvl == logging.INFO
     toks = msg.split()
-    assert toks[0] == 'polynom1d'
+    if isinstance(p, ExpcacheTestModel):
+        assert toks[0] == 'expcache'
+    else:
+        assert toks[0] == 'polynom1d'
     assert toks[1] == 'size:'
     assert toks[2] == '1'
     assert toks[3] == 'hits:'
@@ -1159,7 +1245,9 @@ def test_cache_status_single(caplog):
     assert len(toks) == 9
 
 
-def test_cache_status_multiple(caplog):
+@pytest.mark.parametrize('model',
+                         [Polynom1D, ExpcacheTestModel])
+def test_cache_status_multiple(caplog, model):
     """Check cache_status for a multi-component model.
 
     Unlike test_cache_syayus_single we also have evaluated the model
@@ -1170,7 +1258,7 @@ def test_cache_status_multiple(caplog):
     # term 2) which does not have a cache and so is ignored by
     # cache_status.
     #
-    p = Polynom1D()
+    p = model()
     b = Box1D()
     c = Const1D()
     mdl = c * (2 * p + b)
@@ -1208,7 +1296,10 @@ def test_cache_status_multiple(caplog):
     assert toks[6] == '2'
 
     toks = tokens[1]
-    assert toks[0] == 'polynom1d'
+    if isinstance(p, ExpcacheTestModel):
+        assert toks[0] == 'expcache'
+    else:
+        assert toks[0] == 'polynom1d'
     assert toks[4] == '1'
     assert toks[6] == '2'
 
@@ -1218,10 +1309,12 @@ def test_cache_status_multiple(caplog):
     assert toks[6] == '0'
 
 
-def test_cache_clear_single():
+@pytest.mark.parametrize('model',
+                            [Polynom1D, ExpcacheTestModel])
+def test_cache_clear_single(model):
     """Check cache_clear for a single model."""
 
-    p = Polynom1D()
+    p = model()
 
     # There's no official API for accessing the cache data,
     # so do it directly.
@@ -1248,7 +1341,10 @@ def test_cache_clear_single():
     assert p._cache_ctr['misses'] == 0
 
 
-def test_cache_clear_multiple():
+@pytest.mark.parametrize('model',
+                            [Polynom1D, ExpcacheTestModel])
+
+def test_cache_clear_multiple(model):
     """Check cache_clear for a combined model."""
 
     p = Polynom1D()

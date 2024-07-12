@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016 - 2024
+#  Copyright (C) 2010, 2016, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -353,7 +353,8 @@ warning = logging.getLogger(__name__).warning
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'ArithmeticConstantModel', 'ArithmeticModel', 'RegriddableModel1D', 'RegriddableModel2D',
-           'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
+           'UnaryOpModel', 'BinaryOpModel', 'FilterModel',
+           'modelCacher1d', 'modelCacher1d_exp',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
 
@@ -484,6 +485,116 @@ def modelCacher1d(func: Callable) -> Callable:
         cache_ctr['misses'] += 1
 
         return vals
+
+    return cache_model
+
+
+# This shares a lot of the code with modelCacher1d, but
+# it's annoyingly hard to factor out the common code, so it's not
+# done here.
+
+def modelCacher1d_exp(func: Callable) -> Callable:
+    """A decorator to cache 1D ArithmeticModel evaluations of a specific form.
+
+    Apply to the `calc` method of a 1D model to allow the model
+    evaluation to be cached. The decision is based on the
+    `_use_caching` attribute of the cache along with the `integrate`
+    setting, the evaluation grid, parameter values, and the keywords
+    sent to the model.
+
+    Unlike the more general `sherpa.models.model.modelCacher1d`, this
+    version is designed for models with a single parameter and a model of
+    the following form:
+
+    math::
+        y(x) = \exp(p * a(x))
+
+    where `p` is the parameter. The cacher will evaluate the model once
+    with `p=1` and then store that. This is useful in particular for
+    absorption models, where `a(x)` is an expensive calculation with
+    atomic cross-sections etc.
+
+    Notes
+    -----
+    The keywords are included in the hash calculation even if they are
+    not relevant for the model (as there's no easy way to find this
+    out).
+
+    Example
+    -------
+
+    Allow `MyModel` model evaluations to be cached::
+
+        def MyModel(ArithmeticModel):
+            ...
+            @modelCacher1d_exp
+            def calc(self, p, *args, **kwargs):
+                ...
+
+    """
+
+    @functools.wraps(func)
+    def cache_model(cls, pars, xlo, *args, **kwargs):
+
+        # Assert, not exception since this is a developer error.
+        assert len(pars) == 1, "Only one parameter is allowed"
+
+        # Counts all accesses, even those that do not use the cache.
+        cache_ctr = cls._cache_ctr
+        cache_ctr["check"] += 1
+
+        # Short-cut if the cache is not being used.
+        #
+        if not cls._use_caching:
+            return func(cls, pars, xlo, *args, **kwargs)
+
+        try:
+            integrate = cls.integrate
+        except AttributeError:
+            # Rely on the integrate kwarg as there's no
+            # model setting.
+            #
+            integrate = kwargs.get("integrate", False)
+
+        data = [
+            boolean_to_byte(integrate),
+            np.asarray(xlo).tobytes(),
+        ]
+        if args:
+            data.append(np.asarray(args[0]).tobytes())
+
+        # Add any keyword arguments to the list. This will
+        # include the xhi named argument if given. Can the
+        # value field fail here?
+        #
+        for k, v in kwargs.items():
+            data.extend([k.encode(), np.asarray(v).tobytes()])
+
+        # Is the value cached?
+        #
+        token = b"".join(data)
+        digest = hashfunc(token).digest()
+        cache = cls._cache
+        if digest in cache:
+            cache_ctr["hits"] += 1
+
+        else:
+            # Evaluate the model.
+            #
+            vals = func(cls, (.1,), xlo, *args, **kwargs)
+
+            # remove first item in queue and remove from cache
+            queue = cls._queue
+            key = queue.pop(0)
+            cache.pop(key, None)
+
+            # append newest model values to queue
+            queue.append(digest)
+            cache[digest] = np.log(vals)
+
+            cache_ctr["misses"] += 1
+
+        return np.exp(pars[0] / 0.1 * cache[digest])
 
     return cache_model
 

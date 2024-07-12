@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015 - 2024
+#  Copyright (C) 2007, 2015, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,7 +18,7 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-import numpy
+import numpy as np
 
 import pytest
 
@@ -27,14 +27,22 @@ from sherpa.models import Parameter
 from sherpa.utils.testing import requires_data, \
     requires_fits, requires_xspec
 from sherpa.utils.err import ParameterErr
+try:
+    from sherpa.astro.xspec import XSAbsorptionModel
+except ImportError:
+    # Tests are marked with @requires_xspec, so they will never notice
+    # that this symbol is undefined is XSPEC is not available.
+    pass
 
 # How many models should there be?
-# This number includes all additive, multiplicative, and convolition models,
+# This number includes all additive, multiplicative, and convolution models,
 # even the ones that would be disabled by a decoration from .utils.
 # The number can be calculated by counting the occurrences of the strings
 #    '(XSAdditiveModel)'
 #    '(XSMultiplicativeModel)'
+#    '(XSAbsorptionModel)'
 #    '(XSConvolutionKernel)'
+#    minus 1 (from the definition of XSAbsorptionModel)
 # in `xspec/__init__.py`
 #
 XSPEC_MODELS_COUNT = 281
@@ -99,6 +107,7 @@ def get_xspec_models():
     # Could just exclude any names that end in 'Model', but this
     # could remove valid model names, so be explicit.
     for n in ['XSModel', 'XSMultiplicativeModel', 'XSAdditiveModel',
+              'XSAbsorptionModel',
               'XSTableModel', 'XSConvolutionModel', 'XSConvolutionKernel',
               'XSBaseParameter', 'XSParameter']:
         remove_item(model_names, n)
@@ -109,7 +118,7 @@ def get_xspec_models():
     #
     remove_item(model_names, 'XSgrbjet')
 
-    # The bsedov model causes a crashe with XSPEC 12.14.0 to 12.14.0e
+    # The bsedov model causes a crash with XSPEC 12.14.0 to 12.14.0e
     # (it should be fixed in 12.4.0f and later). The model is not
     # present before 12.14.0.
     #
@@ -150,12 +159,12 @@ def make_grid():
     # 100 models. So chose a coarser grid and a smaller energy
     # range.
     #
-    # egrid = numpy.arange(0.1, 11.01, 0.01)
-    # egrid = numpy.arange(0.1, 5.01, 0.1)
+    # egrid = np.arange(0.1, 11.01, 0.01)
+    # egrid = np.arange(0.1, 5.01, 0.1)
 
     # XSgaussian has peak at 6.5 keV and sigma ~ 0.1 keV
     # so need to get to around 7 keV
-    egrid = numpy.arange(0.1, 7.01, 0.1)
+    egrid = np.arange(0.1, 7.01, 0.1)
     elo = egrid[:-1]
     ehi = egrid[1:]
 
@@ -203,7 +212,7 @@ def assert_is_finite(vals, modelcls, label):
     import sherpa.astro.xspec as xs
 
     emsg = f"model {modelcls} is finite [{label}]"
-    assert numpy.isfinite(vals).all(), emsg
+    assert np.isfinite(vals).all(), emsg
 
     # Some models seem to return 0's, so skip them for now:
     # these models have a default redshift parameter of 0 but
@@ -231,6 +240,7 @@ def test_create_model_instances(clean_astro_ui):
 
         if is_proper_subclass(cls, (xs.XSAdditiveModel,
                                     xs.XSMultiplicativeModel,
+                                    xs.XSAbsorptionModel,
                                     xs.XSConvolutionKernel)):
             # Ensure that we can create an instance, but do
             # nothing with it.
@@ -251,10 +261,11 @@ def test_check_default_name():
         cls = getattr(xs, clname)
         if is_proper_subclass(cls, (xs.XSAdditiveModel,
                                     xs.XSMultiplicativeModel,
+                                    xs.XSAbsorptionModel,
                                     xs.XSConvolutionKernel)):
 
             # At the moment we have some defaulting to xs... and some just ...
-            # (the forner are convolution cases which should probably be
+            # (the former are convolution cases which should probably be
             # switched to drop the leading xs).
             #
             mdl = cls()
@@ -297,9 +308,9 @@ def test_evaluate_model():
     mdl = xs.XSbbody()
     out = mdl([1, 2, 3, 4], [2, 3, 4, 5])
     if mdl.calc.__name__.startswith('C_'):
-        otype = numpy.float64
+        otype = np.float64
     else:
-        otype = numpy.float32
+        otype = np.float32
 
     assert out.dtype.type == otype
     # check all values are > 0
@@ -332,7 +343,7 @@ def test_lowlevel(model):
     # grid chosen to match XSgaussian's default parameter setting
     # (to make sure evaluates to > 0).
     #
-    egrid = numpy.arange(6, 7, 0.1)
+    egrid = np.arange(6, 7, 0.1)
     e1 = egrid[:-1]
     e2 = egrid[1:]
 
@@ -476,7 +487,7 @@ def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
     # when used in the test suite it appears that the tmod
     # global symbol is not created, so need to access the component
     tmod = ui.get_model_component('tmod')
-    elo = numpy.arange(1, 5)
+    elo = np.arange(1, 5)
     ehi = elo + 1
 
     print(tmod)
@@ -489,7 +500,7 @@ def test_xpec_tablemodel_outofbound(clean_astro_ui, make_data_path):
 
 @requires_xspec
 def test_convolution_model_cflux():
-    """This tests the low-level interfce of the convolution model"""
+    """This tests the low-level interface of the convolution model"""
 
     # Use the cflux convolution model, since this gives
     # an easily-checked result.
@@ -505,7 +516,7 @@ def test_convolution_model_cflux():
     # with the egrid bins.
     elo = 0.55
     ehi = 1.45
-    egrid = numpy.linspace(0.5, 1.5, 101)
+    egrid = np.linspace(0.5, 1.5, 101)
     eg1 = egrid[:-1]
     eg2 = egrid[1:]
 
@@ -516,7 +527,7 @@ def test_convolution_model_cflux():
     # from a flux in photon/cm^2/s to erg/cm^2/s, when the
     # energy grid is in keV.
     y1 = mdl1(eg1, eg2)
-    idx, = numpy.where((egrid >= elo) & (egrid < ehi))
+    idx, = np.where((egrid >= elo) & (egrid < ehi))
 
     # To match XSpec, need to multiply by (Ehi^2-Elo^2)/(Ehi-Elo)
     # which means that we need the next bin to get Ehi. Due to
@@ -535,7 +546,7 @@ def test_convolution_model_cflux():
     lflux = -5.0
     pars = [elo, ehi, lflux]
 
-    y1_a = numpy.zeros(y1.size + 1)
+    y1_a = np.zeros(y1.size + 1)
     y1_a[:-1] = y1
     y2_a = xs._xspec.C_cflux(pars, y1_a, egrid)
     y2_b = xs._xspec.C_cflux(pars, y1, eg1, eg2)
@@ -576,7 +587,7 @@ def test_convolution_model_cpflux_noncontiguous():
 
     lflux = -5.0
     pars = [0.2, 0.8, lflux]
-    y1 = numpy.zeros(elo.size)
+    y1 = np.zeros(elo.size)
 
     emsg = "XSPEC convolution model requires a contiguous grid"
 
@@ -606,14 +617,14 @@ def test_set_analysis_wave_fabrizio(clean_astro_ui, make_data_path):
     model = ui.get_model("fabrizio")
     bare_model, _ = ui._session._get_model_status("fabrizio")
     y = bare_model.calc(parvals, model.xlo, model.xhi)
-    y_m = numpy.mean(y)
+    y_m = np.mean(y)
 
     ui.set_analysis("fabrizio", "wave")
 
     model2 = ui.get_model("fabrizio")
     bare_model2, _ = ui._session._get_model_status("fabrizio")
     y2 = bare_model2.calc(parvals, model2.xlo, model2.xhi)
-    y2_m = numpy.mean(y2)
+    y2_m = np.mean(y2)
 
     assert y2_m == pytest.approx(y_m)
 
@@ -805,3 +816,37 @@ def test_apec_redshift_parameter_is_case_insensitive():
     mdl.REDshift = 0.2
     assert mdl.redshift.val == 0.2
     assert mdl.Redshift.val == 0.2
+
+
+@requires_xspec
+def get_xspec_models_with_exp_cache():
+    """Return the XSPEC models that use the modelCacher1d_exp cache.
+
+    Currently, that is: Models that inherit from XSAbsorptionModel.
+    """
+    models = get_xspec_models()
+    return [m for m in models if issubclass(m, XSAbsorptionModel)]
+
+
+@requires_xspec
+@pytest.mark.parametrize("modelcls", get_xspec_models_with_exp_cache())
+def test_models_with_exp_cache(modelcls):
+    '''Tests that models with the modelCacher1d_exp work correctly.
+
+    Unlike modelCacher1d, does not evaluate the model for every
+    parameter value once, but modelCacher1d_exp assumes a certain
+    functional form and calcualtes model values by itself, this this
+    warrantes a test for every model using this cache.
+    '''
+    x = np.arange(0.1, 10, 0.1)
+    xlo = x[:-1]
+    xhi = x[1:]
+    mdl = modelcls()
+    for nh in [1, 0.01, 0.123, 2.3, 11.2]:
+        abs_direct = mdl.calc.__wrapped__(mdl, (nh,), xlo, xhi)
+        abs_cache = mdl.calc((nh,), xlo, xhi)
+        # XSPEC models use float32, so we need to use a relative
+        # tolerance larger than the default
+        assert abs_direct == pytest.approx(abs_cache, rel=1e-5, abs=1e-2)
+
+
