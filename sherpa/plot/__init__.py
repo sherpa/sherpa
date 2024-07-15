@@ -39,7 +39,7 @@ from typing import Any, Literal, Optional, Sequence, Union
 import numpy as np
 
 from sherpa import get_config
-from sherpa.data import Data1D, Data1DInt, Data2D
+from sherpa.data import Data, Data1D, Data1DInt, Data2D
 from sherpa.estmethods import Covariance
 from sherpa.models.model import Model
 from sherpa.optmethods import LevMar, NelderMead
@@ -251,7 +251,7 @@ class TemporaryPlottingBackend(contextlib.AbstractContextManager):
         return False
 
 
-def _make_title(title, name=''):
+def _make_title(title: str, name: Optional[str] = '') -> str:
     """Return the plot title to use.
 
     Parameters
@@ -275,7 +275,7 @@ def _make_title(title, name=''):
     return f"{title} for {name}"
 
 
-def _errorbar_warning(stat):
+def _errorbar_warning(stat: Stat) -> str:
     """The warning message to display when error bars are being "faked".
 
     Parameters
@@ -294,7 +294,10 @@ def _errorbar_warning(stat):
         f"used in fits with {stat.name}"
 
 
-def calculate_errors(data, stat, yerrorbars=True):
+def calculate_errors(data: Data,
+                     stat: Stat,
+                     yerrorbars: bool = True
+                     ) -> Optional[np.ndarray]:
     """Calculate errors from the statistics object."""
 
     if stat is None:
@@ -666,7 +669,7 @@ class HistogramPlot(Histogram):
         self.title = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         xlo = self.xlo
         if self.xlo is not None:
             xlo = np.array2string(np.asarray(self.xlo), separator=',',
@@ -690,7 +693,7 @@ ylabel = {self.ylabel}
 title  = {self.title}
 histo_prefs = {self.histo_prefs}"""
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the histogram plot."""
         return backend.as_html_histogram(self)
 
@@ -926,7 +929,7 @@ class PDFPlot(HistogramPlot):
         self.points = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         points = self.points
         if self.points is not None:
             points = np.array2string(np.asarray(self.points),
@@ -935,7 +938,7 @@ class PDFPlot(HistogramPlot):
 
         return (f'points = {points}\n' + HistogramPlot.__str__(self))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the PDF plot."""
         return backend.as_html_pdf(self)
 
@@ -1023,7 +1026,7 @@ class CDFPlot(Plot):
         self.title = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         x = self.x
         if self.x is not None:
             x = np.array2string(self.x, separator=',', precision=4,
@@ -1049,7 +1052,7 @@ ylabel = {self.ylabel}
 title  = {self.title}
 plot_prefs = {self.plot_prefs}"""
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the CDF plot."""
         return backend.as_html_cdf(self)
 
@@ -1127,7 +1130,7 @@ class LRHistogram(HistogramPlot):
         self.ppp = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         ratios = self.ratios
         if self.ratios is not None:
             ratios = np.array2string(np.asarray(self.ratios),
@@ -1138,7 +1141,7 @@ class LRHistogram(HistogramPlot):
                           f'lr = {self.lr}',
                           HistogramPlot.__str__(self)])
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the LRHistogram plot."""
         return backend.as_html_lr(self)
 
@@ -1213,7 +1216,7 @@ class SplitPlot(Plot, Contour):
         self.reset(rows, cols)
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (('rows   = %s\n' +
                  'cols   = %s\n' +
                  'plot_prefs = %s') %
@@ -1318,9 +1321,6 @@ class JointPlot(SplitPlot):
     tall as the bottom plot.
     """
 
-    def __init__(self):
-        super().__init__()
-
     def plottop(self, plot, *args, overplot=False, clearwindow=True,
                 **kwargs):
 
@@ -1414,7 +1414,7 @@ class DataPlot(Plot):
         self.title = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         x = self.x
         if self.x is not None:
             x = np.array2string(self.x, separator=',', precision=4,
@@ -1452,7 +1452,7 @@ class DataPlot(Plot):
                  self.title,
                  self.plot_prefs))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data plot."""
         return backend.as_html_data(self)
 
@@ -1622,7 +1622,7 @@ class DataContour(Contour):
         self.levels = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         x0 = self.x0
         if self.x0 is not None:
             x0 = np.array2string(self.x0, separator=',', precision=4,
@@ -1655,7 +1655,7 @@ class DataContour(Contour):
                  self.levels,
                  self.contour_prefs))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the contour plot."""
         return backend.as_html_datacontour(self)
 
@@ -1740,7 +1740,7 @@ class ModelPlot(Plot):
         self.title = 'Model'
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         x = self.x
         if self.x is not None:
             x = np.array2string(self.x, separator=',', precision=4,
@@ -1778,7 +1778,7 @@ class ModelPlot(Plot):
                  self.title,
                  self.plot_prefs))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model plot."""
         return backend.as_html_model(self)
 
@@ -1999,7 +1999,7 @@ class ModelContour(Contour):
         self.levels = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         x0 = self.x0
         if self.x0 is not None:
             x0 = np.array2string(self.x0, separator=',', precision=4,
@@ -2032,7 +2032,7 @@ class ModelContour(Contour):
                  self.levels,
                  self.contour_prefs))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model contour plot."""
         return backend.as_html_modelcontour(self)
 
@@ -2125,7 +2125,7 @@ class FitPlot(Plot):
         self.modelplot = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         data_title = None
         if self.dataplot is not None:
             data_title = self.dataplot.title
@@ -2140,7 +2140,7 @@ class FitPlot(Plot):
                  model_title,
                  self.modelplot))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the fit plot."""
         return backend.as_html_fit(self)
 
@@ -2209,7 +2209,7 @@ class FitContour(Contour):
         self.modelcontour = None
         super().__init__()
 
-    def __str__(self):
+    def __str__(self) -> str:
         data_title = None
         if self.datacontour is not None:
             data_title = self.datacontour.title
@@ -2223,7 +2223,7 @@ class FitContour(Contour):
                  model_title,
                  self.modelcontour))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the fit contour plot."""
         return backend.as_html_fitcontour(self)
 
@@ -2960,7 +2960,7 @@ class Confidence1D(DataPlot):
         if 'numcores' not in state:
             self.__dict__['numcores'] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         x = self.x
         if self.x is not None:
             x = np.array2string(self.x, separator=',', precision=4,
@@ -2981,7 +2981,7 @@ class Confidence1D(DataPlot):
                 f'log    = {self.log}\n' +
                 f'parval = {self.parval}')
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the confidence 1D plot."""
         return backend.as_html_contour1d(self)
 
@@ -3207,7 +3207,7 @@ class Confidence2D(DataContour, Point):
         if 'numcores' not in state:
             self.__dict__['numcores'] = None
 
-    def __str__(self):
+    def __str__(self) -> str:
         x0 = self.x0
         if self.x0 is not None:
             x0 = np.array2string(self.x0, separator=',', precision=4,
@@ -3237,7 +3237,7 @@ class Confidence2D(DataContour, Point):
                 f'parval1 = {self.parval1}\n' +
                 f'levels  = {self.levels}')
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the confidence 2D plot."""
         return backend.as_html_contour2d(self)
 
@@ -3536,7 +3536,7 @@ class Confidence2D(DataContour, Point):
             self.contour_prefs['ylog'] = False
 
 
-class IntervalProjectionWorker():
+class IntervalProjectionWorker:
     """Used to evaluate the model by IntervalProjection.
 
     .. versionchanged:: 4.16.1
@@ -3662,7 +3662,7 @@ class IntervalProjection(Confidence1D):
             fit.method = oldfitmethod
 
 
-class IntervalUncertaintyWorker():
+class IntervalUncertaintyWorker:
     """Used to evaluate the model by IntervalUncertainty.
 
     .. versionchanged:: 4.16.1
@@ -3727,7 +3727,7 @@ class IntervalUncertainty(Confidence1D):
             fit.model.thawedpars = oldpars
 
 
-class RegionProjectionWorker():
+class RegionProjectionWorker:
     """Used to evaluate the model by RegionProjection.
 
     .. versionchanged:: 4.16.1
@@ -3860,7 +3860,7 @@ class RegionProjection(Confidence2D):
             fit.method = oldfitmethod
 
 
-class RegionUncertaintyWorker():
+class RegionUncertaintyWorker:
     """Used to evaluate the model by RegionUncertainty.
 
     .. versionchanged:: 4.16.1
