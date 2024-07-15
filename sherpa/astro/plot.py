@@ -36,7 +36,7 @@ from sherpa.models.model import Model
 from sherpa import plot as shplot
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
-from sherpa.utils.err import IOErr, PlotErr, StatErr
+from sherpa.utils.err import IOErr, PlotErr
 
 warning = logging.getLogger(__name__).warning
 
@@ -695,7 +695,7 @@ class RMFPlot(shplot.HistogramPlot):
             # liable to change.
             #
             energies = [energy for energy in self.energies
-                        if energy >= elo[0] and energy < ehi[-1]]
+                        if elo[0] <= energy < ehi[-1]]
             if len(energies) == 0:
                 raise ValueError("energies must be "
                                  f">= {elo[0]} and < {ehi[-1]} keV")
@@ -906,7 +906,7 @@ class OrderPlot(ModelHistogram):
             self.xlo = []
             self.xhi = []
             self.y = []
-            (xlo, y, yerr, _,
+            (xlo, y, _, _,
              self.xlabel, self.ylabel) = data.to_plot(model)
             y = y[1]
 
