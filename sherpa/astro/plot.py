@@ -446,6 +446,9 @@ class SourcePlot(shplot.SourceHistogramPlot):
         self.xlabel = f'{self.units.capitalize()} ({quant})'
         self.ylabel = f'{pre}  Photons{tlabel}/cm{sqr}{post}'
 
+        # Should self.mask be applied to self.xlo/hi/y here?
+        # If so, the plot method could be removed.
+
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         xlo = self.xlo
         xhi = self.xhi
@@ -456,6 +459,10 @@ class SourcePlot(shplot.SourceHistogramPlot):
             xhi = self.xhi[self.mask]
             y = self.y[self.mask]
 
+        # We could temporarily over-write self.xlo, self.xhi, self.y
+        # which would mean this could call super().plot(), or set up
+        # the data in prepare and avoid this method completely.
+        #
         shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
                               xlabel=self.xlabel, ylabel=self.ylabel,
                               overplot=overplot, clearwindow=clearwindow,
@@ -1108,7 +1115,6 @@ class DataIMGPlot(shplot.Image):
     def plot(self, overplot=False, clearwindow=True, **kwargs):
 
         super().plot(self.x0, self.x1, self.y, title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        aspect=self.aspect,
-                        overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
+                     xlabel=self.xlabel, ylabel=self.ylabel,
+                     aspect=self.aspect, overplot=overplot,
+                     clearwindow=clearwindow, **kwargs)

@@ -802,9 +802,10 @@ class HistogramPlot(Histogram):
 
         """
 
-        Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
-                       xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().plot(self.xlo, self.xhi, self.y, title=self.title,
+                     xlabel=self.xlabel, ylabel=self.ylabel,
+                     overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
     @staticmethod
     def vline(x, ymin=0, ymax=1,
@@ -1154,18 +1155,19 @@ class CDFPlot(Plot):
 
         """
 
-        Plot.plot(self, self.x, self.y, title=self.title,
-                  xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().plot(self.x, self.y, title=self.title,
+                     xlabel=self.xlabel, ylabel=self.ylabel,
+                     overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
         # Note: the user arguments are not applied to the vertical lines
         #
-        Plot.vline(self.median, overplot=True, clearwindow=False,
-                   **self.median_defaults)
-        Plot.vline(self.lower, overplot=True, clearwindow=False,
-                   **self.lower_defaults)
-        Plot.vline(self.upper, overplot=True, clearwindow=False,
-                   **self.upper_defaults)
+        super().vline(self.median, overplot=True, clearwindow=False,
+                      **self.median_defaults)
+        super().vline(self.lower, overplot=True, clearwindow=False,
+                      **self.lower_defaults)
+        super().vline(self.upper, overplot=True, clearwindow=False,
+                      **self.upper_defaults)
 
 
 class LRHistogram(HistogramPlot):
@@ -1228,9 +1230,8 @@ class LRHistogram(HistogramPlot):
 
         """
 
-        Histogram.plot(self, self.xlo, self.xhi, self.y, title=self.title,
-                       xlabel=self.xlabel, ylabel=self.ylabel,
-                       overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().plot(overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
         if self.lr is None:
             return
@@ -1238,9 +1239,9 @@ class LRHistogram(HistogramPlot):
         # Note: the user arguments are not applied to the vertical line
         #
         if self.lr <= self.xhi.max() and self.lr >= self.xlo.min():
-            HistogramPlot.vline(self.lr, linecolor="orange",
-                                linestyle="solid", linewidth=1.5,
-                                overplot=True, clearwindow=False)
+            super().vline(self.lr, linecolor="orange",
+                          linestyle="solid", linewidth=1.5,
+                          overplot=True, clearwindow=False)
 
 
 class SplitPlot(Plot, Contour):
@@ -1525,9 +1526,10 @@ class DataPlot(Plot):
         prepare, overplot
 
         """
-        Plot.plot(self, self.x, self.y, yerr=self.yerr, xerr=self.xerr,
-                  title=self.title, xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
+        super().plot(self.x, self.y, yerr=self.yerr, xerr=self.xerr,
+                     title=self.title, xlabel=self.xlabel,
+                     ylabel=self.ylabel, overplot=overplot,
+                     clearwindow=clearwindow, **kwargs)
 
 
 class TracePlot(DataPlot):
@@ -1605,7 +1607,7 @@ class PSFKernelPlot(DataPlot):
         plot
         """
         psfdata = psf.get_kernel(data)
-        DataPlot.prepare(self, psfdata, stat)
+        super().prepare(data=psfdata, stat=stat)
         # self.ylabel = 'PSF value'
         # self.xlabel = 'PSF Kernel size'
         self.title = 'PSF Kernel'
@@ -1663,10 +1665,9 @@ class DataContour(Contour):
         self.title = data.name
 
     def contour(self, overcontour=False, clearwindow=True, **kwargs):
-        Contour.contour(self, self.x0, self.x1, self.y,
-                        levels=self.levels, title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        overcontour=overcontour,
+        super().contour(self.x0, self.x1, self.y, levels=self.levels,
+                        title=self.title, xlabel=self.xlabel,
+                        ylabel=self.ylabel, overcontour=overcontour,
                         clearwindow=clearwindow, **kwargs)
 
 
@@ -1802,10 +1803,10 @@ class ModelPlot(Plot):
 
         """
         # This does not display yerr or xerr.
-        Plot.plot(self, self.x, self.y, title=self.title,
-                  xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow,
-                  **kwargs)
+        super().plot(self.x, self.y, title=self.title,
+                     xlabel=self.xlabel, ylabel=self.ylabel,
+                     overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
 
 class ComponentModelPlot(ModelPlot):
@@ -1951,7 +1952,7 @@ class PSFPlot(DataPlot):
         plot
         """
         psfdata = psf.get_kernel(data, False)
-        DataPlot.prepare(self, psfdata, stat)
+        super().prepare(data=psfdata, stat=stat)
         self.title = psf.kernel.name
 
 
@@ -3070,23 +3071,28 @@ class Confidence1D(DataPlot):
         if par not in fit.model.pars:
             raise ConfidenceErr('thawed', par.fullname, fit.model.name)
 
+        # Make sure xerr and yerr are cleared
+        self.xerr = None
+        self.yerr = None
+
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         if self.log:
             self.plot_prefs['xlog'] = True
 
-        Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
-                  ylabel=self.ylabel, overplot=overplot,
-                  clearwindow=clearwindow, **kwargs)
+        super().plot(overplot=overplot, clearwindow=clearwindow,
+                     **kwargs)
 
         # Note: the user arguments are not applied to the lines
         #
         if self.stat is not None:
-            Plot.hline(self.stat, linecolor="green", linestyle="dash",
-                       linewidth=1.5, overplot=True, clearwindow=False)
+            super().hline(self.stat, linecolor="green",
+                          linestyle="dash", linewidth=1.5,
+                          overplot=True, clearwindow=False)
 
         if self.parval is not None:
-            Plot.vline(self.parval, linecolor="orange", linestyle="dash",
-                       linewidth=1.5, overplot=True, clearwindow=False)
+            super().vline(self.parval, linecolor="orange",
+                          linestyle="dash", linewidth=1.5,
+                          overplot=True, clearwindow=False)
 
         if self.log:
             self.plot_prefs['xlog'] = False
@@ -3424,9 +3430,7 @@ class Confidence2D(DataContour, Point):
         #
         overcontour = kwargs.pop('overcontour', False) or overplot
 
-        Contour.contour(self, self.x0, self.x1, self.y, levels=self.levels,
-                        title=self.title, xlabel=self.xlabel,
-                        ylabel=self.ylabel, overcontour=overcontour,
+        super().contour(overcontour=overcontour,
                         clearwindow=clearwindow, **kwargs)
 
         # Note: the user arguments are not applied to the point
@@ -3500,11 +3504,11 @@ class IntervalProjection(Confidence1D):
     def prepare(self, fast=True, min=None, max=None, nloop=20,
                 delv=None, fac=1, log=False, numcores=None):
         self.fast = fast
-        Confidence1D.prepare(self, min, max, nloop, delv, fac, log, numcores)
+        super().prepare(min, max, nloop, delv, fac, log, numcores)
 
     def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Projection'
-        Confidence1D.calc(self, fit, par)
+        super().calc(fit=fit, par=par)
 
         # If "fast" option enabled, set fitting method to
         # lmdif if stat is chi-squared,
@@ -3609,7 +3613,7 @@ class IntervalUncertainty(Confidence1D):
 
     def calc(self, fit, par, methoddict=None, cache=True):
         self.title = 'Interval-Uncertainty'
-        Confidence1D.calc(self, fit, par)
+        super().calc(fit=fit, par=par)
 
         thawed = [p for p in fit.model.pars if not p.frozen]
         oldpars = fit.model.thawedpars
@@ -3697,12 +3701,12 @@ class RegionProjection(Confidence2D):
                 delv=None, fac=4, log=(False, False),
                 sigma=(1, 2, 3), levels=None, numcores=None):
         self.fast = fast
-        Confidence2D.prepare(self, min, max, nloop, delv, fac, log,
-                             sigma, levels, numcores)
+        super().prepare(min, max, nloop, delv, fac, log, sigma,
+                        levels=levels, numcores=numcores)
 
     def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Projection'
-        Confidence2D.calc(self, fit, par0, par1)
+        super().calc(fit=fit, par0=par0, par1=par1)
 
         # If "fast" option enabled, set fitting method to
         # lmdif if stat is chi-squared,
@@ -3808,7 +3812,7 @@ class RegionUncertainty(Confidence2D):
 
     def calc(self, fit, par0, par1, methoddict=None, cache=True):
         self.title = 'Region-Uncertainty'
-        Confidence2D.calc(self, fit, par0, par1)
+        super().calc(fit=fit, par0=par0, par1=par1)
 
         thawed = [i for i in fit.model.pars if not i.frozen]
         oldpars = fit.model.thawedpars
