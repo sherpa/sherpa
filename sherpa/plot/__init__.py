@@ -1802,9 +1802,11 @@ class ModelPlot(Plot):
         prepare, overplot
 
         """
-        Plot.plot(self, self.x, self.y, title=self.title, xlabel=self.xlabel,
-                  ylabel=self.ylabel, overplot=overplot,
-                  clearwindow=clearwindow, **kwargs)
+        # This does not display yerr or xerr.
+        Plot.plot(self, self.x, self.y, title=self.title,
+                  xlabel=self.xlabel, ylabel=self.ylabel,
+                  overplot=overplot, clearwindow=clearwindow,
+                  **kwargs)
 
 
 class ComponentModelPlot(ModelPlot):
@@ -2394,20 +2396,6 @@ class BaseResidualContour(ModelContour):
         self._calc_y(ys)
         self._title(data)
 
-    def contour(self,  # type: ignore[override]
-                overcontour: bool = False,
-                clearwindow: bool = True,
-                **kwargs) -> None:
-
-        x0 = self.x0
-        x1 = self.x1
-        y = self.y
-
-        Contour.contour(self, x0, x1, y, levels=self.levels,
-                        title=self.title, xlabel=self.xlabel,
-                        ylabel=self.ylabel, overcontour=overcontour,
-                        clearwindow=clearwindow, **kwargs)
-
 
 class DelchiPlot(BaseResidualPlot):
     """Create plots of the delta-chi value per point.
@@ -2524,15 +2512,10 @@ class ChisqrPlot(ModelPlot):
         self.y = self._calc_chisqr(y, staterr)
         # TODO: should this
         #   self.yerr = staterr * staterr
+        # but we currently do not display errors
         self.ylabel = backend.get_latex_for_string(r'\chi^2')
         self.title = _make_title(
             backend.get_latex_for_string(r'\chi^2'), data.name)
-
-    # TODO: should this draw x/y errors?
-    def plot(self, overplot=False, clearwindow=True, **kwargs):
-        Plot.plot(self, self.x, self.y, title=self.title,
-                  xlabel=self.xlabel, ylabel=self.ylabel,
-                  overplot=overplot, clearwindow=clearwindow, **kwargs)
 
 
 class ChisqrHistogramPlot(ModelHistogramPlot):
