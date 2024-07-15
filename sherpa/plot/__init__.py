@@ -970,7 +970,6 @@ class ModelHistogramPlot(HistogramPlot):
         self.xlo = indep[0]
         self.xhi = indep[1]
         self.y = y[1]
-        assert self.y.size == self.xlo.size
 
 
 class SourceHistogramPlot(ModelHistogramPlot):
@@ -1910,7 +1909,6 @@ class ComponentSourceHistogramPlot(SourceHistogramPlot):
         self.xlo = indep[0]
         self.xhi = indep[1]
         self.y = y[1]
-        assert self.y.size == self.xlo.size
 
         self.title = f'Source model component: {model.name}'
 
