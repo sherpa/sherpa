@@ -77,6 +77,7 @@ from sherpa.utils import FuncCounter
 from sherpa.utils.parallel import parallel_map
 from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import random
+from sherpa.utils.types import ArrayType
 
 from . import _saoopt  # type: ignore
 
@@ -97,7 +98,17 @@ EPSILON = np.float64(np.finfo(np.float32).eps)
 FUNC_MAX = np.finfo(np.float64).max
 
 
-def _check_args(x0, xmin, xmax):
+def _check_args(x0: ArrayType,
+                xmin: ArrayType,
+                xmax: ArrayType
+                ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Convert to ndarray, check shape, and ensure x is within (xmin,xmax).
+
+    Thr x0 array is copied (so that changes to it do not affect the
+    input x0 argument).
+
+    """
+
     x = np.array(x0, np.float64)  # Make a copy
     xmin = np.asarray(xmin, np.float64)
     xmax = np.asarray(xmax, np.float64)
@@ -105,9 +116,8 @@ def _check_args(x0, xmin, xmax):
     if (x.shape != xmin.shape) or (x.shape != xmax.shape):
         raise TypeError('input array sizes do not match')
 
-    _move_within_limits(x, xmin, xmax)
-
-    return x, xmin, xmax
+    xclip = np.clip(x, xmin, xmax)
+    return xclip, xmin, xmax
 
 
 def _get_saofit_msg(maxfev: int,
@@ -123,16 +133,6 @@ def _get_saofit_msg(maxfev: int,
     return key.get(ierr, (False, f'unknown status flag ({ierr})'))
 
 
-def _move_within_limits(x, xmin, xmax):
-    below = np.flatnonzero(x < xmin)
-    if below.size > 0:
-        x[below] = xmin[below]
-
-    above = np.flatnonzero(x > xmax)
-    if above.size > 0:
-        x[above] = xmax[above]
-
-
 def _raise_min_limit(factor: float,
                      xmin: np.ndarray,
                      x: np.ndarray
@@ -140,11 +140,7 @@ def _raise_min_limit(factor: float,
     """Calculate the new minimum limits."""
 
     myxmin = x - factor * np.abs(x)
-    below = np.flatnonzero(myxmin < xmin)
-    if below.size > 0:
-        myxmin[below] = xmin[below]
-
-    return myxmin
+    return np.clip(myxmin, xmin, None)
 
 
 def _lower_max_limit(factor: float,
@@ -154,11 +150,7 @@ def _lower_max_limit(factor: float,
     """Calculate the new maximum limits."""
 
     myxmax = x + factor * np.abs(x)
-    above = np.flatnonzero(myxmax > xmax)
-    if above.size > 0:
-        myxmax[above] = xmax[above]
-
-    return myxmax
+    return np.clip(myxmax, None, xmax)
 
 
 def _narrow_limits(factor: float,
