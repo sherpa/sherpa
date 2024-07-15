@@ -359,6 +359,83 @@ def calculate_errors(data: Data,
         return None
 
 
+def arr2str(x: Optional[Sequence]) -> Optional[str]:
+    """Convert an array to a string for __str__ calls
+
+    Parameters
+    ----------
+    x : sequence or None
+
+    Returns
+    -------
+    arrstr : str
+
+    """
+
+    if x is None:
+        return x
+
+    return np.array2string(np.asarray(x), separator=',',
+                           precision=4, suppress_small=False)
+
+
+# This is used in a similar manner to the way that sherpa.data._fields
+# is used to control the string output of the Data objects. We extend
+# that version to allow a decision of whether to display as an array -
+# via arr2str - or as is. Given how our classes are arranged it is not
+# worth trying to share infrastructure between the plot classes and
+# the data classes to handle the similar __str__ handling.
+#
+def display_fields(obj,  # hard to provide an accurate type
+                   fields: Sequence[str]) -> str:
+    """Create the __str__ output for the object.
+
+    Parameters
+    ----------
+    obj
+       The object to convert to a string. It is expected to be
+       derived from one of the plot classes.
+    fields
+       The fields to diplay. A field name ending in ! means display
+       directly, otherwise the value is passed through arr2str.
+
+    Returns
+    -------
+    strval
+       The string representation (one field per line)
+
+    Notes
+    -----
+
+    The default length for the labels is 6 but we check the labels so
+    that a larger value is used if need be (except for any xxx_prefs
+    label, just to better match the original output). This is wasted
+    logic, in that it could be calculated at object creation, but it
+    is not that much work to do here.
+
+    """
+
+    out = []
+    size = 6
+    for lbl in fields:
+        if lbl.endswith('!'):
+            lbl = lbl[:-1]
+            scalar = True
+        else:
+            scalar = False
+
+        val = getattr(obj, lbl)
+        if not scalar:
+            val = arr2str(val)
+
+        out.append((lbl, val))
+        if not lbl.endswith("_prefs"):
+            size = max(size, len(lbl))
+
+    fmt = f"{{:{size}s}} = {{}}"
+    return "\n".join(fmt.format(*vals) for vals in out)
+
+
 class Plot(NoNewAttributesAfterInit):
     "Base class for line plots"
 
@@ -660,6 +737,14 @@ class Histogram(NoNewAttributesAfterInit):
 class HistogramPlot(Histogram):
     """Base class for histogram-style plots with a prepare method."""
 
+    _fields: list[str] = ["xlo", "xhi", "y", "xlabel!", "ylabel!",
+                          "title!", "histo_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     def __init__(self):
         self.xlo = None
         self.xhi = None
@@ -670,28 +755,7 @@ class HistogramPlot(Histogram):
         super().__init__()
 
     def __str__(self) -> str:
-        xlo = self.xlo
-        if self.xlo is not None:
-            xlo = np.array2string(np.asarray(self.xlo), separator=',',
-                                  precision=4, suppress_small=False)
-
-        xhi = self.xhi
-        if self.xhi is not None:
-            xhi = np.array2string(np.asarray(self.xhi), separator=',',
-                                  precision=4, suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(np.asarray(self.y), separator=',',
-                                precision=4, suppress_small=False)
-
-        return f"""xlo    = {xlo}
-xhi    = {xhi}
-y      = {y}
-xlabel = {self.xlabel}
-ylabel = {self.ylabel}
-title  = {self.title}
-histo_prefs = {self.histo_prefs}"""
+        return display_fields(self, self._fields)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the histogram plot."""
@@ -925,18 +989,16 @@ class PDFPlot(HistogramPlot):
     CDFPlot
     """
 
+    _fields: list[str] = ["points"] + HistogramPlot._fields
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     def __init__(self):
         self.points = None
         super().__init__()
-
-    def __str__(self) -> str:
-        points = self.points
-        if self.points is not None:
-            points = np.array2string(np.asarray(self.points),
-                                     separator=',', precision=4,
-                                     suppress_small=False)
-
-        return (f'points = {points}\n' + HistogramPlot.__str__(self))
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the PDF plot."""
@@ -999,6 +1061,15 @@ class CDFPlot(Plot):
 
     """
 
+    _fields: list[str] = ["points", "x", "y", "median!", "lower!",
+                          "upper!", "xlabel!", "ylabel!", "title!",
+                          "plot_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     median_defaults = {"linestyle": 'dash', "linecolor": 'orange',
                        "linewidth": 1.5}
     """The options used to draw the median line."""
@@ -1027,30 +1098,7 @@ class CDFPlot(Plot):
         super().__init__()
 
     def __str__(self) -> str:
-        x = self.x
-        if self.x is not None:
-            x = np.array2string(self.x, separator=',', precision=4,
-                                suppress_small=False)
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        points = self.points
-        if self.points is not None:
-            points = np.array2string(self.points, separator=',',
-                                     precision=4, suppress_small=False)
-
-        return f"""points = {points}
-x      = {x}
-y      = {y}
-median = {self.median}
-lower  = {self.lower}
-upper  = {self.upper}
-xlabel = {self.xlabel}
-ylabel = {self.ylabel}
-title  = {self.title}
-plot_prefs = {self.plot_prefs}"""
+        return display_fields(self, self._fields)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the CDF plot."""
@@ -1124,22 +1172,19 @@ plot_prefs = {self.plot_prefs}"""
 class LRHistogram(HistogramPlot):
     "Derived class for creating 1D likelihood ratio distribution plots"
 
+
+    _fields: list[str] = ["ratios", "lr!"] + HistogramPlot._fields
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     def __init__(self):
         self.ratios = None
         self.lr = None
         self.ppp = None
         super().__init__()
-
-    def __str__(self) -> str:
-        ratios = self.ratios
-        if self.ratios is not None:
-            ratios = np.array2string(np.asarray(self.ratios),
-                                     separator=',', precision=4,
-                                     suppress_small=False)
-
-        return '\n'.join([f'ratios = {ratios}',
-                          f'lr = {self.lr}',
-                          HistogramPlot.__str__(self)])
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the LRHistogram plot."""
@@ -1209,6 +1254,14 @@ class SplitPlot(Plot, Contour):
     cols : int
        Number of columns of plots. The default is 1.
     """
+
+    _fields: list[str] = ["rows!", "cols!", "plot_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     plot_prefs = basicbackend.get_split_plot_defaults()
     "The preferences for the plot."
 
@@ -1217,12 +1270,7 @@ class SplitPlot(Plot, Contour):
         super().__init__()
 
     def __str__(self) -> str:
-        return (('rows   = %s\n' +
-                 'cols   = %s\n' +
-                 'plot_prefs = %s') %
-                (self.rows,
-                 self.cols,
-                 self.plot_prefs))
+        return display_fields(self, self._fields)
 
     def reset(self, rows=2, cols=1):
         "Prepare for a new set of plots or contours."
@@ -1401,6 +1449,14 @@ class DataPlot(Plot):
 
     """
 
+    _fields: list[str] = ["x", "y", "yerr", "xerr", "xlabel!",
+                          "ylabel!", "title!", "plot_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     plot_prefs = basicbackend.get_data_plot_defaults()
     "The preferences for the plot."
 
@@ -1415,42 +1471,7 @@ class DataPlot(Plot):
         super().__init__()
 
     def __str__(self) -> str:
-        x = self.x
-        if self.x is not None:
-            x = np.array2string(self.x, separator=',', precision=4,
-                                suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        yerr = self.yerr
-        if self.yerr is not None:
-            yerr = np.array2string(self.yerr, separator=',', precision=4,
-                                   suppress_small=False)
-
-        xerr = self.xerr
-        if self.xerr is not None:
-            xerr = np.array2string(self.xerr, separator=',', precision=4,
-                                   suppress_small=False)
-
-        return (('x      = %s\n' +
-                 'y      = %s\n' +
-                 'yerr   = %s\n' +
-                 'xerr   = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'plot_prefs = %s') %
-                (x,
-                 y,
-                 yerr,
-                 xerr,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.plot_prefs))
+        return display_fields(self, self._fields)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data plot."""
@@ -1609,6 +1630,14 @@ class DataContour(Contour):
 
     """
 
+    _fields: list[str] = ["x0", "x1", "y", "xlabel!", "ylabel!",
+                          "title!", "levels!", "contour_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     contour_prefs = basicbackend.get_data_contour_defaults()
     "The preferences for the plot."
 
@@ -1623,37 +1652,7 @@ class DataContour(Contour):
         super().__init__()
 
     def __str__(self) -> str:
-        x0 = self.x0
-        if self.x0 is not None:
-            x0 = np.array2string(self.x0, separator=',', precision=4,
-                                 suppress_small=False)
-
-        x1 = self.x1
-        if self.x1 is not None:
-            x1 = np.array2string(self.x1, separator=',', precision=4,
-                                 suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        return (('x0     = %s\n' +
-                 'x1     = %s\n' +
-                 'y      = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'levels = %s\n' +
-                 'contour_prefs = %s') %
-                (x0,
-                 x1,
-                 y,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.levels,
-                 self.contour_prefs))
+        return display_fields(self, self._fields)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the contour plot."""
@@ -1727,6 +1726,14 @@ class ModelPlot(Plot):
 
     """
 
+    _fields: list[str] = ["x", "y", "yerr", "xerr", "xlabel!",
+                          "ylabel!", "title!", "plot_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     plot_prefs = basicbackend.get_model_plot_defaults()
     "The preferences for the plot."
 
@@ -1741,42 +1748,7 @@ class ModelPlot(Plot):
         super().__init__()
 
     def __str__(self) -> str:
-        x = self.x
-        if self.x is not None:
-            x = np.array2string(self.x, separator=',', precision=4,
-                                suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        yerr = self.yerr
-        if self.yerr is not None:
-            yerr = np.array2string(self.yerr, separator=',', precision=4,
-                                   suppress_small=False)
-
-        xerr = self.xerr
-        if self.xerr is not None:
-            xerr = np.array2string(self.xerr, separator=',', precision=4,
-                                   suppress_small=False)
-
-        return (('x      = %s\n' +
-                 'y      = %s\n' +
-                 'yerr   = %s\n' +
-                 'xerr   = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'plot_prefs = %s') %
-                (x,
-                 y,
-                 yerr,
-                 xerr,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.plot_prefs))
+        return display_fields(self, self._fields)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model plot."""
@@ -1986,6 +1958,14 @@ class PSFPlot(DataPlot):
 class ModelContour(Contour):
     "Derived class for creating 2D model contours"
 
+    _fields: list[str] = ["x0", "x1", "y", "xlabel!", "ylabel!",
+                          "title!", "levels!", "contour_prefs!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     contour_prefs = basicbackend.get_model_contour_defaults()
     "The preferences for the plot."
 
@@ -2000,37 +1980,7 @@ class ModelContour(Contour):
         super().__init__()
 
     def __str__(self) -> str:
-        x0 = self.x0
-        if self.x0 is not None:
-            x0 = np.array2string(self.x0, separator=',', precision=4,
-                                 suppress_small=False)
-
-        x1 = self.x1
-        if self.x1 is not None:
-            x1 = np.array2string(self.x1, separator=',', precision=4,
-                                 suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        return (('x0     = %s\n' +
-                 'x1     = %s\n' +
-                 'y      = %s\n' +
-                 'xlabel = %s\n' +
-                 'ylabel = %s\n' +
-                 'title  = %s\n' +
-                 'levels = %s\n' +
-                 'contour_prefs = %s') %
-                (x0,
-                 x1,
-                 y,
-                 self.xlabel,
-                 self.ylabel,
-                 self.title,
-                 self.levels,
-                 self.contour_prefs))
+        return display_fields(self, self._fields)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the model contour plot."""
@@ -2134,11 +2084,11 @@ class FitPlot(Plot):
         if self.modelplot is not None:
             model_title = self.modelplot.title
 
-        return (('dataplot   = %s\n%s\n\nmodelplot  = %s\n%s') %
-                (data_title,
-                 self.dataplot,
-                 model_title,
-                 self.modelplot))
+        return f"""dataplot   = {data_title}
+{self.dataplot}
+
+modelplot  = {model_title}
+{self.modelplot}"""
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the fit plot."""
@@ -2217,11 +2167,12 @@ class FitContour(Contour):
         model_title = None
         if self.modelcontour is not None:
             model_title = self.modelcontour.title
-        return (('datacontour = %s\n%s\n\nmodelcontour = %s\n%s') %
-                (data_title,
-                 self.datacontour,
-                 model_title,
-                 self.modelcontour))
+
+        return f"""datacontour = {data_title}
+{self.datacontour}
+
+modelcontour = {model_title}
+{self.modelcontour}"""
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the fit contour plot."""
@@ -2929,6 +2880,16 @@ class Confidence1D(DataPlot):
 
     """
 
+
+
+    _fields: list[str] = ["x", "y", "min!", "max!", "nloop!", "delv!",
+                          "fac!", "log!", "parval!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     plot_prefs = basicbackend.get_confid_plot_defaults()
     "The preferences for the plot."
 
@@ -2961,25 +2922,7 @@ class Confidence1D(DataPlot):
             self.__dict__['numcores'] = None
 
     def __str__(self) -> str:
-        x = self.x
-        if self.x is not None:
-            x = np.array2string(self.x, separator=',', precision=4,
-                                suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        return (f'x      = {x}\n' +
-                f'y      = {y}\n' +
-                f'min    = {self.min}\n' +
-                f'max    = {self.max}\n' +
-                f'nloop  = {self.nloop}\n' +
-                f'delv   = {self.delv}\n' +
-                f'fac    = {self.fac}\n' +
-                f'log    = {self.log}\n' +
-                f'parval = {self.parval}')
+        return display_fields(self, self._fields)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the confidence 1D plot."""
@@ -3177,6 +3120,15 @@ class Confidence2D(DataContour, Point):
 
     """
 
+    _fields: list[str] = ["x0", "x1", "y", "min!", "max!", "nloop!",
+                          "fac!", "delv!", "log!", "sigma!", "parval0!",
+                          "parval1!", "levels!"]
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     contour_prefs = basicbackend.get_confid_contour_defaults()
     point_prefs = basicbackend.get_confid_point_defaults()
 
@@ -3208,34 +3160,7 @@ class Confidence2D(DataContour, Point):
             self.__dict__['numcores'] = None
 
     def __str__(self) -> str:
-        x0 = self.x0
-        if self.x0 is not None:
-            x0 = np.array2string(self.x0, separator=',', precision=4,
-                                 suppress_small=False)
-
-        x1 = self.x1
-        if self.x1 is not None:
-            x1 = np.array2string(self.x1, separator=',', precision=4,
-                                 suppress_small=False)
-
-        y = self.y
-        if self.y is not None:
-            y = np.array2string(self.y, separator=',', precision=4,
-                                suppress_small=False)
-
-        return (f'x0      = {x0}\n' +
-                f'x1      = {x1}\n' +
-                f'y       = {y}\n' +
-                f'min     = {self.min}\n' +
-                f'max     = {self.max}\n' +
-                f'nloop   = {self.nloop}\n' +
-                f'fac     = {self.fac}\n' +
-                f'delv    = {self.delv}\n' +
-                f'log     = {self.log}\n' +
-                f'sigma   = {self.sigma}\n' +
-                f'parval0 = {self.parval0}\n' +
-                f'parval1 = {self.parval1}\n' +
-                f'levels  = {self.levels}')
+        return display_fields(self, self._fields)
 
     def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the confidence 2D plot."""

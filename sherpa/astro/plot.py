@@ -974,34 +974,19 @@ class OrderPlot(ModelHistogram):
 class FluxHistogram(ModelHistogram):
     "Derived class for creating 1D flux distribution plots"
 
+    _fields: list[str] = ["modelvals", "clipped", "flux"] + \
+        ModelHistogram._fields
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     def __init__(self):
         self.modelvals = None
         self.clipped = None
         self.flux = None
         super().__init__()
-
-    def __str__(self):
-        vals = self.modelvals
-        if self.modelvals is not None:
-            vals = np.array2string(np.asarray(self.modelvals), separator=',',
-                                   precision=4, suppress_small=False)
-
-        clip = self.clipped
-        if self.clipped is not None:
-            # Could convert to boolean, but it is surprising for
-            # anyone trying to access the clipped field
-            clip = np.array2string(np.asarray(self.clipped), separator=',',
-                                   precision=4, suppress_small=False)
-
-        flux = self.flux
-        if self.flux is not None:
-            flux = np.array2string(np.asarray(self.flux), separator=',',
-                                   precision=4, suppress_small=False)
-
-        return '\n'.join([f'modelvals = {vals}',
-                          f'clipped = {clip}',
-                          f'flux = {flux}',
-                          ModelHistogram.__str__(self)])
 
     def prepare(self, fluxes, bins):
         """Define the histogram plot.
