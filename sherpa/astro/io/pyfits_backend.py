@@ -55,6 +55,7 @@ from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
 from sherpa.io import get_ascii_data, write_arrays
 
+from .types import HdrType, KeyType, NamesType
 from .xstable import HeaderItem, TableHDU
 
 warning = logging.getLogger(__name__).warning
@@ -77,7 +78,6 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
 
 DatasetType = Union[str, fits.HDUList]
 HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU]
-KeyType = Union[bool, int, str, float]
 
 
 def _try_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
@@ -107,7 +107,7 @@ def _require_key(hdu, name, *, fix_type=False, dtype=SherpaFloat):
     return value
 
 
-def _get_meta_data(hdu: HDUType) -> dict[str, KeyType]:
+def _get_meta_data(hdu: HDUType) -> HdrType:
     # If the header keywords are not specified correctly then
     # astropy will error out when we try to access it. Since
     # this is not an uncommon problem, there is a verify method
@@ -590,8 +590,8 @@ def _is_ogip_block(hdu: HDUType,
 
 
 def _has_ogip_type(hdus: fits.HDUList,
-                  bltype: str,
-                  bltype2: Optional[str] = None) -> Optional[HDUType]:
+                   bltype: str,
+                   bltype2: Optional[str] = None) -> Optional[HDUType]:
     """Return True if hdus[1] exists and has
     the given type (as determined by the HDUCLAS1 or HDUCLAS2
     keywords). If bltype2 is None then bltype is used for
@@ -1162,7 +1162,7 @@ def get_pha_data(arg, make_copy=False, use_background=False):
 
 # Write Functions
 
-def _create_table(names: Sequence[str],
+def _create_table(names: NamesType,
                   data: dict[str, Optional[np.ndarray]]) -> Table:
     """Create a Table.
 
@@ -1238,7 +1238,7 @@ def set_table_data(filename, data, col_names, header=None,
     return None
 
 
-def _create_header(header: dict[str, KeyType]) -> fits.Header:
+def _create_header(header: HdrType) -> fits.Header:
     """Create a FITS header with the contents of header,
     the Sherpa representation of the key,value store.
     """

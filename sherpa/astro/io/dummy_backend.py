@@ -33,7 +33,7 @@ import numpy as np
 
 from ..data import Data1D
 from .types import NamesType, HdrTypeArg, HdrType, \
-    ColumnsType, DataTypeArg, DataType
+    ColumnsType, ColumnsTypeArg, DataTypeArg, DataType
 from .xstable import TableHDU
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -386,7 +386,7 @@ def get_pha_data(arg,
 # it will be None rather than Optional[Any]).
 #
 def set_table_data(filename: str,
-                   data: ColumnsType,
+                   data: ColumnsTypeArg,
                    col_names: NamesType,
                    header: Optional[HdrTypeArg] = None,
                    ascii: bool = False,
@@ -447,7 +447,7 @@ def set_image_data(filename: str,
 
 
 def set_pha_data(filename: str,
-                 data: ColumnsType,
+                 data: ColumnsTypeArg,
                  col_names: NamesType,
                  header: Optional[HdrTypeArg] = None,
                  ascii: bool = False,
@@ -479,7 +479,7 @@ def set_pha_data(filename: str,
 
 
 def set_arf_data(filename: str,
-                 data: ColumnsType,
+                 data: ColumnsTypeArg,
                  col_names: NamesType,
                  header: Optional[HdrTypeArg] = None,
                  ascii: bool = False,
@@ -561,7 +561,7 @@ def set_hdus(filename: str,
 def read_table_blocks(arg,
                       make_copy: bool = False
                       ) -> tuple[str,
-                                 dict[int, dict[str, np.ndarray]],
+                                 dict[int, ColumnsType],
                                  dict[int, HdrType]]:
     """Read in tabular data with no restrictions on the columns.
 

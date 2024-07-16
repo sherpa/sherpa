@@ -40,7 +40,12 @@ KeyType = Union[str, bool, int, float]
 NamesType = Sequence[str]
 HdrTypeArg = Mapping[str, KeyType]
 HdrType = dict[str, KeyType]
-ColumnsType = Mapping[str, Union[np.ndarray, list, tuple]]
+
+# Note that ColumnsTypeArg allows more for the values than does
+# ColumnsType.
+#
+ColumnsTypeArg = Mapping[str, Union[np.ndarray, list, tuple]]
+ColumnsType = dict[str, np.ndarray]
 
 # It's hard to type the arguments to the Data constructors
 DataTypeArg = Mapping[str, Any]

@@ -35,6 +35,7 @@ from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
 
+from .types import HdrType, KeyType
 from .xstable import HeaderItem, TableHDU
 
 warning = logging.getLogger(__name__).warning
@@ -57,7 +58,6 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
 
 
 CrateType = Union[TABLECrate, IMAGECrate]
-KeyType = Union[bool, int, str, float]
 
 
 def open_crate(filename: str,
@@ -199,7 +199,7 @@ def _try_key(crate: CrateType,
     return dtype(value)
 
 
-def _get_meta_data(crate: CrateType) -> dict[str, KeyType]:
+def _get_meta_data(crate: CrateType) -> HdrType:
     """Retrieve the header information from the crate.
 
     This loses the "specialized" keywords like HISTORY and COMMENT.
