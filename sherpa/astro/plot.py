@@ -439,8 +439,7 @@ class SourcePlot(shplot.SourceHistogramPlot):
                 post += pterm
 
         scale = (self.xhi + self.xlo) / 2
-        for _ in range(data.plot_fac):
-            self.y *= scale
+        self.y *= scale ** data.plot_fac
 
         sqr = shplot.backend.get_latex_for_string('^2')
         self.xlabel = f'{self.units.capitalize()} ({quant})'
