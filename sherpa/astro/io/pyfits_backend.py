@@ -37,6 +37,7 @@ References
 
 """
 
+from contextlib import nullcontext
 import logging
 import os
 from typing import Any, Mapping, Optional, Sequence, Union
@@ -352,13 +353,13 @@ def read_table_blocks(arg: DatasetType,
     # This sets nobinary=True to match the original version of
     # the code, which did not use _get_file_contents.
     #
-    hdus, filename, close = _get_file_contents(arg,
-                                               exptype="BinTableHDU",
-                                               nobinary=True)
+    cm, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                      nobinary=True)
 
     cols: dict[int, ColumnsType] = {}
     hdr: dict[int, HdrType] = {}
-    try:
+
+    with cm as hdus:
         for blockidx, hdu in enumerate(hdus, 1):
             hdr[blockidx] = {}
             header = hdu.header
@@ -374,40 +375,58 @@ def read_table_blocks(arg: DatasetType,
                 for colname in recarray.names:
                     cols[blockidx][colname] = recarray[colname]
 
-    finally:
-        if close:
-            hdus.close()
-
     return filename, cols, hdr
 
 
+# The return value (first argument) is actually
+#    fits.HDUList | nullcontext[fits.HDUList]
+# but it's not obvious how to type this sensibly, so for now
+# use Any instead.
+#
 def _get_file_contents(arg: DatasetType,
                        exptype: str = "PrimaryHDU",
                        nobinary: bool = False
-                       ) -> tuple[fits.HDUList, str, bool]:
+                       ) -> tuple[Any, str]:
     """Read in the contents if needed.
 
     Set nobinary to True to avoid checking that the input
     file is a binary file (via the is_binary_file routine).
     Is this needed?
+
+    The returned fits.HDUList should be used as a context manager,
+    since that will then close the value **if needed**.
+
+    Example
+    -------
+
+    The file will be closed after the with loop if arg is a
+    string, but not if it's a astropy.io.fits object:
+
+    >>> cm, fname = _get_file_contents(arg)
+    >>> with cm as hdus:
+       ...
+
     """
 
     if isinstance(arg, str) and (not nobinary or is_binary_file(arg)):
-        tbl = open_fits(arg)
+        # Looks like HDUList acts as a ContextManager even though it's
+        # not mentioned in the documentation.
+        #
+        cm = open_fits(arg)
         filename = arg
-        close = True
+
     elif isinstance(arg, fits.HDUList) and len(arg) > 0 and \
             isinstance(arg[0], fits.PrimaryHDU):
-        tbl = arg
+        cm = nullcontext(arg)
         filename = arg.filename()
         if filename is None:
             filename = "unknown"
-        close = False
+
     else:
         msg = f"a binary FITS table or a {exptype} list"
         raise IOErr('badfile', arg, msg)
 
-    return (tbl, filename, close)
+    return (cm, filename)
 
 
 def _find_binary_table(tbl: fits.HDUList,
@@ -449,10 +468,10 @@ def get_header_data(arg: DatasetType,
                     ) -> HdrType:
     """Read in the header data."""
 
-    tbl, filename, close = _get_file_contents(arg, exptype="BinTableHDU")
+    cm, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
     hdr = {}
-    try:
+    with cm as tbl:
         hdu = _find_binary_table(tbl, filename, blockname)
 
         if hdrkeys is None:
@@ -462,10 +481,6 @@ def get_header_data(arg: DatasetType,
             # TODO: should this set require_type=true or remove dtype,
             # as currently it does not change the value to str.
             hdr[key] = _require_key(hdu, key, dtype=str)
-
-    finally:
-        if close:
-            tbl.close()
 
     return hdr
 
@@ -501,9 +516,9 @@ def get_table_data(arg: DatasetType,
                    ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
     """Read columns."""
 
-    tbl, filename, close = _get_file_contents(arg, exptype="BinTableHDU")
+    cm, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
-    try:
+    with cm as tbl:
         hdu = _find_binary_table(tbl, filename, blockname)
         cnames = list(hdu.columns.names)
 
@@ -529,10 +544,6 @@ def get_table_data(arg: DatasetType,
             for key in hdrkeys:
                 hdr[key] = _require_key(hdu, key)
 
-    finally:
-        if close:
-            tbl.close()
-
     return colkeys, cols, filename, hdr
 
 
@@ -542,7 +553,7 @@ def get_image_data(arg: DatasetType,
                    ) -> tuple[DataType, str]:
     """Read image data."""
 
-    hdus, filename, close = _get_file_contents(arg)
+    cm, filename = _get_file_contents(arg)
 
     #   FITS uses logical-to-world where we use physical-to-world.
     #   For all transforms, update their physical-to-world
@@ -574,7 +585,7 @@ def get_image_data(arg: DatasetType,
     #         W = 1000 + 2.0 * ( (20-4) - 4 * 10 ) + 2 * 4 $
     #
 
-    try:
+    with cm as hdus:
         data: DataType = {}
 
         # Look for data in the primary or first block.
@@ -635,10 +646,6 @@ def get_image_data(arg: DatasetType,
                     'EQUINOX']:
             data['header'].pop(key, None)
 
-    finally:
-        if close:
-            hdus.close()
-
     return data, filename
 
 
@@ -685,11 +692,10 @@ def get_arf_data(arg: DatasetType,
                  ) -> tuple[DataType, str]:
     """Read in the ARF."""
 
-    arf, filename, close = _get_file_contents(arg,
-                                              exptype="BinTableHDU",
-                                              nobinary=True)
+    cm, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                      nobinary=True)
 
-    try:
+    with cm as arf:
         # Should we do the _has_ogip_type check first and only if that
         # fails fall back to the "common" block names? Given the lack
         # of consistency in following the OGIP standards by missions
@@ -715,10 +721,6 @@ def get_arf_data(arg: DatasetType,
         data['bin_hi'] = _try_col(hdu, 'BIN_HI', fix_type=True)
         data['header'] = _get_meta_data(hdu)
         data['header'].pop('EXPOSURE', None)
-
-    finally:
-        if close:
-            arf.close()
 
     return data, filename
 
@@ -794,12 +796,10 @@ def _read_rmf_data(arg: DatasetType
                    ) -> tuple[DataType, str]:
     """Read in the data from the RMF."""
 
-    rmf, filename, close = _get_file_contents(arg,
-                                              exptype="BinTableHDU",
-                                              nobinary=True)
+    cm, filename = _get_file_contents(arg, exptype="BinTableHDU",
+                                      nobinary=True)
 
-    try:
-
+    with cm as rmf:
         # Find all the potential matrix blocks.
         #
         mblocks = _find_matrix_blocks(filename, rmf)
@@ -861,9 +861,6 @@ def _read_rmf_data(arg: DatasetType
         else:
             data['e_min'] = None
             data['e_max'] = None
-    finally:
-        if close:
-            rmf.close()
 
     return data, filename
 
@@ -1239,10 +1236,9 @@ def get_pha_data(arg: DatasetType,
                  ) -> tuple[list[DataType], str]:
     """Read in the PHA."""
 
-    pha, filename, close = _get_file_contents(arg,
-                                              exptype="BinTableHDU")
+    cm, filename = _get_file_contents(arg, exptype="BinTableHDU")
 
-    try:
+    with cm as pha:
         try:
             hdu = pha["SPECTRUM"]
         except KeyError:
@@ -1264,10 +1260,6 @@ def get_pha_data(arg: DatasetType,
             datasets = [data]
         else:
             datasets = _read_multi_pha(hdu, spec_num, keys)
-
-    finally:
-        if close:
-            pha.close()
 
     return datasets, filename
 
