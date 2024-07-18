@@ -69,11 +69,8 @@ def test_get_ascii_data_irregular_data(tmp_path):
     tfile = tmp_path / "col.dat"
     tfile.write_text("23 1\n24 2\n25 3 4\n")
 
-    # The error message may well depend on the NumPy version so we do
-    # not include a match argument. NumPy 1.26 uses the message
-    #   all the input array dimensions except for the concatenation axis must match exactly, but along dimension 0, the array at index 0 has size 2 and the array at index 2 has size 3
-    #
-    with pytest.raises(ValueError):
+    with pytest.raises(IOErr,
+                       match="^not all arrays are of equal length$"):
         get_ascii_data(str(tfile))
 
 

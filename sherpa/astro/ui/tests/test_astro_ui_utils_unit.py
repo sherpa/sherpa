@@ -95,13 +95,17 @@ def test_load_table_model_fails_with_dev_null():
 
     This simulates an empty file (and relies on the system
     containing a /dev/null file that reads in 0 bytes).
+
+    It is a regression test as the actual error type and message may
+    change over time.
+
     """
 
     ui.clean()
     assert ui.list_model_components() == []
 
-    with pytest.raises(ValueError,
-                       match="^need at least one array to concatenate$"):
+    with pytest.raises(IOErr,
+                       match="^No column data found in /dev/null$"):
         ui.load_table_model('devnull', '/dev/null')
 
     assert ui.list_model_components() == []
