@@ -21,19 +21,12 @@
 """
 Read and write FITS [1]_ files using the ``astropy.io.fits`` module [2]_.
 
-Notes
------
-
-Support for PyFITS [3]_ was dropped in Sherpa 4.10.1.
-
 References
 ----------
 
 .. [1] https://en.wikipedia.org/wiki/FITS
 
 .. [2] http://astropy.readthedocs.org/en/latest/io/fits/
-
-.. [3] http://www.stsci.edu/institute/software_hardware/pyfits
 
 """
 
