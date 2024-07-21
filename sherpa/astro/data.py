@@ -935,9 +935,13 @@ class DataARF(DataOgipResponse):
         self._lo, self._hi = energ_lo, energ_hi
         self.energ_lo = energ_lo
         self.energ_hi = energ_hi
-        Data1DInt.__init__(self, name, energ_lo, energ_hi, specresp)
 
-    def _repr_html_(self):
+        super().__init__(name, energ_lo, energ_hi, specresp)
+
+        self._xlabel = 'Energy (keV)'
+        self._ylabel = None
+
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the ARF
         """
         return html_arf(self)
@@ -982,10 +986,19 @@ class DataARF(DataOgipResponse):
     def get_dep(self, filter=False):
         return self._rsp
 
-    def get_xlabel(self):
-        return 'Energy (keV)'
+    def get_ylabel(self) -> str:
+        """The label for the dependent axis.
 
-    def get_ylabel(self):
+        See Also
+        --------
+        set_ylabel
+
+        """
+        if self._ylabel is not None:
+            return self._ylabel
+
+        # This will pick up the latest plot backend.
+        #
         from sherpa import plot
         return 'cm' + plot.backend.get_latex_for_string('^2')
 
@@ -1076,7 +1089,15 @@ class DataRMF(DataOgipResponse):
             if nelo != self.detchans:
                 raise DataErr(f"detchans mismatch with e_min/max: {self.detchans} vs {nelo}")
 
-        Data1DInt.__init__(self, name, energ_lo, energ_hi, matrix)
+        super().__init__(name, energ_lo, energ_hi, matrix)
+
+        # special case the xlabel behaviour
+        if self.e_min is None or self.e_max is None:
+            self._xlabel = 'Channel'
+        else:
+            self._xlabel = 'Energy (keV)'
+
+        self._ylabel = 'Counts'
 
     # Although we have a Data1DInt-like dataset, the dependent axis
     # does not match the independent axes. So we have to remove the
@@ -1092,7 +1113,7 @@ class DataRMF(DataOgipResponse):
     def y(self, val):
         self._y = val
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the RMF
         """
         return html_rmf(self)
@@ -1162,14 +1183,6 @@ class DataRMF(DataOgipResponse):
 
     def get_dep(self, filter=False):
         return self.apply_rmf(numpy.ones(self.energ_lo.shape, SherpaFloat))
-
-    def get_xlabel(self):
-        if (self.e_min is not None) and (self.e_max is not None):
-            return 'Energy (keV)'
-        return 'Channel'
-
-    def get_ylabel(self):
-        return 'Counts'
 
 
 # FIXME There are places in the code that explicitly check if an object is an instance of sherpa.astro.data.DataRMF.
@@ -1717,6 +1730,10 @@ will be removed. The identifiers can be integers or strings.
         self.quality_filter = None
         super().__init__(name, channel, counts, staterror, syserror)
 
+        # special-case the labels
+        self._xlabel = None
+        self._ylabel = None
+
     def _set_related(self, attr, val, check_mask=True, allow_scalar=False):
         """Set a field that must match the independent axes size.
 
@@ -1947,7 +1964,7 @@ will be removed. The identifiers can be integers or strings.
     def backscal(self, val):
         self._set_related("backscal", val, allow_scalar=True)
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the PHA
         """
         return html_pha(self)
@@ -4133,7 +4150,24 @@ It is an integer or string.
         #
         return self._from_channel(self.channel, group=False, response_id=response_id)
 
-    def get_xlabel(self):
+    def get_xlabel(self) -> None:
+        """The label for the independent axis.
+
+        If set_xlabel has been called then the label used in that call
+        will be used, otherwise the label will change depending on the
+        units setting.
+
+        .. versionchanged:: 4.17.0
+           The return value depends on if set_xlabel has been called.
+
+        See Also
+        --------
+        set_analysis, set_xlabel
+
+        """
+        if self._xlabel is not None:
+            return self._xlabel
+
         xlabel = self.units.capitalize()
         if self.units == 'energy':
             xlabel += ' (keV)'
@@ -4314,6 +4348,17 @@ It is an integer or string.
         return dlam / 2
 
     def get_ylabel(self):
+        """The label for the dependent axis.
+
+        See Also
+        --------
+        set_ylabel
+
+        """
+
+        if self._ylabel is not None:
+            return self._ylabel
+
         ylabel = 'Counts'
 
         if self.rate and self.exposure:
@@ -4969,15 +5014,15 @@ class DataIMG(Data2D):
     coordinate system. This means that the coordinates are expressed in
     the logical coordinates of the image, i.e. in pixels::
 
-        >>> from sherpa.astro.data import DataIMG
-        >>> import numpy as np
-        >>> x1, x0 = np.mgrid[20:30, 5:20]
-        >>> datashape = x0.shape
-        >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
-        >>> x0 = x0.flatten()
-        >>> x1 = x1.flatten()
-        >>> y = y.flatten()
-        >>> image = DataIMG("bimage", x0=x0, x1=x1, y=y, shape=datashape)
+    >>> from sherpa.astro.data import DataIMG
+    >>> import numpy as np
+    >>> x1, x0 = np.mgrid[20:30, 5:20]
+    >>> datashape = x0.shape
+    >>> y = np.sqrt((x0 - 10)**2 + (x1 - 31)**2)
+    >>> x0 = x0.flatten()
+    >>> x1 = x1.flatten()
+    >>> y = y.flatten()
+    >>> image = DataIMG("bimage", x0=x0, x1=x1, y=y, shape=datashape)
 
     Note that in this example, we end up with a "logical" coordinate system
     in ``image`` and no WCS system to convert it to anything else. On the other hand,
@@ -5046,6 +5091,10 @@ class DataIMG(Data2D):
 
         super().__init__(name, x0, x1, y, shape, staterror, syserror)
 
+        # special case the x-axis labels
+        self._x0label = None
+        self._x1label = None
+
     def _clear_filter(self):
         if self._region is None:
             return
@@ -5056,7 +5105,7 @@ class DataIMG(Data2D):
         self.notice2d()
         warning(f"Region filter has been removed from '{self.name}'")
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the data
         """
         return html_img(self)
@@ -5420,17 +5469,48 @@ class DataIMG(Data2D):
 
         return (axis0, axis1)
 
-    def get_x0label(self):
-        "Return label for first dimension in 2-D view of independent axis/axes"
+    def get_x0label(self) -> None:
+        """Return the label for the first independent axis.
+
+        If set_x0label has been called then the label used in that call
+        will be used, otherwise the label will change depending on the
+        coordinate setting.
+
+        .. versionchanged:: 4.17.0
+           The return value depends on if set_x0label has been called.
+
+        See Also
+        --------
+        get_x1label, set_coord, set_x0label
+
+        """
+
+        if self._x0label is not None:
+            return self._x0label
         if self.coord == 'physical':
             return 'x0 (pixels)'
         if self.coord == 'world':
             return 'RA (deg)'
-
         return 'x0'
 
-    def get_x1label(self):
-        "Return label for second dimension in 2-D view of independent axis/axes."
+    def get_x1label(self) -> str:
+        """Return the label for the second independent axis.
+
+        If set_x1label has been called then the label used in that call
+        will be used, otherwise the label will change depending on the
+        coordinate setting.
+
+        .. versionchanged:: 4.17.0
+           The return value depends on if set_x1label has been called.
+
+        See Also
+        --------
+        get_x0label, set_coord, set_x1label
+
+        """
+
+        if self._x1label is not None:
+            return self._x1label
         if self.coord == 'physical':
             return 'x1 (pixels)'
         if self.coord == 'world':
@@ -5527,18 +5607,18 @@ class DataIMGInt(DataIMG):
     edges (``x0edges[:-1]`` or ``x0edges[1:]``) and then repeat them to match
     the number of bins in the flattened data array::
 
-        >>> import numpy as np
-        >>> x = np.random.normal(size=1000, loc=1.2)
-        >>> y = np.random.normal(size=1000)
-        >>> xrange = np.arange(-2, 4.1, 0.5)
-        >>> yrange = np.arange(-2, 2.1, 0.5)
-        >>> hist, x0edges, x1edges = np.histogram2d(y, x, bins=(yrange, xrange))
-        >>> x0lo, x1lo = np.meshgrid(x0edges[:-1], x1edges[:-1])
-        >>> x0hi, x1hi = np.meshgrid(x0edges[1:], x1edges[1:])
-        >>> image = DataIMGInt("binned_image",
-        ...                    x0lo=x0lo.flatten(), x1lo=x1lo.flatten(),
-        ...                    x0hi=x0hi.flatten(), x1hi=x1hi.flatten(),
-        ...                    y=hist.flatten(), shape=hist.shape)
+    >>> import numpy as np
+    >>> x = np.random.normal(size=1000, loc=1.2)
+    >>> y = np.random.normal(size=1000)
+    >>> xrange = np.arange(-2, 4.1, 0.5)
+    >>> yrange = np.arange(-2, 2.1, 0.5)
+    >>> hist, x0edges, x1edges = np.histogram2d(y, x, bins=(yrange, xrange))
+    >>> x0lo, x1lo = np.meshgrid(x0edges[:-1], x1edges[:-1])
+    >>> x0hi, x1hi = np.meshgrid(x0edges[1:], x1edges[1:])
+    >>> image = DataIMGInt("binned_image",
+    ...                    x0lo=x0lo.flatten(), x1lo=x1lo.flatten(),
+    ...                    x0hi=x0hi.flatten(), x1hi=x1hi.flatten(),
+    ...                    y=hist.flatten(), shape=hist.shape)
 
     Note that in this example, we end up with a "logical" coordinate system
     in ``image`` and no WCS system to convert it to anything else. On the other hand,
@@ -5550,12 +5630,19 @@ class DataIMGInt(DataIMG):
     def __init__(self, name, x0lo, x1lo, x0hi, x1hi, y, shape=None,
                  staterror=None, syserror=None, sky=None, eqpos=None,
                  coord='logical', header=None):
+
+        # Note: we do not call the superclass here.
         self._region = None
         self.sky = sky
         self.eqpos = eqpos
         self._set_coord(coord)
         self.header = {} if header is None else header
         self.shape = shape
+
+        self._x0label = 'x0'
+        self._x1label = 'x1'
+        self._ylabel = 'y'
+
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
     def _init_data_space(self, filter, *data):

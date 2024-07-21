@@ -4000,3 +4000,217 @@ def test_get_filter_when_empty_2d(data_class, args):
 
     data = data_class("empty", *args)
     assert data.get_filter() == ''
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("analysis,label",
+                         [("energy", "Energy (keV)"),
+                          ("wavelength", "Wavelength (Angstrom)"),
+                          ("channel", "Channel")])
+def test_get_xlabel_pha(make_data_path, analysis, label):
+    """get_xlabel for PHA file"""
+
+    import sherpa.astro.io
+    infile = make_data_path("3c273.pi")
+    data = sherpa.astro.io.read_pha(infile)
+    data.set_analysis(analysis)
+    assert data.get_xlabel() == label
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
+@pytest.mark.parametrize("label", ["not a label", "", "Energy (keV)"])
+def test_set_xlabel_pha(make_data_path, analysis, label):
+    """set_xlabel for PHA file"""
+
+    import sherpa.astro.io
+    infile = make_data_path("3c273.pi")
+    data = sherpa.astro.io.read_pha(infile)
+    data.set_xlabel(label)
+    data.set_analysis(analysis)
+    assert data.get_xlabel() == label
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("analysis,units",
+                         [("energy", "keV"),
+                          ("wavelength", "Angstrom"),
+                          ("channel", "channel")])
+def test_get_ylabel_pha(make_data_path, analysis, units):
+    """get_ylabel for PHA file
+
+    This does not check all the options for the label.
+    """
+
+    import sherpa.astro.io
+    infile = make_data_path("3c273.pi")
+    data = sherpa.astro.io.read_pha(infile)
+    data.set_analysis(analysis)
+    assert data.get_ylabel() == f"Counts/sec/{units}"
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("analysis", ["energy", "wavelength", "channel"])
+@pytest.mark.parametrize("label", ["not a label", "", "Energy (keV)"])
+def test_set_ylabel_pha(make_data_path, analysis, label):
+    """set_ylabel for PHA file
+
+    This does not check all the options for the label.
+    """
+
+    import sherpa.astro.io
+    infile = make_data_path("3c273.pi")
+    data = sherpa.astro.io.read_pha(infile)
+    data.set_ylabel(label)
+    data.set_analysis(analysis)
+    assert data.get_ylabel() == label
+
+
+@requires_data
+@requires_fits
+def test_get_xlabel_arf(make_data_path):
+    """get_xlabel for ARF"""
+
+    import sherpa.astro.io
+    infile = make_data_path("3c273.arf")
+
+    data = sherpa.astro.io.read_arf(infile)
+    assert data.get_xlabel() == 'Energy (keV)'
+
+
+@requires_data
+@requires_fits
+def test_get_ylabel_arf(make_data_path):
+    """get_ylabel for ARF"""
+
+    import sherpa.astro.io
+    infile = make_data_path("3c273.arf")
+
+    data = sherpa.astro.io.read_arf(infile)
+    # The label depends on the backend
+    ylabel = data.get_ylabel()
+    assert 'cm' in ylabel
+    assert '2' in ylabel
+
+
+@requires_data
+@requires_fits
+def test_get_xlabel_rmf(make_data_path):
+    """get_xlabel for RMF"""
+
+    import sherpa.astro.io
+    infile = make_data_path("3c273.rmf")
+
+    data = sherpa.astro.io.read_rmf(infile)
+    assert data.get_xlabel() == 'Energy (keV)'
+
+
+@requires_data
+@requires_fits
+def test_get_ylabel_rmf(make_data_path):
+    """get_ylabel for RMF"""
+
+    import sherpa.astro.io
+    infile = make_data_path("3c273.rmf")
+
+    data = sherpa.astro.io.read_rmf(infile)
+    assert data.get_ylabel() == 'Counts'
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("label", ["not a label", "", "Energy (keV)"])
+@pytest.mark.parametrize("resp", ["arf", "rmf"])
+def test_set_xlabel_pha_response(make_data_path, label, resp):
+    """set_xlabel for PHA related"""
+
+    import sherpa.astro.io
+    infile = make_data_path(f"3c273.{resp}")
+
+    getfunc = getattr(sherpa.astro.io, f"read_{resp}")
+    data = getfunc(infile)
+    data.set_xlabel(label)
+    assert data.get_xlabel() == label
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("label", ["not a label", "", "Energy (keV)"])
+@pytest.mark.parametrize("resp", ["arf", "rmf"])
+def test_set_ylabel_pha_response(make_data_path, label, resp):
+    """set_xlabel for PHA related"""
+
+    import sherpa.astro.io
+    infile = make_data_path(f"3c273.{resp}")
+
+    getfunc = getattr(sherpa.astro.io, f"read_{resp}")
+    data = getfunc(infile)
+    data.set_ylabel(label)
+    assert data.get_ylabel() == label
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("coord", ["logical", "physical", "world"])
+@pytest.mark.parametrize("axis", ["x0", "x1"])
+def test_get_xlabel_img(make_data_path, coord, axis):
+    """get_xlabel for DataIMG"""
+
+    import sherpa.astro.io
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+
+    data = sherpa.astro.io.read_image(infile)
+    getfunc = getattr(data, f"get_{axis}label")
+    assert getfunc() == axis
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("coord", ["logical", "physical", "world"])
+@pytest.mark.parametrize("axis", ["x0", "x1"])
+@pytest.mark.parametrize("label", ["not a label", "", "Energy (keV)"])
+def test_set_xlabel_img(make_data_path, coord, axis, label):
+    """get_xlabel for DataIMG"""
+
+    import sherpa.astro.io
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+
+    data = sherpa.astro.io.read_image(infile)
+    getfunc = getattr(data, f"get_{axis}label")
+    setfunc = getattr(data, f"set_{axis}label")
+
+    setfunc(label)
+    assert getfunc() == label
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("coord", ["logical", "physical", "world"])
+@pytest.mark.parametrize("axis", ["x0", "x1"])
+def test_get_ylabel_img(make_data_path, coord, axis):
+    """get_ylabel for DataIMG"""
+
+    import sherpa.astro.io
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+
+    data = sherpa.astro.io.read_image(infile)
+    assert data.get_ylabel() == 'y'
+
+
+@requires_data
+@requires_fits
+@pytest.mark.parametrize("coord", ["logical", "physical", "world"])
+@pytest.mark.parametrize("label", ["not a label", "", "Energy (keV)"])
+def test_set_xlabel_img(make_data_path, coord, label):
+    """get_xlabel for DataIMG"""
+
+    import sherpa.astro.io
+    infile = make_data_path("acisf08478_000N001_r0043_regevt3_srcimg.fits")
+
+    data = sherpa.astro.io.read_image(infile)
+    data.set_ylabel(label)
+    assert data.get_ylabel() == label

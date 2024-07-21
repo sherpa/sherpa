@@ -13912,6 +13912,18 @@ class Session(NoNewAttributesAfterInit):
         >>> plot_data(2, overplot=True, alpha=0.7, color='brown')
         >>> plot_data(3, overplot=True, alpha=0.7, color='purple')
 
+        Set the labels used for the X and Y axes for the data. In this
+        example the matplotlib backend is used and so the LaTeX
+        support is used to display an Angstrom symbol as part of the X
+        axis label. Note that the labels will be retained for other
+        plots, including other plot types such as plot_model() or
+        plot_fit_resid().
+
+        >>> d = get_data()
+        >>> d.set_xlabel(r"x axis [$\AA$]")
+        >>> d.set_ylabel("y axis")
+        >>> plot_data()
+
         """
 
         plotobj = self.get_data_plot(id, recalc=not replot)

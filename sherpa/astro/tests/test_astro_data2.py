@@ -1167,11 +1167,24 @@ def test_img_file_get_axes_world(coord, read_test_image):
                           ('physical', 'x0 (pixels)'),
                           ('world', 'RA (deg)'),
                           ('wcs', 'RA (deg)')])
-def test_img_file_get_xlabel(coord, expected, read_test_image):
+def test_img_file_get_x0label(coord, expected, read_test_image):
     """get_x0label"""
     d = read_test_image
     d.set_coord(coord)
     assert d.get_x0label() == expected
+
+
+@requires_fits
+@requires_data
+@requires_wcs
+@pytest.mark.parametrize('coord', ['logical', 'physical', 'world'])
+@pytest.mark.parametrize('label', ['', 'not a label', 'x0'])
+def test_img_file_set_x0label(coord, label, read_test_image):
+    """set_x0label"""
+    d = read_test_image
+    d.set_coord(coord)
+    d.set_x0label(label)
+    assert d.get_x0label() == label
 
 
 @requires_fits
@@ -1183,11 +1196,48 @@ def test_img_file_get_xlabel(coord, expected, read_test_image):
                           ('physical', 'x1 (pixels)'),
                           ('world', 'DEC (deg)'),
                           ('wcs', 'DEC (deg)')])
-def test_img_file_get_ylabel(coord, expected, read_test_image):
+def test_img_file_get_x1label(coord, expected, read_test_image):
     """get_x1label"""
     d = read_test_image
     d.set_coord(coord)
     assert d.get_x1label() == expected
+
+
+@requires_fits
+@requires_data
+@requires_wcs
+@pytest.mark.parametrize('coord', ['logical', 'physical', 'world'])
+@pytest.mark.parametrize('label', ['', 'not a label', 'x0'])
+def test_img_file_set_x1label(coord, label, read_test_image):
+    """set_x1label"""
+    d = read_test_image
+    d.set_coord(coord)
+    d.set_x1label(label)
+    assert d.get_x1label() == label
+
+
+@requires_fits
+@requires_data
+@requires_wcs
+@pytest.mark.parametrize('coord', ['logical', 'physical', 'world'])
+def test_img_file_get_ylabel(coord, read_test_image):
+    """get_ylabel"""
+    d = read_test_image
+    d.set_coord(coord)
+    assert d.get_ylabel() == 'y'
+
+
+@requires_fits
+@requires_data
+@requires_wcs
+@pytest.mark.parametrize('coord', ['logical', 'physical', 'world'])
+@pytest.mark.parametrize('label', ['', 'not a label', 'y'])
+def test_img_file_set_ylabel(coord, label, read_test_image):
+    """set_ylabel"""
+    d = read_test_image
+    d.set_coord(coord)
+    d.set_ylabel(label)
+    assert d.get_ylabel() == label
 
 
 def test_img_get_bounding_mask_nofilter(make_test_image):
