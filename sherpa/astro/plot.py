@@ -36,7 +36,7 @@ from sherpa.models.model import Model
 from sherpa import plot as shplot
 from sherpa.utils import parse_expr, dataspace1d, histogram1d, filter_bins, \
     sao_fcmp
-from sherpa.utils.err import IOErr, PlotErr, StatErr
+from sherpa.utils.err import IOErr, PlotErr
 
 warning = logging.getLogger(__name__).warning
 
@@ -439,12 +439,14 @@ class SourcePlot(shplot.SourceHistogramPlot):
                 post += pterm
 
         scale = (self.xhi + self.xlo) / 2
-        for _ in range(data.plot_fac):
-            self.y *= scale
+        self.y *= scale ** data.plot_fac
 
         sqr = shplot.backend.get_latex_for_string('^2')
         self.xlabel = f'{self.units.capitalize()} ({quant})'
         self.ylabel = f'{pre}  Photons{tlabel}/cm{sqr}{post}'
+
+        # Should self.mask be applied to self.xlo/hi/y here?
+        # If so, the plot method could be removed.
 
     def plot(self, overplot=False, clearwindow=True, **kwargs):
         xlo = self.xlo
@@ -456,6 +458,10 @@ class SourcePlot(shplot.SourceHistogramPlot):
             xhi = self.xhi[self.mask]
             y = self.y[self.mask]
 
+        # We could temporarily over-write self.xlo, self.xhi, self.y
+        # which would mean this could call super().plot(), or set up
+        # the data in prepare and avoid this method completely.
+        #
         shplot.Histogram.plot(self, xlo, xhi, y, title=self.title,
                               xlabel=self.xlabel, ylabel=self.ylabel,
                               overplot=overplot, clearwindow=clearwindow,
@@ -695,7 +701,7 @@ class RMFPlot(shplot.HistogramPlot):
             # liable to change.
             #
             energies = [energy for energy in self.energies
-                        if energy >= elo[0] and energy < ehi[-1]]
+                        if elo[0] <= energy < ehi[-1]]
             if len(energies) == 0:
                 raise ValueError("energies must be "
                                  f">= {elo[0]} and < {ehi[-1]} keV")
@@ -906,7 +912,7 @@ class OrderPlot(ModelHistogram):
             self.xlo = []
             self.xhi = []
             self.y = []
-            (xlo, y, yerr, _,
+            (xlo, y, _, _,
              self.xlabel, self.ylabel) = data.to_plot(model)
             y = y[1]
 
@@ -974,34 +980,19 @@ class OrderPlot(ModelHistogram):
 class FluxHistogram(ModelHistogram):
     "Derived class for creating 1D flux distribution plots"
 
+    _fields: list[str] = ["modelvals", "clipped", "flux"] + \
+        ModelHistogram._fields
+    """The fields to include in the string output.
+
+    Names that end in ! are treated as scalars, otherwise they are
+    passed through NumPy's array2string.
+    """
+
     def __init__(self):
         self.modelvals = None
         self.clipped = None
         self.flux = None
         super().__init__()
-
-    def __str__(self):
-        vals = self.modelvals
-        if self.modelvals is not None:
-            vals = np.array2string(np.asarray(self.modelvals), separator=',',
-                                   precision=4, suppress_small=False)
-
-        clip = self.clipped
-        if self.clipped is not None:
-            # Could convert to boolean, but it is surprising for
-            # anyone trying to access the clipped field
-            clip = np.array2string(np.asarray(self.clipped), separator=',',
-                                   precision=4, suppress_small=False)
-
-        flux = self.flux
-        if self.flux is not None:
-            flux = np.array2string(np.asarray(self.flux), separator=',',
-                                   precision=4, suppress_small=False)
-
-        return '\n'.join([f'modelvals = {vals}',
-                          f'clipped = {clip}',
-                          f'flux = {flux}',
-                          ModelHistogram.__str__(self)])
 
     def prepare(self, fluxes, bins):
         """Define the histogram plot.
@@ -1123,7 +1114,6 @@ class DataIMGPlot(shplot.Image):
     def plot(self, overplot=False, clearwindow=True, **kwargs):
 
         super().plot(self.x0, self.x1, self.y, title=self.title,
-                        xlabel=self.xlabel, ylabel=self.ylabel,
-                        aspect=self.aspect,
-                        overplot=overplot, clearwindow=clearwindow,
-                        **kwargs)
+                     xlabel=self.xlabel, ylabel=self.ylabel,
+                     aspect=self.aspect, overplot=overplot,
+                     clearwindow=clearwindow, **kwargs)

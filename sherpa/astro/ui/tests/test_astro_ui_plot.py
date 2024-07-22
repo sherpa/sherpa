@@ -407,6 +407,8 @@ def test_get_arf_plot_channel(idval, clean_astro_ui):
 
     # the y label depends on the backend (due to LaTeX)
     # assert ap.ylabel == 'cm$^2$'
+    assert 'cm' in ap.ylabel
+    assert '2' in ap.ylabel
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
