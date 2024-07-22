@@ -5607,18 +5607,18 @@ class DataIMGInt(DataIMG):
     edges (``x0edges[:-1]`` or ``x0edges[1:]``) and then repeat them to match
     the number of bins in the flattened data array::
 
-    >>> import numpy as np
-    >>> x = np.random.normal(size=1000, loc=1.2)
-    >>> y = np.random.normal(size=1000)
-    >>> xrange = np.arange(-2, 4.1, 0.5)
-    >>> yrange = np.arange(-2, 2.1, 0.5)
-    >>> hist, x0edges, x1edges = np.histogram2d(y, x, bins=(yrange, xrange))
-    >>> x0lo, x1lo = np.meshgrid(x0edges[:-1], x1edges[:-1])
-    >>> x0hi, x1hi = np.meshgrid(x0edges[1:], x1edges[1:])
-    >>> image = DataIMGInt("binned_image",
-    ...                    x0lo=x0lo.flatten(), x1lo=x1lo.flatten(),
-    ...                    x0hi=x0hi.flatten(), x1hi=x1hi.flatten(),
-    ...                    y=hist.flatten(), shape=hist.shape)
+      >>> import numpy as np
+      >>> x = np.random.normal(size=1000, loc=1.2)
+      >>> y = np.random.normal(size=1000)
+      >>> xrange = np.arange(-2, 4.1, 0.5)
+      >>> yrange = np.arange(-2, 2.1, 0.5)
+      >>> hist, x0edges, x1edges = np.histogram2d(y, x, bins=(yrange, xrange))
+      >>> x0lo, x1lo = np.meshgrid(x0edges[:-1], x1edges[:-1])
+      >>> x0hi, x1hi = np.meshgrid(x0edges[1:], x1edges[1:])
+      >>> image = DataIMGInt("binned_image",
+      ...                    x0lo=x0lo.flatten(), x1lo=x1lo.flatten(),
+      ...                    x0hi=x0hi.flatten(), x1hi=x1hi.flatten(),
+      ...                    y=hist.flatten(), shape=hist.shape)
 
     Note that in this example, we end up with a "logical" coordinate system
     in ``image`` and no WCS system to convert it to anything else. On the other hand,
