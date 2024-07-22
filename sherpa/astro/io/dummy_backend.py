@@ -247,7 +247,7 @@ def get_ascii_data(filename: str,
        The number of columns to read in (the first ``ncols`` columns
        in the file). This is ignored if ``colkeys`` is given.
     colkeys : array of str, optional
-       An array of the column name to read in. The default is
+       An array of the column names to read in. The default is
        `None`.
     sep : str, optional
        The separator character. The default is ``' '``.

@@ -1584,7 +1584,7 @@ def _pack_rmf(dataset: DataRMF) -> list[tuple[DataType, HdrType]]:
     nchan = dataset.offset + dataset.detchans - 1
     dchan = np.int32 if nchan > 32767 else np.int16
 
-    # Technically e_min/max can be empty, but we not expect
+    # Technically e_min/max can be empty, but we do not expect
     # this, and this support should probably be removed. For
     # now error out if we are sent such data.
     #

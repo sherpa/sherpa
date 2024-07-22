@@ -1085,7 +1085,7 @@ def _read_multi_pha(hdu,
 
     # We want an empty list so we can iterate over it and get back
     # "None". As this can be used for multiple fields make sure it
-    # isnot writeable.
+    # is not writeable.
     #
     empty = np.full(num, None)
     empty.setflags(write=False)
