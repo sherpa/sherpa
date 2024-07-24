@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023, 2024
+#  Copyright (C) 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -821,10 +821,9 @@ def test_write_pha_fits_with_extras_roundtrip(tmp_path, caplog):
     assert lname == "sherpa.astro.io"
     assert lvl == logging.WARNING
 
-    # message depends on the backend
+    # message depends on the backend.
     if backend_is("crates"):
-        assert msg.startswith("File ")
-        assert msg.endswith("/made-up-ancrfile.fits does not exist.")
+        assert msg.startswith("unable to open ")
     elif backend_is("pyfits"):
         assert msg.startswith("file '")
         assert msg.endswith("/made-up-ancrfile.fits' not found")
@@ -902,10 +901,9 @@ def test_pha_missing_backfile(tmp_path, caplog):
     assert lname == "sherpa.astro.io"
     assert lvl == logging.WARNING
 
-    # message depends on the backend
+    # message depends on the backend.
     if backend_is("crates"):
-        assert msg.startswith("File ")
-        assert msg.endswith("/made-up-backfile.fits does not exist.")
+        assert msg.startswith("unable to open ")
     elif backend_is("pyfits"):
         assert msg.startswith("file '")
         assert msg.endswith("/made-up-backfile.fits' not found")

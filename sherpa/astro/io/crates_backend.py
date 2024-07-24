@@ -35,6 +35,8 @@ from sherpa.utils.err import ArgumentTypeErr, IOErr
 from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
     SherpaFloat
 
+from .types import ColumnsType, DataType, DataTypeArg, \
+    HdrType, HdrTypeArg, KeyType, NamesType
 from .xstable import HeaderItem, TableHDU
 
 warning = logging.getLogger(__name__).warning
@@ -52,12 +54,13 @@ except ImportError:
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data',
            'get_arf_data', 'get_rmf_data', 'get_pha_data',
+           'pack_table_data', 'pack_image_data', 'pack_pha_data',
+           'pack_arf_data', 'pack_rmf_data', 'pack_hdus',
            'set_table_data', 'set_image_data', 'set_pha_data',
            'set_arf_data', 'set_rmf_data', 'set_hdus')
 
 
 CrateType = Union[TABLECrate, IMAGECrate]
-KeyType = Union[bool, int, str, float]
 
 
 def open_crate(filename: str,
@@ -80,7 +83,11 @@ def open_crate(filename: str,
     when crates can not read a file because of an unknown datatype.
 
     """
-    dataset = CrateDataset(filename, mode=mode)
+    try:
+        dataset = CrateDataset(filename, mode=mode)
+    except OSError as oe:
+        raise IOErr('openfailed', f"unable to open {filename}: {oe}") from oe
+
     current = dataset.get_current_crate()
     try:
         return dataset.get_crate(current)
@@ -199,7 +206,7 @@ def _try_key(crate: CrateType,
     return dtype(value)
 
 
-def _get_meta_data(crate: CrateType) -> dict[str, KeyType]:
+def _get_meta_data(crate: CrateType) -> HdrType:
     """Retrieve the header information from the crate.
 
     This loses the "specialized" keywords like HISTORY and COMMENT.
@@ -474,7 +481,13 @@ def _get_crate_by_blockname(dataset: CrateDataset,
 
 # Read Functions #
 
-def read_table_blocks(arg, make_copy=False):
+def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
+                      make_copy: bool = False
+                      ) -> tuple[str,
+                                 dict[int, ColumnsType],
+                                 dict[int, HdrType]
+                                 ]:
+    """Read in tabular data with no restrictions on the columns."""
 
     dataset = None
     if isinstance(arg, TABLECrate):
@@ -485,12 +498,16 @@ def read_table_blocks(arg, make_copy=False):
         dataset = arg
     elif isinstance(arg, str):
         filename = arg
-        dataset = CrateDataset(arg)
+        try:
+            dataset = CrateDataset(arg)
+        except OSError as oe:
+            raise IOErr('openfailed', f"unable to open {arg}: {oe}") from oe
+
     else:
         raise IOErr('badfile', arg, "CrateDataset obj")
 
-    cols = {}
-    hdr = {}
+    cols: dict[int, ColumnsType] = {}
+    hdr: dict[int, HdrType] = {}
     for idx in range(1, dataset.get_ncrates() + 1):
         crate = dataset.get_crate(idx)
         hdr[idx] = {}
@@ -510,10 +527,11 @@ def read_table_blocks(arg, make_copy=False):
     return filename, cols, hdr
 
 
-def get_header_data(arg, blockname=None, hdrkeys=None):
-    """
-    checked for new crates
-    """
+def get_header_data(arg: Union[str, TABLECrate],
+                    blockname: Optional[str] = None,
+                    hdrkeys: Optional[NamesType] = None
+                    ) -> HdrType:
+    """Read the metadata."""
 
     if isinstance(arg, str):
         arg = get_filename_from_dmsyntax(arg)
@@ -542,16 +560,9 @@ def get_header_data(arg, blockname=None, hdrkeys=None):
     return hdr
 
 
-def get_column_data(*args):
-    """
-    checked for new crates
+def get_column_data(*args) -> list[np.ndarray]:
+    """Extract the column data."""
 
-    get_column_data( *NumPy_args )
-
-    get_column_data( *CrateData_args )
-
-    get_column_data( *NumPy_and_CrateData_args )
-    """
     # args is passed as type list
     if len(args) == 0:
         raise IOErr('noarrays')
@@ -575,13 +586,23 @@ def get_column_data(*args):
     return cols
 
 
-def get_ascii_data(filename, ncols=2, colkeys=None, **kwargs):
+def get_ascii_data(filename: str,
+                   ncols: int = 2,
+                   colkeys: Optional[NamesType] = None,
+                   **kwargs
+                   ) -> tuple[list[str], list[np.ndarray], str]:
     """Read columns from an ASCII file"""
     return get_table_data(filename, ncols, colkeys)[:3]
 
 
-def get_table_data(arg, ncols=1, colkeys=None, make_copy=True, fix_type=True,
-                   blockname=None, hdrkeys=None):
+def get_table_data(arg: Union[str, TABLECrate],
+                   ncols: int = 1,
+                   colkeys: Optional[NamesType] = None,
+                   make_copy: bool = True,
+                   fix_type: bool = True,
+                   blockname: Optional[str] = None,
+                   hdrkeys: Optional[NamesType] = None
+                   ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
     """Read columns from a file or crate."""
 
     if isinstance(arg, str):
@@ -644,7 +665,10 @@ def get_table_data(arg, ncols=1, colkeys=None, make_copy=True, fix_type=True,
     return colkeys, cols, filename, hdr
 
 
-def get_image_data(arg, make_copy=True, fix_type=True):
+def get_image_data(arg: Union[str, IMAGECrate],
+                   make_copy: bool = True,
+                   fix_type: bool = True
+                   ) -> tuple[DataType, str]:
     """Read image data from a file or crate"""
 
     if isinstance(arg, str):
@@ -662,7 +686,7 @@ def get_image_data(arg, make_copy=True, fix_type=True):
     else:
         raise IOErr('badfile', arg, "IMAGECrate obj")
 
-    data = {}
+    data: DataType = {}
 
     data['y'] = _require_image(img, filename, make_copy=make_copy,
                                fix_type=fix_type)
@@ -709,7 +733,9 @@ def get_image_data(arg, make_copy=True, fix_type=True):
     return data, filename
 
 
-def get_arf_data(arg, make_copy=True):
+def get_arf_data(arg: Union[str, TABLECrate],
+                 make_copy: bool = True
+                 ) -> tuple[DataType, str]:
     """Read an ARF from a file or crate"""
 
     if isinstance(arg, str):
@@ -728,7 +754,7 @@ def get_arf_data(arg, make_copy=True):
     if arf is None or arf.get_colnames() is None:
         raise IOErr('filenotfound', arg)
 
-    data = {}
+    data: DataType = {}
 
     data['energ_lo'] = _require_col(arf, 'ENERG_LO',
                                     make_copy=make_copy,
@@ -804,11 +830,17 @@ def _find_matrix_blocks(filename: str,
     return blnames
 
 
-def get_rmf_data(arg, make_copy=True):
+def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
+                 make_copy: bool = True
+                 ) -> tuple[DataType, str]:
     """Read a RMF from a file or crate"""
 
     if isinstance(arg, str):
-        rmfdataset = pycrates.RMFCrateDataset(arg, mode="r")
+        try:
+            rmfdataset = pycrates.RMFCrateDataset(arg, mode="r")
+        except OSError as oe:
+            raise IOErr('openfailed', f"unable to open {arg}: {oe}") from oe
+
         if pycrates.is_rmf(rmfdataset) != 1:
             raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
@@ -856,7 +888,7 @@ def get_rmf_data(arg, make_copy=True):
     if not rmf.column_exists('N_CHAN'):
         raise IOErr('reqcol', 'N_CHAN', filename)
 
-    data = {}
+    data: DataType = {}
     data['detchans'] = _require_key(rmf, 'DETCHANS', dtype=SherpaInt)
     data['energ_lo'] = _require_col(rmf, 'ENERG_LO',
                                     make_copy=make_copy, fix_type=True)
@@ -931,11 +963,18 @@ def get_rmf_data(arg, make_copy=True):
     return data, filename
 
 
-def get_pha_data(arg, make_copy=True, use_background=False):
+def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
+                 make_copy: bool = True,
+                 use_background: bool = False
+                 ) -> tuple[list[DataType], str]:
     """Read PHA data from a file or crate"""
 
     if isinstance(arg, str):
-        phadataset = pycrates.PHACrateDataset(arg, mode="r")
+        try:
+            phadataset = pycrates.PHACrateDataset(arg, mode="r")
+        except OSError as oe:
+            raise IOErr('openfailed', f"unable to open {arg}: {oe}") from oe
+
         if pycrates.is_pha(phadataset) != 1:
             raise IOErr('badfile', arg, "PHACrateDataset obj")
 
@@ -989,7 +1028,7 @@ def get_pha_data(arg, make_copy=True, use_background=False):
     # Here, I instead test for a column, SPEC_NUM, that can
     # *only* be present in Type II. SMD 05/15/13
     if _try_col(pha, 'SPEC_NUM') is None:
-        data = {}
+        data: DataType = {}
 
         # Keywords
         data['exposure'] = _try_key(pha, 'EXPOSURE', SherpaFloat)
@@ -1047,7 +1086,6 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 
     else:
         # Type 2 PHA file support
-        data = {}
         num = pha.get_nrows()
 
         # Keywords
@@ -1132,39 +1170,39 @@ def get_pha_data(arg, make_copy=True, use_background=False):
                       background_down, bin_lo, bin_hi, grouping, quality,
                       orders, parts, specnums, srcids):
 
-            data = {}
+            idata: DataType = {}
 
-            data['exposure'] = exposure
+            idata['exposure'] = exposure
             # data['poisserr'] = poisserr
-            data['backfile'] = backfile
-            data['arffile'] = arffile
-            data['rmffile'] = rmffile
+            idata['backfile'] = backfile
+            idata['arffile'] = arffile
+            idata['rmffile'] = rmffile
 
-            data['backscal'] = bscal
-            data['backscup'] = bscup
-            data['backscdn'] = bscdn
-            data['areascal'] = arsc
+            idata['backscal'] = bscal
+            idata['backscup'] = bscup
+            idata['backscdn'] = bscdn
+            idata['areascal'] = arsc
 
-            data['channel'] = chan
-            data['counts'] = cnt
-            data['staterror'] = staterr
-            data['syserror'] = syserr
-            data['background_up'] = backup
-            data['background_down'] = backdown
-            data['bin_lo'] = binlo
-            data['bin_hi'] = binhi
-            data['grouping'] = grp
-            data['quality'] = qual
-            data['header'] = _get_meta_data(pha)
-            data['header']['TG_M'] = ordr
-            data['header']['TG_PART'] = prt
-            data['header']['SPEC_NUM'] = specnum
-            data['header']['TG_SRCID'] = srcid
+            idata['channel'] = chan
+            idata['counts'] = cnt
+            idata['staterror'] = staterr
+            idata['syserror'] = syserr
+            idata['background_up'] = backup
+            idata['background_down'] = backdown
+            idata['bin_lo'] = binlo
+            idata['bin_hi'] = binhi
+            idata['grouping'] = grp
+            idata['quality'] = qual
+            idata['header'] = _get_meta_data(pha)
+            idata['header']['TG_M'] = ordr
+            idata['header']['TG_PART'] = prt
+            idata['header']['SPEC_NUM'] = specnum
+            idata['header']['TG_SRCID'] = srcid
 
             for key in keys:
-                data['header'].pop(key, None)
+                idata['header'].pop(key, None)
 
-            datasets.append(data)
+            datasets.append(idata)
 
     return datasets, filename
 
@@ -1173,20 +1211,15 @@ def get_pha_data(arg, make_copy=True, use_background=False):
 # Write/Pack Functions #
 #
 
-def check_clobber(filename: str, clobber: bool) -> None:
-    """Error out if the file exists and clobber is not set."""
-
-    if clobber or not os.path.isfile(filename):
-        return
-
-    raise IOErr("filefound", filename)
-
-
 def write_dataset(dataset: Union[TABLECrate, IMAGECrate, CrateDataset],
                   filename: str,
                   *,
-                  ascii: bool) -> None:
+                  ascii: bool,
+                  clobber: bool) -> None:
     """Write out the data."""
+
+    if not clobber and os.path.isfile(filename):
+        raise IOErr("filefound", filename)
 
     if ascii and '[' not in filename and ']' not in filename:
         filename += "[opt kernel=text/simple]"
@@ -1207,11 +1240,9 @@ def write_dataset(dataset: Union[TABLECrate, IMAGECrate, CrateDataset],
     dataset.write(filename, clobber=True)
 
 
-def set_image_data(filename, data, header, ascii=False, clobber=False,
-                   packup=False) -> Optional[IMAGECrate]:
-
-    if not packup:
-        check_clobber(filename, clobber)
+def pack_image_data(data: DataTypeArg,
+                    header: HdrTypeArg) -> IMAGECrate:
+    """Pack up the image data."""
 
     img = IMAGECrate()
 
@@ -1264,23 +1295,27 @@ def set_image_data(filename, data, header, ascii=False, clobber=False,
     pix_col = pycrates.CrateData()
     pix_col.values = data['pixels']
     img.add_image(pix_col)
+    return img
 
-    if packup:
-        return img
+
+def set_image_data(filename: str,
+                   data: DataTypeArg,
+                   header: HdrTypeArg,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
+    """Write out the image data."""
 
     if ascii and '[' not in filename and ']' not in filename:
-        # filename += "[opt kernel=text/simple]"
         raise IOErr('writenoimg')
 
-    img.write(filename, clobber=True)
-    return None
+    img = pack_image_data(data, header)
+    write_dataset(img, filename, ascii=ascii, clobber=clobber)
 
 
-def set_table_data(filename, data, col_names, header=None,
-                   ascii=False, clobber=False, packup=False) -> Optional[TABLECrate]:
-
-    if not packup:
-        check_clobber(filename, clobber)
+def pack_table_data(data: ColumnsType,
+                    col_names: NamesType,
+                    header: Optional[HdrTypeArg] = None) -> TABLECrate:
+    """Pack up the table data."""
 
     tbl = TABLECrate()
     hdr = {} if header is None else header
@@ -1288,36 +1323,52 @@ def set_table_data(filename, data, col_names, header=None,
         _set_column(tbl, name, data[name])
 
     _update_header(tbl, hdr, skip_if_known=False)
-
-    if packup:
-        return tbl
-
-    write_dataset(tbl, filename, ascii=ascii)
-    return None
+    return tbl
 
 
-def set_arf_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False, packup=False) -> Optional[TABLECrate]:
-    """Create an ARF"""
+def set_table_data(filename: str,
+                   data: ColumnsType,
+                   col_names: NamesType,
+                   header: Optional[HdrTypeArg] = None,
+                   ascii: bool = False,
+                   clobber: bool = False) -> None:
+    """Write out the table data."""
 
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
-
-    # Currently we can use the same logic as set_table_data
-    return set_table_data(filename, data, col_names, header=header,
-                          ascii=ascii, clobber=clobber, packup=packup)
+    tbl = pack_table_data(data, col_names, header=header)
+    write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
 
 
-def set_pha_data(filename, data, col_names, header=None,
-                 ascii=False, clobber=False, packup=False
-                 ) -> Optional[pycrates.PHACrateDataset]:
-    """Create a PHA dataset/file"""
+def pack_arf_data(data: ColumnsType,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None) -> TABLECrate:
+    """Pack the ARF"""
 
     if header is None:
         raise ArgumentTypeErr("badarg", "header", "set")
 
-    if not packup:
-        check_clobber(filename, clobber)
+    return pack_table_data(data, col_names, header)
+
+
+def set_arf_data(filename: str,
+                 data: ColumnsType,
+                 col_names: NamesType,
+                 header: Optional[HdrTypeArg] = None,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
+    """Write out the ARF"""
+
+    arf = pack_arf_data(data, col_names, header)
+    write_dataset(arf, filename, ascii=ascii, clobber=clobber)
+
+
+def pack_pha_data(data: ColumnsType,
+                  col_names: NamesType,
+                  header: Optional[HdrTypeArg] = None
+                  ) -> pycrates.PHACrateDataset:
+    """Pack the PHA data."""
+
+    if header is None:
+        raise ArgumentTypeErr("badarg", "header", "set")
 
     phadataset = pycrates.PHACrateDataset()
 
@@ -1336,16 +1387,23 @@ def set_pha_data(filename, data, col_names, header=None,
         _set_column(pha, name, data[name])
 
     phadataset.add_crate(pha)
+    return phadataset
 
-    if packup:
-        return phadataset
 
-    write_dataset(phadataset, filename, ascii=ascii)
-    return None
+def set_pha_data(filename: str,
+                 data: ColumnsType,
+                 col_names: NamesType,
+                 header: Optional[HdrTypeArg] = None,
+                 ascii: bool = False,
+                 clobber: bool = False) -> None:
+    """Create a PHA dataset/file"""
+
+    pha = pack_pha_data(data, col_names, header)
+    write_dataset(pha, filename, ascii=ascii, clobber=clobber)
 
 
 def _update_header(cr: CrateType,
-                   header: dict[str, Optional[KeyType]],
+                   header: HdrTypeArg,
                    skip_if_known: bool = True) -> None:
     """Update the header of the crate."""
 
@@ -1353,6 +1411,7 @@ def _update_header(cr: CrateType,
         if skip_if_known and cr.key_exists(key):
             continue
 
+        # value should not be None, but just in case
         if value is None:
             continue
 
@@ -1361,17 +1420,8 @@ def _update_header(cr: CrateType,
         _set_key(cr, key, value)
 
 
-def set_rmf_data(filename, blocks, clobber=False):
-    """Save the RMF data to disk.
-
-    Unlike the other save_*_data calls this does not support the ascii
-    or packup arguments. It also relies on the caller to have set up
-    the headers and columns correctly apart for variable-length fields,
-    which are limited to F_CHAN, N_CHAN, and MATRIX.
-
-    """
-
-    check_clobber(filename, clobber)
+def pack_rmf_data(blocks) -> pycrates.RMFCrateDataset:
+    """Pack up the RMF data."""
 
     # For now assume only two blocks:
     #    MATRIX
@@ -1437,15 +1487,37 @@ def set_rmf_data(filename, blocks, clobber=False):
     _update_header(matrix_cr, matrix_header)
     _update_header(ebounds_cr, ebounds_header)
 
-    ds.write(filename, clobber=True)
+    return ds
 
 
-def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
+def set_rmf_data(filename: str,
+                 blocks,
+                 clobber: bool = False) -> None:
+    """Save the RMF data to disk.
+
+    Unlike the other save_*_data calls this does not support the ascii
+    argument. It also relies on the caller to have set up the headers
+    and columns correctly apart for variable-length fields, which are
+    limited to F_CHAN, N_CHAN, and MATRIX.
+
+    """
+
+    rmf = pack_rmf_data(blocks)
+    write_dataset(rmf, filename, ascii=False, clobber=clobber)
+
+
+def set_arrays(filename: str,
+               args: Sequence[np.ndarray],
+               fields: Optional[NamesType] = None,
+               ascii: bool = True,
+               clobber: bool = False) -> None:
+    """Write out the columns."""
 
     # Historically the clobber command has been checked before
     # processing the data, so do so here.
     #
-    check_clobber(filename, clobber)
+    if not clobber and os.path.isfile(filename):
+        raise IOErr("filefound", filename)
 
     # Check args is a sequence of sequences (although not a complete
     # check).
@@ -1468,7 +1540,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     if fields is None:
         fieldnames = [f'col{idx + 1}' for idx in range(nargs)]
     elif nargs == len(fields):
-        fieldnames = fields
+        fieldnames = list(fields)
     else:
         raise IOErr('wrongnumcols', nargs, len(fields))
 
@@ -1476,7 +1548,7 @@ def set_arrays(filename, args, fields=None, ascii=True, clobber=False):
     for val, name in zip(args, fieldnames):
         _set_column(tbl, name, val)
 
-    write_dataset(tbl, filename, ascii=ascii)
+    write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
 
 
 def _add_header(cr: CrateType,
@@ -1569,20 +1641,29 @@ def _validate_block_names(hdulist: Sequence[TableHDU]) -> list[TableHDU]:
     return out
 
 
-def set_hdus(filename: str,
-             hdulist: Sequence[TableHDU],
-             clobber: bool = False) -> None:
-    """Write out multiple HDUS to a single file.
+def pack_hdus(blocks: Sequence[TableHDU]) -> CrateDataset:
+    """Create a dataset.
 
     At present we are restricted to tables only.
     """
 
-    check_clobber(filename, clobber)
-    nlist = _validate_block_names(hdulist)
+    nblocks = _validate_block_names(blocks)
 
-    ds = CrateDataset()
-    ds.add_crate(_create_primary_crate(nlist[0]))
-    for hdu in nlist[1:]:
-        ds.add_crate(_create_table_crate(hdu))
+    dset = CrateDataset()
+    dset.add_crate(_create_primary_crate(nblocks[0]))
+    for hdu in nblocks[1:]:
+        dset.add_crate(_create_table_crate(hdu))
 
-    ds.write(filename, clobber=True)
+    return dset
+
+
+def set_hdus(filename: str,
+             blocks: Sequence[TableHDU],
+             clobber: bool = False) -> None:
+    """Write out a dataset.
+
+    At present we are restricted to tables only.
+    """
+
+    dset = pack_hdus(blocks)
+    write_dataset(dset, filename, ascii=False, clobber=clobber)

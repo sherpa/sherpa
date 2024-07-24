@@ -31,6 +31,7 @@ import numpy as np
 
 import pytest
 
+from sherpa.astro import io
 from sherpa.astro import ui
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IOErr
@@ -62,7 +63,9 @@ def test_load_table_model_fails_with_dir(tmp_path):
 
     ui.clean()
     assert ui.list_model_components() == []
-    with pytest.raises(IOError):
+
+    with pytest.raises(IOErr,
+                       match="^unable to open "):
         ui.load_table_model('tmpdir', str(tmpdir))
 
     assert ui.list_model_components() == []
@@ -81,27 +84,33 @@ def test_load_xstable_model_fails_with_dir(tmp_path):
 
     ui.clean()
     assert ui.list_model_components() == []
-    with pytest.raises(IOError):
+    with pytest.raises(IOErr,
+                       match="^unable to open "):
         ui.load_xstable_model('tmpdir', str(tmpdir))
 
     assert ui.list_model_components() == []
 
 
 @requires_fits
-@pytest.mark.skipif(not(os.path.exists('/dev/null')),
-                    reason='/dev/null does not exist')
-def test_load_table_model_fails_with_dev_null():
-    """Check that load_table_model fails with invalid input: /dev/null
+def test_load_table_model_fails_with_empty_file(tmp_path):
+    """Check that load_table_model fails with invalid input: empty file
 
-    This simulates an empty file (and relies on the system
-    containing a /dev/null file that reads in 0 bytes).
+    This used to use /dev/null to simulate an empty file but
+    why not just use an empty file.
+
+    It is a regression test as the actual error type and message may
+    change over time.
+
     """
+
+    empty = tmp_path / 'empty.dat'
+    empty.write_text('')
 
     ui.clean()
     assert ui.list_model_components() == []
 
-    with pytest.raises(ValueError,
-                       match="^need at least one array to concatenate$"):
+    with pytest.raises(IOErr,
+                       match="^No column data found in /dev/null$"):
         ui.load_table_model('devnull', '/dev/null')
 
     assert ui.list_model_components() == []
@@ -109,21 +118,22 @@ def test_load_table_model_fails_with_dev_null():
 
 @requires_fits
 @requires_xspec
-@pytest.mark.skipif(not(os.path.exists('/dev/null')),
-                    reason='/dev/null does not exist')
-def test_load_xstable_model_fails_with_dev_null():
-    """Check that load_table_model fails with invalid input: /dev/null
+def test_load_xstable_model_fails_with_empty_file(tmp_path):
+    """Check that load_table_model fails with invalid input: empty file
 
-    This simulates an empty file (and relies on the system
-    containing a /dev/null file that reads in 0 bytes).
+    This used to use /dev/null to simulate an empty file but
+    why not just use an empty file.
     """
+
+    empty = tmp_path / 'empty.dat'
+    empty.write_text('')
 
     ui.clean()
     assert ui.list_model_components() == []
 
-    # The error depends on the load function
-    with pytest.raises(IOError):
-        ui.load_xstable_model('devnull', '/dev/null')
+    with pytest.raises(IOErr,
+                       match="^unable to open "):
+        ui.load_xstable_model('devnull', str(empty))
 
     assert ui.list_model_components() == []
 
