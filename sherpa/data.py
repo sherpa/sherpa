@@ -2016,8 +2016,18 @@ class Data1DAsymmetricErrs(Data1D):
         self.ehi = ehi
         super().__init__(name, x, y, staterror=staterror, syserror=syserror)
 
+    # TODO: should we change get_error and get_staterror?
+    #
     def get_yerr(self, filter=False, staterrfunc=None):
-        return self.elo, self.ehi
+        """Return the y error.
+
+        The staterrfunc is currently ignored.
+        """
+
+        if not filter:
+            return self.elo, self.ehi
+
+        return self.apply_filter(self.elo), self.apply_filter(self.ehi)
 
 
 class Data1DInt(Data1D):

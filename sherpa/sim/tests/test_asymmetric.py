@@ -381,7 +381,6 @@ def test_ui_plot_filtered_data(make_data_path, clean_astro_ui, all_plot_backends
     ui.plot_data()
 
 
-@pytest.mark.xfail  # yerr[0] size is unfiltered
 @requires_data
 @requires_fits
 def test_to_plot_filtered(make_data_path, clean_astro_ui):
@@ -413,7 +412,6 @@ def test_to_plot_filtered(make_data_path, clean_astro_ui):
     assert yerr[1] == pytest.approx(GRO_YHI[idx])
 
 
-@pytest.mark.xfail  # yerr[0] size is unfiltered
 @requires_data
 @requires_fits
 def test_ui_get_data_plot_filtered(make_data_path, clean_astro_ui):
