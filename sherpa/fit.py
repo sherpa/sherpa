@@ -18,12 +18,13 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from contextlib import nullcontext
 from functools import wraps
 import logging
 import os
 from pathlib import Path
 import signal
-from typing import Optional, Protocol, Union, \
+from typing import Optional, Protocol, Sequence, Union, \
     runtime_checkable
 
 import numpy as np
@@ -951,6 +952,43 @@ class IterFit:
                                  statargs, statkwargs)
 
 
+# What is the best way to annotate the return value here?
+#
+def _add_fit_stats(outfile: Optional[Union[str, Path, WriteableTextFile]],
+                   clobber: bool,
+                   names: Sequence[str]):
+    """Handle creating the output file handle for the fit callback.
+
+    If there is a file handle or file specified then write the
+    header. The return value should be used as a context manager to
+    ensure that the handle is closed (when outfile is a string or a
+    path).
+
+    """
+
+    if outfile is None:
+        return nullcontext(None)
+
+    if isinstance(outfile, WriteableTextFile):
+        fh = outfile
+    else:
+        # os.path.isfile and open accepts strings and Path objects
+        if not clobber and os.path.isfile(outfile):
+            raise FitErr('noclobererr', str(outfile))
+
+        fh = open(outfile, mode='w', encoding="ascii")
+
+    # Write out the header line
+    hdr = ['#', 'nfev', 'statistic']
+    hdr.extend(names)
+    fh.write(' '.join(hdr) + '\n')
+
+    if isinstance(outfile, WriteableTextFile):
+        return nullcontext(fh)
+
+    return fh
+
+
 class Fit(NoNewAttributesAfterInit):
     """Fit a model to a data set.
 
@@ -1272,37 +1310,10 @@ class Fit(NoNewAttributesAfterInit):
 
         init_stat = self.calc_stat()
 
-        # Using close_on_exit is not ideal but the output is optional,
-        # and it depends on what the input argument was, so it's
-        # awkward to do this with a context manager.
-        #
-        close_on_exit = False
-        try:
-            if outfile is not None:
-
-                # If this is a "file handle" then skip the clobber check
-                # and mark as something we do not close on exit.
-                #
-                if isinstance(outfile, WriteableTextFile):
-                    fh = outfile
-                else:
-                    # os.path.isfile and open accepts strings and Path objects
-                    if not clobber and os.path.isfile(outfile):
-                        raise FitErr('noclobererr', str(outfile))
-
-                    fh = open(outfile, mode='w', encoding="ascii")
-                    close_on_exit = True
-
-                # Write out the header line
-                names = ['#', 'nfev', 'statistic']
-                names.extend(par.fullname
-                             for par in self.model.get_thawed_pars())
-
-                fh.write(' '.join(names) + '\n')
-
-            else:
-                fh = None
-
+        names = [par.fullname
+                 for par in self.model.get_thawed_pars()]
+        cm = _add_fit_stats(outfile, clobber, names)
+        with cm as fh:
             cb = self._iterfit._get_callback(fh=fh)
             output_orig = self._iterfit.fit(cb,
                                             self.model.thawedpars,
@@ -1333,10 +1344,6 @@ class Fit(NoNewAttributesAfterInit):
                         param_warnings += f"WARNING: parameter value {par.fullname} is at its minimum boundary {par.min}\n"
                     if sao_fcmp(par.val, par.max, tol) == 0:
                         param_warnings += f"WARNING: parameter value {par.fullname} is at its maximum boundary {par.max}\n"
-
-        finally:
-            if close_on_exit:
-                fh.close()
 
         output = (status, newpars, fval_new, msg, imap)
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
