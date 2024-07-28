@@ -60,6 +60,10 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'set_arf_data', 'set_rmf_data', 'set_hdus')
 
 
+name: str = "crates"
+"""The name of the I/O backend."""
+
+
 CrateType = Union[TABLECrate, IMAGECrate]
 
 

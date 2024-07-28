@@ -72,6 +72,10 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'set_arf_data', 'set_rmf_data', 'set_hdus')
 
 
+name: str = "pyfits"
+"""The name of the I/O backend."""
+
+
 DatasetType = Union[str, fits.HDUList]
 HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU]
 

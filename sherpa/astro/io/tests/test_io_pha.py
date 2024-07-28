@@ -43,9 +43,9 @@ from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits
 
 
-def backend_is(name):
+def backend_is(name: str) -> bool:
     """Are we using the specified backend?"""
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 @requires_fits
@@ -827,6 +827,8 @@ def test_write_pha_fits_with_extras_roundtrip(tmp_path, caplog):
     elif backend_is("pyfits"):
         assert msg.startswith("file '")
         assert msg.endswith("/made-up-ancrfile.fits' not found")
+    else:
+        raise RuntimeError(f"Unknown io backend: {io.backend}")
 
     assert isinstance(inpha, DataPHA)
     assert inpha.channel == pytest.approx(chans)
@@ -907,6 +909,8 @@ def test_pha_missing_backfile(tmp_path, caplog):
     elif backend_is("pyfits"):
         assert msg.startswith("file '")
         assert msg.endswith("/made-up-backfile.fits' not found")
+    else:
+        raise RuntimeError(f"Unknown io backend: {io.backend}")
 
     assert inpha.channel == pytest.approx(chans)
     assert inpha.counts == pytest.approx(counts)
@@ -1390,17 +1394,17 @@ def test_read_pha_object(make_data_path):
     infile = make_data_path("acisf01575_001N001_r0085_pha3.fits.gz")
     close = False
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if backend_is("crates"):
         import pycrates  # type: ignore
         arg = pycrates.PHACrateDataset(infile, mode="r")
 
-    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    elif backend_is("pyfits"):
         from astropy.io import fits  # type: ignore
         arg = fits.open(infile)
         close = True
 
     else:
-        assert False, f"unknown backend: {io.backend.__name__}"
+        assert False, f"unknown backend: {io.backend}"
 
     try:
         pha = io.read_pha(arg)
@@ -1435,7 +1439,7 @@ def test_read_pha_object(make_data_path):
     # For now treat this as a regression test so we can find out
     # when it's fixed.
     #
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if backend_is("crates"):
         assert pha.response_ids == []
         assert pha.background_ids == []
         return

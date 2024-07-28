@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2019, 2021
+#  Copyright (C) 2017, 2019, 2021, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -42,9 +42,9 @@ from sherpa.astro import io
 from sherpa.astro import ui
 
 
-def backend_is(name):
+def backend_is(name: str) -> bool:
     """Are we using the specified backend?"""
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 # The RMF includes the ARF (so is a "RSP" file).

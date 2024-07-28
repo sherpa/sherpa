@@ -48,6 +48,10 @@ __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'set_arf_data', 'set_rmf_data', 'set_hdus')
 
 
+name: str = "dummy"
+"""The name of the I/O backend."""
+
+
 warning = logging.getLogger(__name__).warning
 warning("""Cannot import usable I/O backend.
     If you are using CIAO, this is most likely an error and you should contact the CIAO helpdesk.

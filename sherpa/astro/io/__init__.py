@@ -32,10 +32,10 @@ When this module is first imported, Sherpa tries to import the
 backends installed with Sherpa in the order listed in the
 ``.sherpa.rc`` or ``.sherpa-standalone.rc`` file. The first module that imports
 successfully is set as the active backend. The following command prints the
-name and the location on disk of that module:
+name of the backend:
 
    >>> from sherpa.astro import io
-   >>> print(io.backend)
+   >>> print(io.backend.name)
 
 Change the backend
 ------------------
