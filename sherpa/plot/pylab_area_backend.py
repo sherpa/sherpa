@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2022, 2023
+#  Copyright (C) 2022 - 2024
 #  MIT
 #
 #
@@ -40,7 +40,7 @@ class PylabErrorArea(PylabBackend):
 
     This class changes the behavior of the plotting in a way that is not
     possible with just setting parameters alone: For 1D data with y-errors
-    the error range is not shown with error bars as in 
+    the error range is not shown with error bars as in
     `sherpa.plot.backends.PylabBackend`, but instead with shaded regions.
 
     This class does not display x errors, even if they are given.
@@ -76,6 +76,9 @@ class PylabErrorArea(PylabBackend):
              barsabove=False,
              ):
 
+        if x is None or y is None:
+            return None
+
         axes = self.setup_axes(overplot, clearwindow)
 
         # Set up the axes
@@ -83,10 +86,19 @@ class PylabErrorArea(PylabBackend):
             self.setup_plot(axes, title, xlabel, ylabel, xlog=xlog, ylog=ylog)
 
         if yerrorbars and yerr is not None:
-            axes.fill_between(x, y - yerr, y + yerr, alpha=.2,
-                              linewidth=0, color=ecolor)
-        if x is None or y is None:
-            return None
+            # Are the errors symmetric or not? At the moment this is
+            # decited by checking if yerr is a tuple or not.
+            #
+            if type(yerr) == tuple:
+                ylo = y - yerr[0]
+                yhi = y + yerr[1]
+            else:
+                ylo = y - yerr
+                yhi = y + yerr
+
+            axes.fill_between(x, ylo, yhi, alpha=0.2, linewidth=0,
+                              color=ecolor)
+
         return axes.plot(x, y,
                          color=color,
                          alpha=alpha,
