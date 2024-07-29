@@ -1328,7 +1328,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def get_syserror(self,
                      filter: bool = False
                      ) -> Optional[np.ndarray]:
-        """Return the statistical error on the dependent axis of a data set.
+        """Return the systematic error on the dependent axis of a data set.
 
         Parameters
         ----------
