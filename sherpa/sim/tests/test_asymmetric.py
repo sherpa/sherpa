@@ -306,7 +306,6 @@ def test_ui(make_data_path, clean_astro_ui):
         assert sample[p] == pytest.approx(RESAMPLE_BENCH_10[p], rel=1e-4)
 
 
-@pytest.mark.xfail  # not all backends support asymmetric errors
 @requires_data
 @requires_fits
 def test_ui_plot_data(make_data_path, clean_astro_ui, all_plot_backends):
@@ -366,7 +365,6 @@ def test_ui_get_data_plot(make_data_path, clean_astro_ui):
     assert plot.yerr[1] == pytest.approx(GRO_YHI)
 
 
-@pytest.mark.xfail  # not all backends support asymmetric errors
 @requires_data
 @requires_fits
 def test_ui_plot_filtered_data(make_data_path, clean_astro_ui, all_plot_backends):

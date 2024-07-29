@@ -541,10 +541,20 @@ class BokehBackend(BasicBackend):
             objs.append(xwhisker)
 
         if yerrorbars and yerr is not None:
+            # Are the errors symmetric or not? At the moment this is
+            # decited by checking if yerr is a tuple or not.
+            #
+            if type(yerr) == tuple:
+                ylo = np.atleast_1d(y - yerr[0])
+                yhi = np.atleast_1d(y + yerr[1])
+            else:
+                ylo = np.atleast_1d(y - yerr)
+                yhi = np.atleast_1d(y + yerr)
+
             source = ColumnDataSource({'x': np.atleast_1d(x),
                                        'y': np.atleast_1d(y),
-                                       'lower': np.atleast_1d(y - yerr),
-                                       'upper': np.atleast_1d(y + yerr),
+                                       'lower': ylo,
+                                       'upper': yhi,
                                        })
             ywhisker = Whisker(
                 source=source,
