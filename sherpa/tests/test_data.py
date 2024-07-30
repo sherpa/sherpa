@@ -266,9 +266,23 @@ def test_data_get_xlabel(data):
     assert data.get_xlabel() == "x"
 
 
+@pytest.mark.parametrize("data", DATA_1D_CLASSES, indirect=True)
+@pytest.mark.parametrize("label", ["not a label", "", "x"])
+def test_data_change_xlabel(data, label):
+    data.set_xlabel(label)
+    assert data.get_xlabel() == label
+
+
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
 def test_data_get_x0label(data):
     assert data.get_x0label() == "x0"
+
+
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+@pytest.mark.parametrize("label", ["not a label", "", "x0"])
+def test_data_change_x0label(data, label):
+    data.set_x0label(label)
+    assert data.get_x0label() == label
 
 
 @pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
@@ -276,9 +290,23 @@ def test_data_get_x1label(data):
     assert data.get_x1label() == "x1"
 
 
+@pytest.mark.parametrize("data", DATA_2D_CLASSES, indirect=True)
+@pytest.mark.parametrize("label", ["not a label", "", "x1"])
+def test_data_change_x1label(data, label):
+    data.set_x1label(label)
+    assert data.get_x1label() == label
+
+
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
 def test_data_get_ylabel(data):
     assert data.get_ylabel() == "y"
+
+
+@pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)
+@pytest.mark.parametrize("label", ["not a label", "", "y"])
+def test_data_change_ylabel(data, label):
+    data.set_ylabel(label)
+    assert data.get_ylabel() == label
 
 
 @pytest.mark.parametrize("data", (Data, ), indirect=True)

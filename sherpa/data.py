@@ -878,6 +878,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self.y, self.mask = _check_dep(y)
         self.staterror = staterror
         self.syserror = syserror
+
+        self._ylabel = 'y'
         NoNewAttributesAfterInit.__init__(self)
 
     def _check_data_space(self, dataspace):
@@ -1399,7 +1401,10 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
         return self.get_error(filter, staterrfunc)
 
-    def get_ylabel(self, yfunc=None):
+    # It looks like we never set yfunc when calling this method so we
+    # could remove it.
+    #
+    def get_ylabel(self, yfunc=None) -> str:
         """Return label for dependent axis in N-D view of dependent variable.
 
         Parameters
@@ -1408,9 +1413,32 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         Returns
         -------
+        label: str
+           The label.
+
+        See Also
+        --------
+        set_ylabel
 
         """
-        return 'y'
+        return self._ylabel
+
+    def set_ylabel(self, label: str) -> None:
+        """Set the label for the dependent axis.
+
+        .. versionadded:: 4.17.0
+
+        Parameters
+        ----------
+        label: str
+            The new label.
+
+        See Also
+        --------
+        get_ylabel
+
+        """
+        self._ylabel = label
 
     @overload
     def apply_filter(self, data: None) -> None:
@@ -1660,6 +1688,7 @@ class Data1D(Data):
                  staterror: Optional[ArrayType] = None,
                  syserror: Optional[ArrayType] = None
                  ) -> None:
+        self._xlabel = 'x'
         super().__init__(name, (x, ), y, staterror, syserror)
 
     def _repr_html_(self) -> str:
@@ -1717,8 +1746,29 @@ class Data1D(Data):
         -------
         label : str
 
+        See Also
+        --------
+        set_xlabel
+
         """
-        return 'x'
+        return self._xlabel
+
+    def set_xlabel(self, label: str) -> None:
+        """Set the label for the independent axis.
+
+        .. versionadded:: 4.17.0
+
+        Parameters
+        -------
+        label : str
+           The new label.
+
+        See Also
+        --------
+        set_xlabel
+
+        """
+        self._xlabel = label
 
     # The superclass suggests returning both the independent and
     # dependent axis sizes.
@@ -2051,6 +2101,9 @@ class Data1DInt(Data1D):
                  staterror: Optional[ArrayType] = None,
                  syserror: Optional[ArrayType] = None
                  ) -> None:
+
+        # Note: we do not call the superclass here.
+        self._xlabel = 'x'
         Data.__init__(self, name, (xlo, xhi), y, staterror, syserror)
 
     def _repr_html_(self) -> str:
@@ -2339,6 +2392,10 @@ class Data2D(Data):
                  syserror: Optional[ArrayType] = None
                  ) -> None:
         self.shape = shape
+
+        self._x0label = 'x0'
+        self._x1label = 'x1'
+
         super().__init__(name, (x0, x1), y, staterror, syserror)
 
     def _repr_html_(self) -> str:
@@ -2369,14 +2426,59 @@ class Data2D(Data):
 
         Returns
         -------
+        label: str
+
+        See Also
+        --------
+        get_x1label, set_x0label
 
         """
-        return 'x0'
+        return self._x0label
 
     def get_x1label(self) -> str:
         """Return label for second dimension in 2-D view of independent axis/axes.
+        Returns
+        -------
+        label: str
+
+        See Also
+        --------
+        get_x0label, set_x1label
+
         """
-        return 'x1'
+        return self._x1label
+
+    def set_x0label(self, label: str) -> None:
+        """Set the label for the first independent axis.
+
+        .. versionadded:: 4.17.0
+
+        Parameters
+        -------
+        label: str
+
+        See Also
+        --------
+        get_x0label, set_x1label
+
+        """
+        self._x0label = label
+
+    def set_x1label(self, label: str) -> None:
+        """Set the label for the second independent axis.
+
+        .. versionadded:: 4.17.0
+
+        Parameters
+        -------
+        label: str
+
+        See Also
+        --------
+        get_x1label, set_x0label
+
+        """
+        self._x1label = label
 
     def get_axes(self) -> tuple[np.ndarray, np.ndarray]:
         self._check_shape()
@@ -2593,7 +2695,12 @@ class Data2DInt(Data2D):
                  staterror: Optional[ArrayType] = None,
                  syserror: Optional[ArrayType] = None
                  ) -> None:
+
+        # Note: we do not call the superclass here.
         self.shape = shape
+        self._x0label = 'x0'
+        self._x1label = 'x1'
+        self._ylabel = 'y'
         Data.__init__(self, name, (x0lo, x1lo, x0hi, x1hi), y, staterror, syserror)
 
     def _init_data_space(self,
