@@ -67,10 +67,10 @@ def test_fake_pha_missing_rmf(idval, clean_astro_ui, tmp_path):
 
     # The error message depends on the backend.
     #
-    if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    if io.backend.name == "pyfits":
         emsg = f"file '{rmf}' not found"
 
-    elif io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    elif io.backend.name == "crates":
         emsg = f"File {rmf} does not exist"
 
     else:
@@ -101,10 +101,10 @@ def test_fake_pha_missing_arf(idval, clean_astro_ui, tmp_path):
 
     # The error message depends on the backend.
     #
-    if io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    if io.backend.name == "pyfits":
         emsg = f"file '{arf}' not found"
 
-    elif io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    elif io.backend.name == "crates":
         emsg = f"File {arf} does not exist"
 
     else:

@@ -30,9 +30,9 @@ from sherpa.utils.testing import requires_data, requires_fits, \
     requires_region, requires_wcs
 
 
-def backend_is(name):
+def backend_is(name: str) -> bool:
     """Are we using the given backend?"""
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 @requires_fits
@@ -269,8 +269,8 @@ def test_axs_ordering_1880(tmp_path):
 def test_read_image():
     """Check we get a failure.
 
-    This is a regression test. The exact failure message depends
-    on the backend.
+    This is a regression test.
+
     """
 
     with pytest.raises(IOErr,
@@ -293,17 +293,17 @@ def test_read_image_object(make_data_path):
     infile = make_data_path("psf_0.0_00_bin1.img")
     close = False
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if backend_is("crates"):
         import pycrates  # type: ignore
         arg = pycrates.read_file(infile)
 
-    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    elif backend_is("pyfits"):
         from astropy.io import fits  # type: ignore
         arg = fits.open(infile)
         close = True
 
     else:
-        assert False, f"unknown backend: {io.backend.__name__}"
+        assert False, f"unknown backend: {io.backend}"
 
     try:
         img = io.read_image(arg)

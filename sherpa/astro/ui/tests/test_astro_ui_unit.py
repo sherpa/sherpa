@@ -47,8 +47,8 @@ from sherpa.utils.testing import requires_data, requires_fits, \
     requires_region, requires_wcs, requires_xspec
 
 
-def backend_is(name):
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+def backend_is(name: str) -> bool:
+    return io.backend.name == name
 
 
 def check_table(hdu, colinfo):
@@ -731,7 +731,7 @@ def check_output(out, colnames, rows):
         assert lines[0] == f"# {cols}"
         lines = lines[1:]
     else:
-        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.__name__}")
+        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend}")
 
     assert lines[-1] == ""
     lines = lines[:-1]
@@ -857,7 +857,7 @@ def test_save_data_data2d(tmp_path, clean_astro_ui):
     elif backend_is("pyfits"):
         expected = "\n".join([str(zz) for zz in z]) + "\n"
     else:
-        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend.__name__}")
+        raise RuntimeError(f"UNKNOWN I/O BACKEND: {io.backend}")
 
     assert cts == expected
 

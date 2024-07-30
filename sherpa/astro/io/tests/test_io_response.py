@@ -39,9 +39,9 @@ from sherpa.utils.err import ArgumentErr, IOErr
 from sherpa.utils.testing import requires_data, requires_fits
 
 
-def backend_is(name):
+def backend_is(name: str) -> bool:
     """Are we using the specified backend?"""
-    return io.backend.__name__ == f"sherpa.astro.io.{name}_backend"
+    return io.backend.name == name
 
 
 @requires_data
@@ -1271,17 +1271,17 @@ def test_read_arf_object(make_data_path):
     infile = make_data_path("MNLup_2138_0670580101_EMOS1_S001_spec.arf")
     close = False
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if backend_is("crates"):
         import pycrates  # type: ignore
         arg = pycrates.read_file(infile)
 
-    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    elif backend_is("pyfits"):
         from astropy.io import fits  # type: ignore
         arg = fits.open(infile)
         close = True
 
     else:
-        assert False, f"unknown backend: {io.backend.__name__}"
+        assert False, f"unknown backend: {io.backend}"
 
     try:
         with warnings.catch_warnings(record=True) as ws:
@@ -1320,17 +1320,17 @@ def test_read_rmf_object(make_data_path):
     infile = make_data_path("source.rmf")
     close = False
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
-        import pycrates
+    if backend_is("crates"):
+        import pycrates  # type: ignore
         arg = pycrates.RMFCrateDataset(infile, mode='r')
 
-    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
-        from astropy.io import fits
+    elif backend_is("pyfits"):
+        from astropy.io import fits  # type: ignore
         arg = fits.open(infile)
         close = True
 
     else:
-        assert False, f"unknown backend: {io.backend.__name__}"
+        assert False, f"unknown backend: {io.backend}"
 
     try:
         rmf = io.read_rmf(arg)

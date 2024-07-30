@@ -624,17 +624,17 @@ def test_read_table_object(make_data_path):
     infile = make_data_path("1838_rprofile_rmid.fits")
     close = False
 
-    if io.backend.__name__ == "sherpa.astro.io.crates_backend":
+    if io.backend.name == "crates":
         import pycrates  # type: ignore
         arg = pycrates.read_file(infile)
 
-    elif io.backend.__name__ == "sherpa.astro.io.pyfits_backend":
+    elif io.backend.name == "pyfits":
         from astropy.io import fits  # type: ignore
         arg = fits.open(infile)
         close = True
 
     else:
-        assert False, f"unknown backend: {io.backend.__name__}"
+        assert False, f"unknown backend: {io.backend}"
 
     try:
         # this implicitly checks case insensitivity on column names
