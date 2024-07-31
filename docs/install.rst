@@ -457,8 +457,9 @@ needed if the DS9 tests are run)::
 Building the documentation
 --------------------------
 
-Building the documentation requires a Sherpa installation and several
-additional packages:
+Building the documentation requires a Sherpa installation, *including*
+the test data suite (either as a submodule or installed with the
+``sherpa-test-data`` package), and several additional packages:
 
 * `Sphinx <https://sphinx.pocoo.org/>`_, version 1.8 or later
 * The ``sphinx_rtd_theme``
