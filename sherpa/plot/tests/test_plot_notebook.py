@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020, 2021, 2022, 2023
+#  Copyright (C) 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -37,9 +37,9 @@ from sherpa.plot.testing import check_empty, check_full
 
 
 def test_histogram(all_plot_backends):
-    p = plot.HistogramPlot()
+    p = plot.BaseHistogram()
     r = p._repr_html_()
-    check_empty(r, 'HistogramPlot', nsummary=6)
+    check_empty(r, 'BaseHistogram', nsummary=6)
 
     p.xlo = np.asarray([1, 2, 3])
     p.xhi = np.asarray([2, 2.5, 4])
@@ -48,7 +48,7 @@ def test_histogram(all_plot_backends):
     p.ylabel = 'Y'
     p.title = 'Title String'
     r = p._repr_html_()
-    check_full(r, 'HistogramPlot', 'X <sup>2</sup>',
+    check_full(r, 'BaseHistogram', 'X <sup>2</sup>',
                'Title String', nsummary=6)
 
 
@@ -92,7 +92,7 @@ def test_lrhist(all_plot_backends):
 def test_data(all_plot_backends):
     p = plot.DataPlot()
     r = p._repr_html_()
-    check_full(r, 'DataPlot', 'None', 'None', nsummary=7)  # NOT empty
+    check_empty(r, 'DataPlot', nsummary=7)
 
     x = np.arange(5, 8, 0.5)
     y = np.ones(x.size)
