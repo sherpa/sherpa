@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2016, 2022
+#  Copyright (C) 2014, 2016, 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,14 +19,7 @@
 #
 
 
-# It looks like setuptools sdist is currently incomplete, see
-# https://github.com/numpy/numpy/pull/7131
-# but the replacement test suggests using distutils,
-# which has an add_defaults method.
-#
-# from setuptools.command.sdist import sdist as _sdist
-# from numpy.distutils.command.sdist import sdist as _sdist
-from distutils.command.sdist import sdist as _sdist
+from setuptools.command.sdist import sdist as _sdist
 from .deps import clean_deps
 
 
@@ -34,6 +27,8 @@ class sdist(_sdist):
 
     def run(self):
         clean_deps()
-        # There is no build_configure step for xspec_config
+
+        # The XSPEC configuration does not change the sdist
         self.get_finalized_command('sherpa_config', True).build_configure()
+
         super().run()

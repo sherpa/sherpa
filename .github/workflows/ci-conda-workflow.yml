@@ -52,6 +52,16 @@ jobs:
             install-type: develop
             test-data: none
 
+          - name: Linux Full Build (Python 3.12)
+            os: ubuntu-latest
+            python-version: "3.12"
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            bokeh-version: 3
+            xspec-version: 12.14.0i
+
           - name: Linux Full Build (Python 3.11)
             os: ubuntu-latest
             python-version: "3.11"
@@ -71,15 +81,6 @@ jobs:
             matplotlib-version: 3
             xspec-version: 12.13.1
 
-          - name: Linux Full Build (Python 3.9)
-            os: ubuntu-latest
-            python-version: "3.9"
-            install-type: develop
-            fits: astropy
-            test-data: submodule
-            matplotlib-version: 3
-            xspec-version: 12.12.0g
-
           - name: Linux Build (w/o Astropy or Xspec)
             os: ubuntu-latest
             python-version: "3.11"
@@ -89,8 +90,8 @@ jobs:
 
           - name: Linux Build (w/o Matplotlib, Xspec, or test data)
             os: ubuntu-latest
-            python-version: "3.9"
-            numpy-version: "1.21"
+            python-version: "3.12"
+            numpy-version: "1.26"
             install-type: develop
             fits: astropy
             test-data: none
