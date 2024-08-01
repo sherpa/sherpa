@@ -19,7 +19,9 @@
 #
 
 import importlib
+import importlib.resources
 import os
+from pathlib import Path
 
 from sherpa.plot import TemporaryPlottingBackend
 
@@ -42,21 +44,24 @@ def _get_datadir():
     """
 
     try:
-        import sherpatest
-        datadir = os.path.dirname(sherpatest.__file__)
-    except ImportError:
+        data_dir = importlib.resources.files("sherpatest")
+    except ModuleNotFoundError:
         try:
-            import sherpa
-            datadir = os.path.join(os.path.dirname(sherpa.__file__), os.pardir,
-                                   'sherpa-test-data', 'sherpatest')
-            if not os.path.exists(datadir) or not os.path.isdir(datadir) \
-               or not os.listdir(datadir):
-                # The dir is empty, maybe the submodule was not initialized
-                datadir = None
-        except ImportError:
-            # neither sherpatest nor sherpa can be found, falling back to None
-            datadir = None
-    return datadir
+            # Use the sherpa installation directory as the starting point
+            # for the data directory.
+            #
+            sherpa_dir = importlib.resources.files("sherpa")
+            data_dir = sherpa_dir.parent.parent \
+                / 'sherpa-test-data' / 'sherpatest'
+
+        except ModuleNotFoundError:
+            return None
+
+    # directory has to exist and contain something
+    if data_dir.is_dir() and data_dir.iterdir():
+        return str(data_dir)
+
+    return None
 
 
 DATADIR = _get_datadir()
