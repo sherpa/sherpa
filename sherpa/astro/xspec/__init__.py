@@ -852,7 +852,13 @@ def read_xstable_model(modelname, filename, etable=False):
     # Not all keywords are going to be present, so check what are.
     #
     blkname = 'PRIMARY'
-    hdr = read_hdr(filename, blockname=blkname, hdrkeys=None)
+    try:
+        hdr = read_hdr(filename, blockname=blkname, hdrkeys=None)
+    except IOErr as ie:
+        # The error message will be generic, so add some more
+        # information.
+        #
+        raise IOErr(f"Unable to read XSPEC table model: {ie}") from ie
 
     try:
         hduclas1 = hdr["HDUCLAS1"].upper()

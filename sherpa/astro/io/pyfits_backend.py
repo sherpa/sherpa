@@ -337,7 +337,7 @@ def open_fits(filename: str) -> fits.HDUList:
         try:
             return fits.open(fname)
         except OSError as oe:
-            raise IOErr('openfailed', f"unable to open {fname}: {oe}") from oe
+            raise IOErr('openfailed', str(oe)) from oe
 
 
 def read_table_blocks(arg: DatasetType,

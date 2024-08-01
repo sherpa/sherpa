@@ -822,10 +822,12 @@ def test_write_pha_fits_with_extras_roundtrip(tmp_path, caplog):
     assert lvl == logging.WARNING
 
     # message depends on the backend.
+    start = "unable to read ARF: "
     if backend_is("crates"):
-        assert msg.startswith("unable to open ")
+        assert msg.startswith(f"{start}File")
+        assert msg.endswith("/made-up-ancrfile.fits does not exist.")
     elif backend_is("pyfits"):
-        assert msg.startswith("file '")
+        assert msg.startswith(f"{start}file '")
         assert msg.endswith("/made-up-ancrfile.fits' not found")
     else:
         raise RuntimeError(f"Unknown io backend: {io.backend}")
@@ -904,10 +906,12 @@ def test_pha_missing_backfile(tmp_path, caplog):
     assert lvl == logging.WARNING
 
     # message depends on the backend.
+    start = "unable to read background: "
     if backend_is("crates"):
-        assert msg.startswith("unable to open ")
+        assert msg.startswith(f"{start}File")
+        assert msg.endswith("/made-up-backfile.fits does not exist.")
     elif backend_is("pyfits"):
-        assert msg.startswith("file '")
+        assert msg.startswith(f"{start}file '")
         assert msg.endswith("/made-up-backfile.fits' not found")
     else:
         raise RuntimeError(f"Unknown io backend: {io.backend}")
