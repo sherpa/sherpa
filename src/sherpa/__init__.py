@@ -35,6 +35,7 @@ the standard subpackages, use ``import sherpa.all`` or
 
 import datetime
 import importlib
+import importlib.resources
 import logging
 import os
 import os.path
@@ -837,7 +838,8 @@ def citation(version: str = 'current',
 def get_include() -> str:
     "Get the root path for installed Sherpa header files"
 
-    return os.path.join(os.path.dirname(__file__), 'include')
+    base = importlib.resources.files("sherpa")
+    return str(base / 'include')
 
 
 def get_config() -> str:
@@ -866,7 +868,8 @@ def get_config() -> str:
                 return config
 
     # Fall back to the system config file
-    return os.path.join(os.path.dirname(__file__), filename)
+    base = importlib.resources.files("sherpa")
+    return str(base / filename)
 
 
 def smoke(verbosity: int = 0,
@@ -1026,7 +1029,8 @@ def clitest() -> None:
     import pytest
 
     # Add in command-line arguments to allow configuring the Sherpa tests
-    args = [os.path.dirname(__file__), '-rs'] + sys.argv[1:]
+    base = importlib.resources.files("sherpa")
+    args = [str(base), '-rs'] + sys.argv[1:]
 
     # passing the plugins that have been installed "now".
     errno = pytest.main(args, plugins=plugins)

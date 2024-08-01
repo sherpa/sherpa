@@ -34,18 +34,18 @@ include test_requirements.txt
 include .coveragerc
 
 # Maybe going to a src directory would simplify this?
-recursive-include sherpa *py
-recursive-include sherpa test_*py
-recursive-include sherpa *.gz
-recursive-include sherpa *.fits
-recursive-include sherpa *.pi
-recursive-include sherpa *.arf
-recursive-include sherpa *.rmf
-recursive-include sherpa *.lis
-recursive-include sherpa *.cc
-recursive-include sherpa *.hh
-recursive-include sherpa *.c
-recursive-include sherpa *.h
+recursive-include src *py
+recursive-include src test_*py
+recursive-include src *.gz
+recursive-include src *.fits
+recursive-include src *.pi
+recursive-include src *.arf
+recursive-include src *.rmf
+recursive-include src *.lis
+recursive-include src *.cc
+recursive-include src *.hh
+recursive-include src *.c
+recursive-include src *.h
 
-include sherpa/static/css/*.css
-include sherpa/*.rc
+include src/sherpa/static/css/*.css
+include src/sherpa/*.rc
