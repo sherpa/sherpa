@@ -10,9 +10,6 @@ include RELEASE_NOTES
 include CITATION
 include CONTRIBUTING.md
 
-# Why is this needed but other compiled code is picked up automatically?
-include sherpa/astro/xspec/src/_xspec.cc
-
 # This appears to be necessary in some situations (e.g. using tox),
 # but was that a temporary issue or is it something expected? For
 # whatever reason, let's be explicit.
@@ -20,9 +17,6 @@ include sherpa/astro/xspec/src/_xspec.cc
 include setup.py
 
 recursive-include helpers *.py
-
-# HTML/notebook representation
-recursive-include sherpa/static *
 
 # Scripts (only .py versions)
 recursive-include scripts *.py
@@ -34,9 +28,24 @@ recursive-include docs *
 include notebooks/nbmapping.dat
 include notebooks/*.ipynb
 
-include sherpa/_version.py
-
 # Tests
 include pytest.ini
 include test_requirements.txt
 include .coveragerc
+
+# Maybe going to a src directory would simplify this?
+recursive-include src *py
+recursive-include src test_*py
+recursive-include src *.gz
+recursive-include src *.fits
+recursive-include src *.pi
+recursive-include src *.arf
+recursive-include src *.rmf
+recursive-include src *.lis
+recursive-include src *.cc
+recursive-include src *.hh
+recursive-include src *.c
+recursive-include src *.h
+
+include src/sherpa/static/css/*.css
+include src/sherpa/*.rc

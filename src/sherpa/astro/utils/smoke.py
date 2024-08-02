@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2016, 2018, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,6 +19,7 @@
 #
 
 import importlib
+import importlib.resources
 import logging
 import os
 import sys
@@ -162,11 +163,10 @@ class SmokeTest(unittest.TestCase):
         I/O functions.
         """
 
-        from sherpa.astro import datastack
-        folder = os.path.dirname(datastack.__file__)
-        infile = os.path.join(folder, "tests", "data", "acisf07867_000N001_r0002_pha3.fits")
+        base = importlib.resources.files("sherpa.astro.datastack")
+        infile = base / "tests" / "data" / "acisf07867_000N001_r0002_pha3.fits"
 
-        ui.load_pha(infile)
+        ui.load_pha(str(infile))
         with NamedTemporaryFile() as f:
             ui.save_pha(f.name, ascii=False, clobber=True)
 

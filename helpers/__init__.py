@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2014, 2015, 2016, 2022
+#  Copyright (C) 2014, 2015, 2016, 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,20 +19,16 @@
 #
 
 
-from .develop import develop
+from .build import build, build_ext
 from .sdist import sdist
 from .sherpa_config import sherpa_config
 from .xspec_config import xspec_config
 
-# Switching to setuptools here currently breaks the build.
-from numpy.distutils.command.build_ext import build_ext
-# from setuptools.command.build_ext import build_ext
-
 
 commands = {
+    'build': build,
     'build_ext': build_ext,
     'sdist': sdist,
-    'develop': develop,
     'sherpa_config': sherpa_config,
     'xspec_config': xspec_config,
 }
