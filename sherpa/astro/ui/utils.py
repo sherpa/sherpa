@@ -398,6 +398,7 @@ class Session(sherpa.ui.utils.Session):
 
     # Add ability to save attributes specific to the astro package.
     # Save XSPEC module settings that need to be restored.
+    #
     def save(self, filename='sherpa.save', clobber=False):
         """Save the current Sherpa session to a file.
 
@@ -429,6 +430,14 @@ class Session(sherpa.ui.utils.Session):
         between versions of Sherpa, but is platform independent, and
         contains all the data. This means that files created by `save`
         can be sent to collaborators to share results.
+
+        The output of `save` is not guaranteed to work with different
+        versions of Sherpa, so it is not ideal as an archiving format.
+        The `save_all` command is better suited for long-term support,
+        but it unfortunately can not store ancillary variables, extra
+        modules, or all Sherpa settings. It is suggested that the
+        output of both should be checked when the output may be used
+        long term.
 
         Examples
         --------
@@ -15890,6 +15899,10 @@ class Session(sherpa.ui.utils.Session):
          3. some settings and values may not be recorded (such as
             header information).
 
+        .. versionchanged:: 4.17.0
+           The file will now contain a `set_default_id` call if the
+           default identifier has been changed.
+
         .. versionchanged:: 4.16.0
            Any set_psf calls are now included in the output file. The
            filter is no-longer included if it does not exclude any
@@ -15960,6 +15973,10 @@ class Session(sherpa.ui.utils.Session):
         >>> from io import StringIO
         >>> store = StringIO()
         >>> save_all(store)
+        >>> print(store.getvalue())
+        import numpy
+        from sherpa.astro.ui import *
+        ...
 
         """
 

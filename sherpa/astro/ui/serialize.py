@@ -1440,6 +1440,18 @@ def _save_dataset(out: OutType,
         _output(out, f"set_syserror({idstr}, {syserr.tolist()})")
 
 
+def _save_id(out: OutType, state: SessionType) -> None:
+    "Does the default id need changing?"
+
+    defid = state.get_default_id()
+    if defid == 1:
+        return
+
+    _output_banner(out, "Default identifier")
+    _output(out, f'set_default_id({repr(defid)})')
+    _output_nl(out)
+
+
 def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
     """Save the information about the current session to a file handle.
 
@@ -1514,6 +1526,8 @@ def save_all(state: SessionType, fh: Optional[TextIO] = None) -> None:
     _save_models(out, state)
     if req_xspec:
         _save_xspec(out)
+
+    _save_id(out, state)
 
     if fh is None:
         fh = sys.stdout
