@@ -418,6 +418,8 @@ def read_image(arg,
         data['x0'] = x0
         data['x1'] = x1
     else:
+        # backend.get_image_data should have caught this case
+        #
         raise ArgumentErr("bad", "dstype argument",
                           "dstype is not derived from Data2D")
 
@@ -718,6 +720,9 @@ def _process_pha_block(filename: str,
     This is assumed to be a "type I" block.
     """
 
+    # The assumption is that the table requires a CHANNEL column,
+    # e.g. as guanranteed by read_pha, but leave this check in.
+    #
     chancol = table.get("CHANNEL")
     if chancol is None:
         raise IOErr("reqcol", "CHANNEL", filename)
@@ -946,7 +951,9 @@ def read_pha(arg,
     pha, filename = backend.get_pha_data(arg,
                                          use_background=use_background)
 
-    # Check all the columns have the same shape (e.g. all type I or II).
+    # Check all the columns have the same shape (e.g. all type I or
+    # II).  The CHANNEL column is guaranteed to exist at this point
+    # and be 1 or 2D.
     #
     chancol = pha.rget("CHANNEL")
     channel = chancol.values
@@ -955,6 +962,7 @@ def read_pha(arg,
     elif len(channel.shape) == 2:
         ptype = 2
     else:
+        # This should not be possible
         raise IOErr(f"PHA {filename}: unable to handle CHANNEL shape")
 
     # Deal with the "first column" of the channel array.
@@ -969,7 +977,9 @@ def read_pha(arg,
     # DataPHA so it knew (and could then enforce a non-Poisson
     # statistic).
     #
-    # This is done before any II to I conversion.
+    # This is done before any II to I conversion. The error checks
+    # should not be needed, because SpectrumBlock should enforce these
+    # invariants, but leave in for now.
     #
     if pha.get("COUNTS") is None:
         rate = pha.get("RATE")

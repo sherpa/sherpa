@@ -31,6 +31,7 @@ import pytest
 
 from sherpa.astro.data import DataARF, DataPHA, DataRMF
 from sherpa.astro.instrument import RMF1D, create_arf, create_delta_rmf
+from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro import io
 from sherpa.astro.io.types import HeaderItem, Header, Column, TableBlock, BlockList
 from sherpa.data import Data1DInt
@@ -1268,3 +1269,20 @@ def test_read_rmf_object(make_data_path):
     assert rmf.energ_lo[0:4] == pytest.approx([0.1, 0.11, 0.12, 0.13])
     assert rmf.energ_hi[0:4] == pytest.approx([0.11, 0.12, 0.13, 0.14])
     assert rmf.matrix.max() == pytest.approx(0.12998242676258087)
+
+
+def test_rmf_fails_if_no_ebounds(tmp_path):
+    """Check we error out if e_min/max has not been set up.
+
+    This is a regression test.
+    """
+
+    egrid = np.asarray([0.1, 0.2, 0.3])
+    rmf = create_delta_rmf(egrid[:-1], egrid[1:])
+    rmf.e_min = None
+    rmf.e_max = None
+
+    outfile = tmp_path / 'do-not-create'
+    with pytest.raises(IOErr,
+                       match="^RMF delta-rmf has no E_MIN or E_MAX data$"):
+        io.write_rmf(str(outfile), rmf, clobber=True)
