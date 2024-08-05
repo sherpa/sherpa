@@ -264,7 +264,8 @@ class SpectrumBlock(TableBlock):
     """Represent a PHA dataset.
 
     This ensures that the column CHANNEL exists and is 1 or 2D, and
-    that COUNTS and RATE + EXPOSURE keyword.
+    that either the COUNTS column exists, or RATE column and EXPOSURE
+    keyword exists.
 
     """
 
