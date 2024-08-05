@@ -150,7 +150,6 @@ def test_read_rmf(make_data_path):
         assert attr.dtype == np.uint64
 
     for field in ["energ_lo", "energ_hi", "matrix", "e_min", "e_max"]:
-        print(field)
         attr = getattr(rmf, field)
         assert attr.dtype == np.float64
 
@@ -954,7 +953,6 @@ def test_write_fake_perfect_rmf(offset, tmp_path):
     assert np.log10(new.ethresh) == pytest.approx(-10)
 
     hdr = new.header
-    print(hdr)
     assert "HDUNAME" not in hdr
     assert hdr["HDUCLASS"] == "OGIP"
     assert hdr["HDUCLAS1"] == "RESPONSE"
