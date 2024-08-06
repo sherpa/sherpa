@@ -1695,7 +1695,7 @@ class Data1D(Data):
     def get_xerr(self,
                  filter: bool = False,
                  yfunc=None
-                 ) -> None:
+                 ) -> Optional[np.ndarray]:
         """Return linear view of bin size in independent axis/axes.
 
         Parameters
@@ -2085,7 +2085,7 @@ class Data1DInt(Data1D):
     def get_xerr(self,
                  filter: bool = False,
                  model: Optional[ModelFunc] = None
-                 ) -> np.ndarray:
+                 ) -> Optional[np.ndarray]:
         """Returns an X "error".
 
         The error value for the independent axis is not well defined
@@ -2104,7 +2104,8 @@ class Data1DInt(Data1D):
         Returns
         -------
         xerr : ndarray
-           The half-width of each bin.
+           The half-width of each bin. Although the types suggest it
+           can be None, it will always be an array, even if empty.
 
         """
         indep = self.get_evaluation_indep(filter, model)
