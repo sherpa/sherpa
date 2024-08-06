@@ -1399,7 +1399,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         """
         return self.get_error(filter, staterrfunc)
 
-    def get_ylabel(self, yfunc=None):
+    def get_ylabel(self, yfunc=None) -> str:
         """Return label for dependent axis in N-D view of dependent variable.
 
         Parameters

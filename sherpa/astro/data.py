@@ -1001,10 +1001,10 @@ class DataARF(DataOgipResponse):
     def get_dep(self, filter=False):
         return self._rsp
 
-    def get_xlabel(self):
+    def get_xlabel(self) -> str:
         return 'Energy (keV)'
 
-    def get_ylabel(self):
+    def get_ylabel(self, yfunc=None) -> str:
         from sherpa import plot
         return 'cm' + plot.backend.get_latex_for_string('^2')
 
@@ -1182,12 +1182,12 @@ class DataRMF(DataOgipResponse):
     def get_dep(self, filter=False):
         return self.apply_rmf(np.ones(self.energ_lo.shape, SherpaFloat))
 
-    def get_xlabel(self):
+    def get_xlabel(self) -> str:
         if (self.e_min is not None) and (self.e_max is not None):
             return 'Energy (keV)'
         return 'Channel'
 
-    def get_ylabel(self):
+    def get_ylabel(self, yfunc=None) -> str:
         return 'Counts'
 
 
@@ -4288,7 +4288,7 @@ It is an integer or string.
         #
         return self._from_channel(self.channel, group=False, response_id=response_id)
 
-    def get_xlabel(self):
+    def get_xlabel(self) -> str:
         xlabel = self.units.capitalize()
         if self.units == 'energy':
             xlabel += ' (keV)'
@@ -4468,7 +4468,7 @@ It is an integer or string.
         dlam = hc / elo - hc / ehi
         return dlam / 2
 
-    def get_ylabel(self):
+    def get_ylabel(self, yfunc=None) -> str:
         ylabel = 'Counts'
 
         if self.rate and self.exposure:
@@ -4741,7 +4741,7 @@ It is an integer or string.
 
         return create_expr_integrated(xlo[mask], xhi[mask], mask=mask, format=format, delim=delim)
 
-    def get_filter_expr(self):
+    def get_filter_expr(self) -> str:
         return (self.get_filter(format='%.4f', delim='-') +
                 ' ' + self.get_xlabel())
 
