@@ -118,34 +118,44 @@ this range to have at least 20 counts per group:
 
 """
 
-import os.path
+from __future__ import annotations
+
+from dataclasses import dataclass
 import logging
+import os
+from typing import TYPE_CHECKING, Mapping, Optional
 import warnings
 
-import numpy
+import numpy as np
 
-from sherpa.astro import hc
 from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
     IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
 from sherpa.utils import pad_bounding_box, interpolate, \
-    create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
+    create_expr, create_expr_integrated, parse_expr, bool_cast, \
+    rebin, filter_bins
 from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
 
+from . import hc
+
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
-from sherpa.astro.utils import arf_fold, rmf_fold, filter_resp, \
+from .utils import arf_fold, rmf_fold, filter_resp, \
     compile_energy_grid, do_group, expand_grouped_mask
+
+if TYPE_CHECKING:
+    # Avoid reference loops
+    from .io.types import KeyType
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
 regstatus = False
 try:
-    from sherpa.astro.utils._region import Region
+    from sherpa.astro.utils._region import Region  # type: ignore
     regstatus = True
 except ImportError:
     warning('failed to import sherpa.astro.utils._region; Region routines ' +
@@ -153,7 +163,7 @@ except ImportError:
 
 groupstatus = False
 try:
-    import group as pygroup
+    import group as pygroup  # type: ignore
     groupstatus = True
 except ImportError:
     groupstatus = False
@@ -164,7 +174,12 @@ except ImportError:
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt', 'DataRosatRMF')
 
 
-def _notice_resp(chans, arf, rmf):
+# can arf/rmf be sent ARF1D/RMF1D too?
+#
+def _notice_resp(chans: np.ndarray,
+                 arf: Optional[DataARF],
+                 rmf: Optional[DataRMF]
+                 ) -> None:
     """Notice the channel range for the associated responses
 
     Parameters
@@ -175,8 +190,6 @@ def _notice_resp(chans, arf, rmf):
     rmf : sherpa.astro.data.DataRMF or None
 
     """
-
-    bin_mask = None
 
     if rmf is not None and arf is not None:
 
@@ -190,7 +203,7 @@ def _notice_resp(chans, arf, rmf):
         elif len(rmf.energ_lo) < len(arf.energ_lo):
             arf_mask = None
             if bin_mask is not None:
-                arf_mask = numpy.zeros(len(arf.energ_lo), dtype=bool)
+                arf_mask = np.zeros(len(arf.energ_lo), dtype=bool)
                 for ii, val in enumerate(bin_mask):
                     if val:
                         los = (rmf.energ_lo[ii],)
@@ -199,15 +212,21 @@ def _notice_resp(chans, arf, rmf):
                         # TODO: should this set integrated=True?
                         #       we only have one test of this code in
                         #       sherpa/astro/tests/test_astro.py:test_missmatch_arf
-                        idx = filter_bins(los, his, grid).nonzero()[0]
+                        mask = filter_bins(los, his, grid)
+                        if mask is None:
+                            raise DataErr("notmask")
+
+                        idx = mask.nonzero()[0]
                         arf_mask[idx] = True
+
             arf.notice(arf_mask)
 
-    else:
-        if rmf is not None:
-            bin_mask = rmf.notice(chans)
-        if arf is not None:
-            arf.notice(bin_mask)
+    elif rmf is not None:
+        rmf.notice(chans)
+
+    elif arf is not None:
+        # Is this the correct thing to do?
+        arf.notice(None)
 
 
 def display_header(header, key):
@@ -441,7 +460,7 @@ def _calc_erange(elo, ehi):
 
     # Randomly pick 1% as the cut-off for a constant bin width
     #
-    de = numpy.abs(ehi - elo)
+    de = np.abs(ehi - elo)
     demin = de.min()
     demax = de.max()
     if demin > 0.0:
@@ -479,7 +498,7 @@ def _calc_wrange(wlo, whi):
 
     # Randomly pick 1% as the cut-off for a constant bin width
     #
-    dw = numpy.abs(whi - wlo)
+    dw = np.abs(whi - wlo)
     dwmin = dw.min()
     dwmax = dw.max()
     if dwmin > 0.0:
@@ -542,8 +561,8 @@ def html_arf(arf):
         wrange = _calc_wrange(arf.bin_lo, arf.bin_hi)
         meta.append(('Wavelength range', wrange))
 
-    a1 = numpy.min(arf.specresp)
-    a2 = numpy.max(arf.specresp)
+    a1 = np.min(arf.specresp)
+    a2 = np.max(arf.specresp)
     meta.append(('Area range', f'{a1:g} - {a2:g} cm<sup>2</sup>'))
 
     ls.append(formatting.html_section(meta, summary='Summary',
@@ -823,7 +842,7 @@ class DataOgipResponse(Data1DInt):
         #
         # so the sum will be number of elements or 0
         #
-        increasing = numpy.diff(elo, n=1) > 0.0
+        increasing = np.diff(elo, n=1) > 0.0
         nincreasing = increasing.sum()
         if nincreasing > 0 and nincreasing != len(increasing):
             # raise DataErr('ogip-error', rtype, label,
@@ -982,10 +1001,10 @@ class DataARF(DataOgipResponse):
     def get_dep(self, filter=False):
         return self._rsp
 
-    def get_xlabel(self):
+    def get_xlabel(self) -> str:
         return 'Energy (keV)'
 
-    def get_ylabel(self):
+    def get_ylabel(self, yfunc=None) -> str:
         from sherpa import plot
         return 'cm' + plot.backend.get_latex_for_string('^2')
 
@@ -1003,10 +1022,10 @@ class DataRMF(DataOgipResponse):
         containing the data.
     detchans : int
     energ_lo, energ_hi : array
-        The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
-        for the ARF. The ENERG_HI values must be greater than the
-        ENERG_LO values for each bin, and the energy arrays must be
-        in increasing or decreasing order.
+        The values of the ENERG_LO and ENERG_HI columns for the RMF
+        (for the MATRIX block). The ENERG_HI values must be greater
+        than the ENERG_LO values for each bin, and the energy arrays
+        must be in increasing or decreasing order.
     n_grp, f_chan, n_chan, matrix : array-like
     offset : int, optional
     e_min, e_max : array-like or None, optional
@@ -1161,14 +1180,14 @@ class DataRMF(DataOgipResponse):
         return (self._lo, self._hi)
 
     def get_dep(self, filter=False):
-        return self.apply_rmf(numpy.ones(self.energ_lo.shape, SherpaFloat))
+        return self.apply_rmf(np.ones(self.energ_lo.shape, SherpaFloat))
 
-    def get_xlabel(self):
+    def get_xlabel(self) -> str:
         if (self.e_min is not None) and (self.e_max is not None):
             return 'Energy (keV)'
         return 'Channel'
 
-    def get_ylabel(self):
+    def get_ylabel(self, yfunc=None) -> str:
         return 'Counts'
 
 
@@ -1180,6 +1199,142 @@ class DataRosatRMF(DataRMF):
 
     def _validate(self, name, energy_lo, energy_hi, ethresh):
         return energy_lo, energy_hi
+
+
+@dataclass
+class MatrixRMF:
+    """Store the data for the RMF MATRIX block.
+
+    There is no validation of these fields as this is intended
+    for internal use only.
+    """
+
+    energ_lo: np.ndarray
+    energ_hi: np.ndarray
+    n_grp: np.ndarray
+    f_chan: np.ndarray
+    n_chan: np.ndarray
+    matrix: np.ndarray
+
+
+# Using a single class makes sense given the existing API but there
+# are reasons why we might want the logic in a sherpa.astro.instrument
+# class instead. This is therefore an experiment as we explore
+# supporting this type of data.
+#
+class DataMultiRMF(DataRMF):
+    """Support multi-matrix RMF.
+
+    Allow a multi-block RMF file - where the matrix information is
+    stored at different energy binning - as a `DataRMF` object. This
+    is an *experimental* interface which may change.
+
+    Parameters
+    ----------
+    name : str
+        The name of the data set; often set to the name of the file
+        containing the data.
+    detchans : int
+    matrices : list of MatrixMF
+        The matrix information.
+    e_min, e_max : array-like
+    offset : int, optional
+    header : dict or None, optional
+    ethresh : number or None, optional
+        If set it must be greater than 0 and is the replacement value
+        to use if the lowest-energy value is 0.0.
+
+    Notes
+    -----
+    The current representations of this RMF (e.g. string
+    representation and the rich visualization in notebooks) use the
+    "highest resolution" matrix only.
+
+    """
+
+    def __init__(self,
+                 name: str,
+                 detchans: int,
+                 matrices: list[MatrixRMF],
+                 e_min: np.ndarray,
+                 e_max: np.ndarray,
+                 offset: int = 1,
+                 header: Optional[Mapping[str, KeyType]] = None,
+                 ethresh: Optional[float] = None
+                 ) -> None:
+
+        nmat = len(matrices)
+        if nmat < 2:
+            raise ValueError(f"expected at least 2 matrices, sent {nmat}")
+
+        self._matrices: list[MatrixRMF] = []
+        for mat in matrices:
+            self._matrices.append(mat)
+
+        # Does it really matter what we send to DataRMF here?  For now
+        # pick the matix with the most energy bins, as the assumption
+        # is that this is the "high-res" response, but there's nothing
+        # in the spec to stop "strange" RMFs being created.
+        #
+        # We could instead go and combine the different energ_lo/hi
+        # bins to create an overall grid, and then resample that for
+        # each matrix.
+        #
+        nbins = np.asarray([len(mat.energ_lo)
+                            for mat in matrices])
+        idx = np.argmax(nbins)
+        mat = matrices[idx]
+
+        # Store the identity of the "highest-res" matrix.
+        self._matrix0 = idx
+
+        super().__init__(name, detchans, mat.energ_lo,
+                         mat.energ_hi, mat.n_grp, mat.f_chan,
+                         mat.n_chan, mat.matrix, offset=offset,
+                         e_min=e_min, e_max=e_max, header=header,
+                         ethresh=ethresh)
+
+    # For now we drop all the fancy "restrict to just the range
+    # we care about".
+    #
+    def notice(self, noticed_chans=None):
+        return None
+
+    def apply_rmf(self, src, *args, **kwargs):
+        """Apply the RMF to the source model.
+        """
+
+        # We need to fold the model through each RMF and sum the
+        # results. Note that the use of uint64 for detchans can make
+        # the size calculation overflow into a float, hence the int
+        # call.
+        #
+        out = np.zeros(int(self.detchans + 1 - self.offset),
+                       dtype=SherpaFloat)
+        for mat in self._matrices:
+            elo = mat.energ_lo
+            ehi = mat.energ_hi
+
+            # The API should include the evaluation space for the
+            # model, as that would save a lot of issues here. As
+            # mentioned in #1907 this information may be sent
+            # here, bit it's not currently guaranteed.
+            #
+            # Should args[0] be checked, as this should be the grid
+            # used to evaluate src (but can we guarantee that)?
+            #
+            if len(src) == len(elo):
+                # This is not really a sufficient check.
+                #
+                tmp_src = src
+            else:
+                tmp_src = rebin(src, self._lo, self._hi, elo, ehi)
+
+            out += rmf_fold(tmp_src, mat.n_grp, mat.f_chan,
+                            mat.n_chan, mat.matrix, self.detchans,
+                            self.offset)
+
+        return out
 
 
 def validate_wavelength_limits(wlo, whi, emax):
@@ -1326,8 +1481,8 @@ def replace_xspecvar_values(src_counts, bkg_counts,
     # - all components (source, background_1 .. n) are 0
     # - some are 0
     #
-    counts = numpy.asarray([src_counts] + bkg_counts)
-    numzero = numpy.sum(counts == 0, axis=0)
+    counts = np.asarray([src_counts] + bkg_counts)
+    numzero = np.sum(counts == 0, axis=0)
 
     nbkg = len(bkg_variances)
     ncpts = 1 + nbkg
@@ -1338,11 +1493,11 @@ def replace_xspecvar_values(src_counts, bkg_counts,
     # identifying them requires another loop as some_zero has
     # collapsed the data.
     #
-    idx, = numpy.asarray(src_counts == 0 & some_zero).nonzero()
+    idx, = np.asarray(src_counts == 0 & some_zero).nonzero()
     staterr[idx] = 0
 
     for bcnts, bvar in zip(bkg_counts, bkg_variances):
-        idx, = numpy.asarray(bcnts == 0 & some_zero).nonzero()
+        idx, = np.asarray(bcnts == 0 & some_zero).nonzero()
         bvar[idx] = 0
 
     # Do we have any bins where all source and background components
@@ -1387,10 +1542,10 @@ def replace_xspecvar_values(src_counts, bkg_counts,
     # as the source.
     #
     nelem = len(staterr)
-    scales = numpy.zeros((nbkg, nelem))
+    scales = np.zeros((nbkg, nelem))
     for idx, bscale in enumerate(bkg_scales):
-        if numpy.isscalar(bscale):
-            scales[idx] = numpy.ones(nelem) * bscale
+        if np.isscalar(bscale):
+            scales[idx] = np.ones(nelem) * bscale
         else:
             scales[idx] = bscale
 
@@ -1400,10 +1555,10 @@ def replace_xspecvar_values(src_counts, bkg_counts,
     #
     bkg_scale = scales.sum(axis=0) / nbkg
 
-    s = numpy.ones(nzero)
+    s = np.ones(nzero)
     b = (src_scale / bkg_scale)[all_zero]
-    combined = numpy.asarray([s, b])
-    minval = numpy.min(combined, axis=0)
+    combined = np.asarray([s, b])
+    minval = np.min(combined, axis=0)
 
     staterr[all_zero] = minval
     for bvar in bkg_variances:
@@ -1514,7 +1669,7 @@ class DataPHA(Data1D):
         if val == self._grouped:
             return
 
-        if not numpy.iterable(self.mask):
+        if not np.iterable(self.mask):
             self._grouped = val
             return
 
@@ -1629,7 +1784,7 @@ must be an integer.""")
         return self._response_ids
 
     def _set_response_ids(self, ids):
-        if not numpy.iterable(ids):
+        if not np.iterable(ids):
             raise DataErr('idsnotarray', 'response', str(ids))
 
         keys = list(self._responses.keys())
@@ -1650,7 +1805,7 @@ will be removed. The identifiers can be integers or strings.
         return self._background_ids
 
     def _set_background_ids(self, ids):
-        if not numpy.iterable(ids):
+        if not np.iterable(ids):
             raise DataErr('idsnotarray', 'background', str(ids))
 
         keys = list(self._backgrounds.keys())
@@ -1729,7 +1884,7 @@ will be removed. The identifiers can be integers or strings.
             setattr(self, f"_{attr}", None)
             return
 
-        if not numpy.iterable(val):
+        if not np.iterable(val):
             if not allow_scalar:
                 raise DataErr("notanarray")
 
@@ -1774,7 +1929,7 @@ will be removed. The identifiers can be integers or strings.
         # grouped and val is a sequence (so we test with isscalar
         # rather than iterable, to avoid selecting strings).
         #
-        if self.grouped and val is not None and not numpy.isscalar(val):
+        if self.grouped and val is not None and not np.isscalar(val):
             # The assumption is that if the data is grouped then it contains data.
             nexp = len(self.get_y(filter=False))
             if len(val) != nexp:
@@ -1849,7 +2004,7 @@ will be removed. The identifiers can be integers or strings.
         #
         if val is not None:
             try:
-                val = numpy.asarray(val, dtype=numpy.int16)
+                val = np.asarray(val, dtype=np.int16)
             except TypeError:
                 raise DataErr("notanintarray") from None
 
@@ -1861,7 +2016,7 @@ will be removed. The identifiers can be integers or strings.
         # has already been called).
         #
         ofilter = None
-        if self._NoNewAttributesAfterInit__initialized and numpy.iterable(self.mask):
+        if self._NoNewAttributesAfterInit__initialized and np.iterable(self.mask):
             ofilter = self.get_filter()
 
         self._set_related("grouping", val)
@@ -1912,7 +2067,7 @@ will be removed. The identifiers can be integers or strings.
         #
         if val is not None:
             try:
-                val = numpy.asarray(val, dtype=numpy.int16)
+                val = np.asarray(val, dtype=np.int16)
             except TypeError:
                 raise DataErr("notanintarray") from None
 
@@ -2563,7 +2718,7 @@ will be removed. The identifiers can be integers or strings.
                 elo, ehi, lookuptable = compile_energy_grid(energylist)
             elif (not energylist or
                   (len(energylist) == 1 and
-                      numpy.equal(energylist[0], None).any())):
+                      np.equal(energylist[0], None).any())):
                 raise DataErr('noenergybins', 'Response')
             else:
                 elo, ehi = energylist[0]
@@ -2593,8 +2748,8 @@ will be removed. The identifiers can be integers or strings.
         # Convert to an integer (this keeps the channel within
         # the group).
         #
-        mid = numpy.floor(mid)
-        val = numpy.asarray(val).astype(numpy.int_) - 1
+        mid = np.floor(mid)
+        val = np.asarray(val).astype(np.int_) - 1
         try:
             return mid[val]
         except IndexError:
@@ -2602,15 +2757,15 @@ will be removed. The identifiers can be integers or strings.
 
     def _channel_to_energy(self, val, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
-        val = numpy.asarray(val).astype(numpy.int_) - 1
+        val = np.asarray(val).astype(np.int_) - 1
         try:
             return (elo[val] + ehi[val]) / 2.0
         except IndexError:
             raise DataErr('invalidchannel', val) from None
 
     def _channel_to_wavelength(self, val, group=True, response_id=None):
-        tiny = numpy.finfo(numpy.float32).tiny
-        vals = numpy.asarray(self._channel_to_energy(val, group, response_id))
+        tiny = np.finfo(np.float32).tiny
+        vals = np.asarray(self._channel_to_energy(val, group, response_id))
         if vals.shape == ():
             if vals == 0.0:
                 vals = tiny
@@ -2717,7 +2872,7 @@ It is an integer or string.
             raise DataErr("The channel field of the background must be set")
 
         if len(self.channel) != len(bkg.channel) or \
-           numpy.any(self.channel != bkg.channel):
+           np.any(self.channel != bkg.channel):
             raise DataErr("The source and background channels differ")
 
         bkg_id = self._fix_background_id(id)
@@ -2903,11 +3058,11 @@ It is an integer or string.
             Negative values are replaced by 1.0.
 
         """
-        if numpy.isscalar(scale) and scale <= 0.0:
+        if np.isscalar(scale) and scale <= 0.0:
             return 1.0
 
-        if numpy.iterable(scale):
-            scale = numpy.asarray(scale, dtype=SherpaFloat)
+        if np.iterable(scale):
+            scale = np.asarray(scale, dtype=SherpaFloat)
             if group:
                 if filter:
                     scale = self.apply_filter(scale, self._middle)
@@ -3006,7 +3161,7 @@ It is an integer or string.
 
         return self._check_scale(self.areascal, group, filter)
 
-    def apply_filter(self, data, groupfunc=numpy.sum):
+    def apply_filter(self, data, groupfunc=np.sum):
         """Group and filter the supplied data to match the data set.
 
         Parameters
@@ -3129,7 +3284,7 @@ It is an integer or string.
             # Create an array for the full channel range and insert
             # the user-values into it.
             #
-            temp = numpy.zeros(nelem, dtype=SherpaFloat)
+            temp = np.zeros(nelem, dtype=SherpaFloat)
             temp[mask] = data
             data = temp
 
@@ -3149,7 +3304,7 @@ It is an integer or string.
         #
         return self._data_space.filter.apply(gdata)
 
-    def apply_grouping(self, data, groupfunc=numpy.sum):
+    def apply_grouping(self, data, groupfunc=np.sum):
         """Apply the grouping scheme of the data set to the supplied data.
 
         Parameters
@@ -3275,8 +3430,8 @@ It is an integer or string.
         if len(data) != nfilter or len(groups) != nfilter:
             raise DataErr("mismatchn", "quality filter", "array", nfilter, len(data))
 
-        filtered_data = numpy.asarray(data)[filter]
-        groups = numpy.asarray(groups)[filter]
+        filtered_data = np.asarray(data)[filter]
+        groups = np.asarray(groups)[filter]
         return do_group(filtered_data, groups, groupfunc.__name__)
 
     def ignore_bad(self):
@@ -3307,7 +3462,7 @@ It is an integer or string.
         if self.quality is None:
             raise DataErr("noquality", self.name)
 
-        qual_flags = ~numpy.asarray(self.quality, bool)
+        qual_flags = ~np.asarray(self.quality, bool)
 
         if self.grouped and (self.mask is not True):
             self.notice()
@@ -3376,7 +3531,7 @@ It is an integer or string.
         # that get_mask does it).
         #
         if "tabStops" in kwargs:
-            ts = numpy.asarray(kwargs["tabStops"])
+            ts = np.asarray(kwargs["tabStops"])
 
             # We only expand the array if it has the correct size
             # (expand_grouped_mask does not enforce length checks for
@@ -3388,7 +3543,7 @@ It is an integer or string.
             nts = len(ts)
             nchan = len(self.channel)
             if self.grouped and nts != nchan and \
-               numpy.iterable(self.mask) and len(self.mask) == nts:
+               np.iterable(self.mask) and len(self.mask) == nts:
                 ts = expand_grouped_mask(ts, self.grouping)
 
             kwargs["tabStops"] = ts
@@ -3401,7 +3556,7 @@ It is an integer or string.
             # b) get_mask can return None or an array.
             #
             mask = self.get_mask()
-            if numpy.iterable(mask):
+            if np.iterable(mask):
                 kwargs["tabStops"] = ~mask
 
         self.grouping, self.quality = group_func(*args, **kwargs)
@@ -4100,7 +4255,7 @@ It is an integer or string.
             bkgvar = sum(bkg_variances) / (nbkg * nbkg)
 
         statvar = staterr * staterr + bkgvar * src_scale * src_scale
-        return numpy.sqrt(statvar)
+        return np.sqrt(statvar)
 
     def get_syserror(self, filter=False):
         """Return any systematic error.
@@ -4133,7 +4288,7 @@ It is an integer or string.
         #
         return self._from_channel(self.channel, group=False, response_id=response_id)
 
-    def get_xlabel(self):
+    def get_xlabel(self) -> str:
         xlabel = self.units.capitalize()
         if self.units == 'energy':
             xlabel += ' (keV)'
@@ -4167,7 +4322,7 @@ It is an integer or string.
 
         filter = bool_cast(filter)
         # make a copy of data for units manipulation
-        val = numpy.array(val, dtype=SherpaFloat)
+        val = np.array(val, dtype=SherpaFloat)
 
         if self.rate and self.exposure is not None:
             val /= self.exposure
@@ -4208,7 +4363,7 @@ It is an integer or string.
             else:  # Could be "energy" or "channel"
                 dx = xhi - xlo
 
-            val /= numpy.abs(dx)
+            val /= np.abs(dx)
 
         # The final step is to multiply by the X axis self.plot_fac
         # times.
@@ -4229,7 +4384,7 @@ It is an integer or string.
         #
         xlo, xhi = get_bin_edges()
         xmid = (xlo + xhi) / 2
-        val *= numpy.power(xmid, self.plot_fac)
+        val *= np.power(xmid, self.plot_fac)
         return val
 
     def get_y(self, filter=False, yfunc=None, response_id=None,
@@ -4302,7 +4457,7 @@ It is an integer or string.
                 # What should we do here? This indicates that all bins
                 # have been marked as bad (and grouping is present).
                 #
-                return numpy.asarray([])
+                return np.asarray([])
 
         # Issue #748 #1817 noted we should return the half-width
         # Issue #1985 notes that we need to support wavelength.
@@ -4313,7 +4468,7 @@ It is an integer or string.
         dlam = hc / elo - hc / ehi
         return dlam / 2
 
-    def get_ylabel(self):
+    def get_ylabel(self, yfunc=None) -> str:
         ylabel = 'Counts'
 
         if self.rate and self.exposure:
@@ -4342,22 +4497,22 @@ It is an integer or string.
 
     @staticmethod
     def _middle(array):
-        array = numpy.asarray(array)
+        array = np.asarray(array)
         return (array.min() + array.max()) / 2.0
 
     @staticmethod
     def _min(array):
-        array = numpy.asarray(array)
+        array = np.asarray(array)
         return array.min()
 
     @staticmethod
     def _max(array):
-        array = numpy.asarray(array)
+        array = np.asarray(array)
         return array.max()
 
     @staticmethod
     def _sum_sq(array):
-        return numpy.sqrt(numpy.sum(array * array))
+        return np.sqrt(np.sum(array * array))
 
     def get_noticed_channels(self):
         """Return the noticed channels.
@@ -4403,7 +4558,7 @@ It is an integer or string.
         if self.mask is True or not self.grouped:
             if self.quality_filter is not None:
                 return self.quality_filter
-            if numpy.iterable(self.mask):
+            if np.iterable(self.mask):
                 return self.mask
             return None
 
@@ -4586,7 +4741,7 @@ It is an integer or string.
 
         return create_expr_integrated(xlo[mask], xhi[mask], mask=mask, format=format, delim=delim)
 
-    def get_filter_expr(self):
+    def get_filter_expr(self) -> str:
         return (self.get_filter(format='%.4f', delim='-') +
                 ' ' + self.get_xlabel())
 
@@ -4747,7 +4902,7 @@ It is an integer or string.
             #   - iterable of int or str
             # it's a bit awkward to identify what is meant.
             #
-            if not isinstance(bkg_id, str) and numpy.iterable(bkg_id):
+            if not isinstance(bkg_id, str) and np.iterable(bkg_id):
                 bkg_ids = bkg_id
             else:
                 bkg_ids = [bkg_id]
@@ -4788,7 +4943,7 @@ It is an integer or string.
         try:
             elo, ehi = self._get_ebins(group=self.grouped)
         except DataErr as de:
-            info(f"Skipping dataset {self.name}: {de}")
+            info("Skipping dataset %s: %s", self.name, str(de))
             return
 
         emin = min(elo[[0, -1]])
@@ -5054,7 +5209,8 @@ class DataIMG(Data2D):
         # it is going to be wrong.
         #
         self.notice2d()
-        warning(f"Region filter has been removed from '{self.name}'")
+        warning("Region filter has been removed from '%s'",
+                self.name)
 
     def _repr_html_(self):
         """Return a HTML (string) representation of the data
@@ -5125,7 +5281,8 @@ class DataIMG(Data2D):
         else:
             # If the region is "" then str() will produce '' so we want
             # double quotes about it.
-            warning(f'Unable to restore region="{self._region}" as region module is not available.')
+            warning('Unable to restore region="%s" as region module is not available.',
+                    str(self._region))
 
             self._region = None
 
@@ -5323,8 +5480,7 @@ class DataIMG(Data2D):
         # Crete the new region
         #
         val = str(val).strip()
-        isfile = os.path.isfile(val)
-        reg = Region(val, isfile)
+        reg = Region(val, os.path.isfile(val))
 
         # Calculate the mask for this region as an "included" region.
         mask = reg.mask(self.get_x0(), self.get_x1())
@@ -5362,13 +5518,13 @@ class DataIMG(Data2D):
 
     def get_bounding_mask(self):
         mask = self.mask
-        if not numpy.iterable(self.mask):
+        if not np.iterable(self.mask):
             return mask, None
 
         # create bounding box around noticed image regions
-        mask = numpy.array(self.mask).reshape(*self.shape)
+        mask = np.array(self.mask).reshape(*self.shape)
 
-        x0_i, x1_i = numpy.where(mask)
+        x0_i, x1_i = np.where(mask)
 
         x0_lo = x0_i.min()
         x0_hi = x0_i.max()
@@ -5389,7 +5545,7 @@ class DataIMG(Data2D):
             return y_img
 
         m = self.eval_model_to_fit(yfunc)
-        if numpy.iterable(self.mask):
+        if np.iterable(self.mask):
             # if filtered, the calculated model must be padded up
             # to the data size to preserve img shape and WCS coord
             m = pad_bounding_box(m, self.mask)
@@ -5402,13 +5558,13 @@ class DataIMG(Data2D):
         self._check_shape()
 
         # dummy placeholders needed b/c img shape may not be square!
-        axis0 = numpy.arange(self.shape[1], dtype=float) + 1.
-        axis1 = numpy.arange(self.shape[0], dtype=float) + 1.
+        axis0 = np.arange(self.shape[1], dtype=float) + 1.
+        axis1 = np.arange(self.shape[0], dtype=float) + 1.
         if self.coord == 'logical':
             return (axis0, axis1)
 
-        dummy0 = numpy.ones(axis0.size, dtype=float)
-        dummy1 = numpy.ones(axis1.size, dtype=float)
+        dummy0 = np.ones(axis0.size, dtype=float)
+        dummy1 = np.ones(axis1.size, dtype=float)
 
         if self.coord == 'physical':
             axis0, dummy = self._logical_to_physical(axis0, dummy0)
@@ -5442,7 +5598,7 @@ class DataIMG(Data2D):
         y = self.filter_region(self.get_dep(False))
         if yfunc is not None:
             m = self.eval_model_to_fit(yfunc)
-            if numpy.iterable(self.mask):
+            if np.iterable(self.mask):
                 # if filtered, the calculated model must be padded up
                 # to the data size to preserve img shape and WCS coord
                 m = self.filter_region(pad_bounding_box(m, self.mask))
@@ -5455,7 +5611,7 @@ class DataIMG(Data2D):
                 self.get_x1label())
 
     def filter_region(self, data):
-        if data is None or not numpy.iterable(self.mask):
+        if data is None or not np.iterable(self.mask):
             return data
 
         # We do not want to change the data array hence the
@@ -5463,7 +5619,7 @@ class DataIMG(Data2D):
         # we convert to a type that can accept NaN values.
         #
         out = data.astype(dtype=SherpaFloat, casting="safe", copy=True)
-        out[~self.mask] = numpy.nan
+        out[~self.mask] = np.nan
         return out
 
 
@@ -5663,17 +5819,17 @@ class DataIMGInt(DataIMG):
         self._check_shape()
 
         # dummy placeholders needed b/c img shape may not be square!
-        axis0lo = numpy.arange(self.shape[1], dtype=float) - 0.5
-        axis1lo = numpy.arange(self.shape[0], dtype=float) - 0.5
+        axis0lo = np.arange(self.shape[1], dtype=float) - 0.5
+        axis1lo = np.arange(self.shape[0], dtype=float) - 0.5
 
-        axis0hi = numpy.arange(self.shape[1], dtype=float) + 0.5
-        axis1hi = numpy.arange(self.shape[0], dtype=float) + 0.5
+        axis0hi = np.arange(self.shape[1], dtype=float) + 0.5
+        axis1hi = np.arange(self.shape[0], dtype=float) + 0.5
 
         if self.coord == 'logical':
             return (axis0lo, axis1lo, axis0hi, axis1hi)
 
-        dummy0 = numpy.ones(axis0lo.size, dtype=float)
-        dummy1 = numpy.ones(axis1lo.size, dtype=float)
+        dummy0 = np.ones(axis0lo.size, dtype=float)
+        dummy1 = np.ones(axis1lo.size, dtype=float)
 
         if self.coord == 'physical':
             axis0lo, dummy = self._logical_to_physical(axis0lo, dummy0)
