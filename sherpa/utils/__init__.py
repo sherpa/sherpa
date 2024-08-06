@@ -33,7 +33,8 @@ import pydoc
 import string
 import sys
 from types import FunctionType, MethodType
-from typing import Any, Callable, Generic, Optional, TypeVar
+from typing import Any, Callable, Generic, Optional, Sequence, \
+    TypeVar
 import warnings
 
 import numpy as np
@@ -966,7 +967,11 @@ def pad_bounding_box(kernel, mask):
 eps = np.finfo(np.float32).eps
 
 
-def filter_bins(mins, maxes, axislist, integrated=False):
+def filter_bins(mins: Sequence[Optional[float]],
+                maxes: Sequence[Optional[float]],
+                axislist: Sequence[Sequence[float]],
+                integrated: bool = False
+                ) -> Optional[np.ndarray]:
     """What mask represents the given set of filters?
 
     The ranges are treated as inclusive at both ends if integrated is

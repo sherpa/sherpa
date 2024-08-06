@@ -133,7 +133,8 @@ from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
 from sherpa.utils import pad_bounding_box, interpolate, \
-    create_expr, create_expr_integrated, parse_expr, bool_cast, rebin, filter_bins
+    create_expr, create_expr_integrated, parse_expr, bool_cast, \
+    rebin, filter_bins
 from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
@@ -168,7 +169,12 @@ except ImportError:
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt', 'DataRosatRMF')
 
 
-def _notice_resp(chans, arf, rmf):
+# can arf/rmf be sent ARF1D/RMF1D too?
+#
+def _notice_resp(chans: numpy.ndarray,
+                 arf: Optional[DataARF],
+                 rmf: Optional[DataRMF]
+                 ) -> None:
     """Notice the channel range for the associated responses
 
     Parameters
@@ -179,8 +185,6 @@ def _notice_resp(chans, arf, rmf):
     rmf : sherpa.astro.data.DataRMF or None
 
     """
-
-    bin_mask = None
 
     if rmf is not None and arf is not None:
 
@@ -203,15 +207,21 @@ def _notice_resp(chans, arf, rmf):
                         # TODO: should this set integrated=True?
                         #       we only have one test of this code in
                         #       sherpa/astro/tests/test_astro.py:test_missmatch_arf
-                        idx = filter_bins(los, his, grid).nonzero()[0]
+                        mask = filter_bins(los, his, grid)
+                        if mask is None:
+                            raise DataErr("notmask")
+
+                        idx = mask.nonzero()[0]
                         arf_mask[idx] = True
+
             arf.notice(arf_mask)
 
-    else:
-        if rmf is not None:
-            bin_mask = rmf.notice(chans)
-        if arf is not None:
-            arf.notice(bin_mask)
+    elif rmf is not None:
+        rmf.notice(chans)
+
+    elif arf is not None:
+        # Is this the correct thing to do?
+        arf.notice(None)
 
 
 def display_header(header, key):
