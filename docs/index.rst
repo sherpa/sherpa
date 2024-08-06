@@ -95,6 +95,7 @@ The last version of Sherpa compatible with Python 2.7 was the
    NotebookSupport
    ExamplePlots
    ViewingPHAResponses
+   AsymmetricErrors
 
 .. toctree::
    :maxdepth: 2
