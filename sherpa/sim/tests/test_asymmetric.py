@@ -125,7 +125,7 @@ def rms(a, b):
     return np.sqrt(a * a + b * b)
 
 
-# Basic data values frmo the gro*txt file. Note the data is unordered.
+# Basic data values from the gro*txt file. Note the data is unordered.
 #
 GRO_X = np.asarray(
     [0.00310, 0.00284, 0.00413, 0.00469, 0.00451, 0.00465, 0.00598,
