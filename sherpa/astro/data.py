@@ -1033,6 +1033,77 @@ class DataARF(DataOgipResponse):
         return 'cm' + plot.backend.get_latex_for_string('^2')
 
 
+@dataclass
+class MatrixRMF:
+    """Store the data for the RMF MATRIX block.
+
+    There is no validation of these fields as this is intended for
+    internal use only.
+
+    Header items not explicitly encoded here:
+
+      NUMGRP = n_grp.sum()
+      NUMELT = sum(n_chans.sum() for n_chans in n_chan)
+
+    """
+
+    # The data should be stored in the format that rmf_fold needs,
+    # and to_ogip is provided to convert to a file format.
+    #
+
+    # TODO: I am not sure it's worth using this structure more generically
+
+    energ_lo: np.ndarray
+    energ_hi: np.ndarray
+    n_grp: np.ndarray
+    f_chan: np.ndarray
+    n_chan: np.ndarray
+    matrix: np.ndarray
+
+    def to_ogip(self,
+                maxchan: int
+                ) -> dict[str, np.ndarray]:
+        """Return arrays in OGIP format.
+
+        Parameters
+        ----------
+        maxchan : int
+           The maximum channel number (this is offset + detchans - 1)
+           as this is used to determine the F_CHAN/N_CHAN data type.
+
+        Notes
+        -----
+        What should we do if we ever need 64-bit reals (for instance)?
+
+        Using maxchan for the F_CHAN and N_CHAN data types is not
+        necessarily correct, but it should be a reasonable approach.
+
+        """
+
+        # TODO: VLF shenanighans
+
+        dtype = np.int32 if nchan > 32767 else np.int16
+        return {"ENERG_LO": self.energ_lo.astype(np.float32),
+                "ENERG_HI": self.energ_hi.astype(np.float32),
+                "N_GRP": self.n_grp.astype(np.int16),
+                "F_CHAN": self.f_chan.astype(dtype),
+                "N_CHAN": self.n_chan.astype(dtype),
+                "MATRIX": self.matrix.astype(np.float32)}
+
+    # commented out because it fails at present...
+    #def __post_init__(self) -> None:
+    #
+    #    for name in ["energ_lo", "energ_hi", "matrix"]:
+    #        col = getattr(self, name)
+    #        if col.dtype != np.float64:
+    #            raise DataErr(f"{name} column has dtype {col.dtype}")
+    #
+    #    for name in ["n_grp", "f_chan", "n_chan"]:
+    #        col = getattr(self, name)
+    #        if col.dtype != np.uint64:
+    #            raise DataErr(f"{name} column has dtype {col.dtype}")
+
+
 class DataRMF(DataOgipResponse):
     """RMF data set.
 
@@ -1066,6 +1137,11 @@ class DataRMF(DataOgipResponse):
     but as there are cases of released data products that do not follow
     the standard, these checks can not cover all cases. If a check fails
     then a warning message is logged.
+
+    Best results - in that the RMF convolution should be fastest - are
+    when n_grp, f_chan, n_chan store numpy.uint64 values and matrix
+    stores numpy.float64 values. The main saving is from getting the
+    size correct (e.g. 64 bit versus 32 bit).
 
     """
     _ui_name = "RMF"
@@ -1248,22 +1324,6 @@ class DataRosatRMF(DataRMF):
         return energy_lo, energy_hi
 
 
-@dataclass
-class MatrixRMF:
-    """Store the data for the RMF MATRIX block.
-
-    There is no validation of these fields as this is intended
-    for internal use only.
-    """
-
-    energ_lo: np.ndarray
-    energ_hi: np.ndarray
-    n_grp: np.ndarray
-    f_chan: np.ndarray
-    n_chan: np.ndarray
-    matrix: np.ndarray
-
-
 # Using a single class makes sense given the existing API but there
 # are reasons why we might want the logic in a sherpa.astro.instrument
 # class instead. This is therefore an experiment as we explore
@@ -1282,7 +1342,7 @@ class DataMultiRMF(DataRMF):
         The name of the data set; often set to the name of the file
         containing the data.
     detchans : int
-    matrices : list of MatrixMF
+    matrices : list of MatrixRMF
         The matrix information.
     e_min, e_max : array-like
     offset : int, optional
