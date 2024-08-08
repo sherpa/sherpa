@@ -519,11 +519,7 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     for key in ["BACKFILE", "CORRFILE", "RESPFILE", "ANCRFILE"]:
         assert cr.get_key_value(key) == "none"
 
-    # The EXPOSURE keyword should be an attribute now, and removed
-    # from the header, but we do not guarantee or require that, so
-    # check whether it exists in the header.
-    #
-    assert cr.get_key_value("EXPOSURE") is None
+    assert cr.get_key_value("EXPOSURE") == pytest.approx(1.0)
 
 
 def check_write_pha_fits_basic_roundtrip_pyfits(path):
@@ -576,11 +572,7 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert "TLMIN2" not in hdu.header
         assert "TLMAX2" not in hdu.header
 
-        # The EXPOSURE keyword should be an attribute now, and removed
-        # from the header, but we do not guarantee or require that, so
-        # check whether it exists in the header.
-        #
-        assert "EXPOSURE" not in hdu.header
+        assert hdu.header["EXPOSURE"] == pytest.approx(1.0)
 
     finally:
         hdus.close()
@@ -607,9 +599,10 @@ def test_write_pha_fits_basic_roundtrip(tmp_path):
     assert inpha.channel == pytest.approx(chans)
     assert inpha.counts == pytest.approx(counts)
     for field in ["staterror", "syserror", "bin_lo", "bin_hi",
-                  "grouping", "quality", "exposure"]:
+                  "grouping", "quality"]:
         assert getattr(inpha, field) is None
 
+    assert inpha.exposure == pytest.approx(1.0)
     assert inpha.backscal == pytest.approx(1.0)
     assert inpha.areascal == pytest.approx(1.0)
 

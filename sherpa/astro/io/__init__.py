@@ -1327,6 +1327,9 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
         "HDUVERS": "1.2.1",
         "HDUDOC": "Arnaud et al. 1992a Legacy 2  p 65",
 
+        # The PHA file should have an EXPOSURE value, but just in case.
+        "EXPOSURE": 1.0,
+
         # Rely on the DataPHA class to have set up TELESCOP/INSTRUME/FILTER
         # based on any associated background or response. If the user has
         # changed them then so be it.
@@ -1389,10 +1392,13 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
         # We only set the range if there is no TLMIN/MAX1 keyword
         # already set. It's not clear what the best thing to do is.
         #
+        # Ensure the min/max ranges are written out as integers since
+        # data.channel may contain floating point values.
+        #
         if header.get("TLMIN1") is None:
-            channel.minval = dataset.channel[0]
+            channel.minval = int(dataset.channel[0])
         if header.get("TLMAX1") is None:
-            channel.maxval = dataset.channel[-1]
+            channel.maxval = int(dataset.channel[-1])
 
         cols.append(channel)
 
