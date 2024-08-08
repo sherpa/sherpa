@@ -10489,8 +10489,10 @@ class Session(sherpa.ui.utils.Session):
         # we have to check for the case of a *single* column in an ascii file
         # extract the single array from the read and bypass the dataset
         except TypeError:
-            y = sherpa.astro.io.backend.get_ascii_data(filename, *args,
-                                                       **kwargs)[1].pop()
+            hdu, _ = sherpa.astro.io.backend.get_ascii_data(filename,
+                                                            *args,
+                                                            **kwargs)
+            y = hdu.columns[0].values
         except Exception:
             try:
                 data = self.unpack_table(filename, *args, **kwargs)
@@ -10501,8 +10503,11 @@ class Session(sherpa.ui.utils.Session):
             # fits table
             # extract the single array from the read and bypass the dataset
             except TypeError:
-                y = sherpa.astro.io.backend.get_table_data(filename, *args,
-                                                           **kwargs)[1].pop()
+                hdu, _ = sherpa.astro.io.backend.get_table_data(filename,
+                                                                *args,
+                                                                **kwargs)
+                y = hdu.columns[0].values
+
             except Exception:
                 # unpack_data doesn't include a call to try
                 # getting data from image, so try that here.

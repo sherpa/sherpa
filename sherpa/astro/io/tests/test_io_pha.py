@@ -519,11 +519,7 @@ def check_write_pha_fits_basic_roundtrip_crates(path):
     for key in ["BACKFILE", "CORRFILE", "RESPFILE", "ANCRFILE"]:
         assert cr.get_key_value(key) == "none"
 
-    # The EXPOSURE keyword should be an attribute now, and removed
-    # from the header, but we do not guarantee or require that, so
-    # check whether it exists in the header.
-    #
-    assert cr.get_key_value("EXPOSURE") is None
+    assert cr.get_key_value("EXPOSURE") == pytest.approx(1.0)
 
 
 def check_write_pha_fits_basic_roundtrip_pyfits(path):
@@ -576,11 +572,7 @@ def check_write_pha_fits_basic_roundtrip_pyfits(path):
         assert "TLMIN2" not in hdu.header
         assert "TLMAX2" not in hdu.header
 
-        # The EXPOSURE keyword should be an attribute now, and removed
-        # from the header, but we do not guarantee or require that, so
-        # check whether it exists in the header.
-        #
-        assert "EXPOSURE" not in hdu.header
+        assert hdu.header["EXPOSURE"] == pytest.approx(1.0)
 
     finally:
         hdus.close()
@@ -607,9 +599,10 @@ def test_write_pha_fits_basic_roundtrip(tmp_path):
     assert inpha.channel == pytest.approx(chans)
     assert inpha.counts == pytest.approx(counts)
     for field in ["staterror", "syserror", "bin_lo", "bin_hi",
-                  "grouping", "quality", "exposure"]:
+                  "grouping", "quality"]:
         assert getattr(inpha, field) is None
 
+    assert inpha.exposure == pytest.approx(1.0)
     assert inpha.backscal == pytest.approx(1.0)
     assert inpha.areascal == pytest.approx(1.0)
 
@@ -670,9 +663,10 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
 
     c4 = cr.get_column(4)
     assert c4.name == "AREASCAL"
-    assert c4.values.dtype == np.float64
-    assert c4.get_tlmin() < 1e308
-    assert c4.get_tlmax() > 1e308
+    # FITS standard has as this 4-byte real
+    assert c4.values.dtype == np.float32
+    assert c4.get_tlmin() < -3e38
+    assert c4.get_tlmax() > 3e38
 
     assert cr.get_key_value("HDUCLASS") == "OGIP"
     assert cr.get_key_value("HDUCLAS1") == "SPECTRUM"
@@ -728,7 +722,8 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         assert hdu.columns[3].name == "QUALITY"
         assert hdu.columns[3].format == "I"
         assert hdu.columns[4].name == "AREASCAL"
-        assert hdu.columns[4].format == "D"
+        # FITS standard has as this 4-byte real
+        assert hdu.columns[4].format == "E"
 
         assert hdu.header["HDUCLASS"] == "OGIP"
         assert hdu.header["HDUCLAS1"] == "SPECTRUM"

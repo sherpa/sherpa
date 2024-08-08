@@ -118,8 +118,8 @@ this range to have at least 20 counts per group:
 
 """
 
-import os.path
 import logging
+import os
 import warnings
 
 import numpy
@@ -145,7 +145,7 @@ warning = logging.getLogger(__name__).warning
 
 regstatus = False
 try:
-    from sherpa.astro.utils._region import Region
+    from sherpa.astro.utils._region import Region  # type: ignore
     regstatus = True
 except ImportError:
     warning('failed to import sherpa.astro.utils._region; Region routines ' +
@@ -153,7 +153,7 @@ except ImportError:
 
 groupstatus = False
 try:
-    import group as pygroup
+    import group as pygroup  # type: ignore
     groupstatus = True
 except ImportError:
     groupstatus = False
@@ -1003,10 +1003,10 @@ class DataRMF(DataOgipResponse):
         containing the data.
     detchans : int
     energ_lo, energ_hi : array
-        The values of the ENERG_LO, ENERG_HI, and SPECRESP columns
-        for the ARF. The ENERG_HI values must be greater than the
-        ENERG_LO values for each bin, and the energy arrays must be
-        in increasing or decreasing order.
+        The values of the ENERG_LO and ENERG_HI columns for the RMF
+        (for the MATRIX block). The ENERG_HI values must be greater
+        than the ENERG_LO values for each bin, and the energy arrays
+        must be in increasing or decreasing order.
     n_grp, f_chan, n_chan, matrix : array-like
     offset : int, optional
     e_min, e_max : array-like or None, optional
@@ -5323,8 +5323,7 @@ class DataIMG(Data2D):
         # Crete the new region
         #
         val = str(val).strip()
-        isfile = os.path.isfile(val)
-        reg = Region(val, isfile)
+        reg = Region(val, os.path.isfile(val))
 
         # Calculate the mask for this region as an "included" region.
         mask = reg.mask(self.get_x0(), self.get_x1())
