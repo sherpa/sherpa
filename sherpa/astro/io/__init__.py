@@ -1359,7 +1359,7 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
     #
     if dataset.exposure is not None:
         header.delete("EXPOSURE")
-        header.add(HeaderItem("EXPOSURE", dataset.exposure,
+        header.add(HeaderItem("EXPOSURE", float(dataset.exposure),
                               unit="s", desc="Exposure time"))
 
     # See #1885 for a discussion about the current behaviour.
@@ -1414,47 +1414,33 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
         cols.append(Column("COUNTS", countvals, desc="Counts"))
 
     if dataset.staterror is not None:
+        desc = "Statistical error"
         if np.ptp(dataset.staterror) == 0:
             header.add(HeaderItem("STAT_ERR", dataset.staterror[0],
-                                  desc="Statistical error"))
+                                  desc=desc))
         else:
             cols.append(Column("STAT_ERR",
                                dataset.staterror.astype(np.float32),
-                               desc="Statistical error"))
+                               desc=desc))
 
-    if dataset.syserror is None:
-        header.add(HeaderItem("SYS_ERR", 0,
-                              desc="Fractional systematic error"))
-    elif np.ptp(dataset.syserror) == 0:
-        # TODO: should this convert back into a fractional error?
-        header.add(HeaderItem("SYS_ERR", dataset.syserror[0],
-                              desc="Fractional systematic error"))
-    else:
-        cols.append(Column("SYS_ERR",
-                           dataset.syserror.astype(np.float32),
-                               desc="Fractional systematic error"))
+    def addfield(name, value, dtype, desc):
+        """Add as keyword or array of the expected type"""
 
-    if dataset.grouping is None:
-        header.add(HeaderItem("GROUPING", 0,
-                              desc="Grouping (1,-1,0)"))
-    elif np.ptp(dataset.grouping) == 0:
-        header.add(HeaderItem("GROUPING", dataset.grouping[0],
-                              desc="Grouping (1,-1,0)"))
-    else:
-        cols.append(Column("GROUPING",
-                           dataset.grouping.astype(np.int16),
-                           desc="Grouping (1,-1,0)"))
+        if value is None:
+            header.add(HeaderItem(name, dtype(0), desc=desc))
+        elif np.ptp(value) == 0:
+            header.add(HeaderItem(name, dtype(value[0]), desc=desc))
+        else:
+            cols.append(Column(name, value.astype(dtype), desc=desc))
 
-    if dataset.quality is None:
-        header.add(HeaderItem("QUALITY", 0,
-                              desc="Quality (0 for okay))"))
-    elif np.ptp(dataset.quality) == 0:
-        header.add(HeaderItem("QUALITY", dataset.quality[0],
-                              desc="Quality (0 for okay))"))
-    else:
-        cols.append(Column("QUALITY",
-                           dataset.quality.astype(np.int16),
-                           desc="Quality (0 for okay)"))
+    # Should this convert the value/values back into a fractional error?
+    addfield("SYS_ERR", dataset.syserror, np.float32,
+             "Fractional systematic error")
+
+    addfield("GROUPING", dataset.grouping, np.int16,
+             "Grouping (1,-1,0)")
+    addfield("QUALITY", dataset.quality, np.int16,
+             "Quality (0 for okay)")
 
     if dataset.bin_lo is not None and dataset.bin_hi is not None:
         cols.extend([Column("BIN_LO", dataset.bin_lo),
@@ -1558,7 +1544,7 @@ def _pack_arf(dataset: ARFType) -> BlockList:
     # may be used by CIAO, so copy it across if set.
     #
     if dataset.exposure is not None:
-        aheader.add(HeaderItem("EXPOSURE", dataset.exposure,
+        aheader.add(HeaderItem("EXPOSURE", float(dataset.exposure),
                                desc="Total exposure time",
                                unit="s"))
 
