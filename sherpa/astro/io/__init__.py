@@ -721,7 +721,7 @@ def _process_pha_block(filename: str,
     """
 
     # The assumption is that the table requires a CHANNEL column,
-    # e.g. as guanranteed by read_pha, but leave this check in.
+    # e.g. as guaranteed by read_pha, but leave this check in.
     #
     chancol = table.get("CHANNEL")
     if chancol is None:
@@ -766,7 +766,7 @@ def _process_pha_block(filename: str,
     def getcol(name: str) -> Optional[np.ndarray]:
         """Return the column values if they exist.
 
-        This does not check for a mathing keyword to support the
+        This does not check for a matching keyword to support the
         original code (even though the OGIP standard allows for these
         names).
 
@@ -1548,7 +1548,7 @@ def _pack_arf(dataset: ARFType) -> BlockList:
                                desc="Total exposure time",
                                unit="s"))
 
-    # The column ordering for the ouput file is determined by the
+    # The column ordering for the output file is determined by the
     # order the keys are added to the data dict. Ensure the
     # data type meets the FITS standard (Real4).
     #
@@ -2313,7 +2313,7 @@ def read_table_blocks(arg,
         return {col.name: col.values for col in cols}
 
     # Desconstruct the data. It is not clear what to do if the file
-    # contains any image blocks, so we exlpicitly ignore them at this
+    # contains any image blocks, so we explicitly ignore them at this
     # time (i.e. there is currently no requirement on the
     # backend.read_table_blocks call on what to do in this situation).
     #

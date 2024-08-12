@@ -719,7 +719,7 @@ def copycol(hdu: fits.BinTableHDU,
 
     # Do not expand out variable-length arrays for now.  Note that for
     # columns the unit value is stored separately from the description
-    # (TUNIT versus the commenf for the TTYPE value).
+    # (TUNIT versus the comment for the TTYPE value).
     #
     colinfo = hdu.columns[uname]
     out = Column(uname, values=vals)
