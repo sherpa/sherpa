@@ -524,7 +524,7 @@ def _read_ancillary(data: dict[str, str],
 
     except Exception as exc:
         if output_once:
-            warning(str(exc))
+            warning("unable to read %s: %s", label, str(exc))
 
     return out
 
@@ -653,7 +653,7 @@ def read_pha(arg,
 
             except Exception as exc:
                 if output_once:
-                    warning(str(exc))
+                    warning("unable to read background: %s", str(exc))
 
         for bkg_type, bscal_type in zip(('background_up', 'background_down'),
                                         ('backscup', 'backscdn')):

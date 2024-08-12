@@ -85,7 +85,7 @@ def test_load_xstable_model_fails_with_dir(tmp_path):
     ui.clean()
     assert ui.list_model_components() == []
     with pytest.raises(IOErr,
-                       match="^unable to open "):
+                       match="^Unable to read XSPEC table model: "):
         ui.load_xstable_model('tmpdir', str(tmpdir))
 
     assert ui.list_model_components() == []
@@ -132,7 +132,7 @@ def test_load_xstable_model_fails_with_empty_file(tmp_path):
     assert ui.list_model_components() == []
 
     with pytest.raises(IOErr,
-                       match="^unable to open "):
+                       match="^Unable to read XSPEC table model: "):
         ui.load_xstable_model('devnull', str(empty))
 
     assert ui.list_model_components() == []
