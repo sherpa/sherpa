@@ -3798,3 +3798,27 @@ def test_fake_image_wcs_coord():
     restore()
 
     check()
+
+
+@pytest.mark.parametrize("defid", ["foo", 2])
+def test_store_default_id(defid):
+    "Do we record the default id when it's been changed?"
+
+    x = [3, 45]
+    y = [2, 19]
+
+    assert ui.get_default_id() == 1
+    ui.set_default_id(defid)
+    ui.load_arrays(defid, x, y)
+
+    restore()
+    assert ui.get_default_id() == defid
+    assert ui.list_data_ids() == [defid]
+    with pytest.raises(IdentifierErr,
+                       match="^data set 1 has not been set$"):
+        assert ui.get_data(1)
+
+    d = ui.get_data()
+    assert d.name == ""
+    assert d.x == pytest.approx(x)
+    assert d.y == pytest.approx(y)
