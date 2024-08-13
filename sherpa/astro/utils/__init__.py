@@ -17,7 +17,12 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
-"""Utility routines for the astronomy code."""
+"""Utility routines for the astronomy code.
+
+.. versionchanged:: 4.17.0
+   The resp_init routine has been removed.
+
+"""
 
 from typing import Optional
 
@@ -30,7 +35,7 @@ from sherpa.utils import guess
 from sherpa.utils.guess import ValueAndRange, get_position
 
 from ._utils import arf_fold, do_group, expand_grouped_mask, \
-    filter_resp, is_in, resp_init, rmf_fold, shrink_effarea
+    filter_resp, is_in, rmf_fold, shrink_effarea
 from ._pileup import apply_pileup
 
 
@@ -40,8 +45,9 @@ __all__ = ('arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
            'calc_data_sum2d', 'calc_model_sum2d', 'filter_resp',
            'calc_source_sum', 'compile_energy_grid',
            'calc_kcorr',
-           'expand_grouped_mask', 'resp_init', 'is_in',
+           'expand_grouped_mask', 'is_in',
            'get_xspec_position', 'get_xspec_norm')
+
 
 
 def reshape_2d_arrays(x0, x1):

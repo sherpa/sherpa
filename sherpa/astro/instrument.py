@@ -1462,8 +1462,8 @@ def calc_grp_chan_matrix(fname: str) -> tuple[numpy.ndarray, numpy.ndarray, nump
     # it's not clear we can encode this information without losing
     # some information.
     #
-    data, _ = io.backend.get_image_data(fname)
-    return matrix_to_rmf(data["y"])
+    iblock, _ = io.backend.get_image_data(fname)
+    return matrix_to_rmf(iblock.image)
 
 
 def matrix_to_rmf(matrix: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:

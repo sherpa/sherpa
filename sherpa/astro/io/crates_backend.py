@@ -19,6 +19,7 @@
 #
 
 from collections import defaultdict
+from contextlib import suppress
 import logging
 import os
 from typing import Any, Optional, Sequence, Union
@@ -27,17 +28,14 @@ import numpy as np
 
 from pycrates import CrateDataset, IMAGECrate, TABLECrate  # type: ignore
 import pycrates  # type: ignore
-import pytransform  # type: ignore
 
-from sherpa.astro.utils import resp_init
 from sherpa.utils import is_binary_file
-from sherpa.utils.err import ArgumentTypeErr, IOErr
-from sherpa.utils.numeric_types import SherpaInt, SherpaUInt, \
-    SherpaFloat
+from sherpa.utils.err import IOErr
+from sherpa.utils.numeric_types import SherpaFloat
 
-from .types import ColumnsType, DataType, DataTypeArg, \
-    HdrType, HdrTypeArg, KeyType, NamesType
-from .xstable import HeaderItem, TableHDU
+from .types import KeyType, NamesType, BlockType, \
+    HeaderItem, Header, Column, ImageBlock, TableBlock, BlockList, \
+    SpectrumBlock, SpecrespBlock, MatrixBlock, EboundsBlock
 
 warning = logging.getLogger(__name__).warning
 error = logging.getLogger(__name__).error
@@ -65,6 +63,7 @@ name: str = "crates"
 
 
 CrateType = Union[TABLECrate, IMAGECrate]
+DatasetType = Union[str, CrateDataset]
 
 
 def open_crate(filename: str,
@@ -210,214 +209,22 @@ def _try_key(crate: CrateType,
     return dtype(value)
 
 
-def _get_meta_data(crate: CrateType) -> HdrType:
+def _get_meta_data_header(crate: CrateType) -> Header:
     """Retrieve the header information from the crate.
 
     This loses the "specialized" keywords like HISTORY and COMMENT.
 
     """
 
-    meta = {}
+    out = []
     for name in crate.get_keynames():
-        val = crate.get_key(name).value
-        meta[name] = val
+        key = crate.get_key(name)
+        item = HeaderItem(name=name, value=key.value)
+        item.unit = key.unit if key.unit != '' else None
+        item.desc = key.desc if key.desc != '' else None
+        out.append(item)
 
-    return meta
-
-
-def _set_key(crate: CrateType,
-             name: str,
-             val: KeyType,
-             fix_type: bool = False,
-             dtype: type = str) -> None:
-    """Add a key + value to the header."""
-
-    key = pycrates.CrateKey()
-    key.name = name.upper()
-    key.value = dtype(val) if fix_type else val
-    crate.add_key(key)
-
-
-# The typing for this is not ideal.
-#
-def _set_column(crate: TABLECrate,
-                name: str,
-                val: Any) -> None:
-    """Add a column to the table crate."""
-
-    col = pycrates.CrateData()
-    col.name = name.upper()
-    col.values = np.array(val)
-    crate.add_column(col)
-
-
-def _require_key(crate: CrateType,
-                 name: str,
-                 dtype: type = str) -> KeyType:
-    """Access the key from the crate, erroring out if it does not exist.
-
-    There's no way to differentiate between a key that does not exist
-    and a key that is set but has been set to a value of None (which
-    is unlikely as the ASCII and FITS serializations do not support
-    this).
-
-    Parameters
-    ----------
-    crate : TABLECrate or IMAGECrate
-    name : str
-       The name is case insensitive.
-    dtype
-
-    Returns
-    -------
-    value
-       The key value
-
-    Raises
-    ------
-    IOErr
-       The key does not exist.
-
-    """
-    key = _try_key(crate, name, dtype)
-    if key is None:
-        raise IOErr('nokeyword', crate.get_filename(), name)
-    return key
-
-
-def _try_col(crate: TABLECrate,
-             colname: str,
-             make_copy: bool = False,
-             fix_type: bool = False,
-             dtype: type = SherpaFloat) -> Optional[np.ndarray]:
-    """Return the column data or None (if it does not exist)."""
-
-    try:
-        return _require_col(crate, colname, make_copy=make_copy,
-                            fix_type=fix_type, dtype=dtype)
-    except IOErr:
-        return None
-
-
-# This is surprisingly hard to type (because of column_stack) so skip
-# it.
-#
-def _require_tbl_col(crate, colname, cnames, make_copy=False,
-                     fix_type=False):
-    """
-    checked for new crates
-    """
-
-    try:
-        col = crate.get_column(colname)
-    except ValueError as ve:
-        raise IOErr('reqcol', colname, cnames) from ve
-
-    if make_copy:
-        # Make a copy if a filename passed in
-        data = np.array(col.values)
-    else:
-        # Use a reference if a crate passed in
-        data = np.asarray(col.values)
-
-    if fix_type:
-        data = data.astype(SherpaFloat)
-
-    return np.column_stack(data)
-
-
-def _try_key_list(crate: CrateType,
-                  keyname: str,
-                  num: int,
-                  dtype: type = SherpaFloat,
-                  fix_type: bool = False) -> Optional[np.ndarray]:
-    """
-    checked for new crates
-    """
-    if not crate.key_exists(keyname):
-        return None
-
-    key = crate.get_key(keyname)
-    keys = np.full(num, key.value)
-    if fix_type:
-        keys = keys.astype(dtype)
-
-    return keys
-
-
-def _try_col_list(crate: TABLECrate,
-                  colname: str,
-                  num: int,
-                  make_copy: bool = False,
-                  fix_type: bool = False) -> np.ndarray:
-    """
-    checked for the new crates
-    """
-
-    try:
-        return _require_col_list(crate, colname,
-                                 make_copy=make_copy,
-                                 fix_type=fix_type)
-    except IOErr:
-        return np.full(num, None)
-
-
-def _require_col_list(crate: TABLECrate,
-                      colname: str,
-                      make_copy: bool = False,
-                      fix_type: bool = False) -> np.ndarray:
-    """
-    check for new crates
-    """
-
-    try:
-        col = crate.get_column(colname)
-    except ValueError:
-        raise IOErr("reqcol", colname, crate.get_filename()) from None
-
-    if col.is_varlen():
-        values = col.get_fixed_length_array()
-    else:
-        values = col.values
-
-    if make_copy:
-        # Make a copy if a filename passed in
-        col = np.array(values)
-    else:
-        # Use a reference if a crate passed in
-        col = np.asarray(values)
-
-    if fix_type:
-        col = col.astype(SherpaFloat)
-
-    return col
-
-
-def _require_col(crate: TABLECrate,
-                 colname: str,
-                 make_copy: bool = False,
-                 fix_type: bool = False,
-                 label: Optional[str] = None,
-                 dtype: type = SherpaFloat) -> np.ndarray:
-    """Return the column data or error out."""
-
-    try:
-        col = crate.get_column(colname)
-    except ValueError:
-        msg = colname if label is None else label
-        raise IOErr("reqcol", msg, crate.get_filename()) from None
-
-    if col.is_varlen():
-        values = col.get_fixed_length_array()
-    else:
-        values = col.values
-
-    kwargs = {}
-    if fix_type:
-        kwargs['dtype'] = dtype
-
-    return np.array(values, copy=make_copy, **kwargs).ravel()
-
+    return Header(out)
 
 
 def _require_image(crate: IMAGECrate,
@@ -485,12 +292,11 @@ def _get_crate_by_blockname(dataset: CrateDataset,
 
 # Read Functions #
 
+# This should be added to the official backend API.
+#
 def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
                       make_copy: bool = False
-                      ) -> tuple[str,
-                                 dict[int, ColumnsType],
-                                 dict[int, HdrType]
-                                 ]:
+                      ) -> tuple[BlockList, str]:
     """Read in tabular data with no restrictions on the columns."""
 
     dataset = None
@@ -510,33 +316,28 @@ def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
     else:
         raise IOErr('badfile', arg, "CrateDataset obj")
 
-    cols: dict[int, ColumnsType] = {}
-    hdr: dict[int, HdrType] = {}
-    for idx in range(1, dataset.get_ncrates() + 1):
-        crate = dataset.get_crate(idx)
-        hdr[idx] = {}
-        names = crate.get_keynames()
-        for name in names:
-            hdr[idx][name] = _try_key(crate, name)
+    header = _get_meta_data_header(dataset.get_crate(1))
 
-        cols[idx] = {}
-        # skip over primary
-        if crate.name == 'PRIMARY':
-            continue
+    ncrates = dataset.get_ncrates()
+    blocks: list[BlockType] = []
+    for idx in range(2, ncrates + 1):
+        cr = dataset.get_crate(idx)
+        hdr = _get_meta_data_header(cr)
+        cols = [copycol(cr, filename, name) for name in cr.get_colnames()]
+        blocks.append(TableBlock(cr.name, header=hdr, columns=cols))
 
-        names = crate.get_colnames()
-        for name in names:
-            cols[idx][name] = crate.get_column(name).values
-
-    return filename, cols, hdr
+    return BlockList(blocks=blocks, header=header), filename
 
 
 def get_header_data(arg: Union[str, TABLECrate],
                     blockname: Optional[str] = None,
                     hdrkeys: Optional[NamesType] = None
-                    ) -> HdrType:
+                    ) -> Header:
     """Read the metadata."""
 
+    # Note: this check is too restrictive since it can be sent an
+    # IMAGECrate (e.g. when blockname is set to "PRIMARY").
+    #
     if isinstance(arg, str):
         arg = get_filename_from_dmsyntax(arg)
         tbl = open_crate(arg)
@@ -554,12 +355,11 @@ def get_header_data(arg: Union[str, TABLECrate],
         crate = _get_crate_by_blockname(tbl.get_dataset(), blockname)
         tbl = crate or tbl
 
-    hdr = {}
-    if hdrkeys is None:
-        hdrkeys = tbl.get_keynames()
-
-    for key in hdrkeys:
-        hdr[key] = _require_key(tbl, key)
+    hdr = _get_meta_data_header(tbl)
+    if hdrkeys is not None:
+        for key in hdrkeys:
+            if hdr.get(key) is None:
+                raise IOErr('nokeyword', tbl.get_filename(), key)
 
     return hdr
 
@@ -594,9 +394,10 @@ def get_ascii_data(filename: str,
                    ncols: int = 2,
                    colkeys: Optional[NamesType] = None,
                    **kwargs
-                   ) -> tuple[list[str], list[np.ndarray], str]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from an ASCII file"""
-    return get_table_data(filename, ncols, colkeys)[:3]
+
+    return get_table_data(filename, ncols, colkeys)
 
 
 def get_table_data(arg: Union[str, TABLECrate],
@@ -606,7 +407,7 @@ def get_table_data(arg: Union[str, TABLECrate],
                    fix_type: bool = True,
                    blockname: Optional[str] = None,
                    hdrkeys: Optional[NamesType] = None
-                   ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from a file or crate."""
 
     if isinstance(arg, str):
@@ -615,14 +416,13 @@ def get_table_data(arg: Union[str, TABLECrate],
         if not isinstance(tbl, TABLECrate):
             raise IOErr('badfile', arg, 'TABLECrate obj')
 
-        filename = tbl.get_filename()
-
     elif isinstance(arg, TABLECrate):
         tbl = arg
-        filename = arg.get_filename()
         make_copy = False
     else:
         raise IOErr('badfile', arg, 'TABLECrate obj')
+
+    filename = tbl.get_filename()
 
     # Crates "caches" open files by their filename in memory.  If you try
     # to open a file multiple times (with DM syntax) it corrupts the Crate
@@ -634,11 +434,13 @@ def get_table_data(arg: Union[str, TABLECrate],
     if blockname is not None:
         crate = _get_crate_by_blockname(tbl.get_dataset(), blockname)
         tbl = crate or tbl
+        if not isinstance(tbl, TABLECrate):
+            raise IOErr('badfile', arg, 'TABLECrate obj')
 
-    cnames = list(pycrates.get_col_names(tbl, vectors=False, rawonly=True))
+    cnames = tbl.get_colnames(vectors=False, rawonly=True)
 
     if colkeys is not None:
-        colkeys = [str(name).strip() for name in list(colkeys)]
+        colkeys = [name.strip() for name in list(colkeys)]
 
     elif (isinstance(arg, str) and (not os.path.isfile(arg))
           and '[' in arg and ']' in arg):
@@ -654,25 +456,41 @@ def get_table_data(arg: Union[str, TABLECrate],
     else:
         colkeys = cnames[:ncols]
 
+    # The main issue here is do we allow string columns through?
+    #
+    dtype = SherpaFloat if fix_type else None
+
+    # As this can be used to read in string columns there is no
+    # conversion on the data type of the column values. However,
+    # there is a need to convert "array" columns into separate
+    # values (e.g. R[2] should get converted to R_1 and R_2).
+    #
+    headers = _get_meta_data_header(tbl)
     cols = []
     for name in colkeys:
-        for col in _require_tbl_col(tbl, name, cnames,
-                                    make_copy=make_copy,
-                                    fix_type=fix_type):
+        col = copycol(tbl, filename, name, dtype=dtype)
+
+        if col.values.ndim == 1:
             cols.append(col)
+            continue
 
-    hdr = {}
-    if hdrkeys is not None:
-        for key in hdrkeys:
-            hdr[key] = _require_key(tbl, key)
+        if col.values.ndim != 2:
+            raise IOErr(f"Unsupported column dimension for {name}: {col.values.ndim}")
 
-    return colkeys, cols, filename, hdr
+        for idx in range(col.values.shape[1]):
+            col2 = Column(f"{col.name}_{idx + 1}",
+                          col.values[:, idx].copy(),
+                          desc=col.desc, unit=col.unit,
+                          minval=col.minval, maxval=col.maxval)
+            cols.append(col2)
+
+    return TableBlock("TABLE", header=headers, columns=cols), filename
 
 
 def get_image_data(arg: Union[str, IMAGECrate],
                    make_copy: bool = True,
                    fix_type: bool = True
-                   ) -> tuple[DataType, str]:
+                   ) -> tuple[ImageBlock, str]:
     """Read image data from a file or crate"""
 
     if isinstance(arg, str):
@@ -690,56 +508,56 @@ def get_image_data(arg: Union[str, IMAGECrate],
     else:
         raise IOErr('badfile', arg, "IMAGECrate obj")
 
-    data: DataType = {}
+    name = img.name
+    image = _require_image(img, filename, make_copy=make_copy,
+                           fix_type=fix_type)
 
-    data['y'] = _require_image(img, filename, make_copy=make_copy,
-                               fix_type=fix_type)
-
+    # Find the SKY name using the set intersection. This is only
+    # needed if we have the WCS class.
+    #
+    sky = None
+    eqpos = None
     if HAS_TRANSFORM:
-        sky = None
         skynames = ['SKY', 'sky', 'pos', 'POS']
         names = img.get_axisnames()
 
-        # find the SKY name using the set intersection
         inter = list(set(names) & set(skynames))
-        if inter:
-            sky = img.get_transform(inter[0])
+        sky_tr = img.get_transform(inter[0]) if inter else None
 
-        wcs = None
-        if 'EQPOS' in names:
-            wcs = img.get_transform('EQPOS')
-
-        if sky is not None:
-            linear = pytransform.WCSTANTransform()
+        if sky_tr is not None:
+            linear = pycrates.WCSTANTransform()
             linear.set_name("LINEAR")
-            linear.set_transform_matrix(sky.get_transform_matrix())
+            linear.set_transform_matrix(sky_tr.get_transform_matrix())
             cdelt = np.array(linear.get_parameter_value('CDELT'))
             crpix = np.array(linear.get_parameter_value('CRPIX'))
             crval = np.array(linear.get_parameter_value('CRVAL'))
-            data['sky'] = WCS('physical', 'LINEAR', crval, crpix, cdelt)
+            sky = WCS('physical', 'LINEAR', crval, crpix, cdelt)
 
-        if wcs is not None:
-            cdelt = np.array(wcs.get_parameter_value('CDELT'))
-            crpix = np.array(wcs.get_parameter_value('CRPIX'))
-            crval = np.array(wcs.get_parameter_value('CRVAL'))
-            crota = SherpaFloat(wcs.get_parameter_value('CROTA'))
-            equin = SherpaFloat(wcs.get_parameter_value('EQUINOX'))
-            epoch = SherpaFloat(wcs.get_parameter_value('EPOCH'))
-            data['eqpos'] = WCS('world', 'WCS', crval, crpix, cdelt,
-                                crota, epoch, equin)
+        wcs_tr = img.get_transform('EQPOS') if 'EQPOS' in names else None
+        if wcs_tr is not None:
+            cdelt = np.array(wcs_tr.get_parameter_value('CDELT'))
+            crpix = np.array(wcs_tr.get_parameter_value('CRPIX'))
+            crval = np.array(wcs_tr.get_parameter_value('CRVAL'))
+            crota = SherpaFloat(wcs_tr.get_parameter_value('CROTA'))
+            equin = SherpaFloat(wcs_tr.get_parameter_value('EQUINOX'))
+            epoch = SherpaFloat(wcs_tr.get_parameter_value('EPOCH'))
+            eqpos = WCS('world', 'WCS', crval, crpix, cdelt,
+                        crota, epoch, equin)
 
-    data['header'] = _get_meta_data(img)
+    header = _get_meta_data_header(img)
     for key in ['CTYPE1P', 'CTYPE2P', 'WCSNAMEP', 'CDELT1P',
                 'CDELT2P', 'CRPIX1P', 'CRPIX2P', 'CRVAL1P', 'CRVAL2P',
                 'EQUINOX']:
-        data['header'].pop(key, None)
+        header.delete(key)
 
-    return data, filename
+    block = ImageBlock(name, header=header, image=image,
+                       sky=sky, eqpos=eqpos)
+    return block, filename
 
 
 def get_arf_data(arg: Union[str, TABLECrate],
                  make_copy: bool = True
-                 ) -> tuple[DataType, str]:
+                 ) -> tuple[SpecrespBlock, str]:
     """Read an ARF from a file or crate"""
 
     if isinstance(arg, str):
@@ -755,27 +573,18 @@ def get_arf_data(arg: Union[str, TABLECrate],
     else:
         raise IOErr('badfile', arg, "ARFCrate obj")
 
-    if arf is None or arf.get_colnames() is None:
-        raise IOErr('filenotfound', arg)
+    headers = _get_meta_data_header(arf)
+    cols = [copycol(arf, filename, name, dtype=SherpaFloat)
+            for name in ["ENERG_LO", "ENERG_HI", "SPECRESP"]]
 
-    data: DataType = {}
+    # Optional columns: either both given or none
+    #
+    with suppress(IOErr):
+        bin_lo = copycol(arf, filename, "BIN_LO", dtype=SherpaFloat)
+        bin_hi = copycol(arf, filename, "BIN_HI", dtype=SherpaFloat)
+        cols.extend([bin_lo, bin_hi])
 
-    data['energ_lo'] = _require_col(arf, 'ENERG_LO',
-                                    make_copy=make_copy,
-                                    fix_type=True)
-    data['energ_hi'] = _require_col(arf, 'ENERG_HI',
-                                    make_copy=make_copy,
-                                    fix_type=True)
-    data['specresp'] = _require_col(arf, 'SPECRESP',
-                                    make_copy=make_copy,
-                                    fix_type=True)
-    data['bin_lo'] = _try_col(arf, 'BIN_LO', make_copy, fix_type=True)
-    data['bin_hi'] = _try_col(arf, 'BIN_HI', make_copy, fix_type=True)
-    data['exposure'] = _try_key(arf, 'EXPOSURE', dtype=SherpaFloat)
-    data['header'] = _get_meta_data(arf)
-    data['header'].pop('EXPOSURE', None)
-
-    return data, filename
+    return SpecrespBlock(arf.name, header=headers, columns=cols), filename
 
 
 # Commonly-used block names for the MATRIX block. Only the first two
@@ -834,10 +643,150 @@ def _find_matrix_blocks(filename: str,
     return blnames
 
 
+def copycol(cr: TABLECrate,
+            filename: str,
+            name: str,
+            dtype: Optional[type] = None) -> Column:
+    """Copy the column data (which must exist).
+
+    Parameters
+    ----------
+    cr : TableCrate
+       The crate to search.
+    filename : str
+       The filename from which the crate was created. This is used for
+       error messages only.
+    name : str
+       The column name (case insensitive).
+    dtype : None or type
+       The data type to convert the column values to.
+
+    Returns
+    -------
+    col : Column
+       The column data.
+
+    Raises
+    ------
+    IOErr
+       The column does not exist.
+
+    Notes
+    -----
+
+    Historically Sherpa has converted RMF columns to double-precision
+    values, even though the standard has them as single-precision.
+    Using the on-disk type (e.g. float rather than double) has some
+    annoynig consequences on the test suite, so for now we retain this
+    behaviour.
+
+    """
+
+    try:
+        col = cr.get_column(name)
+    except ValueError:
+        raise IOErr("reqcol", name, filename) from None
+
+    vals = col.values
+    if dtype is not None:
+        vals = vals.astype(dtype)
+
+    # do not expand out variable-length arrays for now.
+    #
+    out = Column(col.name, values=vals)
+    out.desc = col.desc if col.desc != '' else None
+    out.unit = col.unit if col.unit != '' else None
+
+    # Only set the min/max if they are informative (ie not just
+    # the min/max for that datatype). Assume we do not have to
+    # worry about bit columns (for CIAO 4.16 it seems hard to find
+    # this information out, hence the logic below).
+    #
+    if col.is_varlen():
+        # Assume this works even if the first row has no elements
+        coltype = col.values[0].dtype
+    else:
+        coltype = col.values.dtype
+
+    # This is a bit-more verbose than normal to appease mypy.
+    #
+    minval: Any
+    maxval: Any
+    try:
+        ftypeinfo = np.finfo(coltype)
+        minval = ftypeinfo.min
+        maxval = ftypeinfo.max
+    except ValueError:
+        try:
+            dtypeinfo = np.iinfo(coltype)
+            minval = dtypeinfo.min
+            maxval = dtypeinfo.max
+        except ValueError:
+            # Assume some sort of a string column
+            minval = None
+            maxval = None
+
+    if minval is not None:
+        tlmin = col.get_tlmin()
+        tlmax = col.get_tlmax()
+
+        out.minval = tlmin if tlmin != minval else None
+        out.maxval = tlmax if tlmax != maxval else None
+
+    return out
+
+
+def _read_rmf_matrix(rmfdataset: pycrates.RMFCrateDataset,
+                     filename: str,
+                     blname: str) -> MatrixBlock:
+    """Read in the given MATRIX block"""
+
+    # By design we know this block exists but we are not guaranteed we
+    # can read it in.
+    #
+    rmf = _get_crate_by_blockname(rmfdataset, blname)
+    if rmf is None:
+        raise IOErr(f"Unable to read {blname} from {filename}")
+
+    # Ensure we have a DETCHANS keyword
+    if rmf.get_key("DETCHANS") is None:
+        raise IOErr("nokeyword", filename, "DETCHANS")
+
+    mheaders = _get_meta_data_header(rmf)
+    mcols = [copycol(rmf, filename, name, dtype=dtype) for name, dtype in
+             [("ENERG_LO", SherpaFloat),
+              ("ENERG_HI", SherpaFloat),
+              ("N_GRP", None),
+              ("F_CHAN", None),
+              ("N_CHAN", None),
+              ("MATRIX", None)]]
+    return MatrixBlock(blname, header=mheaders, columns=mcols)
+
+
+def _read_rmf_ebounds(rmfdataset: pycrates.RMFCrateDataset,
+                      filename: str,
+                      blname: str) -> EboundsBlock:
+    """Read in the given EBOUNDS block"""
+
+    ebounds = _get_crate_by_blockname(rmfdataset, "EBOUNDS")
+    if ebounds is None:
+        raise IOErr(f"Unable to read {blname} from {filename}")
+
+    eheaders = _get_meta_data_header(ebounds)
+    ecols = [copycol(ebounds, filename, name, dtype=dtype) for name, dtype in
+             [("CHANNEL", None),
+              ("E_MIN", SherpaFloat),
+              ("E_MAX", SherpaFloat)]]
+    return EboundsBlock("EBOUNDS", header=eheaders, columns=ecols)
+
+
 def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
                  make_copy: bool = True
-                 ) -> tuple[DataType, str]:
-    """Read a RMF from a file or crate"""
+                 ) -> tuple[list[MatrixBlock], EboundsBlock, str]:
+    """Read a RMF from a file or crate.
+
+    This drops any information in the PRIMARY block.
+    """
 
     if isinstance(arg, str):
         try:
@@ -845,6 +794,7 @@ def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
         except OSError as oe:
             raise IOErr('openfailed', str(oe)) from oe
 
+        # Is this check needed?
         if pycrates.is_rmf(rmfdataset) != 1:
             raise IOErr('badfile', arg, "RMFCrateDataset obj")
 
@@ -861,117 +811,65 @@ def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
     # Find all the potential matrix blocks.
     #
     blnames = _find_matrix_blocks(filename, rmfdataset)
-    nmat = len(blnames)
-    if nmat > 1:
-        # Warn the user that the multi-matrix RMF is not supported.
-        #
-        error("RMF in %s contains %d MATRIX blocks; "
-              "Sherpa only uses the first block!",
-              filename, nmat)
+    matrixes = [_read_rmf_matrix(rmfdataset, filename, blname)
+                for blname in blnames]
+    ebounds = _read_rmf_ebounds(rmfdataset, filename, "EBOUNDS")
+    return matrixes, ebounds, filename
 
-    rmf = rmfdataset.get_crate(blnames[0])
 
-    if not rmf.column_exists('ENERG_LO'):
-        raise IOErr('reqcol', 'ENERG_LO', filename)
+def _read_pha(pha: TABLECrate,
+              filename: str) -> SpectrumBlock:
+    """Read in the PHA data.
 
-    if not rmf.column_exists('ENERG_HI'):
-        raise IOErr('reqcol', 'ENERG_HI', filename)
+    Note that there is minimal intepretation of the data.
+    """
 
-    # FIXME: this will be a problem now that we have
-    # to pass the name of the matrix column
+    headers = _get_meta_data_header(pha)
 
-    if not rmf.column_exists('MATRIX'):
-        raise IOErr('reqcol', 'MATRIX', filename)
-
-    if not rmf.column_exists('N_GRP'):
-        raise IOErr('reqcol', 'N_GRP', filename)
-
-    if not rmf.column_exists('F_CHAN'):
-        raise IOErr('reqcol', 'F_CHAN', filename)
-
-    if not rmf.column_exists('N_CHAN'):
-        raise IOErr('reqcol', 'N_CHAN', filename)
-
-    data: DataType = {}
-    data['detchans'] = _require_key(rmf, 'DETCHANS', dtype=SherpaInt)
-    data['energ_lo'] = _require_col(rmf, 'ENERG_LO',
-                                    make_copy=make_copy, fix_type=True)
-    data['energ_hi'] = _require_col(rmf, 'ENERG_HI',
-                                    make_copy=make_copy, fix_type=True)
-    data['n_grp'] = _require_col(rmf, 'N_GRP', make_copy=make_copy,
-                                 dtype=SherpaUInt, fix_type=True)
-
-    f_chan = rmf.get_column('F_CHAN')
-    offset = f_chan.get_tlmin()
-
-    fcbuf = _require_col(rmf, 'F_CHAN', make_copy)
-    ncbuf = _require_col(rmf, 'N_CHAN', make_copy)
-
-    respbuf = _require_col_list(rmf, 'MATRIX', make_copy=make_copy)
-
-    ebounds = _get_crate_by_blockname(rmfdataset, 'EBOUNDS')
-    if ebounds is None:
-        ebounds = rmfdataset.get_crate(3)
-
-    data['header'] = _get_meta_data(rmf)
-    data['header'].pop('DETCHANS', None)
-
-    channel = None
-    if ebounds is not None:
-        data['e_min'] = _try_col(ebounds, 'E_MIN', make_copy, fix_type=True)
-        data['e_max'] = _try_col(ebounds, 'E_MAX', make_copy, fix_type=True)
-        if ebounds.column_exists('CHANNEL'):
-            channel = ebounds.get_column('CHANNEL')
-
-        # FIXME: do I include the header keywords from ebounds
-        # data['header'].update(_get_meta_data(ebounds))
-
-    if offset < 0:
-        error("Failed to locate TLMIN keyword for F_CHAN "
-              "column in RMF file '%s'; "
-              'Update the offset value in the RMF data set to '
-              'appropriate TLMIN value prior to fitting', filename)
-
-    if offset < 0 and channel is not None:
-        offset = channel.get_tlmin()
-
-    # If response is non-OGIP, tlmin is -(max of type), so resort to default
-    if not offset < 0:
-        data['offset'] = offset
-
-    # FIXME:
+    # A lot of the data is optional or checked for in the I/O layer.
     #
-    # Currently, CRATES does something screwy:  If n_grp is zero in a bin,
-    # it appends a zero to f_chan, n_chan, and matrix.  I have no idea what
-    # the logic behind this is -- why would you add data that you know you
-    # don't need?  Although it's easy enough to filter the zeros out of
-    # f_chan and n_chan, it's harder for matrix, since zero is a legitimate
-    # value there.
+    # TODO: Why not read in the channels as integers?
+    cols = [copycol(pha, filename, "CHANNEL", dtype=SherpaFloat)]
+
+    # This includes values that can be scalars (i.e. keywords)
+    # or columns. It also incudes non-OGIP columns used to
+    # identify PHA:II data.
     #
-    # I think this crazy behavior of CRATES should be changed, but for the
-    # moment we'll just punt in this case.  (If we don't, the calculation
-    # in rmf_fold() will be trashed.)
+    for name, dtype in [("COUNTS", SherpaFloat),
+                        ("RATE", SherpaFloat),
+                        ("STAT_ERR", SherpaFloat),
+                        ("SYS_ERR", SherpaFloat),
+                        ("BIN_LO", SherpaFloat),
+                        ("BIN_HI", SherpaFloat),
+                        ("BACKGROUND_UP", SherpaFloat),
+                        ("BACKGROUND_DOWN", SherpaFloat),
+                        # Possible scalar values
+                        ("GROUPING", None),
+                        ("QUALITY", None),
+                        ("BACKSCAL", SherpaFloat),
+                        ("BACKSCUP", SherpaFloat),
+                        ("BACKSCDN", SherpaFloat),
+                        ("AREASCAL", SherpaFloat),
+                        # PHA:II columns or scalars
+                        ("TG_M", None),
+                        ("TG_PART", None),
+                        ("TG_SRCID", None),
+                        ("SPEC_NUM", None)
+                        ]:
+        with suppress(IOErr):
+            cols.append(copycol(pha, filename, name, dtype=dtype))
 
-    # CRATES does not support variable length arrays, so here we condense
-    # the array of tuples into the proper length array
-
-    chan_width = data['n_grp'].max()
-    resp_width = 0
-    if len(respbuf.shape) > 1:
-        resp_width = respbuf.shape[1]
-
-    (data['f_chan'], data['n_chan'],
-     data['matrix']) = resp_init(data['n_grp'], fcbuf, ncbuf,
-                                 chan_width, respbuf.ravel(), resp_width)
-
-    return data, filename
+    return SpectrumBlock(pha.name, header=headers, columns=cols)
 
 
 def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
                  make_copy: bool = True,
                  use_background: bool = False
-                 ) -> tuple[list[DataType], str]:
-    """Read PHA data from a file or crate"""
+                 ) -> tuple[SpectrumBlock, str]:
+    """Read PHA data from a file or crate.
+
+    This does not decide whether this is a type I or II dataset.
+    """
 
     if isinstance(arg, str):
         try:
@@ -993,7 +891,6 @@ def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
         raise IOErr('badfile', arg, "PHACrateDataset obj")
 
     pha = _get_crate_by_blockname(phadataset, "SPECTRUM")
-
     if pha is None:
         pha = phadataset.get_crate(phadataset.get_current_crate())
         if (_try_key(pha, 'HDUCLAS1') == 'SPECTRUM' or
@@ -1009,7 +906,6 @@ def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
                 pha = None
 
     if use_background:
-
         # Used to read BKGs found in an additional block of
         # Chandra Level 3 PHA files
         for idx in range(phadataset.get_ncrates()):
@@ -1017,198 +913,7 @@ def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
             if _try_key(block, 'HDUCLAS2') == 'BKG':
                 pha = block
 
-    if pha is None or pha.get_colnames() is None:
-        raise IOErr('filenotfound', arg)
-
-    keys = ['BACKFILE', 'ANCRFILE', 'RESPFILE',
-            'BACKSCAL', 'AREASCAL', 'EXPOSURE']
-
-    keys_or_cols = ['BACKSCAL', 'BACKSCUP', 'BACKSCDN', 'AREASCAL']
-
-    datasets = []
-
-    # Calling phadataset.is_pha_type1() is unreliable when
-    # both TYPE:I and TYPE:II keywords are in the header.
-    # Here, I instead test for a column, SPEC_NUM, that can
-    # *only* be present in Type II. SMD 05/15/13
-    if _try_col(pha, 'SPEC_NUM') is None:
-        data: DataType = {}
-
-        # Keywords
-        data['exposure'] = _try_key(pha, 'EXPOSURE', SherpaFloat)
-        # data['poisserr'] = _try_key(pha, 'POISSERR', bool)
-        data['backfile'] = _try_key(pha, 'BACKFILE')
-        data['arffile'] = _try_key(pha, 'ANCRFILE')
-        data['rmffile'] = _try_key(pha, 'RESPFILE')
-
-        # Keywords or columns
-        for name in keys_or_cols:
-            key = name.lower()
-            data[key] = _try_key(pha, name, SherpaFloat)
-            if data[key] is None:
-                data[key] = _try_col(pha, name, make_copy)
-
-        data['header'] = _get_meta_data(pha)
-        for key in keys:
-            data['header'].pop(key, None)
-
-        # Columns
-
-        data['channel'] = _require_col(pha, 'CHANNEL',
-                                       make_copy=make_copy,
-                                       fix_type=True)
-        # Make sure channel numbers, not indices
-        if int(data['channel'][0]) == 0 or pha.get_column('CHANNEL').get_tlmin() == 0:
-            data['channel'] = data['channel'] + 1
-
-        data['counts'] = None
-        staterror = _try_col(pha, 'STAT_ERR', make_copy)
-        if pha.column_exists('COUNTS'):
-            data['counts'] = _require_col(pha, 'COUNTS',
-                                          make_copy=make_copy,
-                                          fix_type=True)
-        else:
-            data['counts'] = _require_col(pha, 'RATE', label="COUNTS or RATE",
-                                          make_copy=make_copy,
-                                          fix_type=True)
-            data['counts'] *= data['exposure']
-            if staterror is not None:
-                staterror *= data['exposure']
-
-        data['staterror'] = staterror
-        data['syserror'] = _try_col(pha, 'SYS_ERR', make_copy)
-        data['background_up'] = _try_col(
-            pha, 'BACKGROUND_UP', make_copy, fix_type=True)
-        data['background_down'] = _try_col(
-            pha, 'BACKGROUND_DOWN', make_copy, fix_type=True)
-        data['bin_lo'] = _try_col(pha, 'BIN_LO', make_copy, fix_type=True)
-        data['bin_hi'] = _try_col(pha, 'BIN_HI', make_copy, fix_type=True)
-        data['grouping'] = _try_col(pha, 'GROUPING', make_copy)
-        data['quality'] = _try_col(pha, 'QUALITY', make_copy)
-
-        datasets.append(data)
-
-    else:
-        # Type 2 PHA file support
-        num = pha.get_nrows()
-
-        # Keywords
-        exposure = _try_key(pha, 'EXPOSURE', SherpaFloat)
-        # poisserr = _try_key(pha, 'POISSERR', bool)
-        backfile = _try_key(pha, 'BACKFILE')
-        arffile = _try_key(pha, 'ANCRFILE')
-        rmffile = _try_key(pha, 'RESPFILE')
-
-        # Keywords or columns
-        backscal = _try_key_list(pha, 'BACKSCAL', num)
-        if backscal is None:
-            backscal = _try_col_list(pha, 'BACKSCAL', num, make_copy)
-
-        backscup = _try_key_list(pha, 'BACKSCUP', num)
-        if backscup is None:
-            backscup = _try_col_list(pha, 'BACKSCUP', num, make_copy)
-
-        backscdn = _try_key_list(pha, 'BACKSCDN', num)
-        if backscdn is None:
-            backscdn = _try_col_list(pha, 'BACKSCDN', num, make_copy)
-
-        areascal = _try_key_list(pha, 'AREASCAL', num)
-        if areascal is None:
-            areascal = _try_col_list(pha, 'AREASCAL', num, make_copy)
-
-        # Columns
-
-        channel = _require_col_list(pha, 'CHANNEL',
-                                    make_copy=make_copy,
-                                    fix_type=True)
-        # Make sure channel numbers, not indices
-        for idx in range(num):
-            if int(channel[idx][0]) == 0:
-                channel[idx] += 1
-
-        staterror = _try_col_list(pha, 'STAT_ERR', num=num,
-                                  make_copy=make_copy)
-
-        counts = None
-        if pha.column_exists('COUNTS'):
-            counts = _require_col_list(pha, 'COUNTS',
-                                       make_copy=make_copy, fix_type=True)
-
-        else:
-            if not pha.column_exists('RATE'):
-                raise IOErr('reqcol', 'COUNTS or RATE', filename)
-            counts = _require_col_list(pha, 'RATE',
-                                       make_copy=make_copy, fix_type=True)
-            counts *= exposure
-            if staterror is not None:
-                staterror *= exposure
-
-        syserror = _try_col_list(pha, 'SYS_ERR', num, make_copy)
-        background_up = _try_col_list(
-            pha, 'BACKGROUND_UP', num, make_copy, fix_type=True)
-        background_down = _try_col_list(
-            pha, 'BACKGROUND_DOWN', num, make_copy, fix_type=True)
-        bin_lo = _try_col_list(pha, 'BIN_LO', num, make_copy, fix_type=True)
-        bin_hi = _try_col_list(pha, 'BIN_HI', num, make_copy, fix_type=True)
-        grouping = _try_col_list(pha, 'GROUPING', num, make_copy)
-        quality = _try_col_list(pha, 'QUALITY', num, make_copy)
-
-        orders = _try_key_list(pha, 'TG_M', num)
-        if orders is None:
-            orders = _try_col_list(pha, 'TG_M', num, make_copy)
-
-        parts = _try_key_list(pha, 'TG_PART', num)
-        if parts is None:
-            parts = _try_col_list(pha, 'TG_PART', num, make_copy)
-
-        specnums = _try_col_list(pha, 'SPEC_NUM', num, make_copy)
-        srcids = _try_col_list(pha, 'TG_SRCID', num, make_copy)
-
-        # Iterate over all rows of channels, counts, errors, etc
-        # Populate a list of dictionaries containing individual dataset info
-        for (bscal, bscup, bscdn, arsc, chan, cnt, staterr, syserr,
-             backup, backdown, binlo, binhi, grp, qual, ordr, prt,
-             specnum, srcid
-             ) in zip(backscal, backscup, backscdn, areascal, channel,
-                      counts, staterror, syserror, background_up,
-                      background_down, bin_lo, bin_hi, grouping, quality,
-                      orders, parts, specnums, srcids):
-
-            idata: DataType = {}
-
-            idata['exposure'] = exposure
-            # data['poisserr'] = poisserr
-            idata['backfile'] = backfile
-            idata['arffile'] = arffile
-            idata['rmffile'] = rmffile
-
-            idata['backscal'] = bscal
-            idata['backscup'] = bscup
-            idata['backscdn'] = bscdn
-            idata['areascal'] = arsc
-
-            idata['channel'] = chan
-            idata['counts'] = cnt
-            idata['staterror'] = staterr
-            idata['syserror'] = syserr
-            idata['background_up'] = backup
-            idata['background_down'] = backdown
-            idata['bin_lo'] = binlo
-            idata['bin_hi'] = binhi
-            idata['grouping'] = grp
-            idata['quality'] = qual
-            idata['header'] = _get_meta_data(pha)
-            idata['header']['TG_M'] = ordr
-            idata['header']['TG_PART'] = prt
-            idata['header']['SPEC_NUM'] = specnum
-            idata['header']['TG_SRCID'] = srcid
-
-            for key in keys:
-                idata['header'].pop(key, None)
-
-            datasets.append(idata)
-
-    return datasets, filename
+    return _read_pha(pha, filename), filename
 
 
 #
@@ -1244,67 +949,76 @@ def write_dataset(dataset: Union[TABLECrate, IMAGECrate, CrateDataset],
     dataset.write(filename, clobber=True)
 
 
-def pack_image_data(data: DataTypeArg,
-                    header: HdrTypeArg) -> IMAGECrate:
+def pack_image_data(data: ImageBlock) -> IMAGECrate:
     """Pack up the image data."""
 
     img = IMAGECrate()
 
+    def _set_key(name: str,
+                 val: KeyType) -> None:
+        """Add a key + value to the header."""
+
+        key = pycrates.CrateKey()
+        key.name = name
+        key.value = val
+        img.add_key(key)
+
     # Write Image Header Keys
-    _update_header(img, header, skip_if_known=False)
+    #
+    for item in data.header.values:
+        _set_key(item.name, item.value)
 
     # Write Image WCS Header Keys
-    if data['eqpos'] is not None:
-        cdeltw = data['eqpos'].cdelt
-        crvalw = data['eqpos'].crval
-        crpixw = data['eqpos'].crpix
-        equin = data['eqpos'].equinox
+    if data.eqpos is not None:
+        cdeltw = data.eqpos.cdelt
+        crvalw = data.eqpos.crval
+        crpixw = data.eqpos.crpix
+        equin = data.eqpos.equinox
 
-    if data['sky'] is not None:
-        cdeltp = data['sky'].cdelt
-        crvalp = data['sky'].crval
-        crpixp = data['sky'].crpix
+    if data.sky is not None:
+        cdeltp = data.sky.cdelt
+        crvalp = data.sky.crval
+        crpixp = data.sky.crpix
 
-        _set_key(img, 'MTYPE1', 'sky     ')
-        _set_key(img, 'MFORM1', 'x,y     ')
-        _set_key(img, 'CTYPE1P', 'x       ')
-        _set_key(img, 'CTYPE2P', 'y       ')
-        _set_key(img, 'WCSNAMEP', 'PHYSICAL')
-        _set_key(img, 'CDELT1P', cdeltp[0])
-        _set_key(img, 'CDELT2P', cdeltp[1])
-        _set_key(img, 'CRPIX1P', crpixp[0])
-        _set_key(img, 'CRPIX2P', crpixp[1])
-        _set_key(img, 'CRVAL1P', crvalp[0])
-        _set_key(img, 'CRVAL2P', crvalp[1])
+        _set_key('MTYPE1', 'sky     ')
+        _set_key('MFORM1', 'x,y     ')
+        _set_key('CTYPE1P', 'x       ')
+        _set_key('CTYPE2P', 'y       ')
+        _set_key('WCSNAMEP', 'PHYSICAL')
+        _set_key('CDELT1P', cdeltp[0])
+        _set_key('CDELT2P', cdeltp[1])
+        _set_key('CRPIX1P', crpixp[0])
+        _set_key('CRPIX2P', crpixp[1])
+        _set_key('CRVAL1P', crvalp[0])
+        _set_key('CRVAL2P', crvalp[1])
 
-        if data['eqpos'] is not None:
+        if data.eqpos is not None:
             # Simply the inverse of read transformations in get_image_data
             cdeltw = cdeltw * cdeltp
             crpixw = (crpixw - crvalp) / cdeltp + crpixp
 
-    if data['eqpos'] is not None:
-        _set_key(img, 'MTYPE2', 'EQPOS   ')
-        _set_key(img, 'MFORM2', 'RA,DEC  ')
-        _set_key(img, 'CTYPE1', 'RA---TAN')
-        _set_key(img, 'CTYPE2', 'DEC--TAN')
-        _set_key(img, 'CDELT1', cdeltw[0])
-        _set_key(img, 'CDELT2', cdeltw[1])
-        _set_key(img, 'CRPIX1', crpixw[0])
-        _set_key(img, 'CRPIX2', crpixw[1])
-        _set_key(img, 'CRVAL1', crvalw[0])
-        _set_key(img, 'CRVAL2', crvalw[1])
-        _set_key(img, 'EQUINOX', equin)
+    if data.eqpos is not None:
+        _set_key('MTYPE2', 'EQPOS   ')
+        _set_key('MFORM2', 'RA,DEC  ')
+        _set_key('CTYPE1', 'RA---TAN')
+        _set_key('CTYPE2', 'DEC--TAN')
+        _set_key('CDELT1', cdeltw[0])
+        _set_key('CDELT2', cdeltw[1])
+        _set_key('CRPIX1', crpixw[0])
+        _set_key('CRPIX2', crpixw[1])
+        _set_key('CRVAL1', crvalw[0])
+        _set_key('CRVAL2', crvalw[1])
+        _set_key('EQUINOX', equin)
 
     # Write Image pixel values
     pix_col = pycrates.CrateData()
-    pix_col.values = data['pixels']
+    pix_col.values = data.image
     img.add_image(pix_col)
     return img
 
 
 def set_image_data(filename: str,
-                   data: DataTypeArg,
-                   header: HdrTypeArg,
+                   data: ImageBlock,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the image data."""
@@ -1312,197 +1026,101 @@ def set_image_data(filename: str,
     if ascii and '[' not in filename and ']' not in filename:
         raise IOErr('writenoimg')
 
-    img = pack_image_data(data, header)
+    img = pack_image_data(data)
     write_dataset(img, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_table_data(data: ColumnsType,
-                    col_names: NamesType,
-                    header: Optional[HdrTypeArg] = None) -> TABLECrate:
+def pack_table_data(blocks: BlockList) -> CrateDataset:
     """Pack up the table data."""
 
-    tbl = TABLECrate()
-    hdr = {} if header is None else header
-    for name in col_names:
-        _set_column(tbl, name, data[name])
-
-    _update_header(tbl, hdr, skip_if_known=False)
-    return tbl
+    return pack_hdus(blocks)
 
 
 def set_table_data(filename: str,
-                   data: ColumnsType,
-                   col_names: NamesType,
-                   header: Optional[HdrTypeArg] = None,
+                   blocks: BlockList,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the table data."""
 
-    tbl = pack_table_data(data, col_names, header=header)
+    tbl = pack_table_data(blocks)
     write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_arf_data(data: ColumnsType,
-                  col_names: NamesType,
-                  header: Optional[HdrTypeArg] = None) -> TABLECrate:
+def pack_arf_data(blocks: BlockList) -> CrateDataset:
     """Pack the ARF"""
 
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
-
-    return pack_table_data(data, col_names, header)
+    return pack_hdus(blocks)
 
 
 def set_arf_data(filename: str,
-                 data: ColumnsType,
-                 col_names: NamesType,
-                 header: Optional[HdrTypeArg] = None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the ARF"""
 
-    arf = pack_arf_data(data, col_names, header)
+    arf = pack_arf_data(blocks)
     write_dataset(arf, filename, ascii=ascii, clobber=clobber)
 
 
-def pack_pha_data(data: ColumnsType,
-                  col_names: NamesType,
-                  header: Optional[HdrTypeArg] = None
-                  ) -> pycrates.PHACrateDataset:
+def pack_pha_data(blocks: BlockList) -> pycrates.PHACrateDataset:
     """Pack the PHA data."""
-
-    if header is None:
-        raise ArgumentTypeErr("badarg", "header", "set")
 
     phadataset = pycrates.PHACrateDataset()
 
-    # FIXME: Placeholder for pycrates2 bug
+    # FIXME: Placeholder for pycrates2 bug; is this still needed?
     phadataset.set_rw_mode('rw')
 
-    pha = TABLECrate()
-    pha.name = "SPECTRUM"
+    if blocks.header is not None:
+        phadataset.add_crate(_create_primary_crate(blocks.header))
 
-    _update_header(pha, header, skip_if_known=False)
-
-    # Write column values using CrateData objects
-    for name in col_names:
-        if data[name] is None:
-            continue
-        _set_column(pha, name, data[name])
-
+    # This assumes the first block is a table
+    pha = _create_table_crate(blocks.blocks[0])
     phadataset.add_crate(pha)
     return phadataset
 
 
 def set_pha_data(filename: str,
-                 data: ColumnsType,
-                 col_names: NamesType,
-                 header: Optional[HdrTypeArg] = None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Create a PHA dataset/file"""
 
-    pha = pack_pha_data(data, col_names, header)
+    pha = pack_pha_data(blocks)
     write_dataset(pha, filename, ascii=ascii, clobber=clobber)
 
 
-def _update_header(cr: CrateType,
-                   header: HdrTypeArg,
-                   skip_if_known: bool = True) -> None:
-    """Update the header of the crate."""
-
-    for key, value in header.items():
-        if skip_if_known and cr.key_exists(key):
-            continue
-
-        # value should not be None, but just in case
-        if value is None:
-            continue
-
-        # Do we need to worry about keys like TTYPE1 which crates
-        # hides from us?
-        _set_key(cr, key, value)
-
-
-def pack_rmf_data(blocks) -> pycrates.RMFCrateDataset:
+def pack_rmf_data(blocks: BlockList) -> pycrates.RMFCrateDataset:
     """Pack up the RMF data."""
 
-    # For now assume only two blocks:
-    #    MATRIX
-    #    EBOUNDS
-    #
-    matrix_data, matrix_header = blocks[0]
-    ebounds_data, ebounds_header = blocks[1]
+    _validate_block_names(blocks.blocks)
 
-    # Extract the data:
-    #   MATRIX:
-    #     ENERG_LO
-    #     ENERG_HI
-    #     N_GRP
-    #     F_CHAN
-    #     N_CHAN
-    #     MATRIX
-    #
-    #   EBOUNDS:
-    #     CHANNEL
-    #     E_MIN
-    #     E_MAX
-    #
-    # We may need to convert F_CHAN/N_CHAN/MATRIX to Variable-Length
-    # Fields. This is only needed if the ndarray type is object.
-    # Fortunately Crates will convert a n ndarray of objects to a
-    # Variable-Length array, so we do not need to do anything special
-    # here.
-    #
-    def mkcol(name, vals, units=None):
-        col = pycrates.CrateData()
-        col.name = name
-        col.values = vals
-        col.unit = units
-        return col
+    rmf = pycrates.RMFCrateDataset()
+    if blocks.header is not None:
+        rmf.add_crate(_create_primary_crate(blocks.header))
 
-    # Does RMFCrateDataset offer us anything above creating a
-    # CrateDataset manually?
+    # Should only be tables in the list but allow images to make the
+    # code simpler.
     #
-    ds = pycrates.RMFCrateDataset()
-    matrix_cr = ds.get_crate("MATRIX")
-    ebounds_cr = ds.get_crate("EBOUNDS")
+    for block in blocks.blocks:
+        if isinstance(block, TableBlock):
+            cr = _create_table_crate(block)
+        elif isinstance(block, ImageBlock):
+            cr = _create_image_crate(block)
+        else:
+            raise RuntimeError(f"Unsupported block: {block}")
 
-    matrix_cr.add_column(mkcol("ENERG_LO", matrix_data["ENERG_LO"], units="keV"))
-    matrix_cr.add_column(mkcol("ENERG_HI", matrix_data["ENERG_HI"], units="keV"))
-    matrix_cr.add_column(mkcol("N_GRP", matrix_data["N_GRP"]))
-    matrix_cr.add_column(mkcol("F_CHAN", matrix_data["F_CHAN"]))
-    matrix_cr.add_column(mkcol("N_CHAN", matrix_data["N_CHAN"]))
-    matrix_cr.add_column(mkcol("MATRIX", matrix_data["MATRIX"]))
+        rmf.add_crate(cr)
 
-    # Crates does not have a good API for setting the subspace of an
-    # item. So we manually add the correct TLMIN value to the header
-    # directly, as this appears to work.
-    #
-    # matrix_cr.F_CHAN._set_tlmin(matrix_data["OFFSET"])
-    matrix_header["TLMIN4"] = int(matrix_data["OFFSET"])
-
-    ebounds_cr.add_column(mkcol("CHANNEL", ebounds_data["CHANNEL"]))
-    ebounds_cr.add_column(mkcol("E_MIN", ebounds_data["E_MIN"], units="keV"))
-    ebounds_cr.add_column(mkcol("E_MAX", ebounds_data["E_MAX"], units="keV"))
-
-    # Update the headers after adding the columns.
-    #
-    _update_header(matrix_cr, matrix_header)
-    _update_header(ebounds_cr, ebounds_header)
-
-    return ds
+    return rmf
 
 
 def set_rmf_data(filename: str,
-                 blocks,
+                 blocks: BlockList,
                  clobber: bool = False) -> None:
     """Save the RMF data to disk.
 
     Unlike the other save_*_data calls this does not support the ascii
-    argument. It also relies on the caller to have set up the headers
-    and columns correctly apart for variable-length fields, which are
-    limited to F_CHAN, N_CHAN, and MATRIX.
+    argument.
 
     """
 
@@ -1550,25 +1168,28 @@ def set_arrays(filename: str,
 
     tbl = TABLECrate()
     for val, name in zip(args, fieldnames):
-        _set_column(tbl, name, val)
+        col = pycrates.CrateData()
+        col.name = name.upper()
+        col.values = np.array(val)
+        tbl.add_column(col)
 
     write_dataset(tbl, filename, ascii=ascii, clobber=clobber)
 
 
 def _add_header(cr: CrateType,
-                header: Sequence[HeaderItem]) -> None:
+                header: Header) -> None:
     """Add the header keywords to the crate."""
 
-    for item in header:
+    for item in header.values:
         key = pycrates.CrateKey()
         key.name = item.name
         key.value = item.value
-        key.unit = item.unit
-        key.desc = item.desc
+        key.unit = item.unit if item.unit is not None else ""
+        key.desc = item.desc if item.desc is not None else ""
         cr.add_key(key)
 
 
-def _create_primary_crate(hdu: TableHDU) -> IMAGECrate:
+def _create_primary_crate(hdr: Header) -> IMAGECrate:
     """Create the primary block."""
 
     out = IMAGECrate()
@@ -1581,20 +1202,33 @@ def _create_primary_crate(hdu: TableHDU) -> IMAGECrate:
     null.values = np.asarray([], dtype=np.uint8)
     out.add_image(null)
 
+    _add_header(out, hdr)
+    return out
+
+
+def _create_image_crate(hdu: ImageBlock) -> IMAGECrate:
+    """Create an image block."""
+
+    out = IMAGECrate()
+    out.name = hdu.name
+
+    img = pycrates.CrateData()
+    img.values = hdu.image
+    out.add_image(img)
+
     _add_header(out, hdu.header)
     return out
 
 
-def _create_table_crate(hdu: TableHDU) -> TABLECrate:
+def _create_table_crate(hdu: TableBlock) -> TABLECrate:
     """Create a table block."""
-
-    if hdu.data is None:
-        raise ValueError("No column data to write out")
 
     out = TABLECrate()
     out.name = hdu.name
 
-    for col in hdu.data:
+    _add_header(out, hdu.header)
+
+    for idx, col in enumerate(hdu.columns, 1):
         cdata = pycrates.CrateData()
         cdata.name = col.name
         cdata.desc = col.desc
@@ -1602,11 +1236,26 @@ def _create_table_crate(hdu: TableHDU) -> TABLECrate:
         cdata.values = col.values
         out.add_column(cdata)
 
-    _add_header(out, hdu.header)
+        # For CIAO 4.16 crates does not have a "nice" way to set
+        # TLMIN/MAX, but it appears we can just set the TLMIN/MAX
+        # values directly in the header and it works.
+        #
+        if col.minval is not None:
+            key = pycrates.CrateKey()
+            key.name = f"TLMIN{idx}"
+            key.value = col.minval
+            out.add_key(key)
+
+        if col.maxval is not None:
+            key = pycrates.CrateKey()
+            key.name = f"TLMAX{idx}"
+            key.value = col.maxval
+            out.add_key(key)
+
     return out
 
 
-def _validate_block_names(hdulist: Sequence[TableHDU]) -> list[TableHDU]:
+def _validate_block_names(hdulist: Sequence[BlockType]) -> None:
     """Ensure the block names are "independent".
 
     Crates will correctly handle the case when blocks are numbered
@@ -1614,10 +1263,11 @@ def _validate_block_names(hdulist: Sequence[TableHDU]) -> list[TableHDU]:
     but let's automatically add this if the user hasn't already done
     so (since AstroPy works differently).
 
+    This may change the input list contents.
     """
 
     blnames: dict[str, int] = defaultdict(int)
-    for hdu in hdulist[1:]:
+    for hdu in hdulist:
         blnames[hdu.name.upper()] += 1
 
     multi = [n for n,v in blnames.items() if v > 1]
@@ -1625,49 +1275,47 @@ def _validate_block_names(hdulist: Sequence[TableHDU]) -> list[TableHDU]:
     # If the names are unique do nothing
     #
     if len(multi) == 0:
-        return list(hdulist)
+        return
 
-    out = [hdulist[0]]
     extvers: dict[str, int] = defaultdict(int)
-    for hdu in hdulist[1:]:
+    for hdu in hdulist:
         if hdu.name not in multi:
-            out.append(hdu)
             continue
 
         # Either create or update the EXTVER value
         extvers[hdu.name] += 1
         extver = extvers[hdu.name]
 
-        nhdu = TableHDU(name=f"{hdu.name}{extver}",
-                        header=hdu.header, data=hdu.data)
-        out.append(nhdu)
-
-    return out
+        # Change the name field
+        hdu.name = f"{hdu.name}{extver}"
 
 
-def pack_hdus(blocks: Sequence[TableHDU]) -> CrateDataset:
-    """Create a dataset.
+def pack_hdus(blocks: BlockList) -> CrateDataset:
+    """Create a dataset."""
 
-    At present we are restricted to tables only.
-    """
-
-    nblocks = _validate_block_names(blocks)
+    _validate_block_names(blocks.blocks)
 
     dset = CrateDataset()
-    dset.add_crate(_create_primary_crate(nblocks[0]))
-    for hdu in nblocks[1:]:
-        dset.add_crate(_create_table_crate(hdu))
+    if blocks.header is not None:
+        dset.add_crate(_create_primary_crate(blocks.header))
+
+    for block in blocks.blocks:
+        if isinstance(block, TableBlock):
+            cr = _create_table_crate(block)
+        elif isinstance(block, ImageBlock):
+            cr = _create_image_crate(block)
+        else:
+            raise RuntimeError(f"Unsupported block: {block}")
+
+        dset.add_crate(cr)
 
     return dset
 
 
 def set_hdus(filename: str,
-             blocks: Sequence[TableHDU],
+             blocks: BlockList,
              clobber: bool = False) -> None:
-    """Write out a dataset.
-
-    At present we are restricted to tables only.
-    """
+    """Write out a dataset."""
 
     dset = pack_hdus(blocks)
     write_dataset(dset, filename, ascii=False, clobber=clobber)

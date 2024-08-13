@@ -33,9 +33,12 @@ from typing import Any, Optional, Sequence
 import numpy as np
 
 from ..data import Data1D
+
 from .types import NamesType, HdrTypeArg, HdrType, \
-    ColumnsType, ColumnsTypeArg, DataTypeArg, DataType
-from .xstable import TableHDU
+    ColumnsType, ColumnsTypeArg, DataTypeArg, DataType, \
+    Header, BlockList, TableBlock, ImageBlock, \
+    SpectrumBlock, SpecrespBlock, MatrixBlock, EboundsBlock
+
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
            'get_column_data', 'get_ascii_data', 'get_arf_data',
@@ -65,7 +68,7 @@ def get_table_data(arg,
                    fix_type: bool = True,
                    blockname: Optional[str] = None,
                    hdrkeys: Optional[NamesType] = None
-                   ) -> tuple[list[str], list[np.ndarray], str, HdrType]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from a file or object.
 
     The columns to select depend on the ncols and colkeys arguments,
@@ -104,12 +107,8 @@ def get_table_data(arg,
 
     Returns
     -------
-    names, data, filename, hdr
-        The column names, as a list of strings, and the data as
-        a list of NumPy arrays (matching the order and length of
-        the names array). The filename is the name of the file (a
-        string) and hdr is a dictionary with the requested keywords
-        (when hdrkeys is `None` this dictionary will be empty).
+    data, filename
+        The file data and filename.
 
     Raises
     ------
@@ -124,7 +123,7 @@ def get_table_data(arg,
 def get_header_data(arg,
                     blockname: Optional[str] = None,
                     hdrkeys: Optional[NamesType] = None
-                    ) -> HdrType:
+                    ) -> Header:
     """Read the metadata.
 
     Parameters
@@ -144,10 +143,9 @@ def get_header_data(arg,
 
     Returns
     -------
-    hdr: dict
-        A dictionary with the keyword data (only the name and values
-        are returned, any sort of metadata, such as comments or units,
-        are not returned).
+    hdr: Header
+        The header data. This is not guaranteed to return all the
+        metadata in the input data.
 
     Raises
     ------
@@ -161,7 +159,7 @@ def get_header_data(arg,
 def get_image_data(arg,
                    make_copy: bool = True,
                    fix_type: bool = True
-                   ) -> tuple[DataType, str]:
+                   ) -> tuple[ImageBlock, str]:
     """Read image data.
 
     Parameters
@@ -183,9 +181,7 @@ def get_image_data(arg,
     Returns
     -------
     data, filename
-        The data, as a dictionary, and the filename. The keys of the
-        dictionary match the arguments when creating a
-        sherpa.astro.data.DataIMG object.
+        The data and the filename.
 
     Raises
     ------
@@ -237,7 +233,7 @@ def get_ascii_data(filename: str,
                    dstype: type = Data1D,
                    comment: str = '#',
                    require_floats: bool = True
-                   ) -> tuple[list[str], list[np.ndarray], str]:
+                   ) -> tuple[TableBlock, str]:
     """Read columns from an ASCII file.
 
     The `sep`, `dstype`, `comment`, and `require_floats` arguments
@@ -265,10 +261,8 @@ def get_ascii_data(filename: str,
 
     Returns
     -------
-    colnames, coldata, filename
-       The column names read in, the data for the columns
-       as an array, with each element being the data for the column
-       (the order matches ``colnames``), and the name of the file.
+    data, filename
+       The data and filename.
 
     Raises
     ------
@@ -286,7 +280,7 @@ def get_ascii_data(filename: str,
 
 def get_arf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[DataType, str]:
+                 ) -> tuple[SpecrespBlock, str]:
     """Read in the ARF.
 
     Parameters
@@ -304,9 +298,7 @@ def get_arf_data(arg,
     Returns
     -------
     data, filename
-        The data, as a dictionary, and the filename. The keys of the
-        dictionary match the arguments when creating a
-        sherpa.astro.data.DataARF object.
+        The data and the filename.
 
     Raises
     ------
@@ -319,7 +311,7 @@ def get_arf_data(arg,
 
 def get_rmf_data(arg,
                  make_copy: bool = False
-                 ) -> tuple[DataType, str]:
+                 ) -> tuple[list[MatrixBlock], EboundsBlock, str]:
     """Read in the RMF.
 
     Parameters
@@ -336,10 +328,8 @@ def get_rmf_data(arg,
 
     Returns
     -------
-    data, filename
-        The data, as a dictionary, and the filename. The keys of the
-        dictionary match the arguments when creating a
-        sherpa.astro.data.DataRMF object.
+    matrix_blocks, ebounds_block, filename
+        The data and the filename.
 
     Raises
     ------
@@ -353,7 +343,7 @@ def get_rmf_data(arg,
 def get_pha_data(arg,
                  make_copy: bool = False,
                  use_background: bool = False
-                 ) -> tuple[list[DataType], str]:
+                 ) -> tuple[SpectrumBlock, str]:
     """Read in the PHA.
 
     Parameters
@@ -375,11 +365,9 @@ def get_pha_data(arg,
 
     Returns
     -------
-    datas, filename
-        A list of dictionaries, containing the PHA data (since there
-        can be multiple datasets with a PHA-II file) and the filename.
-        The keys of the dictionary match the arguments when creating
-        a sherpa.astro.data.DataPHA object.
+    data, filename
+        The PHA data (since there can be multiple datasets with a
+        PHA-II file) and the filename.
 
     Raises
     ------
@@ -390,22 +378,15 @@ def get_pha_data(arg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_table_data(data: ColumnsTypeArg,
-                    col_names: NamesType,
-                    header: Optional[HdrTypeArg] = None) -> Any:
+def pack_table_data(blocks: BlockList) -> Any:
     """Create the tabular data.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks: BlockList
+        The table data.
 
     Returns
     -------
@@ -416,19 +397,15 @@ def pack_table_data(data: ColumnsTypeArg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_image_data(data: DataTypeArg,
-                    header: HdrTypeArg) -> Any:
+def pack_image_data(data: ImageBlock) -> Any:
     """Create the image data.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    data : dict
-        The image data, where the keys are arguments used to create a
-        sherpa.astro.data.DataIMG object.
-    header : dict
-        The header information to include.
+    data : ImageBlock
+        The image data.
 
     Returns
     -------
@@ -439,22 +416,15 @@ def pack_image_data(data: DataTypeArg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_pha_data(data: ColumnsTypeArg,
-                  col_names: NamesType,
-                  header: Optional[HdrTypeArg] = None) -> Any:
+def pack_pha_data(blocks: BlockList) -> Any:
     """Create the PHA.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks : BlockList
+        The PHA data.
 
     Returns
     -------
@@ -465,22 +435,15 @@ def pack_pha_data(data: ColumnsTypeArg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_arf_data(data: ColumnsTypeArg,
-                  col_names: NamesType,
-                  header: Optional[HdrTypeArg] = None) -> Any:
+def pack_arf_data(blocks: BlockList) -> Any:
     """Create the ARF.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    data : BlockList
+        The ARF data.
 
     Returns
     -------
@@ -491,18 +454,15 @@ def pack_arf_data(data: ColumnsTypeArg,
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_rmf_data(blocks) -> Any:
+def pack_rmf_data(blocks: BlockList) -> Any:
     """Create the RMF.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    blocks : sequence of pairs
-        The RMF data, stored as pairs of (data, header), where data is
-        a dictionary of column name (keys) and values, and header is a
-        dictionary of key and values. The first element is the MATRIX
-        block and the second is for the EBOUNDS block.
+    blocks : BlockList
+        The RMF data.
 
     Returns
     -------
@@ -513,14 +473,14 @@ def pack_rmf_data(blocks) -> Any:
     raise NotImplementedError('No usable I/O backend was imported.')
 
 
-def pack_hdus(blocks: Sequence[TableHDU]) -> Any:
+def pack_hdus(blocks: BlockList) -> Any:
     """Create a dataset.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    blocks : sequence of TableHDU
+    blocks : BlockList
         The blocks (HDUs) to store.
 
     Returns
@@ -533,28 +493,22 @@ def pack_hdus(blocks: Sequence[TableHDU]) -> Any:
 
 
 def set_table_data(filename: str,
-                   data: ColumnsTypeArg,
-                   col_names: NamesType,
-                   header: Optional[HdrTypeArg] = None,
+                   blocks: BlockList,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the tabular data.
 
     .. versionchanged:: 4.17.0
        The packup argument has been removed as `pack_table_data`
-       should be used instead.
+       should be used instead, and the data is now set with the blocks
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks: BlockList
+        The table data.
     ascii : bool, optional
         Is the file to be written out as a text file (`True`) or a
         binary file? The default is `False`.
@@ -568,25 +522,22 @@ def set_table_data(filename: str,
 
 
 def set_image_data(filename: str,
-                   data: DataTypeArg,
-                   header: HdrTypeArg,
+                   data: ImageBlock,
                    ascii: bool = False,
                    clobber: bool = False) -> None:
     """Write out the image data.
 
     .. versionchanged:: 4.17.0
        The packup argument has been removed as `pack_image_data`
-       should be used instead.
+       should be used instead, and the data is now set with the data
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    data : dict
-        The image data, where the keys are arguments used to create a
-        sherpa.astro.data.DataIMG object.
-    header : dict
-        The header information to include.
+    data : ImageBlock
+        The image data.
     ascii : bool, optional
         Is the file to be written out as a text file (`True`) or a
         binary file? The default is `False`.
@@ -600,28 +551,22 @@ def set_image_data(filename: str,
 
 
 def set_pha_data(filename: str,
-                 data: ColumnsTypeArg,
-                 col_names: NamesType,
-                 header: Optional[HdrTypeArg] = None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the PHA.
 
     .. versionchanged:: 4.17.0
-       The packup argument has been removed as `pack_pha_data`
-       should be used instead.
+       The packup argument has been removed as `pack_pha_data` should
+       be used instead, and the data is now set with the blocks
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks : BlockList
+        The PHA data.
     ascii : bool, optional
         Is the file to be written out as a text file (`True`) or a
         binary file? The default is `False`.
@@ -635,28 +580,22 @@ def set_pha_data(filename: str,
 
 
 def set_arf_data(filename: str,
-                 data: ColumnsTypeArg,
-                 col_names: NamesType,
-                 header: Optional[HdrTypeArg] = None,
+                 blocks: BlockList,
                  ascii: bool = False,
                  clobber: bool = False) -> None:
     """Write out the ARF.
 
     .. versionchanged:: 4.17.0
-       The packup argument has been removed as `pack_arf_data`
-       should be used instead.
+       The packup argument has been removed as `pack_arf_data` should
+       be used instead, and the data is now set with the blocks
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    data : dict
-        The table data, where the key is the column name and the value
-        the data.
-    col_names : sequence of str
-        The column names from data to use (this also sets the order).
-    header : dict or None, optional
-        Any header information to include.
+    blocks : BlockList
+        The ARF data.
     ascii : bool, optional
         Is the file to be written out as a text file (`True`) or a
         binary file? The default is `False`.
@@ -670,23 +609,21 @@ def set_arf_data(filename: str,
 
 
 def set_rmf_data(filename: str,
-                 blocks,
+                 blocks: BlockList,
                  clobber: bool = False) -> None:
     """Write out the RMF.
 
     .. versionchanged:: 4.17.0
-       The packup argument has been removed as `pack_rmf_data`
-       should be used instead.
+       The packup argument has been removed as `pack_rnf_data` should
+       be used instead, and the data is now set with the blocks
+       argument.
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    blocks : sequence of pairs
-        The RMF data, stored as pairs of (data, header), where data is
-        a dictionary of column name (keys) and values, and header is a
-        dictionary of key and values. The first element is the MATRIX
-        block and the second is for the EBOUNDS block.
+    blocks : BlockList
+        The RMF data.
     clobber : bool, optional
         If the file already exists can it be over-written (`True`) or
         will a sherpa.utils.err.IOErr error be raised? The default is
@@ -702,15 +639,17 @@ def set_rmf_data(filename: str,
 
 
 def set_hdus(filename: str,
-             blocks: Sequence[TableHDU],
+             blocks: BlockList,
              clobber: bool = False) -> None:
     """Write out (possibly multiple) blocks.
+
+    .. versionadded:: 4.17.0
 
     Parameters
     ----------
     filename : str
         The name of the file to create.
-    blocks : sequence of TableHDU
+    blocks : BlockList
         The blocks (HDUs) to store.
     clobber : bool, optional
         If the file already exists can it be over-written (`True`) or
@@ -723,9 +662,7 @@ def set_hdus(filename: str,
 
 def read_table_blocks(arg,
                       make_copy: bool = False
-                      ) -> tuple[str,
-                                 dict[int, ColumnsType],
-                                 dict[int, HdrType]]:
+                      ) -> tuple[BlockList, str]:
     """Read in tabular data with no restrictions on the columns.
 
     Parameters
@@ -742,13 +679,8 @@ def read_table_blocks(arg,
 
     Returns
     -------
-    filename, blockdata, hdrdata
-        The filename as a string. The blockdata and hdrdata values are
-        dictionaries where the key is an integer representing the
-        block (or HDU) number (where the first block is numbered 1 and
-        represents the first tabular block, that is it does not
-        include the primary HDU) and the values are dictionaries
-        representing the column data or header data for each block.
+    hdus, filename
+        The data and filename.
 
     Raises
     ------

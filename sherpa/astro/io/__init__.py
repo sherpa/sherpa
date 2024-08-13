@@ -50,12 +50,15 @@ interface):
 """
 
 from configparser import ConfigParser
+from contextlib import suppress
 import importlib
+import importlib.metadata
 import logging
 import os
+from pathlib import Path
 import re
-from typing import Any, Callable, Mapping, Optional, Sequence, \
-    TypeVar, Union
+from typing import TYPE_CHECKING, Any, Callable, Mapping, Optional, \
+    Sequence, Type, TypeVar, Union
 
 import numpy as np
 
@@ -67,9 +70,29 @@ from sherpa.data import Data, Data1D, Data2D, Data2DInt
 from sherpa.io import _check_args
 from sherpa.utils import is_subclass
 from sherpa.utils.err import ArgumentErr, DataErr, IOErr
-from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.numeric_types import SherpaFloat, SherpaUInt
 
-from .types import KeyType, NamesType, HdrTypeArg, HdrType, DataType
+from .types import KeyType, NamesType, HdrTypeArg, HdrType, DataType, \
+    Header, HeaderItem, Column, Block, TableBlock, ImageBlock, \
+    BlockList, BlockType, SpecrespBlock, MatrixBlock, EboundsBlock
+
+# Responses can often be send as the Data object or the instrument
+# version, so support it would be good to support this with types
+# like
+#
+#  RMFType = Union[DataRMF, RMF1D]
+#
+# but that is annoying thanks to circular dependencies.
+#
+if TYPE_CHECKING:
+    from sherpa.astro.instrument import ARF1D, RMF1D
+    ARFType = Union[DataARF, ARF1D]
+    RMFType = Union[DataRMF, RMF1D]
+
+else:
+    ARFType = DataARF
+    RMFType = DataRMF
+
 
 config = ConfigParser()
 config.read(get_config())
@@ -95,17 +118,18 @@ else:
         raise ValueError(emsg)
 
 for iotry in io_opt:
-    try:
+    with suppress(ImportError):
         backend = importlib.import_module('.' + iotry,
                                           package='sherpa.astro.io')
         break
-    except ImportError:
-        pass
+
 else:
     # None of the options in the rc file work, e.g. because it's an
     # old file that does not have dummy listed
     import sherpa.astro.io.dummy_backend as backend
 
+
+error = logging.getLogger(__name__).error
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
@@ -184,7 +208,7 @@ def read_arrays(*args) -> Data:
 def read_table(arg,
                ncols: int = 2,
                colkeys: Optional[NamesType] = None,
-               dstype=Data1D) -> Data:
+               dstype: Type[Data1D] = Data1D) -> Data1D:
     """Create a dataset from a tabular file.
 
     The supported file types (e.g. ASCII or FITS) depends on the
@@ -234,22 +258,23 @@ def read_table(arg,
     >>> d = read_table('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
-    args = backend.get_table_data(arg, ncols, colkeys)
-    cols = args[1]
-    name = args[2]
+
+    hdu, name = backend.get_table_data(arg, ncols, colkeys)
+
+    cols = [col.values for col in hdu.columns]
 
     # Determine max number of args for dataset constructor
     _check_args(len(cols), dstype)
-
     return dstype(name, *cols)
 
 
 # TODO: should this be exported?
+#
 def read_ascii(filename: str,
                ncols: int = 2,
                colkeys: Optional[NamesType] = None,
-               dstype=Data1D,
-               **kwargs) -> Data:
+               dstype: Type[Data1D] = Data1D,
+               **kwargs) -> Data1D:
     """Create a dataset from an ASCII tabular file.
 
     Parameters
@@ -298,20 +323,21 @@ def read_ascii(filename: str,
     >>> d = read_ascii('tbl.fits', colkeys=['WLEN', 'FLUX', 'FLUXERR'])
 
     """
-    args = backend.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
-                                  dstype=dstype, **kwargs)
-    cols = args[1]
-    name = args[2]
+
+    hdu, name = backend.get_ascii_data(filename, ncols=ncols, colkeys=colkeys,
+                                       dstype=dstype, **kwargs)
+
+    cols = [col.values for col in hdu.columns]
 
     # Determine max number of args for dataset constructor
     _check_args(len(cols), dstype)
-
     return dstype(name, *cols)
 
 
+# TODO: Can this read in Data2D or only DataIMG?
 def read_image(arg,
                coord: str = 'logical',
-               dstype=DataIMG) -> Data2D:
+               dstype: Type[Data2D] = DataIMG) -> Data2D:
     """Create an image dataset from a file.
 
     .. versionchanged:: 4.16.0
@@ -326,7 +352,7 @@ def read_image(arg,
     coord : {'logical', 'physical', 'world'}, optional
         The type of axis coordinates to use. An error is raised if the
         file does not contain the necessary metadata for the selected
-        coordinate system.
+        coordinate system or the selected dstype does not support it.
     dstype : optional
         The data type to create (it is expected to follow the
         `sherpa.data.Data` interface).
@@ -354,16 +380,16 @@ def read_image(arg,
     >>> d = read_image('img.fits', coord='physical')
 
     """
-    data, filename = backend.get_image_data(arg)
-    data['header'] = _remove_structural_keywords(data['header'])
-    axlens = data['y'].shape
 
-    x0 = np.arange(axlens[1], dtype=SherpaFloat) + 1.
-    x1 = np.arange(axlens[0], dtype=SherpaFloat) + 1.
+    block, filename = backend.get_image_data(arg)
+
+    img = block.image
+    ny, nx = img.shape
+    x0 = np.arange(nx, dtype=SherpaFloat) + 1.
+    x1 = np.arange(ny, dtype=SherpaFloat) + 1.
     x0, x1 = reshape_2d_arrays(x0, x1)
 
-    data['y'] = data['y'].ravel()
-    data['shape'] = axlens
+    data = {"y": img.ravel(), "shape": img.shape}
 
     # We have to be careful with issubclass checks because
     #
@@ -372,11 +398,14 @@ def read_image(arg,
     #    Data2D        DataIMG
     #    DataIMG       DataIMGInt
     #
-    # Drop the transform fields if the object doesn't support them.
-    #
-    if not issubclass(dstype, DataIMG):
-        for name in ['eqpos', 'sky', 'header']:
-            data.pop(name, None)
+    if issubclass(dstype, DataIMG):
+        header = {}
+        for item in _remove_structural_items(block.header):
+            header[item.name] = item.value
+
+        data["header"] = header
+        data["sky"] = block.sky
+        data["eqpos"] = block.eqpos
 
     # What are the independent axes?
     #
@@ -389,14 +418,16 @@ def read_image(arg,
         data['x0'] = x0
         data['x1'] = x1
     else:
+        # backend.get_image_data should have caught this case
+        #
         raise ArgumentErr("bad", "dstype argument",
                           "dstype is not derived from Data2D")
 
     # Note that we only set the coordinates after creating the
-    # dataset, which assumes that data['x'] and data['y'] are always
-    # in logical units. They may not be, but in this case we need to
-    # drop the logical/physical/world conversion system (or improve it
-    # to be more flexible). This is an attempt to resolve issue #1762,
+    # dataset, which assumes that the independent axes are always in
+    # logical units. They may not be, but in this case we need to drop
+    # the logical/physical/world conversion system (or improve it to
+    # be more flexible). This is an attempt to resolve issue #1762,
     # where sherpa.astro.ui.load_image(infile, coord="physical") did
     # not behave sensibly (likely due to #1414 which was to address
     # issue #1380).
@@ -423,16 +454,151 @@ def read_arf(arg) -> DataARF:
     data : sherpa.astro.data.DataARF
 
     """
-    data, filename = backend.get_arf_data(arg)
-    data['header'] = _remove_structural_keywords(data['header'])
 
-    # It is unlikely that the backend will set this, but allow
-    # it to override the config setting.
-    #
-    if 'emin' not in data:
-        data['ethresh'] = ogip_emin
+    block, filename = backend.get_arf_data(arg)
+
+    header = {}
+    exposure = None
+    for item in _remove_structural_items(block.header):
+        if item.name == "EXPOSURE":
+            exposure = item.value
+        else:
+            header[item.name] = item.value
+
+    data = {"energ_lo": block.rget("ENERG_LO").values,
+            "energ_hi": block.rget("ENERG_HI").values,
+            "specresp": block.rget("SPECRESP").values,
+            "exposure": exposure,
+            "header": header,
+            "ethresh": ogip_emin}
+
+    blo = block.get("BIN_LO")
+    bhi = block.get("BIN_HI")
+    if blo is not None and bhi is not None:
+        data["bin_lo"] = blo.values
+        data["bin_hi"] = bhi.values
 
     return DataARF(filename, **data)
+
+
+def _extract_rmf(matrix: MatrixBlock,
+                 ebounds: EboundsBlock,
+                 filename: str) -> dict[str, Any]:
+    """Extract the matrix data from the table.
+
+    Parameters
+    ----------
+    matrix, ebounds : TableBlock
+        The MATRIX and EBOUNDS blocks.
+    filename : str
+        The file name (used for error/warning messages).
+
+    Returns
+    -------
+    data : dict
+        The arguments needed for creating a RMF.
+
+    """
+
+    header = {}
+    detchans = 0
+    for item in _remove_structural_items(matrix.header):
+        if item.name == "DETCHANS":
+            detchans = int(item.value)
+        else:
+            header[item.name] = item.value
+
+    # Validate the data:
+    #  - check that OFFSET is set in either F_CHAN column of MATRIX
+    #    or CHANNEL column of EBOUNDS
+    #  - flatten out the F_CHAN, N_CHAN, and MATRIX columns
+    #
+    f_chan = matrix.rget("F_CHAN")
+    channel = ebounds.rget("CHANNEL")
+
+    if f_chan.minval is not None:
+        offset = f_chan.minval
+    elif channel.minval is not None:
+        offset = channel.minval
+    else:
+        offset = 1
+        error("Failed to locate TLMIN keyword for F_CHAN column "
+              "in RMF file '%s'; Update the offset value in the "
+              "RMF data set to the appropriate TLMIN value prior "
+              "to fitting", filename)
+
+    # The n_grp column remains as is but the other columns
+    # - remove any rows where n_grp for that row is 0
+    # - flatten out any 2D structure or variable-length
+    #   data
+    #
+    # This is not designed to be the fastest code.
+    #
+    n_grp_raw = matrix.rget("N_GRP").values
+    f_chan_raw = f_chan.values
+    n_chan_raw = matrix.rget("N_CHAN").values
+    mat_raw = matrix.rget("MATRIX").values
+
+    good = n_grp_raw > 0
+    ng_raw = n_grp_raw[good]
+    fc_raw = f_chan_raw[good]
+    nc_raw = n_chan_raw[good]
+    mx_raw = mat_raw[good]
+
+    # Since these values are sent to the fold_rmf routine in
+    # sherpa.astro.utils._utils, we want the types to match up to
+    # avoid conversion time in that routine. The n_grp, f_chan, and
+    # n_chan arrays should be SherpaUIntArray and the matrix should be
+    # given by sherpa.utils.numeric_types. This conversion should
+    # probably be done by DataRMF itself though.
+    #
+    f_chan_l = []
+    n_chan_l = []
+    mat_l = []
+    for ng, fc, nc, mxs in zip(ng_raw, fc_raw, nc_raw, mx_raw):
+        # fc and nc may be scalars rather than an array (this is known
+        # before the loop but for now we check for it each row).
+        #
+        try:
+            f_chan_l.append(fc[:ng])
+            n_chan_l.append(nc[:ng])
+        except IndexError:
+            f_chan_l.append([fc])
+            n_chan_l.append([nc])
+
+        # Loop through all the matrix elements, restricting to nchan
+        # (in case we do not have a VLF matrix array).  The matrix may
+        # also be a scalar.
+        #
+        start = 0
+        for nchan in n_chan_l[-1]:
+            # nchan may be an unsigned int, which could lead to type casting
+            # errors, so explicitly convert to an int.
+            end = start + int(nchan)
+            try:
+                mat_l.append(mxs[start:end])
+            except IndexError:
+                # Assume the scalar case
+                mat_l.append([mxs])
+
+            start = end
+
+    def flatten(xs, dtype):
+        return np.concatenate(xs).astype(dtype)
+
+    return {"detchans": detchans,
+            "energ_lo": matrix.rget("ENERG_LO").values,
+            "energ_hi": matrix.rget("ENERG_HI").values,
+            "n_grp": np.asarray(n_grp_raw, dtype=SherpaUInt),
+            "f_chan": flatten(f_chan_l, dtype=SherpaUInt),
+            "n_chan": flatten(n_chan_l, dtype=SherpaUInt),
+            "matrix": flatten(mat_l, dtype=SherpaFloat),
+            "offset": offset,
+            "e_min": ebounds.rget("E_MIN").values,
+            "e_max": ebounds.rget("E_MAX").values,
+            "header": header,
+            "ethresh": ogip_emin  # should we take this from the header?
+            }
 
 
 def read_rmf(arg) -> DataRMF:
@@ -447,18 +613,25 @@ def read_rmf(arg) -> DataRMF:
 
     Returns
     -------
-    data : sherpa.astro.data.DataRMF
+    data : sherpa.astro.data.DataRMF or subclass
 
     """
-    data, filename = backend.get_rmf_data(arg)
-    data['header'] = _remove_structural_keywords(data['header'])
 
-    # It is unlikely that the backend will set this, but allow
-    # it to override the config setting.
+    matrixes, ebounds, filename = backend.get_rmf_data(arg)
+
+    # matrixes is guaranteed not to be empty
+    nmat = len(matrixes)
+    if nmat > 1:
+        # Warn the user that the multi-matrix RMF is not supported.
+        #
+        error("RMF in %s contains %d MATRIX blocks; "
+              "Sherpa only uses the first block!",
+              filename, nmat)
+
+    # Use the metadata from the first matrix
     #
-    if 'emin' not in data:
-        data['ethresh'] = ogip_emin
-
+    matrix = matrixes[0]
+    data = _extract_rmf(matrix, ebounds, filename)
     return _rmf_factory(filename, data)
 
 
@@ -475,25 +648,25 @@ def _rmf_factory(filename: str,
     return rmf_class(filename, **data)
 
 
-def _read_ancillary(data: dict[str, str],
+def _read_ancillary(header: Header,
                     key: str,
                     label: str,
-                    dname: str,
+                    dpath: Path,
                     read_func: Callable[[str], T],
-                    output_once: bool = True) -> Optional[T]:
+                    output_once: bool) -> Optional[T]:
     """Read in a file if the keyword is set.
 
     Parameters
     ----------
-    data
-        The header information, which behaves like a dictionary.
-    key
+    header : Header
+        The header information. This may be updated.
+    key : str
         The key to look for in data. If not set, or its value compares
         case insensitively to "none" then nothing is read in.
     label : str
         This is used to identify the file being read in. It is only
         used if output_once is set.
-    dname : str
+    dname : Path
         The location of the file containing the metadata. This is prepended
         to  the value read from the data argument if it is not an
         absolute path.
@@ -510,17 +683,24 @@ def _read_ancillary(data: dict[str, str],
 
     """
 
-    if not(data[key]) or data[key].lower() == 'none':
+    val = header.get(key)
+    if val is None:
         return None
 
+    if not isinstance(val.value, str):
+        return None
+
+    if val.value.lower() == "none":
+        return None
+
+    # Rely on pathlib to handle the path combinations.
+    #
+    filename = str(dpath / Path(val.value))
     out = None
     try:
-        if os.path.dirname(data[key]) == '':
-            data[key] = os.path.join(dname, data[key])
-
-        out = read_func(data[key])
+        out = read_func(filename)
         if output_once:
-            info('read %s file %s', label, data[key])
+            info("read %s file %s", label, filename)
 
     except Exception as exc:
         if output_once:
@@ -529,36 +709,217 @@ def _read_ancillary(data: dict[str, str],
     return out
 
 
-def _read_bkgs(filename: str,
-               arf: Optional[DataARF],
-               rmf: Optional[DataRMF],
-               *,
-               use_errors: bool,
-               output_once: bool) -> list[DataPHA]:
-    """Read in the background files.
+def _process_pha_block(filename: str,
+                       table: TableBlock,
+                       *,
+                       output_once: bool,
+                       use_errors: bool,
+                       use_background: bool) -> DataPHA:
+    """Convert a PHA block into a DataPHA object.
 
-    This will set up the response if the files do not have
-    one set.
+    This is assumed to be a "type I" block.
     """
 
-    dsets = read_pha(filename, use_errors=use_errors,
-                     use_background=True)
+    # The assumption is that the table requires a CHANNEL column,
+    # e.g. as guaranteed by read_pha, but leave this check in.
+    #
+    chancol = table.get("CHANNEL")
+    if chancol is None:
+        raise IOErr("reqcol", "CHANNEL", filename)
+
+    channel = chancol.values
+    nrows = channel.size
+
+    expval = table.header.get("EXPOSURE")
+    exposure = None if expval is None else expval.value
+
+    def get(name: str,
+            expand: bool = False) -> Optional[Union[np.ndarray, int, float, np.integer, np.floating]]:
+        """Return the column values if they exist.
+
+        This checks for columns and then the header. For the header
+        case we can keep the scalar case (expand=False) or convert
+        into a ndarray. At present the expand option is unused.
+
+        """
+
+        col = table.get(name)
+        if col is not None:
+            return col.values
+
+        colval = table.header.get(name)
+        if colval is None:
+            return None
+
+        if isinstance(colval.value, (str, np.floating)):
+            val = float(colval.value)
+        elif isinstance(colval.value, (bool, np.bool_, np.integer)):
+            val = int(colval.value)
+        else:
+            val = colval.value
+
+        if expand:
+            return np.ones(nrows, dtype=type(val)) * val
+
+        return val
+
+    def getcol(name: str) -> Optional[np.ndarray]:
+        """Return the column values if they exist.
+
+        This does not check for a matching keyword to support the
+        original code (even though the OGIP standard allows for these
+        names).
+
+        """
+
+        col = table.get(name)
+        if col is None:
+            return None
+
+        return col.values
+
+    # Why do we remove the *FILE keywords? See #1885
+    #
+    unwanted = ["ANCRFILE", "BACKFILE", "RESPFILE",
+                "BACKSCAL", "AREASCAL", "EXPOSURE"]
+    header = _remove_structural_items(table.header)
+    basic_header = dict((k.name, k.value) for k in header
+                        if k.name not in unwanted)
+
+    staterr = get("STAT_ERR")
+    syserr = getcol("SYS_ERR")
+
+    # Do we warn the user that the errors read in from the file are
+    # being ignored?
+    #
+    if not use_errors:
+        if output_once and staterr is not None or syserr is not None:
+            if staterr is None:
+                msg = 'systematic'
+            elif syserr is None:
+                msg = 'statistical'
+
+                # Extra warning
+                warning("systematic errors were not found in "
+                        "file '%s'", filename)
+
+            else:
+                msg = 'statistical and systematic'
+
+            # TODO: remove extra space at end of first line
+            info("%s errors were found in file '%s'\nbut not used; "
+                 "to use them, re-read with use_errors=True", msg, filename)
+
+        staterr = None
+        syserr = None
+
+    # For relative path we use the location of the PHA file as the
+    # base.
+    #
+    dpath = Path(filename).parent
+    albl = 'ARF'
+    rlbl = 'RMF'
+    if use_background:
+        albl = albl + ' (background)'
+        rlbl = rlbl + ' (background)'
+
+    arf = _read_ancillary(table.header, "ANCRFILE", albl, dpath,
+                          read_arf, output_once)
+    rmf = _read_ancillary(table.header, "RESPFILE", rlbl, dpath,
+                          read_rmf, output_once)
+
+    # Do we create the backgrounds directly?
+    #
+    kwargs = {"channel": channel,
+              "bin_lo": get("BIN_LO"),
+              "bin_hi": get("BIN_HI"),
+              # "grouping": get("GROUPING", expand=True),
+              # "quality": get("QUALITY", expand=True),
+              "grouping": getcol("GROUPING"),
+              "quality": getcol("QUALITY"),
+              "exposure": exposure,
+              "header": basic_header}
+
+    pha = DataPHA(filename, counts=get("COUNTS"),
+                  staterror=staterr, syserror=syserr,
+                  backscal=get("BACKSCAL"), areascal=get("AREASCAL"),
+                  **kwargs)
+    pha.set_response(arf, rmf)
+
+    # Are there any backgrounds to process?
+    #
+    backgrounds = []
+
+    # Do we read in the background data?
+    # TODO: The use_background logic doesn't seem to make sense here.
+    #
+    backfile = table.header.get("BACKFILE")
+    if backfile is not None and isinstance(backfile.value, str) \
+       and backfile.value.lower() != "none" and \
+           not use_background:
+
+        bfilename = str(dpath / Path(backfile.value))
+        try:
+            backgrounds = _process_pha_backfile(bfilename, arf, rmf,
+                                                output_once=output_once,
+                                                use_errors=use_errors)
+        except Exception as exc:
+            if output_once:
+                warning("unable to read background: %s", str(exc))
+
+    for colname, scalname in [('BACKGROUND_UP', 'BACKSCUP'),
+                              ('BACKGROUND_DOWN', 'BACKSCDN')]:
+        col = table.get(colname)
+        if col is None:
+            continue
+
+        bkg = DataPHA(filename, counts=col.values,
+                      backscal=get(scalname), **kwargs)
+        bkg.set_response(arf, rmf)
+        if output_once:
+            info("read %s into a dataset from file %s",
+                 colname.lower(), filename)
+
+        backgrounds.append(bkg)
+
+    for idx, bkg in enumerate(backgrounds, 1):
+        if bkg.grouping is None:
+            bkg.grouping = pha.grouping
+            bkg.grouped = bkg.grouping is not None
+
+        if bkg.quality is None:
+            bkg.quality = pha.quality
+
+        pha.set_background(bkg, idx)
+
+    # set units *after* bkgs have been set
+    pha._set_initial_quantity()
+
+    return pha
+
+
+def _process_pha_backfile(filename: str,
+                          arf: Optional[DataARF],
+                          rmf: Optional[DataRMF],
+                          *,
+                          output_once: bool,
+                          use_errors: bool) -> list[DataPHA]:
+
+    bkgs = read_pha(filename, use_errors=use_errors, use_background=True)
     if output_once:
         info("read background file %s", filename)
 
     # read_pha can return a single item or a list.
-    if isinstance(dsets, list):
-        bkgs = dsets
+    if isinstance(bkgs, DataPHA):
+        blist = [bkgs]
     else:
-        bkgs = [dsets]
+        blist = list(bkgs)
 
-    # Add in the response if needed.
-    #
-    for bkg in bkgs:
+    for bkg in blist:
         if rmf is not None and bkg.get_response() == (None, None):
             bkg.set_response(arf, rmf)
 
-    return bkgs
+    return blist
 
 
 def read_pha(arg,
@@ -586,144 +947,142 @@ def read_pha(arg,
     data : sherpa.astro.data.DataPHA
 
     """
-    datasets, filename = backend.get_pha_data(arg,
-                                              use_background=use_background)
-    phasets = []
-    output_once = True
-    for data in datasets:
-        data['header'] = _remove_structural_keywords(data['header'])
 
-        if not use_errors and (data['staterror'] is not None or
-                               data['syserror'] is not None):
-            if data['staterror'] is None:
-                msg = 'systematic'
-            elif data['syserror'] is None:
-                msg = 'statistical'
-                if output_once:
-                    warning("systematic errors were not found in "
-                            "file '%s'", filename)
+    pha, filename = backend.get_pha_data(arg,
+                                         use_background=use_background)
 
-            else:
-                msg = 'statistical and systematic'
+    # Check all the columns have the same shape (e.g. all type I or
+    # II).  The CHANNEL column is guaranteed to exist at this point
+    # and be 1 or 2D.
+    #
+    chancol = pha.rget("CHANNEL")
+    channel = chancol.values
+    if len(channel.shape) == 1:
+        ptype = 1
+    elif len(channel.shape) == 2:
+        ptype = 2
+    else:
+        # This should not be possible
+        raise IOErr(f"PHA {filename}: unable to handle CHANNEL shape")
 
-            if output_once:
-                info("%s errors were found in file '%s'\n"
-                     "but not used; to use them, re-read "
-                     "with use_errors=True", msg, filename)
+    # Deal with the "first column" of the channel array.
+    #
+    # TODO: why "correct for 1" here?
+    # TODO: this does not handle TLMIN correctly
+    if int(channel.flatten()[0]) == 0 or \
+       (chancol.minval is not None and chancol.minval == 0):
+        chancol.values += 1
 
-            data['staterror'] = None
-            data['syserror'] = None
+    # Convert from RATE to COUNT. Ideally this would be passed to
+    # DataPHA so it knew (and could then enforce a non-Poisson
+    # statistic).
+    #
+    # This is done before any II to I conversion. The error checks
+    # should not be needed, because SpectrumBlock should enforce these
+    # invariants, but leave in for now.
+    #
+    if pha.get("COUNTS") is None:
+        rate = pha.get("RATE")
+        if rate is None:
+            raise IOErr("reqcol", "COUNTS or RATE", filename)
 
-        dname = os.path.dirname(filename)
-        albl = 'ARF'
-        rlbl = 'RMF'
-        if use_background:
-            albl = albl + ' (background)'
-            rlbl = rlbl + ' (background)'
+        expval = pha.header.get("EXPOSURE")
+        if expval is None:
+            raise IOErr("nokeyword", filename, "EXPOSURE")
 
-        arf = _read_ancillary(data, 'arffile', albl, dname, read_arf,
-                              output_once)
-        rmf = _read_ancillary(data, 'rmffile', rlbl, dname, read_rmf,
-                              output_once)
+        exposure = expval.value
 
-        backgrounds = []
-
-        # We could include the use_background check here, but this
-        # could have subtle knock-on issues (namely, that the
-        # 'backfile' key of the data dictionary can get changed, even
-        # when use_background is set), and it's not clear whether
-        # anything relies on this (it probably should not, but hard to
-        # check for, so leave as is).
+        # Change the RATE column into a "COUNTS" column.
         #
-        if data['backfile'] and data['backfile'].lower() != 'none':
-            try:
-                if os.path.dirname(data['backfile']) == '':
-                    data['backfile'] = os.path.join(os.path.dirname(filename),
-                                                    data['backfile'])
+        rate.values *= exposure
+        rate.name = "COUNTS"
 
-                # Do not read backgrounds of backgrounds.
-                # Is the use_background variable well named?
-                #
-                if not use_background:
-                    bfile = data['backfile']
-                    bkgs = _read_bkgs(bfile, arf, rmf,
-                                      use_errors=use_errors,
-                                      output_once=output_once)
-                    backgrounds.extend(bkgs)
+        # What other columns need to be converted?
+        #
+        # How about SYS_ERR, BACKGROUND_UP/DOWN?
+        stat_err = pha.get("STAT_ERR")
+        if stat_err is not None:
+            stat_err.values *= exposure
 
-            except Exception as exc:
-                if output_once:
-                    warning("unable to read background: %s", str(exc))
+    if ptype == 1:
+        phas = [pha]
+    else:
+        special = ["TG_M", "TG_PART", "TG_SRCID", "SPEC_NUM"]
+        tg_m = pha.get("TG_M")
+        tg_part = pha.get("TG_PART")
+        tg_srcid = pha.get("TG_SRCID")
+        spec_num = pha.get("SPEC_NUM")
 
-        for bkg_type, bscal_type in zip(('background_up', 'background_down'),
-                                        ('backscup', 'backscdn')):
-            if data[bkg_type] is not None:
-                bkg = DataPHA(filename,
-                              channel=data['channel'],
-                              counts=data[bkg_type],
-                              bin_lo=data['bin_lo'],
-                              bin_hi=data['bin_hi'],
-                              grouping=data['grouping'],
-                              quality=data['quality'],
-                              exposure=data['exposure'],
-                              backscal=data[bscal_type],
-                              header=data['header'])
-                bkg.set_response(arf, rmf)
-                if output_once:
-                    info("read %s into a dataset from file %s",
-                         bkg_type, filename)
+        phas = []
+        for idx in range(channel.shape[0]):
+            header = Header([item for item in pha.header.values
+                             if item.name not in special])
 
-                backgrounds.append(bkg)
+            if tg_m is not None:
+                header.add(HeaderItem("TG_M", tg_m.values[idx]))
 
-        for k in ['backfile', 'arffile', 'rmffile', 'backscup', 'backscdn',
-                  'background_up', 'background_down']:
-            data.pop(k, None)
+            if tg_part is not None:
+                header.add(HeaderItem("TG_PART", tg_part.values[idx]))
 
-        pha = DataPHA(filename, **data)
-        pha.set_response(arf, rmf)
-        for idx, bkg in enumerate(backgrounds, 1):
-            # If the background grouping/quality is not set, copy it
-            # from the source.
-            #
-            if bkg.grouping is None:
-                bkg.grouping = pha.grouping
-                bkg.grouped = bkg.grouping is not None
+            if tg_srcid is not None:
+                header.add(HeaderItem("TG_SRCID", tg_srcid.values[idx]))
 
-            if bkg.quality is None:
-                bkg.quality = pha.quality
+            if spec_num is not None:
+                header.add(HeaderItem("SPEC_NUM", spec_num.values[idx]))
 
-            pha.set_background(bkg, idx)
+            cols = [Column(col.name, values=col.values[idx].copy(),
+                           desc=col.desc, unit=col.unit,
+                           minval=col.minval, maxval=col.maxval)
+                    for col in pha.columns
+                    if col.name not in special]
 
-        # set units *after* bkgs have been set
-        pha._set_initial_quantity()
-        phasets.append(pha)
+            phas.append(TableBlock(pha.name, header=header, columns=cols))
+
+    output_once = True
+    datasets = []
+    for p in phas:
+        data = _process_pha_block(filename, p,
+                                  output_once=output_once,
+                                  use_errors=use_errors,
+                                  use_background=use_background)
         output_once = False
+        datasets.append(data)
 
-    if len(phasets) == 1:
-        return phasets[0]
+    if len(datasets) == 1:
+        return datasets[0]
 
-    return phasets
+    return datasets
 
 
-def _pack_table(dataset: Data) -> DataType:
+def _empty_header(creator=False) -> Header:
+    """Create an empty header."""
+
+    out = Header([])
+    if creator:
+        _add_creator(out)
+
+    return out
+
+
+def _pack_header(header: HdrTypeArg) -> Header:
+    """Convert a header and add a CREATOR keyword if not set."""
+
+    out = Header([HeaderItem(name=name, value=value)
+                  for name, value in header.items()])
+    _add_creator(out)
+    return out
+
+
+def _pack_table(dataset: Data1D) -> BlockList:
     """Identify the columns in the data.
 
     This relies on the _fields attribute containing the data columns,
     and _extra_fields the extra information (other than the name
     column). We only return values from _fields that contain data.
 
-    Parameters
-    ----------
-    dataset : sherpa.data.Data instance
-
-    Returns
-    -------
-    data : dict
-        The dictionary containing the columns to write out, with
-        the column names being converted to upper case.
-
     """
-    data = {}
+
+    cols = []
     for name in dataset._fields:
         if name == 'name':
             continue
@@ -732,26 +1091,35 @@ def _pack_table(dataset: Data) -> DataType:
         if val is None:
             continue
 
-        # Convert to upper-case names
-        data[name.upper()] = val
+        cols.append(Column(name.upper(), val))
 
-    return data
+    empty = _empty_header()
+
+    blocks: list[BlockType]
+    blocks = [TableBlock(name="TABLE", header=empty, columns=cols)]
+
+    return BlockList(header=empty, blocks=blocks)
 
 
-def _pack_image(dataset: Data2D) -> tuple[DataType, HdrType]:
-    if not isinstance(dataset, (Data2D, DataIMG)):
+def _pack_image(dataset: Data2D) -> ImageBlock:
+    """Extract the needed data of a 2D dataset."""
+
+    if not isinstance(dataset, Data2D):
         raise IOErr('notimage', dataset.name)
 
-    data: DataType = {}
+    img = dataset.get_img()
 
-    # Data2D does not have a header
-    header = getattr(dataset, "header", {})
+    # Data2D does not have a header or sky/eqpos
+    #
+    hdr = getattr(dataset, "header", {})
+    sky = getattr(dataset, "sky", None)
+    eqpos = getattr(dataset, "eqpos", None)
 
-    data['pixels'] = np.asarray(dataset.get_img())
-    data['sky'] = getattr(dataset, 'sky', None)
-    data['eqpos'] = getattr(dataset, 'eqpos', None)
+    header = Header([HeaderItem(name, value)
+                     for name, value in hdr.items()])
 
-    return data, header
+    return ImageBlock("IMAGE", header=header, image=img,
+                      sky=sky, eqpos=eqpos)
 
 
 # This is to match NAXIS1 and the like, but we do not make it
@@ -826,7 +1194,7 @@ def _is_structural_keyword(key: str) -> bool:
                         ]
 
 
-def _remove_structural_keywords(header: HdrTypeArg) -> HdrType:
+def _remove_structural_items(header: Header) -> list[HeaderItem]:
     """Remove FITS keywords relating to file structure.
 
     The aim is to allow writing out a header that was taken from a
@@ -836,13 +1204,14 @@ def _remove_structural_keywords(header: HdrTypeArg) -> HdrType:
 
     Parameters
     ----------
-    header : dict[str, Any]
+    header : Header
        The input header
 
     Returns
     -------
-    nheader : dict[str, Any]
-       Header with unwanted keywords removed.
+    nheader : list of HeaderItem
+       Header with unwanted keywords returned (including those
+       set to None).
 
     Notes
     -----
@@ -852,17 +1221,33 @@ def _remove_structural_keywords(header: HdrTypeArg) -> HdrType:
 
     """
 
-    out = {}
-    for key, value in header.items():
-        if value is None or _is_structural_keyword(key):
-            continue
-
-        out[key] = value
-
-    return out
+    return [item for item in header.values
+            if not _is_structural_keyword(item.name)]
 
 
-def _pack_pha(dataset: DataPHA) -> tuple[DataType, HdrType]:
+# By making this a package-level value, users can actually change the
+# text (and in fact the name) by using code like
+#
+#    from sherpa.astro.io import CREATOR
+#    CREATOR.value = "not sherpa"
+#
+# but it does not seem worth documenting this at this time.
+#
+CREATOR = HeaderItem(name="CREATOR",
+                     value=f"sherpa {importlib.metadata.version('sherpa')}",
+                     desc="Program creating this file")
+
+
+def _add_creator(header: Header) -> None:
+    """Add a CREATOR card if not set."""
+
+    if header.get("CREATOR") is not None:
+        return
+
+    header.add(CREATOR)
+
+
+def _pack_pha(dataset: DataPHA) -> BlockList:
     """Extract FITS column and header information.
 
     Notes
@@ -942,6 +1327,9 @@ def _pack_pha(dataset: DataPHA) -> tuple[DataType, HdrType]:
         "HDUVERS": "1.2.1",
         "HDUDOC": "Arnaud et al. 1992a Legacy 2  p 65",
 
+        # The PHA file should have an EXPOSURE value, but just in case.
+        "EXPOSURE": 1.0,
+
         # Rely on the DataPHA class to have set up TELESCOP/INSTRUME/FILTER
         # based on any associated background or response. If the user has
         # changed them then so be it.
@@ -957,180 +1345,143 @@ def _pack_pha(dataset: DataPHA) -> tuple[DataType, HdrType]:
         "BACKFILE": "none"
     }
 
-    # Header Keys
-    header = dataset.header
-
     # Merge the keywords
     #
-    header = default_header | header
+    merged_header = default_header | dataset.header
+    header = _pack_header(merged_header)
+
+    if dataset.channel is not None and header.get("DETCHANS") is None:
+        header.add(HeaderItem("DETCHANS", len(dataset.channel),
+                              desc="Number of channels"))
 
     # Over-write the header value (if set). This value should really
     # exist (OGIP standards) but may not, particularly for testing.
     #
     if dataset.exposure is not None:
-        header["EXPOSURE"] = dataset.exposure
+        header.delete("EXPOSURE")
+        header.add(HeaderItem("EXPOSURE", float(dataset.exposure),
+                              unit="s", desc="Exposure time"))
 
-    def _set_keyword(label: str, value: Optional[Data1D]) -> None:
-        """Do we set the *FILE keyword?"""
+    # See #1885 for a discussion about the current behaviour.
+    #
+    if rmf is not None:
+        header.delete("RESPFILE")
+        header.add(HeaderItem("RESPFILE", rmf.name.split("/")[-1],
+                              desc="RMF"))
 
-        if value is None or value.name is None:
-            return
+    if arf is not None:
+        header.delete("ANCRFILE")
+        header.add(HeaderItem("ANCRFILE", arf.name.split("/")[-1],
+                              desc="ARF"))
+    if bkg is not None:
+        header.delete("BACKFILE")
+        header.add(HeaderItem("BACKFILE", bkg.name.split("/")[-1],
+                              desc="Background"))
 
-        # Split on / and then take the last element. Should this
-        # instead make the path relative to the file name for the PHA
-        # dataset (but the problem is that this information is not
-        # known here)?
+    # Create the columns. Special case the CHANNEL and COUNTS
+    # columns.
+    #
+    # TODO: there is currently no way to know we should write out a
+    # RATE column instead of COUNTS.
+    #
+    cols = []
+    if dataset.channel is not None:
+        channel = Column("CHANNEL", dataset.channel.astype(np.int32),
+                         desc="Channel values")
+
+        # We only set the range if there is no TLMIN/MAX1 keyword
+        # already set. It's not clear what the best thing to do is.
         #
-        toks = value.name.split("/")
-        header[label] = toks[-1]
+        # Ensure the min/max ranges are written out as integers since
+        # data.channel may contain floating point values.
+        #
+        if header.get("TLMIN1") is None:
+            channel.minval = int(dataset.channel[0])
+        if header.get("TLMAX1") is None:
+            channel.maxval = int(dataset.channel[-1])
 
-    _set_keyword("RESPFILE", rmf)
-    _set_keyword("ANCRFILE", arf)
-    _set_keyword("BACKFILE", bkg)
+        cols.append(channel)
 
-    # The column ordering for the output file is determined by the
-    # order the keys are added to the data dict.
-    #
-    # TODO: perhaps we should error out if channel or counts is not set?
-    #
-    data = {}
-    data["channel"] = getattr(dataset, "channel", None)
-    data["counts"] = getattr(dataset, "counts", None)
-    data["stat_err"] = getattr(dataset, "staterror", None)
-    data["sys_err"] = getattr(dataset, "syserror", None)
-    data["bin_lo"] = getattr(dataset, "bin_lo", None)
-    data["bin_hi"] = getattr(dataset, "bin_hi", None)
-    data["grouping"] = getattr(dataset, "grouping", None)
-    data["quality"] = getattr(dataset, "quality", None)
-
-    def convert_scale_value(colname):
-        val = getattr(dataset, colname, None)
-        uname = colname.upper()
-        if val is None:
-            header[uname] = 1.0
-            return
-
-        if np.isscalar(val):
-            header[uname] = val
+    if dataset.counts is not None:
+        if np.issubdtype(dataset.counts.dtype, np.integer):
+            countvals = dataset.counts.astype(np.int32)
+        elif np.issubdtype(dataset.counts.dtype, np.floating):
+            countvals = dataset.counts.astype(np.float32)
         else:
-            data[colname] = val
-            try:
-                del header[uname]
-            except KeyError:
-                pass
-
-    # This over-writes (or deletes) the header
-    convert_scale_value("backscal")
-    convert_scale_value("areascal")
-
-    # Replace columns where appropriate.
-    #
-    if data["sys_err"] is None or (data["sys_err"] == 0).all():
-        header["SYS_ERR"] = 0.0
-        del data["sys_err"]
-
-    if data["quality"] is None or (data["quality"] == 0).all():
-        header["QUALITY"] = 0
-        del data["quality"]
-
-    if data["grouping"] is None or (data["grouping"] == 1).all():
-        header["GROUPING"] = 0
-        del data["grouping"]
-
-    # Default to using the STAT_ERR column if set. This is only
-    # changed if the user has not set the POISSERR keyword: this
-    # keyword is likely to be set for data that has been read in from
-    # a file.
-    #
-    if "POISSERR" not in header:
-        header["POISSERR"] = data["stat_err"] is None
-
-    # We are not going to match OGIP standard if there's no data...
-    #
-    # It's also not clear how to handle the case when the channel
-    # range is larger than the channel column. At present we rely in
-    # the header being set, which is not ideal. There is also the
-    # question of whether we should change all header values if
-    # any are missing, or do it on a keyword-by-keyword basis.
-    #
-    # The assumption here is that "channel" is the first keyword
-    # added to the data dictionary.
-    #
-    if data["channel"] is not None:
-        tlmin = data["channel"][0]
-        tlmax = data["channel"][-1]
-
-        if "TLMIN1" not in header:
-            header["TLMIN1"] = tlmin
-
-        if "TLMAX1" not in header:
-            header["TLMAX1"] = tlmax
-
-        if "DETCHANS" not in header:
-            header["DETCHANS"] = tlmax - tlmin + 1
-
-    data = {k.upper(): v for (k, v) in data.items() if v is not None}
-
-    # Enforce the column types:
-    #   CHANNEL:  Int2 or Int4
-    #   COUNTS:   Int2, Int4, or Real4
-    #   GROUPING: Int2
-    #   QUALITY:  Int2
-    #
-    # Rather than try to work out whether to use Int2 or Int4
-    # just use Int4.
-    #
-    def convert(column, dtype):
-        try:
-            vals = data[column]
-        except KeyError:
-            return
-
-        # assume vals is a numpy array
-        if vals.dtype == dtype:
-            return
-
-        # Do we warn if we are doing unit conversion? For now
-        # we don't.
-        #
-        data[column] = vals.astype(dtype)
-
-    convert("CHANNEL", np.int32)
-    convert("GROUPING", np.int16)
-    convert("QUALITY", np.int16)
-
-    # COUNTS has to deal with integer or floating-point.
-    #
-    try:
-        vals = data["COUNTS"]
-        if vals is None:
-            # Is this possible?
-            raise DataErr("ogip-error", "PHA dataset",
-                          dataset.name,
+            raise DataErr("ogip-error", "PHA dataset", dataset.name,
                           "contains an unsupported COUNTS column")
 
-        if np.issubdtype(vals.dtype, np.integer):
-            cvals = vals.astype(np.int32)
-        elif np.issubdtype(vals.dtype, np.floating):
-            cvals = vals.astype(np.float32)
+        cols.append(Column("COUNTS", countvals, desc="Counts"))
+
+    if dataset.staterror is not None:
+        desc = "Statistical error"
+        if np.ptp(dataset.staterror) == 0:
+            header.add(HeaderItem("STAT_ERR", dataset.staterror[0],
+                                  desc=desc))
         else:
-            raise DataErr("ogip-error", "PHA dataset",
-                          dataset.name,
-                          "contains an unsupported COUNTS column")
+            cols.append(Column("STAT_ERR",
+                               dataset.staterror.astype(np.float32),
+                               desc=desc))
 
-        data["COUNTS"] = cvals
+    def addfield(name, value, dtype, desc):
+        """Add as keyword or array of the expected type"""
 
-    except KeyError:
-        pass
+        if value is None:
+            header.add(HeaderItem(name, dtype(0), desc=desc))
+        elif np.ptp(value) == 0:
+            header.add(HeaderItem(name, dtype(value[0]), desc=desc))
+        else:
+            cols.append(Column(name, value.astype(dtype), desc=desc))
 
-    return data, header
+    # Should this convert the value/values back into a fractional error?
+    addfield("SYS_ERR", dataset.syserror, np.float32,
+             "Fractional systematic error")
+
+    addfield("GROUPING", dataset.grouping, np.int16,
+             "Grouping (1,-1,0)")
+    addfield("QUALITY", dataset.quality, np.int16,
+             "Quality (0 for okay)")
+
+    if dataset.bin_lo is not None and dataset.bin_hi is not None:
+        cols.extend([Column("BIN_LO", dataset.bin_lo),
+                     Column("BIN_HI", dataset.bin_hi)])
+
+    def addscal(value, name, label):
+        """Add the scaling value."""
+
+        if value is None:
+            header.add(HeaderItem(name, 1.0, desc=label))
+        elif np.isscalar(value):
+            header.add(HeaderItem(name, float(value), desc=label))
+        else:
+            # Ensure we have no scalar value in the header
+            header.delete(name)
+            # OGIP standard has this as a 4-byte real column/value
+            cols.append(Column(name, value.astype(np.float32),
+                               desc=label))
+
+    # Note that CORRSCAL is set in default_header. Can it also
+    # be a vector?
+    #
+    addscal(dataset.backscal, "BACKSCAL", "Background scaling factor")
+    addscal(dataset.areascal, "AREASCAL", "Area scaling factor")
+
+    # Try to set the POISSERR keyword *IF NOT SET*, but Sherpa does
+    # not use this reliably.
+    #
+    if header.get("POISSERR") is None:
+        header.add(HeaderItem("POISSERR",
+                              dataset.staterror is None))
+
+    pheader = _empty_header()
+
+    blocks: list[BlockType]
+    blocks = [TableBlock("SPECTRUM", header=header, columns=cols)]
+
+    return BlockList(header=pheader, blocks=blocks)
 
 
-# Technically this should check for DataARF | ARF1D but that leads to
-# import loops, and it doesn't seem worth avoiding the issue with a
-# forward reference.
-#
-def _pack_arf(dataset: DataARF) -> tuple[DataType, HdrType]:
+def _pack_arf(dataset: ARFType) -> BlockList:
     """Extract FITS column and header information.
 
     There is currently no support for Type II ARF files.
@@ -1186,22 +1537,27 @@ def _pack_arf(dataset: DataARF) -> tuple[DataType, HdrType]:
 
     # Merge the keywords
     #
-    header = default_header | dataset.header
+    merged_header = default_header | dataset.header
+    aheader = _pack_header(merged_header)
 
     # The exposure time is not an OGIP-mandated value but
-    # is used by CIAO, so copy it across if set.
+    # may be used by CIAO, so copy it across if set.
     #
     if dataset.exposure is not None:
-        header["EXPOSURE"] = dataset.exposure
+        aheader.add(HeaderItem("EXPOSURE", float(dataset.exposure),
+                               desc="Total exposure time",
+                               unit="s"))
 
     # The column ordering for the output file is determined by the
     # order the keys are added to the data dict. Ensure the
     # data type meets the FITS standard (Real4).
     #
-    data = {}
-    data["ENERG_LO"] = dataset.energ_lo.astype(np.float32)
-    data["ENERG_HI"] = dataset.energ_hi.astype(np.float32)
-    data["SPECRESP"] = dataset.specresp.astype(np.float32)
+    acols = [Column("ENERG_LO", unit="keV", desc="Energy",
+                    values=dataset.energ_lo.astype(np.float32)),
+             Column("ENERG_HI", unit="keV", desc="Energy",
+                    values=dataset.energ_hi.astype(np.float32)),
+             Column("SPECRESP", unit="cm^2", desc="Effective Area",
+                    values=dataset.specresp.astype(np.float32))]
 
     # Chandra files can have BIN_LO/HI values, so copy
     # across if both set.
@@ -1209,10 +1565,15 @@ def _pack_arf(dataset: DataARF) -> tuple[DataType, HdrType]:
     blo = dataset.bin_lo
     bhi = dataset.bin_hi
     if blo is not None and bhi is not None:
-        data["BIN_LO"] = blo
-        data["BIN_HI"] = bhi
+        acols.extend([Column("BIN_LO", blo),
+                      Column("BIN_HI", bhi)])
 
-    return data, header
+    pheader = _empty_header(creator=True)
+
+    blocks: list[BlockType]
+    blocks = [SpecrespBlock(name="SPECRESP", header=aheader, columns=acols)]
+
+    return BlockList(header=pheader, blocks=blocks)
 
 
 def _find_int_dtype(rows: Sequence[Sequence[int]]) -> type:
@@ -1319,7 +1680,7 @@ def _make_int_vlf(rows: Sequence[Sequence[int]]) -> np.ndarray:
     return np.asarray(out, dtype=object)
 
 
-def _reconstruct_rmf(rmf: DataRMF) -> DataType:
+def _reconstruct_rmf(rmf: RMFType) -> DataType:
     """Recreate the structure needed to write out as a FITS file.
 
     This does not guarantee to create byte-identical data in a round
@@ -1446,11 +1807,7 @@ def _reconstruct_rmf(rmf: DataRMF) -> DataType:
             "NUMELT": numelt}
 
 
-# Technically this should check for DataRMF | RMF1D but that leads to
-# import loops, and it doesn't seem worth avoiding the issue with a
-# forward reference.
-#
-def _pack_rmf(dataset: DataRMF) -> list[tuple[DataType, HdrType]]:
+def _pack_rmf(dataset: RMFType) -> BlockList:
     """Extract FITS column and header information.
 
     Unlike the other pack routines this returns data for
@@ -1511,6 +1868,15 @@ def _pack_rmf(dataset: DataRMF) -> list[tuple[DataType, HdrType]]:
     if not isinstance(dataset, (DataRMF, RMF1D)):
         raise IOErr("data set is not a RMF")
 
+    # We convert the input into a dict (rmfdata) and then more
+    # dictionaries (both for headers and columns) before eventually
+    # creating the Block objects we return. This separates out the
+    # data manipulation - e.g. creating the correct column types and
+    # ensuring the headers contain the needed data - from creating the
+    # file contents (i.e. Block objects). The two steps could be
+    # combined but leave as is for now since this is not code that
+    # needs to be fast, but does need to be readable.
+    #
     rmfdata = _reconstruct_rmf(dataset)
 
     # The default keywords; these will be over-ridden by
@@ -1597,8 +1963,55 @@ def _pack_rmf(dataset: DataRMF) -> list[tuple[DataType, HdrType]]:
         "E_MAX": dataset.e_max.astype(np.float32)
         }
 
-    return [(matrix_data, matrix_header),
-            (ebounds_data, ebounds_header)]
+    # Now convert these into TableBlock types.
+    #
+    # Create the MATRIX block:
+    #     ENERG_LO
+    #     ENERG_HI
+    #     N_GRP
+    #     F_CHAN
+    #     N_CHAN
+    #     MATRIX
+    #
+    mheader = _pack_header(matrix_header)
+
+    mcols = [Column(name=name, values=value)
+             for name, value in matrix_data.items()
+             if name != "OFFSET"]
+
+    # Adjust the column objects.
+    #
+    for col in mcols:
+        if col.name.startswith("ENERG"):
+            col.unit = "keV"
+            continue
+
+        if col.name == "F_CHAN":
+            col.minval = matrix_data["OFFSET"]
+            continue
+
+    # Create the EBOUNDS block:
+    #     CHANNEL
+    #     E_MIN
+    #     E_MAX
+    #
+    eheader = _pack_header(ebounds_header)
+
+    ecols = [Column(name=name, values=value)
+             for name, value in ebounds_data.items()]
+
+    for col in ecols:
+        if col.name == "CHANNEL":
+            continue
+
+        col.unit = "keV"
+
+    header = _empty_header()
+    blocks: list[BlockType]
+    blocks = [MatrixBlock(name="MATRIX", header=mheader, columns=mcols),
+              EboundsBlock(name="EBOUNDS", header=eheader, columns=ecols)]
+
+    return BlockList(header=header, blocks=blocks)
 
 
 def write_arrays(filename: str,
@@ -1628,11 +2041,12 @@ def write_arrays(filename: str,
     read_arrays
 
     """
+
     backend.set_arrays(filename, args, fields, ascii=ascii, clobber=clobber)
 
 
 def write_table(filename: str,
-                dataset: Data,
+                dataset: Data1D,
                 ascii: bool = True,
                 clobber: bool = False) -> None:
     """Write out a table.
@@ -1654,9 +2068,9 @@ def write_table(filename: str,
     read_table
 
     """
+
     data = _pack_table(dataset)
-    names = list(data.keys())
-    backend.set_table_data(filename, data, names, ascii=ascii, clobber=clobber)
+    backend.set_table_data(filename, data, ascii=ascii, clobber=clobber)
 
 
 def write_image(filename: str,
@@ -1682,8 +2096,9 @@ def write_image(filename: str,
     read_image
 
     """
-    data, hdr = _pack_image(dataset)
-    backend.set_image_data(filename, data, hdr, ascii=ascii, clobber=clobber)
+
+    data = _pack_image(dataset)
+    backend.set_image_data(filename, data, ascii=ascii, clobber=clobber)
 
 
 def write_pha(filename: str,
@@ -1709,14 +2124,14 @@ def write_pha(filename: str,
     read_pha
 
     """
-    data, hdr = _pack_pha(dataset)
-    col_names = list(data.keys())
-    backend.set_pha_data(filename, data, col_names, header=hdr,
-                         ascii=ascii, clobber=clobber)
+
+    block = _pack_pha(dataset)
+    backend.set_pha_data(filename, block, ascii=ascii,
+                         clobber=clobber)
 
 
 def write_arf(filename: str,
-              dataset: DataARF,
+              dataset: ARFType,
               ascii: bool = True,
               clobber: bool = False) -> None:
     """Write out an ARF.
@@ -1742,14 +2157,14 @@ def write_arf(filename: str,
     read_arf
 
     """
-    data, hdr = _pack_arf(dataset)
-    names = list(data.keys())
-    backend.set_arf_data(filename, data, names, header=hdr,
+
+    blocks = _pack_arf(dataset)
+    backend.set_arf_data(filename, blocks,
                          ascii=ascii, clobber=clobber)
 
 
 def write_rmf(filename: str,
-              dataset: DataRMF,
+              dataset: RMFType,
               clobber: bool = False) -> None:
     """Write out a RMF.
 
@@ -1775,7 +2190,7 @@ def write_rmf(filename: str,
     backend.set_rmf_data(filename, blocks, clobber=clobber)
 
 
-def pack_table(dataset: Data) -> object:
+def pack_table(dataset: Data1D) -> object:
     """Convert a Sherpa data object into an I/O item (tabular).
 
     Parameters
@@ -1799,9 +2214,9 @@ def pack_table(dataset: Data) -> object:
     >>> tbl = pack_table(d)
 
     """
+
     data = _pack_table(dataset)
-    names = list(data.keys())
-    return backend.pack_table_data(data, names)
+    return backend.pack_table_data(data)
 
 
 def pack_image(dataset: Data2D) -> Any:
@@ -1831,8 +2246,9 @@ def pack_image(dataset: Data2D) -> Any:
     >>> img = pack_image(d)
 
     """
-    data, hdr = _pack_image(dataset)
-    return backend.pack_image_data(data, hdr)
+
+    data = _pack_image(dataset)
+    return backend.pack_image_data(data)
 
 
 def pack_pha(dataset: DataPHA) -> Any:
@@ -1853,9 +2269,9 @@ def pack_pha(dataset: DataPHA) -> Any:
     pack_image, pack_table
 
     """
-    data, hdr = _pack_pha(dataset)
-    col_names = list(data.keys())
-    return backend.pack_pha_data(data, col_names, header=hdr)
+
+    block = _pack_pha(dataset)
+    return backend.pack_pha_data(block)
 
 
 def read_table_blocks(arg,
@@ -1884,4 +2300,33 @@ def read_table_blocks(arg,
 
     """
 
-    return backend.read_table_blocks(arg, make_copy=make_copy)
+    def getkeys(hdr):
+        if hdr is None:
+            return {}
+
+        return {key.name: key.value for key in hdr.values}
+
+    def getcols(cols):
+        if cols is None:
+            return {}
+
+        return {col.name: col.values for col in cols}
+
+    # Desconstruct the data. It is not clear what to do if the file
+    # contains any image blocks, so we explicitly ignore them at this
+    # time (i.e. there is currently no requirement on the
+    # backend.read_table_blocks call on what to do in this situation).
+    #
+    blist, filename = backend.read_table_blocks(arg, make_copy=make_copy)
+    hdr = {1: getkeys(blist.header)}
+
+    cols: dict[int, dict[str, np.ndarray]]
+    cols = {1: {}}
+    for idx, block in enumerate(blist.blocks, 2):
+        if isinstance(block, ImageBlock):
+            continue
+
+        hdr[idx] = getkeys(block.header)
+        cols[idx] = getcols(block.columns)
+
+    return filename, cols, hdr

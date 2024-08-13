@@ -266,7 +266,7 @@ def test_axs_ordering_1880(tmp_path):
 
 
 @requires_fits
-def test_read_image():
+def test_read_image_sent_invalid_argument():
     """Check we get a failure.
 
     This is a regression test.
@@ -276,6 +276,31 @@ def test_read_image():
     with pytest.raises(IOErr,
                        match="^'True' is not a filename or "):
         io.read_image(True)
+
+
+@requires_fits
+@requires_data
+def test_read_image_sent_a_rmf(make_data_path):
+    """Check we get a failure.
+
+    This is a regression test.
+
+    """
+
+    infile = make_data_path("3c273.rmf")
+
+    # The error message depends on the backend
+    if backend_is("crates"):
+        match = "/3c273.rmf' is not a filename or IMAGECrate obj"
+
+    elif backend_is("pyfits"):
+        match = "unable to read required image "
+
+    else:
+        assert False, f"unknown backend: {io.backend}"
+
+    with pytest.raises(IOErr, match=match):
+        io.read_image(infile)
 
 
 @requires_fits
@@ -328,3 +353,37 @@ def test_read_image_object(make_data_path):
     except ImportError:
         assert img.sky is None
         assert img.eqpos is None
+
+
+@requires_fits
+@requires_data
+def test_read_table_blocks_sent_image(make_data_path):
+    """What happens here? This is a regression test."""
+
+    infile = make_data_path("img.fits")
+    filename, cols, hdr = io.read_table_blocks(infile)
+
+    # There should be no columns and a minimal header
+    assert filename.endswith("/img.fits")
+    assert len(cols) == 1
+    assert len(hdr) == 1
+
+    assert list(cols.keys()) == [1]
+    assert list(hdr.keys()) == [1]
+
+    # The header is empty for crates, and has a few items with pyfits
+    assert len(cols[1]) == 0
+
+    if backend_is("crates"):
+        assert len(hdr[1]) == 0
+
+    elif backend_is("pyfits"):
+        # This is not all the keywords
+        assert hdr[1]["SIMPLE"]
+        assert hdr[1]["BITPIX"] == -32
+        assert hdr[1]["NAXIS"] == 2
+        assert hdr[1]["NAXIS1"] == 100
+        assert hdr[1]["NAXIS2"] == 100
+
+    else:
+        assert False, f"unknown backend: {io.backend}"
