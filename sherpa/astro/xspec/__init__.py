@@ -172,7 +172,7 @@ def get_xsabund(element: Optional[Union[str, int]] = None,
 
     See Also
     --------
-    get_xsabundances, set_xsabund, set_xsabundances
+    get_xsabund_doc, get_xsabundances, set_xsabund, set_xsabundances
 
     Examples
     --------
@@ -265,36 +265,50 @@ def get_xsabundances(table: Optional[str] = None
     return out
 
 
-def get_xsabund_doc(name: Optional[str] = None) -> str:
-    """Return the documentation for the abundance table.
+def get_xsabund_doc(table: str | None = None) -> str:
+    """Return the description of the X-Spec abundance table.
+
+    .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    name : str or None, optional
-        If not set, use the current abundance table
+    table : str, optional
+       The abundance table to use. It accepts the same string labels
+       as `set_xsabund`. If not given the table from `get_xsabund` is
+       used.
 
     Returns
     -------
-    doc : str
-        The documentation for the table
+    desc : str
+       The description of the table.
 
     See Also
     --------
-    get_xsabund
+    get_xsabund, set_xsabund
 
     Examples
     --------
 
-    >>> get_xsabund_doc("angr")
+    Return the description of the current abundance setting, which in
+    this case is 'angr', the default value for X-Spec:
+
+    >>> get_xsabund_doc()
     'Anders E. & Grevesse N. Geochimica et Cosmochimica Acta 53, 197 (1989)'
+
+    Return the description for the 'lodd' and 'grsa' tables:
+
+    >>> get_xsabund_doc('lodd')
+    'Lodders, K. ApJ 591, 1220 (2003)'
+    >>> get_xsabund_doc('grsa')
+    'Grevesse, N. & Sauval, A. J. Space Science Reviews 85, 161 (1998)'
 
     """
 
-    aname = get_xsabund() if name is None else name
+    aname = _xspec.get_xsabund_table() if name is None else name
 
     # Remove any unwanted space characters.
     #
-    return _xspec.get_xsabund_doc(aname).strip()
+    return _xspec.get_xsabund_doc(etable).strip()
 
 
 def set_xsabundances(abundances: dict[str, float]) -> None:

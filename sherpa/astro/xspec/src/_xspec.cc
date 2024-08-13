@@ -219,8 +219,8 @@ static PyObject* get_abund_doc( PyObject *self, PyObject *args )
     return NULL;
 
   std::string doc = FunctionUtility::abundDoc(std::string(name));
-
   return Py_BuildValue( (char*)"s", doc.c_str() );
+
 }
 
 
