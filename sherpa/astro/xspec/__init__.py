@@ -143,7 +143,7 @@ def get_xsabund(element: Optional[Union[str, int]] = None,
                 ) -> Union[str, float]:
     """Return the X-Spec abundance setting or elemental abundance.
 
-    .. versionchanged 4.17.0::
+    .. versionchanged:: 4.17.0
        The element can now be specified via it's atomic number and the
        abundance table to search can be given.
 
