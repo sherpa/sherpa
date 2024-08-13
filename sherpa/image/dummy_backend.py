@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2009,2010,2016  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2009, 2010, 2016, 2024
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,44 +18,117 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+"""Used when DS9 is not available."""
+
 imager = None
+"""The DS9 instance (if set)."""
 
 
-def close(*args, **kwargs):
+def close():
+    """Ensure the DS9 instance is closed."""
     pass
 
 
-def delete_frames(*args, **kwargs):
+def delete_frames():
+    """Remove all frames and create a new frame."""
     pass
 
 
-def get_region(*args, **kwargs):
+def get_region(coord):
+    """Return the current region as a string.
+
+    Parameters
+    ----------
+    coord : str
+       The coordinate setting to use. It may be empty.
+
+    Returns
+    -------
+    region : str
+       The current region.
+
+    """
     pass
 
 
-def image(*args, **kwargs):
+def image(arr, newframe=False, tile=False):
+    """Display the data as an image in DS9.
+
+    Parameters
+    ----------
+    arr : ndarray
+       The pixel data. It is required to be 2D (Y, X) or 3D (Z, Y, X)
+       ordering.
+    newframe : bool, optional
+       Should the image be displayed in a new frame?
+    tile : bool, optional
+       Should DS9 tiling mode be selected?
+
+    """
+
+
+def wcs(keys):
+    """Send the WCS data to DS9 for the current image.
+
+    Parameters
+    ----------
+    keys : triple
+       The (eqpos, sky, name) values, where eqpos and sky are None or
+       a WCS object. The name field is a string used as the OBJECT
+       name.
+
+    """
+
+
+def open():
+    """Start the DS9 instance (if not already started)."""
     pass
 
 
-def _set_wcs(*args, **kwargs):
+def set_region(reg, coord):
+    """Send the region to DS9.
+
+    Parameters
+    ----------
+    reg : str or filename
+       The file containing the region or a string containing regions
+       separated by semi-colon characters.
+
+    """
     pass
 
 
-def wcs(*args, **kwargs):
+def xpaget(arg):
+    """Send a XPA query to DS9.
+
+    Parameter
+    ---------
+    arg : str
+       The XPA query.
+
+    Returns
+    -------
+    result
+       The response from DS9.
+
+    """
     pass
 
 
-def open(*args, **kwargs):
-    pass
+def xpaset(arg, data=None):
+    """Send an XPA command to DS9.
 
+    Parameter
+    ---------
+    arg : str
+       The XPA command.
+    data : optional
+       Any data the XPA command requires.
 
-def set_region(*args, **kwargs):
-    pass
+    Returns
+    -------
+    result
+       The response from DS9.
 
-
-def xpaget(*args, **kwargs):
-    pass
-
-
-def xpaset(*args, **kwargs):
+    """
     pass
