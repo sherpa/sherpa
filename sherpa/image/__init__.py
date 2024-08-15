@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2016, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2016, 2021, 2024
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -27,7 +28,7 @@ References
 
 ..  [DS9] SAOImageDS9, "An image display and visualization tool for astronomical data", https://ds9.si.edu/
 
-..  [XPA] "The XPA Messaging System", https://hea-www.harvard.edu/saord/xpa/
+..  [XPA] "The XPA Messaging System", https://github.com/ericmandel/xpa
 
 """
 

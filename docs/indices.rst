@@ -128,8 +128,7 @@ Glossary
        row on a spectrograph and the corresponding wavelength of light.
 
    XPA
-       The `XPA messaging system
-       <https://hea-www.harvard.edu/saord/xpa/>`_
+       The `XPA messaging system <https://github.com/ericmandel/xpa>`_
        is used by :term:`DS9` to communicate
        with external programs. Sherpa uses this functionality to
        control DS9 - by sending it images to display and retrieving
