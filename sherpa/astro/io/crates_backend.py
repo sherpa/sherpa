@@ -66,14 +66,12 @@ CrateType = Union[TABLECrate, IMAGECrate]
 DatasetType = Union[str, CrateDataset]
 
 
-def open_crate(filename: str,
-               mode: str = "r") -> CrateType:
+def open_crate(filename: str) -> CrateType:
     """Get the "most interesting" block of the file.
 
     Parameters
     ----------
     filename : str
-    mode : str
 
     Returns
     -------
@@ -87,7 +85,7 @@ def open_crate(filename: str,
 
     """
     try:
-        dataset = CrateDataset(filename, mode=mode)
+        dataset = CrateDataset(filename, mode="r")
     except OSError as oe:
         raise IOErr('openfailed', str(oe)) from oe
 
@@ -309,7 +307,7 @@ def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
     elif isinstance(arg, str):
         filename = arg
         try:
-            dataset = CrateDataset(arg)
+            dataset = CrateDataset(arg, mode="r")
         except OSError as oe:
             raise IOErr('openfailed', str(oe)) from oe
 
