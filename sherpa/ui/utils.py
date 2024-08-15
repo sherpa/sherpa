@@ -13822,7 +13822,7 @@ class Session(NoNewAttributesAfterInit):
 
     def plot_data(self, id=None, replot=False, overplot=False,
                   clearwindow=True, **kwargs):
-        """Plot the data values.
+        r"""Plot the data values.
 
         Parameters
         ----------
