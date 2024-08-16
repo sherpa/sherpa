@@ -7089,7 +7089,7 @@ class Session(NoNewAttributesAfterInit):
         >>> get_model_pars(mdl)
         ['fwhm', 'xpos', 'ypos', 'ellip', 'theta', 'ampl', 'c0']
 
-        If a model expression contaoins linked parameters that are not
+        If a model expression contains linked parameters that are not
         part of the model expression then they will also be included
         (in this case both the const2d and scale1d parameters are
         named 'c0', hence the duplication):
