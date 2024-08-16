@@ -986,8 +986,13 @@ class DataARF(DataOgipResponse):
     def get_dep(self, filter=False):
         return self._rsp
 
-    def get_ylabel(self) -> str:
+    def get_ylabel(self, yfunc=None) -> str:
         """The label for the dependent axis.
+
+        Parameters
+        ----------
+        yfunc
+           Unused.
 
         See Also
         --------
@@ -4150,7 +4155,7 @@ It is an integer or string.
         #
         return self._from_channel(self.channel, group=False, response_id=response_id)
 
-    def get_xlabel(self) -> None:
+    def get_xlabel(self) -> str:
         """The label for the independent axis.
 
         If set_xlabel has been called then the label used in that call
@@ -4347,8 +4352,13 @@ It is an integer or string.
         dlam = hc / elo - hc / ehi
         return dlam / 2
 
-    def get_ylabel(self):
+    def get_ylabel(self, yfunc=None) -> str:
         """The label for the dependent axis.
+
+        Parameters
+        ----------
+        yfunc
+           Unused.
 
         See Also
         --------
@@ -5468,7 +5478,7 @@ class DataIMG(Data2D):
 
         return (axis0, axis1)
 
-    def get_x0label(self) -> None:
+    def get_x0label(self) -> str:
         """Return the label for the first independent axis.
 
         If set_x0label has been called then the label used in that call
