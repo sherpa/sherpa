@@ -135,9 +135,7 @@ Glossary
        any regions a used may have created on the image data.
        The command-line tools used for this commiunication may be
        available via the package manager for a particular
-       operating system, such as
-       `xpa-tools for Ubuntu
-       <https://packages.ubuntu.com/xenial/xpa-tools>`_,
+       operating system, such as xpa-tools for Ubuntu,
        or they can be
        `built from source <https://github.com/ericmandel/xpa>`_.
 
