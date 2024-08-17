@@ -1742,10 +1742,19 @@ def test_model_can_send_spectrumnumber_indiv(clsname):
 
     from sherpa.astro import xspec
 
-    mdl = getattr(xspec, clsname)("tmp")
+    mdl1 = getattr(xspec, clsname)("tmp1")
+    mdl2 = getattr(xspec, clsname)("tmp2")
     egrid = np.arange(0.3, 0.4, 0.01)
-    # This fails
-    mdl(egrid[:-1], egrid[1:], spectrumNumber=2)
+
+    # Just check the answers are the same, so this doesn't really
+    # check that spectrumNumber is being used, instead it just checks
+    # that code won't fall over. We use different components to make
+    # sure we aren't just using the cache, rather than re-evaluating
+    # the model.
+    #
+    expected = mdl1(egrid[:-1], egrid[1:])
+    got = mdl2(egrid[:-1], egrid[1:], spectrumNumber=2)
+    assert got == pytest.approx(got)
 
 
 @requires_xspec
@@ -1757,15 +1766,24 @@ def test_model_can_send_spectrumnumber_indiv_con():
 
     from sherpa.astro import xspec
 
-    base = xspec.XSpowerlaw("tmp")
-    con = xspec.XScflux("tmp2")
-    mdl = con(base)
+    base1 = xspec.XSpowerlaw("tmp")
+    con1 = xspec.XScflux("tmp2")
+    mdl1 = con1(base1)
+
+    base2 = xspec.XSpowerlaw("tmp3")
+    con2 = xspec.XScflux("tmp4")
+    mdl2 = con2(base2)
+
     egrid = np.arange(0.3, 0.4, 0.01)
 
     # Does this send the argument to the wrapped model? There's no way
-    # to know when calling the actual XSPEC models.
+    # to know when calling the actual XSPEC models (without manually
+    # creating models), so this is just a check that we can add a
+    # spectrumNumber argument.
     #
-    mdl(egrid[:-1], egrid[1:], spectrumNumber=2)
+    expected = mdl1(egrid[:-1], egrid[1:])
+    got = mdl2(egrid[:-1], egrid[1:], spectrumNumber=2)
+    assert got == pytest.approx(expected)
 
 
 @requires_xspec
@@ -1787,6 +1805,9 @@ def test_model_can_send_spectrumnumber_combine():
     # We use the first parameter to identify what model is being
     # called (relying on the test to change the index value of the
     # model components).
+    #
+    # We use a non-standard default value for spectrumNumber to see
+    # what value we end up with.
     #
     args = []
     def test(cls, pars, lo, hi, spectrumNumber=5):
@@ -1813,10 +1834,16 @@ def test_model_can_send_spectrumnumber_combine():
             self.con = Parameter(name, "con", 1, 0, 100)
             super().__init__(name, (self.index, self.con))
 
+    # pick a spectrum number that is not the default (1) and
+    # not the value used by test as its default (5). We also
+    # pick different values for the two models.
+    #
     m1 = TestSpectrumNumber("x1")
+    m1.spectrum = 2
     m1.index = 1
     m1.norm = 0.2
     m2 = TestSpectrumNumber("2")
+    m2.spectrum = 3
     m2.index = 2
     m2.norm = 0.4
 
@@ -1838,7 +1865,7 @@ def test_model_can_send_spectrumnumber_combine():
     assert y1 == pytest.approx([0.2, 0.2])
     assert len(args) == 1
     print(args)
-    assert args[0][0] == 5
+    assert args[0][0] == 2
     assert args[0][1] == pytest.approx(1)
 
     args.clear()
@@ -1871,15 +1898,16 @@ def test_model_can_send_spectrumnumber_combine():
     ycon = cmdl(elo, ehi, spectrumNumber=6)
     assert ycon == pytest.approx([10.6, 10.6])
 
-    # NOTE: these are not the answers we want, but test them so we know
-    #       when they change.
+    # The model evaluation will use the spectrum attributes for the
+    # models (so that's 2 and 3) and then we do not send in a value to
+    # the convolution model so that uses the default of 9.
     #
     assert len(args) == 3
-    assert args[0][0] == 5  # should be 6
+    assert args[0][0] == 2
     assert args[0][1] == pytest.approx(1)
-    assert args[1][0] == 5  # should be 6
+    assert args[1][0] == 3
     assert args[1][1] == pytest.approx(2)
-    assert args[2][0] == 9  # should be 6
+    assert args[2][0] == 9
     assert args[2][1] == "con"
 
 
@@ -1907,7 +1935,11 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
             self.norm = Parameter(name, "norm", 1, 0, 1)
             super().__init__(name, (self.index, self.norm))
 
+    # pick a spectrum number that is not the default (1) and
+    # not the value used by test as its default (5).
+    #
     m1 = TestSpectrumNumber2("m1")
+    m1.spectrum = 2
     m1.norm = 0.5
     m1.index = 2
 
@@ -1928,7 +1960,7 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
     assert len(args) == 0
     y12 = comb12(elo, ehi)
     assert len(args) == 1
-    assert args[0][0] == 5
+    assert args[0][0] == 2
     assert args[0][1] == pytest.approx(2)
 
     args.clear()

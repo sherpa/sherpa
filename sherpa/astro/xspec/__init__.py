@@ -31,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.14.0b'
+   '12.14.0k'
 
 Initializing XSPEC
 ------------------
@@ -1643,12 +1643,52 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
             attr = getattr(self, par.name)
             assert attr.name == par.name, (par.name, name)
 
+        self._spectrum = 1
         super().__init__(name, pars)
 
+    @property
+    def spectrum(self) -> int:
+        """What value is used for the ifl/spectrum argument?
+
+        This is only relevant for models that use XFLT keywords (that
+        is, the model is marked as being evaluated for each spectrum
+        in the model.dat file). The value must be a positive integer,
+        and there is to see whether any XFLT keyords have been set up
+        for the spectrum number.
+
+        .. versionadded:: 4.17.0
+
+        """
+
+        return self._spectrum
+
+    @spectrum.setter
+    def spectrum(self, val: int) -> None:
+        try:
+            ival = int(val)
+        except ValueError:
+            raise ValueError(f"spectrum must be an integer, sent '{val}'") from None
+
+        if ival < 1:
+            raise ValueError(f"spectrum must be > 0, sent {ival}")
+
+        if self._spectrum == ival:
+            return
+
+        # Clear the cache as we now it is likely to be invalid with
+        # the change in the spectrum.
+        #
+        self.cache_clear()
+        self._spectrum = ival
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
         """Calculate the model given the parameters and grid.
+
+        .. versionadded:: 4.17.0
+           The spectrum attribute is now sent to the model.  This is
+           to allow support for models which use XFLT values (those
+           that require model evaluation per spectrum).
 
         Notes
         -----
@@ -1659,6 +1699,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         it complicates the handling of the regrid method.
 
         Keyword arguments are ignored.
+
         """
 
         nargs = 1 + len(args)
@@ -1666,6 +1707,17 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
             emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
             warnings.warn(emsg, FutureWarning)
             # raise TypeError(emsg)
+
+        # Add in the spectrum keyword IFF it is not present. Note that
+        # out API labels the argument as spectrumNumber and the XSPEC
+        # documentation has used ifl and spectrum for it. It is not
+        # clear whether this makes sense - i.e. should we always set
+        # it, even if the caller may have added it - but we need more
+        # experience with how the XFLT support works before deciding
+        # on the best approach.
+        #
+        if "spectrumNumber" not in kwargs:
+            kwargs["spectrumNumber"] = self.spectrum
 
         # Ensure output is finite (Keith Arnaud mentioned that XSPEC
         # does this as a check). This is done at this level (Python)
