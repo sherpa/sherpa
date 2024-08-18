@@ -1800,10 +1800,10 @@ def get_error_estimates(x, sorted=False):
 
 
 def multinormal_pdf(x, mu, sigma):
-    """The PDF of a multivariate-normal.
+    """The PDF of a multivariate-normal distribution.
 
     Returns the probability density function (PDF) of a
-    multivariate normal [1]_.
+    multivariate normal [1]_ distribution.
 
     Parameters
     ----------
@@ -1821,7 +1821,7 @@ def multinormal_pdf(x, mu, sigma):
     References
     ----------
 
-    .. [1] http://en.wikipedia.org/wiki/Multivariate_normal_distribution
+    .. [1] https://en.wikipedia.org/wiki/Multivariate_normal_distribution
 
     """
     x = np.asarray(x)
@@ -1853,10 +1853,10 @@ def multinormal_pdf(x, mu, sigma):
 
 
 def multit_pdf(x, mu, sigma, dof):
-    """The PDF of a multivariate student-t.
+    """The PDF of a multivariate student-t distribution.
 
     Returns the probability density function (PDF) of a
-    multivariate student-t distribution [1]_.
+    multivariate student-t [1]_ distribution.
 
     Parameters
     ----------
@@ -1875,7 +1875,7 @@ def multit_pdf(x, mu, sigma, dof):
     References
     ----------
 
-    .. [1] http://en.wikipedia.org/wiki/Multivariate_Student_distribution
+    .. [1] https://en.wikipedia.org/wiki/Multivariate_Student_distribution
 
     """
     n = float(dof)
