@@ -111,6 +111,7 @@ import warnings
 
 import numpy as np
 
+from sherpa.astro.data import DataPHA
 from sherpa.astro.utils import get_xspec_norm, get_xspec_position
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
@@ -683,7 +684,15 @@ def set_xsxsect(name: str) -> None:
 # the session.  Only store if setting was successful.
 # See:
 # https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
+#
 modelstrings = {}
+
+# Store XFLT settings. Store per spectrum number. It would be nice to
+# use a distinct type for the "spectrum number" (i.e. not just an
+# integer), but leave that for later, after we have experience in
+# using these values.
+#
+xfltkeys: dict[int, dict[str, float]] = {}
 
 # Store any path changes
 xspecpaths = {}
@@ -784,6 +793,231 @@ def set_xsxset(name: str, value: str) -> None:
         modelstrings[name] = get_xsxset(name)
 
 
+# Handle XFLT keywords. The idea is that the processing is done
+# in this module, with the access via _xspec being limited to
+#
+# - clear database
+# - get all the values for a spectrum
+# - set all the values for a spectrum
+#
+# This is experimental as we learn how well we can use the
+# functionality in Sherpa. This is one reason why they
+# are not added to __all__.
+#
+def clear_xsxflt(spectrum: Optional[int] = None) -> None:
+    """Remove all the XFLT keywords for all or a single spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    spectrum : int or None, Optional
+       If None then delete all the XFLT keywords, otherwise just
+       those for the given spectrum.
+
+    See Also
+    --------
+    get_xsxflt, set_xsxflt
+
+    Notes
+    -----
+    The routine can be called even if no values have been set.
+
+    Examples
+    --------
+
+    >>> clear_xsflt()
+
+    >>> clear_xsxflt(1)
+
+    """
+
+    if spectrum is None:
+        xfltkeys.clear()
+        _xspec.clear_xflt()
+        return
+
+    # Clear out the requested spectrum.
+    #
+    set_xsxflt(spectrum, {})
+
+
+def get_xsxflt(spectrum: int) -> dict[str, float]:
+    """Return the XFLT values stored for a spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    spectrum : int
+        The spectrum number (as used by XSPEC).
+
+    Returns
+    -------
+    xflt : dict
+        The current keywords (strings) and values (numbers) associated
+        with the current spectrumNumber. It may be empty.
+
+    See Also
+    --------
+    clear_xsxflt, set_xsxflt
+
+    Examples
+    --------
+
+    >>> get_xsxflt(1)
+    {}
+
+    >>> set_xsxflt(2, {"inner": 0.2, "outer": 2, "width": 360})
+    >>> get_xsxflt(2)
+    {'inner': 0.2, 'outer': 2.0, 'width': 360.0}
+
+    """
+
+    # We could check xfltkeys but pass through to XSPEC to check
+    # instead, in case somehow the copy here is out of date.
+    #
+    return _xspec.get_xflt(spectrum)
+
+
+def set_xsxflt(spectrum: int, xflt: dict[str, float]) -> None:
+    """Set the XFLT values stored for a spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    spectrum : int
+        The spectrum number (as used by XSPEC).
+    xflt : dict
+        The keywords (strings) and values (numbers) for the current
+        spectrum. These values over-ride any existing values. Using an
+        empty dictionary will remove the settings for this spectrum.
+
+    See Also
+    --------
+    clear_xsxflt, get_xsxflt, load_xsxflt
+
+    Notes
+    -----
+    There is no check that the spectrum value matches any existing
+    model expression.
+
+    Examples
+    --------
+
+    >>> set_xsxflt(2, {"inner": 0.2, "outer": 2})
+    >>> set_xsxflt(2, {"width": 360})
+    >>> get_xsxflt(2)
+    {'width': 360.0}
+
+    """
+
+    _xspec.set_xflt(spectrum, xflt)
+
+    if len(xflt) == 0:
+        # Remove any stored data for this spectrum, if set.
+        #
+        xfltkeys.pop(spectrum, {})
+
+    else:
+        # We store the spectrum values that have data, so that we
+        # can query the database when it comes to calling get_xsstate.
+        #
+        xfltkeys[spectrum] = xflt
+
+
+def load_xsxflt(data: DataPHA,
+                spectrum: int
+                ) -> None:
+    """Load the XFLT keywords from the header of the PHA.
+
+    This takes all the XFLTnnnn keywords from the header of
+    the PHA and associates them with the given spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    data : DataPHA
+       The PHA datset with XFLT0001, ... keywords.
+    spectrum : int
+       The spectrum number, which is expected to be 1 or larger.
+       This will over-write any existing data for the spectrum.
+
+    See Also
+    --------
+    clear_xsxflt, get_xsxflt, set_xsxflt
+
+    Notes
+    -----
+    This does not support reading in values from columns, just from
+    header keywords.
+
+    Examples
+    --------
+
+    >>> load_xsxflt(pha, 1)
+
+    """
+
+    # Process XFLXT keywords from the PHA header.
+    #
+    i = 0
+    store = {}
+    while True:
+        i += 1
+        key = f"XFLT{i:04d}"
+        try:
+            vals = data.header[key]
+        except KeyError:
+            # key does not exist so stop the loop.
+            #
+            break
+
+        # The value can be
+        #     floating-point
+        #     string-name:floating-point
+        # and anything else is skipped (with a note to the caller)
+        #
+        elems = vals.split(":")
+        if len(elems) == 1:
+            # This is how XSPEC seems to store it
+            keyname = f"key{i}"
+            value = elems[0]
+        elif len(elems) == 2:
+            keyname = elems[0]
+            value = elems[1]
+        else:
+            # Note that we do not end the processing here.
+            #
+            info("Unable to recognize header keyword: %s = '%s'",
+                 key, vals)
+            continue
+
+        try:
+            fval = float(value)
+        except ValueError as ve:
+            # I think XSPEC just converts fval to 0 in this case.
+            #
+            warning("Skipping header keyword: %s = '%s'", key, vals)
+            continue
+
+        store[keyname] = fval
+
+    set_xsxflt(spectrum, store)
+    if len(store) == 0:
+        return
+
+    # Display the newly-added keys.
+    #
+    info("XSPEC filtering keys:")
+    for keyname, fval in store:
+        info("  %s = %g", keyname, fval)
+
+
+# Path handling
+#
 def get_xspath_manager() -> str:
     """Return the path to the files describing the XSPEC models.
 
@@ -874,18 +1108,23 @@ def set_xspath_manager(path: str) -> None:
 def get_xsstate() -> dict[str, Any]:
     """Return the state of the XSPEC module.
 
+    .. versionchanged:: 4.17.0
+       Added support for XFLT keywords.
+
     Returns
     -------
     state : dict
         The current settings for the XSPEC module, including but not
-        limited to: the abundance and cross-section settings, parameters
-        for the cosmological model, any XSET parameters that have been
-        set, and changes to the paths used by the model library.
+        limited to: the abundance and cross-section settings,
+        parameters for the cosmological model, any XSET and XFLT
+        parameters that have been set, and changes to the paths used
+        by the model library.
 
     See Also
     --------
-    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
-    set_xsstate
+    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxflt,
+    get_xsxset, set_xsstate
+
     """
 
     # Do not return the internal dictionary but a copy of it.
@@ -894,30 +1133,35 @@ def get_xsstate() -> dict[str, Any]:
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
             "modelstrings": modelstrings.copy(),
+            "xflt": xfltkeys.copy(),
             "paths": xspecpaths.copy()}
 
 
 def set_xsstate(state: dict[str, Any]) -> None:
     """Restore the state of the XSPEC module.
 
+    .. versionchanged:: 4.17.0
+       Added support for XFLT keywords.
+
     Parameters
     ----------
     state : dict
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
-        keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'.
+        keys: 'abund', 'chatter', 'cosmo', 'xflt', 'xsect',
+        'modelstrings', and 'paths'.
 
     See Also
     --------
-    get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxsect,
-    set_xsxset
+    get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxflt,
+    set_xsxsect, set_xsxset
 
     Notes
     -----
     The state of the XSPEC module will only be changed if all
     the required keys in the dictionary are present. All keys apart
     from 'paths' are required.
+
     """
 
     if type(state) == dict and \
@@ -933,8 +1177,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         set_xschatter(state["chatter"])
         set_xscosmo(h0, q0, l0)
         set_xsxsect(state["xsect"])
-        for name in state["modelstrings"].keys():
-            set_xsxset(name, state["modelstrings"][name])
+        for name, value in state["modelstrings"].items():
+            set_xsxset(name, value)
 
         # This is optional to support re-loading state information
         # from a version of XSPEC which did not provide the path
@@ -947,6 +1191,14 @@ def set_xsstate(state: dict[str, Any]) -> None:
 
         if managerpath is not None:
             set_xspath_manager(managerpath)
+
+    # As XFLT support was only added in 4.17.0 we treat this as
+    # optional.
+    #
+    if type(state) == dict and 'xflt' in state:
+        clear_xsxflt()
+        for spectrum, vals in state['xflt'].items():
+            set_xsxflt(spectrum, vals)
 
 
 def read_xstable_model(modelname, filename, etable=False):
