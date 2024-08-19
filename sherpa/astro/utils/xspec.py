@@ -875,6 +875,10 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     # caching. This needs to be done after the parent class has been
     # initialized.
     #
+    # Note that this may not be necessary anymore, but leave in for
+    # now. Users can manually change the attribute value to try out
+    # the cache support.
+    #
     if nflags > 1 and mdl.flags[1] == 1:
         out += f"{t2}self._use_caching = False\n"
 

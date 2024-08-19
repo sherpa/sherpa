@@ -676,6 +676,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(C_sedov, 6),                // XSsedov
   XSPECMODELFCT_C_NORM(C_sirf, 10),                // XSsirf
   XSPECMODELFCT_C_NORM(slimbbmodel, 10),           // XSslimbh
+  XSPECMODELFCT_C_NORM(xsmaug, 23),                // XSsmaug [per spectrum]
   XSPECMODELFCT_C_NORM(C_snapec, 7),               // XSsnapec
   XSPECMODELFCT_NORM(srcut, 3),                    // XSsrcut
   XSPECMODELFCT_NORM(sresc, 3),                    // XSsresc
@@ -765,6 +766,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(xsabsp, 2),                        // XSpcfabs
   XSPECMODELFCT(xsphab, 1),                        // XSphabs
   XSPECMODELFCT(xsplab, 2),                        // XSplabs
+#ifdef XSPEC_12_12_1
+  XSPECMODELFCT_C(C_polconst, 2),                  // XSpolconst [per spectrum]
+  XSPECMODELFCT_C(C_pollin, 4),                    // XSpollin [per spectrum]
+  XSPECMODELFCT_C(C_polpow, 4),                    // XSpolpow [per spectrum]
+#endif
   XSPECMODELFCT_C(C_xspwab, 3),                    // XSpwab
   XSPECMODELFCT(xscred, 1),                        // XSredden
   XSPECMODELFCT(xssmdg, 4),                        // XSsmedge

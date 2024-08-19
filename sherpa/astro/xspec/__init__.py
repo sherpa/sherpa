@@ -56,16 +56,37 @@ Supported models
 ----------------
 
 The additive [2]_, multiplicative [3]_, and convolution [4]_ models
-from the XSPEC model library are supported, except for the `polconst`,
-`pollin`, `polpow`, and `smaug` models [5]_, since they need
-information obtained from the XFLT keywords in the PHA file.
+from the XSPEC model library are supported.
+
+As of 4.17.0, we now also include *experimental* support for the
+`polconst` [5]_, `pollin` [6]_, `polpow` [7]_, and `smaug` [8]_
+models, which require use of the XFLT keywords from the PHA file.
+
+Setting up XFLT keywords
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+New in 4.17.0 is support for the XSpec filtering keywords, that is the
+header keywords XFLT0001 and upwards. Values are either a number or a
+string of the form "keyname: value" (the latter is the preferred
+form). The keyname values depend on the model; for example the
+`XSsmaug` model uses "inner", "outer", and "width" names whereas the
+`XSpolconst`, `XSpollin`, and `XSpolpow` models use the name "Stokes".
+
+Using these values is currenty much-more involved than it is in XSPEC,
+as users need to
+
+ - decide what "spectrum number" to use for each data set
+ - use `load_xsxflt` to load in the XFLT keywords for this "spectrum
+   number"
+ - set the spectrum attribute of the relevant models to this
+   "spectrum number" value.
 
 XSPEC version
 -------------
 
 The intention is to keep the model parameters up to date with the
 highest-supported version of XSPEC. However, there is no way to
-know from the XSPEC API [6]_ whether these parameter values will
+know from the XSPEC API [9]_ whether these parameter values will
 work correctly with the installed XSPEC version, such as when using
 an older version of XSPEC.
 
@@ -95,9 +116,15 @@ References
 
 .. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Convolution.html
 
-.. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
+.. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelPolconst.html
 
-.. [6] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
+.. [6] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelPollin.html
+
+.. [7] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelPolpow.html
+
+.. [8] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
+
+.. [9] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
 
 """
 
@@ -1614,6 +1641,9 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     """
 
     version_enabled = True
+
+    per_spectrum: bool = False
+    """Does the model use per-spectrum information (e.g. XFLT keywords)?"""
 
     def __init__(self, name, pars):
 
@@ -11164,7 +11194,168 @@ class XSslimbh(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
-# NOTE: we do not support the smaug model yet
+class XSsmaug(XSAdditiveModel):
+    """The XSPEC smaug model: optically-thin, spherically-symmetric thermal plasma.
+
+    The model is described at [1]_. The ``set_xscosmo`` command is
+    used to set the cosmology options and ``load_xflt`` to set the
+    XFLT values.  This is provided as an *experimental* interface.
+
+    .. versionadded:: 4.17.0
+
+    Attributes
+    ----------
+    kT_cc
+       The central temparature, in keV.
+    kT_dt
+       The max difference of temperature (keV).
+    kT_ix
+       The exponent of the inner temperature.
+    kT_ir
+       The radius of the inner temperature (Mpc).
+    kT_cx
+       The exponent of the middle temperature.
+    kT_cr
+       The radius of the middle temperature (Mpc).
+    kT_tx
+       The exponent of the outer temperature.
+    kT_tr
+       The radius of the outer temperature (Mpc).
+    nH_cc
+       The central Hydrogren density (cm^-3).
+    nH_ff
+       The fraction of nH.CC relative to the first beta component.
+    nH_cx
+       The exponent of the first beta component.
+    nH_cr
+       The radius of the first beta component (Mpc).
+    nH_gx
+       The exponent of the second beta component.
+    nH_gr
+       The radius of the second beta component (Mpc).
+    Ab_cc
+       The central metallicity (solar units).
+    Ab_xx
+       The exponent of the metal distribution.
+    Ab_rr
+       The radius of the metal distribution (Mpc).
+    redshift
+       The redshift of the source.
+    meshpts
+       The number of mesh-ponits of the DEM summation grid.
+    rcutoff
+       The cutoff radius for the calculation (Mpc).
+    mode
+       The model of spectal evaluation: 0 for calculate, 1 for
+       interpolate, and 2 for APEC interpolation.
+    itype
+       The type of the plasma emission code: 1 for Raymond-Smith,
+       2 for Mekal, 3 for Meka, and 4 for APEC.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    Notes
+    -----
+    This model should be used with multiple datasets, where each
+    dataset corresponds to an annulus of the source, and has XFLT
+    keywords "inner", "outer", and "width", giving the annulus
+    boundary in arcminutes and the width in degrees. These values
+    can be set with the load_xsxflt routine.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSmaug.html
+
+    """
+
+    __function__ = "xsmaug"
+
+    per_spectrum = True
+
+    def __init__(self, name='smaug'):
+        self.kT_cc = XSParameter(name, 'kT_cc', 1.0, min=0.1,
+                                 max=10.0, hard_min=0.08,
+                                 hard_max=100.0, units='keV')
+        self.kT_dt = XSParameter(name, 'kT_dt', 1.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=100.0, units='keV')
+        self.kT_ix = XSParameter(name, 'kT_ix', 0.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0, frozen=True)
+        self.kT_ir = XSParameter(name, 'kT_ir', 0.1, min=0.0001,
+                                 max=1.0, hard_min=0.0001,
+                                 hard_max=1.0, frozen=True,
+                                 units='Mpc')
+        self.kT_cx = XSParameter(name, 'kT_cx', 0.5, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0)
+        self.kT_cr = XSParameter(name, 'kT_cr', 0.1, min=0.0001,
+                                 max=10.0, hard_min=0.0001,
+                                 hard_max=20.0, units='Mpc')
+        self.kT_tx = XSParameter(name, 'kT_tx', 0.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0, frozen=True)
+        self.kT_tr = XSParameter(name, 'kT_tr', 0.5, min=0.0001,
+                                 max=1.0, hard_min=0.0001,
+                                 hard_max=3.0, frozen=True,
+                                 units='Mpc')
+        self.nH_cc = XSParameter(name, 'nH_cc', 1.0, min=1e-06,
+                                 max=3.0, hard_min=1e-06,
+                                 hard_max=3.0, frozen=True,
+                                 units='cm**-3')
+        self.nH_ff = XSParameter(name, 'nH_ff', 1.0, min=0.0, max=1.0,
+                                 hard_min=0.0, hard_max=1.0,
+                                 frozen=True)
+        self.nH_cx = XSParameter(name, 'nH_cx', 0.5, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0)
+        self.nH_cr = XSParameter(name, 'nH_cr', 0.1, min=0.0001,
+                                 max=1.0, hard_min=0.0001,
+                                 hard_max=2.0, units='Mpc')
+        self.nH_gx = XSParameter(name, 'nH_gx', 0.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0, frozen=True)
+        self.nH_gr = XSParameter(name, 'nH_gr', 0.002, min=0.0001,
+                                 max=10.0, hard_min=0.0001,
+                                 hard_max=20.0, frozen=True,
+                                 units='Mpc')
+        self.Ab_cc = XSParameter(name, 'Ab_cc', 1.0, min=0.0, max=3.0,
+                                 hard_min=0.0, hard_max=5.0,
+                                 frozen=True, units='solar')
+        self.Ab_xx = XSParameter(name, 'Ab_xx', 0.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0, frozen=True)
+        self.Ab_rr = XSParameter(name, 'Ab_rr', 0.1, min=0.0001,
+                                 max=1.0, hard_min=0.0001,
+                                 hard_max=1.0, frozen=True,
+                                 units='Mpc')
+        self.redshift = XSParameter(name, 'redshift', 0.01,
+                                    min=0.0001, max=10.0,
+                                    hard_min=0.0001, hard_max=10.0,
+                                    frozen=True)
+        self.meshpts = XSParameter(name, 'meshpts', 10.0, min=1.0,
+                                   max=10000.0, hard_min=1.0,
+                                   hard_max=10000.0, frozen=True)
+        self.rcutoff = XSParameter(name, 'rcutoff', 2.0, min=1.0,
+                                   max=3.0, hard_min=1.0,
+                                   hard_max=3.0, frozen=True,
+                                   units='Mpc')
+        self.mode = XSParameter(name, 'mode', 1, min=0, max=2,
+                                hard_min=0, hard_max=2,
+                                frozen=True)
+        self.itype = XSParameter(name, 'itype', 2, min=1, max=4,
+                                 hard_min=1, hard_max=4,
+                                 frozen=True)
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.kT_cc, self.kT_dt, self.kT_ix, self.kT_ir,
+                self.kT_cx, self.kT_cr, self.kT_tx, self.kT_tr, self.nH_cc,
+                self.nH_ff, self.nH_cx, self.nH_cr, self.nH_gx, self.nH_gr,
+                self.Ab_cc, self.Ab_xx, self.Ab_rr, self.redshift,
+                self.meshpts, self.rcutoff, self.mode, self.itype)
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSsnapec(XSAdditiveModel):
@@ -15195,6 +15386,172 @@ class XSplabs(XSMultiplicativeModel):
         self.index = XSParameter(name, 'index', 2.0, 0.0, 5., 0.0, 5)
         self.coef = XSParameter(name, 'coef', 1.0, 0.0, 100., 0.0, 100)
         XSMultiplicativeModel.__init__(self, name, (self.index, self.coef))
+
+
+@version_at_least("12.12.1")
+class XSpolconst(XSMultiplicativeModel):
+    """The XSPEC polconst model: Constant polarization.
+
+    The model is described at [1]_. The ``load_xflt`` command is used
+    to set the XFLT values.  This is provided as an *experimental*
+    interface.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    A
+       The polarization fraction.
+    psi
+       The polarization angle (degrees).
+
+    Notes
+    -----
+    This model should be used with multiple datasets, where each
+    dataset corresponds to one of the Stokes parameters. The XFLT
+    keyword "Stokes" should be set to 0, 1, or 2.  The value can be
+    set with the load_xsxflt routine.
+
+    Sherpa does not currently handle the errors correctly for
+    IXPE-like data, as it does not recogize the correlations between
+    the data sets.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPolconst.html
+
+    """
+
+    __function__ = "C_polconst"
+
+    per_spectrum = True
+
+    def __init__(self, name='polconst'):
+        self.A = XSParameter(name, 'A', 1.0, min=0.0, max=1.0,
+                             hard_min=0.0, hard_max=1.0)
+        self.psi = XSParameter(name, 'psi', 45.0, min=-90.0, max=90.0,
+                               hard_min=-90.0, hard_max=90.0, units='deg')
+
+        pars = (self.A, self.psi)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.12.1")
+class XSpollin(XSMultiplicativeModel):
+    """The XSPEC pollin model: linearly dependent polarization.
+
+    The model is described at [1]_. The ``load_xflt`` command is used
+    to set the XFLT values.  This is provided as an *experimental*
+    interface.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    A1
+       The polarization fraction at 1 keV.
+    Aslope
+       The polarization fraction slope.
+    psi1
+       The polarization angle at 1 keV (degrees)
+    psislope
+       The polarization angle slope.
+
+    Notes
+    -----
+    This model should be used with multiple datasets, where each
+    dataset corresponds to one of the Stokes parameters. The XFLT
+    keyword "Stokes" should be set to 0, 1, or 2.  The value can be
+    set with the load_xsxflt routine.
+
+    Sherpa does not currently handle the errors correctly for
+    IXPE-like data, as it does not recogize the correlations between
+    the data sets.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPollin.html
+
+    """
+
+    __function__ = "C_pollin"
+
+    per_spectrum = True
+
+    def __init__(self, name='pollin'):
+        self.A1 = XSParameter(name, 'A1', 1.0, min=0.0, max=1.0,
+                              hard_min=0.0, hard_max=1.0)
+        self.Aslope = XSParameter(name, 'Aslope', 0.0, min=-5.0,
+                                  max=5.0, hard_min=-5.0, hard_max=5.0)
+        self.psi1 = XSParameter(name, 'psi1', 45.0, min=-90.0,
+                                max=90.0, hard_min=-90.0,
+                                hard_max=90.0, units='deg')
+        self.psislope = XSParameter(name, 'psislope', 0.0, min=-5.0,
+                                    max=5.0, hard_min=-5.0,
+                                    hard_max=5.0)
+
+        pars = (self.A1, self.Aslope, self.psi1, self.psislope)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.12.1")
+class XSpolpow(XSMultiplicativeModel):
+    """The XSPEC polpow model: power-law dependent polarization.
+
+    The model is described at [1]_. The ``load_xflt`` command is used
+    to set the XFLT values.  This is provided as an *experimental*
+    interface.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    Anorm
+       The polarization fraction at 1 keV.
+    Anidex
+       The polarization fraction index.
+    psinorm
+       The polarization angle at 1 keV (degrees)
+    psiindex
+       The polarization angle index.
+
+    Notes
+    -----
+    This model should be used with multiple datasets, where each
+    dataset corresponds to one of the Stokes parameters. The XFLT
+    keyword "Stokes" should be set to 0, 1, or 2.  The value can be
+    set with the load_xsxflt routine.
+
+    Sherpa does not currently handle the errors correctly for
+    IXPE-like data, as it does not recogize the correlations between
+    the data sets.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPolpow.html
+
+    """
+
+    __function__ = "C_polpow"
+
+    per_spectrum = True
+
+    def __init__(self, name='polpow'):
+        self.Anorm = XSParameter(name, 'Anorm', 1.0, min=0.0, max=1.0,
+                                 hard_min=0.0, hard_max=1.0)
+        self.Aindex = XSParameter(name, 'Aindex', 0.0, min=-5.0,
+                                  max=5.0, hard_min=-5.0, hard_max=5.0)
+        self.psinorm = XSParameter(name, 'psinorm', 45.0, min=-90.0,
+                                   max=90.0, hard_min=-90.0,
+                                   hard_max=90.0, units='deg')
+        self.psiindex = XSParameter(name, 'psiindex', 0.0, min=-5.0,
+                                    max=5.0, hard_min=-5.0, hard_max=5.0)
+
+        pars = (self.Anorm, self.Aindex, self.psinorm, self.psiindex)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSpwab(XSMultiplicativeModel):

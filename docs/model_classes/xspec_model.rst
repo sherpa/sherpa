@@ -4,8 +4,6 @@ The sherpa.astro.xspec module
 
 .. currentmodule:: sherpa.astro.xspec
 
-
-
 This document describes the base classes for XSPEC models, and
 the utility routines - such as querying and retrieving
 the abundance table information. The models provided by XSPEC
