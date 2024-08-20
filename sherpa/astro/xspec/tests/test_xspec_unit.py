@@ -117,6 +117,22 @@ def test_version():
 
 
 @requires_xspec
+def test_expected_elements():
+    """If this fails then something is wrong!"""
+
+    from sherpa.astro import xspec
+
+    # At the moment this just checks I can repeat the information in
+    # two places, but the aim is to change the interface to access
+    # this information from XSPEC itself, at which point it becomes a
+    # regression test.
+    #
+    xselems = xspec.get_xselements()
+    for idx, elem in enumerate(ELEMENT_NAMES, 1):
+        assert xselems[elem] == idx
+
+
+@requires_xspec
 def test_abund_default():
     """Check the expected default setting for the abundance.
 
@@ -235,6 +251,26 @@ def test_cosmo_default():
     assert oval[2] == pytest.approx(DEFAULT_COSMO[2])
 
 
+def check_abundances(h, he, si, ar, k, fe):
+    """Check wilm abundances.
+
+    These values were found from HEASOFT version 6.19
+    spectral/manager/abundances.dat
+
+    The values are given to two decimal places in this file.
+    It is not worth testing all settings, since we are not
+    testing the XSPEC implementation itself, just our use of it.
+
+    """
+
+    assert h == pytest.approx(1.0)
+    assert he == pytest.approx(9.77e-2)
+    assert si == pytest.approx(1.86e-05)
+    assert ar == pytest.approx(2.57e-06)
+    assert k == pytest.approx(0.0)
+    assert fe == pytest.approx(2.69e-05)
+
+
 @requires_xspec
 def test_abund_element():
     """Can we access the elemental settings?
@@ -255,18 +291,76 @@ def test_abund_element():
     finally:
         xspec.set_xsabund(oval)
 
-    # These values were found from HEASOFT version 6.19
-    # spectral/manager/abundances.dat
-    # The values are given to two decimal places in this file.
-    # It is not worth testing all settings, since we are not
-    # testing the XSPEC implementation itself, just our use of it.
-    #
-    assert h == pytest.approx(1.0)
-    assert he == pytest.approx(9.77e-2)
-    assert si == pytest.approx(1.86e-05)
-    assert ar == pytest.approx(2.57e-06)
-    assert k == pytest.approx(0.0)
-    assert fe == pytest.approx(2.69e-05)
+    check_abundances(h, he, si, ar, k, fe)
+
+
+@requires_xspec
+def test_abund_get_invalid_element(caplog):
+    """Check what happens if sent the wrong element name"""
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(TypeError,
+                       match="^could not find element 'O3'$"):
+        xspec.get_xsabund("O3")
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_abund_set_invalid_name(caplog):
+    """Check what happens if sent an unknown table
+    It is unlikely that the name "foo-foo" will become valid.
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match="^Cannot read file 'foo-foo'.  It may not exist or contains invalid data$"):
+        xspec.set_xsabund("foo-foo")
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_xsect_set_invalid_name(caplog):
+    """Check what happens if sent an unknown table
+    It is unlikely that the name "foo-foo" will become valid.
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError,
+                       match="^could not set XSPEC photoelectric cross-section to 'foo-foo'$"):
+        xspec.set_xsxsect("foo-foo")
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_abund_get_dict():
+    """Can we access the elemental settings?
+
+    Make the same checks as test_abund_element
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    assert oval != 'wilm'
+    try:
+        xspec.set_xsabund('wilm')
+        abunds = xspec.get_xsabundances()
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    check_abundances(abunds['H'],
+                     abunds['He'],
+                     abunds['Si'],
+                     abunds['Ar'],
+                     abunds['K'],
+                     abunds['Fe'])
 
 
 def validate_xspec_setting(getfunc, setfunc, newval, altval):
@@ -388,6 +482,7 @@ def test_abund_change_file(tmp_path):
         abund = xspec.get_xsabund()
         out = {n: xspec.get_xsabund(n)
                for n in ELEMENT_NAMES}
+        out2 = xspec.get_xsabundances()
 
     finally:
         xspec.set_xsabund(oval)
@@ -395,6 +490,44 @@ def test_abund_change_file(tmp_path):
     assert abund == 'file'
     for n in ELEMENT_NAMES:
         assert out[n] == pytest.approx(elems[n])
+
+    assert out2 == out
+
+
+@requires_xspec
+def test_abund_change_file_subset(tmp_path):
+    """What happens if send in too-few elements?"""
+
+    from sherpa.astro import xspec
+
+    elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)
+             if i < 10}
+
+    tmpname = tmp_path / "abunds.xspec"
+    with open(tmpname, "w") as tfh:
+        for v in elems.values():
+            tfh.write(f"{v}\n")
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund(str(tmpname))
+
+        abund = xspec.get_xsabund()
+        out = {n: xspec.get_xsabund(n)
+               for n in ELEMENT_NAMES}
+        out2 = xspec.get_xsabundances()
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert abund == 'file'
+    for i, n in enumerate(ELEMENT_NAMES):
+        if i < 10:
+            assert out[n] == pytest.approx(elems[n])
+        else:
+            assert out[n] == pytest.approx(0)
+
+    assert out2 == out
 
 
 @requires_xspec

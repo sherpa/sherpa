@@ -158,7 +158,7 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
 
     See Also
     --------
-    set_xsabund
+    get_xsabundances, set_xsabund
 
     Examples
     --------
@@ -169,6 +169,11 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
     >>> get_xsabund()
     'angr'
 
+    Return the abundance of Helium:
+
+    >>> get_xsabund('He')
+    0.09769999980926514
+
     The `set_xsabund` function has been used to read in the
     abundances from a file, so the routine now returns the
     string 'file':
@@ -177,15 +182,81 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
     >>> get_xsabund()
     'file'
 
-    >>> get_xsabund('He')
-    0.09769999980926514
-
     """
 
     if element is None:
         return _xspec.get_xsabund()
 
     return _xspec.get_xsabund(element)
+
+
+def get_xsabundances() -> dict[str, float]:
+    """Return the abundance settings used by X-Spec.
+
+    .. versionadded:: 4.17.0
+
+    Returns
+    -------
+    abundances : dict
+        The current set of abundances. The keys are the element name
+        (e.g. 'Fe') and the values are the abundances.
+
+    See Also
+    --------
+    get_xsabund, set_xsabund
+
+    Examples
+    --------
+
+    >>> get_xsabundances()
+    {'H': 1.0, 'He': ...}
+
+    """
+
+    return {name: _xspec.get_xsabund(name)
+            for name in get_xselements().keys()}
+
+
+# This function is not added to __all__ as it is very specialized.
+#
+def get_xselements() -> dict[str, int]:
+    """Return the elements names and atomic numbers used by X-Spec.
+
+    .. versionadded:: 4.17.0
+
+    Returns
+    -------
+    elements : dict
+        The keys are the element names and the values the atomic
+        numbers.
+
+    Examples
+    --------
+
+    >>> els = get_xselements()
+    >>> len(els)
+    30
+    >>> els['H']
+    1
+    >>> els['Zn']
+    30
+
+    """
+
+    # We just hard-code this since our interface to the XSPEC library
+    # does not provide this information. We can add functions to
+    # access this, which would replace this code, but at the moment it
+    # is very-unlikely that XSPEC will add more elements.
+    #
+    out = {}
+    elems = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
+             'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar', 'K', 'Ca',
+             'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu',
+             'Zn']
+    for idx, elem in enumerate(elems, 1):
+        out[elem] = idx
+
+    return out
 
 
 def get_xschatter() -> int:
@@ -924,7 +995,7 @@ __all__ : tuple[str, ...]
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
            'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
-           'get_xsstate')
+           'get_xsstate', 'get_xsabundances')
 
 
 class XSBaseParameter(Parameter):
