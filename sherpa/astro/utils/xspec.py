@@ -823,10 +823,15 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
 
     """
 
+    # Does this model use the spectrum/ifl value?
+    #
+    nflags = len(mdl.flags)
+    per_spectrum = nflags > 1 and mdl.flags[1] == 1
+
     t1 = ' ' * 4
     t2 = ' ' * 8
     out = f"\nclass {mdl.clname}(XS{modelname}):\n"
-    out += f'{t1}"""XSPEC {modelname}: {mdl.name}\n\n'
+    out += f'{t1}"""The XSPEC {mdl.name} model\n\n'
     out += f'{t1}Parameters\n'
     out += f'{t1}----------\n'
     for par in mdl.pars:
@@ -839,9 +844,11 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     else:
         funcname = mdl.funcname
 
-    out += f"{t1}_calc = _models.{funcname}\n"
+    out += f"{t1}_calc = _models.{funcname}\n\n"
 
-    out += "\n"
+    if per_spectrum:
+        out += f"{t1}per_spectrum = True\n\n"
+
     out += f"{t1}def __init__(self, name='{mdl.name}'):\n"
     parnames = []
     for par in mdl.pars:
@@ -869,8 +876,6 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     out += f"{t2}pars = {pstr}\n"
     out += f"{t2}XS{modelname}.__init__(self, name, pars)\n"
 
-    nflags = len(mdl.flags)
-
     # If the model needs to be recalculated-per-spectrum turn off the
     # caching. This needs to be done after the parent class has been
     # initialized.
@@ -879,7 +884,7 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     # now. Users can manually change the attribute value to try out
     # the cache support.
     #
-    if nflags > 1 and mdl.flags[1] == 1:
+    if per_spectrum:
         out += f"{t2}self._use_caching = False\n"
 
         # Still warn the user that this is not tested.

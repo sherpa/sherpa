@@ -1681,10 +1681,10 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         """What value is used for the ifl/spectrum argument?
 
         This is only relevant for models that use XFLT keywords (that
-        is, the model is marked as being evaluated for each spectrum
-        in the model.dat file). The value must be a positive integer,
-        and there is to see whether any XFLT keyords have been set up
-        for the spectrum number.
+        is, the model's per_spectrum flag is True).  The value must be
+        a positive integer, and it uses the data set up by the
+        set_xsxflt or load_xsxflt call with this identifier. There is
+        no check that XFLT data has been associated with this value.
 
         .. versionadded:: 4.17.0
 
