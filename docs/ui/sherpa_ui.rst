@@ -91,6 +91,7 @@ hidden away. This needs better explanation...
       get_model_component
       get_model_component_image
       get_model_component_plot
+      get_model_components_plot
       get_model_contour
       get_model_contour_prefs
       get_model_image
@@ -131,6 +132,7 @@ hidden away. This needs better explanation...
       get_source
       get_source_component_image
       get_source_component_plot
+      get_source_components_plot
       get_source_contour
       get_source_image
       get_source_plot
@@ -203,6 +205,7 @@ hidden away. This needs better explanation...
       plot_kernel
       plot_model
       plot_model_component
+      plot_model_components
       plot_pdf
       plot_psf
       plot_pvalue
@@ -211,6 +214,7 @@ hidden away. This needs better explanation...
       plot_scatter
       plot_source
       plot_source_component
+      plot_source_components
       plot_trace
       proj
       projection
