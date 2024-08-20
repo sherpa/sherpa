@@ -24,6 +24,7 @@
 # out of a single file)
 #
 
+from io import StringIO
 import logging
 import os
 
@@ -336,3 +337,62 @@ def test_group_width_tabstops_notset(clean_astro_ui):
     d = ui.get_data()
     assert d.grouping == pytest.approx([0, 1, -1, -1, 1, 0])
     assert d.quality == pytest.approx([0, 0, 0, 0, 2, 0])
+
+
+def test_show_xsabund(clean_astro_ui, caplog):
+    """Basic check of show_xsabund
+
+    We use the StringIO interface to capture the output.
+    """
+
+    # The output depends in whether XSPEC support is available.
+    #
+    try:
+        table = ui.get_xsabund()
+        has_xspec = True
+    except AttributeError:
+        has_xspec = False
+
+    assert len(caplog.records) == 0
+
+    buff = StringIO()
+    ui.show_xsabund(outfile=buff)
+
+    if not has_xspec:
+        # Minimal check of the warning.
+        #
+        assert len(caplog.records) == 1
+        r = caplog.record_tuples[0]
+        assert r[0] == "sherpa.astro.ui.utils"
+        assert r[1] == logging.WARNING
+        assert r[2] == "XSPEC support is not available"
+
+        assert buff.getvalue() == ""
+        return
+
+    assert len(caplog.records) == 0
+
+    txt = buff.getvalue().split("\n")
+
+    # We expect
+    #    Solar Abundance Table:
+    #    <name>
+    #      H : ...
+    #      C : ...
+    #      Na: ...
+    #      S : ...
+    #      Sc: ...
+    #      Fe: ...
+    #
+    assert txt[0] == "Solar Abundance Table:"
+    assert txt[1] == table
+    assert txt[2].startswith("  H : 1.000e+00  He: ")
+    assert txt[3].startswith("  C : ")
+    assert txt[4].startswith("  Na: ")
+    assert txt[5].startswith("  S : ")
+    assert txt[6].startswith("  Sc: ")
+    assert txt[7].startswith("  Fe: ")
+    assert txt[8] == ""
+    assert txt[9] == ""
+
+    assert len(txt) == 10
