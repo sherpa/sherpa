@@ -833,7 +833,7 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         self.data = data
         self.model = model
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
     def __call__(self, niter=1000, seed=None, rng=None):
         return self.call(niter, seed, rng=rng)
