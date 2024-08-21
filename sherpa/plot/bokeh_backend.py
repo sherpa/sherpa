@@ -542,7 +542,7 @@ class BokehBackend(BasicBackend):
 
         if yerrorbars and yerr is not None:
             # Are the errors symmetric or not? At the moment this is
-            # decited by checking if yerr is a tuple or not.
+            # decided by checking if yerr is a tuple or not.
             #
             if type(yerr) == tuple:
                 ylo = np.atleast_1d(y - yerr[0])
