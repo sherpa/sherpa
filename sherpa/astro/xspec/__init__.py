@@ -198,7 +198,7 @@ def get_xsabundances() -> dict[str, float]:
     Returns
     -------
     abundances : dict
-        The current set of abundances. The keys are the element name
+        The current set of abundances. The keys are the element names
         (e.g. 'Fe') and the values are the abundances.
 
     See Also
@@ -246,7 +246,7 @@ def get_xselements() -> dict[str, int]:
     # We just hard-code this since our interface to the XSPEC library
     # does not provide this information. We can add functions to
     # access this, which would replace this code, but at the moment it
-    # is very-unlikely that XSPEC will add more elements.
+    # is very unlikely that XSPEC will add more elements.
     #
     out = {}
     elems = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
