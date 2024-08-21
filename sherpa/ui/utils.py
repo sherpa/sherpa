@@ -9291,7 +9291,7 @@ class Session(NoNewAttributesAfterInit):
             id: Optional[IdType] = None,
             *otherids: IdType,
             **kwargs
-            ) -> FitResults:
+            ) -> None:
         """Fit a model to one or more data sets.
 
         Use forward fitting to find the best-fit model to one or more
