@@ -47,6 +47,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
     DataErr, IdentifierErr, IOErr, ModelErr, ParameterErr, PlotErr, \
     SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.random import RandomType
 from sherpa.utils.types import IdType
 
 info = logging.getLogger(__name__).info
@@ -916,7 +917,11 @@ class Session(NoNewAttributesAfterInit):
         self._set_contour_types()
         self._set_image_types()
 
-    def _set_plot_types(self):
+        # Reset the generator.
+        #
+        self.set_rng(None)
+
+    def _set_plot_types(self) -> None:
         """Set up the plot types."""
 
         # The keys of _plot_types are used to define:
@@ -969,7 +974,7 @@ class Session(NoNewAttributesAfterInit):
             "compmodel": "model_component"
         }
 
-    def _set_contour_types(self):
+    def _set_contour_types(self) -> None:
         """Set up the contour types."""
 
         # This is used by the get_<key>_contour calls to access the
@@ -988,7 +993,7 @@ class Session(NoNewAttributesAfterInit):
             "kernel": sherpa.plot.PSFKernelContour()
         }
 
-    def _set_image_types(self):
+    def _set_image_types(self) -> None:
         """Set up the image types."""
 
         # This is used by the get_<key>_image calls to access the
@@ -1011,11 +1016,7 @@ class Session(NoNewAttributesAfterInit):
             'source_component': sherpa.image.ComponentSourceImage()
         }
 
-        # Reset the generator.
-        #
-        self.set_rng(None)
-
-    def get_rng(self):
+    def get_rng(self) -> Optional[RandomType]:
         """Return the RNG generator in use.
 
         The return can be None, which means that the routines in
@@ -1035,7 +1036,7 @@ class Session(NoNewAttributesAfterInit):
 
         return self._rng
 
-    def set_rng(self, rng):
+    def set_rng(self, rng: Optional[RandomType]) -> None:
         """Set the RNG generator.
 
         .. versionadded:: 4.16.0
