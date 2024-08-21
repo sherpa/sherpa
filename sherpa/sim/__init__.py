@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2011, 2015, 2016, 2018 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -196,6 +196,10 @@ import logging
 
 import numpy
 
+from sherpa.data import Data1D, Data1DAsymmetricErrs
+from sherpa.fit import Fit
+from sherpa.optmethods import LevMar
+
 # Although all this module needs is the following import
 #   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
 # it looks like the following modules are being re-exported by this
@@ -204,17 +208,14 @@ import numpy
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
 from sherpa.sim.mh import *
+
 from sherpa.stats import Cash, CStat, WStat, LeastSq
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults, \
     sao_fcmp
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils import random
 
-from sherpa.fit import Fit
-from sherpa.data import Data1D, Data1DAsymmetricErrs
-from sherpa.optmethods import LevMar
-
 info = logging.getLogger("sherpa").info
-_log = logging.getLogger("sherpa")
 
 _tol = numpy.finfo(float).eps
 
@@ -692,7 +693,6 @@ class MCMC(NoNewAttributesAfterInit):
             raise ValueError("Fit statistic must be cash, cstat or "
                              f"wstat, not {fit.stat.name}")
 
-        _level = _log.getEffectiveLevel()
         mu = fit.model.thawedpars
         dof = len(mu)
 
@@ -726,28 +726,19 @@ class MCMC(NoNewAttributesAfterInit):
             if -1 in mins or -1 in maxes:
                 raise LimitError('Sherpa parameter hard limit exception')
 
-            level = _log.getEffectiveLevel()
+            with SherpaVerbosity(logging.CRITICAL):
+                try:
+                    # soft limits are ignored, hard limits rejected.
+                    # proposed values beyond hard limit default to limit.
+                    fit.model.thawedpars = proposed_params
 
-            try:
-                # ignore warning from Sherpa about hard limits
-                _log.setLevel(logging.CRITICAL)
+                    # Calculate statistic on proposal, use likelihood
+                    proposed_stat = -0.5 * fit.calc_stat()
 
-                # soft limits are ignored, hard limits rejected.
-                # proposed values beyond hard limit default to limit.
-                fit.model.thawedpars = proposed_params
-
-                # Calculate statistic on proposal, use likelihood
-                proposed_stat = -0.5 * fit.calc_stat()
-
-                # _log.setLevel(level)
-
-            except:
-                # set the model back to original state on exception
-                fit.model.thawedpars = oldthawedpars
-                raise
-            finally:
-                # set the logger back to previous level
-                _log.setLevel(level)
+                except:
+                    # set the model back to original state on exception
+                    fit.model.thawedpars = oldthawedpars
+                    raise
 
             return proposed_stat
 
@@ -761,9 +752,6 @@ class MCMC(NoNewAttributesAfterInit):
 
             # set the model back to original state
             fit.model.thawedpars = oldthawedpars
-
-            # set the logger back to previous level
-            _log.setLevel(_level)
 
         # Change to Sherpa statistic convention
         stats = -2.0 * stats
