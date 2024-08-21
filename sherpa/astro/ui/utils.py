@@ -1790,9 +1790,13 @@ class Session(sherpa.ui.utils.Session):
                     # If this errors out then so be it
                     return self.unpack_ascii(filename, *args, **kwargs)
 
-    def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ',
-                               comment='#', func=np.average,
-                               delta=False) -> None:
+    def load_ascii_with_errors(self, id, filename=None,
+                               colkeys: Optional[Sequence[str]] = None,
+                               sep: str = ' ',
+                               comment: str = '#',
+                               func: Callable = np.average,
+                               delta: bool = False
+                               ) -> None:
         """Load an ASCII file with asymmetric errors as a data set.
 
         Create a dataset with asymmetric error bars which can be used
@@ -14406,7 +14410,9 @@ class Session(sherpa.ui.utils.Session):
 
     def resample_data(self,
                       id: Optional[IdType] = None,
-                      niter=1000, seed=None):
+                      niter: int = 1000,
+                      seed: Optional[int] = None
+                      ) -> dict[str, np.ndarray]:
         """Resample data with asymmetric error bars.
 
         The function performs a parametric bootstrap assuming a skewed
@@ -14417,6 +14423,12 @@ class Session(sherpa.ui.utils.Session):
         parameters. The function returns the best fit parameters for
         each realization, and displays the average and standard
         deviation for each parameter.
+
+        .. versionchanged:: 4.17.0
+           The resampling now uses the chosen statistic and optimizer
+           (set with set_stat and set_method). Previously the
+           least-squares statistic and Levenberg-Marquardt method were
+           always used.
 
         .. versionchanged:: 4.16.0
            The random number generation is now controlled by the
@@ -14457,6 +14469,8 @@ class Session(sherpa.ui.utils.Session):
         Account for of asymmetric errors when calculating parameter
         uncertainties:
 
+        >>> set_stat("leastsq")
+        >>> set_method("levmar")
         >>> load_ascii_with_errors(1, 'test.dat')
         >>> set_model(polynom1d.p0)
         >>> thaw(p0.c1)
@@ -14500,8 +14514,12 @@ class Session(sherpa.ui.utils.Session):
         """
         data = self.get_data(id)
         model = self.get_model(id)
+        stat = self.get_stat()
+        method = self.get_method()
+
         resampledata = sherpa.sim.ReSampleData(data, model)
         return resampledata(niter=niter, seed=seed,
+                            stat=stat, method=method,
                             rng=self.get_rng())
 
     def sample_photon_flux(self, lo=None, hi=None,
