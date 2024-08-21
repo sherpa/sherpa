@@ -1330,7 +1330,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def get_syserror(self,
                      filter: bool = False
                      ) -> Optional[np.ndarray]:
-        """Return the statistical error on the dependent axis of a data set.
+        """Return the systematic error on the dependent axis of a data set.
 
         Parameters
         ----------
@@ -2048,7 +2048,20 @@ class Data1D(Data):
 class Data1DAsymmetricErrs(Data1D):
     """1-D data set with asymmetric errors
 
-    Note: elo and ehi shall be stored as delta values from y
+    See Also
+    --------
+    sherpa.sim.ReSampleData
+
+    Notes
+    -----
+    The elo and ehi fields are stored as delta values relative to y.
+
+    Sherpa's data and statistic objects assume symmetric errors, and
+    so the methods here sometimes return a single array for an error,
+    and sometimes a pair or 2D array (giving the low and high values).
+    The assumption is that the staterror field is set when the object
+    is created.
+
     """
 
     _fields: FieldsType = ("name", "x", "y", "staterror", "syserror", "elo", "ehi")
@@ -2066,8 +2079,19 @@ class Data1DAsymmetricErrs(Data1D):
         self.ehi = ehi
         super().__init__(name, x, y, staterror=staterror, syserror=syserror)
 
+    # TODO: should we change get_error and get_staterror?
+    #
     def get_yerr(self, filter=False, staterrfunc=None):
-        return self.elo, self.ehi
+        """Return the y error.
+
+        The staterrfunc argument is currently ignored.
+        """
+
+        if not filter:
+            # A minor optimization
+            return self.elo, self.ehi
+
+        return self.apply_filter(self.elo), self.apply_filter(self.ehi)
 
 
 class Data1DInt(Data1D):

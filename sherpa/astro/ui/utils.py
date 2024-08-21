@@ -1743,6 +1743,13 @@ class Session(sherpa.ui.utils.Session):
                                comment='#', func=np.average, delta=False):
         """Load an ASCII file with asymmetric errors as a data set.
 
+        Create a dataset with asymmetric error bars which can be used
+        with resample_data to fit a model using the asymmetric errors
+        with a parametric bootstrap approach. Note that the func
+        argument is used to provide an estimate for a symmetric error
+        (the default is to average the low and high limits) which is
+        then used with calls like calc_stat and fit.
+
         Parameters
         ----------
         id : int or str, optional
@@ -1802,28 +1809,28 @@ class Session(sherpa.ui.utils.Session):
         --------
 
         Read in the first four columns of the file, as the independent
-        (X), dependent (Y), error low (ELO) and error high (EHI) columns
-        of the default data set:
+        (X), dependent (Y), error low (ELO) and error high (EHI)
+        columns of the default data set:
 
         >>> load_ascii_with_errors('sources.dat')
 
-        Read in the first four columns (x, y, elo, ehi) where elo and ehi
-        are of the form y - delta_lo and y + delta_hi, respectively.
+        Read in the first four columns (x, y, elo, ehi) where elo and
+        ehi are of the form y - delta_lo and y + delta_hi,
+        respectively.
 
         >>> load_ascii_with_errors('sources.dat', delta=True)
 
-        Read in the first four columns (x, y, elo, ehi) where elo and ehi
-        are of the form delta_lo and delta_hi, respectively.
+        Read in the first four columns (x, y, elo, ehi) where elo and
+        ehi are of the form delta_lo and delta_hi, respectively. The
+        `func` argument is used to calculate the error based on the
+        elo and ehi column values, and uses the RMS value of the low
+        and high values:
 
         >>> def rms(lo, hi):
         ...     return numpy.sqrt(lo * lo + hi * hi)
         ...
         >>> load_ascii_with_errors('sources.dat', func=rms)
 
-        Read in the first four columns (x, y, elo, ehi) where elo and ehi
-        are of the form delta_lo and delta_hi, respectively. The `func`
-        argument is used to calculate the error based on the elo and ehi
-        column values.
         """
 
         if filename is None:
