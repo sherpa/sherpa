@@ -193,12 +193,13 @@ parameter::
 """
 
 import logging
+from typing import Optional
 
 import numpy as np
 
 from sherpa.data import Data1D, Data1DAsymmetricErrs
 from sherpa.fit import Fit
-from sherpa.optmethods import LevMar
+from sherpa.optmethods import LevMar, OptMethod
 
 # Although all this module needs is the following import
 #   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
@@ -209,7 +210,7 @@ from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
 from sherpa.sim.mh import *
 
-from sherpa.stats import Cash, CStat, WStat, LeastSq
+from sherpa.stats import Cash, CStat, WStat, LeastSq, Stat
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults, \
     sao_fcmp
 from sherpa.utils.logging import SherpaVerbosity
@@ -835,11 +836,28 @@ class ReSampleData(NoNewAttributesAfterInit):
         self.model = model
         super().__init__()
 
-    def __call__(self, niter=1000, seed=None, rng=None):
-        return self.call(niter, seed, rng=rng)
+    def __call__(self, niter=1000, seed=None, rng=None,
+                 *,
+                 stat: Optional[Stat] = None,
+                 method: Optional[OptMethod] = None
+                 ) -> dict[str, np.ndarray]:
+        return self.call(niter, seed=seed, rng=rng, stat=stat,
+                         method=method)
 
-    def call(self, niter, seed=None, rng=None):
+    def call(self, niter, seed=None, rng=None,
+             *,
+             # Mark these as keyword-only as they are additions to the
+             # interface and the interface is complicated enough it
+             # is worth marking them keyword only.
+             #
+             stat: Optional[Stat] = None,
+             method: Optional[OptMethod] = None
+             ) -> dict[str, np.ndarray]:
         """Resample the data and fit the model to each iteration.
+
+        .. versionadded:: 4.17.0
+           The stat and method parameter were added. These are
+           keyword-only arguments.
 
         .. versionadded:: 4.16.0
            The rng parameter was added.
@@ -860,6 +878,10 @@ class ReSampleData(NoNewAttributesAfterInit):
            Determines how random numbers are created. If set to None then
            the routines from `numpy.random` are used, and so can be
            controlled by calling `numpy.random.seed`.
+        stat : Stat or None, optional
+           If None then the `LeastSq` statistic is used.
+        method: OptMethod or None, optional
+           If None then the `LevMar` method is used.
 
         Returns
         -------
@@ -876,6 +898,9 @@ class ReSampleData(NoNewAttributesAfterInit):
         the model are not changed by this method.
 
         """
+
+        chosen_stat = LeastSq() if stat is None else stat
+        chosen_meth = LevMar() if method is None else method
 
         # Each fit is reset to this set of values as the starting point
         orig_pars = self.model.thawedpars
@@ -960,7 +985,8 @@ class ReSampleData(NoNewAttributesAfterInit):
             # start the fit (by making sure we always reset after a fit).
             #
             fake_data.y = ry
-            fit = Fit(fake_data, self.model, LeastSq(), LevMar())
+            fit = Fit(data=fake_data, model=self.model,
+                      stat=chosen_stat, method=chosen_meth)
             try:
                 fit_result = fit.fit()
             finally:
