@@ -194,7 +194,7 @@ parameter::
 
 import logging
 
-import numpy
+import numpy as np
 
 from sherpa.data import Data1D, Data1DAsymmetricErrs
 from sherpa.fit import Fit
@@ -217,7 +217,7 @@ from sherpa.utils import random
 
 info = logging.getLogger("sherpa").info
 
-_tol = numpy.finfo(float).eps
+_tol = np.finfo(float).eps
 
 string_types = (str, )
 
@@ -714,7 +714,7 @@ class MCMC(NoNewAttributesAfterInit):
         sampler_kwargs = self._sampler_opt.copy()
         sampler_kwargs['priors'] = priors
 
-        oldthawedpars = numpy.array(mu)
+        oldthawedpars = np.array(mu)
         thawedparmins = fit.model.thawedparhardmins
         thawedparmaxes = fit.model.thawedparhardmaxes
 
@@ -888,7 +888,7 @@ class ReSampleData(NoNewAttributesAfterInit):
 
             name = par.fullname
             pars_index.append(name)
-            pars[name] = numpy.zeros(niter)
+            pars[name] = np.zeros(niter)
 
         data = self.data
         x = data.x
@@ -903,13 +903,13 @@ class ReSampleData(NoNewAttributesAfterInit):
         ny = len(y)
 
         # TODO: we do not properly handle Data1DInt here
-        fake_data = Data1D('tmp', x, numpy.zeros(ny))
+        fake_data = Data1D('tmp', x, np.zeros(ny))
 
         if rng is None:
-            numpy.random.seed(seed)
+            np.random.seed(seed)
 
-        ry_all = numpy.zeros((niter, ny), dtype=y_l.dtype)
-        stats = numpy.zeros(niter)
+        ry_all = np.zeros((niter, ny), dtype=y_l.dtype)
+        stats = np.zeros(niter)
         for j in range(niter):
             ry = ry_all[j]
             for i in range(ny):
@@ -972,8 +972,8 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         result = {'samples': ry_all, 'statistic': stats}
         for name in pars_index:
-            avg = numpy.average(pars[name])
-            std = numpy.std(pars[name])
+            avg = np.average(pars[name])
+            std = np.std(pars[name])
             info('%s : avg = %s , std = %s', name, avg, std)
             result[name] = pars[name]
 
