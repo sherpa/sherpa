@@ -15915,7 +15915,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        get_xsabund, set_xsabund
+        get_xsabund, get_xsabundances, set_xsabund, set_xsabundances
 
         Examples
         --------

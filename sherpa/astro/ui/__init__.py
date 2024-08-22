@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2007, 2018, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2007, 2018, 2020, 2021, 2024
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -54,11 +55,11 @@ if hasattr(sherpa.astro, 'xspec'):
 
     from sherpa.astro.xspec import get_xsabund, get_xscosmo, get_xsxsect, \
         set_xsabund, set_xscosmo, set_xsxsect, set_xsxset, get_xsxset, \
-        get_xschatter, set_xschatter
+        get_xschatter, set_xschatter, get_xsabundances, set_xsabundances
     __all__.extend(('get_xsabund', 'get_xschatter', 'get_xscosmo',
                     'get_xsxsect', 'set_xsabund', 'set_xschatter',
                     'set_xscosmo', 'set_xsxsect', 'set_xsxset',
-                    'get_xsxset'))
+                    'get_xsxset', 'get_xsabundances', 'set_xsabundances'))
 
 __all__.extend(_session._export_names(globals()))
 
