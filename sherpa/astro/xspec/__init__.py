@@ -102,8 +102,10 @@ References
 """
 
 
+from contextlib import suppress
 import logging
 import string
+import tempfile
 from typing import Any, Optional, Union
 import warnings
 
@@ -150,15 +152,15 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
     Returns
     -------
     val : str or float
-       When `element` is `None`, the abundance table name is
-       returned (see `set_xsabund`); the string 'file' is used
-       when the abundances were read from a file. A numeric value
-       is returned when an element name is given. This value is the
+       When `element` is `None`, the abundance table name is returned
+       (see `set_xsabund`); the string 'file' is used when the
+       abundances were read from a file or vector. A numeric value is
+       returned when an element name is given. This value is the
        elemental abundance relative to H.
 
     See Also
     --------
-    get_xsabundances, set_xsabund
+    get_xsabundances, set_xsabund, set_xsabundances
 
     Examples
     --------
@@ -203,7 +205,7 @@ def get_xsabundances() -> dict[str, float]:
 
     See Also
     --------
-    get_xsabund, set_xsabund
+    get_xsabund, set_xsabund, set_xsabundances
 
     Examples
     --------
@@ -215,6 +217,67 @@ def get_xsabundances() -> dict[str, float]:
 
     return {name: _xspec.get_xsabund(name)
             for name in get_xselements().keys()}
+
+
+# The current interface to the XSPEC model library makes this awkward
+# to write. Once the interface switches to using the FunctionUtility
+# interface this code will be a lot simpler iternally, without
+# changing the API.
+#
+def set_xsabundances(abundances: dict[str, float]) -> None:
+    """Set the abundances used by X-Spec.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    abundances : dict
+        The new set of abundances. The keys are the element name
+        (e.g. 'Fe') and the values are the abundances. Any element
+        that is not present is set to 0.0, and other keywords are
+        ignored.
+
+    See Also
+    --------
+    get_xsabund, get_xsabundances, set_xsabund
+
+    Examples
+    --------
+
+    Change the relative abundance of Chromium:
+
+    >>> abunds = get_xsabundances()
+    >>> abunds['Cr'] = 4.2e-6
+    >>> set_xsabundances(abunds)
+
+    """
+
+    # Get the list of elemental values.
+    #
+    elems = get_xselements()
+    out = np.zeros(len(elems))
+    for name, abund in abundances.items():
+        # Skip unknown names. Should this warn the user?
+        with suppress(KeyError):
+            z = elems[name]
+            out[z - 1] = abund
+
+    # Write them to a file and then load them.
+    #
+    # This should set delete_on_close=False but that
+    # requires Python 3.12.
+    #
+    with tempfile.NamedTemporaryFile(encoding="ascii", mode="w",
+                                     delete=False) as fh:
+        for elem in out:
+            fh.write(f"{elem}\n")
+
+        # Make sure data is written to disk. Could this just
+        # be fh.flush() and avoid closing the file?
+        #
+        fh.close()
+
+        set_xsabund(fh.name)
 
 
 # This function is not added to __all__ as it is very specialized.
@@ -365,7 +428,7 @@ def set_xsabund(abundance: str) -> None:
 
     See Also
     --------
-    get_xsabund, get_xsversion, set_xschatter
+    get_xsabund, get_xsversion, set_xsabundances, set_xschatter
 
     Notes
     -----
@@ -995,7 +1058,7 @@ __all__ : tuple[str, ...]
 __all__ = ('get_xschatter', 'get_xsabund', 'get_xscosmo', 'get_xsxsect',
            'set_xschatter', 'set_xsabund', 'set_xscosmo', 'set_xsxsect',
            'get_xsversion', 'set_xsxset', 'get_xsxset', 'set_xsstate',
-           'get_xsstate', 'get_xsabundances')
+           'get_xsstate', 'get_xsabundances', 'set_xsabundances')
 
 
 class XSBaseParameter(Parameter):

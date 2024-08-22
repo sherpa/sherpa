@@ -300,6 +300,7 @@ def test_abund_get_invalid_element(caplog):
 
     from sherpa.astro import xspec
 
+    # TODO: TypeError is not the best error type here.
     with pytest.raises(TypeError,
                        match="^could not find element 'O3'$"):
         xspec.get_xsabund("O3")
@@ -310,6 +311,7 @@ def test_abund_get_invalid_element(caplog):
 @requires_xspec
 def test_abund_set_invalid_name(caplog):
     """Check what happens if sent an unknown table
+
     It is unlikely that the name "foo-foo" will become valid.
     """
 
@@ -325,6 +327,7 @@ def test_abund_set_invalid_name(caplog):
 @requires_xspec
 def test_xsect_set_invalid_name(caplog):
     """Check what happens if sent an unknown table
+
     It is unlikely that the name "foo-foo" will become valid.
     """
 
@@ -364,46 +367,78 @@ def test_abund_get_dict():
 
 
 @requires_xspec
-def test_abund_get_invalid_element(caplog):
-    """Check what happens if sent the wrong element name"""
+def test_abund_set_dict():
+    """Can we set a dict of abundances?
 
-    from sherpa.astro import xspec
+    We only set a sub-set of elements, with the rest being set to 0.
 
-    # TODO: TypeError is not the best error type here.
-    with pytest.raises(TypeError, match="^could not find element 'O3'$"):
-        xspec.get_xsabund("O3")
-
-    assert len(caplog.records) == 0
-
-
-@requires_xspec
-def test_abund_set_invalid_name(caplog):
-    """Check what happens if sent an unknown table
-
-    It is unlikely that the name "foo-foo" will become valid.
     """
 
     from sherpa.astro import xspec
 
-    with pytest.raises(ValueError, match="^Cannot read file 'foo-foo'.  It may not exist or contains invalid data$"):
-        xspec.set_xsabund("foo-foo")
+    oval = xspec.get_xsabund()
 
-    assert len(caplog.records) == 0
+    # This is a pre-condition. It is't really needed, but it is a better
+    # test if it holds.
+    #
+    #
+    assert oval != "file"
+
+    abundances = {'He': 0.1, 'H': 1.0, 'O': 0.2, 'Fe': 0.3, 'Mn': 0.4,
+                  'FooBar': 'value is ignored'}
+    try:
+        xspec.set_xsabundances(abundances)
+        assert xspec.get_xsabund() == "file"
+
+        got = []
+        for elem in ELEMENT_NAMES:
+            got.append(xspec.get_xsabund(elem))
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert got[0] == pytest.approx(1.0)
+    assert got[1] == pytest.approx(0.1)
+    assert got[7] == pytest.approx(0.2)
+    assert got[25] == pytest.approx(0.3)
+    assert got[24] == pytest.approx(0.4)
+
+    for i in range(2, 7):
+        assert got[i] == pytest.approx(0.0)
+
+    for i in range(8, 24):
+        assert got[i] == pytest.approx(0.0)
+
+    for i in range(26, 30):
+        assert got[i] == pytest.approx(0.0)
+
+    assert xspec.get_xsabund() == oval
 
 
 @requires_xspec
-def test_xsect_set_invalid_name(caplog):
-    """Check what happens if sent an unknown table
-
-    It is unlikely that the name "foo-foo" will become valid.
-    """
+def test_abund_set_dict_invalid_value():
+    """What happens if the value is not a number?"""
 
     from sherpa.astro import xspec
 
-    with pytest.raises(ValueError, match="^could not set XSPEC photoelectric cross-section to 'foo-foo'$"):
-        xspec.set_xsxsect("foo-foo")
+    ovals = xspec.get_xsabundances()
 
-    assert len(caplog.records) == 0
+    abundances = {'He': 0.1, 'H': 1.0, 'O': 0.2, 'Fe': 0.3, 'Mn': 0.4,
+                  'Cr': '1.2s', # number with text after it
+                  'FooBar': 'value is ignored'}
+
+    # This error comes from Sherpa (actually NumPy) and so the text
+    # could change with NumPy version. Assume that to be unlikely
+    # until we find it is a problem. This error path may change once
+    # we can use the FunctionUtility interface.
+    #
+    with pytest.raises(ValueError,
+                       match="^could not convert string to float: '1.2s'$"):
+        xspec.set_xsabundances(abundances)
+
+    # table should not have changed
+    nvals = xspec.get_xsabundances()
+    assert nvals == ovals
 
 
 def validate_xspec_setting(getfunc, setfunc, newval, altval):
