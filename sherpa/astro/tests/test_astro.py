@@ -465,12 +465,25 @@ def test_grouped_ciao4_5(parallel, run_thread, clean_astro_ui):
 
     def cmp_thread(fres, aa, covarerr):
         assert fres.numpoints == 46
-        assert fres.statval == approx(18.8316, rel=1e-4)
 
-        assert covarerr[0] == approx(0.104838, rel=1e-4)
-        assert covarerr[1] == approx(2.43937e-05, rel=1e-4)
-        assert aa.gamma.val == approx(1.83906, rel=1e-4)
-        assert aa.ampl.val == approx(0.000301258, rel=1e-4)
+        # Prior to 4.17.0 the selected channel range of 41 to 167
+        # mapped to 1.159:4.79661 keV and resulted in a best-fit
+        # statistic of 18.8316, gamma = 1.83906, and ampl of
+        # 3.01258e-4. In 4.17 the channels now start at 0 so
+        # the energy range has shifted. Ideally I'd change the
+        # test suite, but that is much harder to do than just
+        # change the fit results.
+        #
+        # The new energy range - as of 4.17 - os 1.18764:5.05439
+        # kev. There is not a huge lot of difference between these
+        # results (i.e between these two ranges).
+        #
+        assert fres.statval == approx(19.0311, rel=1e-4)
+
+        assert covarerr[0] == approx(0.104215, rel=1e-4)
+        assert covarerr[1] == approx(2.52228e-05, rel=1e-4)
+        assert aa.gamma.val == approx(1.83531, rel=1e-4)
+        assert aa.ampl.val == approx(0.000302545, rel=1e-4)
 
     check_thread(run_thread, 'grouped_ciao4.5', parallel, cmp_thread,
                  ['aa'])
@@ -641,7 +654,7 @@ def test_xmm2(run_thread, fix_xspec):
     wmsgs = set([str(w.message) for w in ws])
     assert wmsgs == emsgs
 
-    assert ui.get_data().channel[0] == approx(1.0, rel=1e-4)
+    assert ui.get_data().channel[0] == approx(0.0)
     rmf = ui.get_rmf()
     arf = ui.get_arf()
     assert rmf.detchans == 800

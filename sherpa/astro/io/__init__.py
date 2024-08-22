@@ -942,6 +942,10 @@ def read_pha(arg,
              ) -> Union[DataPHA, list[DataPHA]]:
     """Create a DataPHA object.
 
+    .. versionchanged:: 4.17.0
+       Channel numbers that start at 0 are now left as is rather than
+       be renumbered to start at 1.
+
     Parameters
     ----------
     arg
@@ -979,14 +983,10 @@ def read_pha(arg,
         # This should not be possible
         raise IOErr(f"PHA {filename}: unable to handle CHANNEL shape")
 
-    # Deal with the "first column" of the channel array.
+    # Prior to 4.17.0 the code tried to ensure that the first channel
+    # was numbered 1. The approach is to now use the values read in
+    # from file / memory.
     #
-    # TODO: why "correct for 1" here?
-    # TODO: this does not handle TLMIN correctly
-    if int(channel.flatten()[0]) == 0 or \
-       (chancol.minval is not None and chancol.minval == 0):
-        chancol.values += 1
-
     # Convert from RATE to COUNT. Ideally this would be passed to
     # DataPHA so it knew (and could then enforce a non-Poisson
     # statistic).
@@ -1314,9 +1314,9 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
     STAT_ERR is to be used for the errors then POISSERR is set to
     false.
 
-    If the CHANNEL array doesn't start at 1 then TLMIN1 and TLMAX1 are
-    required (here we assume the CHANNEL column is first) and they are
-    strongly recommended otherwise.
+    The TLMIN1 and TLMAX1 values are always set to match the CHANNEL
+    data range. This was changed in 4.17.0 as previously they were
+    only set when the channel range did not start at 1.
 
     """
 
@@ -1407,16 +1407,12 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
         channel = Column("CHANNEL", dataset.channel.astype(np.int32),
                          desc="Channel values")
 
-        # We only set the range if there is no TLMIN/MAX1 keyword
-        # already set. It's not clear what the best thing to do is.
-        #
         # Ensure the min/max ranges are written out as integers since
-        # data.channel may contain floating point values.
+        # data.channel may contain floating point values. Always
+        # re-write so that the file matches the data.
         #
-        if header.get("TLMIN1") is None:
-            channel.minval = int(dataset.channel[0])
-        if header.get("TLMAX1") is None:
-            channel.maxval = int(dataset.channel[-1])
+        channel.minval = int(dataset.channel[0])
+        channel.maxval = int(dataset.channel[-1])
 
         cols.append(channel)
 

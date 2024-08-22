@@ -78,7 +78,7 @@ def check_pha(pha):
     # between 1 and 1024 inclusive.
     #
     nchan = 1024
-    assert pha.channel == pytest.approx(np.arange(1, nchan + 1))
+    assert pha.channel == pytest.approx(np.arange(0, nchan))
 
     # Rather than check each element, use some simple summary
     # statistics.
@@ -634,7 +634,7 @@ def test_1209_background(make_data_path):
 
     # We need to set up the channels array to match the background.
     #
-    d = DataPHA("dummy", np.arange(1, 1025, dtype=np.int16), None)
+    d = DataPHA("dummy", np.arange(0, 1024, dtype=np.int16), None)
     assert d.header["TELESCOP"] == "none"
     assert d.header["INSTRUME"] == "none"
     assert d.header["FILTER"] == "none"

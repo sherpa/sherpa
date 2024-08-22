@@ -4714,12 +4714,16 @@ It is an integer or string.
                ) -> None:
         """Notice or ignore the given range.
 
+        Select or remove a range of channels when analyzing the data.
+        The units for the range, that is the values for the lo and hi
+        argument, is set by the analysis field.
+
         .. versionchanged:: 4.14.0
            PHA filtering has been improved to fix a number of corner
            cases which can result in the same filter now selecting one
            or two fewer channels that done in earlier versions of
-           Sherpa. The ``lo`` and ``hi`` arguments are now restricted based on
-           the units setting.
+           Sherpa. The ``lo`` and ``hi`` arguments are now restricted
+           based on the units setting.
 
         Parameters
         ----------

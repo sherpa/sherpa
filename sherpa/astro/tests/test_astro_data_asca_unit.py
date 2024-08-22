@@ -61,7 +61,7 @@ def check_pha0(pha, errors=True, responses=True):
     assert pha.areascal == pytest.approx(1.0)
 
     nchan = 512
-    assert pha.channel == pytest.approx(np.arange(1, nchan + 1))
+    assert pha.channel == pytest.approx(np.arange(0, nchan))
 
     assert len(pha.counts) == nchan
     assert pha.counts.min() == pytest.approx(0.0)

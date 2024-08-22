@@ -1469,7 +1469,7 @@ def test_roundtrip_channel0(tmp_path):
     pha = None
 
     pha2 = io.read_pha(outfile)
-    assert pha2.channel == pytest.approx([1, 2, 3])
+    assert pha2.channel == pytest.approx([0, 1, 2])
     assert pha2.counts == pytest.approx([2, 5, 9])
     assert pha2.exposure == pytest.approx(12)
     assert pha2.backscal == pytest.approx(1.2)

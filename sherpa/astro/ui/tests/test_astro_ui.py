@@ -2042,11 +2042,7 @@ def test_pha_offset_via_file(offset, clean_astro_ui, tmp_path):
     # Have we read in the expected channels?
     expected_chans = np.arange(offset, offset + 9, dtype=np.int16)
     chans, = ui.get_indep()
-    if offset == 0:
-        # Test the current behaviour
-        assert chans == pytest.approx(expected_chans + 1)
-    else:
-        assert chans == pytest.approx(expected_chans)
+    assert chans == pytest.approx(expected_chans)
 
     # It is not clear what values lead to a loss in tolerance here.
     #
