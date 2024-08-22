@@ -1803,8 +1803,9 @@ def _reconstruct_rmf(rmf: RMFType) -> DataType:
             "F_CHAN": f_chan_out,
             "N_CHAN": n_chan_out,
             "MATRIX": matrix_out,
-            "NUMGRP": numgrp,
-            "NUMELT": numelt}
+            # Ensure these are integer types
+            "NUMGRP": int(numgrp),
+            "NUMELT": int(numelt)}
 
 
 def _pack_rmf(dataset: RMFType) -> BlockList:
