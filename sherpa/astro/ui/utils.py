@@ -15894,6 +15894,80 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.utils.calc_kcorr(data, model, z, obslo, obshi,
                                              restlo, resthi)
 
+    def show_xsabund(self,
+                     outfile=None,  # str or file-like
+                     clobber: bool = False) -> None:
+        """Show the XSPEC abundance values.
+
+        .. versionadded:: 4.17.0
+
+        Parameters
+        ----------
+        outfile : str, file-like, or None, optional
+           If not given the results are displayed to the screen,
+           otherwise it is the file name (string) or file-like object
+           to write the results to.
+        clobber : bool, optional
+           If `outfile` is not ``None``, then this flag controls
+           whether an existing file can be overwritten (``True``)
+           or if it raises an exception (``False``, the default
+           setting).
+
+        See Also
+        --------
+        get_xsabund, set_xsabund
+
+        Examples
+        --------
+
+        Display the current abundance table and values:
+
+        >>> show_xsabund()
+        Solar Abundance Table:
+        angr
+          H : 1.000e+00  He: 9.770e-02  Li: 1.450e-11  Be: 1.410e-11  B : 3.980e-10
+          C : 3.630e-04  N : 1.120e-04  O : 8.510e-04  F : 3.630e-08  Ne: 1.230e-04
+          Na: 2.140e-06  Mg: 3.800e-05  Al: 2.950e-06  Si: 3.550e-05  P : 2.820e-07
+          S : 1.620e-05  Cl: 3.160e-07  Ar: 3.630e-06  K : 1.320e-07  Ca: 2.290e-06
+          Sc: 1.260e-09  Ti: 9.770e-08  V : 1.000e-08  Cr: 4.680e-07  Mn: 2.450e-07
+          Fe: 4.680e-05  Co: 8.320e-08  Ni: 1.780e-06  Cu: 1.620e-08  Zn: 3.980e-08
+
+        The output can be written to a file or a file-like instance,
+        such as a StringIO object:
+
+        >>> from io import StringIO
+        >>> buffer = StringIO()
+        >>> show_xsabund(buffer)
+        >>> txt = buffer.getvalue()
+
+        """
+
+        try:
+            xspec = sherpa.astro.xspec
+        except AttributeError:
+            warning("XSPEC support is not available")
+            return
+
+        # Very similar to the XSPEC "show abund" format, except that
+        # we do not have the "documentation" for the abundance table.
+        # This can be added but needs changes to the _xspec module.
+        #
+        lines = ["Solar Abundance Table:",
+                 f"{xspec.get_xsabund():4s}",
+                 ""]
+
+        # Rely on get_xsbundances to be in order of atomic number.
+        #
+        idx = 0
+        for name, abund in xspec.get_xsabundances().items():
+            lines[-1] += f"  {name:2s}: {abund:.3e}"
+            idx += 1
+            if idx == 5:
+                lines.append("")
+                idx = 0
+
+        send_to_pager("\n".join(lines), outfile, clobber)
+
     ###########################################################################
     # Session Text Save Function
     ###########################################################################

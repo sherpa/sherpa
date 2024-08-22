@@ -135,6 +135,7 @@ burden...
       get_model_component
       get_model_component_image
       get_model_component_plot
+      get_model_components_plot
       get_model_contour
       get_model_contour_prefs
       get_model_image
@@ -174,6 +175,7 @@ burden...
       get_resid_plot
       get_response
       get_rmf
+      get_rmf_plot
       get_rng
       get_sampler
       get_sampler_name
@@ -182,6 +184,7 @@ burden...
       get_source
       get_source_component_image
       get_source_component_plot
+      get_source_components_plot
       get_source_contour
       get_source_image
       get_source_plot
@@ -303,6 +306,7 @@ burden...
       plot_kernel
       plot_model
       plot_model_component
+      plot_model_components
       plot_order
       plot_pdf
       plot_photon_flux
@@ -310,9 +314,11 @@ burden...
       plot_pvalue
       plot_ratio
       plot_resid
+      plot_rmf
       plot_scatter
       plot_source
       plot_source_component
+      plot_source_components
       plot_trace
       proj
       projection
@@ -403,6 +409,7 @@ burden...
       show_psf
       show_source
       show_stat
+      show_xsabund
       simulfit
       subtract
       t_sample
