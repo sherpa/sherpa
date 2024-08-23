@@ -2160,6 +2160,7 @@ will be removed. The identifiers can be integers or strings.
 
         """
         if (arf is None) and (rmf is None):
+            # TODO: this does not clear out any existing setting
             return
 
         resp_id = self._fix_response_id(id)
@@ -4863,6 +4864,10 @@ It is an integer or string.
         #
         for bid in bkg_ids:
             bkg = self.get_background(bid)
+            if bkg is None:
+                # Skip any missing identifier
+                continue
+
             old_bkg_units = bkg.units
             try:
                 bkg.units = self.units
@@ -4976,6 +4981,9 @@ It is an integer or string.
         #
         for bkg_id in self.background_ids:
             bkg = self.get_background(bkg_id)
+            if bkg is None:
+                raise DataErr(f"Internal error: unknown background id {bkg_id}")
+
             try:
                 bkg.grouped = True
             except DataErr as exc:
@@ -5003,6 +5011,9 @@ It is an integer or string.
             # Unlike the group case we do not need to worry about this
             # failing.
             bkg = self.get_background(bkg_id)
+            if bkg is None:
+                raise DataErr(f"Internal error: unknown background id {bkg_id}")
+
             bkg.grouped = False
 
     def subtract(self):
