@@ -4156,6 +4156,8 @@ class Session(NoNewAttributesAfterInit):
         -----
         The source expression is not removed by this function.
 
+        The routine does nothing if the given dataset does not exist.
+
         Examples
         --------
 
