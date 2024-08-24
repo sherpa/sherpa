@@ -38,7 +38,9 @@ These are the same stages as described in the
 :ref:`getting started <getting-started>` section, but the
 syntax is different, since the Session object handles the
 creation of, and passing around, the underlying
-Sherpa objects.
+Sherpa objects. The Sherpa objects can still be accessed
+and used directly, which is useful when the Session API
+does not provide access to some specialized method.
 
 The :py:mod:`sherpa.ui` module provides an interface where
 the Session object is hidden from the user, which makes it
@@ -59,6 +61,11 @@ using the
 :py:mod:`sherpa.ui` module.
 
 The data to be fit is the four element array:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> x = [100, 200, 300, 400]
    >>> y = [10, 12, 9, 13]
@@ -92,7 +99,12 @@ method is used to register the models from
 :py:mod:`sherpa.models.basic` with the session (by default it will
 add any class in the module that is derived from the
 :py:class:`~sherpa.models.model.ArithmeticModel`
-class)::
+class):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> from sherpa.ui.utils import Session
    >>> import sherpa.models.basic
@@ -109,7 +121,12 @@ and
 :py:meth:`~sherpa.ui.utils.Session.set_default_id`
 methods, and can be a string or an integer).
 Many methods will default to using the default identifier,
-but ``load_arrays`` requires it::
+but ``load_arrays`` requires it:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> s.load_arrays(1, x, y)
 
@@ -127,14 +144,24 @@ but ``load_arrays`` requires it::
 
 The :py:meth:`~sherpa.ui.utils.Session.list_data_ids` method
 returns the list of available data sets (i.e. those that have
-been loaded into the session)::
+been loaded into the session):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> s.list_data_ids()
    [1]
 
 The :py:meth:`~sherpa.ui.utils.Session.get_data` method lets a user
 access the underlying data object. This method uses the default
-identifier if not specified::
+identifier if not specified:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> s.get_data()
    <Data1D data set instance ''>
@@ -146,7 +173,12 @@ identifier if not specified::
    syserror  = None
 
 The default statistic and optimiser are set to values useful for
-data with Gaussian errors::
+data with Gaussian errors:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> s.get_stat_name()
    'chi2gehrels'
@@ -163,7 +195,12 @@ Note that they take a string as an argument
 (rather than an instance of a
 :py:class:`~sherpa.stats.Stat`
 or :py:class:`~sherpa.optmethods.OptMethod`
-class)::
+class):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> s.set_stat('cash')
    >>> s.set_method('simplex')
@@ -186,14 +223,22 @@ The ``instancename`` is used as an identifier for the
 component, and can be used with other methods,
 such as :py:meth:`~sherpa.ui.utils.Session.set_par`.
 
-::
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> s.set_source('const1d.mdl')
 
 The ``instancename`` value is also used to create a Python variable
 which provides direct access to the model component (it can
 also be retrieved with
-:py:meth:`~sherpa.ui.utils.Session.get_model_component`)::
+:py:meth:`~sherpa.ui.utils.Session.get_model_component`):
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> print(mdl)
    const1d.mdl
@@ -203,7 +248,12 @@ also be retrieved with
 
 The source model can be retrievd with
 :py:meth:`~sherpa.ui.utils.Session.get_source`, which in this
-example is just the single model component ``mdl``::
+example is just the single model component ``mdl``:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> s.get_source()
    <Const1D model instance 'const1d.mdl'>
@@ -212,7 +262,12 @@ With the data, model, statistic, and optimiser set, it
 is now possible to perform a fit. The
 :py:meth:`~sherpa.ui.utils.Session.fit` method defaults to
 a simultaneous fit of all the loaded data sets; in this case
-there is only one::
+there is only one:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> s.fit()
    Dataset               = 1
@@ -231,6 +286,11 @@ with methods such as
 :py:meth:`~sherpa.ui.utils.Session.calc_stat_info`,
 and
 :py:meth:`~sherpa.ui.utils.Session.get_fit_results`.
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> r = s.get_fit_results()
    >>> print(r)
@@ -261,12 +321,27 @@ The following
 hides the automatically-created error bars on the data points
 by changing a setting in dictionary returned by
 :py:meth:`~sherpa.ui.utils.Session.get_data_plot_prefs`,
-and then displays the data along with the model::
+and then displays the data along with the model:
+
+.. plot::
+   :context:
+   :include-source:
 
    >>> s.get_data_plot_prefs()['yerrorbars'] = False
    >>> s.plot_fit()
 
-.. image:: ../_static/ui/session_basic_example_fit.png
+Access to the Sherpa objects is provided, and can be used to
+make changes that the Session API does not provide, such as
+changing the labels of the data plots (added in 4.17.0):
+
+.. plot::
+   :context:
+   :include-source:
+
+   >>> data = s.get_data()
+   >>> data.set_xlabel("Distance [m]")
+   >>> data.set_ylabel("Speed [m/s]")
+   >>> s.plot_fit()
 
 Using the UI module
 -------------------
@@ -348,7 +423,12 @@ preceding example::
    >>> get_data_plot_prefs()['yerrorbars'] = False
    >>> plot_fit()
 
-The plot created by this function is the same as shown in
+   >>> data = get_data()
+   >>> data.set_xlabel("Distance [m]")
+   >>> data.set_ylabel("Speed [m/s]")
+   >>> plot_fit()
+   
+The plots created by this function are the same as shown in
 the previous example.
 
 Reference/API
