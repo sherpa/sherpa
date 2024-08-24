@@ -1250,6 +1250,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: rework the Data type notes section (also needed for
     # unpack_arrays)
+    #
+    # TODO: can bkg_id be sent in?
     def load_arrays(self, id: IdType, *args) -> None:
         """Create a data set from array values.
 
@@ -6990,6 +6992,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        delete_bkg : Remove the background component.
         get_data : Return the data set by identifier.
         load_bkg : Load the backgreound from a file and add it to a PHA data set.
         set_bkg : Set the background for a PHA data set.
@@ -7035,6 +7038,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        delete_bkg : Remove the background component.
         get_bkg : Return the background for a PHA data set.
         load_bkg : Load the background from a file and add it to a PHA data set.
         load_pha : Load a file as a PHA data set.
@@ -7077,6 +7081,77 @@ class Session(sherpa.ui.utils.Session):
         data = self._get_pha_data(id)
         _check_type(bkg, DataPHA, 'bkg', 'a PHA data set')
         data.set_background(bkg, bkg_id)
+
+    # DOC-TODO: this does not delete the source expression for the;
+    # background - is this intended or a bug?
+    def delete_bkg(self,
+                   id: Optional[IdType] = None,
+                   bkg_id: Optional[IdType] = None
+                   ) -> None:
+        """Remove the background component.
+
+        The background data set, and any associated structures - such
+        as the ARF and RMF for PHA data sets - are removed.
+
+        .. versionadded:: 4.17.0
+
+        Parameters
+        ----------
+        id : int, str, or None, optional
+           The data set to delete. If not given then the default
+           identifier is used, as returned by `get_default_id`.
+        bkg_id : int, str, or None, optional
+           The identifier for this background, which is needed if
+           there are multiple background estimates for the source.
+
+        See Also
+        --------
+        clean, delete_bkg_model, list_bkg_ids, set_bkg
+
+        Notes
+        -----
+        The source expression for the background is not removed by
+        this function.
+
+        The routine does nothing if the given dataset or background
+        does not exist, but will error out if the data is not a PHA
+        dataset.
+
+        Examples
+        --------
+
+        Delete the background data from the default data set:
+
+        >>> delete_bkg()
+
+        Delete the second background component:
+
+        >>> delete_bkg(bkg_id=2)
+
+        Delete the second background component for the data set
+        identified as 'src':
+
+        >>> delete_bkg('src', bkg_id=2)
+
+        """
+
+        idval = self._fix_id(id)
+        try:
+            # This will error out if not a PHA data set
+            pha = self._get_pha_data(idval)
+        except IdentifierErr:
+            # No data, so return
+            return
+
+        ostate = pha.subtracted
+        pha.delete_background(bkg_id)
+        nstate = pha.subtracted
+        if ostate and ostate != nstate:
+            # Technically ostate must be True if nstate is False but it's
+            # not worth removing that comparison.
+            #
+            info("dataset %s: background subtraction has been removed",
+                 idval)
 
     def list_bkg_ids(self,
                      id: Optional[IdType] = None
@@ -8112,6 +8187,7 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
+        delete_bkg : Delete a background data set by identifier.
         load_bkg_arf : Load an ARF from a file and add it to the background of a PHA data set.
         load_bkg_rmf : Load a RMF from a file and add it to the background of a PHA data set.
         load_pha : Load a PHA data set.
