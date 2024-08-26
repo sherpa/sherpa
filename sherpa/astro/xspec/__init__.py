@@ -11088,6 +11088,125 @@ class XSssa(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, (self.te, self.y))
 
 
+@version_at_least("12.14.1")
+class XSsssed(XSAdditiveModel):
+    """The XSPEC sssed model: Shakura & Sunyaev spectral energy distribution
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Attributes
+    ----------
+    mass
+       The black hole mass in solar units.
+    dist
+       The comoving (proper) distance in kpc.
+    logmdot
+       The accretion rate, in eddington units.
+    Rin
+       The inner most radius of the accretion flow in r_g.
+    cosi
+       The inclination angle of the disc.
+    kTe_th
+       The electron temparatire the the thermal corona in keV. If
+       negative then it represents the innre hot Comptonisation
+       component.
+    kTe_nt
+       The apparent electron temperature for non-thermal corona (keV),
+       recommended to be fixed at 300 to mimic non-thermal electron
+       distribution. If negative then the model gives the
+       Comptonisation component in the passive disc corona region.
+    Gamma_th
+       The photon index of the inner hot corona. If negative then only
+       the inner Compton component is used.
+    Gamma_nt
+       The photon index of the disk-corona. If negative then the model
+       gives the outer disk.
+    frac_th
+       The fraction of the hot Comptonising component to the total
+       Comptonisation.
+    Rcor
+       The outer radius of the disc-corona region in r_g.
+    logrout
+       The outer radius if the accretion disc. If this parameter is -1
+       then the self-gravity radius, as calculated by Laor & Netzer
+       (1989) is used.
+    redshift
+       The redshift. This must be fixed.
+    color_cor
+       The switching parameter for colour correction: 0 no correction,
+       1 means use the approach as XSoptxagnf.
+    norm
+       This must be fixed to 1.
+
+    See Also
+    --------
+    XSoptxagnf
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSssed.html
+
+    """
+
+    __function__ = "sssed"
+
+    def __init__(self, name='sssed'):
+        self.mass = XSParameter(name, 'mass', 10.0, min=1.0,
+                                max=10000000000.0, hard_min=1.0,
+                                hard_max=10000000000.0, frozen=True,
+                                units='solar')
+        self.dist = XSParameter(name, 'dist', 10.0, min=0.1,
+                                max=1000000000.0, hard_min=0.1,
+                                hard_max=1000000000.0, frozen=True,
+                                units='kpc')
+        self.logmdot = XSParameter(name, 'logmdot', 0.1, min=-3.0,
+                                   max=3.0, hard_min=-3.0,
+                                   hard_max=3.0, units='real')
+        self.Rin = XSParameter(name, 'Rin', 6.0, min=1.0, max=500.0,
+                               hard_min=1.0, hard_max=500.0, units='Rg')
+        self.cosi = XSParameter(name, 'cosi', 0.5, min=0.0, max=0.95,
+                                hard_min=0.0, hard_max=0.95, frozen=True)
+        self.kTe_th = XSParameter(name, 'kTe_th', 10.0, min=4.0,
+                                  max=300.0, hard_min=4.0,
+                                  hard_max=300.0, units='keV(-th)')
+        self.kTe_nt = XSParameter(name, 'kTe_nt', 300.0, min=10.0,
+                                  max=300.0, hard_min=10.0,
+                                  hard_max=300.0, frozen=True,
+                                  units='keV(-nt)')
+        self.Gamma_th = XSParameter(name, 'Gamma_th', 1.7, min=1.4,
+                                    max=4.0, hard_min=1.4,
+                                    hard_max=4.0)
+        self.Gamma_nt = XSParameter(name, 'Gamma_nt', 2.2, min=1.9,
+                                    max=4.0, hard_min=1.9,
+                                    hard_max=4.0, units='(-disk)')
+        # Over-ride the settings from 12.14.1 as they do not make sense
+        self.frac_th = XSParameter(name, 'frac_th', 0.2, min=0.0,
+                                   max=1.0, hard_min=0.0,
+                                   hard_max=1.0)
+        self.Rcor = XSParameter(name, 'Rcor', 10.0, min=1.0,
+                                max=5000.0, hard_min=1.0,
+                                hard_max=5000.0, units='Rg')
+        self.logrout = XSParameter(name, 'logrout', -1.0, min=-1.0,
+                                   max=7.0, hard_min=-1.0,
+                                   hard_max=7.0, frozen=True,
+                                   units='(-selfg)')
+        self.redshift = mkRedshift(name, minval=0, maxval=1, lc=True)
+        self.color_cor = XSParameter(name, 'color_cor', 1.0, min=0.0,
+                                     max=1.0, hard_min=0.0,
+                                     hard_max=1.0, frozen=True,
+                                     units='0off/1on')
+
+        pars = (self.mass, self.dist, self.logmdot, self.Rin,
+                self.cosi, self.kTe_th, self.kTe_nt, self.Gamma_th,
+                self.Gamma_nt, self.frac_th, self.Rcor, self.logrout,
+                self.redshift, self.color_cor)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSstep(XSAdditiveModel):
     """The XSPEC step model: step function convolved with gaussian.
 

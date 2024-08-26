@@ -37,7 +37,7 @@ from sherpa.utils.err import ParameterErr
 #    '(XSConvolutionKernel)'
 # in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 281
+XSPEC_MODELS_COUNT = 282
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
