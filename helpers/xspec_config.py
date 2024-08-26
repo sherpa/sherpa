@@ -30,7 +30,7 @@ from .extensions import build_ext
 #
 SUPPORTED_VERSIONS = [(12, 12, 0), (12, 12, 1),
                       (12, 13, 0), (12, 13, 1),
-                      (12, 14, 0)]
+                      (12, 14, 0), (12, 14, 1)]
 
 
 # We could use packaging.versions.Version here, but for our needs we
