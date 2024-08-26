@@ -1410,6 +1410,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         Parameters
         ----------
         yfunc
+           Unused.
 
         Returns
         -------

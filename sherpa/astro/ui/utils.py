@@ -10999,7 +10999,7 @@ class Session(sherpa.ui.utils.Session):
             id: Optional[IdType] = None,
             *otherids: IdType,
             **kwargs
-            ) -> FitResults:
+            ) -> None:
         # pylint: disable=W1113
         """Fit a model to one or more data sets.
 
@@ -11108,7 +11108,7 @@ class Session(sherpa.ui.utils.Session):
                 id: Optional[IdType] = None,
                 *otherids: IdType,
                 **kwargs
-                ) -> FitResults:
+                ) -> None:
         # pylint: disable=W1113
         """Fit a model to one or more background PHA data sets.
 
@@ -11188,7 +11188,7 @@ class Session(sherpa.ui.utils.Session):
         kwargs['bkg_only'] = True
         self._fit(id, *otherids, **kwargs)
 
-    def _fit(self, id=None, *otherids, **kwargs):
+    def _fit(self, id=None, *otherids, **kwargs) -> None:
         # pylint: disable=W1113
 
         # validate the kwds to f.fit() so user typos do not
