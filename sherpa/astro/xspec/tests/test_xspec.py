@@ -126,6 +126,11 @@ def get_xspec_models():
                    "12.14.0f", "12.14.0g", "12.14.0h"]:
         remove_item(model_names, 'XSbvvnei')
 
+    # Has been reported to XSPEC team.
+    #
+    if version == "12.14.1":
+        remove_item(model_names, 'XSismabs')
+
     models = [getattr(xs, model_name) for model_name in model_names]
     models = list(filter(lambda mod: mod.version_enabled, models))
 
