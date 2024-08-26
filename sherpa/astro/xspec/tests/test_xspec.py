@@ -210,15 +210,6 @@ def assert_is_finite(vals, modelcls, label):
     emsg = f"model {modelcls} is finite [{label}]"
     assert numpy.isfinite(vals).all(), emsg
 
-    # Some models seem to return 0's, so skip them for now:
-    # these models have a default redshift parameter of 0 but
-    # the code complains if z <= 0 and returns 0's.
-    #
-    if modelcls in [xs.XSbcph, xs.XSbvcph, xs.XScph, xs.XSvcph]:
-        assert (vals == 0.0).all(), \
-            f'Expected {modelcls} to evaluate to all zeros [{label}]'
-        return
-
     emsg = f"Expected model {modelcls} to have a value > 0 [{label}]"
     assert (vals > 0.0).any(), emsg
 

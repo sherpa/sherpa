@@ -2642,6 +2642,10 @@ class XSbcph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The default Redshift parameter has been changed from 0 to 0.1 to
+       match version 12.14.1 of XSPEC.
+
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
@@ -2680,7 +2684,7 @@ class XSbcph(XSAdditiveModel):
     def __init__(self, name='bcph'):
         self.peakT = XSParameter(name, 'peakT', 2.2, min=0.1, max=100.0, hard_min=0.1, hard_max=100.0, units='keV')
         self.Abund = XSParameter(name, 'Abund', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
-        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0, maxval=50)
         self.Velocity = mkVelocity(name)
         self.switch = mkswitch(name)
 
@@ -4079,6 +4083,10 @@ class XSbvcph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The default Redshift parameter has been changed from 0 to 0.1 to
+       match version 12.14.1 of XSPEC.
+
     .. versionadded:: 4.16.1
        This model requires XSPEC 12.14.0 or later.
 
@@ -4130,7 +4138,7 @@ class XSbvcph(XSAdditiveModel):
         self.Ca = XSParameter(name, 'Ca', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Fe = XSParameter(name, 'Fe', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, min=0.0, max=1000.0, hard_min=0.0, hard_max=1000.0, frozen=True)
-        self.Redshift = XSParameter(name, 'Redshift', 0.0, min=0.0, max=50.0, hard_min=0.0, hard_max=50.0, frozen=True)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0, maxval=50)
         self.Velocity = mkVelocity(name)
         self.switch = mkswitch(name)
 
@@ -7177,6 +7185,10 @@ class XScph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The default Redshift parameter has gone back to 0.1 to match
+       version 12.14.1 of XSPEC.
+
     .. versionchanged:: 4.16.1
        The switch parameter default has changed from 1 to 2 to match
        XSPEC 12.14.0 and the maximum value is now 3.
@@ -7220,7 +7232,7 @@ class XScph(XSAdditiveModel):
                                  units='keV')
         self.Abund = XSParameter(name, 'Abund', 1, 0, 1000, 0, 1000,
                                  frozen=True)
-        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0, maxval=50)
         self.switch = mkswitch(name)
 
         pars = (self.peakT, self.Abund, self.Redshift, self.switch)
@@ -11544,6 +11556,10 @@ class XSvcph(XSAdditiveModel):
 
     The model is described at [1]_.
 
+    .. versionchanged:: 4.17.1
+       The default Redshift parameter has gone back to 0.1 to match
+       version 12.14.1 of XSPEC.
+
     .. versionchanged:: 4.16.1
        The switch parameter default has changed from 1 to 2 to match
        XSPEC 12.14.0 and the maximum value is now 3.
@@ -11614,7 +11630,7 @@ class XSvcph(XSAdditiveModel):
                               frozen=True)
         self.Ni = XSParameter(name, 'Ni', 1.0, 0., 1000., 0.0, 1000.0,
                               frozen=True)
-        self.Redshift = mkRedshift(name, minval=0, maxval=50)
+        self.Redshift = mkRedshift(name, default=0.1, minval=0, maxval=50)
         self.switch = mkswitch(name)
 
         pars = (self.peakT, self.He, self.C, self.N, self.O, self.Ne,
