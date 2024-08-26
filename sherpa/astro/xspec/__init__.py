@@ -8173,7 +8173,7 @@ class XSgaussian(XSAdditiveModel):
 
     See Also
     --------
-    XSagauss, XSlorentz, XSvoigt, XSzagauss, XSzgauss
+    XSagauss, XSlorentz, XSvgaussian, XSvoigt, XSzagauss, XSzgauss
 
     References
     ----------
@@ -12003,6 +12003,49 @@ class XSvgadem(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.14.1")
+class XSvgaussian(XSAdditiveModel):
+    """The XSPEC vgaussian model: gaussian line profile with sigma in velocity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Attributes
+    ----------
+    LineE
+       The line energy, in keV.
+    Sigma
+       The line width, in km/s.
+    norm
+       The total flux in the line (photon/cm^2/s).
+
+    See Also
+    --------
+    XSgaussian, XSzvgaussian
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVgauss.html
+
+    """
+
+    __function__ = "C_vgaussianLine"
+
+    def __init__(self, name='vgaussian'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+
+        pars = (self.LineE, self.Sigma)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSvgnei(XSAdditiveModel):
     """The XSPEC vgnei model: collisional plasma, non-equilibrium, temperature evolution.
 
@@ -14271,6 +14314,52 @@ class XSzvagauss(XSAdditiveModel):
                                  max=300000.0, hard_min=0.0,
                                  hard_max=300000.0, units='km/s')
         self.Reshift = mkRedshift(name)
+
+        pars = (self.LineE, self.Sigma, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.1")
+class XSzvgaussian(XSAdditiveModel):
+    """The XSPEC zvgaussian model: gaussian line profile with sigma in velocity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Attributes
+    ----------
+    LineE
+       The line energy, in keV.
+    Sigma
+       The line width, in km/s.
+    Redshift
+       The source redshift.
+    norm
+       The total flux in the line (photon/cm^2/s).
+
+    See Also
+    --------
+    XSvgaussian, XSzgauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVgauss.html
+
+    """
+
+    __function__ = "C_zvgaussianLine"
+
+    def __init__(self, name='zvgaussian'):
+        self.LineE = XSParameter(name, 'LineE', 6.5, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+        self.Redshift = mkRedshift(name)
 
         pars = (self.LineE, self.Sigma, self.Redshift)
         XSAdditiveModel.__init__(self, name, pars)
