@@ -24,6 +24,9 @@
 
   ./check_xspec_update.py infile
 
+    --nohard
+    --noswitch
+
 Aim:
 
 Given an XSPEC model.dat file report on differences to the supported
@@ -37,16 +40,26 @@ At the moment this requires a Sherpa build with a working XSPEC
 module; this could be worked around but it's not felt to be worth it
 at this time.
 
+It could take the infile from $HEADAS/../spectral/manager/model.dat
+if not set, but I want to be explicit about what file is being used,
+and it's too easy to have the environment set for a different version
+of XSPEC.
+
 """
 
 import sys
+from typing import Sequence
 
-from sherpa.astro.utils.xspec import parse_xspec_model_description
+from sherpa.astro.utils.xspec import ModelDefinition, \
+    parse_xspec_model_description
 from sherpa.astro import xspec
 from sherpa.models.parameter import hugeval
 
 
-def compare_xspec_models(models, hard=True):
+def compare_xspec_models(models: Sequence[ModelDefinition],
+                         hard: bool = True,
+                         switch: bool = True
+                         ) -> None:
     """Check the sherpa.astro.xspec models to those in models.
 
     This is intended to see what updates are needed when updating the
@@ -58,6 +71,9 @@ def compare_xspec_models(models, hard=True):
     models : list of ModelDefinition
     hard : bool, optional
         Do we bother checking the hard limits (default True)?
+    switch : bool, optional
+        Do we bother checking the limits for the switch parameter
+        (default True)?
 
     """
 
@@ -128,15 +144,38 @@ def compare_xspec_models(models, hard=True):
             # We skip the Parameter instances which are the norm parameters
             #
             if isinstance(xpar, xspec.XSBaseParameter):
-                # How do these values compare to the values from the old model.dat
+                # How do these values compare to the values from the old
+                # model.dat file?
                 #
+                # First check the frozen report, as the remaining checks are
+                # for min/max ranges. Note that we don't always have a frozen
+                # attribute for a parameter.
+                #
+                try:
+                    frozen = par.frozen
+                except AttributeError:
+                    frozen = True
+
+                if xpar.frozen != frozen:
+                    reports.append(f"par {xpar.name} frozen: {xpar.frozen} -> {frozen}")
+
 
                 # The actual soft limits should match the model.dat hard limits
                 # (and should also be reported in the _xspec_soft... checks).
                 # We do special case the situation where the par limits are None
                 # (i.e. undefined) as long as the xpar values are +/- hugeval
                 #
+                # For the moment this does not care about the switch flag
+                #
+                # Do we want to skip the min/max checks? For now we only
+                # skip the switch settings if they are all (in the model.dat
+                # file) not set.
+                #
                 if [par.softmin, par.hardmin, par.softmax, par.hardmax] == [None] * 4:
+
+                    if not switch and xpar.name == "switch":
+                        continue
+
                     for attr in ["min", "hard_min"]:
                         got = getattr(xpar, attr)
                         if got != -hugeval:
@@ -168,15 +207,6 @@ def compare_xspec_models(models, hard=True):
                     if xpar.hard_max != par.hardmax:
                         reports.append(f"par {xpar.name} hardmax: {xpar.hard_max} -> {par.hardmax}")
 
-                # We don't always have a frozen field for par
-                try:
-                    frozen = par.frozen
-                except AttributeError:
-                    frozen = True
-
-                if xpar.frozen != frozen:
-                    reports.append(f"par {xpar.name} frozen: {xpar.frozen} -> {frozen}")
-
             elif xpar.name != 'norm':
                 raise ValueError(f"Unexpected parameter for {mdl.clname}\n{xpar}")
 
@@ -207,24 +237,28 @@ def compare_xspec_models(models, hard=True):
 
 if __name__ == "__main__":
 
-    # Too lazy to use python argument module
-    hard = True
-    argv = []
-    for arg in sys.argv[1:]:
-        if arg == '--nohard':
-            hard = False
-        else:
-            argv.append(arg)
+    import argparse
 
-    if len(argv) != 1:
-        sys.stderr.write(f"Usage: {sys.argv[0]} infile\n")
-        sys.stderr.write("       --nohard  do not check hard ranges\n\n")
-        sys.exit(1)
+    parser = argparse.ArgumentParser()
+
+    # The argument names don't fit the code (i.e. they'd be better
+    # inverted) but this is better documentation for the user.
+    #
+    parser.add_argument("infile", type=str,
+                        help="The spectral/manager/model.dat file")
+    parser.add_argument("--nohard", action="store_true",
+                        help="do not check hard ranges")
+    parser.add_argument("--noswitch", action="store_true",
+                        help="do not check limits of switch parameter")
+
+    args = parser.parse_args()
 
     # This errors out in case of significant model-support issues
     # (e.g. a periodic model parameter) but can also just be an
     # issue with a poorly-specified interchange format (the model.dat
     # file) which may just need changes to this routine.
     #
-    models = parse_xspec_model_description(argv[0])
-    compare_xspec_models(models, hard=hard)
+    models = parse_xspec_model_description(args.infile)
+    compare_xspec_models(models,
+                         hard=not args.nohard,
+                         switch=not args.noswitch)
