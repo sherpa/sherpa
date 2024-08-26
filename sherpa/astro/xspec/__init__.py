@@ -2073,7 +2073,7 @@ class XSagauss(XSAdditiveModel):
 
     See Also
     --------
-    XSgaussian, XSzagauss, XSzgauss
+    XSgaussian, XSvagauss, XSzagauss, XSzgauss, XSzvagauss
 
     References
     ----------
@@ -11299,6 +11299,49 @@ class XStapec(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
+@version_at_least("12.14.1")
+class XSvagauss(XSAdditiveModel):
+    """The XSPEC vagauss model: gaussian line profile in wavelength space with sigma in velocity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line wavelength in Angstrom.
+    Sigma
+       The line width in km/s
+    norm
+       The total photon/cm^2/s in the line.
+
+    See Also
+    --------
+    XSagauss, XSzagauss, XSzvagauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVagauss.html
+
+    """
+
+    __function__ = "C_vagauss"
+
+    def __init__(self, name='vagauss'):
+        self.LineE = XSParameter(name, 'LineE', 10.0, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='A')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+
+        pars = (self.LineE, self.Sigma)
+        XSAdditiveModel.__init__(self, name, pars)
+
+
 class XSvapec(XSAdditiveModel):
     """The XSPEC vapec model: APEC emission spectrum.
 
@@ -13810,7 +13853,7 @@ class XSzagauss(XSAdditiveModel):
 
     See Also
     --------
-    XSagauss, XSgaussian, XSzgauss
+    XSagauss, XSgaussian, XSvagauss, XSzgauss, XSzvagauss
 
     References
     ----------
@@ -14186,6 +14229,51 @@ class XSzpowerlw(XSAdditiveModel):
         self.Redshift = mkRedshift(name)
 
         XSAdditiveModel.__init__(self, name, (self.PhoIndex, self.Redshift))
+
+
+@version_at_least("12.14.1")
+class XSzvagauss(XSAdditiveModel):
+    """The XSPEC zvagauss model: gaussian line profile in wavelength space with sigma in velocity
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.1
+       This model requires XSPEC 12.14.1 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line wavelength in Angstrom.
+    Sigma
+       The line width in km/s
+    Redshift
+    norm
+       The total photon/cm^2/s in the line.
+
+    See Also
+    --------
+    XSagauss, XSzagauss, XSzagauss
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelVagauss.html
+
+    """
+
+    __function__ = "C_zvagauss"
+
+    def __init__(self, name='zvagauss'):
+        self.LineE = XSParameter(name, 'LineE', 10.0, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='A')
+        self.Sigma = XSParameter(name, 'Sigma', 100.0, min=0.0,
+                                 max=300000.0, hard_min=0.0,
+                                 hard_max=300000.0, units='km/s')
+        self.Reshift = mkRedshift(name)
+
+        pars = (self.LineE, self.Sigma, self.Redshift)
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSabsori(XSMultiplicativeModel):
