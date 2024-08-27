@@ -2,6 +2,25 @@
 Simulating data
 ***************
 
+.. plot::
+   :context:
+   :nofigs:
+
+   # This is set up for us with doctest but not for sphinxext_plot_directive,
+   # so we need to redo it. This means that the RTD builds for PRs
+   # end up installing the latest version of sherpa/sherpa-test-data
+   # to try and pick up the correct files, but if a change to that
+   # repository has been made but not merged in then this documentation
+   # may be out of data.
+   #
+   from sherpa.utils.testing import get_datadir
+   data_dir = get_datadir()
+   if data_dir is None:
+       assert False, "data directory is not set"  # simple error log
+   if not data_dir.endswith('/'):
+       data_dir += '/'
+
+
 A simple case
 =============
 
@@ -20,12 +39,20 @@ handled with :py:func:`sherpa.utils.random.poisson_noise` or routines from
 `NumPy <https://numpy.org/doc/stable/reference/random/index.html>`_
 or SciPy to evaluate noise.
 
-::
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> from matplotlib import pyplot as plt
    >>> import numpy as np
    >>> rng = np.random.default_rng(235)  # a "repeatable" set of random values
    >>> from sherpa.utils.random import poisson_noise
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> from sherpa.models.basic import Polynom1D
    >>> mdl = Polynom1D('mdl')
@@ -47,6 +74,10 @@ or SciPy to evaluate noise.
       mdl.c8       frozen            0 -3.40282e+38  3.40282e+38
       mdl.offset   frozen           35 -3.40282e+38  3.40282e+38
 
+.. plot::
+   :context:
+   :include-source:
+
    >>> x = np.arange(10, 100, 12)
    >>> ymdl = mdl(x)
    >>> plt.plot(x, ymdl, label="model")
@@ -54,9 +85,9 @@ or SciPy to evaluate noise.
    >>> plt.legend()
    <matplotlib.legend.Legend object at ...>
 
-.. image:: ../_static/evaluation/model.png
-
-::
+.. plot::
+   :context:
+   :include-source:
 
    >>> ypoisson = poisson_noise(ymdl, rng=rng)
    >>> plt.clf()
@@ -66,8 +97,6 @@ or SciPy to evaluate noise.
    [<matplotlib.lines.Line2D object at ...>]
    >>> plt.legend()
    <matplotlib.legend.Legend object at ...>
-
-.. image:: ../_static/evaluation/model_with_noise.png
 
 .. _data_pha_fake:
 
@@ -92,7 +121,12 @@ simulations of :term:`PHA` data. A :py:class:`~sherpa.astro.data.DataPHA` object
 needs to be set up with the responses for the source and an exposure
 time. So, we first create a :py:class:`~sherpa.astro.data.DataPHA` object with
 the correct exposure time, but we can leave the settings for channel
-and counts empty, because these will be filled in by the simulation::
+and counts empty, because these will be filled in by the simulation:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> from sherpa.astro.data import DataPHA
    >>> from sherpa.astro.io import read_arf, read_rmf, read_pha
@@ -113,7 +147,12 @@ Next, we set up a model. In this case, we start with a powerlaw source
 where the slope and normalization of that powerlaw are already known,
 e.g. from the literature. We then add a weak emission line. Our
 simulation will show us if this emission line would be detectable in
-a real observation::
+a real observation:
+
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> from sherpa.models.basic import PowLaw1D, Gauss1D
    >>> pl = PowLaw1D()
@@ -140,7 +179,10 @@ include the instrument response, which we can access with the
 :py:meth:`~sherpa.astro.data.DataPHA.get_full_response` method
 call.
 
-::
+.. plot::
+   :context:
+   :nofigs:
+   :include-source:
 
    >>> resp = data.get_full_response()
    >>> instmdl = resp(srcmdl)
@@ -170,7 +212,9 @@ slightly different answers. With default settings, the input model is
 convolved with the RMF and multiplied by the ARF, and properly scaled
 for the exposure time.
 
-::
+.. plot::
+   :context:
+   :include-source:
 
    >>> from sherpa.astro.fake import fake_pha
    >>> from sherpa.astro.plot import DataPHAPlot
@@ -179,11 +223,13 @@ for the exposure time.
    >>> dplot.prepare(data)
    >>> dplot.plot()
 
-.. image:: ../_static/evaluation/simulated_pha.png
-
 We bin the counts into bins of at least 5 counts per bin and display
 an image of the simulated spectrum (see :ref:`model_evaluate_example_pha`
-for details)::
+for details):
+
+.. plot::
+   :context:
+   :include-source:
 
    >>> data.set_analysis('energy')
    >>> data.notice(0.3, 8)
@@ -191,9 +237,11 @@ for details)::
    >>> dplot.prepare(data)
    >>> dplot.plot(xlog=True, ylog=True)
 
-.. image:: ../_static/evaluation/simulated_pha_grouped.png
+We can overplot the model (both grouped and ungrouped):
 
-We can overplot the model (both grouped and ungrouped)::
+.. plot::
+   :context:
+   :include-source:
 
    >>> from sherpa.astro.plot import ModelPHAHistogram, ModelHistogram
    >>> dplot.plot(xlog=True, ylog=True)
@@ -203,8 +251,6 @@ We can overplot the model (both grouped and ungrouped)::
    >>> m2plot = ModelHistogram()
    >>> m2plot.prepare(data, instmdl)
    >>> m2plot.overplot(alpha=0.5, label="Ungrouped model")
-
-.. image:: ../_static/evaluation/compare_data_and_model.png
 
 Sometimes, more than one response is needed, e.g. in Chandra LETG/HRC-S
 different orders of the grating overlap on the detector, so they all
@@ -243,7 +289,11 @@ Sample background from a PHA file
 One way to include background is to sample it from a
 :py:class:`~sherpa.astro.data.DataPHA` object. To do so, a background need to be
 loaded into the dataset before running the simulation and, if not done
-before, the scale of the background scaling has to be set::
+before, the scale of the background scaling has to be set:
+
+.. plot::
+   :context:
+   :include-source:
 
    >>> bgdata = read_pha(data_dir + '9774_bg.pi')
    >>> data.set_background(bgdata)
@@ -253,8 +303,6 @@ before, the scale of the background scaling has to be set::
    >>> bplot.prepare(data)
    >>> dplot.plot(linestyle="solid", ylog=True, label="data")
    >>> bplot.overplot(linestyle="solid", alpha=0.5, label="with background")
-
-.. image:: ../_static/evaluation/simulated_pha_with_background.png
 
 The `fake_pha` function simulates the source spectrum as above, but
 then it samples from the background PHA. For each bin, it treats the
