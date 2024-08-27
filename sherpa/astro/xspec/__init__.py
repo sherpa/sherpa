@@ -14615,7 +14615,11 @@ class XSgabs(XSMultiplicativeModel):
         The line width (sigma), in keV.
     Strength
         The line depth, in keV. The optical depth at the line center is
-        Strength / (sqrt(2 pi) * Sigma).
+        Strength / Sigma / sqrt(2 pi).
+
+    See Also
+    --------
+    XSvgabs, XSzgabs
 
     References
     ----------
@@ -15960,7 +15964,7 @@ class XSvarabs(XSMultiplicativeModel):
 
 @version_at_least("12.14.1")
 class XSvgabs(XSMultiplicativeModel):
-    """The XPEC vgabs model: gaussian absorption line with sigma in km/s
+    """The XSPEC vgabs model: gaussian absorption line with sigma in km/s
 
     The model is described at [1]_.
 
@@ -16346,8 +16350,58 @@ class XSzedge(XSMultiplicativeModel):
 
 
 @version_at_least("12.14.1")
+class XSzgabs(XSMultiplicativeModel):
+    """The XSPEC zgabs model: gaussian absorption line.
+
+    The model is described at [1]_.
+
+    .. versionadded:: 4.17.0
+       This model requires XSPEC 12.14.1 or later.
+
+    Parameters
+    ----------
+    LineE
+       The line energy in keV.
+    Sigma
+       The line width in keV.
+    Strength
+       The line depth in keV. The optical depth at the line center is
+       Strength / Sigma / sqrt(2 * pi).
+    Redshift
+       The redshift of the source.
+
+    See Also
+    --------
+    XSgabs, XSzvgabs
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelGabs.html
+
+    """
+
+    __function__ = "C_zgaussianAbsorptionLine"
+
+    def __init__(self, name='zgabs'):
+        self.LineE = XSParameter(name, 'LineE', 1.0, min=0.0,
+                                 max=1000000.0, hard_min=0.0,
+                                 hard_max=1000000.0, units='keV')
+        self.Sigma = XSParameter(name, 'Sigma', 0.01, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=20.0, units='keV')
+        self.Strength = XSParameter(name, 'Strength', 1.0, min=0.0,
+                                    max=1000000.0, hard_min=0.0,
+                                    hard_max=1000000.0, units='keV')
+        self.Redshift = mkRedshift(name)
+
+        pars = (self.LineE, self.Sigma, self.Strength, self.Redshift)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.14.1")
 class XSzvgabs(XSMultiplicativeModel):
-    """The XPEC zvgabs model: gaussian absorption line with sigma in km/s
+    """The XSPEC zvgabs model: gaussian absorption line with sigma in km/s
 
     The model is described at [1]_.
 
@@ -16368,7 +16422,7 @@ class XSzvgabs(XSMultiplicativeModel):
 
     See Also
     --------
-    XSvgabs
+    XSvgabs, XSzgabs
 
     References
     ----------
