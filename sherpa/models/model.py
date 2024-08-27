@@ -322,15 +322,20 @@ import functools
 import itertools
 import logging
 from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, \
-    Sequence, SupportsFloat, SupportsIndex, Type, TypeVar, Union
+    Protocol, Sequence, SupportsFloat, SupportsIndex, Union, overload
 import warnings
+
+# import from typing when Python minimum version is 3.11
+from typing_extensions import Self
 
 import numpy as np
 
-from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, EvaluationSpace2D, ModelDomainRegridder2D
+from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, \
+    EvaluationSpace2D, ModelDomainRegridder2D
 from sherpa.utils import NoNewAttributesAfterInit, formatting
 from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import ArrayType, ModelValsType
 
 from .op import get_precedences_op, get_precedence_expr, \
     get_precedence_lhs, get_precedence_rhs
@@ -750,8 +755,8 @@ class Model(NoNewAttributesAfterInit):
 
     def calc(self,
              p: Sequence[SupportsFloat],
-             *args,
-             **kwargs) -> np.ndarray:
+             *args: ArrayType,
+             **kwargs) -> ModelValsType:
         """Evaluate the model on a grid.
 
         Parameters
@@ -794,10 +799,34 @@ class Model(NoNewAttributesAfterInit):
     def set_center(self, *args, **kwargs):
         raise NotImplementedError
 
-    def __call__(self, *args, **kwargs) -> Union[Model, np.ndarray]:
-        # A bit of trickery, to make model creation
-        # in IPython happen without raising errors, when
-        # model is made automatically callable
+    @overload
+    def __call__(self) -> Self: ...
+
+    # Do we really need all these overloads? Is there ever going to be
+    # a time when we want to send in positional arguments that are not
+    # an array?
+    #
+    @overload
+    def __call__(self, arg: ArrayType) -> ModelValsType: ...
+
+    @overload
+    def __call__(self, arg: ArrayType, **kwargs) -> ModelValsType: ...
+
+    @overload
+    def __call__(self, arg: ArrayType, *args: ArrayType
+                 ) -> ModelValsType:
+        ...
+
+    @overload
+    def __call__(self, arg: ArrayType, *args: ArrayType,
+                 **kwargs) -> ModelValsType:
+        ...
+
+    # When called with no arguments we return the object itself,
+    # otherwise an array. The no-argument form is to support
+    # model creation in a repl such as IPython.
+    #
+    def __call__(self, *args, **kwargs):
         if len(args) == 0 and len(kwargs) == 0:
             return self
 
@@ -1293,8 +1322,9 @@ class ArithmeticConstantModel(Model):
     """
 
     def __init__(self,
-                 # Use SupportsIndex rather than Sequence[SupportsFloat] to
-                 # avoid mypy warnings.
+                 # This could be ModelValsType but SherpaFloat seems
+                 # to want something like SupportsIndex to stop the
+                 # type checkers from complaining.
                  val: Union[SupportsFloat, SupportsIndex],
                  name: Optional[str] = None) -> None:
 
@@ -1303,9 +1333,6 @@ class ArithmeticConstantModel(Model):
             if np.isscalar(store):
                 name = str(store)
             else:
-                if TYPE_CHECKING:
-                    assert isinstance(val, np.ndarray)
-
                 # For some reason mypy didn't like
                 # '[str(s) for s in store.shape]`
                 dims = map(str, store.shape)
@@ -1327,12 +1354,17 @@ class ArithmeticConstantModel(Model):
     def _get_val(self) -> Union[SherpaFloat, np.ndarray]:
         return self._val
 
-    def _set_val(self, val:Union[SupportsFloat, SupportsIndex]) -> None:
-        val = SherpaFloat(val)
-        if val.ndim > 1:
+    def _set_val(self,
+                 # This could be ModelValsType but SherpaFloat seems
+                 # to want something like SupportsIndex to stop the
+                 # type checkers from complaining.
+                 val: Union[SupportsFloat, SupportsIndex]
+                 ) -> None:
+        sval = SherpaFloat(val)
+        if sval.ndim > 1:
             raise ModelErr('The constant must be a scalar or 1D, not 2D')
 
-        self._val = val
+        self._val = sval
 
     val = property(_get_val, _set_val,
                    doc='The constant value (scalar or 1D).')
@@ -1340,11 +1372,7 @@ class ArithmeticConstantModel(Model):
     def startup(self, cache: bool = False) -> None:
         pass
 
-    # This doesn't match superclass, as we can return a scalar here
-    # and the superclass assumes it returns a ndarray, so we do not
-    # type this routine.
-    #
-    def calc(self, p, *args, **kwargs):
+    def calc(self, p, *args, **kwargs) -> ModelValsType:
         return self.val
 
     def teardown(self) -> None:
@@ -1462,7 +1490,13 @@ class ArithmeticModel(Model):
     def teardown(self) -> None:
         self._use_caching = False
 
-    def apply(self, outer, *otherargs, **otherkwargs):
+    # The outer object does is not a normal Model since it must be
+    # sent the data from this model along with the independent axes.
+    #
+    def apply(self,
+              outer,
+              *otherargs: ArrayType,
+              **otherkwargs) -> NestedModel:
         return NestedModel(outer, self, *otherargs, **otherkwargs)
 
 
@@ -1580,7 +1614,8 @@ class UnaryOpModel(CompositeModel, ArithmeticModel):
         CompositeModel.__init__(self, name, (self.arg,))
 
     def calc(self, p: Sequence[SupportsFloat],
-             *args, **kwargs) -> np.ndarray:
+             *args, **kwargs) -> ModelValsType:
+        # This is very likely to just return a ndarray
         return self.op(self.arg.calc(p, *args, **kwargs))
 
 
@@ -1660,6 +1695,7 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
                 continue
             # The full model expression must be used
             return part.__class__.regrid(self, *args, **kwargs)
+
         raise ModelErr('Neither component supports regrid method')
 
     def startup(self, cache: bool = False) -> None:
@@ -1673,7 +1709,10 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         CompositeModel.teardown(self)
 
     def calc(self, p: Sequence[SupportsFloat],
-             *args, **kwargs) -> np.ndarray:
+             *args, **kwargs) -> ModelValsType:
+
+        # This is very likely to just return a ndarray
+
         # Note that the kwargs are sent to both model components.
         #
         nlhs = len(self.lhs.pars)
@@ -1682,9 +1721,15 @@ class BinaryOpModel(CompositeModel, RegriddableModel):
         try:
             val = self.op(lhs, rhs)
         except ValueError as ve:
-            raise ValueError("shape mismatch between " +
-                             f"'{type(self.lhs).__name__}: {len(lhs)}' and " +
-                             f"'{type(self.rhs).__name__}: {len(rhs)}'") from ve
+            # It is rather unlikely lhs and rhs are not both arrays
+            # here, but be explicit.
+            #
+            nleft = len(np.asarray(lhs))
+            nright = len(np.asarray(rhs))
+            raise ValueError("shape mismatch between "
+                             f"'{type(self.lhs).__name__}: {nleft}' and "
+                             f"'{type(self.rhs).__name__}: {nright}'") from ve
+
         return val
 
 
@@ -1745,7 +1790,8 @@ class ArithmeticFunctionModel(Model):
 
     """
 
-    def __init__(self, func: Callable) -> None:
+    def __init__(self, func: Callable[..., ModelValsType]
+                 ) -> None:
         if isinstance(func, Model):
             raise ModelErr('badinstance', type(self).__name__)
         if not callable(func):
@@ -1754,7 +1800,7 @@ class ArithmeticFunctionModel(Model):
         Model.__init__(self, func.__name__)
 
     def calc(self, p: Sequence[SupportsFloat],
-             *args, **kwargs) -> np.ndarray:
+             *args, **kwargs) -> ModelValsType:
         return self.func(*args, **kwargs)
 
     def startup(self, cache: bool = False) -> None:
@@ -1768,13 +1814,16 @@ class ArithmeticFunctionModel(Model):
         pass
 
 
+# How is this different from the "convolution-style" models?
+#
 class NestedModel(CompositeModel, ArithmeticModel):
     """Apply a model to the results of a model.
 
     Parameters
     ----------
     outer : Model instance
-        The model to apply second.
+        The model to apply second. This takes the output of the
+        inner model, along with the independent axis.
     inner : Model instance
         The model to apply first.
     *otherargs
@@ -1799,7 +1848,11 @@ class NestedModel(CompositeModel, ArithmeticModel):
     def wrapobj(obj) -> Model:
         return _wrapobj(obj, ArithmeticFunctionModel)
 
-    def __init__(self, outer, inner, *otherargs, **otherkwargs) -> None:
+    def __init__(self,
+                 outer,
+                 inner,
+                 *otherargs: ArrayType,
+                 **otherkwargs) -> None:
         self.outer = self.wrapobj(outer)
         self.inner = self.wrapobj(inner)
         self.otherargs = otherargs
@@ -1818,7 +1871,8 @@ class NestedModel(CompositeModel, ArithmeticModel):
         CompositeModel.teardown(self)
 
     def calc(self, p: Sequence[SupportsFloat],
-             *args, **kwargs) -> np.ndarray:
+             *args: ArrayType,
+             **kwargs) -> ModelValsType:
         nouter = len(self.outer.pars)
         return self.outer.calc(p[:nouter],
                                self.inner.calc(p[nouter:], *args, **kwargs),
@@ -1828,6 +1882,7 @@ class NestedModel(CompositeModel, ArithmeticModel):
 # TODO: can we remove this as it is now unused?
 #
 class MultigridSumModel(CompositeModel, ArithmeticModel):
+    """This class is deprecated."""
 
     def __init__(self, models: Sequence[Model]) -> None:
         self.models = tuple(models)
@@ -1846,9 +1901,44 @@ class MultigridSumModel(CompositeModel, ArithmeticModel):
         return sum(vals)
 
 
+# Since the ModelDomainRegridder classes do not have a common base
+# class we can either have
+#
+#    Union[ModelDomainRegridder1D, ModelDomainRegridder2D]
+#
+# or something like a Protocol. An advantage to using a Protocol is
+# that it can avoid circular dependencies, but is it worthwhile?
+#
+class Regridder(Protocol):
+    """Represent the ModelDomainRegridder1D/2D classes"""
+
+    name: str
+    evaluation_space: Union[EvaluationSpace1D, EvaluationSpace2D]
+    integrate: bool
+
+    def calc(self, pars, modelfunc, *args, **kwargs) -> np.ndarray:
+        ...
+
+    @property
+    def grid(self) -> Union[Optional[np.ndarray],
+                            tuple[Optional[np.ndarray], Optional[np.ndarray]],
+                            tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]
+                            ]:
+        ...
+
+    @grid.setter
+    def grid(self,
+             value: Union[tuple[Optional[np.ndarray]],
+                          tuple[Optional[np.ndarray], Optional[np.ndarray]],
+                          tuple[Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray]]
+                          ]
+             ) -> None:
+        ...
+
+
 class RegridWrappedModel(CompositeModel, ArithmeticModel):
 
-    def __init__(self, model, wrapper: Model) -> None:
+    def __init__(self, model, wrapper: Regridder) -> None:
         self.model = self.wrapobj(model)
         self.wrapper = wrapper
 
@@ -1860,7 +1950,7 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
                                 (self.model, ))
 
     def calc(self, p: Sequence[SupportsFloat],
-             *args, **kwargs) -> np.ndarray:
+             *args, **kwargs) -> ModelValsType:
         return self.wrapper.calc(p, self.model.calc, *args, **kwargs)
 
     def get_center(self):
@@ -1891,7 +1981,9 @@ class RegridWrappedModel(CompositeModel, ArithmeticModel):
         return _wrapobj(obj, ArithmeticFunctionModel)
 
 
-def _wrapobj(obj, wrapper: Callable[..., Model]) -> Model:
+def _wrapobj(obj,
+             wrapper: Callable[[Any], Model]
+             ) -> Model:
     """Wrap an object with the wrapper if needed.
 
     Parameters
@@ -2095,7 +2187,7 @@ def model_deconstruct(model: Model) -> list[Model]:
 # Notebook representation
 #
 def modelcomponents_to_list(model: Model) -> list[Model]:
-    if hasattr(model, 'parts'):
+    if hasattr(model, 'parts') and model.parts is not None:
         modellist = []
         for p in model.parts:
             modellist.extend(modelcomponents_to_list(p))
