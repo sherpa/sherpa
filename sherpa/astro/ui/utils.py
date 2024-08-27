@@ -41,7 +41,7 @@ from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
-from sherpa.fit import Fit, FitResults
+from sherpa.fit import Fit
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
