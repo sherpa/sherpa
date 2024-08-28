@@ -23,6 +23,9 @@
 #include <iostream>
 #include <fstream>
 
+// Documentation for the "XSPEC internal functions" is at
+// https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/internal/XspecInternalFunctionsGuide.html
+//
 // xsfortran is only needed to support FNINIT as there's (as of XSPEC 12.13.0)
 // no version of this functionality in FunctionUtility.
 //
@@ -63,13 +66,6 @@ static int _sherpa_init_xspec_library()
   }
 
   // Redirect the stdout channel for the duration of the FNINIT call.
-  // The replacement is set to ostringstream so that we can find out
-  // what was sent to it in case of emergency (but would need code
-  // changes to do this). This used to be done by manually replacing
-  // the std::cout buffer.
-  //
-  // Note that only FNINIT needs this, as the FunctionUtility calls do
-  // not create string output (at least for 12.12.x/12.13.0).
   //
   std::ostream* outStream = IosHolder::outHolder();
   std::ostringstream tmpStream;
@@ -78,7 +74,7 @@ static int _sherpa_init_xspec_library()
 			IosHolder::errHolder());
 
   try {
-    // Initialize XSPEC model library
+    // Initialize XSPEC model library.
     FNINIT();
 
   } catch(...) {
@@ -86,7 +82,11 @@ static int _sherpa_init_xspec_library()
 			  outStream,
 			  IosHolder::errHolder());
 
-    // Raise appropriate error message that XSPEC initialization failed.
+    // The contents of tmpStream could be inspected to see if it
+    // contains useful information for the user, but at this point of
+    // the initialization it is not obvious that it would provide any
+    // extra information.
+    //
     PyErr_SetString( PyExc_ImportError,
 		     (char*)"XSPEC initialization failed; "
 		     "check HEADAS environment variable" );
@@ -97,15 +97,11 @@ static int _sherpa_init_xspec_library()
 			outStream,
 			IosHolder::errHolder());
 
-  // We used to set the chatter to 0 but this misses useful info
-  // (like XSPEC can't find the data files) that would be reported
-  // by XSPEC, so use the default XSPEC setting. It does not appear
-  // that this value is read in from ~/.xspec/Xspec.init so set
-  // it here so we have repeatable behavior.
+  // Set a number of values to their XSPEC defaults (as of XSPEC
+  // 12.14.1, but they have not changed for a long time). It appears
+  // these are not read in from the user's ~/.xspec/Xspec.init file.
   //
   FunctionUtility::xwriteChatter( 10 );
-
-  // Set cosmology initial values to XSPEC initial values
   FunctionUtility::setH0( 70.0 );
   FunctionUtility::setq0( 0.0 );
   FunctionUtility::setlambda0( 0.73 );
