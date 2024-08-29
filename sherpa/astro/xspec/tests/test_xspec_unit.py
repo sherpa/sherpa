@@ -378,7 +378,7 @@ def test_abund_set_dict():
 
     oval = xspec.get_xsabund()
 
-    # This is a pre-condition. It is't really needed, but it is a better
+    # This is a pre-condition. It isn't really needed, but it is a better
     # test if it holds.
     #
     #
