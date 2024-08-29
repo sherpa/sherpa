@@ -9978,8 +9978,8 @@ class Session(sherpa.ui.utils.Session):
             # an argument to say they should be kept, but it's not
             # clear what is best.
             #
-            for bkg_id in pha.background_ids:
-                restore[bkg_id] = {"data": pha.get_background(bkg_id)}
+            for bkg_id, bkg in pha.get_backgrounds():
+                restore[bkg_id] = {"data": bkg}
                 try:
                     restore[bkg_id]["model"] = self.get_bkg_source(idval,
                                                                    bkg_id)
@@ -11231,8 +11231,7 @@ class Session(sherpa.ui.utils.Session):
 
                 continue
 
-            for bkg_id in s.data.background_ids:
-                bkg_data = s.data.get_background(bkg_id)
+            for bkg_id, bkg_data in s.data.get_backgrounds():
                 bkg_model = self.get_bkg_model(s.idval, bkg_id)
                 # At this point we know bkg_data is not None
                 out.append(BkgFitStore(s.idval, bkg_data, bkg_model, bkg_id))
@@ -11285,8 +11284,7 @@ class Session(sherpa.ui.utils.Session):
             if not isinstance(data, DataPHA):
                 continue
 
-            for bkg_id in data.background_ids:
-                bkg_data = self.get_bkg(idval, bkg_id)
+            for bkg_id, bkg_data in data.get_backgrounds():
                 try:
                     bkg_model = self.get_bkg_model(idval, bkg_id)
                 except ModelErr:
@@ -11304,7 +11302,8 @@ class Session(sherpa.ui.utils.Session):
     def _get_bkg_fit(self,
                      id: Optional[IdType],
                      otherids: Sequence[IdType] = (),
-                     estmethod=None, numcores=1
+                     estmethod=None,
+                     numcores=1
                      ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object for the given identifiers.
 

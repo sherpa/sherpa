@@ -1591,8 +1591,7 @@ class DataPHA(Data1D):
         else:
             raise DataErr('bad', 'quantity', val)
 
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for _, bkg in self.get_backgrounds():
             if bkg.get_response() != (None, None) or \
                (bkg.bin_lo is not None and bkg.bin_hi is not None):
                 bkg.units = units
@@ -1607,8 +1606,8 @@ class DataPHA(Data1D):
 
     def _set_rate(self, val):
         self._rate = bool_cast(val)
-        for bkg_id in self.background_ids:
-            self.get_background(bkg_id).rate = val
+        for _, bkg in self.get_backgrounds():
+            bkg.rate = val
 
     rate = property(_get_rate, _set_rate,
                     doc="""Is the Y axis displayed as a rate when plotting data?
@@ -1637,8 +1636,8 @@ a rate.""")
             raise DataErr("bad", "plot_fac setting", val)
 
         self._plot_fac = ival
-        for bkg_id in self.background_ids:
-            self.get_background(bkg_id).plot_fac = ival
+        for _, bkg in self.get_backgrounds():
+            bkg.plot_fac = ival
 
     plot_fac = property(_get_plot_fac, _set_plot_fac,
                         doc="""How the X axis is used to create the Y axis when plotting data.
@@ -1668,6 +1667,9 @@ If set, the identifiers must already exist, and any other responses
 will be removed. The identifiers can be integers or strings.
 """)
 
+    # TODO: why not just use the _backgrounds dict directly rather
+    # than keep this information separate?
+    #
     def _get_background_ids(self) -> list[IdType]:
         return self._background_ids
 
@@ -1675,6 +1677,9 @@ will be removed. The identifiers can be integers or strings.
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'background', str(ids))
 
+        # TODO: we should not have invalid keys in this dictionary
+        # by construction.
+        #
         keys = list(self._backgrounds.keys())
         for bkg_id in ids:
             if bkg_id not in keys:
@@ -2716,11 +2721,30 @@ It is an integer or string.
 
         See Also
         --------
-        delete_background, set_background
+        delete_background, get_backgrounds, set_background
 
         """
         bkg_id = self._fix_background_id(id)
         return self._backgrounds.get(bkg_id)
+
+    def get_backgrounds(self) -> list[tuple[IdType, DataPHA]]:
+        """Return all the background components.
+
+        .. versionadded:: 4.17.0
+
+        Returns
+        -------
+        bkg : list of (int or str, sherpa.astro.data.DataPHA)
+           All background identifiers and datasets associated with
+           this PHA. The list will be empty if there is no associated
+           background.
+
+        See Also
+        --------
+        delete_background, get_background, set_background
+
+        """
+        return list(self._backgrounds.items())
 
     def set_background(self,
                        bkg: DataPHA,
@@ -2854,11 +2878,10 @@ It is an integer or string.
         if bkg_id not in self.background_ids:
             return
 
+        self.background_ids.remove(bkg_id)
         self._backgrounds.pop(bkg_id, None)
         if len(self._backgrounds) == 0:
             self._subtracted = False
-
-        self.background_ids.remove(bkg_id)
 
     def get_background_scale(self,
                              bkg_id: IdType = 1,
@@ -2917,12 +2940,13 @@ It is an integer or string.
         if units not in ['counts', 'rate']:
             raise ValueError(f"Invalid units argument: {units}")
 
-        if bkg_id not in self.background_ids:
-            return None
+        bkg_pha = self.get_background(bkg_id)
+        if bkg_pha is None:
+            return
 
         nbkg = len(self.background_ids)
 
-        def correct(obj):
+        def correct(obj: DataPHA) -> Union[float, numpy.ndarray]:
             """Correction factor for the object"""
             ans = 1.0
 
@@ -2940,11 +2964,15 @@ It is an integer or string.
             return ans
 
         src = correct(self)
-        bkg = correct(self.get_background(bkg_id))
+        bkg = correct(bkg_pha)
         scale = src / bkg / nbkg
         return self._check_scale(scale, group=group, filter=filter)
 
-    def _check_scale(self, scale, group=True, filter=False):
+    def _check_scale(self,
+                     scale: Union[float, numpy.ndarray],
+                     group: bool = True,
+                     filter: bool = False
+                     ) -> Union[float, numpy.ndarray]:
         """Ensure the scale value is positive and filtered/grouped.
 
         Parameters
@@ -3511,8 +3539,7 @@ It is an integer or string.
         the quality value for these channels will be set to 2.
 
         """
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for _, bkg in self.get_backgrounds():
             bkg.group_bins(num, tabStops=tabStops)
 
         self._dynamic_group("grpNumBins", len(self.channel), num,
@@ -3559,8 +3586,7 @@ It is an integer or string.
         for these channels will be set to 2.
 
         """
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for _, bkg in self.get_backgrounds():
             bkg.group_width(val, tabStops=tabStops)
 
         self._dynamic_group("grpBinWidth", len(self.channel), val,
@@ -3629,8 +3655,7 @@ It is an integer or string.
         >>> pha.group_counts(20, tabStops=[0] * pha.size)
 
         """
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for _, bkg in self.get_backgrounds():
             bkg.group_counts(num, maxLength=maxLength, tabStops=tabStops)
 
         self._dynamic_group("grpNumCounts", self.counts, num,
@@ -3688,8 +3713,7 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for _, bkg in self.get_backgrounds():
             bkg.group_snr(snr, maxLength=maxLength, tabStops=tabStops,
                           errorCol=errorCol)
 
@@ -3744,8 +3768,7 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for _, bkg in self.get_backgrounds():
             bkg.group_adapt(minimum, maxLength=maxLength,
                             tabStops=tabStops)
 
@@ -3808,8 +3831,7 @@ It is an integer or string.
         quality value for these channels will be set to 2.
 
         """
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for _, bkg in self.get_backgrounds():
             bkg.group_adapt_snr(minimum, maxLength=maxLength,
                                 tabStops=tabStops, errorCol=errorCol)
 
@@ -3875,8 +3897,7 @@ It is an integer or string.
 
         bdata_list = []
 
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for bkg_id, bkg in self.get_backgrounds():
             bdata = get_bdata_func(bkg_id, bkg)
 
             backscal = bkg.backscal
@@ -4102,8 +4123,7 @@ It is an integer or string.
         bkg_counts = []
         bkg_scales = []
 
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
+        for _, bkg in self.get_backgrounds():
             berr, bcounts = get_error(bkg)
             if berr is None:
                 # We do not know how to generate an error, so
@@ -4865,7 +4885,7 @@ It is an integer or string.
         for bid in bkg_ids:
             bkg = self.get_background(bid)
             if bkg is None:
-                # Skip any missing identifier
+                # Skip any missing identifier. Should this error out?
                 continue
 
             old_bkg_units = bkg.units
@@ -4979,11 +4999,7 @@ It is an integer or string.
 
         # Ensure any backgrounds are also grouped.
         #
-        for bkg_id in self.background_ids:
-            bkg = self.get_background(bkg_id)
-            if bkg is None:
-                raise DataErr(f"Internal error: unknown background id {bkg_id}")
-
+        for _, bkg in self.get_backgrounds():
             try:
                 bkg.grouped = True
             except DataErr as exc:
@@ -5005,15 +5021,9 @@ It is an integer or string.
         """
         self.grouped = False
 
-        # Ensure any backgrounds are also grouped.
+        # Ensure any backgrounds are also ungrouped.
         #
-        for bkg_id in self.background_ids:
-            # Unlike the group case we do not need to worry about this
-            # failing.
-            bkg = self.get_background(bkg_id)
-            if bkg is None:
-                raise DataErr(f"Internal error: unknown background id {bkg_id}")
-
+        for _, bkg in self.get_backgrounds():
             bkg.grouped = False
 
     def subtract(self):

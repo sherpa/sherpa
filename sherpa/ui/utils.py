@@ -8753,7 +8753,8 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit_obj(self,
                      store: Sequence[FitStore],
-                     estmethod, numcores=1
+                     estmethod,
+                     numcores=1
                      ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object given the data and models.
 
