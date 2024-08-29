@@ -32,7 +32,7 @@ import numpy as np
 
 from sherpa.models.basic import Const1D
 from sherpa.utils.testing import requires_data, requires_fits, requires_xspec
-from sherpa.utils.err import ParameterErr
+from sherpa.utils.err import ArgumentErr, ParameterErr
 
 
 # It is hard to test many of the state routines, since it requires
@@ -384,8 +384,7 @@ def test_abund_set_dict():
     #
     assert oval != "file"
 
-    abundances = {'He': 0.1, 'H': 1.0, 'O': 0.2, 'Fe': 0.3, 'Mn': 0.4,
-                  'FooBar': 'value is ignored'}
+    abundances = {'He': 0.1, 'H': 1.0, 'O': 0.2, 'Fe': 0.3, 'Mn': 0.4}
     try:
         xspec.set_xsabundances(abundances)
         assert xspec.get_xsabund() == "file"
@@ -416,6 +415,27 @@ def test_abund_set_dict():
 
 
 @requires_xspec
+def test_abund_set_dict_invalid_key():
+    """What happens if the key is not a number?"""
+
+    from sherpa.astro import xspec
+
+    ovals = xspec.get_xsabundances()
+
+    abundances = {'He': 0.1, 'H': 1.0, 'O': 0.2, 'Fe': 0.3, 'Mn': 0.4,
+                  'FooBar': 'value is ignored',
+                  'Cr': 1.2}
+
+    with pytest.raises(ArgumentErr,
+                       match="^Invalid element name: 'FooBar'$"):
+        xspec.set_xsabundances(abundances)
+
+    # table should not have changed
+    nvals = xspec.get_xsabundances()
+    assert nvals == ovals
+
+
+@requires_xspec
 def test_abund_set_dict_invalid_value():
     """What happens if the value is not a number?"""
 
@@ -423,6 +443,10 @@ def test_abund_set_dict_invalid_value():
 
     ovals = xspec.get_xsabundances()
 
+    # The abundances dict is processed in the order the keys are added,
+    # so 'Cr' (invalid value) is processed by set_xsabundances before
+    # 'FooBar' (invalid key).
+    #
     abundances = {'He': 0.1, 'H': 1.0, 'O': 0.2, 'Fe': 0.3, 'Mn': 0.4,
                   'Cr': '1.2s', # number with text after it
                   'FooBar': 'value is ignored'}

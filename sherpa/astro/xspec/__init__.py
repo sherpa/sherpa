@@ -116,7 +116,7 @@ from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 from sherpa.utils import bool_cast
-from sherpa.utils.err import IOErr, ParameterErr
+from sherpa.utils.err import ArgumentErr, IOErr, ParameterErr
 from sherpa.utils.guess import param_apply_limits
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -252,15 +252,19 @@ def set_xsabundances(abundances: dict[str, float]) -> None:
 
     """
 
-    # Get the list of elemental values.
+    # Get the list of elemental values. We do not require that the
+    # dictionary contain all the elements, but it can not contain
+    # unknown elements.
     #
     elems = get_xselements()
     out = np.zeros(len(elems))
     for name, abund in abundances.items():
-        # Skip unknown names. Should this warn the user?
-        with suppress(KeyError):
+        try:
             z = elems[name]
-            out[z - 1] = abund
+        except KeyError:
+            raise ArgumentErr(f"Invalid element name: '{name}'")
+
+        out[z - 1] = abund
 
     # Write them to a file and then load them.
     #
