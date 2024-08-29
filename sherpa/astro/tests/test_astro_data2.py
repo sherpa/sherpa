@@ -4387,6 +4387,23 @@ def test_pha_check_background_ids_basic():
     assert pha.background_ids == pytest.approx([1, "up"])
 
 
+@pytest.mark.parametrize("bkg_id", [None, 1, "foo"])
+def test_pha_delete_unknown_background(bkg_id):
+    """What happens if we delete an unknown background?"""
+
+    pha = DataPHA("src", [1, 2, 3], [1, 1, 1])
+    b1 = DataPHA("b1", [1, 2, 3], [1, 1, 1])
+    b2 = DataPHA("b2", [1, 2, 3], [1, 1, 1])
+
+    pha.set_background(b1, id="up")
+    pha.set_background(b1, id="down")
+
+    # This is treated as a no-op
+    pha.delete_background(bkg_id)
+
+    assert pha.background_ids == pytest.approx(["up", "down"])
+
+
 def test_pha_check_response_ids_basic():
     """Check response_ids can be used.
 
