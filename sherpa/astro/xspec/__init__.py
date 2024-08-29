@@ -262,7 +262,7 @@ def set_xsabundances(abundances: dict[str, float]) -> None:
         try:
             z = elems[name]
         except KeyError:
-            raise ArgumentErr(f"Invalid element name: '{name}'")
+            raise ArgumentErr(f"Invalid element name: '{name}'") from None
 
         out[z - 1] = abund
 
