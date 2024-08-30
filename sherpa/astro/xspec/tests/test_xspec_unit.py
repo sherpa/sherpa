@@ -363,6 +363,49 @@ def test_abund_get_dict():
                      abunds['Fe'])
 
 
+@requires_xspec
+def test_abund_get_invalid_element(caplog):
+    """Check what happens if sent the wrong element name"""
+
+    from sherpa.astro import xspec
+
+    # TODO: TypeError is not the best error type here.
+    with pytest.raises(TypeError, match="^could not find element 'O3'$"):
+        xspec.get_xsabund("O3")
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_abund_set_invalid_name(caplog):
+    """Check what happens if sent an unknown table
+
+    It is unlikely that the name "foo-foo" will become valid.
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError, match="^Cannot read file 'foo-foo'.  It may not exist or contains invalid data$"):
+        xspec.set_xsabund("foo-foo")
+
+    assert len(caplog.records) == 0
+
+
+@requires_xspec
+def test_xsect_set_invalid_name(caplog):
+    """Check what happens if sent an unknown table
+
+    It is unlikely that the name "foo-foo" will become valid.
+    """
+
+    from sherpa.astro import xspec
+
+    with pytest.raises(ValueError, match="^could not set XSPEC photoelectric cross-section to 'foo-foo'$"):
+        xspec.set_xsxsect("foo-foo")
+
+    assert len(caplog.records) == 0
+
+
 def validate_xspec_setting(getfunc, setfunc, newval, altval):
     """Check we can change an XSPEC setting.
 
@@ -528,6 +571,39 @@ def test_abund_change_file_subset(tmp_path):
             assert out[n] == pytest.approx(0)
 
     assert out2 == out
+
+
+@requires_xspec
+def test_abund_change_file_subset(tmp_path):
+    """What happens if send in too-few elements?"""
+
+    from sherpa.astro import xspec
+
+    elems = {n: i * 0.1 for i, n in enumerate(ELEMENT_NAMES)
+             if i < 10}
+
+    tmpname = tmp_path / "abunds.xspec"
+    with open(tmpname, "w") as tfh:
+        for v in elems.values():
+            tfh.write(f"{v}\n")
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund(str(tmpname))
+
+        abund = xspec.get_xsabund()
+        out = {n: xspec.get_xsabund(n)
+               for n in ELEMENT_NAMES}
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert abund == 'file'
+    for i, n in enumerate(ELEMENT_NAMES):
+        if i < 10:
+            assert out[n] == pytest.approx(elems[n])
+        else:
+            assert out[n] == pytest.approx(0)
 
 
 @requires_xspec
@@ -914,7 +990,7 @@ def test_xspec_model_requires_bins_very_low_level(clsname, xsmodel):
 @requires_fits
 @requires_data
 @requires_xspec
-def test_xspec_tablemodel_requires_bin_edges(make_data_path, clean_astro_ui):
+def test_xspec_tablemodel_requires_bin_edges(make_data_path):
     """Check we can not call a table model with a single grid.
 
     This used to be supported in Sherpa 4.13 and before.
@@ -933,7 +1009,7 @@ def test_xspec_tablemodel_requires_bin_edges(make_data_path, clean_astro_ui):
 @requires_fits
 @requires_data
 @requires_xspec
-def test_xspec_tablemodel_requires_bin_edges_low_level(make_data_path, clean_astro_ui):
+def test_xspec_tablemodel_requires_bin_edges_low_level(make_data_path):
     """Check we can not call a table model with a single grid (calc).
 
     This used to be supported in Sherpa 4.13 and before.

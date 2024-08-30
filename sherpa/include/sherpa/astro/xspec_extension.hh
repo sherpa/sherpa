@@ -1,5 +1,5 @@
 //
-//  Copyright (C) 2009, 2015, 2017, 2020, 2021, 2022, 2023
+//  Copyright (C) 2009, 2015, 2017, 2020 - 2024
 //  Smithsonian Astrophysical Observatory
 //
 //
@@ -989,7 +989,7 @@ PyObject* xspecmodelfct_con_f77( PyObject* self, PyObject* args, PyObject* kwarg
 
 // As of XSPEC 12.10.1, the table-model routines have been
 // consolidated into one routine, so there is no need for
-// a template. A templace could be used to allow compile-time
+// a template. A template could be used to allow compile-time
 // specialization over additive versus multiplicative, but
 // for now have a run-time check rather than multiple versions
 // of this routine.
