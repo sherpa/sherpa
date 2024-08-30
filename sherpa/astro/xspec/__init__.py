@@ -221,7 +221,7 @@ def get_xsabundances() -> dict[str, float]:
 
 # The current interface to the XSPEC model library makes this awkward
 # to write. Once the interface switches to using the FunctionUtility
-# interface this code will be a lot simpler iternally, without
+# interface this code will be a lot simpler internally, without
 # changing the API.
 #
 def set_xsabundances(abundances: dict[str, float]) -> None:
