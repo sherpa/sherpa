@@ -401,8 +401,8 @@ def record_starts_with(r, start, level="INFO"):
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("errors", [False, pytest.param(True, marks=pytest.mark.xfail)])  # issue #2117
-def test_read_pha(errors, make_data_path, caplog):
+@pytest.mark.parametrize("errors", [False, True])
+def test_read_pha(errors, make_data_path,caplog):
     """Can we read in a XMM PHA file."""
 
     infile = make_data_path(PHAFILE)
@@ -415,33 +415,19 @@ def test_read_pha(errors, make_data_path, caplog):
     check_warning("ARF", ARFFILE, ws[0])
     check_warning("RMF", RMFFILE, ws[1])
 
-    if errors:
-        assert len(caplog.records) == 3
-        idx = 0
+    assert len(caplog.records) == 3
 
-    else:
-        assert len(caplog.records) == 5
-
-        record_starts_with(caplog.records[0],
-                           "systematic errors were not found in file '",
-                           level="WARNING")
-        record_starts_with(caplog.records[1],
-                           "statistical errors were found in file '")
-        idx = 2
-
-    record_starts_with(caplog.records[idx],
+    record_starts_with(caplog.records[0],
                        "read ARF file /")
-    idx += 1
-    record_starts_with(caplog.records[idx],
+    record_starts_with(caplog.records[1],
                        "read RMF file /")
-    idx += 1
-    record_starts_with(caplog.records[idx],
+    record_starts_with(caplog.records[2],
                        "read background file /")
 
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("errors", [False, pytest.param(True, marks=pytest.mark.xfail)])  # issue #2117
+@pytest.mark.parametrize("errors", [False, True])
 def test_roundtrip_pha(errors, make_data_path, tmp_path, caplog):
     """Can we write out a XMM PHA file and then read it back in?"""
 
@@ -463,30 +449,15 @@ def test_roundtrip_pha(errors, make_data_path, tmp_path, caplog):
 
     assert len(ws2) == 0
 
-    if errors:
-        assert len(caplog.records) == 3
-        idx = 0
+    assert len(caplog.records) == 3
 
-    else:
-        assert len(caplog.records) == 5
-
-        record_starts_with(caplog.records[0],
-                           "systematic errors were not found in file '",
-                           level="WARNING")
-        record_starts_with(caplog.records[1],
-                           "statistical errors were found in file '")
-
-        idx = 2
-
-    record_starts_with(caplog.records[idx],
+    record_starts_with(caplog.records[0],
                        "unable to read ARF: ",
                        level="WARNING")
-    idx += 1
-    record_starts_with(caplog.records[idx],
+    record_starts_with(caplog.records[1],
                        "unable to read RMF: ",
                        level="WARNING")
-    idx += 1
-    record_starts_with(caplog.records[idx],
+    record_starts_with(caplog.records[2],
                        "unable to read background: ",
                        level="WARNING")
 

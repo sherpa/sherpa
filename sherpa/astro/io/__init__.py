@@ -739,7 +739,7 @@ def _process_pha_block(filename: str,
 
         This checks for columns and then the header. For the header
         case we can keep the scalar case (expand=False) or convert
-        into a ndarray. At present the expand option is unused.
+        into a ndarray.
 
         """
 
@@ -759,7 +759,7 @@ def _process_pha_block(filename: str,
             val = colval.value
 
         if expand:
-            return np.ones(nrows, dtype=type(val)) * val
+            return np.full(nrows, val)
 
         return val
 
@@ -786,8 +786,22 @@ def _process_pha_block(filename: str,
     basic_header = dict((k.name, k.value) for k in header
                         if k.name not in unwanted)
 
-    staterr = get("STAT_ERR")
-    syserr = getcol("SYS_ERR")
+    # The statistical and systematic errors can be
+    # - not set
+    # - a column
+    # - a keyword
+    #
+    # However, we can have values of 0, which is not useful for
+    # Sherpa, so we remove them (this is likely pointing at the
+    # handling of the POISERR keyword being sub-optimal).
+    #
+    staterr = get("STAT_ERR", expand=True)
+    syserr = get("SYS_ERR", expand=True)
+    if staterr is not None and np.all(staterr == 0.0):
+        staterr = None
+
+    if syserr is not None and np.all(syserr == 0.0):
+        syserr = None
 
     # Do we warn the user that the errors read in from the file are
     # being ignored?
@@ -1000,6 +1014,10 @@ def read_pha(arg,
         # What other columns need to be converted?
         #
         # How about SYS_ERR, BACKGROUND_UP/DOWN?
+        #
+        # TODO: this likely fails if STAT_ERR is a keyword
+        # and not a column.
+        #
         stat_err = pha.get("STAT_ERR")
         if stat_err is not None:
             stat_err.values *= exposure

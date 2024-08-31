@@ -69,19 +69,8 @@ def check_pha0(pha, errors=True, responses=True):
     assert pha.counts.sum() == pytest.approx(1688.0)
     assert np.argmax(pha.counts) == 36
 
-    for field in ['staterror', 'bin_lo', 'bin_hi']:
+    for field in ['staterror', 'syserror', 'bin_lo', 'bin_hi']:
         assert getattr(pha, field) is None
-
-    # Note this file has systematic, not statistical, errors.
-    # Even if they are all 0.0.
-    #
-    if errors:
-        assert len(pha.syserror) == nchan
-        assert pha.syserror.min() == pytest.approx(0.0)
-        assert np.ptp(pha.syserror) == 0.0
-
-    else:
-        assert pha.syserror is None
 
     assert len(pha.grouping) == nchan
     assert len(pha.quality) == nchan
@@ -391,7 +380,7 @@ def record_starts_with(r, start, level="INFO"):
 #
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("errors", [False, pytest.param(True, marks=pytest.mark.xfail)])  # issue #2117
+@pytest.mark.parametrize("errors", [False, True])
 def test_read_pha0(errors, make_data_path, caplog):
     """Can we read in an ASCS PHA file."""
 
@@ -402,38 +391,26 @@ def test_read_pha0(errors, make_data_path, caplog):
     check_pha0(pha, errors=errors, responses=True)
 
     # What messages were created?
-    if errors:
-        assert len(caplog.records) == 3
-        idx = 0
-    else:
-        assert len(caplog.records) == 4
+    #
+    assert len(caplog.records) == 3
 
-        rec = caplog.records[0]
-        record_starts_with(rec,
-                           "statistical and systematic errors were found in file '/")
-
-        idx = 1
-
-    rec = caplog.records[idx]
+    rec = caplog.records[0]
     record_starts_with(rec, "read ARF file /")
 
-    idx +=1
-    rec = caplog.records[idx]
+    rec = caplog.records[1]
     record_starts_with(rec, "read RMF file /")
-
-    idx +=1
-    rec = caplog.records[idx]
 
     # The end of the message comes from the I/O backend and we do not
     # bother testing that here.
     #
+    rec = caplog.records[2]
     record_starts_with(rec, "unable to read background: ",
                        level="WARNING")
 
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("errors", [False, pytest.param(True, marks=pytest.mark.xfail)])  # issue #2117
+@pytest.mark.parametrize("errors", [False, True])
 def test_read_pha1(errors, make_data_path, caplog):
     """Can we read in an ASCS PHA file."""
 
@@ -443,25 +420,12 @@ def test_read_pha1(errors, make_data_path, caplog):
     pha = io.read_pha(infile, use_errors=errors)
     check_pha1(pha, errors=errors, responses=True)
 
-    # What messages were created?
-    if errors:
-        assert len(caplog.records) == 0
-        return
-
-    assert len(caplog.records) == 2
-
-    rec = caplog.records[0]
-    record_starts_with(rec, "systematic errors were not found in file '/",
-                       level="WARNING")
-
-    rec = caplog.records[1]
-    record_starts_with(rec, "statistical errors were found in file '/")
-
+    assert len(caplog.records) == 0
 
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("errors", [False, pytest.param(True, marks=pytest.mark.xfail)])  # issue #2117
+@pytest.mark.parametrize("errors", [False, True])
 def test_roundtrip_pha0(errors, make_data_path, tmp_path, caplog):
     """Can we write out an ASCA PHA file and then read it back in?"""
 
@@ -480,33 +444,16 @@ def test_roundtrip_pha0(errors, make_data_path, tmp_path, caplog):
 
     check_pha0(pha2, responses=False, errors=errors)
 
-    # What messages were created?
-    if errors:
-        assert len(caplog.records) == 2
-        idx = 0
-    else:
-        assert len(caplog.records) == 4
-
-        rec = caplog.records[0]
-        record_starts_with(rec,
-                           "systematic errors were not found in file '/",
-                           level="WARNING")
-
-        rec = caplog.records[1]
-        record_starts_with(rec,
-                           "statistical errors were found in file '/")
-
-        idx = 2
+    assert len(caplog.records) == 2
 
     # The end of the message comes from the I/O backend and we do not
     # bother testing that here.
     #
-    rec = caplog.records[idx]
+    rec = caplog.records[0]
     record_starts_with(rec, "unable to read ARF: ",
                        level="WARNING")
 
-    idx += 1
-    rec = caplog.records[idx]
+    rec = caplog.records[1]
     record_starts_with(rec, "unable to read RMF: ",
                        level="WARNING")
 
@@ -516,7 +463,7 @@ def test_roundtrip_pha0(errors, make_data_path, tmp_path, caplog):
 
 @requires_data
 @requires_fits
-@pytest.mark.parametrize("errors", [False, pytest.param(True, marks=pytest.mark.xfail)])  # issue #2117
+@pytest.mark.parametrize("errors", [False, True])
 def test_roundtrip_pha1(errors, make_data_path, tmp_path, caplog):
     """Can we write out an ASCA PHA file and then read it back in?"""
 
@@ -639,7 +586,6 @@ def test_roundtrip_rmf(filename, check, tlmin, make_data_path, tmp_path, caplog)
     assert len(caplog.records) == ntot
 
 
-@pytest.mark.xfail  # issue #2117
 @requires_xspec
 @requires_data
 @requires_fits
@@ -786,7 +732,6 @@ def test_can_use_pha0(make_data_path, clean_astro_ui):
     assert mp.y[-1] == pytest.approx(5.45510848e-4)
 
 
-@pytest.mark.xfail  # issue #2117
 @requires_xspec
 @requires_data
 @requires_fits
