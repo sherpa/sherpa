@@ -40,7 +40,7 @@ from sherpa.models.basic import TableModel
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
-from sherpa.plot import Plot, MultiPlot, set_backend
+from sherpa.plot import BasePlot, BaseHistogram, MultiPlot, set_backend
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -716,7 +716,8 @@ class FitStore:
     model : Model
 
 
-def get_components_helper(getfunc: Callable[..., Plot],
+def get_components_helper(getfunc: Callable[...,
+                                            Union[BasePlot, BaseHistogram]],
                           model: Model,
                           idval: Union[int, str]) -> MultiPlot:
     """Handle get_source/model_components_plot.
@@ -947,6 +948,7 @@ class Session(NoNewAttributesAfterInit):
         # as a single-element list, but it was felt that having a
         # consistent access pattern was cleaner.
         #
+        self._plot_types: dict[str, list[Union[BasePlot, BaseHistogram]]]
         self._plot_types = {
             'data': [sherpa.plot.DataPlot(), sherpa.plot.DataHistogramPlot()],
             'model': [sherpa.plot.ModelPlot(), sherpa.plot.ModelHistogramPlot()],
