@@ -42,15 +42,16 @@ from sherpa.astro import io
 from sherpa.astro import ui
 
 
-def backend_is(name: str) -> bool:
-    """Are we using the specified backend?"""
-    return io.backend.name == name
-
-
 # The RMF includes the ARF (so is a "RSP" file).
 #
 PHAFILE = 'xrbg_xspec.pi'
 RMFFILE = 'pspcc_gain1_256.rsp'
+
+
+def backend_is(name: str) -> bool:
+    """Are we using the specified backend?"""
+    return io.backend.name == name
+
 
 """
 Plotting the data - once the response has been read in - into
@@ -197,6 +198,22 @@ def validate_pha(pha, errors=False):
     assert pha.background_ids == []
     assert pha.get_background() is None
 
+    # Check header values.
+    #
+    assert pha.header["HDUCLASS"] == "OGIP"
+    assert pha.header["HDUCLAS1"] == "SPECTRUM"
+    assert pha.header["HDUCLAS2"] == "NET"
+    assert pha.header["HDUCLAS3"] == "RATE"
+    assert pha.header["DETCHANS"] == 256
+    assert pha.header["CHANTYPE"] == "PI"
+
+    # This keyword is removed from the header.
+    assert "POISERR" not in pha.header
+
+    assert pha.header["TELESCOP"] == "ROSAT"
+    assert pha.header["INSTRUME"] == "PSPCC"
+    assert pha.header["FILTER"] == "NONE"
+
 
 def validate_rmf(rmf):
     """Has the PSPC RMF file been read in correctly?
@@ -282,22 +299,30 @@ def validate_rmf(rmf):
 
 @requires_data
 @requires_fits
-def test_read_pha(make_data_path):
+@pytest.mark.parametrize("errors", [False, True])
+def test_read_pha(errors, make_data_path):
     """Can we read in a ROSAT PHA file."""
 
     infile = make_data_path(PHAFILE)
-    pha = io.read_pha(infile)
-    validate_pha(pha, errors=False)
+    pha = io.read_pha(infile, use_errors=errors)
+    validate_pha(pha, errors=errors)
 
 
 @requires_data
 @requires_fits
-def test_read_pha_errors(make_data_path):
-    """Can we read in a ROSAT PHA file."""
+@pytest.mark.parametrize("errors", [False, True])
+def test_roundtrip_pha(errors, make_data_path, tmp_path):
+    """Can we write out a ROSAT PHA file and then read it back in?"""
 
     infile = make_data_path(PHAFILE)
-    pha = io.read_pha(infile, use_errors=True)
-    validate_pha(pha, errors=True)
+    pha1 = io.read_pha(infile, use_errors=errors)
+
+    outpath = tmp_path / "test.pha"
+    outfile = str(outpath)
+    io.write_pha(outfile, pha1, ascii=False, clobber=True)
+
+    pha2 = io.read_pha(outfile, use_errors=errors)
+    validate_pha(pha2, errors=errors)
 
 
 # In the error checks (i.e. checking that invalid files fail),
@@ -350,7 +375,7 @@ def test_read_arf_fails_pha(make_data_path):
 @requires_data
 @requires_fits
 def test_read_arf_fails_rmf(make_data_path):
-    """Just check in we can't read in a RNF as an ARF."""
+    """Just check in we can't read in a RMF as an ARF."""
 
     if backend_is("pyfits"):
         emsg = " does not appear to be an ARF"
@@ -372,6 +397,22 @@ def test_read_rmf(make_data_path):
     infile = make_data_path(RMFFILE)
     rmf = io.read_rmf(infile)
     validate_rmf(rmf)
+
+
+@requires_data
+@requires_fits
+def test_roundtrip_rmf(make_data_path, tmp_path):
+    """Can we write out a ROSAT RMF file and then read it back in?"""
+
+    infile = make_data_path(RMFFILE)
+    rmf1 = io.read_rmf(infile)
+
+    outpath = tmp_path / "test.rmf"
+    outfile = str(outpath)
+    io.write_rmf(outfile, rmf1, clobber=True)
+
+    rmf2 = io.read_rmf(outfile)
+    validate_rmf(rmf2)
 
 
 @requires_data
