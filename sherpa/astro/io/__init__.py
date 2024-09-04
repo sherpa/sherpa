@@ -793,7 +793,7 @@ def _process_pha_block(filename: str,
     #
     # However, we can have values of 0, which is not useful for
     # Sherpa, so we remove them (this is likely pointing at the
-    # handling of the POISERR keyword being sub-optimal).
+    # handling of the POISERR keyword being suboptimal).
     #
     staterr = get("STAT_ERR", expand=True)
     syserr = get("SYS_ERR", expand=True)
