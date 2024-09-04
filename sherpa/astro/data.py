@@ -2321,7 +2321,7 @@ will be removed. The identifiers can be integers or strings.
 
     def get_specresp(self,
                      filter: bool = False
-                     ) -> Optional[numpy.ndarray]:
+                     ) -> Optional[np.ndarray]:
         """Return the effective area values for the data set.
 
         Parameters
@@ -2410,7 +2410,7 @@ will be removed. The identifiers can be integers or strings.
     def _get_ebins(self,
                    response_id: Optional[IdType] = None,
                    group: bool = True
-                   ) -> tuple[numpy.ndarray, numpy.ndarray]:
+                   ) -> tuple[np.ndarray, np.ndarray]:
         """Return the low and high edges of the independent axis.
 
         This method is badly named as it will return values in either
@@ -4248,7 +4248,7 @@ It is an integer or string.
 
     def _fix_y_units(self, val, filter=False,
                      response_id: Optional[IdType] = None
-                     ) -> Optional[numpy.ndarray]:
+                     ) -> Optional[np.ndarray]:
         """Rescale the data to match the 'y' axis."""
 
         if val is None:
