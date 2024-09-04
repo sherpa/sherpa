@@ -282,7 +282,7 @@ def check_rmf0(rmf):
 
     # Expect the upper edge of bin j to equal the lower
     # edge of bin j + 1. Note that we check that the low
-    # bin has been relpaced (i.e. is not 0.0).
+    # bin has been replaced (i.e. is not 0.0).
     #
     assert rmf.energ_lo[1:] == pytest.approx(rmf.energ_hi[:-1])
     assert rmf.energ_lo[0] == pytest.approx(0.20000000298023)
@@ -343,7 +343,7 @@ def check_rmf1(rmf):
 
     # Expect the upper edge of bin j to equal the lower
     # edge of bin j + 1. Note that we check that the low
-    # bin has been relpaced (i.e. is not 0.0).
+    # bin has been replaced (i.e. is not 0.0).
     #
     assert rmf.energ_lo[1:] == pytest.approx(rmf.energ_hi[:-1])
     assert rmf.energ_lo[0] == pytest.approx(0.20000000298023)
