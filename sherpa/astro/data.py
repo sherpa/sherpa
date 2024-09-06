@@ -2502,7 +2502,9 @@ will be removed. The identifiers can be integers or strings.
         >>> (wlo == glo).all()
         True
         """
-        group = bool_cast(group)
+
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
 
         if self.units == 'channel':
             elo = self.channel
@@ -2527,7 +2529,7 @@ will be removed. The identifiers can be integers or strings.
                 elo = self.channel
                 ehi = self.channel + 1
 
-        if self.grouped and group:
+        if self.grouped and bool_cast(group):
             elo = self.apply_grouping(elo, self._min)
             ehi = self.apply_grouping(ehi, self._max)
 

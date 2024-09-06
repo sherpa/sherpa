@@ -240,9 +240,16 @@ def test_pha_filter_when_empty(caplog):
     empty = DataPHA("empty", None, None)
     assert len(caplog.record_tuples) == 0
 
-    with pytest.raises(TypeError,
-                       match="unsupported operand type"):
+    with SherpaVerbosity("INFO"):
         empty.ignore(hi=3)
+
+    assert len(caplog.records) == 1
+
+    emsg = "Skipping dataset empty: The size of 'empty' has not been set"
+    r = caplog.record_tuples[0]
+    assert r[0] == "sherpa.astro.data"
+    assert r[1] == logging.INFO
+    assert r[2] == emsg
 
 
 def test_pha_get_mask_when_empty(caplog):
@@ -3456,7 +3463,6 @@ def test_datapha_apply_grouping_quality_filter_length_check():
     # code check.
     #
     pha.quality_filter = np.asarray([1, 1, 1, 1, 1], dtype=bool)
-
     with pytest.raises(DataErr,
                        match="size mismatch between quality filter and array: 5 vs 4"):
         pha.apply_grouping([1, 2, 3, 4])

@@ -3909,11 +3909,8 @@ def test_to_guess_when_empty_datapha():
     """This is a regression test."""
 
     data = DataPHA("empty", None, None)
-    # This is not a nice error case, so catch it in case we decide to
-    # change the code.
-    #
-    with pytest.raises(TypeError,
-                       match=r"unsupported operand type\(s\) for \+: 'NoneType' and 'int'"):
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
         _ = data.to_guess()
 
 
@@ -3963,11 +3960,8 @@ def test_get_dims_when_empty_datapha():
     """This is a regression test."""
 
     data = DataPHA("empty", None, None)
-    # This is not a nice error case, so catch it in case we decide to
-    # change the code.
-    #
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
         _ = data.get_dims()
 
 
@@ -3976,11 +3970,8 @@ def test_get_dims_when_empty_2d(data_class, args):
     """This is a regression test."""
 
     data = data_class("empty", *args)
-    # This is not a nice error case, so catch it in case we decide to
-    # change the code.
-    #
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
         _ = data.get_dims()
 
 

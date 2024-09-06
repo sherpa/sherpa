@@ -1064,7 +1064,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         self._data_space.filter.mask = val
 
-    def get_dims(self):
+    # This is overloaded by Data1D and Data2D so can it be made "virtual"?
+    #
+    def get_dims(self) -> tuple[int, ...]:
         """
         Return the dimensions of this data space as a tuple of tuples.
         The first element in the tuple is a tuple with the dimensions of the data space, while the second element
@@ -1774,7 +1776,10 @@ class Data1D(Data):
     # The superclass suggests returning both the independent and
     # dependent axis sizes.
     #
-    def get_dims(self, filter: bool = False) -> tuple[int]:
+    def get_dims(self, filter: bool = False) -> tuple[int, ...]:
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
+
         return len(self.get_x(filter)),
 
     @overload
@@ -2512,7 +2517,10 @@ class Data2D(Data):
         return (np.arange(self.shape[1]) + 1,
                 np.arange(self.shape[0]) + 1)
 
-    def get_dims(self, filter: bool = False) -> tuple[int, int]:
+    def get_dims(self, filter: bool = False) -> tuple[int, ...]:
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
+
         # self._check_shape()
         if self.shape is not None:
             return self.shape[::-1]
