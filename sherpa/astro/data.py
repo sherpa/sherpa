@@ -1550,6 +1550,70 @@ class DataPHA(Data1D):
     _related_fields = Data1D._related_fields + ("bin_lo", "bin_hi", "counts", "grouping", "quality",
                                                 "backscal", "areascal")
 
+    def __init__(self, name, channel, counts, staterror=None, syserror=None,
+                 bin_lo=None, bin_hi=None, grouping=None, quality=None,
+                 exposure=None, backscal=None, areascal=None, header=None
+                 ) -> None:
+
+        # Set the size of the object as soon as we know (it makes it
+        # easier to get usable error messages when checking the
+        # related fields). This is only done for the channel case to
+        # allow the counts field to be set but the channel field
+        # unset.
+        #
+        channel = _check(channel)
+        if channel is not None:
+            self._size = len(channel)
+
+        counts = _check(counts)
+
+        self.bin_lo = bin_lo
+        self.bin_hi = bin_hi
+        self.quality = quality
+        self.grouping = grouping
+        self.exposure = exposure
+        self.backscal = backscal
+        self.areascal = areascal
+        if header is None:
+            header = {"HDUCLASS": "OGIP", "HDUCLAS1": "SPECTRUM",
+                      "HDUCLAS2": "TOTAL", "HDUCLAS3": "TYPE:I",
+                      "HDUCLAS4": "COUNT", "HDUVERS": "1.2.1",
+                      "TELESCOP": "none", "INSTRUME": "none",
+                      "FILTER": "none", "POISSERR": True}
+
+        self.header = header
+        self._grouped = grouping is not None
+
+        # _original_groups is set False if the grouping is changed via
+        # the _dynamic_groups method. This is currently only used by the
+        # serialization code (sherpa.astro.ui.serialize) to determine
+        # whether to write out the grouping data.
+        #
+        self._original_groups = True
+        self._subtracted = False
+        self._response_ids = []
+        self._background_ids = []
+
+        # Can these responses be ARF1D / RMF1D too? For now use just
+        # DataARF/DataRMF. Since the response versions actually just
+        # send any call to the underlying Data object it technically
+        # is the correct typing, and avoids playing around with
+        # self-referential type imports for now.
+        #
+        self._responses: dict[IdType, tuple[Optional[DataARF],
+                                            Optional[DataRMF]]] = {}
+
+        self._backgrounds: dict[IdType, DataPHA] = {}
+        self._rate = True
+        self._plot_fac = 0
+        self.units = "channel"
+        self.quality_filter = None
+        super().__init__(name, channel, counts, staterror, syserror)
+
+        # special-case the labels
+        self._xlabel = None
+        self._ylabel = None
+
     def _get_grouped(self):
         return self._grouped
 
@@ -1721,70 +1785,6 @@ will be removed. The identifiers can be integers or strings.
 If set, the identifiers must already exist, and any other backgrounds
 will be removed. The identifiers can be integers or strings.
 """)
-
-    def __init__(self, name, channel, counts, staterror=None, syserror=None,
-                 bin_lo=None, bin_hi=None, grouping=None, quality=None,
-                 exposure=None, backscal=None, areascal=None, header=None
-                 ) -> None:
-
-        # Set the size of the object as soon as we know (it makes it
-        # easier to get usable error messages when checking the
-        # related fields). This is only done for the channel case to
-        # allow the counts field to be set but the channel field
-        # unset.
-        #
-        channel = _check(channel)
-        if channel is not None:
-            self._size = len(channel)
-
-        counts = _check(counts)
-
-        self.bin_lo = bin_lo
-        self.bin_hi = bin_hi
-        self.quality = quality
-        self.grouping = grouping
-        self.exposure = exposure
-        self.backscal = backscal
-        self.areascal = areascal
-        if header is None:
-            header = {"HDUCLASS": "OGIP", "HDUCLAS1": "SPECTRUM",
-                      "HDUCLAS2": "TOTAL", "HDUCLAS3": "TYPE:I",
-                      "HDUCLAS4": "COUNT", "HDUVERS": "1.2.1",
-                      "TELESCOP": "none", "INSTRUME": "none",
-                      "FILTER": "none", "POISSERR": True}
-
-        self.header = header
-        self._grouped = grouping is not None
-
-        # _original_groups is set False if the grouping is changed via
-        # the _dynamic_groups method. This is currently only used by the
-        # serialization code (sherpa.astro.ui.serialize) to determine
-        # whether to write out the grouping data.
-        #
-        self._original_groups = True
-        self._subtracted = False
-        self._response_ids = []
-        self._background_ids = []
-
-        # Can these responses be ARF1D / RMF1D too? For now use just
-        # DataARF/DataRMF. Since the response versions actually just
-        # send any call to the underlying Data object it technically
-        # is the correct typing, and avoids playing around with
-        # self-referential type imports for now.
-        #
-        self._responses: dict[IdType, tuple[Optional[DataARF],
-                                            Optional[DataRMF]]] = {}
-
-        self._backgrounds: dict[IdType, DataPHA] = {}
-        self._rate = True
-        self._plot_fac = 0
-        self.units = "channel"
-        self.quality_filter = None
-        super().__init__(name, channel, counts, staterror, syserror)
-
-        # special-case the labels
-        self._xlabel = None
-        self._ylabel = None
 
     def _set_related(self, attr, val, check_mask=True, allow_scalar=False):
         """Set a field that must match the independent axes size.
