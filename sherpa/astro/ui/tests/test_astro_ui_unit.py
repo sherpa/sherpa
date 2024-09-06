@@ -218,7 +218,7 @@ def test_set_filter_mismatch(f, bid, clean_astro_ui):
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
     with pytest.raises(DataErr,
-                       match="size mismatch between independent axis and mask: 3 vs 2"):
+                       match="size mismatch between data and mask: 3 vs 2"):
         ui.set_filter(f, bkg_id=bid)
 
 
