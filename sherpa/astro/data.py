@@ -118,8 +118,11 @@ this range to have at least 20 counts per group:
 
 """
 
+from __future__ import annotations
+
 import logging
 import os
+from typing import Optional, Sequence, Union
 import warnings
 
 import numpy
@@ -134,6 +137,7 @@ from sherpa.utils import pad_bounding_box, interpolate, \
 from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.utils.types import IdType
 
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
@@ -1643,10 +1647,10 @@ The Y axis values are multiplied by X^plot_fac. The default
 value of 0 means the X axis is not used in plots. The value
 must be an integer.""")
 
-    def _get_response_ids(self):
+    def _get_response_ids(self) -> list[IdType]:
         return self._response_ids
 
-    def _set_response_ids(self, ids):
+    def _set_response_ids(self, ids: Sequence[IdType]) -> None:
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'response', str(ids))
 
@@ -1664,10 +1668,10 @@ If set, the identifiers must already exist, and any other responses
 will be removed. The identifiers can be integers or strings.
 """)
 
-    def _get_background_ids(self):
+    def _get_background_ids(self) -> list[IdType]:
         return self._background_ids
 
-    def _set_background_ids(self, ids):
+    def _set_background_ids(self, ids: Sequence[IdType]) -> None:
         if not numpy.iterable(ids):
             raise DataErr('idsnotarray', 'background', str(ids))
 
@@ -1687,7 +1691,8 @@ will be removed. The identifiers can be integers or strings.
 
     def __init__(self, name, channel, counts, staterror=None, syserror=None,
                  bin_lo=None, bin_hi=None, grouping=None, quality=None,
-                 exposure=None, backscal=None, areascal=None, header=None):
+                 exposure=None, backscal=None, areascal=None, header=None
+                 ) -> None:
 
         # Set the size of the object as soon as we know (it makes it
         # easier to get usable error messages when checking the
@@ -1727,8 +1732,17 @@ will be removed. The identifiers can be integers or strings.
         self._subtracted = False
         self._response_ids = []
         self._background_ids = []
-        self._responses = {}
-        self._backgrounds = {}
+
+        # Can these responses be ARF1D / RMF1D too? For now use just
+        # DataARF/DataRMF. Since the response versions actually just
+        # send any call to the underlying Data object it technically
+        # is the correct typing, and avoids playing around with
+        # self-referential type imports for now.
+        #
+        self._responses: dict[IdType, tuple[Optional[DataARF],
+                                            Optional[DataRMF]]] = {}
+
+        self._backgrounds: dict[IdType, DataPHA] = {}
         self._rate = True
         self._plot_fac = 0
         self.units = "channel"
@@ -1988,7 +2002,7 @@ will be removed. The identifiers can be integers or strings.
             self.header = {}
         self.__dict__.update(state)
 
-    primary_response_id = 1
+    primary_response_id: IdType = 1
     """The identifier for the response component when not set."""
 
     def set_analysis(self, quantity, type='rate', factor=0):
@@ -2082,18 +2096,19 @@ will be removed. The identifiers can be integers or strings.
         """
         return self.units
 
-    def _fix_response_id(self, id):
+    def _fix_response_id(self, id: Optional[IdType]) -> IdType:
         if id is not None:
             return id
 
         return self.primary_response_id
 
-    def get_response(self, id=None):
+    def get_response(self, id: Optional[IdType] = None
+                     ) -> tuple[Optional[DataARF], Optional[DataRMF]]:
         """Return the response component.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the response component. If it is None
            then the default response identifier is used.
 
@@ -2111,7 +2126,11 @@ will be removed. The identifiers can be integers or strings.
         id = self._fix_response_id(id)
         return self._responses.get(id, (None, None))
 
-    def set_response(self, arf=None, rmf=None, id=None):
+    def set_response(self,
+                     arf: Optional[DataARF] = None,
+                     rmf: Optional[DataRMF] = None,
+                     id: Optional[IdType] = None
+                     ) -> None:
         """Add or replace a response component.
 
         To remove a response use delete_response(), as setting arf and
@@ -2123,7 +2142,7 @@ will be removed. The identifiers can be integers or strings.
            The ARF to add if any.
         rmf : sherpa.astro.data.DataRMF instance or None, optional
            The RMF to add, if any.
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the response component. If it is None
            then the default response identifier is used.
 
@@ -2179,7 +2198,7 @@ will be removed. The identifiers can be integers or strings.
         set_key("INSTRUME")
         set_key("FILTER")
 
-    def delete_response(self, id=None):
+    def delete_response(self, id: Optional[IdType] = None) -> None:
         """Remove the response component.
 
         If the response component does not exist then the method
@@ -2200,12 +2219,12 @@ will be removed. The identifiers can be integers or strings.
         self._responses.pop(resp_id, None)
         self.response_ids.remove(resp_id)
 
-    def get_arf(self, id=None):
+    def get_arf(self, id: Optional[IdType] = None) -> Optional[DataARF]:
         """Return the ARF from the response.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the response component. If it is None
            then the default response identifier is used.
 
@@ -2221,12 +2240,12 @@ will be removed. The identifiers can be integers or strings.
         """
         return self.get_response(id)[0]
 
-    def get_rmf(self, id=None):
+    def get_rmf(self, id: Optional[IdType] = None) -> Optional[DataRMF]:
         """Return the RMF from the response.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the response component. If it is None
            then the default response identifier is used.
 
@@ -2242,7 +2261,9 @@ will be removed. The identifiers can be integers or strings.
         """
         return self.get_response(id)[1]
 
-    def set_arf(self, arf, id=None):
+    def set_arf(self,
+                arf: DataARF,
+                id: Optional[IdType] = None) -> None:
         """Add or replace the ARF in a response component.
 
         This replaces the existing ARF of the response, keeping the
@@ -2253,7 +2274,7 @@ will be removed. The identifiers can be integers or strings.
         ----------
         arf : sherpa.astro.data.DataARF instance
            The ARF to add.
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the response component. If it is None
            then the default response identifier is used.
 
@@ -2264,7 +2285,9 @@ will be removed. The identifiers can be integers or strings.
         """
         self.set_response(arf, self.get_rmf(id), id)
 
-    def set_rmf(self, rmf, id=None):
+    def set_rmf(self,
+                rmf: DataRMF,
+                id: Optional[IdType] = None) -> None:
         """Add or replace the RMF in a response component.
 
         This replaces the existing RMF of the response, keeping the
@@ -2275,7 +2298,7 @@ will be removed. The identifiers can be integers or strings.
         ----------
         rmf : sherpa.astro.data.DataRMF instance
            The RMF to add.
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the response component. If it is None
            then the default response identifier is used.
 
@@ -2286,7 +2309,9 @@ will be removed. The identifiers can be integers or strings.
         """
         self.set_response(self.get_arf(id), rmf, id)
 
-    def get_specresp(self, filter=False):
+    def get_specresp(self,
+                     filter: bool = False
+                     ) -> Optional[numpy.ndarray]:
         """Return the effective area values for the data set.
 
         Parameters
@@ -2372,7 +2397,10 @@ will be removed. The identifiers can be integers or strings.
 
         return instrument.Response1D(self)
 
-    def _get_ebins(self, response_id=None, group=True):
+    def _get_ebins(self,
+                   response_id: Optional[IdType] = None,
+                   group: bool = True
+                   ) -> tuple[numpy.ndarray, numpy.ndarray]:
         """Return the low and high edges of the independent axis.
 
         This method is badly named as it will return values in either
@@ -2642,13 +2670,13 @@ will be removed. The identifiers can be integers or strings.
         vals = hc / vals
         return vals
 
-    default_background_id = 1
+    default_background_id: IdType = 1
     """The identifier for the background component when not set.
 
 It is an integer or string.
 """
 
-    def _fix_background_id(self, id):
+    def _fix_background_id(self, id: Optional[IdType]) -> IdType:
         """Identify the background identifier.
 
         Parameters
@@ -2668,12 +2696,14 @@ It is an integer or string.
 
         return self.default_background_id
 
-    def get_background(self, id=None):
+    def get_background(self,
+                       id: Optional[IdType] = None
+                       ) -> Optional[DataPHA]:
         """Return the background component.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the background component. If it is None
            then the default background identifier is used.
 
@@ -2691,7 +2721,9 @@ It is an integer or string.
         bkg_id = self._fix_background_id(id)
         return self._backgrounds.get(bkg_id)
 
-    def set_background(self, bkg, id=None):
+    def set_background(self,
+                       bkg: DataPHA,
+                       id: Optional[IdType] = None) -> None:
         """Add or replace a background component.
 
         If the background has no grouping of quality arrays then they
@@ -2704,7 +2736,7 @@ It is an integer or string.
         bkg : sherpa.astro.data.DataPHA instance
            The background dataset to add. This object may be changed
            by this method.
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the background component. If it is None
            then the default background identifier is used.
 
@@ -2792,7 +2824,9 @@ It is an integer or string.
         set_key("INSTRUME")
         set_key("FILTER")
 
-    def delete_background(self, id=None):
+    def delete_background(self,
+                          id: Optional[IdType] = None
+                          ) -> None:
         """Remove the background component.
 
         If the background component does not exist then the method
@@ -2800,7 +2834,7 @@ It is an integer or string.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the background component. If it is None
            then the default background identifier is used.
 
@@ -2825,8 +2859,12 @@ It is an integer or string.
 
         self.background_ids.remove(bkg_id)
 
-    def get_background_scale(self, bkg_id=1, units='counts',
-                             group=True, filter=False):
+    def get_background_scale(self,
+                             bkg_id: IdType = 1,
+                             units='counts',
+                             group=True,
+                             filter=False
+                             ):
         """Return the correction factor for the background dataset.
 
         .. versionchanged:: 4.12.2
@@ -2838,7 +2876,7 @@ It is an integer or string.
         Parameters
         ----------
         bkg_id : int or str, optional
-           The background component to use (the default is 1).
+           The background component to use.
         units : {'counts', 'rate'}, optional
            The correction is applied to a model defined as counts, the
            default, or a rate. The latter should be used when
@@ -4198,7 +4236,9 @@ It is an integer or string.
                 raise DataErr("incompatibleresp", rmf.name, self.name)
             self.units = 'energy'
 
-    def _fix_y_units(self, val, filter=False, response_id=None):
+    def _fix_y_units(self, val, filter=False,
+                     response_id: Optional[IdType] = None
+                     ) -> Optional[numpy.ndarray]:
         """Rescale the data to match the 'y' axis."""
 
         if val is None:
@@ -4655,7 +4695,9 @@ It is an integer or string.
             arf, rmf = self.get_response(resp_id)
             _notice_resp(noticed_chans, arf, rmf)
 
-    def notice(self, lo=None, hi=None, ignore=False, bkg_id=None):
+    def notice(self, lo=None, hi=None, ignore=False,
+               bkg_id: Optional[Union[IdType, Sequence[IdType]]] = None
+               ) -> None:
         """Notice or ignore the given range.
 
         .. versionchanged:: 4.14.0
@@ -4674,7 +4716,7 @@ It is an integer or string.
         ignore : bool, optional
             Set to True if the range should be ignored. The default is
             to notice the range.
-        bkg_id : int or str, or sequence of int or str, optional
+        bkg_id : int, str, None, or sequence of int or str, optional
             If not None then apply the filter to the given background
             dataset or datasets, otherwise change the object and all
             its background datasets.
