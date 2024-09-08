@@ -4531,7 +4531,11 @@ It is an integer or string.
 
         return create_expr(chans, format='%i')
 
-    def get_filter(self, group=True, format='%.12f', delim=':'):
+    def get_filter(self,
+                   group: bool = True,
+                   format: str = '%.12f',
+                   delim: str = ':'
+                   ) -> str:
         """Return the data filter as a string.
 
         The filter expression depends on the analysis setting.
@@ -4681,7 +4685,7 @@ It is an integer or string.
 
         return create_expr_integrated(xlo[mask], xhi[mask], mask=mask, format=format, delim=delim)
 
-    def get_filter_expr(self):
+    def get_filter_expr(self) -> str:
         return (self.get_filter(format='%.4f', delim='-') +
                 ' ' + self.get_xlabel())
 
