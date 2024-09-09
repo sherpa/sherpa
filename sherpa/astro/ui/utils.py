@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 import logging
 import os
@@ -57,7 +59,7 @@ info = logging.getLogger(__name__).info
 __all__ = ('Session',)
 
 
-def _get_image_filter(data):
+def _get_image_filter(data: DataIMG) -> str:
     """When reporting filters, we need to handle images separately.
 
     There is a disconnect between 1D and 2D filters as an empty string
@@ -96,7 +98,7 @@ def _get_image_filter(data):
     return data.get_filter()
 
 
-def _pha_report_filter_change(session,
+def _pha_report_filter_change(session: Session,
                               idval: Optional[IdType],
                               bkg_id: Optional[IdType],
                               changefunc: Callable[[DataPHA], None]
@@ -179,7 +181,7 @@ def _check_pha_tabstops(data: DataPHA,
     return np.zeros(data.size)
 
 
-def _save_errorcol(session,
+def _save_errorcol(session: Session,
                    idval: Optional[IdType],
                    filename,
                    bkg_id: Optional[IdType],
@@ -319,7 +321,7 @@ class Session(sherpa.ui.utils.Session):
         super().__setstate__(state)
 
     def clean(self) -> None:
-        self._pileup_models = {}
+        self._pileup_models: dict[IdType, Model] = {}
 
         # First key is id, second key is bkg_id.
         #
@@ -356,7 +358,7 @@ class Session(sherpa.ui.utils.Session):
     clean.__doc__ = sherpa.ui.utils.Session.clean.__doc__
     clean.__annotations__ = sherpa.ui.utils.Session.clean.__annotations__
 
-    def _set_plot_types(self):
+    def _set_plot_types(self) -> None:
         """Set up the plot types."""
 
         # The keys are used by the set_xlog/... calls to identify what
@@ -416,7 +418,7 @@ class Session(sherpa.ui.utils.Session):
     # Add ability to save attributes specific to the astro package.
     # Save XSPEC module settings that need to be restored.
     #
-    def save(self, filename='sherpa.save', clobber=False):
+    def save(self, filename='sherpa.save', clobber=False) -> None:
         """Save the current Sherpa session to a file.
 
         Parameters
@@ -476,7 +478,7 @@ class Session(sherpa.ui.utils.Session):
 
         super().save(filename, clobber)
 
-    def restore(self, filename='sherpa.save'):
+    def restore(self, filename='sherpa.save') -> None:
         """Load in a Sherpa session from a file.
 
         .. warning::
@@ -883,7 +885,7 @@ class Session(sherpa.ui.utils.Session):
         ids, f = self._get_bkg_fit(id, otherids)
         return f.calc_stat()
 
-    def calc_bkg_stat_info(self):
+    def calc_bkg_stat_info(self) -> None:
         """Display the statistic values for the current background models.
 
         Returns the statistics values for background datasets with
@@ -1121,7 +1123,9 @@ class Session(sherpa.ui.utils.Session):
         data.set_background(bkg, bkg_id)
 
     # DOC-NOTE: also in sherpa.utils
-    def dataspace2d(self, dims, id=None, dstype=DataIMG):
+    def dataspace2d(self, dims,
+                    id: Optional[IdType] = None,
+                    dstype=DataIMG) -> None:
         """Create the independent axis for a 2D data set.
 
         Create an "empty" two-dimensional data set by defining the
@@ -1132,7 +1136,7 @@ class Session(sherpa.ui.utils.Session):
         ----------
         dims : sequence of 2 number
            The dimensions of the grid in ``(width,height)`` order.
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
@@ -1246,7 +1250,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: rework the Data type notes section (also needed for
     # unpack_arrays)
-    def load_arrays(self, id, *args):
+    def load_arrays(self, id: IdType, *args) -> None:
         """Create a data set from array values.
 
         Parameters
@@ -1415,7 +1419,7 @@ class Session(sherpa.ui.utils.Session):
     # DataX class documentation, but users may not find it)
     # DOC-TODO: what do the shape arguments for Data2D/Data2DInt mean?
     def load_table(self, id, filename=None, ncols=2, colkeys=None,
-                   dstype=Data1D):
+                   dstype=Data1D) -> None:
         """Load a FITS binary file as a data set.
 
         Parameters
@@ -1611,7 +1615,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how best to include datastack support?
     # DOC-TODO: what does shape mean here (how is it encoded)?
     def load_ascii(self, id, filename=None, ncols=2, colkeys=None,
-                   dstype=Data1D, sep=' ', comment='#'):
+                   dstype=Data1D, sep=' ',
+                   comment='#') -> None:
         """Load an ASCII file as a data set.
 
         The standard behavior is to create a single data set, but
@@ -1786,7 +1791,8 @@ class Session(sherpa.ui.utils.Session):
                     return self.unpack_ascii(filename, *args, **kwargs)
 
     def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ',
-                               comment='#', func=np.average, delta=False):
+                               comment='#', func=np.average,
+                               delta=False) -> None:
         """Load an ASCII file with asymmetric errors as a data set.
 
         Create a dataset with asymmetric error bars which can be used
@@ -1899,14 +1905,17 @@ class Session(sherpa.ui.utils.Session):
 
         data.staterror = staterror
 
-    def _load_data(self, id, datasets):
+    def _load_data(self,
+                   id: Optional[IdType],
+                   datasets: Union[Data, Sequence[Data]]
+                   ) -> None:
         """Load one or more datasets.
 
         Used by load_data and load_pha.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None
            The identifier for the data set to use. For multi-dataset
            files, currently only PHA2, the id value indicates the
            first dataset: if it is an integer then the numbering
@@ -1952,7 +1961,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils without the support for
     #           multiple datasets.
     #
-    def load_data(self, id, filename=None, *args, **kwargs):
+    def load_data(self, id, filename=None, *args,
+                  **kwargs) -> None:
         # pylint: disable=W1113
         """Load a data set from a file.
 
@@ -2085,7 +2095,7 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
     def load_image(self, id, arg=None, coord='logical',
-                   dstype=DataIMG):
+                   dstype=DataIMG) -> None:
         """Load an image as a data set.
 
         .. versionchanged:: 4.16.0
@@ -2257,7 +2267,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors, True)
 
     # DOC-TODO: how best to include datastack support?
-    def load_pha(self, id, arg=None, use_errors=False):
+    def load_pha(self, id, arg=None,
+                 use_errors=False) -> None:
         """Load a PHA data set.
 
         This will load the PHA data and any related information, such
@@ -2465,7 +2476,7 @@ class Session(sherpa.ui.utils.Session):
 
         return self.get_bkg(id, bkg_id)
 
-    def _get_img_data(self, id):
+    def _get_img_data(self, id: Optional[IdType]) -> DataIMG:
         """Ensure the dataset is an image"""
         idval = self._fix_id(id)
         data = self.get_data(idval)
@@ -4399,7 +4410,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_arrays(self, filename, args, fields=None, ascii=True,
-                    clobber=False):
+                    clobber=False) -> None:
         """Write a list of arrays to a file.
 
         Parameters
@@ -5545,7 +5556,8 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: setting ascii=True is not supported for crates
     # and in pyfits it seems to just be a 1D array (needs thinking about)
-    def save_image(self, id, filename=None, ascii=False, clobber=False):
+    def save_image(self, id, filename=None, ascii=False,
+                   clobber=False) -> None:
         """Save the pixel values of a 2D data set to a file.
 
         Parameters
@@ -5613,7 +5625,8 @@ class Session(sherpa.ui.utils.Session):
                                     ascii=ascii, clobber=clobber)
 
     # DOC-TODO: the output for an image is "excessive"
-    def save_table(self, id, filename=None, ascii=False, clobber=False):
+    def save_table(self, id, filename=None, ascii=False,
+                   clobber=False) -> None:
         """Save a data set to a file as a table.
 
         Parameters
@@ -5860,7 +5873,7 @@ class Session(sherpa.ui.utils.Session):
 
     @staticmethod
     def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
-                   name='test-arf'):
+                   name='test-arf') -> DataARF:
         """Create an ARF.
 
         .. versionadded:: 4.10.1
@@ -5915,7 +5928,8 @@ class Session(sherpa.ui.utils.Session):
 
     @staticmethod
     def create_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None,
-                   ethresh=None, fname=None, name='delta-rmf'):
+                   ethresh=None, fname=None,
+                   name='delta-rmf') -> DataRMF:
         """Create an RMF.
 
         If fname is set to `None` then this creates a "perfect" RMF,
@@ -7131,7 +7145,9 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
     # DOC-TODO: should the arguments be renamed to better match optional
     # nature of the routine (e.g. can call set_analysis('energy'))?
-    def set_analysis(self, id, quantity=None, type='rate', factor=0):
+    #
+    def set_analysis(self, id, quantity=None, type='rate',
+                     factor=0) -> None:
         """Set the units used when fitting and displaying spectral data.
 
         The set_analysis command sets the units for spectral
@@ -9611,7 +9627,7 @@ class Session(sherpa.ui.utils.Session):
     def fake_pha(self, id, arf=None, rmf=None, exposure=None,
                  backscal=None, areascal=None, grouping=None,
                  grouped=False, quality=None, bkg=None,
-                 method=None):
+                 method=None) -> None:
         """Simulate a PHA data set from a model.
 
         The function creates a simulated PHA data set based on a source
@@ -9938,7 +9954,8 @@ class Session(sherpa.ui.utils.Session):
     # PSF
     ###########################################################################
 
-    def load_psf(self, modelname, filename_or_model, *args, **kwargs):
+    def load_psf(self, modelname, filename_or_model, *args,
+                 **kwargs) -> None:
         kernel = filename_or_model
         if _is_str(filename_or_model):
             try:
@@ -9961,7 +9978,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     # DOC-NOTE: also in sherpa.utils
-    def set_full_model(self, id, model=None):
+    def set_full_model(self, id, model=None) -> None:
         """Define the convolved model expression for a data set.
 
         The model expression created by `set_model` can be modified by
@@ -10275,7 +10292,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: should this be made a general function, since it
     # presumably does not care about pileup, just adds the
     # given model into the expression? Or is it PHA specific?
-    def set_pileup_model(self, id, model=None):
+    #
+    def set_pileup_model(self, id, model=None) -> None:
         """Include a model of the Chandra ACIS pile up when fitting PHA data.
 
         Chandra observations of bright sources can be affected by
@@ -10468,7 +10486,6 @@ class Session(sherpa.ui.utils.Session):
             resp = sherpa.astro.instrument.Response1D(data)
 
         return resp(src)
-
 
     def set_bkg_full_model(self, id, model=None,
                            bkg_id: Optional[IdType] = None
@@ -10776,7 +10793,8 @@ class Session(sherpa.ui.utils.Session):
 
         return (x, y)
 
-    def load_xstable_model(self, modelname, filename, etable=False):
+    def load_xstable_model(self, modelname, filename,
+                           etable=False) -> None:
         """Load a XSPEC table model.
 
         Create an additive ('atable', [1]), multiplicative
@@ -10872,7 +10890,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: can filename be a crate/hdulist?
     # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
     def load_table_model(self, modelname, filename,
-                         method=sherpa.utils.linear_interp, *args, **kwargs):
+                         method=sherpa.utils.linear_interp, *args,
+                         **kwargs) -> None:
         # pylint: disable=W1113
         """Load tabular or image data and use it as a model component.
 
@@ -10973,7 +10992,9 @@ class Session(sherpa.ui.utils.Session):
     # ## also in sherpa.utils
     # DOC-TODO: how to describe *args/**kwargs
     # DOC-TODO: how is the _y value used if set
-    def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
+    #
+    def load_user_model(self, func, modelname, filename=None,
+                        *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Create a user-defined model.
 
@@ -12011,7 +12032,6 @@ class Session(sherpa.ui.utils.Session):
         plotobj.prepare(arf, data)
         return plotobj
 
-
     def get_rmf_plot(self,
                      id: Optional[IdType] = None,
                      resp_id: Optional[IdType] = None,
@@ -12075,7 +12095,6 @@ class Session(sherpa.ui.utils.Session):
 
         plotobj.prepare(rmf, data)
         return plotobj
-
 
     def get_bkg_fit_plot(self,
                          id: Optional[IdType] = None,
@@ -12965,7 +12984,8 @@ class Session(sherpa.ui.utils.Session):
                  id: Optional[IdType] = None,
                  resp_id: Optional[IdType] = None,
                  replot=False, overplot=False,
-                 clearwindow=True, **kwargs) -> None:
+                 clearwindow=True,
+                 **kwargs) -> None:
         """Plot the ARF associated with a data set.
 
         Display the effective area curve from the ARF
@@ -13039,7 +13059,8 @@ class Session(sherpa.ui.utils.Session):
                  id: Optional[IdType] = None,
                  resp_id: Optional[IdType] = None,
                  replot=False, overplot=False,
-                 clearwindow=True, **kwargs) -> None:
+                 clearwindow=True,
+                 **kwargs) -> None:
         """Plot the RMF associated with a data set.
 
         Display the energy redistribution from the RMF
