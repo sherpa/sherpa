@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import annotations
+
 from configparser import ConfigParser
 import copy
 import copyreg as copy_reg
@@ -27,19 +29,23 @@ import logging
 import os
 import pickle
 import sys
-from typing import Any, Callable, Optional, Sequence, TypeVar, Union
+from typing import Any, Callable, Literal, Optional, Sequence, \
+    TypeVar, Union, overload
 
 import numpy as np
 
 from sherpa import get_config
 import sherpa.all
 from sherpa.data import Data, DataSimulFit
+from sherpa.estmethods import EstMethod
 from sherpa.fit import Fit, FitResults
 from sherpa.models.basic import TableModel
 from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
+from sherpa.optmethods import OptMethod
 from sherpa.plot import Plot, MultiPlot, set_backend
+from sherpa.stats import Stat, UserStat
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
     export_method, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
@@ -76,7 +82,7 @@ T = TypeVar("T")
 ###############################################################################
 
 
-def _check_type(arg, argtype, argname, argdesc):
+def _check_type(arg, argtype, argname: str, argdesc: str) -> None:
     if isinstance(arg, argtype):
         return
 
@@ -435,7 +441,7 @@ def read_template_model(modelname, templatefile,
         ntcols = len(tcols)
         if ntcols == 1:
             raise IOErr("onecolneedtwo", filename)
-        elif ntcols != 2:
+        if ntcols != 2:
             raise IOErr("wrongnumcols", 2, ntcols)
 
         tm = TableModel(filename)
@@ -471,7 +477,14 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, session, modeltype, args=(), kwargs=None):
+    # How do we type modeltype so that we can label __call__ as
+    # returning an instance of it, and still identify as deriving from
+    # Model?
+    #
+    def __init__(self,
+                 session: Session,
+                 modeltype,
+                 args=(), kwargs=None) -> None:
         # This is an internal class so do not bother with
         # sherpa.utils.err exceptions.
         #
@@ -534,6 +547,10 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
         NoNewAttributesAfterInit.__init__(self)
 
+    # TODO: can we say that this is the same class as sent to
+    # the constructor? A TypeVar could be used, but how do we
+    # constrain it to Model?
+    #
     def __call__(self, name):
         _check_str_type(name, "name")
 
@@ -551,10 +568,10 @@ class ModelWrapper(NoNewAttributesAfterInit):
 
         return self(name)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{self.modeltype.__name__} model type>'
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.modeltype.__doc__ is not None:
             # Use the documentation from wrapped model if available,
             # rather than a normal "repr" call.
@@ -564,7 +581,7 @@ class ModelWrapper(NoNewAttributesAfterInit):
         return self.__repr__()
 
 
-def _assign_obj_to_main(name, obj):
+def _assign_obj_to_main(name: str, obj) -> None:
     """Create a "global" symbol.
 
     Parameters
@@ -579,7 +596,7 @@ def _assign_obj_to_main(name, obj):
     BUILTINS.__dict__[name] = obj
 
 
-def _assign_model_to_main(name, model):
+def _assign_model_to_main(name: str, model: Model) -> None:
     """Ensure the model is added to the "global" symbol table.
 
     Parameters
@@ -597,7 +614,7 @@ def _assign_model_to_main(name, model):
     _assign_obj_to_main(name, model)
 
 
-def _remove_obj_from_main(name):
+def _remove_obj_from_main(name: str) -> None:
     """Remove the symbol."""
 
     # Is this sufficient or overkill?
@@ -609,7 +626,7 @@ def _remove_obj_from_main(name):
             pass
 
 
-def set_dep(data, val):
+def set_dep(data, val) -> None:
     """Set the dependent axis.
 
     Parameters
@@ -629,7 +646,7 @@ def set_dep(data, val):
     data.dep = dep
 
 
-def set_error(data, field, val, fractional=False):
+def set_error(data, field, val, fractional=False) -> None:
     """Set the error field.
 
     Parameters
@@ -665,7 +682,7 @@ def set_error(data, field, val, fractional=False):
     setattr(data, field, err)
 
 
-def set_filter(data, val, ignore=False):
+def set_filter(data, val, ignore=False) -> None:
     """Set the filter field.
 
     Parameters
@@ -753,7 +770,7 @@ class Session(NoNewAttributesAfterInit):
 
     def __init__(self) -> None:
         self.clean()
-        self._model_types = {}
+        self._model_types: dict[str, ModelWrapper] = {}
         self._model_globals = np.__dict__.copy()
         NoNewAttributesAfterInit.__init__(self)
         global _session
@@ -850,7 +867,7 @@ class Session(NoNewAttributesAfterInit):
         self._default_id: IdType = 1
         self._paramprompt = False
 
-        self._methods = {}
+        self._methods: dict[str, OptMethod] = {}
         self._itermethods = {'none': {'name': 'none'},
                              'sigmarej': {'name': 'sigmarej',
                                           'maxiters': 5,
@@ -858,12 +875,11 @@ class Session(NoNewAttributesAfterInit):
                                           'lrej': 3,
                                           'grow': 0}}
 
-        self._stats = {}
-        self._estmethods = {}
+        self._stats: dict[str, Stat] = {}
+        self._estmethods: dict[str, EstMethod] = {}
 
         modules = (sherpa.optmethods, sherpa.stats, sherpa.estmethods)
-        basetypes = (sherpa.optmethods.OptMethod, sherpa.stats.Stat,
-                     sherpa.estmethods.EstMethod)
+        basetypes = (OptMethod, Stat, EstMethod)
         objdicts = (self._methods, self._stats, self._estmethods)
 
         for mod, base, odict in zip(modules, basetypes, objdicts):
@@ -883,13 +899,22 @@ class Session(NoNewAttributesAfterInit):
 
         reset_interpolators()
 
+        # Should some of these dictionaries have more-restrictive
+        # types for the value? The current hierarchy doesn't help, as
+        # the "base" class is often a "virtual" class which ends up
+        # missing some of the methods that the actual instances rely
+        # on, or that it has different parameters than it's
+        # sub-classes (e.g. the plot classes), or that maybe a
+        # more-specialized class than Model would be helpful
+        # (e.g. _tbl_models).
+        #
         self._data: dict[IdType, Data] = {}
-        self._psf = {}
-        self._tbl_models = []
-        self._psf_models = []
+        self._psf: dict[IdType, Model] = {}
+        self._tbl_models: list[Model] = []
+        self._psf_models: list[Model] = []
 
         self._model_autoassign_func = _assign_model_to_main
-        self._model_components = {}
+        self._model_components: dict[str, Model] = {}
         self._models: dict[IdType, Model] = {}
         self._sources: dict[IdType, Model] = {}
 
@@ -953,7 +978,7 @@ class Session(NoNewAttributesAfterInit):
         # as a single-element list, but it was felt that having a
         # consistent access pattern was cleaner.
         #
-        self._plot_types = {
+        self._plot_types: dict[str, list[Any]] = {
             'data': [sherpa.plot.DataPlot(), sherpa.plot.DataHistogramPlot()],
             'model': [sherpa.plot.ModelPlot(), sherpa.plot.ModelHistogramPlot()],
             'model_component': [sherpa.plot.ComponentModelPlot(), sherpa.plot.ComponentModelHistogramPlot()],
@@ -975,7 +1000,7 @@ class Session(NoNewAttributesAfterInit):
         # name. These keys are also used, along with _plot_type_names,
         # to determine the set of forbidden identifiers.
         #
-        self._plot_types_alias = {
+        self._plot_types_alias: dict[str, str] = {
             "compsource": "source_component",
             "compmodel": "model_component"
         }
@@ -988,7 +1013,7 @@ class Session(NoNewAttributesAfterInit):
         # used in calls to contour(), and are also used to determine
         # the set of forbidden identifiers.
         #
-        self._contour_types = {
+        self._contour_types: dict[str, Any] = {
             "data": sherpa.plot.DataContour(),
             "model": sherpa.plot.ModelContour(),
             "source": sherpa.plot.SourceContour(),
@@ -1010,7 +1035,7 @@ class Session(NoNewAttributesAfterInit):
         # - no image() call that acts like plot() or contour();
         # - and no set_xlog/... like call to change the image displays.
         #
-        self._image_types = {
+        self._image_types: dict[str, Any] = {
             'data': sherpa.image.DataImage(),
             'model': sherpa.image.ModelImage(),
             'source': sherpa.image.SourceImage(),
@@ -1071,7 +1096,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._rng = rng
 
-    def set_plot_backend(self, backend):
+    def set_plot_backend(self, backend) -> None:
         """Change the plot backend.
 
         This will reset any plot structures, such as that returned by
@@ -1092,7 +1117,7 @@ class Session(NoNewAttributesAfterInit):
         self._set_plot_types()
         self._set_contour_types()
 
-    def save(self, filename='sherpa.save', clobber=False):
+    def save(self, filename='sherpa.save', clobber=False) -> None:
         """Save the current Sherpa session to a file.
 
         Parameters
@@ -1151,7 +1176,7 @@ class Session(NoNewAttributesAfterInit):
         finally:
             fout.close()
 
-    def restore(self, filename='sherpa.save'):
+    def restore(self, filename='sherpa.save') -> None:
         """Load in a Sherpa session from a file.
 
         .. warning::
@@ -1224,6 +1249,9 @@ class Session(NoNewAttributesAfterInit):
         # update current session with pickle
         self.__dict__.update(obj.__dict__)
 
+        # TODO: is it possible for _model_autoassign_func to be None,
+        # since NoNewAttributesAfterInit stops it from being set?
+        #
         if self._model_autoassign_func is not None:
             for name, cmpt in self._model_components.items():
                 self._model_autoassign_func(name, cmpt)
@@ -1296,17 +1324,17 @@ class Session(NoNewAttributesAfterInit):
                 psf_str += str(self.get_psf(id).kernel) + '\n\n'
         return psf_str
 
-    def _get_show_method(self):
+    def _get_show_method(self) -> str:
         return ('Optimization Method: %s\n%s\n' %
                 (type(self._current_method).__name__,
                  str(self._current_method)))
 
-    def _get_show_stat(self):
+    def _get_show_stat(self) -> str:
         return ('Statistic: %s\n%s\n' %
                 (type(self._current_stat).__name__,
                  str(self._current_stat)))
 
-    def _get_show_fit(self):
+    def _get_show_fit(self) -> str:
         if self._fit_results is None:
             return ''
 
@@ -1318,7 +1346,7 @@ class Session(NoNewAttributesAfterInit):
         fit_str += self.get_fit_results().format() + '\n\n'
         return fit_str
 
-    def _get_show_conf(self):
+    def _get_show_conf(self) -> str:
         if self._confidence_results is None:
             return ''
 
@@ -1326,7 +1354,7 @@ class Session(NoNewAttributesAfterInit):
         conf_str += self.get_conf_results().format() + '\n\n'
         return conf_str
 
-    def _get_show_proj(self):
+    def _get_show_proj(self) -> str:
         if self._projection_results is None:
             return ''
 
@@ -1334,7 +1362,7 @@ class Session(NoNewAttributesAfterInit):
         proj_str += self.get_proj_results().format() + '\n\n'
         return proj_str
 
-    def _get_show_covar(self):
+    def _get_show_covar(self) -> str:
         if self._covariance_results is None:
             return ''
 
@@ -1342,7 +1370,7 @@ class Session(NoNewAttributesAfterInit):
         covar_str += self.get_covar_results().format() + '\n\n'
         return covar_str
 
-    def show_stat(self, outfile=None, clobber=False):
+    def show_stat(self, outfile=None, clobber=False) -> None:
         """Display the current fit statistic.
 
         Parameters
@@ -1381,7 +1409,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_stat()
         send_to_pager(txt, outfile, clobber)
 
-    def show_method(self, outfile=None, clobber=False):
+    def show_method(self, outfile=None, clobber=False) -> None:
         """Display the current optimization method and options.
 
         Parameters
@@ -1426,7 +1454,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_method()
         send_to_pager(txt, outfile, clobber)
 
-    def show_fit(self, outfile=None, clobber=False):
+    def show_fit(self, outfile=None, clobber=False) -> None:
         """Summarize the fit results.
 
         Display the results of the last call to `fit`, including:
@@ -1465,7 +1493,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_data(self,
                   id: Optional[IdType] = None,
-                  outfile=None, clobber=False):
+                  outfile=None, clobber=False) -> None:
         """Summarize the available data sets.
 
         Display information on the data sets that have been
@@ -1503,7 +1531,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_filter(self,
                     id: Optional[IdType] = None,
-                    outfile=None, clobber=False):
+                    outfile=None, clobber=False) -> None:
         """Show any filters applied to a data set.
 
         Display any filters that have been applied to the independent
@@ -1544,7 +1572,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_model(self,
                    id: Optional[IdType] = None,
-                   outfile=None, clobber=False):
+                   outfile=None, clobber=False) -> None:
         """Display the model expression used to fit a data set.
 
         This displays the model used to fit the data set, that is,
@@ -1588,7 +1616,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_source(self,
                     id: Optional[IdType] = None,
-                    outfile=None, clobber=False):
+                    outfile=None, clobber=False) -> None:
         """Display the source model expression for a data set.
 
         This displays the source model for a data set, that is, the
@@ -1632,7 +1660,7 @@ class Session(NoNewAttributesAfterInit):
     # as the Notes section below is inadequate
     def show_kernel(self,
                     id: Optional[IdType] = None,
-                    outfile=None, clobber=False):
+                    outfile=None, clobber=False) -> None:
         """Display any kernel applied to a data set.
 
         The kernel represents the subset of the PSF model that is used
@@ -1689,7 +1717,7 @@ class Session(NoNewAttributesAfterInit):
     # as the Notes section below is inadequate
     def show_psf(self,
                  id: Optional[IdType] = None,
-                 outfile=None, clobber=False):
+                 outfile=None, clobber=False) -> None:
         """Display any PSF model applied to a data set.
 
         The PSF model represents the full model or data set that is
@@ -1742,7 +1770,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_psf(id)
         send_to_pager(txt, outfile, clobber)
 
-    def show_conf(self, outfile=None, clobber=False):
+    def show_conf(self, outfile=None, clobber=False) -> None:
         """Display the results of the last conf evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1775,7 +1803,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_conf()
         send_to_pager(txt, outfile, clobber)
 
-    def show_proj(self, outfile=None, clobber=False):
+    def show_proj(self, outfile=None, clobber=False) -> None:
         """Display the results of the last proj evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1808,7 +1836,7 @@ class Session(NoNewAttributesAfterInit):
         txt = self._get_show_proj()
         send_to_pager(txt, outfile, clobber)
 
-    def show_covar(self, outfile=None, clobber=False):
+    def show_covar(self, outfile=None, clobber=False) -> None:
         """Display the results of the last covar evaluation.
 
         The output includes the best-fit model parameter values,
@@ -1843,7 +1871,7 @@ class Session(NoNewAttributesAfterInit):
 
     def show_all(self,
                  id: Optional[IdType] = None,
-                 outfile=None, clobber=False):
+                 outfile=None, clobber=False) -> None:
         """Report the current state of the Sherpa session.
 
         Display information about one or all of the data sets that
@@ -1902,7 +1930,7 @@ class Session(NoNewAttributesAfterInit):
         txt += self._get_show_covar()
         send_to_pager(txt, outfile, clobber)
 
-    def get_functions(self):
+    def get_functions(self) -> list[str]:
         """Return the functions provided by Sherpa.
 
         Returns
@@ -1920,7 +1948,7 @@ class Session(NoNewAttributesAfterInit):
                 funcs.append(func)
         return funcs
 
-    def list_functions(self, outfile=None, clobber=False):
+    def list_functions(self, outfile=None, clobber=False) -> None:
         """Display the functions provided by Sherpa.
 
         Unlike the other ``list_xxx`` commands, this does not
@@ -2021,7 +2049,7 @@ class Session(NoNewAttributesAfterInit):
 
         return id
 
-    def _get_plottype(self, plottype):
+    def _get_plottype(self, plottype: str) -> str:
         """Return the name to refer to a given plot type.
 
         This supports aliases for the plot name. If an alias is used
@@ -2063,13 +2091,13 @@ class Session(NoNewAttributesAfterInit):
                 "'%s' should be used instead", plottype, answer)
         return answer
 
-    def _check_plottype(self, plottype):
+    def _check_plottype(self, plottype: IdType) -> bool:
         """Is this a valid plot type (including aliases)?"""
 
         return plottype in self._plot_types or \
             plottype in self._plot_types_alias
 
-    def _get_contourtype(self, plottype):
+    def _get_contourtype(self, plottype: str):
         """Return the name to refer to a given contour type."""
 
         if plottype in self._contour_types:
@@ -2078,7 +2106,7 @@ class Session(NoNewAttributesAfterInit):
         allowed = list(self._contour_types)
         raise PlotErr("wrongtype", plottype, str(allowed))
 
-    def _check_contourtype(self, plottype):
+    def _check_contourtype(self, plottype: IdType) -> bool:
         """Is this a valid contour type?"""
 
         return plottype in self._contour_types
@@ -2100,7 +2128,11 @@ class Session(NoNewAttributesAfterInit):
 
     def _set_item(self,
                   id: Optional[IdType],
-                  item, itemdict, itemtype, itemname, itemdesc
+                  item: T,
+                  itemdict: dict[IdType, T],
+                  itemtype,
+                  itemname: str,
+                  itemdesc: str
                   ) -> None:
         id = self._fix_id(id)
         _check_type(item, itemtype, itemname, itemdesc)
@@ -2190,7 +2222,7 @@ class Session(NoNewAttributesAfterInit):
     # Optimization methods
     ###########################################################################
 
-    def list_methods(self):
+    def list_methods(self) -> list[str]:
         """List the optimization methods.
 
         Returns
@@ -2215,13 +2247,15 @@ class Session(NoNewAttributesAfterInit):
         keys.sort()
         return keys
 
-    def _get_method_by_name(self, name):
+    def _get_method_by_name(self, name: str) -> OptMethod:
         meth = self._methods.get(name.lower())
         if meth is None:
             raise ArgumentErr('badmethod', name)
         return meth
 
-    def get_method(self, name=None):
+    def get_method(self,
+                   name: Optional[str] = None
+                   ) -> OptMethod:
         """Return an optimization method.
 
         Parameters
@@ -2278,7 +2312,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: is this guaranteed to be the same as get_method().name
     # or get_method().name.lower() and, if so, shouldn't this be
     # how it is coded?
-    def get_method_name(self):
+    def get_method_name(self) -> str:
         """Return the name of current Sherpa optimization method.
 
         Returns
@@ -2310,7 +2344,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: remove the list of supported methods once the
     # relevant documentation has been updated.
-    def set_method(self, meth):
+    def set_method(self, meth: str) -> None:
         """Set the optimization method.
 
         The primary task of Sherpa is to fit a model M(p) to a set of
@@ -2381,11 +2415,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if _is_str(meth):
-            meth = self._get_method_by_name(meth)
+            method = self._get_method_by_name(meth)
         else:
             _check_type(meth, sherpa.optmethods.OptMethod, 'meth',
                         'a method name or object')
-        self._current_method = meth
+            method = meth
+
+        self._current_method = method
 
         # Do we need to set the RNG argument? This is not ideal, but
         # is a band-aid while we work out how to handle the RNG
@@ -2450,7 +2486,7 @@ class Session(NoNewAttributesAfterInit):
         self._check_method_opt(optname)
         return self._current_method.config[optname]
 
-    def set_method_opt(self, optname, val):
+    def set_method_opt(self, optname, val) -> None:
         """Set an option for the current optimization method.
 
         This is a helper function since the optimization options can also
@@ -2488,7 +2524,7 @@ class Session(NoNewAttributesAfterInit):
         self._check_method_opt(optname)
         self._current_method.config[optname] = val
 
-    def get_iter_method_name(self):
+    def get_iter_method_name(self) -> str:
         """Return the name of the iterative fitting scheme.
 
         Returns
@@ -2568,7 +2604,7 @@ class Session(NoNewAttributesAfterInit):
                 'badopt', optname, self._current_itermethod['name'])
         return itermethod_opts[optname]
 
-    def list_iter_methods(self):
+    def list_iter_methods(self) -> list[str]:
         """List the iterative fitting schemes.
 
         Returns
@@ -2594,7 +2630,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: this information is also in sherpa/fit.py
     # DOC-TODO: this raises a ValueError rather than a Sherpa error class
-    def set_iter_method(self, meth):
+    def set_iter_method(self, meth: str) -> None:
         """Set the iterative-fitting scheme used in the fit.
 
         Control whether an iterative scheme should be applied to
@@ -2689,7 +2725,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._current_itermethod = self._itermethods[meth]
 
-    def set_iter_method_opt(self, optname, val):
+    def set_iter_method_opt(self, optname, val) -> None:
         """Set an option for the iterative-fitting scheme.
 
         Parameters
@@ -2761,7 +2797,7 @@ class Session(NoNewAttributesAfterInit):
     # Statistics
     ###########################################################################
 
-    def list_stats(self):
+    def list_stats(self) -> list[str]:
         """List the fit statistics.
 
         Returns
@@ -2795,13 +2831,15 @@ class Session(NoNewAttributesAfterInit):
         keys.sort()
         return keys
 
-    def _get_stat_by_name(self, name):
+    def _get_stat_by_name(self, name: str) -> Stat:
         stat = self._stats.get(name.lower())
         if stat is None:
             raise ArgumentErr('badstat', name)
         return stat
 
-    def get_stat(self, name=None):
+    def get_stat(self,
+                 name: Optional[str] = None
+                 ) -> Stat:
         """Return the fit statisic.
 
         Parameters
@@ -2849,7 +2887,7 @@ class Session(NoNewAttributesAfterInit):
         _check_str_type(name, "name")
         return self._get_stat_by_name(name)
 
-    def get_stat_name(self):
+    def get_stat_name(self) -> str:
         """Return the name of the current fit statistic.
 
         Returns
@@ -2876,7 +2914,9 @@ class Session(NoNewAttributesAfterInit):
         """
         return type(self.get_stat()).__name__.lower()
 
-    def set_stat(self, stat):
+    def set_stat(self,
+                 stat: Union[str, Stat]
+                 ) -> None:
         """Set the statistical method.
 
         Changes the method used to evaluate the fit statistic, that is
@@ -2971,12 +3011,13 @@ class Session(NoNewAttributesAfterInit):
 
         """
         if _is_str(stat):
-            stat = self._get_stat_by_name(stat)
+            statobj = self._get_stat_by_name(stat)
         else:
-            _check_type(stat, sherpa.stats.Stat, 'stat',
+            _check_type(stat, Stat, 'stat',
                         'a statistic name or object')
+            statobj = stat
 
-        self._current_stat = stat
+        self._current_stat = statobj
 
     ###########################################################################
     # Data sets
@@ -3083,7 +3124,7 @@ class Session(NoNewAttributesAfterInit):
         return self._data.get(self._fix_id(id))
 
     # DOC-TODO: terrible synopsis
-    def set_data(self, id, data=None):
+    def set_data(self, id, data=None) -> None:
 
         """Set a data set.
 
@@ -3137,7 +3178,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
-    def load_staterror(self, id, filename=None, ncols=2, *args, **kwargs):
+    def load_staterror(self, id, filename=None, ncols=2,
+                       *args, **kwargs) -> None:
         """Load the statistical errors from an ASCII file.
 
         Read in a column or image from a file and use the values
@@ -3209,7 +3251,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
-    def load_syserror(self, id, filename=None, ncols=2, *args, **kwargs):
+    def load_syserror(self, id, filename=None, ncols=2,
+                      *args, **kwargs) -> None:
         """Load the systematic errors from an ASCII file.
 
         Read in a column or image from a file and use the values
@@ -3279,7 +3322,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
     def load_filter(self, id, filename=None, ignore=False, ncols=2,
-                    *args, **kwargs):
+                    *args, **kwargs) -> None:
         """Load the filter array from an ASCII file and add to a data set.
 
         Parameters
@@ -3344,7 +3387,7 @@ class Session(NoNewAttributesAfterInit):
                             filename, ncols=ncols, *args, **kwargs),
                         ignore=ignore)
 
-    def set_filter(self, id, val=None, ignore=False):
+    def set_filter(self, id, val=None, ignore=False) -> None:
         """Set the filter array of a data set.
 
         Parameters
@@ -3393,7 +3436,7 @@ class Session(NoNewAttributesAfterInit):
         set_filter(d, val, ignore=ignore)
 
     # also in sherpa.astro.utils
-    def set_dep(self, id, val=None):
+    def set_dep(self, id, val=None) -> None:
         """Set the dependent axis of a data set.
 
         Parameters
@@ -3441,7 +3484,7 @@ class Session(NoNewAttributesAfterInit):
         set_dep(d, val)
 
     # DOC-NOTE: also in sherpa.utils
-    def set_staterror(self, id, val=None, fractional=False):
+    def set_staterror(self, id, val=None, fractional=False) -> None:
         """Set the statistical errors on the dependent axis of a data set.
 
         These values over-ride the errors calculated by any statistic,
@@ -3499,7 +3542,7 @@ class Session(NoNewAttributesAfterInit):
         set_error(d, "staterror", val, fractional=fractional)
 
     # DOC-NOTE: also in sherpa.astro.utils
-    def set_syserror(self, id, val=None, fractional=False):
+    def set_syserror(self, id, val=None, fractional=False) -> None:
         """Set the systematic errors on the dependent axis of a data set.
 
         Parameters
@@ -4520,7 +4563,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils
     def load_data(self, id, filename=None, ncols=2, colkeys=None,
                   dstype=sherpa.data.Data1D, sep=' ', comment='#',
-                  require_floats=True):
+                  require_floats=True) -> None:
         """Load a data set from an ASCII file.
 
         Parameters
@@ -4667,7 +4710,8 @@ class Session(NoNewAttributesAfterInit):
         """
         self.set_data(id, self.unpack_arrays(*args))
 
-    def _save_type(self, objtype, id, filename, **kwargs):
+    def _save_type(self, objtype: str,
+                   id, filename, **kwargs) -> None:
         if filename is None:
             id, filename = filename, id
 
@@ -4703,7 +4747,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_arrays(self, filename, args, fields=None, clobber=False, sep=' ',
-                    comment='#', linebreak='\n', format='%g'):
+                    comment='#', linebreak='\n', format='%g'
+                    ) -> None:
         """Write a list of arrays to an ASCII file.
 
         Parameters
@@ -4761,7 +4806,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_source(self, id, filename=None, clobber=False, sep=' ',
-                    comment='#', linebreak='\n', format='%g'):
+                    comment='#', linebreak='\n', format='%g'
+                    ) -> None:
         """Save the model values to a file.
 
         The model is evaluated on the grid of the data set, but does
@@ -4836,7 +4882,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_model(self, id, filename=None, clobber=False, sep=' ',
-                   comment='#', linebreak='\n', format='%g'):
+                   comment='#', linebreak='\n', format='%g'
+                   ) -> None:
         """Save the model values to a file.
 
         The model is evaluated on the grid of the data set, including
@@ -4912,7 +4959,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_resid(self, id, filename=None, clobber=False, sep=' ',
-                   comment='#', linebreak='\n', format='%g'):
+                   comment='#', linebreak='\n', format='%g'
+                   ) -> None:
         """Save the residuals (data-model) to a file.
 
         Parameters
@@ -4982,7 +5030,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_delchi(self, id, filename=None, clobber=False, sep=' ',
-                    comment='#', linebreak='\n', format='%g'):
+                    comment='#', linebreak='\n', format='%g'
+                    ) -> None:
         """Save the ratio of residuals (data-model) to error to a file.
 
         Parameters
@@ -5052,7 +5101,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils
     def save_data(self, id, filename=None, fields=None, sep=' ', comment='#',
-                  clobber=False, linebreak='\n', format='%g'):
+                  clobber=False, linebreak='\n', format='%g'
+                  ) -> None:
         """Save the data to a file.
 
         Parameters
@@ -5134,7 +5184,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_filter(self, id, filename=None, clobber=False, sep=' ',
-                    comment='#', linebreak='\n', format='%g'):
+                    comment='#', linebreak='\n', format='%g'
+                    ) -> None:
         """Save the filter array to a file.
 
         Parameters
@@ -5213,7 +5264,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_staterror(self, id, filename=None, clobber=False, sep=' ',
-                       comment='#', linebreak='\n', format='%g'):
+                       comment='#', linebreak='\n', format='%g'
+                       ) -> None:
         """Save the statistical errors to a file.
 
         If the statistical errors have not been set explicitly, then
@@ -5293,7 +5345,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_syserror(self, id, filename=None, clobber=False, sep=' ',
-                      comment='#', linebreak='\n', format='%g'):
+                      comment='#', linebreak='\n', format='%g'
+                      ) -> None:
         """Save the statistical errors to a file.
 
         Parameters
@@ -5371,7 +5424,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-NOTE: also in sherpa.astro.utils with a different interface
     def save_error(self, id, filename=None, clobber=False, sep=' ',
-                   comment='#', linebreak='\n', format='%g'):
+                   comment='#', linebreak='\n', format='%g'
+                   ) -> None:
         """Save the errors to a file.
 
         The total errors for a data set are the quadrature combination
@@ -5454,12 +5508,17 @@ class Session(NoNewAttributesAfterInit):
                          clobber=clobber, sep=sep, comment=comment,
                          linebreak=linebreak, format=format)
 
-    def _notice_expr(self, expr=None, **kwargs):
+    def _notice_expr(self,
+                     expr: Optional[str] = None,
+                     **kwargs) -> None:
         ids = self.list_data_ids()
         for vals in sherpa.utils.parse_expr(expr):
             self.notice_id(ids, *vals, **kwargs)
 
-    def _notice_expr_id(self, ids, expr=None, **kwargs):
+    def _notice_expr_id(self,
+                        ids: Union[IdType, Sequence[IdType]],
+                        expr: Optional[str] = None,
+                        **kwargs) -> None:
         for vals in sherpa.utils.parse_expr(expr):
             self.notice_id(ids, *vals, **kwargs)
 
@@ -5467,7 +5526,7 @@ class Session(NoNewAttributesAfterInit):
     # should only be in the sherpa.astro.ui version, but it is not
     # worth creating a copy of the routine just for this.
     #
-    def notice(self, lo=None, hi=None, **kwargs):
+    def notice(self, lo=None, hi=None, **kwargs) -> None:
         """Include data in the fit.
 
         Select one or more ranges of data to include by filtering on
@@ -5600,7 +5659,7 @@ class Session(NoNewAttributesAfterInit):
     # should only be in the sherpa.astro.ui version, but it is not
     # worth creating a copy of the routine just for this.
     #
-    def ignore(self, lo=None, hi=None, **kwargs):
+    def ignore(self, lo=None, hi=None, **kwargs) -> None:
         """Exclude data from the fit.
 
         Select one or more ranges of data to exclude by filtering on
@@ -5918,7 +5977,7 @@ class Session(NoNewAttributesAfterInit):
     # Models
     ###########################################################################
 
-    def paramprompt(self, val=False):
+    def paramprompt(self, val=False) -> None:
         """Should the user be asked for the parameter values when creating a model?
 
         When `val` is ``True``, calls to `set_model` will cause the user
@@ -5981,7 +6040,8 @@ class Session(NoNewAttributesAfterInit):
         self._paramprompt = sherpa.utils.bool_cast(val)
 
     def _add_model_types(self, module,
-                         baselist=(sherpa.models.ArithmeticModel,)):
+                         baselist=(sherpa.models.ArithmeticModel,)
+                         ) -> None:
         if not isinstance(baselist, tuple):
             baselist = (baselist,)
 
@@ -5998,7 +6058,7 @@ class Session(NoNewAttributesAfterInit):
             self._model_types[name] = ModelWrapper(self, cls)
             self._model_globals.update(self._model_types)
 
-    def add_model(self, modelclass, args=(), kwargs={}):
+    def add_model(self, modelclass, args=(), kwargs={}) -> None:
         """Create a user-defined model class.
 
         Create a model from a class. The name of the class can then be
@@ -6064,7 +6124,8 @@ class Session(NoNewAttributesAfterInit):
     # Model components
     #
 
-    def get_model_autoassign_func(self):
+    def get_model_autoassign_func(self
+                                  ) -> Callable[[str, Model], None]:
         """Return the method used to create model component identifiers.
 
         Provides access to the function which is used by
@@ -6088,7 +6149,9 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: what does func=None mean? If you try None then it
     # fails with AttributeError: 'Session' object attribute
     # '_model_autoassign_func' cannot be replaced with a non-callable attribute
-    def set_model_autoassign_func(self, func=None):
+    def set_model_autoassign_func(self,
+                                  func: Optional[Callable[[str, Model], None]] = None
+                                  ) -> None:
         """Set the method used to create model component identifiers.
 
         When a model component is created, the default behavior is to
@@ -6125,7 +6188,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._model_autoassign_func = func
 
-    def list_models(self, show="all"):
+    def list_models(self, show: str = "all") -> list[str]:
         """List the available model types.
 
         Parameters
@@ -6193,7 +6256,7 @@ class Session(NoNewAttributesAfterInit):
 
         return list(filter(select, keys))
 
-    def list_model_components(self):
+    def list_model_components(self) -> list[str]:
         """List the names of all the model components.
 
         Models are created either directly - by using the form
@@ -6247,7 +6310,7 @@ class Session(NoNewAttributesAfterInit):
         keys.sort()
         return keys
 
-    def _add_model_component(self, cmpt):
+    def _add_model_component(self, cmpt: Model) -> None:
         # If model component name is a model type name
         # or session function name, don't create it, raise
         # warning
@@ -6264,6 +6327,20 @@ class Session(NoNewAttributesAfterInit):
         self._model_components[cmpt.name] = cmpt
         if self._model_autoassign_func is not None:
             self._model_autoassign_func(cmpt.name, cmpt)
+
+    @overload
+    def _get_model_component(self,
+                             name: str,
+                             require: Literal[False]
+                             ) -> Optional[Model]:
+        ...
+
+    @overload
+    def _get_model_component(self,
+                             name: str,
+                             require: Literal[True]
+                             ) -> Model:
+        ...
 
     def _get_model_component(self, name, require=False):
         """Access the model component by name.
@@ -6295,7 +6372,7 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: can send in a model variable, but this is just the
     # identity function, so not worth documenting
-    def get_model_component(self, name):
+    def get_model_component(self, name: str) -> Model:
         """Returns a model component given its name.
 
         Parameters
@@ -6500,7 +6577,7 @@ class Session(NoNewAttributesAfterInit):
         for id in ids:
             self.get_source(id).reset()
 
-    def delete_model_component(self, name):
+    def delete_model_component(self, name: str) -> None:
         """Delete a model component.
 
         Parameters
@@ -7703,7 +7780,8 @@ class Session(NoNewAttributesAfterInit):
     # @loggable()
     def add_user_pars(self, modelname, parnames,
                       parvals=None, parmins=None, parmaxs=None,
-                      parunits=None, parfrozen=None):
+                      parunits=None, parfrozen=None
+                      ) -> None:
         """Add parameter information to a user model.
 
         Parameters
@@ -7819,7 +7897,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: Improve priors documentation
     def load_user_stat(self, statname, calc_stat_func, calc_err_func=None,
-                       priors={}):
+                       priors={}
+                       ) -> None:
         """Create a user-defined statistic.
 
         The choice of statistics - that is, the numeric value that is
@@ -7879,13 +7958,14 @@ class Session(NoNewAttributesAfterInit):
             >>> set_stat("qstat")
 
         """
-        userstat = sherpa.stats.UserStat(calc_stat_func,
-                                         calc_err_func, statname)
+        userstat = UserStat(calc_stat_func, calc_err_func, statname)
         if priors:
+            assert False
+            # TODO: clean this up
             pars = [(key, priors.pop(key)) for key in priors.keys()
                     if isinstance(priors[key], sherpa.models.Parameter)]
-            pars = dict(pars)
-            userstat = sherpa.logposterior.Prior(calc_stat_func, priors, pars)
+            kwargs = dict(pars)
+            userstat = sherpa.logposterior.Prior(calc_stat_func, priors, kwargs)
 
         _assign_obj_to_main(statname, userstat)
 
@@ -13489,7 +13569,7 @@ class Session(NoNewAttributesAfterInit):
     # Line plots
     #
 
-    def _multi_plot(self, args, plotmeth="plot", **kwargs):
+    def _multi_plot(self, args, plotmeth="plot", **kwargs) -> None:
         """Handle the plot() or contour() call.
 
         The arguments are split up into groups - a "command" followed
@@ -13591,7 +13671,7 @@ class Session(NoNewAttributesAfterInit):
             while plots:
                 plotmeth(plots.pop(0), **kwargs)
 
-    def _plot(self, plotobj, **kwargs):
+    def _plot(self, plotobj, **kwargs) -> None:
         """Display a plot object
 
         Parameters
@@ -13610,7 +13690,8 @@ class Session(NoNewAttributesAfterInit):
         with sherpa.plot.backend:
             plotobj.plot(**kwargs)
 
-    def _set_plot_item(self, plottype, item, value):
+    def _set_plot_item(self, plottype: str,
+                       item, value) -> None:
         """Change a plot setting.
 
         This will change all related plot classes; that is setting
@@ -13652,7 +13733,7 @@ class Session(NoNewAttributesAfterInit):
                     # skip it if no preference setting
                     pass
 
-    def set_xlog(self, plottype="all"):
+    def set_xlog(self, plottype: str = "all") -> None:
         """New plots will display a logarithmically-scaled X axis.
 
         This setting only affects plots created after the call to
@@ -13687,7 +13768,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_plot_item(plottype, 'xlog', True)
 
-    def set_ylog(self, plottype="all"):
+    def set_ylog(self, plottype: str = "all") -> None:
         """New plots will display a logarithmically-scaled Y axis.
 
         This setting only affects plots created after the call to
@@ -13722,7 +13803,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_plot_item(plottype, 'ylog', True)
 
-    def set_xlinear(self, plottype="all"):
+    def set_xlinear(self, plottype: str = "all") -> None:
         """New plots will display a linear X axis.
 
         This setting only affects plots created after the call to
@@ -13757,7 +13838,7 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_plot_item(plottype, 'xlog', False)
 
-    def set_ylinear(self, plottype="all"):
+    def set_ylinear(self, plottype: str = "all") -> None:
         """New plots will display a linear Y axis.
 
         This setting only affects plots created after the call to
@@ -13797,7 +13878,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how to list information/examples about the backends?
     # have some introductory text, but prob. need a link
     # to more information
-    def plot(self, *args, **kwargs):
+    def plot(self, *args, **kwargs) -> None:
         """Create one or more plot types.
 
         The plot function creates one or more plots, depending on the
@@ -13976,7 +14057,7 @@ class Session(NoNewAttributesAfterInit):
     def plot_data(self,
                   id: Optional[IdType] = None,
                   replot=False, overplot=False,
-                  clearwindow=True, **kwargs):
+                  clearwindow=True, **kwargs) -> None:
         r"""Plot the data values.
 
         Parameters
@@ -14092,7 +14173,7 @@ class Session(NoNewAttributesAfterInit):
     def plot_model(self,
                    id: Optional[IdType] = None,
                    replot=False, overplot=False,
-                   clearwindow=True, **kwargs):
+                   clearwindow=True, **kwargs) -> None:
         """Plot the model for a data set.
 
         This function plots the model for a data set, which includes
@@ -14174,7 +14255,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: also in sherpa.astro.utils, for now copies this text
     #           but does the astro version support a bkg_id parameter?
     def plot_source_component(self, id, model=None, replot=False,
-                              overplot=False, clearwindow=True, **kwargs):
+                              overplot=False, clearwindow=True,
+                              **kwargs) -> None:
         """Plot a component of the source expression for a data set.
 
         This function evaluates and plots a component of the model
@@ -14248,7 +14330,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_source_components(self,
                                id: Optional[IdType] = None,
                                overplot=False,
-                               clearwindow=True, **kwargs):
+                               clearwindow=True,
+                               **kwargs) -> None:
         """Plot all the components of a source.
 
         Display the individual components of a source expression.
@@ -14294,7 +14377,8 @@ class Session(NoNewAttributesAfterInit):
                    clearwindow=clearwindow, **kwargs)
 
     def plot_model_component(self, id, model=None, replot=False,
-                             overplot=False, clearwindow=True, **kwargs):
+                             overplot=False, clearwindow=True,
+                             **kwargs) -> None:
         """Plot a component of the model for a data set.
 
         This function evaluates and plots a component of the model
@@ -14386,7 +14470,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_model_components(self,
                               id: Optional[IdType] = None,
                               overplot=False,
-                              clearwindow=True, **kwargs):
+                              clearwindow=True,
+                              **kwargs) -> None:
         """Plot all the components of a model.
 
         Display the individual model components of a source expression.
@@ -14435,7 +14520,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_source(self,
                     id: Optional[IdType] = None,
                     replot=False,
-                    overplot=False, clearwindow=True, **kwargs):
+                    overplot=False, clearwindow=True,
+                    **kwargs) -> None:
         """Plot the source expression for a data set.
 
         This function plots the source model for a data set. This does
@@ -14516,7 +14602,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_fit(self,
                  id: Optional[IdType] = None,
                  replot=False, overplot=False,
-                 clearwindow=True, **kwargs):
+                 clearwindow=True,
+                 **kwargs) -> None:
         """Plot the fit results (data, model) for a data set.
 
         This function creates a plot containing the data and the model
@@ -14605,7 +14692,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_resid(self,
                    id: Optional[IdType] = None,
                    replot=False, overplot=False,
-                   clearwindow=True, **kwargs):
+                   clearwindow=True,
+                   **kwargs) -> None:
         """Plot the residuals (data - model) for a data set.
 
         This function displays the residuals (data - model) for a data
@@ -14689,7 +14777,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_chisqr(self,
                     id: Optional[IdType] = None,
                     replot=False, overplot=False,
-                    clearwindow=True, **kwargs):
+                    clearwindow=True,
+                    **kwargs) -> None:
         """Plot the chi-squared value for each point in a data set.
 
         This function displays the square of the residuals (data -
@@ -14752,7 +14841,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_delchi(self,
                     id: Optional[IdType] = None,
                     replot=False, overplot=False,
-                    clearwindow=True, **kwargs):
+                    clearwindow=True,
+                    **kwargs) -> None:
         """Plot the ratio of residuals to error for a data set.
 
         This function displays the residuals (data - model) divided by
@@ -14832,7 +14922,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_ratio(self,
                    id: Optional[IdType] = None,
                    replot=False, overplot=False,
-                   clearwindow=True, **kwargs):
+                   clearwindow=True,
+                   **kwargs) -> None:
         """Plot the ratio of data to model for a data set.
 
         This function displays the ratio data / model for a data set.
@@ -14910,7 +15001,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_psf(self,
                  id: Optional[IdType] = None,
                  replot=False, overplot=False,
-                 clearwindow=True, **kwargs):
+                 clearwindow=True,
+                 **kwargs) -> None:
         """Plot the 1D PSF model applied to a data set.
 
         The `plot_kernel` function shows the data used to convolve
@@ -14971,7 +15063,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_kernel(self,
                     id: Optional[IdType] = None,
                     replot=False, overplot=False,
-                    clearwindow=True, **kwargs):
+                    clearwindow=True,
+                    **kwargs) -> None:
         """Plot the 1D kernel applied to a data set.
 
         The `plot_psf` function shows the full PSF, from which the
@@ -15032,7 +15125,8 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def _jointplot2(self, plot1, plot2,
-                    overplot=False, clearwindow=True, **kwargs):
+                    overplot=False, clearwindow=True,
+                    **kwargs) -> None:
         """Create a joint plot, vertically aligned, fit data on the top.
 
         Parameters
@@ -15084,7 +15178,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_fit_resid(self,
                        id: Optional[IdType] = None,
                        replot=False, overplot=False,
-                       clearwindow=True, **kwargs):
+                       clearwindow=True,
+                       **kwargs) -> None:
         """Plot the fit results, and the residuals, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
@@ -15177,7 +15272,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_fit_ratio(self,
                        id: Optional[IdType] = None,
                        replot=False, overplot=False,
-                       clearwindow=True, **kwargs):
+                       clearwindow=True,
+                       **kwargs) -> None:
         """Plot the fit results, and the ratio of data to model, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
@@ -15268,7 +15364,8 @@ class Session(NoNewAttributesAfterInit):
     def plot_fit_delchi(self,
                         id: Optional[IdType] = None,
                         replot=False, overplot=False,
-                        clearwindow=True, **kwargs):
+                        clearwindow=True,
+                        **kwargs) -> None:
         """Plot the fit results, and the residuals, for a data set.
 
         This creates two plots - the first from `plot_fit` and the
@@ -15362,7 +15459,8 @@ class Session(NoNewAttributesAfterInit):
     #
 
     def plot_pdf(self, points, name="x", xlabel="x", bins=12, normed=True,
-                 replot=False, overplot=False, clearwindow=True, **kwargs):
+                 replot=False, overplot=False, clearwindow=True,
+                 **kwargs) -> None:
         """Plot the probability density function of an array of values.
 
         Create and plot the probability density function (PDF) of
@@ -15433,7 +15531,8 @@ class Session(NoNewAttributesAfterInit):
         return self._pdfplot
 
     def plot_cdf(self, points, name="x", xlabel="x",
-                 replot=False, overplot=False, clearwindow=True, **kwargs):
+                 replot=False, overplot=False, clearwindow=True,
+                 **kwargs) -> None:
         """Plot the cumulative density function of an array of values.
 
         Create and plot the cumulative density function (CDF) of
@@ -15502,7 +15601,8 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: what does xlabel do?
     def plot_trace(self, points, name="x", xlabel="x",
-                   replot=False, overplot=False, clearwindow=True, **kwargs):
+                   replot=False, overplot=False, clearwindow=True,
+                   **kwargs) -> None:
         """Create a trace plot of row number versus value.
 
         Display a plot of the ``points`` array values (Y axis) versus row
@@ -15576,7 +15676,8 @@ class Session(NoNewAttributesAfterInit):
         return self._traceplot
 
     def plot_scatter(self, x, y, name="(x,y)", xlabel="x", ylabel="y",
-                     replot=False, overplot=False, clearwindow=True, **kwargs):
+                     replot=False, overplot=False, clearwindow=True,
+                     **kwargs) -> None:
         """Create a scatter plot.
 
         Parameters
@@ -15651,7 +15752,7 @@ class Session(NoNewAttributesAfterInit):
     # Contours
     #
 
-    def _contour(self, plotobj, overcontour=False, **kwargs):
+    def _contour(self, plotobj, overcontour=False, **kwargs) -> None:
         """Display a plot object
 
         Parameters
@@ -15674,7 +15775,7 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: how to list information/examples about the backends?
     # have some introductory text, but prob. need a link
     # to more information
-    def contour(self, *args, **kwargs):
+    def contour(self, *args, **kwargs) -> None:
         """Create a contour plot for an image data set.
 
         Create one or more contour plots, depending on the arguments
@@ -15767,7 +15868,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_data(self,
                      id: Optional[IdType] = None,
-                     replot=False, overcontour=False, **kwargs):
+                     replot=False, overcontour=False,
+                     **kwargs) -> None:
         """Contour the values of an image data set.
 
         Parameters
@@ -15810,7 +15912,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_model(self,
                       id: Optional[IdType] = None,
-                      replot=False, overcontour=False, **kwargs):
+                      replot=False, overcontour=False,
+                      **kwargs) -> None:
         """Create a contour plot of the model.
 
         Displays a contour plot of the values of the model,
@@ -15859,7 +15962,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_source(self,
                        id: Optional[IdType] = None,
-                       replot=False, overcontour=False, **kwargs):
+                       replot=False, overcontour=False,
+                       **kwargs) -> None:
         """Create a contour plot of the unconvolved spatial model.
 
         Displays a contour plot of the values of the model,
@@ -15907,7 +16011,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_fit(self,
                     id: Optional[IdType] = None,
-                    replot=False, overcontour=False, **kwargs):
+                    replot=False, overcontour=False,
+                    **kwargs) -> None:
         """Contour the fit to a data set.
 
         Overplot the model - including any PSF - on the data. The
@@ -15954,7 +16059,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_resid(self,
                       id: Optional[IdType] = None,
-                      replot=False, overcontour=False, **kwargs):
+                      replot=False, overcontour=False,
+                      **kwargs) -> None:
         """Contour the residuals of the fit.
 
         The residuals are formed by subtracting the current model -
@@ -16000,7 +16106,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_ratio(self,
                       id: Optional[IdType] = None,
-                      replot=False, overcontour=False, **kwargs):
+                      replot=False, overcontour=False,
+                      **kwargs) -> None:
         """Contour the ratio of data to model.
 
         The ratio image is formed by dividing the data by the current
@@ -16046,7 +16153,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_psf(self,
                     id: Optional[IdType] = None,
-                    replot=False, overcontour=False, **kwargs):
+                    replot=False, overcontour=False,
+                    **kwargs) -> None:
         """Contour the PSF applied to the model of an image data set.
 
         If the data set has no PSF applied to it, the model is
@@ -16080,7 +16188,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_kernel(self,
                        id: Optional[IdType] = None,
-                       replot=False, overcontour=False, **kwargs):
+                       replot=False, overcontour=False,
+                       **kwargs) -> None:
         """Contour the kernel applied to the model of an image data set.
 
         If the data set has no PSF applied to it, the model is
@@ -16114,7 +16223,8 @@ class Session(NoNewAttributesAfterInit):
 
     def contour_fit_resid(self,
                           id: Optional[IdType] = None,
-                          replot=False, overcontour=False, **kwargs):
+                          replot=False, overcontour=False,
+                          **kwargs) -> None:
         """Contour the fit and the residuals to a data set.
 
         Overplot the model - including any PSF - on the data. In a
@@ -16672,7 +16782,8 @@ class Session(NoNewAttributesAfterInit):
                  otherids: Optional[Sequence[IdType]] = None,
                  replot=False, fast=True,
                  min=None, max=None, nloop=20, delv=None, fac=1, log=False,
-                 numcores=None, overplot=False):
+                 numcores=None,
+                 overplot=False) -> None:
         """Calculate and plot the fit statistic versus fit parameter value.
 
         Create a confidence plot of the fit statistic as a function of
@@ -16797,7 +16908,8 @@ class Session(NoNewAttributesAfterInit):
                 otherids: Optional[Sequence[IdType]] = None,
                 replot=False, min=None,
                 max=None, nloop=20, delv=None, fac=1, log=False,
-                numcores=None, overplot=False):
+                numcores=None,
+                overplot=False) -> None:
         """Calculate and plot the fit statistic versus fit parameter value.
 
         Create a confidence plot of the fit statistic as a function of
@@ -16920,7 +17032,8 @@ class Session(NoNewAttributesAfterInit):
                  replot=False,
                  fast=True, min=None, max=None, nloop=(10, 10), delv=None,
                  fac=4, log=(False, False), sigma=(1, 2, 3), levels=None,
-                 numcores=None, overplot=False):
+                 numcores=None,
+                 overplot=False) -> None:
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
@@ -17055,7 +17168,8 @@ class Session(NoNewAttributesAfterInit):
                 replot=False,
                 min=None, max=None, nloop=(10, 10), delv=None, fac=4,
                 log=(False, False), sigma=(1, 2, 3), levels=None,
-                numcores=None, overplot=False):
+                numcores=None,
+                overplot=False) -> None:
         """Plot the statistic value as two parameters are varied.
 
         Create a confidence plot of the fit statistic as a function of
@@ -17644,7 +17758,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_data(self,
                    id: Optional[IdType] = None,
-                   newframe=False, tile=False):
+                   newframe=False,
+                   tile=False) -> None:
         """Display a data set in the image viewer.
 
         The image viewer is automatically started if it is not
@@ -17704,7 +17819,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_model(self,
                     id: Optional[IdType] = None,
-                    newframe=False, tile=False):
+                    newframe=False,
+                    tile=False) -> None:
         """Display the model for a data set in the image viewer.
 
         This function evaluates and displays the model expression for
@@ -17772,7 +17888,7 @@ class Session(NoNewAttributesAfterInit):
         imageobj.image(newframe=newframe, tile=tile)
 
     def image_source_component(self, id, model=None, newframe=False,
-                               tile=False):
+                               tile=False) -> None:
         """Display a component of the source expression in the image viewer.
 
         This function evaluates and displays a component of the model
@@ -17844,7 +17960,8 @@ class Session(NoNewAttributesAfterInit):
         imageobj = self.get_source_component_image(id, model)
         imageobj.image(newframe=newframe, tile=tile)
 
-    def image_model_component(self, id, model=None, newframe=False, tile=False):
+    def image_model_component(self, id, model=None, newframe=False,
+                              tile=False) -> None:
         """Display a component of the model in the image viewer.
 
         This function evaluates and displays a component of the model
@@ -17919,7 +18036,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_source(self,
                      id: Optional[IdType] = None,
-                     newframe=False, tile=False):
+                     newframe=False,
+                     tile=False) -> None:
         """Display the source expression for a data set in the image viewer.
 
         This function evaluates and displays the model expression for
@@ -17988,7 +18106,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: does newframe make sense here?
     def image_fit(self,
                   id: Optional[IdType] = None,
-                  newframe=True, tile=True, deleteframes=True):
+                  newframe=True, tile=True,
+                  deleteframes=True) -> None:
         """Display the data, model, and residuals for a data set in the image viewer.
 
         This function displays the data, model (including any
@@ -18060,7 +18179,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_resid(self,
                     id: Optional[IdType] = None,
-                    newframe=False, tile=False):
+                    newframe=False,
+                    tile=False) -> None:
         """Display the residuals (data - model) for a data set in the image viewer.
 
         This function displays the residuals (data - model) for a data
@@ -18129,7 +18249,8 @@ class Session(NoNewAttributesAfterInit):
 
     def image_ratio(self,
                     id: Optional[IdType] = None,
-                    newframe=False, tile=False):
+                    newframe=False,
+                    tile=False) -> None:
         """Display the ratio (data/model) for a data set in the image viewer.
 
         This function displays the ratio data/model for a data
@@ -18186,7 +18307,8 @@ class Session(NoNewAttributesAfterInit):
     # DOC-TODO: what gets displayed when there is no PSF?
     def image_psf(self,
                   id: Optional[IdType] = None,
-                  newframe=False, tile=False):
+                  newframe=False,
+                  tile=False) -> None:
         """Display the 2D PSF model for a data set in the image viewer.
 
         The image viewer is automatically started if it is not
@@ -18241,7 +18363,8 @@ class Session(NoNewAttributesAfterInit):
     # (as it appears in a number of places)?
     def image_kernel(self,
                      id: Optional[IdType] = None,
-                     newframe=False, tile=False):
+                     newframe=False,
+                     tile=False) -> None:
         """Display the 2D kernel for a data set in the image viewer.
 
         The image viewer is automatically started if it is not
@@ -18295,7 +18418,7 @@ class Session(NoNewAttributesAfterInit):
     # through unbound functions of the Image class--always talking to
     # the same instance of the Image backend, so OK for now
 
-    def image_deleteframes(self):
+    def image_deleteframes(self) -> None:
         """Delete all the frames open in the image viewer.
 
         Delete all the frames - in other words, images - being
@@ -18319,7 +18442,7 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.delete_frames()
 
-    def image_open(self):
+    def image_open(self) -> None:
         """Start the image viewer.
 
         The image viewer will be started, if found. Calling this
@@ -18350,7 +18473,7 @@ class Session(NoNewAttributesAfterInit):
         """
         sherpa.image.Image.open()
 
-    def image_close(self):
+    def image_close(self) -> None:
         """Close the image viewer.
 
         Close the image viewer created by a previous call to one
