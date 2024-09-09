@@ -903,7 +903,7 @@ class Session(NoNewAttributesAfterInit):
         # types for the value? The current hierarchy doesn't help, as
         # the "base" class is often a "virtual" class which ends up
         # missing some of the methods that the actual instances rely
-        # on, or that it has different parameters than it's
+        # on, or that it has different parameters than its
         # sub-classes (e.g. the plot classes), or that maybe a
         # more-specialized class than Model would be helpful
         # (e.g. _tbl_models).
@@ -3945,7 +3945,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int . str, or None, optional
+        id : int, str, or None, optional
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
         filter : bool, optional
@@ -17419,7 +17419,7 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        id : int, str, or None. optional
+        id : int, str, or None, optional
            The data set. If not given then the default identifier is
            used, as returned by `get_default_id`.
 
