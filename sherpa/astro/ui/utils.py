@@ -18,11 +18,13 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import annotations
+
 from dataclasses import dataclass
 import logging
 import os
 import sys
-from typing import Optional, Union
+from typing import Callable, Optional, Sequence, Union
 import warnings
 
 import numpy as np
@@ -41,7 +43,7 @@ from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
-from sherpa.fit import Fit, FitResults
+from sherpa.fit import Fit
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
@@ -57,7 +59,7 @@ info = logging.getLogger(__name__).info
 __all__ = ('Session',)
 
 
-def _get_image_filter(data):
+def _get_image_filter(data: DataIMG) -> str:
     """When reporting filters, we need to handle images separately.
 
     There is a disconnect between 1D and 2D filters as an empty string
@@ -96,7 +98,11 @@ def _get_image_filter(data):
     return data.get_filter()
 
 
-def _pha_report_filter_change(session, idval, bkg_id, changefunc):
+def _pha_report_filter_change(session: Session,
+                              idval: Optional[IdType],
+                              bkg_id: Optional[IdType],
+                              changefunc: Callable[[DataPHA], None]
+                              ) -> None:
     """Change the PHA object and report the filter change
 
     This reports the filter change even if the data is not grouped, as
@@ -108,7 +114,7 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
     session : sherpa.astro.ui.utils.Session instance
     idval : int, str, or None
         The dataset identifier, which must represent a DataPHA object.
-    bkg_id : int or None
+    bkg_id : int, str, or None
         The background identifier (if set)
     changefunc : callable
         This takes a DataPHA instance and changes it, possibly
@@ -136,7 +142,8 @@ def _pha_report_filter_change(session, idval, bkg_id, changefunc):
 
 
 def _check_pha_tabstops(data: DataPHA,
-                        tabStops: Optional[Union[str, list, np.ndarray]]) -> Union[None, np.ndarray]:
+                        tabStops: Optional[Union[str, list, np.ndarray]]
+                        ) -> Optional[np.ndarray]:
     """Validate the tabStops argument for the group_xxx calls.
 
     This converts from "nofilter" to numpy.zeros(nchan), where
@@ -174,19 +181,25 @@ def _check_pha_tabstops(data: DataPHA,
     return np.zeros(data.size)
 
 
-def _save_errorcol(session, idval, filename, bkg_id,
-                   clobber, asciiflag,
-                   get_err, colname):
+def _save_errorcol(session: Session,
+                   idval: Optional[IdType],
+                   filename,
+                   bkg_id: Optional[IdType],
+                   clobber,
+                   asciiflag,
+                   get_err,
+                   colname
+                   ) -> None:
     """Write out the error column.
 
     Parameters
     ----------
     session : AstroSession instance
-    idval : int or str or None
+    idval : int, str, or None
         The identifier (or filename)
     filename : str or None
         The filename (when idval is not None)
-    bkg_id : int or None
+    bkg_id : int, str, or None
         The background identifier (if wanted).
     clobber : bool
         Do we clobber the file if it exists?
@@ -227,7 +240,7 @@ def _save_errorcol(session, idval, filename, bkg_id,
 class BkgFitStore(sherpa.ui.utils.FitStore):
     """Store per-dataset information for a background fit"""
 
-    bkg_id : Union[int, str]
+    bkg_id : IdType
 
 
 class Session(sherpa.ui.utils.Session):
@@ -236,7 +249,7 @@ class Session(sherpa.ui.utils.Session):
     # Standard methods
     ###########################################################################
 
-    def __init__(self):
+    def __init__(self) -> None:
 
         self.clean()
         super().__init__()
@@ -245,7 +258,10 @@ class Session(sherpa.ui.utils.Session):
     # High-level utilities
     ###########################################################################
 
-    def _fix_background_id(self, id, bkg_id):
+    def _fix_background_id(self,
+                           id: Optional[IdType],
+                           bkg_id: Optional[IdType]
+                           ) -> IdType:
         """Validate the background id.
 
         The identifier has the same restrictions as the dataset
@@ -253,10 +269,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str or None
+        id : int, str, or None
             The dataset identifier. This is only used if bkg_id is
             None and must refer to a DataPHA dataset.
-        bkg_id : int or str or None
+        bkg_id : int, str, or None
             The identifier to check. If None then the default background
             identifier will be used, taken from the id dataset.
 
@@ -304,10 +320,13 @@ class Session(sherpa.ui.utils.Session):
 
         super().__setstate__(state)
 
-    def clean(self):
-        self._pileup_models = {}
-        self._background_models = {}
-        self._background_sources = {}
+    def clean(self) -> None:
+        self._pileup_models: dict[IdType, Model] = {}
+
+        # First key is id, second key is bkg_id.
+        #
+        self._background_models: dict[IdType, dict[IdType, Model]] = {}
+        self._background_sources: dict[IdType, dict[IdType, Model]] = {}
 
         # The fit-model for PHA data does not get stored in a field
         # (it is created whenever needed), so we should probably do
@@ -339,7 +358,7 @@ class Session(sherpa.ui.utils.Session):
     clean.__doc__ = sherpa.ui.utils.Session.clean.__doc__
     clean.__annotations__ = sherpa.ui.utils.Session.clean.__annotations__
 
-    def _set_plot_types(self):
+    def _set_plot_types(self) -> None:
         """Set up the plot types."""
 
         # The keys are used by the set_xlog/... calls to identify what
@@ -399,7 +418,7 @@ class Session(sherpa.ui.utils.Session):
     # Add ability to save attributes specific to the astro package.
     # Save XSPEC module settings that need to be restored.
     #
-    def save(self, filename='sherpa.save', clobber=False):
+    def save(self, filename='sherpa.save', clobber=False) -> None:
         """Save the current Sherpa session to a file.
 
         Parameters
@@ -459,7 +478,7 @@ class Session(sherpa.ui.utils.Session):
 
         super().save(filename, clobber)
 
-    def restore(self, filename='sherpa.save'):
+    def restore(self, filename='sherpa.save') -> None:
         """Load in a Sherpa session from a file.
 
         .. warning::
@@ -514,7 +533,7 @@ class Session(sherpa.ui.utils.Session):
                 sherpa.astro.xspec.set_xsstate(self._xspec_state)
                 self._xspec_state = None
 
-    def _get_show_data(self, id=None):
+    def _get_show_data(self, id: Optional[IdType] = None) -> str:
         """Show the data"""
 
         if id is None:
@@ -571,7 +590,10 @@ class Session(sherpa.ui.utils.Session):
 
         return data_str
 
-    def _get_show_bkg(self, id=None, bkg_id=None):
+    def _get_show_bkg(self,
+                      id: Optional[IdType] = None,
+                      bkg_id: Optional[IdType] = None
+                      ) -> str:
         """Show the background"""
 
         if id is None:
@@ -610,7 +632,10 @@ class Session(sherpa.ui.utils.Session):
 
         return data_str
 
-    def _get_show_bkg_model(self, id=None, bkg_id=None):
+    def _get_show_bkg_model(self,
+                            id: Optional[IdType] = None,
+                            bkg_id: Optional[IdType] = None
+                            ) -> str:
         """Show the background model"""
 
         if id is None:
@@ -633,7 +658,10 @@ class Session(sherpa.ui.utils.Session):
 
         return model_str
 
-    def _get_show_bkg_source(self, id=None, bkg_id=None):
+    def _get_show_bkg_source(self,
+                             id: Optional[IdType] = None,
+                             bkg_id: Optional[IdType] = None
+                             ) -> str:
         """Show the background source"""
 
         if id is None:
@@ -646,7 +674,7 @@ class Session(sherpa.ui.utils.Session):
             if bkg_id is not None:
                 bkg_ids = [bkg_id]
             else:
-                bkg_ids = self._background_sources.get(idval, {}).keys()
+                bkg_ids = list(self._background_sources.get(idval, {}).keys())
 
             for bidval in bkg_ids:
                 model_str += f'Background Source: {idval}:{bidval}\n'
@@ -654,7 +682,12 @@ class Session(sherpa.ui.utils.Session):
 
         return model_str
 
-    def show_bkg(self, id=None, bkg_id=None, outfile=None, clobber=False):
+    def show_bkg(self,
+                 id: Optional[IdType] = None,
+                 bkg_id: Optional[IdType] = None,
+                 outfile=None,
+                 clobber: bool = False
+                 ) -> None:
         """Show the details of the PHA background data sets.
 
         This displays information about the background, or
@@ -665,10 +698,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set. If not given then all background data sets
            are displayed.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The background component to display. The default is all
            components.
         outfile : str, optional
@@ -696,7 +729,12 @@ class Session(sherpa.ui.utils.Session):
         txt = self._get_show_bkg(id, bkg_id)
         send_to_pager(txt, outfile, clobber)
 
-    def show_bkg_source(self, id=None, bkg_id=None, outfile=None, clobber=False):
+    def show_bkg_source(self,
+                        id: Optional[IdType] = None,
+                        bkg_id: Optional[IdType] = None,
+                        outfile=None,
+                        clobber: bool = False
+                        ) -> None:
         """Display the background model expression for a data set.
 
         This displays the background model for a data set, that is,
@@ -707,10 +745,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set. If not given then all background expressions
            are displayed.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The background component to display. The default is all
            components.
         outfile : str, optional
@@ -740,7 +778,12 @@ class Session(sherpa.ui.utils.Session):
         txt = self._get_show_bkg_source(id, bkg_id)
         send_to_pager(txt, outfile, clobber)
 
-    def show_bkg_model(self, id=None, bkg_id=None, outfile=None, clobber=False):
+    def show_bkg_model(self,
+                       id: Optional[IdType] = None,
+                       bkg_id: Optional[IdType] = None,
+                       outfile=None,
+                       clobber: bool = False
+                       ) -> None:
         """Display the background model expression used to fit a data set.
 
         This displays the model used to the the background data set,
@@ -752,10 +795,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set. If not given then all background expressions are
            displayed.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The background component to display. The default is all
            components.
         outfile : str, optional
@@ -785,7 +828,9 @@ class Session(sherpa.ui.utils.Session):
         txt = self._get_show_bkg_model(id, bkg_id)
         send_to_pager(txt, outfile, clobber)
 
-    def calc_bkg_stat(self, id=None, *otherids):
+    def calc_bkg_stat(self,
+                      id: Optional[IdType] = None,
+                      *otherids: IdType):
         """Calculate the fit statistic for a background data set.
 
         Evaluate the current background models for the background
@@ -799,7 +844,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then all
            background data sets with an associated background model
            are used simultaneously.
@@ -840,7 +885,7 @@ class Session(sherpa.ui.utils.Session):
         ids, f = self._get_bkg_fit(id, otherids)
         return f.calc_stat()
 
-    def calc_bkg_stat_info(self):
+    def calc_bkg_stat_info(self) -> None:
         """Display the statistic values for the current background models.
 
         Returns the statistics values for background datasets with
@@ -954,7 +999,10 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     def dataspace1d(self, start, stop, step=1, numbins=None,
-                    id=None, bkg_id=None, dstype=sherpa.data.Data1DInt):
+                    id: Optional[IdType] = None,
+                    bkg_id: Optional[IdType] = None,
+                    dstype=sherpa.data.Data1DInt
+                    ) -> None:
         """Create the independent axis for a 1D data set.
 
         Create an "empty" one-dimensional data set by defining the
@@ -973,11 +1021,11 @@ class Session(sherpa.ui.utils.Session):
         numbins : int, optional
            The number of grid points. This over-rides the ``step``
            setting.
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            If set, the grid is for the background component of the
            data set.
         dstype : data class to use, optional
@@ -1075,7 +1123,9 @@ class Session(sherpa.ui.utils.Session):
         data.set_background(bkg, bkg_id)
 
     # DOC-NOTE: also in sherpa.utils
-    def dataspace2d(self, dims, id=None, dstype=DataIMG):
+    def dataspace2d(self, dims,
+                    id: Optional[IdType] = None,
+                    dstype=DataIMG) -> None:
         """Create the independent axis for a 2D data set.
 
         Create an "empty" two-dimensional data set by defining the
@@ -1086,7 +1136,7 @@ class Session(sherpa.ui.utils.Session):
         ----------
         dims : sequence of 2 number
            The dimensions of the grid in ``(width,height)`` order.
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
@@ -1200,7 +1250,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: rework the Data type notes section (also needed for
     # unpack_arrays)
-    def load_arrays(self, id, *args):
+    def load_arrays(self, id: IdType, *args) -> None:
         """Create a data set from array values.
 
         Parameters
@@ -1369,7 +1419,7 @@ class Session(sherpa.ui.utils.Session):
     # DataX class documentation, but users may not find it)
     # DOC-TODO: what do the shape arguments for Data2D/Data2DInt mean?
     def load_table(self, id, filename=None, ncols=2, colkeys=None,
-                   dstype=Data1D):
+                   dstype=Data1D) -> None:
         """Load a FITS binary file as a data set.
 
         Parameters
@@ -1565,7 +1615,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how best to include datastack support?
     # DOC-TODO: what does shape mean here (how is it encoded)?
     def load_ascii(self, id, filename=None, ncols=2, colkeys=None,
-                   dstype=Data1D, sep=' ', comment='#'):
+                   dstype=Data1D, sep=' ',
+                   comment='#') -> None:
         """Load an ASCII file as a data set.
 
         The standard behavior is to create a single data set, but
@@ -1740,7 +1791,8 @@ class Session(sherpa.ui.utils.Session):
                     return self.unpack_ascii(filename, *args, **kwargs)
 
     def load_ascii_with_errors(self, id, filename=None, colkeys=None, sep=' ',
-                               comment='#', func=np.average, delta=False):
+                               comment='#', func=np.average,
+                               delta=False) -> None:
         """Load an ASCII file with asymmetric errors as a data set.
 
         Create a dataset with asymmetric error bars which can be used
@@ -1853,14 +1905,17 @@ class Session(sherpa.ui.utils.Session):
 
         data.staterror = staterror
 
-    def _load_data(self, id, datasets):
+    def _load_data(self,
+                   id: Optional[IdType],
+                   datasets: Union[Data, Sequence[Data]]
+                   ) -> None:
         """Load one or more datasets.
 
         Used by load_data and load_pha.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None
            The identifier for the data set to use. For multi-dataset
            files, currently only PHA2, the id value indicates the
            first dataset: if it is an integer then the numbering
@@ -1906,7 +1961,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils without the support for
     #           multiple datasets.
     #
-    def load_data(self, id, filename=None, *args, **kwargs):
+    def load_data(self, id, filename=None, *args,
+                  **kwargs) -> None:
         # pylint: disable=W1113
         """Load a data set from a file.
 
@@ -2039,7 +2095,7 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_image(arg, coord, dstype)
 
     def load_image(self, id, arg=None, coord='logical',
-                   dstype=DataIMG):
+                   dstype=DataIMG) -> None:
         """Load an image as a data set.
 
         .. versionchanged:: 4.16.0
@@ -2211,7 +2267,8 @@ class Session(sherpa.ui.utils.Session):
         return sherpa.astro.io.read_pha(arg, use_errors, True)
 
     # DOC-TODO: how best to include datastack support?
-    def load_pha(self, id, arg=None, use_errors=False):
+    def load_pha(self, id, arg=None,
+                 use_errors=False) -> None:
         """Load a PHA data set.
 
         This will load the PHA data and any related information, such
@@ -2356,15 +2413,18 @@ class Session(sherpa.ui.utils.Session):
         phasets = self.unpack_pha(arg, use_errors)
         self._load_data(id, phasets)
 
-    def _get_pha_data(self, id, bkg_id=None):
+    def _get_pha_data(self,
+                      id: Optional[IdType],
+                      bkg_id: Optional[IdType] = None
+                      ) -> DataPHA:
         """Ensure the dataset is a PHA.
 
         Parameters
         ----------
-        id : int or str or None
+        id : int, str, or None
             The dataset identifier. A value of None means the
             default identifier is used.
-        bkg_id : int or None
+        bkg_id : int, str, or None
             If set then pick the background component instead.
 
         Returns
@@ -2388,7 +2448,10 @@ class Session(sherpa.ui.utils.Session):
         raise IdentifierErr('getitem', 'background data set', bkg_id,
                             f'in PHA data set {idval} has not been set')
 
-    def _get_data_or_bkg(self, id, bkg_id=None):
+    def _get_data_or_bkg(self,
+                         id: Optional[IdType],
+                         bkg_id: Optional[IdType] = None
+                         ) -> sherpa.data.Data:
         """Return the given dataset (may be a background).
 
         Unlike _get_pha_data it does not force the data to
@@ -2396,10 +2459,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str or None
+        id : int, str, or None
             The dataset identifier. A value of None means the
             default identifier is used.
-        bkg_id : int or None
+        bkg_id : int, str, or None
             If set then pick the background component instead.
 
         Returns
@@ -2413,7 +2476,7 @@ class Session(sherpa.ui.utils.Session):
 
         return self.get_bkg(id, bkg_id)
 
-    def _get_img_data(self, id):
+    def _get_img_data(self, id: Optional[IdType]) -> DataIMG:
         """Ensure the dataset is an image"""
         idval = self._fix_id(id)
         data = self.get_data(idval)
@@ -2443,8 +2506,10 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
     #
-    def load_filter(self, id, filename=None, bkg_id=None, ignore=False,
-                    ncols=2, *args, **kwargs):
+    def load_filter(self, id, filename=None,
+                    bkg_id: Optional[IdType] = None,
+                    ignore=False, ncols=2,
+                    *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the filter array from a file and add to a data set.
 
@@ -2459,7 +2524,7 @@ class Session(sherpa.ui.utils.Session):
            information. This file can be a FITS table or an ASCII
            file. Selection of the relevant column depends on the I/O
            library in use (Crates or AstroPy).
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the filter array should be associated with the
            background associated with the data set.
         ignore : bool, optional
@@ -2525,7 +2590,9 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: prob. needs a review as the existing ahelp documentation
     # talks about 2 cols, but experimentation suggests 1 col.
     #
-    def load_grouping(self, id, filename=None, bkg_id=None, *args, **kwargs):
+    def load_grouping(self, id, filename=None,
+                      bkg_id: Optional[IdType] = None,
+                      *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the grouping scheme from a file and add to a PHA data set.
 
@@ -2545,7 +2612,7 @@ class Session(sherpa.ui.utils.Session):
            information. This file can be a FITS table or an ASCII
            file. Selection of the relevant column depends on the I/O
            library in use (Crates or AstroPy).
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the grouping scheme should be associated with the
            background associated with the data set.
         colkeys : array of str, optional
@@ -2612,7 +2679,9 @@ class Session(sherpa.ui.utils.Session):
         grouping = self._read_user_model(filename, *args, **kwargs)[1]
         self.set_grouping(id, grouping, bkg_id=bkg_id)
 
-    def load_quality(self, id, filename=None, bkg_id=None, *args, **kwargs):
+    def load_quality(self, id, filename=None,
+                     bkg_id: Optional[IdType] = None,
+                     *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the quality array from a file and add to a PHA data set.
 
@@ -2631,7 +2700,7 @@ class Session(sherpa.ui.utils.Session):
            information. This file can be a FITS table or an ASCII
            file. Selection of the relevant column depends on the I/O
            library in use (Crates or AstroPy).
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the quality array should be associated with the
            background associated with the data set.
         colkeys : array of str, optional
@@ -2689,7 +2758,10 @@ class Session(sherpa.ui.utils.Session):
         mdata = self._read_user_model(filename, *args, **kwargs)
         self.set_quality(id, mdata[1], bkg_id=bkg_id)
 
-    def set_filter(self, id, val=None, bkg_id=None, ignore=False):
+    def set_filter(self, id, val=None,
+                   bkg_id: Optional[IdType] = None,
+                   ignore=False
+                   ) -> None:
         """Set the filter array of a data set.
 
         Parameters
@@ -2700,7 +2772,7 @@ class Session(sherpa.ui.utils.Session):
         val : array
            The array of filter values (``0`` or ``1``). The size should
            match the array returned by `get_dep`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to set. The
            default value (``None``) means that this is for the source
            component of the data set.
@@ -2744,7 +2816,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-TODO: does ncols make sense here? (have removed for now)
-    def load_staterror(self, id, filename=None, bkg_id=None, *args, **kwargs):
+    def load_staterror(self, id, filename=None,
+                       bkg_id: Optional[IdType] = None,
+                       *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the statistical errors from a file.
 
@@ -2763,7 +2837,7 @@ class Session(sherpa.ui.utils.Session):
            The name of the file to read in. Supported formats depends
            on the I/O library in use (Crates or AstroPy) and the
            type of data set (e.g. 1D or 2D).
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to set. The
            default value (``None``) means that this is for the source
            component of the data set.
@@ -2829,7 +2903,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils
     # DOC-NOTE: is ncols really 2 here? Does it make sense?
-    def load_syserror(self, id, filename=None, bkg_id=None, *args, **kwargs):
+    def load_syserror(self, id, filename=None,
+                      bkg_id: Optional[IdType] = None,
+                      *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Load the systematic errors from a file.
 
@@ -2846,7 +2922,7 @@ class Session(sherpa.ui.utils.Session):
            The name of the file to read in. Supported formats depends
            on the I/O library in use (Crates or AstroPy) and the
            type of data set (e.g. 1D or 2D).
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to set. The
            default value (``None``) means that this is for the source
            component of the data set.
@@ -2913,7 +2989,9 @@ class Session(sherpa.ui.utils.Session):
                           self._read_user_model(filename, *args, **kwargs)[1], bkg_id=bkg_id)
 
     # also in sherpa.utils
-    def set_dep(self, id, val=None, bkg_id=None):
+    def set_dep(self, id, val=None,
+                bkg_id: Optional[IdType] = None
+                ) -> None:
         """Set the dependent axis of a data set.
 
         Parameters
@@ -2969,7 +3047,9 @@ class Session(sherpa.ui.utils.Session):
     set_counts = set_dep
 
     # DOC-NOTE: also in sherpa.utils
-    def set_staterror(self, id, val=None, fractional=False, bkg_id=None):
+    def set_staterror(self, id, val=None, fractional= False,
+                      bkg_id: Optional[IdType] = None
+                      ) -> None:
         """Set the statistical errors on the dependent axis of a data set.
 
         These values over-ride the errors calculated by any statistic,
@@ -2989,7 +3069,7 @@ class Session(sherpa.ui.utils.Session):
            represents the fractional error, so the absolute value is
            calculated as ``get_dep() * val`` (and `val` must be
            a scalar).
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to set. The
            default value (``None``) means that this is for the source
            component of the data set.
@@ -3031,7 +3111,9 @@ class Session(sherpa.ui.utils.Session):
         sherpa.ui.utils.set_error(d, "staterror", val, fractional=fractional)
 
     # DOC-NOTE: also in sherpa.utils
-    def set_syserror(self, id, val=None, fractional=False, bkg_id=None):
+    def set_syserror(self, id, val=None, fractional=False,
+                     bkg_id: Optional[IdType] = None
+                     ) -> None:
         """Set the systematic errors on the dependent axis of a data set.
 
         Parameters
@@ -3048,7 +3130,7 @@ class Session(sherpa.ui.utils.Session):
            represents the fractional error, so the absolute value is
            calculated as ``get_dep() * val`` (and `val` must be
            a scalar).
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to set. The
            default value (``None``) means that this is for the source
            component of the data set.
@@ -3089,7 +3171,9 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_data_or_bkg(id, bkg_id)
         sherpa.ui.utils.set_error(d, "syserror", val, fractional=fractional)
 
-    def set_exposure(self, id, exptime=None, bkg_id=None):
+    def set_exposure(self, id, exptime=None,
+                     bkg_id: Optional[IdType] = None
+                     ) -> None:
         """Change the exposure time of a PHA data set.
 
         The exposure time of a PHA data set is taken from the
@@ -3104,7 +3188,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         exptime : num
            The exposure time, in seconds.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to set.  The
            default value (``None``) means that this is for the source
            component of the data set.
@@ -3154,7 +3238,9 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_pha_data(id, bkg_id)
         d.exposure = exptime
 
-    def set_backscal(self, id, backscale=None, bkg_id=None):
+    def set_backscal(self, id, backscale=None,
+                     bkg_id: Optional[IdType] = None
+                     ) -> None:
         """Change the area scaling of a PHA data set.
 
         The area scaling factor of a PHA data set is taken from the
@@ -3169,7 +3255,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         backscale : number or array
            The scaling factor.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to set.  The
            default value (``None``) means that this is for the source
            component of the data set.
@@ -3203,7 +3289,9 @@ class Session(sherpa.ui.utils.Session):
         d.backscal = backscale
 
     # DOC-TODO: the description needs improving.
-    def set_areascal(self, id, area=None, bkg_id=None):
+    def set_areascal(self, id, area=None,
+                     bkg_id: Optional[IdType] = None
+                     ) -> None:
         """Change the fractional area factor of a PHA data set.
 
         The area scaling factor of a PHA data set is taken from the
@@ -3218,7 +3306,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         area : number
            The scaling factor.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to set.  The
            default value (``None``) means that this is for the source
            component of the data set.
@@ -3252,7 +3340,11 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils, where it does not have
     #           the bkg_id parameter.
     #
-    def get_staterror(self, id=None, filter=False, bkg_id=None):
+    def get_staterror(self,
+                      id: Optional[IdType] = None,
+                      filter=False,
+                      bkg_id: Optional[IdType] = None
+                      ):
         """Return the statistical error on the dependent axis of a data set.
 
         The function returns the statistical errors on the values
@@ -3263,14 +3355,14 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
            the return value or not. The default is ``False``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
 
@@ -3339,7 +3431,11 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils, where it does not have
     #           the bkg_id parameter.
     #
-    def get_syserror(self, id=None, filter=False, bkg_id=None):
+    def get_syserror(self,
+                     id: Optional[IdType] = None,
+                     filter=False,
+                     bkg_id: Optional[IdType] = None
+                     ):
         """Return the systematic error on the dependent axis of a data set.
 
         The function returns the systematic errors on the values
@@ -3349,14 +3445,14 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
            the return value or not. The default is ``False``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
 
@@ -3415,7 +3511,11 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: also in sherpa.utils, where it does not have
     #           the bkg_id parameter.
     #
-    def get_error(self, id=None, filter=False, bkg_id=None):
+    def get_error(self,
+                  id: Optional[IdType] = None,
+                  filter=False,
+                  bkg_id: Optional[IdType] = None
+                  ):
         """Return the errors on the dependent axis of a data set.
 
         The function returns the total errors (a quadrature addition
@@ -3426,14 +3526,14 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
            the return value or not. The default is ``False``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
 
@@ -3491,7 +3591,10 @@ class Session(sherpa.ui.utils.Session):
         return d.get_error(filter, self.get_stat().calc_staterror)
 
     # DOC-NOTE: also in sherpa.utils
-    def get_indep(self, id=None, filter=False, bkg_id=None):
+    def get_indep(self,
+                  id: Optional[IdType] = None,
+                  filter=False,
+                  bkg_id: Optional[IdType] = None):
         """Return the independent axes of a data set.
 
         This function returns the coordinates of each point, or pixel,
@@ -3500,7 +3603,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
@@ -3602,7 +3705,9 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_data_or_bkg(id, bkg_id)
         return d.get_indep(filter=filter)
 
-    def get_axes(self, id=None, bkg_id=None):
+    def get_axes(self,
+                 id: Optional[IdType] = None,
+                 bkg_id: Optional[IdType] = None):
         """Return information about the independent axes of a data set.
 
         This function returns the coordinates of each point, or pixel,
@@ -3611,11 +3716,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
 
@@ -3699,7 +3804,10 @@ class Session(sherpa.ui.utils.Session):
         return d.get_indep()
 
     # DOC-NOTE: also in sherpa.utils
-    def get_dep(self, id=None, filter=False, bkg_id=None):
+    def get_dep(self,
+                id: Optional[IdType] = None,
+                filter=False,
+                bkg_id: Optional[IdType] = None):
         """Return the dependent axis of a data set.
 
         This function returns the data values (the dependent axis)
@@ -3707,14 +3815,14 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
            the return value or not. The default is ``False``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the values returned should be from the given
            background component, instead of the source data set.
 
@@ -3796,7 +3904,10 @@ class Session(sherpa.ui.utils.Session):
 
     get_counts = get_dep
 
-    def get_rate(self, id=None, filter=False, bkg_id=None):
+    def get_rate(self,
+                 id: Optional[IdType] = None,
+                 filter=False,
+                 bkg_id: Optional[IdType] = None):
         """Return the count rate of a PHA data set.
 
         Return an array of count-rate values for each bin in the
@@ -3806,14 +3917,14 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
            the return value or not. The default is ``False``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the rate should be taken from the background
            associated with the data set.
 
@@ -3896,19 +4007,22 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: how to get the corresponding x bins for this data?
     # i.e. what are the X values for these points
-    def get_specresp(self, id=None, filter=False, bkg_id=None):
+    def get_specresp(self,
+                     id: Optional[IdType] = None,
+                     filter=False,
+                     bkg_id: Optional[IdType] = None):
         """Return the effective area values for a PHA data set.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
         filter : bool, optional
            Should the filter attached to the data set be applied to
            the ARF or not. The default is ``False``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the ARF should be taken from a background set
            associated with the data set.
 
@@ -3934,7 +4048,9 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_pha_data(id, bkg_id)
         return d.get_specresp(filter)
 
-    def get_exposure(self, id=None, bkg_id=None):
+    def get_exposure(self,
+                     id: Optional[IdType] = None,
+                     bkg_id: Optional[IdType] = None):
         """Return the exposure time of a PHA data set.
 
         The exposure time of a PHA data set is taken from the
@@ -3943,11 +4059,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to use.  The
            default value (``None``) means that the time is for the
            source component of the data set.
@@ -3984,7 +4100,9 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_pha_data(id, bkg_id)
         return d.exposure
 
-    def get_backscal(self, id=None, bkg_id=None):
+    def get_backscal(self,
+                     id: Optional[IdType] = None,
+                     bkg_id: Optional[IdType] = None):
         """Return the BACKSCAL scaling of a PHA data set.
 
         Return the BACKSCAL setting for the source or background
@@ -3992,11 +4110,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to use.  The
            default value (``None``) means that the value is for the
            source component of the data set.
@@ -4041,8 +4159,10 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_pha_data(id, bkg_id)
         return d.backscal
 
-    def get_bkg_scale(self, id=None, bkg_id=1, units='counts',
-                      group=True, filter=False):
+    def get_bkg_scale(self,
+                      id: Optional[IdType] = None,
+                      bkg_id: IdType = 1,
+                      units='counts', group=True, filter=False):
         """Return the background scaling factor for a background data set.
 
         Return the factor applied to the background component to scale
@@ -4058,7 +4178,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
@@ -4137,7 +4257,9 @@ class Session(sherpa.ui.utils.Session):
 
         return scale
 
-    def get_areascal(self, id=None, bkg_id=None):
+    def get_areascal(self,
+                     id: Optional[IdType] = None,
+                     bkg_id: Optional[IdType] = None):
         """Return the fractional area factor of a PHA data set.
 
         Return the AREASCAL setting for the source or background
@@ -4145,11 +4267,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to identify which background component to use.  The
            default value (``None``) means that the value is for the
            source component of the data set.
@@ -4192,7 +4314,9 @@ class Session(sherpa.ui.utils.Session):
         d = self._get_pha_data(id, bkg_id)
         return d.areascal
 
-    def _save_type(self, objtype, id, filename, bkg_id=None, **kwargs):
+    def _save_type(self, objtype, id, filename,
+                   bkg_id: Optional[IdType] = None,
+                   **kwargs) -> None:
         if filename is None:
             id, filename = filename, id
         _check_str_type(filename, 'filename')
@@ -4286,7 +4410,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-NOTE: also in sherpa.utils with a different interface
     def save_arrays(self, filename, args, fields=None, ascii=True,
-                    clobber=False):
+                    clobber=False) -> None:
         """Write a list of arrays to a file.
 
         Parameters
@@ -4340,8 +4464,10 @@ class Session(sherpa.ui.utils.Session):
                                      ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    def save_source(self, id, filename=None, bkg_id=None, ascii=False,
-                    clobber=False):
+    def save_source(self, id, filename=None,
+                    bkg_id: Optional[IdType] = None,
+                    ascii=False, clobber=False
+                    ) -> None:
         """Save the model values to a file.
 
         The model is evaluated on the grid of the data set, but does
@@ -4357,7 +4483,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background model should be written out
            rather than the source.
         ascii : bool, optional
@@ -4424,8 +4550,10 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    def save_model(self, id, filename=None, bkg_id=None, ascii=False,
-                   clobber=False):
+    def save_model(self, id, filename=None,
+                   bkg_id: Optional[IdType] = None,
+                   ascii=False, clobber=False
+                   ) -> None:
         """Save the model values to a file.
 
         The model is evaluated on the grid of the data set, including
@@ -4440,7 +4568,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background model should be written out
            rather than the source.
         ascii : bool, optional
@@ -4507,8 +4635,10 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    def save_resid(self, id, filename=None, bkg_id=None, ascii=False,
-                   clobber=False):
+    def save_resid(self, id, filename=None,
+                   bkg_id: Optional[IdType] = None,
+                   ascii=False, clobber=False
+                   ) -> None:
         """Save the residuals (data-model) to a file.
 
         Parameters
@@ -4520,7 +4650,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background residuals should be written out
            rather than the source.
         ascii : bool, optional
@@ -4579,8 +4709,10 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different API
-    def save_delchi(self, id, filename=None, bkg_id=None, ascii=True,
-                    clobber=False):
+    def save_delchi(self, id, filename=None,
+                    bkg_id: Optional[IdType] = None,
+                    ascii=True, clobber=False
+                    ) -> None:
         """Save the ratio of residuals (data-model) to error to a file.
 
         Parameters
@@ -4592,7 +4724,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background residuals should be written out
            rather than the source.
         ascii : bool, optional
@@ -4651,8 +4783,10 @@ class Session(sherpa.ui.utils.Session):
                         bkg_id=bkg_id)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_filter(self, id, filename=None, bkg_id=None, ascii=True,
-                    clobber=False):
+    def save_filter(self, id, filename=None,
+                    bkg_id: Optional[IdType] = None,
+                    ascii=True, clobber=False
+                    ) -> None:
         """Save the filter array to a file.
 
         Parameters
@@ -4664,7 +4798,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
@@ -4744,8 +4878,10 @@ class Session(sherpa.ui.utils.Session):
                          ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_staterror(self, id, filename=None, bkg_id=None,
-                       ascii=True, clobber=False):
+    def save_staterror(self, id, filename=None,
+                       bkg_id: Optional[IdType] = None,
+                       ascii=True, clobber=False
+                       ) -> None:
         """Save the statistical errors to a file.
 
         If the statistical errors have not been set explicitly, then
@@ -4761,7 +4897,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
@@ -4821,8 +4957,10 @@ class Session(sherpa.ui.utils.Session):
                        self.get_staterror, 'STAT_ERR')
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_syserror(self, id, filename=None, bkg_id=None,
-                      ascii=True, clobber=False):
+    def save_syserror(self, id, filename=None,
+                      bkg_id: Optional[IdType] = None,
+                      ascii=True, clobber=False
+                      ) -> None:
         """Save the systematic errors to a file.
 
         Parameters
@@ -4834,7 +4972,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
@@ -4896,8 +5034,10 @@ class Session(sherpa.ui.utils.Session):
                        self.get_syserror, 'SYS_ERR')
 
     # DOC-NOTE: also in sherpa.utils with a different interface
-    def save_error(self, id, filename=None, bkg_id=None, ascii=True,
-                   clobber=False):
+    def save_error(self, id, filename=None,
+                   bkg_id: Optional[IdType] = None,
+                   ascii=True, clobber=False
+                   ) -> None:
         """Save the errors to a file.
 
         The total errors for a data set are the quadrature combination
@@ -4915,7 +5055,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
@@ -4977,8 +5117,10 @@ class Session(sherpa.ui.utils.Session):
         _save_errorcol(self, id, filename, bkg_id, clobber, ascii,
                        self.get_error, 'ERR')
 
-    def save_pha(self, id, filename=None, bkg_id=None, ascii=False,
-                 clobber=False):
+    def save_pha(self, id, filename=None,
+                 bkg_id: Optional[IdType] = None,
+                 ascii=False, clobber=False
+                 ) -> None:
         """Save a PHA data set to a file.
 
         Parameters
@@ -4990,7 +5132,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background should be written out rather
            than the source.
         ascii : bool, optional
@@ -5058,8 +5200,11 @@ class Session(sherpa.ui.utils.Session):
     # but the existing logic used to create the ui module does not
     # handle KEYWORD_ONLY so for now do not do this. See #1901.
     #
-    def save_arf(self, id, filename=None, resp_id=None, bkg_id=None,
-                 ascii=False, clobber=False):
+    def save_arf(self, id, filename=None,
+                 resp_id=None,
+                 bkg_id: Optional[IdType] = None,
+                 ascii=False, clobber=False
+                 ) -> None:
         """Save an ARF data set to a file.
 
         .. versionadded:: 4.16.0
@@ -5075,10 +5220,10 @@ class Session(sherpa.ui.utils.Session):
            The name of the file to write the ARF to (when the id value
            is explicitly given). The format is determined by the
            `ascii` argument.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            The identifier for the ARF within this data set, if there
            are multiple responses.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background ARF should be written out rather
            than the source ARF.
         ascii : bool, optional
@@ -5155,8 +5300,11 @@ class Session(sherpa.ui.utils.Session):
     # but the existing logic used to create the ui module does not
     # handle KEYWORD_ONLY so for now do not do this. See #1901.
     #
-    def save_rmf(self, id, filename=None, resp_id=None, bkg_id=None,
-                 clobber=False):
+    def save_rmf(self, id, filename=None,
+                 resp_id=None,
+                 bkg_id: Optional[IdType] = None,
+                 clobber=False
+                 ) -> None:
         """Save an RMF data set to a file.
 
         .. versionadded:: 4.16.0
@@ -5171,10 +5319,10 @@ class Session(sherpa.ui.utils.Session):
         filename : str or None
            The name of the file to write the RMF to (when the id value
            is explicitly given). Note that the format is always FITS.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            The identifier for the RMF within this data set, if there
            are multiple responses.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background RMF should be written out rather
            than the source RMF.
         clobber : bool, optional
@@ -5236,8 +5384,10 @@ class Session(sherpa.ui.utils.Session):
 
         sherpa.astro.io.write_rmf(filename, rmf, clobber=clobber)
 
-    def save_grouping(self, id, filename=None, bkg_id=None,
-                      ascii=True, clobber=False):
+    def save_grouping(self, id, filename=None,
+                      bkg_id: Optional[IdType] = None,
+                      ascii=True, clobber=False
+                      ) -> None:
         """Save the grouping scheme to a file.
 
         The output is a two-column file, containing the channel and
@@ -5252,7 +5402,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the grouping array should be taken from the
            background associated with the data set.
         ascii : bool, optional
@@ -5319,7 +5469,10 @@ class Session(sherpa.ui.utils.Session):
                                      fields=['CHANNEL', 'GROUPS'], ascii=ascii,
                                      clobber=clobber)
 
-    def save_quality(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
+    def save_quality(self, id, filename=None,
+                     bkg_id: Optional[IdType] = None,
+                     ascii=True, clobber=False
+                     ) -> None:
         """Save the quality array to a file.
 
         The output is a two-column file, containing the channel and
@@ -5334,7 +5487,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The format
            is determined by the `ascii` argument.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the quality array should be taken from the
            background associated with the data set.
         ascii : bool, optional
@@ -5403,7 +5556,8 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: setting ascii=True is not supported for crates
     # and in pyfits it seems to just be a 1D array (needs thinking about)
-    def save_image(self, id, filename=None, ascii=False, clobber=False):
+    def save_image(self, id, filename=None, ascii=False,
+                   clobber=False) -> None:
         """Save the pixel values of a 2D data set to a file.
 
         Parameters
@@ -5471,7 +5625,8 @@ class Session(sherpa.ui.utils.Session):
                                     ascii=ascii, clobber=clobber)
 
     # DOC-TODO: the output for an image is "excessive"
-    def save_table(self, id, filename=None, ascii=False, clobber=False):
+    def save_table(self, id, filename=None, ascii=False,
+                   clobber=False) -> None:
         """Save a data set to a file as a table.
 
         Parameters
@@ -5540,7 +5695,10 @@ class Session(sherpa.ui.utils.Session):
                                     ascii=ascii, clobber=clobber)
 
     # DOC-NOTE: also in sherpa.utils
-    def save_data(self, id, filename=None, bkg_id=None, ascii=True, clobber=False):
+    def save_data(self, id, filename=None,
+                  bkg_id: Optional[IdType] = None,
+                  ascii=True, clobber=False
+                  ) -> None:
         """Save the data to a file.
 
         Parameters
@@ -5552,7 +5710,7 @@ class Session(sherpa.ui.utils.Session):
         filename : str
            The name of the file to write the array to. The data is
            written out as an ASCII file.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the background should be written out rather
            than the source (for a PHA data set).
         ascii : bool, optional
@@ -5638,12 +5796,12 @@ class Session(sherpa.ui.utils.Session):
                     sherpa.io.write_data(filename, d, clobber=clobber)
 
     # TODO: could add bkg_id parameter
-    def pack_pha(self, id=None):
+    def pack_pha(self, id: Optional[IdType] = None):
         """Convert a PHA data set into a file structure.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
 
@@ -5666,12 +5824,12 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_pha(self._get_pha_data(id))
 
-    def pack_image(self, id=None):
+    def pack_image(self, id: Optional[IdType] = None):
         """Convert a data set into an image structure.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
 
@@ -5689,12 +5847,12 @@ class Session(sherpa.ui.utils.Session):
         """
         return sherpa.astro.io.pack_image(self.get_data(id))
 
-    def pack_table(self, id=None):
+    def pack_table(self, id: Optional[IdType] = None):
         """Convert a data set into a table structure.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
 
@@ -5715,7 +5873,7 @@ class Session(sherpa.ui.utils.Session):
 
     @staticmethod
     def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
-                   name='test-arf'):
+                   name='test-arf') -> DataARF:
         """Create an ARF.
 
         .. versionadded:: 4.10.1
@@ -5770,7 +5928,8 @@ class Session(sherpa.ui.utils.Session):
 
     @staticmethod
     def create_rmf(rmflo, rmfhi, startchan=1, e_min=None, e_max=None,
-                   ethresh=None, fname=None, name='delta-rmf'):
+                   ethresh=None, fname=None,
+                   name='delta-rmf') -> DataRMF:
         """Create an RMF.
 
         If fname is set to `None` then this creates a "perfect" RMF,
@@ -5833,18 +5992,21 @@ class Session(sherpa.ui.utils.Session):
                                     e_max=e_max, ethresh=ethresh,
                                     name=name)
 
-    def get_arf(self, id=None, resp_id=None, bkg_id=None):
+    def get_arf(self,
+                id: Optional[IdType] = None,
+                resp_id: Optional[IdType] = None,
+                bkg_id: Optional[IdType] = None):
         """Return the ARF associated with a PHA data set.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            The identifier for the ARF within this data set, if there
            are multiple responses.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set this to return the given background component.
 
         Returns
@@ -5909,7 +6071,10 @@ class Session(sherpa.ui.utils.Session):
         return arf
 
     # DOC-TODO: add an example of a grating/multiple response
-    def set_arf(self, id, arf=None, resp_id=None, bkg_id=None):
+    def set_arf(self, id, arf=None,
+                resp_id: Optional[IdType] = None,
+                bkg_id: Optional[IdType] = None
+                ) -> None:
         """Set the ARF for use by a PHA data set.
 
         Set the effective area curve for a PHA data set, or its
@@ -5922,10 +6087,10 @@ class Session(sherpa.ui.utils.Session):
            identifier is used, as returned by `get_default_id`.
         arf
            An ARF, such as returned by `get_arf` or `unpack_arf`.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            The identifier for the ARF within this data set, if there
            are multiple responses.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set this to identify the ARF as being for use with the
            background.
 
@@ -6041,7 +6206,10 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    def load_arf(self, id, arg=None, resp_id=None, bkg_id=None):
+    def load_arf(self, id, arg=None,
+                 resp_id: Optional[IdType] = None,
+                 bkg_id: Optional[IdType] = None
+                 ) -> None:
         """Load an ARF from a file and add it to a PHA data set.
 
         Load in the effective area curve for a PHA data set, or its
@@ -6058,10 +6226,10 @@ class Session(sherpa.ui.utils.Session):
            representing the data to use, as used by the I/O backend in
            use by Sherpa: a ``TABLECrate`` for crates, as used by CIAO,
            or a list of AstroPy HDU objects.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            The identifier for the ARF within this data set, if there
            are multiple responses.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set this to identify the ARF as being for use with the
            background.
 
@@ -6120,7 +6288,8 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
-    def get_bkg_arf(self, id=None):
+    def get_bkg_arf(self,
+                    id: Optional[IdType] = None):
         """Return the background ARF associated with a PHA data set.
 
         This is for the case when there is only one background
@@ -6129,7 +6298,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
 
@@ -6170,7 +6339,7 @@ class Session(sherpa.ui.utils.Session):
         return self.get_arf(id, resp_id, bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    def load_bkg_arf(self, id, arg=None):
+    def load_bkg_arf(self, id, arg=None) -> None:
         """Load an ARF from a file and add it to the background of a
         PHA data set.
 
@@ -6231,7 +6400,7 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         self.set_arf(id, self.unpack_arf(arg), resp_id, bkg_id)
 
-    def load_multi_arfs(self, id, filenames, resp_ids=None):
+    def load_multi_arfs(self, id, filenames, resp_ids=None) -> None:
         """Load multiple ARFs for a PHA data set.
 
         A grating observation - such as a Chandra LETGS data set - may
@@ -6306,18 +6475,21 @@ class Session(sherpa.ui.utils.Session):
         for filename, resp_id in zip(filenames, resp_ids):
             self.load_arf(id, filename, resp_id)
 
-    def get_rmf(self, id=None, resp_id=None, bkg_id=None):
+    def get_rmf(self,
+                id: Optional[IdType] = None,
+                resp_id: Optional[IdType] = None,
+                bkg_id: Optional[IdType] = None):
         """Return the RMF associated with a PHA data set.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            The identifier for the RMF within this data set, if there
            are multiple responses.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set this to return the given background component.
 
         Returns
@@ -6377,7 +6549,10 @@ class Session(sherpa.ui.utils.Session):
         return rmf
 
     # DOC-TODO: add an example of a grating/multiple response
-    def set_rmf(self, id, rmf=None, resp_id=None, bkg_id=None):
+    def set_rmf(self, id, rmf=None,
+                resp_id: Optional[IdType] = None,
+                bkg_id: Optional[IdType] = None
+                ) -> None:
         """Set the RMF for use by a PHA data set.
 
         Set the redistribution matrix for a PHA data set, or its
@@ -6390,10 +6565,10 @@ class Session(sherpa.ui.utils.Session):
            identifier is used, as returned by `get_default_id`.
         rmf
            An RMF, such as returned by `get_rmf` or `unpack_rmf`.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            The identifier for the RMF within this data set, if there
            are multiple responses.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set this to identify the RMF as being for use with the
            background.
 
@@ -6514,7 +6689,10 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: add an example of a grating/multiple response
     # DOC-TODO: how to describe I/O backend support?
-    def load_rmf(self, id, arg=None, resp_id=None, bkg_id=None):
+    def load_rmf(self, id, arg=None,
+                 resp_id: Optional[IdType] = None,
+                 bkg_id: Optional[IdType] = None
+                 ) -> None:
         """Load a RMF from a file and add it to a PHA data set.
 
         Load in the redistribution matrix function for a PHA data set,
@@ -6536,10 +6714,10 @@ class Session(sherpa.ui.utils.Session):
            representing the data to use, as used by the I/O
            backend in use by Sherpa: a ``RMFCrateDataset`` for
            crates, as used by CIAO, or an AstroPy ``HDUList`` object.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            The identifier for the RMF within this data set, if there
            are multiple responses.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set this to identify the RMF as being for use with the
            background.
 
@@ -6598,7 +6776,8 @@ class Session(sherpa.ui.utils.Session):
             id, arg = arg, id
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
-    def get_bkg_rmf(self, id=None):
+    def get_bkg_rmf(self,
+                    id: Optional[IdType] = None):
         """Return the background RMF associated with a PHA data set.
 
         This is for the case when there is only one background
@@ -6607,7 +6786,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
 
@@ -6643,7 +6822,7 @@ class Session(sherpa.ui.utils.Session):
         return self.get_rmf(id, resp_id, bkg_id)
 
     # DOC-TODO: how to describe I/O backend support?
-    def load_bkg_rmf(self, id, arg=None):
+    def load_bkg_rmf(self, id, arg=None) -> None:
         """Load a RMF from a file and add it to the background of a
         PHA data set.
 
@@ -6704,7 +6883,7 @@ class Session(sherpa.ui.utils.Session):
         resp_id = self._get_pha_data(id).primary_response_id
         self.set_rmf(id, self.unpack_rmf(arg), resp_id, bkg_id)
 
-    def load_multi_rmfs(self, id, filenames, resp_ids=None):
+    def load_multi_rmfs(self, id, filenames, resp_ids=None) -> None:
         """Load multiple RMFs for a PHA data set.
 
         A grating observation - such as a Chandra LETGS data set - may
@@ -6724,7 +6903,7 @@ class Session(sherpa.ui.utils.Session):
            identifier is used, as returned by `get_default_id`.
         filenames : iterable of str
            An array of file names.
-        resp_ids : iterable of int or str
+        resp_ids : iterable of int or str, or None
            The identifiers for the RMF within this data set.
            The length should match the filenames argument.
 
@@ -6779,7 +6958,10 @@ class Session(sherpa.ui.utils.Session):
         for filename, resp_id in zip(filenames, resp_ids):
             self.load_rmf(id, filename, resp_id)
 
-    def get_bkg(self, id=None, bkg_id=None):
+    def get_bkg(self,
+                id: Optional[IdType] = None,
+                bkg_id: Optional[IdType] = None
+                ) -> DataPHA:
         """Return the background for a PHA data set.
 
         Function to return the background for a PHA data set.
@@ -6788,10 +6970,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The identifier for this background, which is needed if
            there are multiple background estimates for the source.
 
@@ -6830,7 +7012,9 @@ class Session(sherpa.ui.utils.Session):
 
         return bkg
 
-    def set_bkg(self, id, bkg=None, bkg_id=None):
+    def set_bkg(self, id, bkg=None,
+                bkg_id: Optional[IdType] = None
+                ) -> None:
         """Set the background for a PHA data set.
 
         The background can either be fit with a model - using
@@ -6845,7 +7029,7 @@ class Session(sherpa.ui.utils.Session):
         bkg
            A PHA data set, such as returned by `get_data` or
            `unpack_pha`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The identifier for this background, which is needed if
            there are multiple background estimates for the source.
 
@@ -6894,7 +7078,9 @@ class Session(sherpa.ui.utils.Session):
         _check_type(bkg, DataPHA, 'bkg', 'a PHA data set')
         data.set_background(bkg, bkg_id)
 
-    def list_bkg_ids(self, id=None):
+    def list_bkg_ids(self,
+                     id: Optional[IdType] = None
+                     ) -> list[IdType]:
         """List all the background identifiers for a data set.
 
         A PHA data set can contain multiple background datasets, each
@@ -6903,7 +7089,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to query. If not given then the default
            identifier is used, as returned by `get_default_id`.
 
@@ -6921,7 +7107,10 @@ class Session(sherpa.ui.utils.Session):
         """
         return list(self._get_pha_data(id)._backgrounds.keys())
 
-    def list_response_ids(self, id=None, bkg_id=None):
+    def list_response_ids(self,
+                          id: Optional[IdType] = None,
+                          bkg_id: Optional[IdType] = None
+                          ) -> list[IdType]:
         """List all the response identifiers of a data set.
 
         A PHA data set can contain multiple responses, that is,
@@ -6931,10 +7120,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to query. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set this to identify the background component to query.
 
         Returns
@@ -6956,7 +7145,9 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_analysis
     # DOC-TODO: should the arguments be renamed to better match optional
     # nature of the routine (e.g. can call set_analysis('energy'))?
-    def set_analysis(self, id, quantity=None, type='rate', factor=0):
+    #
+    def set_analysis(self, id, quantity=None, type='rate',
+                     factor=0) -> None:
         """Set the units used when fitting and displaying spectral data.
 
         The set_analysis command sets the units for spectral
@@ -7067,12 +7258,14 @@ class Session(sherpa.ui.utils.Session):
 
             info("dataset %s: %s", idval, fstring)
 
-    def get_analysis(self, id=None):
+    def get_analysis(self,
+                     id: Optional[IdType] = None
+                     ) -> str:
         """Return the units used when fitting spectral data.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to query. If not given then the default
            identifier is used, as returned by `get_default_id`.
 
@@ -7110,7 +7303,7 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: docs need to be added to sherpa.astro.data.set_coord
     # DOC-TODO: how best to document the wcssubs support?
-    def set_coord(self, id, coord=None):
+    def set_coord(self, id, coord=None) -> None:
         """Set the coordinate system to use for image analysis.
 
         The default coordinate system - that is, the mapping between
@@ -7197,12 +7390,12 @@ class Session(sherpa.ui.utils.Session):
             self._get_img_data(id).set_coord(coord)
 
     # DOC-TODO: docs need to be added to sherpa.astro.data.get_coord
-    def get_coord(self, id=None):
+    def get_coord(self, id: Optional[IdType] = None) -> str:
         """Get the coordinate system used for image analysis.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to query. If not given then the default
            identifier is used, as returned by `get_default_id`.
 
@@ -7225,7 +7418,10 @@ class Session(sherpa.ui.utils.Session):
         """
         return self._get_img_data(id).coord
 
-    def ignore_bad(self, id=None, bkg_id=None):
+    def ignore_bad(self,
+                   id: Optional[IdType] = None,
+                   bkg_id: Optional[IdType] = None
+                   ) -> None:
         """Exclude channels marked as bad in a PHA data set.
 
         Ignore any bin in the PHA data set which has a quality value
@@ -7237,10 +7433,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to change. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The identifier for the background (the default of ``None``
            uses the first component).
 
@@ -7305,7 +7501,7 @@ class Session(sherpa.ui.utils.Session):
     # There is no need to override ignore to add unit checking since
     # ignore just ends up calling notice anyway.
     #
-    def notice(self, lo=None, hi=None, **kwargs):
+    def notice(self, lo=None, hi=None, **kwargs) -> None:
 
         if lo is not None or hi is not None:
             units = set(data.get_analysis()
@@ -7325,7 +7521,7 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how best to document the region support?
     # DOC-TODO: I have not mentioned the support for radii in arcsec/minutes/degrees
     # or sexagessimal formats. Is this supported here?
-    def notice2d(self, val=None):
+    def notice2d(self, val=None) -> None:
         """Include a spatial region of all data sets.
 
         Select a spatial region to include in the fit. The filter is
@@ -7494,7 +7690,7 @@ class Session(sherpa.ui.utils.Session):
             idstr = f"dataset {idval}"
             sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
-    def ignore2d(self, val=None):
+    def ignore2d(self, val=None) -> None:
         """Exclude a spatial region from all data sets.
 
         Select a spatial region to exclude in the fit. The filter is
@@ -7574,7 +7770,10 @@ class Session(sherpa.ui.utils.Session):
             idstr = f"dataset {idval}"
             sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
-    def notice2d_id(self, ids, val=None):
+    def notice2d_id(self,
+                    ids: Union[IdType, Sequence[IdType]],
+                    val: Optional[str] = None
+                    ) -> None:
         """Include a spatial region of a data set.
 
         Select a spatial region to include in the fit. The filter is
@@ -7634,17 +7833,17 @@ class Session(sherpa.ui.utils.Session):
 
         """
         if self._valid_id(ids):
-            ids = (ids,)
+            idvals = (ids,)
         else:
             try:
-                ids = tuple(ids)
+                idvals = tuple(ids)
             except TypeError:
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
         # Unlike notice2d we use the order supplied by the user.
         #
-        for idval in ids:
+        for idval in idvals:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
             _check_type(d, DataIMG, 'img', 'a image data set')
@@ -7656,7 +7855,10 @@ class Session(sherpa.ui.utils.Session):
             idstr = f"dataset {idval}"
             sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
-    def ignore2d_id(self, ids, val=None):
+    def ignore2d_id(self,
+                    ids: Union[IdType, Sequence[IdType]],
+                    val: Optional[str] = None
+                    ) -> None:
         """Exclude a spatial region from a data set.
 
         Select a spatial region to exclude in the fit. The filter is
@@ -7667,7 +7869,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        ids : int or str, or array of int or str
+        ids : int, str, or array of int or str
            The data set, or sets, to use.
         val : str, optional
            A region specification as a string or the name of a file
@@ -7711,15 +7913,15 @@ class Session(sherpa.ui.utils.Session):
         # explicit argument that supports this.
         #
         if self._valid_id(ids):
-            ids = (ids,)
+            idvals = (ids,)
         else:
             try:
-                ids = tuple(ids)
+                idvals = tuple(ids)
             except TypeError:
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for idval in ids:
+        for idval in idvals:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
             _check_type(d, DataIMG, 'img', 'a image data set')
@@ -7731,7 +7933,9 @@ class Session(sherpa.ui.utils.Session):
             idstr = f"dataset {idval}"
             sherpa.ui.utils.report_filter_change(idstr, ofilter, nfilter)
 
-    def notice2d_image(self, ids=None):
+    def notice2d_image(self,
+                       ids: Optional[Union[IdType, Sequence[IdType]]] = None
+                       ) -> None:
         """Include pixels using the region defined in the image viewer.
 
         Include points that lie within the region defined in the image
@@ -7742,7 +7946,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        ids : int or str, or sequence of int or str, optional
+        ids : int, str, None, or sequence of int or str, optional
            The data set, or sets, to use. If ``None`` (the default)
            then the default identifier is used, as returned by
            `get_default_id`.
@@ -7779,15 +7983,15 @@ class Session(sherpa.ui.utils.Session):
         if ids is None:
             ids = self._default_id
         if self._valid_id(ids):
-            ids = (ids,)
+            idvals = (ids,)
         else:
             try:
-                ids = tuple(ids)
+                idvals = tuple(ids)
             except TypeError:
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for idval in ids:
+        for idval in idvals:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
             _check_type(d, DataIMG, 'img', 'a image data set')
@@ -7801,7 +8005,9 @@ class Session(sherpa.ui.utils.Session):
             regions = self.image_getregion(coord).replace(';', '')
             self.notice2d_id(idval, regions)
 
-    def ignore2d_image(self, ids=None):
+    def ignore2d_image(self,
+                       ids: Optional[Union[IdType, Sequence[IdType]]] = None
+                       ) -> None:
         """Exclude pixels using the region defined in the image viewer.
 
         Exclude points that lie within the region defined in the image
@@ -7812,7 +8018,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        ids : int or str, or sequence of int or str, optional
+        ids : int, str, None, or sequence of int or str, optional
            The data set, or sets, to ignore. If ``None`` (the default)
            then the default identifier is used, as returned by
            `get_default_id`.
@@ -7853,15 +8059,15 @@ class Session(sherpa.ui.utils.Session):
         if ids is None:
             ids = self._default_id
         if self._valid_id(ids):
-            ids = (ids,)
+            idvals = (ids,)
         else:
             try:
-                ids = tuple(ids)
+                idvals = tuple(ids)
             except TypeError:
                 raise ArgumentTypeErr('badarg', 'ids',
                                       'an identifier or list of identifiers') from None
 
-        for idval in ids:
+        for idval in idvals:
             # d = self._get_img_data(idval)   would be better
             d = self.get_data(idval)
             _check_type(d, DataIMG, 'img', 'a image data set')
@@ -7876,7 +8082,9 @@ class Session(sherpa.ui.utils.Session):
             self.ignore2d_id(idval, regions)
 
     # DOC-TODO: how best to include datastack support? How is it handled here?
-    def load_bkg(self, id, arg=None, use_errors=False, bkg_id=None):
+    def load_bkg(self, id, arg=None, use_errors=False,
+                 bkg_id: Optional[IdType] = None
+                 ) -> None:
         """Load the background from a file and add it to a PHA data set.
 
         This will load the PHA data and any response information - so
@@ -7898,7 +8106,7 @@ class Session(sherpa.ui.utils.Session):
            If ``True`` then the statistical errors are taken from the
            input data, rather than calculated by Sherpa from the
            count values. The default is ``False``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The identifier for the background (the default of ``None``
            uses the first component).
 
@@ -7950,7 +8158,10 @@ class Session(sherpa.ui.utils.Session):
         else:
             self.set_bkg(id, bkgsets, bkg_id)
 
-    def group(self, id=None, bkg_id=None):
+    def group(self,
+              id: Optional[IdType] = None,
+              bkg_id: Optional[IdType] = None
+              ) -> None:
         """Turn on the grouping for a PHA data set.
 
         A PHA data set can be grouped either because it contains
@@ -7969,11 +8180,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to group the background associated with the data set.
 
         Raises
@@ -8059,7 +8270,9 @@ class Session(sherpa.ui.utils.Session):
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
-    def set_grouping(self, id, val=None, bkg_id=None):
+    def set_grouping(self, id, val=None,
+                     bkg_id: Optional[IdType] = None
+                     ) -> None:
         """Apply a set of grouping flags to a PHA data set.
 
         A group is indicated by a sequence of flag values starting
@@ -8082,7 +8295,7 @@ class Session(sherpa.ui.utils.Session):
         val : array of int
            This must be an array of grouping values of the same length
            as the data array.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to group the background associated with the data set.
 
         Raises
@@ -8150,7 +8363,9 @@ class Session(sherpa.ui.utils.Session):
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
-    def get_grouping(self, id=None, bkg_id=None):
+    def get_grouping(self,
+                     id: Optional[IdType] = None,
+                     bkg_id: Optional[IdType] = None):
         """Return the grouping array for a PHA data set.
 
         The function returns the grouping value for each channel in
@@ -8158,11 +8373,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the grouping flags should be taken from a background
            associated with the data set.
 
@@ -8218,7 +8433,9 @@ class Session(sherpa.ui.utils.Session):
         data = self._get_pha_data(id, bkg_id)
         return data.grouping
 
-    def set_quality(self, id, val=None, bkg_id=None):
+    def set_quality(self, id, val=None,
+                    bkg_id: Optional[IdType] = None
+                    ) -> None:
         """Apply a set of quality flags to a PHA data set.
 
         A quality value of 0 indicates a good channel,
@@ -8235,7 +8452,7 @@ class Session(sherpa.ui.utils.Session):
         val : array of int
            This must be an array of quality values of the same length
            as the data array.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the quality values should be associated with the
            background associated with the data set.
 
@@ -8304,7 +8521,9 @@ class Session(sherpa.ui.utils.Session):
     # direct object access
     # get_data().exposure [= ...]
 
-    def get_quality(self, id=None, bkg_id=None):
+    def get_quality(self,
+                    id: Optional[IdType] = None,
+                    bkg_id: Optional[IdType] = None):
         """Return the quality flags for a PHA data set.
 
         The function returns the quality value for each channel in
@@ -8312,11 +8531,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set if the quality flags should be taken from a background
            associated with the data set.
 
@@ -8382,7 +8601,10 @@ class Session(sherpa.ui.utils.Session):
         data = self._get_pha_data(id, bkg_id)
         return data.quality
 
-    def ungroup(self, id=None, bkg_id=None):
+    def ungroup(self,
+                id: Optional[IdType] = None,
+                bkg_id: Optional[IdType] = None
+                ) -> None:
         """Turn off the grouping for a PHA data set.
 
         A PHA data set can be grouped either because it contains
@@ -8394,11 +8616,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to ungroup the background associated with the data set.
 
         Raises
@@ -8476,7 +8698,9 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: how to set the quality if using tabstops to indicate
     # "bad" channels, rather than ones to ignore
 
-    def group_bins(self, id, num=None, bkg_id=None, tabStops=None):
+    def group_bins(self, id, num=None,
+                   bkg_id: Optional[IdType] = None,
+                   tabStops=None) -> None:
         """Group into a fixed number of bins.
 
         Combine the data so that there `num` equal-width bins (or
@@ -8502,7 +8726,7 @@ class Session(sherpa.ui.utils.Session):
         num : int
            The number of bins in the grouped data set. Each bin
            will contain the same number of channels.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to group the background associated with the data set.
            When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
@@ -8605,7 +8829,10 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: should num= be renamed val= to better match
     # underlying code/differ from group_bins?
-    def group_width(self, id, num=None, bkg_id=None, tabStops=None):
+    def group_width(self, id, num=None,
+                    bkg_id: Optional[IdType] = None,
+                    tabStops=None
+                    ) -> None:
         """Group into a fixed bin width.
 
         Combine the data so that each bin contains `num` channels.
@@ -8630,7 +8857,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         num : int
            The number of channels to combine into a group.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to group the background associated with the data set.
            When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
@@ -8731,8 +8958,11 @@ class Session(sherpa.ui.utils.Session):
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
-    def group_counts(self, id, num=None, bkg_id=None,
-                     maxLength=None, tabStops=None):
+    def group_counts(self, id, num=None,
+                     bkg_id: Optional[IdType] = None,
+                     maxLength=None,
+                     tabStops=None
+                     ) -> None:
         """Group into a minimum number of counts per bin.
 
         Combine the data so that each bin contains `num` or more
@@ -8759,7 +8989,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         num : int
            The number of channels to combine into a group.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to group the background associated with the data set.
            When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
@@ -8865,8 +9095,12 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: check the Poisson stats claim; I'm guessing it means
     #           gaussian (i.e. sqrt(n))
-    def group_snr(self, id, snr=None, bkg_id=None,
-                  maxLength=None, tabStops=None, errorCol=None):
+    def group_snr(self, id, snr=None,
+                  bkg_id: Optional[IdType] = None,
+                  maxLength=None,
+                  tabStops=None,
+                  errorCol=None
+                  ) -> None:
         """Group into a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
@@ -8895,7 +9129,7 @@ class Session(sherpa.ui.utils.Session):
         snr : number
            The minimum signal-to-noise ratio that must be reached
            to form a group of channels.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to group the background associated with the data set.
            When ``bkg_id`` is None (which is the default), the
            grouping is applied to all the associated background
@@ -8992,8 +9226,11 @@ class Session(sherpa.ui.utils.Session):
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
-    def group_adapt(self, id, min=None, bkg_id=None,
-                    maxLength=None, tabStops=None):
+    def group_adapt(self, id, min=None,
+                    bkg_id: Optional[IdType] = None,
+                    maxLength=None,
+                    tabStops=None
+                    ) -> None:
         """Adaptively group to a minimum number of counts.
 
         Combine the data so that each bin contains `min` or more
@@ -9023,7 +9260,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         min : int
            The number of channels to combine into a group.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to group the background associated with the data set.
            When ``bkg_id`` is ``None`` (which is the default), the
            grouping is applied to all the associated background
@@ -9117,8 +9354,12 @@ class Session(sherpa.ui.utils.Session):
         _pha_report_filter_change(self, id, bkg_id, change)
 
     # DOC-TODO: shouldn't this be snr=None rather than min=None
-    def group_adapt_snr(self, id, min=None, bkg_id=None,
-                        maxLength=None, tabStops=None, errorCol=None):
+    def group_adapt_snr(self, id, min=None,
+                        bkg_id: Optional[IdType] = None,
+                        maxLength=None,
+                        tabStops=None,
+                        errorCol=None
+                        ) -> None:
         """Adaptively group to a minimum signal-to-noise ratio.
 
         Combine the data so that each bin has a signal-to-noise ratio
@@ -9150,7 +9391,7 @@ class Session(sherpa.ui.utils.Session):
         num : number
            The minimum signal-to-noise ratio that must be reached
            to form a group of channels.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Set to group the background associated with the data set.
            When ``bkg_id`` is ``None`` (which is the default), the
            grouping is applied to all the associated background
@@ -9248,7 +9489,7 @@ class Session(sherpa.ui.utils.Session):
 
         _pha_report_filter_change(self, id, bkg_id, change)
 
-    def subtract(self, id=None):
+    def subtract(self, id: Optional[IdType] = None) -> None:
         """Subtract the background estimate from a data set.
 
         The ``subtract`` function performs a channel-by-channel
@@ -9259,7 +9500,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
@@ -9331,7 +9572,7 @@ class Session(sherpa.ui.utils.Session):
         if not d.subtracted:
             d.subtract()
 
-    def unsubtract(self, id=None):
+    def unsubtract(self, id: Optional[IdType] = None) -> None:
         """Undo any background subtraction for the data set.
 
         The `unsubtract` function undoes any changes made by
@@ -9342,7 +9583,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
@@ -9386,7 +9627,7 @@ class Session(sherpa.ui.utils.Session):
     def fake_pha(self, id, arf=None, rmf=None, exposure=None,
                  backscal=None, areascal=None, grouping=None,
                  grouped=False, quality=None, bkg=None,
-                 method=None):
+                 method=None) -> None:
         """Simulate a PHA data set from a model.
 
         The function creates a simulated PHA data set based on a source
@@ -9713,7 +9954,8 @@ class Session(sherpa.ui.utils.Session):
     # PSF
     ###########################################################################
 
-    def load_psf(self, modelname, filename_or_model, *args, **kwargs):
+    def load_psf(self, modelname, filename_or_model, *args,
+                 **kwargs) -> None:
         kernel = filename_or_model
         if _is_str(filename_or_model):
             try:
@@ -9736,7 +9978,7 @@ class Session(sherpa.ui.utils.Session):
     ###########################################################################
 
     # DOC-NOTE: also in sherpa.utils
-    def set_full_model(self, id, model=None):
+    def set_full_model(self, id, model=None) -> None:
         """Define the convolved model expression for a data set.
 
         The model expression created by `set_model` can be modified by
@@ -9842,7 +10084,9 @@ class Session(sherpa.ui.utils.Session):
     set_full_model.__doc__ = sherpa.ui.utils.Session.set_full_model.__doc__
     set_full_model.__annotations__ = sherpa.ui.utils.Session.set_full_model.__annotations__
 
-    def _add_convolution_models(self, id, data, model, is_source):
+    def _add_convolution_models(self,
+                                id: Optional[IdType],
+                                data, model, is_source):
         """Add in "hidden" components to the model expression.
 
         This includes PSF and pileup models and, for PHA data sets,
@@ -9871,7 +10115,7 @@ class Session(sherpa.ui.utils.Session):
 
         return sherpa.astro.background.add_response(self, id, data, model)
 
-    def _get_response(self, id, pha):
+    def _get_response(self, id: IdType, pha: DataPHA):
         """Calculate the response for the dataset.
 
         Parameter
@@ -9891,7 +10135,10 @@ class Session(sherpa.ui.utils.Session):
         pileup_model = self._pileup_models.get(id)
         return pha.get_full_response(pileup_model)
 
-    def get_response(self, id=None, bkg_id=None):
+    def get_response(self,
+                     id: Optional[IdType] = None,
+                     bkg_id: Optional[IdType] = None
+                     ):
         """Return the response information applied to a PHA data set.
 
         For a PHA data set, the source model - created by `set_model`
@@ -9903,11 +10150,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set containing the instrument response. If not given
            then the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            If given, return the response for the given background
            component, rather than the source.
 
@@ -9950,14 +10197,14 @@ class Session(sherpa.ui.utils.Session):
         pha = self._get_pha_data(idval, bkg_id)
         return self._get_response(idval, pha)
 
-    def get_pileup_model(self, id=None):
+    def get_pileup_model(self, id: Optional[IdType] = None):
         """Return the pile up model for a data set.
 
         Return the pile up model set by a call to `set_pileup_model`.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set containing the source expression. If not given
            then the default identifier is used, as returned by
            `get_default_id`.
@@ -9991,7 +10238,7 @@ class Session(sherpa.ui.utils.Session):
         return self._get_item(id, self._pileup_models, 'pileup model',
                               'has not been set')
 
-    def delete_pileup_model(self, id=None):
+    def delete_pileup_model(self, id: Optional[IdType] = None) -> None:
         """Delete the pile up model for a data set.
 
         Remove the pile up model applied to a source model.
@@ -10000,7 +10247,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set. If not given then the
            default identifier is used, as returned by `get_default_id`.
 
@@ -10021,7 +10268,7 @@ class Session(sherpa.ui.utils.Session):
         id = self._fix_id(id)
         self._pileup_models.pop(id, None)
 
-    def list_pileup_model_ids(self):
+    def list_pileup_model_ids(self) -> list[IdType]:
         """List of all the data sets with a pile up model.
 
         .. versionadded:: 4.12.2
@@ -10045,7 +10292,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: should this be made a general function, since it
     # presumably does not care about pileup, just adds the
     # given model into the expression? Or is it PHA specific?
-    def set_pileup_model(self, id, model=None):
+    #
+    def set_pileup_model(self, id, model=None) -> None:
         """Include a model of the Chandra ACIS pile up when fitting PHA data.
 
         Chandra observations of bright sources can be affected by
@@ -10106,7 +10354,10 @@ class Session(sherpa.ui.utils.Session):
         self._set_item(id, model, self._pileup_models, Model,
                        'model', 'a model object or model expression string')
 
-    def get_bkg_source(self, id=None, bkg_id=None):
+    def get_bkg_source(self,
+                       id: Optional[IdType] = None,
+                       bkg_id: Optional[IdType] = None
+                       ):
         """Return the model expression for the background of a PHA data set.
 
         This returns the model expression created by `set_bkg_model`
@@ -10115,10 +10366,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
 
@@ -10157,7 +10408,10 @@ class Session(sherpa.ui.utils.Session):
 
         return model
 
-    def get_bkg_model(self, id=None, bkg_id=None):
+    def get_bkg_model(self,
+                      id: Optional[IdType] = None,
+                      bkg_id: Optional[IdType] = None
+                      ):
         """Return the model expression for the background of a PHA data set.
 
         This returns the model expression for the background of a data
@@ -10171,10 +10425,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set to use. If not given then the default
            identifier is used, as returned by ``get_default_id``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
 
@@ -10233,8 +10487,9 @@ class Session(sherpa.ui.utils.Session):
 
         return resp(src)
 
-
-    def set_bkg_full_model(self, id, model=None, bkg_id=None):
+    def set_bkg_full_model(self, id, model=None,
+                           bkg_id: Optional[IdType] = None
+                           ) -> None:
         """Define the convolved background model expression for a PHA data set.
 
         Set a model expression for a background data set in the same
@@ -10251,7 +10506,7 @@ class Session(sherpa.ui.utils.Session):
         model : str or sherpa.models.Model object
            This defines the model used to fit the data. It can be a
            Python expression or a string version of it.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The identifier for the background of the data set, in
            cases where multiple backgrounds are provided.
 
@@ -10343,7 +10598,9 @@ class Session(sherpa.ui.utils.Session):
         self._runparamprompt(model.pars)
 
     # DOC-TODO: should probably explain more about how backgrounds are fit?
-    def set_bkg_model(self, id, model=None, bkg_id=None):
+    def set_bkg_model(self, id, model=None,
+                      bkg_id: Optional[IdType] = None
+                      ) -> None:
         """Set the background model expression for a PHA data set.
 
         The background emission can be fit by a model, defined by the
@@ -10360,7 +10617,7 @@ class Session(sherpa.ui.utils.Session):
         model : str or sherpa.models.Model object
            This defines the model used to fit the data. It can be a
            Python expression or a string version of it.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            The identifier for the background of the data set, in
            cases where multiple backgrounds are provided.
 
@@ -10446,7 +10703,10 @@ class Session(sherpa.ui.utils.Session):
 
     set_bkg_source = set_bkg_model
 
-    def delete_bkg_model(self, id=None, bkg_id=None):
+    def delete_bkg_model(self,
+                         id: Optional[IdType] = None,
+                         bkg_id: Optional[IdType] = None
+                         ) -> None:
         """Delete the background model expression for a data set.
 
         This removes the model expression, created by `set_bkg_model`,
@@ -10456,11 +10716,11 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set containing the source expression. If not given
            then the default identifier is used, as returned by
            `get_default_id`.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier for the background component to use.
 
         See Also
@@ -10485,14 +10745,14 @@ class Session(sherpa.ui.utils.Session):
         >>> delete_bkg_model('src', 'down')
 
         """
-        id = self._fix_id(id)
-        bkg_id = self._fix_background_id(id, bkg_id)
+        idval = self._fix_id(id)
+        bkg_id = self._fix_background_id(idval, bkg_id)
 
         # remove dependency of having a loaded PHA dataset at the time
         # of bkg model init.
         #  bkg_id = self._get_pha_data(id)._fix_background_id(bkg_id)
-        self._background_models.get(id, {}).pop(bkg_id, None)
-        self._background_sources.get(id, {}).pop(bkg_id, None)
+        self._background_models.get(idval, {}).pop(bkg_id, None)
+        self._background_sources.get(idval, {}).pop(bkg_id, None)
 
     def _read_user_model(self, filename, *args, **kwargs):
         x = None
@@ -10533,7 +10793,8 @@ class Session(sherpa.ui.utils.Session):
 
         return (x, y)
 
-    def load_xstable_model(self, modelname, filename, etable=False):
+    def load_xstable_model(self, modelname, filename,
+                           etable=False) -> None:
         """Load a XSPEC table model.
 
         Create an additive ('atable', [1]), multiplicative
@@ -10629,7 +10890,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-NOTE: can filename be a crate/hdulist?
     # DOC-TODO: how to describe the supported args/kwargs (not just for this function)?
     def load_table_model(self, modelname, filename,
-                         method=sherpa.utils.linear_interp, *args, **kwargs):
+                         method=sherpa.utils.linear_interp, *args,
+                         **kwargs) -> None:
         # pylint: disable=W1113
         """Load tabular or image data and use it as a model component.
 
@@ -10730,7 +10992,9 @@ class Session(sherpa.ui.utils.Session):
     # ## also in sherpa.utils
     # DOC-TODO: how to describe *args/**kwargs
     # DOC-TODO: how is the _y value used if set
-    def load_user_model(self, func, modelname, filename=None, *args, **kwargs):
+    #
+    def load_user_model(self, func, modelname, filename=None,
+                        *args, **kwargs) -> None:
         # pylint: disable=W1113
         """Create a user-defined model.
 
@@ -10826,16 +11090,19 @@ class Session(sherpa.ui.utils.Session):
     # Fitting
     ###########################################################################
 
-    def _prepare_fit(self, id, otherids=()):
+    def _prepare_fit(self,
+                     id: Optional[IdType],
+                     otherids: Sequence[IdType] = ()
+                     ) -> list[sherpa.ui.utils.FitStore]:
         """Ensure we have all the requested ids, datasets, and models.
 
         Background datasets are included if present.
 
         Parameters
         ----------
-        id: int or str or None
+        id: int, str, or None
             If None then this fits all data.
-        otherids: sequence of int or str or None, or None
+        otherids: sequence of int, str, or None, or None
             When id is not None, the other identifiers to use.
 
         Returns
@@ -10891,20 +11158,24 @@ class Session(sherpa.ui.utils.Session):
             for bkg_id in s.data.background_ids:
                 bkg_data = s.data.get_background(bkg_id)
                 bkg_model = self.get_bkg_model(s.idval, bkg_id)
+                # At this point we know bkg_data is not None
                 out.append(BkgFitStore(s.idval, bkg_data, bkg_model, bkg_id))
 
         return out
 
-    def _prepare_bkg_fit(self, id, otherids=()):
+    def _prepare_bkg_fit(self,
+                         id: Optional[IdType],
+                         otherids: Sequence[IdType] = ()
+                         ) -> list[BkgFitStore]:
         """Ensure we have all the requested background ids, datasets, and models.
 
         Unlike _prepare_fit this is only for background datasets.
 
         Parameters
         ----------
-        id: int or str or None
+        id: int, str, or None
             If None then this fits all background data.
-        otherids: sequence of int or str or None, or None
+        otherids: sequence of int, str, or None, or None
             When id is not None, the other identifiers to use.
 
         Returns
@@ -10954,7 +11225,11 @@ class Session(sherpa.ui.utils.Session):
 
         return out
 
-    def _get_bkg_fit(self, id, otherids=(), estmethod=None, numcores=1):
+    def _get_bkg_fit(self,
+                     id: Optional[IdType],
+                     otherids: Sequence[IdType] = (),
+                     estmethod=None, numcores=1
+                     ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object for the given identifiers.
 
         Given the identifiers (the id and otherids arguments), find
@@ -10962,7 +11237,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str or None
+        id : int, str, or None
             The identifier to fit. A value of None means all available
             background datasets with models.
         otherids : sequence of int or str
@@ -11188,7 +11463,11 @@ class Session(sherpa.ui.utils.Session):
         kwargs['bkg_only'] = True
         self._fit(id, *otherids, **kwargs)
 
-    def _fit(self, id=None, *otherids, **kwargs) -> None:
+    def _fit(self,
+             id: Optional[IdType] = None,
+             *otherids: IdType,
+             **kwargs
+             ) -> None:
         # pylint: disable=W1113
 
         # validate the kwds to f.fit() so user typos do not
@@ -11254,7 +11533,9 @@ class Session(sherpa.ui.utils.Session):
     # Plotting
     ###########################################################################
 
-    def get_data_plot(self, id=None, recalc=True):
+    def get_data_plot(self,
+                      id: Optional[IdType] = None,
+                      recalc=True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11272,7 +11553,9 @@ class Session(sherpa.ui.utils.Session):
     get_data_plot.__doc__ = sherpa.ui.utils.Session.get_data_plot.__doc__
     get_data_plot.__annotations__ = sherpa.ui.utils.Session.get_data_plot.__annotations__
 
-    def get_model_plot(self, id=None, recalc=True):
+    def get_model_plot(self,
+                       id: Optional[IdType] = None,
+                       recalc=True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11291,12 +11574,14 @@ class Session(sherpa.ui.utils.Session):
     get_model_plot.__annotations__ = sherpa.ui.utils.Session.get_model_plot.__annotations__
 
     # also in sherpa.utils, but without the lo/hi arguments
-    def get_source_plot(self, id=None, lo=None, hi=None, recalc=True):
+    def get_source_plot(self,
+                        id: Optional[IdType] = None,
+                        lo=None, hi=None, recalc=True):
         """Return the data used by plot_source.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         lo : number, optional
@@ -11380,7 +11665,9 @@ class Session(sherpa.ui.utils.Session):
 
         return super().get_source_plot(id, recalc=recalc)
 
-    def get_fit_plot(self, id=None, recalc=True):
+    def get_fit_plot(self,
+                     id: Optional[IdType] = None,
+                     recalc=True):
 
         plotobj = self._plot_types["fit"][0]
         if not recalc:
@@ -11528,7 +11815,9 @@ class Session(sherpa.ui.utils.Session):
     get_source_component_plot.__doc__ = sherpa.ui.utils.Session.get_source_component_plot.__doc__
     get_source_component_plot.__annotations__ = sherpa.ui.utils.Session.get_source_component_plot.__annotations__
 
-    def get_ratio_plot(self, id=None, recalc=True):
+    def get_ratio_plot(self,
+                       id: Optional[IdType] = None,
+                       recalc=True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11546,7 +11835,9 @@ class Session(sherpa.ui.utils.Session):
     get_ratio_plot.__doc__ = sherpa.ui.utils.Session.get_ratio_plot.__doc__
     get_ratio_plot.__annotations__ = sherpa.ui.utils.Session.get_ratio_plot.__annotations__
 
-    def get_resid_plot(self, id=None, recalc=True):
+    def get_resid_plot(self,
+                       id: Optional[IdType] = None,
+                       recalc=True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11564,7 +11855,9 @@ class Session(sherpa.ui.utils.Session):
     get_resid_plot.__doc__ = sherpa.ui.utils.Session.get_resid_plot.__doc__
     get_resid_plot.__annotations__ = sherpa.ui.utils.Session.get_resid_plot.__annotations__
 
-    def get_delchi_plot(self, id=None, recalc=True):
+    def get_delchi_plot(self,
+                        id: Optional[IdType] = None,
+                        recalc=True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11582,7 +11875,9 @@ class Session(sherpa.ui.utils.Session):
     get_delchi_plot.__doc__ = sherpa.ui.utils.Session.get_delchi_plot.__doc__
     get_delchi_plot.__annotations__ = sherpa.ui.utils.Session.get_delchi_plot.__annotations__
 
-    def get_chisqr_plot(self, id=None, recalc=True):
+    def get_chisqr_plot(self,
+                        id: Optional[IdType] = None,
+                        recalc=True):
         if recalc:
             data = self.get_data(id)
         else:
@@ -11601,7 +11896,9 @@ class Session(sherpa.ui.utils.Session):
     get_chisqr_plot.__annotations__ = sherpa.ui.utils.Session.get_chisqr_plot.__annotations__
 
     def get_pvalue_plot(self, null_model=None, alt_model=None, conv_model=None,
-                        id=1, otherids=(), num=500, bins=25, numcores=None,
+                        id: IdType = 1,
+                        otherids: Sequence[IdType] = (),
+                        num=500, bins=25, numcores=None,
                         recalc=False):
 
         if recalc and conv_model is None and \
@@ -11616,12 +11913,14 @@ class Session(sherpa.ui.utils.Session):
     get_pvalue_plot.__doc__ = sherpa.ui.utils.Session.get_pvalue_plot.__doc__
     get_pvalue_plot.__annotations__ = sherpa.ui.utils.Session.get_pvalue_plot.__annotations__
 
-    def get_order_plot(self, id=None, orders=None, recalc=True):
+    def get_order_plot(self,
+                       id: Optional[IdType] = None,
+                       orders=None, recalc=True):
         """Return the data used by plot_order.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None,optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         orders : optional
@@ -11669,15 +11968,18 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_arf_plot(self, id=None, resp_id=None, recalc=True):
+    def get_arf_plot(self,
+                     id: Optional[IdType] = None,
+                     resp_id: Optional[IdType] = None,
+                     recalc=True):
         """Return the data used by plot_arf.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set with an ARF. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            Which ARF to use in the case that multiple ARFs are
            associated with a data set. The default is ``None``,
            which means the first one.
@@ -11730,18 +12032,20 @@ class Session(sherpa.ui.utils.Session):
         plotobj.prepare(arf, data)
         return plotobj
 
-
-    def get_rmf_plot(self, id=None, resp_id=None, recalc=True):
+    def get_rmf_plot(self,
+                     id: Optional[IdType] = None,
+                     resp_id: Optional[IdType] = None,
+                     recalc=True):
         """Return the data used by plot_rmf.
 
         .. versionadded:: 4.16.0
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set with a RMF. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            Which RMF to use in the case that multiple RMFs are
            associated with a data set. The default is ``None``,
            which means the first one.
@@ -11792,16 +12096,18 @@ class Session(sherpa.ui.utils.Session):
         plotobj.prepare(rmf, data)
         return plotobj
 
-
-    def get_bkg_fit_plot(self, id=None, bkg_id=None, recalc=True):
+    def get_bkg_fit_plot(self,
+                         id: Optional[IdType] = None,
+                         bkg_id: Optional[IdType] = None,
+                         recalc=True):
         """Return the data used by plot_bkg_fit.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         recalc : bool, optional
@@ -11883,15 +12189,18 @@ class Session(sherpa.ui.utils.Session):
         plotobj.prepare(dataobj, modelobj)
         return plotobj
 
-    def get_bkg_model_plot(self, id=None, bkg_id=None, recalc=True):
+    def get_bkg_model_plot(self,
+                           id: Optional[IdType] = None,
+                           bkg_id: Optional[IdType] = None,
+                           recalc=True):
         """Return the data used by plot_bkg_model.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         recalc : bool, optional
@@ -11940,15 +12249,18 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_bkg_plot(self, id=None, bkg_id=None, recalc=True):
+    def get_bkg_plot(self,
+                     id: Optional[IdType] = None,
+                     bkg_id: Optional[IdType] = None,
+                     recalc=True):
         """Return the data used by plot_bkg.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         recalc : bool, optional
@@ -12006,7 +12318,8 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def get_bkg_source_plot(self, id=None, lo=None, hi=None,
-                            bkg_id=None, recalc=True):
+                            bkg_id: Optional[IdType] = None,
+                            recalc=True):
         """Return the data used by plot_bkg_source.
 
         Parameters
@@ -12018,7 +12331,7 @@ class Session(sherpa.ui.utils.Session):
            The low value to plot.
         hi : number, optional
            The high value to plot.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         recalc : bool, optional
@@ -12098,15 +12411,18 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_bkg_resid_plot(self, id=None, bkg_id=None, recalc=True):
+    def get_bkg_resid_plot(self,
+                           id: Optional[IdType] = None,
+                           bkg_id: Optional[IdType] = None,
+                           recalc=True):
         """Return the data used by plot_bkg_resid.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         recalc : bool, optional
@@ -12156,15 +12472,18 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_bkg_ratio_plot(self, id=None, bkg_id=None, recalc=True):
+    def get_bkg_ratio_plot(self,
+                           id: Optional[IdType] = None,
+                           bkg_id: Optional[IdType] = None,
+                           recalc=True):
         """Return the data used by plot_bkg_ratio.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         recalc : bool, optional
@@ -12214,15 +12533,18 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_bkg_delchi_plot(self, id=None, bkg_id=None, recalc=True):
+    def get_bkg_delchi_plot(self,
+                            id: Optional[IdType] = None,
+                            bkg_id: Optional[IdType] = None,
+                            recalc=True):
         """Return the data used by plot_bkg_delchi.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         recalc : bool, optional
@@ -12273,15 +12595,18 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_bkg_chisqr_plot(self, id=None, bkg_id=None, recalc=True):
+    def get_bkg_chisqr_plot(self,
+                            id: Optional[IdType] = None,
+                            bkg_id: Optional[IdType] = None,
+                            recalc=True):
         """Return the data used by plot_bkg_chisqr.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         recalc : bool, optional
@@ -12333,8 +12658,10 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def _prepare_energy_flux_plot(self, plot, lo, hi, id, num, bins,
-                                  correlated, numcores, bkg_id,
-                                  scales=None, model=None, otherids=(),
+                                  correlated, numcores,
+                                  bkg_id: Optional[IdType],
+                                  scales=None, model=None,
+                                  otherids: Sequence[IdType] = (),
                                   clip='hard'):
         """Run sample_energy_flux and convert to a plot.
         """
@@ -12346,8 +12673,10 @@ class Session(sherpa.ui.utils.Session):
         return plot
 
     def _prepare_photon_flux_plot(self, plot, lo, hi, id, num, bins,
-                                  correlated, numcores, bkg_id,
-                                  scales=None, model=None, otherids=(),
+                                  correlated, numcores,
+                                  bkg_id: Optional[IdType],
+                                  scales=None, model=None,
+                                  otherids: Sequence[IdType]=(),
                                   clip='hard'):
         """Run sample_photon_flux and convert to a plot.
         """
@@ -12358,9 +12687,17 @@ class Session(sherpa.ui.utils.Session):
         plot.prepare(dist, bins)
         return plot
 
-    def get_energy_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                             correlated=False, numcores=None, bkg_id=None,
-                             scales=None, model=None, otherids=(), recalc=True,
+    def get_energy_flux_hist(self, lo=None, hi=None,
+                             id: Optional[IdType] = None,
+                             num=7500,
+                             bins=75,
+                             correlated=False,
+                             numcores=None,
+                             bkg_id: Optional[IdType] = None,
+                             scales=None,
+                             model=None,
+                             otherids: Sequence[IdType] = (),
+                             recalc=True,
                              clip='hard'):
         """Return the data displayed by plot_energy_flux.
 
@@ -12382,7 +12719,7 @@ class Session(sherpa.ui.utils.Session):
         hi : optional
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
-        id : int or string, optional
+        id : int or string or None, optional
            The identifier of the data set to use. If `None`, the
            default value, then all datasets with associated models are
            used to calculate the errors and the model evaluation is
@@ -12399,7 +12736,7 @@ class Session(sherpa.ui.utils.Session):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
@@ -12497,9 +12834,17 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def get_photon_flux_hist(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                             correlated=False, numcores=None, bkg_id=None,
-                             scales=None, model=None, otherids=(), recalc=True,
+    def get_photon_flux_hist(self, lo=None, hi=None,
+                             id: Optional[IdType] = None,
+                             num=7500,
+                             bins=75,
+                             correlated=False,
+                             numcores=None,
+                             bkg_id: Optional[IdType] = None,
+                             scales=None,
+                             model=None,
+                             otherids: Sequence[IdType] = (),
+                             recalc=True,
                              clip='hard'):
         """Return the data displayed by plot_photon_flux.
 
@@ -12520,7 +12865,7 @@ class Session(sherpa.ui.utils.Session):
         hi : optional
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
-        id : int or string, optional
+        id : int, str, or None, optional
            The identifier of the data set to use. If `None`, the
            default value, then all datasets with associated models are
            used to calculate the errors and the model evaluation is
@@ -12537,7 +12882,7 @@ class Session(sherpa.ui.utils.Session):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
@@ -12635,8 +12980,12 @@ class Session(sherpa.ui.utils.Session):
 
         return plotobj
 
-    def plot_arf(self, id=None, resp_id=None, replot=False, overplot=False,
-                 clearwindow=True, **kwargs):
+    def plot_arf(self,
+                 id: Optional[IdType] = None,
+                 resp_id: Optional[IdType] = None,
+                 replot=False, overplot=False,
+                 clearwindow=True,
+                 **kwargs) -> None:
         """Plot the ARF associated with a data set.
 
         Display the effective area curve from the ARF
@@ -12644,10 +12993,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set with an ARF. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            Which ARF to use in the case that multiple ARFs are
            associated with a data set. The default is ``None``,
            which means the first one.
@@ -12706,8 +13055,12 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
 
-    def plot_rmf(self, id=None, resp_id=None, replot=False, overplot=False,
-                 clearwindow=True, **kwargs):
+    def plot_rmf(self,
+                 id: Optional[IdType] = None,
+                 resp_id: Optional[IdType] = None,
+                 replot=False, overplot=False,
+                 clearwindow=True,
+                 **kwargs) -> None:
         """Plot the RMF associated with a data set.
 
         Display the energy redistribution from the RMF
@@ -12719,10 +13072,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set with a RMF. If not given then the default
            identifier is used, as returned by `get_default_id`.
-        resp_id : int or str, optional
+        resp_id : int, str, or None, optional
            Which RMF to use in the case that multiple RMFs are
            associated with a data set. The default is ``None``,
            which means the first one.
@@ -12781,8 +13134,11 @@ class Session(sherpa.ui.utils.Session):
 
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
-    def plot_source(self, id=None, lo=None, hi=None, replot=False,
-                    overplot=False, clearwindow=True, **kwargs):
+    def plot_source(self,
+                    id: Optional[IdType] = None,
+                    lo=None, hi=None,
+                    replot=False, overplot=False, clearwindow=True,
+                    **kwargs) -> None:
         """Plot the source expression for a data set.
 
         This function plots the source model for a data set. This does
@@ -12792,7 +13148,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         lo : number, optional
@@ -12860,8 +13216,12 @@ class Session(sherpa.ui.utils.Session):
                             clearwindow=clearwindow, **kwargs)
 
     # DOC-TODO: is orders the same as resp_id?
-    def plot_order(self, id=None, orders=None, replot=False, overplot=False,
-                   clearwindow=True, **kwargs):
+    def plot_order(self,
+                   id: Optional[IdType] = None,
+                   orders=None,
+                   replot=False, overplot=False,
+                   clearwindow=True,
+                   **kwargs) -> None:
         """Plot the model for a data set convolved by the given response.
 
         Some data sets - such as grating PHA data - can have multiple
@@ -12919,16 +13279,19 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_bkg(self, id=None, bkg_id=None, replot=False, overplot=False,
-                 clearwindow=True, **kwargs):
+    def plot_bkg(self,
+                 id: Optional[IdType] = None,
+                 bkg_id: Optional[IdType] = None,
+                 replot=False, overplot=False, clearwindow=True,
+                 **kwargs) -> None:
         """Plot the background values for a PHA data set.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -12984,8 +13347,11 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_bkg_model(self, id=None, bkg_id=None, replot=False,
-                       overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_model(self,
+                       id: Optional[IdType] = None,
+                       bkg_id: Optional[IdType] = None,
+                       replot=False, overplot=False, clearwindow=True,
+                       **kwargs) -> None:
         """Plot the model for the background of a PHA data set.
 
         This function plots the model for the background of a PHA data
@@ -12994,10 +13360,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13041,8 +13407,11 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_bkg_resid(self, id=None, bkg_id=None, replot=False,
-                       overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_resid(self,
+                       id: Optional[IdType] = None,
+                       bkg_id: Optional[IdType] = None,
+                       replot=False, overplot=False, clearwindow=True,
+                       **kwargs) -> None:
         """Plot the residual (data-model) values for the background of a PHA data set.
 
         Display the residuals for the background of a PHA data set
@@ -13053,10 +13422,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13107,8 +13476,11 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_bkg_ratio(self, id=None, bkg_id=None, replot=False,
-                       overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_ratio(self,
+                       id: Optional[IdType] = None,
+                       bkg_id: Optional[IdType] = None,
+                       replot=False, overplot=False, clearwindow=True,
+                       **kwargs) -> None:
         """Plot the ratio of data to model values for the background of a PHA data set.
 
         Display the ratio of data to model values for the background
@@ -13120,10 +13492,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13173,8 +13545,11 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_bkg_delchi(self, id=None, bkg_id=None, replot=False,
-                        overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_delchi(self,
+                        id: Optional[IdType] = None,
+                        bkg_id: Optional[IdType] = None,
+                        replot=False, overplot=False, clearwindow=True,
+                        **kwargs) -> None:
         """Plot the ratio of residuals to error for the background of a PHA data set.
 
         Display the ratio of the residuals (data-model) to the error
@@ -13186,10 +13561,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13239,8 +13614,11 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_bkg_chisqr(self, id=None, bkg_id=None, replot=False,
-                        overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_chisqr(self,
+                        id: Optional[IdType] = None,
+                        bkg_id: Optional[IdType] = None,
+                        replot=False, overplot=False, clearwindow=True,
+                        **kwargs) -> None:
         """Plot the chi-squared value for each point of the background of a PHA data set.
 
         Display the square of the residuals (data-model) divided by
@@ -13249,10 +13627,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13297,16 +13675,19 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_bkg_fit(self, id=None, bkg_id=None, replot=False,
-                     overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_fit(self,
+                     id: Optional[IdType] = None,
+                     bkg_id: Optional[IdType] = None,
+                     replot=False, overplot=False, clearwindow=True,
+                     **kwargs) -> None:
         """Plot the fit results (data, model) for the background of a PHA data set.
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13354,9 +13735,12 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_bkg_source(self, id=None, lo=None, hi=None, bkg_id=None,
+    def plot_bkg_source(self,
+                        id: Optional[IdType] = None,
+                        lo=None, hi=None,
+                        bkg_id: Optional[IdType] = None,
                         replot=False, overplot=False, clearwindow=True,
-                        **kwargs):
+                        **kwargs) -> None:
         """Plot the model expression for the background of a PHA data set.
 
         This function plots the model for the background of a PHA data
@@ -13365,14 +13749,14 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         lo : number, optional
            The low value to plot.
         hi : number, optional
            The high value to plot.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13416,12 +13800,16 @@ class Session(sherpa.ui.utils.Session):
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_energy_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                         correlated=False, numcores=None, bkg_id=None,
-                         scales=None, model=None, otherids=(),
+    def plot_energy_flux(self, lo=None, hi=None,
+                         id: Optional[IdType] = None,
+                         num=7500, bins=75,
+                         correlated=False, numcores=None,
+                         bkg_id: Optional[IdType] = None,
+                         scales=None, model=None,
+                         otherids: Sequence[IdType] = (),
                          recalc=True, clip='hard',
                          overplot=False, clearwindow=True,
-                         **kwargs):
+                         **kwargs) -> None:
         """Display the energy flux distribution.
 
         For each iteration, draw the parameter values of the model
@@ -13445,7 +13833,7 @@ class Session(sherpa.ui.utils.Session):
         hi : optional
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
-        id : int or string, optional
+        id : int, str, or None, optional
            The identifier of the data set to use. If `None`, the
            default value, then all datasets with associated models are
            used to calculate the errors and the model evaluation is
@@ -13462,7 +13850,7 @@ class Session(sherpa.ui.utils.Session):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
@@ -13571,12 +13959,16 @@ class Session(sherpa.ui.utils.Session):
         self._plot(efplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def plot_photon_flux(self, lo=None, hi=None, id=None, num=7500, bins=75,
-                         correlated=False, numcores=None, bkg_id=None,
-                         scales=None, model=None, otherids=(),
+    def plot_photon_flux(self, lo=None, hi=None,
+                         id: Optional[IdType] = None,
+                         num=7500, bins=75,
+                         correlated=False, numcores=None,
+                         bkg_id: Optional[IdType] = None,
+                         scales=None, model=None,
+                         otherids: Sequence[IdType] = (),
                          recalc=True, clip='hard',
                          overplot=False, clearwindow=True,
-                         **kwargs):
+                         **kwargs) -> None:
         """Display the photon flux distribution.
 
         For each iteration, draw the parameter values of the model
@@ -13600,7 +13992,7 @@ class Session(sherpa.ui.utils.Session):
         hi : optional
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
-        id : int or string, optional
+        id : int, str, or None, optional
            The identifier of the data set to use. If `None`, the
            default value, then all datasets with associated models are
            used to calculate the errors and the model evaluation is
@@ -13617,7 +14009,7 @@ class Session(sherpa.ui.utils.Session):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
@@ -13727,7 +14119,7 @@ class Session(sherpa.ui.utils.Session):
                    **kwargs)
 
     def _bkg_jointplot2(self, plot1, plot2, overplot=False,
-                        clearwindow=True, **kwargs):
+                        clearwindow=True, **kwargs) -> None:
         """Create a joint plot for bkg, vertically aligned, fit data on the top.
 
         Parameters
@@ -13768,8 +14160,11 @@ class Session(sherpa.ui.utils.Session):
 
             p2prefs['xlog'] = oldval
 
-    def plot_bkg_fit_ratio(self, id=None, bkg_id=None, replot=False,
-                           overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_fit_ratio(self,
+                           id: Optional[IdType] = None,
+                           bkg_id: Optional[IdType] = None,
+                           replot=False, overplot=False, clearwindow=True,
+                           **kwargs) -> None:
         """Plot the fit results, and the data/model ratio, for the background of
         a PHA data set.
 
@@ -13783,10 +14178,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13844,8 +14239,11 @@ class Session(sherpa.ui.utils.Session):
                              overplot=overplot, clearwindow=clearwindow,
                              **kwargs)
 
-    def plot_bkg_fit_resid(self, id=None, bkg_id=None, replot=False,
-                           overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_fit_resid(self,
+                           id: Optional[IdType] = None,
+                           bkg_id: Optional[IdType] = None,
+                           replot=False, overplot=False, clearwindow=True,
+                           **kwargs) -> None:
         """Plot the fit results, and the residuals, for the background of
         a PHA data set.
 
@@ -13861,10 +14259,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -13921,8 +14319,11 @@ class Session(sherpa.ui.utils.Session):
                              overplot=overplot, clearwindow=clearwindow,
                              **kwargs)
 
-    def plot_bkg_fit_delchi(self, id=None, bkg_id=None, replot=False,
-                            overplot=False, clearwindow=True, **kwargs):
+    def plot_bkg_fit_delchi(self,
+                            id: Optional[IdType] = None,
+                            bkg_id: Optional[IdType] = None,
+                            replot=False, overplot=False, clearwindow=True,
+                            **kwargs) -> None:
         """Plot the fit results, and the residuals, for the background of
         a PHA data set.
 
@@ -13938,10 +14339,10 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            Identify the background component to use, if there are
            multiple ones associated with the data set.
         replot : bool, optional
@@ -14003,7 +14404,9 @@ class Session(sherpa.ui.utils.Session):
     # Analysis Functions
     ###########################################################################
 
-    def resample_data(self, id=None, niter=1000, seed=None):
+    def resample_data(self,
+                      id: Optional[IdType] = None,
+                      niter=1000, seed=None):
         """Resample data with asymmetric error bars.
 
         The function performs a parametric bootstrap assuming a skewed
@@ -14026,7 +14429,7 @@ class Session(sherpa.ui.utils.Session):
 
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, or None, optional
            The identifier of the data set to use.
         niter : int, optional
            The number of iterations to use. The default is ``1000``.
@@ -14101,10 +14504,15 @@ class Session(sherpa.ui.utils.Session):
         return resampledata(niter=niter, seed=seed,
                             rng=self.get_rng())
 
-    def sample_photon_flux(self, lo=None, hi=None, id=None, num=1,
+    def sample_photon_flux(self, lo=None, hi=None,
+                           id: Optional[IdType] = None,
+                           num=1,
                            scales=None, correlated=False,
-                           numcores=None, bkg_id=None, model=None,
-                           otherids=(), clip='hard'):
+                           numcores=None,
+                           bkg_id: Optional[IdType] = None,
+                           model=None,
+                           otherids: Sequence[IdType] = (),
+                           clip='hard'):
         """Return the photon flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -14129,7 +14537,7 @@ class Session(sherpa.ui.utils.Session):
         hi : optional
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
-        id : int or string, optional
+        id : int, str, or None, optional
            The identifier of the data set to use. If `None`, the
            default value, then all datasets with associated models are
            used to calculate the errors and the model evaluation is
@@ -14159,7 +14567,7 @@ class Session(sherpa.ui.utils.Session):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
@@ -14337,10 +14745,15 @@ class Session(sherpa.ui.utils.Session):
                                              samples=scales, clip=clip,
                                              rng=self.get_rng())
 
-    def sample_energy_flux(self, lo=None, hi=None, id=None, num=1,
+    def sample_energy_flux(self, lo=None, hi=None,
+                           id: Optional[IdType] = None,
+                           num=1,
                            scales=None, correlated=False,
-                           numcores=None, bkg_id=None, model=None,
-                           otherids=(), clip='hard'):
+                           numcores=None,
+                           bkg_id: Optional[IdType] = None,
+                           model=None,
+                           otherids: Sequence[IdType] = (),
+                           clip='hard'):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -14365,7 +14778,7 @@ class Session(sherpa.ui.utils.Session):
         hi : optional
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
-        id : int or string, optional
+        id : int, str, or None, optional
            The identifier of the data set to use. If `None`, the
            default value, then all datasets with associated models are
            used to calculate the errors and the model evaluation is
@@ -14395,7 +14808,7 @@ class Session(sherpa.ui.utils.Session):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
@@ -14573,9 +14986,12 @@ class Session(sherpa.ui.utils.Session):
                                              samples=scales, clip=clip,
                                              rng=self.get_rng())
 
-    def sample_flux(self, modelcomponent=None, lo=None, hi=None, id=None,
+    def sample_flux(self, modelcomponent=None, lo=None, hi=None,
+                    id: Optional[IdType] = None,
                     num=1, scales=None, correlated=False,
-                    numcores=None, bkg_id=None, Xrays=True, confidence=68):
+                    numcores=None,
+                    bkg_id: Optional[IdType] = None,
+                    Xrays=True, confidence=68):
         """Return the flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -14613,7 +15029,7 @@ class Session(sherpa.ui.utils.Session):
         hi : optional
            The upper limit to use when summing up the signal. If not
            given then the upper value of the data grid is used.
-        id : int or string, optional
+        id : int, str, or None, optional
            The identifier of the data set to use. The default value
            (``None``) means that the default identifier, as returned by
            `get_default_id`, is used.
@@ -14633,7 +15049,7 @@ class Session(sherpa.ui.utils.Session):
         numcores : optional
            The number of CPU cores to use. The default is to use all
            the cores on the machine.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
@@ -14795,8 +15211,13 @@ class Session(sherpa.ui.utils.Session):
                                                   modelcomponent=modelcomponent,
                                                   confidence=confidence)
 
-    def eqwidth(self, src, combo, id=None, lo=None, hi=None, bkg_id=None,
-                error=False, params=None, otherids=(), niter=1000,
+    def eqwidth(self, src, combo,
+                id: Optional[IdType] = None,
+                lo=None, hi=None,
+                bkg_id: Optional[IdType] = None,
+                error=False, params=None,
+                otherids: Sequence[IdType] = (),
+                niter=1000,
                 covar_matrix=None):
         """Calculate the equivalent width of an emission or absorption line.
 
@@ -14828,10 +15249,10 @@ class Session(sherpa.ui.utils.Session):
            The upper limit for the calculation (the units are set by
            `set_analysis` for the data set). The default value (``None``)
            means that the upper range of the data set is used.
-        id : int or string, optional
+        id : int, str, or None, optional
            The data set that provides the data. If not given then
            all data sets with an associated model are used simultaneously.
-        bkg_id : int or string, optional
+        bkg_id : int, str, or None, optional
            The identifier of the background component to use. This
            should only be set when the line to be measured is in the
            background model.
@@ -14985,7 +15406,9 @@ class Session(sherpa.ui.utils.Session):
         ####################################################
         return sherpa.astro.utils.eqwidth(data, src, combo, lo, hi)
 
-    def calc_photon_flux(self, lo=None, hi=None, id=None, bkg_id=None,
+    def calc_photon_flux(self, lo=None, hi=None,
+                         id: Optional[IdType] = None,
+                         bkg_id: Optional[IdType] = None,
                          model=None):
         """Integrate the unconvolved source model over a pass band.
 
@@ -15003,11 +15426,11 @@ class Session(sherpa.ui.utils.Session):
            over the given band. If only one is set then calculate
            the flux density at that point. The units for `lo` and `hi`
            are given by the current analysis setting.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            If set, use the model associated with the given background
            component rather than the source model.
         model : model, optional
@@ -15104,7 +15527,9 @@ class Session(sherpa.ui.utils.Session):
 
         return sherpa.astro.utils.calc_photon_flux(data, model, lo, hi)
 
-    def calc_energy_flux(self, lo=None, hi=None, id=None, bkg_id=None,
+    def calc_energy_flux(self, lo=None, hi=None,
+                         id: Optional[IdType] = None,
+                         bkg_id: Optional[IdType] = None,
                          model=None):
         """Integrate the unconvolved source model over a pass band.
 
@@ -15123,11 +15548,11 @@ class Session(sherpa.ui.utils.Session):
            over the given band. If only one is set then calculate
            the flux density at that point. The units for `lo` and `hi`
            are given by the current analysis setting.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by ``get_default_id``.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            If set, use the model associated with the given background
            component rather than the source model.
         model : model, optional
@@ -15222,7 +15647,9 @@ class Session(sherpa.ui.utils.Session):
 
     # DOC-TODO: how do lo/hi limits interact with bin edges;
     # is it all in or partially in or ...
-    def calc_data_sum(self, lo=None, hi=None, id=None, bkg_id=None):
+    def calc_data_sum(self, lo=None, hi=None,
+                      id: Optional[IdType] = None,
+                      bkg_id: Optional[IdType] = None):
         """Sum up the data values over a pass band.
 
         This function is for one-dimensional data sets: use
@@ -15234,11 +15661,11 @@ class Session(sherpa.ui.utils.Session):
            If both are None or both are set then sum up the data
            over the given band. If only one is set then return
            the data count in the given bin.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            If set, use the model associated with the given background
            component rather than the source model.
 
@@ -15318,7 +15745,9 @@ class Session(sherpa.ui.utils.Session):
     #           to show the difference between calc_model_sum and
     #           calc_source_sum
     #
-    def calc_model_sum(self, lo=None, hi=None, id=None, bkg_id=None):
+    def calc_model_sum(self, lo=None, hi=None,
+                       id: Optional[IdType] = None,
+                       bkg_id: Optional[IdType] = None):
         """Sum up the fitted model over a pass band.
 
         Sum up M(E) over a range of bins, where M(E) is the per-bin model
@@ -15335,11 +15764,11 @@ class Session(sherpa.ui.utils.Session):
            band. If only one is set then use the model value in the
            selected bin. The units for `lo` and `hi` are given by the
            current analysis setting.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            If set, use the model associated with the given background
            component rather than the source model.
 
@@ -15424,7 +15853,9 @@ class Session(sherpa.ui.utils.Session):
 
         return sherpa.astro.utils.calc_model_sum(data, model, lo, hi)
 
-    def calc_data_sum2d(self, reg=None, id=None):
+    def calc_data_sum2d(self,
+                        reg=None,
+                        id: Optional[IdType] = None):
         """Sum up the data values of a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -15435,7 +15866,7 @@ class Session(sherpa.ui.utils.Session):
         reg : str, optional
            The spatial filter to use. The default, ``None``, is to
            use the whole data set.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by `get_default_id`.
@@ -15501,7 +15932,8 @@ class Session(sherpa.ui.utils.Session):
     #           and change the model (to a non-flat distribution, otherwise
     #           the PSF doesn't really help)
     # DOC-TODO: this needs testing as doesn't seem to be working for me
-    def calc_model_sum2d(self, reg=None, id=None):
+    def calc_model_sum2d(self, reg=None,
+                         id: Optional[IdType] = None):
         """Sum up the convolved model for a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -15512,7 +15944,7 @@ class Session(sherpa.ui.utils.Session):
         reg : str, optional
            The spatial filter to use. The default, ``None``, is to
            use the whole data set.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by `get_default_id`.
@@ -15579,7 +16011,8 @@ class Session(sherpa.ui.utils.Session):
         model = self.get_model(id)
         return sherpa.astro.utils.calc_model_sum2d(data, model, reg)
 
-    def calc_source_sum2d(self, reg=None, id=None):
+    def calc_source_sum2d(self, reg=None,
+                          id: Optional[IdType] = None):
         """Sum up the unconvolved model for a 2D data set.
 
         This function is for two-dimensional data sets: use
@@ -15590,7 +16023,7 @@ class Session(sherpa.ui.utils.Session):
         reg : str, optional
            The spatial filter to use. The default, ``None``, is to
            use the whole data set.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by `get_default_id`.
@@ -15657,7 +16090,9 @@ class Session(sherpa.ui.utils.Session):
         src = self.get_source(id)
         return sherpa.astro.utils.calc_model_sum2d(data, src, reg)
 
-    def calc_source_sum(self, lo=None, hi=None, id=None, bkg_id=None):
+    def calc_source_sum(self, lo=None, hi=None,
+                        id: Optional[IdType] = None,
+                        bkg_id: Optional[IdType] = None):
         """Sum up the source model over a pass band.
 
         Sum up S(E) over a range of bins, where S(E) is the per-bin model
@@ -15674,11 +16109,11 @@ class Session(sherpa.ui.utils.Session):
            band. If only one is set then use the model value in the
            selected bin. The units for `lo` and `hi` are given by the
            current analysis setting.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            If set, use the model associated with the given background
            component rather than the source model.
 
@@ -15771,7 +16206,8 @@ class Session(sherpa.ui.utils.Session):
     # DOC-TODO: no reason can't k-correct wavelength range,
     # but need to work out how to identify the units
     def calc_kcorr(self, z, obslo, obshi, restlo=None, resthi=None,
-                   id=None, bkg_id=None):
+                   id: Optional[IdType] = None,
+                   bkg_id: Optional[IdType] = None):
         """Calculate the K correction for a model.
 
         The K correction ([1], [2], [3], [4]) is the numeric
@@ -15797,11 +16233,11 @@ class Session(sherpa.ui.utils.Session):
         resthi : number or ``None``
            The maximum energy of the rest-frame band. It must be
            larger than ``restlo``. If ``None`` then use ``obshi``.
-        id : int or str, optional
+        id : int, str, or None, optional
            Use the source expression associated with this data set. If
            not given then the default identifier is used, as returned
            by `get_default_id`.
-        bkg_id : int or str, optional
+        bkg_id : int, str, or None, optional
            If set, use the model associated with the given background
            component rather than the source model.
 
@@ -15972,7 +16408,7 @@ class Session(sherpa.ui.utils.Session):
     # Session Text Save Function
     ###########################################################################
 
-    def save_all(self, outfile=None, clobber=False):
+    def save_all(self, outfile=None, clobber=False) -> None:
         """Save the information about the current session to a text file.
 
         This differs to the `save` command in that the output is human
