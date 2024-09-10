@@ -3226,14 +3226,14 @@ def test_plot_xxx_components_kwargs_bokeh(session, ptype):
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
 @pytest.mark.parametrize("ptype", ["source", "model"])
-@pytest.mark.parametrize("kwargs",
-                         [{"color": ["orange", "black", "green"]},
-                          {"color": ["black", "black"],
-                           "alpha": [0.8]},
-                          {"color": ["black", "black", "black"],
-                           "alpha": [0.8, 0.7, 1.0]}
+@pytest.mark.parametrize("kwargs,badarg",
+                         [({"color": ["orange", "black", "green"]}, "color"),
+                          ({"color": ["black", "black"],
+                            "alpha": [0.8]}, "alpha"),
+                          ({"color": ["black", "black", "black"],
+                            "alpha": [0.8, 0.7, 1.0]}, "color")
                           ])
-def test_plot_xxx_components_kwargs_mismatch(kwargs, session, ptype, plot_backends):
+def test_plot_xxx_components_kwargs_mismatch(kwargs, badarg, session, ptype, plot_backends):
     """Incorrect number of kwargs - what happens?
 
     It is okay to use plot_backends here because this is not
@@ -3251,5 +3251,6 @@ def test_plot_xxx_components_kwargs_mismatch(kwargs, session, ptype, plot_backen
     s.set_source(c1 * (c2 + c3))
 
     pfunc = getattr(s, f"plot_{ptype}_components")
-    with pytest.raises(ValueError):
+    msg = f"keyword '{badarg}': expected 2 elements but found "
+    with pytest.raises(ValueError, match=f"^{msg}"):
         pfunc(**kwargs)
