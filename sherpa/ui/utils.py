@@ -741,7 +741,7 @@ class FitStore:
 
 def get_components_helper(getfunc: Callable[..., Plot],
                           model: Model,
-                          idval: Union[int, str]) -> MultiPlot:
+                          idval: IdType) -> MultiPlot:
     """Handle get_source/model_components_plot.
 
     Iterate through each term in the source model.
@@ -12302,7 +12302,8 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_model_components_plot(self,
-                                  id: Optional[IdType] = None):
+                                  id: Optional[IdType] = None
+                                  ) -> MultiPlot:
         """Return the data used by plot_model_components.
 
         .. versionadded:: 4.16.1
@@ -12315,10 +12316,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        instances : list of objects
-           A list of objects representing the data used to create the
-           plot by `plot_model_components`. The return value depends
-           on the data set (e.g. 1D binned or un-binned).
+        plot : MultiPlot
+           A plot object containing the individual plot objects.
 
         See Also
         --------
@@ -12427,7 +12426,8 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_source_components_plot(self,
-                                   id: Optional[IdType] = None):
+                                   id: Optional[IdType] = None
+                                   ) -> Multiplot:
         """Return the data used by plot_source_components.
 
         .. versionadded:: 4.16.1
@@ -12440,10 +12440,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        instances : list of objects
-           A list of objects representing the data used to create the
-           plot by `plot_source_components`. The return value depends
-           on the data set (e.g. 1D binned or un-binned).
+        plot : MultiPlot
+           A plot object containing the individual plot objects.
 
         See Also
         --------
