@@ -46,7 +46,8 @@ from sherpa.optmethods import LevMar, NelderMead
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 from sherpa.stats import Stat, Likelihood, LeastSq, Chi2XspecVar
 from sherpa.utils import NoNewAttributesAfterInit, erf, \
-    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
+    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates, \
+    is_iterable_not_str
 from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
     IdentifierErr, PlotErr, StatErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -3845,6 +3846,8 @@ class MultiPlot:
     that use the `plot` method to display - to be drawn in
     the same area. Each plot is added with the add method.
 
+    .. versionadded:: 4.16.1
+
     """
 
     __slots__ = ("plots", "title")
@@ -3886,6 +3889,10 @@ class MultiPlot:
              **kwargs) -> None:
         """Plot the data.
 
+        .. versionchanged:: 4.17.0
+           The keyword arguments an now be set per plot by sending in
+           a sequence of values.
+
         Parameters
         ----------
         overplot : bool, optional
@@ -3896,15 +3903,43 @@ class MultiPlot:
            new plot (e.g. for multi-panel plots)?
         **kwargs
            These values are passed on to the plot backend, and must
-           match the names of the keys of the object's
-           plot_prefs dictionary. Note that the same arguments are
-           passed to each plot.
+           match the names of the keys of the object's plot_prefs
+           dictionary. If the value is a scalar then the value is sent
+           to each plot, but if it's a sequence (not a string) then it
+           must match the number of plots and the values are used
+           sequentially.
 
         """
 
-        for plot in self.plots:
+        nplots = len(self.plots)
+
+        # Allow kwargs to be specified per-plot. This is done by
+        # checking if any value is an iterable (and not a string) and
+        # extracting a single value per plot.
+        #
+        # Need these {} to be separate which means we can not just say
+        # `kwstore = [{}] * nplots`.
+        #
+        kwstore: list[dict[str, Any]]
+        kwstore = [{} for _ in range(nplots)]
+        for key, val in kwargs.items():
+            if is_iterable_not_str(val):
+                nval = len(val)
+                if nval != nplots:
+                    raise ValueError(f"keyword '{key}': expected "
+                                     f"{nplots} elements but found "
+                                     f"{nval}")
+
+                for store, v in zip(kwstore, val):
+                    store[key] = v
+
+            else:
+                for store in kwstore:
+                    store[key] = val
+
+        for plot, store in zip(self.plots, kwstore):
             plot.plot(overplot=overplot, clearwindow=clearwindow,
-                      **kwargs)
+                      **store)
 
             # To decide whether we draw a title or not we do rely on
             # the clearwindow setting, since it is not guaranteed to

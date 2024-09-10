@@ -14336,6 +14336,10 @@ class Session(NoNewAttributesAfterInit):
 
         Display the individual components of a source expression.
 
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by using a
+           sequence of values.
+
         .. versionadded:: 4.16.1
 
         Parameters
@@ -14369,6 +14373,16 @@ class Session(NoNewAttributesAfterInit):
 
         >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
         >>> plot_source_components(alpha=0.6)
+
+        Plot the combnined source and then overplot the two components
+        in black, partly opaque, and using dotted and dashed line
+        styles:
+
+        >>> plot_source(label="combined")
+        >>> plot_source_components(overplot=True, color="black",
+        ...                        linestyle=["dotted", "dashed"],
+        ...                        label=["model 1", "model 2"],
+        ...                        alpha=0.5)
 
         """
 
@@ -14476,6 +14490,10 @@ class Session(NoNewAttributesAfterInit):
 
         Display the individual model components of a source expression.
 
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by using a
+           sequence of values.
+
         .. versionadded:: 4.16.1
 
         Parameters
@@ -14509,6 +14527,16 @@ class Session(NoNewAttributesAfterInit):
 
         >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
         >>> plot_model_components(alpha=0.6)
+
+        Plot the combnined model and then overplot the two components
+        in black, partly opaque, and using dotted and dashed line
+        styles:
+
+        >>> plot_model(label="combined")
+        >>> plot_model_components(overplot=True, color="black",
+        ...                       linestyle=["dotted", "dashed"],
+        ...                       label=["model 1", "model 2"],
+        ...                       alpha=0.5)
 
         """
 

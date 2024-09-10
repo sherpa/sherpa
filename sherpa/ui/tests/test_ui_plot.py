@@ -3178,15 +3178,11 @@ def test_plot_xxx_components_kwargs_mpl(session, ptype, requires_pylab):
     s.set_source(c1 * (c2 + c3))
 
     pfunc = getattr(s, f"plot_{ptype}_components")
-    with pytest.raises(TypeError):
-        pfunc(color=["orange", "black"],
-              alpha=0.5,
-              linestyle=["dashed", "dotted"]
-              )
+    pfunc(color=["orange", "black"],
+          alpha=0.5,
+          linestyle=["dashed", "dotted"]
+          )
 
-    return
-
-    # Once support for multipe keywords is added
     axes = plt.gca()
     assert len(axes.lines) == 2
     assert axes.lines[0].get_color() == "orange"
@@ -3220,11 +3216,10 @@ def test_plot_xxx_components_kwargs_bokeh(session, ptype):
     s.set_source(c1 * (c2 + c3))
 
     pfunc = getattr(s, f"plot_{ptype}_components")
-    with pytest.raises(TypeError):
-        pfunc(color=["orange", "black"],
-              alpha=0.5,
-              linestyle=["dashed", "dotted"]
-              )
+    pfunc(color=["orange", "black"],
+          alpha=0.5,
+          linestyle=["dashed", "dotted"]
+          )
 
     # For now there is no check the kwargs were used
 
