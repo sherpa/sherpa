@@ -44,7 +44,7 @@ from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
 from sherpa.optmethods import OptMethod
-from sherpa.plot import Plot, MultiPlot, set_backend
+from sherpa.plot import Plot, MultiPlot, set_backend, get_per_plot_kwargs
 from sherpa.stats import Stat, UserStat
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
     export_method, send_to_pager
@@ -13654,20 +13654,26 @@ class Session(NoNewAttributesAfterInit):
             #
             plots.append(copy.deepcopy(getfunc(*getargs)))
 
-        if len(plots) == 1:
+        nplots = len(plots)
+
+        # Deconstruct the keyword arguments.
+        #
+        kwstore = get_per_plot_kwargs(nplots, kwargs)
+
+        if nplots == 1:
             plotmeth = getattr(self, f"_{plotmeth}")
-            plotmeth(plots[0], **kwargs)
+            plotmeth(plots[0], **kwstore[0])
             return
 
         nrows = 2
-        ncols = int((len(plots) + 1) / 2.0)
+        ncols = int((nplots + 1) / 2.0)
         sp = self._splitplot
         sp.reset(nrows, ncols)
         plotmeth = getattr(sp, f"add{plotmeth}")
 
         with sherpa.plot.backend:
-            while plots:
-                plotmeth(plots.pop(0), **kwargs)
+            for plot, store in zip(plots, kwstore):
+                plotmeth(plot, **store)
 
     def _plot(self, plotobj, **kwargs) -> None:
         """Display a plot object
@@ -13885,6 +13891,10 @@ class Session(NoNewAttributesAfterInit):
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used.
 
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by using a
+           sequence of values.
+
         .. versionchanged:: 4.15.0
            A number of labels, such as "bkgfit", are marked as
            deprecated and using them will cause a warning message to
@@ -14048,6 +14058,22 @@ class Session(NoNewAttributesAfterInit):
         components (in this case the background identifier):
 
         >>> plot("bkg", 1, "up", "bkg", 1, "down")
+
+        Draw both data sets in black, but with partial opacity:
+
+        >>> plot("data", "model", color="black", alpha=0.5)
+
+        Draw the two plots in black but with different opacities:
+
+        >>> plot("data", "model", color="black", alpha=[1. 0.5])
+
+        Label each plot
+
+        >>> plot("data", "model", label=["data", "model"])
+
+        Draw the two plots with different y-axis scalings:
+
+        >>> plot("data", 2, "model", 2, ylog=[False, True])
 
         """
         self._multi_plot(args, **kwargs)
@@ -15810,6 +15836,10 @@ class Session(NoNewAttributesAfterInit):
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used. This is for
         2D data sets.
+
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by using a
+           sequence of values.
 
         .. versionchanged:: 4.12.2
            Keyword arguments, such as alpha, can be sent to
