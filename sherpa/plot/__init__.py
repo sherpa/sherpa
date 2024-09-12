@@ -51,12 +51,15 @@ provides the same interface):
 Creating a plot
 ---------------
 
-The plot backend acts as a context manager::
+A plot backend can act as a context manager to apply a specific backend to just one plot
+without globally changing the backend for the rest of the session:
 
-    from sherpa.plot import backend
-    with backend:
-        # Now call the plot/overplot or contor/overcontour methods
-        obj.plot()
+.. doctest-skip::
+
+    >>> from sherpa.plot import backend
+    >>> with backend:
+    ...     # Now call the plot/overplot or contor/overcontour methods
+    ...     obj.plot()
 
 This handles setting up the backend, handles any error handling,
 and then ends the session.

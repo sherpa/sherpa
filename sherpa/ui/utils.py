@@ -14372,7 +14372,7 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
         >>> plot_source_components(alpha=0.6)
 
-        Plot the combnined source and then overplot the two components
+        Plot the combined source and then overplot the two components
         in black, partly opaque, and using dotted and dashed line
         styles:
 
