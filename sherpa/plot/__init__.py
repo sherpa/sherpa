@@ -58,7 +58,7 @@ without globally changing the backend for the rest of the session:
 
     >>> from sherpa.plot import backend
     >>> with backend:
-    ...     # Now call the plot/overplot or contor/overcontour methods
+    ...     # Now call the plot/overplot or contour/overcontour methods
     ...     obj.plot()
 
 This handles setting up the backend, handles any error handling,
@@ -3929,7 +3929,7 @@ class MultiPlot:
         """Plot the data.
 
         .. versionchanged:: 4.17.0
-           The keyword arguments an now be set per plot by sending in
+           The keyword arguments can now be set per plot by sending in
            a sequence of values.
 
         Parameters

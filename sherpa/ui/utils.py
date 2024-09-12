@@ -14526,7 +14526,7 @@ class Session(NoNewAttributesAfterInit):
         >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
         >>> plot_model_components(alpha=0.6)
 
-        Plot the combnined model and then overplot the two components
+        Plot the combined model and then overplot the two components
         in black, partly opaque, and using dotted and dashed line
         styles:
 
