@@ -89,10 +89,15 @@ def test_pha_get_indep_when_partial_filtered():
 
 
 def test_get_mask_is_none():
+    """This is a regression test.
 
+    The test name is no-longer valid since the return value is now, as
+    of 4.17.0, [True,True,True] and not None.
+
+    """
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
     assert pha.mask is True
-    assert pha.get_mask() is None
+    assert pha.get_mask() == pytest.approx([True] * 3)
 
 
 def test_get_mask_is_none_when_all_filtered():
@@ -139,8 +144,8 @@ def test_get_noticed_channels_removed_filter():
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
     pha.ignore()
     assert pha.mask is False
-    assert pha.get_filter() == "No noticed bins"
-    assert pha.get_noticed_channels() == pytest.approx([1, 2, 3])  # WHY?
+    assert pha.get_filter() == ""
+    assert pha.get_noticed_channels() == pytest.approx([])
 
 
 def test_get_noticed_channels_removed_filter2():
@@ -149,7 +154,6 @@ def test_get_noticed_channels_removed_filter2():
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
     pha.mask = [False, False, False]
     assert pha.mask == pytest.approx([0, 0, 0])
-    # This does not match test_get_noticed_channels_removed_filter, see #1220
     assert pha.get_filter() == ""
     assert pha.get_noticed_channels() == pytest.approx([])
 
@@ -220,10 +224,9 @@ def test_get_filter_is_empty(chans):
     assert pha.mask is True
 
     pha.ignore()
-    assert pha.get_filter() == 'No noticed bins'
+    assert pha.get_filter() == ''
     assert pha.mask is False
 
-    # WHY is this different as the mask means the same thing?
     pha.mask = [False, False, False]
     assert pha.get_filter() == ''
 
@@ -231,7 +234,9 @@ def test_pha_get_noticed_channels_when_empty():
     """A regression test."""
 
     empty = DataPHA("empty", None, None)
-    assert empty.get_noticed_channels() is None
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
+        empty.get_noticed_channels()
 
 
 def test_pha_filter_when_empty(caplog):
@@ -256,7 +261,9 @@ def test_pha_get_mask_when_empty(caplog):
     """A regression test."""
 
     empty = DataPHA("empty", None, None)
-    assert empty.get_mask() is None
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
+        empty.get_mask()
 
 
 def test_pha_channel_empty_remains_empty():
@@ -273,8 +280,15 @@ def test_pha_group_when_empty(chans):
     """A regression test."""
 
     empty = DataPHA("empty", chans, None)
-    with pytest.raises(TypeError,
-                       match=r"grpNumCounts\(\) Could not parse input arguments, "):
+    if chans is None:
+        etype = DataErr
+        emsg = "^The size of 'empty' has not been set$"
+    else:
+        etype = TypeError
+        emsg = r"grpNumCounts\(\) Could not parse input arguments, "
+
+    with pytest.raises(etype,
+                       match=emsg):
         empty.group_counts(5)
 
 
@@ -2297,7 +2311,7 @@ def test_pha_quality_bad_get_mask(make_quality_pha):
     """What does the get_mask() look like?"""
 
     pha = make_quality_pha
-    assert pha.get_mask() is None
+    assert pha.get_mask() == pytest.approx([1] * 9)
 
     pha.ignore_bad()
     assert pha.get_mask() == pytest.approx([1, 0, 0, 1, 1, 1, 0, 0, 0])
@@ -2825,7 +2839,7 @@ def test_quality_pha_mask(make_quality_pha):
 def test_quality_pha_get_mask(make_quality_pha):
     """What is the default get_mask value?"""
     pha = make_quality_pha
-    assert pha.get_mask() is None
+    assert pha.get_mask() == pytest.approx([True] * 9)
 
     pha.ignore_bad()
     # This is a regression test
@@ -3167,8 +3181,10 @@ def test_pha_no_group_apply_xxx_invalid_size(label, make_test_pha):
     pha = make_test_pha
 
     func = getattr(pha, f"apply_{label}")
+    elabel = "filtered data" if label == "filter" else "data"
+    msg = f"size mismatch between {elabel} and array: 4 vs 2"
     with pytest.raises(DataErr,
-                       match="size mismatch between data and array: 4 vs 2"):
+                       match=f"^{msg}$"):
         func([1, 2])
 
 
@@ -3222,8 +3238,10 @@ def test_pha_zero_quality_apply_xxx_invalid_size(label, vals, make_test_pha):
     pha.group()
 
     func = getattr(pha, f"apply_{label}")
+    elabel = "filtered data" if label == "filter" else "data"
+    msg = f"size mismatch between {elabel} and array: 4 vs [128]"
     with pytest.raises(DataErr,
-                       match="^size mismatch between data and array: 4 vs [128]$"):
+                       match=f"^{msg}$"):
         func(vals)
 
 
@@ -5677,7 +5695,7 @@ def test_group_xxx_tabtops_not_ndarray(asarray):
 
     assert pha.get_y() == pytest.approx([2, 3, 4.5, 6])
     assert pha.mask is True
-    assert pha.get_mask() is None
+    assert pha.get_mask() == pytest.approx([True] * 5)
 
 
 @requires_group

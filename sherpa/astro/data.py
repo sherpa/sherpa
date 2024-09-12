@@ -2579,6 +2579,11 @@ will be removed. The identifiers can be integers or strings.
         return (elo, ehi)
 
     def get_indep(self, filter=True):
+
+        # short-cut if no data
+        if self.size is None:
+            return (None,)
+
         if filter:
             return (self.get_noticed_channels(),)
 
@@ -3236,7 +3241,9 @@ It is an integer or string.
 
             mask = self.get_mask()
             if mask is None:
-                raise DataErr("mismatchn", "data", "array", nelem, ndata)
+                # All elements have been filtered out, so error out.
+                #
+                raise DataErr("notmask")
 
             nfiltered = mask.sum()
             if nfiltered != ndata:
@@ -4517,8 +4524,12 @@ It is an integer or string.
     def _sum_sq(array):
         return np.sqrt(np.sum(array * array))
 
-    def get_noticed_channels(self):
+    def get_noticed_channels(self) -> np.ndarray:
         """Return the noticed channels.
+
+        .. versionchanged:: 4.17.0
+           An empty array is now returned if the filter removes all
+           channels and an error is now raised if the data is empty.
 
         Returns
         -------
@@ -4527,10 +4538,16 @@ It is an integer or string.
             analysis setting).
 
         """
+
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
+
         chans = self.channel
+
+        # get_mask returns None if all the data has been filtered.
         mask = self.get_mask()
         if mask is None:
-            return chans
+            return np.asarray([], dtype=chans.dtype)
 
         # This is added to address issue #361
         #
@@ -4545,8 +4562,13 @@ It is an integer or string.
 
         return chans[mask]
 
-    def get_mask(self):
+    def get_mask(self) -> Optional[np.ndarray]:
         """Returns the (ungrouped) mask.
+
+        .. versionchanged:: 4.17.0
+           When all channels are selected the routine now returns an
+           array rather than None, and it is an error to call it on an
+           empty data set (one whose channel field has not been set).
 
         Returns
         -------
@@ -4554,22 +4576,34 @@ It is an integer or string.
             The mask, in channels, or None.
 
         """
-        groups = self.grouping
+
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
+
+        # I am not convinced that self.mask will always be an array if
+        # quality filtering is in use, so do not assume that for now.
+        #
         if self.mask is False:
             return None
 
-        if self.mask is True or not self.grouped:
-            if self.quality_filter is not None:
-                return self.quality_filter
-            if np.iterable(self.mask):
-                return self.mask
-            return None
+        if self.mask is True:
+            if self.quality_filter is None:
+                return np.ones(self.size, dtype=bool)
 
+            return self.quality_filter.copy()
+
+        if not self.grouped:
+            mask = self.mask.copy()
+            # This does not apply the quality filter
+            return mask
+
+        groups = self.grouping
         if self.quality_filter is not None:
             groups = groups[self.quality_filter]
+
         return expand_grouped_mask(self.mask, groups)
 
-    def get_noticed_expr(self):
+    def get_noticed_expr(self) -> str:
         """Returns the current set of noticed channels.
 
         The values returned are always in channels, no matter the
@@ -4589,7 +4623,7 @@ It is an integer or string.
 
         """
         chans = self.get_noticed_channels()
-        if self.mask is False or len(chans) == 0:
+        if len(chans) == 0:
             return 'No noticed channels'
 
         return create_expr(chans, format='%i')
@@ -4602,6 +4636,11 @@ It is an integer or string.
         """Return the data filter as a string.
 
         The filter expression depends on the analysis setting.
+
+        .. versionchanged:: 4.17.0
+           The routine now always returns the empty string if all the
+           data has been filtered out, rather than sometimes returning
+           the phrase "No noticed bins".
 
         .. versionchanged:: 4.14.0
            Prior to 4.14.0 the filter used the mid-point of the bin,
@@ -4624,7 +4663,7 @@ It is an integer or string.
             ranges, where the low and high values are separated by
             the `delim` string. The units of the ranges are controlled
             by the analysis setting. If all bins have been
-            filtered out then "No noticed bins" is returned.
+            filtered out then the empty string is returned.
 
         See Also
         --------
@@ -4674,22 +4713,19 @@ It is an integer or string.
         >>> pha.get_filter(format='%.2f', delim='-')
         '0.47-2.09,2.28-6.57'
 
+        >>> pha.ignore()
+        >>> pha.get_filter()
+        ''
+
         """
-        if self.mask is False:
-            return 'No noticed bins'
 
         # We use get_noticed_channels since it includes quality
         # filtering, which the 'self.mask is True' check below does
         # not make.
         #
         chans = self.get_noticed_channels()
-
-        # Special case all data has been masked. Should it
-        # error out or return either '' or 'No noticed bins'?
-        #
         if len(chans) == 0:
-            # raise DataErr('notmask')
-            # return 'No noticed bins'
+            # This catches both self.mask=False and self.mask=[False] * nchan
             return ''
 
         # Special case all channels are selected.
