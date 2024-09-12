@@ -1837,7 +1837,7 @@ will be removed. The identifiers can be integers or strings.
     # data length, not the independent axis.
     #
     @Data1D.mask.setter
-    def mask(self, val):
+    def mask(self, val: Union[ArrayType, bool]) -> None:
 
         # We only need to over-ride the behavior if the data is
         # grouped and val is a sequence (so we test with isscalar

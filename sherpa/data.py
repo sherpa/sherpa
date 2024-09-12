@@ -590,11 +590,11 @@ class Filter:
     the independent axes.
 
     """
-    def __init__(self):
-        self._mask = True
+    def __init__(self) -> None:
+        self._mask: Union[np.ndarray, bool] = True
 
     @property
-    def mask(self):
+    def mask(self) -> Union[np.ndarray, bool]:
         """Mask array for dependent variable
 
         Returns
@@ -604,7 +604,7 @@ class Filter:
         return self._mask
 
     @mask.setter
-    def mask(self, val):
+    def mask(self, val: Union[ArrayType, bool]) -> None:
         if val is None:
             raise DataErr('ismask')
 
@@ -639,6 +639,14 @@ class Filter:
             # of 2.0's will get converted to booleans.
             #
             raise DataErr('ismask')
+
+    @overload
+    def apply(self, array: None) -> None:
+        ...
+
+    @overload
+    def apply(self, array: ArrayType) -> np.ndarray:
+        ...
 
     def apply(self, array):
         """Apply this filter to an array
@@ -681,7 +689,13 @@ class Filter:
 
         return array[self.mask]
 
-    def notice(self, mins, maxes, axislist, ignore=False, integrated=False):
+    def notice(self,
+               mins: ArrayType,
+               maxes: ArrayType,
+               axislist: Sequence[ArrayType],
+               ignore: bool = False,
+               integrated: bool = False
+               ) -> None:
         """Select a range to notice or ignore (remove).
 
         The ``axislist`` argument is expected to be sent the
@@ -1043,7 +1057,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self._data_space.filter.mask
 
     @mask.setter
-    def mask(self, val: Union[Sequence, np.ndarray, bool]) -> None:
+    def mask(self, val: Union[ArrayType, bool]) -> None:
 
         # If we have a scalar then
         # - we do not check sizes (as it's possible to set even though
