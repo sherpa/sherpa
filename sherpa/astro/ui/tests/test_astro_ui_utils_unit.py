@@ -33,6 +33,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro import hc, io, ui
+from sherpa.models.regrid import IntegratedAxis, PointAxis
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IOErr
 from sherpa.utils.logging import SherpaVerbosity
@@ -400,13 +401,8 @@ def test_show_xsabund(clean_astro_ui, caplog):
 @pytest.mark.parametrize("name", ["model", "source"])
 @pytest.mark.parametrize("arg", [None, 1])
 @pytest.mark.parametrize("empty", [ui.Data1D("x", None, None),
-                                   # At present the code does not handle
-                                   # these cases well (i.e. they error out
-                                   # with an internal error thanks to there
-                                   # being no data).
-                                   #
-                                   # ui.Data1DInt("x", None, None, None),
-                                   # ui.DataPHA("x", None, None)
+                                   ui.Data1DInt("x", None, None, None),
+                                   ui.DataPHA("x", None, None)
                                    ])
 def test_calc_xxx_empty(name, arg, empty, clean_astro_ui):
     """Does calc_source/model error out if empty?"""
@@ -442,7 +438,8 @@ def test_calc_xxx_data1d(name, arg, clean_astro_ui):
     xval, yval = getfunc(arg)
 
     assert len(xval) == 1
-    assert xval[0] == pytest.approx(x)
+    assert isinstance(xval[0], PointAxis)
+    assert xval[0].x == pytest.approx(x)
 
     # y = 4 x + 2
     #
@@ -465,9 +462,10 @@ def test_calc_xxx_data1d_int(name, arg, clean_astro_ui):
     getfunc = getattr(ui, f"calc_{name}")
     xval, yval = getfunc(arg)
 
-    assert len(xval) == 2
-    assert xval[0] == pytest.approx(xlo)
-    assert xval[1] == pytest.approx(xhi)
+    assert len(xval) == 1
+    assert isinstance(xval[0], IntegratedAxis)
+    assert xval[0].lo == pytest.approx(xlo)
+    assert xval[0].hi == pytest.approx(xhi)
 
     # y = 4 x + 2 integrated across each bin
     # (1,2), (4,6), (9,10)
@@ -496,8 +494,10 @@ def test_calc_xxx_data2d(name, arg, clean_astro_ui):
     xval, yval = getfunc(arg)
 
     assert len(xval) == 2
-    assert xval[0] == pytest.approx(x1)
-    assert xval[1] == pytest.approx(x2)
+    assert isinstance(xval[0], PointAxis)
+    assert isinstance(xval[1], PointAxis)
+    assert xval[0].x == pytest.approx(x1)
+    assert xval[1].x == pytest.approx(x2)
 
     # y = 4 * x1 + 10 * x2 + 2
     #
@@ -552,9 +552,10 @@ def test_calc_model_datapha_energy(clean_astro_ui):
 
     xval, yval = ui.calc_model()
 
-    assert len(xval) == 2
-    assert xval[0] == pytest.approx(elo)
-    assert xval[1] == pytest.approx(ehi)
+    assert len(xval) == 1
+    assert isinstance(xval[0], IntegratedAxis)
+    assert xval[0].lo == pytest.approx(elo)
+    assert xval[0].hi == pytest.approx(ehi)
 
     # y = 4 x + 2 integrated across each bin
     # (0.1,0.2), (0.2,0.4), (0.4,0.7) and then corrected
@@ -571,8 +572,12 @@ def test_calc_model_datapha_energy(clean_astro_ui):
     ehi2 = ehi[1:]
 
     xval2, yval2 = ui.calc_model()
-    assert xval2[0] == pytest.approx(elo2)
-    assert xval2[1] == pytest.approx(ehi2)
+
+    assert len(xval2) == 1
+    assert isinstance(xval2[0], IntegratedAxis)
+    assert xval2[0].lo == pytest.approx(elo2)
+    assert xval2[0].hi == pytest.approx(ehi2)
+
     assert yval2 == pytest.approx(norm * integ(elo2, ehi2))
 
 
@@ -589,9 +594,9 @@ def test_calc_model_datapha_wavelength(clean_astro_ui):
     wlo = hc / elo
     whi = hc / ehi
 
-    assert len(xval) == 2
-    assert xval[0] == pytest.approx(wlo)
-    assert xval[1] == pytest.approx(whi)
+    assert len(xval) == 1
+    assert xval[0].lo == pytest.approx(wlo)
+    assert xval[0].hi == pytest.approx(whi)
 
     # y = 4 x + 2 integrated across each bin
     # (0.1,0.2), (0.2,0.4), (0.4,0.7) and then corrected
@@ -612,8 +617,8 @@ def test_calc_model_datapha_wavelength(clean_astro_ui):
     whi2 = whi[:-1]
 
     xval2, yval2 = ui.calc_model()
-    assert xval2[0] == pytest.approx(wlo2)
-    assert xval2[1] == pytest.approx(whi2)
+    assert xval2[0].lo == pytest.approx(wlo2)
+    assert xval2[0].hi == pytest.approx(whi2)
     assert yval2 == pytest.approx(norm * integ(whi2, wlo2))
 
 
@@ -630,9 +635,9 @@ def test_calc_model_datapha_channel(clean_astro_ui):
     xlo = np.arange(1, 4)
     xhi = xlo + 1
 
-    assert len(xval) == 2
-    assert xval[0] == pytest.approx(xlo)
-    assert xval[1] == pytest.approx(xhi)
+    assert len(xval) == 1
+    assert xval[0].lo == pytest.approx(xlo)
+    assert xval[0].hi == pytest.approx(xhi)
 
     # y = 4 x + 2 integrated across each bin
     # (0.1,0.2), (0.2,0.4), (0.4,0.7) and then corrected
@@ -650,8 +655,8 @@ def test_calc_model_datapha_channel(clean_astro_ui):
     xhi2 = xhi[1:]
 
     xval2, yval2 = ui.calc_model()
-    assert xval2[0] == pytest.approx(xlo2)
-    assert xval2[1] == pytest.approx(xhi2)
+    assert xval2[0].lo == pytest.approx(xlo2)
+    assert xval2[0].hi == pytest.approx(xhi2)
     assert yval2 == pytest.approx(norm * integ(elo[1:], ehi[1:]))
 
 
@@ -664,9 +669,10 @@ def test_calc_source_datapha_energy(clean_astro_ui):
 
     xval, yval = ui.calc_source()
 
-    assert len(xval) == 2
-    assert xval[0] == pytest.approx(elo)
-    assert xval[1] == pytest.approx(ehi)
+    assert len(xval) == 1
+    assert isinstance(xval[0], IntegratedAxis)
+    assert xval[0].lo == pytest.approx(elo)
+    assert xval[0].hi == pytest.approx(ehi)
 
     # Since the response is "perfect" - apart from the arf value and
     # exposure - we can use the same integration term as for the
@@ -681,8 +687,8 @@ def test_calc_source_datapha_energy(clean_astro_ui):
     # Does not change calc_source.
     #
     xval2, yval2 = ui.calc_source()
-    assert xval2[0] == pytest.approx(elo)
-    assert xval2[1] == pytest.approx(ehi)
+    assert xval2[0].lo == pytest.approx(elo)
+    assert xval2[0].hi == pytest.approx(ehi)
     assert yval2 == pytest.approx(integ(elo, ehi))
 
 
@@ -700,9 +706,10 @@ def test_calc_source_datapha_wavelength(clean_astro_ui):
     wlo = hc / ehi
     whi = hc / elo
 
-    assert len(xval) == 2
-    assert xval[0] == pytest.approx(wlo)
-    assert xval[1] == pytest.approx(whi)
+    assert len(xval) == 1
+    assert isinstance(xval[0], IntegratedAxis)
+    assert xval[0].lo == pytest.approx(wlo)
+    assert xval[0].hi == pytest.approx(whi)
 
     assert yval == pytest.approx(integ(wlo, whi))
 
@@ -713,8 +720,8 @@ def test_calc_source_datapha_wavelength(clean_astro_ui):
     # Does not change calc_source.
     #
     xval2, yval2 = ui.calc_source()
-    assert xval2[0] == pytest.approx(wlo)
-    assert xval2[1] == pytest.approx(whi)
+    assert xval2[0].lo == pytest.approx(wlo)
+    assert xval2[0].hi == pytest.approx(whi)
     assert yval2 == pytest.approx(integ(wlo, whi))
 
 
@@ -730,9 +737,10 @@ def test_calc_source_datapha_channel(clean_astro_ui):
 
     # X axis is in keV, as channel is not appropriate.
     #
-    assert len(xval) == 2
-    assert xval[0] == pytest.approx(elo)
-    assert xval[1] == pytest.approx(ehi)
+    assert len(xval) == 1
+    assert isinstance(xval[0], IntegratedAxis)
+    assert xval[0].lo == pytest.approx(elo)
+    assert xval[0].hi == pytest.approx(ehi)
 
     assert yval == pytest.approx(integ(elo, ehi))
 
@@ -743,6 +751,6 @@ def test_calc_source_datapha_channel(clean_astro_ui):
     # Does not change calc_source.
     #
     xval2, yval2 = ui.calc_source()
-    assert xval2[0] == pytest.approx(elo)
-    assert xval2[1] == pytest.approx(ehi)
+    assert xval2[0].lo == pytest.approx(elo)
+    assert xval2[0].hi == pytest.approx(ehi)
     assert yval2 == pytest.approx(integ(elo, ehi))
