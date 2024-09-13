@@ -1312,6 +1312,8 @@ class SplitPlot(Plot, Contour):
     def __str__(self) -> str:
         return display_fields(self, self._fields)
 
+    # Should this use the preferences to set the rows and cols?
+    #
     def reset(self, rows=2, cols=1):
         "Prepare for a new set of plots or contours."
         self.rows = rows
