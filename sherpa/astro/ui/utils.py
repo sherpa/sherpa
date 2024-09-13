@@ -15341,6 +15341,9 @@ class Session(sherpa.ui.utils.Session):
         xvals, yvals: tuple of ndarray, ndarray
            The independent axis, which uses a tuple as the number of
            elements depends on the dimensionality and type of data.
+           The units depends on the data type: for PHA data the
+           X axis will be in the analysis units and Y axis will
+           generally be counts.
 
         See Also
         --------
@@ -15364,6 +15367,19 @@ class Session(sherpa.ui.utils.Session):
         >>> xvals, yvals = calc_model()
         >>> xlo = xvals[0]
         >>> xhi = xvals[1]
+
+        The results can be compared to the model output in plot_fit to
+        show agreement (note that calc_model returns grouped values,
+        as used by plot_fit, whereas plot_model shows the ungrouped
+        data):
+
+        >>> set_analysis("energy", type="rate", factor=0)
+        >>> plot_fit()
+        >>> plot_model(overplot=True, color="black", alpha=0.4)
+        >>> xvals, yvals = calc_model()
+        >>> elo, ehi = xvals
+        >>> exposure = get_exposure()
+        >>> plt.plot((elo + ehi) / 2, yvals / (ehi - elo) / exposure)
 
         Changing the analysis setting changes the x values, as xvals2
         is in Angstrom rather than keV (the model values are the same,
@@ -15450,6 +15466,9 @@ class Session(sherpa.ui.utils.Session):
         xvals, yvals: tuple of ndarray, ndarray
            The independent axis, which uses a tuple as the number of
            elements depends on the dimensionality and type of data.
+           The units depends on the data type: for PHA data the
+           X axis will be in the analysis units and Y axis will
+           generally be photon/cm^2/s.
 
         See Also
         --------
@@ -15473,6 +15492,15 @@ class Session(sherpa.ui.utils.Session):
         >>> xvals, yvals = calc_source()
         >>> xlo = xvals[0]
         >>> xhi = xvals[1]
+
+        The results can be compared to the output of plot_source to
+        show agreement:
+
+        >>> set_analysis("energy", type="rate", factor=0)
+        >>> plot_source()
+        >>> xvals, yvals = calc_source()
+        >>> elo, ehi = xvals
+        >>> plt.plot((elo + ehi) / 2, yvals / (ehi - elo))
 
         Changing the analysis setting changes the x values, as xvals2
         is in Angstrom rather than keV (the model values are the same,
