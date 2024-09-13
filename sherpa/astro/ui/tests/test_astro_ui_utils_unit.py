@@ -478,6 +478,32 @@ def test_calc_xxx_data1d_int(name, arg, clean_astro_ui):
     assert yval == pytest.approx(integ(xlo, xhi))
 
 
+@pytest.mark.parametrize("name", ["model", "source"])
+@pytest.mark.parametrize("arg", [None, 1])
+def test_calc_xxx_data2d(name, arg, clean_astro_ui):
+    """Does calc_source/model work?"""
+
+    ui.load_arrays(1, [1, 1, 2], [2, 2, 2], [0, 0, 0], ui.Data2D)
+    ui.set_source(1, ui.polynom2d.mdl)
+    mdl.c = 2
+    mdl.cx1 = 4
+    mdl.cy1 = 10
+
+    x1 = np.asarray([1, 1, 2])
+    x2 = np.asarray([2, 2, 2])
+
+    getfunc = getattr(ui, f"calc_{name}")
+    xval, yval = getfunc(arg)
+
+    assert len(xval) == 2
+    assert xval[0] == pytest.approx(x1)
+    assert xval[1] == pytest.approx(x2)
+
+    # y = 4 * x1 + 10 * x2 + 2
+    #
+    assert yval == pytest.approx(4 * x1 + 10 * x2 + 2)
+
+
 # Do not bother with id checks here.
 #
 def test_calc_model_datapha_no_response(clean_astro_ui):
