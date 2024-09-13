@@ -15339,7 +15339,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         xvals, yvals: tuple of ndarray, ndarray
-           The independent axis, which us a tuple as the number of
+           The independent axis, which uses a tuple as the number of
            elements depends on the dimensionality and type of data.
 
         See Also
@@ -15448,7 +15448,7 @@ class Session(sherpa.ui.utils.Session):
         Returns
         -------
         xvals, yvals: tuple of ndarray, ndarray
-           The independent axis, which us a tuple as the number of
+           The independent axis, which uses a tuple as the number of
            elements depends on the dimensionality and type of data.
 
         See Also
