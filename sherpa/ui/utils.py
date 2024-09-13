@@ -741,7 +741,7 @@ class FitStore:
 
 def get_components_helper(getfunc: Callable[..., Plot],
                           model: Model,
-                          idval: Union[int, str]) -> MultiPlot:
+                          idval: IdType) -> MultiPlot:
     """Handle get_source/model_components_plot.
 
     Iterate through each term in the source model.
@@ -12302,7 +12302,8 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_model_components_plot(self,
-                                  id: Optional[IdType] = None):
+                                  id: Optional[IdType] = None
+                                  ) -> MultiPlot:
         """Return the data used by plot_model_components.
 
         .. versionadded:: 4.16.1
@@ -12315,10 +12316,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        instances : list of objects
-           A list of objects representing the data used to create the
-           plot by `plot_model_components`. The return value depends
-           on the data set (e.g. 1D binned or un-binned).
+        plot : MultiPlot
+           A plot object containing the individual plot objects.
 
         See Also
         --------
@@ -12427,7 +12426,8 @@ class Session(NoNewAttributesAfterInit):
         return plotobj
 
     def get_source_components_plot(self,
-                                   id: Optional[IdType] = None):
+                                   id: Optional[IdType] = None
+                                   ) -> Multiplot:
         """Return the data used by plot_source_components.
 
         .. versionadded:: 4.16.1
@@ -12440,10 +12440,8 @@ class Session(NoNewAttributesAfterInit):
 
         Returns
         -------
-        instances : list of objects
-           A list of objects representing the data used to create the
-           plot by `plot_source_components`. The return value depends
-           on the data set (e.g. 1D binned or un-binned).
+        plot : MultiPlot
+           A plot object containing the individual plot objects.
 
         See Also
         --------
@@ -14336,6 +14334,10 @@ class Session(NoNewAttributesAfterInit):
 
         Display the individual components of a source expression.
 
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by using a
+           sequence of values.
+
         .. versionadded:: 4.16.1
 
         Parameters
@@ -14369,6 +14371,16 @@ class Session(NoNewAttributesAfterInit):
 
         >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
         >>> plot_source_components(alpha=0.6)
+
+        Plot the combined source and then overplot the two components
+        in black, partly opaque, and using dotted and dashed line
+        styles:
+
+        >>> plot_source(label="combined")
+        >>> plot_source_components(overplot=True, color="black",
+        ...                        linestyle=["dotted", "dashed"],
+        ...                        label=["model 1", "model 2"],
+        ...                        alpha=0.5)
 
         """
 
@@ -14476,6 +14488,10 @@ class Session(NoNewAttributesAfterInit):
 
         Display the individual model components of a source expression.
 
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by using a
+           sequence of values.
+
         .. versionadded:: 4.16.1
 
         Parameters
@@ -14509,6 +14525,16 @@ class Session(NoNewAttributesAfterInit):
 
         >>> set_source(xsphabs.gal * (powlaw1d.pl + xsgaussian.line))
         >>> plot_model_components(alpha=0.6)
+
+        Plot the combined model and then overplot the two components
+        in black, partly opaque, and using dotted and dashed line
+        styles:
+
+        >>> plot_model(label="combined")
+        >>> plot_model_components(overplot=True, color="black",
+        ...                       linestyle=["dotted", "dashed"],
+        ...                       label=["model 1", "model 2"],
+        ...                       alpha=0.5)
 
         """
 

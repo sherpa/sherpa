@@ -3090,3 +3090,167 @@ def test_plot_xxx_components_simple_bokeh(session, ptype):
     assert fig0.title.text == "Component plot"
 
     # Unlike the matplotlib case we do not check the plotted data.
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+def test_plot_xxx_components_scalar_mpl(session, ptype, requires_pylab):
+    """Can I set a kwarg to a scalar using matpotlib"""
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_default_id("x")
+    s.load_arrays("x", [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+
+    c1.c0 = 0.5
+    c2.c0 = 2
+    c3.ampl = 4
+    c3.xhi = 100
+    c3.xlow = 7
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    pfunc(color="black", alpha=0.5, linestyle="dashed")
+
+    axes = plt.gca()
+    assert len(axes.lines) == 2
+    for l in axes.lines:
+        assert l.get_color() == "black"
+        assert l.get_alpha() == 0.5
+        assert l.get_linestyle() == "--"
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+def test_plot_xxx_components_scalar_bokeh(session, ptype):
+    """Can I set a kwarg to a scalar using bokeh"""
+
+    backend_mod = pytest.importorskip("sherpa.plot.bokeh_backend")
+    backend = backend_mod.BokehBackend()
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_plot_backend(backend)
+
+    s.set_default_id("x")
+    s.load_arrays("x", [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+
+    c1.c0 = 0.5
+    c2.c0 = 2
+    c3.ampl = 4
+    c3.xhi = 100
+    c3.xlow = 7
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    pfunc(color="black", alpha=0.5, linestyle="dashed")
+
+    # For now there is no check the kwargs were used
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+def test_plot_xxx_components_kwargs_mpl(session, ptype, requires_pylab):
+    """Can we have per-plot kwargs? matplotlib"""
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    pfunc(color=["orange", "black"],
+          alpha=0.5,
+          linestyle=["dashed", "dotted"]
+          )
+
+    axes = plt.gca()
+    assert len(axes.lines) == 2
+    assert axes.lines[0].get_color() == "orange"
+    assert axes.lines[1].get_color() == "black"
+
+    assert axes.lines[0].get_alpha() == 0.5
+    assert axes.lines[1].get_alpha() == 0.5
+
+    assert axes.lines[0].get_linestyle() == "--"
+    assert axes.lines[1].get_linestyle() == ":"
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+def test_plot_xxx_components_kwargs_bokeh(session, ptype):
+    """Can we have per-plot kwargs? bokeh"""
+
+    backend_mod = pytest.importorskip("sherpa.plot.bokeh_backend")
+    backend = backend_mod.BokehBackend()
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.set_plot_backend(backend)
+
+    s.load_arrays(1, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    pfunc(color=["orange", "black"],
+          alpha=0.5,
+          linestyle=["dashed", "dotted"]
+          )
+
+    # For now there is no check the kwargs were used
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("ptype", ["source", "model"])
+@pytest.mark.parametrize("kwargs,badarg",
+                         [({"color": ["orange", "black", "green"]}, "color"),
+                          ({"color": ["black", "black"],
+                            "alpha": [0.8]}, "alpha"),
+                          ({"color": ["black", "black", "black"],
+                            "alpha": [0.8, 0.7, 1.0]}, "color")
+                          ])
+def test_plot_xxx_components_kwargs_mismatch(kwargs, badarg, session, ptype, plot_backends):
+    """Incorrect number of kwargs - what happens?
+
+    It is okay to use plot_backends here because this is not
+    the global Session but a temporary one.
+    """
+
+    s = session()
+    s._add_model_types(basic)
+
+    s.load_arrays(1, [1, 10, 50], [2, 3, 4])
+
+    c1 = s.create_model_component("scale1d", "c1")
+    c2 = s.create_model_component("const1d", "c2")
+    c3 = s.create_model_component("box1d", "c3")
+    s.set_source(c1 * (c2 + c3))
+
+    pfunc = getattr(s, f"plot_{ptype}_components")
+    msg = f"keyword '{badarg}': expected 2 elements but found "
+    with pytest.raises(ValueError, match=f"^{msg}"):
+        pfunc(**kwargs)

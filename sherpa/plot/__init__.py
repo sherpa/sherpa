@@ -22,9 +22,48 @@
 
 Classes provide access to common plotting tasks, which is done by the
 plotting backend defined in the ``options.plot_pkg`` setting of the
-Sherpa configuration file. Note that plot objects can be created
-and used even when only the `sherpa.plot.backends.BasicBackend` is
-available.
+Sherpa configuration file. Note that plot objects can be created and
+used even when only the `sherpa.plot.backends.BasicBackend` is
+available, it is just that no graphical display will be created.
+
+Which backend is used?
+----------------------
+
+When this module is first imported, Sherpa tries to import the
+backends installed with Sherpa in the order listed in the
+``options.plot_pkg`` setting from the ``sherpa.rc`` startup file.
+The first module that imports successfully is set as the active
+backend. The following command prints the name of the backend:
+
+   >>> from sherpa import plot
+   >>> print(plot.backend.name)
+
+Change the backend
+------------------
+
+After the initial import, the backend can be changed by loading one of
+the plotting backends shipped with sherpa (or any other module that
+provides the same interface):
+
+  >>> import sherpa.plot.pylab_backend
+  >>> plot.backend = sherpa.plot.pylab_backend
+
+Creating a plot
+---------------
+
+A plot backend can act as a context manager to apply a specific backend to just one plot
+without globally changing the backend for the rest of the session:
+
+.. doctest-skip::
+
+    >>> from sherpa.plot import backend
+    >>> with backend:
+    ...     # Now call the plot/overplot or contour/overcontour methods
+    ...     obj.plot()
+
+This handles setting up the backend, handles any error handling,
+and then ends the session.
+
 """
 
 from __future__ import annotations
@@ -46,7 +85,8 @@ from sherpa.optmethods import LevMar, NelderMead
 from sherpa.plot.backends import BaseBackend, BasicBackend, PLOT_BACKENDS
 from sherpa.stats import Stat, Likelihood, LeastSq, Chi2XspecVar
 from sherpa.utils import NoNewAttributesAfterInit, erf, \
-    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates
+    bool_cast, parallel_map, dataspace1d, histogram1d, get_error_estimates, \
+    is_iterable_not_str
 from sherpa.utils.err import ArgumentTypeErr, ConfidenceErr, \
     IdentifierErr, PlotErr, StatErr
 from sherpa.utils.numeric_types import SherpaFloat
@@ -3845,6 +3885,8 @@ class MultiPlot:
     that use the `plot` method to display - to be drawn in
     the same area. Each plot is added with the add method.
 
+    .. versionadded:: 4.16.1
+
     """
 
     __slots__ = ("plots", "title")
@@ -3886,6 +3928,10 @@ class MultiPlot:
              **kwargs) -> None:
         """Plot the data.
 
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by sending in
+           a sequence of values.
+
         Parameters
         ----------
         overplot : bool, optional
@@ -3896,15 +3942,43 @@ class MultiPlot:
            new plot (e.g. for multi-panel plots)?
         **kwargs
            These values are passed on to the plot backend, and must
-           match the names of the keys of the object's
-           plot_prefs dictionary. Note that the same arguments are
-           passed to each plot.
+           match the names of the keys of the object's plot_prefs
+           dictionary. If the value is a scalar then the value is sent
+           to each plot, but if it's a sequence (not a string) then it
+           must match the number of plots and the values are used
+           sequentially.
 
         """
 
-        for plot in self.plots:
+        nplots = len(self.plots)
+
+        # Allow kwargs to be specified per-plot. This is done by
+        # checking if any value is an iterable (and not a string) and
+        # extracting a single value per plot.
+        #
+        # Need these {} to be separate which means we can not just say
+        # `kwstore = [{}] * nplots`.
+        #
+        kwstore: list[dict[str, Any]]
+        kwstore = [{} for _ in range(nplots)]
+        for key, val in kwargs.items():
+            if is_iterable_not_str(val):
+                nval = len(val)
+                if nval != nplots:
+                    raise ValueError(f"keyword '{key}': expected "
+                                     f"{nplots} elements but found "
+                                     f"{nval}")
+
+                for store, v in zip(kwstore, val):
+                    store[key] = v
+
+            else:
+                for store in kwstore:
+                    store[key] = val
+
+        for plot, store in zip(self.plots, kwstore):
             plot.plot(overplot=overplot, clearwindow=clearwindow,
-                      **kwargs)
+                      **store)
 
             # To decide whether we draw a title or not we do rely on
             # the clearwindow setting, since it is not guaranteed to

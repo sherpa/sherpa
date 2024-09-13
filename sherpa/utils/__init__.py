@@ -25,6 +25,7 @@ moved, changed, or removed.
 
 """
 
+from collections.abc import Iterable
 import inspect
 import logging
 import operator
@@ -2639,6 +2640,13 @@ def is_in(arg, seq):
 
 def is_iterable(arg):
     return isinstance(arg, (list, tuple, np.ndarray)) or np.iterable(arg)
+
+
+# Can this return TypeGuard[Sequence]?
+def is_iterable_not_str(arg: Any) -> bool:
+    """It is iterable but not a string."""
+
+    return not isinstance(arg, str) and isinstance(arg, Iterable)
 
 
 def is_sequence(start, mid, end):
