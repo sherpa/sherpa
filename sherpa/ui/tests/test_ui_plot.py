@@ -40,7 +40,8 @@ from sherpa.data import Data1D, Data1DInt, Data2D
 from sherpa.models import basic
 import sherpa.plot
 from sherpa.stats import Chi2Gehrels
-from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IdentifierErr, PlotErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, \
+    IdentifierErr, PlotErr
 
 
 _data_x = [10, 20, 40, 90]
@@ -1193,15 +1194,13 @@ def test_plot_multiple(session, requires_pylab):
     fig = plt.gcf()
     assert len(fig.axes) == 5
 
-    for i, (ax, title, ylabel) in enumerate(zip(fig.axes,
-                                                ['', 'Model', '', 'Source',
-                                                 'Ratio of Data to Model'],
-                                                ['y', 'y', 'y', 'y',
-                                                 'Data / Model']),
-                                            1):
+    for idx, (ax, title, ylabel) in enumerate(zip(fig.axes,
+                                                  ['', 'Model', '', 'Source',
+                                                   'Ratio of Data to Model'],
+                                                  ['y', 'y', 'y', 'y',
+                                                   'Data / Model'])):
 
-        w = i - 1
-        assert ax.get_subplotspec().get_geometry() == (2, 3, w, w)
+        assert ax.get_subplotspec().get_geometry() == (2, 3, idx, idx)
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x'
         assert ax.yaxis.get_label().get_text() == ylabel
@@ -1302,13 +1301,11 @@ def test_contour_multiple(session, requires_pylab):
     fig = plt.gcf()
     assert len(fig.axes) == 5
 
-    for i, (ax, title) in enumerate(zip(fig.axes,
-                                        ['', 'Model', 'Source', '',
-                                         'Ratio of Data to Model']),
-                                    1):
+    for idx, (ax, title) in enumerate(zip(fig.axes,
+                                          ['', 'Model', 'Source', '',
+                                           'Ratio of Data to Model'])):
 
-        w = i - 1
-        assert ax.get_subplotspec().get_geometry() == (2, 3, w, w)
+        assert ax.get_subplotspec().get_geometry() == (2, 3, idx, idx)
         assert ax.get_title() == title
         assert ax.xaxis.get_label().get_text() == 'x0'
         assert ax.yaxis.get_label().get_text() == 'x1'
@@ -1359,12 +1356,10 @@ def test_contour_xxx(plotfunc, title, pcls, session, requires_pylab):
     if plotfunc == 'fit_resid':
         assert len(fig.axes) == 2
 
-        for i, (ax, title) in enumerate(zip(fig.axes,
-                                            ['', 'Residuals']),
-                                        1):
+        for idx, (ax, title) in enumerate(zip(fig.axes,
+                                              ['', 'Residuals'])):
 
-            w = i - 1
-            assert ax.get_subplotspec().get_geometry() == (2, 1, w, w)
+            assert ax.get_subplotspec().get_geometry() == (2, 1, idx, idx)
             assert ax.get_title() == title
             assert ax.xaxis.get_label().get_text() == 'x0'
             assert ax.yaxis.get_label().get_text() == 'x1'
@@ -3254,3 +3249,148 @@ def test_plot_xxx_components_kwargs_mismatch(kwargs, badarg, session, ptype, plo
     msg = f"keyword '{badarg}': expected 2 elements but found "
     with pytest.raises(ValueError, match=f"^{msg}"):
         pfunc(**kwargs)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("name,val",
+                         [("rows", 0), ("cols", 0),
+                          ("rows", 1.4), ("cols", 1.9)])
+def test_plot_invalid_size(session, name, val):
+    """This errors out before accessing the data."""
+
+    s = session()
+    s.load_arrays(1, [1, 2], [1, 2])
+
+    kwargs = {}
+    kwargs[name] = val
+    with pytest.raises(ArgumentErr,
+                       match=f"^{name} must be a positive integer, not {val}$"):
+        s.plot("data", "data", **kwargs)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("nrows,ncols,nplots",
+                         [(1, 1, 1),
+                          (2, 1, 2),
+                          (2, 2, 3),
+                          (2, 2, 4),
+                          (2, 3, 5),
+                          (2, 3, 6),
+                          (3, 3, 7),
+                          (3, 3, 8),
+                          (3, 3, 9),
+                          (3, 4, 10),
+                          (3, 4, 11),
+                          (3, 4, 12)
+                          ])
+def test_plot_check_default_size_pylab(session, nrows, ncols, nplots, requires_pylab):
+    """Check we get the expected size.
+
+    We also check that xlog and alpha can be given as arrays.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s.load_arrays(1, [1, 2], [1, 2])
+    args = ["data"] * nplots
+    s.plot(*args)
+
+    fig = plt.gcf()
+    assert len(fig.axes) == nplots
+    for idx, ax in enumerate(fig.axes):
+        assert ax.get_subplotspec().get_geometry() == (nrows, ncols, idx, idx)
+        assert len(ax.lines) == 1
+
+    plt.close()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("nrows,ncols,kwargs",
+                         [(2, 3, {}),  # this is the default setting
+                          (2, 3, {"rows": 1, "cols": 3}),  # also when requested nplots is too small
+                          (2, 3, {"cols": 3}),
+                          (2, 3, {"rows": 2}),
+                          (2, 3, {"rows": 2, "cols": 3}),
+                          (3, 2, {"cols": 2}),
+                          (3, 2, {"rows": 3}),
+                          (3, 2, {"rows": 3, "cols": 2}),
+                          (1, 5, {"rows": 1}),
+                          (1, 5, {"cols": 5}),
+                          (5, 1, {"cols": 1}),
+                          (5, 1, {"rows": 5})
+                          ])
+def test_plot_check_size_nrows_ncols_pylab(session, nrows, ncols, kwargs, requires_pylab):
+    """Check we get the expected size.
+
+    We also check that xlog and alpha can be given as arrays.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s.load_arrays(1, [1, 2], [1, 2])
+    args = ["data"] * 5
+    kwargs["xlog"] = [False, True, False, True, False]
+    kwargs["alpha"] = [0.2, 0.4, 0.6, 0.8, 1.0]
+    kwargs["color"] = "black"
+    s.plot(*args, **kwargs)
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 5
+    for idx, ax in enumerate(fig.axes):
+        assert ax.get_subplotspec().get_geometry() == (nrows, ncols, idx, idx)
+        assert len(ax.lines) == 1
+        assert ax.lines[0].get_alpha() == pytest.approx((idx + 1) * 0.2)
+        assert ax.lines[0].get_color() == "black"
+        scale = "log" if idx % 2 else "linear"
+        assert ax.xaxis.get_scale() == scale
+
+    plt.close()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("rows,cols", [(None, 2), (1, 2),
+                                       (2, None), (2, 1),
+                                       (2, 2)])
+def test_plot_singleton_ignores_sizes(session, rows, cols, requires_pylab):
+    """Single plots are special cased and ignore size arguments.
+
+    Regression test, as we could change this behaviour.
+    """
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s.load_arrays(1, [1, 2], [1, 2])
+    s.plot("data", rows=rows, cols=cols)
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 1
+    assert fig.axes[0].get_subplotspec().get_geometry() == (1, 1, 0, 0)
+
+    plt.close()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_uses_split_plot_prefs(session, requires_pylab):
+    """Check we can use get_split_plot to change the size."""
+
+    from matplotlib import pyplot as plt
+
+    s = session()
+    s.load_arrays(1, [1, 2], [1, 2])
+
+    sp = s.get_split_plot()
+    assert sp.rows == 2
+    assert sp.cols == 1
+    sp.rows = 3
+    sp.cols = 1
+    s.plot("data", "data")
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 2
+    assert fig.axes[0].get_subplotspec().get_geometry() == (3, 1, 0, 0)
+    assert fig.axes[1].get_subplotspec().get_geometry() == (3, 1, 1, 1)
+
+    plt.close()
