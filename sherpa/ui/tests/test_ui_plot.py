@@ -3397,3 +3397,66 @@ def test_plot_uses_split_plot_prefs(session, requires_pylab):
     assert fig.axes[1].get_subplotspec().get_geometry() == (3, 1, 1, 1)
 
     plt.close()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_overplot(session, requires_pylab):
+    """What happens when overplot is set. See issue #2128.
+
+    This is a regression test, to check the current behaviour.
+    """
+
+    from matplotlib import pyplot as plt
+
+    x1 = [1, 2, 3]
+    x2 = [21, 22, 23]
+    y1 = [4, 5, 6]
+    y2 = [-4, -5, -6]
+
+    s = session()
+    s.load_arrays(1, x1, y1)
+    s.load_arrays(2, x2, y2)
+
+    s.plot("data", "data", 2)
+
+    # Validate the original plot
+    fig = plt.gcf()
+    assert len(fig.axes) == 2
+    for ax in fig.axes:
+        assert ax.get_title() == ""
+        assert ax.xaxis.get_label().get_text() == "x"
+        assert ax.yaxis.get_label().get_text() == "y"
+
+        assert len(ax.lines) == 1
+
+    l1 = fig.axes[0].lines[0]
+    l2 = fig.axes[1].lines[0]
+    assert l1.get_xdata() == pytest.approx(x1)
+    assert l2.get_xdata() == pytest.approx(x2)
+    assert l1.get_ydata() == pytest.approx(y1)
+    assert l2.get_ydata() == pytest.approx(y2)
+
+    # Now overplot the "other" data.
+    #
+    s.plot("data", 2, "data", overplot=True)
+
+    # It would be nice if this added the data to the plots, but
+    # it currently replaces them (and doesn't set up the labels).
+    #
+    fig = plt.gcf()
+    assert len(fig.axes) == 2
+    for ax in fig.axes:
+        assert ax.get_title() == ""
+        assert ax.xaxis.get_label().get_text() == ""
+        assert ax.yaxis.get_label().get_text() == ""
+
+        assert len(ax.lines) == 1
+
+    l1 = fig.axes[0].lines[0]
+    l2 = fig.axes[1].lines[0]
+    assert l1.get_xdata() == pytest.approx(x2)
+    assert l2.get_xdata() == pytest.approx(x1)
+    assert l1.get_ydata() == pytest.approx(y2)
+    assert l2.get_ydata() == pytest.approx(y1)
+
+    plt.close()
