@@ -1292,6 +1292,11 @@ class LRHistogram(HistogramPlot):
                           overplot=True, clearwindow=False)
 
 
+# The handling of the overplot/contour keywords is not ideal. To
+# address issue #2128 the UI code ended up accessing internal details
+# of this class. Ideally the API would be cleaned up but it's not
+# currently clear what the requirements are.
+#
 class SplitPlot(Plot, Contour):
     """Create multiple plots.
 

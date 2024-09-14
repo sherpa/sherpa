@@ -3269,6 +3269,24 @@ def test_plot_invalid_size(session, name, val):
 
 
 @pytest.mark.parametrize("session", [BaseSession, AstroSession])
+@pytest.mark.parametrize("nplots", [1, 2, 3, 4, 5])
+def test_plot_overplot_too_many_plots(session, nplots):
+    """Check we error out."""
+
+    s = session()
+    s.load_arrays(1, [1, 2], [1, 2])
+
+    # It's important to include non-square numbers in the test
+    args1 = ["data"] * nplots
+    args2 = ["data"] + args1
+
+    s.plot(*args1)
+    with pytest.raises(ArgumentErr,
+                       match="^Too many elements for overplot$"):
+        s.plot(*args2, overplot=True)
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
 @pytest.mark.parametrize("nrows,ncols,nplots",
                          [(1, 1, 1),
                           (2, 1, 2),
@@ -3440,23 +3458,71 @@ def test_plot_overplot(session, requires_pylab):
     #
     s.plot("data", 2, "data", overplot=True)
 
-    # It would be nice if this added the data to the plots, but
-    # it currently replaces them (and doesn't set up the labels).
-    #
     fig = plt.gcf()
     assert len(fig.axes) == 2
     for ax in fig.axes:
         assert ax.get_title() == ""
-        assert ax.xaxis.get_label().get_text() == ""
-        assert ax.yaxis.get_label().get_text() == ""
+        assert ax.xaxis.get_label().get_text() == "x"
+        assert ax.yaxis.get_label().get_text() == "y"
 
-        assert len(ax.lines) == 1
+        assert len(ax.lines) == 2
 
     l1 = fig.axes[0].lines[0]
     l2 = fig.axes[1].lines[0]
+    assert l1.get_xdata() == pytest.approx(x1)
+    assert l2.get_xdata() == pytest.approx(x2)
+    assert l1.get_ydata() == pytest.approx(y1)
+    assert l2.get_ydata() == pytest.approx(y2)
+
+    l1 = fig.axes[0].lines[1]
+    l2 = fig.axes[1].lines[1]
     assert l1.get_xdata() == pytest.approx(x2)
     assert l2.get_xdata() == pytest.approx(x1)
     assert l1.get_ydata() == pytest.approx(y2)
     assert l2.get_ydata() == pytest.approx(y1)
+
+    plt.close()
+
+
+@pytest.mark.parametrize("session", [BaseSession, AstroSession])
+def test_plot_overplot_smaller(session, requires_pylab):
+    """Check we can overplot less plots than the original.
+
+    This is a regression test, to check the current behaviour.
+    """
+
+    from matplotlib import pyplot as plt
+
+    x1 = [1, 2, 3]
+    x2 = [21, 22, 23]
+    y1 = [4, 5, 6]
+    y2 = [-4, -5, -6]
+
+    s = session()
+    s.load_arrays(1, x1, y1)
+    s.load_arrays(2, x2, y2)
+
+    s.plot("data", "data", 2)
+    s.plot("data", 2, overplot=True, alpha=0.5)
+
+    fig = plt.gcf()
+    assert len(fig.axes) == 2
+    assert len(fig.axes[0].lines) == 2
+    assert len(fig.axes[1].lines) == 1
+
+    l1 = fig.axes[0].lines[0]
+    l2 = fig.axes[1].lines[0]
+    assert l1.get_xdata() == pytest.approx(x1)
+    assert l2.get_xdata() == pytest.approx(x2)
+    assert l1.get_ydata() == pytest.approx(y1)
+    assert l2.get_ydata() == pytest.approx(y2)
+
+    l1 = fig.axes[0].lines[1]
+    assert l1.get_xdata() == pytest.approx(x2)
+    assert l1.get_ydata() == pytest.approx(y2)
+
+    assert fig.axes[0].lines[0].get_alpha() is None
+    assert fig.axes[1].lines[0].get_alpha() is None
+    assert fig.axes[0].lines[1].get_alpha() == 0.5
 
     plt.close()
