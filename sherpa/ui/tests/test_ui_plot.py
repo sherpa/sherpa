@@ -3354,10 +3354,13 @@ def test_plot_check_size_nrows_ncols_pylab(session, nrows, ncols, kwargs, requir
                                        (2, None), (2, 1),
                                        (2, 2)])
 def test_plot_singleton_ignores_sizes(session, rows, cols, requires_pylab):
-    """Single plots are special cased and ignore size arguments.
+    """Single plots used to be special cased to ignore size arguments.
 
-    Regression test, as we could change this behaviour.
+    This is no-longer the case, so test the new behavior.
     """
+
+    nrows = 1 if rows is None else rows
+    ncols = 1 if cols is None else cols
 
     from matplotlib import pyplot as plt
 
@@ -3367,7 +3370,7 @@ def test_plot_singleton_ignores_sizes(session, rows, cols, requires_pylab):
 
     fig = plt.gcf()
     assert len(fig.axes) == 1
-    assert fig.axes[0].get_subplotspec().get_geometry() == (1, 1, 0, 0)
+    assert fig.axes[0].get_subplotspec().get_geometry() == (nrows, ncols, 0, 0)
 
     plt.close()
 

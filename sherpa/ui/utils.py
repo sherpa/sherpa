@@ -320,6 +320,55 @@ def notice_data_range(get_data: Callable[[IdType], Data],
         report_filter_change(idstr, ofilter, nfilter, xlabel)
 
 
+@overload
+def calc_multiplot_size(rows: int,
+                        cols: Optional[int],
+                        nplots: int
+                        ) -> tuple[int, int]:
+    ...
+
+@overload
+def calc_multiplot_size(rows: Optional[int],
+                        cols: int,
+                        nplots: int
+                        ) -> tuple[int, int]:
+    ...
+
+def calc_multiplot_size(rows, cols, nplots):
+    """How many rows and columns to use for multi plot/contours?
+
+    Parameters
+    ----------
+    rows, cols
+       The requested sizes, if set (one of them must be set).
+    nplots
+       The nuber of plots.
+
+    Returns
+    -------
+    (nrows, ncols)
+
+    """
+
+    def get(n: int) -> int:
+        return int(np.ceil(nplots / n))
+
+    # Since at least one of rows or cols must be set.
+    #
+    nrows = rows if rows is not None else get(cols)
+    ncols = cols if cols is not None else get(rows)
+
+    if nrows * ncols < nplots:
+        # Go for the nearest (upper) square value for the number
+        # of columns, and calculate the number of rows to match
+        # the data.
+        #
+        ncols = int(np.ceil(np.sqrt(nplots)))
+        nrows = get(ncols)
+
+    return nrows, ncols
+
+
 ###############################################################################
 #
 # Pickling support
@@ -13697,11 +13746,6 @@ class Session(NoNewAttributesAfterInit):
         #
         kwstore = get_per_plot_kwargs(nplots, kwargs)
 
-        if nplots == 1:
-            plotmeth = getattr(self, f"_{plotmeth}")
-            plotmeth(plots[0], **kwstore[0])
-            return
-
         # Store the original values in case they are over-written.
         #
         sp = self._splitplot
@@ -13711,35 +13755,22 @@ class Session(NoNewAttributesAfterInit):
         # What size to use?
         #
         if rows is None and cols is None:
-            nrows = nrows_orig
-            ncols = ncols_orig
-
-        elif rows is not None and cols is not None:
-            nrows = rows
-            ncols = cols
-
-        elif rows is not None:
-            nrows = rows
-            ncols = int(np.ceil(nplots / nrows))
+            # Special case the single-plot call
+            if nplots == 1:
+                nrows = 1
+                ncols = 1
+            else:
+                nrows, ncols = calc_multiplot_size(nrows_orig,
+                                                   ncols_orig, nplots)
 
         else:
-            ncols = cols
-            nrows = int(np.ceil(nplots / ncols))
+            nrows, ncols = calc_multiplot_size(rows, cols, nplots)
 
-        if nrows * ncols < nplots:
-            # Go for the nearest (upper) square value for the number
-            # of columns, and calculate the number of rows to match
-            # the data.
-            #
-            ncols = int(np.ceil(np.sqrt(nplots)))
-            nrows = int(np.ceil(nplots / ncols))
-
+        plotfunc = getattr(sp, f"add{plotmeth}")
         sp.reset(rows=nrows, cols=ncols)
-        plotmeth = getattr(sp, f"add{plotmeth}")
-
         with sherpa.plot.backend:
             for plot, store in zip(plots, kwstore):
-                plotmeth(plot, **store)
+                plotfunc(plot, **store)
 
         # Restore the settings. Is this needed?
         #
