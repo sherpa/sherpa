@@ -30,11 +30,11 @@ import numpy as np
 import pytest
 
 from sherpa.astro.data import DataARF, DataIMG, DataIMGInt, DataPHA, DataRMF
-from sherpa.astro.instrument import create_delta_rmf
+from sherpa.astro.instrument import create_delta_rmf, matrix_to_rmf
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
 from sherpa.data import Data2D, Data2DInt
-from sherpa.models import Delta2D, Polynom2D
+from sherpa.models import Const1D, Delta2D, Polynom2D
 from sherpa.plot import backend
 from sherpa.stats._statfcts import calc_chi2datavar_errors
 from sherpa.utils import dataspace2d
@@ -3087,6 +3087,68 @@ def test_rmf_checks_energy_length():
         DataRMF("dummy", 1024, elo, ehi, dummy, dummy, dummy, dummy)
 
 
+@pytest.mark.parametrize("startchan,na,nb,nc",
+                         [(0, 0, 2, 17),  # channel 0 is not defined, what should it do?
+                          (1, 0, 3, 16),
+                          (2, 0, 4, 15),
+                          (3, 1, 4, 14),
+                          (4, 2, 4, 13),
+                          (9, 7, 4, 8),
+                          (12, 10, 4, 5),
+                          (16, 14, 4, 1),
+                          (17, 15, 4, 0),
+                          (18, 16, 3, 0), # channel 20 is not defined, what should it do?
+                          (19, 17, 2, 0), # channel 20,21 is not defined, what should it do?
+                          (20, 18, 1, 0), # channel 20,21,22 is not defined, what should it do?
+                          (21, 19, 0, 0), # channel 21,22,23 is not defined, what should it do?
+                          ])
+def test_rmf_simple_filter_check(startchan, na, nb, nc):
+    """Check we behave as expected for a very simple filter.
+
+    nc is not needed since it's 19 - na - nb, but specify it
+    This assumes offset=1.
+
+    It is not at all clear why the filter selects 4 channels once away
+    from the edges. Is it a small bug in the code?
+
+    """
+
+    egrid = np.arange(0.1, 2.1, 0.1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    # This is a "perfect" response.
+    #
+    mvals = np.linspace(1, 19, 19)
+    assert rmf.apply_rmf(mvals) == pytest.approx(mvals)
+
+    selected = rmf.notice([startchan, startchan + 1, startchan + 2])
+    print(selected)
+    expected = [False] * na + [True] * nb + [False] * nc
+    assert selected == pytest.approx(expected)
+
+    # Drop everything but the selected values.
+    #
+    expected = mvals.copy()
+    expected[~selected] = 0
+    assert rmf.apply_rmf(mvals[selected]) == pytest.approx(expected)
+
+
+def test_rmf_complains_about_filter_mismatch():
+    """Check we error out if, after filtering, we are given the wrong size."""
+
+    egrid = np.arange(0.1, 2.1, 0.1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    rmf.notice([9, 10, 11])
+    msg = "Mismatched filter between ARF and RMF or PHA and RMF"
+    with pytest.raises(TypeError, match=f"^{msg}$"):
+        rmf.apply_rmf([1] * 19)
+
+
 def test_rmf_invalid_offset():
     """Just check we error out"""
 
@@ -3097,6 +3159,333 @@ def test_rmf_invalid_offset():
     with pytest.raises(ValueError,
                        match="offset must be >=0, not -1"):
         DataRMF("dummy", 1024, elo, ehi, dummy, dummy, dummy, dummy, offset=-1)
+
+
+@pytest.mark.parametrize("offset", [0, 1, 2, 5])
+def test_rmf_offset_check_square(offset, caplog):
+    """What happens if offset is set?
+
+    This uses a blurry / made-up RMF but with a 1 to 1 mapping of
+    channel and energy grids.
+
+    """
+
+    # The channel range is offset, offset + 1, offset + 2, offset + 3.
+    # The response is not "perfect".
+    #
+    elo = np.asarray([1.1, 1.2, 1.4, 1.5])
+    ehi = np.asarray([1.2, 1.4, 1.5, 2.0])
+    rmf = DataRMF("dummy", 4, elo, ehi,
+                  n_grp=np.asarray([1, 1, 1, 1]),
+                  f_chan=np.asarray([offset, offset, offset + 1, offset + 2]),
+                  n_chan=np.asarray([1, 2, 2, 2]),
+                  matrix=np.asarray([1.0, 0.6, 0.4, 0.5, 0.5, 0.2, 0.8]),
+                  e_min=elo, e_max=ehi, offset=offset)
+
+    assert len(caplog.record_tuples) == 0
+
+    # The model, evaluated on the bins, returns
+    #    mdl.c0 * bin-width
+    # So, for this situation
+    #    [0.2, 0.4, 0.2, 1.0]
+    #
+    mdl = Const1D()
+    mdl.c0 = 2
+    mvals = mdl(elo, ehi)
+    assert mvals == pytest.approx([0.2, 0.4, 0.2, 1.0])
+
+    # The RMF is slightly blury:
+    # - [1.0, 0.0, 0.0, 0.0]
+    # - [0.6, 0.4, 0.0, 0.0]
+    # - [0.0, 0.5, 0.5, 0.0]
+    # - [0.0, 0.0, 0.2, 0.8]
+    #
+    expected = [1.0 * 0.2 + 0.6 * 0.4,
+                0.4 * 0.4 + 0.5 * 0.2,
+                0.5 * 0.2 + 0.5 * 0.4,
+                0.8 * 1.0]
+
+    got = rmf.apply_rmf(mvals)
+    assert got == pytest.approx(expected)
+
+    # Now filter the response and try again. Select just the
+    # third bin, which should select the last three "energy"
+    # bins.
+    #
+    if offset == 0:
+        # Since Sherpa increases channel by 1, change the noticed range.
+        nchans = [offset + 2 + 1]
+    else:
+        nchans = [offset + 2]
+
+    selected = rmf.notice(nchans)
+    assert selected == pytest.approx([False, True, True, True])
+
+    expected2 = [0.0 * 0.2 + 0.6 * 0.4,
+                 0.4 * 0.4 + 0.5 * 0.2,
+                 0.5 * 0.2 + 0.5 * 0.4,
+                 0.8 * 1.0]
+
+    got2 = rmf.apply_rmf(mvals[selected])
+    assert got2 == pytest.approx(expected2)
+
+
+@pytest.mark.parametrize("offset", [0, 1, 2, 5])
+def test_rmf_offset_check_rectangular(offset):
+    """What happens if offset is set?
+
+    Here the RMF grid has more bins than channels, and it's more
+    constrained than the one_to_one case which might cover different
+    code paths in the notice call.
+
+    """
+
+    # 10 channels and 20 energy bins.
+    #
+    ematrix = np.linspace(0.1, 21 * 0.1, 21)
+    ebounds = np.linspace(0.05, 2.2, 11)
+    elo = ematrix[:-1]
+    ehi = ematrix[1:]
+    e_min = ebounds[:-1]
+    e_max = ebounds[1:]
+
+    # Create the full matrix.
+    #
+    full_matrix = np.zeros((20, 10))
+    for idx in range(2, 18):
+        n = idx // 2
+        full_matrix[idx][n:n + 2] = [0.6, 0.4]
+
+    full_matrix[1][1:3] = [0.8, 0.2]
+    full_matrix[18][8:10] = [0.2, 0.8]
+    full_matrix[19][-1] = 1.0
+
+    # Special case the multi-group rows.
+    #
+    full_matrix[0] = [0.0, 0.1, 0.1, 0.0, 0.4, 0.4, 0.0, 0.0, 0.0, 0.0]
+    full_matrix[2] = [0.0, 0.1, 0.1, 0.0, 0.0, 0.0, 0.4, 0.4, 0.0, 0.0]
+    full_matrix[12] = [0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.0, 0.0, 0.4, 0.4]
+    full_matrix[18] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.1, 0.0, 0.4, 0.4]
+
+    # Cmopress the matrix into the form that DataRMF needs. This step
+    # assumes that offset=1.
+    #
+    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(full_matrix)
+
+    # Correct for the offset.
+    #
+    f_chan += (offset - 1)
+
+    rmf = DataRMF("dummy", 10, elo, ehi, n_grp=n_grp, f_chan=f_chan,
+                  n_chan=n_chan, matrix=matrix, e_min=e_min,
+                  e_max=e_max, offset=offset)
+
+    # Have different values for each bin: 0.5, 0.6, ..., 2.4
+    #
+    mvals = np.linspace(0.5, 2.4, 20)
+
+    # Since we have the full matrix we can calculate it rather than
+    # work it out manually.
+    #
+    expected = mvals @ full_matrix
+
+    got = rmf.apply_rmf(mvals)
+    assert got == pytest.approx(expected)
+
+    # Now filter the response and try again:
+    #
+    # We check the RMF convolution still works after each notice call,
+    # even if nothing has been ignored, just to try and check all the
+    # corner cases.
+    #
+    # - drop the first channel
+    nchans1 = offset + np.arange(1, 10)
+    if offset == 0:
+        # Since Sherpa increases channel by 1, change the noticed range.
+        nchans1 += 1
+
+    selected1 = rmf.notice(nchans1)
+    assert selected1.all()
+    expected1 = expected
+
+    got1 = rmf.apply_rmf(mvals[selected1])
+    assert got1 == pytest.approx(expected1)
+
+    # - drop the last channel
+    nchans2 = offset + np.arange(0, 9)
+    if offset == 0:
+        nchans2 += 1
+
+    selected2 = rmf.notice(nchans2)
+    assert selected2 == pytest.approx([True] * 19 + [False])
+
+    expected2 = mvals[selected2] @ full_matrix[selected2, :]
+    got2 = rmf.apply_rmf(mvals[selected2])
+    assert got2 == pytest.approx(expected2)
+
+    # - drop a range of channels (start and end)
+    #
+    # This is a regression test as there's no documentation on
+    # filter_resp to indicate what it should return in this case.
+    # DJB thinks it should have returned
+    #
+    #  T F T F F F T T T T T T T T F F F F T F
+    #
+    # rather than
+    #
+    #  T F T F T T T T T T T T T T F F F F T F
+    #
+    # [or it could not fik=kter out those ranges within the
+    # start/end points].
+    #
+    nchans3 = offset + np.asarray([4, 5, 6])
+    if offset == 0:
+        nchans3 += 1
+
+    selected3 = rmf.notice(nchans3)
+    assert selected3 == pytest.approx([True, False] * 2 + [True] * 10 + [False] * 4 + [True, False])
+
+    # It is not clear what the RMF application does here.
+    #
+    # What did I naively expect?
+    #
+    # expected3 = mvals[selected3] @ full_matrix[selected3, :]
+    # assert expected3 == pytest.approx([0, 0.12, 1.26, 2.14, 2.91, 3.54, 2.83, 1, 1.6, 1.6])
+    #
+    # How is this calculated?
+    expected3 = [0, 0, 1.14, 2.14, 2.91, 3.54, 2.83, 1, 0, 0]
+
+    got3 = rmf.apply_rmf(mvals[selected3])
+    assert got3 == pytest.approx(expected3)
+
+    # Check we get back the original values.
+    #
+    assert rmf.notice(None) is None
+
+    got_last = rmf.apply_rmf(mvals)
+    assert got_last == pytest.approx(expected)
+
+
+@pytest.mark.parametrize("offset", [0, 1, 2, 5])
+def test_rmf_offset_check_basics(offset):
+    """Check out one of the tests from
+    sherpa/astro/utils/tests/test_astro_utils.py::test_filter_resp_basics
+
+    """
+
+    fm = np.asarray([[0.0, 0.0, 0.0, 0.0, 0.0],
+                     [0.0, 1.0, 0.0, 0.0, 0.0],
+                     [0.0, 1.2, 1.8, 0.0, 0.0],
+                     [0.0, 0.0, 2.0, 0.0, 0.0],
+                     [0.0, 0.0, 3.3, 3.7, 0.0],
+                     [0.0, 0.0, 0.0, 4.0, 0.0]])
+
+    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(fm)
+
+    # Correct for the offset
+    #
+    delta = offset - 1
+    f_chan += delta
+
+    # Make up energy ranges
+    #
+    ematrix = np.asarray([0.1, 0.2, 0.25, 0.35, 0.4, 0.5, 0.6])
+    elo = ematrix[:-1]
+    ehi = ematrix[1:]
+
+    ebounds = np.asarray([0.05, 0.15, 0.25, 0.35, 0.45, 0.55])
+    emin = ebounds[:-1]
+    emax = ebounds[1:]
+
+    rmf = DataRMF("x", 5, n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,
+                  matrix=matrix, offset=offset, energ_lo=elo,
+                  energ_hi=ehi, e_min=emin, e_max=emax)
+
+    mvals = np.asarray([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+
+    # No filter:
+    expected = mvals @ fm
+    got = rmf.apply_rmf(mvals)
+    assert got == pytest.approx(expected)
+
+    # Now apply channel selections; need to correct for the offset.
+    #
+    # First channel:
+    nchans = np.asarray([1]) + delta
+    if offset == 0:
+        # Since Sherpa increases channel by 1, change the noticed range.
+        nchans += 1
+
+    selected = rmf.notice(nchans)
+    expected = mvals[selected] @ fm[selected, :]
+    # Check that we get "no model" out
+    assert expected == pytest.approx(np.zeros(5))
+    got = rmf.apply_rmf(mvals[selected])
+    assert got == pytest.approx(expected)
+
+    # Second channel:
+    nchans = np.asarray([2]) + delta
+    if offset == 0:
+        nchans += 1
+
+    selected = rmf.notice(nchans)
+    expected = mvals[selected] @ fm[selected, :]
+    got = rmf.apply_rmf(mvals[selected])
+    assert got == pytest.approx(expected)
+
+    # Add an explicit check here, rather than one that just checks
+    # it is internally consistent.
+    #
+    assert got == pytest.approx([0, 0.56, 0.54, 0, 0])
+
+    # Third channel:
+    nchans = np.asarray([3]) + delta
+    if offset == 0:
+        nchans += 1
+
+    selected = rmf.notice(nchans)
+    expected = mvals[selected] @ fm[selected, :]
+    got = rmf.apply_rmf(mvals[selected])
+    assert got == pytest.approx(expected)
+
+    # Fourth channel:
+    nchans = np.asarray([4]) + delta
+    if offset == 0:
+        nchans += 1
+
+    selected = rmf.notice(nchans)
+    expected = mvals[selected] @ fm[selected, :]
+    got = rmf.apply_rmf(mvals[selected])
+    assert got == pytest.approx(expected)
+
+    # Fifth channel:
+    nchans = np.asarray([5]) + delta
+    if offset == 0:
+        nchans += 1
+
+    selected = rmf.notice(nchans)
+    expected = mvals[selected] @ fm[selected, :]
+    got = rmf.apply_rmf(mvals[selected])
+    assert got == pytest.approx(expected)
+
+    # [2,3] and [1,2,3] should give the same results
+    # as channel 1 doesn't match anything
+    #
+    nchans1 = np.asarray([2,3]) + delta
+    nchans2 = np.asarray([1,2,3]) + delta
+    if offset == 0:
+        nchans1 += 1
+        nchans2 += 1
+
+    selected1 = rmf.notice(nchans1)
+    got1 = rmf.apply_rmf(mvals[selected1])
+    selected2 = rmf.notice(nchans2)
+    got2 = rmf.apply_rmf(mvals[selected2])
+
+    assert selected2 == pytest.approx(selected1)
+    assert got2 == pytest.approx(got1)
+
+    assert got1 == pytest.approx([0, 0.56, 2.99, 1.85, 0])
 
 
 @pytest.mark.parametrize("subtract", [True, False])

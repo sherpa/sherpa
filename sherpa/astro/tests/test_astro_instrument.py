@@ -1948,6 +1948,161 @@ def test_rmf_to_matrix_mission(rmfname, nchan, nenergy, offset,
     recwarn.clear()
 
 
+@requires_data
+@requires_fits
+def test_rmf_image_offset_0(make_data_path, tmp_path, recwarn):
+    """The SWIFT RMF is stored almost as an image with offset=0.
+
+    Use this to validate the "image" checks.
+    """
+
+    infile = make_data_path("swxpc0to12s6_20130101v014.rmf.gz")
+
+    # Read the file in directly
+    #
+    rmf_direct = io.read_rmf(infile)
+
+    # Messy way to get the MATRIX data.
+    #
+    _, blocks, _ = io.read_table_blocks(infile)
+    matrix = blocks[2]["MATRIX"]
+    assert matrix.shape == (2400, 1024)
+    assert matrix.max() == pytest.approx(0.058343917)
+
+    elo = blocks[2]["ENERG_LO"]
+    ehi = blocks[2]["ENERG_HI"]
+    e_min = blocks[3]["E_MIN"]
+    e_max = blocks[3]["E_MAX"]
+
+    # Create a DataIMG with this data and write it out, as
+    # sherpa.astro.instrument.create_non_delta_rmf does not have a
+    # "read the data from an array" option.
+    #
+    x1, x0 = np.mgrid[1:2401, 1:1025]
+    img = DataIMG("rmfimg", x0.flatten(), x1.flatten(),
+                  matrix.flatten(), shape=(2400, 1024))
+
+    outpath = tmp_path / "rmf.img"
+    outfile = str(outpath)
+    io.write_image(outfile, img, ascii=False)
+
+    # Create a RMF with this image.
+    #
+    rmf_image = create_non_delta_rmf(elo, ehi, outfile, offset=0,
+                                     e_min=e_min, e_max=e_max,
+                                     ethresh=1e-10)
+
+    # Hack the output as it's known to be wrong when offset != 1.
+    #
+    rmf_image.f_chan -= 1
+
+    # A couple of simple checks. We can not directly compare
+    # n_grp/n_chan/f_chan/matrix values. We can check some basic
+    # matrix properties, such as the max value and the summation
+    # (assuming the tolerance filter does not significantly change the
+    # results).
+    #
+    assert rmf_image.detchans == rmf_direct.detchans
+    assert rmf_image.offset == rmf_direct.offset
+
+    matrix_direct = rmf_direct.matrix
+    matrix_image = rmf_image.matrix
+    assert matrix_image.max() == pytest.approx(matrix_direct.max())
+    assert matrix_image.sum() == pytest.approx(matrix_direct.sum())
+
+    # Pass a simple model through the full grid.
+    #
+    mvals = np.linspace(2, 10, 2400)
+
+    y_direct = rmf_direct.apply_rmf(mvals)
+    y_image = rmf_image.apply_rmf(mvals)
+    assert y_image == pytest.approx(y_direct)
+
+    # Now filter the RMF
+    #
+    chans = np.arange(200, 500, dtype=np.int16)
+    selected_direct = rmf_direct.notice(chans)
+    selected_image = rmf_image.notice(chans)
+
+    # These filters are not the same, for some reason, but let's add
+    # basic checks.
+    #
+    assert len(selected_direct) == 2400
+    assert len(selected_image) == 2400
+
+    assert selected_direct.all()
+
+    # It is not clear what these values should be, so treat as a
+    # regression test.
+    where, = np.where(selected_image)
+    expected = [146, 178, 183, 184, 185, 186, 187, 188, 189, 190]
+    assert where[:10] == pytest.approx(expected)
+
+    y_direct = rmf_direct.apply_rmf(mvals[selected_direct])
+    y_image = rmf_image.apply_rmf(mvals[selected_image])
+
+    assert len(y_direct) == 1024
+    assert len(y_image) == 1024
+
+    # Because the selected channel range is different the results will
+    # be different, but we can check the position and value of the max
+    # values as, in this case, they should be the same.
+    #
+    idx_direct = y_direct.argmax()
+    idx_image = y_image.argmax()
+    assert idx_image == idx_direct
+
+    assert y_image[idx_image] == pytest.approx(y_direct[idx_direct])
+
+    # We do not care about any warnings here, so clear the state so
+    # that the capture_all_warnings fixture is not triggered.
+    #
+    recwarn.clear()
+
+
+@requires_data
+@requires_fits
+def test_rmf_to_matrix_offset_0(make_data_path, recwarn):
+    """The SWIFT RMF is stored almost as an image with offset=0."""
+
+    infile = make_data_path("swxpc0to12s6_20130101v014.rmf.gz")
+    rmf = io.read_rmf(infile)
+    recwarn.clear()
+
+    mat = rmf_to_matrix(rmf)
+    assert mat.matrix.shape == (2400, 1024)
+    assert mat.matrix.max() == pytest.approx(rmf.matrix.max())
+    assert mat.matrix.sum() == pytest.approx(rmf.matrix.sum())
+
+    assert len(mat.channels.grid) == 1
+    assert mat.channels.grid[0] == pytest.approx(np.arange(0, 1024))
+
+    assert len(mat.energies.grid) == 2
+    assert mat.energies.grid[0] == pytest.approx(rmf.energ_lo)
+    assert mat.energies.grid[1] == pytest.approx(rmf.energ_hi)
+
+
+@requires_data
+@requires_fits
+def test_rmf_to_image_offset_0(make_data_path, recwarn):
+    """The SWIFT RMF is stored almost as an image with offset=0."""
+
+    infile = make_data_path("swxpc0to12s6_20130101v014.rmf.gz")
+    rmf = io.read_rmf(infile)
+    recwarn.clear()
+
+    img = rmf_to_image(rmf)
+    assert img.shape == (2400, 1024)
+
+    assert img.y.max() == pytest.approx(rmf.matrix.max())
+    assert img.y.sum() == pytest.approx(rmf.matrix.sum())
+
+    # Note this starts at 1, not 0.
+    #
+    assert img.x0[0:10] == pytest.approx([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    assert img.x1[0:10] == pytest.approx([1] * 10)
+
+
 # Several tests from sherpa/tests/test_instrument.py repeated to check out
 # the astro-version of PSFModel
 #
