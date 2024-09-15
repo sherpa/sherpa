@@ -15521,7 +15521,8 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def _jointplot2(self, plot1, plot2,
-                    overplot=False, clearwindow=True,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Create a joint plot, vertically aligned, fit data on the top.
 
@@ -15540,14 +15541,18 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        self._jointplot.reset()
+        # Split up the kwargs so that they are per-plot.
+        #
+        kwstore = get_per_plot_kwargs(2, kwargs)
 
+        self._jointplot.reset()
         with sherpa.plot.backend:
 
             # Note: the user preferences are set to both plots
             #
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow, **kwargs)
+                                    clearwindow=clearwindow,
+                                    **kwstore[0])
 
             # The two plots are intended to have the same scaling
             # on the X axis (log or linear), and the approach is
@@ -15567,7 +15572,8 @@ class Session(NoNewAttributesAfterInit):
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
+            self._jointplot.plotbot(plot2, overplot=overplot,
+                                    **kwstore[1])
 
             p2prefs['xlog'] = oldval
 
@@ -15580,6 +15586,9 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_resid` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Options can now be set per-plot with a sequence.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15656,6 +15665,11 @@ class Session(NoNewAttributesAfterInit):
         draw the y error bars:
 
         >>> plot_fit_resid(capsize=4, color='skyblue', xerrorbars=False)
+
+        Use the black color for the fit plot and green for the
+        residuals, with an alpha value of 0.5 for both:
+
+        >>> plot_fit_resid(color=['black', 'green'], alpha=0.5)
 
         """
 
