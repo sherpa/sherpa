@@ -4623,7 +4623,7 @@ def test_when_reset_backend_settings_clear_datapha(clean_astro_ui, all_plot_back
     check_start()
 
 
-@pytest.mark.parametrize("call", [False, pytest.param(True, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("call", [False, True])
 def test_can_handle_per_plot_kwargs(call, clean_astro_ui):
     """Check we can run these commands.
 

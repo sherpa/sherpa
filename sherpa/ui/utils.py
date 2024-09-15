@@ -15521,7 +15521,8 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def _jointplot2(self, plot1, plot2,
-                    overplot=False, clearwindow=True,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Create a joint plot, vertically aligned, fit data on the top.
 
@@ -15540,14 +15541,18 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        self._jointplot.reset()
+        # Split up the kwargs so that they are per-plot.
+        #
+        kwstore = get_per_plot_kwargs(2, kwargs)
 
+        self._jointplot.reset()
         with sherpa.plot.backend:
 
             # Note: the user preferences are set to both plots
             #
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow, **kwargs)
+                                    clearwindow=clearwindow,
+                                    **kwstore[0])
 
             # The two plots are intended to have the same scaling
             # on the X axis (log or linear), and the approach is
@@ -15567,7 +15572,8 @@ class Session(NoNewAttributesAfterInit):
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
+            self._jointplot.plotbot(plot2, overplot=overplot,
+                                    **kwstore[1])
 
             p2prefs['xlog'] = oldval
 
@@ -15580,6 +15586,10 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_resid` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Per-plot options can now be given by using a pair of
+           values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15657,6 +15667,10 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot_fit_resid(capsize=4, color='skyblue', xerrorbars=False)
 
+        Add a label for the components of both plots:
+
+        >>> plot_fit_resid(label=['fit', 'resid'], alpha=0.5)
+
         """
 
         plot1obj = self.get_fit_plot(id, recalc=not replot)
@@ -15674,6 +15688,10 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_ratio` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Per-plot options can now be given by using a pair of
+           values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15749,6 +15767,10 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot_fit_ratio(marker='s', linestyle='none')
 
+        Add a label for the components of both plots:
+
+        >>> plot_fit_ratio(label=['fit', 'resid'], alpha=0.5)
+
         """
 
         plot1obj = self.get_fit_plot(id, recalc=not replot)
@@ -15766,6 +15788,10 @@ class Session(NoNewAttributesAfterInit):
 
         This creates two plots - the first from `plot_fit` and the
         second from `plot_delchi` - for a data set.
+
+        .. versionchanged:: 4.18.0
+           Per-plot options can now be given by using a pair of
+           values.
 
         .. versionchanged:: 4.12.2
            The ``overplot`` option now works.
@@ -15841,6 +15867,10 @@ class Session(NoNewAttributesAfterInit):
         using the Matplotlib backend:
 
         >>> plot_fit_delchi(ecolor='gray')
+
+        Add a label for the components of both plots:
+
+        >>> plot_fit_delchi(label=['fit', 'resid'], alpha=0.5)
 
         """
 

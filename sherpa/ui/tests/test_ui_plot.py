@@ -3550,7 +3550,7 @@ def test_plot_overplot_smaller(session, requires_pylab):
     plt.close()
 
 
-@pytest.mark.parametrize("call", [False, pytest.param(True, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("call", [False, True])
 @pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_plot_fit_resid_kwargs_mpl(call, session, requires_pylab):
     """Can we have per-plot kwargs? matplotlib
@@ -3616,7 +3616,7 @@ def test_plot_fit_resid_kwargs_mpl(call, session, requires_pylab):
     assert axes.lines[1].get_ydata() == pytest.approx([0, 0])
 
 
-@pytest.mark.parametrize("call", [False, pytest.param(True, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("call", [False, True])
 @pytest.mark.parametrize("session", [pytest.param(BaseSession, marks=pytest.mark.session), AstroSession])
 def test_can_handle_per_plot_kwargs(call, session):
     """Check we can run these commands.
@@ -3649,7 +3649,7 @@ def test_can_handle_per_plot_kwargs(call, session):
         s.plot("fit", "resid", **kwargs)
 
 
-@pytest.mark.parametrize("call", [False, pytest.param(True, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("call", [False, True])
 @pytest.mark.parametrize("key,vals",
                          [("color", ["r"]),
                           ("color", ["r", "g", "b"]),

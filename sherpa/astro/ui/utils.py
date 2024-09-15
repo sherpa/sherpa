@@ -58,6 +58,7 @@ import sherpa.io
 from sherpa.models.basic import TableModel, UserModel
 from sherpa.models.model import Model
 import sherpa.plot
+from sherpa.plot import get_per_plot_kwargs
 from sherpa.sim import NormalParameterSampleFromScaleMatrix, \
     ReSampleData
 from sherpa.stats import Cash, CStat, WStat
@@ -73,7 +74,6 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr, SessionErr
 from sherpa.utils.numeric_types import SherpaFloat
 from sherpa.utils.types import IdType
-
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -14261,8 +14261,10 @@ class Session(sherpa.ui.utils.Session):
         self._plot(pfplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def _bkg_jointplot2(self, plot1, plot2, overplot=False,
-                        clearwindow=True, **kwargs) -> None:
+    def _bkg_jointplot2(self, plot1, plot2,
+                        overplot: bool = False,
+                        clearwindow: bool = True,
+                        **kwargs) -> None:
         """Create a joint plot for bkg, vertically aligned, fit data on the top.
 
         Parameters
@@ -14280,13 +14282,18 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        # See sherpa.ui.utils.Session._jointplot2
+        # See sherpa.ui.utils.Session._jointplot2.
+        # TODO: is this not the same as _jointplot2.
         #
-        self._jointplot.reset()
+        # Split up the kwargs so that they are per-plot.
+        #
+        kwstore = get_per_plot_kwargs(2, kwargs)
 
+        self._jointplot.reset()
         with sherpa.plot.backend:
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow, **kwargs)
+                                    clearwindow=clearwindow,
+                                    **kwstore[0])
 
             # We know the plot types here but still use get_plot_prefs
             # to keep the encapsulation.
@@ -14299,7 +14306,8 @@ class Session(sherpa.ui.utils.Session):
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
+            self._jointplot.plotbot(plot2, overplot=overplot,
+                                    **kwstore[1])
 
             p2prefs['xlog'] = oldval
 
