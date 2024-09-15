@@ -15402,7 +15402,8 @@ class Session(NoNewAttributesAfterInit):
                    **kwargs)
 
     def _jointplot2(self, plot1, plot2,
-                    overplot=False, clearwindow=True,
+                    overplot: bool = False,
+                    clearwindow: bool = True,
                     **kwargs) -> None:
         """Create a joint plot, vertically aligned, fit data on the top.
 
@@ -15421,14 +15422,18 @@ class Session(NoNewAttributesAfterInit):
 
         """
 
-        self._jointplot.reset()
+        # Split up the kwargs so that they are per-plot.
+        #
+        kwstore = get_per_plot_kwargs(2, kwargs)
 
+        self._jointplot.reset()
         with sherpa.plot.backend:
 
             # Note: the user preferences are set to both plots
             #
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow, **kwargs)
+                                    clearwindow=clearwindow,
+                                    **kwstore[0])
 
             # The two plots are intended to have the same scaling
             # on the X axis (log or linear), and the approach is
@@ -15448,7 +15453,8 @@ class Session(NoNewAttributesAfterInit):
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
+            self._jointplot.plotbot(plot2, overplot=overplot,
+                                    **kwstore[1])
 
             p2prefs['xlog'] = oldval
 
