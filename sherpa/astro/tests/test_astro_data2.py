@@ -4644,3 +4644,49 @@ def test_dataimg_axis_ordering_1880():
     a0, a1 = orig.get_indep()
     assert a0 == pytest.approx([100, 110] * 3)
     assert a1 == pytest.approx([200, 200, 210, 210, 220, 220])
+
+
+def test_rmf_get_indep():
+    """Check this routine."""
+
+    ebins = np.asarray([3.0, 5., 8.0, 12.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+
+    xlo, xhi = rmf.get_indep()
+    assert xlo == pytest.approx(rlo)
+    assert xhi == pytest.approx(rhi)
+
+
+def test_rmf_get_dep_simple():
+    """Check this routine."""
+
+    ebins = np.asarray([3.0, 5., 8.0, 12.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = create_delta_rmf(rlo, rhi, e_min=rlo, e_max=rhi)
+
+    # This is an "ideal" response.
+    #
+    y = rmf.get_dep()
+    assert y == pytest.approx([1, 1, 1])
+
+
+def test_rmf_get_dep_complex():
+    """Check this routine."""
+
+    ebins = np.asarray([1.1, 1.2, 1.5, 2.0, 3.0, 6.0])
+    rlo = ebins[:-1]
+    rhi = ebins[1:]
+    rmf = DataRMF("x", 5, rlo, rhi,
+                  [1, 1, 1, 1, 1],  # n_grp
+                  [2, 3, 4, 4, 3],  # f_chan
+                  [2, 1, 1, 1, 2],  # n_chan
+                  [0.4, 0.6, 1.0, 1.0, 1.0, 0.2, 0.8],  # matrix
+                  e_min=rlo, e_max=rhi)
+
+    # This RMF only fills in channels 2 to 4.
+    #
+    y = rmf.get_dep()
+    assert y == pytest.approx([0, 0.4, 1.8, 2.8, 0])
