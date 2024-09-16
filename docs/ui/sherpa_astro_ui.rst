@@ -25,9 +25,11 @@ burden...
       calc_data_sum2d
       calc_energy_flux
       calc_kcorr
+      calc_model
       calc_model_sum
       calc_model_sum2d
       calc_photon_flux
+      calc_source
       calc_source_sum
       calc_source_sum2d
       calc_stat

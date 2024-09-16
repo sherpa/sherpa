@@ -15738,6 +15738,251 @@ class Session(sherpa.ui.utils.Session):
         data = self._get_data_or_bkg(id, bkg_id)
         return sherpa.astro.utils.calc_data_sum(data, lo, hi)
 
+    # This could also be done in the sherpa.ui version but for now
+    # leave here.
+    #
+    def calc_model(self,
+                   id: Optional[IdType] = None,
+                   bkg_id: Optional[IdType] = None
+                   ) -> tuple[tuple[np.ndarray, ...], np.ndarray]:
+        """Calculate the per-bin model values.
+
+        The values are filtered and grouped based on the data and will
+        use the analysis setting for PHA data, but not the other plot
+        options (such as whether to display as a rate).
+
+        .. versionadded:: 4.17.0
+
+        Parameters
+        ----------
+        id : int, str, or None, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int, str, or None, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
+
+        Returns
+        -------
+        xvals, yvals: tuple of ndarray, ndarray
+           The independent axis, which uses a tuple as the number of
+           elements depends on the dimensionality and type of data.
+           The units depends on the data type: for PHA data the
+           X axis will be in the analysis units and Y axis will
+           generally be counts.
+
+        See Also
+        --------
+        calc_model_sum, calc_source, plot_model
+
+        Example
+        -------
+
+        For a PHA dataset the independent axis is a pair of values,
+        giving the low and high energies. The xlo and xhi values are
+        in keV, and represent the low and high edges of each bin, and
+        the yvals array is in counts.
+
+        >>> load_pha("3c273.pi")
+        >>> set_analysis("energy")
+        >>> notice(0.5, 6)
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> gal.nh = 0.1
+        >>> pl.gamma = 1.7
+        >>> pl.ampl = 2e-4
+        >>> xvals, yvals = calc_model()
+        >>> xlo = xvals[0]
+        >>> xhi = xvals[1]
+
+        The results can be compared to the model output in plot_fit to
+        show agreement (note that calc_model returns grouped values,
+        as used by plot_fit, whereas plot_model shows the ungrouped
+        data):
+
+        >>> set_analysis("energy", type="rate", factor=0)
+        >>> plot_fit()
+        >>> plot_model(overplot=True, color="black", alpha=0.4)
+        >>> xvals, yvals = calc_model()
+        >>> elo, ehi = xvals
+        >>> exposure = get_exposure()
+        >>> plt.plot((elo + ehi) / 2, yvals / (ehi - elo) / exposure)
+
+        Changing the analysis setting changes the x values, as xvals2
+        is in Angstrom rather than keV (the model values are the same,
+        although there may be small numerical differences that mean
+        the values do not exactly match):
+
+        >>> set_analysis("wave")
+        >>> xvals2, yvals2 = calc_model()
+
+        For 1D datasets the x axis is a single-element tuple:
+
+        >>> load_arrays(2, [1, 4, 7], [3, 12, 2])
+        >>> set_source(2, gauss1.gline)
+        >>> gline.pos = 4.2
+        >>> gline.fwhm = 3
+        >>> gline.ampl = 12
+        >>> xvals, yvals = calc_model(2)
+        >>> x = xvals[0]
+        >>> x
+        array([1, 4, 7])
+        >>> yvals
+        array([ 0.51187072, 11.85303595,  1.07215839])
+
+        """
+
+        # TODO: should there be a response_id argument?
+        #
+        idval = self._fix_id(id)
+        data = self._get_data_or_bkg(idval, bkg_id)
+
+        if isinstance(data, DataPHA):
+            # Returning the grid that this model represents is not as easy
+            # as it should be, since there is no obvious API.
+            #
+            bins = sherpa.astro.plot.calc_x(data)
+        else:
+            bins = data.get_indep(filter=True)
+
+        # Safety check, to ensure we have data. This could be done
+        # by checking whether data.size is None but it is easier
+        # for type checkers if the return value is checked.
+        #
+        if bins[0] is None:
+            raise DataErr("sizenotset", idval)
+
+        if bkg_id is None:
+            model = self.get_model(idval)
+        else:
+            model = self.get_bkg_model(idval, bkg_id)
+
+        # Evaluate the model.
+        #
+        mvals = data.eval_model_to_fit(model)
+
+        return bins, mvals
+
+    # This could also be done in the sherpa.ui version but for now
+    # leave here.
+    #
+    def calc_source(self,
+                   id: Optional[IdType] = None,
+                   bkg_id: Optional[IdType] = None
+                   ) -> tuple[tuple[np.ndarray, ...], np.ndarray]:
+        """Calculate the per-bin source values.
+
+        Unlike calc_model, the values are not filtered and grouped,
+        but the independent axis will use the analysis setting for PHA
+        data.
+
+        .. versionadded:: 4.17.0
+
+        Parameters
+        ----------
+        id : int, str, or None, optional
+           Use the source expression associated with this data set. If
+           not given then the default identifier is used, as returned
+           by `get_default_id`.
+        bkg_id : int, str, or None, optional
+           If set, use the model associated with the given background
+           component rather than the source model.
+
+        Returns
+        -------
+        xvals, yvals: tuple of ndarray, ndarray
+           The independent axis, which uses a tuple as the number of
+           elements depends on the dimensionality and type of data.
+           The units depends on the data type: for PHA data the
+           X axis will be in the analysis units and Y axis will
+           generally be photon/cm^2/s.
+
+        See Also
+        --------
+        calc_source_sum, calc_model, plot_source
+
+        Example
+        -------
+
+        For a PHA dataset the independent axis is a pair of values,
+        giving the low and high energies. The xlo and xhi values are
+        in keV, and represent the low and high edges of each bin, and
+        the yvals array will generally be in photon/cm^2/s.
+
+        >>> load_pha("3c273.pi")
+        >>> set_analysis("energy")
+        >>> notice(0.5, 6)
+        >>> set_source(xsphabs.gal * powlaw1d.pl)
+        >>> gal.nh = 0.1
+        >>> pl.gamma = 1.7
+        >>> pl.ampl = 2e-4
+        >>> xvals, yvals = calc_source()
+        >>> xlo = xvals[0]
+        >>> xhi = xvals[1]
+
+        The results can be compared to the output of plot_source to
+        show agreement:
+
+        >>> set_analysis("energy", type="rate", factor=0)
+        >>> plot_source()
+        >>> xvals, yvals = calc_source()
+        >>> elo, ehi = xvals
+        >>> plt.plot((elo + ehi) / 2, yvals / (ehi - elo))
+
+        Changing the analysis setting changes the x values, as xvals2
+        is in Angstrom rather than keV (the model values are the same,
+        although there may be small numerical differences that mean
+        the values do not exactly match):
+
+        >>> set_analysis("wave")
+        >>> xvals2, yvals2 = calc_source()
+
+        For 1D datasets the x axis is a single-element tuple:
+
+        >>> load_arrays(2, [1, 4, 7], [3, 12, 2])
+        >>> set_source(2, gauss1.gline)
+        >>> gline.pos = 4.2
+        >>> gline.fwhm = 3
+        >>> gline.ampl = 12
+        >>> xvals, yvals = calc_source(2)
+        >>> x = xvals[0]
+        >>> x
+        array([1, 4, 7])
+        >>> yvals
+        array([ 0.51187072, 11.85303595,  1.07215839])
+
+        """
+
+        idval = self._fix_id(id)
+        data = self._get_data_or_bkg(idval, bkg_id)
+
+        if isinstance(data, DataPHA):
+            # Returning the grid that this model represents is not as easy
+            # as it should be, since there is no obvious API.
+            #
+            bins = data._get_indep(filter=False)
+        else:
+            bins = data.get_indep(filter=False)
+
+        # Safety check, to ensure we have data. This could be done
+        # by checking whether data.size is None but it is easier
+        # for type checkers if the return value is checked.
+        #
+        if bins[0] is None:
+            raise DataErr("sizenotset", idval)
+
+        if bkg_id is None:
+            model = self.get_source(idval)
+        else:
+            model = self.get_bkg_source(idval, bkg_id)
+
+        # Evaluate the model. Note there is no attempt to correct
+        # for the bin width or exposure time.
+        #
+        mvals = model(*bins)
+
+        return bins, mvals
+
     # DOC-TODO: better comparison of calc_source_sum and calc_model_sum
     # needed (e.g. integration or results in PHA case?)
     #
@@ -15779,11 +16024,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_data_sum : Sum up the observed counts over a pass band.
-        calc_energy_flux : Integrate the unconvolved source model over a pass band.
-        calc_photon_flux : Integrate the unconvolved source model over a pass band.
-        calc_source_sum: Sum up the source model over a pass band.
-        set_model : Set the source model expression for a data set.
+        calc_data_sum, calc_energy_flux, calc_photon_flux,
+        calc_model, calc_source_sum, set_model
 
         Notes
         -----
@@ -16124,11 +16366,8 @@ class Session(sherpa.ui.utils.Session):
 
         See Also
         --------
-        calc_data_sum : Sum up the observed counts over a pass band.
-        calc_model_sum : Sum up the fitted model over a pass band.
-        calc_energy_flux : Integrate the unconvolved source model over a pass band.
-        calc_photon_flux : Integrate the unconvolved source model over a pass band.
-        set_model : Set the source model expression for a data set.
+        calc_data_sum, calc_model_sum, calc_energy_flux,
+        calc_photon_flux, calc_source, set_model
 
         Notes
         -----
