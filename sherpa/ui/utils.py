@@ -13979,6 +13979,10 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_plot_item(plottype, 'ylog', False)
 
+    # This documentation is really for the sherpa.astro.ui version, as
+    # some of this is not relevant for the sherpa.ui code, but leave
+    # like this.
+    #
     def plot(self,
              *args,
              # At present export_method does not support this
@@ -14118,8 +14122,15 @@ class Session(NoNewAttributesAfterInit):
         such as the `set_analysis` command controlling the units
         used for PHA data sets.
 
-        See the documentation for the individual routines for
-        information on how to configure the plots.
+        Given a plot name, such as "data", the remaining arguments up
+        to the next plot name match those from the corresponding
+        plot_xxx call (in this case plot_data), ignoring the replot,
+        overplot, and clearwindow arguments. So the call
+
+        >>> plot("data", "bkg", 1, "up", ylog=True)
+
+        can be thought of as combining the plots created by calling
+        plot_data(ylog=True) and plot_bkg(1, "up", ylog=True).
 
         The plot capabilities depend on what plotting backend, if any,
         is installed. If there is none available, a warning message
@@ -14163,20 +14174,22 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("data", "model", ylog=True)
 
-        Plot the backgrounds for dataset 1 using the "up" and "down"
-        components (in this case the background identifier):
+        Plot the background data components "up" and "down" for
+        dataset 1:
 
         >>> plot("bkg", 1, "up", "bkg", 1, "down")
 
-        Draw both data sets in black, but with partial opacity:
+        Draw both data and model for the default dataset in black, but
+        with partial opacity:
 
         >>> plot("data", "model", color="black", alpha=0.5)
 
         Draw the two plots in black but with different opacities:
 
-        >>> plot("data", "model", color="black", alpha=[1., 0.5])
+        >>> plot("data", "model", color="black", alpha=[1, 0.5])
 
-        Label each plot
+        Label each plot (the output depends on the backend and the
+        plot options):
 
         >>> plot("data", "model", label=["data", "model"])
 
@@ -14193,6 +14206,11 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("data", "data", 2, "model", "model", 2,
         ...      "resid", "resid", 2, rows=3, cols=2)
+
+        Create a display for three plots, vertically aligned,
+        but only display plots in the first two:
+
+        >>> plot("data", "model", cols=1, rows=3)
 
         """
 
