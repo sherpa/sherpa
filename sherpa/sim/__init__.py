@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2011, 2015, 2016, 2018 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -193,8 +193,13 @@ parameter::
 """
 
 import logging
+from typing import Optional
 
-import numpy
+import numpy as np
+
+from sherpa.data import Data1D, Data1DAsymmetricErrs
+from sherpa.fit import Fit
+from sherpa.optmethods import LevMar, OptMethod
 
 # Although all this module needs is the following import
 #   from sherpa.sim.mh import LimitError, MetropolisMH, MH, Sampler, Walk
@@ -204,19 +209,16 @@ import numpy
 from sherpa.sim.simulate import *
 from sherpa.sim.sample import *
 from sherpa.sim.mh import *
-from sherpa.stats import Cash, CStat, WStat, LeastSq
+
+from sherpa.stats import Cash, CStat, WStat, LeastSq, Stat
 from sherpa.utils import NoNewAttributesAfterInit, get_keyword_defaults, \
     sao_fcmp
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils import random
 
-from sherpa.fit import Fit
-from sherpa.data import Data1D, Data1DAsymmetricErrs
-from sherpa.optmethods import LevMar
-
 info = logging.getLogger("sherpa").info
-_log = logging.getLogger("sherpa")
 
-_tol = numpy.finfo(float).eps
+_tol = np.finfo(float).eps
 
 string_types = (str, )
 
@@ -692,7 +694,6 @@ class MCMC(NoNewAttributesAfterInit):
             raise ValueError("Fit statistic must be cash, cstat or "
                              f"wstat, not {fit.stat.name}")
 
-        _level = _log.getEffectiveLevel()
         mu = fit.model.thawedpars
         dof = len(mu)
 
@@ -714,7 +715,7 @@ class MCMC(NoNewAttributesAfterInit):
         sampler_kwargs = self._sampler_opt.copy()
         sampler_kwargs['priors'] = priors
 
-        oldthawedpars = numpy.array(mu)
+        oldthawedpars = np.array(mu)
         thawedparmins = fit.model.thawedparhardmins
         thawedparmaxes = fit.model.thawedparhardmaxes
 
@@ -726,28 +727,19 @@ class MCMC(NoNewAttributesAfterInit):
             if -1 in mins or -1 in maxes:
                 raise LimitError('Sherpa parameter hard limit exception')
 
-            level = _log.getEffectiveLevel()
+            with SherpaVerbosity(logging.CRITICAL):
+                try:
+                    # soft limits are ignored, hard limits rejected.
+                    # proposed values beyond hard limit default to limit.
+                    fit.model.thawedpars = proposed_params
 
-            try:
-                # ignore warning from Sherpa about hard limits
-                _log.setLevel(logging.CRITICAL)
+                    # Calculate statistic on proposal, use likelihood
+                    proposed_stat = -0.5 * fit.calc_stat()
 
-                # soft limits are ignored, hard limits rejected.
-                # proposed values beyond hard limit default to limit.
-                fit.model.thawedpars = proposed_params
-
-                # Calculate statistic on proposal, use likelihood
-                proposed_stat = -0.5 * fit.calc_stat()
-
-                # _log.setLevel(level)
-
-            except:
-                # set the model back to original state on exception
-                fit.model.thawedpars = oldthawedpars
-                raise
-            finally:
-                # set the logger back to previous level
-                _log.setLevel(level)
+                except:
+                    # set the model back to original state on exception
+                    fit.model.thawedpars = oldthawedpars
+                    raise
 
             return proposed_stat
 
@@ -761,9 +753,6 @@ class MCMC(NoNewAttributesAfterInit):
 
             # set the model back to original state
             fit.model.thawedpars = oldthawedpars
-
-            # set the logger back to previous level
-            _log.setLevel(_level)
 
         # Change to Sherpa statistic convention
         stats = -2.0 * stats
@@ -845,13 +834,30 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         self.data = data
         self.model = model
-        NoNewAttributesAfterInit.__init__(self)
+        super().__init__()
 
-    def __call__(self, niter=1000, seed=None, rng=None):
-        return self.call(niter, seed, rng=rng)
+    def __call__(self, niter=1000, seed=None, rng=None,
+                 *,
+                 stat: Optional[Stat] = None,
+                 method: Optional[OptMethod] = None
+                 ) -> dict[str, np.ndarray]:
+        return self.call(niter, seed=seed, rng=rng, stat=stat,
+                         method=method)
 
-    def call(self, niter, seed=None, rng=None):
+    def call(self, niter, seed=None, rng=None,
+             *,
+             # Mark these as keyword-only as they are additions to the
+             # interface and the interface is complicated enough it
+             # is worth marking them keyword only.
+             #
+             stat: Optional[Stat] = None,
+             method: Optional[OptMethod] = None
+             ) -> dict[str, np.ndarray]:
         """Resample the data and fit the model to each iteration.
+
+        .. versionadded:: 4.17.0
+           The stat and method parameter were added. These are
+           keyword-only arguments.
 
         .. versionadded:: 4.16.0
            The rng parameter was added.
@@ -872,6 +878,10 @@ class ReSampleData(NoNewAttributesAfterInit):
            Determines how random numbers are created. If set to None then
            the routines from `numpy.random` are used, and so can be
            controlled by calling `numpy.random.seed`.
+        stat : Stat or None, optional
+           If None then the `LeastSq` statistic is used.
+        method: OptMethod or None, optional
+           If None then the `LevMar` method is used.
 
         Returns
         -------
@@ -889,6 +899,9 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         """
 
+        chosen_stat = LeastSq() if stat is None else stat
+        chosen_meth = LevMar() if method is None else method
+
         # Each fit is reset to this set of values as the starting point
         orig_pars = self.model.thawedpars
 
@@ -900,7 +913,7 @@ class ReSampleData(NoNewAttributesAfterInit):
 
             name = par.fullname
             pars_index.append(name)
-            pars[name] = numpy.zeros(niter)
+            pars[name] = np.zeros(niter)
 
         data = self.data
         x = data.x
@@ -915,13 +928,13 @@ class ReSampleData(NoNewAttributesAfterInit):
         ny = len(y)
 
         # TODO: we do not properly handle Data1DInt here
-        fake_data = Data1D('tmp', x, numpy.zeros(ny))
+        fake_data = Data1D('tmp', x, np.zeros(ny))
 
         if rng is None:
-            numpy.random.seed(seed)
+            np.random.seed(seed)
 
-        ry_all = numpy.zeros((niter, ny), dtype=y_l.dtype)
-        stats = numpy.zeros(niter)
+        ry_all = np.zeros((niter, ny), dtype=y_l.dtype)
+        stats = np.zeros(niter)
         for j in range(niter):
             ry = ry_all[j]
             for i in range(ny):
@@ -972,7 +985,8 @@ class ReSampleData(NoNewAttributesAfterInit):
             # start the fit (by making sure we always reset after a fit).
             #
             fake_data.y = ry
-            fit = Fit(fake_data, self.model, LeastSq(), LevMar())
+            fit = Fit(data=fake_data, model=self.model,
+                      stat=chosen_stat, method=chosen_meth)
             try:
                 fit_result = fit.fit()
             finally:
@@ -984,8 +998,8 @@ class ReSampleData(NoNewAttributesAfterInit):
 
         result = {'samples': ry_all, 'statistic': stats}
         for name in pars_index:
-            avg = numpy.average(pars[name])
-            std = numpy.std(pars[name])
+            avg = np.average(pars[name])
+            std = np.std(pars[name])
             info('%s : avg = %s , std = %s', name, avg, std)
             result[name] = pars[name]
 

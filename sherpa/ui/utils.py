@@ -97,6 +97,8 @@ def _check_str_type(arg: str, argname: str) -> None:
     raise ArgumentTypeErr('badarg', argname, "a string")
 
 
+# With Python 3.10 these can return TypeGuard annotations.
+#
 def _is_integer(val):
     return isinstance(val, (int, np.integer))
 
@@ -2344,7 +2346,10 @@ class Session(NoNewAttributesAfterInit):
 
     # DOC-TODO: remove the list of supported methods once the
     # relevant documentation has been updated.
-    def set_method(self, meth: str) -> None:
+    #
+    def set_method(self,
+                   meth: Union[OptMethod, str]
+                   ) -> None:
         """Set the optimization method.
 
         The primary task of Sherpa is to fit a model M(p) to a set of
@@ -2417,7 +2422,7 @@ class Session(NoNewAttributesAfterInit):
         if _is_str(meth):
             method = self._get_method_by_name(meth)
         else:
-            _check_type(meth, sherpa.optmethods.OptMethod, 'meth',
+            _check_type(meth, OptMethod, 'meth',
                         'a method name or object')
             method = meth
 
@@ -2442,7 +2447,9 @@ class Session(NoNewAttributesAfterInit):
         if optname not in self._current_method.config:
             raise ArgumentErr('badopt', optname, self.get_method_name())
 
-    def get_method_opt(self, optname=None):
+    def get_method_opt(self,
+                       optname: Optional[str] = None
+                       ) -> Any:
         """Return one or all of the options for the current optimization
         method.
 
@@ -2486,7 +2493,7 @@ class Session(NoNewAttributesAfterInit):
         self._check_method_opt(optname)
         return self._current_method.config[optname]
 
-    def set_method_opt(self, optname, val) -> None:
+    def set_method_opt(self, optname: str, val: Any) -> None:
         """Set an option for the current optimization method.
 
         This is a helper function since the optimization options can also
@@ -2546,7 +2553,9 @@ class Session(NoNewAttributesAfterInit):
         """
         return self._current_itermethod['name']
 
-    def get_iter_method_opt(self, optname=None):
+    def get_iter_method_opt(self,
+                            optname: Optional[str] = None
+                            ) -> Any:
         """Return one or all options for the iterative-fitting scheme.
 
         The options available for the iterative-fitting methods are
@@ -2725,7 +2734,7 @@ class Session(NoNewAttributesAfterInit):
 
         self._current_itermethod = self._itermethods[meth]
 
-    def set_iter_method_opt(self, optname, val) -> None:
+    def set_iter_method_opt(self, optname: str, val: Any) -> None:
         """Set an option for the iterative-fitting scheme.
 
         Parameters
