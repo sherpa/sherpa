@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2024
+#  Copyright (C) 2010, 2016 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -510,7 +510,7 @@ def modelCacher1d_exp(func: Callable) -> Callable:
         y(x) = \exp(p * a(x))
 
     where `p` is the parameter. The cacher will evaluate the model once
-    with `p=1` and then store that. This is useful in particular for
+    with `p=0.1` and then store that. This is useful in particular for
     absorption models, where `a(x)` is an expensive calculation with
     atomic cross-sections etc.
 

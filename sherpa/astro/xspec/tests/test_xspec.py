@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2024
+#  Copyright (C) 2007, 2015 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -825,7 +825,12 @@ def get_xspec_models_with_exp_cache():
     Currently, that is: Models that inherit from XSAbsorptionModel.
     """
     models = get_xspec_models()
-    return [m for m in models if issubclass(m, XSAbsorptionModel)]
+    mlist =  [m for m in models if issubclass(m, XSAbsorptionModel)]
+    # This is a regression test and should be changed when we add this
+    # cache to other models.
+    assert len(mlist) == 3
+
+    return mlist
 
 
 @requires_xspec
@@ -833,20 +838,14 @@ def get_xspec_models_with_exp_cache():
 def test_models_with_exp_cache(modelcls):
     '''Tests that models with the modelCacher1d_exp work correctly.
 
-    Unlike modelCacher1d, does not evaluate the model for every
-    parameter value once, but modelCacher1d_exp assumes a certain
-    functional form and calcualtes model values by itself, this this
-    warrantes a test for every model using this cache.
     '''
-    x = np.arange(0.1, 10, 0.1)
+    x = np.arange(0.1, 20, 0.001)
     xlo = x[:-1]
     xhi = x[1:]
     mdl = modelcls()
     for nh in [1, 0.01, 0.123, 2.3, 11.2]:
         abs_direct = mdl.calc.__wrapped__(mdl, (nh,), xlo, xhi)
         abs_cache = mdl.calc((nh,), xlo, xhi)
-        # XSPEC models use float32, so we need to use a relative
-        # tolerance larger than the default
         assert abs_direct == pytest.approx(abs_cache, rel=1e-5, abs=1e-2)
 
 

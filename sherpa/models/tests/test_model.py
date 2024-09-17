@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020, 2024
+#  Copyright (C) 2007, 2016, 2017, 2020 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -875,15 +875,16 @@ def check_cache(mdl, expected, x, xhi=None, pars_in_cache=slice(None, None)):
 class ExpcacheTestModel(RegriddableModel1D):
     '''A model to test the modelCacher1d_exp decorator.
 
-    Note that a direct calc  gives different values than when
-    using the cache. Obviously, that's not what a real model
-    would do, but it's useful for testing.
+    Note that this model makes no sense p a direct calc gives different values
+    than when using the cache. That is wrong! It's just done here to get a
+    model with the same interface as the others that can be
+    used with the same test code.
     '''
 
     def __init__(self, name='expcache'):
         self.foo = Parameter(name, 'foo', 1, 1e-10, 10)
         ArithmeticModel.__init__(self, name,
-                                 (self.foo))
+                                 (self.foo,))
 
     @modelCacher1d_exp
     def calc(self, p, *args, **kwargs):
@@ -944,7 +945,7 @@ def test_evaluate_cache1dexp(cached):
 
     mdl.foo = 1
 
-    # Note that the model is itentiaonally defined such that
+    # Note that the model is intentionally defined such that
     # the exponential function used in the cache does not match
     # the direct calculation.
     # That way, we can see from the value if the cache is being used.
@@ -1091,7 +1092,7 @@ class DoNotUseModel(Model):
 
     def __init__(self, name='expcache'):
         self.foo = Parameter(name, 'foo', 1, 1e-10, 10)
-        super().__init__(name, (self.foo))
+        super().__init__(name, (self.foo,))
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
         """p is ignored."""
