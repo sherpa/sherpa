@@ -3991,11 +3991,17 @@ class Session(NoNewAttributesAfterInit):
     # DOC-NOTE: should there be a version in sherpa.astro.utils with a bkg_id
     # parameter?
     def get_filter(self,
-                   id: Optional[IdType] = None):
+                   id: Optional[IdType] = None,
+                   format: Optional[str] = None,
+                   delim: Optional[str] = None
+                   ) -> str:
         """Return the filter expression for a data set.
 
         This returns the filter expression, created by one or more
         calls to `ignore` and `notice`, for the data set.
+
+        .. versionchanged:: 4.17.0
+           The format and delim arguments can now be set.
 
         .. versionchanged:: 4.14.0
            The filter expressions have been tweaked for Data1DInt and
@@ -4009,6 +4015,12 @@ class Session(NoNewAttributesAfterInit):
            The identifier for the data set to use. If not given then
            the default identifier is used, as returned by
            `get_default_id`.
+        format : str or None, optional
+           If set, use this rather than the default format value for
+           the dataset.
+        delim : str or None, optional
+           If set, use this rather than the default delim value for
+           the dataset.
 
         Returns
         -------
@@ -4041,6 +4053,11 @@ class Session(NoNewAttributesAfterInit):
         >>> load_arrays(1, [10, 15, 20, 25], [5, 7, 4, 2])
         >>> get_filter()
         '10.0000:25.0000'
+
+        Change the formatting of the output:
+
+        >>> get_filter(format="%d", delim="-")
+        "10-25"
 
         The `notice` call restricts the data to the range between
         14 and 30. The resulting filter is the combination of this
@@ -4097,7 +4114,13 @@ class Session(NoNewAttributesAfterInit):
         >>> get_filter(3)
 
         """
-        return self.get_data(id).get_filter()
+        kwargs = {}
+        if format is not None:
+            kwargs["format"] = format
+        if delim is not None:
+            kwargs["delim"] = delim
+
+        return self.get_data(id).get_filter(**kwargs)
 
     def copy_data(self, fromid: IdType, toid: IdType) -> None:
         """Copy a data set, creating a new identifier.
