@@ -41,7 +41,7 @@ from sherpa.utils.random import poisson_noise
 from sherpa.utils.types import ArrayType
 
 
-# TODO: this should probaly use __name__ rather than "sherpa"
+# TODO: this should probably use __name__ rather than "sherpa"
 logger = logging.getLogger("sherpa")
 debug = logger.debug
 
