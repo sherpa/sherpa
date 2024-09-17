@@ -72,7 +72,7 @@ def compare_xspec_models(models: Sequence[ModelDefinition],
     hard : bool, optional
         Do we bother checking the hard limits (default True)?
     switch : bool, optional
-        Do we bother checking the limits for the swich parameter
+        Do we bother checking the limits for the switch parameter
         (default True)?
 
     """
