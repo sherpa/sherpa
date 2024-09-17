@@ -14174,7 +14174,7 @@ class Session(NoNewAttributesAfterInit):
 
         Draw the two plots in black but with different opacities:
 
-        >>> plot("data", "model", color="black", alpha=[1. 0.5])
+        >>> plot("data", "model", color="black", alpha=[1., 0.5])
 
         Label each plot
 
@@ -16456,7 +16456,7 @@ class Session(NoNewAttributesAfterInit):
         plot2obj = self.get_resid_contour(id, recalc=not replot)
 
         # This does not use _jointplot because the X axis is not
-        # obviously shared between the twp plots.
+        # obviously shared between the two plots.
         #
         self._splitplot.reset(rows=2, cols=1)
         with sherpa.plot.backend:
