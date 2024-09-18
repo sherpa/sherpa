@@ -232,6 +232,10 @@ def get_xsabund_doc(name: Optional[str] = None) -> str:
     doc : str
         The documentation for the table
 
+    See Also
+    --------
+    get_xsabund
+
     Examples
     --------
 
