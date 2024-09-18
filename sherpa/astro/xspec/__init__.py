@@ -219,6 +219,35 @@ def get_xsabundances() -> dict[str, float]:
             for name in get_xselements().keys()}
 
 
+def get_xsabund_doc(name: Optional[str] = None) -> str:
+    """Return the documentation for the abundance table.
+
+    Parameters
+    ----------
+    name : str or None, optional
+        If not set, use the current abundance table
+
+    Returns
+    -------
+    doc : str
+        The documentation for the table
+
+    Examples
+    --------
+
+    >>> get_xsabund_doc("angr")
+    'Anders E. & Grevesse N. Geochimica et Cosmochimica Acta 53, 197 (1989)'
+
+    """
+
+    aname = get_xsabund() if name is None else name
+
+    # Looks the return value includes a leading space so remove it.
+    # This could be done in the C++ code but much easier to do here.
+    #
+    return _xspec.get_xsabund_doc(aname).strip()
+
+
 # The current interface to the XSPEC model library makes this awkward
 # to write. Once the interface switches to using the FunctionUtility
 # interface this code will be a lot simpler internally, without

@@ -384,7 +384,17 @@ def test_show_xsabund(clean_astro_ui, caplog):
     #      Fe: ...
     #
     assert txt[0] == "Solar Abundance Table:"
-    assert txt[1] == table
+
+    # Assume all table names are 4 characters wide; do not bother
+    # trying to catch all cases.
+    #
+    if table == "angr":
+        assert txt[1] == "angr  Anders E. & Grevesse N. Geochimica et Cosmochimica Acta 53, 197 (1989)"
+    elif table == "grsa":
+        assert txt[1] == "grsa  Grevesse, N. & Sauval, A. J. Space Science Reviews 85, 161 (1998)"
+    else:
+        assert txt[1].startswith(f"{table}  ")
+
     assert txt[2].startswith("  H : 1.000e+00  He: ")
     assert txt[3].startswith("  C : ")
     assert txt[4].startswith("  Na: ")
