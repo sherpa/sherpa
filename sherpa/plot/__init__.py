@@ -37,6 +37,7 @@ backend. The following command prints the name of the backend:
 
    >>> from sherpa import plot
    >>> print(plot.backend.name)
+   pylab
 
 Change the backend
 ------------------
@@ -45,21 +46,19 @@ After the initial import, the backend can be changed by loading one of
 the plotting backends shipped with sherpa (or any other module that
 provides the same interface):
 
-  >>> import sherpa.plot.pylab_backend
-  >>> plot.backend = sherpa.plot.pylab_backend
+  >>> from sherpa.plot.pylab_backend import PylabBackend
+  >>> plot.backend = PylabBackend()
 
 Creating a plot
 ---------------
 
 A plot backend can act as a context manager to apply a specific backend to just one plot
-without globally changing the backend for the rest of the session:
+without globally changing the backend for the rest of the session::
 
-.. doctest-skip::
-
-    >>> from sherpa.plot import backend
-    >>> with backend:
-    ...     # Now call the plot/overplot or contour/overcontour methods
-    ...     obj.plot()
+  >>> from sherpa.plot.pylab_backend import PylabBackend
+  >>> with PylabBackend():
+  ...     # Now call the plot/overplot or contour/overcontour methods
+  ...     obj.plot()   # doctest: +SKIP
 
 This handles setting up the backend, handles any error handling,
 and then ends the session.
