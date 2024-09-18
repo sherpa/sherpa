@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2010, 2016, 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -25,24 +25,27 @@ Classes for PPP simulations
 
 from copy import deepcopy
 import logging
+from typing import Sequence
 
-import numpy
+import numpy as np
 
-from sherpa.stats import Cash, CStat
+from sherpa.stats import Cash, CStat, WStat
 from sherpa.optmethods import NelderMead
 from sherpa.estmethods import Covariance
 from sherpa.fit import Fit
+from sherpa.plot import arr2str
 from sherpa.sim.sample import NormalParameterSampleFromScaleMatrix
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.utils.parallel import parallel_map_rng
 from sherpa.utils.random import poisson_noise
+from sherpa.utils.types import ArrayType
 
 
+# TODO: this should probably use __name__ rather than "sherpa"
 logger = logging.getLogger("sherpa")
 debug = logger.debug
-info = logger.info
 
-_tol = numpy.finfo(float).eps
+_tol = np.finfo(float).eps
 
 __all__ = ('LikelihoodRatioTest', 'LikelihoodRatioResults')
 
@@ -93,41 +96,41 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, ratios, stats, samples, lr, ppp, null, alt,
-                 parnames, parvals):
-        self.ratios = numpy.asarray(ratios)
-        self.stats = numpy.asarray(stats)
-        self.samples = numpy.asarray(samples)
+    def __init__(self,
+                 ratios: ArrayType,
+                 stats: ArrayType,
+                 samples: ArrayType,
+                 lr: float,
+                 ppp: float,
+                 null: float,
+                 alt: float,
+                 parnames: Sequence[str],
+                 parvals: np.ndarray
+                 ) -> None:
+
+        self.ratios = np.asarray(ratios)
+        self.stats = np.asarray(stats)
+        self.samples = np.asarray(samples)
         self.lr = float(lr)
         self.ppp = float(ppp)
         self.null = float(null)
         self.alt = float(alt)
         self.parnames = parnames
-        self.parvals = numpy.asarray(parvals)
+        self.parvals = np.asarray(parvals)
         if len(self.parnames) != self.parvals.shape[1]:
             # This is an unlikely error so do not make it a Sherpa error case
             raise ValueError(f"len(parnames) = {len(self.parnames)}  "
                              f"parvals.shape = {self.parvals.shape}")
-        NoNewAttributesAfterInit.__init__(self)
 
-    def __repr__(self):
+        super().__init__()
+
+    def __repr__(self) -> str:
         return '<Likelihood ratio results instance>'
 
-    def __str__(self):
-        samples = self.samples
-        if self.samples is not None:
-            samples = numpy.array2string(self.samples, separator=',',
-                                         precision=4, suppress_small=False)
-
-        stats = self.stats
-        if self.stats is not None:
-            stats = numpy.array2string(self.stats, separator=',',
-                                       precision=4, suppress_small=False)
-
-        ratios = self.ratios
-        if self.ratios is not None:
-            ratios = numpy.array2string(self.ratios, separator=',',
-                                        precision=4, suppress_small=False)
+    def __str__(self) -> str:
+        samples = arr2str(self.samples)
+        stats = arr2str(self.stats)
+        ratios = arr2str(self.ratios)
 
         output = '\n'.join([
                 f'samples = {samples}',
@@ -141,7 +144,7 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
 
         return output
 
-    def format(self):
+    def format(self) -> str:
         """Convert the object to a string representation for display purposes.
 
         Returns
@@ -161,7 +164,7 @@ class LikelihoodRatioResults(NoNewAttributesAfterInit):
         return s
 
 
-class LikelihoodRatioTestWorker():
+class LikelihoodRatioTestWorker:
     """
     Worker class for LikelihoodRatioTest
     """
@@ -203,6 +206,10 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
 
         D = statistic for null model -
             statistic for alternative model
+
+    .. versionchanged:: 4.17.0
+       The run method can now be called when using the WStat
+       statistic.
 
     References
     ----------
@@ -267,9 +274,16 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
         if method is None:
             method = NelderMead()
 
-        if not isinstance(stat, (Cash, CStat)):
-            raise TypeError("Sherpa fit statistic must be Cash or CStat" +
-                            " for likelihood ratio test")
+        # There should be a better way to determine this (by querying the
+        # stat object in some way). We could use
+        #
+        #   isinstance(stat, sherpa.stats.Likelihood)
+        #
+        # which would seem to be a more-appropriate check.
+        #
+        if not isinstance(stat, (Cash, CStat, WStat)):
+            raise TypeError("Sherpa fit statistic must be Cash, CStat, or "
+                            "WStat for likelihood ratio test")
 
         niter = int(niter)
 
@@ -319,11 +333,10 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
 
         olddep = data.get_dep(filter=False)
         try:
-            statistics = parallel_map_rng(
-                LikelihoodRatioTestWorker(nullfit, altfit, null_vals, alt_vals),
-                samples,
-                numcores=numcores, rng=rng
-            )
+            worker = LikelihoodRatioTestWorker(nullfit, altfit,
+                                               null_vals, alt_vals)
+            statistics = parallel_map_rng(worker, samples, rng=rng,
+                                          numcores=numcores)
         finally:
             data.set_dep(olddep)
             alt.thawedpars = oldaltvals
@@ -341,15 +354,14 @@ class LikelihoodRatioTest(NoNewAttributesAfterInit):
             lrs.append(statrow[2])
             thawedpars.append(statrow[3])
 
-        stats = numpy.asarray(stats)
-        lrs = numpy.asarray(lrs)
-        thawedpars = numpy.asarray(thawedpars)
+        stats = np.asarray(stats)
+        lrs = np.asarray(lrs)
+        thawedpars = np.asarray(thawedpars)
 
-        pppvalue = numpy.sum(lrs > LR) / (1.0 * niter)
+        pppvalue = np.sum(lrs > LR) / (1.0 * niter)
         debug('ppp value = %s', str(pppvalue))
 
+        pars = [p.fullname for p in altfit.model.get_thawed_pars()]
         return LikelihoodRatioResults(lrs, stats, samples, LR,
                                       pppvalue, null_stat, alt_stat,
-                                      [p.fullname for p in altfit.model.pars
-                                       if not p.frozen],
-                                      thawedpars)
+                                      pars, thawedpars)

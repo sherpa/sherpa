@@ -73,7 +73,8 @@ import contextlib
 import copy
 import logging
 import importlib
-from typing import Any, Literal, Optional, Sequence, Union
+from typing import Any, Literal, Optional, Sequence, Union, \
+    overload
 
 import numpy as np
 
@@ -399,7 +400,15 @@ def calculate_errors(data: Data,
         return None
 
 
-def arr2str(x: Optional[Sequence]) -> Optional[str]:
+@overload
+def arr2str(x: None) -> None:
+    ...
+
+@overload
+def arr2str(x: ArrayType) -> str:
+    ...
+
+def arr2str(x):
     """Convert an array to a string for __str__ calls
 
     Parameters
