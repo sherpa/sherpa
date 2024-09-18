@@ -338,6 +338,8 @@ def test_notice_string_data1d(session, expr, result, caplog):
 
     expected = "-100:100" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
+    assert s.get_filter(format='%d', delim=':') == expected
+    assert s.get_filter(format='%d') == expected
 
     expected = "dataset 1: -100:100 "
     if result is None:
@@ -379,6 +381,7 @@ def test_notice_string_data1dint(session, expr, result, caplog):
 
     expected = "-100:100" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
+    assert s.get_filter(format='%d') == expected
 
     expected = "dataset 1: -100:100 "
     if result is None:
@@ -418,6 +421,7 @@ def test_notice_string_datapha(expr, result, caplog):
 
     expected = "1:19" if result is None else result
     assert s.get_data().get_filter(format='%d') == expected
+    assert s.get_filter(format='%d') == expected
 
     expected = "dataset 1: 1:19 "
     if result is None:
