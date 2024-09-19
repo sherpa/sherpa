@@ -8,7 +8,7 @@ is to create a new issue on the Sherpa
 requires creating a free account on GitHub if you do not have one.
 For those using Sherpa as part of
 `CIAO <https://cxc.harvard.edu/ciao/>`_, please use the
-`CXC HelpDesk system <https://cxc.harvard.edu/helpdesk/>`_.
+`CXC HelpDesk system <https://cxc.harvard.edu/help/>`_.
 
 Please include an example that demonstrates the issue that will allow
 the developers to reproduce and fix the problem. You may be asked to
