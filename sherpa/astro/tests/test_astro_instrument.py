@@ -1992,10 +1992,6 @@ def test_rmf_image_offset_0(make_data_path, tmp_path, recwarn):
                                      e_min=e_min, e_max=e_max,
                                      ethresh=1e-10)
 
-    # Hack the output as it's known to be wrong when offset != 1.
-    #
-    rmf_image.f_chan -= 1
-
     # A couple of simple checks. We can not directly compare
     # n_grp/n_chan/f_chan/matrix values. We can check some basic
     # matrix properties, such as the max value and the summation
@@ -2035,7 +2031,7 @@ def test_rmf_image_offset_0(make_data_path, tmp_path, recwarn):
     # It is not clear what these values should be, so treat as a
     # regression test.
     where, = np.where(selected_image)
-    expected = [146, 178, 183, 184, 185, 186, 187, 188, 189, 190]
+    expected = [146, 178, 184, 185, 186, 187, 188, 189, 190, 191]
     assert where[:10] == pytest.approx(expected)
 
     y_direct = rmf_direct.apply_rmf(mvals[selected_direct])

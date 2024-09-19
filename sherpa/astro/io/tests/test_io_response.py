@@ -976,7 +976,7 @@ def test_write_fake_perfect_rmf(offset, tmp_path):
     assert new.energ_lo == pytest.approx(elo)
     assert new.energ_hi == pytest.approx(ehi)
     assert new.n_grp == pytest.approx([1] * 10)
-    assert new.f_chan == pytest.approx(np.arange(1, 11))
+    assert new.f_chan == pytest.approx(np.arange(1, 11) + offset - 1)
     assert new.n_chan == pytest.approx([1] * 10)
 
     assert new.matrix == pytest.approx([1] * 10)

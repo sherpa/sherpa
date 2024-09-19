@@ -122,7 +122,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, overload
 import warnings
 
 import numpy as np
@@ -1041,6 +1041,8 @@ class DataRMF(DataOgipResponse):
         must be in increasing or decreasing order.
     n_grp, f_chan, n_chan, matrix : array-like
     offset : int, optional
+        This must be 0 or greater. This maps to the TLMIN value of
+        the F_CHAN column (when reading from a FITS file).
     e_min, e_max : array-like or None, optional
     header : dict or None, optional
     ethresh : number or None, optional
@@ -1065,8 +1067,13 @@ class DataRMF(DataOgipResponse):
                  header=None, ethresh=None):
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
+        # Check it's an integer.
+        if not float(offset).is_integer():
+            raise ValueError(f"offset must be an integer, not {offset}")
+
         if offset < 0:
             raise ValueError(f"offset must be >=0, not {offset}")
+
         self.energ_lo = energ_lo
         self.energ_hi = energ_hi
         self.offset = offset
@@ -1181,20 +1188,36 @@ class DataRMF(DataOgipResponse):
         return rmf_fold(src, self._grp, self._fch, self._nch, self._rsp,
                         self.detchans, self.offset)
 
+    @overload
+    def notice(self, noticed_chans: None) -> None:
+        ...
+
+    @overload
+    def notice(self, noticed_chans: np.ndarray) -> np.ndarray:
+        ...
+
+    # Note that noticed_chans is not a mask, but the channel values.
     def notice(self, noticed_chans=None):
-        bin_mask = None
+        """Filter the response to match the requested channels."""
+
         self._fch = self.f_chan
         self._nch = self.n_chan
         self._grp = self.n_grp
         self._rsp = self.matrix
         self._lo = self.energ_lo
         self._hi = self.energ_hi
-        if noticed_chans is not None:
-            (self._grp, self._fch, self._nch, self._rsp,
-             bin_mask) = filter_resp(noticed_chans, self.n_grp, self.f_chan,
-                                     self.n_chan, self.matrix, self.offset)
-            self._lo = self.energ_lo[bin_mask]
-            self._hi = self.energ_hi[bin_mask]
+
+        # This could also return here if noticed_chans contains all
+        # channels, but that is harder to check.
+        #
+        if noticed_chans is None:
+            return None
+
+        (self._grp, self._fch, self._nch, self._rsp,
+         bin_mask) = filter_resp(noticed_chans, self.n_grp, self.f_chan,
+                                 self.n_chan, self.matrix, self.offset)
+        self._lo = self.energ_lo[bin_mask]
+        self._hi = self.energ_hi[bin_mask]
         return bin_mask
 
     def get_indep(self, filter=False):

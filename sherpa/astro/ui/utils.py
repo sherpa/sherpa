@@ -5955,6 +5955,10 @@ class Session(sherpa.ui.utils.Session):
         maps to a single energy bin), otherwise the RMF is taken from
         the image data stored in the file pointed to by `fname`.
 
+        .. versionchanged:: 4.17.0
+           Support for startchan values other than 1 has been
+           improved.
+
         .. versionchanged:: 4.16.0
            The e_min and e_max values will use the rmflo and rmfhi
            values if not set.

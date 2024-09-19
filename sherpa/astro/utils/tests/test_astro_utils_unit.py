@@ -178,28 +178,18 @@ def test_filter_resp_basics(offset, selected, ng, fch, nch, mat, msk):
                      [0.0, 0.0, 3.3, 3.7, 0.0],
                      [0.0, 0.0, 0.0, 4.0, 0.0]])
 
-    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(fm)
+    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(fm, startchan=offset)
 
-    # Correct for the offset, both for f_chan and for nchans
+    # Correct for the offset.
     #
     delta = offset - 1
-
-    f_chan += delta
     nchans = np.asarray(selected) + delta
-
-    if offset == 0:
-        # PHA files with channel starting at 0 get reset to 1, so
-        # mimic that here.
-        #
-        nchans += 1
 
     # The filter_resp command is sent the noticed channel numbers.
     #
     resp = filter_resp(nchans, n_grp, f_chan, n_chan, matrix, offset)
     n_grp2, f_chan2, n_chan2, matrix2, mask2 = resp
 
-    # We have to correct for the offset here.
-    #
     assert n_grp2 == pytest.approx(ng)
     assert f_chan2 == pytest.approx(np.asarray(fch) + delta)
     assert n_chan2 == pytest.approx(nch)

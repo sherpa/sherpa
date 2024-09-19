@@ -1915,8 +1915,7 @@ def make_pha_offset(offset):
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.8, 0.1],
         [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.9]
     ])
-    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(mat)
-    f_chan += (offset - 1)
+    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(mat, startchan=offset)
     rmf = DataRMF("x", detchans=9, energ_lo=energ_lo,
                   energ_hi=energ_hi, e_min=e_min, e_max=e_max,
                   n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,

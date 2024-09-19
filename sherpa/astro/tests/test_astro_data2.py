@@ -3161,6 +3161,18 @@ def test_rmf_invalid_offset():
         DataRMF("dummy", 1024, elo, ehi, dummy, dummy, dummy, dummy, offset=-1)
 
 
+def test_rmf_invalid_offset_not_integer():
+    """Just check we error out"""
+
+    elo = np.arange(1, 5)
+    ehi = elo + 1
+    dummy = []
+
+    with pytest.raises(ValueError,
+                       match="^offset must be an integer, not 0.5$"):
+        DataRMF("dummy", 1024, elo, ehi, dummy, dummy, dummy, dummy, offset=0.5)
+
+
 @pytest.mark.parametrize("offset", [0, 1, 2, 5])
 def test_rmf_offset_check_square(offset, caplog):
     """What happens if offset is set?
@@ -3212,11 +3224,7 @@ def test_rmf_offset_check_square(offset, caplog):
     # third bin, which should select the last three "energy"
     # bins.
     #
-    if offset == 0:
-        # Since Sherpa increases channel by 1, change the noticed range.
-        nchans = [offset + 2 + 1]
-    else:
-        nchans = [offset + 2]
+    nchans = [offset + 2]
 
     selected = rmf.notice(nchans)
     assert selected == pytest.approx([False, True, True, True])
@@ -3300,9 +3308,6 @@ def test_rmf_offset_check_rectangular(offset):
     #
     # - drop the first channel
     nchans1 = offset + np.arange(1, 10)
-    if offset == 0:
-        # Since Sherpa increases channel by 1, change the noticed range.
-        nchans1 += 1
 
     selected1 = rmf.notice(nchans1)
     assert selected1.all()
@@ -3313,10 +3318,11 @@ def test_rmf_offset_check_rectangular(offset):
 
     # - drop the last channel
     nchans2 = offset + np.arange(0, 9)
-    if offset == 0:
-        nchans2 += 1
 
     selected2 = rmf.notice(nchans2)
+    assert selected2 == pytest.approx([True] * 19 + [False])
+
+    selected2 = rmf.notice(offset + np.arange(0, 9))
     assert selected2 == pytest.approx([True] * 19 + [False])
 
     expected2 = mvals[selected2] @ full_matrix[selected2, :]
@@ -3339,8 +3345,6 @@ def test_rmf_offset_check_rectangular(offset):
     # start/end points].
     #
     nchans3 = offset + np.asarray([4, 5, 6])
-    if offset == 0:
-        nchans3 += 1
 
     selected3 = rmf.notice(nchans3)
     assert selected3 == pytest.approx([True, False] * 2 + [True] * 10 + [False] * 4 + [True, False])
@@ -3380,12 +3384,11 @@ def test_rmf_offset_check_basics(offset):
                      [0.0, 0.0, 3.3, 3.7, 0.0],
                      [0.0, 0.0, 0.0, 4.0, 0.0]])
 
-    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(fm)
+    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(fm, startchan=offset)
 
-    # Correct for the offset
+    # Correct for the offset.
     #
     delta = offset - 1
-    f_chan += delta
 
     # Make up energy ranges
     #
@@ -3412,9 +3415,6 @@ def test_rmf_offset_check_basics(offset):
     #
     # First channel:
     nchans = np.asarray([1]) + delta
-    if offset == 0:
-        # Since Sherpa increases channel by 1, change the noticed range.
-        nchans += 1
 
     selected = rmf.notice(nchans)
     expected = mvals[selected] @ fm[selected, :]
@@ -3425,8 +3425,6 @@ def test_rmf_offset_check_basics(offset):
 
     # Second channel:
     nchans = np.asarray([2]) + delta
-    if offset == 0:
-        nchans += 1
 
     selected = rmf.notice(nchans)
     expected = mvals[selected] @ fm[selected, :]
@@ -3440,8 +3438,6 @@ def test_rmf_offset_check_basics(offset):
 
     # Third channel:
     nchans = np.asarray([3]) + delta
-    if offset == 0:
-        nchans += 1
 
     selected = rmf.notice(nchans)
     expected = mvals[selected] @ fm[selected, :]
@@ -3450,8 +3446,6 @@ def test_rmf_offset_check_basics(offset):
 
     # Fourth channel:
     nchans = np.asarray([4]) + delta
-    if offset == 0:
-        nchans += 1
 
     selected = rmf.notice(nchans)
     expected = mvals[selected] @ fm[selected, :]
@@ -3460,8 +3454,6 @@ def test_rmf_offset_check_basics(offset):
 
     # Fifth channel:
     nchans = np.asarray([5]) + delta
-    if offset == 0:
-        nchans += 1
 
     selected = rmf.notice(nchans)
     expected = mvals[selected] @ fm[selected, :]
@@ -3473,9 +3465,6 @@ def test_rmf_offset_check_basics(offset):
     #
     nchans1 = np.asarray([2,3]) + delta
     nchans2 = np.asarray([1,2,3]) + delta
-    if offset == 0:
-        nchans1 += 1
-        nchans2 += 1
 
     selected1 = rmf.notice(nchans1)
     got1 = rmf.apply_rmf(mvals[selected1])
@@ -3485,6 +3474,9 @@ def test_rmf_offset_check_basics(offset):
     assert selected2 == pytest.approx(selected1)
     assert got2 == pytest.approx(got1)
 
+    # Add an explicit check here, rather than one that just checks
+    # it is internally consistent.
+    #
     assert got1 == pytest.approx([0, 0.56, 2.99, 1.85, 0])
 
 
