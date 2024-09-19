@@ -3545,7 +3545,7 @@ class Session(NoNewAttributesAfterInit):
     def set_staterror(self, id, val=None, fractional=False) -> None:
         """Set the statistical errors on the dependent axis of a data set.
 
-        These values over-ride the errors calculated by any statistic,
+        These values override the errors calculated by any statistic,
         such as ``chi2gehrels`` or ``chi2datavar``.
 
         Parameters
@@ -4273,7 +4273,7 @@ class Session(NoNewAttributesAfterInit):
            The separation between each grid point. This is not used if
            ``numbins`` is set.
         numbins : int, optional
-           The number of grid points. This over-rides the ``step``
+           The number of grid points. This overrides the ``step``
            setting.
         id : int, str, or None, optional
            The identifier for the data set to use. If not given then
@@ -8692,7 +8692,7 @@ class Session(NoNewAttributesAfterInit):
         change.
 
         .. versionchanged:: 4.16.1
-           Source models no-longer have to contain the linked parameter.
+           Source models no longer have to contain the linked parameter.
 
         Parameters
         ----------
@@ -13811,7 +13811,7 @@ class Session(NoNewAttributesAfterInit):
         # We only care about the size when creating the display, that
         # is, if overplot/contour is set then we assume the size is
         # known. There is a check to make sure the user isn't trying
-        # to overplot too-many plots, but we allow less plots to be
+        # to overplot too many plots, but we allow less plots to be
         # overplot than the original.
         #
         # Should this care about clearwindow too?
@@ -16624,7 +16624,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -16738,7 +16738,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -16856,7 +16856,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -16872,7 +16872,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
+           overrides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -16988,7 +16988,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17004,7 +17004,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
+           overrides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -17122,7 +17122,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17244,7 +17244,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17369,7 +17369,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17385,7 +17385,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
+           overrides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -17501,7 +17501,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17517,7 +17517,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
+           overrides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all

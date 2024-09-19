@@ -65,7 +65,7 @@ def _get_image_filter(data: DataIMG) -> str:
     There is a disconnect between 1D and 2D filters as an empty string
     means no data has been selected for the former, but all data is
     selected in the latter. For the logging of the filters this makes
-    things awkward, so we over-ride the image case and replace an empty
+    things awkward, so we override the image case and replace an empty
     string with "Field()". See also issue #1430 which points out that
     the empty string can also mean "all data has been ignored".
 
@@ -406,7 +406,7 @@ class Session(sherpa.ui.utils.Session):
             self._plot_types_alias[f"bkg{key}"] = f"bkg_{key}"
 
         # These are left-over from earlier, when they may have meant
-        # something different but no-longer do. It is probably
+        # something different but no longer do. It is probably
         # time to remove them.
         #
         self._plot_types_alias["astrocompsource"] = "source_component"
@@ -1019,7 +1019,7 @@ class Session(sherpa.ui.utils.Session):
            The separation between each grid point. This is not used if
            ``numbins`` is set.
         numbins : int, optional
-           The number of grid points. This over-rides the ``step``
+           The number of grid points. This overrides the ``step``
            setting.
         id : int, str, or None, optional
            The identifier for the data set to use. If not given then
@@ -3056,7 +3056,7 @@ class Session(sherpa.ui.utils.Session):
                       ) -> None:
         """Set the statistical errors on the dependent axis of a data set.
 
-        These values over-ride the errors calculated by any statistic,
+        These values override the errors calculated by any statistic,
         such as ``chi2gehrels`` or ``chi2datavar``.
 
         Parameters
@@ -4176,7 +4176,7 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.12.2
            The bkg_id, counts, group, and filter parameters have been
-           added and the routine no-longer calculates the average
+           added and the routine no longer calculates the average
            scaling for all the background components but just for the
            given component.
 
@@ -15027,7 +15027,7 @@ class Session(sherpa.ui.utils.Session):
            The `id` parameter is now used if set (previously the
            default dataset was always used). The screen output is now
            controlled by the Sherpa logging setup. The flux
-           calculation no-longer excludes samples at the parameter
+           calculation no longer excludes samples at the parameter
            soft limits, as this could cause an over-estimation of the
            flux when a parameter is only an upper limit. The statistic
            value is now returned for each row, even those that were
@@ -16684,7 +16684,7 @@ class Session(sherpa.ui.utils.Session):
 
         .. versionchanged:: 4.16.0
            Any set_psf calls are now included in the output file. The
-           filter is no-longer included if it does not exclude any
+           filter is no longer included if it does not exclude any
            data, and the code tries to recreate manually-created
            datasets (e.g. use of `dataspace1d` or `load_arrays`), but
            not all situations are handled. XSPEC table models are now
