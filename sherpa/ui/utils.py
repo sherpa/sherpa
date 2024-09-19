@@ -342,7 +342,7 @@ def calc_multiplot_size(rows, cols, nplots):
     rows, cols
        The requested sizes, if set (one of them must be set).
     nplots
-       The nuber of plots.
+       The number of plots.
 
     Returns
     -------
@@ -13646,7 +13646,7 @@ class Session(NoNewAttributesAfterInit):
         plotmeth
             The call.
         rows, cols
-            The number of rows or columns (to over-ride split plot).
+            The number of rows or columns (to override split plot).
         kwargs
             The keyword arguments to apply to each plot or contour.
 
@@ -13746,7 +13746,7 @@ class Session(NoNewAttributesAfterInit):
         #
         kwstore = get_per_plot_kwargs(nplots, kwargs)
 
-        # Store the original values in case they are over-written.
+        # Store the original values in case they are overwritten.
         #
         sp = self._splitplot
         nrows_orig = sp.rows
@@ -14001,7 +14001,7 @@ class Session(NoNewAttributesAfterInit):
            The keyword arguments can now be set per plot by using a
            sequence of values. The layout can be changed with the
            rows and cols arguments and the automatic calculation
-           no-longer forces two rows.
+           no longer forces two rows.
 
         .. versionchanged:: 4.15.0
            A number of labels, such as "bkgfit", are marked as
@@ -15982,7 +15982,7 @@ class Session(NoNewAttributesAfterInit):
            The keyword arguments can now be set per plot by using a
            sequence of values. The layout can be changed with the
            rows and cols arguments and the automatic calculation
-           no-longer forces two rows.
+           no longer forces two rows.
 
         .. versionchanged:: 4.12.2
            Keyword arguments, such as alpha, can be sent to
