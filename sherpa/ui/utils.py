@@ -44,7 +44,7 @@ from sherpa.models.model import Model, SimulFitModel
 from sherpa.models.template import add_interpolator, create_template_model, \
     reset_interpolators
 from sherpa.optmethods import OptMethod
-from sherpa.plot import Plot, MultiPlot, set_backend
+from sherpa.plot import Plot, MultiPlot, set_backend, get_per_plot_kwargs
 from sherpa.stats import Stat, UserStat
 from sherpa.utils import NoNewAttributesAfterInit, is_subclass, \
     export_method, send_to_pager
@@ -320,6 +320,55 @@ def notice_data_range(get_data: Callable[[IdType], Data],
             xlabel = None
 
         report_filter_change(idstr, ofilter, nfilter, xlabel)
+
+
+@overload
+def calc_multiplot_size(rows: int,
+                        cols: Optional[int],
+                        nplots: int
+                        ) -> tuple[int, int]:
+    ...
+
+@overload
+def calc_multiplot_size(rows: Optional[int],
+                        cols: int,
+                        nplots: int
+                        ) -> tuple[int, int]:
+    ...
+
+def calc_multiplot_size(rows, cols, nplots):
+    """How many rows and columns to use for multi plot/contours?
+
+    Parameters
+    ----------
+    rows, cols
+       The requested sizes, if set (one of them must be set).
+    nplots
+       The number of plots.
+
+    Returns
+    -------
+    (nrows, ncols)
+
+    """
+
+    def get(n: int) -> int:
+        return int(np.ceil(nplots / n))
+
+    # Since at least one of rows or cols must be set.
+    #
+    nrows = rows if rows is not None else get(cols)
+    ncols = cols if cols is not None else get(rows)
+
+    if nrows * ncols < nplots:
+        # Go for the nearest (upper) square value for the number
+        # of columns, and calculate the number of rows to match
+        # the data.
+        #
+        ncols = int(np.ceil(np.sqrt(nplots)))
+        nrows = get(ncols)
+
+    return nrows, ncols
 
 
 ###############################################################################
@@ -11903,14 +11952,26 @@ class Session(NoNewAttributesAfterInit):
     # Plot object access
     #
 
-    # DOC-TODO: how is this used? simple testing didn't seem to make any
-    # difference (using the chips backend)
     def get_split_plot(self):
         """Return the plot attributes for displays with multiple plots.
 
         Returns
         -------
         splot : a `sherpa.plot.SplitPlot` instance
+
+        See Also
+        --------
+        contour, plot
+
+        Examples
+        --------
+
+        Change the layout of the plot and contour commands to display
+        three vertical plots:
+
+        >>> sp = get_split_plot()
+        >>> sp.rows = 3
+        >>> sp.cols = 1
 
         """
         return self._splitplot
@@ -13607,8 +13668,12 @@ class Session(NoNewAttributesAfterInit):
     #
     # Line plots
     #
-
-    def _multi_plot(self, args, plotmeth="plot", **kwargs) -> None:
+    def _multi_plot(self,
+                    args: Sequence[IdType],
+                    plotmeth: Literal["plot", "contour"] = "plot",
+                    rows: Optional[int] = None,
+                    cols: Optional[int] = None,
+                    **kwargs) -> None:
         """Handle the plot() or contour() call.
 
         The arguments are split up into groups - a "command" followed
@@ -13617,10 +13682,12 @@ class Session(NoNewAttributesAfterInit):
 
         Parameters
         ----------
-        args : list
+        args
             The arguments to the call. It can not be empty.
-        plotmeth : {"plot", "contour"}
+        plotmeth
             The call.
+        rows, cols
+            The number of rows or columns (to override split plot).
         kwargs
             The keyword arguments to apply to each plot or contour.
 
@@ -13654,6 +13721,19 @@ class Session(NoNewAttributesAfterInit):
 
         are meaningful calls.
 
+        The number of rows and columns depends on the rows and cols
+        arguments:
+
+        - if both are set then they are used
+        - if either are set then the other is calculated
+        - if both are unset then we use the split_plot preferences
+
+        There is then a check, so that they get recalculated if there
+        are too many plots. In this case an approach is used to
+
+        - try to go with a square display
+        - fill in columns first
+
         """
 
         # This is an internal routine so it is not expected to be
@@ -13664,6 +13744,12 @@ class Session(NoNewAttributesAfterInit):
 
         if plotmeth not in ["plot", "contour"]:
             raise ArgumentErr(f"Unsupported plotmeth={plotmeth}")
+
+        if rows is not None and (rows < 1 or not _is_integer(rows)):
+            raise ArgumentErr(f"rows must be a positive integer, not {rows}")
+
+        if cols is not None and (cols < 1 or not _is_integer(cols)):
+            raise ArgumentErr(f"cols must be a positive integer, not {cols}")
 
         get = getattr(self, f"_get_{plotmeth}type")
         check = getattr(self, f"_check_{plotmeth}type")
@@ -13695,20 +13781,42 @@ class Session(NoNewAttributesAfterInit):
             #
             plots.append(copy.deepcopy(getfunc(*getargs)))
 
-        if len(plots) == 1:
-            plotmeth = getattr(self, f"_{plotmeth}")
-            plotmeth(plots[0], **kwargs)
-            return
+        nplots = len(plots)
 
-        nrows = 2
-        ncols = int((len(plots) + 1) / 2.0)
+        # Deconstruct the keyword arguments.
+        #
+        kwstore = get_per_plot_kwargs(nplots, kwargs)
+
+        # Store the original values in case they are overwritten.
+        #
         sp = self._splitplot
-        sp.reset(nrows, ncols)
-        plotmeth = getattr(sp, f"add{plotmeth}")
+        nrows_orig = sp.rows
+        ncols_orig = sp.cols
 
+        # What size to use?
+        #
+        if rows is None and cols is None:
+            # Special case the single-plot call
+            if nplots == 1:
+                nrows = 1
+                ncols = 1
+            else:
+                nrows, ncols = calc_multiplot_size(nrows_orig,
+                                                   ncols_orig, nplots)
+
+        else:
+            nrows, ncols = calc_multiplot_size(rows, cols, nplots)
+
+        plotfunc = getattr(sp, f"add{plotmeth}")
+        sp.reset(rows=nrows, cols=ncols)
         with sherpa.plot.backend:
-            while plots:
-                plotmeth(plots.pop(0), **kwargs)
+            for plot, store in zip(plots, kwstore):
+                plotfunc(plot, **store)
+
+        # Restore the settings. Is this needed?
+        #
+        sp.rows = nrows_orig
+        sp.cols = ncols_orig
 
     def _plot(self, plotobj, **kwargs) -> None:
         """Display a plot object
@@ -13912,12 +14020,16 @@ class Session(NoNewAttributesAfterInit):
         """
         self._set_plot_item(plottype, 'ylog', False)
 
-    # DOC-TODO: how to describe optional plot types
-    # DOC-TODO: should we add plot_order
-    # DOC-TODO: how to list information/examples about the backends?
-    # have some introductory text, but prob. need a link
-    # to more information
-    def plot(self, *args, **kwargs) -> None:
+    # This documentation is really for the sherpa.astro.ui version, as
+    # some of this is not relevant for the sherpa.ui code, but leave
+    # like this.
+    #
+    def plot(self,
+             *args,
+             # At present export_method does not support this
+             # rows: Optional[int] = None,
+             # cols: Optional[int] = None,
+             **kwargs) -> None:
         """Create one or more plot types.
 
         The plot function creates one or more plots, depending on the
@@ -13925,6 +14037,12 @@ class Session(NoNewAttributesAfterInit):
         identifiers, and this can be repeated. If no data set
         identifier is given for a plot type, the default identifier -
         as returned by `get_default_id` - is used.
+
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by using a
+           sequence of values. The layout can be changed with the
+           rows and cols arguments and the automatic calculation
+           no longer forces two rows.
 
         .. versionchanged:: 4.15.0
            A number of labels, such as "bkgfit", are marked as
@@ -13935,6 +14053,15 @@ class Session(NoNewAttributesAfterInit):
            Keyword arguments, such as alpha and ylog, can be sent to
            each plot.
 
+        Parameters
+        ----------
+        args
+           The plot names and identifiers.
+        rows, cols
+           The number of rows and columns (if set).
+        kwargs
+           The plot arguments applied to each plot.
+
         Raises
         ------
         sherpa.utils.err.ArgumentErr
@@ -13942,12 +14069,8 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         ---------
-        get_default_id : Return the default data set identifier.
-        sherpa.astro.ui.set_analysis : Set the units used when fitting and displaying spectral data.
-        set_xlinear : New plots will display a linear X axis.
-        set_xlog : New plots will display a logarithmically-scaled X axis.
-        set_ylinear : New plots will display a linear Y axis.
-        set_ylog : New plots will display a logarithmically-scaled Y axis.
+        get_default_id, get_split_plot, set_xlinear, set_xlog,
+        set_ylinear, set_ylog
 
         Notes
         -----
@@ -14040,8 +14163,15 @@ class Session(NoNewAttributesAfterInit):
         such as the `set_analysis` command controlling the units
         used for PHA data sets.
 
-        See the documentation for the individual routines for
-        information on how to configure the plots.
+        Given a plot name, such as "data", the remaining arguments up
+        to the next plot name match those from the corresponding
+        plot_xxx call (in this case plot_data), ignoring the replot,
+        overplot, and clearwindow arguments. So the call
+
+        >>> plot("data", "bkg", 1, "up", ylog=True)
+
+        can be thought of as combining the plots created by calling
+        plot_data(ylog=True) and plot_bkg(1, "up", ylog=True).
 
         The plot capabilities depend on what plotting backend, if any,
         is installed. If there is none available, a warning message
@@ -14085,13 +14215,49 @@ class Session(NoNewAttributesAfterInit):
 
         >>> plot("data", "model", ylog=True)
 
-        Plot the backgrounds for dataset 1 using the "up" and "down"
-        components (in this case the background identifier):
+        Plot the background data components "up" and "down" for
+        dataset 1:
 
         >>> plot("bkg", 1, "up", "bkg", 1, "down")
 
+        Draw both data and model for the default dataset in black, but
+        with partial opacity:
+
+        >>> plot("data", "model", color="black", alpha=0.5)
+
+        Draw the two plots in black but with different opacities:
+
+        >>> plot("data", "model", color="black", alpha=[1, 0.5])
+
+        Label each plot (the output depends on the backend and the
+        plot options):
+
+        >>> plot("data", "model", label=["data", "model"])
+
+        Draw the two plots with different y-axis scalings:
+
+        >>> plot("data", 2, "model", 2, ylog=[False, True])
+
+        Change the layout to a single column of plots:
+
+        >>> plot("data", "data", 2, cols=1)
+
+        Use a two-column by three-row display (although in this case
+        only one of the rows or cols arguments needed to be given):
+
+        >>> plot("data", "data", 2, "model", "model", 2,
+        ...      "resid", "resid", 2, rows=3, cols=2)
+
+        Create a display for three plots, vertically aligned,
+        but only display plots in the first two:
+
+        >>> plot("data", "model", cols=1, rows=3)
+
         """
-        self._multi_plot(args, **kwargs)
+
+        rows = kwargs.pop("rows", None)
+        cols = kwargs.pop("cols", None)
+        self._multi_plot(args, rows=rows, cols=cols, **kwargs)
 
     def plot_data(self,
                   id: Optional[IdType] = None,
@@ -15838,11 +16004,12 @@ class Session(NoNewAttributesAfterInit):
         with sherpa.plot.backend:
             plotobj.contour(overcontour=overcontour, **kwargs)
 
-    # DOC-TODO: how to describe optional plot types
-    # DOC-TODO: how to list information/examples about the backends?
-    # have some introductory text, but prob. need a link
-    # to more information
-    def contour(self, *args, **kwargs) -> None:
+    def contour(self,
+                *args,
+                # At present export_method does not support this
+                # rows: Optional[int] = None,
+                # cols: Optional[int] = None,
+                **kwargs) -> None:
         """Create a contour plot for an image data set.
 
         Create one or more contour plots, depending on the arguments
@@ -15852,9 +16019,24 @@ class Session(NoNewAttributesAfterInit):
         as returned by `get_default_id` - is used. This is for
         2D data sets.
 
+        .. versionchanged:: 4.17.0
+           The keyword arguments can now be set per plot by using a
+           sequence of values. The layout can be changed with the
+           rows and cols arguments and the automatic calculation
+           no longer forces two rows.
+
         .. versionchanged:: 4.12.2
            Keyword arguments, such as alpha, can be sent to
            each plot.
+
+        Parameters
+        ----------
+        args
+           The contour-plot names and identifiers.
+        rows, cols
+           The number of rows and columns (if set).
+        kwargs
+           The plot arguments applied to each contour plot.
 
         Raises
         ------
@@ -15863,17 +16045,9 @@ class Session(NoNewAttributesAfterInit):
 
         See Also
         ---------
-        contour_data : Contour the values of an image data set.
-        contour_fit : Contour the fit to a data set.
-        contour_fit_resid : Contour the fit and the residuals to a data set.
-        contour_kernel : Contour the kernel applied to the model of an image data set.
-        contour_model : Contour the values of the model, including any PSF.
-        contour_psf : Contour the PSF applied to the model of an image data set.
-        contour_ratio : Contour the ratio of data to model.
-        contour_resid : Contour the residuals of the fit.
-        contour_source : Contour the values of the model, without any PSF.
-        get_default_id : Return the default data set identifier.
-        sherpa.astro.ui.set_coord : Set the coordinate system to use for image analysis.
+        contour_data, contour_fit, contour_fit_resid, contour_kernel,
+        contour_model, contour_psf, contour_ratio, contour_resid,
+        contour_source, get_default_id, get_split_plot
 
         Notes
         -----
@@ -15930,8 +16104,16 @@ class Session(NoNewAttributesAfterInit):
 
         >>> contour('data', 'model', alpha=0.7)
 
+        Use a single column rather than single row to display the
+        contour plots:
+
+        >>> contour('data', 'model', cols=1)
+
         """
-        self._multi_plot(args, plotmeth='contour', **kwargs)
+        rows = kwargs.pop("rows", None)
+        cols = kwargs.pop("cols", None)
+        self._multi_plot(args, plotmeth='contour', rows=rows,
+                         cols=cols, **kwargs)
 
     def contour_data(self,
                      id: Optional[IdType] = None,
@@ -16332,7 +16514,10 @@ class Session(NoNewAttributesAfterInit):
         plot1obj = self.get_fit_contour(id, recalc=not replot)
         plot2obj = self.get_resid_contour(id, recalc=not replot)
 
-        self._splitplot.reset()
+        # This does not use _jointplot because the X axis is not
+        # obviously shared between the two plots.
+        #
+        self._splitplot.reset(rows=2, cols=1)
         with sherpa.plot.backend:
 
             # Note: the user settings are applied to both contours

@@ -1320,6 +1320,8 @@ class SplitPlot(Plot, Contour):
     def __str__(self) -> str:
         return display_fields(self, self._fields)
 
+    # Should this use the preferences to set the rows and cols?
+    #
     def reset(self, rows=2, cols=1):
         "Prepare for a new set of plots or contours."
         self.rows = rows
@@ -3886,6 +3888,55 @@ class RegionUncertainty(Confidence2D):
             fit.model.thawedpars = oldpars
 
 
+def get_per_plot_kwargs(nplots: int,
+                        kwargs
+                        ) -> list[dict[str, Any]]:
+    """Separate the per-plot plot arguments.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    nplots
+       The number of plots.
+    kwargs
+       The user-specified keyword arguments. Any values which are
+       sequences (not a string) need to contain nplots elements.
+
+    Returns
+    -------
+    kwstores
+       The keyword arguments for each plot.
+
+    """
+
+    # Allow kwargs to be specified per-plot. This is done by
+    # checking if any value is an iterable (and not a string) and
+    # extracting a single value per plot.
+    #
+    # Need these {} to be separate which means we can not just say
+    # `kwstore = [{}] * nplots`.
+    #
+    ## kwstore: list[dict[str, Any]]
+    kwstore = [{} for _ in range(nplots)]
+    for key, val in kwargs.items():
+        if is_iterable_not_str(val):
+            nval = len(val)
+            if nval != nplots:
+                raise ValueError(f"keyword '{key}': expected "
+                                 f"{nplots} elements but found "
+                                 f"{nval}")
+
+            for store, v in zip(kwstore, val):
+                store[key] = v
+
+        else:
+            for store in kwstore:
+                store[key] = val
+
+    return kwstore
+
+
 class MultiPlot:
     """Combine multiple line-style plots.
 
@@ -3958,32 +4009,8 @@ class MultiPlot:
 
         """
 
-        nplots = len(self.plots)
-
-        # Allow kwargs to be specified per-plot. This is done by
-        # checking if any value is an iterable (and not a string) and
-        # extracting a single value per plot.
-        #
-        # Need these {} to be separate which means we can not just say
-        # `kwstore = [{}] * nplots`.
-        #
-        kwstore: list[dict[str, Any]]
-        kwstore = [{} for _ in range(nplots)]
-        for key, val in kwargs.items():
-            if is_iterable_not_str(val):
-                nval = len(val)
-                if nval != nplots:
-                    raise ValueError(f"keyword '{key}': expected "
-                                     f"{nplots} elements but found "
-                                     f"{nval}")
-
-                for store, v in zip(kwstore, val):
-                    store[key] = v
-
-            else:
-                for store in kwstore:
-                    store[key] = val
-
+        kwstore = get_per_plot_kwargs(len(self.plots),
+                                      kwargs)
         for plot, store in zip(self.plots, kwstore):
             plot.plot(overplot=overplot, clearwindow=clearwindow,
                       **store)
