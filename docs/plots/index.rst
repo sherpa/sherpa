@@ -145,7 +145,7 @@ classes:
    >>> mdl.pars[2].val = 22
    >>> mdl.pars[3].val = 10
    >>> print(mdl)
-   (base - line)
+   base - line
       Param        Type          Value          Min          Max      Units
       -----        ----          -----          ---          ---      -----
       base.c0      thawed           10 -3.40282e+38  3.40282e+38
@@ -223,7 +223,7 @@ the plot object, for the DataPlot it is
    :include-source:
 
     >>> print(dplot.plot_prefs)
-    {'xerrorbars': False, 'yerrorbars': True, 'ecolor': None, 'capsize': None, 'barsabove': False, 'xlog': False, 'ylog': False, 'linestyle': 'None', 'linecolor': None, 'color': None, 'marker': '.', 'markerfacecolor': None, 'markersize': None}
+    {'xlog': False, 'ylog': False, 'label': None, 'xerrorbars': False, 'yerrorbars': True, 'color': None, 'linestyle': 'None', 'linewidth': None, 'marker': '.', 'alpha': None, 'markerfacecolor': None, 'markersize': None, 'ecolor': None, 'capsize': None}
 
 Here we set the y scale of the data plot to be drawn with a log
 scale - by changing the preference setting - and then override
@@ -271,7 +271,7 @@ accepts plot objects rather than data and model objects.
    >>> from sherpa.stats import Cash
    >>> from sherpa.fit import Fit
    >>> f = Fit(d, mdl, stat=Cash(), method=NelderMead())
-   >>> f.fit()
+   >>> fit_res = f.fit()
 
 The model plot needs to be updated to reflect the new parameter values
 before we can replot the fit:
@@ -279,7 +279,7 @@ before we can replot the fit:
 .. plot::
    :context:
    :include-source:
-   
+
    >>> mplot.prepare(d, mdl)
    >>> fplot.plot()
 
@@ -300,12 +300,7 @@ line position (which corresponds to `mdl.pars[2]`):
     >>> from sherpa.plot import IntervalProjection
     >>> iproj = IntervalProjection()
     >>> iproj.calc(f, mdl.pars[2])
-    WARNING: hard minimum hit for parameter base.c0
-    WARNING: hard maximum hit for parameter base.c0
-    WARNING: hard minimum hit for parameter line.fwhm
-    WARNING: hard maximum hit for parameter line.fwhm
-    WARNING: hard minimum hit for parameter line.ampl
-    WARNING: hard maximum hit for parameter line.ampl
+    ...
     >>> iproj.plot()
 
 More plot customization

@@ -790,8 +790,6 @@ def test_get_source_plot_energy(idval, clean_astro_ui):
 
     assert sp.title == 'Source Model of example'
     assert sp.xlabel == 'Energy (keV)'
-
-    #y label depends on the backend
     assert normalize_latex(sp.ylabel) == 'f(E)  Photons/sec/cm$^2$/keV'
 
 
