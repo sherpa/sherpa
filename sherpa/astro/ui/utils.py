@@ -1853,7 +1853,13 @@ class Session(sherpa.ui.utils.Session):
 
         The column order for the different data types are as follows,
         where ``x`` indicates an independent axis, ``y`` the dependent
-        axis, the asymmetric errors ``elo`` and ``ehi``.
+        axis, the asymmetric errors ``elo`` and ``ehi``. ``elo`` and ``ehi``
+        assumed to be positive values. They are used to calculate ``staterror`` for
+        ``fit`` with ``chi2`` statistics. Note that ``set_stat`` will not
+        impact the statistics values for the fitting this type of data and 
+        ``fit`` will always use ``staterror`` in this case. ``resample_data`` 
+        will assume ``set_stat`` setting in calculating the statistics for bootstrap
+        sampling.
 
         +----------------------+-----------------+--------------------+
         | Identifier           | Required Fields |   Optional Fields  |
