@@ -3545,7 +3545,7 @@ class Session(NoNewAttributesAfterInit):
     def set_staterror(self, id, val=None, fractional=False) -> None:
         """Set the statistical errors on the dependent axis of a data set.
 
-        These values over-ride the errors calculated by any statistic,
+        These values override the errors calculated by any statistic,
         such as ``chi2gehrels`` or ``chi2datavar``.
 
         Parameters
@@ -4273,7 +4273,7 @@ class Session(NoNewAttributesAfterInit):
            The separation between each grid point. This is not used if
            ``numbins`` is set.
         numbins : int, optional
-           The number of grid points. This over-rides the ``step``
+           The number of grid points. This overrides the ``step``
            setting.
         id : int, str, or None, optional
            The identifier for the data set to use. If not given then
@@ -8692,7 +8692,7 @@ class Session(NoNewAttributesAfterInit):
         change.
 
         .. versionchanged:: 4.16.1
-           Source models no-longer have to contain the linked parameter.
+           Source models no longer have to contain the linked parameter.
 
         Parameters
         ----------
@@ -13734,6 +13734,11 @@ class Session(NoNewAttributesAfterInit):
         - try to go with a square display
         - fill in columns first
 
+        The handling of overplot/contour has been improved - see issue
+        #2128 - but this involves using internal features of the
+        SplitPlot class. This could be improved, once we have more
+        experience of how this all works.
+
         """
 
         # This is an internal routine so it is not expected to be
@@ -13755,9 +13760,9 @@ class Session(NoNewAttributesAfterInit):
         check = getattr(self, f"_check_{plotmeth}type")
 
         plots = []
-        args = list(args)
-        while args:
-            plottype = args.pop(0)
+        largs = list(args)
+        while largs:
+            plottype = largs.pop(0)
             _check_str_type(plottype, "plottype")
             plottype = get(plottype.lower())
 
@@ -13766,11 +13771,11 @@ class Session(NoNewAttributesAfterInit):
             # plot/contour type.
             #
             getargs = []
-            while args:
-                if check(args[0]):
+            while largs:
+                if check(largs[0]):
                     break
 
-                getargs.append(args.pop(0))
+                getargs.append(largs.pop(0))
 
             funcname = f"get_{plottype}_{plotmeth}"
             getfunc = getattr(self, funcname)
@@ -13783,6 +13788,14 @@ class Session(NoNewAttributesAfterInit):
 
         nplots = len(plots)
 
+        # What is the overplot/contour handling? To address #2128 we
+        # do not need to worry about the clearwindow option.  Note
+        # that the value (assumed to be a scalar) is not removed from
+        # kwargs.
+        #
+        over = kwargs.get(f"over{plotmeth}", False)
+        # clearwindow = kwargs.get("clearwindow", True)
+
         # Deconstruct the keyword arguments.
         #
         kwstore = get_per_plot_kwargs(nplots, kwargs)
@@ -13793,9 +13806,25 @@ class Session(NoNewAttributesAfterInit):
         nrows_orig = sp.rows
         ncols_orig = sp.cols
 
-        # What size to use?
+        plotfunc = getattr(sp, f"add{plotmeth}")
+
+        # We only care about the size when creating the display, that
+        # is, if overplot/contour is set then we assume the size is
+        # known. There is a check to make sure the user isn't trying
+        # to overplot too many plots, but we allow less plots to be
+        # overplot than the original.
         #
-        if rows is None and cols is None:
+        # Should this care about clearwindow too?
+        #
+        if over:
+            # Dig inside the SplitPlot class to find this out.
+            #
+            nrows, ncols = sp._used.shape
+            nplots_used = sp._used.sum()
+            if nplots_used < nplots:
+                raise ArgumentErr(f"Too many elements for over{plotmeth}")
+
+        elif rows is None and cols is None:
             # Special case the single-plot call
             if nplots == 1:
                 nrows = 1
@@ -13809,6 +13838,14 @@ class Session(NoNewAttributesAfterInit):
 
         plotfunc = getattr(sp, f"add{plotmeth}")
         sp.reset(rows=nrows, cols=ncols)
+
+        # This is a hack as the SplitPlot API does not provide a way
+        # to do this. We want to avoid calling the _clear_window
+        # method when calling addplot/contour.
+        #
+        if over:
+            sp._cleared_window = True
+
         with sherpa.plot.backend:
             for plot, store in zip(plots, kwstore):
                 plotfunc(plot, **store)
@@ -14042,7 +14079,8 @@ class Session(NoNewAttributesAfterInit):
            The keyword arguments can now be set per plot by using a
            sequence of values. The layout can be changed with the
            rows and cols arguments and the automatic calculation
-           no longer forces two rows.
+           no longer forces two rows. Handling of the overplot flag
+           has been improved.
 
         .. versionchanged:: 4.15.0
            A number of labels, such as "bkgfit", are marked as
@@ -14252,6 +14290,12 @@ class Session(NoNewAttributesAfterInit):
         but only display plots in the first two:
 
         >>> plot("data", "model", cols=1, rows=3)
+
+        Draw the data and residuals for the default dataset and then
+        overplot those from dataset 2:
+
+        >>> plot("data", "resid", cols=1, color="black")
+        >>> plot("data", 2, "resid", 2, overplot=True, color="black", alpha=0.5)
 
         """
 
@@ -16023,7 +16067,8 @@ class Session(NoNewAttributesAfterInit):
            The keyword arguments can now be set per plot by using a
            sequence of values. The layout can be changed with the
            rows and cols arguments and the automatic calculation
-           no longer forces two rows.
+           no longer forces two rows. Handling of the overcontour
+           flag has been improved.
 
         .. versionchanged:: 4.12.2
            Keyword arguments, such as alpha, can be sent to
@@ -16579,7 +16624,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -16693,7 +16738,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -16811,7 +16856,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -16827,7 +16872,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
+           overrides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -16943,7 +16988,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -16959,7 +17004,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
+           overrides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -17077,7 +17122,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17199,7 +17244,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17324,7 +17369,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17340,7 +17385,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
+           overrides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
@@ -17456,7 +17501,7 @@ class Session(NoNewAttributesAfterInit):
            The number of steps to use. This is used when `delv` is set
            to ``None``.
         delv : pair of number, optional
-           The step size for the parameter. Setting this over-rides
+           The step size for the parameter. Setting this overrides
            the `nloop` parameter. The default is ``None``.
         fac : number, optional
            When `min` or `max` is not given, multiply the covariance
@@ -17472,7 +17517,7 @@ class Session(NoNewAttributesAfterInit):
            in units of sigma.
         levels : sequence of number, optional
            The numeric values at which to draw the contours. This
-           over-rides the `sigma` parameter, if set (the default is
+           overrides the `sigma` parameter, if set (the default is
            ``None``).
         numcores : optional
            The number of CPU cores to use. The default is to use all
