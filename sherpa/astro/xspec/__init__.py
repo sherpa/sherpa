@@ -246,8 +246,7 @@ def get_xsabund_doc(name: Optional[str] = None) -> str:
 
     aname = get_xsabund() if name is None else name
 
-    # Looks the return value includes a leading space so remove it.
-    # This could be done in the C++ code but much easier to do here.
+    # Remove any unwanted space characters.
     #
     return _xspec.get_xsabund_doc(aname).strip()
 
