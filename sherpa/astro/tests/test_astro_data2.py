@@ -34,11 +34,11 @@ from sherpa.astro.instrument import create_delta_rmf, matrix_to_rmf
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
 from sherpa.data import Data2D, Data2DInt
-from sherpa.models import Const1D, Delta2D, Polynom2D
-from sherpa.plot import backend
+from sherpa.models import Const1D, Delta2D, Polynom1D, Polynom2D
 from sherpa.stats._statfcts import calc_chi2datavar_errors
 from sherpa.utils import dataspace2d
 from sherpa.utils.err import DataErr
+from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.testing import requires_data, requires_fits, \
     requires_group, requires_region, requires_wcs
 
@@ -53,6 +53,41 @@ def test_can_not_group_ungrouped():
         pha.grouped = True
 
 
+def test_pha_get_indep_when_all_filtered():
+    """Regression test."""
+
+    pha = DataPHA("pha", [1, 2, 3], [9, 7, 8])
+    pha.ignore()
+
+    # This is with 'pha.mask = False'
+    #
+    indep = pha.get_indep()
+    assert len(indep) == 1
+    assert indep[0] == pytest.approx([])
+
+
+def test_pha_get_indep_when_all_filtered():
+    """Regression test."""
+
+    pha = DataPHA("pha", [1, 2, 3], [9, 7, 8])
+    pha.mask = [False] * 3
+
+    indep = pha.get_indep()
+    assert len(indep) == 1
+    assert indep[0] == pytest.approx([])
+
+
+def test_pha_get_indep_when_partial_filtered():
+    """Regression test."""
+
+    pha = DataPHA("pha", [1, 2, 3], [9, 7, 8])
+    pha.mask = [True, False, True]
+
+    indep = pha.get_indep()
+    assert len(indep) == 1
+    assert indep[0] == pytest.approx([1, 3])
+
+
 def test_get_mask_is_none():
 
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
@@ -60,39 +95,180 @@ def test_get_mask_is_none():
     assert pha.get_mask() is None
 
 
-def test_get_filter_expr_channel():
+def test_get_mask_is_none_when_all_filtered():
+    """This is a regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.ignore()
+    assert pha.mask is False
+    assert pha.get_mask() is None
+
+
+def test_get_noticed_channels_no_filter():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    assert pha.get_filter() == "1:3"
+    assert pha.get_noticed_channels() == pytest.approx([1, 2, 3])
+    assert pha.mask is True
+
+
+def test_get_noticed_channels_no_filter_manual():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.mask = [True, True, True]
+    assert pha.mask == pytest.approx([1, 1, 1])
+    assert pha.get_filter() == "1:3"
+    assert pha.get_noticed_channels() == pytest.approx([1, 2, 3])
+
+
+def test_get_noticed_channels_partial_filter():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.ignore(2, 2)
+    assert pha.mask == pytest.approx([1, 0, 1])
+    assert pha.get_filter() == "1,3"
+    assert pha.get_noticed_channels() == pytest.approx([1, 3])
+
+
+def test_get_noticed_channels_removed_filter():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.ignore()
+    assert pha.mask is False
+    assert pha.get_filter() == "No noticed bins"
+    assert pha.get_noticed_channels() == pytest.approx([1, 2, 3])  # WHY?
+
+
+def test_get_noticed_channels_removed_filter2():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.mask = [False, False, False]
+    assert pha.mask == pytest.approx([0, 0, 0])
+    # This does not match test_get_noticed_channels_removed_filter, see #1220
+    assert pha.get_filter() == ""
+    assert pha.get_noticed_channels() == pytest.approx([])
+
+
+def test_get_noticed_expr_no_filter():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    assert pha.get_noticed_expr() == "1-3"
+
+
+def test_get_noticed_expr_no_filter_manual():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.mask = [True, True, True]
+    assert pha.get_noticed_expr() == "1-3"
+
+
+def test_get_noticed_expr_partial_filter():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.ignore(2, 2)
+    assert pha.get_noticed_expr() == "1,3"
+
+
+def test_get_noticed_expr_removed_filter():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.ignore()
+    assert pha.get_noticed_expr() == "No noticed channels"
+
+
+def test_get_noticed_expr_removed_filter2():
+    """Regression test."""
+
+    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
+    pha.mask = [False, False, False]
+    assert pha.get_noticed_expr() == "No noticed channels"
+
+
+# Historically we have needed to use ndarray and not lists, so check.
+@pytest.mark.parametrize("chans",
+                         [np.asarray([1, 2, 3]),
+                          [1, 2, 3]
+                          ])
+def test_get_filter_expr_channel(chans):
     """Check get_filter_expr is called"""
 
-    pha = DataPHA('name', np.asarray([1, 2, 3]), [1, 1, 1])
+    pha = DataPHA('name', chans, [1, 1, 1])
     assert pha.get_filter_expr() == '1-3 Channel'
 
     pha.ignore(None, 1)
     assert pha.get_filter_expr() == '2-3 Channel'
 
 
-def test_get_filter_is_empty():
+# Historically we have needed to use ndarray and not lists, so check.
+@pytest.mark.parametrize("chans",
+                         [np.asarray([1, 2, 3]),
+                          [1, 2, 3]
+                          ])
+def test_get_filter_is_empty(chans):
 
-    # Need to send in numpy arrays otherwise the code fails as it
-    # assumes a numpy array. This should be addressed upstream.
-    #
-    # pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
-    pha = DataPHA('name', np.asarray([1, 2, 3]), [1, 1, 1])
+    pha = DataPHA('name', chans, [1, 1, 1])
     assert pha.get_filter() == '1:3'
-    pha.ignore()
-    assert pha.get_filter() == 'No noticed bins'
-
-
-def test_need_numpy_channels():
-    """We didn't used to convert channels to a NumPy array which broke
-    this logic - the ignore line would error out due to an operation on
-    self.channel
-    """
-
-    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
-    assert pha.get_filter() == '1:3'
+    assert pha.mask is True
 
     pha.ignore()
     assert pha.get_filter() == 'No noticed bins'
+    assert pha.mask is False
+
+    # WHY is this different as the mask means the same thing?
+    pha.mask = [False, False, False]
+    assert pha.get_filter() == ''
+
+def test_pha_get_noticed_channels_when_empty():
+    """A regression test."""
+
+    empty = DataPHA("empty", None, None)
+    assert empty.get_noticed_channels() is None
+
+
+def test_pha_filter_when_empty(caplog):
+    """A regression test."""
+
+    empty = DataPHA("empty", None, None)
+    assert len(caplog.record_tuples) == 0
+
+    with pytest.raises(TypeError,
+                       match="unsupported operand type"):
+        empty.ignore(hi=3)
+
+
+def test_pha_get_mask_when_empty(caplog):
+    """A regression test."""
+
+    empty = DataPHA("empty", None, None)
+    assert empty.get_mask() is None
+
+
+def test_pha_channel_empty_remains_empty():
+    """A regression test."""
+
+    empty = DataPHA("empty", None, None)
+    assert empty.channel is None
+    empty.channel = None
+    assert empty.channel is None
+
+
+@pytest.mark.parametrize("chans", [None, [1, 2, 3]])
+def test_pha_group_when_empty(chans):
+    """A regression test."""
+
+    empty = DataPHA("empty", chans, None)
+    with pytest.raises(TypeError,
+                       match=r"grpNumCounts\(\) Could not parse input arguments, "):
+        empty.group_counts(5)
 
 
 @pytest.mark.parametrize("chtype,expected,args",
@@ -498,8 +674,9 @@ def test_416_c():
     tabstops = [True] * 3 + [False] * 3 + [True] * 4
     assert ~pha.mask == pytest.approx(tabstops)
 
+    assert pha.grouping is None
+    assert pha.quality is None
     pha.group_counts(3, tabStops=~pha.mask)
-    pha.ignore_bad()
 
     grouping = [0] * 3 + [1, -1, 1] + [0] * 4
     assert pha.grouping == pytest.approx(grouping)
@@ -508,6 +685,11 @@ def test_416_c():
     # it only contains 1 count
     quality = np.zeros(10, dtype=int)
     quality[5] = 2
+    assert pha.quality == pytest.approx(quality)
+
+    pha.ignore_bad()
+
+    assert pha.grouping == pytest.approx(grouping)
     assert pha.quality == pytest.approx(quality)
 
     dep = pha.get_dep(filter=False)
@@ -628,6 +810,29 @@ def make_grouped_pha():
                   grouping=grp, quality=qual)
     pha.ignore_bad()
     return pha
+
+
+@pytest.fixture
+def make_quality_pha():
+    """A simple PHA with grouping/quality data
+
+    This is different to make_grouped_data as
+
+    - it is more focussed on quality issues so has more
+      channels, and more "bad" ones
+    - does not call ignore_bad.
+
+    """
+
+    chans = np.arange(1, 10, dtype=np.int16)
+    counts = np.asarray([1, 2, 0, 3, 12, 2, 9, 8, 7], dtype=np.int16)
+
+    # The first group extends across the first set of "5" bad
+    # channels, as does the last group (but that also includes a "5"
+    # channel).
+    grp = np.asarray([1, -1, -1, -1, 1, 1, 1, -1, -1], dtype=np.int16)
+    qual = np.asarray([0, 5, 5, 0, 0, 0, 2, 2, 5], dtype=np.int16)
+    return DataPHA('grp', chans, counts, grouping=grp, quality=qual)
 
 
 def test_img_get_img(make_test_image):
@@ -1410,6 +1615,115 @@ def test_img_get_filter_compare_filtering(make_test_image):
     assert maska.max() == 1
 
 
+def test_pha_size_grouped(make_grouped_pha):
+    """Regression test: what is the size of this?
+
+    Is it always DETCHANS or does it change? Test what we say.
+    """
+
+    pha = make_grouped_pha
+    assert pha.quality_filter is not None
+    assert pha.size == 5
+    assert pha.quality_filter.sum() == 4
+
+
+def test_pha_size_quality(make_quality_pha):
+    """Regression test: what is the size of this?
+
+    Is it always DETCHANS or does it change? Test what we say.
+    """
+
+    pha = make_quality_pha
+    pha.ignore_bad()
+    assert pha.quality_filter is not None
+    assert pha.size == 9
+    assert pha.quality_filter.sum() == 4
+
+
+def test_grouped_quality_filter_expr(make_grouped_pha):
+    """What is the filter expression?
+
+    This is a regression test.
+    """
+
+    pha = make_grouped_pha
+    pha.get_filter() == "1:9"  # does not exclude bad channel
+
+
+def test_quality_quality_filter_expr(make_quality_pha):
+    """What is the filter expression?
+
+    This is a regression test.
+    """
+
+    pha = make_quality_pha
+    pha.ignore_bad()
+
+    # Note that the first group covers is 1-4, but channels 2 and 3
+    # are excluded, so this could be written as "1,4-..." but then
+    # this loses the fact that the first group is 1 and 4, (so it
+    # canbe thought of as being correct).
+    #
+    pha.get_filter() == "1:9"  # does not exclude bad channels at end
+
+
+def test_pha_quality_change_mask(make_quality_pha):
+    """A regression test."""
+
+    pha = make_quality_pha
+    pha.ignore_bad()
+    assert pha.mask is True
+    pha.mask = [1, 1, 0]
+    assert pha.mask == pytest.approx([True, True, False])
+
+
+def test_pha_quality_change_mask_ungrouped(make_quality_pha):
+    """A regression test."""
+
+    pha = make_quality_pha
+    pha.ignore_bad()
+    pha.ungroup()
+    assert pha.mask is True
+    pha.mask = [1, 1, 0, 1, 1, 0, 0, 1, 1]
+    assert pha.mask == pytest.approx([True, True, False, True, True, False, False, True, True])
+
+
+def test_pha_quality_change_mask_fullsize(make_quality_pha):
+    """A regression test.
+
+    Can we give the mask the "full" size (i.e. detchans)?
+    No.
+
+    """
+
+    pha = make_quality_pha
+    pha.ignore_bad()
+    with pytest.raises(DataErr,
+                       match="^size mismatch between grouped data and mask: 3 vs 9$"):
+        pha.mask = [1, 1, 0, 1, 1, 0, 0, 1, 1]
+
+
+def test_pha_quality_change_mask_wrong_size(make_quality_pha):
+    """A regression test."""
+
+    pha = make_quality_pha
+    pha.ignore_bad()
+    with pytest.raises(DataErr,
+                       match="^size mismatch between grouped data and mask: 3 vs 5$"):
+        pha.mask = [1, 1, 0, 1, 1]
+
+
+def test_pha_quality_change_mask_ungrouped_wrong_size(make_quality_pha):
+    """A regression test."""
+
+    pha = make_quality_pha
+    pha.ignore_bad()
+    pha.ungroup()
+    with pytest.raises(DataErr,
+                       match="^size mismatch between independent axis and mask: 9 vs 5$"):
+        pha.mask = [1, 1, 0, 1, 1]
+
+
 def test_pha_change_channels(make_test_pha):
     """What happens if we change the channel/count values?
 
@@ -1549,6 +1863,40 @@ def test_pha_ignore_bad_no_quality(make_test_pha):
     with pytest.raises(DataErr,
                        match="data set 'p' does not specify quality flags"):
         pha.ignore_bad()
+
+
+def test_pha_quality_noticed_channels_no_filter(make_quality_pha):
+    """Regression test."""
+
+    pha = make_quality_pha
+    chans0 = pha.get_noticed_channels()
+    assert chans0 == pytest.approx(np.arange(1, 10))
+
+    pha.ignore_bad()
+
+    chans1 = pha.get_noticed_channels()
+    assert chans1 == pytest.approx([1, 4, 5, 6])
+
+
+def test_pha_quality_noticed_channels_with_filter(make_quality_pha):
+    """Regression test."""
+
+    pha = make_quality_pha
+    assert pha.grouped
+    pha.ignore_bad()
+
+    # The bins are 1-4 (although 2 and 3 are excluded), 5, 6, 7-9 (all
+    # excluded). Ignoring at hi=2 makes this interesting, as the first
+    # group should then be removed.
+    #
+    pha.ignore(hi=2)
+
+    chans1 = pha.get_noticed_channels()
+    assert chans1 == pytest.approx([5, 6])
+
+    pha.notice(lo=2)
+    chans2 = pha.get_noticed_channels()
+    assert chans2 == pytest.approx([1, 4, 5, 6])
 
 
 def test_pha_grouping_changed_no_filter_1160(make_test_pha):
@@ -1828,24 +2176,61 @@ def test_pha_remove_quality_bad(make_test_pha):
     assert d2 == pytest.approx(no_data)
 
 
-def test_pha_quality_bad_filter(make_test_pha):
-    """What is the filter expression when ignore bad + filter"""
+def test_pha_quality_bad_filter(make_test_pha, caplog):
+    """What is the filter expression when ignore bad + filter
+
+    Also check the screen output (there is none for the PHA case,
+    unlike the UI version).
+
+    """
 
     pha = make_test_pha
     assert pha.get_filter() == "1:4"
 
-    pha.ignore(hi=1)
+    assert len(caplog.record_tuples) == 0
+    with SherpaVerbosity("INFO"):
+        pha.ignore(hi=1)
+
     assert pha.get_filter() == "2:4"
+    assert len(caplog.record_tuples) == 0
 
     d1 = pha.get_dep(filter=True)
     assert d1 == pytest.approx([2, 0, 3])
 
     pha.quality = [0, 0, 0, 2]
-    pha.ignore_bad()
+    with SherpaVerbosity("INFO"):
+        pha.ignore_bad()
 
     d2 = pha.get_dep(filter=True)
     assert d2 == pytest.approx([2, 0])
     assert pha.get_filter() == "2:3"
+    assert len(caplog.record_tuples) == 0
+
+
+def test_pha_quality_bad_filter2(make_quality_pha, caplog):
+    """A different set of bad channels and groups to test_pha_quality_bad_filter
+
+    This also does not include a filter, since this messes everything up at
+    this time.
+    """
+
+    pha = make_quality_pha
+    assert pha.get_filter() == "1:9"
+    assert pha.grouped
+
+    d1 = pha.get_dep(filter=True)
+    assert d1 == pytest.approx([6, 12, 2, 24])
+
+    with SherpaVerbosity("INFO"):
+        pha.ignore_bad()
+
+    assert len(caplog.record_tuples) == 0
+
+    d2 = pha.get_dep(filter=True)
+    assert d2 == pytest.approx([4, 12, 2])
+    assert pha.get_filter() == "1:9"
+
+    assert len(caplog.record_tuples) == 0
 
 
 @pytest.mark.xfail
@@ -1866,6 +2251,60 @@ def test_pha_quality_bad_filter_remove(make_test_pha):
     assert pha.get_filter() == "2:4"
 
 
+@pytest.mark.parametrize("field,expected",
+                         [("channel", [1, 2, 3, 4, 5, 6, 7, 8, 9]),
+                          ("counts", [1, 2, 0, 3, 12, 2, 9, 8, 7]),
+                          ("grouping", [1, -1, -1, -1, 1, 1, 1, -1, -1]),
+                          ("quality", [0, 5, 5, 0, 0, 0, 2, 2, 5])
+                          ])
+def test_pha_quality_bad_field(field, expected, make_quality_pha):
+    """After ignore_bad what does the field return?"""
+
+    pha = make_quality_pha
+    assert getattr(pha, field) == pytest.approx(expected)
+
+    pha.ignore_bad()
+    assert getattr(pha, field) == pytest.approx(expected)
+
+
+def test_pha_quality_bad_mask(make_quality_pha):
+    """What does the mask look like?"""
+
+    pha = make_quality_pha
+    assert pha.mask is True
+
+    pha.ignore_bad()
+    assert pha.mask is True
+
+
+def test_pha_quality_bad_mask_grouped(make_quality_pha):
+    """What does the mask look like?"""
+
+    pha = make_quality_pha
+    pha.ignore_bad()
+    pha.group()
+    assert pha.mask is True
+
+
+def test_pha_quality_bad_get_mask(make_quality_pha):
+    """What does the get_mask() look like?"""
+
+    pha = make_quality_pha
+    assert pha.get_mask() is None
+
+    pha.ignore_bad()
+    assert pha.get_mask() == pytest.approx([1, 0, 0, 1, 1, 1, 0, 0, 0])
+
+
+def test_pha_no_quality_ignore_bad(make_test_pha):
+    """What happens if call ignore_bad and no quality data"""
+
+    pha = make_test_pha
+    with pytest.raises(DataErr,
+                       match="^data set 'p' does not specify quality flags$"):
+        pha.ignore_bad()
+
+
 @requires_group
 def test_pha_change_quality_values():
     """What happens if we change the quality column?
@@ -1882,7 +2321,7 @@ def test_pha_change_quality_values():
 
     assert pha.quality_filter is None
     pha.ignore_bad()
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False, False])
+    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
     assert pha.get_dep(filter=True) == pytest.approx([6])
     assert pha.get_filter() == '1:7'
 
@@ -2245,6 +2684,25 @@ def test_361():
     assert pha.get_noticed_channels() == pytest.approx([3, 4, 7, 8])
 
 
+def test_grouped_pha_get_dep(make_grouped_pha):
+    """Quality filtering and grouping is applied: get_dep
+
+    As noted in issue #1438 it's not obvious what get_y is meant to
+    return. It is not the same as get_dep as there's post-processing.
+    So just test the current behavior.
+
+    """
+    pha = make_grouped_pha
+
+    # grouped counts are [3, 3, 12]
+    # channel widths are [3, 1, 1]
+    # which gives [1, 3, 12]
+    # but the last group is marked bad by quality,
+    # so we expect [1, 3]
+    #
+    assert pha.get_dep() == pytest.approx([1, 3])
+
+
 def test_grouped_pha_get_y(make_grouped_pha):
     """Quality filtering and grouping is applied: get_y
 
@@ -2264,6 +2722,76 @@ def test_grouped_pha_get_y(make_grouped_pha):
     assert pha.get_y() == pytest.approx([1, 3])
 
 
+def test_quality_pha_get_dep(make_quality_pha):
+    """Regression test for quality + filtering."""
+
+    pha = make_quality_pha
+
+    # ungrouped counts  no quality are [1, 2, 0, 3, 12, 2, 9, 8, 7]
+    # ungrouped counts with quality are [1, 3, 12, 2]
+    #
+    # grouped counts no quality are [6, 12, 2, 24]
+    # grouped counts with quality are [4, 12, 2]
+    #
+    all_counts = [1, 2, 0, 3, 12, 2, 9, 8, 7]
+    assert pha.get_dep(filter=False) == pytest.approx(all_counts)
+    assert pha.get_dep(filter=True) == pytest.approx([6, 12, 2, 24])
+
+    pha.ignore_bad()
+    assert pha.get_dep(filter=False) == pytest.approx(all_counts)
+    assert pha.get_dep(filter=True) == pytest.approx([4, 12, 2])
+
+
+def test_quality_pha_get_y(make_quality_pha):
+    """Regression test for quality + filtering."""
+
+    pha = make_quality_pha
+
+    # bin widths are
+    #    no quality  [4, 1, 1, 3]
+    #       quality  [2, 1, 1]
+    #
+    # grouped counts no quality are [6, 12, 2, 24]
+    # grouped counts with quality are [4, 12, 2]
+    #
+    expected1 = np.asarray([1.5, 12, 2, 8])
+    assert pha.get_y(filter=False) == pytest.approx(expected1)
+    assert pha.get_y(filter=True) == pytest.approx(expected1)
+
+    pha.ignore_bad()
+    # expected2 = np.asarray([2, 12, 2])
+    expected2 = np.asarray([1, 12, 2])  # TODO: why do we get this?
+    assert pha.get_y(filter=False) == pytest.approx(expected2)
+    assert pha.get_y(filter=True) == pytest.approx(expected2)
+
+
+def test_quality_pha_get_indep(make_quality_pha):
+    """Regression test for quality + filtering.
+
+    This ignores the channel settings.
+    """
+
+    pha = make_quality_pha
+    assert pha.units == "channel"
+
+    chans = np.arange(1, 10)
+
+    for filt in [False, True]:
+        indep = pha.get_indep(filter=filt)
+        assert len(indep) == 1
+        assert indep[0] == pytest.approx(chans)
+
+    pha.ignore_bad()
+
+    indep = pha.get_indep(filter=False)
+    assert len(indep) == 1
+    assert indep[0] == pytest.approx(chans)
+
+    indep = pha.get_indep(filter=True)
+    assert len(indep) == 1
+    assert indep[0] == pytest.approx([1, 4, 5, 6])
+
+
 def test_grouped_pha_mask(make_grouped_pha):
     """What is the default mask setting?"""
     pha = make_grouped_pha
@@ -2275,6 +2803,48 @@ def test_grouped_pha_get_mask(make_grouped_pha):
     """What is the default get_mask value?"""
     pha = make_grouped_pha
     assert pha.get_mask() == pytest.approx([True] * 4 + [False])
+
+
+def test_quality_pha_mask(make_quality_pha):
+    """What is the default mask setting?"""
+    pha = make_quality_pha
+    assert np.isscalar(pha.mask)
+    assert pha.mask
+
+    pha.ignore_bad()
+    assert np.isscalar(pha.mask)
+    assert pha.mask
+
+def test_quality_pha_get_mask(make_quality_pha):
+    """What is the default get_mask value?"""
+    pha = make_quality_pha
+    assert pha.get_mask() is None
+
+    pha.ignore_bad()
+    # This is a regression test
+    assert pha.get_mask() == pytest.approx([True] + [False] * 2 + [True] * 3 + [False] * 3)
+
+
+@pytest.mark.parametrize("field,expected",
+                         [("channel", np.arange(1, 10)),
+                          ("counts", [1, 2, 0, 3, 12, 2, 9, 8, 7]),
+                          ("grouping", [1, -1, -1, -1, 1, 1, 1, -1, -1]),
+                          ("quality", [0, 5, 5, 0, 0, 0, 2, 2, 5]),
+                          ("backscal", [0.2, 99, 98, 0.4, 0.5, 0.6, 2, 3, 4]),
+                          ("areascal", 0.9)
+                          ])
+def test_quality_pha_fields(field, expected, make_quality_pha):
+    """Regression test: do we get the expected fields?"""
+
+    pha = make_quality_pha
+
+    # fake in a backscal array but scalar areascal
+    pha.areascal = 0.9
+    pha.backscal = [0.2, 99, 98, 0.4, 0.5, 0.6, 2, 3, 4]
+
+    pha.ignore_bad()
+
+    assert getattr(pha, field) == pytest.approx(expected)
 
 
 # Should this really return "1:4" as the fifth channel has been
@@ -2319,6 +2889,212 @@ def test_grouped_pha_filter_get_dep(filter, expected, make_grouped_pha):
     pha = make_grouped_pha
     pha.ignore(hi=2)
     assert pha.get_dep(filter=filter) == pytest.approx(expected)
+
+
+def setup_pha_quality_example():
+    """A PHA dataset for some tests."""
+
+    chans = np.arange(1, 11, dtype=np.int16)
+    pha = DataPHA("x", chans, chans)
+    pha.grouping = [1, -1, -1, 1, 1, 1, -1, 1, 1, 1]
+    pha.quality = [0, 5, 0, 0, 0, 2, 2, 0, 0, 5]
+    pha.exposure = 5.0
+
+    elo = chans * 0.1
+    ehi = elo + 0.1
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    pha.set_rmf(rmf)
+
+    # The groups are irrelevant to the model evaluation. We do
+    # care about the energy bins
+    #
+    #   channel   1   2   3   4   5   6   7   8   9   10
+    #     elo    0.1 0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0
+    #     ehi    0.2 0.3 0.4 0.5 0.6 0.7 0.8 0.9 1.0 1.1
+    #    bad?         *               ?   ?           *
+    #
+    # where
+    #    * indicates a "very bad" bin (qual=1 or 5)
+    #    ? indicates a "slightly bad" bin (qual=2)
+    #
+    # The groups are complicated for the first group, since it
+    # contanis a bad channel.
+    #
+    #  group        1     2   3     4     5   6    7
+    #  channels  1,2*,3   4   5   6?-7?   8   9   10
+    #
+    # As of 4.17.0 there's no difference in handing the
+    # "severity" of the quality setting.
+    #
+    pha.set_analysis("energy")
+    return pha, elo, ehi
+
+
+def test_pha_get_indep_grouped_quality():
+    """A regression test.
+
+    This is to check the behavior with ignore_bad.
+
+    See also test_pha_eval_model_to_fit_grouped_quality
+
+    """
+
+    pha, _, _ = setup_pha_quality_example()
+
+    expected = np.arange(1, 11, dtype=np.int16)
+
+    # Checks: no filtering
+    #
+    i1, = pha.get_indep(filter=False)
+    i2, = pha.get_indep(filter=True)
+
+    assert i1 == pytest.approx(expected)
+    assert i2 == pytest.approx(expected)
+
+    # Checks: what does the bad filter do?
+    #
+    pha.ignore_bad()
+    expected1 = expected[[0, 2, 3, 4, 7, 8]]
+
+    i1, = pha.get_indep(filter=False)
+    i2, = pha.get_indep(filter=True)
+
+    assert i1 == pytest.approx(expected)
+    assert i2 == pytest.approx(expected1)
+
+    # This range is in the "bad quality" region so it should not
+    # change the result.
+    #
+    pha.ignore(0.6, 0.8)
+
+    i1, = pha.get_indep(filter=False)
+    i2, = pha.get_indep(filter=True)
+
+    assert i1 == pytest.approx(expected)
+    assert i2 == pytest.approx(expected1)
+
+    # Subset the data
+    #
+    pha.ignore(hi=0.25)  # this is a bad-quality bin
+    pha.ignore(lo=0.95)
+    expected2 = expected[[2, 3, 4, 7]]
+
+    i1, = pha.get_indep(filter=False)
+    i2, = pha.get_indep(filter=True)
+
+    assert i1 == pytest.approx(expected)
+    assert i2 == pytest.approx(expected2)
+
+    # Re-allow the low-energy range, but it should
+    # still drop the 0.2-0.3 keV bin. It does not.
+    #
+    pha.notice(hi=0.4)
+    expected3 = expected[[0, 1, 2, 3, 4, 7]]
+
+    i1, = pha.get_indep(filter=False)
+    i2, = pha.get_indep(filter=True)
+
+    assert i1 == pytest.approx(expected)
+    assert i2 == pytest.approx(expected3)
+
+    # Drop all filters. It should not drop the quality filter, but it
+    # currently does.
+    #
+    pha.notice()
+
+    i1, = pha.get_indep(filter=False)
+    i2, = pha.get_indep(filter=True)
+
+    assert i1 == pytest.approx(expected)
+    assert i2 == pytest.approx(expected)
+
+
+def test_pha_eval_model_to_fit_grouped_quality():
+    """A regression test.
+
+    This is to check the behavior with ignore_bad.
+
+    See also test_pha_get_indep_grouped_quality
+    """
+
+    pha, elo, ehi = setup_pha_quality_example()
+
+    mdl = Polynom1D()
+    mdl.c0 = 0.1
+    mdl.c1 = 1.2
+
+    # Need to scale by the exposure time for the expected values.
+    #
+    expected = 5 * mdl(elo, ehi)
+    assert (expected > 0).all()  # just check
+
+    resp = pha.get_full_response()
+    full_mdl = resp(mdl)
+
+    # Checks: no filtering
+    #
+    m1 = pha.eval_model(full_mdl)
+    m2 = pha.eval_model_to_fit(full_mdl)
+
+    assert m1 == pytest.approx(expected)
+    assert m2 == pytest.approx(expected)
+
+    # Checks: what does the bad filter do?
+    #
+    pha.ignore_bad()
+    expected1 = expected[[0, 2, 3, 4, 7, 8]]
+
+    m1 = pha.eval_model(full_mdl)
+    m2 = pha.eval_model_to_fit(full_mdl)
+
+    assert m1 == pytest.approx(expected)
+    assert m2 == pytest.approx(expected1)
+
+    # This range is in the "bad quality" region so it should not
+    # change the result.
+    #
+    pha.ignore(0.6, 0.8)
+
+    m1 = pha.eval_model(full_mdl)
+    m2 = pha.eval_model_to_fit(full_mdl)
+
+    assert m1 == pytest.approx(expected)
+    assert m2 == pytest.approx(expected1)
+
+    # Subset the data
+    #
+    pha.ignore(hi=0.25)  # this is a bad-quality bin
+    pha.ignore(lo=0.95)
+    expected2 = expected[[2, 3, 4, 7]]
+
+    m1 = pha.eval_model(full_mdl)
+    m2 = pha.eval_model_to_fit(full_mdl)
+
+    assert m1 == pytest.approx(expected)
+    assert m2 == pytest.approx(expected2)
+
+    # Re-allow the low-energy range, but it should
+    # still drop the 0.2-0.3 keV bin. It does not.
+    #
+    pha.notice(hi=0.4)
+    expected3 = expected[[0, 1, 2, 3, 4, 7]]
+
+    m1 = pha.eval_model(full_mdl)
+    m2 = pha.eval_model_to_fit(full_mdl)
+
+    assert m1 == pytest.approx(expected)
+    assert m2 == pytest.approx(expected3)
+
+    # Drop all filters. It should not drop the quality filter, but it
+    # currently does.
+    #
+    pha.notice()
+
+    m1 = pha.eval_model(full_mdl)
+    m2 = pha.eval_model_to_fit(full_mdl)
+
+    assert m1 == pytest.approx(expected)
+    assert m2 == pytest.approx(expected)
 
 
 def test_grouped_pha_set_y_invalid_size(make_grouped_pha):
@@ -2543,6 +3319,31 @@ def test_pha_quality_filtered_apply_grouping_invalid_size(vals, make_grouped_pha
         pha.apply_grouping(vals)
 
 
+def test_pha_quality_apply_grouping_size_matches_detchans(make_grouped_pha):
+    """Regression test: send in DETCHANS values to group.
+
+    Is this an error or not? There's arguments for both, so test what we do.
+    """
+
+    pha = make_grouped_pha
+    pha.ignore(hi=1)
+    got = pha.apply_grouping([10, 12, 2, 4, 84])
+    assert got == pytest.approx([24, 4])
+
+
+def test_pha_quality_apply_grouping_size_matches_quality(make_grouped_pha):
+    """Regression test: send in"good" values to group.
+
+    Is this an error or not? There's arguments for both, so test what we do.
+    """
+
+    pha = make_grouped_pha
+    pha.ignore(hi=1)
+    with pytest.raises(DataErr,
+                       match="^size mismatch between data and array: 5 vs 4$"):
+        pha.apply_grouping([10, 12, 2, 4])
+
+
 def test_pha_apply_filter_check():
     """Check that apply_filter works as expected.
 
@@ -2659,6 +3460,21 @@ def test_datapha_apply_grouping_quality_filter_length_check():
     with pytest.raises(DataErr,
                        match="size mismatch between quality filter and array: 5 vs 4"):
         pha.apply_grouping([1, 2, 3, 4])
+
+
+def test_datapha_apply_grouping_quality_filter_scalar():
+    """A regression test - should this error out?"""
+
+    channels = np.arange(1, 5, dtype=np.int16)
+    counts = np.asarray([10, 5, 12, 7], dtype=np.int16)
+    grouping = np.asarray([1, -1, 1, 1])
+    pha = DataPHA('test-pha', channel=channels, counts=counts,
+                  grouping=grouping)
+
+    assert pha.grouped
+
+    # This should be an array matching the number of channels.
+    pha.quality_filter = True
 
 
 @requires_fits
@@ -3489,18 +4305,6 @@ def test_pha_set_analysis_rate_invalid():
     with pytest.raises(DataErr,
                        match="unknown plot type 'None', choose 'rate' or 'counts'"):
         pha.set_analysis("channel", type=None)
-
-
-def test_pha_ignore_bad_no_quality():
-    """Just check we error out"""
-
-    chans = np.arange(1, 4)
-    counts = np.ones_like(chans)
-    pha = DataPHA("dummy", chans, counts)
-
-    with pytest.raises(DataErr,
-                       match="data set 'dummy' does not specify quality flags"):
-        pha.ignore_bad()
 
 
 def test_pha_get_ylabel_yfac0():

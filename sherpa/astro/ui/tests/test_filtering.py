@@ -165,17 +165,7 @@ def test_filter_bad_notice_361(make_data_path):
     stats = setup_model(make_data_path)
 
     ui.ignore_bad()
-
-    # With support for #1558 - writing out the filter as we apply them
-    # - we now get this call failing, so catch this failure to allow
-    # the test to continue. This should be fixed, but it's a
-    # long-standing problem.
-    #
-    try:
-        ui.notice(0.5, 8.0)
-    except IndexError:
-        pass
-
+    ui.notice(0.5, 8)
     s1 = ui.calc_stat()
     assert s1 == pytest.approx(stats['0.5-8.0'])
 
