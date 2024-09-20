@@ -138,7 +138,7 @@ from sherpa.utils import pad_bounding_box, interpolate, \
 from sherpa.utils.err import ArgumentTypeErr, DataErr, ImportErr
 from sherpa.utils import formatting
 from sherpa.utils.numeric_types import SherpaFloat
-from sherpa.utils.types import IdType
+from sherpa.utils.types import ArrayType, IdType
 
 # There are currently (Sep 2015) no tests that exercise the code that
 # uses the compile_energy_grid symbols.
@@ -1991,6 +1991,41 @@ will be removed. The identifiers can be integers or strings.
         # quality_filter?
         #
         self._set_related("quality", val)
+
+    # It is unclear exactly what the quality_filter is meant to
+    # represent, so as part of improving support for ignore_bad, add
+    # some semantics.
+    #
+    @property
+    def quality_filter(self) -> Optional[np.ndarray]:
+        """The applied quality filter.
+
+        If set, this indicates which channels are currently selected
+        (a True value) and those that are ignored (False) by a
+        `ignore_bad` call.
+
+        Returns
+        -------
+        quality_filter : numpy.ndarray or None
+
+        See Also
+        --------
+        ignore_bad, quality
+
+        """
+        return self._quality_filter
+
+    # TODO: should this be allowed? Maybe this should only be set
+    # internally with ignore_bad?
+    #
+    @quality_filter.setter
+    def quality_filter(self, val: Optional[ArrayType]) -> None:
+        if val is None:
+            qfilt = None
+        else:
+            # ensure we store boolean values
+            qfilt = np.asarray(val, dtype=bool)
+        self._set_related("quality_filter", qfilt)
 
     @property
     def areascal(self):

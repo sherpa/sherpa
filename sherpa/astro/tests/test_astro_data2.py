@@ -3453,23 +3453,16 @@ def test_datapha_apply_grouping_quality_filter_length_check():
 
     assert pha.grouped
 
-    # Manually set the quality_filter field. We do not have any
-    # documentation on what this is or how it's meant to work.
-    #
-    # I think the only way that the code in apply_grouping can
-    # fail is if the quality_filter array is the wrong size.
-    # We may be able to add a check to the attribute to force
-    # this, which would avoid the need for this test and the
-    # code check.
-    #
-    pha.quality_filter = np.asarray([1, 1, 1, 1, 1], dtype=bool)
     with pytest.raises(DataErr,
-                       match="size mismatch between quality filter and array: 5 vs 4"):
-        pha.apply_grouping([1, 2, 3, 4])
+                       match="size mismatch between independent axis and quality_filter: 4 vs 5"):
+        pha.quality_filter = np.asarray([1, 1, 1, 1, 1], dtype=bool)
 
 
 def test_datapha_apply_grouping_quality_filter_scalar():
-    """A regression test - should this error out?"""
+    """A regression test.
+
+    Check we get an error for this case.
+    """
 
     channels = np.arange(1, 5, dtype=np.int16)
     counts = np.asarray([10, 5, 12, 7], dtype=np.int16)
@@ -3479,8 +3472,11 @@ def test_datapha_apply_grouping_quality_filter_scalar():
 
     assert pha.grouped
 
-    # This should be an array matching the number of channels.
-    pha.quality_filter = True
+    # TODO: The error message here is not ideal.
+    #
+    with pytest.raises(DataErr,
+                       match="^Array must be a sequence or None$"):
+        pha.quality_filter = True
 
 
 @requires_fits
