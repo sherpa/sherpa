@@ -466,18 +466,6 @@ def test_grouped_ciao4_5(parallel, run_thread, clean_astro_ui):
     def cmp_thread(fres, aa, covarerr):
         assert fres.numpoints == 46
 
-        # Prior to 4.17.0 the selected channel range of 41 to 167
-        # mapped to 1.159:4.79661 keV and resulted in a best-fit
-        # statistic of 18.8316, gamma = 1.83906, and ampl of
-        # 3.01258e-4. In 4.17 the channels now start at 0 so
-        # the energy range has shifted. Ideally I'd change the
-        # test suite, but that is much harder to do than just
-        # change the fit results.
-        #
-        # The new energy range - as of 4.17 - os 1.18764:5.05439
-        # kev. There is not a huge lot of difference between these
-        # results (i.e between these two ranges).
-        #
         assert fres.statval == approx(19.0311, rel=1e-4)
 
         assert covarerr[0] == approx(0.104215, rel=1e-4)
