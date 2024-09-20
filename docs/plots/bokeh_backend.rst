@@ -85,7 +85,7 @@ For example, if the color `'k'` (black) is passed into a sherpa plotting routine
 will be internally translated to bokeh's representation of black (`'black'`).
 However, this is limited to a subset of the available options that are commonly
 used, see :ref:`backend-independent-plotting-options`.
-A user can pass a additional backend specific options to the plotting
+A user can pass additional backend specific options to the plotting
 routines, such as `marker="*"` in matplotlib. This will cause an error in
 bokeh, as bokeh does not have a `"*"` marker; a similar look can be achieved
 with `marker="star"`.
