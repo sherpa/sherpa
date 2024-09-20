@@ -158,6 +158,22 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
 }
 
 
+// Return the "nice" name for an abundance table - e.g.
+// "Anders E. & Grevesse N. Geochimica et Cosmochimica Acta 53, 197 (1989)"
+// for "angr".
+//
+static PyObject* get_abund_doc( PyObject *self, PyObject *args )
+{
+  char *name = NULL;
+  if ( !PyArg_ParseTuple( args, (char*)"s", &name ) )
+    return NULL;
+
+  std::string doc = FunctionUtility::abundDoc(std::string(name));
+
+  return Py_BuildValue( (char*)"s", doc.c_str() );
+}
+
+
 static PyObject* get_cosmo( PyObject *self )
 {
   // Assume these can not throw errors
@@ -370,6 +386,7 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(get_xschatter, get_chatter),
   FCTSPEC(set_xschatter, set_chatter),
   FCTSPEC(get_xsabund, get_abund),
+  FCTSPEC(get_xsabund_doc, get_abund_doc),
   FCTSPEC(set_xsabund, set_abund),
   FCTSPEC(set_xscosmo, set_cosmo),
   NOARGSPEC(get_xscosmo, get_cosmo),

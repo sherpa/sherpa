@@ -133,6 +133,39 @@ def test_expected_elements():
 
 
 @requires_xspec
+def test_abund_angr_doc():
+    """Check the doc string for angr.
+
+    This is assumed to be constant.
+    """
+
+    from sherpa.astro import xspec
+
+    doc = xspec.get_xsabund_doc("angr")
+    assert doc == "Anders E. & Grevesse N. Geochimica et Cosmochimica Acta 53, 197 (1989)"
+
+
+@requires_xspec
+def test_abund_selected_doc():
+    """Check the doc string for the selected table.
+
+    This is assumed to be constant.
+    """
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    try:
+        xspec.set_xsabund("lodd")
+        doc = xspec.get_xsabund_doc()
+
+    finally:
+        xspec.set_xsabund(oval)
+
+    assert doc == "Lodders, K. ApJ 591, 1220 (2003)"
+
+
+@requires_xspec
 def test_abund_default():
     """Check the expected default setting for the abundance.
 
