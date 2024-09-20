@@ -90,7 +90,7 @@ class BokehBackend(BasicBackend):
     "current plot" or "current figure". This fits in very well with the `matplotlib.pyplot`
     model, but requires some extra work for object-oriented plotting packages.
 
-    term:`bokeh` is such an object-oriented package, which, by itself,
+    :term:`bokeh` is such an object-oriented package, which, by itself,
     does not keep a plotting state. Usually, bokeh commands act
     on an axis object that is passed in as a parameter.
     Sherpa, on the other hand, does not keep track of those objects,
@@ -98,8 +98,8 @@ class BokehBackend(BasicBackend):
 
     We solve this problem with attributes in the BokehBackend class:
 
-    - current_fig: the current figure
-    - current_axis: the current axis. This is a reference to one of the
+    - `current_fig`: the current figure
+    - `current_axis`: the current axis. This is a reference to one of the
       panels in the current figure.
 
     We follow a similar approach to default to cycling through colors
@@ -196,6 +196,24 @@ class BokehBackend(BasicBackend):
     def __exit__(self, exec_type, value, traceback):
         '''Called from the UI after an interactive plot is done.'''
         return False
+
+    def get_latex_for_string(self, txt):
+        """Convert LaTeX formula
+
+        Parameters
+        ----------
+        txt : str
+            The text component in LaTeX form (e.g. r'\alpha^2'). It
+            should not contain any non-LaTeX content.
+
+        Returns
+        -------
+        latex : str
+            The text modified as appropriate for a backend so that the LaTeX
+            will be displayed properly.
+
+        """
+        return f"$${txt}$$"
 
     def _figure(self):
         fig = figure()

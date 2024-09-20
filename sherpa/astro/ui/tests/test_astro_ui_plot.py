@@ -97,6 +97,19 @@ MODEL_NORM = 1.02e2
 BGND_NORM = 0.4
 
 
+def normalize_latex(s):
+    r'''Bokeh and matplotlib use different markup for LaTeX
+
+    This function brings that into the same form, so that it is easier
+    to run tests.
+
+    In matplotlib, the markup is `$...$`, while bokeh allows
+    `$$...$$`, `\[...\]`, and `\(...\)`. Only the first of those forms
+    is used in Sherpa, so we only deal with that.
+    '''
+    return s.replace('$$', '$')
+
+
 def example_pha_data():
     """Create an example data set."""
 
@@ -777,9 +790,7 @@ def test_get_source_plot_energy(idval, clean_astro_ui):
 
     assert sp.title == 'Source Model of example'
     assert sp.xlabel == 'Energy (keV)'
-
-    # y label depends on the backend
-    # assert sp.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
+    assert normalize_latex(sp.ylabel) == 'f(E)  Photons/sec/cm$^2$/keV'
 
 
 @pytest.mark.parametrize("idval", [None, 1, "one", 23])
@@ -1154,8 +1165,8 @@ def check_bkg_chisqr(plotfunc, idval, isfit=True):
     # once we have multiple backends.
     #
     assert plot.xlabel == 'Channel'
-    assert plot.ylabel == '$\\chi^2$'
-    assert plot.title == '$\\chi^2$ for example-bkg'
+    assert normalize_latex(plot.ylabel) == '$\\chi^2$'
+    assert normalize_latex(plot.title) == '$\\chi^2$ for example-bkg'
 
     assert np.all(plot.y >= 0)
 
@@ -1223,7 +1234,7 @@ def check_bkg_source(plotfunc, idval, isfit=True):
     # once we have multiple backends.
     #
     assert plot.xlabel == 'Energy (keV)'
-    assert plot.ylabel == 'f(E)  Photons/sec/cm$^2$/keV'
+    assert normalize_latex(plot.ylabel) == 'f(E)  Photons/sec/cm$^2$/keV'
     assert plot.title == 'Source Model of example-bkg'
 
     assert np.all(plot.y >= 0)

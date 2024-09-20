@@ -36,12 +36,14 @@ on disk of that module::
 
    >>> from sherpa import plot
    >>> print(plot.backend.name)
+   pylab
 
 .. warning::
     Of course, you could be tempted to write::
 
       >>> from sherpa.plot import backend
       >>> print(backend.name)
+      pylab
 
     However, ``backend`` is now a reference to the backend that
     was active when the import was done. If the backend is changed
@@ -73,7 +75,7 @@ provides the same interface)::
 Sherpa also provides a context manager to change the backend for just one plot::
 
   >>> from sherpa.plot import TemporaryPlottingBackend
-  >>> with TemporarypPlottingBackend('pylab'):
+  >>> with TemporaryPlottingBackend('pylab'):
   ...     x = [1,2,3,4]
   ...     # do some plotting with x
 
@@ -81,10 +83,12 @@ The list of available plotting backend names and the classes that implement them
 
   >>> from sherpa.plot.backends import PLOT_BACKENDS
   >>> print(PLOT_BACKENDS.keys())
+  dict_keys(['BaseBackend', 'BasicBackend', 'IndepOnlyBackend', 'pylab', 'PylabErrorArea', 'BokehBackend'])
 
 Which backends are available depends on which packages are installed in your Python
 environment, e.g. the ``"pylab"`` backend requires :term:`matplotlib`.
 
+.. _backend-independent-plotting-options:
 
 Backend-independent plotting options
 ====================================
@@ -183,7 +187,7 @@ will pass them through to the plotting backend:
   >>> d = Data1D('example data', [1, 2, 3], [3, 2, 5])
   >>> dplot = DataPlot()
   >>> dplot.prepare(d)
-  >>> dplot.plot(url='https://www.example.com')
+  >>> dplot.plot(marker='*')
 
 Since Sherpa does not process those options itself, but just passes them on to
 the underlying backend module, they are not documented here - see the
@@ -293,8 +297,8 @@ Interaction with interactive plots in the UI
 Each backend also acts as a context manager: All plotting commands
 in the UI are wrapped in a ``with`` statement like this::
 
-    >>> with sherpa.backend():
-    ...     plotobj.plot()
+    >>> with sherpa.plot.backend():  # doctest: +SKIP
+    ...     plotobj.plot()  # doctest: +SKIP
 
 That allows the backend to execute any finishing code after the plots are done,
 e.g. to save the plot to disk or to display it in a window.

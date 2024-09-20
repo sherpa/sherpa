@@ -68,17 +68,33 @@ The same is true for the UI interface::
     >>> from sherpa.astro import ui
     >>> from sherpa import plot
     >>> from sherpa.astro.data import DataPHA
-    >>> session = Session()
     >>> ui.load_arrays(1, [1, 2, 3], [1, 2, 3], DataPHA)
     >>> ui.plot_data()
     >>> show(plot.backend.current_fig)
     >>> # or
-    >>> save(plot.backend.current_fig, filename='plot.html')
+    >>> save(plot.backend.current_fig, filename='plot.html')  # doctest: +SKIP
 
 Suggestions on how to integrate that better into the Sherpa UI are welcome.
 
 
+Differences to matplotlib
+-------------------------
+The :term:`bokeh` backend is intrinsically different from the :term:`matplotlib` backend,
+but Sherpa will automatically translate some settings.
+For example, if the color `'k'` (black) is passed into a sherpa plotting routine, it
+will be internally translated to bokeh's representation of black (`'black'`).
+However, this is limited to a subset of the available options that are commonly
+used, see :ref:`backend-independent-plotting-options`.
+A user can pass additional backend specific options to the plotting
+routines, such as `marker="*"` in matplotlib. This will cause an error in
+bokeh, as bokeh does not have a `"*"` marker; a similar look can be achieved
+with `marker="star"`.
 
+Similarly, in bokeh, text for labels can be formatted with LaTeX by
+enclosing it in `'$$'` (e.g. `label=r"$$\alpha$$"`), while in matplotlib
+it is done with `label=r"$\alpha$"`. All labels that sherpa itself sets will be set
+correctly, but if a user wants to manually set a label, they need adjust it
+for the backend that is currently active.
 
 Limitations
 -----------
