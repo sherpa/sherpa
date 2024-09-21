@@ -648,3 +648,69 @@ def test_1209_background(make_data_path):
     assert d.header["TELESCOP"] == "SWIFT"
     assert d.header["INSTRUME"] == "XRT"
     assert d.header["FILTER"] == "NONE"
+
+
+@pytest.mark.xfail
+@requires_fits
+@requires_data
+def test_get_x_channel0(make_data_path):
+    """Are we correctly matching up channel and energies?"""
+
+    infile = make_data_path(PHAFILE)
+    rmffile = make_data_path(RMFFILE)
+    arffile = make_data_path(ARFFILE)
+
+    pha = io.read_pha(infile)
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("ignore")
+        rmf = io.read_rmf(rmffile)
+        arf = io.read_arf(arffile)
+
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
+
+    # get_x returns all data, no matter the filter. We can check this
+    # by filtering out everything.
+    pha.ignore()
+
+    pha.set_analysis("channel")
+    x_chan = pha.get_x()
+
+    pha.set_analysis("energy")
+    x_energy = pha.get_x()
+
+    pha.set_analysis("wave")
+    x_wave = pha.get_x()
+
+    assert len(x_chan) == 1024
+    assert len(x_energy) == 1024
+    assert len(x_wave) == 1024
+
+    # Check some expected values. The energy bins are (modulo rounding
+    # issues):
+    #
+    #    0    -  0.01
+    #    0.01 -  0.02
+    #    0.02 -  0.03
+    #    0.03 -  0.04
+    #    0.04 -  0.05
+    #    ...
+    #   10.23 - 10.24
+    #
+    assert x_chan[0:5] == pytest.approx([0, 1, 2, 3, 4])
+    assert x_energy[0:5] == pytest.approx([0.005, 0.015, 0.025, 0.035, 0.045])
+    assert x_wave[0:5] == pytest.approx([2479.68380343, 826.56126781,
+                                         495.93676069, 354.24054335,
+                                         275.5204169])
+
+    # Do not bother checking wavelength since it is calculated from
+    # energy and we have shown above the wavelength mapping is
+    # correct.
+    #
+    assert x_chan[1023] == pytest.approx(1023)
+    assert x_energy[1023] == pytest.approx(10.235)
+
+    # check ascending or descending
+    assert (x_chan[1:] > x_chan[:-1]).all()
+    assert (x_energy[1:] > x_energy[:-1]).all()
+    assert (x_wave[1:] < x_wave[:-1]).all()

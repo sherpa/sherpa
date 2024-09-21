@@ -3952,6 +3952,13 @@ def test_to_guess_when_all_ignored_dataimg():
         _ = data.to_guess()
 
 
+def test_get_x_when_empty_datapha():
+    """This is a regression test."""
+
+    data = DataPHA("empty", None, None)
+    assert data.get_x() is None
+
+
 def test_get_dims_when_empty_datapha():
     """This is a regression test."""
 
