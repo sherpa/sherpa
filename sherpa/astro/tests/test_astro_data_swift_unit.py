@@ -650,7 +650,6 @@ def test_1209_background(make_data_path):
     assert d.header["FILTER"] == "NONE"
 
 
-@pytest.mark.xfail
 @requires_fits
 @requires_data
 def test_get_x_channel0(make_data_path):

@@ -2658,7 +2658,11 @@ will be removed. The identifiers can be integers or strings.
 
         return (lo, hi)
 
-    def _group_to_channel(self, val, group=True, response_id=None):
+    # The _group_to_channel, _channel_to_energy, and
+    # _channel_to_wavelength routines are only used by _from_channel
+    # (it gets set to one of these three).
+    #
+    def _group_to_channel(self, group=True, response_id=None):
         """Convert group number to channel number.
 
         For ungrouped data channel and group numbering are the
@@ -2667,7 +2671,7 @@ will be removed. The identifiers can be integers or strings.
         """
 
         if not self.grouped or not group:
-            return val
+            return self.channel
 
         # The middle channel of each group.
         #
@@ -2676,32 +2680,18 @@ will be removed. The identifiers can be integers or strings.
         # Convert to an integer (this keeps the channel within
         # the group).
         #
-        mid = np.floor(mid)
-        val = np.asarray(val).astype(np.int_) - 1
-        try:
-            return mid[val]
-        except IndexError:
-            raise DataErr(f'invalid group number: {val}') from None
+        return np.floor(mid)
 
-    def _channel_to_energy(self, val, group=True, response_id=None):
+    def _channel_to_energy(self, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
-        val = np.asarray(val).astype(np.int_) - 1
-        try:
-            return (elo[val] + ehi[val]) / 2.0
-        except IndexError:
-            raise DataErr('invalidchannel', val) from None
+        return (elo + ehi) / 2.0
 
-    def _channel_to_wavelength(self, val, group=True, response_id=None):
+    def _channel_to_wavelength(self, group=True, response_id=None):
         tiny = np.finfo(np.float32).tiny
-        vals = np.asarray(self._channel_to_energy(val, group, response_id))
-        if vals.shape == ():
-            if vals == 0.0:
-                vals = tiny
-        else:
-            vals[vals == 0.0] = tiny
-
-        vals = hc / vals
-        return vals
+        emid = self._channel_to_energy(group=group, response_id=response_id)
+        # In case there are any 0-energy bins replace them
+        emid[emid == 0.0] = tiny
+        return hc / emid
 
     default_background_id: IdType = 1
     """The identifier for the background component when not set.
@@ -4222,9 +4212,12 @@ It is an integer or string.
         return syserr
 
     def get_x(self, filter=False, response_id=None):
+        if self.channel is None:
+            return None
+
         # We want the full channel grid with no grouping.
         #
-        return self._from_channel(self.channel, group=False, response_id=response_id)
+        return self._from_channel(group=False, response_id=response_id)
 
     def get_xlabel(self) -> str:
         """The label for the independent axis.

@@ -185,49 +185,6 @@ def test_pha_get_filter_checks_ungrouped(chtype, expected, args):
     assert pha.get_filter(format='%.1f') == expected
 
 
-@pytest.mark.parametrize("chan", [0, -1, 4])
-def test_error_on_invalid_channel_ungrouped(chan):
-    """Does channel access fail when outside the bounds?
-
-    For ungrouped data it currently does not, but just
-    acts as an identity function.
-    """
-
-    pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
-    assert pha._from_channel(chan) == chan
-
-
-@pytest.mark.parametrize("chan,exp1,exp2",
-                         [(0, 1, 3),
-                          (-1, 1, 1)])
-def test_error_on_invalid_channel_grouped(chan, exp1, exp2):
-    """Does channel access fail when outside the bounds?
-
-    It is not clear what _from_channel is doing here, so
-    just check the responses.
-    """
-
-    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
-                  grouping=[1, -1, 1])
-    assert pha.grouped
-    assert pha._from_channel(chan) == exp2
-
-
-@pytest.mark.parametrize("chan", [-2, 4])
-def test_error_on_invalid_channel_grouped2(chan):
-    """Does channel access fail when outside the bounds?
-
-    This one does error out in _from_channel.
-    """
-
-    pha = DataPHA('name', [1, 2, 3], [1, 1, 1],
-                  grouping=[1, -1, 1])
-    assert pha.grouped
-    with pytest.raises(DataErr,
-                       match=f"invalid group number: {chan - 1}"):
-        pha._from_channel(chan)
-
-
 def test_pha_get_xerr_all_bad_channel_no_group():
     """get_xerr handles all bad values [channel]
 
