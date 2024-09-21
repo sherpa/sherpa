@@ -2269,7 +2269,7 @@ def test_pha_filter_simple_energy0():
 
     # use integer bins as easy to check but ensure
     # the first bin is not 0
-    rmf = create_delta_rmf(chans + 10, chans + 11,
+    rmf = create_delta_rmf(chans + 10, chans + 11, offset=0,
                            e_min=chans + 10, e_max=chans + 11)
     pha.set_rmf(rmf)
     pha.units = 'energy'
@@ -2494,19 +2494,19 @@ def test_pha_channel0_filtering():
     assert p1.get_dep(filter=True) == pytest.approx(counts)
     assert p0.get_dep(filter=True) == pytest.approx(counts)
 
-    for p in [p0, p1]:
-        p.notice(2, 6)
+    # The filter has to be different since the channel values are
+    # different.
+    #
+    p1.notice(2, 6)
+    p0.notice(1, 5)
 
     expected = np.zeros(9, dtype=bool)
     expected[1:6] = True
     assert p1.mask == pytest.approx(expected)
-
-    expected = np.zeros(9, dtype=bool)
-    expected[2:7] = True
     assert p0.mask == pytest.approx(expected)
 
     assert p1.get_dep(filter=True) == pytest.approx(counts[1:6])
-    assert p0.get_dep(filter=True) == pytest.approx(counts[2:7])
+    assert p0.get_dep(filter=True) == pytest.approx(counts[1:6])
 
 
 @requires_group
@@ -2527,33 +2527,34 @@ def test_pha_channel0_grouping():
     assert p1.grouped
     assert p0.grouped
 
-    expected = np.array([1, 1, 1, -1, -1, 1, 1, -1, 1], dtype=np.int16)
-    assert p1.grouping == pytest.approx(expected)
-    assert p0.grouping == pytest.approx(expected)
+    expected_grp = np.array([1, 1, 1, -1, -1, 1, 1, -1, 1], dtype=np.int16)
+    assert p1.grouping == pytest.approx(expected_grp)
+    assert p0.grouping == pytest.approx(expected_grp)
 
-    expected = np.zeros(9)
-    expected[-1] = 2
-    assert p1.quality == pytest.approx(expected)
-    assert p0.quality == pytest.approx(expected)
+    expected_qual = np.zeros(9)
+    expected_qual[-1] = 2
+    assert p1.quality == pytest.approx(expected_qual)
+    assert p0.quality == pytest.approx(expected_qual)
 
+    # This is the grouped data.
+    #
     expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16)
     assert p1.get_dep(filter=True) == pytest.approx(expected)
     assert p0.get_dep(filter=True) == pytest.approx(expected)
 
-    for p in [p0, p1]:
-        p.notice(2, 6)
+    # The filter has to be different since the channel values are
+    # different.
+    #
+    p1.notice(2, 6)
+    p0.notice(1, 5)
 
-    expected = np.zeros(9, dtype=bool)
-    expected[1:6] = True
-    assert p1.get_mask() == pytest.approx(expected)
+    expected_mask = np.zeros(9, dtype=bool)
+    expected_mask[1:6] = True
+    assert p1.get_mask() == pytest.approx(expected_mask)
+    assert p0.get_mask() == pytest.approx(expected_mask)
 
-    expected = np.zeros(9, dtype=bool)
-    expected[2:8] = True  # Why is this not 2:7 since the p1 case used 1:6?
-    assert p0.get_mask() == pytest.approx(expected)
-
-    expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16)
     assert p1.get_dep(filter=True) == pytest.approx(expected[1:4])
-    assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
+    assert p0.get_dep(filter=True) == pytest.approx(expected[1:4])
 
 
 @requires_group
@@ -2575,7 +2576,9 @@ def test_pha_channel0_subtract():
     for p in [p0, p1]:
         p.subtract()
         p.group_counts(3)
-        p.notice(2, 6)
+
+    p1.notice(2, 6)
+    p0.notice(1, 5)
 
     assert p1.channel[0] == 1
     assert b1.channel[0] == 1
@@ -2589,12 +2592,10 @@ def test_pha_channel0_subtract():
     assert p1.get_dep() == pytest.approx(expected)
     assert p0.get_dep() == pytest.approx(expected)
 
-    # See also the confusion of test_pha_channel0_grouping
-    #
     expected = np.array([3, 4, 3, 5, 4, 2], dtype=np.int16) - \
         np.array([0, 1, 2, 0, 3, 1], dtype=np.int16)
     assert p1.get_dep(filter=True) == pytest.approx(expected[1:4])
-    assert p0.get_dep(filter=True) == pytest.approx(expected[2:5])
+    assert p0.get_dep(filter=True) == pytest.approx(expected[1:4])
 
 
 def test_set_channel_sets_independent_axis():
