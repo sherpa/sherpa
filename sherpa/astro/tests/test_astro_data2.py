@@ -280,15 +280,8 @@ def test_pha_group_when_empty(chans):
     """A regression test."""
 
     empty = DataPHA("empty", chans, None)
-    if chans is None:
-        etype = DataErr
-        emsg = "^The size of 'empty' has not been set$"
-    else:
-        etype = TypeError
-        emsg = r"grpNumCounts\(\) Could not parse input arguments, "
-
-    with pytest.raises(etype,
-                       match=emsg):
+    with pytest.raises(DataErr,
+                       match="^data set 'empty' can not be grouped as channel or counts is not set"):
         empty.group_counts(5)
 
 

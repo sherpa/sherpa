@@ -959,7 +959,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
     def _set_related(self,
                      attr: str,
                      val: Optional[ArrayType],
-                     check_mask: bool = True) -> None:
+                     check_mask: bool = True,
+                     **kwargs) -> None:
         """Set a field that must match the independent axes size.
 
         The value can be None or something with the same length as the

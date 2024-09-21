@@ -106,7 +106,7 @@ def is_subclass(t1, t2):
 ###############################################################################
 
 
-class NoNewAttributesAfterInit():
+class NoNewAttributesAfterInit:
     """
 
     Prevents attribute deletion and setting of new attributes after
@@ -117,16 +117,16 @@ class NoNewAttributesAfterInit():
 
     __initialized = False  # Use name mangling
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.__initialized = True
 
-    def __delattr__(self, name):
+    def __delattr__(self, name: str) -> None:
         if self.__initialized and hasattr(self, name):
             raise AttributeError(f"'{type(self).__name__}' object attribute '{name}' "
                                   "cannot be deleted")
         object.__delattr__(self, name)
 
-    def __setattr__(self, name, val):
+    def __setattr__(self, name: str, val: Any) -> None:
         if self.__initialized and (not hasattr(self, name)):
             raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
 
