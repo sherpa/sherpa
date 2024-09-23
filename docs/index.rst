@@ -48,11 +48,11 @@ Acknowledging or Citing Sherpa
 
 If you use Sherpa for work/research presented in a publication please cite teh Sherpa papers:
 
-`Sherpa Paper III <https://arxiv.org/abs/2409.10400>` (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation>`)
+`Sherpa Paper III <https://arxiv.org/abs/2409.10400>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation>`_)
 
-`Sherpa Paper II <https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D>` (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation>`)
+`Sherpa Paper II <https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation>`_)
 
-`Sherpa Paper I <https://arxiv.org/abs/astro-ph/0108426>` (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation>`)
+`Sherpa Paper I <https://arxiv.org/abs/astro-ph/0108426>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation>`_)
 
 
 
