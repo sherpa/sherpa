@@ -46,14 +46,13 @@ Sherpa is available using the Digital Object Identifier (DOI)
 Acknowledging or Citing Sherpa
 ==============================
 
-If you use Sherpa for work/research presented in a publication please cite teh Sherpa papers:
+If you use Sherpa for work/research presented in a publication please cite the Sherpa papers:
 
-`Sherpa Paper III <https://arxiv.org/abs/2409.10400>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation>`_)
+`Sherpa Paper 2024 <https://arxiv.org/abs/2409.10400>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation>`_)
 
-`Sherpa Paper II <https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation>`_)
+`Sherpa Paper 2007 <https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation>`_)
 
-`Sherpa Paper I <https://arxiv.org/abs/astro-ph/0108426>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation>`_)
-
+`Sherpa Paper 2001 <https://arxiv.org/abs/astro-ph/0108426>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation>`_)
 
 
 The last version of Sherpa compatible with Python 2.7 was the
