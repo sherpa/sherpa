@@ -81,6 +81,27 @@ If you want a general-purpose citation then please use either of the
 following, kindly provided by the SAO/NASA Astrophysics Data System
 service:
 
+The most recent article will appear in the Astrophysical Journal Supplement Series and it is
+available on the archives:
+
+@ARTICLE{2024arXiv240910400S,
+       author = {{Siemiginowska}, Aneta and {Burke}, Douglas and {G{\"u}nther}, Hans Moritz and {Lee}, Nicholas P. and {McLaughlin}, Warren and {Principe}, David A. and {Cheer}, Harlan and {Fruscione}, Antonella and {Laurino}, Omar and {McDowell}, Jonathan and {Terrell}, Marie},
+        title = "{Sherpa: An Open Source Python Fitting Package}",
+      journal = {arXiv e-prints},
+     keywords = {Astrophysics - Instrumentation and Methods for Astrophysics, Astrophysics - High Energy Astrophysical Phenomena},
+         year = 2024,
+        month = sep,
+          eid = {arXiv:2409.10400},
+        pages = {arXiv:2409.10400},
+          doi = {10.48550/arXiv.2409.10400},
+archivePrefix = {arXiv},
+       eprint = {2409.10400},
+ primaryClass = {astro-ph.IM},
+       adsurl = {https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S},
+      adsnote = {Provided by the SAO/NASA Astrophysics Data System}
+}
+
+
 @INPROCEEDINGS{2001SPIE.4477...76F,
        author = {{Freeman}, Peter and {Doe}, Stephen and {Siemiginowska}, Aneta},
         title = "{Sherpa: a mission-independent data analysis application}",
