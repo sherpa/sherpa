@@ -1711,7 +1711,7 @@ def test_pha_quality_all_bad_basic_checks():
     assert pha.get_filter() == ""
     assert pha.get_x() == pytest.approx([1, 2, 3, 4])
     assert pha.apply_filter(fvals) == pytest.approx([])
-    assert pha.apply_grouping(fvals) == pytest.approx(fvals)
+    assert pha.apply_grouping(fvals) == pytest.approx([])
 
 
 @pytest.mark.parametrize("qual,fexpr,mask,counts",
@@ -1740,7 +1740,7 @@ def test_pha_quality_change_mask(make_quality_pha):
 
     pha = make_quality_pha
     pha.ignore_bad()
-    assert pha.mask is True
+    assert pha.mask == pytest.approx([True] * 3)
     pha.mask = [1, 1, 0]
     assert pha.mask == pytest.approx([True, True, False])
 
@@ -3088,8 +3088,7 @@ def test_quality_pha_get_indep(make_quality_pha):
 def test_grouped_pha_mask(make_grouped_pha):
     """What is the default mask setting?"""
     pha = make_grouped_pha
-    assert np.isscalar(pha.mask)
-    assert pha.mask is True
+    assert pha.mask == pytest.approx([True, True])
 
 
 def test_grouped_pha_get_mask(make_grouped_pha):

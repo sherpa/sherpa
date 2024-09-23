@@ -1885,6 +1885,7 @@ If set, the identifiers must already exist, and any other backgrounds
 will be removed. The identifiers can be integers or strings.
 """)
 
+
     @overload
     def _set_related(self,
                      attr: str,
@@ -1965,45 +1966,91 @@ will be removed. The identifiers can be integers or strings.
     def counts(self, val: Optional[np.ndarray]):
         self.y = val
 
-    # Override the mask handling because the mask matches the grouped
-    # data length, not the independent axis, and when reading the
-    # value any quality filter needs to be applied.
+    # The mask handling is complex because the mask
     #
-    @Data1D.mask.getter
-    def mask(self) -> ArrayType | bool | None:
+    # - represents the grouped data (if grouped, so may have
+    #   less elements than the number of channels),
+    # - and has to worry about the quality filter, if set
+    #
+    # The set code can ignore the quality filter (if set) since
+    # that is only applied when getting the mask (also see get_mask).
+    #
+    # What does setting val to None mean, and should it be an
+    # error? The parent class disallows it.
+    #
+    @property
+    def mask(self) -> Union[np.ndarray, bool]:
+        """Mask array for dependent variable
 
-        mask = Data1D.mask.getter()
+        Complexities added by the DataPHA class:
+
+        1. the data may be grouped, in which case the mask matches
+           the grouped data
+        2. qualify filtering, by `ignore_bad`, will be added to
+           any mask set by `notice` or `ignore`.
+
+        """
+
+        mask = self._data_space.filter.mask
+
         if self.quality_filter is None:
             return mask
 
-        if mask is False:
-            return mask
-
+        # Should this always error out here?
         if self.size is None:
-            # Is this possible?
             raise DataErr("sizenotset", self.name)
 
-        if not self.grouped:
-            if mask is True:
-                mval = np.ones(self.size, dtype=bool)
-            else:
-                mval = mask
-
-            return mask & self.qualty_filter
-
-        # TODO: how do we compress the quality filter down to match
-        # the mask? Really all that maters is whether a group contains
-        # all-bad-quality values, because then it gets dropped,
-        # otherwise we can not filter it out. Is this case a
-        # possibility?
+        # The assumption is that at least one element of
+        # self.quality_filter is not True.
         #
-        ngrps = np.sum(self.grouping >= 0)
-        if mask.size == ngrps:
+        if not self.grouped:
+            if mask is False:
+                return np.zeros(self.size, dtype=bool)
+
+            if mask is True:
+                out = np.ones(self.size, dtype=bool)
+            else:
+                out = mask
+
+            return out & self.quality_filter
+
+        # How to apply to a grouped dataset?
+        #
+        # The assumption here is that we only mark a group "bad" from
+        # the quality filter is if each element of the group has bad
+        # quality. To do this the code replicates apply_grouping; it
+        # is not used directly to avoid confusion over whether quality
+        # filtering is handled there or not. Working out this is a
+        # bit messy: look for any groups which have a max of False.
+        #
+        # However, at present the data is assumed to already have been
+        # filtered to remove bad-quality values, so it's not clear
+        # what we want to do.
+        #
+        maxvals = do_group(self.quality_filter, self.grouping, "_max")
+        qfilt = maxvals > 0
+
+        # What is the output size to be?
+        # nelem = qfilt.size
+        nelem = qfilt.sum()
+
+        if mask is False:
+            return np.zeros(nelem, dtype=bool)
+
+        if mask is True:
+            return np.ones(nelem, dtype=bool)
+
+        # This is not turning out to be what I expected...
+        #
+        if qfilt.all():
             return mask
 
-        assert False, ("Need to worry about mask resizing", mask.size, ngrps)
+        # DEFNIITELY WRONG
+        print((nelem, qfilt.size, qfilt, mask))
+        # return mask & qfilt
+        return mask
 
-    @Data1D.mask.setter
+    @mask.setter
     def mask(self, val: Union[ArrayType, bool]) -> None:
 
         # We only need to over-ride the behavior if the data is
@@ -3446,6 +3493,8 @@ It is an integer or string.
             temp[mask] = data
             data = temp
 
+        # The apply_grouping method handles any quality filtering.
+        #
         gdata = self.apply_grouping(data, groupfunc)
 
         # We can not
@@ -3585,14 +3634,14 @@ It is an integer or string.
         if ndata != nelem:
             raise DataErr("mismatchn", "data", "array", nelem, ndata)
 
-        # TODO: This should probably apply the quality filter whether
-        # grouped or not.
-        #
+        qfilter = self.quality_filter
         if not self.grouped:
-            return data
+            if qfilter is None:
+                return data
+
+            return data[qfilter]
 
         groups = self.grouping
-        qfilter = self.quality_filter
         if qfilter is None:
             return do_group(data, groups, groupfunc.__name__)
 
@@ -3601,8 +3650,8 @@ It is an integer or string.
             raise DataErr("mismatchn", "quality filter", "array", nfilter, len(data))
 
         filtered_data = np.asarray(data)[qfilter]
-        groups = np.asarray(groups)[qfilter]
-        return do_group(filtered_data, groups, groupfunc.__name__)
+        filtered_groups = np.asarray(groups)[qfilter]
+        return do_group(filtered_data, filtered_groups, groupfunc.__name__)
 
     def ignore_bad(self) -> None:
         """Exclude channels marked as bad.
@@ -3634,20 +3683,27 @@ It is an integer or string.
 
         qual_flags = ~np.asarray(self.quality, dtype=bool)
 
-        if self.grouped and (self.mask is not True):
-            self.notice()
-            warning('filtering grouped data with quality flags,' +
-                    ' previous filters deleted')
+        # Special case the "nothing has changed" case.
+        #
+        if self.quality_filter is not None and \
+           (self.quality_filter == qual_flags).all():
+            return
 
-        #elif not self.grouped:
-        #    # if ungrouped, create/combine with self.mask
-        #    if self.mask is not True:
-        #        self.mask = self.mask & qual_flags
-        #    else:
-        #        self.mask = qual_flags
+        ofilter = self.get_filter()
 
-        # self.quality_filter used for pre-grouping filter
-        self.quality_filter = qual_flags
+        if qual_flags.all():
+            # Special case there being no "bad" elements
+            self.quality_filter = None
+        else:
+            self.quality_filter = qual_flags
+
+        nfilter = self.get_filter()
+        if ofilter == nfilter:
+            # Special case the filter not changing,
+            return
+
+        # Should this be done here or somwhere else?
+        warning(f"Filter change: {ofilter} -> {nfilter}")
 
     def _dynamic_group(self,
                        group_func: Union[Callable, str],
@@ -4849,28 +4905,60 @@ It is an integer or string.
         if self.size is None:
             raise DataErr("sizenotset", self.name)
 
-        # I am not convinced that self.mask will always be an array if
-        # quality filtering is in use, so do not assume that for now.
+        # The assumption is that qualit filtering is applied in the
+        # mask call, so this routine only needs to worry about the
+        # grouped data case.
         #
-        if self.mask is False:
-            return None
+        qual = self.quality_filter
+        mask = self.mask
 
-        if self.mask is True:
-            if self.quality_filter is None:
-                return np.ones(self.size, dtype=bool)
+        # Separate out the options
+        # - mask is False
+        # - mask is True
+        #   OR
+        #   data is ungrouped
+        # - data is grouped and mask is an array
+        #
+        if mask is False:
+            if qual is None:
+                # Why do we do this?
+                return None
 
-            return self.quality_filter.copy()
+            return np.zeros(self.size, dtype=bool)
 
-        if not self.grouped:
-            mask = self.mask.copy()
-            # This does not apply the quality filter
-            return mask
+        if mask is True or not self.grouped:
+            if mask is True:
+                out = np.ones(self.size, dtype=bool)
+            else:
+                out = mask.copy()
 
-        groups = self.grouping
-        if self.quality_filter is not None:
-            groups = groups[self.quality_filter]
+            if qual is None:
+                return out
 
-        return expand_grouped_mask(self.mask, groups)
+            return out & qual
+
+        # It is possible for mask to be empty.
+        #
+        if mask.size == 0:
+            return np.zeros(self.size, dtype=bool)
+
+        # The mask is grouped, so it needs to be expanded out using
+        # the grouping field. If quality filtering is in play then
+        #
+        # a) a group may contain good and bad quality channels, so
+        #    this needs to be corrected after the expansion
+        #
+        # b) the mask will not include data for groups which are all
+        #    bad, so these channels will somehow have to be added
+        #
+        ngrps = np.sum(self.grouping > 0)
+        if mask.size == ngrps:
+            out = expand_grouped_mask(mask, self.grouping)
+        else:
+            assert False, (mask.size, ngrps, mask, self.grouping)
+
+        qfilt = np.ones(self.size, dtype=bool) if qual is None else qual
+        return out & qfilt
 
     def get_noticed_expr(self) -> str:
         """Returns the current set of noticed channels.
