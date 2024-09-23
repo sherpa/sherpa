@@ -26,6 +26,7 @@ Sherpa contains an expressive and powerful
 modeling language, coupled with a
 range of statistics and robust optimisers.
 
+
 .. seealso::
 
    If you are looking for the similarly named package
@@ -41,6 +42,19 @@ and is compatible with Python versions 3.9 to 3.11.
 Information on recent releases and citation information for
 Sherpa is available using the Digital Object Identifier (DOI)
 `10.5281/zenodo.593753 <https://doi.org/10.5281/zenodo.593753>`_.
+
+Acknowledging or Citing Sherpa
+==============================
+
+If you use Sherpa for work/research presented in a publication please cite teh Sherpa papers:
+
+`Sherpa Paper III <https://arxiv.org/abs/2409.10400>` (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation>`)
+
+`Sherpa Paper II <https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D>` (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation>`)
+
+`Sherpa Paper I <https://arxiv.org/abs/astro-ph/0108426>` (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation>`)
+
+
 
 The last version of Sherpa compatible with Python 2.7 was the
 `4.11.1 release <https://doi.org/10.5281/zenodo.3358134>`_.
