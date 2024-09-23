@@ -61,7 +61,7 @@ def check_pha(pha, responses=True):
     assert pha.backscal == pytest.approx(1136000.)
 
     nchan = 800
-    assert pha.channel == pytest.approx(np.arange(1, nchan + 1))
+    assert pha.channel == pytest.approx(np.arange(0, nchan))
 
     # Rather than check each element, use some simple summary
     # statistics.

@@ -2291,6 +2291,10 @@ class Session(sherpa.ui.utils.Session):
         multiple data sets can be loaded with this command, as
         described in the `sherpa.astro.datastack` module.
 
+        .. versionchanged:: 4.17.0
+           Channel numbers that start at 0 are now left as is rather
+           than be renumbered to start at 1.
+
         .. versionchanged:: 4.12.2
            The id argument is now used to define the first identifier
            when loading in a PHA2 file (previously they always used
@@ -2335,6 +2339,16 @@ class Session(sherpa.ui.utils.Session):
         they are interpreted as the `id` and `arg` parameters,
         respectively. The remaining parameters are expected to be
         given as named arguments.
+
+        Unlike XSPEC, Sherpa does not:
+
+        - use the error column in the file, prefering to re-calculate
+          them (so set use_errors=True to use the values from the
+          file);
+        - automatically subtract any background component;
+        - renumber channels so they start at 1;
+        - or use the group number rather than channel number when
+          filtering by channel.
 
         The `minimum_energy` setting of the `ogip` section of the
         Sherpa configuration file determines the behavior when an
@@ -5947,6 +5961,10 @@ class Session(sherpa.ui.utils.Session):
         maps to a single energy bin), otherwise the RMF is taken from
         the image data stored in the file pointed to by `fname`.
 
+        .. versionchanged:: 4.17.0
+           Support for startchan values other than 1 has been
+           improved.
+
         .. versionchanged:: 4.16.0
            The e_min and e_max values will use the rmflo and rmfhi
            values if not set.
@@ -5964,8 +5982,8 @@ class Session(sherpa.ui.utils.Session):
             by the ENERG_LO and ENERG_HI columns of the MATRIX block) of
             the OGIP standard.
         startchan : int, optional
-            The starting channel number: expected to be 0 or 1 but this is
-            not enforced.
+            The starting channel number: it should match the offset
+            value for the DataRMF class.
         e_min, e_max : None or array, optional
             The E_MIN and E_MAX columns of the EBOUNDS block of the
             RMF. If not set they are taken from rmflo and rmfhi

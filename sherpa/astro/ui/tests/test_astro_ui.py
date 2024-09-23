@@ -23,13 +23,13 @@ import os
 import re
 import logging
 
-import numpy
+import numpy as np
 from numpy.testing import assert_allclose
 
 import pytest
 
-from sherpa.astro.data import DataIMG, DataPHA
-from sherpa.astro.instrument import RMFModelPHA, create_arf
+from sherpa.astro.data import DataIMG, DataPHA, DataRMF
+from sherpa.astro.instrument import RMFModelPHA, create_arf, matrix_to_rmf
 from sherpa.astro import ui
 from sherpa.data import Data1D, Data2D, Data2DInt
 from sherpa.utils.err import ArgumentErr, DataErr, IdentifierErr, IOErr, StatErr
@@ -157,12 +157,12 @@ def test_dataspace1d_data1dint(clean_astro_ui):
     grid = ui.get_indep('x')
     assert len(grid) == 2
 
-    expected = numpy.asarray([20, 22.5, 25, 27.5, 30.0])
+    expected = np.asarray([20, 22.5, 25, 27.5, 30.0])
     assert grid[0] == pytest.approx(expected[:-1])
     assert grid[1] == pytest.approx(expected[1:])
 
     y = ui.get_dep('x')
-    assert y == pytest.approx(numpy.zeros(4))
+    assert y == pytest.approx(np.zeros(4))
 
 
 def test_dataspace1d_datapha(clean_astro_ui):
@@ -179,11 +179,11 @@ def test_dataspace1d_datapha(clean_astro_ui):
     grid = ui.get_indep('x')
     assert len(grid) == 1
 
-    expected = numpy.asarray([1, 2, 3, 4, 5])
+    expected = np.asarray([1, 2, 3, 4, 5])
     assert grid[0] == pytest.approx(expected)
 
     y = ui.get_dep('x')
-    assert y == pytest.approx(numpy.zeros(5))
+    assert y == pytest.approx(np.zeros(5))
 
     assert ui.get_exposure('x') is None
     assert ui.get_grouping('x') is None
@@ -234,11 +234,11 @@ def test_dataspace1d_datapha_bkg(clean_astro_ui):
     grid = ui.get_indep('x', bkg_id=2)
     assert len(grid) == 1
 
-    expected = numpy.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
+    expected = np.asarray([1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
     assert grid[0] == pytest.approx(expected)
 
     y = ui.get_dep('x', bkg_id=2)
-    assert y == pytest.approx(numpy.zeros(10))
+    assert y == pytest.approx(np.zeros(10))
 
     assert ui.get_exposure('x', bkg_id=2) is None
     assert ui.get_grouping('x', bkg_id=2) is None
@@ -426,7 +426,7 @@ def test_more_ui_bug38_pre_416(make_data_path, caplog):
     exact_record(caplog.records[1], "sherpa.ui.utils", "INFO",
                  "dataset 3c273: 0.2482:2.0294 -> 0.00146:2.0294 Energy (keV)")
 
-    ui.group_counts('3c273', 15, tabStops=numpy.zeros(1024))
+    ui.group_counts('3c273', 15, tabStops=np.zeros(1024))
 
     assert len(caplog.records) == 3
     exact_record(caplog.records[2], "sherpa.ui.utils", "INFO",
@@ -578,7 +578,7 @@ def test_group_reporting_case_pre_416(clean_astro_ui, caplog):
     current behaviour.
     """
 
-    x = numpy.arange(1, 22)
+    x = np.arange(1, 22)
     ui.load_arrays(1, x, x, ui.DataPHA)
     ui.notice(5, 7)
     ui.notice(9, 11)
@@ -596,7 +596,7 @@ def test_group_reporting_case_pre_416(clean_astro_ui, caplog):
 
     # Prior to 4.16.0 the group_xxx calls ignored the existing filter.
     #
-    ui.group_width(3, tabStops=numpy.zeros(21))
+    ui.group_width(3, tabStops=np.zeros(21))
 
     assert len(caplog.records) == 4
     exact_record(caplog.records[3], "sherpa.ui.utils", "INFO",
@@ -613,7 +613,7 @@ def test_group_reporting_case(clean_astro_ui, caplog):
     current behaviour.
     """
 
-    x = numpy.arange(1, 22)
+    x = np.arange(1, 22)
     ui.load_arrays(1, x, x, ui.DataPHA)
     ui.notice(5, 7)
     ui.notice(9, 11)
@@ -646,7 +646,7 @@ def test_group_bins_pre_416(idval, clean_astro_ui, caplog):
 
     idarg = 1 if idval is None else idval
 
-    x = numpy.arange(1, 22)
+    x = np.arange(1, 22)
     ui.load_arrays(idarg, x, x, ui.DataPHA)
     ui.notice(5, 7)
     ui.notice(9, 11)
@@ -695,7 +695,7 @@ def test_group_bins(idval, clean_astro_ui, caplog):
 
     idarg = 1 if idval is None else idval
 
-    x = numpy.arange(1, 22)
+    x = np.arange(1, 22)
     ui.load_arrays(idarg, x, x, ui.DataPHA)
     ui.notice(5, 7)
     ui.notice(9, 11)
@@ -917,8 +917,8 @@ def test_psf_model2d(model, clean_astro_ui):
     ui.load_psf('psf2d', model + '.mdl')
     ui.set_psf('psf2d')
     mdl = ui.get_model_component('mdl')
-    assert (numpy.array(mdl.get_center()) ==
-            numpy.array([108, 130])).all()
+    assert (np.array(mdl.get_center()) ==
+            np.array([108, 130])).all()
 
 
 def test_dataspace2d_default(clean_astro_ui):
@@ -931,7 +931,7 @@ def test_dataspace2d_default(clean_astro_ui):
     assert data.shape == (5, 3)
     assert data.x0 == pytest.approx([1, 2, 3] * 5)
     assert data.x1 == pytest.approx([1] * 3 + [2] * 3 + [3] * 3 + [4] * 3 + [5] * 3)
-    assert data.y == pytest.approx(numpy.zeros(15))
+    assert data.y == pytest.approx(np.zeros(15))
 
 
 def test_dataspace2d_data2d(clean_astro_ui):
@@ -944,7 +944,7 @@ def test_dataspace2d_data2d(clean_astro_ui):
     assert data.shape == (5, 3)
     assert data.x0 == pytest.approx([1, 2, 3] * 5)
     assert data.x1 == pytest.approx([1] * 3 + [2] * 3 + [3] * 3 + [4] * 3 + [5] * 3)
-    assert data.y == pytest.approx(numpy.zeros(15))
+    assert data.y == pytest.approx(np.zeros(15))
 
 
 def test_dataspace2d_data2dint(clean_astro_ui):
@@ -959,7 +959,7 @@ def test_dataspace2d_data2dint(clean_astro_ui):
     assert data.x0hi == pytest.approx([1.5, 2.5, 3.5] * 5)
     assert data.x1lo == pytest.approx([0.5] * 3 + [1.5] * 3 + [2.5] * 3 + [3.5] * 3 + [4.5] * 3)
     assert data.x1hi == pytest.approx([1.5] * 3 + [2.5] * 3 + [3.5] * 3 + [4.5] * 3 + [5.5] * 3)
-    assert data.y == pytest.approx(numpy.zeros(15))
+    assert data.y == pytest.approx(np.zeros(15))
 
     # These are presumably auto-generated
     assert data.x0 == pytest.approx([1, 2, 3] * 5)
@@ -1122,8 +1122,8 @@ def save_arrays(tmp_path, colnames, fits, read_func):
 
     # It looks like the input arrays to `write_arrays` should be numpy
     # arrays, so enforce that invariant.
-    a = numpy.asarray([1, 3, 9])
-    b = numpy.sqrt(numpy.asarray(a))
+    a = np.asarray([1, 3, 9])
+    b = np.sqrt(np.asarray(a))
     c = b * 0.1
 
     if colnames:
@@ -1180,8 +1180,8 @@ def test_save_arrays_colmismatch_errs(ascii_type, tmp_path):
 
     ofile = str(tmp_path / "should_not_get_created")
 
-    a = numpy.asarray([1, 3, 5])
-    b = numpy.asarray([4, 6, 8])
+    a = np.asarray([1, 3, 5])
+    b = np.asarray([4, 6, 8])
     c = a*b
     fields = ["odd", "even"]
 
@@ -1576,10 +1576,10 @@ def test_grouped_pha_all_bad_channel(clean_astro_ui):
     same test but with a response model.
 
     """
-    chans = numpy.arange(1, 6, dtype=numpy.int16)
-    counts = numpy.asarray([0, 1, 2, 0, 1], dtype=numpy.int16)
-    grouping = numpy.asarray([1, -1, -1, -1, -1], dtype=numpy.int16)
-    quality = numpy.asarray([2, 2, 2, 2, 2], dtype=numpy.int16)
+    chans = np.arange(1, 6, dtype=np.int16)
+    counts = np.asarray([0, 1, 2, 0, 1], dtype=np.int16)
+    grouping = np.asarray([1, -1, -1, -1, -1], dtype=np.int16)
+    quality = np.asarray([2, 2, 2, 2, 2], dtype=np.int16)
 
     dset = ui.DataPHA('low', chans, counts, grouping=grouping, quality=quality)
     ui.set_data(dset)
@@ -1608,15 +1608,15 @@ def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xlo, e
 
     """
 
-    chans = numpy.arange(1, 6, dtype=numpy.int16)
-    counts = numpy.asarray([0, 1, 2, 0, 1], dtype=numpy.int16)
-    grouping = numpy.asarray([1, -1, -1, -1, -1], dtype=numpy.int16)
-    quality = numpy.asarray([2, 2, 2, 2, 2], dtype=numpy.int16)
+    chans = np.arange(1, 6, dtype=np.int16)
+    counts = np.asarray([0, 1, 2, 0, 1], dtype=np.int16)
+    grouping = np.asarray([1, -1, -1, -1, -1], dtype=np.int16)
+    quality = np.asarray([2, 2, 2, 2, 2], dtype=np.int16)
 
     dset = ui.DataPHA('low', chans, counts, grouping=grouping, quality=quality)
     ui.set_data(dset)
 
-    egrid = numpy.asarray([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+    egrid = np.asarray([0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
     elo = egrid[:-1]
     ehi = egrid[1:]
 
@@ -1657,7 +1657,7 @@ def test_grouped_pha_all_bad_response_bg_warning(elo, ehi, nbins, fstr, bkg_id,
     with SherpaVerbosity("ERROR"):
         ui.load_pha('check', make_data_path('3c273.pi'))
 
-    ui.set_quality('check', 2 * numpy.ones(1024, dtype=numpy.int16), bkg_id=1)
+    ui.set_quality('check', 2 * np.ones(1024, dtype=np.int16), bkg_id=1)
 
     assert len(caplog.records) == 0
     ui.ignore_bad('check', bkg_id=1)
@@ -1760,8 +1760,8 @@ def test_unpack_arrays_datapha():
 def test_unpack_arrays_dataimg():
     """Can we call unpack_arrays? DataIMG"""
 
-    ivals = numpy.arange(12)
-    y, x = numpy.mgrid[0:3, 0:4]
+    ivals = np.arange(12)
+    y, x = np.mgrid[0:3, 0:4]
     x = x.flatten()
     y = y.flatten()
     ans = ui.unpack_arrays(x, y, ivals, (3, 4), ui.DataIMG)
@@ -1787,14 +1787,14 @@ def test_get_rate_bkg(idval, clean_astro_ui, make_data_path):
     r2 = ui.get_rate(idval, bkg_id=1)
 
     # All we do is check they are different
-    assert isinstance(r1, numpy.ndarray)
-    assert isinstance(r2, numpy.ndarray)
+    assert isinstance(r1, np.ndarray)
+    assert isinstance(r2, np.ndarray)
 
     # We can not say r1 > r2 as this is not true for all bins.
     # Technically two bins could be the same, but they are not for
     # this dataset.
     #
-    assert numpy.all(r1 != r2)
+    assert np.all(r1 != r2)
 
 
 @pytest.mark.parametrize("idval", [1, "x"])
@@ -1808,7 +1808,7 @@ def test_warn_about_bgnd_subtracted_with_model(idval, clean_astro_ui, caplog):
 
     ui.load_arrays(idval, [1, 2], [4, 3], ui.DataPHA)
 
-    egrid = numpy.asarray([1, 2, 3])
+    egrid = np.asarray([1, 2, 3])
     ui.set_arf(idval, create_arf(egrid[:-1], egrid[1:]))
 
     ui.set_bkg(idval, ui.DataPHA("b", [1, 2], [1, 1]))
@@ -1843,7 +1843,7 @@ def test_warn_about_bgnd_or_subtracted_no_model(idval, clean_astro_ui, caplog):
 
     ui.load_arrays(idval, [1, 2], [4, 3], ui.DataPHA)
 
-    egrid = numpy.asarray([1, 2, 3])
+    egrid = np.asarray([1, 2, 3])
     ui.set_arf(idval, create_arf(egrid[:-1], egrid[1:]))
 
     ui.set_bkg(idval, ui.DataPHA("b", [1, 2], [1, 1]))
@@ -1865,3 +1865,185 @@ def test_warn_about_bgnd_or_subtracted_no_model(idval, clean_astro_ui, caplog):
     assert sinfo[0].ids == [idval]
     assert sinfo[0].bkg_ids is None
     assert sinfo[0].statval == pytest.approx(13.0)
+
+
+def make_pha_offset(offset):
+    """Create the data files for this offset."""
+
+    delta = offset - 1
+    channels = np.arange(1, 10, dtype=np.int16) + delta
+    counts = np.zeros(9)
+
+    # The RMF is not "ideal".
+    #
+    energ = np.linspace(0.1, 1.1, 21)
+    energ_lo = energ[:-1]
+    energ_hi = energ[1:]
+
+    ebounds = np.asarray([0.05, 0.18, 0.32, 0.45, 0.55, 0.7, 0.85, 1.0,
+                          1.05, 1.2])
+    e_min = ebounds[:-1]
+    e_max = ebounds[1:]
+
+    pha = DataPHA("x", channels, counts)
+    pha.exposure = 100
+
+    # The RMF matrix is 20 by 9.
+    #
+    # We have several rows with multiple groups, in case there's odd
+    # behaviour with this.
+    #
+    mat = np.asarray([
+        [0.9, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.1, 0.8, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.1, 0.4, 0.5, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.1, 0.8, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.8, 0.2, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.2, 0.8, 0.0, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.1, 0.8, 0.1, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.2, 0.8, 0.2, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.6, 0.4, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.4, 0.6, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.3, 0.7, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.2, 0.8, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.1, 0.9, 0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.2, 0.0, 0.8, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.7, 0.1, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.8, 0.1, 0.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.8, 0.1],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 0.9]
+    ])
+    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(mat, startchan=offset)
+    rmf = DataRMF("x", detchans=9, energ_lo=energ_lo,
+                  energ_hi=energ_hi, e_min=e_min, e_max=e_max,
+                  n_grp=n_grp, f_chan=f_chan, n_chan=n_chan,
+                  matrix=matrix, offset=offset)
+    specresp = np.linspace(100, 119, 20)
+    arf = create_arf(energ_lo, energ_hi, specresp)
+    return pha, arf, rmf, energ_lo, energ_hi, specresp, mat
+
+
+def check_pha_offset(specresp, matrix, energ_lo, energ_hi,
+                     tol=1e-6):
+    """Run the tests.
+
+    Evaluate the model for the full channel range and for
+    a subset.
+
+    """
+
+    ui.set_source(ui.polynom1d.mdl)
+    mdl.c0 = 50
+    mdl.c1 = 200
+
+    mvals = mdl(energ_lo, energ_hi)
+    assert np.all(mvals > 0)
+
+    # X is easy to calculate from first principles, but Y is
+    # harder to do.
+    #
+    expected_x0 = [0.115, 0.25, 0.385, 0.5, 0.625,
+                   0.775, 0.925, 1.025, 1.125]
+    expected_y0 = 100 * (specresp * mvals) @ matrix
+
+    # No filter
+    #
+    xvals0, yvals0 = ui.calc_model()
+
+    xmid0 = (xvals0[0] + xvals0[1]) / 2
+    assert xmid0 == pytest.approx(expected_x0)
+    assert yvals0 == pytest.approx(expected_y0, rel=tol)
+
+    # Subset the data: aim for channels 4,5,6.
+    #
+    ui.ignore()
+    ui.notice(0.5, 0.8)
+
+    data = ui.get_data()
+    assert data.mask == pytest.approx([False] * 3 + [True] * 3 + [False] * 3)
+
+    assert ui.get_filter(format="%.2f", delim="-") == "0.45-0.85"
+
+    # After filter
+    #
+    xvals1, yvals1 = ui.calc_model()
+
+    assert xvals1[0] == pytest.approx([0.45, 0.55, 0.70])
+    assert xvals1[1] == pytest.approx([0.55, 0.70, 0.85])
+
+    # I would have expected this to be
+    #   [False] * 3 + [True] * 15 + [False] * 2
+    # but it isn't.
+    #
+    mask = [False] + [True] * 17 + [False, False]
+    expected_y1 = 100 * (specresp[mask] * mvals[mask]) @ matrix[mask, :]
+    assert yvals1 == pytest.approx(expected_y1[data.mask], rel=tol)
+
+
+@pytest.mark.parametrize("offset", [0, 1, 2, 5])
+def test_pha_offset_direct(offset, clean_astro_ui):
+    """Do we get consistent behaviour with different offsets?
+
+    This creates the data structures in memory. See
+    test_pha_offset_via_file for reading from file.
+    """
+
+    # Given issue #2127 it is not clear what the intended behaviour
+    # is. For this test we assume that the channel values are as
+    # specified in the data file (although in this case the data is
+    # generated on-the-fly) and that the results are the same given an
+    # energy filter (if we chose a channel filter they they would not
+    # match).
+    #
+    pha, arf, rmf, energ_lo, energ_hi, specresp, matrix = make_pha_offset(offset)
+    ui.set_data(pha)
+    ui.set_rmf(rmf)
+    ui.set_arf(arf)
+
+    ui.set_analysis("energy")
+    check_pha_offset(specresp, matrix, energ_lo, energ_hi)
+
+
+@requires_fits
+@pytest.mark.parametrize("offset", [0, 1, 2, 5])
+def test_pha_offset_via_file(offset, clean_astro_ui, tmp_path):
+    """Do we get consistent behaviour with different offsets?
+
+    See test_pha_offset_direct for commentary - this version
+    writes the files out, reads them back in, and then checks it
+    still works.
+
+    """
+
+    from sherpa.astro import io
+
+    arfname = "src.arf"
+    rmfname = "src.rmf"
+    phaname = "src.pha"
+
+    pha, arf, rmf, energ_lo, energ_hi, specresp, matrix = make_pha_offset(offset)
+
+    pha.header["ANCRFILE"] = arfname
+    pha.header["RESPFILE"] = rmfname
+
+    phapath = tmp_path / phaname
+    io.write_pha(str(phapath), pha, ascii=False)
+    io.write_arf(str(tmp_path / arfname), arf, ascii=False)
+    io.write_rmf(str(tmp_path / rmfname), rmf)
+
+    ui.load_pha(str(phapath))
+
+    # Check we've read in the responses
+    assert ui.get_analysis() == "energy"
+
+    # Have we read in the expected channels?
+    expected_chans = np.arange(offset, offset + 9, dtype=np.int16)
+    chans, = ui.get_indep()
+    assert chans == pytest.approx(expected_chans)
+
+    # It is not clear what values lead to a loss in tolerance here.
+    #
+    check_pha_offset(specresp, matrix, energ_lo, energ_hi,
+                     tol=1.5e-6)

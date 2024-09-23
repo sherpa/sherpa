@@ -21,9 +21,11 @@
 import re
 
 import numpy as np
+
 import pytest
 
 from sherpa.astro.data import DataPHA, DataIMG, DataIMGInt
+from sherpa.astro.instrument import matrix_to_rmf
 from sherpa.astro import ui
 from sherpa.astro import utils
 from sherpa.astro.utils import do_group, expand_grouped_mask, filter_resp, \
@@ -66,6 +68,133 @@ def test_rmf_filter_no_chans(make_data_path):
     with pytest.raises(ValueError,
                        match="There are no noticed channels"):
         rmf.notice([])
+
+
+@pytest.mark.parametrize("offset", [0, 1, 2, 5])
+@pytest.mark.parametrize("selected,ng,fch,nch,mat,msk",
+                         [([1],
+                           [],
+                           [],
+                           [],
+                           [],
+                           [False] * 6),
+                          ([2],
+                           [1, 1],
+                           [2, 2],
+                           [1, 2],
+                           # There is an argument to say this should
+                           # just return [1, 1.2] as the 1.8 factor is
+                           # for channel 3. Do we just return all the
+                           # elements of a group if any element in the
+                           # group is needed?
+                           #
+                           [1, 1.2, 1.8],
+                           [False] + [True] * 2 + [False] * 3),
+                          ([3],
+                           [1, 1, 1, 1],
+                           [2, 2, 3, 3],
+                           [1, 2, 1, 2],
+                           [1, 1.2, 1.8, 2.0, 3.3, 3.7],
+                           [False] + [True] * 4 + [False]),
+                          ([4],
+                           [1, 1, 1, 1],
+                           [2, 3, 3, 4],
+                           [2, 1, 2, 1],
+                           [1.2, 1.8, 2.0, 3.3, 3.7, 4.0],
+                           [False] * 2 + [True] * 4),
+                          ([5],
+                           # Why is this not empty?
+                           [1, 1],
+                           [3, 4],
+                           [2, 1],
+                           [3.3, 3.7, 4.0],
+                           [False] * 4 + [True] * 2),
+                          ([1, 2],
+                           [1, 1],
+                           [2, 2],
+                           [1, 2],
+                           [1, 1.2, 1.8],
+                           [False] + [True] * 2 + [False] * 3),
+                          ([2, 3],
+                           [1, 1, 1, 1],
+                           [2, 2, 3, 3],
+                           [1, 2, 1, 2],
+                           [1, 1.2, 1.8, 2.0, 3.3, 3.7],
+                           [False] + [True] * 4 + [False]),
+                          ([1, 2, 3],
+                           [1, 1, 1, 1],
+                           [2, 2, 3, 3],
+                           [1, 2, 1, 2],
+                           [1, 1.2, 1.8, 2.0, 3.3, 3.7],
+                           [False] + [True] * 4 + [False]),
+                          ([3, 4],
+                           [1, 1, 1, 1, 1],
+                           [2, 2, 3, 3, 4],
+                           [1, 2, 1, 2, 1],
+                           [1, 1.2, 1.8, 2.0, 3.3, 3.7, 4.0],
+                           # Why does this include bin 2?
+                           [False] + [True] * 5),
+                          ([1, 5],
+                           # Assume this matches [5]
+                           [1, 1],
+                           [3, 4],
+                           [2, 1],
+                           [3.3, 3.7, 4.0],
+                           [False] * 4 + [True] * 2),
+                          ([2, 4],
+                           [1, 1, 1, 1, 1],
+                           [2, 2, 3, 3, 4],
+                           [1, 2, 1, 2, 1],
+                           [1, 1.2, 1.8, 2.0, 3.3, 3.7, 4.0],
+                           [False] + [True] * 5),
+                          ])
+def test_filter_resp_basics(offset, selected, ng, fch, nch, mat, msk):
+    """Check filter_resp behaves as expected.
+
+    There is no documentation in the code to say what the expected
+    behaviour is. The belief is that, given a list of channels we
+    are interested in we can
+
+    - restrict to just the subset of the matrix that can change
+      these fields
+    - provide a mask for the matrix ENERG_LO/HI columns so that model
+      evaluation can be restricted to just this range
+
+    See also
+    sherpa/astro/tests/test_astro_data2.py::test_rmf_offset_check_basics
+
+    """
+
+    # 6 energy grid values and 5 channels
+    #
+    # Note that the first row is empty and the rows do not sum to 1.0
+    # - this could represent a RSP, but it's actually just to
+    # make it obvious what values are being used.
+    #
+    fm = np.asarray([[0.0, 0.0, 0.0, 0.0, 0.0],
+                     [0.0, 1.0, 0.0, 0.0, 0.0],
+                     [0.0, 1.2, 1.8, 0.0, 0.0],
+                     [0.0, 0.0, 2.0, 0.0, 0.0],
+                     [0.0, 0.0, 3.3, 3.7, 0.0],
+                     [0.0, 0.0, 0.0, 4.0, 0.0]])
+
+    n_grp, f_chan, n_chan, matrix = matrix_to_rmf(fm, startchan=offset)
+
+    # Correct for the offset.
+    #
+    delta = offset - 1
+    nchans = np.asarray(selected) + delta
+
+    # The filter_resp command is sent the noticed channel numbers.
+    #
+    resp = filter_resp(nchans, n_grp, f_chan, n_chan, matrix, offset)
+    n_grp2, f_chan2, n_chan2, matrix2, mask2 = resp
+
+    assert n_grp2 == pytest.approx(ng)
+    assert f_chan2 == pytest.approx(np.asarray(fch) + delta)
+    assert n_chan2 == pytest.approx(nch)
+    assert matrix2 == pytest.approx(mat)
+    assert mask2 == pytest.approx(msk)
 
 
 @pytest.mark.parametrize("lo, hi, expected",

@@ -1450,3 +1450,27 @@ def test_read_pha_object(make_data_path):
     assert pha.get_rmf().matrix.max() == pytest.approx(0.1611403226852417)
 
     assert pha.get_background().counts[-1] == pytest.approx(59)
+
+
+@requires_fits
+def test_roundtrip_channel0(tmp_path):
+    """Check what happens if we write out and read back in channel 0.
+
+    This is a regression test.
+    """
+
+    pha = DataPHA("chan0", [0, 1, 2], [2, 5, 9])
+    pha.exposure = 12.0
+    pha.backscal = 1.2
+    pha.areascal = 0.4
+
+    outfile = str(tmp_path / "out.pha")
+    io.write_pha(outfile, pha, ascii=False)
+    pha = None
+
+    pha2 = io.read_pha(outfile)
+    assert pha2.channel == pytest.approx([0, 1, 2])
+    assert pha2.counts == pytest.approx([2, 5, 9])
+    assert pha2.exposure == pytest.approx(12)
+    assert pha2.backscal == pytest.approx(1.2)
+    assert pha2.areascal == pytest.approx(0.4)

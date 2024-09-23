@@ -1274,11 +1274,6 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
                    exposure=exposure, ethresh=ethresh, header=header)
 
 
-# Notes for create*rmf:
-#  - I do not think I have the startchan=0 case correct. Does the
-#    f_chan array have to change?
-#
-
 def create_delta_rmf(rmflo, rmfhi, offset=1,
                      e_min=None, e_max=None, ethresh=None,
                      name='delta-rmf', header=None):
@@ -1287,6 +1282,9 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     The RMF has a unique mapping from channel to energy, in
     that each channel maps exactly to one energy bin, the
     mapping is monotonic, and there are no gaps.
+
+    .. versionchanged:: 4.17.0
+       Support for offset values other than 1 has been improved.
 
     .. versionchanged:: 4.16.0
        The e_min and e_max values will use the rmflo and rmfhi values
@@ -1305,8 +1303,7 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
         (represented by the ENERG_LO and ENERG_HI columns of the
         MATRIX block) of the OGIP standard.
     offset : int, optional
-        The starting channel number: expected to be 0 or 1 but this is
-        not enforced.
+        The starting channel number, which can not be negative.
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
         RMF. This must have the same size as rmflo and rmfhi as the
@@ -1330,13 +1327,15 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
 
     """
 
+    if offset < 0:
+        raise ValueError(f"offset must be >=0, not {offset}")
+
     # Set up the delta-function response.
-    # TODO: should f_chan start at startchan?
     #
     nchans = rmflo.size
     matrix = numpy.ones(nchans, dtype=numpy.float32)
     dummy = numpy.ones(nchans, dtype=numpy.int16)
-    f_chan = numpy.arange(1, nchans + 1, dtype=numpy.int16)
+    f_chan = numpy.arange(offset, nchans + offset, dtype=numpy.int16)
 
     if e_min is None:
         e_min = rmflo
@@ -1358,6 +1357,9 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
 
     The RMF matrix (the mapping from channel to energy bin) is
     read in from a file.
+
+    .. versionchanged:: 4.17.0
+       Support for offset values other than 1 has been improved.
 
     .. versionchanged:: 4.16.0
        The number of channels is now taken from e_min (if set) so the
@@ -1381,8 +1383,7 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
         created by the `CIAO tool rmfimg
         <https://cxc.harvard.edu/ciao/ahelp/rmfimg.html>`_).
     offset : int, optional
-        The starting channel number: expected to be 0 or 1 but this is
-        not enforced.
+        The starting channel number, which can not be negative.
     e_min, e_max : None or array, optional
         The E_MIN and E_MAX columns of the EBOUNDS block of the
         RMF. If not given the matrix is assumed to be square (using
@@ -1407,11 +1408,13 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
 
     """
 
+    if offset < 0:
+        raise ValueError(f"offset must be >=0, not {offset}")
+
     if fname is not None and not os.path.isfile(fname):
         raise ValueError(f"{fname} is not a file")
 
     # Set up the delta-function response.
-    # TODO: should f_chan start at startchan?
     #
     # Is this a square matrix or not?
     if e_min is None:
@@ -1419,7 +1422,8 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
     else:
         nchans = e_min.size
 
-    n_grp, f_chan, n_chan, matrix = calc_grp_chan_matrix(fname)
+    rmfdata = calc_grp_chan_matrix(fname, startchan=offset)
+    n_grp, f_chan, n_chan, matrix = rmfdata
     return DataRMF(name, detchans=nchans, energ_lo=rmflo,
                    energ_hi=rmfhi, n_grp=n_grp,
                    n_chan=n_chan, f_chan=f_chan,
@@ -1428,13 +1432,22 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
                    ethresh=ethresh, header=header)
 
 
-def calc_grp_chan_matrix(fname: str) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+# TODO: this could try to use the WCS information to determine what
+# startchan is, or some other metadata in the file, but it is safer to
+# be explicit.
+#
+def calc_grp_chan_matrix(fname: str,
+                         startchan: int = 1
+                         ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
     """Read in an image and convert it to RMF components.
 
     For an image containing a RMF, such as created by the `CIAO tool
     rmfimg <https://cxc.harvard.edu/ciao/ahelp/rmfimg.html>`_),
     extract the needed data to create a DataRMF object (modulo
     knowledge of the channel or energy grids).
+
+    .. versionchanged:: 4.17.0
+       Added the optional startchan argument.
 
     Parameters
     ----------
@@ -1445,11 +1458,14 @@ def calc_grp_chan_matrix(fname: str) -> tuple[numpy.ndarray, numpy.ndarray, nump
        RMF. At present any WCS information stored about these axes is
        ignored, as is any metadata (such as the starting point of the
        channel axis).
+    startchan : int, optional
+       Channels start at this value. It must be positive.
 
     Returns
     -------
     n_grp, f_chan, n_chan, matrix : (ndarray, ndarray, ndarray, ndarray)
-       Needed to create a DataRMF to match fname.
+       Needed to create a DataRMF to match fname. This assumes that
+       the first channel is 1.
 
     """
 
@@ -1463,11 +1479,16 @@ def calc_grp_chan_matrix(fname: str) -> tuple[numpy.ndarray, numpy.ndarray, nump
     # some information.
     #
     iblock, _ = io.backend.get_image_data(fname)
-    return matrix_to_rmf(iblock.image)
+    return matrix_to_rmf(iblock.image, startchan=startchan)
 
 
-def matrix_to_rmf(matrix: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+def matrix_to_rmf(matrix: numpy.ndarray,
+                  startchan: int = 1,
+                  ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
     """Convert a matrix (2D image) to RMF components.
+
+    .. versionchanged:: 4.17.0
+       Added the optional startchan argument.
 
     .. versionadded:: 4.16.0
 
@@ -1476,6 +1497,8 @@ def matrix_to_rmf(matrix: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray, 
     matrix : ndarray
        A 2D matrix of shape (ny, nx), where ny represents the energy
        axis and nx the channels.
+    startchan : int, optional
+       Channels start at this value. It must be positive.
 
     Returns
     -------
@@ -1484,15 +1507,21 @@ def matrix_to_rmf(matrix: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray, 
 
     Notes
     -----
-    This assumes that the channel array starts at 1 and there is no
-    knowledge of the energy bounds (either the ENERG_LO and ENERG_HI
-    values used for the matrix itself or the E_MIN and E_MAX values
-    used to approximate the channel boundaries).
+    There is no knowledge of the energy bounds (either the ENERG_LO
+    and ENERG_HI values used for the matrix itself or the E_MIN and
+    E_MAX values used to approximate the channel boundaries).
 
     """
 
+    # The assumption for now is that the matrix has already been
+    # filtered to remove "too small" values (e.g. the LO_THRES header
+    # value).
+    #
     if matrix.ndim != 2:
         raise ValueError(f"matrix must be 2D, not {matrix.ndim}D")
+
+    if startchan < 0:
+        raise ValueError(f"startchan must be >= 0, not {startchan}")
 
     n_grp1: list[int] = []
     n_chan1: list[int] = []
@@ -1503,7 +1532,7 @@ def matrix_to_rmf(matrix: numpy.ndarray) -> tuple[numpy.ndarray, numpy.ndarray, 
         starts, = numpy.where(diffs > 0)
         ends, = numpy.where(diffs < 0)
         n_chan1.extend(ends - starts)
-        f_chan1.extend(starts + 1)
+        f_chan1.extend(starts + startchan)
         n_grp1.append(len(starts))
 
     n_grp = numpy.asarray(n_grp1, dtype=numpy.int16)
@@ -1597,7 +1626,6 @@ def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
             matrix_start = matrix_end
             chan_idx += 1
 
-    # TODO: Is the offset handling correct here?
     channels = numpy.arange(rmf.offset, rmf.offset + nchans,
                             dtype=numpy.int16)
     cgrid = EvaluationSpace1D(channels)
@@ -1618,6 +1646,9 @@ def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
     Returns
     -------
     image : DataIMG
+       The axis units are pixel based (both x0 and x1 start at 1) and
+       do not reflect the channel or energy ranges of the RMF. No WCS
+       information is added to represent this mapping.
 
     """
 

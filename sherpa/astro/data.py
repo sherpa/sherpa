@@ -122,7 +122,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional, Sequence, Union
+from typing import Optional, Sequence, Union, overload
 import warnings
 
 import numpy as np
@@ -1041,6 +1041,8 @@ class DataRMF(DataOgipResponse):
         must be in increasing or decreasing order.
     n_grp, f_chan, n_chan, matrix : array-like
     offset : int, optional
+        This must be 0 or greater. This maps to the TLMIN value of
+        the F_CHAN column (when reading from a FITS file).
     e_min, e_max : array-like or None, optional
     header : dict or None, optional
     ethresh : number or None, optional
@@ -1065,8 +1067,13 @@ class DataRMF(DataOgipResponse):
                  header=None, ethresh=None):
         energ_lo, energ_hi = self._validate(name, energ_lo, energ_hi, ethresh)
 
+        # Check it's an integer.
+        if not float(offset).is_integer():
+            raise ValueError(f"offset must be an integer, not {offset}")
+
         if offset < 0:
             raise ValueError(f"offset must be >=0, not {offset}")
+
         self.energ_lo = energ_lo
         self.energ_hi = energ_hi
         self.offset = offset
@@ -1181,20 +1188,36 @@ class DataRMF(DataOgipResponse):
         return rmf_fold(src, self._grp, self._fch, self._nch, self._rsp,
                         self.detchans, self.offset)
 
+    @overload
+    def notice(self, noticed_chans: None) -> None:
+        ...
+
+    @overload
+    def notice(self, noticed_chans: np.ndarray) -> np.ndarray:
+        ...
+
+    # Note that noticed_chans is not a mask, but the channel values.
     def notice(self, noticed_chans=None):
-        bin_mask = None
+        """Filter the response to match the requested channels."""
+
         self._fch = self.f_chan
         self._nch = self.n_chan
         self._grp = self.n_grp
         self._rsp = self.matrix
         self._lo = self.energ_lo
         self._hi = self.energ_hi
-        if noticed_chans is not None:
-            (self._grp, self._fch, self._nch, self._rsp,
-             bin_mask) = filter_resp(noticed_chans, self.n_grp, self.f_chan,
-                                     self.n_chan, self.matrix, self.offset)
-            self._lo = self.energ_lo[bin_mask]
-            self._hi = self.energ_hi[bin_mask]
+
+        # This could also return here if noticed_chans contains all
+        # channels, but that is harder to check.
+        #
+        if noticed_chans is None:
+            return None
+
+        (self._grp, self._fch, self._nch, self._rsp,
+         bin_mask) = filter_resp(noticed_chans, self.n_grp, self.f_chan,
+                                 self.n_chan, self.matrix, self.offset)
+        self._lo = self.energ_lo[bin_mask]
+        self._hi = self.energ_hi[bin_mask]
         return bin_mask
 
     def get_indep(self, filter=False):
@@ -2635,7 +2658,11 @@ will be removed. The identifiers can be integers or strings.
 
         return (lo, hi)
 
-    def _group_to_channel(self, val, group=True, response_id=None):
+    # The _group_to_channel, _channel_to_energy, and
+    # _channel_to_wavelength routines are only used by _from_channel
+    # (it gets set to one of these three).
+    #
+    def _group_to_channel(self, group=True, response_id=None):
         """Convert group number to channel number.
 
         For ungrouped data channel and group numbering are the
@@ -2644,7 +2671,7 @@ will be removed. The identifiers can be integers or strings.
         """
 
         if not self.grouped or not group:
-            return val
+            return self.channel
 
         # The middle channel of each group.
         #
@@ -2653,32 +2680,18 @@ will be removed. The identifiers can be integers or strings.
         # Convert to an integer (this keeps the channel within
         # the group).
         #
-        mid = np.floor(mid)
-        val = np.asarray(val).astype(np.int_) - 1
-        try:
-            return mid[val]
-        except IndexError:
-            raise DataErr(f'invalid group number: {val}') from None
+        return np.floor(mid)
 
-    def _channel_to_energy(self, val, group=True, response_id=None):
+    def _channel_to_energy(self, group=True, response_id=None):
         elo, ehi = self._get_ebins(response_id=response_id, group=group)
-        val = np.asarray(val).astype(np.int_) - 1
-        try:
-            return (elo[val] + ehi[val]) / 2.0
-        except IndexError:
-            raise DataErr('invalidchannel', val) from None
+        return (elo + ehi) / 2.0
 
-    def _channel_to_wavelength(self, val, group=True, response_id=None):
+    def _channel_to_wavelength(self, group=True, response_id=None):
         tiny = np.finfo(np.float32).tiny
-        vals = np.asarray(self._channel_to_energy(val, group, response_id))
-        if vals.shape == ():
-            if vals == 0.0:
-                vals = tiny
-        else:
-            vals[vals == 0.0] = tiny
-
-        vals = hc / vals
-        return vals
+        emid = self._channel_to_energy(group=group, response_id=response_id)
+        # In case there are any 0-energy bins replace them
+        emid[emid == 0.0] = tiny
+        return hc / emid
 
     default_background_id: IdType = 1
     """The identifier for the background component when not set.
@@ -4199,9 +4212,12 @@ It is an integer or string.
         return syserr
 
     def get_x(self, filter=False, response_id=None):
+        if self.channel is None:
+            return None
+
         # We want the full channel grid with no grouping.
         #
-        return self._from_channel(self.channel, group=False, response_id=response_id)
+        return self._from_channel(group=False, response_id=response_id)
 
     def get_xlabel(self) -> str:
         """The label for the independent axis.
@@ -4714,12 +4730,16 @@ It is an integer or string.
                ) -> None:
         """Notice or ignore the given range.
 
+        Select or remove a range of channels when analyzing the data.
+        The units for the range, that is the values for the lo and hi
+        argument, is set by the analysis field.
+
         .. versionchanged:: 4.14.0
            PHA filtering has been improved to fix a number of corner
            cases which can result in the same filter now selecting one
            or two fewer channels that done in earlier versions of
-           Sherpa. The ``lo`` and ``hi`` arguments are now restricted based on
-           the units setting.
+           Sherpa. The ``lo`` and ``hi`` arguments are now restricted
+           based on the units setting.
 
         Parameters
         ----------

@@ -1,5 +1,6 @@
 //
-//  Copyright (C) 2007, 2021  Smithsonian Astrophysical Observatory
+//  Copyright (C) 2007, 2021, 2024
+//  Smithsonian Astrophysical Observatory
 //
 //
 //  This program is free software; you can redistribute it and/or modify
@@ -261,9 +262,6 @@ namespace sherpa { namespace astro { namespace utils {
 	  return EXIT_FAILURE;
 
 	lo = current_chan;
-	// if f_chan values are indices, convert to channels
-	if(!offset)
-	  lo++;
 	hi = lo + current_num_chans;
 
 	if( is_in( noticed_chans, len_not_chans, lo, hi ) ) {
