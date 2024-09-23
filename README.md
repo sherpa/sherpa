@@ -62,7 +62,7 @@ If you use Sherpa for work/research presented in a publication please cite teh S
 
 [Sherpa Paper I](https://arxiv.org/abs/astro-ph/0108426) ([ADS BibTex](https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation))
 
-If you are using AASTeX and plan to submit an article to one of the AAS journals, we recommend adding a \software{...} tag to your manuscript that cites Sherpa (see the AASTeX guide for more information), e.g.:
+If you are using AASTeX and plan to submit an article to one of the AAS journals, we recommend adding a \software{...} tag to your manuscript that cites Sherpa (see the [AASTeX guide](https://journals.aas.org/aastexguide/) for more information), e.g.:
 
 \software{Sherpa \citep{2001SPIE.4477...76F, 2007ASPC..376..543D, 2024arXiv240910400S}}
 
