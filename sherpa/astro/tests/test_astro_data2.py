@@ -1681,6 +1681,60 @@ def test_quality_quality_filter_expr(make_quality_pha):
     pha.get_filter() == "1:9"  # does not exclude bad channels at end
 
 
+def test_pha_quality_all_bad_basic_checks():
+    """Regression test
+
+    Note this only sets the quality field, not the grouping field.
+
+    """
+
+    pha = DataPHA("q", [1, 2, 3, 4], [9, 0, 1, 64])
+    fvals = [12, 2, 7, 8]
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx([True] * 4)
+    assert pha.get_filter() == "1:4"
+    assert pha.get_x() == pytest.approx([1, 2, 3, 4])
+    assert pha.apply_filter(fvals) == pytest.approx(fvals)
+    assert pha.apply_grouping(fvals) == pytest.approx(fvals)
+
+    pha.quality = [2, 2, 2, 5]
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx([True] * 4)
+    assert pha.get_filter() == "1:4"
+    assert pha.get_x() == pytest.approx([1, 2, 3, 4])
+    assert pha.apply_filter(fvals) == pytest.approx(fvals)
+    assert pha.apply_grouping(fvals) == pytest.approx(fvals)
+
+    pha.ignore_bad()
+    assert pha.mask == pytest.approx([False] * 4)
+    assert pha.get_mask() == pytest.approx([False] * 4)
+    assert pha.get_filter() == ""
+    assert pha.get_x() == pytest.approx([1, 2, 3, 4])
+    assert pha.apply_filter(fvals) == pytest.approx([])
+    assert pha.apply_grouping(fvals) == pytest.approx(fvals)
+
+
+@pytest.mark.parametrize("qual,fexpr,mask,counts",
+                         [([2, 0, 0, 0], "1:4", [0, 1, 1, 1], [1, 64]),
+                          ([0, 0, 0, 2], "1:4", [1, 1, 1, 0], [9, 1]),
+                          ([0, 2, 2, 0], "1:4", [1, 0, 0, 1], [9, 64])
+                         ])
+def test_pha_quality_bad_range_checks(qual, fexpr, mask, counts):
+    """Regression test when a group is all bad quality.
+
+    We want to test start, end, and middle of the channels.
+    """
+
+    pha = DataPHA("q", [1, 2, 3, 4], [9, 0, 1, 64], quality=qual,
+                  grouping=[1, 1, -1, 1])
+
+    pha.ignore_bad()
+    assert pha.get_filter() == fexpr
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx(mask)
+    assert pha.get_dep(filter=True) == pytest.approx(counts)
+
+
 def test_pha_quality_change_mask(make_quality_pha):
     """A regression test."""
 
@@ -1911,6 +1965,56 @@ def test_pha_quality_noticed_channels_with_filter(make_quality_pha):
     pha.notice(lo=2)
     chans2 = pha.get_noticed_channels()
     assert chans2 == pytest.approx([1, 4, 5, 6])
+
+
+def test_pha_quality_ignore_bad_clear_filter(make_quality_pha):
+    """Regression test."""
+
+    pha = make_quality_pha
+
+    assert pha.get_filter() == "1:9"
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx([True] * 9)
+    assert pha.quality_filter is None
+
+    # channels 2,3 and 7-9 are "bad"
+    pha.ignore(hi=3)
+
+    assert pha.get_filter() == "5:9"
+    assert pha.mask == pytest.approx([False] + [True] * 3)
+    assert pha.get_mask() == pytest.approx([False] * 4 + [True] * 5)
+    assert pha.quality_filter is None
+
+    # This resets the previous filters
+    pha.ignore_bad()
+
+    qflags = [True] * 1 + [False] * 2 + [True] * 3 + [False] * 3
+    assert pha.get_filter() == "1:9"
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx(qflags)
+    assert pha.quality_filter == pytest.approx(qflags)
+
+    pha.ignore(hi=3)
+
+    assert pha.get_filter() == "5:6"
+    assert pha.mask == pytest.approx([False] + [True] * 2)
+    assert pha.get_mask() == pytest.approx([False] * 2 + [True] * 2)
+    assert pha.quality_filter == pytest.approx(qflags)
+
+    pha.ignore(lo=2, hi=4)
+
+    assert pha.get_filter() == "5:6"
+    assert pha.mask == pytest.approx([False] + [True] * 2)
+    assert pha.get_mask() == pytest.approx([False] * 2 + [True] * 2)
+    assert pha.quality_filter == pytest.approx(qflags)
+
+    # This removes the quality filter!
+    pha.notice()
+
+    assert pha.get_filter() == "1:9"
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx([True] * 9)
+    assert pha.quality_filter is None
 
 
 def test_pha_grouping_changed_no_filter_1160(make_test_pha):
@@ -2320,7 +2424,7 @@ def test_pha_no_quality_ignore_bad(make_test_pha):
 
 
 @requires_group
-def test_pha_change_quality_values():
+def test_pha_change_quality_values(caplog):
     """What happens if we change the quality column?
 
     This is a regression test as it is likely we should change the filter,
@@ -2334,7 +2438,11 @@ def test_pha_change_quality_values():
     assert pha.get_filter() == '1:7'
 
     assert pha.quality_filter is None
+    assert len(caplog.records) == 0
+
     pha.ignore_bad()
+    assert len(caplog.records) == 0
+
     assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
     assert pha.get_dep(filter=True) == pytest.approx([6])
     assert pha.get_filter() == '1:7'
@@ -2343,12 +2451,186 @@ def test_pha_change_quality_values():
     # is [False] * 5 + [True] * 2,
     #
     pha.group_counts(4)
+    assert len(caplog.records) == 0
+
     assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0, 0])
 
     # Should quality filter be reset?
     assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
     assert pha.get_dep(filter=True) == pytest.approx([4, 2])
     assert pha.get_filter() == '1:7'
+
+
+def test_pha_group_adapt_check():
+    """Regression test.
+
+    This was found when investigating ignore_bad issues and felt to
+    be worth a test to check how this code behaves.
+    """
+
+    counts = [4, 2, 3, 1, 5, 6, 7]
+    pha = DataPHA("ex", [1, 2, 3, 4, 5, 6, 7], counts)
+    pha.group_adapt(6)
+
+    # The grouping may change if the adaptive scheme changes.
+    assert pha.grouping == pytest.approx([1, -1, 1, 1, -1, 1, 1])
+
+    # The group library behaves oddly (the last element being 2).
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
+
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx([6, 3, 6, 6, 7])
+
+
+def test_pha_group_ignore_bad_then_filter(caplog):
+    """Regression test."""
+
+    counts = [4, 2, 3, 1, 5, 6, 7]
+    pha = DataPHA("ex", [1, 2, 3, 4, 5, 6, 7], counts)
+
+    # The equivalent of pha.group_adapt(6) with CIAO 4.17 but this
+    # may change, so set the data manually. Compare to
+    # test_pha_group_adapt_check
+    #
+    # pha.group_adapt(6)
+    pha.grouping = [1, -1, 1, 1, -1, 1, 1]
+    pha.quality = [0, 0, 2, 0, 0, 0, 2]
+    pha.group()
+    assert len(caplog.records) == 0
+
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx([True] * 7)
+    assert pha.get_filter() == '1:7'
+    assert pha.quality_filter is None
+
+    pha.ignore_bad()
+    assert len(caplog.records) == 0
+
+    qual_mask = [True] * 2 + [False] + [True] * 3 + [False]
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx(qual_mask)
+    assert pha.get_filter() == '1:7'
+    assert pha.quality_filter == pytest.approx(qual_mask)
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx([6, 6, 6])
+
+    pha.ignore(4, 5)
+    assert len(caplog.records) == 0
+
+    assert pha.mask == pytest.approx([True, False, True])
+    assert pha.get_mask() == pytest.approx([True] * 2 + [False] * 2 + [True])
+    assert pha.get_filter() == '1:2,6'
+    assert pha.quality_filter == pytest.approx(qual_mask)
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx([6, 6])
+
+
+def test_pha_group_ignore_bad_then_group(caplog):
+    """Regression test."""
+
+    counts = [4, 2, 3, 1, 5, 6, 7]
+    pha = DataPHA("ex", [1, 2, 3, 4, 5, 6, 7], counts)
+    pha.group_adapt(6)
+    pha.ignore_bad()
+    assert len(caplog.records) == 0
+
+    qual_mask = [True] * 2 + [False] + [True] * 3 + [False]
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx(qual_mask)
+    assert pha.quality_filter == pytest.approx(qual_mask)
+
+    # Change the grouping. What happens with the existing "bad
+    # quality" data?
+    #
+    pha.group_counts(4)
+    assert len(caplog.records) == 0
+
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx(qual_mask)
+    assert pha.get_filter() == '1:7'
+    assert pha.quality_filter == pytest.approx(qual_mask)
+    assert pha.quality == pytest.approx([0, 2, 0, 0, 0, 0, 0])
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx([4, 2, 6, 6])
+
+    # Shouldn't this be a no-op. It isn't because the group call
+    # didn't change the quality_filter array, so it now changes what
+    # are the good/bad channels.
+    #
+    pha.ignore_bad()
+    assert len(caplog.records) == 0
+
+    qual_mask = [True] + [False] + [True] * 5
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx(qual_mask)
+    assert pha.get_filter() == '1:7'
+    assert pha.quality_filter == pytest.approx(qual_mask)
+    assert pha.quality == pytest.approx([0, 2, 0, 0, 0, 0, 0])
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx([4, 3, 6, 6, 7])
+
+
+def test_pha_filter_ignore_bad_filter(caplog):
+    """A regression test.
+
+    Mix filtering, ignore_bad, and more filtering.
+    """
+
+    counts = np.asarray([4, 2, 3, 1, 5, 6, 7])
+    pha = DataPHA("ex", [1, 2, 3, 4, 5, 6, 7], counts)
+
+    pha.ignore(lo=4, hi=4)
+    assert len(caplog.records) == 0
+
+    data_mask = [True] * 3 + [False] + [True] * 3
+    assert pha.mask == pytest.approx(data_mask)
+    assert pha.get_mask() == pytest.approx(data_mask)
+    assert pha.get_filter() == '1:3,5:7'
+    assert pha.quality_filter is None
+    assert pha.quality is None
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx(counts[[0, 1, 2, 4, 5, 6]])
+
+    pha.group_counts(5)
+    assert len(caplog.records) == 0
+
+    assert pha.mask == pytest.approx([True] * 2 + [False] + [True] * 3)
+    assert pha.get_mask() == pytest.approx(data_mask)
+    assert pha.get_filter() == '1:3,5:7'
+    assert pha.quality_filter is None
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 0])
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx([6, 3, 5, 6, 7])
+
+    pha.ignore_bad()
+    assert len(caplog.records) == 1
+
+    r = caplog.records[-1]
+    assert r.name == "sherpa.astro.data"
+    assert r.levelname == "WARNING"
+    assert r.getMessage() == "filtering grouped data with quality flags, previous filters deleted"
+
+    new_mask = [True] * 2 + [False] + [True] * 4
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx(new_mask)
+    assert pha.get_filter() == '1:7'
+    assert pha.quality_filter == pytest.approx(new_mask)
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 0])
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx([6, 1, 5, 6, 7])
+
+    pha.ignore(lo=2, hi=2)
+    assert len(caplog.records) == 1
+
+    assert pha.mask == pytest.approx([False] + [True] * 4)
+    assert pha.get_mask() == pytest.approx([False] * 2 + [True] * 4)
+    assert pha.get_filter() == '4:7'
+    assert pha.quality_filter == pytest.approx(new_mask)
+    assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 0])
+    assert pha.get_dep(filter=False) == pytest.approx(counts)
+    assert pha.get_dep(filter=True) == pytest.approx([1, 5, 6, 7])
 
 
 @pytest.mark.parametrize("field", ["grouping", "quality"])
@@ -3911,7 +4193,6 @@ def test_rmf_simple_filter_check(startchan, na, nb, nc):
     assert rmf.apply_rmf(mvals) == pytest.approx(mvals)
 
     selected = rmf.notice([startchan, startchan + 1, startchan + 2])
-    print(selected)
     expected = [False] * na + [True] * nb + [False] * nc
     assert selected == pytest.approx(expected)
 

@@ -3258,3 +3258,169 @@ def test_guess_with_response_and_multiple_models(idval, clean_astro_ui, caplog, 
     assert r[0] == "sherpa.models.model"
     assert r[1] == logging.WARN
     assert r[2] == "No guess found for xsphabs.gal"
+
+
+def test_pha_ignore_bad_no_quality(clean_astro_ui):
+    """Check error case."""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 2, 3, 4, 55], ui.DataPHA)
+    with pytest.raises(DataErr,
+                       match="^data set '' does not specify quality flags$"):
+        ui.ignore_bad()
+
+
+def test_pha_ignore_bad(caplog, clean_astro_ui):
+    """Regression test."""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 2, 3, 4, 55], ui.DataPHA)
+    ui.set_quality([0, 0, 2, 0, 5])
+
+    assert len(caplog.records) == 0
+    ui.ignore_bad()
+    assert len(caplog.records) == 1
+
+    assert ui.get_dep(filter=False) == pytest.approx([5, 2, 3, 4, 55])
+    assert ui.get_dep(filter=True) == pytest.approx([5, 2, 4])
+
+    r = caplog.records[0]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:5 -> 1:2,4 Channel"
+
+
+def test_pha_filter_ignore_bad(caplog, clean_astro_ui):
+    """Regression test."""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 2, 3, 4, 55], ui.DataPHA)
+    ui.set_quality([0, 0, 2, 0, 5])
+
+    ui.notice(hi=4)
+    assert len(caplog.records) == 1
+
+    assert ui.get_dep(filter=False) == pytest.approx([5, 2, 3, 4, 55])
+    assert ui.get_dep(filter=True) == pytest.approx([5, 2, 3, 4])
+
+    ui.ignore_bad()
+    assert len(caplog.records) == 2
+
+    assert ui.get_dep(filter=False) == pytest.approx([5, 2, 3, 4, 55])
+    assert ui.get_dep(filter=True) == pytest.approx([5, 2, 4])
+
+    r = caplog.records[0]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:5 -> 1:4 Channel"
+
+    r = caplog.records[1]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:4 -> 1:2,4 Channel"
+
+
+def test_pha_group_filter_ignore_bad(caplog, clean_astro_ui):
+    """Regression test."""
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 2, 3, 4, 55], ui.DataPHA)
+    ui.set_quality([0, 0, 2, 0, 5])
+    ui.set_grouping([1, -1, 1, 1, 1])
+    ui.group()
+    assert len(caplog.records) == 2
+
+    ui.notice(hi=4)
+    assert len(caplog.records) == 3
+
+    assert ui.get_dep(filter=False) == pytest.approx([3.5, 3, 4, 55])
+    assert ui.get_dep(filter=True) == pytest.approx([3.5, 3, 4])
+
+    ui.ignore_bad()
+    assert len(caplog.records) == 5
+
+    assert ui.get_dep(filter=False) == pytest.approx([3.5, 4])
+    assert ui.get_dep(filter=True) == pytest.approx([3.5, 4])
+
+    r = caplog.records[0]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:5 Channel (unchanged)"
+
+    r = caplog.records[1]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:5 Channel (unchanged)"
+
+    r = caplog.records[2]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:5 -> 1:4 Channel"
+
+    r = caplog.records[3]
+    assert r.name == "sherpa.astro.data"
+    assert r.levelname == "WARNING"
+    assert r.getMessage() == "filtering grouped data with quality flags, previous filters deleted"
+
+    r = caplog.records[4]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:4 -> 1:5 Channel"
+
+
+def test_pha_group_ignore_bad_group(caplog, clean_astro_ui):
+    """Regression test.
+
+    Check what happens after ignore_bad(); group_counts()
+    """
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 2, 3, 4, 55], ui.DataPHA)
+    ui.set_quality([0, 0, 2, 0, 5])
+    ui.set_grouping([1, -1, 1, 1, 1])
+    ui.group()
+    ui.ignore_bad()
+    assert len(caplog.records) == 3
+
+    assert ui.get_dep(filter=False) == pytest.approx([3.5, 4])
+    assert ui.get_dep(filter=True) == pytest.approx([3.5, 4])
+
+    ui.group_counts(3)
+    assert len(caplog.records) == 4
+
+    assert ui.get_dep(filter=False) == pytest.approx([5, 2, 4])
+    assert ui.get_dep(filter=True) == pytest.approx([5, 2, 4])
+
+    r = caplog.records[3]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:5 Channel (unchanged)"
+
+
+def test_pha_group_filter_ignore_bad_group(caplog, clean_astro_ui):
+    """Regression test.
+
+    Check what happens after ignore_bad(); notice(..); notice()
+    """
+
+    ui.load_arrays(1, [1, 2, 3, 4, 5], [5, 2, 3, 4, 55], ui.DataPHA)
+    ui.set_quality([0, 0, 2, 0, 5])
+    ui.set_grouping([1, -1, 1, 1, 1])
+    ui.group()
+    ui.ignore_bad()
+    assert len(caplog.records) == 3
+
+    assert ui.get_dep(filter=False) == pytest.approx([3.5, 4])
+    assert ui.get_dep(filter=True) == pytest.approx([3.5, 4])
+
+    ui.notice(lo=2, hi=4)
+    assert len(caplog.records) == 4
+
+    assert ui.get_dep(filter=False) == pytest.approx([3.5, 4])
+    assert ui.get_dep(filter=True) == pytest.approx([3.5, 4])
+
+    ui.notice()
+    assert len(caplog.records) == 5
+
+    assert ui.get_dep(filter=False) == pytest.approx([3.5, 3, 4, 55])
+    assert ui.get_dep(filter=True) == pytest.approx([3.5, 3, 4, 55])
+
+    r = caplog.records[4]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:4 -> 1:5 Channel"
