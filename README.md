@@ -54,13 +54,13 @@ is included in the `notebooks` folder and can be opened with an `ipython noteboo
 Acknowledging or Citing Sherpa
 ==============================
 
-If you use Sherpa for work/research presented in a publication please cite teh Sherpa papers:
+If you use Sherpa for work/research presented in a publication please cite the Sherpa papers:
 
-[Sherpa Paper III](https://arxiv.org/abs/2409.10400) ([ADS BibTex](https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation))
+[Sherpa Paper 2024](https://arxiv.org/abs/2409.10400) ([ADS BibTex](https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation))
 
-[Sherpa Paper II](https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D) ([ADS BibTex](https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation) )
+[Sherpa Paper 2007](https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D) ([ADS BibTex](https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation) )
 
-[Sherpa Paper I](https://arxiv.org/abs/astro-ph/0108426) ([ADS BibTex](https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation))
+[Sherpa Paper 2001](https://arxiv.org/abs/astro-ph/0108426) ([ADS BibTex](https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation))
 
 If you are using AASTeX and plan to submit an article to one of the AAS journals, we recommend adding a \software{...} tag to your manuscript that cites Sherpa (see the [AASTeX guide](https://journals.aas.org/aastexguide/) for more information), e.g.:
 
