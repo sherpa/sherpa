@@ -130,7 +130,7 @@ import numpy as np
 
 from sherpa.astro import hc
 from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
-    IntegratedDataSpace2D, _check
+    Filter, IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
 from sherpa.utils import pad_bounding_box, interpolate, \
@@ -1468,6 +1468,87 @@ def replace_xspecvar_values(src_counts, bkg_counts,
     staterr[all_zero] = minval
     for bvar in bkg_variances:
         bvar[all_zero] = 0
+
+
+class PHAFilter(Filter):
+    """Allow filtering with "quality filters" present.
+
+    Allow a pre-defined set of filters to be applied to mark certain
+    channels as "always un-used", and to understand that there is a
+    "grouping" array (they can be used together but also are
+    separate).
+
+    """
+
+    # The Filter class does not care about the size of the data, but
+    # once quality/grouping is added it is useful to know the
+    # "un-grouped" size.
+    #
+    _size: Optional[int] = None
+    _quality: Optional[np.ndarray] = None
+    _grouping: Optional[np.ndarray] = None
+
+    # This is not a general-purpose class, so do not bother making
+    # these properties.
+    #
+    def set_quality(self, qual: Optional[np.ndarray]) -> None:
+        """Set the quality array.
+
+        It must match the "expected" size (the grouping or the
+        previous quality field).
+        """
+
+        if qual is None:
+            self._quality = None
+            return
+
+        if self._size is None:
+            self._size = qual.size
+
+        if self._size is not None and qual.size != self._size:
+            raise DataErr("mismatchn", "quality", "previous filter",
+                          str(qual.size), str(self._size))
+
+        self._quality = qual
+
+    def set_grouping(self, group: Optional[np.ndarray]) -> None:
+        """Set the grouping array.
+
+        It must match the "expected" size (the grouping or the
+        previous quality field).
+        """
+
+        if group is None:
+            self._grouping = None
+            return
+
+        if self._size is None:
+            self._size = group.size
+
+        if self._size is not None and qual.size != self._size:
+            raise DataErr("mismatchn", "grouping", "previous filter",
+                          str(qual.size), str(self._size))
+
+        self._grouping = group
+
+    @property
+    def mask(self) -> Union[np.ndarray, bool]:
+        """Mask array for dependent variable
+
+        If quality flags are set then these are always
+        applied.
+
+        Returns
+        -------
+        mask : bool or numpy.ndarray
+        """
+        return self._mask
+
+    @mask.setter
+    def mask(self, val: Union[ArrayType, bool]) -> None:
+        if val is None:
+            raise DataErr('ismask')
+
 
 
 class DataPHA(Data1D):
