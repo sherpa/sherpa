@@ -48,11 +48,11 @@ Acknowledging or Citing Sherpa
 
 If you use Sherpa for work/research presented in a publication please cite the Sherpa papers:
 
-`Sherpa Paper 2024 <https://arxiv.org/abs/2409.10400>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation>`_)
+`Sherpa Paper 2024 <https://arxiv.org/abs/2409.10400>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2024arXiv240910400S/exportcitation>`__)
 
-`Sherpa Paper 2007 <https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation>`_)
+`Sherpa Paper 2007 <https://articles.adsabs.harvard.edu/full/2007ASPC..376..543D>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2007ASPC..376..543D/exportcitation>`__)
 
-`Sherpa Paper 2001 <https://arxiv.org/abs/astro-ph/0108426>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation>`_)
+`Sherpa Paper 2001 <https://arxiv.org/abs/astro-ph/0108426>`_ (`ADS BibTex <https://ui.adsabs.harvard.edu/abs/2001SPIE.4477...76F/exportcitation>`__)
 
 
 The last version of Sherpa compatible with Python 2.7 was the
