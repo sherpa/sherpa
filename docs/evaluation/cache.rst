@@ -28,10 +28,13 @@ by running a test as shown below,
 When is the cache useful?
 =========================
 
-At present most 1D models use the cache by default when evaluated
-normally, but not during a fit. It is intended to improve fit
-performance - that is, reduce the time taken to fit a dataset - but
-there has been limited effort to evaluate its efficiency.
+At present most 1D models use the cache by default when evaluated.
+It is intended to improve fit performance - that is, reduce the time
+taken to fit a dataset. Obviously, this is most useful when the model
+evaluation is expensive and the fit will call the model with the same
+parameter values multiple times.
+
+
 
 Can I turn off this behavior?
 =============================
@@ -175,3 +178,20 @@ Note that if we had called::
 
 then the cache would not have been used (e.g. `mdl._cache` would
 have remained empty).
+
+
+******************************
+The sherpa.models.cache module
+******************************
+
+.. currentmodule:: sherpa.models.cache
+
+.. automodule:: sherpa.models.cache
+
+   .. rubric:: Functions
+
+   .. autosummary::
+      :toctree: api
+
+      modelCacher1d
+      modelCacher1d_exp

@@ -23,7 +23,8 @@ import numpy
 
 from sherpa.models.basic import clean_kwargs1d, clean_kwargs2d
 from sherpa.models.parameter import Parameter, tinyval
-from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D, modelCacher1d
+from sherpa.models.model import ArithmeticModel, RegriddableModel2D, RegriddableModel1D
+from sherpa.models.cache import modelCacher1d
 from sherpa.astro.utils import apply_pileup
 from sherpa.utils import bool_cast, lgam
 from sherpa.utils.err import ModelErr

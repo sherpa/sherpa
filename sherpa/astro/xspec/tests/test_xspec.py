@@ -27,12 +27,6 @@ from sherpa.models import Parameter
 from sherpa.utils.testing import requires_data, \
     requires_fits, requires_xspec
 from sherpa.utils.err import ParameterErr
-try:
-    from sherpa.astro.xspec import XSAbsorptionModel
-except ImportError:
-    # Tests are marked with @requires_xspec, so they will never notice
-    # that this symbol is undefined is XSPEC is not available.
-    pass
 
 # How many models should there be?
 # This number includes all additive, multiplicative, and convolution models,
@@ -40,9 +34,7 @@ except ImportError:
 # The number can be calculated by counting the occurrences of the strings
 #    '(XSAdditiveModel)'
 #    '(XSMultiplicativeModel)'
-#    '(XSAbsorptionModel)'
 #    '(XSConvolutionKernel)'
-#    minus 1 (from the definition of XSAbsorptionModel)
 # in `xspec/__init__.py`
 #
 XSPEC_MODELS_COUNT = 281
@@ -107,7 +99,6 @@ def get_xspec_models():
     # Could just exclude any names that end in 'Model', but this
     # could remove valid model names, so be explicit.
     for n in ['XSModel', 'XSMultiplicativeModel', 'XSAdditiveModel',
-              'XSAbsorptionModel',
               'XSTableModel', 'XSConvolutionModel', 'XSConvolutionKernel',
               'XSBaseParameter', 'XSParameter']:
         remove_item(model_names, n)
@@ -139,6 +130,19 @@ def get_xspec_models():
     models = list(filter(lambda mod: mod.version_enabled, models))
 
     return models
+
+
+def get_xspec_models_with_exp_cache():
+    """Return the XSPEC models that use the modelCacher1d_exp cache.
+
+    Currently, the list is hardocded.
+    """
+    try:
+        import sherpa.astro.xspec as xs
+    except ImportError:
+        return []
+
+    return [xs.XSTBabs, xs.XScabs, xs.XSphabs]
 
 
 def make_grid():
@@ -240,7 +244,6 @@ def test_create_model_instances(clean_astro_ui):
 
         if is_proper_subclass(cls, (xs.XSAdditiveModel,
                                     xs.XSMultiplicativeModel,
-                                    xs.XSAbsorptionModel,
                                     xs.XSConvolutionKernel)):
             # Ensure that we can create an instance, but do
             # nothing with it.
@@ -261,7 +264,6 @@ def test_check_default_name():
         cls = getattr(xs, clname)
         if is_proper_subclass(cls, (xs.XSAdditiveModel,
                                     xs.XSMultiplicativeModel,
-                                    xs.XSAbsorptionModel,
                                     xs.XSConvolutionKernel)):
 
             # At the moment we have some defaulting to xs... and some just ...
@@ -765,7 +767,7 @@ def test_evaluate_xspec_model(modelcls):
     assert_is_finite(evals, modelcls, "energy")
     assert_is_finite(wvals, modelcls, "wavelength")
 
-    assert wvals == pytest.approx(evals)
+    assert wvals == pytest.approx(evals, rel=1e-8, abs=1e-8)
 
 
 @requires_xspec
@@ -796,7 +798,7 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     assert_is_finite(evals2, modelcls, "energy")
     assert_is_finite(wvals2, modelcls, "wavelength")
 
-    assert wvals2 == pytest.approx(evals2)
+    assert wvals2 == pytest.approx(evals2, rel=1e-8, abs=1e-8)
 
 
 @requires_xspec
@@ -819,21 +821,6 @@ def test_apec_redshift_parameter_is_case_insensitive():
 
 
 @requires_xspec
-def get_xspec_models_with_exp_cache():
-    """Return the XSPEC models that use the modelCacher1d_exp cache.
-
-    Currently, that is: Models that inherit from XSAbsorptionModel.
-    """
-    models = get_xspec_models()
-    mlist =  [m for m in models if issubclass(m, XSAbsorptionModel)]
-    # This is a regression test and should be changed when we add this
-    # cache to other models.
-    assert len(mlist) == 3
-
-    return mlist
-
-
-@requires_xspec
 @pytest.mark.parametrize("modelcls", get_xspec_models_with_exp_cache())
 def test_models_with_exp_cache(modelcls):
     '''Tests that models with the modelCacher1d_exp work correctly.
@@ -847,5 +834,7 @@ def test_models_with_exp_cache(modelcls):
         abs_direct = mdl.calc.__wrapped__(mdl, (nh,), xlo, xhi)
         abs_cache = mdl.calc((nh,), xlo, xhi)
         assert abs_direct == pytest.approx(abs_cache, rel=1e-5, abs=1e-2)
+        assert np.all(abs_cache >= 0)
+        assert np.all(abs_cache <= 1)
 
 

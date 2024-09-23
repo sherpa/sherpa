@@ -30,8 +30,9 @@ from sherpa.utils.guess import get_position, guess_amplitude, \
     guess_fwhm, guess_position, guess_reference, param_apply_limits
 
 from .parameter import Parameter, tinyval
-from .model import ArithmeticModel, modelCacher1d, CompositeModel, \
+from .model import ArithmeticModel, CompositeModel, \
     ArithmeticFunctionModel, RegriddableModel2D, RegriddableModel1D
+from .cache import modelCacher1d
 from . import _modelfcts  # type: ignore
 
 warning = logging.getLogger(__name__).warning

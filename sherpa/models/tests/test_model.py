@@ -37,8 +37,8 @@ import pytest
 from sherpa.data import Data1D
 from sherpa.models.model import (ArithmeticModel, ArithmeticConstantModel,
     ArithmeticFunctionModel, BinaryOpModel, FilterModel, Model, NestedModel,
-    UnaryOpModel, RegridWrappedModel, modelCacher1d, modelCacher1d_exp,
-    RegriddableModel1D)
+    UnaryOpModel, RegridWrappedModel, RegriddableModel1D)
+from sherpa.models.cache import modelCacher1d, modelCacher1d_exp
 from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
     Scale1D, Integrate1D, Const2D, Gauss2D, Scale2D, Poisson
@@ -886,7 +886,7 @@ class ExpcacheTestModel(RegriddableModel1D):
         ArithmeticModel.__init__(self, name,
                                  (self.foo,))
 
-    @modelCacher1d_exp
+    @modelCacher1d_exp()
     def calc(self, p, *args, **kwargs):
         return p[0] * np.ones_like(args[0])
 
@@ -1102,7 +1102,7 @@ class DoNotUseModel(Model):
 
 class DoNotUseModel_exp(DoNotUseModel):
 
-    @modelCacher1d_exp
+    @modelCacher1d_exp()
     def calc(self, p, *args, **kwargs):
         """p is ignored."""
 
