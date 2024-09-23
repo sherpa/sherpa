@@ -1693,19 +1693,13 @@ class DataPHA(Data1D):
             units = 'channel'
 
         if units.startswith('chan'):
-            # Note: the names of these routines appear confusing because of the
-            #       way group values are used
-            self._from_channel = self._group_to_channel
             units = 'channel'
 
         elif units.startswith('ener'):
-            self._from_channel = self._channel_to_energy
             units = 'energy'
 
         elif units.startswith('wave'):
-            self._from_channel = self._channel_to_wavelength
             units = 'wavelength'
-
         else:
             raise DataErr('bad', 'quantity', val)
 
@@ -2115,7 +2109,6 @@ will be removed. The identifiers can be integers or strings.
 
     def __getstate__(self):
         state = self.__dict__.copy()
-        del state['_from_channel']
         return state
 
     def __setstate__(self, state):
@@ -2771,50 +2764,6 @@ will be removed. The identifiers can be integers or strings.
             hi = hc / elo
 
         return (lo, hi)
-
-    # The _group_to_channel, _channel_to_energy, and
-    # _channel_to_wavelength routines are only used by _from_channel
-    # (it gets set to one of these three).
-    #
-    def _group_to_channel(self,
-                          group: bool = True,
-                          response_id: Optional[IdType] = None
-                          ) -> np.ndarray:
-        """Convert group number to channel number.
-
-        For ungrouped data channel and group numbering are the
-        same. The mid-point of each group is used (rounded down
-        if not an integer).
-        """
-
-        if not self.grouped or not group:
-            return self.channel
-
-        # The middle channel of each group.
-        #
-        mid = self.apply_grouping(self.channel, self._middle)
-
-        # Convert to an integer (this keeps the channel within
-        # the group).
-        #
-        return np.floor(mid)
-
-    def _channel_to_energy(self,
-                           group: bool = True,
-                           response_id: Optional[IdType] = None
-                           ) -> np.ndarray:
-        elo, ehi = self._get_ebins(response_id=response_id, group=group)
-        return (elo + ehi) / 2.0
-
-    def _channel_to_wavelength(self,
-                               group: bool = True,
-                               response_id: Optional[IdType] = None
-                               ) -> np.ndarray:
-        tiny = np.finfo(np.float32).tiny
-        emid = self._channel_to_energy(group=group, response_id=response_id)
-        # In case there are any 0-energy bins replace them
-        emid[emid == 0.0] = tiny
-        return hc / emid
 
     default_background_id: IdType = 1
     """The identifier for the background component when not set.
@@ -4385,7 +4334,21 @@ It is an integer or string.
 
         # We want the full channel grid with no grouping.
         #
-        return self._from_channel(group=False, response_id=response_id)
+        if self.units == "channel":
+            return self.channel
+
+        elo, ehi = self._get_ebins(response_id=response_id, group=False)
+        emid = (elo + ehi) / 2
+
+        if self.units == "energy":
+            return emid
+
+        # The units must be wavelength.
+        #
+        tiny = np.finfo(np.float32).tiny
+        # In case there are any 0-energy bins replace them
+        emid[emid == 0.0] = tiny
+        return hc / emid
 
     def get_xlabel(self) -> str:
         """The label for the independent axis.
