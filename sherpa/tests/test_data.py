@@ -2729,17 +2729,10 @@ def test_to_guess_when_all_ignored(data_copy):
 def test_get_dims_when_empty_1d(data_class, args):
     """This is a regression test."""
 
-    if data_class == Data1D:
-        # Error is
-        # TypeError: object of type 'NoneType' has no len()
-        pytest.xfail("test known to fail with Data1D")
-
-    # It's not clear what the response should be, but Data1DInt
-    # responds with (0, ) so check that.
-    #
     data = data_class("empty", *args)
-    resp = data.get_dims()
-    assert resp == (0, )
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
+        _ = data.get_dims()
 
 
 @pytest.mark.parametrize("data_class,args", EMPTY_DATA_OBJECTS_2D)
@@ -2747,11 +2740,8 @@ def test_get_dims_when_empty_2d(data_class, args):
     """This is a regression test."""
 
     data = data_class("empty", *args)
-    # This is not a nice error case, so catch it in case we decide to
-    # change the code.
-    #
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
         _ = data.get_dims()
 
 

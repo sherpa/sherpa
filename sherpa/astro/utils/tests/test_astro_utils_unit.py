@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020, 2021, 2022, 2024
+#  Copyright (C) 2017, 2018, 2020 - 2022, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -406,7 +406,15 @@ def make_data(data_class):
     if data_class == "imgint":
         return DataIMGInt('imgi', x0, x1, x0 + 1, x1 + 1, y, shape=(2, 3))
 
+    # This would indicate an error in the test setup.
     assert False
+
+
+def test_qual_setting():
+    """Regression test."""
+
+    pha = make_data("qual")
+    assert pha.quality_filter == pytest.approx([True, True, False, True])
 
 
 @pytest.mark.parametrize("data_class", ["1d", "1dint", "pha", "grp", "qual"])

@@ -2367,7 +2367,7 @@ def test_pha_check_limit(ignore, lo, hi, evals):
     pha.units = 'energy'
 
     assert pha.mask is True
-    assert pha.get_mask() is None
+    assert pha.get_mask() == pytest.approx([True] * 10)
 
     func = pha.ignore if ignore else pha.notice
     func(lo, hi)
@@ -2449,7 +2449,7 @@ def test_pha_check_limit_channel(ignore, lo, hi, evals):
     pha.units = 'channel'
 
     assert pha.mask is True
-    assert pha.get_mask() is None
+    assert pha.get_mask() == pytest.approx([True] * 10)
 
     func = pha.ignore if ignore else pha.notice
     func(lo, hi)
@@ -3867,6 +3867,7 @@ def test_eval_model_when_all_ignored_datapha():
 
     data = DataPHA("x", [1, 2, 3], [3, 2, 7])
     data.ignore()
+    # TODO: should this error out?
     resp = data.eval_model(mdl)
     assert resp == pytest.approx([-9])
 
@@ -3909,11 +3910,8 @@ def test_to_guess_when_empty_datapha():
     """This is a regression test."""
 
     data = DataPHA("empty", None, None)
-    # This is not a nice error case, so catch it in case we decide to
-    # change the code.
-    #
-    with pytest.raises(TypeError,
-                       match=r"unsupported operand type\(s\) for \+: 'NoneType' and 'int'"):
+    with pytest.raises(DataErr,
+                       match="The size of 'empty' has not been set"):
         _ = data.to_guess()
 
 
@@ -3963,11 +3961,8 @@ def test_get_dims_when_empty_datapha():
     """This is a regression test."""
 
     data = DataPHA("empty", None, None)
-    # This is not a nice error case, so catch it in case we decide to
-    # change the code.
-    #
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
         _ = data.get_dims()
 
 
@@ -3976,11 +3971,8 @@ def test_get_dims_when_empty_2d(data_class, args):
     """This is a regression test."""
 
     data = data_class("empty", *args)
-    # This is not a nice error case, so catch it in case we decide to
-    # change the code.
-    #
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
         _ = data.get_dims()
 
 
@@ -3988,11 +3980,8 @@ def test_get_filter_when_empty_datapha():
     """This is a regression test."""
 
     data = DataPHA("empty", None, None)
-    # This is not a nice error case, so catch it in case we decide to
-    # change the code.
-    #
-    with pytest.raises(TypeError,
-                       match=r"object of type 'NoneType' has no len\(\)"):
+    with pytest.raises(DataErr,
+                       match="^The size of 'empty' has not been set$"):
         _ = data.get_filter()
 
 

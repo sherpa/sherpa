@@ -4488,10 +4488,9 @@ def test_pha_model_plot_filter_range_1024_true(mask, make_data_path,
 
 @requires_fits
 @requires_data
-@pytest.mark.parametrize("mask,expected",
-                         [(False, 'No noticed bins'),
-                          (np.zeros(46, dtype=bool), '')])
-def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path,
+@pytest.mark.parametrize("mask",
+                         [False, np.zeros(46, dtype=bool)])
+def test_pha_model_plot_filter_range_1024_false(mask, make_data_path,
                                                 clean_astro_ui, plot_backends):
     """Special-case handling of mask: all masked out.
 
@@ -4506,8 +4505,7 @@ def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path,
     d = ui.get_data()
     d.mask = mask
 
-    # See #1220 for why we don't have a unique value for the filter
-    assert ui.get_filter() == expected
+    assert ui.get_filter() == ""
 
     # We can not guarantee what error will be raised here because of
     # issue #1220 so just pick a generic exception which will catch
@@ -4520,7 +4518,7 @@ def test_pha_model_plot_filter_range_1024_false(mask, expected, make_data_path,
     with pytest.raises(Exception):
         ui.plot_model()
 
-    assert ui.get_filter() == expected
+    assert ui.get_filter() == ""
 
 
 @requires_fits

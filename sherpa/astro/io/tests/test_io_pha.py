@@ -1474,3 +1474,44 @@ def test_roundtrip_channel0(tmp_path):
     assert pha2.exposure == pytest.approx(12)
     assert pha2.backscal == pytest.approx(1.2)
     assert pha2.areascal == pytest.approx(0.4)
+
+
+@requires_fits
+def test_write_pha_with_bad_quality(tmp_path):
+    """If ignore_bad has been called what is written out?"""
+
+    # This gives groups of
+    #
+    # | channel | counts | filtered |
+    # | ------- | ------ | -------- |
+    # |  1 - 3  |   12   |     8    |
+    # |  4 - 5  |   18   |    18    |
+    # |    6    |   12   |    12    |
+    # |    7    |   14   |    14    |
+    # |  8 - 9  |   34   |     -    |
+    #
+    chans = np.arange(1, 10)
+    counts = chans * 2
+    group = [1, -1, -1, 1, -1, 1, 1, 1, -1]
+    quality = [0, 5, 0, 0, 0, 0, 0, 2, 2]
+    qfilt = [True, False] + [True] * 5 + [False] * 2
+
+    pha0 = DataPHA("qual", chans, counts, grouping=group,
+                   quality=quality)
+    pha0.ignore_bad()
+    assert pha0.quality_filter == pytest.approx(qfilt)
+
+    outpath = tmp_path / "test.pha"
+    outfile = str(outpath)
+    io.write_pha(outfile, pha0, ascii=False, clobber=True)
+
+    # Check that the quality filter field hasn't changed
+    assert pha0.quality_filter == pytest.approx(qfilt)
+
+    # Ensure all rows are written out
+    pha1 = io.read_pha(outfile)
+    assert pha1.channel == pytest.approx(chans)
+    assert pha1.counts == pytest.approx(counts)
+    assert pha1.grouping == pytest.approx(group)
+    assert pha1.quality == pytest.approx(quality)
+    assert pha1.quality_filter is None
