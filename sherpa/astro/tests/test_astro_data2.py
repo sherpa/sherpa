@@ -489,7 +489,7 @@ def test_288_a():
     grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
     pha = DataPHA('x', channels, counts, grouping=grouping)
 
-    assert pha.mask
+    assert pha.mask is True
     pha.ignore(3, 4)
 
     # I use approx because it gives a nice answer, even though
@@ -517,7 +517,7 @@ def test_288_a_energy():
     pha.set_arf(rmf)
     pha.set_analysis('energy')
 
-    assert pha.mask
+    assert pha.mask is True
     pha.ignore(3, 4)
 
     # I use approx because it gives a nice answer, even though
@@ -539,7 +539,7 @@ def test_288_b():
     grouping = np.asarray([1, -1, 1, -1, 1], dtype=np.int16)
     pha = DataPHA('x', channels, counts, grouping=grouping)
 
-    assert pha.mask
+    assert pha.mask is True
     with pytest.raises(DataErr,
                        match="unknown lo argument: 'must be an integer channel value'"):
         pha.ignore(3.1, 4)
@@ -562,7 +562,7 @@ def test_288_b_energy():
     pha.set_arf(rmf)
     pha.set_analysis('energy')
 
-    assert pha.mask
+    assert pha.mask is True
     pha.ignore(3.1, 4)
 
     assert pha.mask == pytest.approx([True, False, True])
@@ -1673,10 +1673,10 @@ def test_quality_quality_filter_expr(make_quality_pha):
     pha = make_quality_pha
     pha.ignore_bad()
 
-    # Note that the first group covers is 1-4, but channels 2 and 3
+    # Note that the first group covers channels 1-4, but channels 2 and 3
     # are excluded, so this could be written as "1,4-..." but then
     # this loses the fact that the first group is 1 and 4, (so it
-    # canbe thought of as being correct).
+    # can be thought of as being correct).
     #
     pha.get_filter() == "1:9"  # does not exclude bad channels at end
 
@@ -2501,7 +2501,7 @@ def test_pha_ignore_bad_group_quality(caplog):
     # is back to a boolean.
     #
     assert type(pha.mask) is bool
-    assert pha.mask
+    assert pha.mask is True
 
     # However, get_mask reflects the quality filter, so is all True
     # except for the 6th element.
@@ -2741,7 +2741,7 @@ def test_quality_pha_get_dep(make_quality_pha):
 
     pha = make_quality_pha
 
-    # ungrouped counts  no quality are [1, 2, 0, 3, 12, 2, 9, 8, 7]
+    # ungrouped counts no quality are [1, 2, 0, 3, 12, 2, 9, 8, 7]
     # ungrouped counts with quality are [1, 3, 12, 2]
     #
     # grouped counts no quality are [6, 12, 2, 24]
@@ -2810,7 +2810,7 @@ def test_grouped_pha_mask(make_grouped_pha):
     """What is the default mask setting?"""
     pha = make_grouped_pha
     assert np.isscalar(pha.mask)
-    assert pha.mask
+    assert pha.mask is True
 
 
 def test_grouped_pha_get_mask(make_grouped_pha):
@@ -2823,11 +2823,12 @@ def test_quality_pha_mask(make_quality_pha):
     """What is the default mask setting?"""
     pha = make_quality_pha
     assert np.isscalar(pha.mask)
-    assert pha.mask
+    assert pha.mask is True
 
     pha.ignore_bad()
     assert np.isscalar(pha.mask)
-    assert pha.mask
+    assert pha.mask is True
+
 
 def test_quality_pha_get_mask(make_quality_pha):
     """What is the default get_mask value?"""

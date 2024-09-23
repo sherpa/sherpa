@@ -3559,7 +3559,6 @@ It is an integer or string.
         self.quality_filter = qual_flags
 
     def _dynamic_group(self,
-                       # TODO: remove callable support
                        group_func: Union[Callable, str],
                        *args, **kwargs) -> None:
         """Group the data using the given function and arguments.
@@ -3575,9 +3574,6 @@ It is an integer or string.
 
         If group_func is a callable then it must return the grouping
         and quality arrays for the new scheme.
-
-        Support for group_func being a callable has been marked as
-        deprecated in 4.17.0 and will be removed in the next release.
 
         """
 
