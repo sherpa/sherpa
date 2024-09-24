@@ -132,7 +132,7 @@ jobs:
             os-type: "macos-12"
             os-dir: "osx-64"
             python-version: "3.11"
-           - name: MacOS (Intel) Python ${{ matrix.python-version }}
+          - name: MacOS (Intel) Python ${{ matrix.python-version }}
             os-type: "macos-12"
             os-dir: "osx-64"
             python-version: "3.12"
