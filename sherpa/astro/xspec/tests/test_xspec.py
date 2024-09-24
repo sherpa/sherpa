@@ -767,7 +767,7 @@ def test_evaluate_xspec_model(modelcls):
     assert_is_finite(evals, modelcls, "energy")
     assert_is_finite(wvals, modelcls, "wavelength")
 
-    assert wvals == pytest.approx(evals, rel=1e-8, abs=1e-8)
+    assert wvals == pytest.approx(evals, rel=1e-6, abs=2e-5)
 
 
 @requires_xspec
@@ -798,7 +798,7 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     assert_is_finite(evals2, modelcls, "energy")
     assert_is_finite(wvals2, modelcls, "wavelength")
 
-    assert wvals2 == pytest.approx(evals2, rel=1e-8, abs=1e-8)
+    assert wvals2 == pytest.approx(evals2, rel=1e-6, abs=2e-5)
 
 
 @requires_xspec

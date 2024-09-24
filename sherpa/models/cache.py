@@ -22,6 +22,7 @@ import functools
 
 import numpy as np
 from typing import Callable
+from sherpa.astro import hc
 
 # What routine do we use for the hash in modelCacher1d?  As we do not
 # need cryptographic security go for a "quick" algorithm, but md5 is
@@ -166,7 +167,7 @@ def modelCacher1d(func: Callable) -> Callable:
 def modelCacher1d_exp(canonical_nh : list[float]=[0.1],
                               nh_bound : list[float]=[np.inf]) -> Callable:
     def modelCacher1d_exp_inner(func: Callable) -> Callable:
-        r"""A decorator to cache 1D ArithmeticModel evaluations for absorption models.
+        r"""A decorator to cache XSPEC absorption models.
 
         Apply to the `calc` method of a 1D model to allow the model
         evaluation to be cached. The decision is based on the
@@ -182,6 +183,12 @@ def modelCacher1d_exp(canonical_nh : list[float]=[0.1],
         with `p=0.1` and then store that. This is useful in particular for
         absorption models, where `a(x)` is an expensive calculation with
         atomic cross-sections etc.
+
+        Use this only with XSPEC models
+        -------------------------------
+        This cacher has some specific assumption built in how XSPEC
+        decides if it receives a grid in wavelength or in energy space.
+        Those assumptions will fail for normal Sherpa models.
 
         Notes
         -----
@@ -244,19 +251,38 @@ def modelCacher1d_exp(canonical_nh : list[float]=[0.1],
             digest = hashfunc(token).digest()
             cache = cls._cache
 
-            # It's not clear that this can be anything but an array in real live
+            # XSPEC assumes that the grid is in keV if xlo is in increasing order
+            # and in Ang if xlo is in decreasing order.
+            # For us, it's simpler to assume that the grid is in keV.
+            # We are not checking that the grid is monotonically increasing,
+            # because we're assuming that's done elsewhere.
+
+            # It's not clear if xlo can be anything but an array in real live
             # but we have tests that pass in plain Python lists.
-            xlo = np.asarray(xlo)
-            nhbin = np.digitize(xlo, nh_bound)
+            if xlo[1] > xlo[0]:
+                en_lo = np.asanyarray(xlo)
+                if args:
+                    en_hi = np.asanyarray(args[0])
+                else:
+                    en_hi = ()
+            else:
+                if args:
+                    en_lo = hc / np.asanyarray(args[0])
+                    en_hi = hc / np.asanyarray(xlo)
+                else:
+                    en_lo = hc / np.asanyarray(xlo)
+                    en_hi = ()
+
+            nhbin = np.digitize(en_lo, nh_bound)
             nh_array = np.array(canonical_nh)[nhbin]
+
+            vals = np.zeros_like(xlo, dtype=float)
 
             if digest in cache:
                 cache_ctr["hits"] += 1
 
             else:
                 # Evaluate the model.
-                #
-                vals = np.zeros_like(xlo, dtype=float)
                 for i, this_nh in enumerate(canonical_nh):
                     ind = nhbin == i
                     if ind.sum() == 0:
@@ -267,25 +293,17 @@ def modelCacher1d_exp(canonical_nh : list[float]=[0.1],
                     if ind.sum() == 1:
                         # The easiest is if we have xlo, xhi as input
                         if args:
-                            xhi = args[0]
-                            this_xlo = np.append(xlo[ind], xhi[ind])
-                            xhi = np.append(xhi[ind], xhi[ind] + 0.01)
-                            this_args = (xhi, )
+                            this_xlo = np.append(en_lo[ind], en_hi[ind])
+                            this_args = (np.append(en_hi[ind], en_hi[ind] + 0.01), )
                         else:
+                            this_xlo = np.append(xlo[ind], xlo[ind] + 0.01)
                             this_args = ( )
-                            if ind[-1] == True:
-                                # If the last bin is the only one, we need to add a bin
-                                this_xlo = np.append(xlo[ind], xlo[ind] + 0.01)
-                            else:
-                                # It's not the last one, use real bin width
-                                i = np.where(ind)[0][0]
-                                this_xlo = xlo[i: i + 2]
-
+                        # Either way, we'll only use the value from the first bin.
                         use_xpec_out = [True, False]
-                    else:
-                        this_xlo = xlo[ind]
+                    if ind.sum() > 1:
+                        this_xlo = en_lo[ind]
                         if args:
-                            this_args = (args[0][ind], )
+                            this_args = (en_hi[ind], )
                         else:
                             this_args = ( )
                         use_xpec_out = np.ones_like(this_xlo, dtype=bool)
