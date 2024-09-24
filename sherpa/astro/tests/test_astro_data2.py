@@ -3220,6 +3220,10 @@ def setup_pha_quality_example():
     # "severity" of the quality setting.
     #
     pha.set_analysis("energy")
+
+    # For some reason this has not actually been grouped
+    assert not pha.grouped
+
     return pha, elo, ehi
 
 
@@ -3347,6 +3351,8 @@ def test_pha_eval_model_to_fit_grouped_quality():
     # change the result.
     #
     pha.ignore(0.6, 0.8)
+
+    assert not pha.grouped
 
     m1 = pha.eval_model(full_mdl)
     m2 = pha.eval_model_to_fit(full_mdl)

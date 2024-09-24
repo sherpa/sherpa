@@ -3495,7 +3495,9 @@ It is an integer or string.
 
         # The apply_grouping method handles any quality filtering.
         #
+        print(f"DBG: data size {data.size}")
         gdata = self.apply_grouping(data, groupfunc)
+        print(f"DBG: gdata size {gdata.size}")
 
         # We can not
         #
@@ -3509,6 +3511,11 @@ It is an integer or string.
         # there are places where we need this behavior. Can we add an
         # "effective size" property?
         #
+        try:
+            print(f"DBG: filter size {self._data_space.filter.mask.size}")
+            print(f"DBG: filter sum  {self._data_space.filter.mask.sum()}")
+        except AttributeError:
+            pass
         return self._data_space.filter.apply(gdata)
 
     @overload
@@ -4148,7 +4155,11 @@ It is an integer or string.
                             errorCol=errorCol)
 
     def eval_model_to_fit(self, modelfunc):
+
+should we call eval_model instead and do the filtering here?
+
         model = super().eval_model_to_fit(modelfunc)
+        print(f"DBG: model size {model.size}")
         return self.apply_filter(model)
 
     def sum_background_data(self,
@@ -4870,6 +4881,7 @@ It is an integer or string.
         chans = self.channel
 
         # get_mask returns None if all the data has been filtered.
+        # TODO: is this still true?
         mask = self.get_mask()
         if mask is None:
             return np.asarray([], dtype=chans.dtype)
@@ -4937,7 +4949,8 @@ It is an integer or string.
 
             return out & qual
 
-        # It is possible for mask to be empty.
+        # It is possible for mask to be empty, if the quality array
+        # removes all the entries.
         #
         if mask.size == 0:
             return np.zeros(self.size, dtype=bool)
@@ -4951,14 +4964,93 @@ It is an integer or string.
         # b) the mask will not include data for groups which are all
         #    bad, so these channels will somehow have to be added
         #
-        ngrps = np.sum(self.grouping > 0)
+        ngrps = np.sum(self.grouping >= 0)
         if mask.size == ngrps:
             out = expand_grouped_mask(mask, self.grouping)
         else:
-            assert False, (mask.size, ngrps, mask, self.grouping)
+            # Replicate expand_grouped_mask but with a quality check,
+            # here using quality_filter rather than self.quality in
+            # case we allow for subsetting the quality check. The
+            # assumption is that self.quality_filter can not be None
+            # here.
+            #
+            # We can not rely on apply_grouping here since that ends
+            # up calling this routine.
+            #
+            midx = 0
+            out = np.zeros(self.size, dtype=bool)
+            check = np.zeros(self.size, dtype=int)
 
-        qfilt = np.ones(self.size, dtype=bool) if qual is None else qual
-        return out & qfilt
+            # The state encodes the start of the group and the quality
+            # state of the group (all we care about is if it's all False,
+            # because if it is then it has been dropped from the mask
+            # array).
+            #
+            state = None
+
+            # It is okay for a "bad quality" bin to be marked as good
+            # in this routine, since it will be cleared later.
+            #
+            for idx, (gval, qval) in enumerate(zip(self.grouping, qual)):
+                if state is None:
+                    if gval < 0:
+                        # Try to mimic expand_grouped_mask error handling.
+                        raise ValueError("The first element of group is negative")
+
+                    # We either have the start of a group or bad-quality
+                    # channels.
+                    #
+                    state = {"start": idx, "qual": qval}
+                    continue
+
+                # Is this part of a group?
+                #
+                if gval < 0:
+                    state["qual"] |= qval
+                    continue
+
+                # This is a new group so we have to decide what to do
+                # with the preceeding group: is it part of mask, so
+                # the output needs changing, or has it been marked as
+                # all bad, in which case we can just carry on to the
+                # next group.
+                #
+                if state["qual"]:
+                    if midx >= mask.size:
+                        raise ValueError("More groups than mask elements")
+
+                    out[state["start"]:idx + 1] = mask[midx]
+                    check[state["start"]:idx + 1] += 1
+                    midx += 1
+
+                state = {"start": idx, "qual": qval}
+
+            # Check we have done this correctly
+            if midx < mask.size:
+                raise ValueError("More mask elements than groups")
+
+            if np.any(check > 1):  # TODO: remove
+                print(out)
+                print(check)
+                assert False
+
+            #print("@@@@@@@")
+            #print(mask.size)
+            #print(mask)
+            #print(ngrps)
+            #print("---")
+            #print(self.grouping)
+            #print(self.quality)
+            #print(self.quality_filter)
+            #print("->")
+            #print(out)
+            #print("@@@@@@@")
+            #assert False, (mask.size, ngrps, mask, self.grouping)
+
+        if qual is None:
+            return out
+
+        return out & qual
 
     def get_noticed_expr(self) -> str:
         """Returns the current set of noticed channels.
