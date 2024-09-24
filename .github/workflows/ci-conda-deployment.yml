@@ -70,7 +70,7 @@ jobs:
         image: ["redhat/ubi8"]
         conda-os: ["Linux-x86_64"]
         os-dir: ["linux-64"]
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
 
     steps:
     - name: Install git and diff
@@ -128,7 +128,7 @@ jobs:
         os-type: ["macos-12"]
         conda-os: ["MacOSX-x86_64"]
         os-dir: ["osx-64"]
-        python-version: ["3.9", "3.10", "3.11"]
+        python-version: ["3.10", "3.11", "3.12"]
     env:
       CONDA_BUILD_SYSROOT: /opt/MacOSX11.0.sdk
 
@@ -234,12 +234,6 @@ jobs:
       run: |
         source ${conda_loc}/etc/profile.d/conda.sh
         curl -LO -k https://github.com/sherpa/sherpa-test-data/archive/main.zip 
-        echo "conda create -n test39 --yes -q -c file://$(pwd)/packages python=3.9 astropy sherpa matplotlib"
-        conda create -n test39 --yes -q -c file://$(pwd)/packages python=3.9 astropy sherpa matplotlib
-        conda activate test39
-        pip install main.zip
-        sherpa_smoke -f astropy
-        sherpa_test
         echo "conda create -n test310 --yes -q -c file://$(pwd)/packages python=3.10 astropy sherpa matplotlib"
         conda create -n test310 --yes -q -c file://$(pwd)/packages python=3.10 astropy sherpa matplotlib
         conda activate test310
@@ -249,6 +243,12 @@ jobs:
         echo "conda create -n test311 --yes -q -c file://$(pwd)/packages python=3.11 astropy sherpa matplotlib"
         conda create -n test311 --yes -q -c file://$(pwd)/packages python=3.11 astropy sherpa matplotlib
         conda activate test311
+        pip install main.zip
+        sherpa_smoke -f astropy
+        sherpa_test
+        echo "conda create -n test312 --yes -q -c file://$(pwd)/packages python=3.12 astropy sherpa matplotlib"
+        conda create -n test312 --yes -q -c file://$(pwd)/packages python=3.12 astropy sherpa matplotlib
+        conda activate test312
         pip install main.zip
         sherpa_smoke -f astropy
         sherpa_test
