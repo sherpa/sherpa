@@ -1585,11 +1585,11 @@ class DataPHA(Data1D):
 
         # Assert types: is there a better way to do this?
         #
-        self._bin_lo: Optional[np.ndarray]
-        self._bin_hi: Optional[np.ndarray]
-        self._grouping: Optional[np.ndarray]
-        self._quality: Optional[np.ndarray]
-        self._quality_filter: Optional[np.ndarray]
+        self._bin_lo: Optional[np.ndarray] = None
+        self._bin_hi: Optional[np.ndarray] = None
+        self._grouping: Optional[np.ndarray] = None
+        self._quality: Optional[np.ndarray] = None
+        self._quality_filter: Optional[np.ndarray] = None
 
         self.bin_lo = _check(bin_lo)
         self.bin_hi = _check(bin_hi)
@@ -1885,8 +1885,43 @@ will be removed. The identifiers can be integers or strings.
         self.y = val
 
     # Override the mask handling because the mask matches the grouped
-    # data length, not the independent axis.
+    # data length, not the independent axis, and when reading the
+    # value any quality filter needs to be applied.
     #
+    @Data1D.mask.getter
+    def mask(self) -> ArrayType | bool | None:
+
+        mask = Data1D.mask.getter()
+        if self.quality_filter is None:
+            return mask
+
+        if mask is False:
+            return mask
+
+        if self.size is None:
+            # Is this possible?
+            raise DataErr("sizenotset", self.name)
+
+        if not self.grouped:
+            if mask is True:
+                mval = np.ones(self.size, dtype=bool)
+            else:
+                mval = mask
+
+            return mask & self.qualty_filter
+
+        # TODO: how do we compress the quality filter down to match
+        # the mask? Really all that maters is whether a group contains
+        # all-bad-quality values, because then it gets dropped,
+        # otherwise we can not filter it out. Is this case a
+        # possibility?
+        #
+        ngrps = np.sum(self.grouping >= 0)
+        if mask.size == ngrps:
+            return mask
+
+        assert False, ("Need to worry about mask resizing", mask.size, ngrps)
+
     @Data1D.mask.setter
     def mask(self, val: Union[ArrayType, bool]) -> None:
 
@@ -2036,12 +2071,40 @@ will be removed. The identifiers can be integers or strings.
             except TypeError:
                 raise DataErr("notanintarray") from None
 
-        # If the quality changes, should we re-create the filter as we
-        # do with grouping? No, because the quality array is currently
-        # not automatically applied. Although perhaps we should reset
-        # quality_filter?
-        #
         self._set_related("quality", val)
+        if self.quality_filter is None:
+            return
+
+        # If we have no quality filters, reset the value.
+        #
+        if val is None:
+            self.quality_filter = None
+            warning('Quality filter has been removed')
+            return
+
+        qual_flags = ~np.asarray(self.quality, dtype=bool)
+        if np.all(self.quality_filter == qual_flags):
+            # No change is easy to handle.
+            return
+
+        # If the quality changes and 'ignore_bad' has been used should
+        # this
+        #
+        # - do nothing
+        # - error out
+        # - silently change the quality mask
+        # - warn the user and reset the filter
+        #
+        # Is is similar to ignore_bad(), which resets the filter, when
+        # the data is grouped.
+        #
+        # Check the values before resetting quality_filter.
+        warn = self.grouped and self.mask is not True
+
+        self.quality_filter = qual_flags
+        if warn:
+            self.notice()
+            warning('quality filter has changed, previous filters deleted')
 
     # It is unclear exactly what the quality_filter is meant to
     # represent, so as part of improving support for ignore_bad, add
@@ -3448,16 +3511,16 @@ It is an integer or string.
             return data
 
         groups = self.grouping
-        filter = self.quality_filter
-        if filter is None:
+        qfilter = self.quality_filter
+        if qfilter is None:
             return do_group(data, groups, groupfunc.__name__)
 
-        nfilter = len(filter)
+        nfilter = len(qfilter)
         if len(data) != nfilter or len(groups) != nfilter:
             raise DataErr("mismatchn", "quality filter", "array", nfilter, len(data))
 
-        filtered_data = np.asarray(data)[filter]
-        groups = np.asarray(groups)[filter]
+        filtered_data = np.asarray(data)[qfilter]
+        groups = np.asarray(groups)[qfilter]
         return do_group(filtered_data, groups, groupfunc.__name__)
 
     def ignore_bad(self) -> None:
@@ -3488,21 +3551,19 @@ It is an integer or string.
         if self.quality is None:
             raise DataErr("noquality", self.name)
 
-        qual_flags = ~np.asarray(self.quality, bool)
+        qual_flags = ~np.asarray(self.quality, dtype=bool)
 
         if self.grouped and (self.mask is not True):
             self.notice()
             warning('filtering grouped data with quality flags,' +
                     ' previous filters deleted')
 
-        elif not self.grouped:
-            # if ungrouped, create/combine with self.mask
-            if self.mask is not True:
-                self.mask = self.mask & qual_flags
-                return
-
-            self.mask = qual_flags
-            return
+        #elif not self.grouped:
+        #    # if ungrouped, create/combine with self.mask
+        #    if self.mask is not True:
+        #        self.mask = self.mask & qual_flags
+        #    else:
+        #        self.mask = qual_flags
 
         # self.quality_filter used for pre-grouping filter
         self.quality_filter = qual_flags
@@ -3594,6 +3655,9 @@ It is an integer or string.
             if np.iterable(mask):
                 kwargs["tabStops"] = ~mask
 
+        # If ignore_bad has been called then this may change the
+        # quality filter.
+        #
         self.grouping, self.quality = group_func(*args, **kwargs)
         self.group()
         self._original_groups = False
@@ -5111,10 +5175,11 @@ It is an integer or string.
         if filter_background_only:
             return
 
-        # Go on if we are also supposed to filter the source data
+        # Go on if we are also supposed to filter the source data.
+        #
         if lo is None and hi is None:
-            self.quality_filter = None
-            self.notice_response(False)
+            # This does not remove any quality filter.
+            self.notice_response(notice_resp=False)
 
         # elo and ehi will be in channel (units=channel) or energy
         # (units=energy or units=wavelength).

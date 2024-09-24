@@ -2008,13 +2008,12 @@ def test_pha_quality_ignore_bad_clear_filter(make_quality_pha):
     assert pha.get_mask() == pytest.approx([False] * 2 + [True] * 2)
     assert pha.quality_filter == pytest.approx(qflags)
 
-    # This removes the quality filter!
     pha.notice()
 
     assert pha.get_filter() == "1:9"
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 9)
-    assert pha.quality_filter is None
+    assert pha.get_mask() == pytest.approx(qflags)
+    assert pha.quality_filter == pytest.approx(qflags)
 
 
 def test_pha_grouping_changed_no_filter_1160(make_test_pha):
@@ -2455,9 +2454,8 @@ def test_pha_change_quality_values(caplog):
 
     assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0, 0])
 
-    # Should quality filter be reset?
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
-    assert pha.get_dep(filter=True) == pytest.approx([4, 2])
+    assert pha.quality_filter == pytest.approx([True] * 3 + [False] * 2 + [True] * 2)
+    assert pha.get_dep(filter=True) == pytest.approx([4, 2, 1])
     assert pha.get_filter() == '1:7'
 
 
@@ -2547,22 +2545,21 @@ def test_pha_group_ignore_bad_then_group(caplog):
     pha.group_counts(4)
     assert len(caplog.records) == 0
 
+    qual_mask = [True] + [False] + [True] * 5
+
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qual_mask)
     assert pha.get_filter() == '1:7'
     assert pha.quality_filter == pytest.approx(qual_mask)
     assert pha.quality == pytest.approx([0, 2, 0, 0, 0, 0, 0])
     assert pha.get_dep(filter=False) == pytest.approx(counts)
-    assert pha.get_dep(filter=True) == pytest.approx([4, 2, 6, 6])
+    assert pha.get_dep(filter=True) == pytest.approx([4, 3, 6, 6, 7])
 
-    # Shouldn't this be a no-op. It isn't because the group call
-    # didn't change the quality_filter array, so it now changes what
-    # are the good/bad channels.
+    # This is a no-op call.
     #
     pha.ignore_bad()
     assert len(caplog.records) == 0
 
-    qual_mask = [True] + [False] + [True] * 5
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qual_mask)
     assert pha.get_filter() == '1:7'

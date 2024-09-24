@@ -451,11 +451,16 @@ def test_calc_data_sum_no_range(data_class):
     to the same call after calling the calc routine. This is to check
     that we have restored the filter expression correctly.
 
+    Of interest is now the data summation works when there are known
+    "bad" channels. Do we include them or not (prior to 4.17.0 we did
+    but now we do not).
+
     """
 
+    expected = 10 if data_class == "qual" else 14
     data = make_data(data_class)
     orig = data.get_dep(filter=True).copy()
-    assert utils.calc_data_sum(data) == 14
+    assert utils.calc_data_sum(data) == expected
     assert data.get_dep(filter=True) == pytest.approx(orig)
 
 
@@ -539,6 +544,14 @@ def test_calc_data_sum_only_one_limit_pha(name, limit, expected):
                                             (15, 0)])
 def test_calc_data_sum_only_one_limit_pha_grouped(name, limit, expected, data_class):
     """Call calc_data_sum(data, lo or hi): DataPHA (group/quality)"""
+
+    # Prior to 4.17.0 calc_data_sum did not care if ignore_bad had
+    # been called. To avoid major changes to the test setup, adjust
+    # the expected value here
+    #
+    if limit == 3 and data_class == "qual":
+        # This is the bad channel
+        expected = 0
 
     data = make_data(data_class)
     orig = data.get_dep(filter=True).copy()
@@ -645,6 +658,13 @@ def test_calc_data_sum_filtered_pha(frange, expected):
 def test_calc_data_sum_filtered_pha_grouped(frange, expected, data_class):
     """Filter out everything and then check with both lo/hi set: DataPHA (grouped/quality)"""
 
+    # Prior to 4.17.0 calc_data_sum did not care if ignore_bad had
+    # been called. To avoid major changes to the test setup, adjust
+    # the expected value here
+    #
+    if data_class == "qual" and frange[0] <= 3 and frange[1] >= 3:
+        expected = expected - 4
+
     data = make_data(data_class)
     data.ignore()
     assert not data.mask
@@ -652,18 +672,18 @@ def test_calc_data_sum_filtered_pha_grouped(frange, expected, data_class):
     assert not data.mask
 
 
-@pytest.mark.parametrize("frange,expected", [((0, 10), 14),
-                                             ((0, 4), 14),
-                                             ((2, 3), 9),
-                                             ((2, 10), 14),
+@pytest.mark.parametrize("frange,expected", [((0, 10), 10),
+                                             ((0, 4), 10),
+                                             ((2, 3), 5),
+                                             ((2, 10), 10),
                                              ((1, 1), 5),
                                              ((2, 2), 5),
-                                             ((3, 3), 4),  # this is technically filtered-out by bad quality
+                                             ((3, 3), 0),  # this is technically filtered-out by bad quality
                                              ((4, 4), 5),
-                                             ((3, 4), 9),
-                                             ((3, 5), 9),
-                                             ((3, 12), 9),
-                                             ((1, 13), 14),
+                                             ((3, 4), 5),
+                                             ((3, 5), 5),
+                                             ((3, 12), 5),
+                                             ((1, 13), 10),
                                              ((20, 22), 0)])
 @pytest.mark.parametrize("ignore_args",
                          [{"hi": 2}, {"lo": 2},
@@ -696,15 +716,11 @@ def test_calc_data_sum_pha_bad_quality_and_filter(frange, expected, ignore_args)
     orig_mask2 = pha.mask.copy()
     orig_mask_full2 = pha.get_mask().copy()
 
-    # The summation should not change, but at present it fails.
-    with pytest.raises(DataErr,
-                       match="size mismatch between grouped data and mask: 3 vs 2"):
-        assert utils.calc_data_sum(pha, *frange) == pytest.approx(expected)
+    assert utils.calc_data_sum(pha, *frange) == pytest.approx(expected)
 
-    # The failure has caused the filter state to be lost
-    assert pha.quality_filter is None
-    # assert pha.mask == pytest.approx(orig_mask2)
-    # assert pha.get_mask() == pytest.approx(orig_mask_full2)
+    assert pha.quality_filter == pytest.approx(orig_qual)
+    assert pha.mask == pytest.approx(orig_mask2)
+    assert pha.get_mask() == pytest.approx(orig_mask_full2)
 
 
 @pytest.mark.parametrize("data_class", ["2d", "img", "2dint", "imgint"])
