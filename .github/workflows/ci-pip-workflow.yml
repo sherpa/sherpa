@@ -61,7 +61,7 @@ jobs:
 
           - name: Linux Build (submodule data w/o Matplotlib or Xspec)
             os: ubuntu-latest
-            python-version: "3.9"
+            python-version: "3.12"
             numpy-pkg: 'numpy'
             install-type: develop
             fits-pkg: 'astropy'
@@ -90,8 +90,6 @@ jobs:
           NUMPYVER='numpy'
         fi
         pip install ${NUMPYVER} ${FITSBUILD} ${MATPLOTLIBVER} ${BOKEHVER}
-        # Ensure we use an old-enough setuptools: see issue #1456
-        pip install 'setuptools < 60'
 
     - name: Build Sherpa (install)
       if: matrix.install-type == 'install'

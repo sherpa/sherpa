@@ -18,9 +18,9 @@ requirements:
 
  host:
   - python
-  - numpy 1.21.* # [py<=310]
-  - numpy 1.23.* # [py>310]
-  - setuptools <60.0.0
+  - numpy 1.24.* # [py<312]
+  - numpy 1.26.* # [py==312]
+  - setuptools
   - six
 
  run:

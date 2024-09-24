@@ -33,7 +33,7 @@ Requirements
 
 Sherpa has the following requirements:
 
-* Python 3.9 to 3.11
+* Python 3.9 to 3.12
 * NumPy (version 2.0 should work but there has been limited testing)
 * Linux or OS-X (patches to add Windows support are welcome)
 
@@ -134,7 +134,7 @@ Prerequisites
 
 The prerequisites for building from source are:
 
-* Python versions: 3.9 to 3.11
+* Python versions: 3.9 to 3.12
 * Python packages: ``setuptools``, ``numpy`` (these should be
   automatically installed by ``pip``)
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
@@ -152,14 +152,6 @@ The full Sherpa test suite requires `pytest`, which is included when
 using the ``.[test]`` option with ``pip``. The `pytest-xvfb` package
 can be useful if :term:`DS9` is installed, as it hides the DS9 windows
 created during the tests.
-
-.. warning::
-
-   Sherpa includes a number of compiled extensions that use the NumPy
-   C API. Following the `advice from NumPy
-   <https://numpy.org/devdocs/reference/distutils_status_migration.html#numpy-setuptools-interaction>`_,
-   it is **strongly suggested** that `setuptools < 60` is used when
-   building Sherpa.
 
 .. note::
 
@@ -379,9 +371,7 @@ From the root of the Sherpa source tree, Sherpa can be built with
 
   pip install .
 
-Although it may still work, the use of ``python setup.py`` to build,
-install, or test Sherpa is no-longer officially supported. Please
-report any problems to the
+Please report any problems to the
 `Sherpa issues page <https://github.com/sherpa/sherpa/issues/>`_.
 
 .. _developer-build:
