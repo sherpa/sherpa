@@ -192,25 +192,8 @@ packages = [
   "tests/test_*py"
 ]
 
-# Remove the src/ directories. Does this make sense?
-# find sherpa -name src | sort
+# Remove the src/ directories
 #
-# It also doesn't seem to work, so I obviously haven't got the
-# incantation correct.
-#
-#[tool.setuptools.exclude-package-data]
-#"sherpa.astro.models" = ["src"]
-#"sherpa.astro.models" = ["src/*"]
-#"sherpa.astro.utils" = ["src/*"]
-#"sherpa.astro.xspec" = ["src/*"]
-#"sherpa.estmethods" = ["src/*"]
-#"sherpa.models" = ["src/*"]
-#"sherpa.optmethods" = ["src/*"]
-#"sherpa.stats" = ["src/*"]
-#"sherpa.utils" = [
-#  "src",
-#  "src/cephes",
-#  "src/gsl",
-#  "src/sjohnson",
-#  "src/tcd"
-#]
+[tool.setuptools.exclude-package-data]
+"*" = ["src/*"]
+"sherpa.include.sherpa" = ["MersenneTwister.h"]
