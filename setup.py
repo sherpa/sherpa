@@ -24,9 +24,9 @@ import sys
 # This is done before we load in any non-core modules to avoid people
 # installing software that they can not use.
 #
-if sys.version_info < (3, 9):
-    sys.stderr.write("Sherpa 4.15.1 (and later) requires Python 3.9 or later.\n\n")
-    sys.stderr.write("Please use Sherpa 4.15.0 if you need to use Python 3.8\n")
+if sys.version_info < (3, 10):
+    sys.stderr.write("Sherpa 4.17.0 (and later) requires Python 3.10 or later.\n\n")
+    sys.stderr.write("Please use Sherpa 4.16.1 if you need to use Python 3.9\n")
     sys.exit(1)
 
 # We need to import setuptools so that 'python setup.py develop'

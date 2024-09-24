@@ -38,17 +38,17 @@ jobs:
             matplotlib-version: 3
             xspec-version: 12.14.0i
 
-          - name: Linux Minimum Setup (Python 3.9)
+          - name: Linux Minimum Setup (Python 3.10)
             os: ubuntu-latest
-            python-version: "3.9"
-            numpy-version: "1.21"
+            python-version: "3.10"
+            numpy-version: "1.24"
             install-type: develop
             test-data: none
 
           - name: Linux Minimum Setup (Python 3.11)
             os: ubuntu-latest
             python-version: "3.11"
-            numpy-version: "1.23"
+            numpy-version: "1.24"
             install-type: develop
             test-data: none
 
