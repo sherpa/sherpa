@@ -120,23 +120,22 @@ jobs:
         retention-days: 3
 
   build-macos:
-    name: MacOS Python ${{ matrix.python-version }}
+    name: ${{ matrix.name }}
     if: github.repository == 'sherpa/sherpa' && ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
     needs: ["check-skip"]
     runs-on: ${{ matrix.os-type }}
     strategy:
       matrix:
+        python-version: ["3.10", "3.11", "3.12"]
         include:
-          - name: Latest Ubuntu Pre-Deploy Test
+          - name: MacOS (Intel) Python ${{ matrix.python-version }}
             os-type: ["macos-12"]
             conda-os: ["MacOSX-x86_64"]
             os-dir: "osx-64"
-            python-version: ["3.10", "3.11", "3.12"]
-          - name: Latest MacOS Pre-Deploy Test
+          - name: MacOS (ARM) Python ${{ matrix.python-version }}
             os-type: ["macos-14-arm64"]
-            conda-os: "MacOSX-arm64"
+            conda-os: ["MacOSX-arm64"]
             os-dir: "osx-arm64"
-            python-version: ["3.10", "3.11", "3.12"]
 
     env:
       CONDA_BUILD_SYSROOT: /opt/MacOSX11.0.sdk
