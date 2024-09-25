@@ -78,7 +78,7 @@ def test_citation_hardcoded(tmp_path):
     assert cts[2] == 'Sherpa 4.8.0 was released on January 27, 2016.'
     assert cts[3] == ''
     assert cts[4] == '@software{sherpa_2016_45243,'
-    assert len(cts) == 65
+    assert len(cts) == 86
 
 
 @pytest.mark.zenodo
