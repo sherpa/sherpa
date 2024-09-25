@@ -149,7 +149,15 @@ known_warnings = {
             # Technically this should only be needed if bokeh is installed
             # but it doesn't seem worth setting up that machinery.
             #
-            "\nPyarrow will become a required dependency of pandas "
+            "\nPyarrow will become a required dependency of pandas ",
+
+            # See issues
+            # https://github.com/sherpa/sherpa/issues/2158
+            # https://github.com/sherpa/sherpa/issues/2007
+            #
+            # For now we hide them.
+            #
+            r".* is multi-threaded, use of fork\(\) may lead to deadlocks in the child\."
 
         ],
     UserWarning:
@@ -259,8 +267,7 @@ def capture_all_warnings(request, recwarn, pytestconfig):
     known = check_known_warning
 
     def fin():
-        warnings = [w for w in recwarn.list
-                    if type(w.message) not in known_warnings or not known(w)]
+        warnings = [w for w in recwarn.list if not known(w)]
 
         nwarnings = len(warnings)
         if nwarnings > 0:
@@ -287,7 +294,7 @@ def check_known_warning(warning):
     """Return True if this is an "allowed" warning."""
 
     message = warning.message
-    for known_warning in known_warnings[type(message)]:
+    for known_warning in known_warnings.get(type(message), []):
         pattern = re.compile(known_warning)
         if pattern.match(str(message)):
             return True
