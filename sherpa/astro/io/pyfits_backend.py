@@ -1191,10 +1191,10 @@ def _create_table_hdu(hdu: TableBlock) -> fits.BinTableHDU:
             out.columns[col.name].unit = col.unit
 
         if col.minval is not None:
-            out.header.append((f"TLMIN{idx}", col.minval))
+            out.header[f"TLMIN{idx}"] = col.minval
 
         if col.maxval is not None:
-            out.header.append((f"TLMAX{idx}", col.maxval))
+            out.header[f"TLMAX{idx}"] = col.maxval
 
         if col.desc is None:
             continue
