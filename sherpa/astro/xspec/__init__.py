@@ -130,10 +130,11 @@ References
 
 
 from contextlib import suppress
+from dataclasses import dataclass
 import logging
 import string
 import tempfile
-from typing import Any, Optional, Union
+from typing import Any, Optional, TypeGuard, Union
 import warnings
 
 import numpy as np
@@ -144,7 +145,7 @@ from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 from sherpa.utils import bool_cast
-from sherpa.utils.err import ArgumentErr, IOErr, ParameterErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IOErr, ParameterErr
 from sherpa.utils.guess import param_apply_limits
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -157,6 +158,77 @@ from . import _xspec  # type: ignore
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
+
+# Represent a "spectrumNumber/ifl" argument as an object to
+# make it harder to mix up with IdType or general integers.
+#
+@dataclass(frozen=True)
+class SpectrumNumber:
+    """An identifier for XFLT data.
+
+    The value must be 1 or larger.
+    """
+
+    # This can not be changed which means the object can be hashed and
+    # so can be used as a keyword for a dict.
+    #
+    # It is not clear from the XSPEC documentation whether ifl can be
+    # 0 or lower, so just enforce 1 as the minimum.
+    #
+    spectrumNumber: int
+    """The XSPEC spectrum identifier.
+
+    This is not the same as any dataset identifier used by Sherpa.
+    """
+
+    def __post_init__(self) -> None:
+        num = self.spectrumNumber
+        try:
+            if num < 1:
+                raise ValueError(f"spectrumNumber must be > 0, not {num}")
+        except TypeError:
+            raise ValueError(f"spectrumNumber must be a number, not '{num}'") from None
+
+        if not float(num).is_integer():
+            raise ValueError(f"spectrumNumber must be an integer, not {num}")
+
+
+def make_xsxflt(spectrum: int) -> SpectrumNumber:
+    """Create a SpectrumNumber for use with XFLT data.
+
+    To avoid confusion between different identifiers, XFLT identifiers
+    must use the SpectrumNumber type, created by this routine. Unlike
+    next_xsxflt this does not add any data to the XFLT database.
+
+    .. versionadded:: 4.17.0
+
+    Parameter
+    ---------
+    spectrum: int
+       This must be 1 or larger.
+
+    Returns
+    -------
+    spectrum: SpectrumNumber
+       The value used with calls like load_xsxflt.
+
+    See Also
+    --------
+    load_xsxflt, next_xsxflt
+
+    """
+    return SpectrumNumber(spectrum)
+
+
+# Does labelling this as returning a TypeGuard help, since we never
+# use the return value?
+#
+def check_spectrum(spectrum: Any) -> TypeGuard[SpectrumNumber]:
+    if isinstance(spectrum, SpectrumNumber):
+        return True
+
+    raise ArgumentTypeErr("spectrum", "created by make_xsxflt")
+
 
 # Python wrappers around the exported functions from _xspec. This
 # provides a more-accurate function signature to the user, makes
@@ -714,12 +786,9 @@ def set_xsxsect(name: str) -> None:
 #
 modelstrings = {}
 
-# Store XFLT settings. Store per spectrum number. It would be nice to
-# use a distinct type for the "spectrum number" (i.e. not just an
-# integer), but leave that for later, after we have experience in
-# using these values.
+# Store XFLT settings.
 #
-xfltkeys: dict[int, dict[str, float]] = {}
+xfltkeys: dict[SpectrumNumber, dict[str, float]] = {}
 
 # Store any path changes
 xspecpaths = {}
@@ -831,20 +900,20 @@ def set_xsxset(name: str, value: str) -> None:
 # functionality in Sherpa. This is one reason why they
 # are not added to __all__.
 #
-def clear_xsxflt(spectrum: Optional[int] = None) -> None:
+def clear_xsxflt(spectrum: Optional[SpectrumNumber] = None) -> None:
     """Remove all the XFLT keywords for all or a single spectrum.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    spectrum : int or None, Optional
+    spectrum : SpectrumNumber or None, Optional
        If None then delete all the XFLT keywords, otherwise just
        those for the given spectrum.
 
     See Also
     --------
-    get_xsxflt, set_xsxflt
+    get_xsxflt, make_xsxflt, set_xsxflt
 
     Notes
     -----
@@ -855,7 +924,7 @@ def clear_xsxflt(spectrum: Optional[int] = None) -> None:
 
     >>> clear_xsflt()
 
-    >>> clear_xsxflt(1)
+    >>> clear_xsxflt(make_xsxflt(1))
 
     """
 
@@ -869,14 +938,14 @@ def clear_xsxflt(spectrum: Optional[int] = None) -> None:
     set_xsxflt(spectrum, {})
 
 
-def get_xsxflt(spectrum: int) -> dict[str, float]:
+def get_xsxflt(spectrum: SpectrumNumber) -> dict[str, float]:
     """Return the XFLT values stored for a spectrum.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    spectrum : int
+    spectrum : SpectrumNumber
         The spectrum number (as used by XSPEC).
 
     Returns
@@ -887,34 +956,38 @@ def get_xsxflt(spectrum: int) -> dict[str, float]:
 
     See Also
     --------
-    clear_xsxflt, set_xsxflt
+    clear_xsxflt, make_xsxflt, set_xsxflt
 
     Examples
     --------
 
-    >>> get_xsxflt(1)
+    >>> get_xsxflt(make_xsxflt(1))
     {}
 
-    >>> set_xsxflt(2, {"inner": 0.2, "outer": 2, "width": 360})
-    >>> get_xsxflt(2)
+    >>> ifl = make_xsxflt(2)
+    >>> set_xsxflt(ifl, {"inner": 0.2, "outer": 2, "width": 360})
+    >>> get_xsxflt(ifl)
     {'inner': 0.2, 'outer': 2.0, 'width': 360.0}
 
     """
 
+    check_spectrum(spectrum)
+
     # We could check xfltkeys but pass through to XSPEC to check
     # instead, in case somehow the copy here is out of date.
     #
-    return _xspec.get_xflt(spectrum)
+    return _xspec.get_xflt(spectrum.spectrumNumber)
 
 
-def set_xsxflt(spectrum: int, xflt: dict[str, float]) -> None:
+def set_xsxflt(spectrum: SpectrumNumber,
+               xflt: dict[str, float]) -> None:
     """Set the XFLT values stored for a spectrum.
 
     .. versionadded:: 4.17.0
 
     Parameters
     ----------
-    spectrum : int
+    spectrum : SpectrumNumber
         The spectrum number (as used by XSPEC).
     xflt : dict
         The keywords (strings) and values (numbers) for the current
@@ -923,7 +996,7 @@ def set_xsxflt(spectrum: int, xflt: dict[str, float]) -> None:
 
     See Also
     --------
-    clear_xsxflt, get_xsxflt, load_xsxflt
+    clear_xsxflt, get_xsxflt, load_xsxflt, make_xsxflt, next_xsxflt
 
     Notes
     -----
@@ -933,29 +1006,28 @@ def set_xsxflt(spectrum: int, xflt: dict[str, float]) -> None:
     Examples
     --------
 
-    >>> set_xsxflt(2, {"inner": 0.2, "outer": 2})
-    >>> set_xsxflt(2, {"width": 360})
-    >>> get_xsxflt(2)
+    >>> ifl = next_xsxflt()
+    >>> set_xsxflt(ifl, {"inner": 0.2, "outer": 2})
+    >>> set_xsxflt(ifl, {"width": 360})
+    >>> get_xsxflt(ifl)
     {'width': 360.0}
 
     """
 
-    _xspec.set_xflt(spectrum, xflt)
+    check_spectrum(spectrum)
+    _xspec.set_xflt(spectrum.spectrumNumber, xflt)
 
-    if len(xflt) == 0:
-        # Remove any stored data for this spectrum, if set.
-        #
-        xfltkeys.pop(spectrum, {})
-
-    else:
-        # We store the spectrum values that have data, so that we
-        # can query the database when it comes to calling get_xsstate.
-        #
-        xfltkeys[spectrum] = xflt
+    # We store the spectrum values that have data, so that we
+    # can query the database when it comes to calling get_xsstate.
+    #
+    # We store the empty set, rather than dropping it, to make
+    # next_xsxflt work sensibly.
+    #
+    xfltkeys[spectrum] = xflt
 
 
 def load_xsxflt(data: DataPHA,
-                spectrum: int
+                spectrum: SpectrumNumber
                 ) -> None:
     """Load the XFLT keywords from the header of the PHA.
 
@@ -968,23 +1040,24 @@ def load_xsxflt(data: DataPHA,
     ----------
     data : DataPHA
        The PHA datset with XFLT0001, ... keywords.
-    spectrum : int
-       The spectrum number, which is expected to be 1 or larger.
-       This will over-write any existing data for the spectrum.
+    spectrum : SpectrumNumber
+       The spectrum number (as used by XSPEC). This will over-write
+       any existing data for the spectrum.
 
     See Also
     --------
-    clear_xsxflt, get_xsxflt, set_xsxflt
+    clear_xsxflt, get_xsxflt, make_xsxflt, next_xsxflt, set_xsxflt
 
     Notes
     -----
-    This does not support reading in values from columns, just from
-    header keywords.
+    This does not support reading in XFLT values from columns, just
+    from header keywords.
 
     Examples
     --------
 
-    >>> load_xsxflt(pha, 1)
+    >>> ifl = next_xsxflt()
+    >>> load_xsxflt(pha, ifl)
 
     """
 
@@ -1038,9 +1111,43 @@ def load_xsxflt(data: DataPHA,
 
     # Display the newly-added keys.
     #
-    info("XSPEC filtering keys:")
+    info("XSPEC filtering keys for spectrum "
+         f"{spectrum.spectrumNumber}:")
     for keyname, fval in store:
         info("  %s = %g", keyname, fval)
+
+
+def next_xsxflt() -> SpectrumNumber:
+    """Create the next XFLT spectrum number.
+
+    This is based on the maximum number used to store XFLT data.  It
+    adds an empty XFLT dictionary, so repeated calls will not return
+    the same value.
+
+    See Also
+    --------
+    clear_xsxflt, load_xsxflt, make_xsxflt, set_xsxflt
+
+    Examples
+    --------
+
+    Adds keys for spectrum numbers 1 and 2, storing them in the
+    variables key1 and key2:
+
+    >>> clear_xsxflt()
+    >>> key1 = next_xsxflt()
+    >>> key2 = next_xsxflt()
+
+    """
+
+    ifls = [s.spectrumNumber for s in xfltkeys.keys()]
+    maxval = max([0] + ifls)
+    s = make_xsxflt(maxval + 1)
+
+    # Store the empty dictionary so this value will not be
+    # recalculated by this routine.
+    set_xsxflt(s, {})
+    return s
 
 
 # Path handling
@@ -1688,19 +1795,19 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 
         .. versionadded:: 4.17.0
 
+        Notes
+        -----
+        This value is set with a SpectrumNumber value but it returns
+        an integer.
+
         """
 
         return self._spectrum
 
     @spectrum.setter
-    def spectrum(self, val: int) -> None:
-        try:
-            ival = int(val)
-        except ValueError:
-            raise ValueError(f"spectrum must be an integer, sent '{val}'") from None
-
-        if ival < 1:
-            raise ValueError(f"spectrum must be > 0, sent {ival}")
+    def spectrum(self, val: SpectrumNumber) -> None:
+        check_spectrum(val)
+        ival = val.spectrumNumber
 
         if self._spectrum == ival:
             return

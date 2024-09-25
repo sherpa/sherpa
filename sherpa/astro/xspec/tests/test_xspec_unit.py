@@ -1839,11 +1839,11 @@ def test_model_can_send_spectrumnumber_combine():
     # pick different values for the two models.
     #
     m1 = TestSpectrumNumber("x1")
-    m1.spectrum = 2
+    m1.spectrum = xspec.make_xsxflt(2)
     m1.index = 1
     m1.norm = 0.2
     m2 = TestSpectrumNumber("2")
-    m2.spectrum = 3
+    m2.spectrum = xspec.make_xsxflt(3)
     m2.index = 2
     m2.norm = 0.4
 
@@ -1939,7 +1939,7 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
     # not the value used by test as its default (5).
     #
     m1 = TestSpectrumNumber2("m1")
-    m1.spectrum = 2
+    m1.spectrum = xspec.make_xsxflt(2)
     m1.norm = 0.5
     m1.index = 2
 
@@ -2359,22 +2359,58 @@ def clear_xflt():
 
 
 @requires_xspec
+@pytest.mark.parametrize("badval", [0, -1, "1", 2.3])
+def test_make_xsxflt_error_checks(badval):
+    """Basic checks"""
+
+    from sherpa.astro import xspec
+    with pytest.raises(ValueError,
+                       match="^spectrumNumber must be "):
+        xspec.make_xsxflt(badval)
+
+
+@requires_xspec
+def test_next_xsxflt(clear_xflt):
+    """Basic checks."""
+
+    from sherpa.astro import xspec
+
+    S1 = xspec.next_xsxflt()
+    S2 = xspec.next_xsxflt()
+    assert S1.spectrumNumber == 1
+    assert S2.spectrumNumber == 2
+
+    S5 = xspec.make_xsxflt(5)
+    xspec.set_xsxflt(S5, {})
+
+    S3 = xspec.make_xsxflt(3)
+    xspec.set_xsxflt(S3, {})
+
+    S6 = xspec.next_xsxflt()
+    assert S6.spectrumNumber == 6
+
+
+@requires_xspec
 def test_xflt_can_clear_all(clear_xflt):
     """Check clear_xsxflt() does something."""
 
     from sherpa.astro import xspec
 
-    xspec.set_xsxflt(1, {"a": 23})
-    xspec.set_xsxflt(3, {"b": 4.9})
-    assert len(xspec.get_xsxflt(1)) == 1
-    assert len(xspec.get_xsxflt(2)) == 0
-    assert len(xspec.get_xsxflt(3)) == 1
+    S1 = xspec.make_xsxflt(1)
+    S2 = xspec.make_xsxflt(2)
+    S3 = xspec.make_xsxflt(3)
+
+    xspec.set_xsxflt(S1, {"a": 23})
+    xspec.set_xsxflt(S3, {"b": 4.9})
+    assert len(xspec.get_xsxflt(S1)) == 1
+    assert len(xspec.get_xsxflt(S2)) == 0
+    assert len(xspec.get_xsxflt(S3)) == 1
 
     xspec.clear_xsxflt()
 
     # We check spectrumNumber 1, 2, and 3 just to make sure.
     for i in range(1, 4):
-        assert len(xspec.get_xsxflt(i)) == 0
+        assert len(xspec.get_xsxflt(xspec.make_xsxflt(i))) == 0
 
 
 @requires_xspec
@@ -2383,16 +2419,18 @@ def test_xflt_can_clear_single(clear_xflt):
 
     from sherpa.astro import xspec
 
-    xspec.set_xsxflt(1, {"a": 23, "b": 4.9})
-    xspec.set_xsxflt(2, {"a": 23, "b": 4.9})
+    S1 = xspec.next_xsxflt()
+    S2 = xspec.next_xsxflt()
+    xspec.set_xsxflt(S1, {"a": 23, "b": 4.9})
+    xspec.set_xsxflt(S2, {"a": 23, "b": 4.9})
 
-    assert len(xspec.get_xsxflt(1)) == 2
-    assert len(xspec.get_xsxflt(2)) == 2
+    assert len(xspec.get_xsxflt(S1)) == 2
+    assert len(xspec.get_xsxflt(S2)) == 2
 
-    xspec.set_xsxflt(2, {})
+    xspec.set_xsxflt(S2, {})
 
-    assert len(xspec.get_xsxflt(1)) == 2
-    assert len(xspec.get_xsxflt(2)) == 0
+    assert len(xspec.get_xsxflt(S1)) == 2
+    assert len(xspec.get_xsxflt(S2)) == 0
 
 
 @requires_xspec
@@ -2405,9 +2443,10 @@ def test_xflt_can_get(clear_xflt):
 
     from sherpa.astro import xspec
 
-    xspec.set_xsxflt(1, {"CC": -1.2e-2, "aA": 23, "b": 4.9})
+    S1 = xspec.next_xsxflt()
+    xspec.set_xsxflt(S1, {"CC": -1.2e-2, "aA": 23, "b": 4.9})
 
-    out = xspec.get_xsxflt(1)
+    out = xspec.get_xsxflt(S1)
     assert len(out) == 3
     assert out["aA"] == pytest.approx(23)
     assert out["b"] == pytest.approx(4.9)
@@ -2420,23 +2459,29 @@ def test_xflt_can_get_xsxstate(clear_xflt):
 
     from sherpa.astro import xspec
 
-    xspec.set_xsxflt(4, {"CC": -1.2e-2, "aA": 23, "b": 4.9})
-    xspec.set_xsxflt(2, {"FOO": 200})
-    xspec.set_xsxflt(1, {})  # this does not store any state data
+    S1 = xspec.make_xsxflt(1)
+    S2 = xspec.make_xsxflt(2)
+    S4 = xspec.make_xsxflt(4)
+
+    xspec.set_xsxflt(S4, {"CC": -1.2e-2, "aA": 23, "b": 4.9})
+    xspec.set_xsxflt(S2, {"FOO": 200})
+    xspec.set_xsxflt(S1, {})
 
     state = xspec.get_xsstate()
     assert "xflt" in state
     xflt = state["xflt"]
-    assert len(xflt) == 2
-    assert sorted(xflt.keys()) == [2, 4]
+    assert len(xflt) == 3
+    keys = [s.spectrumNumber for s in xflt.keys()]
+    assert sorted(keys) == [1, 2, 4]
 
-    assert sorted(xflt[2].keys()) == ["FOO"]
-    assert sorted(xflt[4].keys()) == ["CC", "aA", "b"]
+    assert sorted(xflt[S1].keys()) == []
+    assert sorted(xflt[S2].keys()) == ["FOO"]
+    assert sorted(xflt[S4].keys()) == ["CC", "aA", "b"]
 
-    assert xflt[2]["FOO"] == pytest.approx(200)
-    assert xflt[4]["aA"] == pytest.approx(23)
-    assert xflt[4]["b"] == pytest.approx(4.9)
-    assert xflt[4]["CC"] == pytest.approx(-1.2e-2)
+    assert xflt[S2]["FOO"] == pytest.approx(200)
+    assert xflt[S4]["aA"] == pytest.approx(23)
+    assert xflt[S4]["b"] == pytest.approx(4.9)
+    assert xflt[S4]["CC"] == pytest.approx(-1.2e-2)
 
 
 @requires_xspec
@@ -2446,19 +2491,24 @@ def test_xflt_can_set_xsxstate(clear_xflt):
     from sherpa.astro import xspec
 
     # Set the XSFLT state to see what happens
-    xspec.set_xsxflt(9, {"TMP": 2000})
+    S9 = xspec.make_xsxflt(9)
+    xspec.set_xsxflt(S9, {"TMP": 2000})
 
-    xflt = {4: {"CC": -1.2e-2, "aA": 23, "b": 4.9},
-            2: {"FOO": 200},
-            1: {}}
+    S1 = xspec.make_xsxflt(1)
+    S2 = xspec.make_xsxflt(2)
+    S4 = xspec.make_xsxflt(4)
+
+    xflt = {S4: {"CC": -1.2e-2, "aA": 23, "b": 4.9},
+            S2: {"FOO": 200},
+            S1: {}}
     xspec.set_xsstate({"xflt": xflt})
 
-    assert xspec.get_xsxflt(1) == {}
-    assert xspec.get_xsxflt(2) == {"FOO": 200}
-    assert xspec.get_xsxflt(4) == {"b": 4.9, "aA": 23, "CC": -1.2e-2}
+    assert xspec.get_xsxflt(S1) == {}
+    assert xspec.get_xsxflt(S2) == {"FOO": 200}
+    assert xspec.get_xsxflt(S4) == {"b": 4.9, "aA": 23, "CC": -1.2e-2}
 
     # What about the previous setting?
-    assert xspec.get_xsxflt(9) == {}
+    assert xspec.get_xsxflt(S9) == {}
 
     # And this is an unknown record
-    assert xspec.get_xsxflt(3) == {}
+    assert xspec.get_xsxflt(xspec.make_xsxflt(3)) == {}
