@@ -116,6 +116,7 @@ jobs:
         if-no-files-found: error
         retention-days: 3
 
+#Note macos-14+ is macos arm
   build-macos:
     name: ${{ matrix.name }}
     if: github.repository == 'sherpa/sherpa' && ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
@@ -137,15 +138,15 @@ jobs:
             os-dir: "osx-64"
             python-version: "3.12"
           - name: MacOS (ARM) Python 3.10
-            os-type: "macos-14-arm64"
+            os-type: "macos-14"
             os-dir: "osx-arm64"
             python-version: "3.10"
           - name: MacOS (ARM) Python 3.11
-            os-type: "macos-14-arm64"
+            os-type: "macos-14"
             os-dir: "osx-arm64"
             python-version: "3.11"
           - name: MacOS (ARM) Python 3.12
-            os-type: "macos-14-arm64"
+            os-type: "macos-14"
             os-dir: "osx-arm64"
             python-version: "3.12"
 
@@ -223,7 +224,7 @@ jobs:
             conda-os: "MacOSX-x86_64"
             os-dir: "osx-64"
           - name: Latest MacOS (ARM) Pre-Deploy Test
-            os: macos-14-arm64
+            os: macos-14
             conda-os: "MacOSX-arm64"
             os-dir: "osx-arm64"
 
