@@ -652,6 +652,61 @@ def test_calc_data_sum_filtered_pha_grouped(frange, expected, data_class):
     assert not data.mask
 
 
+@pytest.mark.parametrize("frange,expected", [((0, 10), 14),
+                                             ((0, 4), 14),
+                                             ((2, 3), 9),
+                                             ((2, 10), 14),
+                                             ((1, 1), 5),
+                                             ((2, 2), 5),
+                                             ((3, 3), 4),  # this is technically filtered-out by bad quality
+                                             ((4, 4), 5),
+                                             ((3, 4), 9),
+                                             ((3, 5), 9),
+                                             ((3, 12), 9),
+                                             ((1, 13), 14),
+                                             ((20, 22), 0)])
+@pytest.mark.parametrize("ignore_args",
+                         [{"hi": 2}, {"lo": 2},
+                          {"lo": 1, "hi": 1},
+                          # channel 3 is the bad-quality channel so filter
+                          # just this as a test
+                          {"lo": 3, "hi": 3}
+                          ])
+def test_calc_data_sum_pha_bad_quality_and_filter(frange, expected, ignore_args):
+    """Regression test of ignore_bad handling."""
+
+    pha = make_data("qual")
+    assert pha.quality_filter is not None
+
+    # ignore_bad has been called which ignores channel 3.
+
+    assert pha.mask is True
+    orig_qual = pha.quality_filter.copy()
+    orig_mask_full = pha.get_mask().copy()
+
+    assert utils.calc_data_sum(pha, *frange) == pytest.approx(expected)
+
+    assert pha.quality_filter == pytest.approx(orig_qual)
+    assert pha.mask is True
+    assert pha.get_mask() == pytest.approx(orig_mask_full)
+
+    pha.ignore(**ignore_args)
+
+    # The mask has changed, so copy over the values
+    orig_mask2 = pha.mask.copy()
+    orig_mask_full2 = pha.get_mask().copy()
+
+    # The summation should not change, but at present it fails.
+    with pytest.raises(DataErr,
+                       match="size mismatch between grouped data and mask: 3 vs 2"):
+        assert utils.calc_data_sum(pha, *frange) == pytest.approx(expected)
+
+    # The failure has caused the filter state to be lost
+    assert pha.quality_filter is None
+    # assert pha.mask == pytest.approx(orig_mask2)
+    # assert pha.get_mask() == pytest.approx(orig_mask_full2)
+
+
 @pytest.mark.parametrize("data_class", ["2d", "img", "2dint", "imgint"])
 def test_calc_data_sum_no_range_2d(data_class):
     """What happens when data is not 1D?"""

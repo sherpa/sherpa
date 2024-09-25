@@ -673,3 +673,89 @@ def test_notice2d_reporting(caplog):
     s.ignore2d()
     assert len(caplog.record_tuples) == 7
     clc_filter(caplog, "dataset 1: no data (unchanged)")
+
+
+def test_ignore_bad_simple_comparison(caplog):
+    """A PHA grouped with one-channel per group should match no grouping.
+
+    However, at present there are differences
+    """
+
+    s = AstroSession()
+
+    counts = [9, 8, 7, 6, 5]
+    for idval in [1, 2]:
+        s.load_arrays(idval, [1, 2, 3, 4, 5], counts, DataPHA)
+        s.set_quality(idval, [0, 2, 0, 0, 0])
+
+    s.set_grouping(2, [1, 1, 1, 1, 1])
+    s.group(2)
+
+    for idval in [1, 2]:
+        assert s.get_dep(idval, filter=True) == pytest.approx(counts)
+        assert s.get_filter() == "1:5"
+
+        d = s.get_data(idval)
+        assert d.mask is True
+        assert d.get_mask() == pytest.approx([True] * 5)
+
+    assert len(caplog.records) == 2
+    s.ignore_bad(1)
+    s.ignore_bad(2)
+    assert len(caplog.records) == 4
+
+    r = caplog.records[2]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1:5 -> 1,3:5 Channel"
+
+    r = caplog.records[3]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 2: 1:5 Channel (unchanged)"
+
+    filtered_counts = [9, 7, 6, 5]
+    for idval in [1, 2]:
+        assert s.get_dep(idval, filter=True) == pytest.approx(filtered_counts)
+
+    assert s.get_filter(1) == "1,3:5"
+    assert s.get_filter(2) == "1:5"
+
+    mask = [True] + [False] + [True] * 3
+    d1 = s.get_data(1)
+    assert d1.mask == pytest.approx(mask)
+    assert d1.get_mask() == pytest.approx(mask)
+
+    d2 = s.get_data(2)
+    assert d2.mask is True
+    assert d2.get_mask() == pytest.approx(mask)
+
+    s.ignore(lo=4)
+    assert len(caplog.records) == 6
+
+    r = caplog.records[4]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 1: 1,3:5 -> 1,3 Channel"
+
+    r = caplog.records[5]
+    assert r.name == "sherpa.ui.utils"
+    assert r.levelname == "INFO"
+    assert r.getMessage() == "dataset 2: 1:5 -> 1:3 Channel"
+
+    filtered_counts = [9, 7]
+    for idval in [1, 2]:
+        assert s.get_dep(idval, filter=True) == pytest.approx(filtered_counts)
+
+    assert s.get_filter(1) == "1,3"
+    assert s.get_filter(2) == "1:3"
+
+    mask = [True] + [False] + [True] + [False] * 2
+    d1 = s.get_data(1)
+    assert d1.mask == pytest.approx(mask)
+    assert d1.get_mask() == pytest.approx(mask)
+
+    mask = [True] * 2 + [False] * 2
+    d2 = s.get_data(2)
+    assert d2.mask == pytest.approx(mask)
+    assert d2.get_mask() == pytest.approx(mask)
