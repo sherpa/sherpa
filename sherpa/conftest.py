@@ -151,13 +151,13 @@ known_warnings = {
             #
             "\nPyarrow will become a required dependency of pandas ",
 
-￼           # See issues
-￼           # https://github.com/sherpa/sherpa/issues/2158
-￼           # https://github.com/sherpa/sherpa/issues/2007
-￼           #
-￼           # For now we hide them.
-￼           #
-￼           r"is multi-threaded, use of fork\(\) may lead to deadlocks in the child"
+            # See issues
+            # https://github.com/sherpa/sherpa/issues/2158
+            # https://github.com/sherpa/sherpa/issues/2007
+            #
+            # For now we hide them.
+            #
+            r"is multi-threaded, use of fork\(\) may lead to deadlocks in the child"
 
         ],
     UserWarning:
