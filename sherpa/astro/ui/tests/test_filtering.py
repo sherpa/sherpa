@@ -278,12 +278,10 @@ def test_filter_bad_grouped(make_data_path, clean_astro_ui, caplog):
     # What happens when we filter the data? Unlike #1169
     # we do change the noticed range.
     #
-    # This should create a filter message, but thanks to ignore_bad we
-    # get an IndexError, which has been caught and that causes the
-    # filter message to not be displayed.
-    #
     ui.notice(0.5, 7)
-    assert len(caplog.records) == 1
+    assert len(caplog.records) == 2
+    check_last_caplog(caplog, "sherpa.ui.utils",
+                      logging.ERROR, "dataset 1: 1D filter has failed")
 
     assert pha.quality_filter == pytest.approx(expected)
 
@@ -597,22 +595,36 @@ def test_notice_reporting_data2d(session, caplog):
     assert s.get_filter() == ""
 
     # At the moment it's not obvious what the arguments mean, so just
-    # act as a regression test. In particular, we get no caplog output.
+    # act as a regression test.
     #
     s.notice(lo=13)
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 1
+    check_last_caplog(caplog, "sherpa.ui.utils",
+                      logging.ERROR, "dataset 1: 1D filter has failed")
+
     assert s.get_filter() == ""
 
     s.ignore(6, 15)
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 2
+    check_last_caplog(caplog, "sherpa.ui.utils",
+                      logging.ERROR, "dataset 1: 1D filter has failed")
+
     assert s.get_filter() == ""
 
     s.notice_id(1, 13, 15)
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 3
+    check_last_caplog(caplog, "sherpa.ui.utils",
+                      logging.ERROR, "dataset 1: 1D filter has failed")
+
     assert s.get_filter() == ""
 
+    # It's not clear this filter message is correct, but it's not
+    # really obvious what we want to happen here anyway.
+    #
     s.ignore_id(1)
-    assert len(caplog.record_tuples) == 0
+    assert len(caplog.record_tuples) == 4
+    clc_filter(caplog, "dataset 1: <broken> -> no data")
+
     assert s.get_filter() == ""
 
 

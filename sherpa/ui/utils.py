@@ -186,7 +186,7 @@ def _get_filter(data):
 
     except IndexError:
         # This is a known failure case with ignore_bad handling of
-        # DataPHA.
+        # DataPHA. Is this still an issue? It is safer to leave in.
         #
         return None
 
@@ -194,7 +194,8 @@ def _get_filter(data):
 def report_filter_change(idstr: str,
                          ofilter: Optional[str],
                          nfilter: Optional[str],
-                         xlabel: Optional[str] = None):
+                         xlabel: Optional[str] = None
+                         ) -> None:
     """Report the filter change for ignore/filter.
 
     Parameters
@@ -211,29 +212,32 @@ def report_filter_change(idstr: str,
     Notes
     -----
 
-    We technically don't require the delim=':', format='%g' arguments
-    to the get_filter call, but I list them so we have consistent
-    code. Ideally this would be encapsulated in the Data class, so we
-    let the object define the best arguments to use, but it's not
-    guaranteed to work well so we are trying this explicit approach.
-
     A filter expression of "" (the empty string) is taken to mean all
     data has been removed, and converted to something more readable
     here.
 
     If either ofilter or nfilter is None then we assume that some
-    error has happened and drop the reporting for this. This is an
-    unusual situation, so we do not try to provide extra information
-    to the user, we just want to make sure the notice/ignore call
-    succeeds (as well as it can, given that something is wrong with
-    the system).
+    error has happened. The reporting of this depends on what has gone
+    wrong. That is, are both None (so broken before and after), is
+    only nfilter None (so now broken), or is only ofilter None (so it
+    has somehow been "fixed")?
 
     """
 
-    if ofilter is None or nfilter is None:
-        return
-
     ostr = f"{idstr}: "
+
+    if ofilter is None and nfilter is not None:
+        # Let the user know the filter has changed but do not create a
+        # warning message. Chose "<broken>" as the original filter
+        # state since this is not going to match nfilter, and
+        # indicates that the user should be careful.
+        #
+        ofilter = "<broken>"
+
+    if ofilter is None or nfilter is None:
+        emsg = f"{ostr}1D filter has failed"
+        logging.getLogger(__name__).error(emsg)
+        return
 
     # Make it easy to handle labels being optional
     if xlabel is None:
