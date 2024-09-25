@@ -640,8 +640,13 @@ def check_write_pha_fits_with_extras_roundtrip_crates(path, etime, bscal):
     c0 = cr.get_column(0)
     assert c0.name == "CHANNEL"
     assert c0.values.dtype == np.int64
+
+    # The CHANNEL data range is 1-4 but the header contains
+    # DETCHANS=10, so the data does not really make sense. What should
+    # be written out?
+    #
     assert c0.get_tlmin() == 1
-    assert c0.get_tlmax() == 10
+    assert c0.get_tlmax() == 4
 
     c1 = cr.get_column(1)
     assert c1.name == "COUNTS"
@@ -758,8 +763,12 @@ def check_write_pha_fits_with_extras_roundtrip_pyfits(path, etime, bscal):
         for key in ["AREASCAL", "QUALITY", "GROUPING"]:
             assert key not in hdu.header
 
+        # The CHANNEL data range is 1-4 but the header contains
+        # DETCHANS=10, so the data does not really make sense. What
+        # should be written out?
+        #
         assert hdu.header["TLMIN1"] == 1
-        assert hdu.header["TLMAX1"] == 10
+        assert hdu.header["TLMAX1"] == 4
 
     finally:
         hdus.close()
@@ -784,7 +793,8 @@ def test_write_pha_fits_with_extras_roundtrip(tmp_path, caplog):
 
     hdr = {"TELESCOP": "CHANDRA", "INSTRUME": "ACIS", "FILTER": "NONE",
            "CHANTYPE": "PI",
-           "DETCHANS": 10,  # This intentionally does not match the data
+           # DETCHANS intentionally does not match the data, so what gets written out?
+           "DETCHANS": 10,
            "OBJECT": "Made up source",
            "CORRFILE": "None",
            # This will cause a warning when reading in the file
