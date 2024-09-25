@@ -157,7 +157,7 @@ known_warnings = {
             #
             # For now we hide them.
             #
-            r"is multi-threaded, use of fork\(\) may lead to deadlocks in the child"
+            r"is multi-threaded, use of fork\(\) may lead to deadlocks in the child."
 
         ],
     UserWarning:
