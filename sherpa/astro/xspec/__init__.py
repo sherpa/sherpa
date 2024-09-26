@@ -128,7 +128,6 @@ References
 
 """
 
-
 from contextlib import suppress
 from dataclasses import dataclass
 import logging
@@ -1750,7 +1749,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
     version_enabled = True
 
     per_spectrum: bool = False
-    """Does the model use per-spectrum information (e.g. XFLT keywords)?"""
+    """This model does not use per-spectrum information (e.g. XFLT keywords)?"""
 
     def __init__(self, name, pars):
 
@@ -1783,49 +1782,9 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         self._spectrum = 1
         super().__init__(name, pars)
 
-    @property
-    def spectrum(self) -> int:
-        """What value is used for the ifl/spectrum argument?
-
-        This is only relevant for models that use XFLT keywords (that
-        is, the model's per_spectrum flag is True).  The value must be
-        a positive integer, and it uses the data set up by the
-        set_xsxflt or load_xsxflt call with this identifier. There is
-        no check that XFLT data has been associated with this value.
-
-        .. versionadded:: 4.17.0
-
-        Notes
-        -----
-        This value is set with a SpectrumNumber value but it returns
-        an integer.
-
-        """
-
-        return self._spectrum
-
-    @spectrum.setter
-    def spectrum(self, val: SpectrumNumber) -> None:
-        check_spectrum(val)
-        ival = val.spectrumNumber
-
-        if self._spectrum == ival:
-            return
-
-        # Clear the cache as we now it is likely to be invalid with
-        # the change in the spectrum.
-        #
-        self.cache_clear()
-        self._spectrum = ival
-
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
         """Calculate the model given the parameters and grid.
-
-        .. versionadded:: 4.17.0
-           The spectrum attribute is now sent to the model.  This is
-           to allow support for models which use XFLT values (those
-           that require model evaluation per spectrum).
 
         Notes
         -----
@@ -1844,17 +1803,6 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
             emsg = f"calc() requires pars,lo,hi arguments, sent {nargs} arguments"
             warnings.warn(emsg, FutureWarning)
             # raise TypeError(emsg)
-
-        # Add in the spectrum keyword IFF it is not present. Note that
-        # out API labels the argument as spectrumNumber and the XSPEC
-        # documentation has used ifl and spectrum for it. It is not
-        # clear whether this makes sense - i.e. should we always set
-        # it, even if the caller may have added it - but we need more
-        # experience with how the XFLT support works before deciding
-        # on the best approach.
-        #
-        if "spectrumNumber" not in kwargs:
-            kwargs["spectrumNumber"] = self.spectrum
 
         # Ensure output is finite (Keith Arnaud mentioned that XSPEC
         # does this as a check). This is done at this level (Python)
@@ -1900,6 +1848,82 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         #     raise FloatingPointError(msg)
 
         return out
+
+
+# This can not be marked as an ABC without more looking into ModelMeta.
+#
+class XSPerSpectrum(metaclass=ModelMeta):
+    """Mark an XSPEC model as using XFLT data.
+
+    Only models marked as requiring per-dataset data should inherit
+    from this class.
+
+    """
+
+    # Why do we need this?
+    version_enabled = True
+
+    per_spectrum: bool = True
+    """This model does use use per-spectrum information (e.g. XFLT keywords)?"""
+
+    @property
+    def spectrum(self) -> int:
+        """What value is used for the ifl/spectrum argument?
+
+        What spectrum number is used to store the XFLT data needed by
+        this model? It uses the data set up by the set_xsxflt or
+        load_xsxflt call with this identifier. There is no check that
+        XFLT data has been associated with this value.
+
+        .. versionadded:: 4.17.0
+
+        Notes
+        -----
+        This value is set with a SpectrumNumber value but it returns
+        an integer.
+
+        """
+
+        return self._spectrum
+
+    @spectrum.setter
+    def spectrum(self, val: SpectrumNumber) -> None:
+        check_spectrum(val)
+        ival = val.spectrumNumber
+
+        if self._spectrum == ival:
+            return
+
+        # Clear the cache as we now it is likely to be invalid with
+        # the change in the spectrum.
+        #
+        self.cache_clear()
+        self._spectrum = ival
+
+    # Could we use the XFLT data for the model as part of the cache
+    # key? How to do this quickly?
+    #
+    # For now do not label this as @modelCacher1d and rely on the
+    # superclass to cache things.
+    #
+    # @modelCacher1d
+    def calc(self, p, *args, **kwargs):
+        """Calculate the model given the parameters and grid.
+
+        This ensures that the spectrum value is sent to the model.
+
+        """
+
+        # For now only use the models spectrumNumber if it
+        # has not been set. The idea is that it may be useful
+        # for a caller to change this (why they would want to
+        # do this is unclear), so support this as we work out
+        # what best to do.
+        #
+        if "spectrumNumber" not in kwargs:
+            kwargs["spectrumNumber"] = self.spectrum
+
+        super().calc(p, *args, **kwargs)
 
 
 class XSTableModel(XSModel):
@@ -11301,7 +11325,7 @@ class XSslimbh(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
-class XSsmaug(XSAdditiveModel):
+class XSsmaug(XSPerSpectrum, XSAdditiveModel):
     """The XSPEC smaug model: optically-thin, spherically-symmetric thermal plasma.
 
     The model is described at [1]_. The ``set_xscosmo`` command is
@@ -11378,8 +11402,6 @@ class XSsmaug(XSAdditiveModel):
     """
 
     __function__ = "xsmaug"
-
-    per_spectrum = True
 
     def __init__(self, name='smaug'):
         self.kT_cc = XSParameter(name, 'kT_cc', 1.0, min=0.1,
@@ -15496,7 +15518,7 @@ class XSplabs(XSMultiplicativeModel):
 
 
 @version_at_least("12.12.1")
-class XSpolconst(XSMultiplicativeModel):
+class XSpolconst(XSPerSpectrum, XSMultiplicativeModel):
     """The XSPEC polconst model: Constant polarization.
 
     The model is described at [1]_. The ``load_xflt`` command is used
@@ -15532,8 +15554,6 @@ class XSpolconst(XSMultiplicativeModel):
 
     __function__ = "C_polconst"
 
-    per_spectrum = True
-
     def __init__(self, name='polconst'):
         self.A = XSParameter(name, 'A', 1.0, min=0.0, max=1.0,
                              hard_min=0.0, hard_max=1.0)
@@ -15545,7 +15565,7 @@ class XSpolconst(XSMultiplicativeModel):
 
 
 @version_at_least("12.12.1")
-class XSpollin(XSMultiplicativeModel):
+class XSpollin(XSPerSpectrum, XSMultiplicativeModel):
     """The XSPEC pollin model: linearly dependent polarization.
 
     The model is described at [1]_. The ``load_xflt`` command is used
@@ -15585,8 +15605,6 @@ class XSpollin(XSMultiplicativeModel):
 
     __function__ = "C_pollin"
 
-    per_spectrum = True
-
     def __init__(self, name='pollin'):
         self.A1 = XSParameter(name, 'A1', 1.0, min=0.0, max=1.0,
                               hard_min=0.0, hard_max=1.0)
@@ -15604,7 +15622,7 @@ class XSpollin(XSMultiplicativeModel):
 
 
 @version_at_least("12.12.1")
-class XSpolpow(XSMultiplicativeModel):
+class XSpolpow(XSPerSpectrum, XSMultiplicativeModel):
     """The XSPEC polpow model: power-law dependent polarization.
 
     The model is described at [1]_. The ``load_xflt`` command is used
@@ -15643,8 +15661,6 @@ class XSpolpow(XSMultiplicativeModel):
     """
 
     __function__ = "C_polpow"
-
-    per_spectrum = True
 
     def __init__(self, name='polpow'):
         self.Anorm = XSParameter(name, 'Anorm', 1.0, min=0.0, max=1.0,
