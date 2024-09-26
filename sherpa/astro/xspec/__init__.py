@@ -1433,10 +1433,16 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
             #   - model class
             #   - model name
             #   - parameter list
+            #   - any kwargs
             #
             msg = f"{ve}: {self.type}.{self.name}"
-            for par, val in zip(self.pars, args[0]):
+            for par, val in zip(self.pars, p):
                 msg += f" {par.name}={val}"
+
+            if kwargs:
+                msg += " KEYWORDS "
+                for k, v in kwargs.items():
+                    msg += f"{k}={v}"
 
             raise ValueError(msg) from None
 
