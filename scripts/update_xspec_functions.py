@@ -72,19 +72,23 @@ def print_model(model: xspec.ModelDefinition,
         # sys.stderr.write(f"# Unsupported: {model.name} / {model.funcname}\n")
         return prev
 
-    # For the moment models that are calculated per-spectrum are unsupported.
+    # Identify, with a comment, the per-spectrum models.
+    #
     try:
-        if model.flags[1] == 1:
-            return prev
+        per_spectrum = model.flags[1] == 1
     except IndexError:
-        pass
+        per_spectrum = False
 
     # If we have changed "type" then print a new line
     if prev is not None and prev != model.modeltype:
         print("")
 
     # Add in the model name as a comment
-    print(f"{code[0]:50s} // XS{model.name}")
+    label = f"XS{model.name}"
+    if per_spectrum:
+        label += " [per spectrum]"
+
+    print(f"{code[0]:50s} // {label}")
     return model.modeltype
 
 

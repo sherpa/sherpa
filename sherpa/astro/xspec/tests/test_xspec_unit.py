@@ -1742,10 +1742,19 @@ def test_model_can_send_spectrumnumber_indiv(clsname):
 
     from sherpa.astro import xspec
 
-    mdl = getattr(xspec, clsname)("tmp")
+    mdl1 = getattr(xspec, clsname)("tmp1")
+    mdl2 = getattr(xspec, clsname)("tmp2")
     egrid = np.arange(0.3, 0.4, 0.01)
-    # This fails
-    mdl(egrid[:-1], egrid[1:], spectrumNumber=2)
+
+    # Just check the answers are the same, so this doesn't really
+    # check that spectrumNumber is being used, instead it just checks
+    # that code won't fall over. We use different components to make
+    # sure we aren't just using the cache, rather than re-evaluating
+    # the model.
+    #
+    expected = mdl1(egrid[:-1], egrid[1:])
+    got = mdl2(egrid[:-1], egrid[1:], spectrumNumber=2)
+    assert got == pytest.approx(got)
 
 
 @requires_xspec
@@ -1757,15 +1766,24 @@ def test_model_can_send_spectrumnumber_indiv_con():
 
     from sherpa.astro import xspec
 
-    base = xspec.XSpowerlaw("tmp")
-    con = xspec.XScflux("tmp2")
-    mdl = con(base)
+    base1 = xspec.XSpowerlaw("tmp")
+    con1 = xspec.XScflux("tmp2")
+    mdl1 = con1(base1)
+
+    base2 = xspec.XSpowerlaw("tmp3")
+    con2 = xspec.XScflux("tmp4")
+    mdl2 = con2(base2)
+
     egrid = np.arange(0.3, 0.4, 0.01)
 
     # Does this send the argument to the wrapped model? There's no way
-    # to know when calling the actual XSPEC models.
+    # to know when calling the actual XSPEC models (without manually
+    # creating models), so this is just a check that we can add a
+    # spectrumNumber argument.
     #
-    mdl(egrid[:-1], egrid[1:], spectrumNumber=2)
+    expected = mdl1(egrid[:-1], egrid[1:])
+    got = mdl2(egrid[:-1], egrid[1:], spectrumNumber=2)
+    assert got == pytest.approx(expected)
 
 
 @requires_xspec
@@ -1788,6 +1806,9 @@ def test_model_can_send_spectrumnumber_combine():
     # called (relying on the test to change the index value of the
     # model components).
     #
+    # We use a non-standard default value for spectrumNumber to see
+    # what value we end up with.
+    #
     args = []
     def test(cls, pars, lo, hi, spectrumNumber=5):
         args.append((spectrumNumber, pars[0]))
@@ -1797,7 +1818,7 @@ def test_model_can_send_spectrumnumber_combine():
         args.append((spectrumNumber, "con"))
         return fluxes + pars[1]
 
-    class TestSpectrumNumber(xspec.XSAdditiveModel):
+    class TestSpectrumNumber(xspec.XSPerSpectrum, xspec.XSAdditiveModel):
         _calc = test
 
         def __init__(self, name="test"):
@@ -1805,7 +1826,7 @@ def test_model_can_send_spectrumnumber_combine():
             self.norm = Parameter(name, "norm", 1, 0, 1)
             super().__init__(name, (self.index, self.norm))
 
-    class TestConvSpectrumNumber(xspec.XSConvolutionKernel):
+    class TestConvSpectrumNumber(xspec.XSPerSpectrum, xspec.XSConvolutionKernel):
         _calc = testcon
 
         def __init__(self, name="test"):
@@ -1813,10 +1834,16 @@ def test_model_can_send_spectrumnumber_combine():
             self.con = Parameter(name, "con", 1, 0, 100)
             super().__init__(name, (self.index, self.con))
 
+    # pick a spectrum number that is not the default (1) and
+    # not the value used by test as its default (5). We also
+    # pick different values for the two models.
+    #
     m1 = TestSpectrumNumber("x1")
+    m1.spectrum = xspec.make_xsxflt(2)
     m1.index = 1
     m1.norm = 0.2
     m2 = TestSpectrumNumber("2")
+    m2.spectrum = xspec.make_xsxflt(3)
     m2.index = 2
     m2.norm = 0.4
 
@@ -1838,7 +1865,7 @@ def test_model_can_send_spectrumnumber_combine():
     assert y1 == pytest.approx([0.2, 0.2])
     assert len(args) == 1
     print(args)
-    assert args[0][0] == 5
+    assert args[0][0] == 2
     assert args[0][1] == pytest.approx(1)
 
     args.clear()
@@ -1871,15 +1898,16 @@ def test_model_can_send_spectrumnumber_combine():
     ycon = cmdl(elo, ehi, spectrumNumber=6)
     assert ycon == pytest.approx([10.6, 10.6])
 
-    # NOTE: these are not the answers we want, but test them so we know
-    #       when they change.
+    # The model evaluation will use the spectrum attributes for the
+    # models (so that's 2 and 3) and then we do not send in a value to
+    # the convolution model so that uses the default of 9.
     #
     assert len(args) == 3
-    assert args[0][0] == 5  # should be 6
+    assert args[0][0] == 2
     assert args[0][1] == pytest.approx(1)
-    assert args[1][0] == 5  # should be 6
+    assert args[1][0] == 3
     assert args[1][1] == pytest.approx(2)
-    assert args[2][0] == 9  # should be 6
+    assert args[2][0] == 9
     assert args[2][1] == "con"
 
 
@@ -1899,7 +1927,7 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
         args.append((spectrumNumber, pars[0]))
         return pars[1] * np.ones_like(lo)
 
-    class TestSpectrumNumber2(xspec.XSAdditiveModel):
+    class TestSpectrumNumber2(xspec.XSPerSpectrum, xspec.XSAdditiveModel):
         _calc = test
 
         def __init__(self, name="test"):
@@ -1907,7 +1935,11 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
             self.norm = Parameter(name, "norm", 1, 0, 1)
             super().__init__(name, (self.index, self.norm))
 
+    # pick a spectrum number that is not the default (1) and
+    # not the value used by test as its default (5).
+    #
     m1 = TestSpectrumNumber2("m1")
+    m1.spectrum = xspec.make_xsxflt(2)
     m1.norm = 0.5
     m1.index = 2
 
@@ -1928,7 +1960,7 @@ def test_model_can_send_spectrumnumber_combine_non_xspec():
     assert len(args) == 0
     y12 = comb12(elo, ehi)
     assert len(args) == 1
-    assert args[0][0] == 5
+    assert args[0][0] == 2
     assert args[0][1] == pytest.approx(2)
 
     args.clear()
@@ -2309,3 +2341,174 @@ def test_table_mod_mul_escale_redshift(make_data_path):
     tbl.redshift = 0
     tbl.escale = 2
     assert tbl(elo, ehi) == pytest.approx(MUL_TABLE_E2, rel=2e-6)
+
+
+@pytest.fixture
+def clear_xflt():
+    """Clears XFLT database, runs test, then clears database.
+
+    The test using this fixture must be labelled as
+        @requires_xspec
+
+    """
+
+    from sherpa.astro import xspec
+    xspec.clear_xsxflt()
+    yield
+    xspec.clear_xsxflt()
+
+
+@requires_xspec
+@pytest.mark.parametrize("badval", [0, -1, "1", 2.3])
+def test_make_xsxflt_error_checks(badval):
+    """Basic checks"""
+
+    from sherpa.astro import xspec
+    with pytest.raises(ValueError,
+                       match="^spectrumNumber must be "):
+        xspec.make_xsxflt(badval)
+
+
+@requires_xspec
+def test_next_xsxflt(clear_xflt):
+    """Basic checks."""
+
+    from sherpa.astro import xspec
+
+    S1 = xspec.next_xsxflt()
+    S2 = xspec.next_xsxflt()
+    assert S1.spectrumNumber == 1
+    assert S2.spectrumNumber == 2
+
+    S5 = xspec.make_xsxflt(5)
+    xspec.set_xsxflt(S5, {})
+
+    S3 = xspec.make_xsxflt(3)
+    xspec.set_xsxflt(S3, {})
+
+    S6 = xspec.next_xsxflt()
+    assert S6.spectrumNumber == 6
+
+
+@requires_xspec
+def test_xflt_can_clear_all(clear_xflt):
+    """Check clear_xsxflt() does something."""
+
+    from sherpa.astro import xspec
+
+    S1 = xspec.make_xsxflt(1)
+    S2 = xspec.make_xsxflt(2)
+    S3 = xspec.make_xsxflt(3)
+
+    xspec.set_xsxflt(S1, {"a": 23})
+    xspec.set_xsxflt(S3, {"b": 4.9})
+    assert len(xspec.get_xsxflt(S1)) == 1
+    assert len(xspec.get_xsxflt(S2)) == 0
+    assert len(xspec.get_xsxflt(S3)) == 1
+
+    xspec.clear_xsxflt()
+
+    # We check spectrumNumber 1, 2, and 3 just to make sure.
+    for i in range(1, 4):
+        assert len(xspec.get_xsxflt(xspec.make_xsxflt(i))) == 0
+
+
+@requires_xspec
+def test_xflt_can_clear_single(clear_xflt):
+    """We can clear a single spectrumNumber with an empty dict."""
+
+    from sherpa.astro import xspec
+
+    S1 = xspec.next_xsxflt()
+    S2 = xspec.next_xsxflt()
+    xspec.set_xsxflt(S1, {"a": 23, "b": 4.9})
+    xspec.set_xsxflt(S2, {"a": 23, "b": 4.9})
+
+    assert len(xspec.get_xsxflt(S1)) == 2
+    assert len(xspec.get_xsxflt(S2)) == 2
+
+    xspec.set_xsxflt(S2, {})
+
+    assert len(xspec.get_xsxflt(S1)) == 2
+    assert len(xspec.get_xsxflt(S2)) == 0
+
+
+@requires_xspec
+def test_xflt_can_get(clear_xflt):
+    """We can get the values we set.
+    It's not clear whether we should upper-case the keys, so check
+    that we do not change the case (this could be changed in the
+    future).
+    """
+
+    from sherpa.astro import xspec
+
+    S1 = xspec.next_xsxflt()
+    xspec.set_xsxflt(S1, {"CC": -1.2e-2, "aA": 23, "b": 4.9})
+
+    out = xspec.get_xsxflt(S1)
+    assert len(out) == 3
+    assert out["aA"] == pytest.approx(23)
+    assert out["b"] == pytest.approx(4.9)
+    assert out["CC"] == pytest.approx(-1.2e-2)
+
+
+@requires_xspec
+def test_xflt_can_get_xsxstate(clear_xflt):
+    """Check we return the XFLT data as part of the state"""
+
+    from sherpa.astro import xspec
+
+    S1 = xspec.make_xsxflt(1)
+    S2 = xspec.make_xsxflt(2)
+    S4 = xspec.make_xsxflt(4)
+
+    xspec.set_xsxflt(S4, {"CC": -1.2e-2, "aA": 23, "b": 4.9})
+    xspec.set_xsxflt(S2, {"FOO": 200})
+    xspec.set_xsxflt(S1, {})
+
+    state = xspec.get_xsstate()
+    assert "xflt" in state
+    xflt = state["xflt"]
+    assert len(xflt) == 3
+    keys = [s.spectrumNumber for s in xflt.keys()]
+    assert sorted(keys) == [1, 2, 4]
+
+    assert sorted(xflt[S1].keys()) == []
+    assert sorted(xflt[S2].keys()) == ["FOO"]
+    assert sorted(xflt[S4].keys()) == ["CC", "aA", "b"]
+
+    assert xflt[S2]["FOO"] == pytest.approx(200)
+    assert xflt[S4]["aA"] == pytest.approx(23)
+    assert xflt[S4]["b"] == pytest.approx(4.9)
+    assert xflt[S4]["CC"] == pytest.approx(-1.2e-2)
+
+
+@requires_xspec
+def test_xflt_can_set_xsxstate(clear_xflt):
+    """Check we set the XFLT data via the state."""
+
+    from sherpa.astro import xspec
+
+    # Set the XSFLT state to see what happens
+    S9 = xspec.make_xsxflt(9)
+    xspec.set_xsxflt(S9, {"TMP": 2000})
+
+    S1 = xspec.make_xsxflt(1)
+    S2 = xspec.make_xsxflt(2)
+    S4 = xspec.make_xsxflt(4)
+
+    xflt = {S4: {"CC": -1.2e-2, "aA": 23, "b": 4.9},
+            S2: {"FOO": 200},
+            S1: {}}
+    xspec.set_xsstate({"xflt": xflt})
+
+    assert xspec.get_xsxflt(S1) == {}
+    assert xspec.get_xsxflt(S2) == {"FOO": 200}
+    assert xspec.get_xsxflt(S4) == {"b": 4.9, "aA": 23, "CC": -1.2e-2}
+
+    # What about the previous setting?
+    assert xspec.get_xsxflt(S9) == {}
+
+    # And this is an unknown record
+    assert xspec.get_xsxflt(xspec.make_xsxflt(3)) == {}

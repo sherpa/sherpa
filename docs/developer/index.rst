@@ -508,7 +508,7 @@ noted as not being supported::
 
 
   class XSwdem(XSAdditiveModel):
-      """XSPEC AdditiveModel: wdem
+      """The XSPEC wdem model
 
       Parameters
       ----------
@@ -777,8 +777,10 @@ available.
       build Sherpa: the compiler should fail with an indication of
       what symbol names are missing.
 
-      .. note:: Ideally we would have a sensible ordering for the declarations in this
-		file, but at present it is ad-hoc.
+      .. note:: The idea is to match the ordering of the ``model.dat`` file,
+		to make it easier to spot additions and changes, but that
+		may be difficult to do once model definitons change in a
+	        new XSPEC version.
 
    b. ``sherpa/astro/xspec/__init__.py``
 
@@ -868,6 +870,9 @@ and abort the commit so that you can manually check before committing again.
 To use this opt-in functionality, simply copy the file to the appropriate location::
 
   cp scripts/pre-commit .git/hooks
+
+.. note:: The script has problems if dates are expressed as a range, rather
+          than per year.
 
 Notes
 =====

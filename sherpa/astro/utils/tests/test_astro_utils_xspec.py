@@ -421,7 +421,7 @@ kT      keV     1.    0.008   0.008   64.0      64.0      .01
 
     expected = '''
 class XSapec(XSAdditiveModel):
-    """XSPEC AdditiveModel: apec
+    """The XSPEC apec model
 
     Parameters
     ----------
@@ -497,7 +497,7 @@ nH      cm^-3   1.0   1.e-6  1.e-5  1.e19  1.e20   -0.01
 
     expected = '''
 class XSabcd(XSMultiplicativeModel):
-    """XSPEC MultiplicativeModel: abcd
+    """The XSPEC abcd model
 
     Parameters
     ----------
@@ -565,7 +565,7 @@ order    " "  -1.   -3.    -3.      -1.       -1.       -1
 
     expected = '''
 class XSrgsxsrc(XSConvolutionKernel):
-    """XSPEC ConvolutionKernel: rgsxsrc
+    """The XSPEC rgsxsrc model
 
     Parameters
     ----------
@@ -631,7 +631,7 @@ xs   ""    10    1 2  20 30  0.01
     expected = '''import warnings
 
 class XSabcd(XSAdditiveModel):
-    """XSPEC AdditiveModel: abcd
+    """The XSPEC abcd model
 
     Parameters
     ----------
@@ -640,6 +640,8 @@ class XSabcd(XSAdditiveModel):
 
     """
     _calc = _models.foos
+
+    per_spectrum = True
 
     def __init__(self, name='abcd'):
         self.xs = XSParameter(name, 'xs', 10.0, min=2.0, max=20.0, hard_min=1.0, hard_max=30.0)
@@ -705,7 +707,7 @@ xs   ""    10    1 2  20 30  0.01
     expected = '''import warnings
 
 class XSabcd(XSAdditiveModel):
-    """XSPEC AdditiveModel: abcd
+    """The XSPEC abcd model
 
     Parameters
     ----------

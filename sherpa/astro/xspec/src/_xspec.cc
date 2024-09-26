@@ -358,6 +358,98 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
 }
 
+// XFLT functions
+//
+//      static int getNumberXFLT(int ifl);
+//      // This will throw a silent YellowAlert if map corresponding to ifl doesn't exist.
+//      static const std::map<string, Real>& getAllXFLT(int ifl);
+//      static bool inXFLT(int ifl, int i);
+//      static bool inXFLT(int ifl, string skey);
+//      static double getXFLT(int ifl, int i);
+//      static double getXFLT(int ifl, string skey);
+//      static void loadXFLT(int ifl, const std::map<string, Real>& values);
+//      static void clearXFLT();
+//
+// We use a dictionary interface - that is we set and get dictionaries
+// rather than have commands work on individual keys. That is,
+// checks like inXFLT have to be done by the user on the data returned
+// by these routines.
+//
+static PyObject* clearXFLT( PyObject *self )
+{
+  FunctionUtility::clearXFLT();
+  Py_RETURN_NONE;
+}
+
+static PyObject* getAllXFLT( PyObject *self, PyObject *args )
+{
+  int spectrumNumber = 1;
+
+  if ( !PyArg_ParseTuple( args, (char*)"i", &spectrumNumber ) )
+    return NULL;
+
+  PyObject *d = PyDict_New();
+
+  // Check that we have data, to avoid a YellowAlert when calling
+  // getAllXFLT.
+  //
+  if (FunctionUtility::getNumberXFLT(spectrumNumber) > 0) {
+    const std::map<string, Real> xflt = FunctionUtility::getAllXFLT(spectrumNumber);
+
+    // This would be nicer if we could assume C++11 (or C++17).
+    //
+    std::map<string, Real>::const_iterator item;
+    for (item = xflt.begin(); item != xflt.end(); ++item) {
+      PyObject *value = PyFloat_FromDouble(item->second);
+      PyDict_SetItemString(d, item->first.c_str(), value);
+      Py_DECREF(value);
+    }
+  }
+
+  return d;
+}
+
+static PyObject* loadXFLT( PyObject *self, PyObject *args )
+{
+  PyObject *xflt_dict = NULL;
+  int spectrumNumber = 1;
+
+  if ( !PyArg_ParseTuple( args, (char*)"iO!",
+			  &spectrumNumber,
+			  &PyDict_Type, &xflt_dict
+			  ) )
+    return NULL;
+
+  std::map<string, Real> xflt;
+
+  PyObject *key, *value;
+  Py_ssize_t pos = 0;
+
+  while (PyDict_Next(xflt_dict, &pos, &key, &value)) {
+
+    const char *k = PyUnicode_AsUTF8(key);
+    if (k == NULL) {
+	PyErr_SetString( PyExc_ValueError,
+			 (char*)"keys must be strings" );
+	return NULL;
+    }
+
+    double v = PyFloat_AsDouble(value);
+    if (v == -1 && PyErr_Occurred()) {
+	PyErr_SetString( PyExc_ValueError,
+			 (char*)"values must be numbers" );
+	return NULL;
+    }
+
+    xflt[k] = v;
+  }
+
+  // We do not check if xflt is empty.
+  FunctionUtility::loadXFLT(spectrumNumber, xflt);
+  Py_RETURN_NONE;
+}
+
+
 template <const std::string& get()>
 static PyObject* get_xspec_string( PyObject *self ) {
   return Py_BuildValue( (char*)"s", get().c_str() );
@@ -395,6 +487,12 @@ static PyMethodDef XSpecMethods[] = {
   FCTSPEC(set_xsxsect, set_cross),
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
+
+  // XFLT commands
+  NOARGSPEC(clear_xflt, clearXFLT),
+  FCTSPEC(get_xflt, getAllXFLT),
+  FCTSPEC(set_xflt, loadXFLT),
+
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
   FCTSPEC(set_xspath_manager, set_manager_data_path),
@@ -578,6 +676,7 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C_NORM(C_sedov, 6),                // XSsedov
   XSPECMODELFCT_C_NORM(C_sirf, 10),                // XSsirf
   XSPECMODELFCT_C_NORM(slimbbmodel, 10),           // XSslimbh
+  XSPECMODELFCT_C_NORM(xsmaug, 23),                // XSsmaug [per spectrum]
   XSPECMODELFCT_C_NORM(C_snapec, 7),               // XSsnapec
   XSPECMODELFCT_NORM(srcut, 3),                    // XSsrcut
   XSPECMODELFCT_NORM(sresc, 3),                    // XSsresc
@@ -667,6 +766,11 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(xsabsp, 2),                        // XSpcfabs
   XSPECMODELFCT(xsphab, 1),                        // XSphabs
   XSPECMODELFCT(xsplab, 2),                        // XSplabs
+#ifdef XSPEC_12_12_1
+  XSPECMODELFCT_C(C_polconst, 2),                  // XSpolconst [per spectrum]
+  XSPECMODELFCT_C(C_pollin, 4),                    // XSpollin [per spectrum]
+  XSPECMODELFCT_C(C_polpow, 4),                    // XSpolpow [per spectrum]
+#endif
   XSPECMODELFCT_C(C_xspwab, 3),                    // XSpwab
   XSPECMODELFCT(xscred, 1),                        // XSredden
   XSPECMODELFCT(xssmdg, 4),                        // XSsmedge

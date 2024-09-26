@@ -37,7 +37,7 @@ from sherpa.utils.err import ParameterErr
 #    '(XSConvolutionKernel)'
 # in `xspec/__init__.py`
 #
-XSPEC_MODELS_COUNT = 281
+XSPEC_MODELS_COUNT = 285
 
 # Conversion between wavelength (Angstrom) and energy (keV)
 # The values used are from sherpa/include/constants.hh
@@ -732,7 +732,7 @@ def test_evaluate_xspec_model(modelcls):
     which did not happen when they were all stuck in the same test function.
 
     Convolution models are skipped (easier to filter out here given the
-    current design).
+    current design), as are models which require XFLT keywords.
     """
 
     from sherpa.astro import xspec
@@ -740,6 +740,10 @@ def test_evaluate_xspec_model(modelcls):
     # use an identifier in case there is an error
     mdl = modelcls()
     if isinstance(mdl, xspec.XSConvolutionKernel):
+        return
+
+    # skip the models that need XFLT keywords
+    if mdl.per_spectrum:
         return
 
     elo, ehi, wlo, whi = make_grid()
@@ -768,6 +772,9 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     some models are implemented make this a tricky test to
     write (due to numerical tolerances), as bins at the
     edges may not match well.
+
+    Convolution models are skipped (easier to filter out here given the
+    current design), as are models which require XFLT keywords.
     """
 
     from sherpa.astro import xspec
@@ -775,6 +782,10 @@ def test_evaluate_xspec_model_noncontiguous2(modelcls):
     # use an identifier in case there is an error
     mdl = modelcls()
     if isinstance(mdl, xspec.XSConvolutionKernel):
+        return
+
+    # skip the models that need XFLT keywords
+    if mdl.per_spectrum:
         return
 
     elo, ehi, wlo, whi = make_grid_noncontig2()
