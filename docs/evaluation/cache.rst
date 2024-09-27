@@ -56,9 +56,9 @@ to look up a value in the `_cache` dictionary. If it exists then the
 stored value is returned, otherwise the model is evaluated and added
 to the `_cache` dictionary. In order to keep the cache size small, the
 `_queue` array is used to remove an existing value from the store when
-a new value is added. The default size for the `_queue` array is
-a single value, but it can be changed by
-:ref:`the startup method <startup-modelcacher1d>`.
+a new value is added. The size for the `_queue` array is set to
+:py:attr:`~sherpa.models.model.ArithmeticModel.cache` elements (the
+default value for this attribute is 5).
 
 .. _startup-modelcacher1d:
 
@@ -68,9 +68,8 @@ The startup method
 The model :py:meth:`~sherpa.models.model.ArithmeticModel.startup`
 method is automatically called by the :py:meth:`~sherpa.fit.Fit.fit`
 method, but can also be called manually. It sets the `_use_caching`
-attribute and sets the `_queue` array to have
-:py:attr:`~sherpa.models.model.ArithmeticModel.cache` elements (the
-default value for this attribute is 5).
+attribute.
+
 
 Although the default value for the `cache` argument to `startup` is
 set to `False`, the `sherpa.fit.evaluates_model` decorator - which
