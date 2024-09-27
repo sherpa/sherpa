@@ -62,6 +62,7 @@ def combine_years(list_years: list[int]) -> str:
     This combines consecutive years into ranges, e.g. [2010, 2011, 2012]
     becomes "2010-2012".
     '''
+    list_years = list(set(list_years))
     list_years.sort()
     combined = []
     start = list_years[0]
@@ -102,7 +103,7 @@ if __name__ == '__main__':
                     list_years.append(year)
                     changed = 1
                     print(m.group('comment') +
-                          '  Copyright (C) ' + combine_years(list_years), end='')
+                          '  Copyright (C) ' + combine_years(list_years), end='\n')
                     # sometimes group institution will be empty, because it's
                     # on the next text line. If not, move it there.
                     if m.group('institution'):
