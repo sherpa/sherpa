@@ -473,9 +473,11 @@ def modelCacher1d(func: Callable) -> Callable:
         vals = func(cls, pars, xlo, *args, **kwargs)
 
         # remove first item in queue and remove from cache
+        # if cache is reaching max size.
         queue = cls._queue
-        key = queue.pop(0)
-        cache.pop(key, None)
+        if len(queue) >= cls.cache:
+            key = queue.pop(0)
+            cache.pop(key, None)
 
         # append newest model values to queue
         queue.append(digest)
@@ -1400,8 +1402,7 @@ class ArithmeticModel(Model):
 
     def cache_clear(self) -> None:
         """Clear the cache."""
-        # It is not obvious what to set the queue length to
-        self._queue = ['']
+        self._queue = []
 
         self._cache: dict[bytes, np.ndarray] = {}
         self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
@@ -1498,20 +1499,12 @@ class ArithmeticModel(Model):
         return NotImplemented
 
     def __setstate__(self, state):
-        self.__dict__.update(state)
-
+        # In case old pickle files do not have cache info
+        self.cache_clear()
         if '_use_caching' not in state:
             self.__dict__['_use_caching'] = True
 
-        if '_queue' not in state:
-            self.__dict__['_queue'] = ['']
-
-        if '_cache' not in state:
-            self.__dict__['_cache'] = {}
-            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'check': 0}
-
-        if 'cache' not in state:
-            self.__dict__['cache'] = 5
+        self.__dict__.update(state)
 
     def __getitem__(self, filter):
         return FilterModel(self, filter)
@@ -1522,7 +1515,7 @@ class ArithmeticModel(Model):
         if int(self.cache) <= 0:
             return
 
-        self._queue = [''] * int(self.cache)
+        self._queue = []
         frozen = np.array([par.frozen for par in self.pars], dtype=bool)
         if len(frozen) > 0 and frozen.all():
             self._use_caching = cache
