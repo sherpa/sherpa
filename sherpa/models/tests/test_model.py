@@ -949,6 +949,23 @@ def test_evaluate_cache1d():
     check_cache(mdl, expected, xgrid)
 
 
+def test_cache_is_actually_used():
+    """Most other test check that the cache has values in it,
+    but not that those values are actually returned."""
+    xgrid = numpy.arange(2, 10, 1.5)
+
+    mdl = Polynom1D()
+    assert len(mdl._cache) == 0
+
+    # Check the default values
+    expected = numpy.ones(6)
+    assert mdl(xgrid) == pytest.approx(expected)
+
+    # Manipulate the values in the cache
+    mdl._cache[list(mdl._cache.keys())[0]] = 2 * expected
+    assert mdl(xgrid) == pytest.approx(2 * expected)
+
+
 def test_evaluate_no_cache1dint():
     """Check we can turn off caching: 1dint"""
 
