@@ -24,19 +24,20 @@
 
 """
 
-from typing import Optional
+from typing import Callable, Optional
 
 import numpy as np
 
 from sherpa.astro import hc, charge_e
 from sherpa.utils import filter_bins
-from sherpa.utils.err import IOErr, DataErr
+from sherpa.utils.err import DataErr, IOErr
 from sherpa.utils import guess
 from sherpa.utils.guess import ValueAndRange, get_position
+from sherpa.utils.types import ArrayType
 
-from ._utils import arf_fold, do_group, expand_grouped_mask, \
+from ._utils import arf_fold, expand_grouped_mask, \
     filter_resp, is_in, rmf_fold, shrink_effarea
-from ._pileup import apply_pileup
+from ._pileup import apply_pileup    # type: ignore
 
 
 __all__ = ('arf_fold', 'rmf_fold', 'do_group', 'apply_pileup',
@@ -1068,3 +1069,142 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
         return kcorr[0]
 
     return kcorr
+
+
+# Grouping code
+#
+def do_group(data: ArrayType,
+             group: ArrayType,
+             name: Callable | str
+             ) -> np.ndarray:
+    """Group the array using OGIP standards.
+
+    Parameters
+    ----------
+    data : array_like
+        The data to group.
+    group : array_like
+        The OGIP grouping data: 1 indicates the start of a group and
+        -1 continues the group.
+    name : {'sum', '_sum_sq', '_max', '_min', '_middle', '_make_groups'}
+        The grouping scheme to combine values within a group.
+
+    Returns
+    -------
+    grouped : array
+        The grouped data. It will be smaller than data unless group only
+        contains 1's.
+
+    Examples
+    --------
+
+    Group the array [1, 2, 3, 4, 5, 6] into groups of length 2, 1, and 3,
+    using different grouping schemes:
+
+    >>> data = [1, 2, 3, 4, 5, 6]
+    >>> group = [1, -1, 1, 1, -1, -1]
+    >>> do_group(data, group, '_make_groups')
+    [1, 2, 3]
+    >>> do_group(data, group, 'sum')
+    [3, 3, 15]
+    >>> do_group(data, group, '_min')
+    [1, 3, 4]
+    >>> do_group(data, group, '_max')
+    [2, 3, 6]
+    >>> do_group(data, group, '_middle')
+    [1.5, 3. , 5. ]
+
+    """
+
+    # Match the 4.17.0 error message behaviour:
+    # - check length
+    # - check name is valid
+    # - return [] if empty
+    #
+    if len(data) != len(group):
+        raise TypeError(f"input array sizes do not match, data: {len(data)} vs group: {len(group)}")
+
+    # How do we combine the data.
+    #
+    if isinstance(name, str):
+        if name == "sum":
+            combine = np.sum
+        elif name == "_sum_sq":
+            combine = lambda x: np.sqrt(np.sum(x * x))
+        elif name == "_max":
+            combine = np.max
+        elif name == "_min":
+            combine = np.min
+        elif name == "_middle":
+            combine = lambda x: (np.min(x) + np.max(x)) / 2.0
+        elif name == "_make_groups":
+            combine = None
+            pass
+        else:
+            # match 4.17.0 error
+            raise ValueError(f"unsupported group function: {name}")
+
+    elif callable(name):
+        # Assume it has the correct signature so if it doesn't it's
+        # the caller's problem to deal with.
+        #
+        combine = name
+
+    else:
+        raise ArgumentTypeErr("name must be a string or a callable")
+
+    # If there's no data it's easy.
+    #
+    if len(data) == 0:
+        return np.asarray([])
+
+    # Process the grouping data with a simple state machine.  It
+    # starts with "start", where the next element must be 0 or >1. If
+    # it is 0 then the state becomes "not in a group", which can only
+    # be followed by 0 or > 1. If it is >1 then the state is "in a
+    # group", which can be followed by 0, >1, or <-1). These
+    # states map to:
+    #    "start" -> 0,  "not in a group" -> 1, "in a group" -> 2.
+    #
+    # The last element of the ranges array represents the
+    # current range.
+    #
+    ranges = [[0, None]]
+    state = 0
+    for idx, grpval in enumerate(group):
+
+        if grpval < 0:
+            if state != 2:
+                # What did 4.17.0 do here?
+                raise DataErr(f"{grpval} is not valid at index {idx}")
+
+            state = 2
+            continue
+
+        # This is a new "group", so we need to add the previous
+        # group, unless we are in the "start" state.
+        #
+        if state != 0:
+            ranges[-1][1] = idx
+            ranges.append([idx, None])
+
+        if grpval == 0:
+            state = 1
+        else:
+            state = 2
+
+    ranges[-1][1] = len(group)
+
+    # Group the data.
+    #
+    if combine is None:
+        # This is _make_groups
+        return data[0] + np.arange(len(ranges))
+
+    out = []
+    dvals = np.asarray(data)
+    for start_idx, end_idx in ranges:
+        vals = dvals[start_idx:end_idx]
+        out.append(combine(vals))
+
+    return np.asarray(out)
