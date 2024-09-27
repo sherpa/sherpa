@@ -29,23 +29,22 @@ When is the cache useful?
 =========================
 
 At present most 1D models use the cache by default when evaluated
-normally, but not during a fit. It is intended to improve fit
-performance - that is, reduce the time taken to fit a dataset - but
-there has been limited effort to evaluate its efficiency.
+during a fit, but not when evaluated separately (e.g. on the command
+line by hand). It is intended to improve fit performance, but the actual
+time saved depends on the model and the data being fit.
 
 Can I turn off this behavior?
 =============================
 
-The `_use_caching` attribute of a model can be set to `False` to stop
-the cache behavior. This may be useful if you are evaluating models
-over a large grid, to save memory, or the model calculation is not
-expensive, and so the extra time used to store the result is not
-beneficial.
+The size of the cache for a specific model component called ``mdl`` can
+be set to zero (``mdl.cache=0``) to turn off the cache behavior.
+This may be useful if you are evaluating models over a large grid,
+to save memory. For a composite model (e.g. a sum of models) you need
+to set the cache for each component.
 
-Note that the :ref:`the startup method <startup-modelcacher1d>` can
-change this value, but it depends if you are calling `startup`
-directly or indirectly, via the ``fit`` and ``est_errors`` methods of
-a fit object.
+Alternatively, caching can be switched off for a specific
+fit call: ``f.fit(cache=False)``.
+
 
 How does the cache work?
 ========================
@@ -63,7 +62,7 @@ default value for this attribute is 5).
 .. _startup-modelcacher1d:
 
 The startup method
-==================
+------------------
 
 The model :py:meth:`~sherpa.models.model.ArithmeticModel.startup`
 method is automatically called by the :py:meth:`~sherpa.fit.Fit.fit`
@@ -82,7 +81,7 @@ have to explicitly pass ``cache=False`` to the fit method::
     f.fit(cache=False)
 
 The teardown method
-===================
+-------------------
 
 The model :py:meth:`~sherpa.models.model.ArithmeticModel.teardown`
 method is run after the fit is done - to match `startup` - and

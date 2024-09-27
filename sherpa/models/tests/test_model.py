@@ -42,6 +42,7 @@ from sherpa.models.parameter import Parameter, hugeval, tinyval
 from sherpa.models.basic import Sin, Const1D, Box1D, LogParabola, Polynom1D, \
     Scale1D, Integrate1D, Gauss1D, \
     Const2D, Gauss2D, Scale2D, Poisson
+from sherpa.fit import Fit
 from sherpa.utils.err import ModelErr, ParameterErr
 
 
@@ -1156,6 +1157,72 @@ def test_cache_uses_instance_attributes(cls):
         assert hasattr(mdl, attr)
         if hasattr(cls, attr):
             assert id(getattr(mdl, attr)) != id(getattr(cls, attr))
+
+
+def test_cache_reset_when_size_changes():
+    """Check the cache is reset when the cache size changes."""
+
+    mdl = Polynom1D()
+    mdl.cache = 2
+    mdl._use_caching = True
+
+    x = numpy.arange(2, 10, 1.5)
+    mdl(x)
+
+    assert len(mdl._cache) == 1
+    assert mdl._cache_ctr['check'] == 1
+
+    mdl.cache = 3
+    assert len(mdl._cache) == 0
+    assert mdl._cache_ctr['check'] == 0
+
+    mdl(x)
+    assert len(mdl._cache) == 1
+    assert mdl._cache_ctr['check'] == 1
+
+
+def test_caching_not_used_when_set_to_zero():
+    """Check the cache is not used when the cache size is zero."""
+
+    mdl = Polynom1D()
+    mdl.cache = 0
+    mdl._use_caching = True
+
+    x = np.arange(2, 10, 1.5)
+    mdl(x)
+
+    assert len(mdl._cache) == 0
+    # We checked, but found nothing (because the cache is empty)
+    assert mdl._cache_ctr['check'] == 1
+
+
+def test_cache_not_used_in_fit():
+    """Check the cache is not used in a fit when `fit=False`.
+
+    How do we do that without relying too much on the internal
+    implementation?
+    """
+    mdl = Const1D('con1')
+    mdl.c0 = 1
+    dat = Data1D('data', numpy.arange(4), 2 * numpy.ones(4), numpy.ones(4))
+    fit = Fit(dat, mdl)
+    res = fit.fit()
+    assert mdl.c0.val == pytest.approx(2)
+    assert len(mdl._cache) == 5
+
+    mdl.cache_clear()
+    mdl.c0 = 1
+    res = fit.fit(cache=False)
+    assert mdl.c0.val == pytest.approx(2)
+    assert len(mdl._cache) == 0
+    # There are no values in the cache while in the case with cache=True (the default)
+    # there are, so presumably the cache was never used.
+
+    mdl.cache_clear()
+    mdl.c0 = 1
+    res = fit.fit(cache=True)
+    assert mdl.c0.val == pytest.approx(2)
+    assert len(mdl._cache) == 5
 
 
 def test_cache_integrate_fall_through_no_integrate():
