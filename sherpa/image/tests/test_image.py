@@ -216,6 +216,7 @@ def test_image_getregion(coordsys):
 
     # Use XPA to set a region in the imager
     imshape = 'image; circle 8.5 7.0 0.8'
+    im.xpaset('regions format ds9')
     im.xpaset('regions', data=imshape)
 
     rval = ds9_backend.get_region(coordsys)
