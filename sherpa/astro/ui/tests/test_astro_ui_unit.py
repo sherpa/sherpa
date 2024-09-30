@@ -218,7 +218,7 @@ def test_set_filter_mismatch(f, bid, clean_astro_ui):
     bkg = ui.DataPHA("bkg", np.asarray([1, 2, 3]), [1, 1, 0])
     ui.set_bkg(bkg)
     with pytest.raises(DataErr,
-                       match="size mismatch between independent axis and mask: 3 vs 2"):
+                       match="size mismatch between data and mask: 3 vs 2"):
         ui.set_filter(f, bkg_id=bid)
 
 
@@ -3383,8 +3383,8 @@ def test_pha_group_ignore_bad_group(caplog, clean_astro_ui):
     ui.group_counts(3)
     assert len(caplog.records) == 4
 
-    assert ui.get_dep(filter=False) == pytest.approx([5, 2, 4])
-    assert ui.get_dep(filter=True) == pytest.approx([5, 2, 4])
+    assert ui.get_dep(filter=False) == pytest.approx([5, 3, 4, 55])
+    assert ui.get_dep(filter=True) == pytest.approx([5, 3, 4, 55])
 
     r = caplog.records[3]
     assert r.name == "sherpa.ui.utils"
@@ -3417,8 +3417,8 @@ def test_pha_group_filter_ignore_bad_group(caplog, clean_astro_ui):
     ui.notice()
     assert len(caplog.records) == 5
 
-    assert ui.get_dep(filter=False) == pytest.approx([3.5, 3, 4, 55])
-    assert ui.get_dep(filter=True) == pytest.approx([3.5, 3, 4, 55])
+    assert ui.get_dep(filter=False) == pytest.approx([3.5, 4])
+    assert ui.get_dep(filter=True) == pytest.approx([3.5, 4])
 
     r = caplog.records[4]
     assert r.name == "sherpa.ui.utils"
