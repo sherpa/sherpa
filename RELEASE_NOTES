@@ -108,7 +108,7 @@ Details
 
 #2068 - CM-887: Updating macos gitlab runner images to version 12 and update the MacOS SDK to version 11.0
     This ups the actions macOS Intel version to 12, and updates the macOS SDK
-    to version 11.0, which it consistent with CIAO.
+    to version 11.0, which is consistent with CIAO.
 
 #2069 - Allow the tests to pass with NumPy 2.0
     Allow the tests to pass when using NumPy 2.0, as long as pytest-doctestplus
@@ -218,7 +218,7 @@ Details
     Fix up several typing annotations from a recent refactoring.
 
 #2133 - UI: add format and delim arguments to get_filter. 
-    Allow the get_filter call to over-ride the format and delim arguments. Fix
+    Allow the get_filter call to override the format and delim arguments. Fix
     #1277
 
 #2135 - Tests: tweak tolerances for macOS ARM #2135
@@ -334,7 +334,7 @@ Details
     Updates from running codespell on source distribution
 
 #1945 - Better error checks for table loads
-    Insure that table models are sent numeric columns, to catch cases like #1943.
+    Ensure that table models are sent numeric columns, to catch cases like #1943.
 
 #1946 - versioneer: update to version 0.29
     Update the vendored copy of versioneer from 0.28 to 0.29.
@@ -566,7 +566,7 @@ from NumPy
 
 #1791 - Tests: ensure repeatable test of get_draws
     Ensure tests of get_draws use a fixed seed to make the results 
-    reproducible. There is no functional changes in this commit.
+    reproducible. There are no functional changes in this commit.
 
 #1794 - docs: note requirement on ar for building Sherpa
     Add ar to the list of requirements for building Sherpa. Fix #1792
@@ -654,7 +654,7 @@ model
     files). Fix #1699, #1695, and #203.
 
 #1839 - ui: add get_plot_prefs/get_contour_prefs calls
-    Add the get_plot_prefs and get_contour_prefs call to simplify access to 
+    Add the get_plot_prefs and get_contour_prefs calls to simplify access to 
     the plot and contour preferences.
 
 #1840 - Fix #1828 - histogram plot issue
@@ -998,7 +998,7 @@ This release of Sherpa includes various enhancements, documentation updates,  bu
         * arrays sent to Data objects are now converted to ndarrays
         * the independent axis is now made read-only
         * the size of a data object is now fixed.
-    * Filter setting with notice/ignore are reported to the screen for the users of the UI layer.
+    * Filter settings with notice/ignore are reported to the screen for the users of the UI layer.
     * Increased test coverage for plotting
 * documentation changes:
     * updated readthedocs to use pip and pytest instead of setup.py
@@ -1135,7 +1135,7 @@ Details
 #1579 - Add back --python removed in #1566
     reinserts --python flag that was accidentally removed in #1566
 
-#1580 -add a versionchanged note for the fake_pha command
+#1580 -add a version changed note for the fake_pha command
     Update the documentation to note the change to fake_pha in #1567
 
 #1585 - Tests: work around matplotlib 3.6.0 warning
