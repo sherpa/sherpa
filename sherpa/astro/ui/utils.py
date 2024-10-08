@@ -1856,8 +1856,8 @@ class Session(sherpa.ui.utils.Session):
         axis, the asymmetric errors ``elo`` and ``ehi``. ``elo`` and ``ehi``
         assumed to be positive values. They are used to calculate ``staterror`` for
         ``fit`` with ``chi2`` statistics. Note that ``set_stat`` will not
-        impact the statistics values for the fitting this type of data and 
-        ``fit`` will always use ``staterror`` in this case. ``resample_data`` 
+        impact the statistics values for the fitting this type of data and
+        ``fit`` will always use ``staterror`` in this case. ``resample_data``
         will assume ``set_stat`` setting in calculating the statistics for bootstrap
         sampling.
 
@@ -16641,7 +16641,7 @@ class Session(sherpa.ui.utils.Session):
 
         >>> show_xsabund()
         Solar Abundance Table:
-        angr  Anders E. & Grevesse N. Geochimica et Cosmochimica Acta 53, 197 (1989)
+        angr:  Anders E. & Grevesse N. Geochimica et Cosmochimica Acta 53, 197 (1989)
           H : 1.000e+00  He: 9.770e-02  Li: 1.450e-11  Be: 1.410e-11  B : 3.980e-10
           C : 3.630e-04  N : 1.120e-04  O : 8.510e-04  F : 3.630e-08  Ne: 1.230e-04
           Na: 2.140e-06  Mg: 3.800e-05  Al: 2.950e-06  Si: 3.550e-05  P : 2.820e-07
@@ -16665,12 +16665,10 @@ class Session(sherpa.ui.utils.Session):
             warning("XSPEC support is not available")
             return
 
-        # Very similar to the XSPEC "show abund" format, except that
-        # we do not have the "documentation" for the abundance table.
-        # This can be added but needs changes to the _xspec module.
+        # Very similar to the XSPEC "show abund" format.
         #
         lines = ["Solar Abundance Table:",
-                 f"{xspec.get_xsabund():4s}  {xspec.get_xsabund_doc()}",
+                 f"{xspec.get_xsabund():4s}:  {xspec.get_xsabund_doc()}",
                  ""]
 
         # Rely on get_xsbundances to be in order of atomic number.
