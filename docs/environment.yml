@@ -13,9 +13,10 @@ dependencies:
   - astropy
   - pip
   - graphviz
+  - sphinx<8.0
   - pip:
     - ipykernel
     - nbsphinx
     - sphinx-astropy
-    - sphinx_rtd_theme>=1.0.0
+    - sphinx_rtd_theme>=3.0.0
     - bokeh
