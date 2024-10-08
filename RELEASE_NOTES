@@ -277,6 +277,10 @@ Details
     Ignore the deprecation warnings about the use of the fork method for 
     multiprocessing.
 
+#2177 - Read the Docs build failures with newer sphinx versions and sphinx_rtd_theme deprecation warning
+    Specify sphinx < 8 for the read the doc environment and remove the call
+    to get_html_theme_path no longer needed.
+
 
 Sherpa 4.16.1
 =============
