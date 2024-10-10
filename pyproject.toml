@@ -40,6 +40,21 @@ test = [
   "pytest>=8.0"
 ]
 
+# This is not a complete list, but that's because the doc build
+# needs non-python packages such as pandoc and graphviz
+doc = [
+  # code needed for the documentation
+  "sphinx>=5,<8",
+  "sphinx_rtd_theme>=3.0.0",
+  "sphinx-astropy",
+  "nbsphinx",
+  "ipykernel",
+  # code needed to run the documentation tests
+  "astropy",
+  "matplotlib",
+  "bokeh"
+]
+
 [project.urls]
 Homepage = "https://cxc.harvard.edu/sherpa/"
 Documentation = "https://sherpa.readthedocs.io/"

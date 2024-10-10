@@ -13,7 +13,7 @@ dependencies:
   - astropy
   - pip
   - graphviz
-  - sphinx<8.0
+  - sphinx>=5.0,<8.0
   - pip:
     - ipykernel
     - nbsphinx
