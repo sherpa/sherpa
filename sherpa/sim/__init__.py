@@ -722,9 +722,9 @@ class MCMC(NoNewAttributesAfterInit):
         def calc_stat(proposed_params):
 
             # automatic rejection outside hard limits
-            mins = sao_fcmp(proposed_params, thawedparmins, _tol)
-            maxes = sao_fcmp(thawedparmaxes, proposed_params, _tol)
-            if -1 in mins or -1 in maxes:
+            mins = thawedparmins <= proposed_params
+            maxs = proposed_params <= thawedparmaxes
+            if sum(mins) != dof or sum(maxs) != dof:
                 raise LimitError('Sherpa parameter hard limit exception')
 
             with SherpaVerbosity(logging.CRITICAL):

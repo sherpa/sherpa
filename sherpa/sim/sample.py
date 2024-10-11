@@ -148,7 +148,7 @@ class ParameterScaleVector(ParameterScale):
 
     """
 
-    def get_scales(self, fit, myscales=None):
+    def get_scales(self, fit, myscales=None, est_method_args=None):
         """Return the samples.
 
         Parameters
@@ -170,6 +170,9 @@ class ParameterScaleVector(ParameterScale):
 
         """
 
+        if est_method_args is None:
+            est_method_args = {}
+        
         scales = []
         thawedpars = [par for par in fit.model.pars if not par.frozen]
 
@@ -179,7 +182,8 @@ class ParameterScaleVector(ParameterScale):
 
             covar = Covariance()
             covar.config['sigma'] = self.sigma
-            fit.estmethod = Covariance()
+            covar.config.update(est_method_args)
+            fit.estmethod = covar
 
             try:
                 r = fit.est_errors()
@@ -196,6 +200,7 @@ class ParameterScaleVector(ParameterScale):
 
                     conf = Confidence()
                     conf.config['sigma'] = self.sigma
+                    conf.config.update(est_method_args)
                     fit.estmethod = conf
                     try:
                         t = fit.est_errors(parlist=(par,))
@@ -237,7 +242,7 @@ class ParameterScaleMatrix(ParameterScale):
 
     """
 
-    def get_scales(self, fit, myscales=None):
+    def get_scales(self, fit, myscales=None, **est_method_args):
         """Return the samples.
 
         Parameters
@@ -263,6 +268,7 @@ class ParameterScaleMatrix(ParameterScale):
         if myscales is None:
             oldestmethod = fit.estmethod
             fit.estmethod = Covariance()
+            fit.estmethod.config.update(est_method_args)
 
             try:
                 r = fit.est_errors()
@@ -414,7 +420,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
     but the upper bound is not).
     """
 
-    def get_sample(self, fit, *, factor=4, num=1, rng=None):
+    def get_sample(self, fit, *, factor=4, num=1, rng=None, est_method_args=None):
         """Return the parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -444,7 +450,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
         """
         vals = numpy.array(fit.model.thawedpars)
-        scales = self.scale.get_scales(fit)
+        scales = self.scale.get_scales(fit, est_method_args=est_method_args)
         size = int(num)
         samples = [random.uniform(rng,
                                   val - factor * abs(scale),
@@ -464,7 +470,7 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
     """
 
-    def get_sample(self, fit, *, myscales=None, num=1, rng=None):
+    def get_sample(self, fit, *, myscales=None, num=1, rng=None, est_method_args=None):
         """Return the parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -494,7 +500,7 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
         """
         vals = numpy.array(fit.model.thawedpars)
-        scales = self.scale.get_scales(fit, myscales)
+        scales = self.scale.get_scales(fit, myscales, est_method_args=est_method_args)
         size = int(num)
 
         samples = [random.normal(rng, val, scale, size=size)
@@ -512,7 +518,7 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, mycov=None, num=1, rng=None):
+    def get_sample(self, fit, *, mycov=None, num=1, rng=None, est_method_args=None):
         """Return the parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -542,7 +548,7 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
         """
         vals = numpy.array(fit.model.thawedpars)
-        cov = self.scale.get_scales(fit, mycov)
+        cov = self.scale.get_scales(fit, mycov, est_method_args=est_method_args)
         return random.multivariate_normal(rng, vals, cov, size=int(num))
 
 
@@ -556,7 +562,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, dof, num=1, rng=None):
+    def get_sample(self, fit, *, dof, num=1, rng=None, est_method_args=None):
         """Return the parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -585,7 +591,7 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
         """
         vals = numpy.array(fit.model.thawedpars)
-        cov = self.scale.get_scales(fit)
+        cov = self.scale.get_scales(fit, est_method_args=None)
         return multivariate_t(vals, cov, dof, int(num), rng=rng)
 
 
