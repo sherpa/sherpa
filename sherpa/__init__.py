@@ -843,7 +843,7 @@ def get_include() -> str:
 def get_config() -> str:
     "Get the path for the installed Sherpa configuration file"
 
-    filename = "sherpa-standalone.rc"
+    filename = "sherpa.rc"
 
     # The behavior depends on whether the NOSHERPARC
     # environment variable is set.
