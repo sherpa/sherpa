@@ -458,19 +458,26 @@ additional packages:
   for including Jupyter notebooks
 * `Graphviz <https://www.graphviz.org/>`_ (for the inheritance diagrams)
 
-With these installed, the documentation can be built by saying::
+The easiset way to install the Python packages is to install the ``doc``
+option with::
 
-    cd docs
-    make html
+  pip install .[doc]
 
-Note that this uses the installed version of sherpa, so if you want to make
-sure the current repository version is used, you will need to install it with e.g.::
+This also ensures that Sherpa has been built, as this is needed to
+build the documentation.
 
-    pip install -e .
+If conda is being used then the other packages can be installed with::
 
-before changing to the docs directory. Only very specific modules are mocked out
-because they are hard to build and are not needed for the documentation build
-(currently ds9 and XSPEC).
+  conda install -c conda-forge pandoc graphviz
+
+With these installed, the documentation can be built::
+
+  cd docs
+  make html
+
+Only very specific modules are mocked out because they are hard to
+build and are not needed for the documentation build (currently ds9
+and XSPEC).
 
 The documentation should be placed in ``docs/_build/html/index.html``.
 
