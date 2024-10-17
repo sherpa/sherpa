@@ -285,10 +285,12 @@ hopefully saving time at the expense of using more memory. This is
 most effective when the same model is used with multiple datasets
 which all have the same grid.
 
-The `_use_caching` attribute of the model is used to determine whether
-the cache is used, but this setting can be over-ridden by the startup
-method, which is automatically called by the fit and est_errors
-methods of a `sherpa.fit.Fit` object.
+The `cache` attribute of the model sets the maximum number of
+entries in a cache. Setting it to 0 disables caching for a model.
+If the cache is actually used is controlled by the `_use_caching`
+attribute of the model, but this setting can be over-ridden by the startup
+method, which is automatically called by the `~sherpa.fit.Fitfit`
+and `~sherpa.fit.Fit.est_errors` methods of a `sherpa.fit.Fit` object.
 
 The `cache_clear` and `cache_status` methods of the `ArithmeticModel`
 and `CompositeModel` classes allow you to clear the cache and display
@@ -421,7 +423,7 @@ def modelCacher1d(func: Callable) -> Callable:
 
         # Short-cut if the cache is not being used.
         #
-        if not cls._use_caching:
+        if cls.cache == 0 or not cls._use_caching:
             return func(cls, pars, xlo, *args, **kwargs)
 
         # Up until Sherpa 4.12.2 we used the kwargs to define the
@@ -473,9 +475,11 @@ def modelCacher1d(func: Callable) -> Callable:
         vals = func(cls, pars, xlo, *args, **kwargs)
 
         # remove first item in queue and remove from cache
+        # if cache is reaching max size.
         queue = cls._queue
-        key = queue.pop(0)
-        cache.pop(key, None)
+        if len(queue) >= cls.cache:
+            key = queue.pop(0)
+            cache.pop(key, None)
 
         # append newest model values to queue
         queue.append(digest)
@@ -1374,8 +1378,18 @@ def _make_binop(op: Callable, opstr: str) -> tuple[Callable, Callable]:
 class ArithmeticModel(Model):
     """Support combining model expressions and caching results."""
 
-    cache = 5
-    """The maximum size of the cache."""
+    @property
+    def cache(self) -> int:
+        """The number of entires in the cache.
+
+        Changing this value will clear the cache.
+        """
+        return self._cache_size
+
+    @cache.setter
+    def cache(self, val: int) -> None:
+        self._cache_size = val
+        self.cache_clear()
 
     def __init__(self,
                  name: str,
@@ -1383,18 +1397,24 @@ class ArithmeticModel(Model):
         self.integrate = True
 
         # Model caching ability
-        self.cache = 5  # repeat the class definition
-        self._use_caching = True  # FIXME: reduce number of variables?
-        self.cache_clear()
+        self.cache = 5  # sets all hidden parameters for the cache
+
         Model.__init__(self, name, pars)
 
     def cache_clear(self) -> None:
         """Clear the cache."""
-        # It is not obvious what to set the queue length to
-        self._queue = ['']
-
+        self._queue = []
         self._cache: dict[bytes, np.ndarray] = {}
         self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
+
+        # One might think that this could be a class attribute, but
+        # models like BinaryOpModel and UnaryOpModel are derived
+        # both from ArithmeticModel and CompositeModel.
+        # They are not supposed to have caching and they don't call
+        # AstroModel.__init__, so by setting this only in the __init__,
+        # we ensue they don't get this attribute.
+        if not hasattr(self, '_use_caching'):
+            self._use_caching = True
 
     def cache_status(self) -> None:
         """Display the cache status.
@@ -1430,20 +1450,12 @@ class ArithmeticModel(Model):
     __pow__, __rpow__ = _make_binop(np.power, '**')
 
     def __setstate__(self, state):
-        self.__dict__.update(state)
-
+        # In case old pickle files do not have cache info
+        self.cache_clear()
         if '_use_caching' not in state:
             self.__dict__['_use_caching'] = True
 
-        if '_queue' not in state:
-            self.__dict__['_queue'] = ['']
-
-        if '_cache' not in state:
-            self.__dict__['_cache'] = {}
-            self.__dict__['_cache_ctr'] = {'hits': 0, 'misses': 0, 'check': 0}
-
-        if 'cache' not in state:
-            self.__dict__['cache'] = 5
+        self.__dict__.update(state)
 
     def __getitem__(self, filter):
         return FilterModel(self, filter)
@@ -1454,7 +1466,7 @@ class ArithmeticModel(Model):
         if int(self.cache) <= 0:
             return
 
-        self._queue = [''] * int(self.cache)
+        self._queue = []
         frozen = np.array([par.frozen for par in self.pars], dtype=bool)
         if len(frozen) > 0 and frozen.all():
             self._use_caching = cache
