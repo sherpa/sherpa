@@ -4241,6 +4241,8 @@ class Session(NoNewAttributesAfterInit):
         -----
         The source expression is not removed by this function.
 
+        The routine does nothing if the given dataset does not exist.
+
         Examples
         --------
 
@@ -8836,7 +8838,8 @@ class Session(NoNewAttributesAfterInit):
 
     def _get_fit_obj(self,
                      store: Sequence[FitStore],
-                     estmethod, numcores=1
+                     estmethod,
+                     numcores=1
                      ) -> tuple[tuple[IdType, ...], Fit]:
         """Create the fit object given the data and models.
 

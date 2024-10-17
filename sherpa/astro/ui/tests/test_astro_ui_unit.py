@@ -3168,6 +3168,117 @@ def test_set_bkg_not_a_background(clean_astro_ui):
         ui.set_bkg(ui.Data1D("x", [1, 2], [1, 2]))
 
 
+@pytest.mark.parametrize("id", [None, 1, "x"])
+@pytest.mark.parametrize("bkg_id", [None, 1, "y"])
+def test_delete_bkg_no_data(id, bkg_id, clean_astro_ui):
+    """Check we can delete a background when nothing exists.
+
+    This just checks the code does not error out.
+    """
+
+    ui.delete_bkg(id, bkg_id)
+
+
+@pytest.mark.parametrize("id", [None, 1, "x"])
+@pytest.mark.parametrize("bkg_id", [None, 1, "y"])
+def test_delete_bkg_no_bkg(id, bkg_id, clean_astro_ui):
+    """Check we can delete a background when nothing exists.
+
+    This just checks the code does not error out.
+    """
+
+    idval = 1 if id is None else id
+    ui.load_arrays(idval, [1, 2], [2, 0], ui.DataPHA)
+    ui.delete_bkg(id, bkg_id)
+
+
+@pytest.mark.parametrize("id", [None, 1, "x"])
+@pytest.mark.parametrize("bkg_id", [None, 1, "y"])
+def test_delete_bkg_not_pha_error(id, bkg_id, clean_astro_ui):
+    """Trying to delete the background of a non-PHA dataset is an error."""
+
+    idval = 1 if id is None else id
+    ui.load_arrays(idval, [1, 2], [2, 0])
+    with pytest.raises(ArgumentErr,
+                       match=f"^data set {idval} does not contain PHA data"):
+        ui.delete_bkg(id, bkg_id)
+
+
+@pytest.mark.parametrize("id", [None, 1, "x"])
+@pytest.mark.parametrize("bkg_id", [None, 1, "y"])
+def test_delete_bkg(id, bkg_id, clean_astro_ui, caplog):
+    """Check we can delete a background."""
+
+    idval = 1 if id is None else id
+    bidval = 1 if bkg_id is None else bkg_id
+
+    x = np.arange(1, 11, dtype=np.int16)
+    ui.load_arrays(idval, x, x, ui.DataPHA)
+    bkg = ui.DataPHA("bkg", x, x)
+    ui.set_bkg(idval, bkg, bkg_id=bkg_id)
+
+    assert ui.list_bkg_ids(id) == [bidval]
+
+    ui.subtract(id)
+    assert ui.get_data(id).subtracted
+
+    ui.delete_bkg(id, bkg_id)
+    assert not ui.get_data(id).subtracted
+
+    # Check we get the message about the background subtracting state
+    # changing.
+    #
+    assert len(caplog.records) == 1
+    r = caplog.record_tuples[-1]
+    assert r[0] == "sherpa.astro.ui.utils"
+    assert r[1] == logging.INFO
+    assert r[2] == f"dataset {idval}: background subtraction has been removed"
+
+    # Check it errors out if we try to get the background.
+    #
+    with pytest.raises(IdentifierErr):
+        ui.get_bkg(id)
+
+
+@pytest.mark.parametrize("id", [None, 1, "x"])
+@pytest.mark.parametrize("bkg_id", [None, 1, "y"])
+def test_delete_bkg_component(id, bkg_id, clean_astro_ui, caplog):
+    """Check we can delete a background but the other background remains"""
+
+    idval = 1 if id is None else id
+    bidval = 1 if bkg_id is None else bkg_id
+
+    x = np.arange(1, 11, dtype=np.int16)
+    ui.load_arrays(idval, x, x, ui.DataPHA)
+    bkg = ui.DataPHA("bkg", x, x)
+    ui.set_bkg(idval, bkg, bkg_id=bkg_id)
+
+    bkg = ui.DataPHA("bkg", x, x)
+    ui.set_bkg(idval, bkg, bkg_id=2)
+
+    assert ui.list_bkg_ids(id) == [bidval, 2]
+
+    ui.subtract(id)
+    assert ui.get_data(id).subtracted
+
+    ui.delete_bkg(id, bkg_id)
+    assert ui.get_data(id).subtracted
+    assert ui.list_bkg_ids(id) == [2]
+
+    # Check no message.
+    #
+    assert len(caplog.records) == 0
+
+    # Check it errors out if we try to get the background.
+    #
+    with pytest.raises(IdentifierErr):
+        ui.get_bkg(id)
+
+    # But we can still get bkg_id=2
+    #
+    assert isinstance(ui.get_bkg(id, bkg_id=2), ui.DataPHA)
+
+
 @requires_fits
 @requires_data
 @requires_wcs  # only needed for physical / world
