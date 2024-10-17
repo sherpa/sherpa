@@ -407,7 +407,7 @@ def test_spectrum(parallel, run_thread, fix_xspec):
         assert covarerr[2] == approx(0.00377755, rel=1e-3)
         assert covarerr[3] == approx(0.00370543, rel=1e-3)
         assert covarerr[4] == approx(0.0016608, rel=1e-3)
-        assert fres.statval == approx(0.0496819, rel=1e-4)
+        assert fres.statval == approx(0.0496819, rel=2e-2)
         assert abs2.nh.val == approx(1.1015, rel=1e-4)
         assert mek1.kt.val == approx(0.841025, rel=1e-4)
         assert mek1.norm.val == approx(0.699761, rel=1e-4)

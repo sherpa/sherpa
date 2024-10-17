@@ -113,7 +113,8 @@ import numpy as np
 
 from sherpa.astro.utils import get_xspec_norm, get_xspec_position
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
-    CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
+    CompositeModel, Parameter, RegriddableModel1D
+from sherpa.models.cache import modelCacher1d, modelCacher1d_exp
 from sherpa.models.parameter import hugeval
 from sherpa.utils import bool_cast
 from sherpa.utils.err import ArgumentErr, IOErr, ParameterErr
@@ -14135,6 +14136,10 @@ class XScabs(XSMultiplicativeModel):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
         XSMultiplicativeModel.__init__(self, name, (self.nH,))
 
+    @modelCacher1d_exp(canonical_nh=[10.], nh_bound=[np.inf])
+    def calc(self, p, *args, **kwargs):
+        return XSMultiplicativeModel.calc.__wrapped__(self, p, *args, **kwargs)
+
 
 class XScyclabs(XSMultiplicativeModel):
     """The XSPEC cyclabs model: absorption line, cyclotron.
@@ -14859,6 +14864,11 @@ class XSphabs(XSMultiplicativeModel):
         self.nH = XSParameter(name, 'nH', 1., 0.0, 1.e5, 0.0, 1e6, units='10^22 atoms / cm^2')
         XSMultiplicativeModel.__init__(self, name, (self.nH,))
 
+    @modelCacher1d_exp(canonical_nh=[0.001, 10.], nh_bound=[0.5, np.inf])
+    def calc(self, p, *args, **kwargs):
+        return XSMultiplicativeModel.calc.__wrapped__(self, p, *args, **kwargs)
+
+
 
 class XSplabs(XSMultiplicativeModel):
     """The XSPEC plabs model: power law absorption.
@@ -15157,6 +15167,11 @@ class XSTBabs(XSMultiplicativeModel):
     def __init__(self, name='tbabs'):
         self.nH = XSParameter(name, 'nH', 1., 0., 1E5, 0.0, 1e6, units='10^22 atoms / cm^2')
         XSMultiplicativeModel.__init__(self, name, (self.nH,))
+
+    @modelCacher1d_exp(canonical_nh=[0.001, 1.], nh_bound=[0.1, np.inf])
+    def calc(self, p, *args, **kwargs):
+        return XSMultiplicativeModel.calc.__wrapped__(self, p, *args, **kwargs)
+
 
 
 class XSTBfeo(XSMultiplicativeModel):
