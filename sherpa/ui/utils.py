@@ -12533,7 +12533,7 @@ class Session(NoNewAttributesAfterInit):
 
     def get_source_components_plot(self,
                                    id: Optional[IdType] = None
-                                   ) -> Multiplot:
+                                   ) -> MultiPlot:
         """Return the data used by plot_source_components.
 
         .. versionadded:: 4.16.1
