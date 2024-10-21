@@ -99,9 +99,12 @@ def test_filter_basic(make_data_path):
     s2 = ui.calc_stat()
     assert s2 == pytest.approx(stats['bad'])
 
+    # Prior to 4.17.0 this removed the quality filter
     ui.notice(None, None)
+
     s3 = ui.calc_stat()
-    assert s3 == pytest.approx(stats['all'])
+    # assert s3 == pytest.approx(stats['all'])
+    assert s3 == pytest.approx(stats['bad'])
 
     ui.notice(0.5, 8.0)
     s4 = ui.calc_stat()
@@ -204,10 +207,10 @@ def test_filter_bad_ungrouped(make_data_path, clean_astro_ui, caplog):
     clc_filter(caplog, "dataset 1: 0.0073:14.9504 -> 0.0073:14.5416 Energy (keV)")
 
     assert ui.get_dep().shape == (1024, )
-    assert pha.quality_filter is None
 
     expected = np.ones(1024, dtype=bool)
     expected[996:1025] = False
+    assert pha.quality_filter == pytest.approx(expected)
     assert pha.mask == pytest.approx(expected)
 
     # At this point we've changed the mask array so Sherpa thinks

@@ -449,6 +449,8 @@ def _counts(data, lo, hi, func, *args):
     if data.ndim != 1:
         raise DataErr("wrongdim", data.name, 1)
 
+    # Should this routine drop or include "bad quality" values?
+    #
     lo, hi = bounds_check(lo, hi)
     old_mask = data.mask
     old_quality_filter = getattr(data, 'quality_filter', None)

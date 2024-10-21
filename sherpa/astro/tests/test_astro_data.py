@@ -3024,7 +3024,7 @@ def test_pha_mask_size_must_match_ungrouped():
     assert not data.grouped
 
     with pytest.raises(DataErr,
-                       match="size mismatch between independent axis and mask: 8 vs 3"):
+                       match="size mismatch between data and mask: 8 vs 3"):
         data.mask = [1, 0, 1]
 
 
