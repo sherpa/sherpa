@@ -789,17 +789,23 @@ class Filter:
 
         if mask is None:
             self.mask = not ignore
-        elif not ignore:
+            return
+
+        # mask is a ndarray at this point.
+        #
+        if not ignore:
             if self.mask is True:
                 self.mask = mask
             else:
                 self.mask |= mask
+
+            return
+
+        mask = np.invert(mask)
+        if self.mask is False:
+            self.mask = mask
         else:
-            mask = ~mask
-            if self.mask is False:
-                self.mask = mask
-            else:
-                self.mask &= mask
+            self.mask &= mask
 
 
 class BaseData(metaclass=ABCMeta):
