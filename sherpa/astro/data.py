@@ -3983,8 +3983,8 @@ It is an integer or string.
         by the source exposure time (if set). The final step is
         to divide by the number of background files used.
 
-        Example
-        -------
+        Examples
+        --------
 
         Calculate the background counts, per channel, scaled to match
         the source:
@@ -5885,8 +5885,8 @@ class DataIMGInt(DataIMG):
     header : dict
         The FITS header associated with the data to store meta data.
 
-    Example
-    -------
+    Examples
+    --------
     In this example, we first generate a 1000 (x,y) points from a 2D Gaussian.
     This could be, e.g., photons observed from a star. In x direction, the center
     of the Gaussian is at 1.2 and in y direction at 0.0. We then use

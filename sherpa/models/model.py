@@ -294,8 +294,8 @@ The `cache_clear` and `cache_status` methods of the `ArithmeticModel`
 and `CompositeModel` classes allow you to clear the cache and display
 to the standard output the cache status of each model component.
 
-Example
-=======
+Examples
+========
 
 The following class implements a simple scale model which has a single
 parameter (``scale``) which defaults to 1. It can be used for both
@@ -400,8 +400,8 @@ def modelCacher1d(func: Callable) -> Callable:
     not relevant for the model (as there's no easy way to find this
     out).
 
-    Example
-    -------
+    Examples
+    --------
 
     Allow `MyModel` model evaluations to be cached::
 
@@ -1174,8 +1174,8 @@ class CompositeModel(Model):
         Information on the cache - the number of "hits", "misses", and
         "requests" - is displayed at the INFO logging level.
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> mdl.cache_status()
          xsphabs.gal                size:    5  hits:   715  misses:   158  check=  873
@@ -1402,8 +1402,8 @@ class ArithmeticModel(Model):
         Information on the cache - the number of "hits", "misses", and
         "requests" - is displayed at the INFO logging level.
 
-        Example
-        -------
+        Examples
+        --------
 
         >>> pl.cache_status()
          powlaw1d.pl                size:    5  hits:   633  misses:   240  check=  873
