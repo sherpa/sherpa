@@ -1157,15 +1157,14 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     def get_indep(self,
                   filter: bool = False
-                  ) -> Union[tuple[np.ndarray, ...],
-                             tuple[None, ...]]:
+                  ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
         """Return the independent axes of a data set.
 
         Parameters
         ----------
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not.
 
         Returns
         -------
