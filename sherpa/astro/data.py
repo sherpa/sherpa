@@ -1000,7 +1000,9 @@ class DataARF(DataOgipResponse):
             self._lo = self.energ_lo[bin_mask]
             self._hi = self.energ_hi[bin_mask]
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
         return (self._lo, self._hi)
 
     def get_dep(self, filter=False):
@@ -1226,7 +1228,9 @@ class DataRMF(DataOgipResponse):
         self._hi = self.energ_hi[bin_mask]
         return bin_mask
 
-    def get_indep(self, filter=False):
+    def get_indep(self,
+                  filter: bool = False
+                  ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
         return (self._lo, self._hi)
 
     def get_dep(self, filter=False):
@@ -2626,6 +2630,7 @@ will be removed. The identifiers can be integers or strings.
         >>> wlo, whi = pha._get_ebins()
         >>> print((wlo == glo).all())
         True
+
         """
 
         if self.size is None:
@@ -2669,8 +2674,66 @@ will be removed. The identifiers can be integers or strings.
         return (elo, ehi)
 
     def get_indep(self,
-                  filter: bool = True
+                  filter: bool = True,  # superclass defaults to False
+                  group: bool = True
                   ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
+        """Return the independent axis of the PHA in channel units.
+
+        .. versionchanged:: 4.17.1
+           The get_indep_transform routine returns access to the
+           transformed values for the independent axis.
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not.
+        group : bool, optional
+           Should the grouping attached to the data set be applied to
+           the return value or not. This is only used when transform
+           is True.
+
+        Returns
+        -------
+        axis: (array, )
+           A single-element tuple giving the channel values.
+
+        See Also
+        --------
+        get_dep, get_indep_transform, set_analysis
+
+        Examples
+        --------
+
+        The return values are in channels, no matter the units
+        setting:
+
+        >>> from sherpa.astro.io import read_pha
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
+        >>> print(pha.grouped)
+        True
+        >>> print(pha.units)
+        energy
+        >>> chans, = pha.get_indep()
+        >>> print(chans)
+        [1.000e+00 2.000e+00 3.000e+00 ... 1.022e+03 1.023e+03 1.024e+03]
+
+        The channels will be filtered (by default) but never
+        grouped:
+
+        >>> print(pha.get_filter(format='%.4f'))
+        0.0015:14.9504
+        >>> pha.notice(0.5, 6)
+        >>> print(pha.get_filter(format='%.4f'))
+        0.4672:6.5700
+        >>> chan_filtered, = pha.get_indep()
+        >>> chan_all, = pha.get_indep(filter=False)
+        >>> print(chan_filtered)
+        [ 33.  34.  35. ... 448. 449. 450.]
+        >>> print(chan_all)
+        [1.000e+00 2.000e+00 3.000e+00 ... 1.022e+03 1.023e+03 1.024e+03]
+
+        """
 
         # short-cut if no data
         if self.size is None:
@@ -2680,6 +2743,120 @@ will be removed. The identifiers can be integers or strings.
             return (self.get_noticed_channels(),)
 
         return (self.channel,)
+
+    # TODO: should this allow response_id be set?
+    #
+    def get_indep_transform(self,
+                            # What should the defaults be?
+                            filter: bool = True,
+                            group: bool = True,
+                            **kwargs
+                            ) -> tuple[np.ndarray, ...]:
+        """Return the independent axis of the PHA in the units setting.
+
+        .. versionadded:: 4.17.1
+
+        Parameters
+        ----------
+        filter : bool, optional
+           Should the filter attached to the data set be applied to
+           the return value or not.
+        group : bool, optional
+           Should the grouping attached to the data set be applied to
+           the return value or not. This is only used when transform
+           is True.
+
+        Returns
+        -------
+        axis: (array, array)
+           The low and high edges of each bin using the units setting.
+           The values will be filtered or grouped, depending on the
+           filter and group settings.
+
+        See Also
+        --------
+        get_dep, get_indep, set_analysis
+
+        Notes
+        -----
+        Energy values of 0 are replaced by hc / tiny, where tiny is
+        the smallest value stored in a 32-byte float.
+
+        Examples
+        --------
+
+        >>> from sherpa.astro.io import read_pha
+        >>> pha = read_pha(data_3c273 + '3c273.pi')
+        >>> print(pha.grouped)
+        True
+        >>> print(pha.units)
+        energy
+        >>> elo, ehi = pha.get_indep_transform()
+        >>> print(elo)
+        [1.46000006e-03 2.48199999e-01 ... 9.86960030e+00]
+        >>> print(ehi)
+        [ 0.2482      0.3066      ... 14.95040035]
+
+        >>> pha.set_analysis("wave")
+        >>> wlo, whi = pha.get_indep_transform()
+        >>> print(wlo)
+        [49.95333914 40.4384167  ... 1.25622298  0.82930346]
+        >>> print(whi)
+        [8.49206729e+03 4.99533391e+01 ... 1.88712609e+00 1.25622298e+00]
+
+        >>> pha.set_analysis("channel")
+        >>> clo, chi = pha.get_indep_transform()
+        >>> print(clo)
+        [  1.  18.  22.  ... 405. 451. 677.]
+
+        >>> pha.set_analysis("energy")
+        >>> pha.notice(0.5, 6)
+        >>> elo2, ehi2 = pha.get_indep_transform()
+        >>> print(elo2)
+        [0.46720001 0.56940001 0.64240003 ... 5.0223999  5.37279987 5.89839983]
+        >>> print(ehi2)
+        [0.56940001 0.64240003 0.7008     ... 5.37279987 5.89839983 6.57000017]
+
+        """
+
+        # This will error out if there's no data, but it doesn't
+        # really make sense to return something.
+        #
+        # _get_ebins doesn't quite have the correct API so handle the
+        # difference here for now, but this should be re-worked.
+        #
+        # Would it make sense to allow filtering without grouping?
+        #
+        (lo, hi) = self._get_ebins(group=False)
+
+        if self.units == 'wavelength':
+            tiny = np.finfo(np.float32).tiny
+
+            # Swap the edges
+            lo, hi = hi, lo
+
+            # The "lo" value is now the upper edge, so we do not
+            # expect it to have any values with energy=0.
+            #
+            # lo[lo <= 0] = tiny
+            hi[hi <= 0] = tiny
+
+            lo = hc / lo
+            hi = hc / hi
+
+        # We don't have a nice way to filter but no group.
+        #
+        if filter and group:
+            lo = self.apply_filter(lo, groupfunc=self._min)
+            hi = self.apply_filter(hi, groupfunc=self._max)
+        elif group:
+            lo = self.apply_grouping(lo, groupfunc=self._min)
+            hi = self.apply_grouping(hi, groupfunc=self._max)
+        elif filter:
+            lo = super().apply_filter(lo)
+            hi = super().apply_filter(hi)
+
+        return (lo, hi)
 
     def _get_indep(self,
                    filter: bool = False
@@ -4345,6 +4522,18 @@ It is an integer or string.
               filter: bool = False,
               response_id: IdType | None = None
               ) -> np.ndarray | None:
+        """Return the x axis values.
+
+        .. versionchanged:: 4.17.1
+           The get_indep method can now be used to get the low and
+           high bin edges to match the current analysis setting.
+
+        See Also
+        --------
+        get_indep
+
+        """
+
         if self.channel is None:
             return None
 

@@ -1161,7 +1161,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         ----------
         filter : bool, optional
            Should the filter attached to the data set be applied to
-           the return value or not. The default is `False`.
+           the return value or not.
 
         Returns
         -------

@@ -34,7 +34,7 @@ import pytest
 
 from sherpa.astro.data import DataARF, DataIMG, DataIMGInt, DataPHA, DataRMF
 from sherpa.astro.instrument import create_arf, create_delta_rmf, matrix_to_rmf
-from sherpa.astro import io
+from sherpa.astro import hc, io
 from sherpa.astro.io.wcs import WCS
 from sherpa.data import Data2D, Data2DInt
 from sherpa.models import Const1D, Delta2D, Polynom1D, Polynom2D
@@ -383,6 +383,152 @@ def test_pha_get_filter_checks_ungrouped(chtype, expected, args):
             pha.ignore(lo, hi)
 
     assert pha.get_filter(format='%.1f') == expected
+
+
+def test_pha_get_indep_transform():
+    """Check the independent axis values transform.
+
+    Prior to Sherpa 4.17.1, there was no "official" way to get at the
+    independent axis values in anything other than channels.  The
+    closest that could be done was to create a data plot and access
+    the stored axis values.
+
+    """
+
+    chans = np.arange(1, 11, dtype=int)
+    counts = np.ones(10, dtype=int)
+    pha = DataPHA('data', chans, counts)
+
+    # Use a perfect ARF and RMF to create a channel to energy mapping.
+    # The 0.2-2.2 keV range maps to 5.636-61.992 Angstrom
+    #
+    egrid = 0.2 * np.arange(1, 12)
+    glo = egrid[:-1]
+    ghi = egrid[1:]
+    arf = DataARF('arf', glo, ghi, np.ones(10))
+    rmf = create_delta_rmf(glo, ghi, e_min=glo, e_max=ghi)
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
+
+    assert pha.units == "channel"
+
+    clo, chi = pha.get_indep_transform()
+    assert clo == pytest.approx(chans)
+    assert chi == pytest.approx(chans + 1)
+
+    pha.set_analysis("energy")
+
+    elo, ehi = pha.get_indep_transform()
+    assert elo == pytest.approx(glo)
+    assert ehi == pytest.approx(ghi)
+
+    pha.set_analysis("wave")
+
+    wlo, whi = pha.get_indep_transform()
+    assert wlo == pytest.approx(hc / ghi)
+    assert whi == pytest.approx(hc / glo)
+
+    grps = np.asarray([1, -1, -1, 1, -1, 1, 1, 1, -1, 1],
+                      dtype=np.int16)
+    pha.grouping = grps
+    pha.group()
+
+    # Note that wavelength swaps the order of idx_start and idx_end
+    # compared to the other unit settings.
+    #
+    idx_start = np.asarray([0, 3, 5, 6, 7, 9], dtype=int)
+    idx_end = np.asarray([2, 4, 5, 6, 8, 9], dtype=int)
+
+    wlo, whi = pha.get_indep_transform()
+    assert wlo == pytest.approx((hc / ghi)[idx_end])
+    assert whi == pytest.approx((hc / glo)[idx_start])
+
+    wlo, whi = pha.get_indep_transform(group=False)
+    assert wlo == pytest.approx((hc / ghi))
+    assert whi == pytest.approx((hc / glo))
+
+    wlo, whi = pha.get_indep_transform(group=False, filter=False)
+    assert wlo == pytest.approx((hc / ghi))
+    assert whi == pytest.approx((hc / glo))
+
+    pha.set_analysis("energy")
+
+    elo, ehi = pha.get_indep_transform()
+    assert elo == pytest.approx(glo[idx_start])
+    assert ehi == pytest.approx(ghi[idx_end])
+
+    elo, ehi = pha.get_indep_transform(group=False)
+    assert elo == pytest.approx(glo)
+    assert ehi == pytest.approx(ghi)
+
+    elo, ehi = pha.get_indep_transform(group=False, filter=False)
+    assert elo == pytest.approx(glo)
+    assert ehi == pytest.approx(ghi)
+
+    pha.set_analysis("channel")
+
+    clo, chi = pha.get_indep_transform()
+    assert clo == pytest.approx(chans[idx_start])
+    assert chi == pytest.approx((chans + 1)[idx_end])
+
+    clo, chi = pha.get_indep_transform(group=False)
+    assert clo == pytest.approx(chans)
+    assert chi == pytest.approx(chans + 1)
+
+    clo, chi = pha.get_indep_transform(group=False, filter=False)
+    assert clo == pytest.approx(chans)
+    assert chi == pytest.approx(chans + 1)
+
+    # Drop the first and the last group.
+    #
+    pha.ignore()
+    pha.notice(lo=5, hi=8)
+    assert pha.get_filter() == '4:9'
+
+    # Do we filter the data?
+    #
+    idx_start2 = idx_start[1:-1]
+    idx_end2 = idx_end[1:-1]
+
+    clo, chi = pha.get_indep_transform(filter=True)
+    assert clo == pytest.approx(chans[idx_start2])
+    assert chi == pytest.approx((chans + 1)[idx_end2])
+
+    clo, chi = pha.get_indep_transform(filter=False)
+    assert clo == pytest.approx(chans[idx_start])
+    assert chi == pytest.approx((chans + 1)[idx_end])
+
+    clo, chi = pha.get_indep_transform(filter=False, group=False)
+    assert clo == pytest.approx(chans)
+    assert chi == pytest.approx((chans + 1))
+
+    pha.set_analysis("energy")
+
+    elo, ehi = pha.get_indep_transform(filter=True)
+    assert elo == pytest.approx(glo[idx_start2])
+    assert ehi == pytest.approx(ghi[idx_end2])
+
+    elo, ehi = pha.get_indep_transform(filter=False)
+    assert elo == pytest.approx(glo[idx_start])
+    assert ehi == pytest.approx(ghi[idx_end])
+
+    elo, ehi = pha.get_indep_transform(filter=False, group=False)
+    assert elo == pytest.approx(glo)
+    assert ehi == pytest.approx(ghi)
+
+    pha.set_analysis("wave")
+
+    wlo, whi = pha.get_indep_transform(filter=True)
+    assert wlo == pytest.approx((hc / ghi)[idx_end2])
+    assert whi == pytest.approx((hc / glo)[idx_start2])
+
+    wlo, whi = pha.get_indep_transform(filter=False)
+    assert wlo == pytest.approx((hc / ghi)[idx_end])
+    assert whi == pytest.approx((hc / glo)[idx_start])
+
+    wlo, whi = pha.get_indep_transform(filter=False, group=False)
+    assert wlo == pytest.approx((hc / ghi))
+    assert whi == pytest.approx((hc / glo))
 
 
 def test_pha_get_xerr_all_bad_channel_no_group():
