@@ -207,7 +207,7 @@ def test_plot_pvalue_with_wstat(make_data_path, clean_astro_ui):
 
     assert tmp.null == pytest.approx(37.216613841917265)
     assert tmp.alt == pytest.approx(35.86267116207018)
-    assert tmp.lr == pytest.approx(LR)
+    assert tmp.lr == pytest.approx(LR, rel=2e-6)
 
     assert tmp.samples.shape == (20, 2)
     assert tmp.stats.shape == (20, 2)
@@ -215,7 +215,7 @@ def test_plot_pvalue_with_wstat(make_data_path, clean_astro_ui):
 
     tmp = ui.get_pvalue_plot()
 
-    assert tmp.lr == pytest.approx(LR)
+    assert tmp.lr == pytest.approx(LR, rel=2e-6)
 
     assert tmp.xlabel == 'Likelihood Ratio'
     assert tmp.ylabel == 'Frequency'

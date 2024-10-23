@@ -116,7 +116,8 @@ import numpy as np
 from sherpa.utils.err import ModelErr
 
 from .parameter import Parameter
-from .model import ArithmeticModel, modelCacher1d
+from .model import ArithmeticModel
+from .cache import modelCacher1d
 from .basic import TableModel
 
 __all__ = ('TemplateModel', 'InterpolatingTemplateModel',

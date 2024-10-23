@@ -318,11 +318,10 @@ non-integrated and integrated datasets of any dimensionality (see
 
 from __future__ import annotations
 
-import functools
 import itertools
 import logging
 from typing import TYPE_CHECKING, Any, Callable, Iterator, Optional, \
-    Sequence, SupportsFloat, SupportsIndex, Type, TypeVar, Union
+    Sequence, SupportsFloat, SupportsIndex, Union
 import warnings
 
 import numpy as np
@@ -331,21 +330,15 @@ from sherpa.models.regrid import EvaluationSpace1D, ModelDomainRegridder1D, Eval
 from sherpa.utils import NoNewAttributesAfterInit, formatting
 from sherpa.utils.err import ModelErr, ParameterErr
 from sherpa.utils.numeric_types import SherpaFloat
+from sherpa.models.cache import modelCacher1d, modelCacher1d_exp
 
 from .op import get_precedences_op, get_precedence_expr, \
     get_precedence_lhs, get_precedence_rhs
 from .parameter import Parameter, expand_par
 
-# What routine do we use for the hash in modelCacher1d?  As we do not
-# need cryptographic security go for a "quick" algorithm, but md5 is
-# not guaranteed to always be present.  There has been no attempt to
-# check the run times of these routines for the expected data sizes
-# they will be used with.
-#
-try:
-    from hashlib import md5 as hashfunc
-except ImportError:
-    from hashlib import sha256 as hashfunc
+
+import numpy as np
+from typing import Callable
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
@@ -353,7 +346,8 @@ warning = logging.getLogger(__name__).warning
 
 __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
            'ArithmeticConstantModel', 'ArithmeticModel', 'RegriddableModel1D', 'RegriddableModel2D',
-           'UnaryOpModel', 'BinaryOpModel', 'FilterModel', 'modelCacher1d',
+           'UnaryOpModel', 'BinaryOpModel', 'FilterModel',
+           'modelCacher1d', 'modelCacher1d_exp',
            'ArithmeticFunctionModel', 'NestedModel', 'MultigridSumModel')
 
 
@@ -364,128 +358,6 @@ __all__ = ('Model', 'CompositeModel', 'SimulFitModel',
 __doctest_skip__ = ['ArithmeticModel.cache_status',
                     'CompositeModel.cache_status',
                     'SimulFitModel']
-
-
-def boolean_to_byte(boolean_value: bool) -> bytes:
-    """Convert a boolean to a byte value.
-
-    Parameters
-    ----------
-    boolean_value : bool
-        The value to convert. If not a boolean then it is
-        treated as `False`.
-
-    Returns
-    -------
-    val : bytes
-        b'1' if `True` otherwise b'0'.
-    """
-
-    bmap = {True: b'1', False: b'0'}
-    return bmap.get(boolean_value, b'0')
-
-
-def modelCacher1d(func: Callable) -> Callable:
-    """A decorator to cache 1D ArithmeticModel evaluations.
-
-    Apply to the `calc` method of a 1D model to allow the model
-    evaluation to be cached. The decision is based on the
-    `_use_caching` attribute of the cache along with the `integrate`
-    setting, the evaluation grid, parameter values, and the keywords
-    sent to the model.
-
-    Notes
-    -----
-    The keywords are included in the hash calculation even if they are
-    not relevant for the model (as there's no easy way to find this
-    out).
-
-    Example
-    -------
-
-    Allow `MyModel` model evaluations to be cached::
-
-        def MyModel(ArithmeticModel):
-            ...
-            @modelCacher1d
-            def calc(self, p, *args, **kwargs):
-                ...
-
-    """
-
-    @functools.wraps(func)
-    def cache_model(cls, pars, xlo, *args, **kwargs):
-        # Counts all accesses, even those that do not use the cache.
-        cache_ctr = cls._cache_ctr
-        cache_ctr['check'] += 1
-
-        # Short-cut if the cache is not being used.
-        #
-        if not cls._use_caching:
-            return func(cls, pars, xlo, *args, **kwargs)
-
-        # Up until Sherpa 4.12.2 we used the kwargs to define the
-        # integrate setting, with
-        # boolean_to_byte(kwargs.get('integrate', False)) but
-        # unfortunately this is used in code like
-        #
-        #    @modelCacher1d
-        #    def calc(..):
-        #        kwargs['integrate'] = self.integrate
-        #        return somefunc(... **kwargs)
-        #
-        # and the decorator is applied to calc, which is not
-        # called with a integrate kwarg, rather than the call to
-        # somefunc, which was sent an integrate setting.
-        #
-        try:
-            integrate = cls.integrate
-        except AttributeError:
-            # Rely on the integrate kwarg as there's no
-            # model setting.
-            #
-            integrate = kwargs.get('integrate', False)
-
-        data = [np.array(pars).tobytes(),
-                boolean_to_byte(integrate),
-                np.asarray(xlo).tobytes()]
-        if args:
-            data.append(np.asarray(args[0]).tobytes())
-
-        # Add any keyword arguments to the list. This will
-        # include the xhi named argument if given. Can the
-        # value field fail here?
-        #
-        for k, v in kwargs.items():
-            data.extend([k.encode(), np.asarray(v).tobytes()])
-
-        # Is the value cached?
-        #
-        token = b''.join(data)
-        digest = hashfunc(token).digest()
-        cache = cls._cache
-        if digest in cache:
-            cache_ctr['hits'] += 1
-            return cache[digest].copy()
-
-        # Evaluate the model.
-        #
-        vals = func(cls, pars, xlo, *args, **kwargs)
-
-        # remove first item in queue and remove from cache
-        queue = cls._queue
-        key = queue.pop(0)
-        cache.pop(key, None)
-
-        # append newest model values to queue
-        queue.append(digest)
-        cache[digest] = vals.copy()
-
-        cache_ctr['misses'] += 1
-
-        return vals
-
-    return cache_model
 
 
 # It is tempting to convert the explicit class names below into calls
