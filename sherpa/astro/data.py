@@ -5054,22 +5054,14 @@ It is an integer or string.
         # Special case all channels are selected.
         #
         if self.mask is True:
-            elo, ehi = self._get_ebins(group=False, response_id=None)
-            if self.units == 'energy':
-                loval = elo[0]
-                hival = ehi[-1]
-            elif self.units == 'wavelength':
-                loval = hc / ehi[-1]
-                hival = hc / elo[0]
-            else:
-                # Assume channel
-                loval = self.channel[0]
-                hival = self.channel[-1]
+            if self.units == 'channel':
+                loval = chans[0]
+                hival = chans[-1]
                 format = '%i'
-
-            # Check for inversion
-            if loval > hival:
-                loval, hival = hival, loval
+            else:
+                lo, hi = self.get_indep_transform(group=False)
+                loval = lo.min()
+                hival = hi.max()
 
             return f"{format % loval}{delim}{format % hival}"
 
@@ -5091,12 +5083,7 @@ It is an integer or string.
         if self.units == 'channel':
             return create_expr(chans, mask=mask, format='%i', delim=delim)
 
-        # Unfortunately we don't have a usable API for accessing the
-        # energy or wavelength ranges directly.
-        #
-        xlo, xhi = self._get_ebins(group=False)
-        if self.units == 'wavelength':
-            xlo, xhi = hc / xhi, hc / xlo
+        xlo, xhi = self.get_indep_transform(group=False, filter=False)
 
         # Ensure the data is in ascending order for create_expr_integrated.
         #

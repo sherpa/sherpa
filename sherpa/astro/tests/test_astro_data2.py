@@ -1901,8 +1901,8 @@ def test_pha_quality_all_bad_basic_checks():
 
 
 @pytest.mark.parametrize("qual,fexpr,mask,counts",
-                         [([2, 0, 0, 0], "1:4", [0, 1, 1, 1], [1, 64]),
-                          ([0, 0, 0, 2], "1:4", [1, 1, 1, 0], [9, 1]),
+                         [([2, 0, 0, 0], "2:4", [0, 1, 1, 1], [1, 64]),
+                          ([0, 0, 0, 2], "1:3", [1, 1, 1, 0], [9, 1]),
                           ([0, 2, 2, 0], "1:4", [1, 0, 0, 1], [9, 64])
                          ])
 def test_pha_quality_bad_range_checks(qual, fexpr, mask, counts):
@@ -2245,7 +2245,7 @@ def test_pha_quality_ignore_bad_clear_filter(make_quality_pha):
     pha.ignore_bad()
 
     qflags = np.asarray([True] * 1 + [False] * 2 + [True] * 3 + [False] * 3)
-    assert pha.get_filter() == "1:9"
+    assert pha.get_filter() == "1:6"
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qflags)
     assert pha.quality_filter == pytest.approx(qflags)
@@ -2340,8 +2340,7 @@ def test_pha_grouping_changed_1160_grped_no_filter(make_grouped_pha):
     # Do we care about adding a response?
     pha = make_grouped_pha
 
-    # why does this not understand the "bad quality" filter?
-    ofilter = "1:5"
+    ofilter = "1:4"
     assert pha.get_filter() == ofilter
 
     # Change the grouping
@@ -2605,7 +2604,7 @@ def test_pha_quality_bad_filter2(make_quality_pha, caplog):
 
     d2 = pha.get_dep(filter=True)
     assert d2 == pytest.approx([4, 12, 2])
-    assert pha.get_filter() == "1:9"
+    assert pha.get_filter() == "1:6"
 
     assert len(caplog.record_tuples) == 0
 
@@ -2705,7 +2704,7 @@ def test_pha_change_quality_values(caplog):
     qfilt = np.asarray([True] * 5 + [False] * 2)
     assert pha.quality_filter == pytest.approx(qfilt)
     assert pha.get_dep(filter=True) == pytest.approx([6])
-    assert pha.get_filter() == '1:7'
+    assert pha.get_filter() == '1:5'
 
     # With no tabStops set it uses ~pha.get_mask() which in this case
     # is [False] * 5 + [True] * 2,
@@ -2718,7 +2717,7 @@ def test_pha_change_quality_values(caplog):
     # Should quality filter be reset?
     assert pha.quality_filter == pytest.approx(qfilt)
     assert pha.get_dep(filter=True) == pytest.approx([4, 2])
-    assert pha.get_filter() == '1:7'
+    assert pha.get_filter() == '1:5'
 
 
 @requires_group
@@ -2770,7 +2769,7 @@ def test_pha_group_ignore_bad_then_filter(caplog):
     qual_mask = np.asarray([True] * 2 + [False] + [True] * 3 + [False])
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qual_mask)
-    assert pha.get_filter() == '1:7'
+    assert pha.get_filter() == '1:6'
     assert pha.quality_filter == pytest.approx(qual_mask)
     assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
     assert pha.get_dep(filter=False) == pytest.approx(counts)
@@ -2813,7 +2812,7 @@ def test_pha_group_ignore_bad_then_group(caplog):
 
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qual_mask)
-    assert pha.get_filter() == '1:7'
+    assert pha.get_filter() == '1:6'
     assert pha.quality_filter == pytest.approx(qual_mask)
     assert pha.quality == pytest.approx([0, 2, 0, 0, 0, 0, 0])
     assert pha.get_dep(filter=False) == pytest.approx(counts)
@@ -3397,13 +3396,10 @@ def test_quality_pha_fields(field, expected, make_quality_pha):
     assert getattr(pha, field) == pytest.approx(expected)
 
 
-# Should this really return "1:4" as the fifth channel has been
-# excluded? At the moment check the current behavior.
-#
 def test_grouped_pha_get_filter(make_grouped_pha):
     """What is the default get_filter value?"""
     pha = make_grouped_pha
-    assert pha.get_filter() == "1:5"
+    assert pha.get_filter() == "1:4"
 
 
 def test_grouped_pha_set_filter(make_grouped_pha):

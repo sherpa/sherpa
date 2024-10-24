@@ -3364,7 +3364,7 @@ def test_pha_group_filter_ignore_bad(caplog, clean_astro_ui):
     r = caplog.records[4]
     assert r.name == "sherpa.ui.utils"
     assert r.levelname == "INFO"
-    assert r.getMessage() == "dataset 1: 1:4 -> 1:5 Channel"
+    assert r.getMessage() == "dataset 1: 1:4 Channel (unchanged)"
 
 
 @requires_group
@@ -3393,7 +3393,7 @@ def test_pha_group_ignore_bad_group(caplog, clean_astro_ui):
     r = caplog.records[3]
     assert r.name == "sherpa.ui.utils"
     assert r.levelname == "INFO"
-    assert r.getMessage() == "dataset 1: 1:5 Channel (unchanged)"
+    assert r.getMessage() == "dataset 1: 1:4 Channel (unchanged)"
 
 
 def test_pha_group_filter_ignore_bad_group(caplog, clean_astro_ui):

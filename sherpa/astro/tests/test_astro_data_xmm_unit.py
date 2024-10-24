@@ -629,7 +629,7 @@ def test_can_use_pha_grating(make_data_path, clean_astro_ui):
     assert ui.get_analysis() == "energy"
 
     d = ui.get_data()
-    assert d.get_filter(format='%.4f') == "0.3100:3.0919"
+    assert d.get_filter(format='%.5f') == "0.30996:3.09961"
 
     # XSPEC 12.14.1 has the energy ranges for a plot
     #
@@ -785,13 +785,8 @@ def test_issue_2184(make_data_path, clean_astro_ui):
     assert cf1 == '1:3600'
     assert cf2 == cf1
 
-    # These two should be the same, but they are not (issue #2184).
-    # For now treat this as a regression test.
-    #
-    assert ef1 == "0.31004:3.09188"
-    assert ef2 == "0.30996:3.09961"
+    assert ef1 == "0.30996:3.09961"
+    assert ef2 == ef1
 
-    # Ditto.
-    #
-    assert wf1 == '4.01000:39.98998'
-    assert wf2 == '4.00000:39.99998'
+    assert wf1 == '4.00000:39.99998'
+    assert wf2 == wf1
