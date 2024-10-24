@@ -4678,53 +4678,22 @@ It is an integer or string.
             areascal = self._check_scale(self.areascal, filter=filter)
             val /= areascal
 
-        # Should this be a user-callable method?
-        #
-        def get_bin_edges():
-            if self.units != 'channel':
-                xlo, xhi = self._get_ebins(response_id, group=False)
-            else:
-                xlo, xhi = (self.channel, self.channel + 1.)
-
-            if filter:
-                # If we apply a filter, make sure that
-                # ebins are ungrouped before applying
-                # the filter.
-                xlo = self.apply_filter(xlo, self._min)
-                xhi = self.apply_filter(xhi, self._max)
-            elif self.grouped:
-                xlo = self.apply_grouping(xlo, self._min)
-                xhi = self.apply_grouping(xhi, self._max)
-
-            return xlo, xhi
-
         if self.grouped or self.rate:
-            xlo, xhi = get_bin_edges()
-            if self.units == 'wavelength':
-                dx = hc / xlo - hc / xhi
-            else:  # Could be "energy" or "channel"
-                dx = xhi - xlo
-
-            val /= np.abs(dx)
+            xlo, xhi = self.get_indep_transform(filter=filter,
+                                                group=True)
+            dx = xhi - xlo
+            val /= dx
 
         # The final step is to multiply by the X axis self.plot_fac
         # times.
         if self.plot_fac <= 0:
             return val
 
-        # Get the bin edges so we can calculate the center of
-        # each bin. This used to use
+        # This uses the center of the bin in the axis units (so it is
+        # not hc / emid for wavelength units.
         #
-        # xvals = self.get_x(response_id=response_id)
-        # if filter:
-        #     xvals = self.apply_filter(xvals, self._middle)
-        # elif self.grouped:
-        #     xvals = self.apply_grouping(xvals, self._middle)
-        #
-        # but this uses the center of each channel and then
-        # averages them, which doesn't quite match the following.
-        #
-        xlo, xhi = get_bin_edges()
+        xlo, xhi = self.get_indep_transform(filter=filter,
+                                            group=True)
         xmid = (xlo + xhi) / 2
         val *= np.power(xmid, self.plot_fac)
         return val
