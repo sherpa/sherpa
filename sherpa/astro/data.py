@@ -4528,9 +4528,39 @@ It is an integer or string.
            The get_indep method can now be used to get the low and
            high bin edges to match the current analysis setting.
 
+        Parameters
+        ----------
+        filter
+           This parameter is ignored.
+        response_id
+           This parameter is ignored.
+
+        Returns
+        -------
+        answer
+           None if the channel axis is not set, or an array of
+           the mid-point of each bin.
+
         See Also
         --------
         get_indep
+
+        Notes
+        -----
+        When elo and ehi give the energy values of the low and high
+        edges, then the mid-point is calculated as
+
+            (elo + ehi) / 2
+
+        when units="energy" and
+
+            hc * 2 / (elo + ehi)
+
+        rather than
+
+            (hc / elo + hc / ehi) / 2
+
+        for units="wavelength".
 
         """
 
@@ -4542,17 +4572,29 @@ It is an integer or string.
         if self.units == "channel":
             return self.channel
 
-        elo, ehi = self._get_ebins(response_id=response_id, group=False)
-        emid = (elo + ehi) / 2
-
-        if self.units == "energy":
-            return emid
-
-        # The units must be wavelength.
+        # When using wavelength units, do we want to take the
+        # mid-point in energy units and convert that, or use the
+        # actual edges (in wavelength units), since it's not a linear
+        # transform.  It might make sense to use the bin edges in
+        # Angstrom, but to match the pre-4.17.1 behaviour the
+        # conversion is done via the mid-point in energy.
         #
-        tiny = np.finfo(np.float32).tiny
-        # In case there are any 0-energy bins replace them
-        emid[emid == 0.0] = tiny
+        if self.units == "energy":
+            elo, ehi = self.get_indep_transform(group=False,
+                                                filter=False)
+            return (elo + ehi) / 2
+
+        try:
+            self.units = "energy"
+            elo, ehi = self.get_indep_transform(group=False,
+                                                filter=False)
+        finally:
+            self.units = "wavelength"
+
+        # This should not need the "check energies are 0" check, as
+        # this check is done in get_indep.
+        #
+        emid = (elo + ehi) / 2
         return hc / emid
 
     def get_xlabel(self) -> str:
