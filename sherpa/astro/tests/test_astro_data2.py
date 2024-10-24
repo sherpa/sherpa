@@ -2140,7 +2140,7 @@ def test_pha_get_specresp_no_response(make_test_pha):
     assert pha.get_specresp() is None
 
 
-@pytest.mark.parametrize("units", [pytest.param("channel", marks=pytest.mark.xfail), "energy", "wavelength"])
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
 def test_pha_get_specresp_analysis_no_filter(make_test_pha_response, units):
     """Do we get sensible results with units setting, no filter?
 
@@ -2158,7 +2158,7 @@ def test_pha_get_specresp_analysis_no_filter(make_test_pha_response, units):
     assert ychan == pytest.approx(abins)
 
 
-@pytest.mark.parametrize("units", [pytest.param("channel", marks=pytest.mark.xfail), "energy", "wavelength"])
+@pytest.mark.parametrize("units", ["channel", "energy", "wavelength"])
 def test_pha_get_specresp_analysis_with_filter(make_test_pha_response, units):
     """Do we get sensible results with units setting and filter?
 

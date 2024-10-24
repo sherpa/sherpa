@@ -2474,7 +2474,14 @@ will be removed. The identifiers can be integers or strings.
     def get_specresp(self,
                      filter: bool = False
                      ) -> np.ndarray | None:
-        """Return the effective area values for the data set.
+        """Return the effective area values for the data set in channel space.
+
+        The ARF is interpolated onto the approximate energy grid of
+        the channels.
+
+        .. versionchanged:: 4.17.1
+           The interpolated data now uses 0 rather than 1 if the
+           results of the bin were negative.
 
         Parameters
         ----------
@@ -2501,27 +2508,37 @@ will be removed. The identifiers can be integers or strings.
 
         """
         self.notice_response(False)
-        arf, rmf = self.get_response()
+        arf, rmf = self.get_response()  # TODO: response_id?
 
-        # It's not clear why we do interpolation below, why we replace
-        # with 1 rather than 0, or how it is even meant to work, since
-        # the current code returns different values depending on the
-        # units setting - see issue #1582
+        # Technically this could support a ARF-only analysis, but for
+        # now require both responses.
         #
         if arf is None or rmf is None:
             return None
 
         specresp = arf.get_dep()
-        elo, ehi = arf.get_indep()
-        lo, hi = self._get_ebins(group=False)
+        slo, _ = arf.get_indep()
 
-        newarf = interpolate(lo, elo, specresp)
-        newarf[newarf <= 0] = 1.
+        units = self.units
+        try:
+            self.units = "energy"
+            elo, _ = self.get_indep_transform(filter=False, group=False)
+        finally:
+            self.units = units
 
-        if bool_cast(filter):
-            newarf = self.apply_filter(newarf, self._middle)
+        # Interpolate (rather than rebin) onto the "channel" grid.
+        # Should this use left edge, center of bin, right edge?
+        #
+        # Ensure the results of the interpolation are physically
+        # meaningful.
+        #
+        out = interpolate(elo, slo, specresp)
+        out[out < 0] = 0
 
-        return newarf
+        if filter:
+            return self.apply_filter(out, groupfunc=self._middle)
+
+        return out
 
     def get_full_response(self, pileup_model=None):
         """Calculate the response for the dataset.
