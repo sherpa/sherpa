@@ -4807,31 +4807,14 @@ It is an integer or string.
            analysis units.
 
         """
-        if bool_cast(filter):
-            # If we apply a filter, make sure that
-            # ebins are ungrouped before applying
-            # the filter.
-            elo, ehi = self._get_ebins(response_id, group=False)
-            elo = self.apply_filter(elo, self._min)
-            ehi = self.apply_filter(ehi, self._max)
 
-        else:
-            try:
-                elo, ehi = self._get_ebins(response_id=response_id)
-            except DataErr:
-                # What should we do here? This indicates that all bins
-                # have been marked as bad (and grouping is present).
-                #
-                return np.asarray([])
+        try:
+            xlo, xhi = self.get_indep_transform(group=True,
+                                                filter=filter)
+        except DataErr:
+            return np.asarray([])
 
-        # Issue #748 #1817 noted we should return the half-width
-        # Issue #1985 notes that we need to support wavelength.
-        #
-        if self.units != "wavelength":
-            return (ehi - elo) / 2
-
-        dlam = hc / elo - hc / ehi
-        return dlam / 2
+        return (xhi - xlo) / 2
 
     def get_ylabel(self, yfunc=None) -> str:
         """The label for the dependent axis.
