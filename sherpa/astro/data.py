@@ -5324,21 +5324,59 @@ It is an integer or string.
             self.quality_filter = None
             self.notice_response(False)
 
-        # elo and ehi will be in channel (units=channel) or energy
-        # (units=energy or units=wavelength).
+        # Separate out the units=channel from energy/wavelength
+        # for now.
         #
+        if self.units == "channel":
+            try:
+                xlo, xhi = self.get_indep_transform(filter=False,
+                                                    group=self.grouped)
+            except DataErr as de:
+                info("Skipping dataset %s: %s", self.name, str(de))
+                return
+
+            if len(xlo) == 0:
+                # Should get_indep raise this?
+                info("Skipping dataset %s: mask excludes all data", self.name)
+                return
+
+            if hi is not None:
+                # A channel range lo to hi is read as [lo, hi] rather than
+                # [lo, hi), so we increase the upper limit by 1 to
+                # work around this, as the filter call checks for < hi
+                # and not <= hi.
+                #
+                hi += 1
+
+            self._data_space.filter.notice((None, lo), (hi, None),
+                                           (xlo, xhi), ignore=ignore,
+                                           integrated=True)
+            return
+
+        # Can we filter using wavelength vlaues directly? It probably
+        # messes up internal assumptions of axis ordering, so
+        # treat as separate for now.
+        #
+        units = self.units
         try:
-            elo, ehi = self._get_ebins(group=self.grouped)
+            self.units = "energy"
+            elo, ehi = self.get_indep_transform(filter=False,
+                                                group=self.grouped)
         except DataErr as de:
             info("Skipping dataset %s: %s", self.name, str(de))
             return
+        finally:
+            self.units = units
 
-        emin = min(elo[[0, -1]])
-        emax = max(ehi[[0, -1]])
+        if len(elo) == 0:
+            # Should get_indep raise this?
+            info("Skipping dataset %s: mask excludes all data", self.name)
+            return
 
         # Convert wavelength limits to energy if necessary.
         #
         if self.units == 'wavelength':
+            emax = max(ehi[[0, -1]])
             lims = validate_wavelength_limits(lo, hi, emax)
             if lims is None:
                 # No useful filter to apply
@@ -5348,14 +5386,6 @@ It is an integer or string.
 
         # safety check
         assert lo is None or hi is None or lo <= hi, (lo, hi, self.name)
-
-        if self.units == 'channel' and hi is not None:
-            # A channel range lo to hi is read as [lo, hi] rather than
-            # [lo, hi), so we increase the upper limit by 1 to
-            # work around this, as the filter call checks for < hi
-            # and not <= hi.
-            #
-            hi += 1
 
         self._data_space.filter.notice((None, lo), (hi, None),
                                        (elo, ehi), ignore=ignore,
