@@ -1521,7 +1521,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self._can_apply_model(modelfunc)
         return modelfunc(*self.get_indep(filter=True))
 
-    def to_guess(self) -> tuple[Optional[np.ndarray], ...]:
+    def to_guess(self) -> tuple[np.ndarray | None, ...]:
 
         # Should this also check whether the independent and dependent
         # axes are set?

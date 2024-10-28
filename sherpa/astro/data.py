@@ -5391,25 +5391,24 @@ It is an integer or string.
                                        (elo, ehi), ignore=ignore,
                                        integrated=True)
 
-    def to_guess(self):
-        elo, ehi = self._get_ebins(group=False)
-        elo = self.apply_filter(elo, self._min)
-        ehi = self.apply_filter(ehi, self._max)
-        if self.units == "wavelength":
-            lo = hc / ehi
-            hi = hc / elo
-            elo = lo
-            ehi = hi
+    def to_guess(self) -> tuple[np.ndarray | None, ...]:
+
+        xlo, xhi = self.get_indep_transform(group=False, filter=False)
+        lo = self.apply_filter(xlo, groupfunc=self._min)
+        hi = self.apply_filter(xhi, groupfunc=self._max)
+
         cnt = self.get_dep(True)
         arf = self.get_specresp(filter=True)
 
-        y = cnt / (ehi - elo)
+        # Normalize, if set, by the bin width, exposure time, and ARF.
+        #
+        y = cnt / (hi - lo)
         if self.exposure is not None:
-            y /= self.exposure   # photons/keV/sec or photons/Ang/sec
-        # y = cnt/arf/self.exposure
+            y /= self.exposure
         if arf is not None:
-            y /= arf  # photons/keV/cm^2/sec or photons/Ang/cm^2/sec
-        return (y, elo, ehi)
+            y /= arf
+
+        return (y, lo, hi)
 
     def to_fit(self, staterrfunc=None):
         return (self.get_dep(True),
