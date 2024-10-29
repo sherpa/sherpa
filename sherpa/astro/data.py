@@ -2590,6 +2590,9 @@ will be removed. The identifiers can be integers or strings.
         E_MAX columns from the RMF EBOUNDS block rather than from the
         ENERG_LO and ENERG_HI columns from the MATRIX block.
 
+        .. deprecated:: 4.17.1
+           Use get_indep(transform=True, ...) instead.
+
         Parameters
         ----------
         response_id : int, str, or None, optional
@@ -2613,42 +2616,10 @@ will be removed. The identifiers can be integers or strings.
         --------
         _get_indep
 
-        Examples
-        --------
-
-        >>> from sherpa.astro.io import read_pha
-        >>> pha = read_pha(data_3c273 + '3c273.pi')
-        >>> pha.ungroup()
-        >>> pha.units = 'channel'
-        >>> clo, chi = pha._get_ebins()
-        >>> print((clo == pha.channel).all())
-        True
-        >>> print((chi == clo + 1).all())
-        True
-
-        >>> pha.units = 'energy'
-        >>> elo, ehi = pha._get_ebins()
-        >>> elo.size == pha.channel.size
-        True
-        >>> elo[0:5]
-        array([0.00146, 0.0146 , 0.0292 , 0.0438 , 0.0584 ])
-        >>> print((elo[1:] == ehi[:-1]).all())
-        True
-
-        >>> pha.group()
-        >>> glo, ghi = pha._get_ebins()
-        >>> glo[0:5]
-        array([0.00146   , 0.2482    , 0.3066    , 0.46720001, 0.56940001])
-
-        Note that the returned units are energy even if units is set
-        to "wavelength":
-
-        >>> pha.units = 'wave'
-        >>> wlo, whi = pha._get_ebins()
-        >>> print((wlo == glo).all())
-        True
-
         """
+
+        warnings.warn("Use get_indep(transform=True, ...) instead",
+                      category=DeprecationWarning)
 
         if self.size is None:
             raise DataErr("sizenotset", self.name)
@@ -2824,7 +2795,9 @@ will be removed. The identifiers can be integers or strings.
         >>> pha.set_analysis("channel")
         >>> clo, chi = pha.get_indep_transform()
         >>> print(clo)
-        [  1.  18.  22.  ... 405. 451. 677.]
+        [  1  18  22  ... 405 451 677]
+        >>> print(chi)
+        [  18  22  33 ... 451 677 1025]
 
         >>> pha.set_analysis("energy")
         >>> pha.notice(0.5, 6)
@@ -2839,12 +2812,27 @@ will be removed. The identifiers can be integers or strings.
         # This will error out if there's no data, but it doesn't
         # really make sense to return something.
         #
-        # _get_ebins doesn't quite have the correct API so handle the
-        # difference here for now, but this should be re-worked.
-        #
-        # Would it make sense to allow filtering without grouping?
-        #
-        (lo, hi) = self._get_ebins(group=False)
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
+
+        if self.units == 'channel':
+            lo = self.channel
+            hi = self.channel + 1
+
+        else:
+            arf, rmf = self.get_response()
+            if rmf is not None:
+                if (rmf.e_min is None) or (rmf.e_max is None):
+                    raise DataErr('noenergybins', 'RMF')
+
+                lo = rmf.e_min
+                hi = rmf.e_max
+            elif arf is not None:
+                lo = arf.energ_lo
+                hi = arf.energ_hi
+            else:
+                lo = self.channel
+                hi = self.channel + 1
 
         if self.units == 'wavelength':
             tiny = np.finfo(np.float32).tiny
@@ -2873,6 +2861,12 @@ will be removed. The identifiers can be integers or strings.
             lo = super().apply_filter(lo)
             hi = super().apply_filter(hi)
 
+        # Ensure the channels are integers.
+        #
+        if self.units == 'channel':
+            lo = lo.astype(int)
+            hi = hi.astype(int)
+
         return (lo, hi)
 
     def _get_indep(self,
@@ -2880,10 +2874,10 @@ will be removed. The identifiers can be integers or strings.
                    ) -> tuple[np.ndarray, np.ndarray]:
         """Return the low and high edges of the independent axis.
 
-        Unlike _get_ebins, this returns values in the "native" space
-        of the response - i.e. for a RMF, it returns the bounds from
-        the MATRIX rather than EBOUNDS extension of the RMF - and not
-        the approximation used in _get_ebins.
+        Unlike get_indep(transform=True), this returns values in the
+        "native" space of the response - i.e. for a RMF, it returns
+        the bounds from the MATRIX rather than EBOUNDS extension of
+        the RMF - and not the approximation used in get_indep.
 
         Parameters
         ----------
@@ -2903,7 +2897,7 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        _get_ebins
+        get_indep
 
         Notes
         -----
