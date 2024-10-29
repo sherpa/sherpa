@@ -1100,7 +1100,7 @@ def test_get_filter_group_bug(make_data_path):
     n2 = 449
 
     # this is to check we get the expected results
-    elo, ehi = pha._get_ebins(group=False)
+    elo, ehi = pha.get_indep_transform(group=False, filter=False)
     assert elo[n1] == pytest.approx(en1)
     assert ehi[n2] == pytest.approx(en2)
 
@@ -1382,7 +1382,7 @@ def test_grouping_filtering_binning_416(analysis, make_data_path):
 #
 # where
 #    pha.set_analysis('energy')
-#    elo, ehi = pha._get_ebins(group=False)
+#    elo, ehi = pha.get_indep_transform(group=False, filter=False)
 #
 
 @requires_data
@@ -1966,25 +1966,29 @@ def test_energy_filter_ordering(make_data_path):
 
 @pytest.mark.parametrize('units', ['bin', 'chan'])
 def test_pha_get_ebins_internal_no_response_chans(units):
-    """Check that _get_ebins has an unlikely-used path checked.
+    """Check an unlikely-used path.
 
     It's  not clear what we are meant to return here - i.e. no
     response but a units value has been set - and maybe there
     should be an error instead (for non-channel settings).
+
+    The routine now tests get_indep(teansform=True) but the test
+    name has not been changed from 4.17.0 and earlier.
+
     """
 
     chans = np.arange(1, 10, dtype=np.int16)
     counts = np.ones(9, dtype=np.int16)
     pha = DataPHA('tst', chans, counts)
     pha.units = units
-    lo, hi = pha._get_ebins()
+    lo, hi = pha.get_indep_transform()
     assert lo == pytest.approx(chans)
     assert hi == pytest.approx(chans + 1)
 
 
 @pytest.mark.parametrize('units', ['energy', 'wave'])
 def test_pha_get_ebins_internal_no_response_not_channels(units):
-    """Check that _get_ebins has an unlikely-used path checked.
+    """Check an unlikely-used path.
 
     This used to succeed but in 4.17.1 was made to error out.
     """
