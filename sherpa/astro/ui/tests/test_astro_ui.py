@@ -514,8 +514,8 @@ def test_bug38_filtering_grouping_pre_416(make_data_path, caplog):
     assert mask[240:480].all()
 
     # check filtered bins
-    elo_all, ehi_all = pha._get_ebins(group=False)
-    elo, ehi = pha._get_ebins(group=True)
+    elo_all, ehi_all = pha.get_indep_transform(group=False, filter=False)
+    elo, ehi = pha.get_indep_transform(group=True, filter=False)
 
     assert elo[1] == elo_all[40]
     assert ehi[11] == ehi_all[479]
@@ -560,8 +560,8 @@ def test_bug38_filtering_grouping(make_data_path, caplog):
     assert mask[276:450].all()
 
     # check filtered bins
-    elo_all, ehi_all = pha._get_ebins(group=False)
-    elo, ehi = pha._get_ebins(group=True)
+    elo_all, ehi_all = pha.get_indep_transform(group=False, filter=False)
+    elo, ehi = pha.get_indep_transform(group=True, filter=False)
 
     assert elo[68] == elo_all[68]
     assert elo[72] == elo_all[196]
@@ -1626,7 +1626,7 @@ def test_grouped_pha_all_bad_response(arf, rmf, chantype, exp_counts, exp_xlo, e
 
     if rmf:
         # NOTE: need to set e_min/max otherwise get a 'noenergybins'
-        #       error from sherpa.astro.data.DataPHA._get_ebins
+        #       error
         #
         ui.set_rmf(ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi))
 
