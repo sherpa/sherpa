@@ -1933,8 +1933,8 @@ def test_energy_filter_ordering(make_data_path):
     assert mask1 == pytest.approx(mask2)
 
 
-@pytest.mark.parametrize('units', ['bin', 'chan', 'energy', 'wave'])
-def test_pha_get_ebins_internal_no_response(units):
+@pytest.mark.parametrize('units', ['bin', 'chan'])
+def test_pha_get_ebins_internal_no_response_chans(units):
     """Check that _get_ebins has an unlikely-used path checked.
 
     It's  not clear what we are meant to return here - i.e. no
@@ -1949,6 +1949,21 @@ def test_pha_get_ebins_internal_no_response(units):
     lo, hi = pha._get_ebins()
     assert lo == pytest.approx(chans)
     assert hi == pytest.approx(chans + 1)
+
+
+@pytest.mark.parametrize('units', ['energy', 'wave'])
+def test_pha_get_ebins_internal_no_response_not_channels(units):
+    """Check that _get_ebins has an unlikely-used path checked.
+
+    This used to succeed but in 4.17.1 was made to error out.
+    """
+
+    chans = np.arange(1, 10, dtype=np.int16)
+    counts = np.ones(9, dtype=np.int16)
+    pha = DataPHA('tst', chans, counts)
+    with pytest.raises(DataErr,
+                       match="^No instrument response found for dataset tst$"):
+        pha.units = units
 
 
 def test_get_background_scale_is_none():
