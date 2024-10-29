@@ -1329,163 +1329,171 @@ def _pack_pha(dataset: DataPHA) -> BlockList:
     if not isinstance(dataset, DataPHA):
         raise IOErr("notpha", dataset.name)
 
-    arf, rmf = dataset.get_response()
-    bkg = dataset.get_background()
-
-    # The default keywords; these will be over-ridden by
-    # anything set by the input.
+    # It's easiest if this temporarily removes any quality filtering.
     #
-    default_header = {
-        "EXTNAME": "SPECTRUM",
-        "HDUCLASS": "OGIP",
-        "HDUCLAS1": "SPECTRUM",
-        "HDUCLAS2": "TOTAL",
-        "HDUCLAS3": "COUNT",
-        "HDUCLAS4": "TYPE:I",
-        "HDUVERS": "1.2.1",
-        "HDUDOC": "Arnaud et al. 1992a Legacy 2  p 65",
+    orig_qfilt = dataset.quality_filter
+    try:
+        dataset.quality_filter = None
 
-        # The PHA file should have an EXPOSURE value, but just in case.
-        "EXPOSURE": 1.0,
+        arf, rmf = dataset.get_response()
+        bkg = dataset.get_background()
 
-        # Rely on the DataPHA class to have set up TELESCOP/INSTRUME/FILTER
-        # based on any associated background or response. If the user has
-        # changed them then so be it.
+        # The default keywords; these will be over-ridden by
+        # anything set by the input.
         #
-        "TELESCOP": "none",
-        "INSTRUME": "none",
-        "FILTER": "none",
-        "CORRFILE": "none",
-        "CORRSCAL": 0,
-        "CHANTYPE": "PI",
-        "RESPFILE": "none",
-        "ANCRFILE": "none",
-        "BACKFILE": "none"
-    }
+        default_header = {
+            "EXTNAME": "SPECTRUM",
+            "HDUCLASS": "OGIP",
+            "HDUCLAS1": "SPECTRUM",
+            "HDUCLAS2": "TOTAL",
+            "HDUCLAS3": "COUNT",
+            "HDUCLAS4": "TYPE:I",
+            "HDUVERS": "1.2.1",
+            "HDUDOC": "Arnaud et al. 1992a Legacy 2  p 65",
 
-    # Merge the keywords
-    #
-    merged_header = default_header | dataset.header
-    header = _pack_header(merged_header)
+            # The PHA file should have an EXPOSURE value, but just in case.
+            "EXPOSURE": 1.0,
 
-    if dataset.channel is not None and header.get("DETCHANS") is None:
-        header.add(HeaderItem("DETCHANS", len(dataset.channel),
-                              desc="Number of channels"))
+            # Rely on the DataPHA class to have set up TELESCOP/INSTRUME/FILTER
+            # based on any associated background or response. If the user has
+            # changed them then so be it.
+            #
+            "TELESCOP": "none",
+            "INSTRUME": "none",
+            "FILTER": "none",
+            "CORRFILE": "none",
+            "CORRSCAL": 0,
+            "CHANTYPE": "PI",
+            "RESPFILE": "none",
+            "ANCRFILE": "none",
+            "BACKFILE": "none"
+        }
 
-    # Over-write the header value (if set). This value should really
-    # exist (OGIP standards) but may not, particularly for testing.
-    #
-    if dataset.exposure is not None:
-        header.delete("EXPOSURE")
-        header.add(HeaderItem("EXPOSURE", float(dataset.exposure),
-                              unit="s", desc="Exposure time"))
-
-    # See #1885 for a discussion about the current behaviour.
-    #
-    if rmf is not None:
-        header.delete("RESPFILE")
-        header.add(HeaderItem("RESPFILE", rmf.name.split("/")[-1],
-                              desc="RMF"))
-
-    if arf is not None:
-        header.delete("ANCRFILE")
-        header.add(HeaderItem("ANCRFILE", arf.name.split("/")[-1],
-                              desc="ARF"))
-    if bkg is not None:
-        header.delete("BACKFILE")
-        header.add(HeaderItem("BACKFILE", bkg.name.split("/")[-1],
-                              desc="Background"))
-
-    # Create the columns. Special case the CHANNEL and COUNTS
-    # columns.
-    #
-    # TODO: there is currently no way to know we should write out a
-    # RATE column instead of COUNTS.
-    #
-    cols = []
-    if dataset.channel is not None:
-        channel = Column("CHANNEL", dataset.channel.astype(np.int32),
-                         desc="Channel values")
-
-        # Ensure the min/max ranges are written out as integers since
-        # data.channel may contain floating point values. Always
-        # re-write so that the file matches the data.
+        # Merge the keywords
         #
-        channel.minval = int(dataset.channel[0])
-        channel.maxval = int(dataset.channel[-1])
+        merged_header = default_header | dataset.header
+        header = _pack_header(merged_header)
 
-        cols.append(channel)
+        if dataset.channel is not None and header.get("DETCHANS") is None:
+            header.add(HeaderItem("DETCHANS", len(dataset.channel),
+                                  desc="Number of channels"))
 
-    if dataset.counts is not None:
-        if np.issubdtype(dataset.counts.dtype, np.integer):
-            countvals = dataset.counts.astype(np.int32)
-        elif np.issubdtype(dataset.counts.dtype, np.floating):
-            countvals = dataset.counts.astype(np.float32)
-        else:
-            raise DataErr("ogip-error", "PHA dataset", dataset.name,
-                          "contains an unsupported COUNTS column")
+        # Over-write the header value (if set). This value should really
+        # exist (OGIP standards) but may not, particularly for testing.
+        #
+        if dataset.exposure is not None:
+            header.delete("EXPOSURE")
+            header.add(HeaderItem("EXPOSURE", float(dataset.exposure),
+                                  unit="s", desc="Exposure time"))
 
-        cols.append(Column("COUNTS", countvals, desc="Counts"))
+        # See #1885 for a discussion about the current behaviour.
+        #
+        if rmf is not None:
+            header.delete("RESPFILE")
+            header.add(HeaderItem("RESPFILE", rmf.name.split("/")[-1],
+                                  desc="RMF"))
 
-    if dataset.staterror is not None:
-        desc = "Statistical error"
-        if np.ptp(dataset.staterror) == 0:
-            header.add(HeaderItem("STAT_ERR", dataset.staterror[0],
-                                  desc=desc))
-        else:
-            cols.append(Column("STAT_ERR",
-                               dataset.staterror.astype(np.float32),
-                               desc=desc))
+        if arf is not None:
+            header.delete("ANCRFILE")
+            header.add(HeaderItem("ANCRFILE", arf.name.split("/")[-1],
+                                  desc="ARF"))
+        if bkg is not None:
+            header.delete("BACKFILE")
+            header.add(HeaderItem("BACKFILE", bkg.name.split("/")[-1],
+                                  desc="Background"))
 
-    def addfield(name, value, dtype, desc):
-        """Add as keyword or array of the expected type"""
+        # Create the columns. Special case the CHANNEL and COUNTS
+        # columns.
+        #
+        # TODO: there is currently no way to know we should write out a
+        # RATE column instead of COUNTS.
+        #
+        cols = []
+        if dataset.channel is not None:
+            channel = Column("CHANNEL", dataset.channel.astype(np.int32),
+                             desc="Channel values")
 
-        if value is None:
-            header.add(HeaderItem(name, dtype(0), desc=desc))
-        elif np.ptp(value) == 0:
-            header.add(HeaderItem(name, dtype(value[0]), desc=desc))
-        else:
-            cols.append(Column(name, value.astype(dtype), desc=desc))
+            # Ensure the min/max ranges are written out as integers since
+            # data.channel may contain floating point values. Always
+            # re-write so that the file matches the data.
+            #
+            channel.minval = int(dataset.channel[0])
+            channel.maxval = int(dataset.channel[-1])
+            cols.append(channel)
 
-    # Should this convert the value/values back into a fractional error?
-    addfield("SYS_ERR", dataset.syserror, np.float32,
-             "Fractional systematic error")
+        if dataset.counts is not None:
+            if np.issubdtype(dataset.counts.dtype, np.integer):
+                countvals = dataset.counts.astype(np.int32)
+            elif np.issubdtype(dataset.counts.dtype, np.floating):
+                countvals = dataset.counts.astype(np.float32)
+            else:
+                raise DataErr("ogip-error", "PHA dataset", dataset.name,
+                              "contains an unsupported COUNTS column")
 
-    addfield("GROUPING", dataset.grouping, np.int16,
-             "Grouping (1,-1,0)")
-    addfield("QUALITY", dataset.quality, np.int16,
-             "Quality (0 for okay)")
+            cols.append(Column("COUNTS", countvals, desc="Counts"))
 
-    if dataset.bin_lo is not None and dataset.bin_hi is not None:
-        cols.extend([Column("BIN_LO", dataset.bin_lo),
-                     Column("BIN_HI", dataset.bin_hi)])
+        if dataset.staterror is not None:
+            desc = "Statistical error"
+            if np.ptp(dataset.staterror) == 0:
+                header.add(HeaderItem("STAT_ERR", dataset.staterror[0],
+                                      desc=desc))
+            else:
+                cols.append(Column("STAT_ERR",
+                                   dataset.staterror.astype(np.float32),
+                                   desc=desc))
 
-    def addscal(value, name, label):
-        """Add the scaling value."""
+        def addfield(name, value, dtype, desc):
+            """Add as keyword or array of the expected type"""
 
-        if value is None:
-            header.add(HeaderItem(name, 1.0, desc=label))
-        elif np.isscalar(value):
-            header.add(HeaderItem(name, float(value), desc=label))
-        else:
-            # Ensure we have no scalar value in the header
-            header.delete(name)
-            # OGIP standard has this as a 4-byte real column/value
-            cols.append(Column(name, value.astype(np.float32),
-                               desc=label))
+            if value is None:
+                header.add(HeaderItem(name, dtype(0), desc=desc))
+            elif np.ptp(value) == 0:
+                header.add(HeaderItem(name, dtype(value[0]), desc=desc))
+            else:
+                cols.append(Column(name, value.astype(dtype), desc=desc))
 
-    # Note that CORRSCAL is set in default_header. Can it also
-    # be a vector?
-    #
-    addscal(dataset.backscal, "BACKSCAL", "Background scaling factor")
-    addscal(dataset.areascal, "AREASCAL", "Area scaling factor")
+        # Should this convert the value/values back into a fractional error?
+        addfield("SYS_ERR", dataset.syserror, np.float32,
+                 "Fractional systematic error")
 
-    # Try to set the POISSERR keyword *IF NOT SET*, but Sherpa does
-    # not use this reliably.
-    #
-    if header.get("POISSERR") is None:
-        header.add(HeaderItem("POISSERR",
-                              dataset.staterror is None))
+        addfield("GROUPING", dataset.grouping, np.int16,
+                 "Grouping (1,-1,0)")
+        addfield("QUALITY", dataset.quality, np.int16,
+                 "Quality (0 for okay)")
+
+        if dataset.bin_lo is not None and dataset.bin_hi is not None:
+            cols.extend([Column("BIN_LO", dataset.bin_lo),
+                         Column("BIN_HI", dataset.bin_hi)])
+
+        def addscal(value, name, label):
+            """Add the scaling value."""
+
+            if value is None:
+                header.add(HeaderItem(name, 1.0, desc=label))
+            elif np.isscalar(value):
+                header.add(HeaderItem(name, float(value), desc=label))
+            else:
+                # Ensure we have no scalar value in the header
+                header.delete(name)
+                # OGIP standard has this as a 4-byte real column/value
+                cols.append(Column(name, value.astype(np.float32),
+                                   desc=label))
+
+        # Note that CORRSCAL is set in default_header. Can it also
+        # be a vector?
+        #
+        addscal(dataset.backscal, "BACKSCAL", "Background scaling factor")
+        addscal(dataset.areascal, "AREASCAL", "Area scaling factor")
+
+        # Try to set the POISSERR keyword *IF NOT SET*, but Sherpa does
+        # not use this reliably.
+        #
+        if header.get("POISSERR") is None:
+            header.add(HeaderItem("POISSERR",
+                                  dataset.staterror is None))
+
+    finally:
+        dataset.quality_filter = orig_qfilt
 
     pheader = _empty_header()
 

@@ -130,7 +130,7 @@ import numpy as np
 
 from sherpa.astro import hc
 from sherpa.data import Data1DInt, Data2D, Data, Data1D, \
-    IntegratedDataSpace2D, _check
+    Filter, IntegratedDataSpace2D, _check
 from sherpa.models.regrid import EvaluationSpace1D
 from sherpa.stats import Chi2XspecVar
 from sherpa.utils import pad_bounding_box, interpolate, \
@@ -1470,6 +1470,87 @@ def replace_xspecvar_values(src_counts, bkg_counts,
         bvar[all_zero] = 0
 
 
+class PHAFilter(Filter):
+    """Allow filtering with "quality filters" present.
+
+    Allow a pre-defined set of filters to be applied to mark certain
+    channels as "always un-used", and to understand that there is a
+    "grouping" array (they can be used together but also are
+    separate).
+
+    """
+
+    # The Filter class does not care about the size of the data, but
+    # once quality/grouping is added it is useful to know the
+    # "un-grouped" size.
+    #
+    _size: Optional[int] = None
+    _quality: Optional[np.ndarray] = None
+    _grouping: Optional[np.ndarray] = None
+
+    # This is not a general-purpose class, so do not bother making
+    # these properties.
+    #
+    def set_quality(self, qual: Optional[np.ndarray]) -> None:
+        """Set the quality array.
+
+        It must match the "expected" size (the grouping or the
+        previous quality field).
+        """
+
+        if qual is None:
+            self._quality = None
+            return
+
+        if self._size is None:
+            self._size = qual.size
+
+        if self._size is not None and qual.size != self._size:
+            raise DataErr("mismatchn", "quality", "previous filter",
+                          str(qual.size), str(self._size))
+
+        self._quality = qual
+
+    def set_grouping(self, group: Optional[np.ndarray]) -> None:
+        """Set the grouping array.
+
+        It must match the "expected" size (the grouping or the
+        previous quality field).
+        """
+
+        if group is None:
+            self._grouping = None
+            return
+
+        if self._size is None:
+            self._size = group.size
+
+        if self._size is not None and qual.size != self._size:
+            raise DataErr("mismatchn", "grouping", "previous filter",
+                          str(qual.size), str(self._size))
+
+        self._grouping = group
+
+    @property
+    def mask(self) -> Union[np.ndarray, bool]:
+        """Mask array for dependent variable
+
+        If quality flags are set then these are always
+        applied.
+
+        Returns
+        -------
+        mask : bool or numpy.ndarray
+        """
+        return self._mask
+
+    @mask.setter
+    def mask(self, val: Union[ArrayType, bool]) -> None:
+        if val is None:
+            raise DataErr('ismask')
+
+
+
 class DataPHA(Data1D):
     """PHA data set, including any associated instrument and background data.
 
@@ -1532,6 +1613,14 @@ class DataPHA(Data1D):
       not a channel is trust-worthy or not (and so acts as an
       additional filtering term).
 
+    To support "quality filtering", 4.17.0 changed how the code works:
+    once `ignore_bad` has been called then the `quality_filter`
+    attribute will be set, and this array is used to filter most data
+    read access. However, write access, such as replacing the
+    statistical errors array, still requires the full array size (so
+    including "bad" elements) and the size attribute does not change.
+    **THIS MAY CHANGE**
+
     The handling of the AREASCAl value - whether it is a scalar or
     array - is currently in flux. It is a value that is stored with
     the PHA file, and the OGIP PHA standard ([OGIP_92_007]_,
@@ -1585,11 +1674,11 @@ class DataPHA(Data1D):
 
         # Assert types: is there a better way to do this?
         #
-        self._bin_lo: Optional[np.ndarray]
-        self._bin_hi: Optional[np.ndarray]
-        self._grouping: Optional[np.ndarray]
-        self._quality: Optional[np.ndarray]
-        self._quality_filter: Optional[np.ndarray]
+        self._bin_lo: Optional[np.ndarray] = None
+        self._bin_hi: Optional[np.ndarray] = None
+        self._grouping: Optional[np.ndarray] = None
+        self._quality: Optional[np.ndarray] = None
+        self._quality_filter: Optional[np.ndarray] = None
 
         self.bin_lo = _check(bin_lo)
         self.bin_hi = _check(bin_hi)
@@ -1804,6 +1893,7 @@ If set, the identifiers must already exist, and any other backgrounds
 will be removed. The identifiers can be integers or strings.
 """)
 
+
     @overload
     def _set_related(self,
                      attr: str,
@@ -1832,6 +1922,18 @@ will be removed. The identifiers can be integers or strings.
         something with the same length as the independent axis. This
         is intended to be used from the property setter.
 
+        When sent a sequence, the length check is complicated if a
+        quality filter is in place. Should it only allow the original
+        size (i.e. something of size DETCHANS) or can it take data
+        that matches the quality-filtered size, and the extra elements
+        get added (set to 0)? There is the related issue of whether
+        the size field gets reduced when ignore_bad is called.
+
+        **AT THE MOMENT** the aim is that the size attribute
+        represents the total number of channels (i.e. DETCHANS) and
+        any array sent here must match that size. Either or both of
+        these may change.
+
         """
         if val is None:
             setattr(self, f"_{attr}", None)
@@ -1851,6 +1953,27 @@ will be removed. The identifiers can be integers or strings.
         super()._set_related(attr, np.asarray(val),
                              check_mask=check_mask)
 
+    @overload
+    def _get_qfiltered(self, vals: None) -> None:
+        ...
+
+    @overload
+    def _get_qfiltered(self, vals: float) -> float:
+        ...
+
+    @overload
+    def _get_qfiltered(self, vals: np.ndarray) -> np.ndarray:
+        ...
+
+    def _get_qfiltered(self, vals):
+        """Filter by the quality array, if set."""
+
+        if vals is None or not np.iterable(vals) or \
+           self.quality_filter is None:
+            return vals
+
+        return vals[self.quality_filter]
+
     # Set up the aliases for channel and counts
     #
     @property
@@ -1858,8 +1981,15 @@ will be removed. The identifiers can be integers or strings.
         """The channel array.
 
         This is the first, and only, element of the indep attribute.
+
+        Notes
+        -----
+        This will return a smaller array than the number of detector
+        channels if a quality array is in use and it has non-zero
+        elements.
+
         """
-        return self.indep[0]
+        return self._get_qfiltered(self.indep[0])
 
     @channel.setter
     def channel(self, val: Optional[ArrayType]) -> None:
@@ -1871,6 +2001,27 @@ will be removed. The identifiers can be integers or strings.
             return
 
         self.indep = (_check(val), )
+
+    # Override y to add the quality filtering.
+    #
+    @property
+    def y(self) -> Optional[np.ndarray]:
+        """The dependent axis.
+
+        If set, it must match the size of the independent axes.
+
+        Notes
+        -----
+        This will return a smaller array than the number of detector
+        channels if a quality array is in use and it has non-zero
+        elements.
+
+        """
+        return self._get_qfiltered(self._y)
+
+    @y.setter
+    def y(self, val: ArrayType) -> None:
+        self._set_related("y", val, check_mask=False)
 
     @property
     def counts(self) -> Optional[np.ndarray]:
@@ -1884,27 +2035,115 @@ will be removed. The identifiers can be integers or strings.
     def counts(self, val: Optional[np.ndarray]):
         self.y = val
 
-    # Override the mask handling because the mask matches the grouped
-    # data length, not the independent axis.
+    # The mask handling is complex because the mask
+    # - represents the grouped data
+    # - and has to worry about the quality filter, if set.
     #
-    @Data1D.mask.setter
+    # At present the mask must match the grouped and filtered length,
+    # which includes any quality filtering, when not None.
+    #
+    # Setting the mask to None will not change the status of the
+    # quality-filtered channels.
+    #
+    @property
+    def mask(self) -> Union[np.ndarray, bool]:
+        """Mask array for dependent variable
+
+        Complexities added by the DataPHA class:
+
+        1. the data may be grouped, in which case the mask matches
+           the grouped data
+        2. qualify filtering, by `ignore_bad`, will be added to
+           any mask set by `notice` or `ignore`.
+
+        """
+
+        mask = self._data_space.filter.mask
+
+        if self.quality_filter is None:
+            return mask
+
+        # Should this always error out here?
+        if self.size is None:
+            raise DataErr("sizenotset", self.name)
+
+        # The assumption is that at least one element of
+        # self.quality_filter is not True.
+        #
+        if not self.grouped:
+            if mask is False:
+                return np.zeros(self.size, dtype=bool)
+
+            if mask is True:
+                out = np.ones(self.size, dtype=bool)
+            else:
+                out = mask
+
+            return out & self.quality_filter
+
+        # How to apply to a grouped dataset?
+        #
+        # The assumption here is that we only mark a group "bad" from
+        # the quality filter is if each element of the group has bad
+        # quality. To do this the code replicates apply_grouping; it
+        # is not used directly to avoid confusion over whether quality
+        # filtering is handled there or not. Working out this is a
+        # bit messy: look for any groups which have a max of False.
+        #
+        # However, at present the data is assumed to already have been
+        # filtered to remove bad-quality values, so it's not clear
+        # what we want to do.
+        #
+        maxvals = do_group(self.quality_filter, self.grouping, "_max")
+        qfilt = maxvals > 0
+
+        # What is the output size to be?
+        # nelem = qfilt.size
+        nelem = qfilt.sum()
+
+        if mask is False:
+            return np.zeros(nelem, dtype=bool)
+
+        if mask is True:
+            return np.ones(nelem, dtype=bool)
+
+        # This is not turning out to be what I expected...
+        #
+        if qfilt.all():
+            return mask
+
+        # DEFNIITELY WRONG
+        print((nelem, qfilt.size, qfilt, mask))
+        # return mask & qfilt
+        return mask
+
+    @mask.setter
     def mask(self, val: Union[ArrayType, bool]) -> None:
 
+<<<<<<< HEAD
         # We only need to over-ride the behavior if the data is
         # grouped and val is a sequence (so we test with isscalar
         # rather than iterable, to avoid selecting strings).
+=======
+        # Pass scalar values through to the superclass.
+>>>>>>> 73e976ce (bad WIP WAT)
         #
-        if self.grouped and val is not None and not np.isscalar(val):
-            # The assumption is that if the data is grouped then it contains data.
-            nexp = len(self.get_y(filter=False))
-            if len(val) != nexp:
-                raise DataErr("mismatchn", "grouped data", "mask", nexp, len(val))
-
-            self._data_space.filter.mask = val
+        if val is None or np.isscalar(val):
+            Data1D.mask.fset(self, val)
             return
 
-        # This is a bit messy just to call the original code
-        Data1D.mask.fset(self, val)
+        mask = _check(val)
+        nmask = len(mask)
+
+        # Rely on get_y handling both grouping and quality filtering
+        # to determine the correct size.
+        #
+        nexp = len(self.get_y(filter=False))
+        if nmask != nexp:
+            label = "grouped data" if self.grouped else "data"
+            raise DataErr("mismatchn", label, "mask", nexp, nmask)
+
+        self._data_space.filter.mask = mask
 
     # Set up the properties for the related fields
     #
@@ -1914,8 +2153,15 @@ will be removed. The identifiers can be integers or strings.
 
         The values are expected to be in descending order. This is
         only expected to be set for Chandra grating data.
+
+        Notes
+        -----
+        This will return a smaller array than the number of detector
+        channels if a quality array is in use and it has non-zero
+        elements.
+
         """
-        return self._bin_lo
+        return self._get_qfiltered(self._bin_lo)
 
     @bin_lo.setter
     def bin_lo(self, val: Optional[ArrayType]) -> None:
@@ -1928,8 +2174,15 @@ will be removed. The identifiers can be integers or strings.
         The values are expected to be in descending order, with the
         bin_hi value larger than the corresponding bin_lo element.
         This is only expected to be set for Chandra grating data.
+
+        Notes
+        -----
+        This will return a smaller array than the number of detector
+        channels if a quality array is in use and it has non-zero
+        elements.
+
         """
-        return self._bin_hi
+        return self._get_qfiltered(self._bin_hi)
 
     @bin_hi.setter
     def bin_hi(self, val: Optional[ArrayType]) -> None:
@@ -1945,6 +2198,10 @@ will be removed. The identifiers can be integers or strings.
         number of channels and it will be converted to an integer type
         if necessary.
 
+        .. versionchanged:: 4.17.0
+           The return value is now filtered to remove any "bad
+           quality" elements after calling ignore_bad.
+
         .. versionchanged:: 4.15.1
            The filter is now re-calculated when the grouping is
            changed. It is suggested that the filter be checked with
@@ -1959,8 +2216,14 @@ will be removed. The identifiers can be integers or strings.
         --------
         group, grouped, quality
 
+        Notes
+        -----
+        This will return a smaller array than the number of detector
+        channels if a quality array is in use and it has non-zero
+        elements.
+
         """
-        return self._grouping
+        return self._get_qfiltered(self._grouping)
 
     @grouping.setter
     def grouping(self, val: Optional[ArrayType]) -> None:
@@ -2022,6 +2285,11 @@ will be removed. The identifiers can be integers or strings.
         --------
         group, grouping
 
+        Notes
+        -----
+        Unlike other attributes, this returns the full quality array,
+        when set.
+
         """
         return self._quality
 
@@ -2036,12 +2304,53 @@ will be removed. The identifiers can be integers or strings.
             except TypeError:
                 raise DataErr("notanintarray") from None
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+        # If self.quality_filter is not None then what should be done?
+=======
         # If the quality changes, should we re-create the filter as we
         # do with grouping? No, because the quality array is currently
-        # not automatically applied. Although perhaps we should reset
-        # quality_filter?
+        # not automatically applied.
+>>>>>>> 73e976ce (bad WIP WAT)
         #
+>>>>>>> eadd1701 (bad WIP WAT)
         self._set_related("quality", val)
+        if self.quality_filter is None:
+            return
+
+        # If we have no quality filters, reset the value.
+        #
+        if val is None:
+            self.quality_filter = None
+            warning('Quality filter has been removed')
+            return
+
+        qual_flags = ~np.asarray(self.quality, dtype=bool)
+        if np.all(self.quality_filter == qual_flags):
+            # No change is easy to handle.
+            return
+
+        # If the quality changes and 'ignore_bad' has been used should
+        # this
+        #
+        # - do nothing
+        # - error out
+        # - silently change the quality mask
+        # - warn the user and reset the filter
+        #
+        # Is is similar to ignore_bad(), which resets the filter, when
+        # the data is grouped.
+        #
+        # Check the values before resetting quality_filter.
+        warn = self.grouped and self.mask is not True
+
+        self.quality_filter = qual_flags
+        if warn:
+            self.notice()
+            warning('quality filter has changed, previous filters deleted')
+
+        # TODO: QUAL reset quality_filter
 
     # It is unclear exactly what the quality_filter is meant to
     # represent, so as part of improving support for ignore_bad, add
@@ -2067,7 +2376,8 @@ will be removed. The identifiers can be integers or strings.
         return self._quality_filter
 
     # TODO: should this be allowed? Maybe this should only be set
-    # internally with ignore_bad?
+    # internally with ignore_bad? That would make it slightly-clearer
+    # that users shouuld not change elements of the array themselves.
     #
     @quality_filter.setter
     def quality_filter(self, val: Optional[ArrayType]) -> None:
@@ -2083,8 +2393,15 @@ will be removed. The identifiers can be integers or strings.
         """The area scaling value (can be a scalar or array).
 
         If this is an array then it must match the length of channel.
+
+        Notes
+        -----
+        This will return a smaller array than the number of detector
+        channels if a quality array is in use and it has non-zero
+        elements.
+
         """
-        return self._areascal
+        return self._get_qfiltered(self._areascal)
 
     @areascal.setter
     def areascal(self, val):
@@ -2095,8 +2412,15 @@ will be removed. The identifiers can be integers or strings.
         """The background scaling value (can be a scalar or array).
 
         If this is an array then it must match the length of channel.
+
+        Notes
+        -----
+        This will return a smaller array than the number of detector
+        channels if a quality array is in use and it has non-zero
+        elements.
+
         """
-        return self._backscal
+        return self._get_qfiltered(self._backscal)
 
     @backscal.setter
     def backscal(self, val):
@@ -2611,6 +2935,7 @@ will be removed. The identifiers can be integers or strings.
                 elo = hc / self.bin_hi
                 ehi = hc / self.bin_lo
         else:
+            # TODO: QUAL these values have not been filtered by the quality array
             arf, rmf = self.get_response(response_id)
             if rmf is not None:
                 if (rmf.e_min is None) or (rmf.e_max is None):
@@ -2745,6 +3070,7 @@ will be removed. The identifiers can be integers or strings.
                     if filter:
                         lo, hi = arf.get_indep()
 
+                # TODO: QUAL these values have not been filtered by the quality array
                 energylist.append((lo, hi))
 
             if len(energylist) > 1:
@@ -3176,6 +3502,10 @@ It is an integer or string.
     def apply_filter(self, data, groupfunc=np.sum):
         """Group and filter the supplied data to match the data set.
 
+        .. versionchanged:: 4.17.0
+           Improvements to the handling if `ignore_bad` means that the
+           data size can now match the number of "good" elements.
+
         Parameters
         ----------
         data : ndarray or None
@@ -3269,25 +3599,49 @@ It is an integer or string.
         data = _check(data)
         ndata = len(data)
 
-        # We allow the data to have either (using the un-grouped data)
+        # We allow the data to have (using the un-grouped data)
         #
         # - the size of the data object (all channels)
-        # - the size of the filtered object
+        # - the size of the filtered data
+        #
+        # The issue becomes what to we mean by "filtered" here,
+        # because there's
+        #
+        # - the notice/ignore range
+        # - any quality filter done by ignore_bad
+        #
+        # The assumption for now is that we require both. I could
+        # see this causing a problem somewhere (manly the quality
+        # filtering).
         #
         # This is unlike the other Data classes, where only the "all
         # channel" case is supported. We need to allow this new
         # behavior to support model evaluation via eval_model_to_fit
         # when using a PHA-based instrument model.
         #
+        # It would be nice to just let apply_grouping worry about
+        # this, but that routine has to worry about arrays matching
+        # the grouped data size, and this routine deals with ungrouped
+        # data.
+        #
         if ndata != nelem:
 
+            # What is the expected size?
+            #
             mask = self.get_mask()
+
+
+            # mask is either None or an array
             if mask is None:
                 # All elements have been filtered out, so error out.
                 #
                 raise DataErr("notmask")
 
-            nfiltered = mask.sum()
+            if mask is None:
+                nfiltered = self.quality_filter.sum()
+            else:
+                nfiltered = mask.sum()
+
             if nfiltered != ndata:
                 # It is hard to get a concise error here: assume that the user
                 # would prefer to know about the filtered length.
@@ -3302,7 +3656,11 @@ It is an integer or string.
             temp[mask] = data
             data = temp
 
+        # The apply_grouping method handles any quality filtering.
+        #
+        print(f"DBG: data size {data.size}")
         gdata = self.apply_grouping(data, groupfunc)
+        print(f"DBG: gdata size {gdata.size}")
 
         # We can not
         #
@@ -3316,6 +3674,11 @@ It is an integer or string.
         # there are places where we need this behavior. Can we add an
         # "effective size" property?
         #
+        try:
+            print(f"DBG: filter size {self._data_space.filter.mask.size}")
+            print(f"DBG: filter sum  {self._data_space.filter.mask.sum()}")
+        except AttributeError:
+            pass
         return self._data_space.filter.apply(gdata)
 
     @overload
@@ -3333,11 +3696,15 @@ It is an integer or string.
     def apply_grouping(self, data, groupfunc=np.sum):
         """Apply the grouping scheme of the data set to the supplied data.
 
+        .. versionchanged:: 4.17.0
+           Improvements to the handling if `ignore_bad` means that the
+           data size can now match the number of "good" elements.
+
         Parameters
         ----------
         data : ndarray or None
-            The data to group, which must match the number of channels
-            of the data set.
+            The data to group, which must match either the number of
+            channels of the data set or the number of "good" channels.
         groupfunc : function reference
             The grouping function. Note that what matters is the name
             of the function, not its code. The supported function
@@ -3394,15 +3761,19 @@ It is an integer or string.
 
         >>> from sherpa.astro.io import read_pha
         >>> pha = read_pha(data_3c273 + '3c273.pi')
+        >>> pha.grouped
+        True
         >>> gcounts = pha.apply_grouping(pha.counts)
+        >>> pha.counts.size
+        1024
+        >>> gcounts.size
+        46
 
         The grouping for an unfiltered PHA data set with 1024 channels
         is used to calculate the number of channels in each group, the
         lowest channel number in each group, the highest channel
         number in each group, and the mid-point between the two:
 
-        >>> pha.grouped
-        True
         >>> pha.mask
         True
         >>> len(pha.channel)
@@ -3422,6 +3793,8 @@ It is an integer or string.
         used):
 
         >>> pha.notice()
+        >>> pha.mask
+        True
         >>> v1 = pha.apply_grouping(dvals)
         >>> pha.notice(1.2, 4.5)
         >>> v2 = pha.apply_grouping(dvals)
@@ -3429,36 +3802,62 @@ It is an integer or string.
         True
 
         """
+
         if data is None:
             return None
 
-        nelem = self.size
-        if nelem is None:
+        # At the moment, self.size represents the total number of
+        # channels, and not the number of "good" channels to use.
+        #
+        if self.size is None:
             raise DataErr("sizenotset", self.name)
 
+        # The data can match either the number of channels or, if
+        # quality filtering is in use, the number of "good" channels.
+        #
         data = _check(data)
         ndata = len(data)
-        if ndata != nelem:
-            raise DataErr("mismatchn", "data", "array", nelem, ndata)
 
-        # TODO: This should probably apply the quality filter whether
-        # grouped or not.
+<<<<<<< HEAD
+        qfilter = self.quality_filter
+=======
+        # Filter down the input array if needed, otherwise check the
+        # size.
         #
-        if not self.grouped:
-            return data
+        if self.quality_filter is not None:
+            if ndata == self.size:
+                data = data[self.quality_filter]
 
+            else:
+                nfilt = self.quality_filter.sum()
+                if ndata != nfilt:
+                    raise DataErr("mismatchn", "data", "array", nfilt, ndata)
+
+        elif ndata != self.size:
+            raise DataErr("mismatchn", "data", "array", self.size, ndata)
+
+>>>>>>> f778e91e (bad WIP WAT)
+        if not self.grouped:
+            if qfilter is None:
+                return data
+
+            return data[qfilter]
+
+<<<<<<< HEAD
         groups = self.grouping
-        filter = self.quality_filter
-        if filter is None:
+        if qfilter is None:
             return do_group(data, groups, groupfunc.__name__)
 
-        nfilter = len(filter)
+        nfilter = len(qfilter)
         if len(data) != nfilter or len(groups) != nfilter:
             raise DataErr("mismatchn", "quality filter", "array", nfilter, len(data))
 
-        filtered_data = np.asarray(data)[filter]
-        groups = np.asarray(groups)[filter]
-        return do_group(filtered_data, groups, groupfunc.__name__)
+        filtered_data = np.asarray(data)[qfilter]
+        filtered_groups = np.asarray(groups)[qfilter]
+        return do_group(filtered_data, filtered_groups, groupfunc.__name__)
+=======
+        return do_group(data, self.grouping, groupfunc.__name__)
+>>>>>>> f778e91e (bad WIP WAT)
 
     def ignore_bad(self) -> None:
         """Exclude channels marked as bad.
@@ -3488,6 +3887,44 @@ It is an integer or string.
         if self.quality is None:
             raise DataErr("noquality", self.name)
 
+<<<<<<< HEAD
+        qual_flags = ~np.asarray(self.quality, dtype=bool)
+
+        # Special case the "nothing has changed" case.
+        #
+        if self.quality_filter is not None and \
+           (self.quality_filter == qual_flags).all():
+            return
+
+        ofilter = self.get_filter()
+
+        if qual_flags.all():
+            # Special case there being no "bad" elements
+            self.quality_filter = None
+        else:
+            self.quality_filter = qual_flags
+
+        nfilter = self.get_filter()
+        if ofilter == nfilter:
+            # Special case the filter not changing,
+            return
+
+        # Should this be done here or somwhere else?
+        warning(f"Filter change: {ofilter} -> {nfilter}")
+=======
+        # Any non-zero value is treated as "bad". HEASARC/XSPEC use 1
+        # and 5 to mean "ignore at all times" and 2 comes from grouped
+        # data that does not match the grouping criteria. At present
+        # Sherpa does not respect this difference.
+        #
+        # IDEA
+        # - have a separate _quality_foo bool array (True is good,
+        #   False is bad)
+        # - if this is set then when setting mask
+        #   you can't set to True, as you always or the
+        #   result with the _quality_foo array to get the result
+        #
+
         qual_flags = ~np.asarray(self.quality, bool)
 
         if self.grouped and (self.mask is not True):
@@ -3502,10 +3939,14 @@ It is an integer or string.
                 return
 
             self.mask = qual_flags
-            return
+            return  # TODO: QUAL  why the return ie do not change quality_filter?
 
-        # self.quality_filter used for pre-grouping filter
+        # quality_filter is used to filter an array of self.size
+        # elements to access the desired ("good") values. See
+        # the _get_qfiltered method.
+        #
         self.quality_filter = qual_flags
+>>>>>>> 73e976ce (bad WIP WAT)
 
     def _dynamic_group(self,
                        group_func: Union[Callable, str],
@@ -3594,6 +4035,9 @@ It is an integer or string.
             if np.iterable(mask):
                 kwargs["tabStops"] = ~mask
 
+        # If ignore_bad has been called then this may change the
+        # quality filter.
+        #
         self.grouping, self.quality = group_func(*args, **kwargs)
         self.group()
         self._original_groups = False
@@ -3947,7 +4391,11 @@ It is an integer or string.
                             errorCol=errorCol)
 
     def eval_model_to_fit(self, modelfunc):
+
+should we call eval_model instead and do the filtering here?
+
         model = super().eval_model_to_fit(modelfunc)
+        print(f"DBG: model size {model.size}")
         return self.apply_filter(model)
 
     def sum_background_data(self,
@@ -4050,11 +4498,6 @@ It is an integer or string.
     def get_dep(self,
                 filter: bool = False
                 ) -> Optional[np.ndarray]:
-        # FIXME: Aneta says we need to group *before* subtracting, but that
-        # won't work (I think) when backscal is an array
-        # if not self.subtracted:
-        #     return self.counts
-        # return self.counts - self.sum_background_data()
 
         dep = self.counts
 
@@ -4072,7 +4515,7 @@ It is an integer or string.
             dep = dep - bkg
 
         if bool_cast(filter):
-            dep = self.apply_filter(dep)
+            return self.apply_filter(dep)
 
         return dep
 
@@ -4504,6 +4947,13 @@ It is an integer or string.
     #
     def get_y(self, filter=False, yfunc=None, response_id=None,
               use_evaluation_space=False):
+        """Return the dependent axis.
+
+        .. versionchanged:: 4.17.0
+           If ignore_bad has been called then the bad-quality bins are
+           always ignored, even when filter is not set.
+
+        """
 
         vals = Data.get_y(self, yfunc=yfunc)
         vallist = (vals,) if yfunc is None else vals
@@ -4669,22 +5119,19 @@ It is an integer or string.
         chans = self.channel
 
         # get_mask returns None if all the data has been filtered.
+        # TODO: is this still true?
         mask = self.get_mask()
         if mask is None:
             return np.asarray([], dtype=chans.dtype)
 
-        # This is added to address issue #361
+        # The channels have been filtered by any quality_filter but
+        # get_mask has not been.
         #
-        # If there is a quality filter then the mask may be
-        # smaller than the chans array. It is not clear if this
-        # is the best location for this. If it is, then are there
-        # other locations where this logic is needed?
-        #
-        if self.quality_filter is not None and \
-           self.quality_filter.size != mask.size:
-            chans = chans[self.quality_filter]
+        if self.quality_filter is None:
+            return chans[mask]
 
-        return chans[mask]
+        fmask = mask[self.quality_filter]
+        return chans[fmask]
 
     def get_mask(self) -> Optional[np.ndarray]:
         """Returns the (ungrouped) mask.
@@ -4693,6 +5140,9 @@ It is an integer or string.
            When all channels are selected the routine now returns an
            array rather than None, and it is an error to call it on an
            empty data set (one whose channel field has not been set).
+           The return value is now filtered to clear any "bad quality"
+           elements after calling ignore_bad, but it remains the full
+           length of the data array.
 
         Returns
         -------
@@ -4704,28 +5154,175 @@ It is an integer or string.
         if self.size is None:
             raise DataErr("sizenotset", self.name)
 
-        # I am not convinced that self.mask will always be an array if
-        # quality filtering is in use, so do not assume that for now.
+        # The assumption is that qualit filtering is applied in the
+        # mask call, so this routine only needs to worry about the
+        # grouped data case.
         #
-        if self.mask is False:
-            return None
+        qual = self.quality_filter
+        mask = self.mask
 
-        if self.mask is True:
-            if self.quality_filter is None:
-                return np.ones(self.size, dtype=bool)
+        # Separate out the options
+        # - mask is False
+        # - mask is True
+        #   OR
+        #   data is ungrouped
+        # - data is grouped and mask is an array
+        #
+        if mask is False:
+            if qual is None:
+                # Why do we do this?
+                return None
 
-            return self.quality_filter.copy()
+            return np.zeros(self.size, dtype=bool)
 
+<<<<<<< HEAD
+        if mask is True or not self.grouped:
+            if mask is True:
+                out = np.ones(self.size, dtype=bool)
+            else:
+                out = mask.copy()
+
+            if qual is None:
+                return out
+
+            return out & qual
+
+        # It is possible for mask to be empty, if the quality array
+        # removes all the entries.
+        #
+        if mask.size == 0:
+            return np.zeros(self.size, dtype=bool)
+
+        # The mask is grouped, so it needs to be expanded out using
+        # the grouping field. If quality filtering is in play then
+        #
+        # a) a group may contain good and bad quality channels, so
+        #    this needs to be corrected after the expansion
+        #
+        # b) the mask will not include data for groups which are all
+        #    bad, so these channels will somehow have to be added
+        #
+        ngrps = np.sum(self.grouping >= 0)
+        if mask.size == ngrps:
+            out = expand_grouped_mask(mask, self.grouping)
+        else:
+            # Replicate expand_grouped_mask but with a quality check,
+            # here using quality_filter rather than self.quality in
+            # case we allow for subsetting the quality check. The
+            # assumption is that self.quality_filter can not be None
+            # here.
+            #
+            # We can not rely on apply_grouping here since that ends
+            # up calling this routine.
+            #
+            midx = 0
+            out = np.zeros(self.size, dtype=bool)
+            check = np.zeros(self.size, dtype=int)
+
+<<<<<<< HEAD
+            # The state encodes the start of the group and the quality
+            # state of the group (all we care about is if it's all False,
+            # because if it is then it has been dropped from the mask
+            # array).
+            #
+            state = None
+
+            # It is okay for a "bad quality" bin to be marked as good
+            # in this routine, since it will be cleared later.
+            #
+            for idx, (gval, qval) in enumerate(zip(self.grouping, qual)):
+                if state is None:
+                    if gval < 0:
+                        # Try to mimic expand_grouped_mask error handling.
+                        raise ValueError("The first element of group is negative")
+
+                    # We either have the start of a group or bad-quality
+                    # channels.
+                    #
+                    state = {"start": idx, "qual": qval}
+                    continue
+
+                # Is this part of a group?
+                #
+                if gval < 0:
+                    state["qual"] |= qval
+                    continue
+
+                # This is a new group so we have to decide what to do
+                # with the preceeding group: is it part of mask, so
+                # the output needs changing, or has it been marked as
+                # all bad, in which case we can just carry on to the
+                # next group.
+                #
+                if state["qual"]:
+                    if midx >= mask.size:
+                        raise ValueError("More groups than mask elements")
+
+                    out[state["start"]:idx + 1] = mask[midx]
+                    check[state["start"]:idx + 1] += 1
+                    midx += 1
+
+                state = {"start": idx, "qual": qval}
+
+            # Check we have done this correctly
+            if midx < mask.size:
+                raise ValueError("More mask elements than groups")
+
+            if np.any(check > 1):  # TODO: remove
+                print(out)
+                print(check)
+                assert False
+
+            #print("@@@@@@@")
+            #print(mask.size)
+            #print(mask)
+            #print(ngrps)
+            #print("---")
+            #print(self.grouping)
+            #print(self.quality)
+            #print(self.quality_filter)
+            #print("->")
+            #print(out)
+            #print("@@@@@@@")
+            #assert False, (mask.size, ngrps, mask, self.grouping)
+
+        if qual is None:
+            return out
+
+        return out & qual
+=======
+        qfilt = np.ones(self.size, dtype=bool) if qual is None else qual
+<<<<<<< HEAD
+        return out & qfilt
+=======
+<<<<<<< HEAD
+        # out = expand_grouped_mask(mask, self.grouping)
+        # return out & qfilt
+        print(mask)
+        print(self.grouping)
+        prnit(self.grouping[qfilt])
+        return expand_grouped_mask(mask, self.grouping[qfilt])
+=======
+        # out = expand_grouped_mask(mask, self.grouping[qfilt])  # TODO: review
+        out = expand_grouped_mask(mask, self.grouping)
+        return out & qfilt
+=======
         if not self.grouped:
             mask = self.mask.copy()
-            # This does not apply the quality filter
+            if self.quality_filter is not None:
+                mask &= self.quality_filter
+
             return mask
 
-        groups = self.grouping
-        if self.quality_filter is not None:
-            groups = groups[self.quality_filter]
-
-        return expand_grouped_mask(self.mask, groups)
+        # DO WE NEED THIS???
+        # groups = self.grouping
+        # if self.quality_filter is not None:
+        #     groups = groups[self.quality_filter]
+        return expand_grouped_mask(self.mask, self.grouping)
+>>>>>>> 1aa6b5b2 (bad WIP WAT)
+>>>>>>> 4d74f84b (bad WIP WAT)
+>>>>>>> f778e91e (bad WIP WAT)
+>>>>>>> 385d52a8 (bad WIP WAT)
 
     def get_noticed_expr(self) -> str:
         """Returns the current set of noticed channels.
@@ -5111,10 +5708,11 @@ It is an integer or string.
         if filter_background_only:
             return
 
-        # Go on if we are also supposed to filter the source data
+        # Go on if we are also supposed to filter the source data.
+        #
         if lo is None and hi is None:
-            self.quality_filter = None
-            self.notice_response(False)
+            # This does not remove any quality filter.
+            self.notice_response(notice_resp=False)
 
         # elo and ehi will be in channel (units=channel) or energy
         # (units=energy or units=wavelength).
