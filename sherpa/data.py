@@ -2042,8 +2042,8 @@ class Data1D(Data):
         >>> x = np.arange(0.4, 2.6, 0.2)
         >>> y = np.ones_like(x)
         >>> d = Data1D('example', x, y)
-        >>> d.x[0], d.x[-1]
-        (0.4, 2.4000000000000004)
+        >>> print(d.x[0], d.x[-1])
+        0.4 2.4000000000000004
         >>> d.notice()
         >>> d.get_filter(format='%.1f')
         '0.4:2.4'
@@ -2326,8 +2326,8 @@ class Data1DInt(Data1D):
         >>> xlo, xhi = edges[:-1], edges[1:]
         >>> y = np.ones_like(xlo)
         >>> d = Data1DInt('example', xlo, xhi, y)
-        >>> d.xlo[0], d.xhi[-1]
-        (0.4, 2.400000000000001)
+        >>> print(d.xlo[0], d.xhi[-1])
+        0.4 2.400000000000001
         >>> d.get_filter(format='%.1f')
         '0.4:2.4'
         >>> d.notice(0.8, 1.9)
