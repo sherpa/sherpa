@@ -31,6 +31,11 @@ fi
 
 # Sanity check
 #
+if [ "$CONDA_PREFIX" != "$ASCDS_INSTALL" ]; then
+    echo "ERROR: somehow CONDA_PREFIX and ASDCS_INSTALL are not the same"
+    exit 1;
+fi
+
 # Extract the XSPEC version from the conda packaging metadata;
 # hopefully the formatting and structure remain consistent.
 #
