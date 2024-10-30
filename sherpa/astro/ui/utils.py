@@ -14795,7 +14795,7 @@ class Session(sherpa.ui.utils.Session):
                            bkg_id: Optional[IdType] = None,
                            model=None,
                            otherids: Sequence[IdType] = (),
-                           clip='hard'):
+                           clip='hard', est_method_args = None):
         """Return the energy flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -15026,14 +15026,14 @@ class Session(sherpa.ui.utils.Session):
                                              num=num, lo=lo, hi=hi,
                                              numcores=numcores,
                                              samples=scales, clip=clip,
-                                             rng=self.get_rng())
+                                             rng=self.get_rng(), est_method_args=est_method_args)
 
     def sample_flux(self, modelcomponent=None, lo=None, hi=None,
                     id: Optional[IdType] = None,
                     num=1, scales=None, correlated=False,
                     numcores=None,
                     bkg_id: Optional[IdType] = None,
-                    Xrays=True, confidence=68):
+                    Xrays=True, confidence=68, est_method_args=None):
         """Return the flux distribution of a model.
 
         For each iteration, draw the parameter values of the model
@@ -15246,7 +15246,7 @@ class Session(sherpa.ui.utils.Session):
                                               scales=scales, clip='soft',
                                               correlated=correlated,
                                               numcores=numcores,
-                                              bkg_id=bkg_id)
+                                              bkg_id=bkg_id, est_method_args=est_method_args)
 
         return sherpa.astro.flux.calc_sample_flux(lo=lo, hi=hi,
                                                   fit=fit, data=data, samples=samples,
