@@ -60,7 +60,7 @@ Changing parameter values
 
 The `val` attribute is used to retrieve or change the parameter value:
 
-    >>> p.val
+    >>> print(p.val)
     2.0
     >>> p.val = 3
 
@@ -72,9 +72,9 @@ of the parameter (known as the "soft" limits). The default values
 for these are the 32-bit floating point maximum value, and it's
 negative:
 
-    >>> p.max
+    >>> print(p.max)
     3.4028234663852886e+38
-    >>> p.min
+    >>> print(p.min)
     -3.4028234663852886e+38
 
 Setting a value outside this range will raise a
@@ -578,9 +578,9 @@ Examples
 >>> a = Parameter("mdl", "a", 2)
 >>> b = Parameter("mdl", "b", 1)
 >>> b.link = 10 - a
->>> a.val
+>>> print(a.val)
 2.0
->>> b.val
+>>> print(b.val)
 8.0
 """)
 

@@ -152,7 +152,7 @@ and the expression is stored in the link attribute:
 
     >>> m1.ampl = 10
     >>> m2.ampl = 12
-    >>> m3.ampl.val
+    >>> print(m3.ampl.val)
     11.0
     >>> m3.ampl.link
     <BinaryOpParameter '(gauss1d.ampl + gmdl.ampl) / 2'>
