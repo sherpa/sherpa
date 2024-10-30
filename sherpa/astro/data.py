@@ -521,7 +521,7 @@ def html_arf(arf):
 
     # Unlike the string representation, this provides extra
     # information (e.g. energy range covered). Should it include
-    # any filters or masks? How about bin_lo/hi values?
+    # any filters or masks?
     #
     # It also assumes the units are keV/cm^2 which is not
     # guaranteed.
@@ -556,14 +556,6 @@ def html_arf(arf):
 
     erange = _calc_erange(arf.energ_lo, arf.energ_hi)
     meta.append(('Energy range', erange))
-
-    # It would be nice to show the wavelength range, but how to decide
-    # when to include it? For now the presence of bin_lo/hi fields is
-    # used (this is not an OGIP standard).
-    #
-    if arf.bin_lo is not None and arf.bin_hi is not None:
-        wrange = _calc_wrange(arf.bin_lo, arf.bin_hi)
-        meta.append(('Wavelength range', wrange))
 
     a1 = np.min(arf.specresp)
     a2 = np.max(arf.specresp)
@@ -938,7 +930,7 @@ class DataARF(DataOgipResponse):
 
     """
     _ui_name = "ARF"
-    _fields = ("name", "energ_lo", "energ_hi", "specresp", "bin_lo", "bin_hi")
+    _fields = ("name", "energ_lo", "energ_hi", "specresp")
     _extra_fields = ("exposure", "ethresh")
 
     def _get_specresp(self):
@@ -953,8 +945,9 @@ class DataARF(DataOgipResponse):
     def __init__(self, name, energ_lo, energ_hi, specresp, bin_lo=None,
                  bin_hi=None, exposure=None, header=None, ethresh=None):
         self.specresp = specresp
-        self.bin_lo = bin_lo
-        self.bin_hi = bin_hi
+        # Keep these fields for now, but they are unused.
+        self.bin_lo = None
+        self.bin_hi = None
         self.exposure = exposure
         self.header = {} if header is None else header
         self.ethresh = ethresh
@@ -1485,7 +1478,8 @@ class DataPHA(Data1D):
     [OGIP_92_007a]_.
 
     .. versionchanged:: 4.17.1
-       The bin_lo and bin_hi columns are now ignored.
+       The bin_lo and bin_hi columns are now ignored. A diagonal RMF
+       can be added to represent the mapping if needed.
 
     Parameters
     ----------
@@ -1558,11 +1552,11 @@ class DataPHA(Data1D):
     discontinuities where the area-scaling factor changes strongly).
 
     """
-    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'bin_lo', 'bin_hi', 'grouping', 'quality')
+    _fields = ('name', 'channel', 'counts', 'staterror', 'syserror', 'grouping', 'quality')
     _extra_fields = ('exposure', 'backscal', 'areascal', 'grouped', 'subtracted', 'units', 'rate',
                      'plot_fac', 'response_ids', 'background_ids')
 
-    _related_fields = Data1D._related_fields + ("bin_lo", "bin_hi", "counts", "grouping", "quality",
+    _related_fields = Data1D._related_fields + ("counts", "grouping", "quality",
                                                 "backscal", "areascal")
 
     def __init__(self,
@@ -1571,8 +1565,8 @@ class DataPHA(Data1D):
                  counts: Optional[ArrayType],
                  staterror: Optional[ArrayType] = None,
                  syserror: Optional[ArrayType] = None,
-                 bin_lo: Optional[ArrayType] = None,
-                 bin_hi: Optional[ArrayType] = None,
+                 bin_lo: ArrayType | None = None,
+                 bin_hi: ArrayType | None = None,
                  grouping: Optional[ArrayType] = None,
                  quality: Optional[ArrayType] = None,
                  exposure=None,
@@ -1595,14 +1589,12 @@ class DataPHA(Data1D):
 
         # Assert types: is there a better way to do this?
         #
-        self._bin_lo: Optional[np.ndarray]
-        self._bin_hi: Optional[np.ndarray]
         self._grouping: Optional[np.ndarray]
         self._quality: Optional[np.ndarray]
         self._quality_filter: Optional[np.ndarray]
 
-        self.bin_lo = _check(bin_lo)
-        self.bin_hi = _check(bin_hi)
+        self.bin_lo = None
+        self.bin_hi = None
         self.quality = _check(quality)
         self.grouping = _check(grouping)
         self.exposure = exposure
@@ -1955,31 +1947,40 @@ will be removed. The identifiers can be integers or strings.
     # Set up the properties for the related fields
     #
     @property
-    def bin_lo(self) -> Optional[np.ndarray]:
+    def bin_lo(self) -> np.ndarray | None:
         """The lower edge of each channel, in Angstroms, or None.
 
-        The values are expected to be in descending order. This is
-        only expected to be set for Chandra grating data.
+        .. versionchanged:: 4.17.1
+           This field is no-longer used. A diagonal RMF can be added
+           to represent the mapping between channel and bin_lo/hi
+           values.
+
         """
-        return self._bin_lo
+        return None
 
     @bin_lo.setter
-    def bin_lo(self, val: Optional[ArrayType]) -> None:
-        self._set_related("bin_lo", val)
+    def bin_lo(self, val: ArrayType | None) -> None:
+        if val is None:
+            return
+
+        warnings.warn("The bin_lo/hi fields are no-longer used: a diagonal RMF can badded to represent the mapping.", FutureWarning)
 
     @property
-    def bin_hi(self) -> Optional[np.ndarray]:
+    def bin_hi(self) -> np.ndarray | None:
         """The upper edge of each channel, in Angstroms, or None.
 
-        The values are expected to be in descending order, with the
-        bin_hi value larger than the corresponding bin_lo element.
-        This is only expected to be set for Chandra grating data.
+        .. versionchanged:: 4.17.1
+           This field is no-longer used.
+
         """
-        return self._bin_hi
+        return None
 
     @bin_hi.setter
-    def bin_hi(self, val: Optional[ArrayType]) -> None:
-        self._set_related("bin_hi", val)
+    def bin_hi(self, val: ArrayType | None) -> None:
+        # Assume that bin_lo will also have been set so there's no
+        # need to add a warning here.
+        #
+        pass
 
     @property
     def grouping(self) -> Optional[np.ndarray]:
