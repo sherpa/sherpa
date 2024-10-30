@@ -418,8 +418,8 @@ def test_746(make_data_path, clean_astro_ui):
     # group the data
     ui.group_width(id=10, num=2)
 
-    ui.set_analysis('wave')
-    ui.notice(21.4, 21.7)
+    ui.set_analysis(10, 'wave')
+    ui.notice_id(10, 21.4, 21.7)
 
     # internal check that getting the expected data
     expected = np.zeros(30)
