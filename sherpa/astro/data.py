@@ -53,9 +53,7 @@ reducing the number of values in a data set - and adds an extra way
 to filter the data with the quality array. The class extends
 `~sherpa.data.Data1D`, since the primary data is channels and
 counts, but it also has to act like an integrated data set
-(`~sherpa.data.Data1DInt`) in some cases. In an extension to
-OGIP support, there is limited support for the ``BIN_LO`` and
-``BIN_HI`` fields provided with Chandra grating data.
+(`~sherpa.data.Data1DInt`) in some cases.
 
 The `DataIMG` class extends 2D support for "gridded" data, with
 multiple possible coordinate systems (e.g. ``logical``, ``physical``,
@@ -67,6 +65,10 @@ Notes
 
 Some functionality depends on the presence of the region and grouping
 Sherpa modules, which are optional components of Sherpa.
+
+Prior to 4.18.0 there was limited support for the ``BIN_LO`` and
+``BIN_HI`` fields provided with Chandra grating data, but this has now
+been removed.
 
 Notebook support
 ----------------
@@ -556,7 +558,9 @@ def html_arf(arf):
     erange = _calc_erange(arf.energ_lo, arf.energ_hi)
     meta.append(('Energy range', erange))
 
-    # repeat for wavelengths (without the energy threshold)
+    # It would be nice to show the wavelength range, but how to decide
+    # when to include it? For now the presence of bin_lo/hi fields is
+    # used (this is not an OGIP standard).
     #
     if arf.bin_lo is not None and arf.bin_hi is not None:
         wrange = _calc_wrange(arf.bin_lo, arf.bin_hi)
@@ -899,6 +903,9 @@ class DataARF(DataOgipResponse):
     The ARF format is described in OGIP documents [CAL_92_002]_ and
     [CAL_92_002a]_.
 
+    .. versionchanged:: 4.18.0
+       The bin_lo and bin_hi columns are now ignored.
+
     Parameters
     ----------
     name : str
@@ -910,6 +917,7 @@ class DataARF(DataOgipResponse):
         ENERG_LO values for each bin, and the energy arrays must be
         in increasing or decreasing order.
     bin_lo, bin_hi : array or None, optional
+        These should not be set.
     exposure : number or None, optional
         The exposure time for the ARF, in seconds.
     header : dict or None, optional
@@ -1477,6 +1485,9 @@ class DataPHA(Data1D):
     The PHA format is described in an OGIP document [OGIP_92_007]_ and
     [OGIP_92_007a]_.
 
+    .. versionchanged:: 4.18.0
+       The bin_lo and bin_hi columns are now ignored.
+
     Parameters
     ----------
     name : str
@@ -1488,8 +1499,7 @@ class DataPHA(Data1D):
         The statistical and systematic errors for the data, if
         defined.
     bin_lo, bin_hi : array or None, optional
-        The wavelength ranges for the channels. This is intended to support
-        Chandra grating spectra.
+        These should not be set.
     grouping : array of int or None, optional
     quality : array of int or None, optional
     exposure : number or None, optional
@@ -2604,13 +2614,6 @@ will be removed. The identifiers can be integers or strings.
         if self.units == 'channel':
             elo = self.channel
             ehi = self.channel + 1
-        elif (self.bin_lo is not None) and (self.bin_hi is not None):
-            # TODO: review whether bin_lo/hi should over-ride the response
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                elo = hc / self.bin_hi
-                ehi = hc / self.bin_lo
         else:
             arf, rmf = self.get_response(response_id)
             if rmf is not None:
@@ -2716,47 +2719,36 @@ will be removed. The identifiers can be integers or strings.
 
         """
 
-        if (self.bin_lo is not None) and (self.bin_hi is not None):
-            elo = self.bin_lo
-            ehi = self.bin_hi
-            if (elo[0] > elo[-1]) and (ehi[0] > ehi[-1]):
-                if self.units == 'wavelength':
-                    return (elo, ehi)
+        energylist = []
+        for resp_id in self.response_ids:
+            arf, rmf = self.get_response(resp_id)
+            lo = None
+            hi = None
 
-                elo = hc / self.bin_hi
-                ehi = hc / self.bin_lo
+            if rmf is not None:
+                lo = rmf.energ_lo
+                hi = rmf.energ_hi
+                if filter:
+                    lo, hi = rmf.get_indep()
 
+            elif arf is not None:
+                lo = arf.energ_lo
+                hi = arf.energ_hi
+                if filter:
+                    lo, hi = arf.get_indep()
+
+            energylist.append((lo, hi))
+
+        if len(energylist) > 1:
+            # TODO: This is only tested by test_eval_multi_xxx and not with
+            # actual (i.e. real world) data
+            elo, ehi, _ = compile_energy_grid(energylist)
+        elif (not energylist or
+              (len(energylist) == 1 and
+                  np.equal(energylist[0], None).any())):
+            raise DataErr('noenergybins', 'Response')
         else:
-            energylist = []
-            for resp_id in self.response_ids:
-                arf, rmf = self.get_response(resp_id)
-                lo = None
-                hi = None
-
-                if rmf is not None:
-                    lo = rmf.energ_lo
-                    hi = rmf.energ_hi
-                    if filter:
-                        lo, hi = rmf.get_indep()
-
-                elif arf is not None:
-                    lo = arf.energ_lo
-                    hi = arf.energ_hi
-                    if filter:
-                        lo, hi = arf.get_indep()
-
-                energylist.append((lo, hi))
-
-            if len(energylist) > 1:
-                # TODO: This is only tested by test_eval_multi_xxx and not with
-                # actual (i.e. real world) data
-                elo, ehi, lookuptable = compile_energy_grid(energylist)
-            elif (not energylist or
-                  (len(energylist) == 1 and
-                      np.equal(energylist[0], None).any())):
-                raise DataErr('noenergybins', 'Response')
-            else:
-                elo, ehi = energylist[0]
+            elo, ehi = energylist[0]
 
         lo, hi = elo, ehi
         if self.units == 'wavelength':
