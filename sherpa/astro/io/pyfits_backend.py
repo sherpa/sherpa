@@ -608,13 +608,6 @@ def _read_arf_specresp(arf: fits.HDUList,
     cols = [copycol(hdu, filename, name, dtype=SherpaFloat)
             for name in ["ENERG_LO", "ENERG_HI", "SPECRESP"]]
 
-    # Optional columns: either both given or none
-    #
-    with suppress(IOErr):
-        bin_lo = copycol(hdu, filename, "BIN_LO", dtype=SherpaFloat)
-        bin_hi = copycol(hdu, filename, "BIN_HI", dtype=SherpaFloat)
-        cols.extend([bin_lo, bin_hi])
-
     return SpecrespBlock(hdu.name, header=headers, columns=cols)
 
 
@@ -865,8 +858,6 @@ def _read_pha(pha: fits.BinTableHDU,
                         ("RATE", SherpaFloat),
                         ("STAT_ERR", SherpaFloat),
                         ("SYS_ERR", SherpaFloat),
-                        ("BIN_LO", SherpaFloat),
-                        ("BIN_HI", SherpaFloat),
                         ("BACKGROUND_UP", SherpaFloat),
                         ("BACKGROUND_DOWN", SherpaFloat),
                         # Possible scalar values

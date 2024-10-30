@@ -66,17 +66,6 @@ def validate_pha(d, bkg=True):
     assert d.channel.max() == pytest.approx(8192.0)
     assert d.channel.sum() == pytest.approx(8193.0 * 8192.0 / 2.0)
 
-    assert len(d.bin_lo) == 8192
-    assert len(d.bin_hi) == 8192
-
-    # check the bins are increasing (so bin_lo[i] < bin_hi[i])
-    # but in descending order
-    assert (d.bin_lo < d.bin_hi).all()
-    assert (d.bin_lo[:-1] > d.bin_lo[1:]).all()
-
-    # are they consecutive?
-    assert (d.bin_lo[:-1] == d.bin_hi[1:]).all()
-
     assert d.counts.sum() > 0
     assert (d.counts >= 0).all()
 

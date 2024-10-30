@@ -66,8 +66,6 @@ PHA FITS file::
   counts         = Float64[1024]
   staterror      = None
   syserror       = None
-  bin_lo         = None
-  bin_hi         = None
   grouping       = Int16[1024]
   quality        = Int16[1024]
   exposure       = 38564.608926889
@@ -96,8 +94,6 @@ that are set in this file's FITS metadata::
   counts         = Float64[1024]
   staterror      = None
   syserror       = None
-  bin_lo         = None
-  bin_hi         = None
   grouping       = Int16[1024]
   quality        = Int16[1024]
   exposure       = 38564.608926889
@@ -115,8 +111,6 @@ that are set in this file's FITS metadata::
   energ_lo = Float64[1090]
   energ_hi = Float64[1090]
   specresp = Float64[1090]
-  bin_lo   = None
-  bin_hi   = None
   exposure = 38564.141454905
   ethresh  = 1e-10
   >>> print(pha.get_rmf())
@@ -147,8 +141,6 @@ created::
   counts         = Int64[1024]
   staterror      = None
   syserror       = None
-  bin_lo         = None
-  bin_hi         = None
   grouping       = None
   quality        = None
   exposure       = None
@@ -499,8 +491,6 @@ representing the background region.
   counts         = Float64[1024]
   staterror      = None
   syserror       = None
-  bin_lo         = None
-  bin_hi         = None
   grouping       = Int16[1024]
   quality        = Int16[1024]
   exposure       = 38564.608926889

@@ -98,8 +98,6 @@ def test_pha_write_basic(make_data_path, tmp_path):
 
         assert obj.staterror is None
         assert obj.syserror is None
-        assert obj.bin_lo is None
-        assert obj.bin_hi is None
 
         assert obj.exposure == pytest.approx(38564.608926889)
         assert np.log10(obj.backscal) == pytest.approx(-5.597491618115439)
@@ -236,8 +234,6 @@ def test_pha_write_basic_errors(make_data_path, tmp_path):
         assert np.argmax(obj.staterror) == 51
 
         assert obj.syserror is None
-        assert obj.bin_lo is None
-        assert obj.bin_hi is None
 
         assert obj.exposure == pytest.approx(38564.608926889)
         assert np.log10(obj.backscal) == pytest.approx(-5.597491618115439)
@@ -393,8 +389,6 @@ def test_pha_write_xmm_grating(make_data_path, tmp_path):
         assert np.argmax(obj.staterror) == 1498
 
         assert obj.syserror is None
-        assert obj.bin_lo is None
-        assert obj.bin_hi is None
 
         assert obj.exposure == pytest.approx(28965.6406250)
         assert obj.backscal == pytest.approx(1.0)
@@ -598,7 +592,7 @@ def test_write_pha_fits_basic_roundtrip(tmp_path):
     assert isinstance(inpha, DataPHA)
     assert inpha.channel == pytest.approx(chans)
     assert inpha.counts == pytest.approx(counts)
-    for field in ["staterror", "syserror", "bin_lo", "bin_hi",
+    for field in ["staterror", "syserror",
                   "grouping", "quality"]:
         assert getattr(inpha, field) is None
 
@@ -845,7 +839,7 @@ def test_write_pha_fits_with_extras_roundtrip(tmp_path, caplog):
     assert inpha.exposure == pytest.approx(etime)
     assert inpha.backscal == pytest.approx(bscal)
     assert inpha.areascal == pytest.approx(ascal)
-    for field in ["staterror", "syserror", "bin_lo", "bin_hi"]:
+    for field in ["staterror", "syserror"]:
         assert getattr(inpha, field) is None
 
     assert inpha.grouped
@@ -1208,8 +1202,6 @@ def test_csc_pha_roundtrip(make_data_path, tmp_path):
 
         assert obj.staterror is None
         assert obj.syserror is None
-        assert obj.bin_lo is None
-        assert obj.bin_hi is None
 
         assert obj.exposure == pytest.approx(37664.157219191)
         assert np.log10(obj.backscal) == pytest.approx(lbscal)
