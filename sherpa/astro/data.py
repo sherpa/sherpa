@@ -1755,7 +1755,7 @@ class DataPHA(Data1D):
 
     See Also
     --------
-    set_analysis
+    get_analysis, get_indep_transform, set_analysis
 
 """)
 
@@ -2763,12 +2763,12 @@ will be removed. The identifiers can be integers or strings.
 
         See Also
         --------
-        get_dep, get_indep, set_analysis
+        get_dep, get_indep, set_analysis, units
 
         Notes
         -----
         Energy values of 0 are replaced by hc / tiny, where tiny is
-        the smallest value stored in a 32-byte float.
+        the smallest value stored in a 32-bit float.
 
         Examples
         --------
