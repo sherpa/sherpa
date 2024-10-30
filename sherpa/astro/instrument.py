@@ -379,7 +379,6 @@ class ARFModelPHA(ARFModel):
 
         # Create a view of original ARF
         self.arf = DataARF(arf.name, arf.energ_lo, arf.energ_hi, arf.specresp,
-                           bin_lo=arf.bin_lo, bin_hi=arf.bin_hi,
                            exposure=arf.exposure, header=arf.header)
 
         # Filter the view for current fitting session
@@ -488,7 +487,6 @@ class RSPModelPHA(RSPModel):
 
         # Create a view of original ARF
         self.arf = DataARF(arf.name, arf.energ_lo, arf.energ_hi, arf.specresp,
-                           bin_lo=arf.bin_lo, bin_hi=arf.bin_hi,
                            exposure=arf.exposure, header=arf.header)
 
         # Filter the view for current fitting session

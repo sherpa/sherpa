@@ -2862,28 +2862,6 @@ def test_make_invalid_dependent_axis(data_class, args):
         data_class("wrong", *args)
 
 
-def test_pha_fails_when_bin_lo_is_invalid():
-    """What happens when bin_lo has a different size to the data?
-
-    This is to test the order of calls in the __init__ method.
-    """
-
-    with pytest.raises(DataErr,
-                       match="size mismatch between independent axis and bin_lo: 3 vs 2"):
-        DataPHA("something", CHANS, ONES, bin_lo=[1, 3])
-
-
-def test_pha_fails_when_bin_hi_is_invalid():
-    """What happens when bin_hi has a different size to the data?
-
-    This is to test the order of calls in the __init__ method.
-    """
-
-    with pytest.raises(DataErr,
-                       match="size mismatch between independent axis and bin_hi: 3 vs 2"):
-        DataPHA("something", CHANS, ONES, bin_hi=[1, 3])
-
-
 @pytest.mark.parametrize("data_args",
                          [ARF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
 def test_set_independent_axis_to_none(data_args):
@@ -2946,29 +2924,7 @@ def test_pha_dependent_field_can_not_be_a_scalar(related):
         setattr(data, related, 2)
 
 
-@pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
-def test_pha_bin_field_must_match_initialization(vals):
-    """The bin_lo/hi must match the data"""
-
-    data_class, args = PHA_ARGS
-    with pytest.raises(DataErr,
-                       match=r"^size mismatch between independent axis and bin_hi: 3 vs [14]$"):
-        data_class(*args, bin_lo=[1, 2, 3], bin_hi=vals)
-
-
-@pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
-def test_pha_bin_field_must_match_after(vals):
-    """The bin_lo/hi must match the data"""
-
-    data_class, args = PHA_ARGS
-    data = data_class(*args)
-    data.bin_hi = [4, 5, 6]
-    with pytest.raises(DataErr,
-                       match=r"^size mismatch between independent axis and bin_lo: 3 vs [14]$"):
-        data.bin_lo = vals
-
-
-@pytest.mark.parametrize("related", ["staterror", "syserror", "grouping", "quality", "bin_lo", "bin_hi"])
+@pytest.mark.parametrize("related", ["staterror", "syserror", "grouping", "quality"])
 @pytest.mark.parametrize("vals", [True, 0, np.asarray(1)])
 def test_pha_related_field_can_not_be_a_scalar(related, vals):
     """The related fields (staterror/syserror/grouping/quality/...) can not be a scalar."""
@@ -2980,7 +2936,7 @@ def test_pha_related_field_can_not_be_a_scalar(related, vals):
         setattr(data, related, vals)
 
 
-@pytest.mark.parametrize("label", ["staterror", "syserror", "grouping", "quality", "bin_lo", "bin_hi"])
+@pytest.mark.parametrize("label", ["staterror", "syserror", "grouping", "quality"])
 @pytest.mark.parametrize("vals", [[1, 1], np.ones(10)])
 def test_pha_related_field_can_not_be_a_sequence_wrong_size(label, vals):
     """Check we error out if column=label has the wrong size: sequence"""

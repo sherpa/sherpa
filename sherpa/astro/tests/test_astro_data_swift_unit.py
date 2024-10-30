@@ -88,7 +88,7 @@ def check_pha(pha):
     assert pha.counts.sum() == pytest.approx(58.0)
     assert np.argmax(pha.counts) == 110
 
-    for field in ['staterror', 'syserror', 'bin_lo', 'bin_hi',
+    for field in ['staterror', 'syserror',
                   'grouping', 'quality']:
         assert getattr(pha, field) is None
 
@@ -154,8 +154,7 @@ def check_arf(arf):
     assert arf.specresp.sum() == pytest.approx(178696.1007297188)
     assert np.argmax(arf.specresp) == 309
 
-    for field in ['bin_lo', 'bin_hi', 'exposure']:
-        assert getattr(arf, field) is None
+    assert arf.exposure is None
 
 
 def check_rmf(rmf):

@@ -81,8 +81,7 @@ def check_pha(pha, responses=True):
     assert pha.quality.sum() == 276
     assert pha.quality.argmax() == 662
 
-    for field in ['staterror', 'syserror',
-                  'bin_lo', 'bin_hi']:
+    for field in ['staterror', 'syserror']:
         assert getattr(pha, field) is None
 
     assert pha.grouped is True
@@ -153,9 +152,6 @@ def check_arf(arf):
     assert arf.energ_hi[0] == pytest.approx(0.005)
     assert arf.energ_lo[-1] == pytest.approx(11.9949998856)
     assert arf.energ_hi[-1] == pytest.approx(12.0)
-
-    assert arf.bin_lo is None
-    assert arf.bin_hi is None
 
     # Rather than check each element, use some simple summary
     # statistics.
@@ -257,8 +253,7 @@ def check_pha_grating(pha, errors=False):
     assert pha.counts.sum() == pytest.approx(2724.0)
     assert np.argmax(pha.counts) == 1498
 
-    for field in ['syserror', 'bin_lo', 'bin_hi',
-                  'grouping']:
+    for field in ['syserror', 'grouping']:
         assert getattr(pha, field) is None
 
     if errors:
