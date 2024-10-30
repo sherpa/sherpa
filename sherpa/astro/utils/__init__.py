@@ -1029,14 +1029,14 @@ def calc_kcorr(data, model, z, obslo, obshi, restlo=None, resthi=None):
 
     if hasattr(data, 'get_response'):
         arf, rmf = data.get_response()
-        elo = data.bin_lo
-        ehi = data.bin_hi
-        if arf is not None:
-            elo = arf.energ_lo
-            ehi = arf.energ_hi
-        elif rmf is not None:
+        if rmf is not None:
             elo = rmf.energ_lo
             ehi = rmf.energ_hi
+        elif arf is not None:
+            elo = arf.energ_lo
+            ehi = arf.energ_hi
+        else:
+            raise DataErr('norsp', data.name)
     else:
         elo, ehi = data.get_indep()
 
