@@ -266,6 +266,9 @@ class RSPModel(CompositeModel, ArithmeticModel):
 class RMFModelPHA(RMFModel):
     """RMF convolution model with associated PHA data set.
 
+    .. versionchanged:: 4.17.1
+       The bin_lo and bin_hi columns are now ignored.
+
     Notes
     -----
     Scaling by the AREASCAL setting (scalar or array) is included in
@@ -281,31 +284,6 @@ class RMFModelPHA(RMFModel):
 
         RMFModel.filter(self)
 
-        pha = self.pha
-        # If PHA is a finer grid than RMF, evaluate model on PHA and
-        # rebin down to the granularity that the RMF expects.
-        if pha.bin_lo is not None and pha.bin_hi is not None:
-            bin_lo, bin_hi = pha.bin_lo, pha.bin_hi
-
-            # If PHA grid is in angstroms then convert to keV for
-            # consistency
-            if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = hc / pha.bin_hi
-                bin_hi = hc / pha.bin_lo
-
-            # FIXME: What about filtered option?? bin_lo, bin_hi are
-            # unfiltered??
-
-            # Compare disparate grids in energy space
-            self.rmfargs = ((self.elo, self.ehi), (bin_lo, bin_hi))
-
-            # FIXME: Compute on finer energy grid?  Assumes that PHA has
-            # finer grid than RMF
-            self.elo, self.ehi = bin_lo, bin_hi
-
-            # Wavelength grid (angstroms)
-            self.lo, self.hi = hc / self.ehi, hc / self.elo
-
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
         if self.pha.units == 'wavelength':
@@ -315,9 +293,11 @@ class RMFModelPHA(RMFModel):
         rmf = self._rmf  # original
 
         # Create a view of original RMF
-        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo, rmf.energ_hi,
-                           rmf.n_grp, rmf.f_chan, rmf.n_chan, rmf.matrix,
-                           rmf.offset, rmf.e_min, rmf.e_max, rmf.header)
+        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo,
+                           rmf.energ_hi, rmf.n_grp, rmf.f_chan,
+                           rmf.n_chan, rmf.matrix, offset=rmf.offset,
+                           e_min=rmf.e_min, e_max=rmf.e_max,
+                           header=rmf.header)
 
         # Filter the view for current fitting session
         _notice_resp(self.pha.get_noticed_channels(), None, self.rmf)
@@ -370,6 +350,9 @@ class RMFModelNoPHA(RMFModel):
 class ARFModelPHA(ARFModel):
     """ARF convolution model with associated PHA data set.
 
+    .. versionchanged:: 4.17.1
+       The bin_lo and bin_hi columns are now ignored.
+
     Notes
     -----
     Scaling by the AREASCAL setting (scalar or array) is included in
@@ -385,26 +368,6 @@ class ARFModelPHA(ARFModel):
 
         ARFModel.filter(self)
 
-        pha = self.pha
-        # If PHA is a finer grid than ARF, evaluate model on PHA and
-        # rebin down to the granularity that the ARF expects.
-        if pha.bin_lo is not None and pha.bin_hi is not None:
-            bin_lo, bin_hi = pha.bin_lo, pha.bin_hi
-
-            # If PHA grid is in angstroms then convert to keV for
-            # consistency
-            if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = hc / pha.bin_hi
-                bin_hi = hc / pha.bin_lo
-
-            # FIXME: What about filtered option?? bin_lo, bin_hi are
-            # unfiltered??
-
-            # Compare disparate grids in energy space
-            self.arfargs = ((self.elo, self.ehi), (bin_lo, bin_hi))
-
-            # FIXME: Assumes ARF grid is finest
-
         # Assume energy as default spectral coordinates
         self.xlo, self.xhi = self.elo, self.ehi
         if self.pha.units == 'wavelength':
@@ -416,7 +379,8 @@ class ARFModelPHA(ARFModel):
 
         # Create a view of original ARF
         self.arf = DataARF(arf.name, arf.energ_lo, arf.energ_hi, arf.specresp,
-                           arf.bin_lo, arf.bin_hi, arf.exposure, arf.header)
+                           bin_lo=arf.bin_lo, bin_hi=arf.bin_hi,
+                           exposure=arf.exposure, header=arf.header)
 
         # Filter the view for current fitting session
         if numpy.iterable(pha.mask):
@@ -477,6 +441,9 @@ class ARFModelNoPHA(ARFModel):
 class RSPModelPHA(RSPModel):
     """RMF + ARF convolution model with associated PHA.
 
+    .. versionchanged:: 4.17.1
+       The bin_lo and bin_hi columns are now ignored.
+
     Notes
     -----
     Scaling by the AREASCAL setting (scalar or array) is included in
@@ -493,30 +460,14 @@ class RSPModelPHA(RSPModel):
 
         RSPModel.filter(self)
 
-        pha = self.pha
-        # If PHA is a finer grid than RMF, evaluate model on PHA and
-        # rebin down to the granularity that the RMF expects.
-        if pha.bin_lo is not None and pha.bin_hi is not None:
-            bin_lo, bin_hi = pha.bin_lo, pha.bin_hi
-
-            # If PHA grid is in angstroms then convert to keV for
-            # consistency
-            if (bin_lo[0] > bin_lo[-1]) and (bin_hi[0] > bin_hi[-1]):
-                bin_lo = hc / pha.bin_hi
-                bin_hi = hc / pha.bin_lo
-
-            # FIXME: What about filtered option?? bin_lo, bin_hi are
-            # unfiltered??
-
-            # Compare disparate grids in energy space
-            self.arfargs = ((self.elo, self.ehi), (bin_lo, bin_hi))
-
-            # FIXME: Assumes ARF grid is finest
-
+        # Can this really happen? There is a test of it but it is an
+        # engineered test case rather than "actual" data.
+        #
+        # Should this check be a "or" and not "and", and really it
+        # should check the grid values.
+        #
         elo, ehi = self.rmf.get_indep()
-        # self.elo, self.ehi are from ARF
         if len(elo) != len(self.elo) and len(ehi) != len(self.ehi):
-
             self.rmfargs = ((elo, ehi), (self.elo, self.ehi))
 
         # Assume energy as default spectral coordinates
@@ -529,13 +480,16 @@ class RSPModelPHA(RSPModel):
         rmf = self._rmf
 
         # Create a view of original RMF
-        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo, rmf.energ_hi,
-                           rmf.n_grp, rmf.f_chan, rmf.n_chan, rmf.matrix,
-                           rmf.offset, rmf.e_min, rmf.e_max, rmf.header)
+        self.rmf = DataRMF(rmf.name, rmf.detchans, rmf.energ_lo,
+                           rmf.energ_hi, rmf.n_grp, rmf.f_chan,
+                           rmf.n_chan, rmf.matrix, offset=rmf.offset,
+                           e_min=rmf.e_min, e_max=rmf.e_max,
+                           header=rmf.header)
 
         # Create a view of original ARF
         self.arf = DataARF(arf.name, arf.energ_lo, arf.energ_hi, arf.specresp,
-                           arf.bin_lo, arf.bin_hi, arf.exposure, arf.header)
+                           bin_lo=arf.bin_lo, bin_hi=arf.bin_hi,
+                           exposure=arf.exposure, header=arf.header)
 
         # Filter the view for current fitting session
         _notice_resp(self.pha.get_noticed_channels(), self.arf, self.rmf)
