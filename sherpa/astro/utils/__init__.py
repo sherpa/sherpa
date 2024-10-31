@@ -24,7 +24,7 @@
 
 """
 
-from typing import Optional
+from typing import Optional, Sequence
 
 import numpy as np
 
@@ -99,7 +99,11 @@ def get_xspec_norm(y: np.ndarray, mdl: np.ndarray) -> ValueAndRange:
             'max': r * guess._guess_ampl_scale}
 
 
-def compile_energy_grid(arglist):
+def compile_energy_grid(arglist: Sequence[tuple[np.ndarray, np.ndarray]]
+                        ) -> list[np.ndarray,
+                                  np.ndarray,
+                                  list[tuple[np.ndarray, np.ndarray]]
+                                  ]:
     '''Combine several grids (energy, channel, wavelength) into one.
 
     This function combines several grids into one, such that the model

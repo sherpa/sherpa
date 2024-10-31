@@ -6736,7 +6736,10 @@ class Session(NoNewAttributesAfterInit):
     # Source models
     #
 
-    def _eval_model_expression(self, expr, typestr='model'):
+    def _eval_model_expression(self,
+                               expr: str,
+                               typestr: str = 'model'
+                               ) -> Model:
         try:
             return eval(expr, self._model_globals, self._model_components)
         except Exception as exc:

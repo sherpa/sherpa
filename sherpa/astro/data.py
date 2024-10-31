@@ -2749,23 +2749,21 @@ will be removed. The identifiers can be integers or strings.
 
         """
 
+        # It is not clear what the filter flag is meant to do and
+        # there is no test that can be used to identify what it is
+        # meant to do. The RMF and ARF get_indep calls ignore the
+        # filter flag they are sent.
+        #
         energylist = []
         for resp_id in self.response_ids:
             arf, rmf = self.get_response(resp_id)
-            lo = None
-            hi = None
-
             if rmf is not None:
-                lo = rmf.energ_lo
-                hi = rmf.energ_hi
-                if filter:
-                    lo, hi = rmf.get_indep()
-
+                lo, hi = rmf.get_indep(filter=filter)
             elif arf is not None:
-                lo = arf.energ_lo
-                hi = arf.energ_hi
-                if filter:
-                    lo, hi = arf.get_indep()
+                lo, hi = arf.get_indep(filter=filter)
+            else:
+                lo = None
+                hi = None
 
             energylist.append((lo, hi))
 

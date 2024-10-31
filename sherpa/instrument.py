@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2008, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2008, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,22 +18,28 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING, Sequence
 import warnings
 
-import numpy
+import numpy as np
 
 from sherpa.data import Data, Data1D, Data2D
 from sherpa.models import ArithmeticModel, ArithmeticConstantModel, \
     ArithmeticFunctionModel, CompositeModel, Model
 from sherpa.models.parameter import Parameter
-from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D, rebin_2d
+from sherpa.models.regrid import EvaluationSpace1D, EvaluationSpace2D, \
+    rebin_2d
 from sherpa.utils import bool_cast, NoNewAttributesAfterInit
 from sherpa.utils.err import PSFErr
 from sherpa.utils._psf import extract_kernel, get_padsize, normalize, \
     pad_data, set_origin, tcdData, unpad_data
 
-import sherpa
+if TYPE_CHECKING:
+    import sherpa.ui.utils
+
 info = logging.getLogger(__name__).info
 
 string_types = (str, )
@@ -43,7 +49,7 @@ __all__ = ('Kernel', 'PSFKernel', 'RadialProfileKernel', 'PSFModel',
            'ConvolutionModel', 'PSFSpace2D')
 
 
-def make_renorm_shape(shape):
+def make_renorm_shape(shape: Sequence[int]) -> list[int]:
     """Given a shape, calculate the appropriate renorm_shape."""
 
     out = []
@@ -104,13 +110,13 @@ class Kernel(NoNewAttributesAfterInit):
         #
         try:
             nd = len(dshape)
-        except TypeError:
-            raise TypeError("dshape must be a sequence")
+        except TypeError as te:
+            raise TypeError("dshape must be a sequence") from te
 
         try:
             nk = len(kshape)
-        except TypeError:
-            raise TypeError("kshape must be a sequence")
+        except TypeError as te:
+            raise TypeError("kshape must be a sequence") from te
 
         if nd != nk:
             raise ValueError(f"dshape and kshape must be the same size, not {nd} and {nk}")
@@ -125,7 +131,7 @@ class Kernel(NoNewAttributesAfterInit):
         self.ndim = nd
 
         if origin is None:
-            origin = numpy.zeros(self.ndim)
+            origin = np.zeros(self.ndim)
 
         self.dshape = dshape
         self.kshape = kshape
@@ -154,10 +160,10 @@ class Kernel(NoNewAttributesAfterInit):
         state.pop('_tcd')
         return state
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} kernel instance>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         ss = [
             f"dshape   = {self.dshape}",
             f"kshape   = {self.kshape}",
@@ -189,7 +195,7 @@ class Kernel(NoNewAttributesAfterInit):
 
         kernpad = pad_data(kernel, self.dshape, self.renorm_shape)
 
-        renorm = self._tcd.convolve(numpy.ones(len(kernel)), kernpad,
+        renorm = self._tcd.convolve(np.ones(len(kernel)), kernpad,
                                     self.dshape, renorm_shape,
                                     self.origin)
         self.renorm = unpad_data(renorm, renorm_shape, self.dshape)
@@ -218,7 +224,7 @@ class Kernel(NoNewAttributesAfterInit):
         return self._tcd.convolve(data, kernel, dshape, kshape, self.origin)
 
     def calc(self, pl, pr, lhs, rhs, *args, **kwargs):
-        if self.do_pad and len(args[0]) == numpy.prod(self.dshape):
+        if self.do_pad and len(args[0]) == np.prod(self.dshape):
             self.do_pad = False
 
         data = rhs(pr, *self.args, **self.kwargs)
@@ -232,9 +238,26 @@ class Kernel(NoNewAttributesAfterInit):
         return self.deinit(vals)
 
 
+def get_model_via_session(model: Model | str,
+                          session: "sherpa.ui.utils.Session | None"
+                          ) -> Model:
+    """If the model is a string, read it from the session."""
+
+    if isinstance(model, string_types):
+        if session is None:
+            import sherpa.astro.ui
+            return sherpa.astro.ui._session._eval_model_expression(expr=model)
+
+        return session._eval_model_expression(expr=model)
+
+    return model
+
+
 class ConvolutionKernel(Model):
 
-    def __init__(self, kernel, name='conv'):
+    def __init__(self,
+                 kernel,
+                 name: str = 'conv') -> None:
         self.kernel = kernel
         self.name = name
         self._tcd = tcdData()
@@ -249,30 +272,28 @@ class ConvolutionKernel(Model):
         state.pop('_tcd')
         return state
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"<{type(self).__name__} kernel instance>"
 
-    def __str__(self):
+    def __str__(self) -> str:
         if self.kernel is None:
             raise PSFErr('notset')
 
         return f"Convolution Kernel:\n{self.kernel}"
 
-    def __call__(self, model, session=None):
+    def __call__(self,
+                 model: Model | str,
+                 session: "sherpa.ui.utils.Session | None" = None
+                 ) -> ConvolutionModel:
         if self.kernel is None:
             raise PSFErr('notset')
 
         kernel = self.kernel
         if isinstance(kernel, Data):
-            kernel = numpy.asarray(kernel.get_dep())
+            kernel = np.asarray(kernel.get_dep())
 
-        if isinstance(model, string_types):
-            if session is None:
-                model = sherpa.astro.ui._session._eval_model_expression(model)
-            else:
-                model = session._eval_model_expression(model)
-
-        return ConvolutionModel(kernel, model, self)
+        mdl = get_model_via_session(model, session)
+        return ConvolutionModel(kernel, mdl, self)
 
     def set_kernel(self, kernel):
         self.kernel = kernel
@@ -281,8 +302,8 @@ class ConvolutionKernel(Model):
 
         self._tcd.clear_kernel_fft()
 
-        data = numpy.asarray(rhs(pr, *args, **kwargs))
-        kern = numpy.asarray(lhs(pl, *args, **kwargs))
+        data = np.asarray(rhs(pr, *args, **kwargs))
+        kern = np.asarray(lhs(pl, *args, **kwargs))
 
         size = data.size
         return self._tcd.convolve(data, kern, size, kern.size,
@@ -313,7 +334,7 @@ class PSFKernel(Kernel):
         if origin is None:
             self.origin = origin
 
-    def __str__(self):
+    def __str__(self) -> str:
         ss = [
             f"is_model = {self.is_model}",
             f"size     = {self.size}",
@@ -331,8 +352,8 @@ class PSFKernel(Kernel):
             kernel = normalize(kernel)
 
         (kernel, kshape, self.frac,
-         lo, hi) = extract_kernel(kernel, self.kshape, self.size, self.center,
-                                  self.lo, self.hi, self.width, self.radial)
+         _, _) = extract_kernel(kernel, self.kshape, self.size, self.center,
+                                self.lo, self.hi, self.width, self.radial)
 
         # If PSF model, then normalize integrated volume to 1, after
         # kernel extraction
@@ -344,13 +365,13 @@ class PSFKernel(Kernel):
         # Just assuming that the origin is half of szs1 can lead to
         # unwanted pixel shifts--but this assumes that origin should
         # be centered on brightest pixel.
-        brightPixel = list(numpy.where(kernel == kernel.max())).pop()
+        brightPixel = list(np.where(kernel == kernel.max())).pop()
 
         # if more than one pixel qualifies as brightest, such as const2D
         # use the middle of subkernel -- assumes the user provided center at
         # time of kernel extraction, so that should be middle of subkernel.
         origin = None
-        if (not numpy.isscalar(brightPixel)) and len(brightPixel) != 1:
+        if (not np.isscalar(brightPixel)) and len(brightPixel) != 1:
             origin = set_origin(kshape)
         else:
             # brightPixel is a NumPy index (int64) which - as of NumPy 1.18
@@ -363,7 +384,7 @@ class PSFKernel(Kernel):
             # assume there is only one element in brightPixel if not
             # a scalar
             #
-            if not numpy.isscalar(brightPixel):
+            if not np.isscalar(brightPixel):
                 loc = brightPixel[0]
             else:
                 loc = brightPixel
@@ -401,7 +422,7 @@ class RadialProfileKernel(PSFKernel):
         if self.ndim != 1:
             raise PSFErr(f"Radial profile requires 1D data, not {self.ndim}D")
 
-    def __str__(self):
+    def __str__(self) -> str:
         return (PSFKernel.__str__(self) + "\n" +
                 f"radialsize = {self.radialsize}")
 
@@ -422,12 +443,12 @@ class RadialProfileKernel(PSFKernel):
     def convolve(self, data, dshape, kernel, kshape):
         origin = self.origin
         if self.radialsize is not None:
-            origin = self.origin + (numpy.asarray(dshape) -
-                                    numpy.asarray(self.radialsize))
+            origin = self.origin + (np.asarray(dshape) -
+                                    np.asarray(self.radialsize))
         return self._tcd.convolve(data, kernel, dshape, kshape, origin)
 
     def calc(self, pl, pr, lhs, rhs, *args, **kwargs):
-        if self.do_pad and len(args[0]) == numpy.prod(self.dshape):
+        if self.do_pad and len(args[0]) == np.prod(self.dshape):
             self.do_pad = False
 
         data = rhs(pr, *self.args, **self.kwargs)
@@ -439,7 +460,7 @@ class RadialProfileKernel(PSFKernel):
         tail_grid = _create_tail_grid(self.args)
         if tail_grid is not None:
             tail = rhs(pr, *tail_grid, **self.kwargs)
-            data = numpy.concatenate([tail, data])
+            data = np.concatenate([tail, data])
             dshape = (len(data),)
 
         if self.kernel is None or not self.frozen:
@@ -456,16 +477,16 @@ def _create_tail_grid(axis_list):
         grid = axis_list[0]
         # origsize = len(grid)
         width = grid[1] - grid[0]
-        tail = numpy.arange(grid[0] - width, 0., -width)[::-1]
+        tail = np.arange(grid[0] - width, 0., -width)[::-1]
         return (tail,)
 
     if len(axis_list) == 2:
         # binned axis
         gridlo, gridhi = axis_list
         # origsize = len(gridlo)
-        width = (gridhi[0] - gridlo[0])
+        width = gridhi[0] - gridlo[0]
         mid = (gridlo[0] + gridhi[0]) / 2.
-        mids = numpy.arange(mid, 0., -width)[::-1]
+        mids = np.arange(mid, 0., -width)[::-1]
         taillo = mids - width / 2.
         tailhi = mids + width / 2.
         return (taillo, tailhi)
@@ -620,10 +641,10 @@ they do not match.
             return
 
         # TODO: do we still expect to get bytes here?
-        if isinstance(vals, (str, numpy.bytes_)):
+        if isinstance(vals, (str, np.bytes_)):
             raise PSFErr('nostr')
 
-        if not isinstance(vals, (list, tuple, numpy.ndarray)):
+        if not isinstance(vals, (list, tuple, np.ndarray)):
             vals = [vals]
 
         nvals = len(vals)
@@ -707,7 +728,7 @@ they do not match.
         # Do we need to return the min/max values?
         return f"\n   {name:12s} {flag:6s} {value:>12s} {value:>12s} {value:>12s}"
 
-    def _get_str(self):
+    def _get_str(self) -> str:
         s = ''
         if self.kernel is not None:
             s += ('\n   %-12s %-6s %12s' %
@@ -728,7 +749,7 @@ they do not match.
                   (p.fullname, 'frozen', p.val, p.min, p.max, p.units))
         return s
 
-    def __str__(self):
+    def __str__(self) -> str:
         s = self.name
         hfmt = '\n   %-12s %-6s %12s %12s %12s %10s'
         s += hfmt % ('Param', 'Type', 'Value', 'Min', 'Max', 'Units')
@@ -736,21 +757,19 @@ they do not match.
         s += self._get_str()
         return s
 
-    def __call__(self, model, session=None):
+    def __call__(self,
+                 model: Model | str,
+                 session: "sherpa.ui.utils.Session | None" = None
+                 ) -> ConvolutionModel:
         if self.kernel is None:
             raise PSFErr('notset')
 
         kernel = self.kernel
         if isinstance(kernel, Data):
-            kernel = numpy.asarray(kernel.get_dep())
+            kernel = np.asarray(kernel.get_dep())
 
-        if isinstance(model, string_types):
-            if session is None:
-                model = sherpa.astro.ui._session._eval_model_expression(model)
-            else:
-                model = session._eval_model_expression(model)
-
-        return ConvolutionModel(kernel, model, self)
+        mdl = get_model_via_session(model, session)
+        return ConvolutionModel(kernel, mdl, self)
 
     def calc(self, p, *args, **kwargs):
         if self.model is None:
@@ -840,7 +859,7 @@ they do not match.
             # TODO: shouldn't thawedpars always be True with the above?
             #
             if hasattr(self.kernel, 'thawedpars'):
-                kwargs['frozen'] = (len(self.kernel.thawedpars) == 0)
+                kwargs['frozen'] = len(self.kernel.thawedpars) == 0
 
         kwargs['center'] = self.center
         kwargs['size'] = self.size
@@ -850,7 +869,7 @@ they do not match.
                      nkernel == 1)
 
         # Handle noticed regions for convolution
-        if numpy.iterable(data.mask):
+        if np.iterable(data.mask):
             kwargs['do_pad'] = True
             kwargs['pad_mask'] = data.mask
         else:
@@ -870,9 +889,9 @@ they do not match.
         # Does this indicate that there should be better argument checking
         # or defaults?
         #
-        kwargs['lo'] = numpy.ones(nkernel)
+        kwargs['lo'] = np.ones(nkernel)
         kwargs['hi'] = kshape
-        kwargs['width'] = numpy.ones(nkernel)
+        kwargs['width'] = np.ones(nkernel)
 
         # TODO: why is this not just checking 'self.radial.val > 0'
         # instead of 'int(self.radial.val)'? Aren't they the same, and
@@ -892,7 +911,7 @@ they do not match.
 
         kernel = self.kernel
         if isinstance(kernel, Data):
-            dep = numpy.asarray(kernel.get_dep())
+            dep = np.asarray(kernel.get_dep())
             indep = kernel.get_indep()
 
         else:
@@ -906,7 +925,7 @@ they do not match.
         if subkernel:
             (dep, newshape) = self.model.init_kernel(dep)
 
-            if (numpy.array(kshape) != numpy.array(newshape)).any():
+            if (np.array(kshape) != np.array(newshape)).any():
                 newindep = []
                 for axis in indep:
                     args = extract_kernel(axis,
@@ -932,9 +951,9 @@ they do not match.
             kshape = newshape
 
         if self.model.frac is not None:
-            info('PSF frac: %s' % self.model.frac)
+            info('PSF frac: %s', self.model.frac)
 
-        if numpy.isscalar(kshape):
+        if np.isscalar(kshape):
             kshape = [kshape]
 
         return (indep, dep, kshape, lo, hi)
@@ -1050,7 +1069,7 @@ they do not match.
                           "the pixel size is the same as the PSF")
             return self.SAME_RESOLUTION
 
-        if numpy.allclose(psf_pixel_size, data_pixel_size):
+        if np.allclose(psf_pixel_size, data_pixel_size):
             return self.SAME_RESOLUTION
 
         if psf_pixel_size[0] < data_pixel_size[0]:
@@ -1086,7 +1105,7 @@ class PSFSpace2D(EvaluationSpace2D):
         step_x = psf_pixel_size_axis0 / data_pixel_size_axis0
         step_y = psf_pixel_size_axis1 / data_pixel_size_axis1
         x_range_end, y_range_end = x_end + 1, y_end + 1
-        x = numpy.arange(x_start, x_range_end, step_x)
-        y = numpy.arange(y_start, y_range_end, step_y)
+        x = np.arange(x_start, x_range_end, step_x)
+        y = np.arange(y_start, y_range_end, step_y)
         self.data_2_psf_pixel_size_ratio = (step_x, step_y)
         super().__init__(x, y)

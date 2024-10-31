@@ -35,32 +35,38 @@ Michael F. Corcoran
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Optional, Union
+from typing import TYPE_CHECKING, Any, Mapping, Protocol
 import os
 
-import numpy
+import numpy as np
 
 import sherpa
 from sherpa.utils.err import InstrumentErr, DataErr, PSFErr
 from sherpa.models.model import ArithmeticModel, CompositeModel, Model
 
-from sherpa.instrument import PSFModel as _PSFModel
+from sherpa.instrument import PSFModel as _PSFModel, get_model_via_session
 from sherpa.utils import NoNewAttributesAfterInit
 from sherpa.data import Data1D
 from sherpa.astro import hc
-from sherpa.astro.data import DataARF, DataRMF, _notice_resp, DataIMG
+from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataIMG, \
+    _notice_resp
 from sherpa.astro import io
-from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 from sherpa.astro.utils import compile_energy_grid
 from sherpa.models.regrid import EvaluationSpace1D
+from sherpa.utils import sao_fcmp, sum_intervals, sao_arange
 
-WCS: Optional[type["sherpa.astro.io.wcs.WCS"]] = None
+if TYPE_CHECKING:
+    import sherpa.astro.io.wcs
+    import sherpa.ui.utils
+
+
+WCS: type["sherpa.astro.io.wcs.WCS"] | None = None
 try:
     from sherpa.astro.io.wcs import WCS
 except ImportError:
     WCS = None
 
-_tol = numpy.finfo(numpy.float32).eps
+_tol = np.finfo(np.float32).eps
 
 string_types = (str, )
 
@@ -74,7 +80,10 @@ __all__ = ('RMFModel', 'ARFModel', 'RSPModel', 'RMFModelPHA',
            'create_non_delta_rmf', 'rmf_to_matrix', 'rmf_to_image' )
 
 
-def apply_areascal(mdl, pha, instlabel):
+def apply_areascal(mdl: np.ndarray,
+                   pha: DataPHA,
+                   instlabel: str
+                   ) -> np.ndarray:
     """Apply the AREASCAL conversion.
 
     This should be done after applying any RMF or ARF.
@@ -104,56 +113,89 @@ def apply_areascal(mdl, pha, instlabel):
     if ascal is None:
         return mdl
 
-    if numpy.iterable(ascal) and len(ascal) != len(mdl):
+    if np.iterable(ascal) and len(ascal) != len(mdl):
         raise DataErr('mismatch', instlabel,
                       f'AREASCAL: {pha.name}')
 
     return mdl * ascal
 
 
+class PHALimits(Protocol):
+    """Represent objects that set_xlimits can be called on."""
+
+    pha: DataPHA
+    elo: np.ndarray
+    ehi: np.ndarray
+    lo: np.ndarray
+    hi: np.ndarray
+    xlo: np.ndarray
+    xhi: np.ndarray
+
+
+def set_xlimits(obj: PHALimits) -> None:
+    """Set the xlo/hi values.
+
+    Parameters
+    ----------
+    obj
+       Has pha, xlo, xhi, elo, ehi, lo, and hi fields.
+
+    """
+
+    if obj.pha.units == "wavelength":
+        obj.xlo = obj.lo
+        obj.xhi = obj.hi
+    else:
+        obj.xlo = obj.elo
+        obj.xhi = obj.ehi
+
+
 class RMFModel(CompositeModel, ArithmeticModel):
     """Base class for expressing RMF convolution in model expressions.
     """
 
-    def __init__(self, rmf, model):
+    def __init__(self,
+                 rmf: DataRMF,
+                 model: Model) -> None:
         self.rmf = rmf
         self.model = model
 
         # Logic for ArithmeticModel.__init__
         self._pars = ()
 
-        # FIXME: group pairs of coordinates with one attribute
+        self.elo: np.ndarray
+        self.ehi: np.ndarray
+        self.rmfargs: tuple[()] | tuple[tuple[np.ndarray, np.ndarray],
+                                        tuple[np.ndarray, np.ndarray]]
 
-        self.elo = None
-        self.ehi = None  # Energy space
-        self.lo = None
-        self.hi = None   # Wavelength space
-        self.xlo = None
-        self.xhi = None  # Current Spectral coordinates
-
-        # Used to rebin against finer or coarser energy grids
-        self.rmfargs = ()
-        CompositeModel.__init__(self, f'apply_rmf({model.name})', (model,))
         self.filter()
+        CompositeModel.__init__(self, f'apply_rmf({model.name})', (model,))
 
-    def filter(self):
+    def filter(self) -> None:
         # Energy grid (keV)
-        self.elo, self.ehi = self.rmf.get_indep()
+        # Do not assign directly as we know elo and ehi are not None.
+        elo, ehi = self.rmf.get_indep()
+        assert elo is not None
+        assert ehi is not None
+        self.elo = elo
+        self.ehi = ehi
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = hc / self.ehi, hc / self.elo
+        self.lo = hc / self.ehi
+        self.hi = hc / self.elo
 
         # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
+        self.xlo = self.elo
+        self.xhi = self.ehi
 
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.model.teardown()
         CompositeModel.teardown(self)
 
@@ -165,44 +207,45 @@ class ARFModel(CompositeModel, ArithmeticModel):
     """Base class for expressing ARF convolution in model expressions.
     """
 
-    def __init__(self, arf, model):
+    def __init__(self,
+                 arf: DataARF,
+                 model: Model) -> None:
         self.arf = arf
         self.model = model
-
-        self.elo = None
-        self.ehi = None  # Energy space
-        self.lo = None
-        self.hi = None   # Wavelength space
-        self.xlo = None
-        self.xhi = None  # Current Spectral coordinates
-
-        # Used to rebin against finer or coarser energy grids
-        self.arfargs = ()
 
         # Logic for ArithmeticModel.__init__
         self._pars = ()
 
-        CompositeModel.__init__(self, f'apply_arf({model.name})', (model,))
+        self.elo: np.ndarray
+        self.ehi: np.ndarray
         self.filter()
+        CompositeModel.__init__(self, f'apply_arf({model.name})', (model,))
 
-    def filter(self):
+    def filter(self) -> None:
         # Energy grid (keV)
-        self.elo, self.ehi = self.arf.get_indep()
+        # Do not assign directly as we know elo and ehi are not None.
+        elo, ehi = self.arf.get_indep()
+        assert elo is not None
+        assert ehi is not None
+        self.elo = elo
+        self.ehi = ehi
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = hc / self.ehi, hc / self.elo
+        self.lo = hc / self.ehi
+        self.hi = hc / self.elo
 
         # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
+        self.xlo = self.elo
+        self.xhi = self.ehi
 
         # Used to rebin against finer or coarser energy grids
         self.arfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.model.teardown()
         CompositeModel.teardown(self)
 
@@ -214,48 +257,52 @@ class RSPModel(CompositeModel, ArithmeticModel):
     """Base class for expressing RMF + ARF convolution in model expressions
     """
 
-    def __init__(self, arf, rmf, model):
+    def __init__(self,
+                 arf: DataARF,
+                 rmf: DataRMF,
+                 model: Model) -> None:
         self.arf = arf
         self.rmf = rmf
         self.model = model
 
-        self.elo = None
-        self.ehi = None  # Energy space
-        self.lo = None
-        self.hi = None    # Wavelength space
-        self.xlo = None
-        self.xhi = None  # Current Spectral coordinates
-
-        # Used to rebin against finer or coarser energy grids
-        self.rmfargs = ()
-        self.arfargs = ()
-
         # Logic for ArithmeticModel.__init__
         self._pars = ()
 
+        self.elo: np.ndarray
+        self.ehi: np.ndarray
+        self.rmfargs: tuple[()] | tuple[tuple[np.ndarray, np.ndarray],
+                                        tuple[np.ndarray, np.ndarray]]
+
+        self.filter()
         CompositeModel.__init__(self, f'apply_rmf(apply_arf({model.name}))',
                                 (model,))
-        self.filter()
 
-    def filter(self):
+    def filter(self) -> None:
         # Energy grid (keV), ARF grid breaks tie
-        self.elo, self.ehi = self.arf.get_indep()
+        # TODO: why does ARF grid break the tie?
+        elo, ehi = self.arf.get_indep()
+        assert elo is not None
+        assert ehi is not None
+        self.elo = elo
+        self.ehi = ehi
 
         # Wavelength grid (angstroms)
-        self.lo, self.hi = hc / self.ehi, hc / self.elo
+        self.lo = hc / self.ehi
+        self.hi = hc / self.elo
 
         # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
+        self.xlo = self.elo
+        self.xhi = self.ehi
 
         # Used to rebin against finer or coarser energy grids
         self.rmfargs = ()
         self.arfargs = ()
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.model.teardown()
         CompositeModel.teardown(self)
 
@@ -275,21 +322,20 @@ class RMFModelPHA(RMFModel):
     this model.
     """
 
-    def __init__(self, rmf, pha, model):
+    def __init__(self,
+                 rmf: DataRMF,
+                 pha: DataPHA,
+                 model: Model) -> None:
         self.pha = pha
         self._rmf = rmf  # store a reference to original
         RMFModel.__init__(self, rmf, model)
 
-    def filter(self):
+    def filter(self) -> None:
 
         RMFModel.filter(self)
+        set_xlimits(self)
 
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if self.pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
-
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         rmf = self._rmf  # original
 
         # Create a view of original RMF
@@ -303,15 +349,10 @@ class RMFModelPHA(RMFModel):
         _notice_resp(self.pha.get_noticed_channels(), None, self.rmf)
 
         self.filter()
-
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if self.pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
-
+        set_xlimits(self)
         RMFModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.rmf = self._rmf
 
         self.filter()
@@ -336,7 +377,9 @@ class RMFModelNoPHA(RMFModel):
     AREASCAL setting associated with the data.
     """
 
-    def __init__(self, rmf, model):
+    def __init__(self,
+                 rmf: DataRMF,
+                 model: Model) -> None:
         RMFModel.__init__(self, rmf, model)
 
     def calc(self, p, x, xhi=None, *args, **kwargs):
@@ -359,21 +402,20 @@ class ARFModelPHA(ARFModel):
     this model. It is not yet clear if this is handled correctly.
     """
 
-    def __init__(self, arf, pha, model):
+    def __init__(self,
+                 arf: DataARF,
+                 pha: DataPHA,
+                 model: Model) -> None:
         self.pha = pha
         self._arf = arf  # store a reference to original
         ARFModel.__init__(self, arf, model)
 
-    def filter(self):
+    def filter(self) -> None:
 
         ARFModel.filter(self)
+        set_xlimits(self)
 
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if self.pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
-
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         arf = self._arf  # original
         pha = self.pha
 
@@ -382,21 +424,16 @@ class ARFModelPHA(ARFModel):
                            exposure=arf.exposure, header=arf.header)
 
         # Filter the view for current fitting session
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             mask = pha.get_mask()
             if len(mask) == len(self.arf.specresp):
                 self.arf.notice(mask)
 
         self.filter()
-
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
-
+        set_xlimits(self)
         ARFModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.arf = self._arf  # restore original
 
         self.filter()
@@ -421,7 +458,9 @@ class ARFModelNoPHA(ARFModel):
     AREASCAL setting associated with the data.
     """
 
-    def __init__(self, arf, model):
+    def __init__(self,
+                 arf: DataARF,
+                 model: Model) -> None:
         ARFModel.__init__(self, arf, model)
 
     def calc(self, p, x, xhi=None, *args, **kwargs):
@@ -449,13 +488,17 @@ class RSPModelPHA(RSPModel):
     this model.
     """
 
-    def __init__(self, arf, rmf, pha, model):
+    def __init__(self,
+                 arf: DataARF,
+                 rmf: DataRMF,
+                 pha: DataPHA,
+                 model: Model) -> None:
         self.pha = pha
         self._arf = arf
         self._rmf = rmf
         RSPModel.__init__(self, arf, rmf, model)
 
-    def filter(self):
+    def filter(self) -> None:
 
         RSPModel.filter(self)
 
@@ -466,15 +509,14 @@ class RSPModelPHA(RSPModel):
         # should check the grid values.
         #
         elo, ehi = self.rmf.get_indep()
+        assert elo is not None
+        assert ehi is not None
         if len(elo) != len(self.elo) and len(ehi) != len(self.ehi):
             self.rmfargs = ((elo, ehi), (self.elo, self.ehi))
 
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if self.pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
+        set_xlimits(self)
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         arf = self._arf
         rmf = self._rmf
 
@@ -493,15 +535,10 @@ class RSPModelPHA(RSPModel):
         _notice_resp(self.pha.get_noticed_channels(), self.arf, self.rmf)
 
         self.filter()
-
-        # Assume energy as default spectral coordinates
-        self.xlo, self.xhi = self.elo, self.ehi
-        if self.pha.units == 'wavelength':
-            self.xlo, self.xhi = self.lo, self.hi
-
+        set_xlimits(self)
         RSPModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.arf = self._arf  # restore originals
         self.rmf = self._rmf
 
@@ -530,7 +567,10 @@ class RSPModelNoPHA(RSPModel):
     AREASCAL setting associated with the data.
     """
 
-    def __init__(self, arf, rmf, model):
+    def __init__(self,
+                 arf: DataARF,
+                 rmf: DataRMF,
+                 model: Model) -> None:
         RSPModel.__init__(self, arf, rmf, model)
 
     def calc(self, p, x, xhi=None, *args, **kwargs):
@@ -544,16 +584,20 @@ class RSPModelNoPHA(RSPModel):
 
 class ARF1D(NoNewAttributesAfterInit):
 
-    def __init__(self, arf, pha=None, rmf=None):
+    def __init__(self,
+                 arf: DataARF,
+                 pha: DataPHA | None = None,
+                 rmf: DataRMF | None = None  # THIS IS UNUSED
+                 ) -> None:
         self._arf = arf
         self._pha = pha
         NoNewAttributesAfterInit.__init__(self)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         arf = None
         try:
             arf = ARF1D.__getattribute__(self, '_arf')
-        except:
+        except AttributeError:
             pass
 
         if name in ('_arf', '_pha'):
@@ -564,11 +608,11 @@ class ARF1D(NoNewAttributesAfterInit):
 
         return ARF1D.__getattribute__(self, name)
 
-    def __setattr__(self, name, val):
+    def __setattr__(self, name: str, val: Any) -> None:
         arf = None
         try:
             arf = ARF1D.__getattribute__(self, '_arf')
-        except:
+        except AttributeError:
             pass
 
         if arf is not None and hasattr(arf, name):
@@ -576,51 +620,54 @@ class ARF1D(NoNewAttributesAfterInit):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
-    def __dir__(self):
+    def __dir__(self) -> list[str]:
         return dir(self._arf)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._arf)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._arf)
 
-    def __call__(self, model, session=None):
+    def __call__(self,
+                 model: Model | str,
+                 session: "sherpa.ui.utils.Session | None" = None
+                 ) -> ArithmeticModel:  # what is the best type here?
         arf = self._arf
         pha = self._pha
 
-        if isinstance(model, string_types):
-            if session is None:
-                model = sherpa.astro.ui._session._eval_model_expression(model)
-            else:
-                model = session._eval_model_expression(model)
+        mdl = get_model_via_session(model, session)
 
         # Automatically add exposure time to source model
         if pha is not None and pha.exposure is not None:
-            model = pha.exposure * model
+            mdl = pha.exposure * mdl
         elif arf.exposure is not None:
-            model = arf.exposure * model
+            mdl = arf.exposure * mdl
         # FIXME: display a warning if exposure is None?
 
         if pha is not None:
-            return ARFModelPHA(arf, pha, model)
+            return ARFModelPHA(arf, pha, mdl)
 
-        return ARFModelNoPHA(arf, model)
+        return ARFModelNoPHA(arf, mdl)
 
 
 class RMF1D(NoNewAttributesAfterInit):
 
-    def __init__(self, rmf, pha=None, arf=None):
+    def __init__(self,
+                 rmf: DataRMF,
+                 pha: DataPHA | None = None,
+                 arf: DataARF | None = None
+                 ) -> None:
         self._rmf = rmf
         self._arf = arf
         self._pha = pha
         NoNewAttributesAfterInit.__init__(self)
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         rmf = None
         try:
             rmf = RMF1D.__getattribute__(self, '_rmf')
-        except:
+        except AttributeError:
             pass
 
         if name in ('_rmf', '_pha'):
@@ -631,11 +678,11 @@ class RMF1D(NoNewAttributesAfterInit):
 
         return RMF1D.__getattribute__(self, name)
 
-    def __setattr__(self, name, val):
+    def __setattr__(self, name: str, val: Any) -> None:
         rmf = None
         try:
             rmf = RMF1D.__getattribute__(self, '_rmf')
-        except:
+        except AttributeError:
             pass
 
         if rmf is not None and hasattr(rmf, name):
@@ -643,42 +690,41 @@ class RMF1D(NoNewAttributesAfterInit):
         else:
             NoNewAttributesAfterInit.__setattr__(self, name, val)
 
-    def __dir__(self):
+    def __dir__(self) -> list[str]:
         return dir(self._rmf)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self._rmf)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return repr(self._rmf)
 
-    def __call__(self, model, session=None):
+    def __call__(self,
+                 model: Model | str,
+                 session: "sherpa.ui.utils.Session | None" = None
+                 ) -> ArithmeticModel:  # what is the best type here?
         arf = self._arf
         rmf = self._rmf
         pha = self._pha
 
-        if isinstance(model, string_types):
-            if session is None:
-                model = sherpa.astro.ui._session._eval_model_expression(model)
-            else:
-                model = session._eval_model_expression(model)
+        mdl = get_model_via_session(model, session)
 
         # Automatically add exposure time to source model for RMF-only analysis
-        if type(model) not in (ARFModel, ARFModelPHA, ARFModelNoPHA):
+        if type(mdl) not in (ARFModel, ARFModelPHA, ARFModelNoPHA):
 
             if pha is not None and pha.exposure is not None:
-                model = pha.exposure * model
+                mdl = pha.exposure * mdl
             elif arf is not None and arf.exposure is not None:
-                model = arf.exposure * model
+                mdl = arf.exposure * mdl
         elif pha is not None and arf is not None:
             # If model is an ARF?
             # Replace RMF(ARF(SRC)) with RSP(SRC) for efficiency
-            return RSPModelPHA(arf, rmf, pha, model.model)
+            return RSPModelPHA(arf, rmf, pha, mdl.model)
 
         if pha is not None:
-            return RMFModelPHA(rmf, pha, model)
+            return RMFModelPHA(rmf, pha, mdl)
 
-        return RMFModelNoPHA(rmf, model)
+        return RMFModelNoPHA(rmf, mdl)
 
 
 class Response1D(NoNewAttributesAfterInit):
@@ -728,7 +774,7 @@ class Response1D(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, pha):
+    def __init__(self, pha: DataPHA) -> None:
         self.pha = pha
         arf, rmf = pha.get_response()
         if arf is None and rmf is None:
@@ -736,37 +782,40 @@ class Response1D(NoNewAttributesAfterInit):
 
         NoNewAttributesAfterInit.__init__(self)
 
-    def __call__(self, model, session=None):
+    def __call__(self,
+                 model: Model | str,
+                 session: "sherpa.ui.utils.Session | None" = None
+                 ) -> ArithmeticModel:  # what is the best type here?
         pha = self.pha
         arf, rmf = pha.get_response()
 
-        if isinstance(model, string_types):
-            if session is None:
-                model = sherpa.astro.ui._session._eval_model_expression(model)
-            else:
-                model = session._eval_model_expression(model)
+        mdl = get_model_via_session(model, session)
 
         # Automatically add exposure time to source model
         if pha.exposure is not None:
-            model = pha.exposure * model
+            mdl = pha.exposure * mdl
         elif arf is not None and arf.exposure is not None:
-            model = arf.exposure * model
+            mdl = arf.exposure * mdl
 
         if arf is not None and rmf is not None:
-            return RSPModelPHA(arf, rmf, pha, model)
+            return RSPModelPHA(arf, rmf, pha, mdl)
 
         if arf is not None:
-            return ARFModelPHA(arf, pha, model)
+            return ARFModelPHA(arf, pha, mdl)
 
-        if rmf is not None:
-            return RMFModelPHA(rmf, pha, model)
+        if rmf is None:
+            raise DataErr('norsp', pha.name)
 
-        raise DataErr('norsp', pha.name)
+        return RMFModelPHA(rmf, pha, mdl)
 
 
 class ResponseNestedModel(Model):
 
-    def __init__(self, arf=None, rmf=None):
+    def __init__(self,
+                 arf: DataARF | None = None,
+                 rmf: DataRMF | None = None
+                 ) -> None:
+        # This should probably error out if both arf and rmf are None
         self.arf = arf
         self.rmf = rmf
 
@@ -785,44 +834,45 @@ class ResponseNestedModel(Model):
 
         if arf is not None and rmf is not None:
             return rmf.apply_rmf(arf.apply_arf(*args, **kwargs))
-        elif self.arf is not None:
+
+        if arf is not None:
             return arf.apply_arf(*args, **kwargs)
 
-        return rmf.apply_rmf(*args, **kwargs)
+        if rmf is not None:
+            return rmf.apply_rmf(*args, **kwargs)
+
+        # No name for 'norsp' variant
+        raise DataErr('No instrument response')
 
 
 class MultiResponseSumModel(CompositeModel, ArithmeticModel):
 
-    def __init__(self, source, pha):
+    def __init__(self,
+                 source: Model,
+                 pha: DataPHA) -> None:
         self.channel = pha.channel
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         self.pha = pha
         self.source = source
-        self.elo = None
-        self.ehi = None
-        self.lo = None
-        self.hi = None
+        self.elo: np.ndarray | None = None
+        self.ehi: np.ndarray | None = None
+        self.lo: np.ndarray | None = None
+        self.hi: np.ndarray | None = None
         self.table = None
         self.orders = None
 
         models = []
         grid = []
-
         for id in pha.response_ids:
             arf, rmf = pha.get_response(id)
-
-            if arf is None and rmf is None:
-                raise DataErr('norsp', pha.name)
-
-            m = ResponseNestedModel(arf, rmf)
-            indep = None
-
-            if arf is not None:
-                indep = arf.get_indep()
-
             if rmf is not None:
                 indep = rmf.get_indep()
+            elif arf is not None:
+                indep = arf.get_indep()
+            else:
+                raise DataErr('norsp', self.pha.name)
 
+            m = ResponseNestedModel(arf, rmf)
             models.append(m)
             grid.append(indep)
 
@@ -833,35 +883,47 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         name = f'{type(self).__name__}({expr})'
         CompositeModel.__init__(self, name, (source,))
 
-    def _get_noticed_energy_list(self):
+    def _get_noticed_energy_list(self) -> None:
         grid = []
         for id in self.pha.response_ids:
             arf, rmf = self.pha.get_response(id)
-            indep = None
-            if arf is not None:
-                indep = arf.get_indep()
-            elif rmf is not None:
+            # Prior to 4.17.1 this chose ARF over RMF
+            if rmf is not None:
                 indep = rmf.get_indep()
+            elif arf is not None:
+                indep = arf.get_indep()
+            else:
+                raise DataErr('nosrp', self.pha.name)
+
+            assert len(indep) == 2
+            assert indep[0] is not None
+            assert indep[1] is not None
             grid.append(indep)
 
-        self.elo, self.ehi, self.table = compile_energy_grid(grid)
-        self.lo, self.hi = hc / self.ehi, hc / self.elo
+        if len(grid) == 0:
+            raise DataErr('nosrp', self.pha.name)
 
-    def startup(self, cache=False):
+        elo, ehi, self.table = compile_energy_grid(grid)
+        self.elo = elo
+        self.ehi = ehi
+        self.lo = hc / ehi
+        self.hi = hc / elo
+
+    def startup(self, cache: bool = False) -> None:
         pha = self.pha
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             pha.notice_response(True)
         self.channel = pha.get_noticed_channels()
         self.mask = pha.get_mask()
         self._get_noticed_energy_list()
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
         pha = self.pha
-        if numpy.iterable(pha.mask):
+        if np.iterable(pha.mask):
             pha.notice_response(False)
         self.channel = pha.channel
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         self.elo = None
         self.ehi = None
         self.table = None
@@ -869,22 +931,28 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
         self.hi = None
         CompositeModel.teardown(self)
 
-    def _check_for_user_grid(self, x, xhi=None):
+    def _check_for_user_grid(self,
+                             x: np.ndarray,
+                             xhi: np.ndarray | None = None
+                             ) -> bool:
         return (len(self.channel) != len(x) or
                 not (sao_fcmp(self.channel, x, _tol) == 0).all())
 
-    def _startup_user_grid(self, x, xhi=None):
+    def _startup_user_grid(self,
+                           x: np.ndarray,
+                           xhi: np.ndarray | None = None
+                           ) -> None:
         # fit() never comes in here b/c it calls startup()
         pha = self.pha
-        self.mask = numpy.zeros(len(pha.channel), dtype=bool)
-        self.mask[numpy.searchsorted(pha.channel, x)] = True
+        self.mask = np.zeros(len(pha.channel), dtype=bool)
+        self.mask[np.searchsorted(pha.channel, x)] = True
         pha.notice_response(True, x)
         self._get_noticed_energy_list()
 
-    def _teardown_user_grid(self):
+    def _teardown_user_grid(self) -> None:
         # fit() never comes in here b/c it calls startup()
         pha = self.pha
-        self.mask = numpy.ones(len(pha.channel), dtype=bool)
+        self.mask = np.ones(len(pha.channel), dtype=bool)
         pha.notice_response(False)
         self.elo = None
         self.ehi = None
@@ -918,9 +986,12 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
                 self.orders = vals
             # Fast
             else:
-                xlo, xhi = self.elo, self.ehi
                 if pha.units == 'wavelength':
-                    xlo, xhi = self.lo, self.hi
+                    xlo = self.lo
+                    xhi = self.hi
+                else:
+                    xlo = self.elo
+                    xhi = self.ehi
 
                 src = self.source(xlo, xhi)  # hi-res grid of all ARF grids
 
@@ -929,6 +1000,7 @@ class MultiResponseSumModel(CompositeModel, ArithmeticModel):
                     [model(sum_intervals(src, interval[0], interval[1]))
                      for model, interval in zip(self.models, self.table)]
 
+            # TODO: should this be np.sum and not sum?
             vals = sum(self.orders)
             if self.mask is not None:
                 vals = vals[self.mask]
@@ -963,36 +1035,47 @@ class MultipleResponse1D(Response1D):
 
     """
 
-    def __call__(self, model, session=None):
+    def __call__(self,
+                 model: Model | str,
+                 session: "sherpa.ui.utils.Session | None" = None
+                 ) -> ArithmeticModel:  # what is the best type here?
         pha = self.pha
-
-        if isinstance(model, string_types):
-            if session is None:
-                model = sherpa.astro.ui._session._eval_model_expression(model)
-            else:
-                model = session._eval_model_expression(model)
+        mdl = get_model_via_session(model, session)
 
         pha.notice_response(False)
 
-        model = MultiResponseSumModel(model, pha)
+        out = MultiResponseSumModel(mdl, pha)
 
         # TODO: should this include AREASCAL?
         if pha.exposure:
-            model = pha.exposure * model
+            return pha.exposure * out
 
-        return model
+        return out
 
 
 class PileupRMFModel(CompositeModel, ArithmeticModel):
 
-    def __init__(self, rmf, model, pha=None):
+    def __init__(self,
+                 rmf: DataRMF,
+                 model: Model,
+                 pha: DataPHA | None = None
+                 ) -> None:
+
+        # Should this require pha to be set?
         self.pha = pha
         self.channel = sao_arange(1, rmf.detchans)  # sao_arange is inclusive
-        self.mask = numpy.ones(rmf.detchans, dtype=bool)
+        self.mask = np.ones(rmf.detchans, dtype=bool)
         self.rmf = rmf
 
-        self.elo, self.ehi = rmf.get_indep()
-        self.lo, self.hi = hc / self.ehi, hc / self.elo
+        self.elo: np.ndarray
+        self.ehi: np.ndarray
+        elo, ehi = rmf.get_indep()
+        assert elo is not None
+        assert ehi is not None
+        self.elo = elo
+        self.ehi = ehi
+        self.lo = hc / self.ehi
+        self.hi = hc / self.elo
         self.model = model
         self.otherargs = None
         self.otherkwargs = None
@@ -1001,7 +1084,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
                                 f'apply_rmf({self.model.name})',
                                 (self.model,))
 
-    def startup(self, cache=False):
+    def startup(self, cache: bool = False) -> None:
         pha = self.pha
         pha.notice_response(False)
         self.channel = pha.get_noticed_channels()
@@ -1009,7 +1092,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
         self.model.startup(cache)
         CompositeModel.startup(self, cache)
 
-    def teardown(self):
+    def teardown(self) -> None:
 
         # Note:
         #
@@ -1022,18 +1105,18 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
         rmf = self.rmf
         self.channel = sao_arange(1, rmf.detchans)
-        self.mask = numpy.ones(rmf.detchans, dtype=bool)
+        self.mask = np.ones(rmf.detchans, dtype=bool)
         self.model.teardown()
         CompositeModel.teardown(self)
 
-    def _check_for_user_grid(self, x):
+    def _check_for_user_grid(self, x: np.ndarray) -> bool:
         return (len(self.channel) != len(x) or
                 not (sao_fcmp(self.channel, x, _tol) == 0).all())
 
-    def _startup_user_grid(self, x):
+    def _startup_user_grid(self, x: np.ndarray) -> None:
         # fit() never comes in here b/c it calls startup()
-        self.mask = numpy.zeros(self.rmf.detchans, dtype=bool)
-        self.mask[numpy.searchsorted(self.pha.channel, x)] = True
+        self.mask = np.zeros(self.rmf.detchans, dtype=bool)
+        self.mask[np.searchsorted(self.pha.channel, x)] = True
 
     def _calc(self, p, xlo, xhi):
         # Evaluate source model on RMF energy/wave grid OR
@@ -1053,9 +1136,12 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
                 user_grid = True
                 self._startup_user_grid(x)
 
-            xlo, xhi = self.elo, self.ehi
             if pha is not None and pha.units == 'wavelength':
-                xlo, xhi = self.lo, self.hi
+                xlo = self.lo
+                xhi = self.hi
+            else:
+                xlo = self.elo
+                xhi = self.ehi
 
             vals = self._calc(p, xlo, xhi)
             if self.mask is not None:
@@ -1063,7 +1149,7 @@ class PileupRMFModel(CompositeModel, ArithmeticModel):
 
         finally:
             if user_grid:
-                self.mask = numpy.ones(self.rmf.detchans, dtype=bool)
+                self.mask = np.ones(self.rmf.detchans, dtype=bool)
 
         return vals
 
@@ -1092,46 +1178,47 @@ class PileupResponse1D(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, pha, pileup_model):
+    def __init__(self,
+                 pha: DataPHA,
+                 pileup_model   # what is the best type for this?
+                 ) -> None:
         self.pha = pha
         self.pileup_model = pileup_model
         NoNewAttributesAfterInit.__init__(self)
 
-    def __call__(self, model, session=None):
+    def __call__(self,
+                 model: Model | str,
+                 session: "sherpa.ui.utils.Session | None" = None
+                 ) -> ArithmeticModel:  # what is the best type here?
+
         pha = self.pha
         # clear out any previous response filter
         pha.notice_response(False)
 
-        if isinstance(model, string_types):
-            if session is None:
-                model = sherpa.astro.ui._session._eval_model_expression(model)
-            else:
-                model = session._eval_model_expression(model)
-
+        mdl = get_model_via_session(model, session)
         arf, rmf = pha.get_response()
-        err_msg = None
-
         if arf is None and rmf is None:
             raise DataErr('norsp', pha.name)
 
         if arf is None:
             err_msg = 'does not have an associated ARF'
-        elif pha.exposure is None:
-            err_msg = 'does not specify an exposure time'
+            raise InstrumentErr('baddata', pha.name, err_msg)
 
-        if err_msg:
+        if pha.exposure is None:
+            err_msg = 'does not specify an exposure time'
             raise InstrumentErr('baddata', pha.name, err_msg)
 
         # Currently, the response is NOT noticed using pileup
 
         # ARF convolution done inside ISIS pileup module
         # on finite grid scale
-        model = model.apply(self.pileup_model, pha.exposure, arf.energ_lo,
-                            arf.energ_hi, arf.specresp, model)
+        out = mdl.apply(self.pileup_model, pha.exposure, arf.energ_lo,
+                        arf.energ_hi, arf.specresp, mdl)
 
-        if rmf is not None:
-            model = PileupRMFModel(rmf, model, pha)
-        return model
+        if rmf is None:
+            return out
+
+        return PileupRMFModel(rmf, out, pha)
 
 
 class PSFModel(_PSFModel):
@@ -1168,7 +1255,7 @@ class PSFModel(_PSFModel):
             if (subkernel and sky is not None and
                     lo is not None and hi is not None):
 
-                if (WCS is not None):
+                if WCS is not None:
                     sky = WCS(sky.name, sky.type, sky.crval,
                               sky.crpix - lo, sky.cdelt, sky.crota,
                               sky.epoch, sky.equinox)
@@ -1183,8 +1270,14 @@ class PSFModel(_PSFModel):
         raise PSFErr('ndim')
 
 
-def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
-               name='user-arf', header=None):
+def create_arf(elo: np.ndarray,
+               ehi: np.ndarray,
+               specresp: np.ndarray | None = None,
+               exposure: float | None = None,
+               ethresh: float | None = None,
+               name: str = 'user-arf',
+               header: Mapping[str, Any] | None = None
+               ) -> DataARF:
     """Create an ARF.
 
     .. versionadded:: 4.10.1
@@ -1219,15 +1312,21 @@ def create_arf(elo, ehi, specresp=None, exposure=None, ethresh=None,
     """
 
     if specresp is None:
-        specresp = numpy.ones(elo.size, dtype=numpy.float32)
+        specresp = np.ones(elo.size, dtype=np.float32)
 
     return DataARF(name, energ_lo=elo, energ_hi=ehi, specresp=specresp,
                    exposure=exposure, ethresh=ethresh, header=header)
 
 
-def create_delta_rmf(rmflo, rmfhi, offset=1,
-                     e_min=None, e_max=None, ethresh=None,
-                     name='delta-rmf', header=None):
+def create_delta_rmf(rmflo: np.ndarray,
+                     rmfhi: np.ndarray,
+                     offset: int = 1,
+                     e_min: np.ndarray | None = None,
+                     e_max: np.ndarray | None = None,
+                     ethresh: float | None = None,
+                     name: str = 'delta-rmf',
+                     header: Mapping[str, Any] | None = None
+                     ) -> DataRMF:
     """Create an ideal RMF.
 
     The RMF has a unique mapping from channel to energy, in
@@ -1284,9 +1383,9 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
     # Set up the delta-function response.
     #
     nchans = rmflo.size
-    matrix = numpy.ones(nchans, dtype=numpy.float32)
-    dummy = numpy.ones(nchans, dtype=numpy.int16)
-    f_chan = numpy.arange(offset, nchans + offset, dtype=numpy.int16)
+    matrix = np.ones(nchans, dtype=np.float32)
+    dummy = np.ones(nchans, dtype=np.int16)
+    f_chan = np.arange(offset, nchans + offset, dtype=np.int16)
 
     if e_min is None:
         e_min = rmflo
@@ -1301,9 +1400,16 @@ def create_delta_rmf(rmflo, rmfhi, offset=1,
                    ethresh=ethresh, header=header)
 
 
-def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
-                         e_min=None, e_max=None, ethresh=None,
-                         name='delta-rmf', header=None):
+def create_non_delta_rmf(rmflo: np.ndarray,
+                         rmfhi: np.ndarray,
+                         fname: str,
+                         offset: int = 1,
+                         e_min: np.ndarray | None = None,
+                         e_max: np.ndarray | None = None,
+                         ethresh: float | None = None,
+                         name: str = 'delta-rmf',
+                         header: Mapping[str, Any] | None = None
+                         ) -> DataRMF:
     """Create a RMF using a matrix from a file.
 
     The RMF matrix (the mapping from channel to energy bin) is
@@ -1389,7 +1495,7 @@ def create_non_delta_rmf(rmflo, rmfhi, fname, offset=1,
 #
 def calc_grp_chan_matrix(fname: str,
                          startchan: int = 1
-                         ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+                         ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Read in an image and convert it to RMF components.
 
     For an image containing a RMF, such as created by the `CIAO tool
@@ -1433,9 +1539,9 @@ def calc_grp_chan_matrix(fname: str,
     return matrix_to_rmf(iblock.image, startchan=startchan)
 
 
-def matrix_to_rmf(matrix: numpy.ndarray,
+def matrix_to_rmf(matrix: np.ndarray,
                   startchan: int = 1,
-                  ) -> tuple[numpy.ndarray, numpy.ndarray, numpy.ndarray, numpy.ndarray]:
+                  ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     """Convert a matrix (2D image) to RMF components.
 
     .. versionchanged:: 4.17.0
@@ -1478,17 +1584,17 @@ def matrix_to_rmf(matrix: numpy.ndarray,
     n_chan1: list[int] = []
     f_chan1: list[int] = []
     for row in matrix > 0:
-        flag = numpy.hstack([[0], row, [0]])
-        diffs = numpy.diff(flag, n=1)
-        starts, = numpy.where(diffs > 0)
-        ends, = numpy.where(diffs < 0)
+        flag = np.hstack([[0], row, [0]])
+        diffs = np.diff(flag, n=1)
+        starts, = np.where(diffs > 0)
+        ends, = np.where(diffs < 0)
         n_chan1.extend(ends - starts)
         f_chan1.extend(starts + startchan)
         n_grp1.append(len(starts))
 
-    n_grp = numpy.asarray(n_grp1, dtype=numpy.int16)
-    f_chan = numpy.asarray(f_chan1, dtype=numpy.int16)
-    n_chan = numpy.asarray(n_chan1, dtype=numpy.int16)
+    n_grp = np.asarray(n_grp1, dtype=np.int16)
+    f_chan = np.asarray(f_chan1, dtype=np.int16)
+    n_chan = np.asarray(n_chan1, dtype=np.int16)
     matrix = matrix.flatten()
     matrix = matrix[matrix > 0]
     return n_grp, f_chan, n_chan, matrix
@@ -1498,7 +1604,7 @@ def matrix_to_rmf(matrix: numpy.ndarray,
 class RMFMatrix:
     """Raw RMF data"""
 
-    matrix: numpy.ndarray
+    matrix: np.ndarray
     """The matrix as a 2D array (X axis is channels, Y axis is energy)"""
     channels: EvaluationSpace1D
     """The channel values. This must be a non-integrated axis."""
@@ -1523,7 +1629,7 @@ class RMFMatrix:
             raise ValueError("channels and matrix mismatch")
 
 
-def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
+def rmf_to_matrix(rmf: DataRMF | RMF1D) -> RMFMatrix:
     """Convert a RMF to a matrix (2D image).
 
     .. versionadded:: 4.16.0
@@ -1550,7 +1656,7 @@ def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
     #
     nchans = rmf.detchans
     nenergy = rmf.energ_lo.size
-    matrix = numpy.zeros((nenergy, nchans), dtype=rmf.matrix.dtype)
+    matrix = np.zeros((nenergy, nchans), dtype=rmf.matrix.dtype)
 
     # Loop through each energy bin and add in the data, which is split
     # into n_grp chunks, each starting at f_chan (with 1 being the
@@ -1577,14 +1683,14 @@ def rmf_to_matrix(rmf: Union[DataRMF, RMF1D]) -> RMFMatrix:
             matrix_start = matrix_end
             chan_idx += 1
 
-    channels = numpy.arange(rmf.offset, rmf.offset + nchans,
-                            dtype=numpy.int16)
+    channels = np.arange(rmf.offset, rmf.offset + nchans,
+                         dtype=np.int16)
     cgrid = EvaluationSpace1D(channels)
     egrid = EvaluationSpace1D(rmf.energ_lo, rmf.energ_hi)
     return RMFMatrix(matrix, cgrid, egrid)
 
 
-def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
+def rmf_to_image(rmf: DataRMF | RMF1D) -> DataIMG:
     """Convert a RMF to DataIMG.
 
     .. versionadded:: 4.16.0
@@ -1607,7 +1713,7 @@ def rmf_to_image(rmf: Union[DataRMF, RMF1D]) -> DataIMG:
 
     nx = mat.channels.x_axis.size
     ny = mat.energies.x_axis.size
-    x1, x0 = numpy.mgrid[1:ny + 1, 1:nx + 1]
+    x1, x0 = np.mgrid[1:ny + 1, 1:nx + 1]
     x0 = x0.flatten()
     x1 = x1.flatten()
     y = mat.matrix.flatten()
