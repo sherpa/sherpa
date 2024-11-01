@@ -50,13 +50,12 @@ How does the cache work?
 ========================
 
 The parameter values, integrate setting, and grid values are used to
-create an unique token - the SHA256 hash of the values - which is used
+create a unique token - the SHA256 hash of the values - which is used
 to look up a value in the `_cache` dictionary. If it exists then the
 stored value is returned, otherwise the model is evaluated and added
 to the `_cache` dictionary. In order to keep the cache size small, the
-`_queue` array is used to remove an existing value from the store when
-a new value is added. The size for the `_queue` array is set to
-:py:attr:`~sherpa.models.model.ArithmeticModel.cache` elements (the
+oldest element in the cache is removed when the number of entries becomes
+larger than :py:attr:`~sherpa.models.model.ArithmeticModel.cache` elements (the
 default value for this attribute is 5).
 
 .. _startup-modelcacher1d:
@@ -110,8 +109,7 @@ True
 [0. 1. 1. 1. 0. 0.]
 >>> print(m._cache)  # doctest: +SKIP
 {b'<random byte string>': array([0., 1., 1., 1., 0., 0.])}
->>> print(m._queue)  # doctest: +SKIP
-[b'<random byte string>']
+
 
 Fit and the startup method
 --------------------------

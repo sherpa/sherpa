@@ -1125,7 +1125,6 @@ class DoNotUseModel(Model):
 
     def cache_clear(self) -> None:
         """Clear the cache."""
-        self._queue = []
 
         self._cache: dict[bytes, np.ndarray] = {}
         self._cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
@@ -1142,7 +1141,7 @@ class DoNotUseModel(Model):
 def get_cache_classes():
     """This is a function because we want to conditionally
     include an XSPEC model. Within a function, we can simply
-    pass that if XSEPC is not available.
+    pass that if XSPEC is not available.
     """
     cls_list = [DoNotUseModel, Polynom1D]
 

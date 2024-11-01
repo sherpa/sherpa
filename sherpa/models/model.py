@@ -475,14 +475,10 @@ def modelCacher1d(func: Callable) -> Callable:
         vals = func(cls, pars, xlo, *args, **kwargs)
 
         # remove first item in queue and remove from cache
-        # if cache is reaching max size.
-        queue = cls._queue
-        if len(queue) >= cls.cache:
-            key = queue.pop(0)
-            cache.pop(key, None)
+        # if the cache is full.
+        if len(cache) >= cls.cache:
+            del cache[list(cache.keys())[0]]
 
-        # append newest model values to queue
-        queue.append(digest)
         cache[digest] = vals.copy()
 
         cache_ctr['misses'] += 1
@@ -1413,7 +1409,6 @@ class ArithmeticModel(Model):
 
     def cache_clear(self) -> None:
         """Clear the cache."""
-        self._queue = []
         self._cache: dict[bytes, np.ndarray] = {}
         self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
 
@@ -1440,7 +1435,7 @@ class ArithmeticModel(Model):
 
         """
         c = self._cache_ctr
-        info(f" {self.name:25s}  size: {len(self._queue):4d}  " +
+        info(f" {self.name:25s}  size: {len(self._cache):4d}  " +
              f"hits: {c['hits']:5d}  misses: {c['misses']:5d}  " +
              f"check: {c['check']:5d}")
 
@@ -1534,7 +1529,6 @@ class ArithmeticModel(Model):
         if int(self.cache) <= 0:
             return
 
-        self._queue = []
         frozen = np.array([par.frozen for par in self.pars], dtype=bool)
         if len(frozen) > 0 and frozen.all():
             self._use_caching = cache
