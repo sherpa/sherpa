@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2012 - 2016, 2020 - 2024
+#  Copyright (C) 2012-2016, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -526,7 +526,7 @@ def read_model_definition(fh, namefunc: Callable[[str], str]) -> Optional[ModelD
 
 def mpop(array: list[str]) -> Optional[float]:
     """Pop first element from array (converting to float),
-    returning defval if empty.
+    returning None if empty.
     """
 
     try:
