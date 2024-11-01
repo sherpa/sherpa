@@ -1095,7 +1095,6 @@ class DoNotUseModel(Model):
 
     def cache_clear(self) -> None:
         """Clear the cache."""
-        self._queue = []
 
         self._cache: dict[bytes, numpy.ndarray] = {}
         self._cache_ctr: dict[str, int] = {'hits': 0, 'misses': 0, 'check': 0}
