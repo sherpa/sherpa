@@ -24,13 +24,7 @@ fi
 
 # Ensure we have set up conda
 #
-source ${CONDA}/etc/profile.d/conda.sh
-
-# update and add channels
-conda update --yes conda
-conda config --add channels conda-forge
-#Remove defaults to avoid conflicts with conda-forge
-conda config --remove channels defaults
+source ${conda_loc}/etc/profile.d/conda.sh
 
 # To avoid issues with non-XSPEC builds (e.g.
 # https://github.com/sherpa/sherpa/pull/794#issuecomment-616570995 )
