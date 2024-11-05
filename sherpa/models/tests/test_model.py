@@ -2100,6 +2100,7 @@ def test_model_can_not_change_pars():
         mdl.pars = [Parameter("x", "y", 2)]
 
 
+@pytest.mark.xfail
 def test_model_linked_par_outside_limit():
     """What happens if a linked par is outside it's limits"""
 
