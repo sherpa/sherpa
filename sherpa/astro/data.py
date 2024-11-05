@@ -178,7 +178,7 @@ RateType = Literal["counts", "rate"]
 
 # can arf/rmf be sent ARF1D/RMF1D too?
 #
-def _notice_resp(chans: np.ndarray,
+def _notice_resp(chans: np.ndarray | None,
                  arf: DataARF | None,
                  rmf: DataRMF | None
                  ) -> None:
@@ -5123,8 +5123,8 @@ It is an integer or string.
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self,
-               lo: float | None = None,
-               hi: float | None = None,
+               lo: int | float | None = None,
+               hi: int | float | None = None,
                ignore: bool = False,
                bkg_id: IdType | Sequence[IdType] | None = None
                ) -> None:

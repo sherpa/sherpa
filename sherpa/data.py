@@ -119,7 +119,7 @@ dependent axis (``y``) then filter to select only those values between
 from abc import ABCMeta
 from collections.abc import Sequence
 import logging
-from typing import Any, Literal, overload
+from typing import Any, Literal, Sequence, overload
 import warnings
 
 import numpy as np
@@ -1483,7 +1483,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         return self._data_space.filter.apply(data)
 
-    def notice(self, mins, maxes,
+    def notice(self,
+               mins,
+               maxes,
                ignore: bool = False,
                integrated: bool = False
                ) -> None:
@@ -2008,8 +2010,8 @@ class Data1D(Data):
         return data_space.grid
 
     def notice(self,
-               xlo: float | None = None,
-               xhi: float | None = None,
+               xlo: int | float | None = None,
+               xhi: int | float | None = None,
                ignore: bool = False) -> None:
         """Notice or ignore the given range.
 
@@ -2057,7 +2059,8 @@ class Data1D(Data):
 
         """
 
-        Data.notice(self, (xlo,), (xhi,), ignore)
+        Data.notice(self, (xlo,), (xhi,), ignore=ignore,
+                    integrated=False)
 
     @property
     def x(self) -> np.ndarray | None:
@@ -2283,8 +2286,8 @@ class Data1DInt(Data1D):
                                       format=format, delim=delim)
 
     def notice(self,
-               xlo: float | None = None,
-               xhi: float | None = None,
+               xlo: int | float | None = None,
+               xhi: int | float | None = None,
                ignore: bool = False
                ) -> None:
         """Notice or ignore the given range.
@@ -2651,14 +2654,15 @@ class Data2D(Data):
         return self.get_x1()
 
     def notice(self,
-               x0lo: float | None = None,
-               x0hi: float | None = None,
-               x1lo: float | None = None,
-               x1hi: float | None = None,
+               x0lo: int | float | None = None,
+               x0hi: int | float | None = None,
+               x1lo: int | float | None = None,
+               x1hi: int | float | None = None,
                ignore: bool = False
                ) -> None:
+
         Data.notice(self, (x0lo, x1lo), (x0hi, x1hi),
-                    ignore=ignore)
+                    ignore=ignore, integrated=False)
 
 
 class Data2DInt(Data2D):
@@ -2777,13 +2781,14 @@ class Data2DInt(Data2D):
         return (indep.x1lo + indep.x1hi) / 2.0
 
     def notice(self,
-               x0lo: float | None = None,
-               x0hi: float | None = None,
-               x1lo: float | None = None,
-               x1hi: float | None = None,
+               x0lo: int | float | None = None,
+               x0hi: int | float | None = None,
+               x1lo: int | float | None = None,
+               x1hi: int | float | None = None,
                ignore: bool = False
                ) -> None:
-        Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None),
+        Data.notice(self, (None, None, x0lo, x1lo),
+                    (x0hi, x1hi, None, None),
                     ignore=ignore, integrated=True)
 
     @property
