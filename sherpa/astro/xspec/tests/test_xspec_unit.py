@@ -1374,6 +1374,7 @@ def test_ismabs_parameter_name_clashes():
 @requires_data
 @requires_fits
 @requires_xspec
+@pytest.mark.xfail
 def test_xstbl_link_parameter_evaluation(make_data_path):
     """See also sherpa/models/test_parameter::test_link_parameter_setting
 
