@@ -178,9 +178,9 @@ RateType = Literal["counts", "rate"]
 
 # can arf/rmf be sent ARF1D/RMF1D too?
 #
-def _notice_resp(chans: np.ndarray,
-                 arf: Optional[DataARF],
-                 rmf: Optional[DataRMF]
+def _notice_resp(chans: np.ndarray | None,
+                 arf: DataARF | None,
+                 rmf: DataRMF | None
                  ) -> None:
     """Notice the channel range for the associated responses
 
@@ -4896,7 +4896,7 @@ It is an integer or string.
 
         return chans[mask]
 
-    def get_mask(self) -> Optional[np.ndarray]:
+    def get_mask(self) -> np.ndarray | None:
         """Returns the (ungrouped) mask.
 
         .. versionchanged:: 4.17.0
@@ -5111,7 +5111,7 @@ It is an integer or string.
 
     def notice_response(self,
                         notice_resp: bool = True,
-                        noticed_chans: Optional[np.ndarray] = None
+                        noticed_chans: np.ndarray | None = None
                         ) -> None:
         notice_resp = bool_cast(notice_resp)
 
@@ -5123,10 +5123,10 @@ It is an integer or string.
             _notice_resp(noticed_chans, arf, rmf)
 
     def notice(self,
-               lo: Optional[float] = None,
-               hi: Optional[float] = None,
+               lo: int | float | None = None,
+               hi: int | float | None = None,
                ignore: bool = False,
-               bkg_id: Optional[Union[IdType, Sequence[IdType]]] = None
+               bkg_id: IdType | Sequence[IdType] | None = None
                ) -> None:
         """Notice or ignore the given range.
 

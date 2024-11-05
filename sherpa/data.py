@@ -118,8 +118,7 @@ dependent axis (``y``) then filter to select only those values between
 
 from abc import ABCMeta
 import logging
-from typing import Any, Literal, Optional, Sequence, Union, \
-    overload
+from typing import Any, Literal, Sequence, overload
 import warnings
 
 import numpy as np
@@ -591,10 +590,10 @@ class Filter:
 
     """
     def __init__(self) -> None:
-        self._mask: Union[np.ndarray, bool] = True
+        self._mask: np.ndarray | bool = True
 
     @property
-    def mask(self) -> Union[np.ndarray, bool]:
+    def mask(self) -> np.ndarray | bool:
         """Mask array for dependent variable
 
         Returns
@@ -604,7 +603,7 @@ class Filter:
         return self._mask
 
     @mask.setter
-    def mask(self, val: Union[ArrayType, bool]) -> None:
+    def mask(self, val: ArrayType | bool) -> None:
         if val is None:
             raise DataErr('ismask')
 
@@ -877,21 +876,20 @@ class Data(NoNewAttributesAfterInit, BaseData):
     is set or changed.
     """
 
-    _y: Optional[np.ndarray] = None
-    _size: Optional[int] = None
-    _staterror: Optional[np.ndarray] = None
-    _syserror: Optional[np.ndarray] = None
+    _y: np.ndarray | None = None
+    _size: int | None = None
+    _staterror: np.ndarray | None = None
+    _syserror: np.ndarray | None = None
 
-    ndim: Optional[int] = None
+    ndim: int | None = None
     "The dimensionality of the dataset, if defined, or None."
 
     def __init__(self,
                  name: str,
-                 indep: Union[Sequence[ArrayType],
-                              Sequence[None]],
-                 y: Optional[ArrayType],
-                 staterror: Optional[ArrayType] = None,
-                 syserror: Optional[ArrayType] = None
+                 indep: Sequence[ArrayType] | Sequence[None],
+                 y: ArrayType | None,
+                 staterror: ArrayType | None = None,
+                 syserror: ArrayType | None = None
                  ) -> None:
         self.name = name
         self._data_space = self._init_data_space(Filter(), *indep)
@@ -964,7 +962,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     def _set_related(self,
                      attr: str,
-                     val: Optional[ArrayType],
+                     val: ArrayType | None,
                      check_mask: bool = True,
                      **kwargs) -> None:
         """Set a field that must match the independent axes size.
@@ -1008,7 +1006,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         setattr(self, f"_{attr}", vals)
 
     @property
-    def y(self) -> Optional[np.ndarray]:
+    def y(self) -> np.ndarray | None:
         """The dependent axis.
 
         If set, it must match the size of the independent axes.
@@ -1020,7 +1018,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self._set_related("y", val, check_mask=False)
 
     @property
-    def size(self) -> Optional[int]:
+    def size(self) -> int | None:
         """The number of elements in the data set.
 
         Returns
@@ -1042,18 +1040,18 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self.size
 
     @property
-    def dep(self) -> Optional[np.ndarray]:
+    def dep(self) -> np.ndarray | None:
         """
         Left for compatibility with older versions
         """
         return self.y
 
     @dep.setter
-    def dep(self, val: Optional[ArrayType]) -> None:
+    def dep(self, val: ArrayType | None) -> None:
         self.y = val
 
     @property
-    def mask(self) -> Union[np.ndarray, bool]:
+    def mask(self) -> np.ndarray | bool:
         """
         Mask array for dependent variable
 
@@ -1064,7 +1062,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self._data_space.filter.mask
 
     @mask.setter
-    def mask(self, val: Union[ArrayType, bool]) -> None:
+    def mask(self, val: ArrayType | bool) -> None:
 
         # If we have a scalar then
         # - we do not check sizes (as it's possible to set even though
@@ -1116,8 +1114,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     @property
     def indep(self
-              ) -> Union[tuple[np.ndarray, ...],
-                         tuple[None, ...]]:
+              ) -> tuple[np.ndarray, ...] | tuple[None, ...]:
         """The grid of the data space associated with this data set.
 
         When set, the field must be set to a tuple, even for a
@@ -1138,8 +1135,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     @indep.setter
     def indep(self,
-              val: Union[tuple[ArrayType, ...],
-                         tuple[None, ...]]
+              val: tuple[ArrayType, ...] | tuple[None, ...]
               ) -> None:
 
         # This is a low-level check so raise a normal Python error
@@ -1180,14 +1176,13 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return self._data_space.get(filter).grid
 
     def set_indep(self,
-                  val: Union[tuple[ArrayType, ...],
-                             tuple[None, ...]]
+                  val: tuple[ArrayType, ...] | tuple[None, ...]
                   ) -> None:
         self.indep = val
 
     def get_dep(self,
                 filter: bool = False
-                ) -> Optional[np.ndarray]:
+                ) -> np.ndarray | None:
         """Return the dependent axis of a data set.
 
         Parameters
@@ -1217,7 +1212,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return dep
 
     # Do we want to allow val to be None?
-    def set_dep(self, val: Union[ArrayType, float]) -> None:
+    def set_dep(self, val: ArrayType | float) -> None:
         """
         Set the dependent variable values.
 
@@ -1286,7 +1281,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         return (y, y2)
 
     @property
-    def staterror(self) -> Optional[np.ndarray]:
+    def staterror(self) -> np.ndarray | None:
         """The statistical error on the dependent axis, if set.
 
         This must match the size of the independent axis.
@@ -1298,7 +1293,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
         self._set_related("staterror", val)
 
     @property
-    def syserror(self) -> Optional[np.ndarray]:
+    def syserror(self) -> np.ndarray | None:
         """The systematic error on the dependent axis, if set.
 
         This must match the size of the independent axis.
@@ -1311,8 +1306,8 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     def get_staterror(self,
                       filter: bool = False,
-                      staterrfunc: Optional[StatErrFunc] = None
-                      ) -> Optional[ArrayType]:
+                      staterrfunc: StatErrFunc | None = None
+                      ) -> ArrayType | None:
         """Return the statistical error on the dependent axis of a data set.
 
         Parameters
@@ -1351,7 +1346,7 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
     def get_syserror(self,
                      filter: bool = False
-                     ) -> Optional[np.ndarray]:
+                     ) -> np.ndarray | None:
         """Return the systematic error on the dependent axis of a data set.
 
         Parameters
@@ -1487,7 +1482,9 @@ class Data(NoNewAttributesAfterInit, BaseData):
 
         return self._data_space.filter.apply(data)
 
-    def notice(self, mins, maxes,
+    def notice(self,
+               mins,
+               maxes,
                ignore: bool = False,
                integrated: bool = False
                ) -> None:
@@ -1526,16 +1523,16 @@ class Data(NoNewAttributesAfterInit, BaseData):
         # Should this also check whether the independent and dependent
         # axes are set?
         #
-        arrays: list[Optional[np.ndarray]]
+        arrays: list[np.ndarray | None]
         arrays = [self.get_y(filter=True, yfunc=None)]
         arrays.extend(self.get_indep(True))
         return tuple(arrays)
 
     def to_fit(self,
-               staterrfunc: Optional[StatErrFunc] = None
-               ) -> tuple[Optional[np.ndarray],
-                          Optional[ArrayType],
-                          Optional[np.ndarray]]:
+               staterrfunc: StatErrFunc | None = None
+               ) -> tuple[np.ndarray | None,
+                          ArrayType | None,
+                          np.ndarray | None]:
         return (self.get_dep(True),
                 self.get_staterror(True, staterrfunc),
                 self.get_syserror(True))
@@ -1630,10 +1627,10 @@ class DataSimulFit(NoNewAttributesAfterInit):
         return np.concatenate(all_model)
 
     def to_fit(self,
-               staterrfunc: Optional[StatErrFunc] = None
+               staterrfunc: StatErrFunc | None = None
                ) -> tuple[np.ndarray,
-                          Optional[np.ndarray],
-                          Optional[np.ndarray]]:
+                          np.ndarray | None,
+                          np.ndarray | None]:
         total_dep = []
         total_staterror = []
         total_syserror = []
@@ -1679,7 +1676,7 @@ class DataSimulFit(NoNewAttributesAfterInit):
     #
     def to_plot(self,
                 yfunc=None,
-                staterrfunc: Optional[StatErrFunc] = None
+                staterrfunc: StatErrFunc | None = None
                 ):
         return self.datasets[0].to_plot(yfunc.parts[0], staterrfunc)
 
@@ -1706,10 +1703,10 @@ class Data1D(Data):
 
     def __init__(self,
                  name: str,
-                 x: Optional[ArrayType],
-                 y: Optional[ArrayType],
-                 staterror: Optional[ArrayType] = None,
-                 syserror: Optional[ArrayType] = None
+                 x: ArrayType | None,
+                 y: ArrayType | None,
+                 staterror: ArrayType | None = None,
+                 syserror: ArrayType | None = None
                  ) -> None:
         self._xlabel = 'x'
         super().__init__(name, (x, ), y, staterror, syserror)
@@ -1733,9 +1730,9 @@ class Data1D(Data):
 
     def get_x(self,
               filter: bool = False,
-              model: Optional[ModelFunc] = None,
+              model: ModelFunc | None = None,
               use_evaluation_space: bool = False
-              ) -> Optional[np.ndarray]:
+              ) -> np.ndarray | None:
 
         if model is not None:
             mdim = getattr(model, "ndim", None)
@@ -1747,7 +1744,7 @@ class Data1D(Data):
     def get_xerr(self,
                  filter: bool = False,
                  yfunc=None
-                 ) -> Optional[np.ndarray]:
+                 ) -> np.ndarray | None:
         """Return linear view of bin size in independent axis/axes.
 
         Parameters
@@ -1975,8 +1972,8 @@ class Data1D(Data):
     # The return value is hard to type, so it is skipped at the
     # moment.
     def to_plot(self,
-                yfunc: Optional[ModelFunc] = None,
-                staterrfunc: Optional[StatErrFunc] = None):
+                yfunc: ModelFunc | None = None,
+                staterrfunc: StatErrFunc | None = None):
         # As we introduced models defined on arbitrary grids, the x array can also depend on the
         # model function, at least in principle.
         return (self.get_x(True, yfunc),
@@ -1989,8 +1986,8 @@ class Data1D(Data):
     # The return value is hard to type, so it is skipped at the
     # moment.
     def to_component_plot(self,
-                          yfunc: Optional[ModelFunc] = None,
-                          staterrfunc: Optional[StatErrFunc] = None):
+                          yfunc: ModelFunc | None = None,
+                          staterrfunc: StatErrFunc | None = None):
         # As we introduced models defined on arbitrary grids, the x array can also depend on the
         # model function, at least in principle.
         return (self.get_x(True, yfunc, use_evaluation_space=True),
@@ -2002,9 +1999,9 @@ class Data1D(Data):
 
     def get_evaluation_indep(self,
                              filter: bool = False,
-                             model: Optional[ModelFunc] = None,
+                             model: ModelFunc | None = None,
                              use_evaluation_space: bool = False
-                             ) -> Optional[np.ndarray]:
+                             ) -> np.ndarray | None:
         data_space = self._data_space.get(filter)
         if use_evaluation_space:
             return data_space.for_model(model).grid
@@ -2012,8 +2009,8 @@ class Data1D(Data):
         return data_space.grid
 
     def notice(self,
-               xlo: Optional[float] = None,
-               xhi: Optional[float] = None,
+               xlo: int | float | None = None,
+               xhi: int | float | None = None,
                ignore: bool = False) -> None:
         """Notice or ignore the given range.
 
@@ -2061,10 +2058,11 @@ class Data1D(Data):
 
         """
 
-        Data.notice(self, (xlo,), (xhi,), ignore)
+        Data.notice(self, (xlo,), (xhi,), ignore=ignore,
+                    integrated=False)
 
     @property
-    def x(self) -> Optional[np.ndarray]:
+    def x(self) -> np.ndarray | None:
         """
         Used for compatibility, in particular for __str__ and __repr__
         """
@@ -2094,10 +2092,10 @@ class Data1DAsymmetricErrs(Data1D):
 
     def __init__(self,
                  name: str,
-                 x: Optional[ArrayType],
-                 y: Optional[ArrayType],
-                 elo: Optional[ArrayType],
-                 ehi: Optional[ArrayType],
+                 x: ArrayType | None,
+                 y: ArrayType | None,
+                 elo: ArrayType | None,
+                 ehi: ArrayType | None,
                  staterror=None,
                  syserror=None
                  ) -> None:
@@ -2145,11 +2143,11 @@ class Data1DInt(Data1D):
 
     def __init__(self,
                  name: str,
-                 xlo: Optional[ArrayType],
-                 xhi: Optional[ArrayType],
-                 y: Optional[ArrayType],
-                 staterror: Optional[ArrayType] = None,
-                 syserror: Optional[ArrayType] = None
+                 xlo: ArrayType | None,
+                 xhi: ArrayType | None,
+                 y: ArrayType | None,
+                 staterror: ArrayType | None = None,
+                 syserror: ArrayType | None = None
                  ) -> None:
 
         # Note: we do not call the superclass here.
@@ -2175,7 +2173,7 @@ class Data1DInt(Data1D):
 
     def get_x(self,
               filter: bool = False,
-              model: Optional[ModelFunc] = None,
+              model: ModelFunc | None = None,
               use_evaluation_space: bool = False
               ) -> np.ndarray:
         indep = self.get_evaluation_indep(filter, model, use_evaluation_space)
@@ -2187,8 +2185,8 @@ class Data1DInt(Data1D):
 
     def get_xerr(self,
                  filter: bool = False,
-                 model: Optional[ModelFunc] = None
-                 ) -> Optional[np.ndarray]:
+                 model: ModelFunc | None = None
+                 ) -> np.ndarray | None:
         """Returns an X "error".
 
         The error value for the independent axis is not well defined
@@ -2287,8 +2285,8 @@ class Data1DInt(Data1D):
                                       format=format, delim=delim)
 
     def notice(self,
-               xlo: Optional[float] = None,
-               xhi: Optional[float] = None,
+               xlo: int | float | None = None,
+               xhi: int | float | None = None,
                ignore: bool = False
                ) -> None:
         """Notice or ignore the given range.
@@ -2349,14 +2347,14 @@ class Data1DInt(Data1D):
                     ignore=ignore, integrated=True)
 
     @property
-    def xlo(self) -> Optional[np.ndarray]:
+    def xlo(self) -> np.ndarray | None:
         """
         Property kept for compatibility
         """
         return self._data_space.x_axis.lo
 
     @property
-    def xhi(self) -> Optional[np.ndarray]:
+    def xhi(self) -> np.ndarray | None:
         """
         Property kept for compatibility
         """
@@ -2435,12 +2433,12 @@ class Data2D(Data):
 
     def __init__(self,
                  name: str,
-                 x0: Optional[ArrayType],
-                 x1: Optional[ArrayType],
-                 y: Optional[ArrayType],
-                 shape: Optional[tuple[int, int]] = None,
-                 staterror: Optional[ArrayType] = None,
-                 syserror: Optional[ArrayType] = None
+                 x0: ArrayType | None,
+                 x1: ArrayType | None,
+                 y: ArrayType | None,
+                 shape: tuple[int, int] | None = None,
+                 staterror: ArrayType | None = None,
+                 syserror: ArrayType | None = None
                  ) -> None:
         self.shape = shape
 
@@ -2466,10 +2464,10 @@ class Data2D(Data):
         self._check_data_space(ds)
         return ds
 
-    def get_x0(self, filter: bool = False) -> Optional[np.ndarray]:
+    def get_x0(self, filter: bool = False) -> np.ndarray | None:
         return self._data_space.get(filter).x0
 
-    def get_x1(self, filter: bool = False) -> Optional[np.ndarray]:
+    def get_x1(self, filter: bool = False) -> np.ndarray | None:
         return self._data_space.get(filter).x1
 
     def get_x0label(self) -> str:
@@ -2554,9 +2552,8 @@ class Data2D(Data):
         return ''
 
     def get_max_pos(self,
-                    dep: Optional[np.ndarray] = None
-                    ) -> Union[tuple[float, float],
-                               list[tuple[float, float]]]:
+                    dep: np.ndarray | None = None
+                    ) -> tuple[float, float] | list[tuple[float, float]]:
         """Return the coordinates of the maximum value.
 
         Parameters
@@ -2642,28 +2639,29 @@ class Data2D(Data):
             raise DataErr('shape', self.name)
 
     @property
-    def x0(self) -> Optional[np.ndarray]:
+    def x0(self) -> np.ndarray | None:
         """
         kept for compatibility
         """
         return self.get_x0()
 
     @property
-    def x1(self) -> Optional[np.ndarray]:
+    def x1(self) -> np.ndarray | None:
         """
         kept for compatibility
         """
         return self.get_x1()
 
     def notice(self,
-               x0lo: Optional[float] = None,
-               x0hi: Optional[float] = None,
-               x1lo: Optional[float] = None,
-               x1hi: Optional[float] = None,
+               x0lo: int | float | None = None,
+               x0hi: int | float | None = None,
+               x1lo: int | float | None = None,
+               x1hi: int | float | None = None,
                ignore: bool = False
                ) -> None:
+
         Data.notice(self, (x0lo, x1lo), (x0hi, x1hi),
-                    ignore=ignore)
+                    ignore=ignore, integrated=False)
 
 
 class Data2DInt(Data2D):
@@ -2740,14 +2738,14 @@ class Data2DInt(Data2D):
 
     def __init__(self,
                  name: str,
-                 x0lo: Optional[ArrayType],
-                 x1lo: Optional[ArrayType],
-                 x0hi: Optional[ArrayType],
-                 x1hi: Optional[ArrayType],
-                 y: Optional[ArrayType],
-                 shape: Optional[Sequence[int]] = None,
-                 staterror: Optional[ArrayType] = None,
-                 syserror: Optional[ArrayType] = None
+                 x0lo: ArrayType | None,
+                 x1lo: ArrayType | None,
+                 x0hi: ArrayType | None,
+                 x1hi: ArrayType | None,
+                 y: ArrayType | None,
+                 shape: Sequence[int] | None = None,
+                 staterror: ArrayType | None = None,
+                 syserror: ArrayType | None = None
                  ) -> None:
 
         # Note: we do not call the superclass here.
@@ -2769,51 +2767,52 @@ class Data2DInt(Data2D):
         self._check_data_space(ds)
         return ds
 
-    def get_x0(self, filter: bool = False) -> Optional[np.ndarray]:
+    def get_x0(self, filter: bool = False) -> np.ndarray | None:
         if self.size is None:
             return None
         indep = self._data_space.get(filter)
         return (indep.x0lo + indep.x0hi) / 2.0
 
-    def get_x1(self, filter=False) -> Optional[np.ndarray]:
+    def get_x1(self, filter=False) -> np.ndarray | None:
         if self.size is None:
             return None
         indep = self._data_space.get(filter)
         return (indep.x1lo + indep.x1hi) / 2.0
 
     def notice(self,
-               x0lo: Optional[float] = None,
-               x0hi: Optional[float] = None,
-               x1lo: Optional[float] = None,
-               x1hi: Optional[float] = None,
+               x0lo: int | float | None = None,
+               x0hi: int | float | None = None,
+               x1lo: int | float | None = None,
+               x1hi: int | float | None = None,
                ignore: bool = False
                ) -> None:
-        Data.notice(self, (None, None, x0lo, x1lo), (x0hi, x1hi, None, None),
+        Data.notice(self, (None, None, x0lo, x1lo),
+                    (x0hi, x1hi, None, None),
                     ignore=ignore, integrated=True)
 
     @property
-    def x0lo(self) -> Optional[np.ndarray]:
+    def x0lo(self) -> np.ndarray | None:
         """
         Property kept for compatibility
         """
         return self._data_space.x0lo
 
     @property
-    def x0hi(self) -> Optional[np.ndarray]:
+    def x0hi(self) -> np.ndarray | None:
         """
         Property kept for compatibility
         """
         return self._data_space.x0hi
 
     @property
-    def x1lo(self) -> Optional[np.ndarray]:
+    def x1lo(self) -> np.ndarray | None:
         """
         Property kept for compatibility
         """
         return self._data_space.x1lo
 
     @property
-    def x1hi(self) -> Optional[np.ndarray]:
+    def x1hi(self) -> np.ndarray | None:
         """
         Property kept for compatibility
         """
