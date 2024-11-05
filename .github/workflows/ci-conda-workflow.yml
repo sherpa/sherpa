@@ -17,7 +17,7 @@ concurrency:
 env:
   xspec_channel: "https://cxc.cfa.harvard.edu/conda/xspec"
   CONDA_BUILD_SYSROOT: ${{ github.workspace }}/11.0SDK/MacOSX11.0.sdk
-  conda_loc: ${{ github.workspace }}/conda_loc 
+  conda_loc: ${{ github.workspace }}/conda_loc
 
 jobs:
   tests:
