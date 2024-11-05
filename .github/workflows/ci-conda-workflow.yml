@@ -17,6 +17,7 @@ concurrency:
 env:
   xspec_channel: "https://cxc.cfa.harvard.edu/conda/xspec"
   CONDA_BUILD_SYSROOT: ${{ github.workspace }}/11.0SDK/MacOSX11.0.sdk
+  conda_loc: ${{ github.workspace }}/conda_loc
 
 jobs:
   tests:
@@ -117,6 +118,9 @@ jobs:
         BOKEHVER: ${{ matrix.bokeh-version }}
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
+        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
+        bash conda-installer.sh -b -p ${conda_loc}
+        source ${conda_loc}/etc/profile.d/conda.sh
         source .github/scripts/setup_conda.sh
 
     - name: Conda Setup (Xspec and DS9)
@@ -124,7 +128,7 @@ jobs:
       env:
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         if [ "$RUNNER_OS" != "macOS" ]; then
           source .github/scripts/setup_ds9.sh
@@ -138,7 +142,7 @@ jobs:
       env:
         PYTHON_LDFLAGS: " "
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         pip install .[test] --verbose
 
@@ -147,14 +151,14 @@ jobs:
       env:
         PYTHON_LDFLAGS: " "
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         pip install -e .[test] --verbose
 
     - name: Install the test data?
       if: matrix.test-data == 'package'
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         pip install ./sherpa-test-data
 
@@ -181,7 +185,7 @@ jobs:
         fi
 
         echo "** smoke test: ${smokevars}"
-        source ${CONDA}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         cd /home
         sherpa_smoke ${smokevars}
@@ -215,7 +219,7 @@ jobs:
           # moment, but leave this in
           export PATH="${PATH}:/opt/X11/bin"
         fi
-        source ${CONDA}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
         pytest --pyargs sherpa --cov sherpa --cov-report xml:${{ github.workspace }}/coverage.xml
@@ -223,7 +227,7 @@ jobs:
     - name: sherpa_test Tests
       if: matrix.test-data == 'package' || matrix.test-data == 'none'
       run: |
-        source ${CONDA}/etc/profile.d/conda.sh
+        source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
         conda install -yq pytest-cov
         cd $HOME
