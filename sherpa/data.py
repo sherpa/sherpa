@@ -583,6 +583,14 @@ class DataSpaceND:
 # - in particular the notice method. It is likely that we can document
 # this - i.e. that the mask is going to be 1D.
 #
+# There is a note that the filter does not know either
+#
+#  - the size of the dataset
+#  - the values if the independent axis
+#
+# which is presumably to avoid coupling concepts. However, the apply
+# method has to have some idea of size.
+#
 class Filter:
     """A class for representing filters of N-Dimensional datasets.
 

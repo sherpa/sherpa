@@ -1247,7 +1247,11 @@ class DataRosatRMF(DataRMF):
         return energy_lo, energy_hi
 
 
-def validate_wavelength_limits(wlo, whi, emax):
+def validate_wavelength_limits(wlo: int | float | None,
+                               whi: int | float | None,
+                               emax: float
+                               ) -> tuple[int | float | None,
+                                          int | float | None] | None:
     """Check that the wavelength limits are sensible.
 
     This is used by DataPHA.notice to ensure that the wavelength
@@ -1276,6 +1280,9 @@ def validate_wavelength_limits(wlo, whi, emax):
     None in certain circumstances, not all cases).
 
     """
+
+    lo: int | float | None
+    hi: int | float | None
 
     # As we allow wlo and whi to be 0 we need to handle this here,
     # otherwise we'd have try hc / 0. We can either replace 0 by a
@@ -4877,6 +4884,7 @@ It is an integer or string.
             raise DataErr("sizenotset", self.name)
 
         chans = self.channel
+        assert chans is not None
 
         # get_mask returns None if all the data has been filtered.
         mask = self.get_mask()
@@ -5318,71 +5326,73 @@ It is an integer or string.
             self.quality_filter = None
             self.notice_response(False)
 
-        # Separate out the units=channel from energy/wavelength
-        # for now.
+        # What are the lo and hi values to use? This depends on the
+        # current analysis setting.
         #
-        if self.units == "channel":
-            try:
-                xlo, xhi = self.get_indep_transform(filter=False,
-                                                    group=self.grouped)
-            except DataErr as de:
-                info("Skipping dataset %s: %s", self.name, str(de))
-                return
+        # xhi is the upper edge of the axis in either channel (in
+        # which case it's unused) or energy units (in which case it is
+        # only used if wavelength filtering is being used).
+        #
+        def check_limits(xhi):
+            outlo = lo
+            outhi = hi
+            if self.units == "channel":
+                if outhi is not None:
+                    # A channel range lo to hi is read as [lo, hi]
+                    # rather than [lo, hi), so we increase the upper
+                    # limit by 1 to work around this, as the filter
+                    # call checks for < hi and not <= hi.
+                    #
+                    outhi += 1
 
-            if len(xlo) == 0:
-                # Should get_indep raise this?
-                info("Skipping dataset %s: mask excludes all data", self.name)
-                return
-
-            if hi is not None:
-                # A channel range lo to hi is read as [lo, hi] rather than
-                # [lo, hi), so we increase the upper limit by 1 to
-                # work around this, as the filter call checks for < hi
-                # and not <= hi.
+            elif self.units == "wavelength":
+                # Convert to energy.
                 #
-                hi += 1
+                emax = max(xhi[[0, -1]])
+                lims = validate_wavelength_limits(outlo, outhi, emax)
+                if lims is None:
+                    # No useful filter to apply.
+                    return  None
 
-            self._data_space.filter.notice((None, lo), (hi, None),
-                                           (xlo, xhi), ignore=ignore,
-                                           integrated=True)
-            return
+                outlo, outhi = lims
 
-        # Can we filter using wavelength vlaues directly? It probably
-        # messes up internal assumptions of axis ordering, so
-        # treat as separate for now.
+            return outlo, outhi
+
+        # Evaluate the grid in channel or energy space.
         #
-        units = self.units
+        orig_units = self.units
         try:
-            self.units = "energy"
-            elo, ehi = self.get_indep_transform(filter=False,
+            if orig_units == "wavelength":
+                self.units = "energy"
+
+            # The filter is applied to the grouped data.
+            #
+            xlo, xhi = self.get_indep_transform(filter=False,
                                                 group=self.grouped)
+
         except DataErr as de:
             info("Skipping dataset %s: %s", self.name, str(de))
             return
-        finally:
-            self.units = units
 
-        if len(elo) == 0:
+        finally:
+            if orig_units == "wavelength":
+                self.units = "wavelength"
+
+        if len(xlo) == 0:
             # Should get_indep raise this?
             info("Skipping dataset %s: mask excludes all data", self.name)
             return
 
-        # Convert wavelength limits to energy if necessary.
-        #
-        if self.units == 'wavelength':
-            emax = max(ehi[[0, -1]])
-            lims = validate_wavelength_limits(lo, hi, emax)
-            if lims is None:
-                # No useful filter to apply
-                return
+        lims = check_limits(xhi)
+        if lims is None:
+            return
 
-            lo, hi = lims
+        lolim, hilim = lims
 
-        # safety check
-        assert lo is None or hi is None or lo <= hi, (lo, hi, self.name)
+can I move the grouping logic to the filter objcet, so here we
 
-        self._data_space.filter.notice((None, lo), (hi, None),
-                                       (elo, ehi), ignore=ignore,
+        self._data_space.filter.notice((None, lolim), (hilim, None),
+                                       (xlo, xhi), ignore=ignore,
                                        integrated=True)
 
     def to_guess(self) -> tuple[np.ndarray | None, ...]:
