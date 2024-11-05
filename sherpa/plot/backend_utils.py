@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2022, 2023
+#  Copyright (C) 2022 - 2024
 #  MIT
 #
 #
@@ -49,8 +49,8 @@ def translate_args(func):
     syntax for the same option, e.g. one backend might call a color
     "red", while another uses the tuple (1, 0, 0) to describe the same color.
 
-    Example
-    -------
+    Examples
+    --------
     In this example, the input 'r' or 'b' will be translated into an rgb tuple
     before the ``plot`` function is called. Other values (e.g. ``color=(0, 0, 0)``)
     will be passed through unchanged so that the user can also make use of any other

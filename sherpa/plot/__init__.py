@@ -194,8 +194,8 @@ def set_backend(new_backend: Union[str, BaseBackend, type[BaseBackend]]) -> None
         Set a sherpa plotting backend. The backend can be passed in as an
         object, or as a convenience, as a simple string
 
-    Example
-    -------
+    Examples
+    --------
     Set the backend to use Pylab from matplotlib for plotting. This is
     probably what most users need:
 
@@ -256,8 +256,8 @@ class TemporaryPlottingBackend(contextlib.AbstractContextManager):
         also pass in a string naming a loaded backend class or the class
         itself; calling this context manager will then create an instance.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> from sherpa.plot import TemporaryPlottingBackend, DataPlot
     >>> from sherpa.data import Data1D

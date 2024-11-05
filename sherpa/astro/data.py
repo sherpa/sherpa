@@ -2563,9 +2563,9 @@ will be removed. The identifiers can be integers or strings.
         >>> pha.ungroup()
         >>> pha.units = 'channel'
         >>> clo, chi = pha._get_ebins()
-        >>> (clo == pha.channel).all()
+        >>> print((clo == pha.channel).all())
         True
-        >>> (chi == clo + 1).all()
+        >>> print((chi == clo + 1).all())
         True
 
         >>> pha.units = 'energy'
@@ -2574,7 +2574,7 @@ will be removed. The identifiers can be integers or strings.
         True
         >>> elo[0:5]
         array([0.00146, 0.0146 , 0.0292 , 0.0438 , 0.0584 ])
-        >>> (elo[1:] == ehi[:-1]).all()
+        >>> print((elo[1:] == ehi[:-1]).all())
         True
 
         >>> pha.group()
@@ -2587,7 +2587,7 @@ will be removed. The identifiers can be integers or strings.
 
         >>> pha.units = 'wave'
         >>> wlo, whi = pha._get_ebins()
-        >>> (wlo == glo).all()
+        >>> print((wlo == glo).all())
         True
         """
 
@@ -2702,7 +2702,7 @@ will be removed. The identifiers can be integers or strings.
         array([0.1 , 0.11, 0.12, 0.13, 0.14])
         >>> ehi[0:5]
         array([0.11      , 0.12      , 0.13      , 0.14      , 0.15000001])
-        >>> (elo[1:] == ehi[:-1]).all()
+        >>> print((elo[1:] == ehi[:-1]).all())
         True
 
         >>> pha.units = 'wave'
@@ -2711,7 +2711,7 @@ will be removed. The identifiers can be integers or strings.
         array([112.71289825, 103.32015848,  95.37245534,  88.56013348])
         >>> whi[0:4]
         array([123.98418555, 112.71289825, 103.32015848,  95.37245534])
-        >>> (wlo[:-1] == whi[1:]).all()
+        >>> print((wlo[:-1] == whi[1:]).all())
         True
 
         """
@@ -3425,7 +3425,7 @@ It is an integer or string.
         >>> v1 = pha.apply_grouping(dvals)
         >>> pha.notice(1.2, 4.5)
         >>> v2 = pha.apply_grouping(dvals)
-        >>> np.all(v1 == v2)
+        >>> print(np.all(v1 == v2))
         True
 
         """
@@ -3983,8 +3983,8 @@ It is an integer or string.
         by the source exposure time (if set). The final step is
         to divide by the number of background files used.
 
-        Example
-        -------
+        Examples
+        --------
 
         Calculate the background counts, per channel, scaled to match
         the source:
@@ -5885,8 +5885,8 @@ class DataIMGInt(DataIMG):
     header : dict
         The FITS header associated with the data to store meta data.
 
-    Example
-    -------
+    Examples
+    --------
     In this example, we first generate a 1000 (x,y) points from a 2D Gaussian.
     This could be, e.g., photons observed from a star. In x direction, the center
     of the Gaussian is at 1.2 and in y direction at 0.0. We then use

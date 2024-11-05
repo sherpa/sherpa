@@ -35,8 +35,8 @@ obvious that the interface is as usable as it could be.
    TableBlock, are now defined in the sherpa.astro.io.types module.
    Some types have been changed as part of this work.
 
-Example
--------
+Examples
+--------
 
 The following example creates an additive table model
 that represents a gaussian model where the only parameters are

@@ -796,8 +796,8 @@ class ReSampleData(NoNewAttributesAfterInit):
     to 1000 and the seed is set to `None`. The `call` method should
     be used instead if the values need changing.
 
-    Example
-    -------
+    Examples
+    --------
 
     >>> from sherpa.astro import ui
     >>> from sherpa.models.basic import PowLaw1D

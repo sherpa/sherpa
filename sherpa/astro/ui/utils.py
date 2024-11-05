@@ -1856,8 +1856,8 @@ class Session(sherpa.ui.utils.Session):
         axis, the asymmetric errors ``elo`` and ``ehi``. ``elo`` and ``ehi``
         assumed to be positive values. They are used to calculate ``staterror`` for
         ``fit`` with ``chi2`` statistics. Note that ``set_stat`` will not
-        impact the statistics values for the fitting this type of data and 
-        ``fit`` will always use ``staterror`` in this case. ``resample_data`` 
+        impact the statistics values for the fitting this type of data and
+        ``fit`` will always use ``staterror`` in this case. ``resample_data``
         will assume ``set_stat`` setting in calculating the statistics for bootstrap
         sampling.
 
@@ -15818,8 +15818,8 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_model_sum, calc_source, plot_model
 
-        Example
-        -------
+        Examples
+        --------
 
         For a PHA dataset the independent axis is a pair of values,
         giving the low and high energies. The xlo and xhi values are
@@ -15943,8 +15943,8 @@ class Session(sherpa.ui.utils.Session):
         --------
         calc_source_sum, calc_model, plot_source
 
-        Example
-        -------
+        Examples
+        --------
 
         For a PHA dataset the independent axis is a pair of values,
         giving the low and high energies. The xlo and xhi values are

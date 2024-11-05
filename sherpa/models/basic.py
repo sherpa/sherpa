@@ -539,14 +539,14 @@ class Gauss1D(RegriddableModel1D):
     >>> m1.pos, m2.pos = 10, 10
     >>> m1.ampl, m2.ampl = 10, 10
     >>> m1.fwhm, m2.fwhm = 5, 5
-    >>> m1(10)
+    >>> print(m1(10))
     10.0
-    >>> m2(10)
+    >>> print(m2(10))
     1.8788745573993026
     >>> m1.fwhm, m2.fwhm = 1, 1
-    >>> m1(10)
+    >>> print(m1(10))
     10.0
-    >>> m2(10)
+    >>> print(m2(10))
     9.394372786996513
 
     The normalised version will sum to the amplitude when given
@@ -558,9 +558,9 @@ class Gauss1D(RegriddableModel1D):
     >>> m1.fwhm, m2.fwhm = 12.2, 12.2
     >>> grid = np.arange(-90, 110, 0.01)
     >>> glo, ghi = grid[:-1], grid[1:]
-    >>> m1(glo, ghi).sum()
+    >>> print(m1(glo, ghi).sum())
     129.86497637060958
-    >>> m2(glo, ghi).sum()
+    >>> print(m2(glo, ghi).sum())
     10.000000000000002
 
     """
@@ -1923,12 +1923,12 @@ class TableModel(ArithmeticModel):
     >>> d.staterror = [.2, .2, .2, .2, .2]
     >>> tm1 = TableModel('tabmodel')
     >>> tm1.load(None, [.6, .2, 1.1, .2, .5])
-    >>> tm1.ampl.val
+    >>> print(tm1.ampl.val)
     1.0
     >>> tm1.fold(d)
     >>> fit1 = Fit(d, tm1)
     >>> res1 = fit1.fit()
-    >>> tm1.ampl.val
+    >>> print(tm1.ampl.val)
     1.9894736842102083
 
     In this case the `fold` method is necessary, to ensure that the
@@ -1941,11 +1941,11 @@ class TableModel(ArithmeticModel):
     >>> tm2 = TableModel('tabmodel')
     >>> tm2.load(None, [.6, .2, 1.1, .2, .5])
     >>> tm2.fold(d)
-    >>> tm2.ampl.val
+    >>> print(tm2.ampl.val)
     1.0
     >>> fit2 = Fit(d, tm2)
     >>> res2 = fit2.fit()
-    >>> tm2.ampl.val
+    >>> print(tm2.ampl.val)
     1.9866666666663104
 
     The masking also holds if the notice or ignore method has been
@@ -1957,11 +1957,11 @@ class TableModel(ArithmeticModel):
     >>> tm3 = TableModel('tabmodel')
     >>> tm3.load(None, [.6, .2, 1.1, .2, .5])
     >>> tm3.fold(d)
-    >>> tm3.ampl.val
+    >>> print(tm3.ampl.val)
     1.0
     >>> fit3 = Fit(d, tm3)
     >>> res = fit3.fit()
-    >>> tm3.ampl.val
+    >>> print(tm3.ampl.val)
     1.9866666666663104
 
     """

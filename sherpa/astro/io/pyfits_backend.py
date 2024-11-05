@@ -243,8 +243,8 @@ def _get_file_contents(arg: DatasetType,
     The returned fits.HDUList should be used as a context manager,
     since that will then close the value **if needed**.
 
-    Example
-    -------
+    Examples
+    --------
 
     The file will be closed after the with loop if arg is a
     string, but not if it's a astropy.io.fits object:
