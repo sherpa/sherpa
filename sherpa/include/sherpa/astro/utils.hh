@@ -352,6 +352,64 @@ namespace sherpa { namespace astro { namespace utils {
     val = (min + max) / 2.0;
   }
 
+  // Apply the group function to a subset of the data. The
+  // start and stop indices indicate the subset as
+  // [start, stop), so we have
+  //
+  //   - stop > start
+  //   - start >= 0
+  //   - stop is one more than the upper-limit to process
+  //
+  // Note that the grp_func is assumed to return a SherpaFloat
+  // value (or something that can be converted to it). It is
+  // not worth trying to make the output type be a template
+  // parameter.
+  //
+  template <typename ArrayType, typename IndexType>
+  SherpaFloat apply_group(PyObject *grp_func,
+			  const ArrayType& data,
+			  IndexType start,
+			  IndexType stop,
+			  int& ierr ) {
+
+    // Optimize for success.
+    ierr = EXIT_SUCCESS;
+
+    npy_intp dims[1] = {stop - start};
+    ArrayType grp_data;
+    if ( EXIT_SUCCESS != grp_data.create(1, dims) ) {
+      PyErr_SetString( PyExc_ValueError,
+		       "unable to create array" );
+      ierr = EXIT_FAILURE;
+      return 0.0;
+    }
+
+    // Copy over the data, as there is no guarantee that data is
+    // stored contiguously.
+    //
+    IndexType out = 0;
+    for( IndexType in = start; in < stop; in++ ) {
+      grp_data[out] = data[in];
+      out++;
+    }
+
+    PyObject* rv = PyObject_CallOneArg( grp_func,
+					grp_data.borrowed_ref() );
+    if ( NULL == rv ) {
+      PyErr_SetString( PyExc_ValueError,
+		       "unable to evaluate group function" );
+      ierr = EXIT_FAILURE;
+      return 0.0;
+    }
+
+    double retval = PyFloat_AsDouble(rv);
+    Py_DECREF(rv);
+    if (PyErr_Occurred() != NULL)
+      ierr = EXIT_FAILURE;
+
+    return static_cast<SherpaFloat>(retval);
+  }
+
   // The data and group arrays have the same size, nelem. The
   // operation to apply to each group is controlled by the type
   // argument, and can be one of: "sum", "_sum_sq", "_max", "_min",
@@ -361,11 +419,11 @@ namespace sherpa { namespace astro { namespace utils {
   template <typename FloatArrayType,
 	    typename IntArrayType,
 	    typename IndexType>
-  int _do_group( IndexType nelem,
-		 const FloatArrayType& data,
-		 const IntArrayType& group,
-		 FloatArrayType& grouped,
-		 const char *type )
+  int _do_group_name( IndexType nelem,
+		      const FloatArrayType& data,
+		      const IntArrayType& group,
+		      FloatArrayType& grouped,
+		      const char *type )
   {
 
     typedef void (*fptr)( const FloatArrayType&, IndexType, IndexType,
@@ -427,6 +485,48 @@ namespace sherpa { namespace astro { namespace utils {
 
   }
 
+  // The data and group arrays have the same size, nelem.
+  //
+  template <typename FloatArrayType,
+	    typename IntArrayType,
+	    typename IndexType>
+  int _do_group_call( IndexType nelem,
+		      const FloatArrayType& data,
+		      const IntArrayType& group,
+		      FloatArrayType& grouped,
+		      PyObject *grp_func )
+  {
+
+    std::vector< IndexType > pick_pts;
+
+    for( IndexType ii = 0; ii < nelem; ii++ )
+      //if( group[ ii ] == 1 )
+      // include channels where grouping == 0 so the filter will catch large
+      // energy bins
+      if( group[ ii ] >= 0 )
+	pick_pts.push_back( ii );
+    pick_pts.push_back( nelem );
+
+    npy_intp dim = npy_intp( pick_pts.size( ) - 1 );
+    if ( EXIT_SUCCESS != grouped.create( 1, &dim ) )
+      return EXIT_FAILURE;
+
+    int ierr = EXIT_SUCCESS;
+    for( size_t ii = 0; ii < pick_pts.size( ) - 1; ii++ ) {
+      IndexType start = pick_pts[ ii ];
+      IndexType stop = pick_pts[ ii + 1 ];
+      if ( stop > nelem )
+	return EXIT_FAILURE;
+
+      grouped[ ii ] = apply_group(grp_func, data, start, stop, ierr);
+      if (ierr != EXIT_SUCCESS)
+	return EXIT_FAILURE;
+
+    } // end ii
+
+    return EXIT_SUCCESS;
+
+  }
 
   static double interpolate( double x, double x0, double x1,
 		      double y0, double y1, double tol ) {
