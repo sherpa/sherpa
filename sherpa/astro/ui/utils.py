@@ -1105,8 +1105,6 @@ class Session(sherpa.ui.utils.Session):
         if is_pha:
             channel = np.arange(1, len(xlo) + 1, dtype=float)
             args = [channel, y]
-            # kwargs['bin_lo'] = xlo
-            # kwargs['bin_hi'] = xhi
         elif dstype is not sherpa.data.Data1DInt:
             args = [xlo, y]
 
@@ -1301,7 +1299,6 @@ class Session(sherpa.ui.utils.Session):
         +------------+-----------------+--------------------+
         | DataPHA    | channel, counts | statistical error, |
         |            |                 | systematic error,  |
-        |            |                 | bin_lo, bin_hi,    |
         |            |                 | grouping, quality  |
         +------------+-----------------+--------------------+
         | DataIMG    | x0, x1, y       | shape,             |

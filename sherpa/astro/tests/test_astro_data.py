@@ -25,9 +25,10 @@ import numpy as np
 
 import pytest
 
-from sherpa.astro.ui.utils import Session
+from sherpa.astro import hc
 from sherpa.astro.data import Data1D, DataARF, DataPHA, DataRMF, DataIMG, DataIMGInt
 from sherpa.astro.instrument import create_arf, create_delta_rmf
+from sherpa.astro.ui.utils import Session
 from sherpa.models.basic import Gauss1D, Gauss2D
 from sherpa.utils import parse_expr
 from sherpa.utils.err import ArgumentTypeErr, DataErr
@@ -86,10 +87,18 @@ def setUp1():
         5.0223999, 5.37279987, 5.89839983, 6.57000017, 9.8696003,
         14.95040035])
 
+    # Unlike setUp2 we do not need to invert the energy grids.
+    #
+    elo = emin
+    ehi = emax
+
     pha = DataPHA('', np.arange(46, dtype=float) + 1.,
-                  np.zeros(46),
-                  bin_lo=emin,
-                  bin_hi=emax)
+                  np.zeros(46))
+
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    arf = create_arf(elo, ehi)
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
     pha.units = "energy"
     return pha
 
@@ -119,7 +128,11 @@ def test_filter_energy_grid_ignore(setUp1):
 @pytest.fixture
 def setUp2():
 
-    emin = np.array([
+    # This was written to use bin_lo/hi but with #1564 addressed the
+    # code now uses an ARF and RMF, but the original grids are kept as
+    # is.
+    #
+    wmin = np.array([
         2.39196181, 2.35973215, 2.34076023, 2.30973101, 2.2884388,
         2.25861454, 2.22371697, 2.20662117, 2.18140674, 2.14317489,
         2.12185216, 2.09055495, 2.06256914, 2.04509854, 2.02788448,
@@ -162,7 +175,7 @@ def setUp2():
         0.34418666, 0.33912122, 0.33720407, 0.33505177, 0.33279634,
         0.33081138, 0.32847831, 0.32592943, 0.3111549], float)
 
-    emax = np.array([
+    wmax = np.array([
         3.06803656, 2.39196181, 2.35973215, 2.34076023, 2.30973101,
         2.2884388, 2.25861454, 2.22371697, 2.20662117, 2.18140674,
         2.14317489, 2.12185216, 2.09055495, 2.06256914, 2.04509854,
@@ -205,10 +218,16 @@ def setUp2():
         0.34669766, 0.34418666, 0.33912122, 0.33720407, 0.33505177,
         0.33279634, 0.33081138, 0.32847831, 0.32592943], float)
 
+    elo = hc / wmax
+    ehi = hc / wmin
+
     pha = DataPHA('', np.arange(204, dtype=float) + 1.,
-                  np.zeros(204),
-                  bin_lo=emin,
-                  bin_hi=emax)
+                  np.zeros(204))
+
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    arf = create_arf(elo, ehi)
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
     pha.units = "energy"
     return pha
 
@@ -222,6 +241,7 @@ def test_test_energy_grid_reversed_notice(setUp2):
     expected = np.zeros(204, dtype=bool)
     expected[0:42] = True
     assert pha.mask == pytest.approx(expected)
+
 
 def test_test_energy_grid_reversed_ignore(setUp2):
     pha = setUp2
@@ -239,13 +259,23 @@ def test_test_energy_grid_reversed_ignore(setUp2):
 @pytest.fixture
 def setUp3():
 
-    emin = np.arange(205.7875, 0.9875, -0.0125)
-    emax = emin + 0.0125
+    # This was written to use bin_lo/hi but with #1564 addressed the
+    # code now uses an ARF and RMF, but the original grids are kept as
+    # is.
+    #
+    wmin = np.arange(205.7875, 0.9875, -0.0125)
+    wmax = wmin + 0.0125
+
+    elo = hc / wmax
+    ehi = hc / wmin
 
     pha = DataPHA('', np.arange(16384, dtype=float) + 1,
-                  np.zeros(16384),
-                  bin_lo=emin,
-                  bin_hi=emax)
+                  np.zeros(16384))
+
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    arf = create_arf(elo, ehi)
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
     pha.units = 'wavelength'
     return pha
 
@@ -1439,14 +1469,16 @@ def test_notice_channel_grouping_outofbounds(lo, hi, expected, make_data_path):
     1-17 and the last group 677-1024, which have mid-points
     9 and 850.5, hence the 9:850 as the default filter.
 
-    >>> pha.apply_grouping(pha.channel, pha._min)
+    pha.apply_grouping(pha.channel, pha._min)
+    ->
     array([  1.,  18.,  22.,  33.,  40.,  45.,  49.,  52.,  55.,  57.,  60.,
             62.,  66.,  69.,  72.,  76.,  79.,  83.,  89.,  97., 102., 111.,
            117., 125., 131., 134., 140., 144., 151., 157., 165., 178., 187.,
            197., 212., 233., 245., 261., 277., 292., 324., 345., 369., 405.,
            451., 677.])
 
-    >>> pha.apply_grouping(pha.channel, pha._max)
+    pha.apply_grouping(pha.channel, pha._max)
+    ->
     array([  17.,   21.,   32.,   39.,   44.,   48.,   51.,   54.,   56.,
              59.,   61.,   65.,   68.,   71.,   75.,   78.,   82.,   88.,
              96.,  101.,  110.,  116.,  124.,  130.,  133.,  139.,  143.,
@@ -1932,8 +1964,8 @@ def test_energy_filter_ordering(make_data_path):
     assert mask1 == pytest.approx(mask2)
 
 
-@pytest.mark.parametrize('units', ['bin', 'chan', 'energy', 'wave'])
-def test_pha_get_ebins_internal_no_response(units):
+@pytest.mark.parametrize('units', ['bin', 'chan'])
+def test_pha_get_ebins_internal_no_response_chans(units):
     """Check that _get_ebins has an unlikely-used path checked.
 
     It's  not clear what we are meant to return here - i.e. no
@@ -1948,6 +1980,21 @@ def test_pha_get_ebins_internal_no_response(units):
     lo, hi = pha._get_ebins()
     assert lo == pytest.approx(chans)
     assert hi == pytest.approx(chans + 1)
+
+
+@pytest.mark.parametrize('units', ['energy', 'wave'])
+def test_pha_get_ebins_internal_no_response_not_channels(units):
+    """Check that _get_ebins has an unlikely-used path checked.
+
+    This used to succeed but in 4.17.1 was made to error out.
+    """
+
+    chans = np.arange(1, 10, dtype=np.int16)
+    counts = np.ones(9, dtype=np.int16)
+    pha = DataPHA('tst', chans, counts)
+    with pytest.raises(DataErr,
+                       match="^No instrument response found for dataset tst$"):
+        pha.units = units
 
 
 def test_get_background_scale_is_none():
@@ -2812,28 +2859,6 @@ def test_make_invalid_dependent_axis(data_class, args):
         data_class("wrong", *args)
 
 
-def test_pha_fails_when_bin_lo_is_invalid():
-    """What happens when bin_lo has a different size to the data?
-
-    This is to test the order of calls in the __init__ method.
-    """
-
-    with pytest.raises(DataErr,
-                       match="size mismatch between independent axis and bin_lo: 3 vs 2"):
-        DataPHA("something", CHANS, ONES, bin_lo=[1, 3])
-
-
-def test_pha_fails_when_bin_hi_is_invalid():
-    """What happens when bin_hi has a different size to the data?
-
-    This is to test the order of calls in the __init__ method.
-    """
-
-    with pytest.raises(DataErr,
-                       match="size mismatch between independent axis and bin_hi: 3 vs 2"):
-        DataPHA("something", CHANS, ONES, bin_hi=[1, 3])
-
-
 @pytest.mark.parametrize("data_args",
                          [ARF_ARGS, PHA_ARGS, IMG_ARGS, IMGINT_ARGS])
 def test_set_independent_axis_to_none(data_args):
@@ -2896,29 +2921,7 @@ def test_pha_dependent_field_can_not_be_a_scalar(related):
         setattr(data, related, 2)
 
 
-@pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
-def test_pha_bin_field_must_match_initialization(vals):
-    """The bin_lo/hi must match the data"""
-
-    data_class, args = PHA_ARGS
-    with pytest.raises(DataErr,
-                       match=r"^size mismatch between independent axis and bin_hi: 3 vs [14]$"):
-        data_class(*args, bin_lo=[1, 2, 3], bin_hi=vals)
-
-
-@pytest.mark.parametrize("vals", [[4], (2, 3, 4, 5)])
-def test_pha_bin_field_must_match_after(vals):
-    """The bin_lo/hi must match the data"""
-
-    data_class, args = PHA_ARGS
-    data = data_class(*args)
-    data.bin_hi = [4, 5, 6]
-    with pytest.raises(DataErr,
-                       match=r"^size mismatch between independent axis and bin_lo: 3 vs [14]$"):
-        data.bin_lo = vals
-
-
-@pytest.mark.parametrize("related", ["staterror", "syserror", "grouping", "quality", "bin_lo", "bin_hi"])
+@pytest.mark.parametrize("related", ["staterror", "syserror", "grouping", "quality"])
 @pytest.mark.parametrize("vals", [True, 0, np.asarray(1)])
 def test_pha_related_field_can_not_be_a_scalar(related, vals):
     """The related fields (staterror/syserror/grouping/quality/...) can not be a scalar."""
@@ -2930,7 +2933,7 @@ def test_pha_related_field_can_not_be_a_scalar(related, vals):
         setattr(data, related, vals)
 
 
-@pytest.mark.parametrize("label", ["staterror", "syserror", "grouping", "quality", "bin_lo", "bin_hi"])
+@pytest.mark.parametrize("label", ["staterror", "syserror", "grouping", "quality"])
 @pytest.mark.parametrize("vals", [[1, 1], np.ones(10)])
 def test_pha_related_field_can_not_be_a_sequence_wrong_size(label, vals):
     """Check we error out if column=label has the wrong size: sequence"""
@@ -3948,6 +3951,65 @@ def test_to_guess_when_all_ignored_dataimg():
     with pytest.raises(DataErr,
                        match="mask excludes all data"):
         _ = data.to_guess()
+
+
+def make_pha_for_guess():
+
+    channels = [1, 2, 3, 4, 5]
+    counts = [10, 12, 0, 3, 5]
+    grouping = [1, 1, 1, 1, -1]
+    quality = [0, 0, 5, 0, 0]
+    exposure = 100
+
+    egrid = np.asarray([20.1, 20.2, 21.2, 21.3, 22.0, 24.5])
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    specresp = np.asarray([1000, 1010, 50, 1040, 1020])
+    arf = create_arf(elo, ehi, specresp)
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+
+    # So,
+    #    exposure  = 100
+    #    arf       ~ 1000 [for good channels]
+    #    bin width ~ 0.1 to 2.5 keV
+    #
+    # These could be adjusted to give nice numbers for the tests.
+    #
+    pha = DataPHA("guess", channels, counts, exposure=exposure,
+                  quality=quality, grouping=grouping)
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
+    pha.ignore_bad()
+
+    assert pha.grouped
+    assert pha.units == "channel"
+    return pha
+
+
+@pytest.mark.parametrize("units,lo,hi,y",
+                         [("channel",
+                           [1, 2, 4], [2, 3, 6], [0.1, 0.12, 0.04]),
+                          ("energy",
+                           [20.1, 20.2, 21.3], [20.2, 21.2, 24.5],
+                           [0.001, 1.18812e-4, 2.427184e-5]),
+                          ("wave",
+                           [hc / 20.2, hc / 21.2, hc / 24.5],
+                           [hc / 20.1, hc / 20.2, hc / 21.3],
+                           [3.274772e-2, 4.103749e-3, 1.021603e-3])
+                          ])
+def test_datapha_to_guess(units, lo, hi, y):
+    """Minimal check that to_guess returns something sensible.
+
+    This is partly a regression test.
+
+    """
+
+    pha = make_pha_for_guess()
+    pha.set_analysis(units)
+    a, b, c = pha.to_guess()
+    assert a == pytest.approx(y)
+    assert b == pytest.approx(lo)
+    assert c == pytest.approx(hi)
 
 
 def test_get_x_when_empty_datapha():
