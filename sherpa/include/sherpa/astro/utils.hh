@@ -29,7 +29,6 @@
 #include <string>
 #include <vector>
 #include <algorithm>
-using namespace std;
 
 #ifndef MID
 #define MID( a, b ) (( a + b ) / 2.0 )
@@ -186,10 +185,10 @@ namespace sherpa { namespace astro { namespace utils {
     if( lo < lochan && hi > hichan )
       return true;
 
-    if( binary_search( noticed_chans, noticed_chans + size, lo ) )
+    if( std::binary_search( noticed_chans, noticed_chans + size, lo ) )
       return true;
 
-    if( binary_search( noticed_chans, noticed_chans + size, hi ) )
+    if( std::binary_search( noticed_chans, noticed_chans + size, hi ) )
       return true;
 
     // consider the case of fragmented channels
@@ -203,8 +202,9 @@ namespace sherpa { namespace astro { namespace utils {
     // noticed_chans = 1-249, 400-500, 601-1024
     // lo=250 hi=600
     if( lochan < lo && lo < hichan && lochan < hi && hi < hichan ) {
-      const ConstIntType *idx = upper_bound( noticed_chans,
-					  noticed_chans + size, lo );
+      const ConstIntType *idx = std::upper_bound( noticed_chans,
+						  noticed_chans + size,
+						  lo );
       if( idx == (noticed_chans + size) )
 	return false;
 
@@ -233,10 +233,10 @@ namespace sherpa { namespace astro { namespace utils {
 		   const ConstIntType *n_chan,
 		   const ConstFloatType *matrix, IndexType len_response,
 		   unsigned int offset,
-		   vector<IntType>& grp,
-		   vector<IntType>& fch,
-		   vector<IntType>& nch,
-		   vector<FloatType>& rsp,
+		   std::vector<IntType>& grp,
+		   std::vector<IntType>& fch,
+		   std::vector<IntType>& nch,
+		   std::vector<FloatType>& rsp,
 		   BoolType *mask) {
 
     IndexType response_counter = 0, group_counter = 0;
@@ -357,8 +357,8 @@ namespace sherpa { namespace astro { namespace utils {
 
     typedef void (*fptr)( const ConstFloatArrayType&, IndexType, IndexType,
 			  SherpaFloat&);
-    string funcname(type);
-    map<string, fptr> funcs;
+    std::string funcname(type);
+    std::map<std::string, fptr> funcs;
     SherpaFloat val;
     fptr func = _sum;
 
@@ -373,7 +373,7 @@ namespace sherpa { namespace astro { namespace utils {
       func = funcs.at(funcname);
     }
 
-    vector< IndexType > pick_pts;
+    std::vector< IndexType > pick_pts;
 
     for( IndexType ii = 0; ii < len_group; ii++ )
       //if( group[ ii ] == 1 )

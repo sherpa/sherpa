@@ -49,7 +49,7 @@ namespace sherpa { namespace astro { namespace utils {
     npy_intp nelem = source.get_size();
 
     if ( effarea.get_size() != nelem ) {
-      ostringstream err;
+      std::ostringstream err;
       err << "input array sizes do not match, "
 	  << "source: " << nelem << " vs effarea: " << effarea.get_size();
       PyErr_SetString( PyExc_TypeError, err.str().c_str() );
@@ -141,7 +141,7 @@ namespace sherpa { namespace astro { namespace utils {
     return NULL;
 
     if ( data.get_size() != group.get_size() ) {
-      ostringstream err;
+      std::ostringstream err;
       err << "input array sizes do not match, "
 	  << "data: " << data.get_size() << " vs group: " << group.get_size();
       PyErr_SetString( PyExc_TypeError, err.str().c_str() );
@@ -157,7 +157,7 @@ namespace sherpa { namespace astro { namespace utils {
 	return NULL;
       }
     } catch ( std::out_of_range& ) {
-      ostringstream err;
+      std::ostringstream err;
       err << "unsupported group function: " << type;
       PyErr_SetString( PyExc_ValueError, err.str().c_str() );
       return NULL;
@@ -188,7 +188,7 @@ namespace sherpa { namespace astro { namespace utils {
     return NULL;
 
     if ( specresp.get_size() != arf_lo.get_size() ) {
-      ostringstream err;
+      std::ostringstream err;
       err << "input array sizes do not match, "
 	  << "specresp: " << specresp.get_size()
 	  << " vs arf_lo: " << arf_lo.get_size();
@@ -232,10 +232,10 @@ namespace sherpa { namespace astro { namespace utils {
     FloatArrayType matrix;
 
     BoolArray mask;
-    vector<FloatType> resp_buf;
-    vector<IntType> f_buf;
-    vector<IntType> n_buf;
-    vector<IntType> grp_buf;
+    std::vector<FloatType> resp_buf;
+    std::vector<IntType> f_buf;
+    std::vector<IntType> n_buf;
+    std::vector<IntType> grp_buf;
 
     FloatArrayType resp;
     IntArrayType grp;
