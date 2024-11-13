@@ -30,12 +30,7 @@
 #include <vector>
 #include <algorithm>
 
-#ifndef MID
-#define MID( a, b ) (( a + b ) / 2.0 )
-#endif
-
 namespace sherpa { namespace astro { namespace utils {
-
 
   template <typename ArrayType, typename ConstArrayType, typename IndexType>
   void arf_fold( IndexType num,
@@ -47,7 +42,6 @@ namespace sherpa { namespace astro { namespace utils {
       out[ ii ] = in1[ ii ] * in2[ ii ];
 
   }
-
 
   //
   // Function to perform XSPEC-style convolution, using an RMF
@@ -345,7 +339,7 @@ namespace sherpa { namespace astro { namespace utils {
       min = std::min( min, data[ ii + 1 ] );
       max = std::max( max, data[ ii + 1 ] );
     }
-    val = MID( min, max );
+    val = (min + max) / 2.0;
   }
 
   template <typename ConstFloatArrayType, typename FloatArrayType,
