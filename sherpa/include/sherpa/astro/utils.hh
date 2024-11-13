@@ -366,31 +366,23 @@ namespace sherpa { namespace astro { namespace utils {
   // parameter.
   //
   template <typename ArrayType, typename IndexType>
-  SherpaFloat apply_group(PyObject *grp_func,
-			  const ArrayType& data,
-			  IndexType start,
-			  IndexType stop,
-			  int& ierr ) {
+  SherpaFloat apply_group(const ArrayType& unused,
+		     PyObject* grp_func,
+		     double* data,
+		     IndexType start,
+		     IndexType stop,
+		     int& ierr ) {
 
     // Optimize for success.
     ierr = EXIT_SUCCESS;
 
     npy_intp dims[1] = {stop - start};
     ArrayType grp_data;
-    if ( EXIT_SUCCESS != grp_data.create(1, dims) ) {
+    if ( EXIT_SUCCESS != grp_data.create(1, dims, &data[start]) ) {
       PyErr_SetString( PyExc_ValueError,
-		       "unable to create array" );
+		       "unable to create view of array" );
       ierr = EXIT_FAILURE;
       return 0.0;
-    }
-
-    // Copy over the data, as there is no guarantee that data is
-    // stored contiguously.
-    //
-    IndexType out = 0;
-    for( IndexType in = start; in < stop; in++ ) {
-      grp_data[out] = data[in];
-      out++;
     }
 
     PyObject* rv = PyObject_CallOneArg( grp_func,
@@ -511,6 +503,17 @@ namespace sherpa { namespace astro { namespace utils {
     if ( EXIT_SUCCESS != grouped.create( 1, &dim ) )
       return EXIT_FAILURE;
 
+    // Ensure that data is stored in a contiguous array, so that it is
+    // easier to subset below. It also assumes that the FloatArrayType
+    // is compatible with double storage.
+    //
+    PyArrayObject *borrowed = static_cast< PyArrayObject * >
+      ( static_cast< void * >
+	( const_cast< FloatArrayType& > (data).borrowed_ref() )
+	);
+    PyArrayObject* contiguous = PyArray_GETCONTIGUOUS(borrowed);
+    double* cont_data = (double *) PyArray_DATA(contiguous);
+
     int ierr = EXIT_SUCCESS;
     for( size_t ii = 0; ii < pick_pts.size( ) - 1; ii++ ) {
       IndexType start = pick_pts[ ii ];
@@ -518,7 +521,8 @@ namespace sherpa { namespace astro { namespace utils {
       if ( stop > nelem )
 	return EXIT_FAILURE;
 
-      grouped[ ii ] = apply_group(grp_func, data, start, stop, ierr);
+      grouped[ ii ] = apply_group(data,  // only sent to please the type gods
+				  grp_func, cont_data, start, stop, ierr);
       if (ierr != EXIT_SUCCESS)
 	return EXIT_FAILURE;
 
