@@ -1,7 +1,17 @@
 #!/usr/bin/env bash -e
 
+# Occasionally useful to know what these values are
+echo "** uname -s: `uname -s`"
+echo "** uname -m: `uname -m`"
+
 if [ "`uname -s`" == "Darwin" ] ; then
-    compilers="clang_osx-64 clangxx_osx-64 gfortran_osx-64"
+
+    if [ "`uname -m`" == "x86_64" ]; then
+	sys="64"
+    else
+	sys="arm64"
+    fi
+    compilers="clang_osx-${sys} clangxx_osx-${sys} gfortran_osx-${sys}"
 
     #Download the macOS 11.0 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
     mkdir -p ${GITHUB_WORKSPACE}/11.0SDK
@@ -10,7 +20,7 @@ if [ "`uname -s`" == "Darwin" ] ; then
       echo "macOS 11.0 SDK download failed"
     fi
     tar -C ${GITHUB_WORKSPACE}/11.0SDK -xf MacOSX11.0.sdk.tar.xz
-    #End of Conda compilers section
+
 else
     compilers="gcc_linux-64 gxx_linux-64 gfortran_linux-64"
 
@@ -27,7 +37,12 @@ fi
 # the XSPEC-related channels are only added if needed
 #
 if [ -n "${XSPECVER}" ]; then
- conda config --add channels ${xspec_channel}
+  if [[ "`uname -s`" == "Darwin" && "`uname -m`" != "x86_64" ]] ; then
+    # we need to use the CXC conda channel to get the ARM XSPEC build for now
+    conda config --add channels https://cxc.harvard.edu/conda/ciao
+  else
+    conda config --add channels ${xspec_channel}
+  fi
 fi
 
 # Figure out requested dependencies
@@ -39,7 +54,8 @@ if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER}";
 fi
 
-echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${FITS} ${XSPEC}"
+echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD}"
+echo "compilers:    ${compilers}"
 
 # Create and activate conda build environment
 conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
