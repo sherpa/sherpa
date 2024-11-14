@@ -342,14 +342,19 @@ namespace sherpa { namespace astro { namespace utils {
     val = (min + max) / 2.0;
   }
 
-  template <typename ConstFloatArrayType, typename FloatArrayType,
-	    typename ConstIntArrayType, typename IndexType>
-  int _do_group( IndexType len_data, const ConstFloatArrayType& data,
-		 IndexType len_group, const ConstIntArrayType& group,
-		 FloatArrayType& grouped, const char *type )
+  // The data and group arrays have the same size, nelem.
+  //
+  template <typename FloatArrayType,
+	    typename IntArrayType,
+	    typename IndexType>
+  int _do_group( IndexType nelem,
+		 const FloatArrayType& data,
+		 const IntArrayType& group,
+		 FloatArrayType& grouped,
+		 const char *type )
   {
 
-    typedef void (*fptr)( const ConstFloatArrayType&, IndexType, IndexType,
+    typedef void (*fptr)( const FloatArrayType&, IndexType, IndexType,
 			  SherpaFloat&);
     std::string funcname(type);
     std::map<std::string, fptr> funcs;
@@ -369,13 +374,13 @@ namespace sherpa { namespace astro { namespace utils {
 
     std::vector< IndexType > pick_pts;
 
-    for( IndexType ii = 0; ii < len_group; ii++ )
+    for( IndexType ii = 0; ii < nelem; ii++ )
       //if( group[ ii ] == 1 )
       // include channels where grouping == 0 so the filter will catch large
       // energy bins
       if( group[ ii ] >= 0 )
 	pick_pts.push_back( ii );
-    pick_pts.push_back( len_group );
+    pick_pts.push_back( nelem );
 
     npy_intp dim = npy_intp( pick_pts.size( ) - 1 );
     if ( EXIT_SUCCESS != grouped.create( 1, &dim ) )
@@ -385,7 +390,7 @@ namespace sherpa { namespace astro { namespace utils {
       IndexType start = pick_pts[ ii ];
       IndexType stop = pick_pts[ ii + 1 ];
 
-      if ( stop > len_data )
+      if ( stop > nelem )
 	return EXIT_FAILURE;
 
       if ( funcname == "_make_groups" ) {

@@ -149,8 +149,7 @@ namespace sherpa { namespace astro { namespace utils {
     }
 
     try {
-      if( EXIT_SUCCESS != _do_group(data.get_size(), data,
-				    group.get_size(), group,
+      if( EXIT_SUCCESS != _do_group(data.get_size(), data, group,
 				    grouped, type) ) {
 	PyErr_SetString( PyExc_ValueError,
 			 (char*)"group data is invalid or inconsistent" );
