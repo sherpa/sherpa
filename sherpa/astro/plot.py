@@ -139,18 +139,7 @@ def calc_x(data: DataPHA) -> tuple[np.ndarray, np.ndarray]:
 
     # Get the X axis data.
     #
-    if data.units != 'channel':
-        elo, ehi = data._get_ebins(group=False)
-    else:
-        elo, ehi = (data.channel, data.channel + 1.)
-
-    xlo = data.apply_filter(elo, data._min)
-    xhi = data.apply_filter(ehi, data._max)
-    if data.units == 'wavelength':
-        # Should this swap xlo and xhi here?
-        xlo = hc / xlo
-        xhi = hc / xhi
-
+    xlo, xhi = data.get_indep_transform(group=True, filter=True)
     return _check_hist_bins(xlo, xhi)
 
 
@@ -912,22 +901,11 @@ class OrderPlot(ModelHistogram):
             self.xlo = []
             self.xhi = []
             self.y = []
-            (xlo, y, _, _,
+            (_, y, _, _,
              self.xlabel, self.ylabel) = data.to_plot(model)
             y = y[1]
 
-            # TODO: should this use calc_x? The logic isn't quite the
-            # same but that may be a logical error in the following.
-            #
-            if data.units != 'channel':
-                elo, ehi = data._get_ebins(group=False)
-                xlo = data.apply_filter(elo, data._min)
-                xhi = data.apply_filter(ehi, data._max)
-                if data.units == 'wavelength':
-                    xlo = hc / xlo
-                    xhi = hc / xhi
-            else:
-                xhi = xlo + 1.
+            xlo, xhi = data.get_indep_transform(group=True, filter=True)
 
             for order in self.orders:
                 self.xlo.append(xlo)

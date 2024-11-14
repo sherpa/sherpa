@@ -214,20 +214,19 @@ The raw data is available from the
 :py:attr:`~sherpa.astro.data.DataPHA.channel` and
 :py:attr:`~sherpa.astro.data.DataPHA.counts` attributes, but
 it is better to use the various methods, such as
-:py:meth:`~sherpa.astro.data.DataPHA.get_indep` and
+:py:meth:`~sherpa.astro.data.DataPHA.get_indep`,
+:py:meth:`~sherpa.astro.data.DataPHA.get_indep_transform`,
+and
 :py:meth:`~sherpa.astro.data.DataPHA.get_dep`, to
 access the data.
 
 PHA data generally requires filtering to exclude parts of the
 data, so let's pick a common energy range for ACIS data,
-0.3 to 7 keV, and then use that range - which is indicated
-by the :py:attr:`~sherpa.astro.data.DataPHA.mask` attribute -
-to ensure we only group the data within this range::
+0.3 to 7 keV, and then group the data within that range::
 
    >>> pha.set_analysis('energy')
    >>> pha.notice(0.3, 7)
-   >>> tabs = ~pha.mask
-   >>> pha.group_counts(20, tabStops=tabs)
+   >>> pha.group_counts(20)
 
 The standard :doc:`Sherpa plotting <../plots/index>` setup can
 be used to display the data. However we
@@ -296,6 +295,14 @@ show they match::
 
 .. image:: ../_static/evaluation/pha_data_compare.png
 
+.. note::
+   The :py:meth:`~sherpa.astro.data.DataPHA.get_indep_transform`
+   method was added in 4.17.1 to make it easy to find the bin edges
+   of the independent axis in the current
+   :py:attr:`~sherpa.astro.data.DataPHA.units` setting::
+
+   >>> elo, ehi = pha.get_indep_transform()
+
 As mentioned, the :py:class:`~sherpa.astro.plot.DataPHAPlot` class
 handles the units for you. Switching the analysis setting
 to wavelength will create a plot in Angstroms::
@@ -303,8 +310,7 @@ to wavelength will create a plot in Angstroms::
    >>> pha.set_analysis('wave')
    >>> pha.get_x().max()
    1544.0122577477066
-   >>> from sherpa.plot import DataPlot
-   >>> wplot = DataPlot()
+   >>> wplot = DataPHAPlot()
    >>> wplot.prepare(pha)
    >>> wplot.plot(linestyle='solid', xlog=True, ylog=True)
 

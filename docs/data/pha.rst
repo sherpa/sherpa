@@ -66,8 +66,6 @@ PHA FITS file::
   counts         = Float64[1024]
   staterror      = None
   syserror       = None
-  bin_lo         = None
-  bin_hi         = None
   grouping       = Int16[1024]
   quality        = Int16[1024]
   exposure       = 38564.608926889
@@ -96,8 +94,6 @@ that are set in this file's FITS metadata::
   counts         = Float64[1024]
   staterror      = None
   syserror       = None
-  bin_lo         = None
-  bin_hi         = None
   grouping       = Int16[1024]
   quality        = Int16[1024]
   exposure       = 38564.608926889
@@ -115,8 +111,6 @@ that are set in this file's FITS metadata::
   energ_lo = Float64[1090]
   energ_hi = Float64[1090]
   specresp = Float64[1090]
-  bin_lo   = None
-  bin_hi   = None
   exposure = 38564.141454905
   ethresh  = 1e-10
   >>> print(pha.get_rmf())
@@ -147,8 +141,6 @@ created::
   counts         = Int64[1024]
   staterror      = None
   syserror       = None
-  bin_lo         = None
-  bin_hi         = None
   grouping       = None
   quality        = None
   exposure       = None
@@ -441,6 +433,26 @@ filtered range to the requested range becomes larger::
   >>> print(pha3.get_filter())
   0.394199997187:14.950400352478
 
+Accessing the independent axis
+==============================
+
+The independent axis can be accessed via the
+:py:attr:`~sherpa.astro.data.DataPHA.indep` property, the
+:py:meth:`~sherpa.astro.data.DataPHA.get_indep` method,
+or the
+:py:meth:`~sherpa.astro.data.DataPHA.get_indep_transform` method
+(you can also use
+:py:attr:`~sherpa.astro.data.DataPHA.x` and
+:py:meth:`~sherpa.astro.data.DataPHA.get_x`
+but these do not give you access to the bin edges).
+
+.. note::
+   Version 4.17.1 added the
+   :py:meth:`~sherpa.astro.data.DataPHA.get_indep_transform` call, which
+   will return values that match the
+   :py:attr:`~sherpa.astro.data.DataPHA.units` property, rather than in
+   channel units.
+
 Manipulating data
 =================
 
@@ -499,8 +511,6 @@ representing the background region.
   counts         = Float64[1024]
   staterror      = None
   syserror       = None
-  bin_lo         = None
-  bin_hi         = None
   grouping       = Int16[1024]
   quality        = Int16[1024]
   exposure       = 38564.608926889

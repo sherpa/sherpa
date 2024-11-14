@@ -82,8 +82,7 @@ def check_pha(pha, responses=True):
     assert pha.quality.sum() == 276
     assert pha.quality.argmax() == 662
 
-    for field in ['staterror', 'syserror',
-                  'bin_lo', 'bin_hi']:
+    for field in ['staterror', 'syserror']:
         assert getattr(pha, field) is None
 
     assert pha.grouped is True
@@ -154,9 +153,6 @@ def check_arf(arf):
     assert arf.energ_hi[0] == pytest.approx(0.005)
     assert arf.energ_lo[-1] == pytest.approx(11.9949998856)
     assert arf.energ_hi[-1] == pytest.approx(12.0)
-
-    assert arf.bin_lo is None
-    assert arf.bin_hi is None
 
     # Rather than check each element, use some simple summary
     # statistics.
@@ -258,8 +254,7 @@ def check_pha_grating(pha, errors=False):
     assert pha.counts.sum() == pytest.approx(2724.0)
     assert np.argmax(pha.counts) == 1498
 
-    for field in ['syserror', 'bin_lo', 'bin_hi',
-                  'grouping']:
+    for field in ['syserror', 'grouping']:
         assert getattr(pha, field) is None
 
     if errors:
@@ -633,7 +628,7 @@ def test_can_use_pha_grating(make_data_path, clean_astro_ui):
     assert ui.get_analysis() == "energy"
 
     d = ui.get_data()
-    assert d.get_filter(format='%.4f') == "0.3100:3.0919"
+    assert d.get_filter(format='%.5f') == "0.30996:3.09961"
 
     # XSPEC 12.14.1 has the energy ranges for a plot
     #
@@ -749,3 +744,48 @@ def test_can_use_pha_grating(make_data_path, clean_astro_ui):
     assert stat.dof == 108
 
     assert stat.statval == pytest.approx(118.23, rel=0, abs=0.005)
+
+
+@requires_xspec
+@requires_data
+@requires_fits
+def test_issue_2184(make_data_path, clean_astro_ui):
+    """Does the filter expression mask=True match mask=[True, ...]?
+
+    This repeats part of test_can_use_pha_grating
+    """
+
+    ui.load_pha(make_data_path(PHAFILE_GRATING))
+    ui.load_rmf(make_data_path(RMFFILE_GRATING))
+
+    d = ui.get_data()
+    assert d.mask is True
+
+    ui.set_analysis("channel")
+    cf1 = ui.get_filter()
+
+    ui.set_analysis("energy")
+    ef1 = ui.get_filter(format='%.5f')
+
+    ui.set_analysis("wave")
+    wf1 = ui.get_filter(format='%.5f')
+
+    d.mask = [True] * 3600
+
+    ui.set_analysis("channel")
+    cf2 = ui.get_filter()
+
+    ui.set_analysis("energy")
+    ef2 = ui.get_filter(format='%.5f')
+
+    ui.set_analysis("wave")
+    wf2 = ui.get_filter(format='%.5f')
+
+    assert cf1 == '1:3600'
+    assert cf2 == cf1
+
+    assert ef1 == "0.30996:3.09961"
+    assert ef2 == ef1
+
+    assert wf1 == '4.00000:39.99998'
+    assert wf2 == wf1

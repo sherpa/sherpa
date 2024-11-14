@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 - 2018, 2020, 2021, 2023, 2024
+#  Copyright (C) 2016 - 2018, 2020 - 2021, 2023 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -100,22 +100,33 @@ def test_warnings_are_gone_pha(make_data_path, tmp_path):
 
 
 def assert_staterr(use_errors):
-    assert np.all(ui.get_data("phacounts").counts ==
-                  pytest.approx(ui.get_data("pharate").counts))
+
+    # Check what the analysis setting is
+    assert ui.get_analysis("phacounts") == "energy"
+    assert ui.get_analysis("pharate") == "energy"
+
+    # Treat the "phacounts" value as the truth
+    #
+    assert ui.get_data("pharate").counts == \
+        pytest.approx(ui.get_data("phacounts").counts)
+
     if use_errors is True:
-        assert np.all(ui.get_data("phacounts").staterror ==
-                      pytest.approx(ui.get_data("pharate").staterror))
+        counts = ui.get_data("phacounts").staterror
+        assert ui.get_data("pharate").staterror == pytest.approx(counts)
+        assert len(counts) in [1024, 8192]  # really just check it's not 16
     else:
         assert ui.get_data("phacounts").staterror is None
         assert ui.get_data("pharate").staterror is None
 
     for n in ['phacounts', 'pharate']:
         ui.group_bins(n, 16)
-    ui.set_analysis('energy')
-    ui.ignore(None, 3.)
+
+    ui.ignore(hi=3.)
+
     if use_errors is True:
-        assert np.all(ui.get_data("phacounts").get_error() ==
-                      pytest.approx(ui.get_data("pharate").get_error()))
+        counts = ui.get_data("phacounts").get_error()
+        assert ui.get_data("pharate").get_error() == pytest.approx(counts)
+        assert len(counts) == 16
     else:
         assert ui.get_data("phacounts").get_error() is None
         assert ui.get_data("pharate").get_error() is None
@@ -125,7 +136,7 @@ def assert_staterr(use_errors):
 @requires_data
 @requires_group
 @pytest.mark.parametrize("use_errors", [True, False])
-def test_scaling_staterr(make_data_path, use_errors):
+def test_scaling_staterr(make_data_path, use_errors, clean_astro_ui):
     '''Regression test for https://github.com/sherpa/sherpa/issues/800
 
     Notes
@@ -135,6 +146,7 @@ def test_scaling_staterr(make_data_path, use_errors):
     dmcopy "source_edit.pi[cols channel,pi,RATE=count_rate,stat_err]" source_rate.pi clobber=yes
     # Then fix units to counts/s manually in the header
     '''
+
     ui.load_pha("phacounts", make_data_path("source.pi"),
                 use_errors=use_errors)
     ui.load_pha("pharate", make_data_path("source_rate.pi"),
@@ -150,7 +162,7 @@ def test_scaling_staterr(make_data_path, use_errors):
 @requires_data
 @requires_group
 @pytest.mark.parametrize("use_errors", [True, False])
-def test_scaling_staterr_pha2(make_data_path, use_errors):
+def test_scaling_staterr_pha2(make_data_path, use_errors, clean_astro_ui):
     '''Regression test for https://github.com/sherpa/sherpa/issues/800
 
     Notes
@@ -164,15 +176,27 @@ def test_scaling_staterr_pha2(make_data_path, use_errors):
     dmcopy "3c120_pha2_edit4.gz[cols -COUNTS,-BACKGROUND_UP,-BACKGROUND_DOWN][cols *,BACKGROUND_UP=backgroun_up,BACKGROUND_DOWN=backgroun_down][col -COUNTS]" 3c120_pha2_rate.gz clobber=yes
     Then fix units manually.
     '''
-    ui.load_pha(make_data_path("3c120_pha2_rate.gz"),
-                use_errors=use_errors)
-    ui.copy_data(9, "phacounts")
-    ui.load_pha(make_data_path("3c120_pha2_rate.gz"),
-                use_errors=use_errors)
-    ui.copy_data(9, "pharate")
+
+    # The test is with just one of the datasets from the PHA2 file.
+    #
+    infile = make_data_path("3c120_pha2.gz")
+    ui.load_pha("count", infile, use_errors=use_errors)
+    ui.copy_data("count9", "phacounts")
+
+    infile = make_data_path("3c120_pha2_rate.gz")
+    ui.load_pha("rate", infile, use_errors=use_errors)
+    ui.copy_data("rate9", "pharate")
+
+    # Clean up the other files
+    #
+    for idval in range(1, 13):
+        ui.delete_data(f"count{idval}")
+        ui.delete_data(f"rate{idval}")
+
     for n in ['phacounts', 'pharate']:
         ui.load_arf(n, make_data_path("3c120_meg_-1.arf.gz"))
         ui.load_rmf(n, make_data_path("3c120_meg_-1.rmf.gz"))
+
     assert_staterr(use_errors)
 
 
