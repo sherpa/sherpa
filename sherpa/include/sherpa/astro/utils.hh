@@ -291,59 +291,61 @@ namespace sherpa { namespace astro { namespace utils {
   // group, where a single group covers the given [start, stop) range
   // for the data array.
   //
-  // The input data is provided as a template but the output value is
-  // always a SherpaFloat.
-  //
   // The Sherpa array type does not support C++11 style iterators,
   // hence the direct array access via the for loop.
   //
   template <typename FloatArrayType, typename IndexType>
-  void _sum(const FloatArrayType& data, IndexType start,
-	    IndexType stop, SherpaFloat& val) {
+  void _sum(const FloatArrayType& data,
+	    IndexType start, IndexType stop,
+	    typename FloatArrayType::value_type& val) {
 
     val = 0.0;
-    for( IndexType ii = start; ii < stop; ii++ )
+    for( auto ii = start; ii < stop; ii++ )
       val += data[ii];
   }
 
   template <typename FloatArrayType, typename IndexType>
-  void _sum_sq(const FloatArrayType& data, IndexType start,
-	       IndexType stop, SherpaFloat& val) {
+  void _sum_sq(const FloatArrayType& data,
+	       IndexType start, IndexType stop,
+	       typename FloatArrayType::value_type& val) {
 
     val = 0.0;
-    for( IndexType ii = start; ii < stop; ii++ )
+    for( auto ii = start; ii < stop; ii++ )
       val += ( data[ii] * data[ii] );
 
     val = sqrt( val );
   }
 
   template <typename FloatArrayType, typename IndexType>
-  void _max(const FloatArrayType& data, IndexType start,
-		 IndexType stop, SherpaFloat& val) {
+  void _max(const FloatArrayType& data,
+	    IndexType start, IndexType stop,
+	    typename FloatArrayType::value_type& val) {
 
     val = data[start];
-    for( IndexType ii = start + 1; ii < stop; ii++ )
+    for( auto ii = start + 1; ii < stop; ii++ )
       val = std::max( val, data[ii] );
 
   }
 
   template <typename FloatArrayType, typename IndexType>
-  void _min(const FloatArrayType& data, IndexType start,
-		 IndexType stop, SherpaFloat& val) {
+  void _min(const FloatArrayType& data,
+	    IndexType start, IndexType stop,
+	    typename FloatArrayType::value_type& val) {
 
     val = data[start];
-    for( IndexType ii = start + 1; ii < stop; ii++ )
+    for( auto ii = start + 1; ii < stop; ii++ )
       val = std::min( val, data[ii] );
 
   }
 
   template <typename FloatArrayType, typename IndexType>
-  void _middle(const FloatArrayType& data, IndexType start,
-	       IndexType stop, SherpaFloat& val) {
+  void _middle(const FloatArrayType& data,
+	       IndexType start, IndexType stop,
+	       typename FloatArrayType::value_type& val) {
 
-    SherpaFloat min = data[start];
-    SherpaFloat max = data[start];
-    for( IndexType ii = start + 1; ii < stop; ii++ ) {
+    auto min = data[start];
+    auto max = data[start];
+    for( auto ii = start + 1; ii < stop; ii++ ) {
       min = std::min( min, data[ii] );
       max = std::max( max, data[ii] );
     }
@@ -367,10 +369,9 @@ namespace sherpa { namespace astro { namespace utils {
   {
 
     typedef void (*fptr)( const FloatArrayType&, IndexType, IndexType,
-			  SherpaFloat&);
+			  typename FloatArrayType::value_type&);
     std::string funcname(type);
     std::map<std::string, fptr> funcs;
-    SherpaFloat val;
     fptr func = NULL;
 
     funcs["sum"] = _sum;
@@ -392,7 +393,7 @@ namespace sherpa { namespace astro { namespace utils {
     //     pick_pts[i] <= idx < pick_pts[i + 1]
     //
     std::vector< IndexType > pick_pts;
-    for( IndexType ii = 0; ii < nelem; ii++ )
+    for( auto ii = 0; ii < nelem; ii++ )
       if( group[ ii ] >= 0 )
 	pick_pts.push_back( ii );
 
@@ -402,20 +403,19 @@ namespace sherpa { namespace astro { namespace utils {
     // Number of groups.
     const size_t ngrp = pick_pts.size() - 1;
 
-    // It is assumed that this is only ever called with an array type
-    // that can store SherpaFloat values.
-    //
     npy_intp dim = npy_intp( ngrp );
     if ( EXIT_SUCCESS != grouped.create( 1, &dim ) )
       return EXIT_FAILURE;
 
     // Apply the group function to each group.
+    auto val = static_cast<typename FloatArrayType::value_type>(0.0);
     for( size_t ii = 0; ii < ngrp; ii++ ) {
-      IndexType start = pick_pts[ ii ];
-      IndexType stop = pick_pts[ ii + 1 ];
+      auto start = pick_pts[ ii ];
+      auto stop = pick_pts[ ii + 1 ];
 
       if ( func == NULL ) {
-	grouped[ ii ] = data[0] + (SherpaFloat) ii;
+	grouped[ ii ] = data[0] +
+	  static_cast<typename FloatArrayType::value_type>(ii);
       } else {
 	func( data, start, stop, val );
 	grouped[ ii ] = val;
