@@ -384,25 +384,35 @@ namespace sherpa { namespace astro { namespace utils {
       func = funcs.at(funcname);
     }
 
+    // Identify the start of each "group", with each "0" value being
+    // treated as a new group. There is limited validation here (e.g.
+    // if group starts with a sequence of values < 0 then they will be
+    // ignored). Each group can then be identified as
+    //
+    //     pick_pts[i] <= idx < pick_pts[i + 1]
+    //
     std::vector< IndexType > pick_pts;
-
     for( IndexType ii = 0; ii < nelem; ii++ )
-      //if( group[ ii ] == 1 )
-      // include channels where grouping == 0 so the filter will catch large
-      // energy bins
       if( group[ ii ] >= 0 )
 	pick_pts.push_back( ii );
+
+    // End the last group.
     pick_pts.push_back( nelem );
 
-    npy_intp dim = npy_intp( pick_pts.size( ) - 1 );
+    // Number of groups.
+    const size_t ngrp = pick_pts.size() - 1;
+
+    // It is assumed that this is only ever called with an array type
+    // that can store SherpaFloat values.
+    //
+    npy_intp dim = npy_intp( ngrp );
     if ( EXIT_SUCCESS != grouped.create( 1, &dim ) )
       return EXIT_FAILURE;
 
-    for( size_t ii = 0; ii < pick_pts.size( ) - 1; ii++ ) {
+    // Apply the group function to each group.
+    for( size_t ii = 0; ii < ngrp; ii++ ) {
       IndexType start = pick_pts[ ii ];
       IndexType stop = pick_pts[ ii + 1 ];
-      if ( stop > nelem )
-	return EXIT_FAILURE;
 
       if ( func == NULL ) {
 	grouped[ ii ] = data[0] + (SherpaFloat) ii;
