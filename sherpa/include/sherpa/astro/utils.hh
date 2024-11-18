@@ -373,7 +373,7 @@ namespace sherpa { namespace astro { namespace utils {
     string funcname(type);
     map<string, fptr> funcs;
     SherpaFloat val;
-    fptr func = _sum;
+    fptr func = NULL;
 
     funcs["sum"] = _sum;
     funcs["_sum_sq"] = _sum_sq;
@@ -406,7 +406,7 @@ namespace sherpa { namespace astro { namespace utils {
       if ( stop > nelem )
 	return EXIT_FAILURE;
 
-      if ( funcname == "_make_groups" ) {
+      if ( func == NULL ) {
 	grouped[ ii ] = data[0] + (SherpaFloat) ii;
       } else {
 	func( data, start, stop, val );
