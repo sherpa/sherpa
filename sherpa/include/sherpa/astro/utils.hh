@@ -287,8 +287,18 @@ namespace sherpa { namespace astro { namespace utils {
     return EXIT_SUCCESS;
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _sum(const ConstFloatArrayType& data, IndexType start,
+  // These routines are used by _do_group to combine the data for each
+  // group, where a single group covers the given [start, stop) range
+  // for the data array.
+  //
+  // The input data is provided as a template but the output value is
+  // always a SherpaFloat.
+  //
+  // The Sherpa array type does not support C++11 style iterators,
+  // hence the direct array access via the for loop.
+  //
+  template <typename FloatArrayType, typename IndexType>
+  void _sum(const FloatArrayType& data, IndexType start,
 	    IndexType stop, SherpaFloat& val) {
 
     val = 0.0;
@@ -296,8 +306,8 @@ namespace sherpa { namespace astro { namespace utils {
       val += data[ii];
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _sum_sq(const ConstFloatArrayType& data, IndexType start,
+  template <typename FloatArrayType, typename IndexType>
+  void _sum_sq(const FloatArrayType& data, IndexType start,
 	       IndexType stop, SherpaFloat& val) {
 
     val = 0.0;
@@ -307,42 +317,44 @@ namespace sherpa { namespace astro { namespace utils {
     val = sqrt( val );
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _max(const ConstFloatArrayType& data, IndexType start,
+  template <typename FloatArrayType, typename IndexType>
+  void _max(const FloatArrayType& data, IndexType start,
 		 IndexType stop, SherpaFloat& val) {
 
-    SherpaFloat max = data[start];
-    for( IndexType ii = start; ii < stop - 1; ii++ )
-      max = std::max( max, data[ ii + 1 ] );
+    val = data[start];
+    for( IndexType ii = start + 1; ii < stop; ii++ )
+      val = std::max( val, data[ii] );
 
-    val = max;
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _min(const ConstFloatArrayType& data, IndexType start,
+  template <typename FloatArrayType, typename IndexType>
+  void _min(const FloatArrayType& data, IndexType start,
 		 IndexType stop, SherpaFloat& val) {
 
-    SherpaFloat min = data[start];
-    for( IndexType ii = start; ii < stop - 1; ii++ )
-      min = std::min( min, data[ ii + 1 ] );
+    val = data[start];
+    for( IndexType ii = start + 1; ii < stop; ii++ )
+      val = std::min( val, data[ii] );
 
-    val = min;
   }
 
-  template <typename ConstFloatArrayType, typename IndexType>
-  void _middle(const ConstFloatArrayType& data, IndexType start,
+  template <typename FloatArrayType, typename IndexType>
+  void _middle(const FloatArrayType& data, IndexType start,
 	       IndexType stop, SherpaFloat& val) {
 
     SherpaFloat min = data[start];
     SherpaFloat max = data[start];
-    for( IndexType ii = start; ii < stop - 1; ii++ ) {
-      min = std::min( min, data[ ii + 1 ] );
-      max = std::max( max, data[ ii + 1 ] );
+    for( IndexType ii = start + 1; ii < stop; ii++ ) {
+      min = std::min( min, data[ii] );
+      max = std::max( max, data[ii] );
     }
     val = (min + max) / 2.0;
   }
 
-  // The data and group arrays have the same size, nelem.
+  // The data and group arrays have the same size, nelem. The
+  // operation to apply to each group is controlled by the type
+  // argument, and can be one of: "sum", "_sum_sq", "_max", "_min",
+  // "_middle", and "_make_groups". If the type argument is not
+  // recognized then a std::out_of_range exception will be raised.
   //
   template <typename FloatArrayType,
 	    typename IntArrayType,
@@ -389,17 +401,15 @@ namespace sherpa { namespace astro { namespace utils {
     for( size_t ii = 0; ii < pick_pts.size( ) - 1; ii++ ) {
       IndexType start = pick_pts[ ii ];
       IndexType stop = pick_pts[ ii + 1 ];
-
       if ( stop > nelem )
 	return EXIT_FAILURE;
 
       if ( funcname == "_make_groups" ) {
 	grouped[ ii ] = data[0] + (SherpaFloat) ii;
-	continue;
+      } else {
+	func( data, start, stop, val );
+	grouped[ ii ] = val;
       }
-
-      func( data, start, stop, val );
-      grouped[ ii ] = val;
 
     } // end ii
 
