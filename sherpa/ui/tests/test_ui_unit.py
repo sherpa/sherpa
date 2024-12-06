@@ -1209,7 +1209,7 @@ def test_set_filter_unmasked(ignore, clean_ui):
     ui.load_arrays(1, x, y)
 
     data = ui.get_data()
-    assert data.mask
+    assert data.mask is True
 
     if ignore:
         expected = [False, True, False]
@@ -1217,7 +1217,7 @@ def test_set_filter_unmasked(ignore, clean_ui):
         expected = [True, False, True]
 
     ui.set_filter(np.asarray([True, False, True]), ignore=ignore)
-    assert data.mask == pytest.approx(expected)
+    assert data.mask == pytest.approx(np.asarray(expected))
 
 
 def test_set_filter_unmasked_wrong(clean_ui):
@@ -1245,7 +1245,9 @@ def test_set_filter_masked(ignore, clean_ui):
     ui.ignore(lo=15, hi=45)
 
     data = ui.get_data()
-    assert data.mask == pytest.approx([True, False, False, False, True])
+
+    orig = np.asarray([True, False, False, False, True])
+    assert data.mask == pytest.approx(orig)
 
     # Unlike test_set_filter_masked the two expected values are not
     # logical inverses, since we need to consider the existing mask.
@@ -1256,7 +1258,7 @@ def test_set_filter_masked(ignore, clean_ui):
         expected = [True, False, True, False, True]
 
     ui.set_filter(np.asarray([True, False, True, False, False]), ignore=ignore)
-    assert data.mask == pytest.approx(expected)
+    assert data.mask == pytest.approx(np.asarray(expected))
 
 
 def test_set_filter_masked_wrong(clean_ui):
