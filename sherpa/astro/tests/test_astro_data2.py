@@ -97,7 +97,7 @@ def test_get_mask_is_none():
     """
     pha = DataPHA('name', [1, 2, 3], [1, 1, 1])
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 3)
+    assert pha.get_mask() == pytest.approx(np.asarray([True] * 3))
 
 
 def test_get_mask_is_none_when_all_filtered():
@@ -497,7 +497,7 @@ def test_288_a():
     # with bools the use of approx is okay (it can tell the
     # difference between 0 and 1, aka False and True).
     #
-    assert pha.mask == pytest.approx([True, False, True])
+    assert pha.mask == pytest.approx(np.asarray([True, False, True]))
 
 
 def test_288_a_energy():
@@ -525,7 +525,7 @@ def test_288_a_energy():
     # with bools the use of approx is okay (it can tell the
     # difference between 0 and 1, aka False and True).
     #
-    assert pha.mask == pytest.approx([True, False, True])
+    assert pha.mask == pytest.approx(np.asarray([True, False, True]))
 
 
 def test_288_b():
@@ -565,7 +565,7 @@ def test_288_b_energy():
     assert pha.mask is True
     pha.ignore(3.1, 4)
 
-    assert pha.mask == pytest.approx([True, False, True])
+    assert pha.mask == pytest.approx(np.asarray([True, False, True]))
 
 
 @requires_group
@@ -621,8 +621,8 @@ def test_416_a():
     #     grouped)
     #   - pha.get_mask() always returns the ungrouped mask
     #
-    mask_ungrouped = [False] * 3 + [True] * 3 + [False] * 4
-    mask_grouped = [False] * 3 + [True] * 2 + [False] * 4
+    mask_ungrouped = np.asarray([False] * 3 + [True] * 3 + [False] * 4)
+    mask_grouped = np.asarray([False] * 3 + [True] * 2 + [False] * 4)
 
     assert pha.mask == pytest.approx(mask_ungrouped)
     assert pha.get_mask() == pytest.approx(mask_ungrouped)
@@ -685,7 +685,7 @@ def test_416_c():
     pha.notice(4.5, 6.5)
 
     # this should be ~pha.mask
-    tabstops = [True] * 3 + [False] * 3 + [True] * 4
+    tabstops = np.asarray([True] * 3 + [False] * 3 + [True] * 4)
     assert ~pha.mask == pytest.approx(tabstops)
 
     assert pha.grouping is None
@@ -1688,10 +1688,13 @@ def test_pha_quality_all_bad_basic_checks():
 
     """
 
+    all4 = np.ones(4, dtype=bool)
+    none4 = np.zeros(4, dtype=bool)
+
     pha = DataPHA("q", [1, 2, 3, 4], [9, 0, 1, 64])
     fvals = [12, 2, 7, 8]
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 4)
+    assert pha.get_mask() == pytest.approx(all4)
     assert pha.get_filter() == "1:4"
     assert pha.get_x() == pytest.approx([1, 2, 3, 4])
     assert pha.apply_filter(fvals) == pytest.approx(fvals)
@@ -1699,15 +1702,15 @@ def test_pha_quality_all_bad_basic_checks():
 
     pha.quality = [2, 2, 2, 5]
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 4)
+    assert pha.get_mask() == pytest.approx(all4)
     assert pha.get_filter() == "1:4"
     assert pha.get_x() == pytest.approx([1, 2, 3, 4])
     assert pha.apply_filter(fvals) == pytest.approx(fvals)
     assert pha.apply_grouping(fvals) == pytest.approx(fvals)
 
     pha.ignore_bad()
-    assert pha.mask == pytest.approx([False] * 4)
-    assert pha.get_mask() == pytest.approx([False] * 4)
+    assert pha.mask == pytest.approx(none4)
+    assert pha.get_mask() == pytest.approx(none4)
     assert pha.get_filter() == ""
     assert pha.get_x() == pytest.approx([1, 2, 3, 4])
     assert pha.apply_filter(fvals) == pytest.approx([])
@@ -1742,7 +1745,7 @@ def test_pha_quality_change_mask(make_quality_pha):
     pha.ignore_bad()
     assert pha.mask is True
     pha.mask = [1, 1, 0]
-    assert pha.mask == pytest.approx([True, True, False])
+    assert pha.mask == pytest.approx(np.asarray([True, True, False]))
 
 
 def test_pha_quality_change_mask_ungrouped(make_quality_pha):
@@ -1753,7 +1756,8 @@ def test_pha_quality_change_mask_ungrouped(make_quality_pha):
     pha.ungroup()
     assert pha.mask is True
     pha.mask = [1, 1, 0, 1, 1, 0, 0, 1, 1]
-    assert pha.mask == pytest.approx([True, True, False, True, True, False, False, True, True])
+    mask = np.asarray([True, True, False, True, True, False, False, True, True])
+    assert pha.mask == pytest.approx(mask)
 
 
 def test_pha_quality_change_mask_fullsize(make_quality_pha):
@@ -1972,23 +1976,26 @@ def test_pha_quality_ignore_bad_clear_filter(make_quality_pha):
 
     pha = make_quality_pha
 
+    mask0 = np.ones(9, dtype=bool)
     assert pha.get_filter() == "1:9"
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 9)
+    assert pha.get_mask() == pytest.approx(mask0)
     assert pha.quality_filter is None
 
     # channels 2,3 and 7-9 are "bad"
     pha.ignore(hi=3)
 
+    mask = np.asarray([False] + [True] * 3)
+    mask_full = np.asarray([False] * 4 + [True] * 5)
     assert pha.get_filter() == "5:9"
-    assert pha.mask == pytest.approx([False] + [True] * 3)
-    assert pha.get_mask() == pytest.approx([False] * 4 + [True] * 5)
+    assert pha.mask == pytest.approx(mask)
+    assert pha.get_mask() == pytest.approx(mask_full)
     assert pha.quality_filter is None
 
     # This resets the previous filters
     pha.ignore_bad()
 
-    qflags = [True] * 1 + [False] * 2 + [True] * 3 + [False] * 3
+    qflags = np.asarray([True] * 1 + [False] * 2 + [True] * 3 + [False] * 3)
     assert pha.get_filter() == "1:9"
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qflags)
@@ -1996,16 +2003,19 @@ def test_pha_quality_ignore_bad_clear_filter(make_quality_pha):
 
     pha.ignore(hi=3)
 
+    mask2 = np.asarray([False] + [True] * 2)
+    mask2_full = np.asarray([False] * 2 + [True] * 2)
+
     assert pha.get_filter() == "5:6"
-    assert pha.mask == pytest.approx([False] + [True] * 2)
-    assert pha.get_mask() == pytest.approx([False] * 2 + [True] * 2)
+    assert pha.mask == pytest.approx(mask2)
+    assert pha.get_mask() == pytest.approx(mask2_full)
     assert pha.quality_filter == pytest.approx(qflags)
 
     pha.ignore(lo=2, hi=4)
 
     assert pha.get_filter() == "5:6"
-    assert pha.mask == pytest.approx([False] + [True] * 2)
-    assert pha.get_mask() == pytest.approx([False] * 2 + [True] * 2)
+    assert pha.mask == pytest.approx(mask2)
+    assert pha.get_mask() == pytest.approx(mask2_full)
     assert pha.quality_filter == pytest.approx(qflags)
 
     # This removes the quality filter!
@@ -2013,7 +2023,7 @@ def test_pha_quality_ignore_bad_clear_filter(make_quality_pha):
 
     assert pha.get_filter() == "1:9"
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 9)
+    assert pha.get_mask() == pytest.approx(mask0)
     assert pha.quality_filter is None
 
 
@@ -2443,7 +2453,8 @@ def test_pha_change_quality_values(caplog):
     pha.ignore_bad()
     assert len(caplog.records) == 0
 
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
+    qfilt = np.asarray([True] * 5 + [False] * 2)
+    assert pha.quality_filter == pytest.approx(qfilt)
     assert pha.get_dep(filter=True) == pytest.approx([6])
     assert pha.get_filter() == '1:7'
 
@@ -2456,7 +2467,7 @@ def test_pha_change_quality_values(caplog):
     assert pha.quality == pytest.approx([0, 0, 0, 2, 2, 0, 0])
 
     # Should quality filter be reset?
-    assert pha.quality_filter == pytest.approx([True] * 5 + [False] * 2)
+    assert pha.quality_filter == pytest.approx(qfilt)
     assert pha.get_dep(filter=True) == pytest.approx([4, 2])
     assert pha.get_filter() == '1:7'
 
@@ -2499,14 +2510,14 @@ def test_pha_group_ignore_bad_then_filter(caplog):
     assert len(caplog.records) == 0
 
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 7)
+    assert pha.get_mask() == pytest.approx(np.ones(7, dtype=bool))
     assert pha.get_filter() == '1:7'
     assert pha.quality_filter is None
 
     pha.ignore_bad()
     assert len(caplog.records) == 0
 
-    qual_mask = [True] * 2 + [False] + [True] * 3 + [False]
+    qual_mask = np.asarray([True] * 2 + [False] + [True] * 3 + [False])
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qual_mask)
     assert pha.get_filter() == '1:7'
@@ -2518,8 +2529,10 @@ def test_pha_group_ignore_bad_then_filter(caplog):
     pha.ignore(4, 5)
     assert len(caplog.records) == 0
 
-    assert pha.mask == pytest.approx([True, False, True])
-    assert pha.get_mask() == pytest.approx([True] * 2 + [False] * 2 + [True])
+    mask = np.asarray([True, False, True])
+    mask_full = np.asarray([True] * 2 + [False] * 2 + [True])
+    assert pha.mask == pytest.approx(mask)
+    assert pha.get_mask() == pytest.approx(mask_full)
     assert pha.get_filter() == '1:2,6'
     assert pha.quality_filter == pytest.approx(qual_mask)
     assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 2])
@@ -2536,7 +2549,7 @@ def test_pha_group_ignore_bad_then_group(caplog):
     pha.ignore_bad()
     assert len(caplog.records) == 0
 
-    qual_mask = [True] * 2 + [False] + [True] * 3 + [False]
+    qual_mask = np.asarray([True] * 2 + [False] + [True] * 3 + [False])
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qual_mask)
     assert pha.quality_filter == pytest.approx(qual_mask)
@@ -2562,7 +2575,7 @@ def test_pha_group_ignore_bad_then_group(caplog):
     pha.ignore_bad()
     assert len(caplog.records) == 0
 
-    qual_mask = [True] + [False] + [True] * 5
+    qual_mask = np.asarray([True] + [False] + [True] * 5)
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(qual_mask)
     assert pha.get_filter() == '1:7'
@@ -2584,7 +2597,7 @@ def test_pha_filter_ignore_bad_filter(caplog):
     pha.ignore(lo=4, hi=4)
     assert len(caplog.records) == 0
 
-    data_mask = [True] * 3 + [False] + [True] * 3
+    data_mask = np.asarray([True] * 3 + [False] + [True] * 3)
     assert pha.mask == pytest.approx(data_mask)
     assert pha.get_mask() == pytest.approx(data_mask)
     assert pha.get_filter() == '1:3,5:7'
@@ -2596,7 +2609,8 @@ def test_pha_filter_ignore_bad_filter(caplog):
     pha.group_counts(5)
     assert len(caplog.records) == 0
 
-    assert pha.mask == pytest.approx([True] * 2 + [False] + [True] * 3)
+    data_mask2 = np.asarray([True] * 2 + [False] + [True] * 3)
+    assert pha.mask == pytest.approx(data_mask2)
     assert pha.get_mask() == pytest.approx(data_mask)
     assert pha.get_filter() == '1:3,5:7'
     assert pha.quality_filter is None
@@ -2612,7 +2626,7 @@ def test_pha_filter_ignore_bad_filter(caplog):
     assert r.levelname == "WARNING"
     assert r.getMessage() == "filtering grouped data with quality flags, previous filters deleted"
 
-    new_mask = [True] * 2 + [False] + [True] * 4
+    new_mask = np.asarray([True] * 2 + [False] + [True] * 4)
     assert pha.mask is True
     assert pha.get_mask() == pytest.approx(new_mask)
     assert pha.get_filter() == '1:7'
@@ -2624,8 +2638,10 @@ def test_pha_filter_ignore_bad_filter(caplog):
     pha.ignore(lo=2, hi=2)
     assert len(caplog.records) == 1
 
-    assert pha.mask == pytest.approx([False] + [True] * 4)
-    assert pha.get_mask() == pytest.approx([False] * 2 + [True] * 4)
+    mask3 = np.asarray([False] + [True] * 4)
+    mask3_full = np.asarray([False] * 2 + [True] * 4)
+    assert pha.mask == pytest.approx(mask3)
+    assert pha.get_mask() == pytest.approx(mask3_full)
     assert pha.get_filter() == '4:7'
     assert pha.quality_filter == pytest.approx(new_mask)
     assert pha.quality == pytest.approx([0, 0, 2, 0, 0, 0, 0])
@@ -2732,7 +2748,7 @@ def test_pha_ignore_bad_group_quality(caplog):
     assert pha.get_filter(format="%.1f") == "3.0:7.0"
     assert pha.get_noticed_channels() == pytest.approx(np.arange(3, 7))
 
-    omask = [False] * 2 + [True] * 4 + [False] * 4
+    omask = np.asarray([False] * 2 + [True] * 4 + [False] * 4)
     assert pha.mask == pytest.approx(omask)
     assert pha.get_mask() == pytest.approx(omask)
 
@@ -2749,7 +2765,8 @@ def test_pha_ignore_bad_group_quality(caplog):
     assert pha.get_dep(filter=False) == pytest.approx(y)
     assert pha.get_dep(filter=True) == pytest.approx([3, 1])
 
-    assert pha.mask == pytest.approx([False] * 2 + [True] * 2 + [False] * 4)
+    mask = np.asarray([False] * 2 + [True] * 2 + [False] * 4)
+    assert pha.mask == pytest.approx(mask)
     assert pha.get_mask() == pytest.approx(omask)
 
     grouping = [0, 0, 1, -1, -1,  1, 0, 0, 0, 0]
@@ -2788,7 +2805,7 @@ def test_pha_ignore_bad_group_quality(caplog):
     # However, get_mask reflects the quality filter, so is all True
     # except for the 6th element.
     #
-    single_bad = [True] * 5 + [False] + [True] * 4
+    single_bad = np.asarray([True] * 5 + [False] + [True] * 4)
     assert pha.get_mask() == pytest.approx(single_bad)
 
     # What about the quality fields?
@@ -2862,7 +2879,7 @@ def test_pha_ignore_bad_quality(groupit, caplog):
     assert pha.get_dep(filter=False) == pytest.approx(y)
     assert pha.get_dep(filter=True) == pytest.approx(y[2:6])
 
-    mask = [False] * 2 + [True] * 4 + [False] * 4
+    mask = np.asarray([False] * 2 + [True] * 4 + [False] * 4)
     assert pha.mask == pytest.approx(mask)
     assert pha.get_mask() == pytest.approx(mask)
 
@@ -2900,7 +2917,7 @@ def test_pha_ignore_bad_quality(groupit, caplog):
 
     # The mask changed (the channel=6 value is now filtered out).
     #
-    mask2 = [False] * 2 + [True] * 3 + [False] * 5
+    mask2 = np.asarray([False] * 2 + [True] * 3 + [False] * 5)
     assert pha.mask == pytest.approx(mask2)
     assert pha.get_mask() == pytest.approx(mask2)
 
@@ -3098,7 +3115,7 @@ def test_grouped_pha_mask(make_grouped_pha):
 def test_grouped_pha_get_mask(make_grouped_pha):
     """What is the default get_mask value?"""
     pha = make_grouped_pha
-    assert pha.get_mask() == pytest.approx([True] * 4 + [False])
+    assert pha.get_mask() == pytest.approx(np.asarray([True] * 4 + [False]))
 
 
 def test_quality_pha_mask(make_quality_pha):
@@ -3115,11 +3132,13 @@ def test_quality_pha_mask(make_quality_pha):
 def test_quality_pha_get_mask(make_quality_pha):
     """What is the default get_mask value?"""
     pha = make_quality_pha
-    assert pha.get_mask() == pytest.approx([True] * 9)
+    m1 = np.ones(9, dtype=bool)
+    assert pha.get_mask() == pytest.approx(m1)
 
     pha.ignore_bad()
     # This is a regression test
-    assert pha.get_mask() == pytest.approx([True] + [False] * 2 + [True] * 3 + [False] * 3)
+    m2 = np.asarray([True] + [False] * 2 + [True] * 3 + [False] * 3)
+    assert pha.get_mask() == pytest.approx(m2)
 
 
 @pytest.mark.parametrize("field,expected",
@@ -3576,8 +3595,10 @@ def test_pha_quality_filtered_apply_filter_invalid_size(vals, make_grouped_pha):
     pha.ignore(hi=1)
 
     # safety check to make sure we've excluded points
-    assert pha.mask == pytest.approx([False, True])
-    assert pha.get_mask() == pytest.approx([False, False, False, True])
+    m1 = np.asarray([False, True])
+    m2 = np.asarray([False, False, False, True])
+    assert pha.mask == pytest.approx(m1)
+    assert pha.get_mask() == pytest.approx(m2)
 
     with pytest.raises(DataErr,
                        match="^size mismatch between filtered data and array: 1 vs [28]$"):
@@ -4193,7 +4214,7 @@ def test_rmf_simple_filter_check(startchan, na, nb, nc):
     assert rmf.apply_rmf(mvals) == pytest.approx(mvals)
 
     selected = rmf.notice([startchan, startchan + 1, startchan + 2])
-    expected = [False] * na + [True] * nb + [False] * nc
+    expected = np.asarray([False] * na + [True] * nb + [False] * nc)
     assert selected == pytest.approx(expected)
 
     # Drop everything but the selected values.
@@ -4295,7 +4316,7 @@ def test_rmf_offset_check_square(offset, caplog):
     nchans = [offset + 2]
 
     selected = rmf.notice(nchans)
-    assert selected == pytest.approx([False, True, True, True])
+    assert selected == pytest.approx(np.asarray([False, True, True, True]))
 
     expected2 = [0.0 * 0.2 + 0.6 * 0.4,
                  0.4 * 0.4 + 0.5 * 0.2,
@@ -4387,11 +4408,13 @@ def test_rmf_offset_check_rectangular(offset):
     # - drop the last channel
     nchans2 = offset + np.arange(0, 9)
 
+    mask = np.asarray([True] * 19 + [False])
+
     selected2 = rmf.notice(nchans2)
-    assert selected2 == pytest.approx([True] * 19 + [False])
+    assert selected2 == pytest.approx(mask)
 
     selected2 = rmf.notice(offset + np.arange(0, 9))
-    assert selected2 == pytest.approx([True] * 19 + [False])
+    assert selected2 == pytest.approx(mask)
 
     expected2 = mvals[selected2] @ full_matrix[selected2, :]
     got2 = rmf.apply_rmf(mvals[selected2])
@@ -4414,8 +4437,11 @@ def test_rmf_offset_check_rectangular(offset):
     #
     nchans3 = offset + np.asarray([4, 5, 6])
 
+    mask3 = np.asarray([True, False] * 2 + [True] * 10 +
+                       [False] * 4 + [True, False])
+
     selected3 = rmf.notice(nchans3)
-    assert selected3 == pytest.approx([True, False] * 2 + [True] * 10 + [False] * 4 + [True, False])
+    assert selected3 == pytest.approx(mask3)
 
     # It is not clear what the RMF application does here.
     #
@@ -5970,7 +5996,7 @@ def test_group_xxx_tabtops_not_ndarray(asarray):
 
     assert pha.get_y() == pytest.approx([2, 3, 4.5, 6])
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 5)
+    assert pha.get_mask() == pytest.approx(np.ones(5, dtype=bool))
 
 
 @requires_group
@@ -6002,7 +6028,8 @@ def test_group_xxx_tabstops_already_grouped():
     assert pha.get_y(filter=True) == pytest.approx([12, 5.5, 4])
 
     tstops = ~pha.mask
-    assert tstops == pytest.approx([False, True, False, False, True])
+    mask = np.asarray([False, True, False, False, True])
+    assert tstops == pytest.approx(mask)
 
     # Apply the mask as the tabStops (after inversion) where
     # len(tstops) < nchannel but does match the number of groups.

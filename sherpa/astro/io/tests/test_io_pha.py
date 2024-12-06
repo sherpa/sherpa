@@ -1504,7 +1504,7 @@ def test_write_pha_with_bad_quality(tmp_path):
     counts = chans * 2
     group = [1, -1, -1, 1, -1, 1, 1, 1, -1]
     quality = [0, 5, 0, 0, 0, 0, 0, 2, 2]
-    qfilt = [True, False] + [True] * 5 + [False] * 2
+    qfilt = np.asarray([True, False] + [True] * 5 + [False] * 2)
 
     pha0 = DataPHA("qual", chans, counts, grouping=group,
                    quality=quality)

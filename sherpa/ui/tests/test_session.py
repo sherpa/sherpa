@@ -1408,7 +1408,8 @@ def test_load_filter_simple(idval, tmp_path):
     else:
         s.load_filter(idval, str(infile), ncols=1, ignore=True)
 
-    assert s.get_data().mask == pytest.approx([True, True, False])
+    expected = np.asarray([True, True, False])
+    assert s.get_data().mask == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("idval", [None, 1])

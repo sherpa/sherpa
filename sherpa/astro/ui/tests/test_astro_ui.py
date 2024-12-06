@@ -1962,7 +1962,8 @@ def check_pha_offset(specresp, matrix, energ_lo, energ_hi,
     ui.notice(0.5, 0.8)
 
     data = ui.get_data()
-    assert data.mask == pytest.approx([False] * 3 + [True] * 3 + [False] * 3)
+    expected = np.asarray([False] * 3 + [True] * 3 + [False] * 3)
+    assert data.mask == pytest.approx(expected)
 
     assert ui.get_filter(format="%.2f", delim="-") == "0.45-0.85"
 

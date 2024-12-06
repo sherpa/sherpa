@@ -2957,7 +2957,7 @@ def test_pha_set_filter_unmasked(simple_pha):
     expected = [True, True, False, True, False]
     ui.set_filter(expected)
 
-    assert data.mask == pytest.approx(expected)
+    assert data.mask == pytest.approx(np.asarray(expected))
 
 
 def test_pha_set_filter_unmasked_wrong(simple_pha):
@@ -2973,11 +2973,14 @@ def test_pha_set_filter_masked(simple_pha):
 
     data = ui.get_data()
 
+    mask = np.asarray([True, False, False, False, True])
+    mask2 = np.asarray([True, False, True, False, True])
+
     ui.ignore(4, 8)
-    assert data.mask == pytest.approx([True, False, False, False, True])
+    assert data.mask == pytest.approx(mask)
 
     ui.set_filter(np.asarray([True, False, True, False, False]))
-    assert data.mask == pytest.approx([True, False, True, False, True])
+    assert data.mask == pytest.approx(mask2)
 
 
 def test_pha_set_filter_masked_wrong(simple_pha):

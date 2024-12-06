@@ -227,8 +227,8 @@ def test_sourceplot_filtered(caplog, make_basic_datapha):
     # The filtering should probably be this, but let's test the
     # current behavior:
     #
-    # expected = [False] * 2 + [True] * 6 + [False] * 2
-    expected = [False] * 3 + [True] * 5 + [False] * 2
+    # expected = np.asarray([False] * 2 + [True] * 6 + [False] * 2)
+    expected = np.asarray([False] * 3 + [True] * 5 + [False] * 2)
     assert sp.mask == pytest.approx(expected)
     assert len(caplog.records) == 0
     check_sourceplot_energy(sp)
@@ -365,7 +365,7 @@ def test_sourceplot_wavelength_filtered(caplog, make_basic_datapha):
     # Given the filtering for energy didn't quite match, DJB is
     # slightly surprised this works.
     #
-    expected = [False] * 2 + [True] * 6 + [False] * 2
+    expected = np.asarray([False] * 2 + [True] * 6 + [False] * 2)
     assert sp.mask == pytest.approx(expected)
     assert len(caplog.records) == 0
     check_sourceplot_wavelength(sp)
