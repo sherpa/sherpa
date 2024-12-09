@@ -37,12 +37,7 @@ fi
 # the XSPEC-related channels are only added if needed
 #
 if [ -n "${XSPECVER}" ]; then
-  if [[ "`uname -s`" == "Darwin" && "`uname -m`" != "x86_64" ]] ; then
-    # we need to use the CXC conda channel to get the ARM XSPEC build for now
-    conda config --add channels https://cxc.harvard.edu/conda/ciao
-  else
-    conda config --add channels ${xspec_channel}
-  fi
+  conda config --add channels ${xspec_channel}
 fi
 
 # Figure out requested dependencies
