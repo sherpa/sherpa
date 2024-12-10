@@ -1,6 +1,6 @@
 #
-#  Copyright (C) 2022
-#      MIT
+#  Copyright (C) 2022, 2024
+#  MIT
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -17,6 +17,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
+
+import sys
+
 from sherpa.plot.backend_utils import (translate_args,
                                        add_kwargs_to_doc,
                                        get_keyword_defaults)
@@ -99,8 +102,31 @@ class A():
 
 def test_modify_doctring():
     '''Check that kwarg descriptions are properly inserted into the docstring.'''
-    a = A()
-    expected = '''Method that does nothing
+
+    # Python 3.13 has changed how strings are indented.
+    #
+    if sys.version_info >= (3, 13, 0):
+        expected = '''Method that does nothing
+
+more text here
+
+Parameters
+----------
+a : int
+    Our stuff
+title : string, default=None
+    Title of figure (only use if `overplot=False`)
+color : string or number, default=None
+    any matplotlib color with a really long text attached to it that will not fit in the one line of text in the docstring
+kwargs : dict, optional
+    All other keyword parameters are passed to the plotting library.
+
+Returns
+-------
+something
+'''
+    else:
+        expected = '''Method that does nothing
 
         more text here
 
@@ -119,5 +145,7 @@ def test_modify_doctring():
         -------
         something
         '''
+
+    a = A()
     assert a.func.__doc__ == expected
  

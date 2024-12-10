@@ -1405,10 +1405,23 @@ def test_show_fit(session):
     assert toks[11] == "Statistic: LeastSq"
     assert toks[12] == "Least Squared Statistic."
     assert toks[13] == ""
-    assert toks[14] == "    The least-square statistic is equivalent to a chi-square"
-    assert toks[15] == "    statistic where the error on each point - sigma(i) - is 1."
+
+    # Python 3.13 has changed the way that leading spaces are handled in docstrings
+    msg1 = "The least-square statistic is equivalent to a chi-square"
+    msg2 = "statistic where the error on each point - sigma(i) - is 1."
+    if sys.version_info >= (3, 13, 0):
+        assert toks[14] == msg1
+        assert toks[15] == msg2
+    else:
+        assert toks[14] == f"    {msg1}"
+        assert toks[15] == f"    {msg2}"
+
     assert toks[16] == ""
-    assert toks[17] == "    "
+    if sys.version_info >= (3, 13, 0):
+        assert toks[17] == ""
+    else:
+        assert toks[17] == "    "
+
     assert toks[18] == ""
     assert toks[19] == "Fit:Dataset               = 2"
     assert toks[20] == "Method                = neldermead"
