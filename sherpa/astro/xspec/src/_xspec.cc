@@ -40,6 +40,29 @@
 #include <XSFunctions/funcWrappers.h>
 #include <XSFunctions/functionMap.h>
 
+
+// A simple range iterator. This could be made a template (e.g.  for
+// the type) or allow the start of the range to be changed, but we do
+// not need this complexity.
+//
+class irange
+{
+private:
+  size_t lastval;
+  size_t current = 0;
+
+public:
+  irange(size_t end): lastval(end) {}
+
+  bool operator!=(const irange&) const { return current < lastval; }
+  void operator++() { ++current; }
+  size_t operator*() const { return current; }
+
+  const irange& begin() const { return *this; }
+  const irange& end() const { return *this; }
+};
+
+
 // The XSPEC initialization used to be done lazily - that is, only
 // when the first routine from XSPEC was about to be called - but
 // the module is now set up so that we need to know the version
@@ -117,44 +140,71 @@ static PyObject* get_chatter( PyObject *self )
 }
 
 
-// TODO: we could send in an integer for the Z number (ie either name or number)
-static PyObject* get_abund( PyObject *self, PyObject *args )
+static PyObject* get_abund_name( PyObject *self, PyObject *args )
 {
-
   char* element = NULL;
-  if ( !PyArg_ParseTuple( args, (char*)"|s", &element ) )
+  char *name = NULL;
+  if ( !PyArg_ParseTuple( args, (char*)"s|z", &element, &name ) )
     return NULL;
 
-  // Not asked for an element so return the table name
-  if ( !element ) {
-    return (PyObject*) Py_BuildValue( (char*)"s", FunctionUtility::ABUND().c_str() );
+  // We have to find the element with the given name.
+  //
+  const size_t nelem = FunctionUtility::NELEMS();
+  for (const auto idx: irange(nelem)) {
+    if (FunctionUtility::elements(idx) != element) {
+      continue;
+    }
+
+    const size_t z = idx + 1;
+
+    float abundVal;
+    if (name == NULL) {
+      abundVal = FunctionUtility::getAbundance(z);
+    } else {
+      try {
+	abundVal = FunctionUtility::getAbundance(string(name), z);
+      } catch (FunctionUtility::NoInitializer&) {
+	// Fortunately this error does not lead to stderr output
+	return PyErr_Format( PyExc_ValueError,
+			     "Unknown abundance table '%s'", name );
+      }
+    }
+
+    return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
   }
 
-  // Get the specific abundance. Unfortunately getAbundance reports an
-  // error to stderr when an invalid element is used, so we need to
-  // hide this.
-  //
-  std::ostream* errStream = IosHolder::errHolder();
-  std::ostringstream tmpStream;
-  IosHolder::setStreams(IosHolder::inHolder(),
-			IosHolder::outHolder(),
-			&tmpStream);
+  return PyErr_Format( PyExc_ValueError,
+		       (char*)"could not find element '%s'", element);
+}
 
-  float abundVal = FunctionUtility::getAbundance(string(element));
 
-  IosHolder::setStreams(IosHolder::inHolder(),
-			IosHolder::outHolder(),
-			errStream);
+static PyObject* get_abund_z( PyObject *self, PyObject *args )
+{
+  char *name = NULL;
+  int zarg = 0;
+  if ( !PyArg_ParseTuple( args, (char*)"i|z", &zarg, &name ) )
+    return NULL;
 
-  // Was there an error?
-  //
-  if( tmpStream.str().size() > 0 ) {
-    return PyErr_Format( PyExc_TypeError, // TODO: change from TypeError to ValueError?
-			 (char*)"could not find element '%s'", element);
+  size_t z = static_cast<size_t>(zarg);
+  if (z < 1 || z > FunctionUtility::NELEMS()) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"Unsupported atomic number: %d", zarg );
+  }
+
+  float abundVal;
+  if (name == NULL) {
+    abundVal = FunctionUtility::getAbundance(z);
+  } else {
+    try {
+      abundVal = FunctionUtility::getAbundance(string(name), z);
+    } catch (FunctionUtility::NoInitializer&) {
+      // Fortunately this error does not lead to stderr output
+      return PyErr_Format( PyExc_ValueError,
+			   "Unknown abundance table '%s'", name );
+    }
   }
 
   return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
-
 }
 
 
@@ -169,8 +219,8 @@ static PyObject* get_abund_doc( PyObject *self, PyObject *args )
     return NULL;
 
   std::string doc = FunctionUtility::abundDoc(std::string(name));
-
   return Py_BuildValue( (char*)"s", doc.c_str() );
+
 }
 
 
@@ -199,10 +249,32 @@ static PyObject* set_chatter( PyObject *self, PyObject *args )
 
 }
 
+// Ideally XSPEC would check this, but it doesn't appear to. This has
+// been added to make sure that get_xsabund(<element>) will not fail,
+// although we also have code there to catch that eventuality.
+//
+static bool abundances_can_be_set_to_file = false;
+
+
+// This is used in two places, so it has been moved into a
+// separate routine. The code assumes that vals is the
+// correct size by the time we get here.
+//
+static void set_abundances_from_vector(const std::vector<float> vals) {
+  FunctionUtility::abundanceVectors("file", vals);
+  FunctionUtility::ABUND("file");
+
+  // Now we have loaded data we can let the user use the "file" label.
+  // This label handles both "read-from-a-file" and "sent in an array"
+  // cases.
+  //
+  if (!abundances_can_be_set_to_file) {
+    abundances_can_be_set_to_file = true;
+  }
+}
+
 
 // Based on xsFortran::FPSOLR
-//
-// TODO: add a version where we can send in an array of numbers
 //
 static PyObject* set_abund( PyObject *self, PyObject *args )
 {
@@ -214,7 +286,16 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
   string tableName = string(table);
   tableName = XSutility::lowerCase(tableName);
 
+  // Make sure we can't select the file option if we have not loaded
+  // any data.
+  //
   if (tableName == "file") {
+    if (!abundances_can_be_set_to_file) {
+      PyErr_SetString( PyExc_ValueError,
+		       (char*)"Abundances have not been read in from a file/vector" );
+      return NULL;
+    }
+
     FunctionUtility::ABUND(tableName);
     Py_RETURN_NONE;
   }
@@ -224,7 +305,9 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     Py_RETURN_NONE;
   }
 
-  // If we've got here then try to read the data from a file
+  // If we've got here then try to read the data from a file. This follows
+  // the XSPEC code - it is very-similar to FunctionUtility::readNewAbundances
+  // but is this supported in 12.12.0 (it is in 12.12.1)?
   //
   const size_t nelems = FunctionUtility::NELEMS();
   std::vector<float> vals(nelems, 0);
@@ -256,11 +339,41 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     }
   }
 
-  FunctionUtility::ABUND("file");
-  FunctionUtility::abundanceVectors("file", vals);
-
+  set_abundances_from_vector(vals);
   Py_RETURN_NONE;
+}
 
+
+// Handle a vector of abundances. It must be the right size.
+// To match set_abund when given a file name we set the
+// abundances to "file". This means that a user can not
+// load up a set of abundances and *NOT* use them; they
+// would have to reset the abundance table after loading.
+//
+static PyObject* set_abund_vector( PyObject *self, PyObject *args )
+{
+  sherpa::astro::xspec::FloatArray vector;
+  if ( !PyArg_ParseTuple( args, (char*)"O&",
+			  (converter)sherpa::convert_to_contig_array< sherpa::astro::xspec::FloatArray >,
+			  &vector ) )
+    return NULL;
+
+  size_t nelem = FunctionUtility::NELEMS();
+  size_t nvector = static_cast<size_t>(vector.get_size());
+
+  if ( nvector != nelem ) {
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"Array must contain %d elements, not %d",
+			 nelem, nvector );
+  }
+
+  std::vector<float> vals(nelem);
+  for (const auto idx: irange(nelem)) {
+    vals[idx] = vector[idx];
+  }
+
+  set_abundances_from_vector(vals);
+  Py_RETURN_NONE;
 }
 
 
@@ -319,8 +432,12 @@ static PyObject* set_cross( PyObject *self, PyObject *args )
 }
 
 
-// TODO: We could have a seperate "reset" command
-//
+static PyObject* clear_xset( PyObject *self )
+{
+  FunctionUtility::eraseModelStringDataBase();
+  Py_RETURN_NONE;
+}
+
 static PyObject* set_xset( PyObject *self, PyObject *args )
 {
 
@@ -330,6 +447,9 @@ static PyObject* set_xset( PyObject *self, PyObject *args )
   if ( !PyArg_ParseTuple( args, (char*)"ss", &str_name, &str_value ) )
     return NULL;
 
+  // Support the initalize option to follow XSPEC, but it is expected
+  // that users will use the clear_xset routine directly.
+  //
   string name = XSutility::upperCase(string(str_name));
   if (name == "INITIALIZE") {
     FunctionUtility::eraseModelStringDataBase();
@@ -345,34 +465,206 @@ static PyObject* get_xset( PyObject *self, PyObject *args  )
 
   char* str_name = NULL;
 
-  if ( !PyArg_ParseTuple( args, (char*)"s", &str_name ) )
+  if ( !PyArg_ParseTuple( args, (char*)"|s", &str_name ) )
     return NULL;
 
+  // If no argument is given then we return a dictonary
+  // of all items.
+  //
+  if ( str_name == NULL ) {
+
+    PyObject *d = PyDict_New();
+    for (const auto& item : FunctionUtility::modelStringDataBase()) {
+      PyObject *value = PyUnicode_FromString(item.second.c_str());
+      PyDict_SetItemString(d, item.first.c_str(), value);
+      Py_DECREF(value);
+    }
+
+    return d;
+  }
+
+  // Treat an unknown key as an error.
+  //
   static string value;
   value = FunctionUtility::getModelString(string(str_name));
   if (value == FunctionUtility::NOT_A_KEY()) {
-    value.erase();
+    PyErr_SetString( PyExc_KeyError, str_name );
+    return NULL;
   }
 
   return Py_BuildValue( (char*)"s", value.c_str() );
 
 }
 
+
+static PyObject *emptyDict() { return PyDict_New(); }
+
+// This is not a generic routine (i.e. it's only for the Python type
+// dict[str, float]). Note that Real is a typedef for double, which is
+// why it can be used for both getAllXFLT and getAllDbValues.
+//
+static PyObject *mapToDict(const std::map<string, double> &map) {
+  PyObject *d = PyDict_New();
+
+  for (const auto& item : map) {
+    PyObject *value = PyFloat_FromDouble(item.second);
+    PyDict_SetItemString(d, item.first.c_str(), value);
+    Py_DECREF(value);
+  }
+
+  return d;
+}
+
+
+// XFLT functions
+//
+//      static int getNumberXFLT(int ifl);
+//      // This will throw a silent YellowAlert if map corresponding to ifl doesn't exist.
+//      static const std::map<string, Real>& getAllXFLT(int ifl);
+//      static bool inXFLT(int ifl, int i);
+//      static bool inXFLT(int ifl, string skey);
+//      static double getXFLT(int ifl, int i);
+//      static double getXFLT(int ifl, string skey);
+//      static void loadXFLT(int ifl, const std::map<string, Real>& values);
+//      static void clearXFLT();
+//
+// We use a dictionary interface - that is we set and get dictionaries
+// rather than have commands work on individual keys. That is,
+// checks like inXFLT have to be done by the user on the data returned
+// by these routines.
+//
+static PyObject* clearXFLT( PyObject *self )
+{
+  FunctionUtility::clearXFLT();
+  Py_RETURN_NONE;
+}
+
+static PyObject* getAllXFLT( PyObject *self, PyObject *args )
+{
+  int spectrumNumber = 1;
+
+  if ( !PyArg_ParseTuple( args, (char*)"i", &spectrumNumber ) )
+    return NULL;
+
+  // Check that we have data, to avoid a YellowAlert when calling
+  // getAllXFLT.
+  //
+  if (FunctionUtility::getNumberXFLT(spectrumNumber) > 0) {
+    const std::map<string, Real> xflt = FunctionUtility::getAllXFLT(spectrumNumber);
+    return mapToDict(xflt);
+  } else {
+    return emptyDict();
+  }
+}
+
+static PyObject* loadXFLT( PyObject *self, PyObject *args )
+{
+  PyObject *xflt_dict = NULL;
+  int spectrumNumber = 1;
+
+  if ( !PyArg_ParseTuple( args, (char*)"iO!",
+			  &spectrumNumber,
+			  &PyDict_Type, &xflt_dict
+			  ) )
+    return NULL;
+
+  std::map<string, Real> xflt;
+
+  PyObject *key, *value;
+  Py_ssize_t pos = 0;
+
+  while (PyDict_Next(xflt_dict, &pos, &key, &value)) {
+
+    const char *k = PyUnicode_AsUTF8(key);
+    if (k == NULL) {
+	PyErr_SetString( PyExc_ValueError,
+			 (char*)"keys must be strings" );
+	return NULL;
+    }
+
+    double v = PyFloat_AsDouble(value);
+    if (v == -1 && PyErr_Occurred()) {
+	PyErr_SetString( PyExc_ValueError,
+			 (char*)"values must be numbers" );
+	return NULL;
+    }
+
+    xflt[k] = v;
+  }
+
+  // We do not check if xflt is empty.
+  FunctionUtility::loadXFLT(spectrumNumber, xflt);
+  Py_RETURN_NONE;
+}
+
+
+// This is easy to provide access to, but is it worth it?
+//
+//   static double getDbValue(const string keyword);
+//   static void loadDbValue(const string keyword, const double value);
+//   static void clearDb();
+//   static string getDbKeywords();
+//   static const std::map<string,double>& getAllDbValues();
+//
+// Follow the XFLT approach and just provide an access via
+// dictionaries, although in  this case we do support a way
+// to set a single value.
+//
+static PyObject* clearDb( PyObject *self )
+{
+  FunctionUtility::clearDb();
+  Py_RETURN_NONE;
+}
+
+static PyObject* getAllDb( PyObject *self )
+{
+  const std::map<string, double> db = FunctionUtility::getAllDbValues();
+  return mapToDict(db);
+}
+
+static PyObject* loadDbValue( PyObject *self, PyObject *args )
+{
+  char* key = NULL;
+  double value = 0;
+
+  if ( !PyArg_ParseTuple( args, (char*)"sd", &key, &value ) )
+    return NULL;
+
+  FunctionUtility::loadDbValue(string(key), value);
+  Py_RETURN_NONE;
+}
+
+
+// Provide access to the element table. This returns
+// a dictionary where the key is the name and the value
+// the atomic number (so 'He' maps to 2).
+//
+static PyObject* get_elements( PyObject *self ) {
+  PyObject *d = PyDict_New();
+
+  for (const auto i: irange(FunctionUtility::NELEMS())) {
+    PyObject *value = PyLong_FromSize_t(i + 1);
+    PyDict_SetItemString(d, FunctionUtility::elements(i).c_str(), value);
+    Py_DECREF(value);
+  }
+
+  return d;
+}
+
+
 template <const std::string& get()>
 static PyObject* get_xspec_string( PyObject *self ) {
   return Py_BuildValue( (char*)"s", get().c_str() );
 }
 
-static PyObject* set_manager_data_path( PyObject *self, PyObject *args )
-{
-
+template <void set(const std::string& value)>
+static PyObject* set_xspec_string( PyObject *self, PyObject *args ) {
   char* path = NULL;
   if ( !PyArg_ParseTuple( args, (char*)"s", &path ) )
     return NULL;
 
-  FunctionUtility::managerPath(string(path));
+  set(string(path));
   Py_RETURN_NONE;
-
 }
 
 #define NOARGSPEC(name, func) \
@@ -385,19 +677,63 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(get_xsversion, get_xspec_string<XSutility::xs_version>),
   NOARGSPEC(get_xschatter, get_chatter),
   FCTSPEC(set_xschatter, set_chatter),
-  FCTSPEC(get_xsabund, get_abund),
+
+  NOARGSPEC(get_xsabund_table, get_xspec_string<FunctionUtility::ABUND>),
+  FCTSPEC(get_xsabund_name, get_abund_name),
+  FCTSPEC(get_xsabund_z, get_abund_z),
   FCTSPEC(get_xsabund_doc, get_abund_doc),
   FCTSPEC(set_xsabund, set_abund),
-  FCTSPEC(set_xscosmo, set_cosmo),
-  NOARGSPEC(get_xscosmo, get_cosmo),
-  NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),
+  FCTSPEC(set_xsabund_vector, set_abund_vector),
 
+  NOARGSPEC(get_xscosmo, get_cosmo),
+  FCTSPEC(set_xscosmo, set_cosmo),
+
+  NOARGSPEC(get_xsxsect, get_xspec_string<FunctionUtility::XSECT>),
   FCTSPEC(set_xsxsect, set_cross),
+
+  NOARGSPEC(clear_xsxset, clear_xset),
   FCTSPEC(set_xsxset, set_xset),
   FCTSPEC(get_xsxset, get_xset),
+
+  // The set commands are not wrapped yet as it's not clear how well
+  // the system handles these changes (e.g. it doesn't seem to update
+  // the stored abundances if you change one or both of the abundance
+  // settings). The cross-section file should also be accessible in a
+  // similar manner, but the XSPEC API does not provide access to this
+  // (at least for XSPEC 12.12.1).
+  //
+  // Also, abundPath is essentially managerPath, but we provide access
+  // to it as it could be changed (but not by any routine we currently
+  // provide access to).
+  //
+  NOARGSPEC(get_abundance_file, get_xspec_string<FunctionUtility::abundanceFile>),
+  NOARGSPEC(get_xspath_abundance, get_xspec_string<FunctionUtility::abundPath>),
+  // FCTSPEC(set_abundance_file, set_xspec_string<FunctionUtility::abundanceFile>),
+  // FCTSPEC(set_xspath_abundance, set_xspec_string<FunctionUtility::abundPath>),
+
+  // XFLT commands
+  NOARGSPEC(clear_xflt, clearXFLT),
+  FCTSPEC(get_xflt, getAllXFLT),
+  FCTSPEC(set_xflt, loadXFLT),
+
+  // DB commands
+  NOARGSPEC(clear_db, clearDb),
+  NOARGSPEC(get_db, getAllDb),
+  FCTSPEC(set_db, loadDbValue),
+
+  NOARGSPEC(get_xsversion_atomdb, get_xspec_string<FunctionUtility::atomdbVersion>),
+  NOARGSPEC(get_xsversion_nei, get_xspec_string<FunctionUtility::neiVersion>),
+  FCTSPEC(set_xsversion_atomdb, set_xspec_string<FunctionUtility::atomdbVersion>),
+  FCTSPEC(set_xsversion_nei, set_xspec_string<FunctionUtility::neiVersion>),
+
+  // element access
+  //
+  NOARGSPEC(get_xselements, get_elements),
+
   NOARGSPEC(get_xspath_manager, get_xspec_string<FunctionUtility::managerPath>),
   NOARGSPEC(get_xspath_model, get_xspec_string<FunctionUtility::modelDataPath>),
-  FCTSPEC(set_xspath_manager, set_manager_data_path),
+  FCTSPEC(set_xspath_manager, set_xspec_string<FunctionUtility::managerPath>),
+  FCTSPEC(set_xspath_model, set_xspec_string<FunctionUtility::modelDataPath>),
 
   // Start model definitions
 
