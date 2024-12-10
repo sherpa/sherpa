@@ -709,7 +709,7 @@ def test_ignore_bad_simple_comparison(caplog):
 
         d = s.get_data(idval)
         assert d.mask is True
-        assert d.get_mask() == pytest.approx([True] * 5)
+        assert d.get_mask() == pytest.approx(np.ones(5, dtype=bool))
 
     assert len(caplog.records) == 2
     s.ignore_bad(1)
@@ -733,7 +733,7 @@ def test_ignore_bad_simple_comparison(caplog):
     assert s.get_filter(1) == "1,3:5"
     assert s.get_filter(2) == "1:5"
 
-    mask = [True] + [False] + [True] * 3
+    mask = np.asarray([True] + [False] + [True] * 3)
     d1 = s.get_data(1)
     assert d1.mask == pytest.approx(mask)
     assert d1.get_mask() == pytest.approx(mask)
@@ -762,12 +762,12 @@ def test_ignore_bad_simple_comparison(caplog):
     assert s.get_filter(1) == "1,3"
     assert s.get_filter(2) == "1:3"
 
-    mask = [True] + [False] + [True] + [False] * 2
+    mask = np.asarray([True] + [False] + [True] + [False] * 2)
     d1 = s.get_data(1)
     assert d1.mask == pytest.approx(mask)
     assert d1.get_mask() == pytest.approx(mask)
 
-    mask = [True] * 2 + [False] * 2
+    mask = np.asarray([True] * 2 + [False] * 2)
     d2 = s.get_data(2)
     assert d2.mask == pytest.approx(mask)
     assert d2.get_mask() == pytest.approx(mask)

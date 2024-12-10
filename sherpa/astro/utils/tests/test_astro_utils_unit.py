@@ -194,7 +194,7 @@ def test_filter_resp_basics(offset, selected, ng, fch, nch, mat, msk):
     assert f_chan2 == pytest.approx(np.asarray(fch) + delta)
     assert n_chan2 == pytest.approx(nch)
     assert matrix2 == pytest.approx(mat)
-    assert mask2 == pytest.approx(msk)
+    assert mask2 == pytest.approx(np.asarray(msk))
 
 
 @pytest.mark.parametrize("lo, hi, expected",
@@ -414,7 +414,8 @@ def test_qual_setting():
     """Regression test."""
 
     pha = make_data("qual")
-    assert pha.quality_filter == pytest.approx([True, True, False, True])
+    expected = np.asarray([True, True, False, True])
+    assert pha.quality_filter == pytest.approx(expected)
 
 
 @pytest.mark.parametrize("data_class", ["1d", "1dint", "pha", "grp", "qual"])
@@ -869,4 +870,5 @@ def test_expand_grouped_mask_ingalid_group():
 def test_expand_grouped_mask(mask, group, expected):
     """Check how test_expand_grouped_mask works."""
 
-    assert expand_grouped_mask(mask, group) == pytest.approx(expected)
+    evals = np.asarray(expected)
+    assert expand_grouped_mask(mask, group) == pytest.approx(evals)

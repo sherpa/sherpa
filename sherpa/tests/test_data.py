@@ -1321,7 +1321,7 @@ def test_data_filter_invalid_size_scalar():
     x = numpy.asarray([1, 2, 5])
     d = Data1D('x', x, x)
     d.ignore(None, 2)
-    assert d.mask == pytest.approx([False, False, True])
+    assert d.mask == pytest.approx(numpy.asarray([False, False, True]))
 
     with pytest.raises(DataErr,
                        match="Array must be a sequence or None"):
@@ -1567,7 +1567,7 @@ def test_data1dint_check_limit(ignore, lo, hi, evals):
 
     c1, c2, c3 = evals
     expected = [vout] * c1 + [vin] * c2 + [vout] * c3
-    assert d.mask == pytest.approx(expected)
+    assert d.mask == pytest.approx(numpy.asarray(expected))
 
 
 def test_filter_apply_none():
@@ -1993,7 +1993,7 @@ def test_mask_sent_array_non_bool():
     expected = [True, False, True, False, True, True, False, True, False, True]
 
     data.mask = mask
-    assert data.mask == pytest.approx(expected)
+    assert data.mask == pytest.approx(numpy.asarray(expected))
 
 
 @pytest.mark.parametrize("data", ALL_DATA_CLASSES, indirect=True)

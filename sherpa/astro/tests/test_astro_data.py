@@ -2367,7 +2367,7 @@ def test_pha_check_limit(ignore, lo, hi, evals):
     pha.units = 'energy'
 
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 10)
+    assert pha.get_mask() == pytest.approx(np.ones(10, dtype=bool))
 
     func = pha.ignore if ignore else pha.notice
     func(lo, hi)
@@ -2380,7 +2380,7 @@ def test_pha_check_limit(ignore, lo, hi, evals):
         vin = True
 
     c1, c2, c3 = evals
-    expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+    expected = np.asarray([vout] * c1 + [vin] * c2 + [vout] * c3)
     assert pha.mask == pytest.approx(pha.get_mask())
     assert pha.mask == pytest.approx(expected)
 
@@ -2449,7 +2449,7 @@ def test_pha_check_limit_channel(ignore, lo, hi, evals):
     pha.units = 'channel'
 
     assert pha.mask is True
-    assert pha.get_mask() == pytest.approx([True] * 10)
+    assert pha.get_mask() == pytest.approx(np.ones(10, dtype=bool))
 
     func = pha.ignore if ignore else pha.notice
     func(lo, hi)
@@ -2462,7 +2462,7 @@ def test_pha_check_limit_channel(ignore, lo, hi, evals):
         vin = True
 
     c1, c2, c3 = evals
-    expected = [vout] * c1 + [vin] * c2 + [vout] * c3
+    expected = np.asarray([vout] * c1 + [vin] * c2 + [vout] * c3)
     assert pha.mask == pytest.approx(pha.get_mask())
     assert pha.mask == pytest.approx(expected)
 
@@ -2672,7 +2672,9 @@ def test_is_mask_reset_pha(caplog):
     # Pick a value somewhere within the independent axis
     assert data.mask is True
     data.ignore(None, 2)
-    assert data.mask == pytest.approx([False, False, True])
+
+    mask = np.asarray([False, False, True])
+    assert data.mask == pytest.approx(mask)
 
     # Change the independent axis, but to something of the same
     # length.
@@ -2683,7 +2685,7 @@ def test_is_mask_reset_pha(caplog):
     assert len(caplog.records) == 0
 
     # The mask has *not* been cleared
-    assert data.mask == pytest.approx([False, False, True])
+    assert data.mask == pytest.approx(mask)
 
 
 def test_is_mask_reset_pha_channel(caplog):
@@ -2703,7 +2705,8 @@ def test_is_mask_reset_pha_channel(caplog):
     assert len(caplog.records) == 0
 
     # The mask has not been cleared
-    assert data.mask == pytest.approx([False, False, True])
+    mask = np.asarray([False, False, True])
+    assert data.mask == pytest.approx(mask)
 
 
 @requires_region
@@ -3376,9 +3379,11 @@ def test_pha_notice_bkg_id_none():
 
     pha.notice(lo=2, bkg_id=None)  # the default
 
-    assert pha.mask == pytest.approx([False, True])
-    assert b1.mask == pytest.approx([False, True])
-    assert bup.mask == pytest.approx([False, True])
+    bfilt = np.asarray([False, True])
+
+    assert pha.mask == pytest.approx(bfilt)
+    assert b1.mask == pytest.approx(bfilt)
+    assert bup.mask == pytest.approx(bfilt)
 
 
 @pytest.mark.parametrize("bkg_id", [1, "up"])
@@ -3394,13 +3399,15 @@ def test_pha_notice_bkg_id_scalar(bkg_id):
 
     pha.notice(lo=2, bkg_id=bkg_id)
 
+    bfilt = np.asarray([False, True])
+
     assert pha.mask is True
     if bkg_id == 1:
-        assert b1.mask == pytest.approx([False, True])
+        assert b1.mask == pytest.approx(bfilt)
         assert bup.mask is True
     else:
         assert b1.mask is True
-        assert bup.mask == pytest.approx([False, True])
+        assert bup.mask == pytest.approx(bfilt)
 
 
 def test_pha_notice_bkg_id_array_all():
@@ -3415,9 +3422,11 @@ def test_pha_notice_bkg_id_array_all():
 
     pha.notice(lo=2, bkg_id=["up", 1])
 
+    bfilt = np.asarray([False, True])
+
     assert pha.mask is True
-    assert b1.mask == pytest.approx([False, True])
-    assert bup.mask == pytest.approx([False, True])
+    assert b1.mask == pytest.approx(bfilt)
+    assert bup.mask == pytest.approx(bfilt)
 
 
 @pytest.mark.parametrize("bkg_id", [1, "up"])
@@ -3433,13 +3442,15 @@ def test_pha_notice_bkg_id_array_subset(bkg_id):
 
     pha.notice(lo=2, bkg_id=[bkg_id])
 
+    bfilt = np.asarray([False, True])
+
     assert pha.mask is True
     if bkg_id == 1:
-        assert b1.mask == pytest.approx([False, True])
+        assert b1.mask == pytest.approx(bfilt)
         assert bup.mask is True
     else:
         assert b1.mask is True
-        assert bup.mask == pytest.approx([False, True])
+        assert bup.mask == pytest.approx(bfilt)
 
 
 def get_img_spatial_mask():
