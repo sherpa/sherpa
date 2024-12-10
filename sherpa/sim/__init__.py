@@ -218,8 +218,6 @@ from sherpa.utils import random
 
 info = logging.getLogger("sherpa").info
 
-_tol = np.finfo(float).eps
-
 string_types = (str, )
 
 
@@ -721,10 +719,12 @@ class MCMC(NoNewAttributesAfterInit):
 
         def calc_stat(proposed_params):
 
-            # automatic rejection outside hard limits
-            mins = sao_fcmp(proposed_params, thawedparmins, _tol)
-            maxes = sao_fcmp(thawedparmaxes, proposed_params, _tol)
-            if -1 in mins or -1 in maxes:
+            # This used to use sao_fcmp to compare these limits with
+            # a tolerance of np.finfo(float).eps, but it has since
+            # been changed to the easier check thanks to a request
+            # from the Chandra Source Catalog team.
+            if np.any(proposed_params < thawedparmins) or \
+               np.any(proposed_params > thawedparmaxes):
                 raise LimitError('Sherpa parameter hard limit exception')
 
             with SherpaVerbosity(logging.CRITICAL):
