@@ -1,5 +1,5 @@
-![Build Status: Conda](https://github.com/sherpa/sherpa/workflows/Conda%20CI/badge.svg)
-![Build Status: Pip](https://github.com/sherpa/sherpa/workflows/Pip%20CI/badge.svg)
+![Build Status: Conda](https://github.com/sherpa/sherpa/actions/workflows/ci-conda-workflow.yml/badge.svg)
+![Build Status: Pip](https://github.com/sherpa/sherpa/actions/workflows/ci-pip-workflow.yml/badge.svg)
 [![Documentation Status](https://readthedocs.org/projects/sherpa/badge/)](https://sherpa.readthedocs.io/)
 [![DOI](https://zenodo.org/badge/683/sherpa/sherpa.svg)](https://zenodo.org/badge/latestdoi/683/sherpa/sherpa)
 [![GPLv3+ License](https://img.shields.io/badge/license-GPLv3+-blue.svg)](https://www.gnu.org/copyleft/gpl.html)
