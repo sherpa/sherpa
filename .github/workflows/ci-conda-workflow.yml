@@ -30,7 +30,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: MacOS Intel Full Build
+          - name: MacOS Intel Full Build (Python 3.11)
             os: macos-13
             python-version: "3.11"
             install-type: develop
@@ -39,6 +39,16 @@ jobs:
             matplotlib-version: 3
             bokeh-version: 3
             xspec-version: 12.14.0i
+
+          - name: MacOS ARM Full Build (Python 3.11)
+            os: macos-14
+            python-version: "3.11"
+            install-type: develop
+            fits: astropy
+            test-data: submodule
+            matplotlib-version: 3
+            bokeh-version: 3
+            xspec-version: 12.13.1e
 
           - name: Linux Minimum Setup (Python 3.10)
             os: ubuntu-latest
@@ -124,18 +134,29 @@ jobs:
         source ${conda_loc}/etc/profile.d/conda.sh
         source .github/scripts/setup_conda.sh
 
-    - name: Conda Setup (Xspec and DS9)
+    # The decision on whether to install DS9 or not has historically
+    # been tied to XSPEC, which is why this rule checks for XSPEC
+    # support.
+    #
+    # The DS9 tests have been shown to be problematic on macOS/GitHub
+    # so we do not install DS9 on this platform.
+    #
+    - name: Conda Setup (DS9)
+      if: matrix.xspec-version != '' && runner.os != 'macOS'
+      run: |
+        source ${conda_loc}/etc/profile.d/conda.sh
+        conda activate build
+        source .github/scripts/setup_ds9.sh
+        # We need xvfb to run the tests so ensure it's installed
+        pip install pytest-xvfb
+
+    - name: Conda Setup (Xspec)
       if: matrix.xspec-version != ''
       env:
         XSPECVER: ${{ matrix.xspec-version }}
       run: |
         source ${conda_loc}/etc/profile.d/conda.sh
         conda activate build
-        if [ "$RUNNER_OS" != "macOS" ]; then
-          source .github/scripts/setup_ds9.sh
-          # We need xvfb to run the tests so ensure it's installed
-          pip install pytest-xvfb
-        fi
         source .github/scripts/setup_xspec.sh
 
     - name: Build Sherpa (install)

@@ -1,6 +1,5 @@
 #!/usr/bin/env bash -e
 
-# variable $CONDA_PREFIX should be defined by conda by using conda activate (in setup_conda.sh)
 if [[ "x${CONDA_PREFIX}" == "x" ]];
 then
     echo "Error: CONDA_PREFIX not set. This should be set for active Conda environments."
