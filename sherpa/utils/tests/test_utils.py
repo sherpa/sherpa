@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2016, 2018 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -374,9 +374,11 @@ def test_filter_bins_one(lo, hi, res):
     lo>hi.
     """
 
+    expected = numpy.asarray(res)
+
     dvals = numpy.asarray([1, 2, 3, 4, 5])
     flags = utils.filter_bins([lo], [hi], [dvals])
-    assert flags == pytest.approx(res)
+    assert flags == pytest.approx(expected)
 
     # We can also check an identity: that
     #    a <= x <= b
@@ -385,7 +387,7 @@ def test_filter_bins_one(lo, hi, res):
     #    x <= b
     #
     flags = utils.filter_bins([lo, None], [None, hi], [dvals, dvals])
-    assert flags == pytest.approx(res)
+    assert flags == pytest.approx(expected)
 
 
 
@@ -418,7 +420,7 @@ def test_filter_bins_one_int(lo, hi, res):
     hivals = lovals + 1
     flags = utils.filter_bins([None, lo], [hi, None], [lovals, hivals],
                               integrated=True)
-    assert flags == pytest.approx(res)
+    assert flags == pytest.approx(numpy.asarray(res))
 
 
 

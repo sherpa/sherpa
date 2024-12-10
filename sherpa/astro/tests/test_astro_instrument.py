@@ -712,7 +712,8 @@ def test_rmfmodelpha_delta_no_ebounds(analysis, caplog):
 
     assert len(caplog.records) == 0
     if analysis == "energy":
-        assert pha.mask == pytest.approx([False, True, True, True, False])
+        expected = np.asarray([False, True, True, True, False])
+        assert pha.mask == pytest.approx(expected)
     else:
         assert not pha.mask.any()
 
