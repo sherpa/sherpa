@@ -159,12 +159,17 @@ except ImportError:
 
 groupstatus = False
 try:
-    import group as pygroup  # type: ignore
+    # Are we using the Sherpa-supplied version or the CIAO one?
+    from sherpa import group as pygroup  # type: ignore
     groupstatus = True
 except ImportError:
-    groupstatus = False
-    warning('the group module (from the CIAO tools package) is not ' +
-            'installed.\nDynamic grouping functions will not be available.')
+    try:
+        import group as pygroup
+        groupstatus = True
+    except ImportError:
+        groupstatus = False
+        warning('the group module (from the CIAO tools package) is not ' +
+                'installed.\nDynamic grouping functions will not be available.')
 
 
 __all__ = ('DataARF', 'DataRMF', 'DataPHA', 'DataIMG', 'DataIMGInt', 'DataRosatRMF')

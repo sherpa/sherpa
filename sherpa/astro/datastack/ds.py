@@ -1,5 +1,6 @@
 #
-# Copyright (C) 2015, 2016, 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+# Copyright (C) 2015, 2016, 2019, 2020, 2021, 2022
+# Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,6 +19,7 @@
 #
 
 import numpy
+
 from sherpa.utils.logging import config_logger
 from sherpa.utils.err import IOErr
 from sherpa.utils.formatting import html_table, html_from_sections
@@ -29,9 +31,14 @@ from .utils import load_error_msg, load_wrapper, model_wrapper, \
 logger = config_logger(__name__)
 
 try:
-    import stk
+    # Are we using the Sherpa-supplied version or the CIAO one?
+    from sherpa import stk
 except ImportError:
-    logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
+    try:
+        import stk
+    except:
+        logger.warning("could not import stk library. CIAO stack files and syntax will be disabled")
+
 
 # Global list of dataset ids in use
 _all_dataset_ids = {}
