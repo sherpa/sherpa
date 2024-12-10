@@ -126,15 +126,15 @@ jobs:
       matrix:
         include:
           - name: MacOS (Intel) Python 3.10
-            os-type: "macos-12"
+            os-type: "macos-13"
             os-dir: "osx-64"
             python-version: "3.10"
           - name: MacOS (Intel) Python 3.11
-            os-type: "macos-12"
+            os-type: "macos-13"
             os-dir: "osx-64"
             python-version: "3.11"
           - name: MacOS (Intel) Python 3.12
-            os-type: "macos-12"
+            os-type: "macos-13"
             os-dir: "osx-64"
             python-version: "3.12"
           - name: MacOS (ARM) Python 3.10
