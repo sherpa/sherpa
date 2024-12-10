@@ -68,7 +68,6 @@ jobs:
     strategy:
       matrix:
         image: ["redhat/ubi8"]
-        conda-os: ["Linux-x86_64"]
         os-dir: ["linux-64"]
         python-version: ["3.10", "3.11", "3.12"]
 
@@ -77,10 +76,8 @@ jobs:
       run: yum install -y -q git diffutils
 
     - name: Conda Setup
-      env:
-        CONDA_OS: ${{ matrix.conda-os }}
       run: |
-        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-${CONDA_OS}.sh -o conda-installer.sh
+        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
         source ${conda_loc}/etc/profile.d/conda.sh
         conda create -yq -n builder conda-build conda-verify
@@ -118,32 +115,53 @@ jobs:
         if-no-files-found: error
         retention-days: 3
 
+#Note macos-14+ is macos arm
   build-macos:
-    name: MacOS Python ${{ matrix.python-version }}
+    name: ${{ matrix.name }}
     if: github.repository == 'sherpa/sherpa' && ${{ needs.check-skip.outputs.skip_pipeline }} == "false"
     needs: ["check-skip"]
     runs-on: ${{ matrix.os-type }}
     strategy:
       matrix:
-        os-type: ["macos-12"]
-        conda-os: ["MacOSX-x86_64"]
-        os-dir: ["osx-64"]
-        python-version: ["3.10", "3.11", "3.12"]
+        include:
+          - name: MacOS (Intel) Python 3.10
+            os-type: "macos-13"
+            os-dir: "osx-64"
+            python-version: "3.10"
+          - name: MacOS (Intel) Python 3.11
+            os-type: "macos-13"
+            os-dir: "osx-64"
+            python-version: "3.11"
+          - name: MacOS (Intel) Python 3.12
+            os-type: "macos-13"
+            os-dir: "osx-64"
+            python-version: "3.12"
+          - name: MacOS (ARM) Python 3.10
+            os-type: "macos-14"
+            os-dir: "osx-arm64"
+            python-version: "3.10"
+          - name: MacOS (ARM) Python 3.11
+            os-type: "macos-14"
+            os-dir: "osx-arm64"
+            python-version: "3.11"
+          - name: MacOS (ARM) Python 3.12
+            os-type: "macos-14"
+            os-dir: "osx-arm64"
+            python-version: "3.12"
+
     env:
       CONDA_BUILD_SYSROOT: /opt/MacOSX11.0.sdk
 
     steps:
     - name: Conda Setup
-      env:
-        CONDA_OS: ${{ matrix.conda-os }}
       run: |
-        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-${CONDA_OS}.sh -o conda-installer.sh
+        curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
         source ${conda_loc}/etc/profile.d/conda.sh
         conda create -yq -n builder conda-build conda-verify
 
     - name: macOS 11.0 SDK
-      if: ${{ matrix.conda-os == 'MacOSX-x86_64' }}
+      if: ${{ matrix.os-dir != 'linux-64' }}
       run: |
         #Download the MacOS 11.0 SDK to the CONDA_BUILD_SYSROOT location for the Conda Compilers to work
         mkdir -p /opt
@@ -200,10 +218,15 @@ jobs:
             os: ubuntu-latest
             conda-os: "Linux-x86_64"
             os-dir: "linux-64"
-          - name: Latest MacOS Pre-Deploy Test
+          - name: Latest MacOS (Intel) Pre-Deploy Test
             os: macos-latest
             conda-os: "MacOSX-x86_64"
             os-dir: "osx-64"
+          - name: Latest MacOS (ARM) Pre-Deploy Test
+            os: macos-14
+            conda-os: "MacOSX-arm64"
+            os-dir: "osx-arm64"
+
 
     steps:
     #Download all artifacts
