@@ -9,7 +9,6 @@ on:
     - main
     - ciaox
     - 'release/**'
-  pull_request:
 
 #Reduces GH Action duplication:
 # Cancels the previous pipeline for this ref it is still running
