@@ -4,8 +4,6 @@ The sherpa.astro.xspec module
 
 .. currentmodule:: sherpa.astro.xspec
 
-
-
 This document describes the base classes for XSPEC models, and
 the utility routines - such as querying and retrieving
 the abundance table information. The models provided by XSPEC
@@ -31,17 +29,21 @@ for a general description of the ``sherpa.astro.xspec`` module.
    .. autosummary::
       :toctree: api
 
+      clear_xsxflt
       get_xsabund
       get_xsabund_doc
       get_xsabundances
       get_xschatter
       get_xscosmo
+      get_xselements
       get_xspath_manager
       get_xspath_model
       get_xsstate
       get_xsversion
+      get_xsxflt
       get_xsxsect
       get_xsxset
+      load_xsxflt
       read_xstable_model
       set_xsabund
       set_xsabundances
@@ -49,6 +51,7 @@ for a general description of the ``sherpa.astro.xspec`` module.
       set_xscosmo
       set_xspath_manager
       set_xsstate
+      set_xsxflt
       set_xsxsect
       set_xsxset
 

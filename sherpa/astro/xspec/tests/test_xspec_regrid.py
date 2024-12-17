@@ -43,9 +43,11 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 # way, when support is finally unlocked, we should find out from the
 # tests (rather that just going from xfail to xpass which is easy to
 # miss). It also lets us check why a test fails (in case the failure
-# mode changes due to other parts of Sherpa).
+# mode changes due to other parts of Sherpa). There are now two
+# variants.
 #
 IntegrateError = "'integrate' is an invalid keyword argument for this function"
+IntegrateError2 = r"function takes at most 4 arguments \(5 given\)"
 
 
 @requires_xspec
@@ -135,7 +137,7 @@ def test_regrid_identity(mname, xsmodel):
 
     # scale y values to make them closer to unity
     y1 = 100 * mdl(elo, ehi)
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y2 = 100 * regrid(elo, ehi)
 
     # assert y2 == pytest.approx(y1)
@@ -163,7 +165,7 @@ def test_regrid_identity_combined():
 
     # scale y values to make them closer to unity
     y1 = mdl(elo, ehi)
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y2 = regrid(elo, ehi)
 
     # assert y2 == pytest.approx(y1)
@@ -185,7 +187,7 @@ def test_additive():
     mdl.norm = 100
 
     y1 = mdl(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y2 = regrid(egrid[:-1], egrid[1:])
 
     # assert y2 == pytest.approx(y1)
@@ -229,7 +231,7 @@ def test_additive_overlap(egrid, yexp):
 
     # will change regrid too
     mdl.norm = 100
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y2 = regrid(egrid[:-1], egrid[1:])
 
     # assert y2 == pytest.approx(yexp)
@@ -265,7 +267,7 @@ def test_multiplicative():
     mdl.nh = 0.05
 
     y1 = mdl(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y2 = regrid(egrid[:-1], egrid[1:])
 
     # assert y2 == pytest.approx(y1, rel=0.04)
@@ -304,7 +306,7 @@ def test_multiplicative_overlap(egrid, yexp):
     # will change regrid too
     mdl.nh = 0.05
 
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y2 = regrid(egrid[:-1], egrid[1:])
 
     # assert y2 == pytest.approx(yexp)
@@ -337,7 +339,7 @@ def test_combined(name1, par1, val1, name2, par2, val2, xsmodel):
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
     y1 = mdl(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y2 = regrid(egrid[:-1], egrid[1:])
 
     # assert y2 == pytest.approx(y1, rel=0.04)
@@ -360,7 +362,7 @@ def test_combined_arithmetic_left(name, par, val, xsmodel):
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
     yexp = 4 * com(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y1 = regrid(egrid[:-1], egrid[1:])
 
     # assert y1 == pytest.approx(yexp, rel=0.04)
@@ -383,7 +385,7 @@ def test_combined_arithmetic_right(name, par, val, xsmodel):
     regrid = mdl.regrid(ebase[:-1], ebase[1:])
 
     yexp = 4 * com(egrid[:-1], egrid[1:])
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         y1 = regrid(egrid[:-1], egrid[1:])
 
     # assert y1 == pytest.approx(yexp, rel=0.04)
@@ -478,7 +480,7 @@ def test_sherpa_mul_xspec_add(sherpa_first):
 
     # Note the tolerance is different to test_sherpa_add_xspec_mul
     assert comb(eg1, eg2) == pytest.approx(yexp)
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         assert rcomb(eg1, eg2) == pytest.approx(yexp, rel=0.006)
 
 
@@ -514,7 +516,7 @@ def test_sherpa_add_xspec_mul(sherpa_first):
 
     # Note the tolerance is different to test_sherpa_mul_xspec_add
     assert comb(eg1, eg2) == pytest.approx(yexp)
-    with pytest.raises(TypeError, match=IntegrateError):
+    with pytest.raises(TypeError, match=IntegrateError2):
         assert rcomb(eg1, eg2) == pytest.approx(yexp, rel=0.07)
 
 

@@ -31,7 +31,7 @@ XSPEC version - including patch level - the module is using::
 
    >>> from sherpa.astro import xspec
    >>> xspec.get_xsversion()
-   '12.14.0b'
+   '12.14.0k'
 
 Initializing XSPEC
 ------------------
@@ -56,16 +56,37 @@ Supported models
 ----------------
 
 The additive [2]_, multiplicative [3]_, and convolution [4]_ models
-from the XSPEC model library are supported, except for the `polconst`,
-`pollin`, `polpow`, and `smaug` models [5]_, since they need
-information obtained from the XFLT keywords in the PHA file.
+from the XSPEC model library are supported.
+
+As of 4.17.0, we now also include *experimental* support for the
+`polconst` [5]_, `pollin` [6]_, `polpow` [7]_, and `smaug` [8]_
+models, which require use of the XFLT keywords from the PHA file.
+
+Setting up XFLT keywords
+^^^^^^^^^^^^^^^^^^^^^^^^
+
+New in 4.17.0 is support for the XSpec filtering keywords, that is the
+header keywords XFLT0001 and upwards. Values are either a number or a
+string of the form "keyname: value" (the latter is the preferred
+form). The keyname values depend on the model; for example the
+`XSsmaug` model uses "inner", "outer", and "width" names whereas the
+`XSpolconst`, `XSpollin`, and `XSpolpow` models use the name "Stokes".
+
+Using these values is currenty much-more involved than it is in XSPEC,
+as users need to
+
+ - decide what "spectrum number" to use for each data set
+ - use `load_xsxflt` to load in the XFLT keywords for this "spectrum
+   number"
+ - set the spectrum attribute of the relevant models to this
+   "spectrum number" value.
 
 XSPEC version
 -------------
 
 The intention is to keep the model parameters up to date with the
 highest-supported version of XSPEC. However, there is no way to
-know from the XSPEC API [6]_ whether these parameter values will
+know from the XSPEC API [9]_ whether these parameter values will
 work correctly with the installed XSPEC version, such as when using
 an older version of XSPEC.
 
@@ -95,28 +116,35 @@ References
 
 .. [4] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/Convolution.html
 
-.. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
+.. [5] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelPolconst.html
 
-.. [6] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
+.. [6] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelPollin.html
+
+.. [7] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelPolpow.html
+
+.. [8] https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSmodelSmaug.html
+
+.. [9] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
 
 """
 
-
 from contextlib import suppress
+from dataclasses import dataclass
 import logging
 import string
 import tempfile
-from typing import Any, Optional, Union
+from typing import Any, Optional, TypeGuard, Union
 import warnings
 
 import numpy as np
 
+from sherpa.astro.data import DataPHA
 from sherpa.astro.utils import get_xspec_norm, get_xspec_position
 from sherpa.models import ArithmeticModel, ArithmeticFunctionModel, \
     CompositeModel, Parameter, modelCacher1d, RegriddableModel1D
 from sherpa.models.parameter import hugeval
 from sherpa.utils import bool_cast
-from sherpa.utils.err import ArgumentErr, IOErr, ParameterErr
+from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, IOErr, ParameterErr
 from sherpa.utils.guess import param_apply_limits
 from sherpa.utils.numeric_types import SherpaFloat
 
@@ -129,6 +157,77 @@ from . import _xspec  # type: ignore
 
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
+
+# Represent a "spectrumNumber/ifl" argument as an object to
+# make it harder to mix up with IdType or general integers.
+#
+@dataclass(frozen=True)
+class SpectrumNumber:
+    """An identifier for XFLT data.
+
+    The value must be 1 or larger.
+    """
+
+    # This can not be changed which means the object can be hashed and
+    # so can be used as a keyword for a dict.
+    #
+    # It is not clear from the XSPEC documentation whether ifl can be
+    # 0 or lower, so just enforce 1 as the minimum.
+    #
+    spectrumNumber: int
+    """The XSPEC spectrum identifier.
+
+    This is not the same as any dataset identifier used by Sherpa.
+    """
+
+    def __post_init__(self) -> None:
+        num = self.spectrumNumber
+        try:
+            if num < 1:
+                raise ValueError(f"spectrumNumber must be > 0, not {num}")
+        except TypeError:
+            raise ValueError(f"spectrumNumber must be a number, not '{num}'") from None
+
+        if not float(num).is_integer():
+            raise ValueError(f"spectrumNumber must be an integer, not {num}")
+
+
+def make_xsxflt(spectrum: int) -> SpectrumNumber:
+    """Create a SpectrumNumber for use with XFLT data.
+
+    To avoid confusion between different identifiers, XFLT identifiers
+    must use the SpectrumNumber type, created by this routine. Unlike
+    next_xsxflt this does not add any data to the XFLT database.
+
+    .. versionadded:: 4.17.0
+
+    Parameter
+    ---------
+    spectrum: int
+       This must be 1 or larger.
+
+    Returns
+    -------
+    spectrum: SpectrumNumber
+       The value used with calls like load_xsxflt.
+
+    See Also
+    --------
+    load_xsxflt, next_xsxflt
+
+    """
+    return SpectrumNumber(spectrum)
+
+
+# Does labelling this as returning a TypeGuard help, since we never
+# use the return value?
+#
+def check_spectrum(spectrum: Any) -> TypeGuard[SpectrumNumber]:
+    if isinstance(spectrum, SpectrumNumber):
+        return True
+
+    raise ArgumentTypeErr("spectrum", "created by make_xsxflt")
+
 
 # Python wrappers around the exported functions from _xspec. This
 # provides a more-accurate function signature to the user, makes
@@ -683,7 +782,12 @@ def set_xsxsect(name: str) -> None:
 # the session.  Only store if setting was successful.
 # See:
 # https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
+#
 modelstrings = {}
+
+# Store XFLT settings.
+#
+xfltkeys: dict[SpectrumNumber, dict[str, float]] = {}
 
 # Store any path changes
 xspecpaths = {}
@@ -784,6 +888,269 @@ def set_xsxset(name: str, value: str) -> None:
         modelstrings[name] = get_xsxset(name)
 
 
+# Handle XFLT keywords. The idea is that the processing is done
+# in this module, with the access via _xspec being limited to
+#
+# - clear database
+# - get all the values for a spectrum
+# - set all the values for a spectrum
+#
+# This is experimental as we learn how well we can use the
+# functionality in Sherpa. This is one reason why they
+# are not added to __all__.
+#
+def clear_xsxflt(spectrum: Optional[SpectrumNumber] = None) -> None:
+    """Remove all the XFLT keywords for all or a single spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    spectrum : SpectrumNumber or None, Optional
+       If None then delete all the XFLT keywords, otherwise just
+       those for the given spectrum.
+
+    See Also
+    --------
+    get_xsxflt, make_xsxflt, set_xsxflt
+
+    Notes
+    -----
+    The routine can be called even if no values have been set.
+
+    Examples
+    --------
+
+    >>> clear_xsflt()
+
+    >>> clear_xsxflt(make_xsxflt(1))
+
+    """
+
+    if spectrum is None:
+        xfltkeys.clear()
+        _xspec.clear_xflt()
+        return
+
+    # Clear out the requested spectrum.
+    #
+    set_xsxflt(spectrum, {})
+
+
+def get_xsxflt(spectrum: SpectrumNumber) -> dict[str, float]:
+    """Return the XFLT values stored for a spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    spectrum : SpectrumNumber
+        The spectrum number (as used by XSPEC).
+
+    Returns
+    -------
+    xflt : dict
+        The current keywords (strings) and values (numbers) associated
+        with the current spectrumNumber. It may be empty.
+
+    See Also
+    --------
+    clear_xsxflt, make_xsxflt, set_xsxflt
+
+    Examples
+    --------
+
+    >>> get_xsxflt(make_xsxflt(1))
+    {}
+
+    >>> ifl = make_xsxflt(2)
+    >>> set_xsxflt(ifl, {"inner": 0.2, "outer": 2, "width": 360})
+    >>> get_xsxflt(ifl)
+    {'inner': 0.2, 'outer': 2.0, 'width': 360.0}
+
+    """
+
+    check_spectrum(spectrum)
+
+    # We could check xfltkeys but pass through to XSPEC to check
+    # instead, in case somehow the copy here is out of date.
+    #
+    return _xspec.get_xflt(spectrum.spectrumNumber)
+
+
+def set_xsxflt(spectrum: SpectrumNumber,
+               xflt: dict[str, float]) -> None:
+    """Set the XFLT values stored for a spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    spectrum : SpectrumNumber
+        The spectrum number (as used by XSPEC).
+    xflt : dict
+        The keywords (strings) and values (numbers) for the current
+        spectrum. These values over-ride any existing values. Using an
+        empty dictionary will remove the settings for this spectrum.
+
+    See Also
+    --------
+    clear_xsxflt, get_xsxflt, load_xsxflt, make_xsxflt, next_xsxflt
+
+    Notes
+    -----
+    There is no check that the spectrum value matches any existing
+    model expression.
+
+    Examples
+    --------
+
+    >>> ifl = next_xsxflt()
+    >>> set_xsxflt(ifl, {"inner": 0.2, "outer": 2})
+    >>> set_xsxflt(ifl, {"width": 360})
+    >>> get_xsxflt(ifl)
+    {'width': 360.0}
+
+    """
+
+    check_spectrum(spectrum)
+    _xspec.set_xflt(spectrum.spectrumNumber, xflt)
+
+    # We store the spectrum values that have data, so that we
+    # can query the database when it comes to calling get_xsstate.
+    #
+    # We store the empty set, rather than dropping it, to make
+    # next_xsxflt work sensibly.
+    #
+    xfltkeys[spectrum] = xflt
+
+
+def load_xsxflt(data: DataPHA,
+                spectrum: SpectrumNumber
+                ) -> None:
+    """Load the XFLT keywords from the header of the PHA.
+
+    This takes all the XFLTnnnn keywords from the header of
+    the PHA and associates them with the given spectrum.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    data : DataPHA
+       The PHA datset with XFLT0001, ... keywords.
+    spectrum : SpectrumNumber
+       The spectrum number (as used by XSPEC). This will over-write
+       any existing data for the spectrum.
+
+    See Also
+    --------
+    clear_xsxflt, get_xsxflt, make_xsxflt, next_xsxflt, set_xsxflt
+
+    Notes
+    -----
+    This does not support reading in XFLT values from columns, just
+    from header keywords.
+
+    Examples
+    --------
+
+    >>> ifl = next_xsxflt()
+    >>> load_xsxflt(pha, ifl)
+
+    """
+
+    # Process XFLXT keywords from the PHA header.
+    #
+    i = 0
+    store = {}
+    while True:
+        i += 1
+        key = f"XFLT{i:04d}"
+        try:
+            vals = data.header[key]
+        except KeyError:
+            # key does not exist so stop the loop.
+            #
+            break
+
+        # The value can be
+        #     floating-point
+        #     string-name:floating-point
+        # and anything else is skipped (with a note to the caller)
+        #
+        elems = vals.split(":")
+        if len(elems) == 1:
+            # This is how XSPEC seems to store it
+            keyname = f"key{i}"
+            value = elems[0]
+        elif len(elems) == 2:
+            keyname = elems[0]
+            value = elems[1]
+        else:
+            # Note that we do not end the processing here.
+            #
+            info("Unable to recognize header keyword: %s = '%s'",
+                 key, vals)
+            continue
+
+        try:
+            fval = float(value)
+        except ValueError as ve:
+            # I think XSPEC just converts fval to 0 in this case.
+            #
+            warning("Skipping header keyword: %s = '%s'", key, vals)
+            continue
+
+        store[keyname] = fval
+
+    set_xsxflt(spectrum, store)
+    if len(store) == 0:
+        return
+
+    # Display the newly-added keys.
+    #
+    info("XSPEC filtering keys for spectrum "
+         f"{spectrum.spectrumNumber}:")
+    for keyname, fval in store:
+        info("  %s = %g", keyname, fval)
+
+
+def next_xsxflt() -> SpectrumNumber:
+    """Create the next XFLT spectrum number.
+
+    This is based on the maximum number used to store XFLT data.  It
+    adds an empty XFLT dictionary, so repeated calls will not return
+    the same value.
+
+    See Also
+    --------
+    clear_xsxflt, load_xsxflt, make_xsxflt, set_xsxflt
+
+    Examples
+    --------
+
+    Adds keys for spectrum numbers 1 and 2, storing them in the
+    variables key1 and key2:
+
+    >>> clear_xsxflt()
+    >>> key1 = next_xsxflt()
+    >>> key2 = next_xsxflt()
+
+    """
+
+    ifls = [s.spectrumNumber for s in xfltkeys.keys()]
+    maxval = max([0] + ifls)
+    s = make_xsxflt(maxval + 1)
+
+    # Store the empty dictionary so this value will not be
+    # recalculated by this routine.
+    set_xsxflt(s, {})
+    return s
+
+
+# Path handling
+#
 def get_xspath_manager() -> str:
     """Return the path to the files describing the XSPEC models.
 
@@ -874,18 +1241,23 @@ def set_xspath_manager(path: str) -> None:
 def get_xsstate() -> dict[str, Any]:
     """Return the state of the XSPEC module.
 
+    .. versionchanged:: 4.17.0
+       Added support for XFLT keywords.
+
     Returns
     -------
     state : dict
         The current settings for the XSPEC module, including but not
-        limited to: the abundance and cross-section settings, parameters
-        for the cosmological model, any XSET parameters that have been
-        set, and changes to the paths used by the model library.
+        limited to: the abundance and cross-section settings,
+        parameters for the cosmological model, any XSET and XFLT
+        parameters that have been set, and changes to the paths used
+        by the model library.
 
     See Also
     --------
-    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxset,
-    set_xsstate
+    get_xsabund, get_xschatter, get_xscosmo, get_xsxsect, get_xsxflt,
+    get_xsxset, set_xsstate
+
     """
 
     # Do not return the internal dictionary but a copy of it.
@@ -894,30 +1266,35 @@ def get_xsstate() -> dict[str, Any]:
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
             "modelstrings": modelstrings.copy(),
+            "xflt": xfltkeys.copy(),
             "paths": xspecpaths.copy()}
 
 
 def set_xsstate(state: dict[str, Any]) -> None:
     """Restore the state of the XSPEC module.
 
+    .. versionchanged:: 4.17.0
+       Added support for XFLT keywords.
+
     Parameters
     ----------
     state : dict
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
-        keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'.
+        keys: 'abund', 'chatter', 'cosmo', 'xflt', 'xsect',
+        'modelstrings', and 'paths'.
 
     See Also
     --------
-    get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxsect,
-    set_xsxset
+    get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxflt,
+    set_xsxsect, set_xsxset
 
     Notes
     -----
     The state of the XSPEC module will only be changed if all
     the required keys in the dictionary are present. All keys apart
     from 'paths' are required.
+
     """
 
     if type(state) == dict and \
@@ -933,8 +1310,8 @@ def set_xsstate(state: dict[str, Any]) -> None:
         set_xschatter(state["chatter"])
         set_xscosmo(h0, q0, l0)
         set_xsxsect(state["xsect"])
-        for name in state["modelstrings"].keys():
-            set_xsxset(name, state["modelstrings"][name])
+        for name, value in state["modelstrings"].items():
+            set_xsxset(name, value)
 
         # This is optional to support re-loading state information
         # from a version of XSPEC which did not provide the path
@@ -947,6 +1324,14 @@ def set_xsstate(state: dict[str, Any]) -> None:
 
         if managerpath is not None:
             set_xspath_manager(managerpath)
+
+    # As XFLT support was only added in 4.17.0 we treat this as
+    # optional.
+    #
+    if type(state) == dict and 'xflt' in state:
+        clear_xsxflt()
+        for spectrum, vals in state['xflt'].items():
+            set_xsxflt(spectrum, vals)
 
 
 def read_xstable_model(modelname, filename, etable=False):
@@ -1363,6 +1748,9 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
 
     version_enabled = True
 
+    per_spectrum: bool = False
+    """This model does not use per-spectrum information (e.g. XFLT keywords)?"""
+
     def __init__(self, name, pars):
 
         # Validate the parameters argument to check that the
@@ -1391,8 +1779,8 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
             attr = getattr(self, par.name)
             assert attr.name == par.name, (par.name, name)
 
+        self._spectrum = 1
         super().__init__(name, pars)
-
 
     @modelCacher1d
     def calc(self, p, *args, **kwargs):
@@ -1407,6 +1795,7 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         it complicates the handling of the regrid method.
 
         Keyword arguments are ignored.
+
         """
 
         nargs = 1 + len(args)
@@ -1459,6 +1848,82 @@ class XSModel(RegriddableModel1D, metaclass=ModelMeta):
         #     raise FloatingPointError(msg)
 
         return out
+
+
+# This can not be marked as an ABC without more looking into ModelMeta.
+#
+class XSPerSpectrum(metaclass=ModelMeta):
+    """Mark an XSPEC model as using XFLT data.
+
+    Only models marked as requiring per-dataset data should inherit
+    from this class.
+
+    """
+
+    # Why do we need this?
+    version_enabled = True
+
+    per_spectrum: bool = True
+    """This model does use use per-spectrum information (e.g. XFLT keywords)?"""
+
+    @property
+    def spectrum(self) -> int:
+        """What value is used for the ifl/spectrum argument?
+
+        What spectrum number is used to store the XFLT data needed by
+        this model? It uses the data set up by the set_xsxflt or
+        load_xsxflt call with this identifier. There is no check that
+        XFLT data has been associated with this value.
+
+        .. versionadded:: 4.17.0
+
+        Notes
+        -----
+        This value is set with a SpectrumNumber value but it returns
+        an integer.
+
+        """
+
+        return self._spectrum
+
+    @spectrum.setter
+    def spectrum(self, val: SpectrumNumber) -> None:
+        check_spectrum(val)
+        ival = val.spectrumNumber
+
+        if self._spectrum == ival:
+            return
+
+        # Clear the cache as we now it is likely to be invalid with
+        # the change in the spectrum.
+        #
+        self.cache_clear()
+        self._spectrum = ival
+
+    # Could we use the XFLT data for the model as part of the cache
+    # key? How to do this quickly?
+    #
+    # For now do not label this as @modelCacher1d and rely on the
+    # superclass to cache things.
+    #
+    # @modelCacher1d
+    def calc(self, p, *args, **kwargs):
+        """Calculate the model given the parameters and grid.
+
+        This ensures that the spectrum value is sent to the model.
+
+        """
+
+        # For now only use the models spectrumNumber if it
+        # has not been set. The idea is that it may be useful
+        # for a caller to change this (why they would want to
+        # do this is unclear), so support this as we work out
+        # what best to do.
+        #
+        if "spectrumNumber" not in kwargs:
+            kwargs["spectrumNumber"] = self.spectrum
+
+        super().calc(p, *args, **kwargs)
 
 
 class XSTableModel(XSModel):
@@ -10860,7 +11325,166 @@ class XSslimbh(XSAdditiveModel):
         XSAdditiveModel.__init__(self, name, pars)
 
 
-# NOTE: we do not support the smaug model yet
+class XSsmaug(XSPerSpectrum, XSAdditiveModel):
+    """The XSPEC smaug model: optically-thin, spherically-symmetric thermal plasma.
+
+    The model is described at [1]_. The ``set_xscosmo`` command is
+    used to set the cosmology options and ``load_xflt`` to set the
+    XFLT values.  This is provided as an *experimental* interface.
+
+    .. versionadded:: 4.17.0
+
+    Attributes
+    ----------
+    kT_cc
+       The central temparature, in keV.
+    kT_dt
+       The max difference of temperature (keV).
+    kT_ix
+       The exponent of the inner temperature.
+    kT_ir
+       The radius of the inner temperature (Mpc).
+    kT_cx
+       The exponent of the middle temperature.
+    kT_cr
+       The radius of the middle temperature (Mpc).
+    kT_tx
+       The exponent of the outer temperature.
+    kT_tr
+       The radius of the outer temperature (Mpc).
+    nH_cc
+       The central Hydrogren density (cm^-3).
+    nH_ff
+       The fraction of nH.CC relative to the first beta component.
+    nH_cx
+       The exponent of the first beta component.
+    nH_cr
+       The radius of the first beta component (Mpc).
+    nH_gx
+       The exponent of the second beta component.
+    nH_gr
+       The radius of the second beta component (Mpc).
+    Ab_cc
+       The central metallicity (solar units).
+    Ab_xx
+       The exponent of the metal distribution.
+    Ab_rr
+       The radius of the metal distribution (Mpc).
+    redshift
+       The redshift of the source.
+    meshpts
+       The number of mesh-ponits of the DEM summation grid.
+    rcutoff
+       The cutoff radius for the calculation (Mpc).
+    mode
+       The model of spectal evaluation: 0 for calculate, 1 for
+       interpolate, and 2 for APEC interpolation.
+    itype
+       The type of the plasma emission code: 1 for Raymond-Smith,
+       2 for Mekal, 3 for Meka, and 4 for APEC.
+    norm
+        The normalization of the model: see [1]_ for an explanation
+        of the units.
+
+    Notes
+    -----
+    This model should be used with multiple datasets, where each
+    dataset corresponds to an annulus of the source, and has XFLT
+    keywords "inner", "outer", and "width", giving the annulus
+    boundary in arcminutes and the width in degrees. These values
+    can be set with the load_xsxflt routine.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelSmaug.html
+
+    """
+
+    __function__ = "xsmaug"
+
+    def __init__(self, name='smaug'):
+        self.kT_cc = XSParameter(name, 'kT_cc', 1.0, min=0.1,
+                                 max=10.0, hard_min=0.08,
+                                 hard_max=100.0, units='keV')
+        self.kT_dt = XSParameter(name, 'kT_dt', 1.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=100.0, units='keV')
+        self.kT_ix = XSParameter(name, 'kT_ix', 0.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0, frozen=True)
+        self.kT_ir = XSParameter(name, 'kT_ir', 0.1, min=0.0001,
+                                 max=1.0, hard_min=0.0001,
+                                 hard_max=1.0, frozen=True,
+                                 units='Mpc')
+        self.kT_cx = XSParameter(name, 'kT_cx', 0.5, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0)
+        self.kT_cr = XSParameter(name, 'kT_cr', 0.1, min=0.0001,
+                                 max=10.0, hard_min=0.0001,
+                                 hard_max=20.0, units='Mpc')
+        self.kT_tx = XSParameter(name, 'kT_tx', 0.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0, frozen=True)
+        self.kT_tr = XSParameter(name, 'kT_tr', 0.5, min=0.0001,
+                                 max=1.0, hard_min=0.0001,
+                                 hard_max=3.0, frozen=True,
+                                 units='Mpc')
+        self.nH_cc = XSParameter(name, 'nH_cc', 1.0, min=1e-06,
+                                 max=3.0, hard_min=1e-06,
+                                 hard_max=3.0, frozen=True,
+                                 units='cm**-3')
+        self.nH_ff = XSParameter(name, 'nH_ff', 1.0, min=0.0, max=1.0,
+                                 hard_min=0.0, hard_max=1.0,
+                                 frozen=True)
+        self.nH_cx = XSParameter(name, 'nH_cx', 0.5, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0)
+        self.nH_cr = XSParameter(name, 'nH_cr', 0.1, min=0.0001,
+                                 max=1.0, hard_min=0.0001,
+                                 hard_max=2.0, units='Mpc')
+        self.nH_gx = XSParameter(name, 'nH_gx', 0.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0, frozen=True)
+        self.nH_gr = XSParameter(name, 'nH_gr', 0.002, min=0.0001,
+                                 max=10.0, hard_min=0.0001,
+                                 hard_max=20.0, frozen=True,
+                                 units='Mpc')
+        self.Ab_cc = XSParameter(name, 'Ab_cc', 1.0, min=0.0, max=3.0,
+                                 hard_min=0.0, hard_max=5.0,
+                                 frozen=True, units='solar')
+        self.Ab_xx = XSParameter(name, 'Ab_xx', 0.0, min=0.0,
+                                 max=10.0, hard_min=0.0,
+                                 hard_max=10.0, frozen=True)
+        self.Ab_rr = XSParameter(name, 'Ab_rr', 0.1, min=0.0001,
+                                 max=1.0, hard_min=0.0001,
+                                 hard_max=1.0, frozen=True,
+                                 units='Mpc')
+        self.redshift = XSParameter(name, 'redshift', 0.01,
+                                    min=0.0001, max=10.0,
+                                    hard_min=0.0001, hard_max=10.0,
+                                    frozen=True)
+        self.meshpts = XSParameter(name, 'meshpts', 10.0, min=1.0,
+                                   max=10000.0, hard_min=1.0,
+                                   hard_max=10000.0, frozen=True)
+        self.rcutoff = XSParameter(name, 'rcutoff', 2.0, min=1.0,
+                                   max=3.0, hard_min=1.0,
+                                   hard_max=3.0, frozen=True,
+                                   units='Mpc')
+        self.mode = XSParameter(name, 'mode', 1, min=0, max=2,
+                                hard_min=0, hard_max=2,
+                                frozen=True)
+        self.itype = XSParameter(name, 'itype', 2, min=1, max=4,
+                                 hard_min=1, hard_max=4,
+                                 frozen=True)
+
+        # norm parameter is automatically added by XSAdditiveModel
+        pars = (self.kT_cc, self.kT_dt, self.kT_ix, self.kT_ir,
+                self.kT_cx, self.kT_cr, self.kT_tx, self.kT_tr, self.nH_cc,
+                self.nH_ff, self.nH_cx, self.nH_cr, self.nH_gx, self.nH_gr,
+                self.Ab_cc, self.Ab_xx, self.Ab_rr, self.redshift,
+                self.meshpts, self.rcutoff, self.mode, self.itype)
+        XSAdditiveModel.__init__(self, name, pars)
 
 
 class XSsnapec(XSAdditiveModel):
@@ -14891,6 +15515,166 @@ class XSplabs(XSMultiplicativeModel):
         self.index = XSParameter(name, 'index', 2.0, 0.0, 5., 0.0, 5)
         self.coef = XSParameter(name, 'coef', 1.0, 0.0, 100., 0.0, 100)
         XSMultiplicativeModel.__init__(self, name, (self.index, self.coef))
+
+
+@version_at_least("12.12.1")
+class XSpolconst(XSPerSpectrum, XSMultiplicativeModel):
+    """The XSPEC polconst model: Constant polarization.
+
+    The model is described at [1]_. The ``load_xflt`` command is used
+    to set the XFLT values.  This is provided as an *experimental*
+    interface.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    A
+       The polarization fraction.
+    psi
+       The polarization angle (degrees).
+
+    Notes
+    -----
+    This model should be used with multiple datasets, where each
+    dataset corresponds to one of the Stokes parameters. The XFLT
+    keyword "Stokes" should be set to 0, 1, or 2.  The value can be
+    set with the load_xsxflt routine.
+
+    Sherpa does not currently handle the errors correctly for
+    IXPE-like data, as it does not recogize the correlations between
+    the data sets.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPolconst.html
+
+    """
+
+    __function__ = "C_polconst"
+
+    def __init__(self, name='polconst'):
+        self.A = XSParameter(name, 'A', 1.0, min=0.0, max=1.0,
+                             hard_min=0.0, hard_max=1.0)
+        self.psi = XSParameter(name, 'psi', 45.0, min=-90.0, max=90.0,
+                               hard_min=-90.0, hard_max=90.0, units='deg')
+
+        pars = (self.A, self.psi)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.12.1")
+class XSpollin(XSPerSpectrum, XSMultiplicativeModel):
+    """The XSPEC pollin model: linearly dependent polarization.
+
+    The model is described at [1]_. The ``load_xflt`` command is used
+    to set the XFLT values.  This is provided as an *experimental*
+    interface.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    A1
+       The polarization fraction at 1 keV.
+    Aslope
+       The polarization fraction slope.
+    psi1
+       The polarization angle at 1 keV (degrees)
+    psislope
+       The polarization angle slope.
+
+    Notes
+    -----
+    This model should be used with multiple datasets, where each
+    dataset corresponds to one of the Stokes parameters. The XFLT
+    keyword "Stokes" should be set to 0, 1, or 2.  The value can be
+    set with the load_xsxflt routine.
+
+    Sherpa does not currently handle the errors correctly for
+    IXPE-like data, as it does not recogize the correlations between
+    the data sets.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPollin.html
+
+    """
+
+    __function__ = "C_pollin"
+
+    def __init__(self, name='pollin'):
+        self.A1 = XSParameter(name, 'A1', 1.0, min=0.0, max=1.0,
+                              hard_min=0.0, hard_max=1.0)
+        self.Aslope = XSParameter(name, 'Aslope', 0.0, min=-5.0,
+                                  max=5.0, hard_min=-5.0, hard_max=5.0)
+        self.psi1 = XSParameter(name, 'psi1', 45.0, min=-90.0,
+                                max=90.0, hard_min=-90.0,
+                                hard_max=90.0, units='deg')
+        self.psislope = XSParameter(name, 'psislope', 0.0, min=-5.0,
+                                    max=5.0, hard_min=-5.0,
+                                    hard_max=5.0)
+
+        pars = (self.A1, self.Aslope, self.psi1, self.psislope)
+        XSMultiplicativeModel.__init__(self, name, pars)
+
+
+@version_at_least("12.12.1")
+class XSpolpow(XSPerSpectrum, XSMultiplicativeModel):
+    """The XSPEC polpow model: power-law dependent polarization.
+
+    The model is described at [1]_. The ``load_xflt`` command is used
+    to set the XFLT values.  This is provided as an *experimental*
+    interface.
+
+    .. versionadded:: 4.17.0
+
+    Parameters
+    ----------
+    Anorm
+       The polarization fraction at 1 keV.
+    Anidex
+       The polarization fraction index.
+    psinorm
+       The polarization angle at 1 keV (degrees)
+    psiindex
+       The polarization angle index.
+
+    Notes
+    -----
+    This model should be used with multiple datasets, where each
+    dataset corresponds to one of the Stokes parameters. The XFLT
+    keyword "Stokes" should be set to 0, 1, or 2.  The value can be
+    set with the load_xsxflt routine.
+
+    Sherpa does not currently handle the errors correctly for
+    IXPE-like data, as it does not recogize the correlations between
+    the data sets.
+
+    References
+    ----------
+
+    .. [1] https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSmodelPolpow.html
+
+    """
+
+    __function__ = "C_polpow"
+
+    def __init__(self, name='polpow'):
+        self.Anorm = XSParameter(name, 'Anorm', 1.0, min=0.0, max=1.0,
+                                 hard_min=0.0, hard_max=1.0)
+        self.Aindex = XSParameter(name, 'Aindex', 0.0, min=-5.0,
+                                  max=5.0, hard_min=-5.0, hard_max=5.0)
+        self.psinorm = XSParameter(name, 'psinorm', 45.0, min=-90.0,
+                                   max=90.0, hard_min=-90.0,
+                                   hard_max=90.0, units='deg')
+        self.psiindex = XSParameter(name, 'psiindex', 0.0, min=-5.0,
+                                    max=5.0, hard_min=-5.0, hard_max=5.0)
+
+        pars = (self.Anorm, self.Aindex, self.psinorm, self.psiindex)
+        XSMultiplicativeModel.__init__(self, name, pars)
 
 
 class XSpwab(XSMultiplicativeModel):
