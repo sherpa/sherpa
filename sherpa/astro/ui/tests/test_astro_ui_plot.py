@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019 - 2024
+#  Copyright (C) 2019 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -32,6 +32,7 @@ correct data; it is more a check that the routines can be called.
 
 import copy
 import logging
+
 import numpy as np
 
 import pytest
@@ -1843,15 +1844,15 @@ def test_pha1_plot_data_options(caplog, clean_astro_ui, requires_pylab,
 
     assert len(coll.get_segments()) == 42
 
-    # The return value depends on matplotlib version (>= 3.3
-    # returns something). What has changed? Maybe this should
-    # not be tested?
+    # The linestyles return value has changed with matplotib
+    # and NumPy version, so just check the second element
+    # and not the first (which can be None, 0.0, np.float64(0)).
     #
-    expected = [(None, None)]
-    if matplotlib.__version__ >= '3.3.0':
-        expected = [(0.0, None)]
-
-    assert coll.get_linestyles() == expected
+    #
+    ls = coll.get_linestyles()
+    assert len(ls) == 1
+    assert len(ls[0]) == 2
+    assert ls[0][1] is None
 
     # looks like the color has been converted to individual channels
     # - e.g. floating-point values for R, G, B, and alpha.
@@ -2041,15 +2042,15 @@ def test_pha1_plot_fit_options(clean_astro_ui, requires_pylab, basic_pha1):
 
     assert len(coll.get_segments()) == 42
 
-    # The return value depends on matplotlib version (>= 3.3
-    # returns something). What has changed? Maybe this should
-    # not be tested?
+    # The linestyles return value has changed with matplotib
+    # and NumPy version, so just check the second element
+    # and not the first (which can be None, 0.0, np.float64(0)).
     #
-    expected = [(None, None)]
-    if matplotlib.__version__ >= '3.3.0':
-        expected = [(0.0, None)]
-
-    assert coll.get_linestyles() == expected
+    #
+    ls = coll.get_linestyles()
+    assert len(ls) == 1
+    assert len(ls[0]) == 2
+    assert ls[0][1] is None
 
     # looks like the color has been converted to individual channels
     # - e.g. floating-point values for R, G, B, and alpha.
