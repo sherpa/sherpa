@@ -1,5 +1,11 @@
 #!/usr/bin/env bash -e
 
+# As of early 2025 we do not download the Darwin version (i.e. this
+# script should not be run on a macOS machine), but the implementation
+# is left in place (although it is known to fail if run as the script
+# would need to identify x86 versus ARM, as well as update the OS).
+#
+
 ds9_base_url=https://ds9.si.edu/download/
 
 if [[ "x${CONDA_PREFIX}" == "x" ]];
@@ -32,7 +38,7 @@ download () {
 }
 
 # Tarballs to fetch
-ds9_tar=ds9.${ds9_os}.8.5.tar.gz
+ds9_tar=ds9.${ds9_os}.8.6.tar.gz
 xpa_tar=xpa.${ds9_os}.2.1.20.tar.gz
 
 # Fetch them
