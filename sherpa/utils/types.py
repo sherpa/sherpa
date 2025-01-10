@@ -26,7 +26,7 @@ in Python matures.
 
 """
 
-from typing import Callable, Sequence, Union
+from typing import Any, Callable, Sequence, Union
 
 import numpy as np
 
@@ -56,6 +56,13 @@ StatErrFunc = Callable[..., ArrayType]
 StatResults = tuple[float, np.ndarray]
 StatFunc = Callable[..., StatResults]
 
+# What do the optimization functions return?
+#
+OptReturn = tuple[bool,            # did the optimiser succeed
+                  np.ndarray,      # final parameter values
+                  float,           # final statistic value
+                  str,             # message
+                  dict[str, Any]]  # information to pass back
 
 # Represent model evaluation. Using a Protocol may be better, but
 # for now keep with a Callable. Ideally the model would just
