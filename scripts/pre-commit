@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-#  Copyright (C) 2022
+#  Copyright (C) 2022, 2024
 #  MIT
 #
 #
@@ -27,13 +27,64 @@ import re
 import subprocess
 import sys
 
-year = str(datetime.datetime.now().year)
-copyr = re.compile(r"(?P<comment>(#|//))\s*Copyright \(C\) (?P<years>[0-9,\s]+)(?P<institution>[\w\s]*)")
+year = datetime.datetime.now().year
+copyr = re.compile(r"(?P<comment>(#|//))\s*Copyright \(C\) (?P<years>[0-9,\s\-]+)(?P<institution>[\w\s]*)")
 # Only apply this to C or Python files since sherpa does not use
 # copyright statements in others files, also, do not change in extern
 # directory.
 ftype = re.compile(r"^((?!extern).)*(hh|cc|c|h|py)$")
 changed = 0
+
+def split_years(years: str) -> list[int]:
+    '''Split a string of years into a list of integers
+
+    This expands ranges of years, e.g. "2010-2012" becomes
+    [2010, 2011, 2012]
+
+    Parameters
+    ----------
+    years : str
+        A comma-separated list of years, with ranges separated by a dash.
+    '''
+    list_years = []
+    for y in years.split(','):
+        if '-' in y:
+            start, end = y.split('-')
+            list_years.extend(range(int(start), int(end) + 1))
+        else:
+            list_years.append(int(y))
+    return list_years
+
+
+def combine_years(list_years: list[int]) -> str:
+    '''Combine a list of years into a string
+
+    This combines consecutive years into ranges, e.g. [2010, 2011, 2012]
+    becomes "2010-2012".
+    '''
+    list_years = list(set(list_years))
+    list_years.sort()
+    combined = []
+    start = list_years[0]
+    finish = list_years[0]
+    for y in list_years[1:]:
+        if y == finish + 1:
+            finish = y
+        else:
+            if start == finish:
+                combined.append(str(start))
+            else:
+                combined.append(str(start) + '-' + str(finish))
+            start = y
+            finish = y
+
+    if start == finish:
+        combined.append(str(start))
+    else:
+        combined.append(str(start) + '-' + str(finish))
+
+    return ', '.join(combined)
+
 
 if __name__ == '__main__':
 
@@ -46,11 +97,13 @@ if __name__ == '__main__':
         try:
             for line in fileinput.input(files=filenames, inplace=True):
                 m = copyr.match(line)
-                if m and year not in m.group('years'):
+                if m:
+                    list_years = split_years(m.group('years'))
+                if m and year not in list_years:
+                    list_years.append(year)
                     changed = 1
                     print(m.group('comment') +
-                          '  Copyright (C) ' + m.group('years').strip() +
-                          ', ' + year)
+                          '  Copyright (C) ' + combine_years(list_years), end='\n')
                     # sometimes group institution will be empty, because it's
                     # on the next text line. If not, move it there.
                     if m.group('institution'):
@@ -58,6 +111,9 @@ if __name__ == '__main__':
                               '  ' + m.group('institution'), end='')
                 else:
                     print(line, end='')
+            # The following line would automatically commit the changes
+            # but we need some more experience to check the changes by hand
+            # before we activate that.
             # subprocess.Popen("git add " + f, shell=True)
         except FileNotFoundError:
             # file was removed with "git rm" so there is nothing to check here
