@@ -111,7 +111,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.os-dir }}-${{ matrix.python-version }}
-        path: ${{ github.workspace }}/packages/*/sherpa*bz2
+        path: ${{ github.workspace }}/packages/*/sherpa*conda
         if-no-files-found: error
         retention-days: 3
 
@@ -199,7 +199,7 @@ jobs:
     - uses: actions/upload-artifact@v4
       with:
         name: ${{ matrix.os-dir }}-${{ matrix.python-version }}
-        path: ${{ github.workspace }}/packages/*/sherpa*bz2
+        path: ${{ github.workspace }}/packages/*/sherpa*conda
         if-no-files-found: error
         retention-days: 3
 
@@ -247,8 +247,8 @@ jobs:
         source ${conda_loc}/etc/profile.d/conda.sh
         conda install conda-build
         echo "Packages downloaded here: ${{steps.download.outputs.download-path}}"
-        echo "ls packages/*/sherpa*.bz2"
-        ls packages/*/sherpa*.bz2
+        echo "ls packages/*/sherpa*.conda"
+        ls packages/*/sherpa*.conda
         echo "conda index packages"
         conda index packages
 
