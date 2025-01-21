@@ -75,6 +75,16 @@ _y = np.array(
 _err = np.ones(100) * 0.4
 
 
+EXPECTED_VECTOR_ERR = np.asarray([0.00752475, 0.15368132, 0.01088586,
+                                  0.00362169, 0.12308473])
+
+EXPECTED_MATRIX_ERR = np.asarray([[ 5.66219290e-05, -1.13204057e-03,  5.74775798e-05, -1.41279846e-05,   3.89927955e-04],
+                                  [-1.13204057e-03,  2.36179487e-02, -1.24335374e-03,  3.07465479e-04,  -7.64855819e-03],
+                                  [ 5.74775798e-05, -1.24335374e-03,  1.18501872e-04, -1.78172521e-05,  -8.27934918e-05],
+                                  [-1.41279846e-05,  3.07465479e-04, -1.78172521e-05,  1.31166529e-05,  -8.41924293e-05],
+                                  [ 3.89927955e-04, -7.64855819e-03, -8.27934918e-05, -8.41924293e-05,   1.51498514e-02]])
+
+
 @pytest.fixture
 def setup():
     data = Data1D('fake', _x, _y, _err)
@@ -235,22 +245,34 @@ def test_parameter_scale_vector(setup):
     ps = sim.ParameterScaleVector()
     out = ps.get_scales(setup.fit)
 
-    expected = [0.00752475, 0.15368132, 0.01088586, 0.00362169, 0.12308473]
+    assert out == pytest.approx(EXPECTED_VECTOR_ERR)
 
-    assert out == pytest.approx(np.asarray(expected))
+
+@pytest.mark.xfail  # Issue #2210, ps.sigma is ignored
+def test_parameter_scale_vector_sigma2(setup):
+    ps = sim.ParameterScaleVector()
+    ps.sigma = 2
+    out = ps.get_scales(setup.fit)
+
+    # May need to tweak the tolerances for this check
+    assert out == pytest.approx(2.0 * EXPECTED_VECTOR_ERR)
 
 
 def test_parameter_scale_matrix(setup):
     ps = sim.ParameterScaleMatrix()
     out = ps.get_scales(setup.fit)
 
-    expected = [[ 5.66219290e-05, -1.13204057e-03,  5.74775798e-05, -1.41279846e-05,   3.89927955e-04],
-                [-1.13204057e-03,  2.36179487e-02, -1.24335374e-03,  3.07465479e-04,  -7.64855819e-03],
-                [ 5.74775798e-05, -1.24335374e-03,  1.18501872e-04, -1.78172521e-05,  -8.27934918e-05],
-                [-1.41279846e-05,  3.07465479e-04, -1.78172521e-05,  1.31166529e-05,  -8.41924293e-05],
-                [ 3.89927955e-04, -7.64855819e-03, -8.27934918e-05, -8.41924293e-05,   1.51498514e-02]]
+    assert out == pytest.approx(EXPECTED_MATRIX_ERR)
 
-    assert out == pytest.approx(np.asarray(expected))
+
+@pytest.mark.xfail  # Issue #2210, ps.sigma is ignored
+def test_parameter_scale_matrix_sigma2(setup):
+    ps = sim.ParameterScaleMatrix()
+    ps.sigma = 2
+    out = ps.get_scales(setup.fit)
+
+    # May need to tweak the tolerances for this check
+    assert out == pytest.approx(2 * EXPECTED_MATRIX_ERR)
 
 
 def test_parameter_sample_checks_clip_argument(setup):
@@ -657,4 +679,3 @@ def test_to_arviz_tuple():
 
     g1pos = np.array(getattr(dataset.posterior, 'g1.pos'))
     assert g1pos.flatten() == pytest.approx(draws[2][1, :])
-
