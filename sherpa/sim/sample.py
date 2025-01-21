@@ -292,14 +292,16 @@ class ParameterScaleMatrix(ParameterScale):
         scales : numpy array
             Two-dimensional scales array (npar by npar elements,
             matching the free parameters in fit). The values are the
-            covariance matrix for the parameters (or the input values if
-            given).
+            covariance matrix for the parameters (or the input values
+            if given).
 
         """
 
         if myscales is None:
             oldestmethod = fit.estmethod
-            fit.estmethod = Covariance()
+            covar = Covariance()
+            covar.config['sigma'] = self.sigma
+            fit.estmethod = covar
 
             try:
                 r = fit.est_errors()
@@ -307,6 +309,12 @@ class ParameterScaleMatrix(ParameterScale):
                 fit.estmethod = oldestmethod
 
             cov = r.extra_output
+            if cov is not None:
+                # Scale the covariance matrix by the square of the
+                # sigma value (which is expected to be 1, although it
+                # can be changed).
+                #
+                cov = self.sigma * self.sigma * cov
 
         else:
 
