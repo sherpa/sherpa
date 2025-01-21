@@ -266,14 +266,15 @@ def test_parameter_scale_matrix(setup):
     assert out == pytest.approx(EXPECTED_MATRIX_ERR)
 
 
-@pytest.mark.xfail  # Issue #2210, ps.sigma is ignored
 def test_parameter_scale_matrix_sigma2(setup):
     ps = sim.ParameterScaleMatrix()
     ps.sigma = 2
     out = ps.get_scales(setup.fit)
 
-    # May need to tweak the tolerances for this check
-    assert out == pytest.approx(2 * EXPECTED_MATRIX_ERR)
+    # Note that the output is sigma^2 the one-sigma value since the
+    # code has never been clear about sigma/variance.
+    #
+    assert out == pytest.approx(2 * 2 * EXPECTED_MATRIX_ERR)
 
 
 def test_parameter_sample_checks_clip_argument(setup):
