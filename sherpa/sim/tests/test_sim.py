@@ -248,7 +248,6 @@ def test_parameter_scale_vector(setup):
     assert out == pytest.approx(EXPECTED_VECTOR_ERR)
 
 
-@pytest.mark.xfail  # Issue #2210, ps.sigma is ignored
 def test_parameter_scale_vector_sigma2(setup):
     ps = sim.ParameterScaleVector()
     ps.sigma = 2
