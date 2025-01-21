@@ -77,6 +77,16 @@ _y = np.array(
 _err = np.ones(100) * 0.4
 
 
+EXPECTED_VECTOR_ERR = np.asarray([0.00752475, 0.15368132, 0.01088586,
+                                  0.00362169, 0.12308473])
+
+EXPECTED_MATRIX_ERR = np.asarray([[ 5.66219290e-05, -1.13204057e-03,  5.74775798e-05, -1.41279846e-05,   3.89927955e-04],
+                                  [-1.13204057e-03,  2.36179487e-02, -1.24335374e-03,  3.07465479e-04,  -7.64855819e-03],
+                                  [ 5.74775798e-05, -1.24335374e-03,  1.18501872e-04, -1.78172521e-05,  -8.27934918e-05],
+                                  [-1.41279846e-05,  3.07465479e-04, -1.78172521e-05,  1.31166529e-05,  -8.41924293e-05],
+                                  [ 3.89927955e-04, -7.64855819e-03, -8.27934918e-05, -8.41924293e-05,   1.51498514e-02]])
+
+
 @pytest.fixture
 def setup():
     data = Data1D('fake', _x, _y, _err)
@@ -237,22 +247,34 @@ def test_parameter_scale_vector(setup):
     ps = sim.ParameterScaleVector()
     out = ps.get_scales(setup.fit)
 
-    expected = [0.00752475, 0.15368132, 0.01088586, 0.00362169, 0.12308473]
+    assert out == pytest.approx(EXPECTED_VECTOR_ERR)
 
-    assert out == pytest.approx(np.asarray(expected))
+
+@pytest.mark.xfail  # Issue #2210, ps.sigma is ignored
+def test_parameter_scale_vector_sigma2(setup):
+    ps = sim.ParameterScaleVector()
+    ps.sigma = 2
+    out = ps.get_scales(setup.fit)
+
+    # May need to tweak the tolerances for this check
+    assert out == pytest.approx(2.0 * EXPECTED_VECTOR_ERR)
 
 
 def test_parameter_scale_matrix(setup):
     ps = sim.ParameterScaleMatrix()
     out = ps.get_scales(setup.fit)
 
-    expected = [[ 5.66219290e-05, -1.13204057e-03,  5.74775798e-05, -1.41279846e-05,   3.89927955e-04],
-                [-1.13204057e-03,  2.36179487e-02, -1.24335374e-03,  3.07465479e-04,  -7.64855819e-03],
-                [ 5.74775798e-05, -1.24335374e-03,  1.18501872e-04, -1.78172521e-05,  -8.27934918e-05],
-                [-1.41279846e-05,  3.07465479e-04, -1.78172521e-05,  1.31166529e-05,  -8.41924293e-05],
-                [ 3.89927955e-04, -7.64855819e-03, -8.27934918e-05, -8.41924293e-05,   1.51498514e-02]]
+    assert out == pytest.approx(EXPECTED_MATRIX_ERR)
 
-    assert out == pytest.approx(np.asarray(expected))
+
+@pytest.mark.xfail  # Issue #2210, ps.sigma is ignored
+def test_parameter_scale_matrix_sigma2(setup):
+    ps = sim.ParameterScaleMatrix()
+    ps.sigma = 2
+    out = ps.get_scales(setup.fit)
+
+    # May need to tweak the tolerances for this check
+    assert out == pytest.approx(2 * EXPECTED_MATRIX_ERR)
 
 
 def test_parameter_sample_checks_clip_argument(setup):
@@ -339,11 +361,75 @@ def test_normal_sample(setup):
     assert out == pytest.approx(EXPECTED_NORMAL)
 
 
+@pytest.mark.xfail  # See issue #1736
+def test_normal_sample_sigma(setup):
+    """Test normal_sample with different sigma values."""
+
+    # Run with sigma=1 and 2 and then check the output differs
+    # as expected. The return value is a 2D array where the first
+    # column is the statistic value and the remaining columns are
+    # the simulated parameter values. So the check is to compare
+    # the offset of the parameter values to the "truth", and
+    # see if it varies with sigma.
+    #
+    # The sigma=1 values have been tested in test_normal_sample,
+    # so there is no need to recalculate them here. Note they were
+    # calculated with the same RNG.
+    #
+    out1 = EXPECTED_NORMAL
+    out2 = sim.normal_sample(setup.fit, num=setup.num, sigma=2,
+                             correlate=False, rng=setup.rng)
+
+    # Calculate the offset from the expected value, dropping the
+    # statistic column (which is first).
+    #
+    pvals = np.asarray(setup.results.parvals)
+    delta1 = out1[:, 1:] - pvals
+    delta2 = out2[:, 1:] - pvals
+    ratio = delta2 / delta1
+
+    ncols = len(pvals)
+    expected = np.full((setup.num, ncols), 2.0)
+    assert ratio == pytest.approx(expected, rel=1e-4)
+
+
 def test_normal_sample_correlated(setup):
     out = sim.normal_sample(setup.fit, num=setup.num,
                             correlate=True, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL2)
+
+
+@pytest.mark.xfail  # See issue #1736
+def test_normal_sample_correlated_sigma(setup):
+    """Test normal_sample with different sigma values + correlation."""
+
+    # Run with sigma=1 and 2 and then check the output differs
+    # as expected. The return value is a 2D array where the first
+    # column is the statistic value and the remaining columns are
+    # the simulated parameter values. So the check is to compare
+    # the offset of the parameter values to the "truth", and
+    # see if it varies with sigma.
+    #
+    # The sigma=1 values have been tested in test_normal_sample_correlated,
+    # so there is no need to recalculate them here. Note they were
+    # calculated with the same RNG.
+    #
+    out1 = EXPECTED_NORMAL2
+    out2 = sim.normal_sample(setup.fit, num=setup.num, sigma=2,
+                             correlate=True, rng=setup.rng)
+
+    # Calculate the offset from the expected value, dropping the
+    # statistic column (which is first).
+    #
+    pvals = np.asarray(setup.results.parvals)
+    delta1 = out1[:, 1:] - pvals
+    delta2 = out2[:, 1:] - pvals
+    ratio = delta2 / delta1
+
+    ncols = len(pvals)
+    expected = np.full((setup.num, ncols), 2.0)
+    assert ratio == pytest.approx(expected, rel=1e-4)
 
 
 def test_t_sample(setup):
