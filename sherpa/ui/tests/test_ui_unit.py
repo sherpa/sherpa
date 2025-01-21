@@ -1572,6 +1572,9 @@ def test_normal_sample_correlate(setrng, clean_ui):
         assert r == pytest.approx(expected)
 
     check_ratio(e1t[:, 1:], e2t[:, 1:])
+
+    scalevalue = 2.0
+    expected = np.full((3, 2), scalevalue)
     check_ratio(e1f[:, 1:], e2f[:, 1:])
 
     # Assume that the correlated=true/false results are different,
@@ -2164,8 +2167,8 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     # treat as a regression test.
     #
     assert resf_sigma1[:, 0] == pytest.approx([1.96756011, 5.17975686, 38.494826, 3.72584152, 12.42435527])
-    assert resf_sigma16[:, 0] == pytest.approx([1.68841482, 5.17975686, 61.85450933, 3.72584152, 13.99620488])
-    assert resf_sigma2[:, 0] == pytest.approx([1.5868464, 5.17975686, 80.73766006, 3.72584152, 15.11189104])
+    assert resf_sigma16[:, 0] == pytest.approx([2.21202788, 8.96141072, 76.96112604, 4.15693761, 20.58014045])
+    assert resf_sigma2[:, 0] == pytest.approx([1.93025625, 8.39272471, 95.45773131, 4.09849966, 20.96955128])
 
     assert rest_sigma1[:, 0] == pytest.approx([3.26772618, 7.86906547, 1.58810658, 5.40581264, 3.12139264])
     assert rest_sigma16[:, 0] == pytest.approx(rest_sigma1[:, 0])
@@ -2190,9 +2193,11 @@ def test_normal_sample_sigma_warning_message_upper(clean_ui, caplog):
     d16f = resf_sigma16[:, 2] - mdl.m.val
     d2f = resf_sigma2[:, 2] - mdl.m.val
 
-    # For now sigma makes no difference to the chosen parameters
-    check_m_ratio(d16f, d1f, 1.0)
-    check_m_ratio(d2f, d1f, 1.0)
+    # TODO: Why are these ratios not 1.6 and 2, and why is sigma=2
+    # smaller than sigma=1.6?
+    #
+    check_m_ratio(d16f, d1f, 1.2785750682547592)
+    check_m_ratio(d2f, d1f, 1.2422080062609844)
 
     # For correlate=True, there is no need to special case the
     # c value. Since this uses the covariance matrix we check
@@ -2268,12 +2273,11 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     r = caplog.records[nlog3 + 5]
     assert r.getMessage() == "1 sigma bounds for parameter mdl.c could not be found, using soft limit minimum"  # note: this does not report the actual sigma limit
 
-    # Check how the statistic values vary. As sigma increases you
-    # might expect the statistic to increase, but at the moment
-    # they stay the same.
+    # Check how the statistic values vary.
     #
-    assert resf_sigma16[:, 0] == pytest.approx(resf_sigma1[:, 0])
-    assert resf_sigma2[:, 0] == pytest.approx(resf_sigma1[:, 0])
+    assert resf_sigma1[:, 0] == pytest.approx([1.14516881e+03, 5.40748610e+04, 2.08524903e+01, 2.59152235e+04, 1.15355855e+03])
+    assert resf_sigma16[:, 0] == pytest.approx([1.12467203e+03, 5.37400095e+04, 3.00878135e+01, 2.59548008e+04, 1.20528623e+03])
+    assert resf_sigma2[:, 0] == pytest.approx([1.12733428e+03, 5.37836483e+04, 2.87802714e+01, 2.59496320e+04, 1.19845547e+03])
 
     assert rest_sigma16[:, 0] == pytest.approx(rest_sigma1[:, 0])
     assert rest_sigma2[:, 0] == pytest.approx(rest_sigma1[:, 0])
@@ -2294,9 +2298,11 @@ def test_normal_sample_sigma_warning_message_lower(clean_ui, caplog):
     d16f = resf_sigma16[:, 2] - mdl.m.val
     d2f = resf_sigma2[:, 2] - mdl.m.val
 
-    # For now sigma makes no difference to the chosen parameters
-    check_m_ratio(d16f, d1f, 1.0)
-    check_m_ratio(d2f, d1f, 1.0)
+    # TODO: Why are these ratios not 1.6 and 2, and why is sigma=2
+    # smaller than sigma=1.6?
+    #
+    check_m_ratio(d16f, d1f, 1.2785750685947328)
+    check_m_ratio(d2f, d1f, 1.24220800667757)
 
     # For correlate=True, there is no need to special case the
     # c value. Since this uses the covariance matrix we check
