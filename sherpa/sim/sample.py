@@ -199,7 +199,7 @@ class ParameterScaleVector(ParameterScale):
 
             covar = Covariance()
             covar.config['sigma'] = self.sigma
-            fit.estmethod = Covariance()
+            fit.estmethod = covar
 
             try:
                 r = fit.est_errors()
