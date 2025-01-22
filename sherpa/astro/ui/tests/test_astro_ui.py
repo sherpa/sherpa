@@ -170,8 +170,7 @@ def test_dataspace1d_datapha(clean_astro_ui):
 
     assert ui.list_data_ids() == []
 
-    # Note the grid is ignored, other than the number of bins
-    ui.dataspace1d(20, 30, step=2.5, id='x', dstype=ui.DataPHA)
+    ui.dataspace1d(1, 5, id='x', dstype=ui.DataPHA)
 
     assert ui.list_data_ids() == ['x']
     assert ui.get_data('x').name == 'dataspace1d'
@@ -199,7 +198,7 @@ def test_dataspace1d_datapha_bkg_nopha(clean_astro_ui):
     """We need a PHA to create a background dataset"""
 
     with pytest.raises(IdentifierErr) as exc:
-        ui.dataspace1d(20, 30, step=2.5, id='x', bkg_id=2, dstype=ui.DataPHA)
+        ui.dataspace1d(1, 5, id='x', bkg_id=2, dstype=ui.DataPHA)
 
     assert str(exc.value) == 'data set x has not been set'
 
@@ -212,13 +211,12 @@ def test_dataspace1d_datapha_bkg(clean_astro_ui):
 
     # We don't use the grid range or step size since numbins has been
     # given.
-    ui.dataspace1d(20, 30, step=2.5, numbins=10, id='x', dstype=ui.DataPHA)
+    ui.dataspace1d(1, 10, numbins=10, id='x', dstype=ui.DataPHA)
 
     assert ui.list_data_ids() == ['x']
     assert ui.list_bkg_ids('x') == []
 
-    ui.dataspace1d(20, 30, step=2.5, numbins=10, id='x', bkg_id=2,
-                   dstype=ui.DataPHA)
+    ui.dataspace1d(1, 10, step=1, id='x', bkg_id=2, dstype=ui.DataPHA)
 
     assert ui.list_data_ids() == ['x']
     assert ui.list_bkg_ids('x') == [2]
