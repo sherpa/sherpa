@@ -4236,7 +4236,7 @@ def test_set_fit_checks_arg(session):
         s.set_rng(1234)
 
 
-@pytest.mark.parametrize("offset", [pytest.param(0, marks=pytest.mark.xfail), 1, pytest.param(5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("offset", [0, 1, 5])
 def test_dataspace1d_datapha_offset(offset):
     """Ensure we can create the correct channel numbers for DataPHA"""
 
@@ -4251,7 +4251,7 @@ def test_dataspace1d_datapha_offset(offset):
     assert d.channel == pytest.approx(chans)
 
 
-@pytest.mark.parametrize("offset", [pytest.param(0, marks=pytest.mark.xfail), 1, pytest.param(5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("offset", [0, 1, 5])
 def test_dataspace1d_datapha_offset_bkg(offset):
     """Can we set the background correctly"""
 
@@ -4293,7 +4293,6 @@ def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
                       dstype=DataPHA)
 
 
-@pytest.mark.xfail
 @pytest.mark.parametrize("start,stop,step,numbins",
                          [[1, 5, 0.5, None],
                           [1, 5, 1.1, None],
