@@ -4234,3 +4234,87 @@ def test_set_fit_checks_arg(session):
     with pytest.raises(ArgumentTypeErr,
                        match="^'rng' must be a Generator or None$"):
         s.set_rng(1234)
+
+
+@pytest.mark.parametrize("offset", [pytest.param(0, marks=pytest.mark.xfail), 1, pytest.param(5, marks=pytest.mark.xfail)])
+def test_dataspace1d_datapha_offset(offset):
+    """Ensure we can create the correct channel numbers for DataPHA"""
+
+    s = AstroSession()
+    detchans = 10
+    s.dataspace1d(offset, offset + detchans - 1, dstype=DataPHA)
+    d = s.get_data()
+    assert isinstance(d, DataPHA)
+    assert len(d.channel) == detchans
+    assert d.counts == pytest.approx(np.zeros(detchans))
+    chans = np.linspace(offset, detchans - 1 + offset, detchans)
+    assert d.channel == pytest.approx(chans)
+
+
+@pytest.mark.parametrize("offset", [pytest.param(0, marks=pytest.mark.xfail), 1, pytest.param(5, marks=pytest.mark.xfail)])
+def test_dataspace1d_datapha_offset_bkg(offset):
+    """Can we set the background correctly"""
+
+    s = AstroSession()
+    detchans = 10
+
+    # Need to create the data first
+    s.dataspace1d(offset, offset + detchans - 1, dstype=DataPHA)
+
+    # Now the background
+    s.dataspace1d(offset, offset + detchans - 1, bkg_id=1,
+                  dstype=DataPHA)
+
+    d = s.get_bkg()
+    assert isinstance(d, DataPHA)
+    assert len(d.channel) == detchans
+    assert d.counts == pytest.approx(np.zeros(detchans))
+    chans = np.linspace(offset, detchans - 1 + offset, detchans)
+    assert d.channel == pytest.approx(chans)
+
+
+@pytest.mark.parametrize("start,stop,step,numbins",
+                         [[1, 1, 1, None],
+                          [1, 0, 1, None],
+                          [1, 5, 20, None]
+                          ])
+def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
+    """What happens with invalid arguments?
+
+    These errors come from sherpa.utils.dataspace1d
+    """
+
+    s = AstroSession()
+    detchans = 10
+
+    # The error message is hard to test programatically.
+    with pytest.raises(TypeError):
+        s.dataspace1d(start, stop, step=step, numbins=numbins,
+                      dstype=DataPHA)
+
+
+@pytest.mark.xfail
+@pytest.mark.parametrize("start,stop,step,numbins",
+                         [[1, 5, 0.5, None],
+                          [1, 5, 1.1, None],
+                          [1, 5, 1, 2],
+                          [1.1, 5, 1, None],
+                          # Note: the following does not fail as the
+                          # 5.1 gets morphed into 6, and we do not
+                          # check the input arguments as this does
+                          # not seem worth doing
+                          # [1, 5.1, 1, None]
+                          ])
+def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
+    """What happens with invalid arguments?
+
+    These errors come from sherpa.astro.ui.utils.dataspace1d
+    """
+
+    s = AstroSession()
+    detchans = 10
+
+    # The error message is hard to test programatically.
+    with pytest.raises(DataErr):
+        s.dataspace1d(start, stop, step=step, numbins=numbins,
+                      dstype=DataPHA)
