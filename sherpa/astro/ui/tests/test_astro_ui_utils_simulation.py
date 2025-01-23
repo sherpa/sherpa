@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020 - 2024
+#  Copyright (C) 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -22,6 +22,8 @@
 
 At present it is *very* limited.
 """
+
+import warnings
 
 import numpy as np
 
@@ -441,8 +443,9 @@ def test_fake_pha_add_background(method, expected, idval, clean_astro_ui):
                          [(None, [189, 382, 400]),
                           (identity, [200, 400, 400])
                           ])
+@pytest.mark.parametrize("offset", [pytest.param(0, marks=pytest.mark.xfail), 1, pytest.param(5, marks=pytest.mark.xfail)])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
-def test_fake_pha_no_data(method, expected, idval, clean_astro_ui):
+def test_fake_pha_no_data(method, expected, offset, idval, clean_astro_ui):
     """What happens if there is no data loaded at the id?
     """
 
@@ -452,7 +455,8 @@ def test_fake_pha_no_data(method, expected, idval, clean_astro_ui):
     elo = ebins[:-1]
     ehi = ebins[1:]
     arf = ui.create_arf(elo, ehi)
-    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    rmf = ui.create_rmf(elo, ehi, e_min=elo, e_max=ehi,
+                        startchan=offset)
 
     mdl = ui.create_model_component('const1d', 'mdl')
     mdl.c0 = 2
@@ -460,7 +464,7 @@ def test_fake_pha_no_data(method, expected, idval, clean_astro_ui):
 
     ui.fake_pha(idval, arf, rmf, 1000.0, method=method)
 
-    channels = np.arange(1, 4)
+    channels = np.arange(offset, 4 + offset - 1)
     counts = [1, 1, 1]
 
     faked = ui.get_data(idval)
@@ -1071,3 +1075,46 @@ def test_fake_pha_subtracted(clean_astro_ui):
     # At present the subtraction flag is not retained.
     #
     assert not ui.get_data().subtracted
+
+
+@requires_fits
+@requires_data
+def test_fake_pha_issue_2212(make_data_path, clean_astro_ui):
+    """Check can simulate data when channel starts at 0."""
+
+    # Hide the UserWarning messages about replacing ENERG_LO=0
+    with warnings.catch_warnings(record=True) as ws:
+        warnings.simplefilter("ignore")
+        ui.load_pha(3, make_data_path("target_sr.pha"))
+        ui.load_rmf(3, make_data_path("swxpc0to12s6_20130101v014.rmf"))
+        ui.load_arf(3, make_data_path("target_sr.arf"))
+
+    dorig = ui.get_data(3)
+    ochannels = dorig.channel.copy()
+    ocounts = dorig.counts.copy()
+
+    # Just to check the change in normalization below.
+    assert ocounts.sum() == 58
+
+    ui.set_source(3, ui.powlaw1d.pl)
+    pl.gamma = 1.8
+    pl.ampl = 5e-4
+
+    ui.set_rng(np.random.RandomState(374563))
+    ui.fake_pha(3)
+
+    dnew = ui.get_data(3)
+    nchannels = dnew.channel.copy()
+    ncounts = dnew.counts.copy()
+
+    # The simulated spectrum should have significantly more counts
+    # than the original (the data has an amplitude ~ 6e-5).  Here we
+    # just want to check that the counts have changed, not the details
+    # of the simulation.
+    #
+    assert nchannels == pytest.approx(ochannels)
+    assert (ncounts >= 0).all()
+    # The actual value depends on the simulation details so it may
+    # need to be changed, or the test switched to something like
+    # ncounds.sum() > ocounts.sum().
+    assert ncounts.sum() == 365
