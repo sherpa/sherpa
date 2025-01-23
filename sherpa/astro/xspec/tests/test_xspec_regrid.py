@@ -30,7 +30,10 @@ is to check sepcialized behavior with the XSPEC models.
 
 """
 
+import re
+
 import numpy as np
+
 import pytest
 
 from sherpa.models.basic import Const1D, Gauss1D
@@ -45,7 +48,10 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 # miss). It also lets us check why a test fails (in case the failure
 # mode changes due to other parts of Sherpa).
 #
-IntegrateError = "'integrate' is an invalid keyword argument for this function"
+# The error message changed in Python 3.13, hence the check for
+# either message.
+#
+IntegrateError = "('integrate' is an invalid keyword argument for this function)|(this function got an unexpected keyword argument 'integrate')"
 
 
 @requires_xspec
@@ -96,7 +102,7 @@ def test_regrid_does_not_require_bins(mname, xsmodel):
 
     # assert str(exc.value) == 'calc() requires pars,lo,hi arguments, sent 2 arguments'
     # assert str(exc.value).endswith('() takes no keyword arguments')
-    assert str(exc.value) == IntegrateError
+    assert re.match(IntegrateError, str(exc.value))
 
 
 @requires_data

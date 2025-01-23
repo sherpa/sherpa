@@ -26,6 +26,7 @@ to be kept up to date.
 from io import StringIO
 import logging
 import pickle
+import sys
 from unittest.mock import patch
 
 import numpy as np
@@ -1142,7 +1143,21 @@ def test_modelwrapper_str_with_doc():
 
     s = Session()
     wrap = ModelWrapper(s, ModelWithDoc)
-    assert str(wrap) == "This has a doc string\n\n    This line is not included in the model-wrapped doc string.\n    "
+
+    # Python 3.13 has changed how it handles indentation
+    lwrap = str(wrap).split("\n")
+    assert lwrap[0] == "This has a doc string"
+    assert lwrap[1] == ""
+
+    msg = "This line is not included in the model-wrapped doc string."
+    if sys.version_info >= (3, 13, 0):
+        assert lwrap[2] == msg
+        assert lwrap[3] == ""
+    else:
+        assert lwrap[2] == f"    {msg}"
+        assert lwrap[3] == "    "
+
+    assert len(lwrap) == 4
 
 
 def test_modelwrapper_str_no_doc():
