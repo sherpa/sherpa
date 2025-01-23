@@ -443,7 +443,7 @@ def test_fake_pha_add_background(method, expected, idval, clean_astro_ui):
                          [(None, [189, 382, 400]),
                           (identity, [200, 400, 400])
                           ])
-@pytest.mark.parametrize("offset", [pytest.param(0, marks=pytest.mark.xfail), 1, pytest.param(5, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("offset", [0, 1, 5])
 @pytest.mark.parametrize("idval", [None, 1, "faked"])
 def test_fake_pha_no_data(method, expected, offset, idval, clean_astro_ui):
     """What happens if there is no data loaded at the id?
