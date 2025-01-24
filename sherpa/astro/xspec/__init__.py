@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015 - 2024
+#  Copyright (C) 2010, 2015 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -106,7 +106,7 @@ from contextlib import suppress
 import logging
 import string
 import tempfile
-from typing import Any, Optional, Union
+from typing import Any, overload
 import warnings
 
 import numpy as np
@@ -136,12 +136,24 @@ warning = logging.getLogger(__name__).warning
 # when the compiled code has not been compiled (e.g. for a Sphinx
 # documentation run).
 #
-def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
+@overload
+def get_xsabund() -> str:
+    ...
+
+@overload
+def get_xsabund(element: None) -> str:
+    ...
+
+@overload
+def get_xsabund(element: str) -> float:
+    ...
+
+def get_xsabund(element: str | None = None) -> str | float:
     """Return the X-Spec abundance setting or elemental abundance.
 
     Parameters
     ----------
-    element : str, optional
+    element : str or None, optional
        When not given, the abundance table name is returned.
        If a string, then it must be an element name from:
        'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
@@ -165,8 +177,8 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
     Examples
     --------
 
-    Return the current abundance setting, which in this case
-    is 'angr', the default value for X-Spec:
+    Return the current abundance setting, which in this case is
+    'angr', the default value for X-Spec:
 
     >>> get_xsabund()
     'angr'
@@ -176,11 +188,23 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
     >>> get_xsabund('He')
     0.09769999980926514
 
-    The `set_xsabund` function has been used to read in the
-    abundances from a file, so the routine now returns the
-    string 'file':
+    The `set_xsabund` function has been used to read in the abundances
+    from a file, so the routine now returns the string 'file':
 
     >>> set_xsabund('abund.dat')
+    >>> get_xsabund()
+    'file'
+
+    Use the Lodders 2003 abundances but replace the Oxygen abundance
+    value with 0. In this case the abundance table is labelled as
+    'file':
+
+    >>> set_xsabund("lodd")
+    >>> get_xsabund()
+    'lodd'
+    >>> tbl = get_xsabundances()
+    >>> tbl['O'] = 0
+    >>> set_xsabundances(tbl)
     >>> get_xsabund()
     'file'
 
@@ -219,7 +243,7 @@ def get_xsabundances() -> dict[str, float]:
             for name in get_xselements().keys()}
 
 
-def get_xsabund_doc(name: Optional[str] = None) -> str:
+def get_xsabund_doc(name: str | None = None) -> str:
     """Return the documentation for the abundance table.
 
     Parameters
@@ -470,17 +494,18 @@ def set_xsabund(abundance: str) -> None:
     -----
     The pre-defined abundance tables are:
 
-     - 'angr', from [2]_
-     - 'aspl', from [3]_
-     - 'feld', from [4]_, except for elements not listed which
+     - 'aneb', from [2]_
+     - 'angr', from [3]_
+     - 'aspl', from [4]_
+     - 'felc', from [5]_ (coronal)
+     - 'feld', from [6]_, except for elements not listed which
        are given 'grsa' abundances
-     - 'aneb', from [5]_
-     - 'grsa', from [6]_
-     - 'wilm', from [7]_, except for elements not listed which
-       are given zero abundance
+     - 'grsa', from [7]_
      - 'lodd', from [8]_
      - 'lpgp', from [9]_ (photospheric)
      - 'lpgs', from [9]_ (proto-solar)
+     - 'wilm', from [10]_, except for elements not listed which
+       are given zero abundance
 
     The values for these tables are given at [1]_.
 
@@ -498,27 +523,27 @@ def set_xsabund(abundance: str) -> None:
            compiled version used by Sherpa; use `get_xsversion` to
            check.
 
-    .. [2] Anders E. & Grevesse N. (1989, Geochimica et
-           Cosmochimica Acta 53, 197)
-           https://adsabs.harvard.edu/abs/1989GeCoA..53..197A
-
-    .. [3] Asplund M., Grevesse N., Sauval A.J. & Scott P.
-           (2009, ARAA, 47, 481)
-           https://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
-
-    .. [4] Feldman U.(1992, Physica Scripta 46, 202)
-           https://adsabs.harvard.edu/abs/1992PhyS...46..202F
-
-    .. [5] Anders E. & Ebihara (1982, Geochimica et Cosmochimica
+    .. [2] Anders E. & Ebihara (1982, Geochimica et Cosmochimica
            Acta 46, 2363)
            https://adsabs.harvard.edu/abs/1982GeCoA..46.2363A
 
-    .. [6] Grevesse, N. & Sauval, A.J. (1998, Space Science
+    .. [3] Anders E. & Grevesse N. (1989, Geochimica et
+           Cosmochimica Acta 53, 197)
+           https://adsabs.harvard.edu/abs/1989GeCoA..53..197A
+
+    .. [4] Asplund M., Grevesse N., Sauval A.J. & Scott P.
+           (2009, ARAA, 47, 481)
+           https://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
+
+    .. [5] Feldman, U., Mandelbaum, P., Seely, J.L., Doschek, G.A., Gursky H.
+           (1992, ApJSS, 81, 387)
+
+    .. [6] Feldman U.(1992, Physica Scripta 46, 202)
+           https://adsabs.harvard.edu/abs/1992PhyS...46..202F
+
+    .. [7] Grevesse, N. & Sauval, A.J. (1998, Space Science
            Reviews 85, 161)
            https://adsabs.harvard.edu/abs/1998SSRv...85..161G
-
-    .. [7] Wilms, Allen & McCray (2000, ApJ 542, 914)
-           https://adsabs.harvard.edu/abs/2000ApJ...542..914W
 
     .. [8] Lodders, K (2003, ApJ 591, 1220)
            https://adsabs.harvard.edu/abs/2003ApJ...591.1220L
@@ -526,6 +551,9 @@ def set_xsabund(abundance: str) -> None:
     .. [9] Lodders K., Palme H., Gail H.P., Landolt-Börnstein,
            New Series, vol VI/4B, pp 560–630 (2009)
            https://ui.adsabs.harvard.edu/abs/2009LanB...4B..712L/abstract
+
+    .. [10] Wilms, Allen & McCray (2000, ApJ 542, 914)
+            https://adsabs.harvard.edu/abs/2000ApJ...542..914W
 
     Examples
     --------
