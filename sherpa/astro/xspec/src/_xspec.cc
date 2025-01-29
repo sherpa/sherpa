@@ -213,6 +213,15 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
   tableName = XSutility::lowerCase(tableName);
 
   if (tableName == "file") {
+    // Can not use this if no abundances have been loaded (otherwise
+    // XSPEC has been known to crash).
+    //
+    if (!FunctionUtility::abundChanged()) {
+      PyErr_SetString( PyExc_ValueError,
+		       (char*)"Abundances have not been read in from a file or array" );
+      return NULL;
+    }
+
     FunctionUtility::ABUND(tableName);
     Py_RETURN_NONE;
   }
@@ -222,7 +231,17 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
     Py_RETURN_NONE;
   }
 
-  // If we've got here then try to read the data from a file.
+  // If we've got here then try to read the data from a file. This
+  // could be done with a call to FunctionUtility::readNewAbundances()
+  // but
+  // - it doesn't seem to support reading a file with less then
+  //   NELEMS elements,
+  // - and if it did it's not clear how to handle the screen output
+  //   that (may) be created in that case.
+  //
+  // So we essentially repeat the readNewAbundaces code here, which
+  // has the advantage of not having to throw an error which we then
+  // have to catch.
   //
   const size_t nelems = FunctionUtility::NELEMS();
   std::vector<float> vals(nelems, 0);
@@ -256,6 +275,7 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
 
   FunctionUtility::ABUND("file");
   FunctionUtility::abundanceVectors("file", vals);
+  FunctionUtility::abundChanged(true);
 
   Py_RETURN_NONE;
 
@@ -267,6 +287,12 @@ static PyObject* set_abund( PyObject *self, PyObject *args )
 // abundances to "file". This means that a user can not
 // load up a set of abundances and *NOT* use them; they
 // would have to reset the abundance table after loading.
+//
+// It looks like we could label these vectors with any value,
+// such as "tbl1" or "aneb", rather than "file", which would
+// allow multiple tables to be loaded. However, that is for
+// later work to see if it is worthwhile (the XSPEC code doesn't
+// make it clear how "open" the namespace is here)
 //
 static PyObject* set_abund_vector( PyObject *self, PyObject *args )
 {
@@ -306,6 +332,7 @@ static PyObject* set_abund_vector( PyObject *self, PyObject *args )
 			IosHolder::errHolder());
 
   FunctionUtility::abundanceVectors("file", vals);
+  FunctionUtility::abundChanged(true);
 
   Py_RETURN_NONE;
 }
