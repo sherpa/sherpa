@@ -831,14 +831,14 @@ def test_get_xsstate_keys():
                          ["abund", "chatter", "cosmo", "xsect",
                           "modelstrings"])  # paths is not a required key
 def test_set_xsstate_missing_key(key):
-    """Check set_xsstate does nothing if required key is missing.
+    """Check set_xsstate handles a missing key.
 
     """
 
     from sherpa.astro import xspec
 
     ostate = xspec.get_xsstate()
-
+    assert key in ostate
     for val in ostate.values():
         assert val is not None
 
@@ -846,20 +846,49 @@ def test_set_xsstate_missing_key(key):
         """Pick the first item in vals that is not value"""
         return [v for v in vals if v != value][0]
 
-    # Try to pick valid arguments where possible.
+    # We need valid arguments as the values will get set woth the
+    # set_xsstate(fake) call below.
     #
     fake = {'abund': not_elem(ostate['abund'], ["angr", "aspl", "grsa"]),
             'xsect': not_elem(ostate['xsect'], ["bcmc", "vern", "obcm"]),
             'chatter': 10,
             'cosmo': (50, 0.1, 0.4),
-            'modelstrings': {'foo': 2},
+            'modelstrings': {'foo': '2'},
             'paths': {'manager': '/dev/null'}}
 
     del fake[key]
-    xspec.set_xsstate(fake)
 
-    nstate = xspec.get_xsstate()
-    assert nstate == ostate
+    try:
+        xspec.set_xsstate(fake)
+
+        nstate = xspec.get_xsstate()
+        ncopy = nstate.copy()
+        del ncopy[key]
+
+        # The key should be unchanged; the others set to those in
+        # fake. Checking the latter is a bit annoying.
+        #
+        assert nstate[key] == ostate[key]
+        for key, value in fake.items():
+            match key:
+                case "cosmo":
+                    assert ncopy[key] == pytest.approx(value)
+
+                case "modelstrings":
+                    for mkey, mvalue in value.items():
+                        assert ncopy[key][mkey.upper()] == mvalue
+
+                case _:
+                    assert ncopy[key] == value
+
+    finally:
+        xspec.set_xsstate(ostate)
+
+        # Revert any unwanted settings (since we do not clear out
+        # the old settings).
+        #
+        for key in fake.get("modelstrings", {}).keys():
+            xspec.set_xsxset(key, "")
 
 
 @requires_xspec
@@ -906,7 +935,7 @@ def test_set_xsstate_xset():
     # There should be no value for this key (since it isn't
     # in modelstrings by construction).
     #
-    assert key not in xspec.modelstrings
+    assert key not in xspec.xsstate["modelstrings"]
     assert xspec.get_xsxset(key) == ''
 
     nstate = copy.deepcopy(ostate)
@@ -914,8 +943,8 @@ def test_set_xsstate_xset():
     xspec.set_xsstate(nstate)
 
     assert xspec.get_xsxset(key) == val
-    assert ukey in xspec.modelstrings
-    assert xspec.modelstrings[ukey] == val
+    assert ukey in xspec.xsstate["modelstrings"]
+    assert xspec.xsstate["modelstrings"][ukey] == val
 
     xspec.set_xsstate(ostate)
 
@@ -929,7 +958,7 @@ def test_set_xsstate_xset():
     # assert xspec.get_xsstate() == ostate
 
     xspec.set_xsxset(key, '')
-    del xspec.modelstrings[ukey]
+    del xspec.xsstate["modelstrings"][ukey]
     assert xspec.get_xsstate() == ostate
 
 

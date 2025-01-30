@@ -132,6 +132,21 @@ from . import _xspec  # type: ignore
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
+# Store information useful to re-create the XSPEC state. This could be
+# a structured type (e.g. a dataclass), but it's not clear how we want
+# this to evolve, so leave as a dict.
+#
+# The idea is that we do not always want to rely on the XSPEC model
+# library - since it doesn't always let you ask "what has the user
+# set", with the interface currently available to Sherpa - so we
+# record these settings manually.
+#
+xsstate: dict[str, Any] = {
+    "modelstrings": {},
+    "paths": {},
+}
+
+
 # Python wrappers around the exported functions from _xspec. This
 # provides a more-accurate function signature to the user, makes
 # the documentation easier to write, and makes it available even
@@ -708,17 +723,6 @@ def set_xsxsect(name: str) -> None:
     _xspec.set_xsxsect(name)
 
 
-# Wrap the XSET function in Python, so that we can keep a record of
-# the strings the user sent as specific XSPEC model strings (if any) during
-# the session.  Only store if setting was successful.
-# See:
-# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
-modelstrings = {}
-
-# Store any path changes
-xspecpaths = {}
-
-
 def get_xsxset(name: str) -> str:
     """Return the X-Spec model setting.
 
@@ -810,8 +814,9 @@ def set_xsxset(name: str, value: str) -> None:
     """
     name = name.upper()
     _xspec.set_xsxset(name, value)
-    if get_xsxset(name) != "":
-        modelstrings[name] = get_xsxset(name)
+    nval = get_xsxset(name)
+    if nval != "":
+        xsstate["modelstrings"][name] = nval
 
 
 def get_xspath_manager() -> str:
@@ -883,7 +888,7 @@ def set_xspath_manager(path: str) -> None:
         raise IOError("Unable to set the XSPEC manager path "
                       f"to '{path}'")
 
-    xspecpaths['manager'] = path
+    xsstate["paths"]["manager"] = path
 
 
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is
@@ -923,12 +928,17 @@ def get_xsstate() -> dict[str, Any]:
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
-            "modelstrings": modelstrings.copy(),
-            "paths": xspecpaths.copy()}
+            "modelstrings": xsstate["modelstrings"].copy(),
+            "paths": xsstate["paths"].copy()
+            }
 
 
 def set_xsstate(state: dict[str, Any]) -> None:
     """Restore the state of the XSPEC module.
+
+    .. versionchanged:: 4.17.1
+       The input state no-longer requires all the keys to be
+       present.
 
     Parameters
     ----------
@@ -936,47 +946,47 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'.
+        and 'paths'. If a keyword is missing then that setting will
+        not be changed.
 
     See Also
     --------
     get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxsect,
     set_xsxset
 
-    Notes
-    -----
-    The state of the XSPEC module will only be changed if all
-    the required keys in the dictionary are present. All keys apart
-    from 'paths' are required.
     """
 
-    if type(state) == dict and \
-       'abund' in state and \
-       'chatter' in state and \
-       'cosmo' in state and \
-       'xsect' in state and \
-       'modelstrings' in state:
-
-        h0, q0, l0 = state["cosmo"]
-
-        set_xsabund(state["abund"])
-        set_xschatter(state["chatter"])
-        set_xscosmo(h0, q0, l0)
-        set_xsxsect(state["xsect"])
-        for name in state["modelstrings"].keys():
-            set_xsxset(name, state["modelstrings"][name])
-
-        # This is optional to support re-loading state information
-        # from a version of XSPEC which did not provide the path
-        # information.
-        #
+    # As the input argument has changed over time, allow each setting
+    # to be optional. However, we assume that, if given, the value is
+    # of the correct type (such as a dictionary, three-element tuple,
+    # or string).
+    #
+    with suppress(KeyError):
         try:
-            managerpath = state['paths']['manager']
-        except KeyError:
-            managerpath = None
+            set_xschatter(state["chatter"])
+        except TypeError:
+            # Assume state is not a dictionary, so return.
+            return
 
-        if managerpath is not None:
-            set_xspath_manager(managerpath)
+    with suppress(KeyError):
+        set_xsabund(state["abund"])
+
+    with suppress(KeyError):
+        set_xsxsect(state["xsect"])
+
+    with suppress(KeyError):
+        h0, q0, l0 = state["cosmo"]
+        set_xscosmo(h0, q0, l0)
+
+    with suppress(KeyError):
+        # Should this remove any old keys? With the current API this
+        # is hard to do reliably.
+        #
+        for name, value in state["modelstrings"].items():
+            set_xsxset(name, value)
+
+    with suppress(KeyError):
+        set_xspath_manager(state["paths"]["manager"])
 
 
 def read_xstable_model(modelname: str,
