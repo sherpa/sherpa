@@ -826,7 +826,10 @@ def test_get_xsstate_keys():
 
 
 @requires_xspec
-def test_set_xsstate_missing_key():
+@pytest.mark.parametrize("key",
+                         ["abund", "chatter", "cosmo", "xsect",
+                          "modelstrings"])  # paths is not a required key
+def test_set_xsstate_missing_key(key):
     """Check set_xsstate does nothing if required key is missing.
 
     """
@@ -838,26 +841,24 @@ def test_set_xsstate_missing_key():
     for val in ostate.values():
         assert val is not None
 
-    # paths is not a required key
-    #
-    req_keys = ["abund", "chatter", "cosmo", "xsect",
-                "modelstrings"]
+    def not_elem(value, vals):
+        """Pick the first item in vals that is not value"""
+        return [v for v in vals if v != value][0]
 
-    fake = {'abund': ostate['abund'] + '_copy',
-            'xsect': ostate['xsect'] + '_copy',
-            'chatter': -10,
-            'cosmo': (0.0, 0.0),  # two elements will cause a failure
-            'modelstrings': {'foo': 2, 'bar': None},
+    # Try to pick valid arguments where possible.
+    #
+    fake = {'abund': not_elem(ostate['abund'], ["angr", "aspl", "grsa"]),
+            'xsect': not_elem(ostate['xsect'], ["bcmc", "vern", "obcm"]),
+            'chatter': 10,
+            'cosmo': (50, 0.1, 0.4),
+            'modelstrings': {'foo': 2},
             'paths': {'manager': '/dev/null'}}
 
-    for key in req_keys:
+    del fake[key]
+    xspec.set_xsstate(fake)
 
-        copy = fake.copy()
-        del copy[key]
-        xspec.set_xsstate(copy)
-
-        nstate = xspec.get_xsstate()
-        assert nstate == ostate
+    nstate = xspec.get_xsstate()
+    assert nstate == ostate
 
 
 @requires_xspec
@@ -893,6 +894,7 @@ def test_set_xsstate_xset():
 
     ostate = xspec.get_xsstate()
 
+    # Ensure we use an unknown-to-Sherpa keyword.
     key = 'a-test-keyword'
     val = '/foo/bar/baz.pha'
     while key in ostate['modelstrings']:
