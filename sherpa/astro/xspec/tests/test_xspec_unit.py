@@ -846,7 +846,7 @@ def test_set_xsstate_missing_key(key):
         """Pick the first item in vals that is not value"""
         return [v for v in vals if v != value][0]
 
-    # We need valid arguments as the values will get set woth the
+    # We need valid arguments as the values will get set with the
     # set_xsstate(fake) call below.
     #
     fake = {'abund': not_elem(ostate['abund'], ["angr", "aspl", "grsa"]),
