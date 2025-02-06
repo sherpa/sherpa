@@ -676,7 +676,86 @@ def test_abund_change_file_subset(tmp_path):
 
 
 @requires_xspec
+def test_get_xsabundances_table_name():
+    """Check we can get a different abundance table to the default."""
+
+    from sherpa.astro import xspec
+
+    oval = xspec.get_xsabund()
+    assert oval != "wilm"  # just in case
+
+    elems1 = xspec.get_xsabundances()
+    elems2 = xspec.get_xsabundances("wilm")
+    elems3 = xspec.get_xsabundances()
+
+    assert elems1 != elems2
+    assert elems1 == elems3  # just to check no change
+    check_abundances(elems2["H"],
+                     elems2["He"],
+                     elems2["Si"],
+                     elems2["Ar"],
+                     elems2["K"],
+                     elems2["Fe"])
+
+
+@requires_xspec
+def test_get_xsabundances_table_name_file():
+    """Check we can get a different abundance table to the default.
+
+    Unlike test_get_xsabundances_table_name we load our own abnudances
+    so we can definitely check they are being used.
+
+    """
+
+    from sherpa.astro import xspec
+
+    orig = xspec.get_xsabund()
+    oelems = xspec.get_xsabundances()
+    assert orig != "file"  # as restoring this would be annoying
+
+    nelems = {"H": 1.0, "He": 0.2, "Fe": 2.3, "Zn": 1.3}
+    try:
+        xspec.set_xsabundances(nelems)
+        xspec.set_xsabund(orig)
+
+        got1 = xspec.get_xsabundances()
+        got2 = xspec.get_xsabundances("file")
+    finally:
+        xspec.set_xsabund(orig)
+
+    # Check that got2 matches what we expect and isn't the same as
+    # got1.
+    #
+    assert got1 == oelems
+    assert got1 != got2
+    for k, v in got2.items():
+        if k in nelems:
+            assert v == pytest.approx(nelems[k])
+        else:
+            assert v == pytest.approx(0.0)
+
+
+@requires_xspec
+def test_get_xsabundances_table_name_unknown():
+    """Check we error out if the table name is unknown.
+
+    I don't think there is a way to query XSPEC for the known
+    abundance tables, so we just have to hope we use a name that isn't
+    going to be used.
+
+    """
+
+    from sherpa.astro import xspec
+
+    tbl = "not-an-abundance-table"
+    with pytest.raises(ValueError,
+                       match=f"^Unknown abundance table '{tbl}'$"):
+        xspec.get_xsabundances(tbl)
+
+
+@requires_xspec
 def test_xset_change():
+
     """Can we change the xset setting.
     """
 

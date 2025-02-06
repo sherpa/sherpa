@@ -117,7 +117,13 @@ static PyObject* get_chatter( PyObject *self )
 }
 
 
-// TODO: we could send in an integer for the Z number (ie either name or number)
+// TODO:
+//   we could send in an integer for the Z number (ie either name
+//   or number) but that seems a bit excessive, as the user can
+//   get a dict of abundances keyed by the element name.
+//
+// See also: get_abund_from_table
+//
 static PyObject* get_abund( PyObject *self, PyObject *args )
 {
 
@@ -151,6 +157,62 @@ static PyObject* get_abund( PyObject *self, PyObject *args )
   if( tmpStream.str().size() > 0 ) {
     return PyErr_Format( PyExc_TypeError, // TODO: change from TypeError to ValueError?
 			 (char*)"could not find element '%s'", element);
+  }
+
+  return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
+
+}
+
+
+// See also: get_abund
+//
+// It is simpler to have separate routines rather than to try to deal
+// with the multiple options in one routine.
+//
+static PyObject* get_abund_from_table( PyObject *self, PyObject *args )
+{
+
+  // This requires both the table and element name.
+  //
+  char* table = NULL;
+  char* element = NULL;
+  if ( !PyArg_ParseTuple( args, (char*)"ss", &table, &element ) )
+    return NULL;
+
+  // Get the specific abundance. Unfortunately getAbundance reports an
+  // error to stderr when an invalid element is used, so we need to
+  // hide this. However it does throw an error if the table is unknown.
+  //
+  std::ostream* errStream = IosHolder::errHolder();
+  std::ostringstream tmpStream;
+  IosHolder::setStreams(IosHolder::inHolder(),
+			IosHolder::outHolder(),
+			&tmpStream);
+
+  float abundVal = 0.0;
+  try {
+    abundVal = FunctionUtility::getAbundance(string(table),
+					     string(element));
+  } catch (FunctionUtility::NoInitializer&) {
+    return PyErr_Format( PyExc_ValueError,
+			 "Unknown abundance table '%s'",
+			 table );
+  }
+
+  IosHolder::setStreams(IosHolder::inHolder(),
+			IosHolder::outHolder(),
+			errStream);
+
+  // Was there an error?
+  //
+  if( tmpStream.str().size() > 0 ) {
+    // No backwards compatability to worry about, so use the sensible
+    // error type (ValueError rather than TypeError as used by
+    // get_abund).
+    //
+    return PyErr_Format( PyExc_ValueError,
+			 (char*)"could not find element '%s' in table '%s'",
+			 element, table );
   }
 
   return (PyObject*) Py_BuildValue( (char*)"f", abundVal );
@@ -487,6 +549,7 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(get_xschatter, get_chatter),
   FCTSPEC(set_xschatter, set_chatter),
   FCTSPEC(get_xsabund, get_abund),
+  FCTSPEC(get_xsabund_table, get_abund_from_table),
   FCTSPEC(get_xsabund_doc, get_abund_doc),
   FCTSPEC(set_xsabund, set_abund),
   FCTSPEC(set_xsabund_vector, set_abund_vector),

@@ -232,16 +232,25 @@ def get_xsabund(element: str | None = None) -> str | float:
     return _xspec.get_xsabund(element)
 
 
-def get_xsabundances() -> dict[str, float]:
+def get_xsabundances(table: str | None = None) -> dict[str, float]:
     """Return the abundance settings used by X-Spec.
 
+    .. versionchanged:: 4.17.1
+       The optional table argument was added.
+
     .. versionadded:: 4.17.0
+
+    Parameter
+    ---------
+    table : optional
+        The table to use. Leave as None to use the selected abundance
+        table.
 
     Returns
     -------
     abundances : dict
-        The current set of abundances. The keys are the element names
-        (e.g. 'Fe') and the values are the abundances.
+        The keys are the element names (e.g. 'Fe') and the values are
+        the abundances.
 
     See Also
     --------
@@ -253,9 +262,16 @@ def get_xsabundances() -> dict[str, float]:
     >>> get_xsabundances()
     {'H': 1.0, 'He': ...}
 
+    >>> set_xsabud("angr")
+    >>> get_xsabundances()["Cu"]
+    1.619999956403717e-08
+    >>> get_xsabundances("felc")["Cu"]
+    0.0
+
     """
 
-    return {name: _xspec.get_xsabund(name)
+    tbl = get_xsabund() if table is None else table
+    return {name: _xspec.get_xsabund_table(tbl, name)
             for name in get_xselements().keys()}
 
 
