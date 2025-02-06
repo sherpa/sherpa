@@ -827,10 +827,10 @@ def test_get_xsstate_keys():
 
 
 @requires_xspec
-@pytest.mark.parametrize("key",
+@pytest.mark.parametrize("miss_key",
                          ["abund", "chatter", "cosmo", "xsect",
                           "modelstrings"])  # paths is not a required key
-def test_set_xsstate_missing_key(key):
+def test_set_xsstate_missing_key(miss_key):
     """Check set_xsstate handles a missing key.
 
     """
@@ -838,7 +838,7 @@ def test_set_xsstate_missing_key(key):
     from sherpa.astro import xspec
 
     ostate = xspec.get_xsstate()
-    assert key in ostate
+    assert miss_key in ostate
     for val in ostate.values():
         assert val is not None
 
@@ -856,19 +856,19 @@ def test_set_xsstate_missing_key(key):
             'modelstrings': {'foo': '2'},
             'paths': {'manager': '/dev/null'}}
 
-    del fake[key]
+    del fake[miss_key]
 
     try:
         xspec.set_xsstate(fake)
 
         nstate = xspec.get_xsstate()
         ncopy = nstate.copy()
-        del ncopy[key]
+        del ncopy[miss_key]
 
         # The key should be unchanged; the others set to those in
         # fake. Checking the latter is a bit annoying.
         #
-        assert nstate[key] == ostate[key]
+        assert nstate[miss_key] == ostate[miss_key]
         for key, value in fake.items():
             match key:
                 case "cosmo":
