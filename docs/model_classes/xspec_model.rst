@@ -41,6 +41,7 @@ for a general description of the ``sherpa.astro.xspec`` module.
       get_xschatter
       get_xscosmo
       get_xsdb
+      get_xsDEM
       get_xsxflt
       get_xspath_manager
       get_xspath_model

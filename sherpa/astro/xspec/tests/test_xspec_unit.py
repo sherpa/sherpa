@@ -2666,3 +2666,62 @@ def test_db_can_get():
     assert out["cc"] == pytest.approx(-1.2e-2)
 
     xspec.clear_xsdb()
+
+
+@requires_xspec
+def test_get_dem(xsmodel):
+    """A minimal check as it is hard to know the "true" values."""
+
+    from sherpa.astro import xspec
+
+    # The DEM distribution for gadem model should be relatively easy
+    # to check, since there's a mean and sigma for the temperature
+    # distribution.
+    #
+    mdl = xsmodel("gadem")
+
+    # Switch off model caching as we want to make sure that any model
+    # evaluation ends up calling the C++ code that sets the DEM array.
+    #
+    mdl.cache = 0
+
+    # Ensure apec (should be the default, but may change). An
+    # alternative would be to error out if the default value is not 2,
+    # as that might suggest a change in model behaviour, but that
+    # seems excessive.
+    #
+    mdl.switch = 2
+
+    egrid = np.arange(0.1, 5, 0.1)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+
+    _ = mdl(elo, ehi)
+    x1, y1 = xspec.get_xsDEM()
+
+    assert len(x1) == len(y1)
+    assert len(x1) > 0
+    assert np.all(x1 > 0)
+    assert np.all(y1 > 0)
+    assert y1.sum() == pytest.approx(1.0, rel=3e-5)
+
+    # Change the temperature but not the sigma, so the distribution
+    # should be the same but the X axis different.
+    #
+    mdl.Tmean = mdl.Tmean.val + 1
+    _ = mdl(elo, ehi)
+    x2, y2 = xspec.get_xsDEM()
+
+    assert (x2 > x1).all()
+    assert y2 == pytest.approx(y1)
+
+    # Change the sigma, so the distribution changes (the DEM values
+    # are the same but the temperature range changes).
+    #
+    mdl.Tsigma = 2 * mdl.Tsigma.val
+    _ = mdl(elo, ehi)
+    x3, y3 = xspec.get_xsDEM()
+
+    assert x3.min() < x2.min()
+    assert x3.max() > x2.max()
+    assert y3 == pytest.approx(y1)
