@@ -660,6 +660,43 @@ static PyObject* loadDbValue( PyObject *self, PyObject *args )
 }
 
 
+// Minimal access to DEM data: just the ability to read the DEM and
+// tempsDEM vectors.
+//
+static PyObject* getDEM( PyObject *self )
+{
+  // Do not worry if the sizes are 0. Can we just assume the two
+  // arrays have the same size?
+  //
+  std::vector<double> &o_temps = FunctionUtility::tempsDEM();
+  std::vector<double> &o_dems = FunctionUtility::DEM();
+
+  // Limited eror checking / recovery.
+  //
+  size_t nelem = o_temps.size();
+  npy_intp dims[1] { static_cast<npy_intp>(nelem) };
+
+  DoubleArray tempsDEM;
+  if ( EXIT_SUCCESS != tempsDEM.zeros( 1, dims ) ) {
+    return NULL;
+  }
+
+  DoubleArray DEM;
+  if ( EXIT_SUCCESS != DEM.zeros( 1, dims ) ) {
+    return NULL;
+  }
+
+  // Copying from std:vector<double> to DoubleArray.
+  std::copy( &o_temps[0], &o_temps[0] + nelem, &tempsDEM[0] );
+  std::copy( &o_dems[0], &o_dems[0] + nelem, &DEM[0] );
+
+  return Py_BuildValue( (char*)"NN",
+			tempsDEM.return_new_ref(),
+			DEM.return_new_ref() );
+}
+
+
+
 template <const std::string& get()>
 static PyObject* get_xspec_string( PyObject *self ) {
   return Py_BuildValue( (char*)"s", get().c_str() );
@@ -708,6 +745,9 @@ static PyMethodDef XSpecMethods[] = {
   NOARGSPEC(clear_db, clearDb),
   NOARGSPEC(get_db, getAllDb),
   FCTSPEC(set_db, loadDbValue),
+
+  // DEM
+  NOARGSPEC(get_xsDEM, getDEM),
 
   // The set commands are not wrapped yet as it's not clear how well
   // the system handles these changes (e.g. it doesn't seem to update
