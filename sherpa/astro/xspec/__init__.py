@@ -1283,6 +1283,40 @@ def set_xsdb(key: str, value: float) -> None:
     _xspec.set_db(key, value)
 
 
+# This function is not added to __all__ as it is very specialized
+# and we need more experience as to how it will be used.
+#
+def get_xsDEM() -> tuple[np.ndarray, np.ndarray]:
+    """The relative contributions of plasma at different temperatures.
+
+    Returns
+    -------
+    temp, dem
+       The distribution of plasma at different temperatures for
+       multi-temperature models (the dem array will sum to 1). These
+       arrays may be empty.
+
+    Notes
+    -----
+    The XSPEC model library provides very-limited access to this
+    data. It is only for the last plasma model calculated, so be
+    careful if the model expression contains multiple plasma models.
+
+    Examples
+    --------
+
+    Ensure the model has been evaluated and then plot the
+    distribution:
+
+    >>> plot_model()
+    >>> t, d = get_xsDEM()
+    >>> plot_scatter(t, d, name="DEM", xlabel="Temperature", ylabel="DEM")
+
+    """
+
+    return _xspec.get_xsDEM()
+
+
 def get_xspath_manager() -> str:
     """Return the path to the files describing the XSPEC models.
 
