@@ -68,7 +68,8 @@ Best-fit value: 4.0
 
 """
 
-from typing import Sequence, SupportsFloat
+from collections.abc import Sequence
+from typing import SupportsFloat
 
 import numpy as np
 

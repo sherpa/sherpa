@@ -18,7 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from typing import Callable, Sequence, SupportsFloat
+from collections.abc import Callable, Sequence
+from typing import SupportsFloat
 
 import numpy as np
 

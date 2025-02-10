@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018 - 2024
+#  Copyright (C) 2009, 2015, 2016, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,14 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections.abc import Sequence
 from contextlib import nullcontext
 from functools import wraps
 import logging
 import os
 from pathlib import Path
 import signal
-from typing import Optional, Protocol, Sequence, Union, \
-    runtime_checkable
+from typing import Protocol, runtime_checkable
 
 import numpy as np
 
@@ -594,7 +594,7 @@ class IterCallback:
                  data: DataSimulFit,
                  model: SimulFitModel,
                  stat: Stat,
-                 fh: Optional[WriteableTextFile] = None
+                 fh: WriteableTextFile | None = None
                  ) -> None:
         self.data = data
         self.model = model
@@ -700,7 +700,7 @@ class IterFit:
         raise KeyboardInterrupt()
 
     def _get_callback(self,
-                      fh: Optional[WriteableTextFile] = None
+                      fh: WriteableTextFile | None = None
                       ) -> IterCallback:
         """Create the function that returns the statistic.
 
@@ -954,7 +954,7 @@ class IterFit:
 
 # What is the best way to annotate the return value here?
 #
-def _add_fit_stats(outfile: Optional[Union[str, Path, WriteableTextFile]],
+def _add_fit_stats(outfile: str | Path | WriteableTextFile | None,
                    clobber: bool,
                    names: Sequence[str]):
     """Handle creating the output file handle for the fit callback.
@@ -1198,9 +1198,9 @@ class Fit(NoNewAttributesAfterInit):
     #
     @evaluates_model
     def fit(self,
-            outfile: Optional[Union[str, Path, WriteableTextFile]] = None,
+            outfile: str | Path | WriteableTextFile | None = None,
             clobber: bool = False,
-            numcores: Optional[int] = 1
+            numcores: int | None = 1
             ) -> FitResults:
         """Fit the model to the data.
 
