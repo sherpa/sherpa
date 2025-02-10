@@ -876,8 +876,7 @@ def simple_wrap(modelname: str, mdl: ModelDefinition) -> str:
     # initialized.
     #
     if nflags > 1 and mdl.flags[1] == 1:
-        out += f"{t2}self._use_caching = False\n"
-
+        out += f"{t2}self.cache = 0\n"
         # Still warn the user that this is not tested.
         out += f"{t2}warnings.warn('support for models like xs{mdl.name.lower()} "
         out += "(recalculated per spectrum) is untested.')\n"

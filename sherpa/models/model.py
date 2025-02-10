@@ -287,10 +287,6 @@ which all have the same grid.
 
 The `cache` attribute of the model sets the maximum number of
 entries in a cache. Setting it to 0 disables caching for a model.
-If the cache is actually used is controlled by the `_use_caching`
-attribute of the model, but this setting can be over-ridden by the startup
-method, which is automatically called by the `~sherpa.fit.Fitfit`
-and `~sherpa.fit.Fit.est_errors` methods of a `sherpa.fit.Fit` object.
 
 The `cache_clear` and `cache_status` methods of the `ArithmeticModel`
 and `CompositeModel` classes allow you to clear the cache and display
@@ -391,8 +387,7 @@ def modelCacher1d(func: Callable) -> Callable:
     """A decorator to cache 1D ArithmeticModel evaluations.
 
     Apply to the `calc` method of a 1D model to allow the model
-    evaluation to be cached. The decision is based on the
-    `_use_caching` attribute of the cache along with the `integrate`
+    evaluation to be cached. The decision is based on the `integrate`
     setting, the evaluation grid, parameter values, and the keywords
     sent to the model.
 
@@ -423,7 +418,7 @@ def modelCacher1d(func: Callable) -> Callable:
 
         # Short-cut if the cache is not being used.
         #
-        if cls.cache == 0 or not cls._use_caching:
+        if cls.cache == 0:
             return func(cls, pars, xlo, *args, **kwargs)
 
         # Up until Sherpa 4.12.2 we used the kwargs to define the
@@ -1386,7 +1381,7 @@ class ArithmeticModel(Model):
 
     @property
     def cache(self) -> int:
-        """The number of entires in the cache.
+        """The maximum number of entries in the cache.
 
         Changing this value will clear the cache.
         """
@@ -1396,6 +1391,20 @@ class ArithmeticModel(Model):
     def cache(self, val: int) -> None:
         self._cache_size = val
         self.cache_clear()
+
+    @property
+    def _use_caching(self) -> bool:
+        return self.cache > 0
+
+    @_use_caching.setter
+    def _use_caching(self, val: bool) -> None:
+        warnings.warn("_use_caching is deprecated."
+                      "Instead, set `cache` to 0 or a positive integer.",
+                      category=DeprecationWarning)
+        if val:
+            self.cache = 5
+        else:
+            self.cache = 0
 
     def __init__(self,
                  name: str,
@@ -1411,15 +1420,6 @@ class ArithmeticModel(Model):
         """Clear the cache."""
         self._cache: dict[bytes, np.ndarray] = {}
         self._cache_ctr = {'hits': 0, 'misses': 0, 'check': 0}
-
-        # One might think that this could be a class attribute, but
-        # models like BinaryOpModel and UnaryOpModel are derived
-        # both from ArithmeticModel and CompositeModel.
-        # They are not supposed to have caching and they don't call
-        # AstroModel.__init__, so by setting this only in the __init__,
-        # we ensue they don't get this attribute.
-        if not hasattr(self, '_use_caching'):
-            self._use_caching = True
 
     def cache_status(self) -> None:
         """Display the cache status.
@@ -1515,26 +1515,19 @@ class ArithmeticModel(Model):
     def __setstate__(self, state):
         # In case old pickle files do not have cache info
         self.cache_clear()
-        if '_use_caching' not in state:
-            self.__dict__['_use_caching'] = True
-
         self.__dict__.update(state)
 
     def __getitem__(self, filter):
         return FilterModel(self, filter)
 
     def startup(self, cache: bool = False) -> None:
-        self.cache_clear()
-        self._use_caching = cache
-        if int(self.cache) <= 0:
-            return
-
-        frozen = np.array([par.frozen for par in self.pars], dtype=bool)
-        if len(frozen) > 0 and frozen.all():
-            self._use_caching = cache
+        if cache:
+            self.cache_clear()
+        else:
+            self.cache = 0
 
     def teardown(self) -> None:
-        self._use_caching = False
+        pass
 
     def apply(self, outer, *otherargs, **otherkwargs):
         return NestedModel(outer, self, *otherargs, **otherkwargs)

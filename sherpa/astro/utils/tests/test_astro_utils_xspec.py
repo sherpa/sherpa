@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023, 2024
+#  Copyright (C) 2021, 2023-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -647,7 +647,7 @@ class XSabcd(XSAdditiveModel):
         # norm parameter is automatically added by XSAdditiveModel
         pars = (self.xs,)
         XSAdditiveModel.__init__(self, name, pars)
-        self._use_caching = False
+        self.cache = 0
         warnings.warn('support for models like xsabcd (recalculated per spectrum) is untested.')
 
 '''
