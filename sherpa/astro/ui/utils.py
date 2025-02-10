@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015 - 2024
+#  Copyright (C) 2010, 2015 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -9663,6 +9663,10 @@ class Session(sherpa.ui.utils.Session):
         time, along with a Poisson noise term. A background component can
         be included.
 
+        .. versionchanged:: 4.17.1
+           Improvements for faking data when the channel range does
+           not start at 1.
+
         .. versionchanged:: 4.16.1
            Several bugs have been addressed when simulating data with
            a background: the background model contribution would be
@@ -9859,7 +9863,8 @@ class Session(sherpa.ui.utils.Session):
             rmf0 = rmf
 
         if pha.channel is None:
-            pha.channel = sao_arange(1, rmf0.detchans)
+            pha.channel = sao_arange(rmf0.offset,
+                                     rmf0.detchans + rmf0.offset - 1)
 
         elif len(pha.channel) != rmf0.detchans:
             raise DataErr('incompatibleresp', rmf.name, str(idval))
