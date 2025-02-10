@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018, 2020, 2021, 2022, 2023
+#  Copyright (C) 2007, 2016, 2018, 2020-2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -95,7 +95,6 @@ def test_send_keyword_1d(cls):
     """What happens if we use an un-supported keyword?"""
 
     mdl = cls()
-    mdl._use_caching = False
 
     if cls == models.LineBroad:
         mdl.vsini = 1e6
@@ -118,7 +117,6 @@ def test_send_keyword_2d(cls):
     """What happens if we use an un-supported keyword?"""
 
     mdl = cls()
-    mdl._use_caching = False
 
     # Not guaranteed to produce interesting results
     x0 =  [10, 12, 13, 15]
