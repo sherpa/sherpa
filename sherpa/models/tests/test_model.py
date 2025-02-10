@@ -1111,7 +1111,7 @@ class DoNotUseModel(Model):
 def get_cache_classes():
     """This is a function because we want to conditionally
     include an XSPEC model. Within a function, we can simply
-    pass that if XSEPC is not available.
+    pass that if XSPEC is not available.
     """
     cls_list = [DoNotUseModel, Polynom1D]
 

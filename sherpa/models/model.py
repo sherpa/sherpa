@@ -475,7 +475,7 @@ def modelCacher1d(func: Callable) -> Callable:
         vals = func(cls, pars, xlo, *args, **kwargs)
 
         # remove first item in queue and remove from cache
-        # if cache is reaching max size.
+        # if the cache is full.
         if len(cache) >= cls.cache:
             del cache[list(cache.keys())[0]]
 

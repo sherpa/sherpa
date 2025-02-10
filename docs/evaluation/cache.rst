@@ -54,7 +54,7 @@ create a unique token - the SHA256 hash of the values - which is used
 to look up a value in the `_cache` dictionary. If it exists then the
 stored value is returned, otherwise the model is evaluated and added
 to the `_cache` dictionary. In order to keep the cache size small, the
-oldest elements in the cache is removed when the number of entries becomes
+oldest element in the cache is removed when the number of entries becomes
 larger than :py:attr:`~sherpa.models.model.ArithmeticModel.cache` elements (the
 default value for this attribute is 5).
 
