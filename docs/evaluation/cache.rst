@@ -28,10 +28,12 @@ by running a test as shown below,
 When is the cache useful?
 =========================
 
-At present most 1D models use the cache by default when evaluated
-during a fit, but not when evaluated separately (e.g. on the command
-line by hand). It is intended to improve fit performance, but the actual
+At present most 1D models use the cache by default.
+It is intended to improve fit performance, but the actual
 time saved depends on the model and the data being fit.
+Compared to most built-in sherpa models, models in the optional XSPEC model
+library (:py:mod:`sherpa.astro.xspec`) tend to be more complex and
+thus benefit more from caching.
 
 Can I turn off this behavior?
 =============================
@@ -41,10 +43,6 @@ be set to zero (``mdl.cache=0``) to turn off the cache behavior.
 This may be useful if you are evaluating models over a large grid,
 to save memory. For a composite model (e.g. a sum of models) you need
 to set the cache for each component.
-
-Alternatively, caching can be switched off for a specific
-fit call: ``f.fit(cache=False)``.
-
 
 How does the cache work?
 ========================
@@ -58,33 +56,6 @@ oldest element in the cache is removed when the number of entries becomes
 larger than :py:attr:`~sherpa.models.model.ArithmeticModel.cache` elements (the
 default value for this attribute is 5).
 
-.. _startup-modelcacher1d:
-
-The startup method
-------------------
-
-The model :py:meth:`~sherpa.models.model.ArithmeticModel.startup`
-method is automatically called by the :py:meth:`~sherpa.fit.Fit.fit`
-method, but can also be called manually. It sets the `_use_caching`
-attribute.
-
-
-Although the default value for the `cache` argument to `startup` is
-set to `False`, the `sherpa.fit.evaluates_model` decorator - which
-is used to wrap the :py:meth:`~sherpa.fit.Fit.fit`,
-:py:meth:`~sherpa.fit.Fit.simulfit`, and
-:py:meth:`~sherpa.fit.Fit.est_errors` methods - over-rides this value
-and uses a value of `True`. Therefore, to turn off the cache you
-have to explicitly pass ``cache=False`` to the fit method::
-
-    f.fit(cache=False)
-
-The teardown method
--------------------
-
-The model :py:meth:`~sherpa.models.model.ArithmeticModel.teardown`
-method is run after the fit is done - to match `startup` - and
-currently sets the `_use_caching` setting to `False`.
 
 Examples
 ========
@@ -101,8 +72,6 @@ attribute, and see that it has been updated by the model evaluation.
 >>> m = Box1D()
 >>> m.xlow = 1.5
 >>> m.xhi = 4.5
->>> print(m._use_caching)
-True
 >>> print(m._cache)
 {}
 >>> print(m([1, 2, 3, 4, 5, 6]))
@@ -165,9 +134,3 @@ The cache contains 4 elements which we can display::
     [3.39944171 3.39944171 3.39944171]
     [3.40061543 3.40061543 3.40061543]
 
-Note that if we had called::
-
-    f.fit(cache=False)
-
-then the cache would not have been used (e.g. `mdl._cache` would
-have remained empty).
