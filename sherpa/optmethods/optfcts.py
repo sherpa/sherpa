@@ -550,19 +550,6 @@ def minim(fcn: StatFunc,
 #
 # Monte Carlo
 #
-def random_start(rng: random.RandomType | None,
-                 xmin: np.ndarray,
-                 xmax: np.ndarray
-                 ) -> np.ndarray:
-    """Create an array of values between xmin and xmax."""
-
-    out = np.zeros_like(xmin)
-    for idx, (minval, maxval) in enumerate(zip(xmin, xmax)):
-        out[idx] = random.uniform(rng, minval, maxval)
-
-    return out
-
-
 def montecarlo(fcn: StatFunc,
                x0: ArrayType,
                xmin: ArrayType,
@@ -737,7 +724,7 @@ def montecarlo(fcn: StatFunc,
             xmin, xmax = _narrow_limits(factor, x, xmin, xmax)
 
             ############################ nmDifEvo #############################
-            y = random_start(rng, xmin, xmax)
+            y = random.uniform(rng, xmin, xmax)
             mymaxfev = min(maxfev_per_iter, maxfev - nfev)
 
             if numcores == 1:
