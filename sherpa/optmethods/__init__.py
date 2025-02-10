@@ -112,8 +112,9 @@ const1d
 
 """
 
+from collections.abc import Callable, Sequence
 import logging
-from typing import Any, Callable, Sequence
+from typing import Any
 
 import numpy as np
 
