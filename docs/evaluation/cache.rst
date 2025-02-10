@@ -44,6 +44,17 @@ This may be useful if you are evaluating models over a large grid,
 to save memory. For a composite model (e.g. a sum of models) you need
 to set the cache for each component.
 
+When we use the fit method of the UI or the fit method of an optimizer, it is possible to
+turn off caching for all models with the ``cache`` parameter, e.g.
+``ui.fit(..., cache=False)``.
+This works by iterating over all the model components and setting the
+``cache`` attribute to zero. Note that the opposite is not true: setting
+``cache=True`` does not turn on the cache for all model components, it simply
+leaves it at the previous setting. This is because some models may not work with
+caching at all and need to stay at ``cache=0`` at all times.
+The cache has to be manually set to a positive number for all models that should use the cache
+to allow caching again.
+
 How does the cache work?
 ========================
 
