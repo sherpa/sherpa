@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 #
-#  Copyright (C) 2021
+#  Copyright (C) 2021, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -58,9 +58,9 @@ def create_xspec_model(models, modelname):
         raise ValueError(f"Unknown model name: {modelname}")
 
     code = xspec.create_xspec_code([model])
-    print("# C++ code for sherpa/astro/xspec/src/_xspec.cc\n")
+    print("# C++ code for src/sherpa/astro/xspec/src/_xspec.cc\n")
     print(code.compiled)
-    print("\n# Python code for sherpa/astro/xspec/__init__.py\n")
+    print("\n# Python code for src/sherpa/astro/xspec/__init__.py\n")
     print(code.python)
 
 

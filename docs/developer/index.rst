@@ -65,7 +65,7 @@ particularly useful option is to run only the tests in a specific file.
 For example, if you changed the code and the tests in the `sherpa.astro.ui`
 module, one might expect tests for this module to be the most likely to fail::
 
-  pytest sherpa/astro/ui/tests/test_astro_ui.py
+  pytest src/sherpa/astro/ui/tests/test_astro_ui.py
 
 Once everything looks good, you can do a final run of the entire test suite. A
 second option useful for development is ``--pdb`` which drops into the
@@ -128,8 +128,8 @@ hard-to follow. The file should be removed from this list when it has been updat
 
 During development, you can run doctestplus on individual files like so (the option to use depends on whether it is a Python or reStructuredText file)::
 
-   pytest --doctest-plus sherpa/astro/data.py
-   pytest --doctest-plus sherpa/data.py
+   pytest --doctest-plus src/sherpa/astro/data.py
+   pytest --doctest-plus src/sherpa/data.py
    pytest --doctest-rst docs/quick.rst
    pytest --doctest-rst docs/evaluation/combine.rst
 
@@ -141,7 +141,7 @@ Some doctests (in the documentation or in the docstrings of individual
 functions) load data files. Those datafiles can be found in the
 `sherpa-test-data <https://github.com/sherpa/sherpa-test-data>` directory
 as explained in the description of the :ref:`development build <developer-build>`.
-There is a `conftest.py` file in the `sherpa/docs` directory and in the `sherpa/sherpa`
+There is a `conftest.py` file in the `docs/` directory and in the `src/sherpa/`
 directory that sets up a
 pytest fixture to define a variable called `data_dir` which points to this directory.
 That way, we do not need to clutter the example with long directory names, but the
@@ -219,8 +219,7 @@ that the `${ASCDS_INSTALL}` environment variable **must** be
 replaced by its actual value, and the ``xspec_version`` line
 should be updated to match the output above::
 
-    bdist_wheel = sherpa_config xspec_config bdist_wheel
-
+    [sherpa_config]
     install_dir=${ASCDS_INSTALL}
 
     configure=None
@@ -244,6 +243,7 @@ should be updated to match the output above::
     wcs-lib-dirs=${ASCDS_INSTALL}/lib
     wcs-libraries=wcs
 
+    [xspec_config]
     with-xspec=True
     xspec_version = 12.12.0
     xspec_lib_dirs = ${ASCDS_INSTALL}/lib
@@ -384,7 +384,7 @@ version then you can use three helper scripts:
       ...
       // End model definitions
 
-   lines of the ``sherpa/astro/xspec/src/_xspec.cc`` file. This
+   lines of the ``src/sherpa/astro/xspec/src/_xspec.cc`` file. This
    information is replicated in the output of ``add_xspec_model.py``
    so it depends on how many models need to be added or changed as
    to which to use.
@@ -399,8 +399,8 @@ version then you can use three helper scripts:
 #. ``scripts/add_xspec_model.py``
 
    This will report the basic code needed to be added to both
-   the compiled code (``sherpa/astro/xspec/src/_xspec.cc``) and
-   Python (``sherpa/astro/xspec/__init__.py``). Note that it
+   the compiled code (``src/sherpa/astro/xspec/src/_xspec.cc``) and
+   Python (``src/sherpa/astro/xspec/__init__.py``). Note that it
    does not deal with conditional compilation, the need to
    add a decorator to the Python class, or missing documentation
    for the class.
@@ -451,7 +451,7 @@ how the ``add_xspec_model.py`` script can be used for those models
 noted as not being supported::
 
   % ./scripts/add_xspec_model.py ~/local/heasoft-6.31/spectral/manager/model.dat wdem
-  # C++ code for sherpa/astro/xspec/src/_xspec.cc
+  # C++ code for src/sherpa/astro/xspec/src/_xspec.cc
 
   // Includes
 
@@ -504,7 +504,7 @@ noted as not being supported::
   }
 
 
-  # Python code for sherpa/astro/xspec/__init__.py
+  # Python code for src/sherpa/astro/xspec/__init__.py
 
 
   class XSwdem(XSAdditiveModel):
@@ -539,8 +539,8 @@ noted as not being supported::
 
 
 This code then can then be added to
-``sherpa/astro/xspec/src/_xspec.cc`` and
-``sherpa/astro/xspec/__init__.py`` and then refined so that the tests
+``src/sherpa/astro/xspec/src/_xspec.cc`` and
+``src/sherpa/astro/xspec/__init__.py`` and then refined so that the tests
 pass.
 
 .. note::
@@ -557,7 +557,7 @@ available.
 
 #. Add a new version define in ``helpers/xspec_config.py``.
 
-   Current version: `helpers/xspec_config.py <https://github.com/sherpa/sherpa/blob/master/helpers/xspec_config.py>`_.
+   Current version: `helpers/xspec_config.py <https://github.com/sherpa/sherpa/blob/main/helpers/xspec_config.py>`_.
 
    When adding support for XSPEC 12.12.1, the top-level
    ``SUPPORTED_VERSIONS`` list was changed to include the triple
@@ -576,7 +576,9 @@ available.
 	     this value automatically were not successful). This version is
 	     the value used in the checks in ``helpers/xspec_config.py``.
 
-#. Add the new version to ``sherpa/astro/utils/xspec.py``
+#. Add the new version to ``src/sherpa/astro/utils/xspec.py``
+
+   Current version: `src/sherpa/astro/utils/xspec.py <https://github.com/sherpa/sherpa/blob/main/src/sherpa/astro/utils/xspec.py>`_.
 
    The ``models_to_compiled`` routine also contains a ``SUPPORTED_VERSIONS``
    list which should be kept in sync with the version in
@@ -680,9 +682,9 @@ available.
    .. note:: The examples below may refer to XSPEC versions we
 	     no-longer support.
 
-   a. ``sherpa/astro/xspec/src/_xspec.cc``
+   a. ``src/sherpa/astro/xspec/src/_xspec.cc``
 
-      Current version: `sherpa/astro/xspec/src/_xspec.cc <https://github.com/sherpa/sherpa/blob/master/sherpa/astro/xspec/src/_xspec.cc>`_.
+      Current version: `src/sherpa/astro/xspec/src/_xspec.cc <https://github.com/sherpa/sherpa/blob/main/src/sherpa/astro/xspec/src/_xspec.cc>`_.
 
       New functions are added to the ``XspecMethods`` array, using
       macros defined in
@@ -780,9 +782,9 @@ available.
       .. note:: Ideally we would have a sensible ordering for the declarations in this
 		file, but at present it is ad-hoc.
 
-   b. ``sherpa/astro/xspec/__init__.py``
+   b. ``src/sherpa/astro/xspec/__init__.py``
 
-      Current version: `sherpa/astro/xspec/__init__.py <https://github.com/sherpa/sherpa/blob/master/sherpa/astro/xspec/__init__.py>`_.
+      Current version: `src/sherpa/astro/xspec/__init__.py <https://github.com/sherpa/sherpa/blob/main/src/sherpa/astro/xspec/__init__.py>`_.
 
       This is where the Python classes are added for additive and multiplicative
       models. The code additions are defined by the model and parameter
@@ -823,9 +825,9 @@ available.
 
             __function__ = "C_apec" if equal_or_greater_than("12.9.1") else "xsaped"
 
-   c. ``sherpa/astro/xspec/tests/test_xspec.py``
+   c. ``src/sherpa/astro/xspec/tests/test_xspec.py``
 
-      Current version: `sherpa/astro/xspec/tests/test_xspec.py <https://github.com/sherpa/sherpa/blob/master/sherpa/astro/xspec/tests/test_xspec.py>`_.
+      Current version: `src/sherpa/astro/xspec/tests/test_xspec.py <https://github.com/sherpa/sherpa/blob/main/src/sherpa/astro/xspec/tests/test_xspec.py>`_.
 
       The ``XSPEC_MODELS_COUNT`` version should be increased by the number
       of models classes added to ``__init__.py``.
@@ -838,7 +840,7 @@ available.
 
    d. ``docs/model_classes/astro_xspec.rst``
 
-      Current version: `docs/model_classes/astro_xspec.rst <https://github.com/sherpa/sherpa/blob/master/docs/model_classes/astro_xspec.rst>`_.
+      Current version: `docs/model_classes/astro_xspec.rst <https://github.com/sherpa/sherpa/blob/main/docs/model_classes/astro_xspec.rst>`_.
 
       New models should be added to both the ``Classes`` rubric - sorted
       by addtive and then multiplicative models, using an alphabetical
@@ -853,7 +855,7 @@ available.
    be updated to add an entry for the ``setup.cfg`` changes in
    :ref:`build-xspec`.
 
-   The ``sherpa/astro/xspec/__init__.py`` file also lists the supported
+   The ``src/sherpa/astro/xspec/__init__.py`` file also lists the supported
    XSPEC versions.
 
 Never forget to update the year of the copyright notice?
@@ -881,7 +883,7 @@ Adding typing statements
 
 Typing rules, such as::
 
-  def random(rng: Optional[RandomType]) -> float:
+  def random(rng: RandomType | None) -> float:
 
 are being added to the Sherpa code base to see if they improve the
 maintenance and development of Sherpa. This is an incremental process
