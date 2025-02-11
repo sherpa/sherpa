@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020 - 2024
+#  Copyright (C) 2016, 2018, 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -27,7 +27,7 @@ import os
 import re
 import sys
 
-import numpy
+import numpy as np
 
 import pytest
 
@@ -264,8 +264,8 @@ def clc_filter(caplog, msg, astro=False, pos=-1):
 @requires_group
 def test_zero_division_calc_stat(caplog):
     ui = AstroSession()
-    x = numpy.arange(100)
-    y = numpy.zeros(100)
+    x = np.arange(100)
+    y = np.zeros(100)
     ui.load_arrays(1, x, y, DataPHA)
 
     assert len(caplog.record_tuples) == 0
@@ -286,7 +286,7 @@ def test_zero_division_calc_stat(caplog):
     # Then, since calc_stat_info only logs something and doesn't return anything, we use
     # a white box approach to get the result from _get_stat_info.
     ui.calc_stat_info()
-    assert ui._get_stat_info()[0].rstat is numpy.nan
+    assert ui._get_stat_info()[0].rstat is np.nan
 
 
 @pytest.mark.parametrize("session", [Session, AstroSession])
@@ -479,7 +479,7 @@ def test_astro_plot_bkgxxx(label):
     data = DataPHA("data", [1, 2, 3], [5, 2, 3])
     bkg = DataPHA("bkg", [1, 2, 3], [2, 1, 2])
 
-    egrid = numpy.asarray([0.1, 0.2, 0.3, 0.4])
+    egrid = np.asarray([0.1, 0.2, 0.3, 0.4])
     arf = create_arf(egrid[:-1], egrid[1:])
 
     s.set_data(data)
@@ -511,7 +511,7 @@ def test_astro_plot_bkg_xxx(label):
     data = DataPHA("data", [1, 2, 3], [5, 2, 3])
     bkg = DataPHA("bkg", [1, 2, 3], [2, 1, 2])
 
-    egrid = numpy.asarray([0.1, 0.2, 0.3, 0.4])
+    egrid = np.asarray([0.1, 0.2, 0.3, 0.4])
     arf = create_arf(egrid[:-1], egrid[1:])
 
     s.set_data(data)
@@ -870,8 +870,8 @@ def test_show_data_datapha_bkg_no_response():
 
     s = AstroSession()
 
-    chans = numpy.arange(1, 6, dtype=int)
-    counts = numpy.asarray([10, 20, 15, 12, 10], dtype=int)
+    chans = np.arange(1, 6, dtype=int)
+    counts = np.asarray([10, 20, 15, 12, 10], dtype=int)
     data = DataPHA("src", chans, counts)
     bkg1 = DataPHA("down", chans, counts)
     bkg2 = DataPHA("up", chans, counts)
@@ -972,8 +972,8 @@ def test_show_bkg_datapha_no_response():
 
     s = AstroSession()
 
-    chans = numpy.arange(1, 6, dtype=int)
-    counts = numpy.asarray([10, 20, 15, 12, 10], dtype=int)
+    chans = np.arange(1, 6, dtype=int)
+    counts = np.asarray([10, 20, 15, 12, 10], dtype=int)
     data = DataPHA("src", chans, counts)
     bkg = DataPHA("down", chans, counts)
 
@@ -1024,14 +1024,14 @@ def test_show_data_datapha_bkg():
 
     s = AstroSession()
 
-    chans = numpy.arange(1, 6, dtype=int)
-    counts = numpy.asarray([10, 20, 15, 12, 10], dtype=int)
+    chans = np.arange(1, 6, dtype=int)
+    counts = np.asarray([10, 20, 15, 12, 10], dtype=int)
     data = DataPHA("src", chans, counts)
     bkg = DataPHA("bkg", chans, counts)
 
     # Pick a variety of bin edges. Just pick a RMF-only example.
     #
-    edges = numpy.asarray([0.1, 0.2, 0.4, 0.7, 1.0, 1.5])
+    edges = np.asarray([0.1, 0.2, 0.4, 0.7, 1.0, 1.5])
     src_rmf = create_delta_rmf(edges[:-1], edges[1:], name="srmf",
                                e_min=edges[:-1], e_max=edges[1:])
     bkg_rmf = create_delta_rmf(edges[:-1], edges[1:], name="brmf",
@@ -1138,8 +1138,8 @@ def test_show_bkg_source_output():
     s._add_model_types(sherpa.models.basic)
     s._add_model_types(sherpa.astro.models)
 
-    chans = numpy.arange(1, 6, dtype=int)
-    counts = numpy.asarray([10, 20, 15, 12, 10], dtype=int)
+    chans = np.arange(1, 6, dtype=int)
+    counts = np.asarray([10, 20, 15, 12, 10], dtype=int)
     data = DataPHA("src", chans, counts)
     bkg = DataPHA("bkg", chans, counts)
 
@@ -1148,7 +1148,7 @@ def test_show_bkg_source_output():
 
     # Pick a variety of bin edges. Just pick a RMF-only example.
     #
-    edges = numpy.asarray([0.1, 0.2, 0.4, 0.7, 1.0, 1.5])
+    edges = np.asarray([0.1, 0.2, 0.4, 0.7, 1.0, 1.5])
     src_rmf = create_delta_rmf(edges[:-1], edges[1:], name="srmf",
                                e_min=edges[:-1], e_max=edges[1:])
     bkg_rmf = create_delta_rmf(edges[:-1], edges[1:], name="brmf",
@@ -1689,7 +1689,7 @@ def test_get_xxx_component_plot_with_templates_data1d(session, label, make_data_
     # not check the actual values.
     #
     assert mplot.y == pytest.approx(cplot.y * ynorm)
-    assert numpy.all(mplot.y > 0)
+    assert np.all(mplot.y > 0)
 
 
 @requires_data
@@ -1737,7 +1737,7 @@ def test_get_xxx_component_plot_with_templates_data1d_no_interp(session, label, 
     # not check the actual values.
     #
     assert mplot.y == pytest.approx(cplot.y * ynorm)
-    assert numpy.all(mplot.y > 0)
+    assert np.all(mplot.y > 0)
 
 
 @requires_data
@@ -1751,7 +1751,7 @@ def test_get_xxx_component_plot_with_templates_data1dint(session, label, make_da
     # The actual data isn't too relevant, but pick similar x range
     # to load_template_with_interpolation-bb_data.dat
     #
-    edges = numpy.arange(1, 3, 0.1) * 1e14
+    edges = np.arange(1, 3, 0.1) * 1e14
     s.load_arrays(1, edges[:-1], edges[1:], edges[1:] * 0, Data1DInt)
 
     bbtemp, ynorm = setup_template_model(s, make_data_path)
@@ -1778,7 +1778,7 @@ def test_get_xxx_component_plot_with_templates_data1dint(session, label, make_da
     # not check the actual values.
     #
     assert mplot.y == pytest.approx(cplot.y * ynorm)
-    assert numpy.all(mplot.y > 0)
+    assert np.all(mplot.y > 0)
 
 
 @requires_data
@@ -1792,7 +1792,7 @@ def test_get_xxx_component_plot_with_templates_data1dint_no_interp(session, labe
     # The actual data isn't too relevant, but pick similar x range
     # to load_template_with_interpolation-bb_data.dat
     #
-    edges = numpy.arange(1, 3, 0.1) * 1e14
+    edges = np.arange(1, 3, 0.1) * 1e14
     s.load_arrays(1, edges[:-1], edges[1:], edges[1:] * 0, Data1DInt)
 
     bbtemp, ynorm = setup_template_model(s, make_data_path, interp=None)
@@ -1822,8 +1822,8 @@ def test_get_xxx_component_plot_with_templates_data1dint_no_interp(session, labe
         assert len(cplot.y) == 100
 
         assert mplot.y[0] == pytest.approx(cplot.y[0] * ynorm)
-        assert numpy.all(mplot.y > 0)
-        assert numpy.all(cplot.y > 0)
+        assert np.all(mplot.y > 0)
+        assert np.all(cplot.y > 0)
 
     else:
 
@@ -1837,7 +1837,7 @@ def test_get_xxx_component_plot_with_templates_data1dint_no_interp(session, labe
         # not check the actual values.
         #
         assert mplot.y == pytest.approx(cplot.y * ynorm)
-        assert numpy.all(mplot.y > 0)
+        assert np.all(mplot.y > 0)
 
 
 @requires_data
@@ -1857,10 +1857,10 @@ def test_get_source_component_plot_with_templates_datapha(interp, make_data_path
     # The actual data isn't too relevant, but pick similar x range
     # to load_template_with_interpolation-bb_data.dat
     #
-    chans = numpy.arange(1, 100, dtype=numpy.int16)
+    chans = np.arange(1, 100, dtype=np.int16)
     s.load_arrays(1, chans, chans * 0, DataPHA)
 
-    edges = numpy.linspace(1, 3, num=len(chans) + 1) * 1e4
+    edges = np.linspace(1, 3, num=len(chans) + 1) * 1e4
     arf = create_arf(edges[:-1], edges[1:])
     s.set_arf(arf)
 
@@ -1880,7 +1880,7 @@ def test_get_source_component_plot_with_templates_datapha(interp, make_data_path
     # not check the actual values.
     #
     assert mplot.y == pytest.approx(cplot.y * ynorm)
-    assert numpy.all(mplot.y > 0)
+    assert np.all(mplot.y > 0)
 
 
 @requires_data
@@ -1900,10 +1900,10 @@ def test_get_model_component_plot_with_templates_datapha(interp, make_data_path)
     # The actual data isn't too relevant, but pick similar x range
     # to load_template_with_interpolation-bb_data.dat
     #
-    chans = numpy.arange(1, 100, dtype=numpy.int16)
+    chans = np.arange(1, 100, dtype=np.int16)
     s.load_arrays(1, chans, chans * 0, DataPHA)
 
-    edges = numpy.linspace(1, 3, num=len(chans) + 1) * 1e4
+    edges = np.linspace(1, 3, num=len(chans) + 1) * 1e4
     arf = create_arf(edges[:-1], edges[1:])
     s.set_arf(arf)
 
@@ -1923,7 +1923,7 @@ def test_get_model_component_plot_with_templates_datapha(interp, make_data_path)
     # not check the actual values.
     #
     assert mplot.y == pytest.approx(cplot.y * ynorm)
-    assert numpy.all(mplot.y > 0)
+    assert np.all(mplot.y > 0)
 
 
 @requires_data
@@ -1947,18 +1947,18 @@ def test_compare_get_model_component_plot_with_templates(interp, make_data_path)
     # array is normally used for 1D non-integrated) we can try
     # and get the same values used.
     #
-    chans = numpy.arange(1, NBINS + 1, dtype=numpy.int16)
+    chans = np.arange(1, NBINS + 1, dtype=np.int16)
     s.load_arrays("pha", chans, chans * 0, DataPHA)
 
     # Give the ARF a non-unit response so we can see if it has been
     # applied (or, can infer it has been applied since the model
     # component will apply it).
     #
-    edges = numpy.arange(10000, 30001, BIN_WIDTH)
-    arf = create_arf(edges[:-1], edges[1:], numpy.ones(NBINS) * SPECRESP)
+    edges = np.arange(10000, 30001, BIN_WIDTH)
+    arf = create_arf(edges[:-1], edges[1:], np.ones(NBINS) * SPECRESP)
     s.set_arf("pha", arf)
 
-    ones = numpy.ones(NBINS)
+    ones = np.ones(NBINS)
     s.load_arrays("int", edges[:-1], edges[1:], ones, Data1DInt)
     s.load_arrays("1d", edges[:-1], ones, Data1D)
 
@@ -1979,9 +1979,9 @@ def test_compare_get_model_component_plot_with_templates(interp, make_data_path)
     # In case the pathway is different from using the default dataset
     # identifier, check some basic things about the response.
     #
-    assert numpy.all(cplot_pha.y > 0)
-    assert numpy.all(cplot_int.y > 0)
-    assert numpy.all(cplot_1d.y > 0)
+    assert np.all(cplot_pha.y > 0)
+    assert np.all(cplot_int.y > 0)
+    assert np.all(cplot_1d.y > 0)
 
     assert cplot_int.xlo == pytest.approx(cplot_pha.xlo)
     assert cplot_1d.x == pytest.approx(cplot_pha.xlo)
@@ -2013,7 +2013,7 @@ def test_get_source_component_plot_with_templates_datapha_no_response(make_data_
 
     s = AstroSession()
 
-    chans = numpy.arange(1, 100, dtype=numpy.int16)
+    chans = np.arange(1, 100, dtype=np.int16)
     s.load_arrays(1, chans, chans * 0, DataPHA)
 
     bbtemp, ynorm = setup_template_model(s, make_data_path)
@@ -2041,7 +2041,7 @@ def test_get_model_component_plot_with_templates_datapha_no_response(make_data_p
 
     s = AstroSession()
 
-    chans = numpy.arange(1, 100, dtype=numpy.int16)
+    chans = np.arange(1, 100, dtype=np.int16)
     s.load_arrays(1, chans, chans * 0, DataPHA)
 
     bbtemp, ynorm = setup_template_model(s, make_data_path)
@@ -2053,7 +2053,7 @@ def test_get_model_component_plot_with_templates_datapha_no_response(make_data_p
 
     cplot = s.get_model_component_plot(bbtemp)
     assert cplot.title == "Model component: template.bbtemp"
-    assert numpy.all(cplot.y > 0)
+    assert np.all(cplot.y > 0)
 
 
 def check_stat_info_basic(sinfo, name, ids, numpoints, statval):
@@ -2128,7 +2128,7 @@ def test_get_stat_info_astro_one(caplog):
     data = DataPHA("example", [1, 2, 3], [3, 7, 6])
     bkg = DataPHA("background", [1, 2, 3], [1, 1, 2])
 
-    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.8])
     arf = create_arf(egrid[:-1], egrid[1:])
     data.set_arf(arf)
     bkg.set_arf(arf)
@@ -2161,7 +2161,7 @@ def test_get_stat_info_astro_two(caplog):
 
     bkg2 = DataPHA("background2", [1, 2, 3], [1, 1, 2])
 
-    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.8])
     arf = create_arf(egrid[:-1], egrid[1:])
     data1.set_arf(arf)
     data2.set_arf(arf)
@@ -2286,7 +2286,7 @@ def test_set_full_model_pha_warning_response(caplog):
 
     s.load_arrays(1, [1, 2], [2, 4], DataPHA)
 
-    egrid = numpy.asarray([0.1, 0.2, 0.3])
+    egrid = np.asarray([0.1, 0.2, 0.3])
     s.set_arf(create_arf(egrid[:-1], egrid[1:], [10, 20]))
 
     gmdl = s.create_model_component("gauss1d", "gmdl")
@@ -2316,7 +2316,7 @@ def test_set_full_model_pha_warning_response_bkg():
     s.load_arrays(1, [1, 2], [2, 4], DataPHA)
     s.set_bkg(1, DataPHA("b", [1, 2], [1, 2]))
 
-    egrid = numpy.asarray([0.1, 0.2, 0.3])
+    egrid = np.asarray([0.1, 0.2, 0.3])
     s.set_arf(create_arf(egrid[:-1], egrid[1:], [10, 20]))
     s.set_arf(create_arf(egrid[:-1], egrid[1:], [5, 10]), bkg_id=1)
 
@@ -2454,7 +2454,7 @@ def test_notice_warning(caplog):
     s.load_arrays(1, [1, 2, 3], [1, 2, 3], DataPHA)
     s.load_arrays(2, [1, 2, 3], [1, 2, 3], DataPHA)
 
-    egrid = numpy.asarray([0.5, 0.7, 1.0, 2.0])
+    egrid = np.asarray([0.5, 0.7, 1.0, 2.0])
     elo = egrid[:-1]
     ehi = egrid[1:]
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
@@ -2489,7 +2489,7 @@ def test_ignore_warning(caplog):
     s.load_arrays(1, [1, 2, 3], [1, 2, 3], DataPHA)
     s.load_arrays(2, [1, 2, 3], [1, 2, 3], DataPHA)
 
-    egrid = numpy.asarray([0.5, 0.7, 1.0, 2.0])
+    egrid = np.asarray([0.5, 0.7, 1.0, 2.0])
     elo = egrid[:-1]
     ehi = egrid[1:]
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
@@ -2527,7 +2527,7 @@ def test_set_analysis_messages(caplog):
     s.load_arrays(2, [1, 2, 3], [1, 2, 3], DataPHA)
     s.load_arrays("foo", [1, 2, 3], [1, 2, 3], DataPHA)
 
-    egrid = numpy.asarray([0.5, 0.7, 1.0, 2.0])
+    egrid = np.asarray([0.5, 0.7, 1.0, 2.0])
     elo = egrid[:-1]
     ehi = egrid[1:]
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
@@ -2947,7 +2947,7 @@ def test_fake_random(session, idval):
 
     s = session()
     s._add_model_types(sherpa.models.basic)
-    s.set_rng(numpy.random.RandomState(735))
+    s.set_rng(np.random.RandomState(735))
 
     s.load_arrays(idval, [2, 5, 9], [12, 13, 14])
     mdl = s.create_model_component("polynom1d", "mdl")
@@ -3384,7 +3384,7 @@ def test_check_get_source_and_model_with_background():
     s.set_backscal(2)
     s.set_backscal(8, bkg_id=1)
 
-    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.8])
     elo = egrid[:-1]
     ehi = egrid[1:]
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
@@ -3427,7 +3427,7 @@ def test_calc_model_sum_of_bkg():
     s.load_arrays(1, [1, 2, 3], [4, 5, 6], DataPHA)
     s.set_bkg(DataPHA("x", [1, 2, 3], [9, 2, 1]))
 
-    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.8])
     elo = egrid[:-1]
     ehi = egrid[1:]
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
@@ -3470,7 +3470,7 @@ def test_calc_source_sum_of_bkg():
     s.load_arrays(1, [1, 2, 3], [4, 5, 6], DataPHA)
     s.set_bkg(DataPHA("x", [1, 2, 3], [9, 2, 1]))
 
-    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.8])
     elo = egrid[:-1]
     ehi = egrid[1:]
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
@@ -3527,7 +3527,7 @@ def test_bkg_fit_data_with_no_model():
     s.set_bkg(DataPHA("ex", [1, 2, 3], [2, 0, 1]))
     s.set_bkg(DataPHA("ex", [1, 2, 3], [2, 0, 1]), bkg_id=2)
 
-    egrid = numpy.asarray([0.1, 0.2, 0.4, 0.8])
+    egrid = np.asarray([0.1, 0.2, 0.4, 0.8])
     elo = egrid[:-1]
     ehi = egrid[1:]
     rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
@@ -4001,7 +4001,7 @@ def test_fit_datapha_mix_data(id1):
     # We allow ARF-only analysis, so test it. The fit seems to ignore
     # the bin widths in this case.
     #
-    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    egrid = np.asarray([0.2, 0.5, 0.9])
     arf = create_arf(egrid[:-1], egrid[1:])
     s.set_arf(1, arf)
     s.set_arf(2, arf)
@@ -4040,7 +4040,7 @@ def test_fit_datapha_mix_data_with_bkg(id1):
     # We allow ARF-only analysis, so test it. The fit seems to ignore
     # the bin widths in this case.
     #
-    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    egrid = np.asarray([0.2, 0.5, 0.9])
     arf = create_arf(egrid[:-1], egrid[1:])
     s.set_arf(1, arf)
     s.set_arf(2, arf)
@@ -4084,7 +4084,7 @@ def test_fit_datapha_mix_data_only_bkg(id1):
     # We allow ARF-only analysis, so test it. The fit seems to ignore
     # the bin widths in this case.
     #
-    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    egrid = np.asarray([0.2, 0.5, 0.9])
     arf = create_arf(egrid[:-1], egrid[1:])
     s.set_arf(1, arf)
     s.set_arf(2, arf)
@@ -4137,7 +4137,7 @@ def test_fit_datapha_mix_data_only_bkg_no_response(id1):
     # We allow ARF-only analysis, so test it. The fit seems to ignore
     # the bin widths in this case.
     #
-    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    egrid = np.asarray([0.2, 0.5, 0.9])
     arf = create_arf(egrid[:-1], egrid[1:])
     s.set_arf(1, arf)
     s.set_arf(2, arf)
@@ -4178,7 +4178,7 @@ def test_fit_datapha_mix_data_with_bkg_sensible():
     # We allow ARF-only analysis, so test it. The fit seems to ignore
     # the bin widths in this case.
     #
-    egrid = numpy.asarray([0.2, 0.5, 0.9])
+    egrid = np.asarray([0.2, 0.5, 0.9])
     arf = create_arf(egrid[:-1], egrid[1:])
     s.set_arf(1, arf)
     s.set_arf(2, arf)
@@ -4216,10 +4216,10 @@ def test_set_fit_works(session):
 
     s = session()
 
-    rng = numpy.random.RandomState()
+    rng = np.random.RandomState()
     s.set_rng(rng)
     got = s.get_rng()
-    assert isinstance(got, numpy.random.RandomState)
+    assert isinstance(got, np.random.RandomState)
 
     s.set_rng(None)
     got = s.get_rng()
@@ -4234,3 +4234,86 @@ def test_set_fit_checks_arg(session):
     with pytest.raises(ArgumentTypeErr,
                        match="^'rng' must be a Generator or None$"):
         s.set_rng(1234)
+
+
+@pytest.mark.parametrize("offset", [0, 1, 5])
+def test_dataspace1d_datapha_offset(offset):
+    """Ensure we can create the correct channel numbers for DataPHA"""
+
+    s = AstroSession()
+    detchans = 10
+    s.dataspace1d(offset, offset + detchans - 1, dstype=DataPHA)
+    d = s.get_data()
+    assert isinstance(d, DataPHA)
+    assert len(d.channel) == detchans
+    assert d.counts == pytest.approx(np.zeros(detchans))
+    chans = np.linspace(offset, detchans - 1 + offset, detchans)
+    assert d.channel == pytest.approx(chans)
+
+
+@pytest.mark.parametrize("offset", [0, 1, 5])
+def test_dataspace1d_datapha_offset_bkg(offset):
+    """Can we set the background correctly"""
+
+    s = AstroSession()
+    detchans = 10
+
+    # Need to create the data first
+    s.dataspace1d(offset, offset + detchans - 1, dstype=DataPHA)
+
+    # Now the background
+    s.dataspace1d(offset, offset + detchans - 1, bkg_id=1,
+                  dstype=DataPHA)
+
+    d = s.get_bkg()
+    assert isinstance(d, DataPHA)
+    assert len(d.channel) == detchans
+    assert d.counts == pytest.approx(np.zeros(detchans))
+    chans = np.linspace(offset, detchans - 1 + offset, detchans)
+    assert d.channel == pytest.approx(chans)
+
+
+@pytest.mark.parametrize("start,stop,step,numbins",
+                         [[1, 1, 1, None],
+                          [1, 0, 1, None],
+                          [1, 5, 20, None]
+                          ])
+def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
+    """What happens with invalid arguments?
+
+    These errors come from sherpa.utils.dataspace1d
+    """
+
+    s = AstroSession()
+    detchans = 10
+
+    # The error message is hard to test programatically.
+    with pytest.raises(TypeError):
+        s.dataspace1d(start, stop, step=step, numbins=numbins,
+                      dstype=DataPHA)
+
+
+@pytest.mark.parametrize("start,stop,step,numbins",
+                         [[1, 5, 0.5, None],
+                          [1, 5, 1.1, None],
+                          [1, 5, 1, 2],
+                          [1.1, 5, 1, None],
+                          # Note: the following does not fail as the
+                          # 5.1 gets morphed into 6, and we do not
+                          # check the input arguments as this does
+                          # not seem worth doing
+                          # [1, 5.1, 1, None]
+                          ])
+def test_dataspace1d_datapha_invalid_args(start, stop, step, numbins):
+    """What happens with invalid arguments?
+
+    These errors come from sherpa.astro.ui.utils.dataspace1d
+    """
+
+    s = AstroSession()
+    detchans = 10
+
+    # The error message is hard to test programatically.
+    with pytest.raises(DataErr):
+        s.dataspace1d(start, stop, step=step, numbins=numbins,
+                      dstype=DataPHA)

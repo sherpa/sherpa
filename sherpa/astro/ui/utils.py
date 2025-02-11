@@ -1007,7 +1007,13 @@ class Session(sherpa.ui.utils.Session):
 
         Create an "empty" one-dimensional data set by defining the
         grid on which the points are defined (the independent axis).
-        The values are set to 0.
+        The values on the dependent axis are set to 0.
+
+        .. versionchanged:: 4.17.1
+           When creating a DataPHA data set, the start and stop values
+           are now used, and the step and numbins arguments must be
+           meaningful (if set). Previously it always started the
+           channel values at 1.
 
         Parameters
         ----------
@@ -1027,7 +1033,7 @@ class Session(sherpa.ui.utils.Session):
            `get_default_id`.
         bkg_id : int, str, or None, optional
            If set, the grid is for the background component of the
-           data set.
+           data set. This is only used when dstype is set to `DataPHA`.
         dstype : data class to use, optional
            What type of data is to be used. Supported values include
            `Data1DInt` (the default), `Data1D`, and `DataPHA`.
@@ -1041,9 +1047,14 @@ class Session(sherpa.ui.utils.Session):
 
         Notes
         -----
-        The meaning of the ``stop`` parameter depends on whether it is a
-        binned or unbinned data set (as set by the ``dstype``
+
+        The meaning of the ``stop`` parameter depends on whether it is
+        a binned or unbinned data set (as set by the ``dstype``
         parameter).
+
+        For DataPHA values, ``step`` and ``numbins`` should be left at
+        their default values, and only the ``start`` and ``stop``
+        values changed.
 
         Examples
         --------
@@ -1103,10 +1114,24 @@ class Session(sherpa.ui.utils.Session):
 
         is_pha = issubclass(dstype, DataPHA)
         if is_pha:
-            channel = np.arange(1, len(xlo) + 1, dtype=float)
-            args = [channel, y]
-            # kwargs['bin_lo'] = xlo
-            # kwargs['bin_hi'] = xhi
+            # Check that xlo is "sensible"
+            # - not empty (this has been checked for already)
+            # - values are consecutive
+            #   (could check step and numbins arguments above, but
+            #    easier to do this here)
+            # - values are integers
+            #
+            if not float(xlo[0]).is_integer():
+                raise DataErr("start must be an integer")
+
+            # Expect integer spacing; should this allow for numerical
+            # tolerances?
+            #
+            dx = np.diff(xlo, n=1)
+            if dx[0] != 1:
+                raise DataErr("channel spacing is not 1")
+
+            args = [xlo, y]
         elif dstype is not sherpa.data.Data1DInt:
             args = [xlo, y]
 
