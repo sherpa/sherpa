@@ -134,7 +134,7 @@ Prerequisites
 
 The prerequisites for building from source are:
 
-* Python versions: 3.9 to 3.12
+* Python versions: 3.10 to 3.12
 * Python packages: ``setuptools``, ``numpy`` (these should be
   automatically installed by ``pip``)
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
@@ -403,20 +403,20 @@ You can pass additional arguments to ``pytest``. As examples, the
 following two commands run all the tests in ``test_data.py`` and then
 a single named test in the file::
 
-  pytest sherpa/tests/test_data.py
-  pytest sherpa/tests/test_data.py::test_data_eval_model
+  pytest src/sherpa/tests/test_data.py
+  pytest src/sherpa/tests/test_data.py::test_data_eval_model
 
 The full set of options, including those added by the Sherpa test
 suite - which are listed at the end of the ``custom options``
 section - can be found with::
 
-  pytest --pyargs sherpa --help
+  pytest --pyargs src/sherpa --help
 
 and to pass an argument to the Sherpa test suite (there are currently
 three options, namely ``--test-data``, ``--runslow``, and
 ``--runzenodo``)::
 
-  pytest --pyargs sherpa --runslow
+  pytest --pyargs src/sherpa --runslow
 
 The
 `Sherpa test data suite <https://github.com/sherpa/sherpa-test-data>`_
@@ -525,7 +525,7 @@ configured when built)::
     sherpa_test
 
 The ``sherpa_test`` command supports the same optional arguments as
-``pytest`` does (the ``--pyargs sherpa`` option is, however, not
+``pytest`` does (the ``--pyargs src/sherpa`` option is, however, not
 needed).
 
 The

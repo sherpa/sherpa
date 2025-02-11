@@ -68,146 +68,28 @@ sherpa_smoke = "sherpa:_smoke_cli"
 [tool.versioneer]
 VCS = "git"
 style = "pep440"
-versionfile_source = "sherpa/_version.py"
+versionfile_source = "src/sherpa/_version.py"
 versionfile_build = "sherpa/_version.py"
 tag_prefix = ""
 parentdir_prefix = "sherpa-"
 
-# Be explicit as we have src/ directories which complicate things.
-# find sherpa -name __init__.py | sort | sed -e "s|/__init__.py||" -e "s|/|.|g"
-# find sherpa -name tests
-#
-# Note that this has been set up to reduce the number of
-#   Python recognizes 'sherpa...' as an importable pachage[^1],
-# messages from pip, rather than working out from first principles
-# what to include.
-#
-[tool.setuptools]
-packages = [
-  "sherpa.astro.datastack",
-  "sherpa.astro",
-  "sherpa.astro.io",
-  "sherpa.astro.models",
-  "sherpa.astro.optical",
-  "sherpa.astro.sim",
-  "sherpa.astro.ui",
-  "sherpa.astro.utils",
-  "sherpa.astro.xspec",
-  "sherpa.estmethods",
-  "sherpa.image",
-  "sherpa",
-  "sherpa.models",
-  "sherpa.optmethods",
-  "sherpa.plot",
-  "sherpa.sim",
-  "sherpa.stats",
-  "sherpa.ui",
-  "sherpa.utils",
-  "sherpa.estmethods.tests",
-  "sherpa.sim.tests",
-  "sherpa.tests",
-  "sherpa.image.tests",
-  "sherpa.astro.xspec.tests",
-  "sherpa.astro.sim.tests",
-  "sherpa.astro.tests",
-  "sherpa.astro.datastack.tests",
-  "sherpa.astro.datastack.tests.data",
-  "sherpa.astro.utils.tests",
-  "sherpa.astro.optical.tests",
-  "sherpa.astro.ui.tests",
-  "sherpa.astro.ui.tests.data",
-  "sherpa.astro.io.tests",
-  "sherpa.astro.models.tests",
-  "sherpa.utils.tests",
-  "sherpa.stats.tests",
-  "sherpa.ui.tests",
-  "sherpa.optmethods.tests",
-  "sherpa.models.tests",
-  "sherpa.plot.tests",
-  "sherpa.include",
-  "sherpa.include.sherpa",
-  "sherpa.include.sherpa.astro",
-  "sherpa.static.css"
-]
+[tool.setuptools.packages.find]
+where = ["src"]
 
-# Install the tests as "package data".
-# find sherpa -name tests | sort
-#
-# It's not clear how this interacts with tools.setuptools.packages.
-#
-[tool.setuptools.package-data]
-"sherpa.astro.datastack" = [
-  "tests/data/*",
-  "tests/acis_bkg_model.py",
-  "tests/test_*py"
-]
-"sherpa.astro.io" = [
-  "tests/test_*py"
-]
-"sherpa.astro.models" = [
-  "tests/test_*py"
-]
-"sherpa.astro.optical" = [
-  "tests/test_*py"
-]
-"sherpa.astro.sim" = [
-  "tests/test_*py"
-]
-"sherpa.astro" = [
-  "tests/test_*py"
-]
-"sherpa.astro.ui" = [
-  "tests/data/*",
-  "tests/test_*py"
-]
-"sherpa.astro.utils" = [
-  "tests/test_*py"
-]
-"sherpa.astro.xspec" = [
-  "tests/test_*py"
-]
-"sherpa.estmethods" = [
-  "tests/test_*py"
-]
-"sherpa.image" = [
-  "tests/test_*py"
-]
-"sherpa.models" = [
-  "tests/test_*py"
-]
-"sherpa.optmethods" = [
-  "tests/test_*py",
-  "tests/*.hh",           # do we need this?
-  "tests/_tstoptfct.cc"   # do we need this
-]
-"sherpa.plot" = [
-  "tests/test_*py"
-]
-"sherpa.sim" = [
-  "tests/test_*py"
-]
-"sherpa.stats" = [
-  "tests/test_*py"
-]
-"sherpa" = [
-  "tests/test_*py",
-  "tests/a.lis",
-  "tests/b.lis",
-  "include/sherpa/*.hh",
-  "include/sherpa/astro/*.hh",
-  "static/css/*css",
-  "sherpa.rc",
-  "sherpa-standalone.rc"
-]
-"sherpa.ui" = [
-  "tests/test_*py"
-]
-"sherpa.utils" = [
-  "tests/test_*py"
-]
-
-# Remove the src/ directories
+# Remove files used to build extension modules from the wheel.
 #
 [tool.setuptools.exclude-package-data]
-"*" = ["src/*"]
+"sherpa.astro.models.src" = ["_modelfcts.cc"]
+"sherpa.astro.utils.src" = ["*"]
+"sherpa.astro.xspec.src" = ["_xspec.cc"]
+"sherpa.estmethods.src" = ["*"]
 "sherpa.include.sherpa" = ["MersenneTwister.h"]
+"sherpa.models.src" = ["_modelfcts.cc"]
+"sherpa.optmethods.src" = ["*"]
+"sherpa.optmethods.src.minpack" = ["*"]
+"sherpa.stats.src" = ["_statfcts.cc"]
+"sherpa.utils.src" = ["*"]
+"sherpa.utils.src.cephes" = ["*"]
+"sherpa.utils.src.gsl" = ["*"]
+"sherpa.utils.src.sjohnson" = ["*"]
+"sherpa.utils.src.tcd" = ["*"]

@@ -53,12 +53,12 @@ class build_ext(_build_ext):
             sherpa_config = self.get_finalized_command('sherpa_config', True)
             if not sherpa_config.disable_group:
                 self.copy_file(sherpa_config.group_location,
-                               "group.so")
+                               "src/group.so")
                 self.announce("install group extension locally")
 
             if not sherpa_config.disable_stk:
                 self.copy_file(sherpa_config.stk_location,
-                               "stk.so")
+                               "src/stk.so")
                 self.announce("install stk extension locally")
 
         super().run()
