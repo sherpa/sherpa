@@ -26,7 +26,7 @@ from pytest import approx
 from sherpa.astro import ui
 from sherpa.data import Data1D
 from sherpa.stats import UserStat
-from sherpa.utils.err import StatErr
+from sherpa.utils.err import IdentifierErr, StatErr
 
 
 def test_user_stat_unit(clean_astro_ui):
@@ -58,7 +58,7 @@ def test_user_stat_unit(clean_astro_ui):
     assert 3.235 == ui.get_fit_results().statval
 
 
-@pytest.mark.parametrize("use_string", [False, pytest.param(True, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("use_string", [False, True])
 def test_user_model_stat_docs(use_string, clean_astro_ui):
     """This test reproduces the documentation shown at:
     http://cxc.harvard.edu/sherpa4.4/statistics/#userstat
@@ -116,7 +116,6 @@ def test_user_model_stat_docs(use_string, clean_astro_ui):
     assert ui.get_par("myl.b").val == approx(3, abs=0.01)
 
 
-@pytest.mark.xfail  # issue #2225
 def test_list_stats(clean_astro_ui):
     """Can we list the stats after adding a new one?"""
 
@@ -144,7 +143,7 @@ def test_list_stats(clean_astro_ui):
     assert set(nstats).difference(set(ostats)) == set([statname.lower()])
 
 
-@pytest.mark.parametrize("use_string", [False, pytest.param(True, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("use_string", [False, True])
 def test_get_stat_name_user_stat(use_string, clean_astro_ui):
     """What does get_stat_name return?"""
 
@@ -163,7 +162,7 @@ def test_get_stat_name_user_stat(use_string, clean_astro_ui):
     assert ui.get_stat_name() == "userstat"
 
 
-@pytest.mark.parametrize("use_string", [False, pytest.param(True, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("use_string", [False, True])
 def test_get_stat_user_stat(use_string, clean_astro_ui):
     """What does get_stat return?"""
 
@@ -184,6 +183,15 @@ def test_get_stat_user_stat(use_string, clean_astro_ui):
     assert s.name == statname
     assert s.statfunc == delme
     assert s.errfunc is None
+
+
+@pytest.mark.parametrize("name", ["map", "Map"])
+def test_load_user_stat_invalid_name(name, clean_astro_ui):
+    """Check we error out"""
+
+    with pytest.raises(IdentifierErr,
+                       match=f"^'{name}' is reserved for the native Python function$"):
+        ui.load_user_stat(name, None)
 
 
 def test_341(clean_astro_ui):

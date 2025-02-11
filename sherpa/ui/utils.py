@@ -2900,7 +2900,7 @@ class Session(NoNewAttributesAfterInit):
         return stat
 
     def get_stat(self,
-                 name: Optional[str] = None
+                 name: str | None = None
                  ) -> Stat:
         """Return the fit statisic.
 
@@ -2977,7 +2977,7 @@ class Session(NoNewAttributesAfterInit):
         return type(self.get_stat()).__name__.lower()
 
     def set_stat(self,
-                 stat: Union[str, Stat]
+                 stat: str | Stat
                  ) -> None:
         """Set the statistical method.
 
@@ -7996,7 +7996,7 @@ class Session(NoNewAttributesAfterInit):
         ----------
         statname : str
            The name to use for the new statistic when calling
-           `set_stat`.
+           `set_stat` (this value is converted to lower case).
         calc_stat_func : func
            The function that calculates the statistic.
         calc_err_func : func, optional
@@ -8043,6 +8043,11 @@ class Session(NoNewAttributesAfterInit):
             >>> set_stat("qstat")
 
         """
+
+        lname = statname.lower()
+        if lname in _builtin_symbols_:
+            raise IdentifierErr('badidnative', statname)
+
         userstat = UserStat(calc_stat_func, calc_err_func, statname)
         if priors:
             assert False
@@ -8052,7 +8057,14 @@ class Session(NoNewAttributesAfterInit):
             kwargs = dict(pars)
             userstat = sherpa.logposterior.Prior(calc_stat_func, priors, kwargs)
 
+        # Ideally we wuold not add this to the global symbol table,
+        # but existing code may rely on this behaviour.
+        #
         _assign_obj_to_main(statname, userstat)
+
+        # Add to the statistics.
+        #
+        self._stats[lname] = userstat
 
     # Back-compatibility
     # set_source = set_model
