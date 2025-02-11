@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-#  Copyright (C) 2017, 2019  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2017, 2019, 2025
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -24,10 +25,11 @@ from pytest import approx
 
 from sherpa.astro import ui
 from sherpa.data import Data1D
+from sherpa.stats import UserStat
 from sherpa.utils.err import StatErr
 
 
-def test_user_stat_unit():
+def test_user_stat_unit(clean_astro_ui):
     given_stat_error = [1.1, 2.2, 3.3]
     given_sys_error = [10.1, 10.2, 10.3]
 
@@ -56,9 +58,9 @@ def test_user_stat_unit():
     assert 3.235 == ui.get_fit_results().statval
 
 
-def test_user_model_stat_docs():
-    """
-    This test reproduces the documentation shown at:
+@pytest.mark.parametrize("use_string", [False, pytest.param(True, marks=pytest.mark.xfail)])
+def test_user_model_stat_docs(use_string, clean_astro_ui):
+    """This test reproduces the documentation shown at:
     http://cxc.harvard.edu/sherpa4.4/statistics/#userstat
 
     and:
@@ -73,6 +75,11 @@ def test_user_model_stat_docs():
     external module, plus the dataset is different.
 
     Also, the stats docs do not perform a fit.
+
+    The use_string parameter is to allow issue #2225 to be tested.
+    When False, the original code is used, using eval to access the
+    statistic name. When True we use a string (issue #2225).
+
     """
     def my_stat_func(data, model, staterror, syserror=None, weight=None):
         # A simple function to replicate χ2
@@ -93,10 +100,15 @@ def test_user_model_stat_docs():
     ui.clean()
     ui.load_arrays(1, x, y)
     ui.load_user_stat("mystat", my_stat_func, my_staterr_func)
-    ui.set_stat(eval('mystat'))
     ui.load_user_model(myline, "myl")
     ui.add_user_pars("myl", ["m", "b"])
-    ui.set_model(eval('myl'))
+
+    if use_string:
+        ui.set_stat("mystat")
+    else:
+        ui.set_stat(eval("mystat"))
+
+    ui.set_model(eval("myl"))
 
     ui.fit()
 
@@ -104,7 +116,77 @@ def test_user_model_stat_docs():
     assert ui.get_par("myl.b").val == approx(3, abs=0.01)
 
 
-def test_341():
+@pytest.mark.xfail  # issue #2225
+def test_list_stats(clean_astro_ui):
+    """Can we list the stats after adding a new one?"""
+
+    # We do not hard code the statistic names here, in case we ever
+    # add (or remove) any frmo the defaut set.
+    #
+
+    ostats = ui.list_stats()
+    assert len(ostats) > 0
+    assert len(ostats) == len(set(ostats))  # no duplicates
+    assert ui.get_stat_name() in ostats
+
+    def delme(*args, **kwargs):
+        raise RuntimeError()
+
+    statname = "not_A_Good_Stat"
+    assert statname not in ostats          # just in case
+    assert statname.lower() not in ostats  # just in case
+
+    ui.load_user_stat(statname, delme)
+
+    nstats = ui.list_stats()
+    assert len(nstats) == len(ostats) + 1
+    assert statname.lower() in nstats
+    assert set(nstats).difference(set(ostats)) == set([statname.lower()])
+
+
+@pytest.mark.parametrize("use_string", [False, pytest.param(True, marks=pytest.mark.xfail)])
+def test_get_stat_name_user_stat(use_string, clean_astro_ui):
+    """What does get_stat_name return?"""
+
+    def delme(*args, **kwargs):
+        raise RuntimeError()
+
+    statname = "What_A_Name"
+    ui.load_user_stat(statname, delme)
+
+    if use_string:
+        ui.set_stat(statname)
+    else:
+        ui.set_stat(eval(statname))
+
+    # This response is not ideal
+    assert ui.get_stat_name() == "userstat"
+
+
+@pytest.mark.parametrize("use_string", [False, pytest.param(True, marks=pytest.mark.xfail)])
+def test_get_stat_user_stat(use_string, clean_astro_ui):
+    """What does get_stat return?"""
+
+    def delme(*args, **kwargs):
+        raise RuntimeError()
+
+    statname = "aName"
+    ui.load_user_stat(statname, delme)
+
+    if use_string:
+        ui.set_stat(statname)
+    else:
+        ui.set_stat(eval(statname))
+
+    s = ui.get_stat()
+
+    assert isinstance(s, UserStat)
+    assert s.name == statname
+    assert s.statfunc == delme
+    assert s.errfunc is None
+
+
+def test_341(clean_astro_ui):
     """
     The original reporter of bug #341 had a special implementation that should be captured
     by this test. The implementation has a proxy model that takes care of updating the actual
