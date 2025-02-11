@@ -158,8 +158,7 @@ def test_get_stat_name_user_stat(use_string, clean_astro_ui):
     else:
         ui.set_stat(eval(statname))
 
-    # This response is not ideal
-    assert ui.get_stat_name() == "userstat"
+    assert ui.get_stat_name() == statname.lower()
 
 
 @pytest.mark.parametrize("use_string", [False, True])

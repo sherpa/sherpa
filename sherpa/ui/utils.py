@@ -2952,6 +2952,10 @@ class Session(NoNewAttributesAfterInit):
     def get_stat_name(self) -> str:
         """Return the name of the current fit statistic.
 
+        .. versionchanged:: 4.17.1
+           User statistics now return their name, in lower-case,
+           rather than the string "userstat".
+
         Returns
         -------
         name : str
@@ -2974,7 +2978,7 @@ class Session(NoNewAttributesAfterInit):
         'cash'
 
         """
-        return type(self.get_stat()).__name__.lower()
+        return self.get_stat().name.lower()
 
     def set_stat(self,
                  stat: str | Stat
