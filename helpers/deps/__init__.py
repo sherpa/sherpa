@@ -90,7 +90,9 @@ def build_deps(configure):
         print(f">> python: {env.get('PYTHON')}  -> {sys.executable}")
         env['PYTHON'] = sys.executable
         env['PWD'] = os.getcwd()  # is this needed
-        out = call(configure, env=env)
+
+        # out = call(configure, env=env)
+        out = call(["/bin/sh"] + configure, env=env)
         if out != 0:
             sys.exit(out)
 
