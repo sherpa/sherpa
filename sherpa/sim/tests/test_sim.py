@@ -359,11 +359,75 @@ def test_normal_sample(setup):
     assert out == pytest.approx(EXPECTED_NORMAL)
 
 
+@pytest.mark.xfail  # See issue #1736
+def test_normal_sample_sigma(setup):
+    """Test normal_sample with different sigma values."""
+
+    # Run with sigma=1 and 2 and then check the output differs
+    # as expected. The return value is a 2D array where the first
+    # column is the statistic value and the remaining columns are
+    # the simulated parameter values. So the check is to compare
+    # the offset of the parameter values to the "truth", and
+    # see if it varies with sigma.
+    #
+    # The sigma=1 values have been tested in test_normal_sample,
+    # so there is no need to recalculate them here. Note they were
+    # calculated with the same RNG.
+    #
+    out1 = EXPECTED_NORMAL
+    out2 = sim.normal_sample(setup.fit, num=setup.num, sigma=2,
+                             correlate=False, rng=setup.rng)
+
+    # Calculate the offset from the expected value, dropping the
+    # statistic column (which is first).
+    #
+    pvals = np.asarray(setup.results.parvals)
+    delta1 = out1[:, 1:] - pvals
+    delta2 = out2[:, 1:] - pvals
+    ratio = delta2 / delta1
+
+    ncols = len(pvals)
+    expected = np.full((setup.num, ncols), 2.0)
+    assert ratio == pytest.approx(expected, rel=1e-4)
+
+
 def test_normal_sample_correlated(setup):
     out = sim.normal_sample(setup.fit, num=setup.num,
                             correlate=True, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL2)
+
+
+@pytest.mark.xfail  # See issue #1736
+def test_normal_sample_correlated_sigma(setup):
+    """Test normal_sample with different sigma values + correlation."""
+
+    # Run with sigma=1 and 2 and then check the output differs
+    # as expected. The return value is a 2D array where the first
+    # column is the statistic value and the remaining columns are
+    # the simulated parameter values. So the check is to compare
+    # the offset of the parameter values to the "truth", and
+    # see if it varies with sigma.
+    #
+    # The sigma=1 values have been tested in test_normal_sample_correlated,
+    # so there is no need to recalculate them here. Note they were
+    # calculated with the same RNG.
+    #
+    out1 = EXPECTED_NORMAL2
+    out2 = sim.normal_sample(setup.fit, num=setup.num, sigma=2,
+                             correlate=True, rng=setup.rng)
+
+    # Calculate the offset from the expected value, dropping the
+    # statistic column (which is first).
+    #
+    pvals = np.asarray(setup.results.parvals)
+    delta1 = out1[:, 1:] - pvals
+    delta2 = out2[:, 1:] - pvals
+    ratio = delta2 / delta1
+
+    ncols = len(pvals)
+    expected = np.full((setup.num, ncols), 2.0)
+    assert ratio == pytest.approx(expected, rel=1e-4)
 
 
 def test_t_sample(setup):
