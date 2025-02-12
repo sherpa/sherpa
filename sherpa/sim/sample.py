@@ -189,7 +189,7 @@ class ParameterScaleVector(ParameterScale):
         """
 
         scales = []
-        thawedpars = [par for par in fit.model.pars if not par.frozen]
+        thawedpars = fit.model.get_thawed_pars()
 
         if myscales is None:
 
@@ -293,8 +293,7 @@ class ParameterScaleMatrix(ParameterScale):
 
         else:
 
-            thawedpars = [par for par in fit.model.pars if not par.frozen]
-            npar = len(thawedpars)
+            npar = len(fit.model.thawedpars)
             msg = f'scales must be a numpy array of size ({npar},{npar})'
 
             if not isinstance(myscales, np.ndarray):
