@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015, 2016, 2019, 2020, 2021, 2023
+#  Copyright (C) 2011, 2015, 2016, 2019 - 2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,13 +19,15 @@
 #
 
 import logging
+from typing import Literal
 
-import numpy
+import numpy as np
 
 from sherpa.estmethods import Covariance, Confidence
+from sherpa.fit import Fit
+from sherpa.utils import NoNewAttributesAfterInit, parallel_map, random
 from sherpa.utils.err import EstErr
-from sherpa.utils import parallel_map, NoNewAttributesAfterInit
-from sherpa.utils import random
+from sherpa.utils.types import ArrayType
 
 warning = logging.getLogger("sherpa").warning
 
@@ -42,7 +44,12 @@ __all__ = ('multivariate_t', 'multivariate_cauchy',
            )
 
 
-def multivariate_t(mean, cov, df, size=None, rng=None):
+def multivariate_t(mean: ArrayType,
+                   cov: np.ndarray,
+                   df: int,
+                   size: tuple[int, ...] | None = None,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
     """multivariate_t(mean, cov, df[, size])
 
     Draw random deviates from a multivariate Student's T distribution Such a
@@ -86,19 +93,24 @@ def multivariate_t(mean, cov, df, size=None, rng=None):
     the better
 
     """
-    df = float(df)
-    mean = numpy.asarray(mean)
+    dff = float(df)
+    mean = np.asarray(mean)
 
-    normal = random.multivariate_normal(rng, numpy.zeros_like(mean), cov, size=size)
-    x = numpy.sqrt(random.chisquare(rng, df, size=size) / df)
-    numpy.divide(normal, x[numpy.newaxis].T, normal)
-    numpy.add(mean, normal, normal)
+    normal = random.multivariate_normal(rng, np.zeros_like(mean), cov, size=size)
+    x = np.sqrt(random.chisquare(rng, dff, size=size) / dff)
+    np.divide(normal, x[np.newaxis].T, normal)
+    np.add(mean, normal, normal)
     x = normal
     return x
 
 
 # TODO: should this pass the size value through to multivariate_t?
-def multivariate_cauchy(mean, cov, size=None, rng=None):
+#
+def multivariate_cauchy(mean: ArrayType,
+                        cov: np.ndarray,
+                        size: tuple[int, ...] | None = None,
+                        rng: random.RandomType | None = None
+                        ) -> np.ndarray:
     """
     This needs to be checked too! A reference to the literature the better
 
@@ -118,9 +130,12 @@ class ParameterScale(NoNewAttributesAfterInit):
     """
 
     # The sigma value to use
-    sigma = 1
+    sigma: float = 1
 
-    def get_scales(self, fit, myscales=None):
+    def get_scales(self,
+                   fit: Fit,
+                   myscales: np.ndarray | None = None
+                   ) -> np.ndarray:
         """Return the samples.
 
         Parameters
@@ -148,7 +163,10 @@ class ParameterScaleVector(ParameterScale):
 
     """
 
-    def get_scales(self, fit, myscales=None):
+    def get_scales(self,
+                   fit: Fit,
+                   myscales: np.ndarray | None = None
+                   ) -> np.ndarray:
         """Return the samples.
 
         Parameters
@@ -189,7 +207,7 @@ class ParameterScaleVector(ParameterScale):
             for par, val, lo, hi in zip(thawedpars, r.parvals, r.parmins, r.parmaxes):
                 scale = None
                 if lo is not None and hi is not None:
-                    scale = numpy.abs(lo)
+                    scale = np.abs(lo)
                 else:
                     warning("Covariance failed for '%s', trying Confidence...",
                             par.fullname)
@@ -200,36 +218,35 @@ class ParameterScaleVector(ParameterScale):
                     try:
                         t = fit.est_errors(parlist=(par,))
                         if t.parmins[0] is not None and t.parmaxes[0] is not None:
-                            scale = numpy.abs(t.parmins[0])
+                            scale = np.abs(t.parmins[0])
 
                         else:
 
                             if t.parmins[0] is None and t.parmaxes[0] is not None:
-                                scale = numpy.abs(t.parmaxes[0])
+                                scale = np.abs(t.parmaxes[0])
 
                             else:
                                 warning('1 sigma bounds for parameter %s'
                                         ' could not be found, using soft limit minimum',
                                         par.fullname)
-                                if 0.0 == numpy.abs(par.min):
+                                if 0.0 == np.abs(par.min):
                                     scale = 1.0e-16
                                 else:
-                                    scale = numpy.abs(par.min)
+                                    scale = np.abs(par.min)
 
                     finally:
                         fit.estmethod = oldestmethod
                 scales.append(scale)
 
         else:
-            if not numpy.iterable(myscales):
+            if not np.iterable(myscales):
                 emsg = "scales option must be iterable of " + \
                        f"length {len(thawedpars)}"
                 raise TypeError(emsg)
 
             scales = list(map(abs, myscales))
 
-        scales = numpy.asarray(scales).transpose()
-        return scales
+        return np.asarray(scales).transpose()
 
 
 class ParameterScaleMatrix(ParameterScale):
@@ -237,7 +254,10 @@ class ParameterScaleMatrix(ParameterScale):
 
     """
 
-    def get_scales(self, fit, myscales=None):
+    def get_scales(self,
+                   fit: Fit,
+                   myscales: np.ndarray | None = None
+                   ) -> np.ndarray:
         """Return the samples.
 
         Parameters
@@ -277,7 +297,7 @@ class ParameterScaleMatrix(ParameterScale):
             npar = len(thawedpars)
             msg = f'scales must be a numpy array of size ({npar},{npar})'
 
-            if not isinstance(myscales, numpy.ndarray):
+            if not isinstance(myscales, np.ndarray):
                 raise EstErr(msg)
 
             if (npar, npar) != myscales.shape:
@@ -288,17 +308,20 @@ class ParameterScaleMatrix(ParameterScale):
         if cov is None:
             raise EstErr('nocov')
 
-        cov = numpy.asarray(cov)
+        cov = np.asarray(cov)
 
         # Investigate spectral decomposition to avoid requirement that the cov be
         # semi-positive definite.  Nevermind, NumPy already uses SVD to generate
         # deviates from a multivariate normal.  An alternative is to use Cholesky
         # decomposition, but it assumes that the matrix is semi-positive
         # definite.
-        if numpy.min(numpy.linalg.eigvalsh(cov)) <= 0:
+        if np.min(np.linalg.eigvalsh(cov)) <= 0:
             raise TypeError("The covariance matrix is not positive definite")
 
         return cov
+
+
+ClipValue = Literal["none"] | Literal["hard"] | Literal["soft"]
 
 
 class ParameterSample(NoNewAttributesAfterInit):
@@ -306,7 +329,12 @@ class ParameterSample(NoNewAttributesAfterInit):
 
     """
 
-    def get_sample(self, fit, *, num=1, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   num: int = 1,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
         """Return the samples.
 
         .. versionchanged:: 4.16.0
@@ -334,7 +362,11 @@ class ParameterSample(NoNewAttributesAfterInit):
         """
         raise NotImplementedError
 
-    def clip(self, fit, samples, clip='none'):
+    def clip(self,
+             fit: Fit,
+             samples: np.ndarray,
+             clip: ClipValue = 'none'
+             ) -> np.ndarray:
         """Clip the samples if out of bounds.
 
         Parameters
@@ -359,7 +391,7 @@ class ParameterSample(NoNewAttributesAfterInit):
         """
 
         niter = samples.shape[0]
-        clipped = numpy.zeros(niter, dtype=bool)
+        clipped = np.zeros(niter, dtype=bool)
         if clip == 'none':
             return clipped
 
@@ -378,7 +410,7 @@ class ParameterSample(NoNewAttributesAfterInit):
             porig = pvals.copy()
 
             # do the clipping in place
-            numpy.clip(pvals, pmin, pmax, out=pvals)
+            np.clip(pvals, pmin, pmax, out=pvals)
 
             # update the clipped array (which is True if a
             # value on the row has been clipped).
@@ -392,18 +424,18 @@ class ParameterSampleFromScaleVector(ParameterSample):
     """Samples drawn from uncorrelated parameters.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.scale = ParameterScaleVector()
-        ParameterSample.__init__(self)
+        super().__init__()
 
 
 class ParameterSampleFromScaleMatrix(ParameterSample):
     """Samples drawn from correlated parameters.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.scale = ParameterScaleMatrix()
-        ParameterSample.__init__(self)
+        super().__init__()
 
 
 class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
@@ -414,7 +446,13 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
     but the upper bound is not).
     """
 
-    def get_sample(self, fit, *, factor=4, num=1, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   factor: float = 4,
+                   num: int = 1,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
         """Return the parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -443,7 +481,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
            free parameters in the fit argument.
 
         """
-        vals = numpy.array(fit.model.thawedpars)
+        vals = np.array(fit.model.thawedpars)
         scales = self.scale.get_scales(fit)
         size = int(num)
         samples = [random.uniform(rng,
@@ -451,7 +489,7 @@ class UniformParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
                                   val + factor * abs(scale),
                                   size=size)
                    for val, scale in zip(vals, scales)]
-        return numpy.asarray(samples).T
+        return np.asarray(samples).T
 
 
 class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
@@ -464,7 +502,13 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
 
     """
 
-    def get_sample(self, fit, *, myscales=None, num=1, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   myscales: np.ndarray | None = None,
+                   num: int = 1,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
         """Return the parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -493,13 +537,13 @@ class NormalParameterSampleFromScaleVector(ParameterSampleFromScaleVector):
             free parameters in the fit argument.
 
         """
-        vals = numpy.array(fit.model.thawedpars)
+        vals = np.array(fit.model.thawedpars)
         scales = self.scale.get_scales(fit, myscales)
         size = int(num)
 
         samples = [random.normal(rng, val, scale, size=size)
                    for val, scale in zip(vals, scales)]
-        return numpy.asarray(samples).T
+        return np.asarray(samples).T
 
 
 class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
@@ -512,7 +556,13 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, mycov=None, num=1, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   mycov: np.ndarray | None = None,
+                   num: int = 1,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
         """Return the parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -541,7 +591,7 @@ class NormalParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
             free parameters in the fit argument.
 
         """
-        vals = numpy.array(fit.model.thawedpars)
+        vals = np.array(fit.model.thawedpars)
         cov = self.scale.get_scales(fit, mycov)
         return random.multivariate_normal(rng, vals, cov, size=int(num))
 
@@ -556,7 +606,13 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, dof, num=1, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   dof: int,
+                   num: int = 1,
+                   rng: random.RandomType | None = None,
+                   ) -> np.ndarray:
         """Return the parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -584,12 +640,12 @@ class StudentTParameterSampleFromScaleMatrix(ParameterSampleFromScaleMatrix):
            free parameters in the fit argument.
 
         """
-        vals = numpy.array(fit.model.thawedpars)
+        vals = np.array(fit.model.thawedpars)
         cov = self.scale.get_scales(fit)
         return multivariate_t(vals, cov, dof, int(num), rng=rng)
 
 
-class Evaluate():
+class Evaluate:
     """
     Callable class for _sample_stat multiprocessing call
     This class used to be a nested function, which can't be pickled and results in
@@ -598,15 +654,20 @@ class Evaluate():
     Note that this does not guarantee to reset the model
     parameters after being run.
     """
-    def __init__(self, fit):
+
+    def __init__(self, fit: Fit) -> None:
         self.fit = fit
 
-    def __call__(self, sample):
+    def __call__(self, sample: np.ndarray) -> float:
         self.fit.model.thawedpars = sample
         return self.fit.calc_stat()
 
 
-def _sample_stat(fit, samples, numcores=None, cache=True):
+def _sample_stat(fit: Fit,
+                 samples: np.ndarray,
+                 numcores: bool = None,
+                 cache: bool = True
+                 ) -> np.ndarray:
     """Calculate the statistic for each set of samples.
 
     Parameters
@@ -635,12 +696,12 @@ def _sample_stat(fit, samples, numcores=None, cache=True):
 
     try:
         fit.model.startup(cache=cache)
-        stats = numpy.asarray(parallel_map(Evaluate(fit), samples, numcores))
+        stats = np.asarray(parallel_map(Evaluate(fit), samples, numcores))
     finally:
         fit.model.teardown()
         fit.model.thawedpars = oldvals
 
-    return numpy.concatenate([stats[:, numpy.newaxis], samples], axis=1)
+    return np.concatenate([stats[:, np.newaxis], samples], axis=1)
 
 
 class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
@@ -653,7 +714,13 @@ class NormalSampleFromScaleMatrix(NormalParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, num=1, numcores=None, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   num: int = 1,
+                   numcores: int | None = None,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -701,7 +768,13 @@ class NormalSampleFromScaleVector(NormalParameterSampleFromScaleVector):
 
     """
 
-    def get_sample(self, fit, *, num=1, numcores=None, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   num: int = 1,
+                   numcores: int | None = None,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -746,7 +819,14 @@ class UniformSampleFromScaleVector(UniformParameterSampleFromScaleVector):
     but the upper bound is not).
     """
 
-    def get_sample(self, fit, *, num=1, factor=4, numcores=None, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   num: int = 1,
+                   factor: float = 4,
+                   numcores: int | None = None,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -797,7 +877,14 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
 
     """
 
-    def get_sample(self, fit, *, num=1, dof=2, numcores=None, rng=None):
+    def get_sample(self,
+                   fit: Fit,
+                   *,
+                   num: int = 1,
+                   dof: int = 2,
+                   numcores: int | None = None,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
         """Return the statistic and parameter samples.
 
         .. versionchanged:: 4.16.0
@@ -836,8 +923,13 @@ class StudentTSampleFromScaleMatrix(StudentTParameterSampleFromScaleMatrix):
         return _sample_stat(fit, samples, numcores)
 
 
-def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None,
-                  rng=None):
+def normal_sample(fit: Fit,
+                  num: int = 1,
+                  sigma: float = 1,
+                  correlate: bool = True,
+                  numcores: int | None = None,
+                  rng: random.RandomType | None = None
+                  ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from a normal distribution.
 
@@ -898,7 +990,12 @@ def normal_sample(fit, num=1, sigma=1, correlate=True, numcores=None,
     return sampler.get_sample(fit, num=num, numcores=numcores, rng=rng)
 
 
-def uniform_sample(fit, num=1, factor=4, numcores=None, rng=None):
+def uniform_sample(fit: Fit,
+                   num: int = 1,
+                   factor: float = 4,
+                   numcores: int | None = None,
+                   rng: random.RandomType | None = None
+                   ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values
     from an uniform distribution.
 
@@ -943,7 +1040,12 @@ def uniform_sample(fit, num=1, factor=4, numcores=None, rng=None):
                               numcores=numcores, rng=rng)
 
 
-def t_sample(fit, num=1, dof=2, numcores=None, rng=None):
+def t_sample(fit: Fit,
+             num: int = 1,
+             dof: int = 2,
+             numcores: int | None = None,
+             rng: random.RandomType | None = None
+             ) -> np.ndarray:
     """Sample the fit statistic by taking the parameter values from
     a Student's t-distribution.
 
