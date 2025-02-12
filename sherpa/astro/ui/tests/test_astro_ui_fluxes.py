@@ -2625,7 +2625,7 @@ def setup_2337_model(setup: str) -> Polynom1D:
     return cpt2
 
 
-@pytest.mark.parametrize("setup", ["A", "B", pytest.param("C", marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("setup", ["A", "B", "C"])
 def test_2337_linked_par_full(setup, clean_astro_ui):
     """What happens when a linked-parameter is used for sampe_photon_flux?
 

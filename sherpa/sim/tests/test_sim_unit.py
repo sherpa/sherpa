@@ -157,7 +157,7 @@ def test_dmvnorm_checks_symmetry():
         dmvnorm(14.3, 2.3, sigma)
 
 
-@pytest.mark.parametrize("myscales", [True, pytest.param([1, 2, 3], marks=pytest.mark.xfail)])  # does not check length
+@pytest.mark.parametrize("myscales", [True, [1, 2, 3]])
 def test_parameterscale_checks_samples_size_vector(myscales):
     """Do we error out?"""
 

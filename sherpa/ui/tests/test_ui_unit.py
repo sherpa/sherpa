@@ -1674,7 +1674,7 @@ def basic_linked_par_validation(mdl1: ArithmeticModel,
         assert c2.parmaxes == pytest.approx(c1.parmaxes)
 
 
-@pytest.mark.parametrize("correlate", [pytest.param(False, marks=pytest.mark.xfail), True])  # See issue #2332
+@pytest.mark.parametrize("correlate", [False, True])
 @pytest.mark.parametrize("method", ["levmar", "simplex"])
 @pytest.mark.parametrize("swap", [False, True])
 def test_normal_sample_linked_par_chisq(swap, method, correlate, clean_ui):

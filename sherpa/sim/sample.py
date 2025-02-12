@@ -191,7 +191,8 @@ class ParameterScaleVector(ParameterScale):
         """
 
         scales = []
-        thawedpars = [par for par in fit.model.pars if not par.frozen]
+        thawedpars = fit.model.get_thawed_pars()
+        npar = len(thawedpars)
 
         if myscales is None:
 
@@ -254,11 +255,13 @@ class ParameterScaleVector(ParameterScale):
 
         elif np.iterable(myscales):
             scales = abs(np.asarray(myscales))
+            if len(scales) != npar:
+                raise TypeError("scales option must be iterable of "
+                                f"length {npar}")
 
         else:
-            emsg = "scales option must be iterable of " + \
-                f"length {len(thawedpars)}"
-            raise TypeError(emsg)
+            raise TypeError("scales option must be iterable of "
+                            f"length {npar}")
 
         return np.asarray(scales).transpose()
 
@@ -307,8 +310,7 @@ class ParameterScaleMatrix(ParameterScale):
 
         else:
 
-            thawedpars = [par for par in fit.model.pars if not par.frozen]
-            npar = len(thawedpars)
+            npar = len(fit.model.thawedpars)
             msg = f'scales must be a numpy array of size ({npar},{npar})'
 
             if not isinstance(myscales, np.ndarray):

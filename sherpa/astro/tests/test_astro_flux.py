@@ -184,7 +184,7 @@ SAMPLE_C1.setflags(write=False)
                          [(0, 40),
                           (None, None)
                           ])
-@pytest.mark.parametrize("link", [False, pytest.param(True, marks=pytest.mark.xfail)])
+@pytest.mark.parametrize("link", [False, True])
 @pytest.mark.parametrize("setup,fluxes1,fluxes2",
                          [(setup_data1d_linked_par,
                            [0] * 5,
