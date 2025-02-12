@@ -87,7 +87,7 @@ def build_deps(configure):
         print("<<<<<<"); sys.stdout.flush()
 
         env = os.environ.copy()
-        print(f">> python: {env.get('PYTHON')}}  -> {sys.executable}")
+        print(f">> python: {env.get('PYTHON')}  -> {sys.executable}")
         env['PYTHON'] = sys.executable
         env['PWD'] = os.getcwd()  # is this needed
         out = call(configure, env=env)
