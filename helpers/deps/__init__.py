@@ -32,12 +32,12 @@ def in_dir(cwd):
 
     owd = os.getcwd()
     os.chdir(cwd)
-    print(f">> changing directory: {owd} to {cwd}")
+    print(f">> changing directory: {owd} to {cwd}"); sys.stdout.flush()
     try:
         yield
 
     finally:
-        print(f"<< restoring directory: {owd}")
+        print(f"<< restoring directory: {owd}"); sys.stdout.flush()
         os.chdir(owd)
 
 
@@ -67,24 +67,29 @@ def clean_deps():
 
 
 def build_deps(configure):
-    print(">> In configure step")
+    print(">> In configure step"); sys.stdout.flush()
     if os.path.exists('extern/built'):
         return
 
-    print(f">> about to change to extern from {os.getcwd()}")
+    print(f">> about to change to extern from {os.getcwd()}"); sys.stdout.flush()
     with in_dir("extern"):
-        print(">>>")
+        print(">>>"); sys.stdout.flush()
         os.system("ls -l")
-        print("<<<")
+        print("<<<"); sys.stdout.flush()
         print(f">> configure:    {configure}")
         print(f">> configure[0]: {configure[0]}")
 
         # If this succeeds then configure should exist ...
         os.chmod(configure[0], 0o755)
 
+        print(">>>>>>"); sys.stdout.flush()
+        os.system("ls -l configure")
+        print("<<<<<<"); sys.stdout.flush()
+
         env = os.environ.copy()
-        print("f>> python: {env.get('PYTHON')}}  -> {sys.executable}")
+        print(f">> python: {env.get('PYTHON')}}  -> {sys.executable}")
         env['PYTHON'] = sys.executable
+        env['PWD'] = os.getcwd()  # is this needed
         out = call(configure, env=env)
         if out != 0:
             sys.exit(out)
