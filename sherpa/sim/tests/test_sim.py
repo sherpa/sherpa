@@ -359,11 +359,29 @@ def test_normal_sample(setup):
     assert out == pytest.approx(EXPECTED_NORMAL)
 
 
+@pytest.mark.xfail  # See issue #1736
+def test_normal_sample_sigma(setup):
+    out = sim.normal_sample(setup.fit, num=setup.num, sigma=2,
+                            correlate=False, rng=setup.rng)
+
+    # May need to tweak the tolerances for this check
+    assert out == pytest.approx(2.0 * EXPECTED_NORMAL)
+
+
 def test_normal_sample_correlated(setup):
     out = sim.normal_sample(setup.fit, num=setup.num,
                             correlate=True, rng=setup.rng)
 
     assert out == pytest.approx(EXPECTED_NORMAL2)
+
+
+@pytest.mark.xfail  # See issue #1736
+def test_normal_sample_correlated_sigma(setup):
+    out = sim.normal_sample(setup.fit, num=setup.num, sigma=2,
+                            correlate=True, rng=setup.rng)
+
+    # May need to tweak the tolerances for this check
+    assert out == pytest.approx(2.0 * EXPECTED_NORMAL2)
 
 
 def test_t_sample(setup):
