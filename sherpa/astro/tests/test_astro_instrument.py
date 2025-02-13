@@ -1356,8 +1356,8 @@ def test_rsp_multi_1_label(arfexp, phaexp):
 
     assert isinstance(wrapped, ArithmeticModel)
 
-    # The labelling of the model differes from the Response1D case, so
-    # re-do the analysis.
+    # The labelling of the model differs from the Response1D case, so
+    # redo the analysis.
     #
     # TODO:
     #   - what happens to the ARF exposure time?
@@ -1451,7 +1451,7 @@ def test_rsp_multi_2_label(analysis, arfexp, phaexp):
 
     assert isinstance(wrapped, ArithmeticModel)
 
-    # The labelling of the model differes from the Response1D case, so
+    # The labelling of the model differs from the Response1D case, so
     # re-do the analysis.
     #
     # TODO:
