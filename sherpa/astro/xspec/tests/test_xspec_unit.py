@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016 - 2021, 2023, 2024
+#  Copyright (C) 2016 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -24,6 +24,7 @@
 import copy
 import logging
 import os
+from pathlib import Path
 import re
 
 import pytest
@@ -826,38 +827,68 @@ def test_get_xsstate_keys():
 
 
 @requires_xspec
-def test_set_xsstate_missing_key():
-    """Check set_xsstate does nothing if required key is missing.
+@pytest.mark.parametrize("miss_key",
+                         ["abund", "chatter", "cosmo", "xsect",
+                          "modelstrings"])  # paths is not a required key
+def test_set_xsstate_missing_key(miss_key):
+    """Check set_xsstate handles a missing key.
 
     """
 
     from sherpa.astro import xspec
 
     ostate = xspec.get_xsstate()
-
+    assert miss_key in ostate
     for val in ostate.values():
         assert val is not None
 
-    # paths is not a required key
-    #
-    req_keys = ["abund", "chatter", "cosmo", "xsect",
-                "modelstrings"]
+    def not_elem(value, vals):
+        """Pick the first item in vals that is not value"""
+        return [v for v in vals if v != value][0]
 
-    fake = {'abund': ostate['abund'] + '_copy',
-            'xsect': ostate['xsect'] + '_copy',
-            'chatter': -10,
-            'cosmo': (0.0, 0.0),  # two elements will cause a failure
-            'modelstrings': {'foo': 2, 'bar': None},
+    # We need valid arguments as the values will get set with the
+    # set_xsstate(fake) call below.
+    #
+    fake = {'abund': not_elem(ostate['abund'], ["angr", "aspl", "grsa"]),
+            'xsect': not_elem(ostate['xsect'], ["bcmc", "vern", "obcm"]),
+            'chatter': 10,
+            'cosmo': (50, 0.1, 0.4),
+            'modelstrings': {'foo': '2'},
             'paths': {'manager': '/dev/null'}}
 
-    for key in req_keys:
+    del fake[miss_key]
 
-        copy = fake.copy()
-        del copy[key]
-        xspec.set_xsstate(copy)
+    try:
+        xspec.set_xsstate(fake)
 
         nstate = xspec.get_xsstate()
-        assert nstate == ostate
+        ncopy = nstate.copy()
+        del ncopy[miss_key]
+
+        # The key should be unchanged; the others set to those in
+        # fake. Checking the latter is a bit annoying.
+        #
+        assert nstate[miss_key] == ostate[miss_key]
+        for key, value in fake.items():
+            match key:
+                case "cosmo":
+                    assert ncopy[key] == pytest.approx(value)
+
+                case "modelstrings":
+                    for mkey, mvalue in value.items():
+                        assert ncopy[key][mkey.upper()] == mvalue
+
+                case _:
+                    assert ncopy[key] == value
+
+    finally:
+        xspec.set_xsstate(ostate)
+
+        # Revert any unwanted settings (since we do not clear out
+        # the old settings).
+        #
+        for key in fake.get("modelstrings", {}).keys():
+            xspec.set_xsxset(key, "")
 
 
 @requires_xspec
@@ -893,6 +924,7 @@ def test_set_xsstate_xset():
 
     ostate = xspec.get_xsstate()
 
+    # Ensure we use an unknown-to-Sherpa keyword.
     key = 'a-test-keyword'
     val = '/foo/bar/baz.pha'
     while key in ostate['modelstrings']:
@@ -903,7 +935,7 @@ def test_set_xsstate_xset():
     # There should be no value for this key (since it isn't
     # in modelstrings by construction).
     #
-    assert key not in xspec.modelstrings
+    assert key not in xspec.xsstate["modelstrings"]
     assert xspec.get_xsxset(key) == ''
 
     nstate = copy.deepcopy(ostate)
@@ -911,8 +943,8 @@ def test_set_xsstate_xset():
     xspec.set_xsstate(nstate)
 
     assert xspec.get_xsxset(key) == val
-    assert ukey in xspec.modelstrings
-    assert xspec.modelstrings[ukey] == val
+    assert ukey in xspec.xsstate["modelstrings"]
+    assert xspec.xsstate["modelstrings"][ukey] == val
 
     xspec.set_xsstate(ostate)
 
@@ -926,7 +958,7 @@ def test_set_xsstate_xset():
     # assert xspec.get_xsstate() == ostate
 
     xspec.set_xsxset(key, '')
-    del xspec.modelstrings[ukey]
+    del xspec.xsstate["modelstrings"][ukey]
     assert xspec.get_xsstate() == ostate
 
 
@@ -979,7 +1011,8 @@ def test_set_xsstate_path_manager():
 @requires_data
 @requires_fits
 @requires_xspec
-def test_read_xstable_model(make_data_path):
+@pytest.mark.parametrize("usepath", [True, False])
+def test_read_xstable_model(usepath, make_data_path):
     """Limited test (only one file).
 
     Evaluation tests using this model are in
@@ -989,7 +1022,8 @@ def test_read_xstable_model(make_data_path):
     from sherpa.astro import xspec
 
     path = make_data_path('xspec-tablemodel-RCS.mod')
-    tbl = xspec.read_xstable_model('bar', path)
+    filename = Path(path) if usepath else path
+    tbl = xspec.read_xstable_model('bar', filename)
 
     assert tbl.name == 'bar'
     assert isinstance(tbl, xspec.XSTableModel)

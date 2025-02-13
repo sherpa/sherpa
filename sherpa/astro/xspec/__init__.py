@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2015 - 2024
+#  Copyright (C) 2010, 2015 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -101,12 +101,14 @@ References
 
 """
 
+from __future__ import annotations
 
 from contextlib import suppress
 import logging
+from pathlib import Path
 import string
 import tempfile
-from typing import Any, Optional, Union
+from typing import Any, overload
 import warnings
 
 import numpy as np
@@ -130,18 +132,45 @@ from . import _xspec  # type: ignore
 info = logging.getLogger(__name__).info
 warning = logging.getLogger(__name__).warning
 
+# Store information useful to re-create the XSPEC state. This could be
+# a structured type (e.g. a dataclass), but it's not clear how we want
+# this to evolve, so leave as a dict.
+#
+# The idea is that we do not always want to rely on the XSPEC model
+# library - since it doesn't always let you ask "what has the user
+# set", with the interface currently available to Sherpa - so we
+# record these settings manually.
+#
+xsstate: dict[str, Any] = {
+    "modelstrings": {},
+    "paths": {},
+}
+
+
 # Python wrappers around the exported functions from _xspec. This
 # provides a more-accurate function signature to the user, makes
 # the documentation easier to write, and makes it available even
 # when the compiled code has not been compiled (e.g. for a Sphinx
 # documentation run).
 #
-def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
+@overload
+def get_xsabund() -> str:
+    ...
+
+@overload
+def get_xsabund(element: None) -> str:
+    ...
+
+@overload
+def get_xsabund(element: str) -> float:
+    ...
+
+def get_xsabund(element: str | None = None) -> str | float:
     """Return the X-Spec abundance setting or elemental abundance.
 
     Parameters
     ----------
-    element : str, optional
+    element : str or None, optional
        When not given, the abundance table name is returned.
        If a string, then it must be an element name from:
        'H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne',
@@ -165,8 +194,8 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
     Examples
     --------
 
-    Return the current abundance setting, which in this case
-    is 'angr', the default value for X-Spec:
+    Return the current abundance setting, which in this case is
+    'angr', the default value for X-Spec:
 
     >>> get_xsabund()
     'angr'
@@ -176,11 +205,23 @@ def get_xsabund(element: Optional[str] = None) -> Union[str, float]:
     >>> get_xsabund('He')
     0.09769999980926514
 
-    The `set_xsabund` function has been used to read in the
-    abundances from a file, so the routine now returns the
-    string 'file':
+    The `set_xsabund` function has been used to read in the abundances
+    from a file, so the routine now returns the string 'file':
 
     >>> set_xsabund('abund.dat')
+    >>> get_xsabund()
+    'file'
+
+    Use the Lodders 2003 abundances but replace the Oxygen abundance
+    value with 0. In this case the abundance table is labelled as
+    'file':
+
+    >>> set_xsabund("lodd")
+    >>> get_xsabund()
+    'lodd'
+    >>> tbl = get_xsabundances()
+    >>> tbl['O'] = 0
+    >>> set_xsabundances(tbl)
     >>> get_xsabund()
     'file'
 
@@ -219,7 +260,7 @@ def get_xsabundances() -> dict[str, float]:
             for name in get_xselements().keys()}
 
 
-def get_xsabund_doc(name: Optional[str] = None) -> str:
+def get_xsabund_doc(name: str | None = None) -> str:
     """Return the documentation for the abundance table.
 
     Parameters
@@ -470,17 +511,18 @@ def set_xsabund(abundance: str) -> None:
     -----
     The pre-defined abundance tables are:
 
-     - 'angr', from [2]_
-     - 'aspl', from [3]_
-     - 'feld', from [4]_, except for elements not listed which
+     - 'aneb', from [2]_
+     - 'angr', from [3]_
+     - 'aspl', from [4]_
+     - 'felc', from [5]_ (coronal)
+     - 'feld', from [6]_, except for elements not listed which
        are given 'grsa' abundances
-     - 'aneb', from [5]_
-     - 'grsa', from [6]_
-     - 'wilm', from [7]_, except for elements not listed which
-       are given zero abundance
+     - 'grsa', from [7]_
      - 'lodd', from [8]_
      - 'lpgp', from [9]_ (photospheric)
      - 'lpgs', from [9]_ (proto-solar)
+     - 'wilm', from [10]_, except for elements not listed which
+       are given zero abundance
 
     The values for these tables are given at [1]_.
 
@@ -498,27 +540,27 @@ def set_xsabund(abundance: str) -> None:
            compiled version used by Sherpa; use `get_xsversion` to
            check.
 
-    .. [2] Anders E. & Grevesse N. (1989, Geochimica et
-           Cosmochimica Acta 53, 197)
-           https://adsabs.harvard.edu/abs/1989GeCoA..53..197A
-
-    .. [3] Asplund M., Grevesse N., Sauval A.J. & Scott P.
-           (2009, ARAA, 47, 481)
-           https://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
-
-    .. [4] Feldman U.(1992, Physica Scripta 46, 202)
-           https://adsabs.harvard.edu/abs/1992PhyS...46..202F
-
-    .. [5] Anders E. & Ebihara (1982, Geochimica et Cosmochimica
+    .. [2] Anders E. & Ebihara (1982, Geochimica et Cosmochimica
            Acta 46, 2363)
            https://adsabs.harvard.edu/abs/1982GeCoA..46.2363A
 
-    .. [6] Grevesse, N. & Sauval, A.J. (1998, Space Science
+    .. [3] Anders E. & Grevesse N. (1989, Geochimica et
+           Cosmochimica Acta 53, 197)
+           https://adsabs.harvard.edu/abs/1989GeCoA..53..197A
+
+    .. [4] Asplund M., Grevesse N., Sauval A.J. & Scott P.
+           (2009, ARAA, 47, 481)
+           https://adsabs.harvard.edu/abs/2009ARA%26A..47..481A
+
+    .. [5] Feldman, U., Mandelbaum, P., Seely, J.L., Doschek, G.A., Gursky H.
+           (1992, ApJSS, 81, 387)
+
+    .. [6] Feldman U.(1992, Physica Scripta 46, 202)
+           https://adsabs.harvard.edu/abs/1992PhyS...46..202F
+
+    .. [7] Grevesse, N. & Sauval, A.J. (1998, Space Science
            Reviews 85, 161)
            https://adsabs.harvard.edu/abs/1998SSRv...85..161G
-
-    .. [7] Wilms, Allen & McCray (2000, ApJ 542, 914)
-           https://adsabs.harvard.edu/abs/2000ApJ...542..914W
 
     .. [8] Lodders, K (2003, ApJ 591, 1220)
            https://adsabs.harvard.edu/abs/2003ApJ...591.1220L
@@ -526,6 +568,9 @@ def set_xsabund(abundance: str) -> None:
     .. [9] Lodders K., Palme H., Gail H.P., Landolt-Börnstein,
            New Series, vol VI/4B, pp 560–630 (2009)
            https://ui.adsabs.harvard.edu/abs/2009LanB...4B..712L/abstract
+
+    .. [10] Wilms, Allen & McCray (2000, ApJ 542, 914)
+            https://adsabs.harvard.edu/abs/2000ApJ...542..914W
 
     Examples
     --------
@@ -678,17 +723,6 @@ def set_xsxsect(name: str) -> None:
     _xspec.set_xsxsect(name)
 
 
-# Wrap the XSET function in Python, so that we can keep a record of
-# the strings the user sent as specific XSPEC model strings (if any) during
-# the session.  Only store if setting was successful.
-# See:
-# https://heasarc.gsfc.nasa.gov/docs/xanadu/xspec/manual/XSxset.html
-modelstrings = {}
-
-# Store any path changes
-xspecpaths = {}
-
-
 def get_xsxset(name: str) -> str:
     """Return the X-Spec model setting.
 
@@ -780,8 +814,9 @@ def set_xsxset(name: str, value: str) -> None:
     """
     name = name.upper()
     _xspec.set_xsxset(name, value)
-    if get_xsxset(name) != "":
-        modelstrings[name] = get_xsxset(name)
+    nval = get_xsxset(name)
+    if nval != "":
+        xsstate["modelstrings"][name] = nval
 
 
 def get_xspath_manager() -> str:
@@ -853,7 +888,7 @@ def set_xspath_manager(path: str) -> None:
         raise IOError("Unable to set the XSPEC manager path "
                       f"to '{path}'")
 
-    xspecpaths['manager'] = path
+    xsstate["paths"]["manager"] = path
 
 
 # Provide XSPEC module state as a dictionary.  The "cosmo" state is
@@ -893,12 +928,17 @@ def get_xsstate() -> dict[str, Any]:
             "chatter": get_xschatter(),
             "cosmo": get_xscosmo(),
             "xsect": get_xsxsect(),
-            "modelstrings": modelstrings.copy(),
-            "paths": xspecpaths.copy()}
+            "modelstrings": xsstate["modelstrings"].copy(),
+            "paths": xsstate["paths"].copy()
+            }
 
 
 def set_xsstate(state: dict[str, Any]) -> None:
     """Restore the state of the XSPEC module.
+
+    .. versionchanged:: 4.17.1
+       The input state no-longer requires all the keys to be
+       present.
 
     Parameters
     ----------
@@ -906,54 +946,60 @@ def set_xsstate(state: dict[str, Any]) -> None:
         The current settings for the XSPEC module. This is expected to
         match the return value of ``get_xsstate``, and so uses the
         keys: 'abund', 'chatter', 'cosmo', 'xsect', 'modelstrings',
-        and 'paths'.
+        and 'paths'. If a keyword is missing then that setting will
+        not be changed.
 
     See Also
     --------
     get_xsstate, set_xsabund, set_xschatter, set_xscosmo, set_xsxsect,
     set_xsxset
 
-    Notes
-    -----
-    The state of the XSPEC module will only be changed if all
-    the required keys in the dictionary are present. All keys apart
-    from 'paths' are required.
     """
 
-    if type(state) == dict and \
-       'abund' in state and \
-       'chatter' in state and \
-       'cosmo' in state and \
-       'xsect' in state and \
-       'modelstrings' in state:
-
-        h0, q0, l0 = state["cosmo"]
-
-        set_xsabund(state["abund"])
-        set_xschatter(state["chatter"])
-        set_xscosmo(h0, q0, l0)
-        set_xsxsect(state["xsect"])
-        for name in state["modelstrings"].keys():
-            set_xsxset(name, state["modelstrings"][name])
-
-        # This is optional to support re-loading state information
-        # from a version of XSPEC which did not provide the path
-        # information.
-        #
+    # As the input argument has changed over time, allow each setting
+    # to be optional. However, we assume that, if given, the value is
+    # of the correct type (such as a dictionary, three-element tuple,
+    # or string).
+    #
+    with suppress(KeyError):
         try:
-            managerpath = state['paths']['manager']
-        except KeyError:
-            managerpath = None
+            set_xschatter(state["chatter"])
+        except TypeError:
+            # Assume state is not a dictionary, so return.
+            return
 
-        if managerpath is not None:
-            set_xspath_manager(managerpath)
+    with suppress(KeyError):
+        set_xsabund(state["abund"])
+
+    with suppress(KeyError):
+        set_xsxsect(state["xsect"])
+
+    with suppress(KeyError):
+        h0, q0, l0 = state["cosmo"]
+        set_xscosmo(h0, q0, l0)
+
+    with suppress(KeyError):
+        # Should this remove any old keys? With the current API this
+        # is hard to do reliably.
+        #
+        for name, value in state["modelstrings"].items():
+            set_xsxset(name, value)
+
+    with suppress(KeyError):
+        set_xspath_manager(state["paths"]["manager"])
 
 
-def read_xstable_model(modelname, filename, etable=False):
+def read_xstable_model(modelname: str,
+                       filename: Path | str,
+                       etable: bool = False
+                       ) -> XSTableModel:
     """Create a XSPEC table model.
 
     XSPEC additive (atable, [1]_), multiplicative (mtable, [2]_), and
     exponential (etable, [3]_) table models are supported.
+
+    .. versionchanged:: 4.17.1
+       The filename argument can now be sent a Path object.
 
     .. versionchanged:: 4.16.0
        Parameters with negative DELTA values are now made frozen, to
@@ -971,7 +1017,7 @@ def read_xstable_model(modelname, filename, etable=False):
     ----------
     modelname : str
        The identifier for this model component.
-    filename : str
+    filename : str or Path
        The name of the FITS file containing the data, which should
        match the XSPEC table model definition [4]_.
     etable : bool, optional
@@ -1014,6 +1060,8 @@ def read_xstable_model(modelname, filename, etable=False):
 
     """
 
+    fname = str(filename) if isinstance(filename, Path) else filename
+
     # TODO: how to avoid loading this if no backend is available
     import sherpa.astro.io
     read_hdr = sherpa.astro.io.backend.get_header_data
@@ -1022,7 +1070,7 @@ def read_xstable_model(modelname, filename, etable=False):
     # What sort of a XSPEC table model is this?
     #
     try:
-        hdr1 = read_hdr(filename, blockname="PRIMARY")
+        hdr1 = read_hdr(fname, blockname="PRIMARY")
     except IOErr as ie:
         # The error message will be generic, so add some more
         # information.
@@ -1031,7 +1079,7 @@ def read_xstable_model(modelname, filename, etable=False):
 
     hduclas1 = hdr1.get("HDUCLAS1")
     if hduclas1 is None:
-        raise IOErr("nokeyword", filename, "HDUCLAS1")
+        raise IOErr("nokeyword", fname, "HDUCLAS1")
 
     if hduclas1.value != 'XSPEC TABLE MODEL':
         # TODO: change Exception to something more useful
@@ -1044,9 +1092,9 @@ def read_xstable_model(modelname, filename, etable=False):
     escale = hdr1.get("ESCALE")
     nxflt = hdr1.get("NXFLTEXP")
     if redshift is None:
-        raise IOErr("nokeyword", filename, "REDSHIFT")
+        raise IOErr("nokeyword", fname, "REDSHIFT")
     if model is None:
-        raise IOErr("nokeyword", filename, "ADDMODEL")
+        raise IOErr("nokeyword", fname, "ADDMODEL")
 
     addredshift = bool_cast(redshift.value)
     addmodel = bool_cast(model.value)
@@ -1057,32 +1105,34 @@ def read_xstable_model(modelname, filename, etable=False):
     #
     nxfltexp = 1 if nxflt is None else int(nxflt.value)
     if nxfltexp > 1:
-        raise IOErr(f"No support for NXFLTEXP={nxfltexp} in {filename}")
+        raise IOErr(f"No support for NXFLTEXP={nxfltexp} in {fname}")
 
-    colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP',
-               'MINIMUM', 'MAXIMUM']
-
-    hdu2, name2 = read_tbl(filename, colkeys=colkeys,
+    colkeys = ['NAME', 'INITIAL', 'DELTA', 'BOTTOM', 'TOP', 'MINIMUM',
+               'MAXIMUM']
+    hdu2, name2 = read_tbl(fname, colkeys=colkeys,
                            blockname="PARAMETERS", fix_type=False)
     hdr2 = hdu2.header
-    cols2 = [col.values for col in hdu2.columns]
+    cols2 = {col.name: col.values for col in hdu2.columns}
 
     nintkey = hdr2.get("NINTPARM")
     if nintkey is None:
-        raise IOErr("nokeyword", filename, "NINTPARM")
+        raise IOErr("nokeyword", fname, "NINTPARM")
 
     # The constructor does not need this but the XSPEC model library
     # has historically been very poor at reporting missing or invalid
-    # information, often preferrnig to crash, so ensure this required
+    # information, often preferring to crash, so ensure this required
     # keyword is present.
     #
     if hdr2.get("NADDPARM") is None:
-        raise IOErr("nokeyword", filename, "NADDPARM")
+        raise IOErr("nokeyword", fname, "NADDPARM")
 
     nint = int(nintkey.value)
-    return XSTableModel(filename, modelname, *cols2,
-                        nint=nint, addmodel=addmodel,
-                        addredshift=addredshift,
+    return XSTableModel(fname, name=modelname, parnames=cols2["NAME"],
+                        initvals=cols2["INITIAL"],
+                        delta=cols2["DELTA"], mins=cols2["BOTTOM"],
+                        maxes=cols2["TOP"], hardmins=cols2["MINIMUM"],
+                        hardmaxes=cols2["MAXIMUM"], nint=nint,
+                        addmodel=addmodel, addredshift=addredshift,
                         addescale=addescale, etable=etable)
 
 
