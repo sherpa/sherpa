@@ -161,7 +161,7 @@ class OptMethod(NoNewAttributesAfterInit):
         ArrayType = Sequence[float] | np.ndarray
 
     and the remaining arguments are sent in as keyword arguments, and
-    so can specific to the optimization function. The x0, xmin, and
+    so can be specific to the optimization function. The x0, xmin, and
     xmax values specify the starting values and their minimum and
     maximum limits; they are intended to be sent in as 1D numeric
     arrays.
