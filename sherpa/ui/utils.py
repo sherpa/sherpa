@@ -8061,7 +8061,7 @@ class Session(NoNewAttributesAfterInit):
             kwargs = dict(pars)
             userstat = sherpa.logposterior.Prior(calc_stat_func, priors, kwargs)
 
-        # Ideally we wuold not add this to the global symbol table,
+        # Ideally we would not add this to the global symbol table,
         # but existing code may rely on this behaviour.
         #
         _assign_obj_to_main(statname, userstat)

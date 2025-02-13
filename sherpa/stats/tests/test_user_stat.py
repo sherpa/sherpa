@@ -106,7 +106,9 @@ def test_user_model_stat_docs(use_string, clean_astro_ui):
     if use_string:
         ui.set_stat("mystat")
     else:
-        ui.set_stat(eval("mystat"))
+        evalout = eval("mystat")
+        assert isinstance(evalout, UserStat)
+        ui.set_stat(evalout)
 
     ui.set_model(eval("myl"))
 
@@ -120,7 +122,7 @@ def test_list_stats(clean_astro_ui):
     """Can we list the stats after adding a new one?"""
 
     # We do not hard code the statistic names here, in case we ever
-    # add (or remove) any frmo the defaut set.
+    # add (or remove) any from the default set.
     #
 
     ostats = ui.list_stats()
