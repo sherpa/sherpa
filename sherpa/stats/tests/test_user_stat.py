@@ -61,7 +61,7 @@ def test_user_stat_unit(clean_astro_ui):
 @pytest.mark.parametrize("use_string", [False, True])
 def test_user_model_stat_docs(use_string, clean_astro_ui):
     """This test reproduces the documentation shown at:
-    http://cxc.harvard.edu/sherpa4.4/statistics/#userstat
+    https://cxc.cfa.harvard.edu/sherpa/statistics/#userstat
 
     and:
     http://cxc.harvard.edu/sherpa/threads/user_model/
