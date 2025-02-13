@@ -44,21 +44,21 @@ jobs:
       uses: uraimo/run-on-arch-action@v2
       with:
         arch: ${{ matrix.arch }}
-        # distro: ubuntu_rolling
-        # ubuntu 22.04 uses Python 3.10
-        distro: ubuntu22.04
+        # use the latest LTS version
+        distro: ubuntu_latest
 
         shell: /bin/bash
 
         # Based on AstroPy
         install: |
           apt-get update -q -y
-          apt-get install -q -y git \
+          apt-get install -q -y \
                                 g++ \
                                 gfortran \
                                 flex \
                                 bison \
                                 make \
+                                file \
                                 pkg-config \
                                 python3 \
                                 python3-dev \
