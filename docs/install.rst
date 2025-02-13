@@ -138,7 +138,7 @@ The prerequisites for building from source are:
 * Python packages: ``setuptools``, ``numpy`` (these should be
   automatically installed by ``pip``)
 * System: ``gcc`` and ``g++`` or ``clang`` and ``clang++``, ``make``, ``flex``,
-  ``bison``, ``ar`` (which may be provided by the ``binutils`` package)
+  ``bison``, ``ar`` (which may be provided by the ``binutils`` package), ``file``.
 
 The aim is to support recent versions of these tools and libraries;
 please report problems to the
