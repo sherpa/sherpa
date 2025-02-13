@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2017, 2020 - 2024
+#  Copyright (C) 2007, 2016-2017, 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -2138,3 +2138,12 @@ def test_model_linked_par_outside_limit():
     with pytest.raises(ParameterErr,
                        match="parameter mdl.ampl has a minimum of 0"):
         mdl.thawedpars = [12, 6]
+
+
+@pytest.mark.parametrize('name',
+                         [None, 23, Box1D("23")])
+def test_name_not_string(name):
+    """Check if we can use a non-string name"""
+    with pytest.raises(TypeError,
+                       match="The parameter 'name' for a model must be a string but it is a "):
+        mdl = Box1D(name=name)

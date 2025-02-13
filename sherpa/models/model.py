@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016 - 2024
+#  Copyright (C) 2010, 2016-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -536,6 +536,8 @@ class Model(NoNewAttributesAfterInit):
     def __init__(self,
                  name: str,
                  pars: Sequence[Parameter] = ()) -> None:
+        if not isinstance(name, str):
+            raise TypeError("The parameter 'name' for a model must be a string but it is a " + str(type(name)) + ".")
         self.name = name
         self.type = self.__class__.__name__.lower()
         self._pars = tuple(pars)
