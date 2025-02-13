@@ -91,6 +91,12 @@ def build_deps(configure):
         env['PYTHON'] = sys.executable
         env['PWD'] = os.getcwd()  # is this needed
 
+        print(">>>>>>"); sys.stdout.flush()
+        os.system("file /bin/sh")
+        os.system("ls -l /bin/sh")
+        print("<<<<<<"); sys.stdout.flush()
+
+
         # out = call(configure, env=env)
         out = call(["/bin/sh"] + configure, env=env)
         if out != 0:
