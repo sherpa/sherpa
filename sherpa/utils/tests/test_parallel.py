@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018, 2019, 2020, 2021, 2022, 2023
+#  Copyright (C) 2010, 2016, 2018 - 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -51,23 +51,34 @@ def test_parallel_map_checks_iterable():
         parallel_map(sum, True)
 
 
+def func_fails_on_2(x):
+    """A function to be sent to parallel_map.
+
+    See test_parallel_map_on_error. This used to be a local definition
+    for that test but, in order to support the non-fork methods of
+    multiprocessing (e.g. to allow this symbol to be pickled by
+    ForkingPickler) it has been moved to a module-level symbol.
+
+    """
+
+    if x == 2:
+        # Assume the other tasks will have completed within 0.1
+        # second, so this failure is at, or near the end, of the
+        # tasks being processed.
+        #
+        time.sleep(0.1)
+        raise ValueError("x can not be 2")
+
+    return x
+
+
 @pytest.mark.parametrize("ntasks", [1, 2, 8])
 def test_parallel_map_on_error(ntasks, caplog):
     """What happens if one of the processes raises an error?"""
 
-    def func(x):
-        if x == 2:
-            # Assume the other tasks will have completed within 0.1
-            # second, so this failure is at, or near the end, of the
-            # tasks being processed.
-            #
-            time.sleep(0.1)
-            raise ValueError("x can not be 2")
-        return x
-
     args = [-3, 0, 1, 2, 3, 4]
     with pytest.raises(ValueError):
-        parallel_map(func, args, numcores=ntasks)
+        parallel_map(func_fails_on_2, args, numcores=ntasks)
 
 
 @pytest.mark.parametrize("num_tasks, num_segments",

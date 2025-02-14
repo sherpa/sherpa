@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2009, 2015, 2016, 2018 - 2024
+#  Copyright (C) 2009, 2015, 2016, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,26 +18,33 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from __future__ import annotations
+
 from contextlib import nullcontext
 from functools import wraps
 import logging
 import os
 from pathlib import Path
 import signal
-from typing import Optional, Protocol, Sequence, Union, \
+from typing import Any, Callable, Mapping, Protocol, Sequence, \
     runtime_checkable
 
 import numpy as np
 
-from sherpa.data import DataSimulFit
-from sherpa.estmethods import Covariance, EstNewMin
-from sherpa.models import SimulFitModel
-from sherpa.optmethods import LevMar, NelderMead
+from sherpa.data import Data, DataSimulFit
+from sherpa.estmethods import Covariance, EstNewMin, FreezePar, \
+    ParName, ReportProgress, ThawPar
+from sherpa.models.model import Model, SimulFitModel
+from sherpa.models.parameter import Parameter
+from sherpa.optmethods import OptMethod, LevMar, NelderMead
+from sherpa.optmethods.optfcts import OptReturn
 from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_iterable, list_to_open_interval, sao_fcmp, formatting
 from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
+from sherpa.utils.types import IdType
+
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
@@ -60,70 +67,80 @@ def evaluates_model(func):
     return run
 
 
-class StatInfoResults(NoNewAttributesAfterInit):
+class StatInfoResults:
     """A summary of the current statistic value for one or more data sets.
 
-    Attributes
-    ----------
-    name : str
-       The name of the data set, or sets.
-    ids : sequence of int or str
-       The data set ids (it may be a tuple or array) included in the
-       results.
-    bkg_ids: sequence of int or str, or None
-       The background data set ids (it may be a tuple or array)
-       included in the results, if any.
-    statname : str
-       The name of the statistic function.
-    statval : number
-       The statistic value.
-    numpoints : int
-       The number of bins used in the fits.
-    dof: int
-       The number of degrees of freedom in the fit (the number of
-       bins minus the number of free parameters).
-    qval: number or None
-       The Q-value (probability) that one would observe the reduced
-       statistic value, or a larger value, if the assumed model is
-       true and the current model parameters are the true parameter
-       values. This will be `None` if the value can not be calculated
-       with the current statistic (e.g. the Cash statistic).
-    rstat: number or None
-       The reduced statistic value (the `statval` field divided by
-       `dof`). This is not calculated for all statistics.
+    .. versionchanged:: 4.17.1
+       The class now uses ``__slots__`` to mark this object as having
+       no user fields.
+
     """
+
+    __slots__ = ("name", "ids", "bkg_ids", "statname", "statval",
+                 "numpoints", "model", "dof", "qval", "rstat")
 
     # The fields to include in the __str__ output.
     _fields = ('name', 'ids', 'bkg_ids', 'statname', 'statval',
                'numpoints', 'dof', 'qval', 'rstat')
 
-    def __init__(self, statname, statval, numpoints, model, dof,
-                 qval=None, rstat=None):
-        self.name = ''
-        self.ids = None
-        self.bkg_ids = None
+    def __init__(self,
+                 statname: str,
+                 statval: float,
+                 numpoints: int,
+                 model,  # Why do we have this?
+                 dof: int,
+                 qval: float | None = None,
+                 rstat: float | None = None) -> None:
+        self.name: str = ''
+        """The name of the data set, or sets."""
 
-        self.statname = statname
-        self.statval = statval
-        self.numpoints = numpoints
+        self.ids: Sequence[IdType] | None = None
+        """The data set ids (it may be a tuple or array) included
+        in the results."""
+
+        self.bkg_ids: Sequence[IdType] | None = None
+        """The background data set ids (it may be a tuple or array)
+        included in the results, if any."""
+
+        self.statname: str = statname
+        """The name of the statistic function."""
+
+        self.statval: float = statval
+        """The statistic value."""
+
+        self.numpoints: int = numpoints
+        """The number of bins used in the fits."""
+
         self.model = model
-        self.dof = dof
-        self.qval = qval
-        self.rstat = rstat
 
-        super().__init__()
+        self.dof: int = dof
+        """The number of degrees of freedom in the fit (the number of
+        bins minus the number of free parameters)."""
 
-    def __repr__(self):
+        self.qval: float | None = qval
+        """The Q-value (probability) that one would observe the reduced
+        statistic value, or a larger value, if the assumed model is
+        true and the current model parameters are the true parameter
+        values. This will be `None` if the value can not be calculated
+        with the current statistic (e.g. the Cash statistic).
+        """
+
+        self.rstat: float | None = rstat
+        """The reduced statistic value (the `statval` field divided by
+        `dof`). This is not calculated for all statistics."""
+
+    def __repr__(self) -> str:
         return '<Statistic information results instance>'
 
-    def __str__(self):
-        return print_fields(self._fields, vars(self))
+    def __str__(self) -> str:
+        return print_fields(self._fields,
+                            {k: getattr(self, k) for k in self._fields})
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the statistics."""
         return html_statinfo(self)
 
-    def format(self):
+    def format(self) -> str:
         """Return a string representation of the statistic.
 
         Returns
@@ -165,7 +182,8 @@ class StatInfoResults(NoNewAttributesAfterInit):
         return "\n".join(out)
 
 
-def _cleanup_chi2_name(stat, data):
+def _cleanup_chi2_name(stat: Stat,
+                       data: Data | DataSimulFit) -> str:
     """Simplify the chi-square name if possible.
 
     Returns the statistic name for reporting fit results, simplifying
@@ -208,7 +226,6 @@ class FitResults(NoNewAttributesAfterInit):
        The ``covarerr`` attribute has been renamed to ``covar``
        and now contains the covariance matrix estimated at the
        best-fit location, if provided by the optimiser.
-
 
     Attributes
     ----------
@@ -269,7 +286,11 @@ class FitResults(NoNewAttributesAfterInit):
                'dstatval', 'numpoints', 'dof', 'qval', 'rstat', 'message',
                'nfev')
 
-    def __init__(self, fit, results, init_stat, param_warnings):
+    def __init__(self,
+                 fit: Fit,
+                 results: OptReturn,
+                 init_stat: float,
+                 param_warnings: str) -> None:
         _vals = fit.data.eval_model_to_fit(fit.model)
         _dof = len(_vals) - len(tuple(results[1]))
         _covar = results[4].get('covar')
@@ -280,7 +301,7 @@ class FitResults(NoNewAttributesAfterInit):
         self.parvals = tuple(float(r) for r in results[1])
         self.istatval = init_stat
         self.statval = results[2]
-        self.dstatval = np.abs(results[2] - init_stat)
+        self.dstatval = np.abs(float(results[2]) - init_stat)
         self.numpoints = len(_vals)
         self.dof = _dof
         self.qval = _qval
@@ -422,13 +443,14 @@ class ErrorEstResults(NoNewAttributesAfterInit):
                'sigma', 'percent', 'parnames', 'parvals', 'parmins',
                'parmaxes', 'nfits')
 
-    def __init__(self, fit, results, parlist=None):
+    def __init__(self,
+                 fit: Fit,
+                 results,
+                 parlist: Optional[Sequence[Parameter]] = None) -> None:
         if parlist is None:
             parlist = fit.model.get_thawed_pars()
 
-        # TODO: Can we not just import them at the top level?  It may
-        # cause an import loop.
-        #
+        # Avoid an import loop
         from sherpa.estmethods import est_hardmin, est_hardmax, \
             est_hardminmax
 
@@ -442,8 +464,8 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
         self.parvals = tuple(float(p.val) for p in parlist if not p.frozen)
 
-        pmins = []
-        pmaxes = []
+        pmins: list[Union[Optional[float]]] = []
+        pmaxes: list[Union[Optional[float]]] = []
         for i in range(len(parlist)):
             if (results[2][i] == est_hardmin or
                 results[2][i] == est_hardminmax or
@@ -476,17 +498,17 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         if 'iterfitname' not in state:
             self.__dict__['iterfitname'] = 'none'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{self.methodname} results instance>'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return print_fields(self._fields, vars(self))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the error estimates."""
         return html_errresults(self)
 
-    def format(self):
+    def format(self) -> str:
         """Return a string representation of the error estimates.
 
         Returns
@@ -594,7 +616,7 @@ class IterCallback:
                  data: DataSimulFit,
                  model: SimulFitModel,
                  stat: Stat,
-                 fh: Optional[WriteableTextFile] = None
+                 fh: WriteableTextFile | None = None
                  ) -> None:
         self.data = data
         self.model = model
@@ -635,18 +657,33 @@ class IterCallback:
 # issue #2063
 #
 class IterFit:
-    """Support iterative fitting schemes.
+    """Handle possibly iterated fits.
 
-    This class is highly coupled to `Fit`.
+    This is tightly coupled with `Fit`.
+
+    .. versionchanged:: 4.17.1
+       The class now uses ``__slots__`` to mark this object as having
+       no user-defineable fields.
 
     .. versionchanged:: 4.17.0
-       Several internal fields have been removed as they are now
-       handled by the IterCallback class and the changes to the
-       _get_callback routine.
+       A number of internal variables have been removed as they are
+       now handled by the `IterCallback` class.
 
     """
 
-    def __init__(self, data, model, stat, method, itermethod_opts=None):
+    __slots__ = ("data", "model", "stat", "method", "_dep",
+                 "_staterror", "_syserror", "itermethod_opts",
+                 "iterate", "funcs", "current_func")
+
+    def __init__(self,
+                 # note that DataSimulFit does not derive from Data but
+                 # SimulFitModel does derive from Model.
+                 data: Data | DataSimulFit,
+                 model: Model,
+                 stat: Stat,
+                 method: OptMethod,
+                 itermethod_opts: Mapping[str, Any] | None = None
+                 ) -> None:
         if itermethod_opts is None:
             itermethod_opts = {'name': 'none'}
 
@@ -690,6 +727,8 @@ class IterFit:
             except KeyError:
                 raise ValueError(f"{iname} is not an iterative fitting method") from None
 
+            self.iterate = True
+
     # SIGINT (i.e., typing ctrl-C) can dump the user to the Unix prompt,
     # when signal is sent from G95 compiled code.  What we want is to
     # get to the Sherpa prompt instead.  Typically the user only thinks
@@ -700,7 +739,7 @@ class IterFit:
         raise KeyboardInterrupt()
 
     def _get_callback(self,
-                      fh: Optional[WriteableTextFile] = None
+                      fh: WriteableTextFile | None = None
                       ) -> IterCallback:
         """Create the function that returns the statistic.
 
@@ -722,6 +761,8 @@ class IterFit:
         except ValueError as e:
             warning(e)
 
+        # Store the original set of data that is to be fit.
+        #
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
@@ -938,8 +979,10 @@ class IterFit:
         # Return results from sigma rejection
         return final_fit_results
 
-    def fit(self, statfunc, pars, parmins, parmaxes,
-            statargs=(), statkwargs=None):
+    def fit(self,
+            statfunc: Callable,
+            pars, parmins, parmaxes,
+            statargs=(), statkwargs=None) -> OptReturn:
 
         if statkwargs is None:
             statkwargs = {}
@@ -948,13 +991,16 @@ class IterFit:
             return self.method.fit(statfunc, pars, parmins, parmaxes,
                                    statargs, statkwargs)
 
+        # If iterate is true then we assume current_func is set.
+        #
+        assert self.current_func is not None
         return self.current_func(statfunc, pars, parmins, parmaxes,
                                  statargs, statkwargs)
 
 
 # What is the best way to annotate the return value here?
 #
-def _add_fit_stats(outfile: Optional[Union[str, Path, WriteableTextFile]],
+def _add_fit_stats(outfile: str | Path | WriteableTextFile | None,
                    clobber: bool,
                    names: Sequence[str]):
     """Handle creating the output file handle for the fit callback.
@@ -987,6 +1033,23 @@ def _add_fit_stats(outfile: Optional[Union[str, Path, WriteableTextFile]],
         return nullcontext(fh)
 
     return fh
+
+
+def _check_contains_data(dep) -> None:
+    """Check we have data to fit."""
+
+    # This is partly written this way to appease mypy.
+    #
+    try:
+        ndep = len(dep)
+    except TypeError:
+        # Assume does not have a length
+        ndep = 0
+
+    if ndep > 0:
+        return
+
+    raise FitErr('nobins')
 
 
 class Fit(NoNewAttributesAfterInit):
@@ -1198,9 +1261,9 @@ class Fit(NoNewAttributesAfterInit):
     #
     @evaluates_model
     def fit(self,
-            outfile: Optional[Union[str, Path, WriteableTextFile]] = None,
+            outfile: str | Path | WriteableTextFile | None = None,
             clobber: bool = False,
-            numcores: Optional[int] = 1
+            numcores: int | None = 1
             ) -> FitResults:
         """Fit the model to the data.
 
@@ -1299,8 +1362,7 @@ class Fit(NoNewAttributesAfterInit):
         #       investigated if it is possible to pass that check
         #       but fail the following.
         #
-        if not np.iterable(dep) or len(dep) == 0:
-            raise FitErr('nobins')
+        _check_contains_data(dep)
 
         if ((np.iterable(staterror) and 0.0 in staterror) and
                 isinstance(self.stat, Chi2) and
@@ -1349,7 +1411,7 @@ class Fit(NoNewAttributesAfterInit):
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
     @evaluates_model
-    def simulfit(self, *others):
+    def simulfit(self, *others) -> FitResults:
         """Fit multiple data sets and models simultaneously.
 
         The current fit object is combined with the other fit
@@ -1378,11 +1440,13 @@ class Fit(NoNewAttributesAfterInit):
         d = DataSimulFit('simulfit data', tuple(f.data for f in fits))
         m = SimulFitModel('simulfit model', tuple(f.model for f in fits))
 
-        f = Fit(d, m, self.stat, self.method)
-        return f.fit()
+        return Fit(d, m, self.stat, self.method).fit()
 
     @evaluates_model
-    def est_errors(self, methoddict=None, parlist=None):
+    def est_errors(self,
+                   methoddict: dict[str, OptMethod] | None = None,
+                   parlist: Sequence[Parameter] | None = None
+                   ) -> ErrorEstResults:
         """Estimate errors.
 
         Calculate the low and high errors for one or more of the
@@ -1438,57 +1502,10 @@ class Fit(NoNewAttributesAfterInit):
         #
         thawedpars = self.model.get_thawed_pars()
 
-        # Define functions to freeze and thaw a parameter before
-        # we call fit function -- projection can call fit several
-        # times, for each parameter -- that parameter must be frozen
-        # while the others freely vary.
-        def freeze_par(pars, parmins, parmaxes, idx):
-            # Freeze the indicated parameter; return
-            # its place in the list of all parameters,
-            # and the current values of the parameters,
-            # and the hard mins amd maxs of the parameters
-            thawedpars[idx].val = pars[idx]
-            thawedpars[idx].frozen = True
-            self.current_frozen = idx
-
-            keep_pars = np.ones_like(pars)
-            keep_pars[idx] = 0
-            current_pars = pars[np.where(keep_pars)]
-            current_parmins = parmins[np.where(keep_pars)]
-            current_parmaxes = parmaxes[np.where(keep_pars)]
-            return (current_pars, current_parmins, current_parmaxes)
-
-        def thaw_par(idx):
-            if idx < 0:
-                return
-
-            thawedpars[idx].frozen = False
-            self.current_frozen = -1
-
-        # confidence needs to know which parameter it is working on.
-        def get_par_name(idx):
-            return thawedpars[idx].fullname
-
-        # Call from a parameter estimation method, to report that
-        # limits for a given parameter have been found At present (mid
-        # 2023) it looks like lower/upper are both single-element
-        # ndarrays, hence the need to convert to a scalar by accessing
-        # the first element (otherwise there's a deprecation warning
-        # from NumPy 1.25).
-        #
-        def report_progress(idx, lower, upper):
-            if idx < 0:
-                return
-
-            name = thawedpars[idx].fullname
-            if np.isnan(lower) or np.isinf(lower):
-                info("%s \tlower bound: -----", name)
-            else:
-                info("%s \tlower bound: %g", name, lower[0])
-            if np.isnan(upper) or np.isinf(upper):
-                info("%s \tupper bound: -----", name)
-            else:
-                info("%s \tupper bound: %g", name, upper[0])
+        freeze_par = FreezePar(thawedpars, self)
+        thaw_par = ThawPar(thawedpars, self)
+        get_par_name = ParName(thawedpars)
+        report_progress = ReportProgress(thawedpars)
 
         # If starting fit statistic is chi-squared or C-stat,
         # can calculate reduced fit statistic -- if it is
@@ -1502,8 +1519,7 @@ class Fit(NoNewAttributesAfterInit):
             dep, staterror, syserror = self.data.to_fit(
                 self.stat.calc_staterror)
 
-            if not np.iterable(dep) or len(dep) == 0:
-                raise FitErr('nobins')
+            _check_contains_data(dep)
 
             # For chi-squared and C-stat, reduced statistic is
             # statistic value divided by number of degrees of
@@ -1576,22 +1592,22 @@ class Fit(NoNewAttributesAfterInit):
         # that means get limits for all thawed parameters, so parnums
         # is [0, ... , numpars - 1], if the number of thawed parameters
         # is numpars.)
-        parnums = []
         if parlist is not None:
             allpars = self.model.get_thawed_pars()
+            pnums = []
             for p in parlist:
                 count = 0
                 match = False
                 for par in allpars:
                     if p is par:
-                        parnums.append(count)
+                        pnums.append(count)
                         match = True
                     count = count + 1
 
                 if not match:
                     raise EstErr('noparameter', p.fullname)
 
-            parnums = np.array(parnums)
+            parnums = np.array(pnums)
         else:
             parlist = self.model.get_thawed_pars()
             parnums = np.arange(len(startpars))
@@ -1609,14 +1625,16 @@ class Fit(NoNewAttributesAfterInit):
         try:
             output = self.estmethod.compute(self._iterfit._get_callback(),
                                             self._iterfit.fit,
-                                            self.model.thawedpars,
-                                            startsoftmins,
-                                            startsoftmaxs,
-                                            starthardmins,
-                                            starthardmaxs,
-                                            parnums,
-                                            freeze_par, thaw_par,
-                                            report_progress, get_par_name)
+                                            pars=self.model.thawedpars,
+                                            parmins=startsoftmins,
+                                            parmaxes=startsoftmaxs,
+                                            parhardmins=starthardmins,
+                                            parhardmaxes=starthardmaxs,
+                                            limit_parnums=parnums,
+                                            freeze_par=freeze_par,
+                                            thaw_par=thaw_par,
+                                            report_progress=report_progress,
+                                            get_par_name=get_par_name)
         except EstNewMin as e:
             # If maximum number of refits has occurred, don't
             # try to reminimize again.
@@ -1686,7 +1704,7 @@ class Fit(NoNewAttributesAfterInit):
 
 # Notebook representation
 #
-def html_fitresults(fit):
+def html_fitresults(fit) -> str:
     """Construct the HTML to display the FitResults object."""
 
     has_covar = fit.covar is not None
@@ -1706,7 +1724,7 @@ def html_fitresults(fit):
     if has_covar:
         header.append('Approximate error')
 
-    rows = []
+    rows: list[tuple] = []
     if has_covar:
         for pname, pval, perr in zip(fit.parnames, fit.parvals,
                                      np.sqrt(fit.covar.diagonal())):
@@ -1766,7 +1784,7 @@ def html_fitresults(fit):
     return formatting.html_from_sections(fit, ls)
 
 
-def html_errresults(errs):
+def html_errresults(errs) -> str:
     """Construct the HTML to display the FitResults object."""
 
     ls = []
@@ -1776,7 +1794,7 @@ def html_errresults(errs):
     header = ['Parameter', 'Best-fit value', 'Lower Bound',
               'Upper Bound']
 
-    rows = []
+    rows: list[tuple] = []
 
     def display(limit):
         """Display the limit
@@ -1830,7 +1848,7 @@ def html_errresults(errs):
     return formatting.html_from_sections(errs, ls)
 
 
-def html_statinfo(stats):
+def html_statinfo(stats) -> str:
 
     meta = []
 

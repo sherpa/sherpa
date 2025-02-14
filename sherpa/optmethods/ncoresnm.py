@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019- 2021, 2023, 2024
+#  Copyright (C) 2019 - 2021, 2023, 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -18,11 +18,14 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from typing import Callable, Sequence, SupportsFloat
+
 import numpy as np
 
 from sherpa.utils.parallel import ncpus
-from sherpa.optmethods import _saoopt
-from sherpa.optmethods.opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
+
+from . import _saoopt  # type: ignore
+from .opt import MyNcores, Opt, SimplexNoStep, SimplexStep, \
     SimplexRandom
 
 __all__ = ('ncoresNelderMead', )
@@ -32,8 +35,11 @@ EPSILON = np.float64(np.finfo(np.float32).eps)
 
 class MyNelderMead(Opt):
 
-    def __init__(self, fcn, xmin, xmax):
-        Opt.__init__(self, fcn, xmin, xmax)
+    def __init__(self,
+                 func: Callable[..., SupportsFloat],
+                 xmin: Sequence[SupportsFloat],
+                 xmax: Sequence[SupportsFloat]) -> None:
+        super().__init__(func, xmin, xmax)
         self.expansion_coef = 2.0          # chi
         self.contraction_coef = 0.5          # gamma
         self.reflection_coef = 1.0          # rho
