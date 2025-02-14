@@ -30,7 +30,7 @@ import numpy as np
 import pytest
 
 from sherpa.astro.data import DataARF, DataIMG, DataIMGInt, DataPHA, DataRMF
-from sherpa.astro.instrument import create_delta_rmf, matrix_to_rmf
+from sherpa.astro.instrument import create_arf, create_delta_rmf, matrix_to_rmf
 from sherpa.astro import io
 from sherpa.astro.io.wcs import WCS
 from sherpa.data import Data2D, Data2DInt
@@ -806,6 +806,33 @@ def make_test_pha():
     chans = np.asarray([1, 2, 3, 4], dtype=np.int16)
     counts = np.asarray([1, 2, 0, 3], dtype=np.int16)
     return DataPHA('p', chans, counts)
+
+
+@pytest.fixture
+def make_test_pha_response():
+    """A simple PHA with a response"""
+
+    chans = np.asarray([1, 2, 3, 4], dtype=np.int16)
+    counts = np.asarray([1, 2, 0, 3], dtype=np.int16)
+    pha = DataPHA('p', chans, counts)
+
+    # Choose an energy range well away from the channel range of 1-4
+    # to make it more obvious if the channel values are used for
+    # interpolation.
+    #
+    ebins = np.asarray([20.1, 20.2, 20.35, 20.7, 20.75])
+    elo = ebins[:-1]
+    ehi = ebins[1:]
+    abins = np.asarray([12, 10, 14, 15])
+    rmf = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi)
+    arf = create_arf(elo, ehi, specresp=abins)
+
+    pha.set_rmf(rmf)
+    pha.set_arf(arf)
+
+    # Make sure this has channel units
+    pha.units = "channel"
+    return pha
 
 
 @pytest.fixture
@@ -1870,11 +1897,39 @@ def test_pha_remove_channels(make_test_pha):
                           ("chan This Is Wrong", "channel"),  # should this be an error?
                           ("WAVEY GRAVY", "wavelength")  # should this be an error?
                           ])
-def test_pha_valid_units(requested, expected, make_test_pha):
+def test_pha_valid_units(requested, expected, make_test_pha_response):
     """Check we can set the units field of a PHA object"""
+    pha = make_test_pha_response
+    pha.units = requested
+    assert pha.units == expected
+
+
+@pytest.mark.parametrize("requested,expected",
+                         [("bin", "channel"), ("Bin", "channel"),
+                          ("channel", "channel"), ("ChannelS", "channel"),
+                          ("chan", "channel"),
+                          ("chan This Is Wrong", "channel"),  # should this be an error?
+                          ])
+def test_pha_valid_units_no_response_okay(requested, expected, make_test_pha):
+    """Can set channel okay here"""
     pha = make_test_pha
     pha.units = requested
     assert pha.units == expected
+
+
+@pytest.mark.parametrize("requested,expected",
+                         [("energy", "energy"), ("ENERGY", "energy"),
+                          ("Energies", "energy"),
+                          ("WAVE", "wavelength"), ("wavelength", "wavelength"),
+                          ("Wavelengths", "wavelength"),
+                          ("WAVEY GRAVY", "wavelength")  # should this be an error?
+                          ])
+def test_pha_valid_units_no_response_error(requested, expected, make_test_pha):
+    """Error out as have no response"""
+    pha = make_test_pha
+    with pytest.raises(DataErr,
+                       match="^No instrument response found for dataset p$"):
+        pha.units = requested
 
 
 @pytest.mark.parametrize("invalid", ["Bins", "BINNING", "wavy", "kev", "angstrom"])
@@ -1927,6 +1982,44 @@ def test_pha_analysis_factor_invalid(invalid, make_test_pha):
 def test_pha_get_specresp_no_response(make_test_pha):
     pha = make_test_pha
     assert pha.get_specresp() is None
+
+
+@pytest.mark.parametrize("units", [pytest.param("channel", marks=pytest.mark.xfail), "energy", "wavelength"])
+def test_pha_get_specresp_analysis_no_filter(make_test_pha_response, units):
+    """Do we get sensible results with units setting, no filter?
+
+    There's noting in get_specresp that suggests the values should
+    change when the analysis setting changes (and specresp is in cm^2
+    so is "independent" of the independent axis).
+
+    """
+
+    pha = make_test_pha_response
+    pha.units = units
+
+    ychan = pha.get_specresp()
+    abins = np.asarray([12, 10, 14, 15])
+    assert ychan == pytest.approx(abins)
+
+
+@pytest.mark.parametrize("units", [pytest.param("channel", marks=pytest.mark.xfail), "energy", "wavelength"])
+def test_pha_get_specresp_analysis_with_filter(make_test_pha_response, units):
+    """Do we get sensible results with units setting and filter?
+
+    See test_pha_get_specresp_analysis_no_filter.
+
+    """
+
+    pha = make_test_pha_response
+
+    # use a channel filter to ignore channel 3
+    pha.ignore(lo=3, hi=3)
+
+    pha.units = units
+
+    ychan = pha.get_specresp(filter=True)
+    abins = np.asarray([12, 10, 14, 15])
+    assert ychan == pytest.approx(abins[[0, 1, 3]])
 
 
 def test_pha_ignore_bad_no_quality(make_test_pha):
