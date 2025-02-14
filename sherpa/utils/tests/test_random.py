@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2010, 2016, 2018 - 2024
+#  Copyright (C) 2010, 2016, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -23,7 +23,7 @@ import numpy as np
 import pytest
 
 from sherpa.utils.random import poisson_noise, \
-    standard_normal, chisquare, choice
+    standard_normal, chisquare, choice, uniform
 from sherpa.utils.numeric_types import SherpaFloat
 
 
@@ -168,3 +168,35 @@ def test_choice_rng_is_none():
         np.random.seed()
 
     assert a == pytest.approx(b)
+
+
+def test_uniform_ranges():
+    """Check uniform behaves as expected.
+
+    The behaviour tested here is disussed in
+    https://github.com/sherpa/sherpa/pull/2047
+    so check it works
+
+    """
+
+    rng = np.random.RandomState(23427)
+
+    lo = np.asarray([2, -2, 4, 5])
+    hi = np.asarray([3, 2, 12, 7])
+
+    niter = 1000
+    out = np.zeros((niter, 4))
+    out[:] = np.nan
+
+    for i in range(niter):
+        out[i] = uniform(rng, lo, hi)
+
+    assert np.isfinite(out).all()
+
+    # Check each chunk of numbers. As it's random, and the limits are
+    # hard-bounds, just check we are "close" to them.
+    #
+    for idx in range(4):
+        s = out[:, idx]
+        assert s.min() == pytest.approx(lo[idx], abs=0.01)
+        assert s.max() == pytest.approx(hi[idx], abs=0.01)
