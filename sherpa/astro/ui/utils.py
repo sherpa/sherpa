@@ -38,12 +38,13 @@ from sherpa.utils import is_subclass, sao_arange, send_to_pager
 from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
     IdentifierErr, ImportErr, IOErr, ModelErr
 from sherpa.utils.numeric_types import SherpaFloat
-from sherpa.utils.types import IdType
+from sherpa.utils.types import IdType, IdTypes
 from sherpa.data import Data1D, Data1DAsymmetricErrs, Data2D, Data2DInt
 import sherpa.astro.all
 import sherpa.astro.plot
 from sherpa.astro.ui import serialize
 from sherpa.fit import Fit
+from sherpa.plot import get_per_plot_kwargs
 from sherpa.sim import NormalParameterSampleFromScaleMatrix
 from sherpa.stats import Cash, CStat, WStat
 from sherpa.models.basic import TableModel
@@ -13039,7 +13040,7 @@ class Session(sherpa.ui.utils.Session):
         return plotobj
 
     def plot_arf(self,
-                 id: Optional[IdType] = None,
+                 id: Optional[Union[IdType, IdTypes]] = None,
                  resp_id: Optional[IdType] = None,
                  replot=False, overplot=False,
                  clearwindow=True,
@@ -13049,9 +13050,15 @@ class Session(sherpa.ui.utils.Session):
         Display the effective area curve from the ARF
         component of a PHA data set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set with an ARF. If not given then the default
            identifier is used, as returned by `get_default_id`.
         resp_id : int, str, or None, optional
@@ -13108,13 +13115,14 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_arf_plot(id, resp_id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_arf_plot,
+                                         recalc=not replot,
+                                         resp_id=resp_id)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-
     def plot_rmf(self,
-                 id: Optional[IdType] = None,
+                 id: Optional[Union[IdType, IdTypes]] = None,
                  resp_id: Optional[IdType] = None,
                  replot=False, overplot=False,
                  clearwindow=True,
@@ -13126,11 +13134,17 @@ class Session(sherpa.ui.utils.Session):
         and generates a plot with several histograms that show the energy
         redistribution for those specific energies.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         .. versionadded:: 4.16.0
 
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set with a RMF. If not given then the default
            identifier is used, as returned by `get_default_id`.
         resp_id : int, str, or None, optional
@@ -13186,14 +13200,16 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_rmf_plot(id, resp_id, recalc=not replot)
+        plotobj = self._get_plot_objects(id, self.get_rmf_plot,
+                                         recalc=not replot,
+                                         resp_id=resp_id)
         self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
 
     # DOC-NOTE: also in sherpa.utils, but without the lo/hi arguments
     def plot_source(self,
-                    id: Optional[IdType] = None,
+                    id: Optional[Union[IdType, IdTypes]] = None,
                     lo=None, hi=None,
                     replot=False, overplot=False, clearwindow=True,
                     **kwargs) -> None:
@@ -13204,9 +13220,15 @@ class Session(sherpa.ui.utils.Session):
         created by `set_psf` or ARF and RMF automatically created for
         a PHA data set).
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         lo : number, optional
@@ -13262,20 +13284,23 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        data = self.get_data(id)
-        if isinstance(data, DataPHA):
-            # Note: lo/hi arguments mean we can not just rely on superclass
-            plotobj = self.get_source_plot(id, lo=lo, hi=hi, recalc=not replot)
-            self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                       **kwargs)
-            return
+        def get(idval, recalc=False):
+            data = self.get_data(idval)
+            if isinstance(data, DataPHA):
+                kwargs = {"lo": lo, "hi": hi}
+            else:
+                kwargs = {}
 
-        super().plot_source(id=id, replot=replot, overplot=overplot,
-                            clearwindow=clearwindow, **kwargs)
+            return self.get_source_plot(idval, recalc=recalc,
+                                        **kwargs)
+
+        plotobj = self._get_plot_objects(id, get, recalc=not replot)
+        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
+                   **kwargs)
 
     # DOC-TODO: is orders the same as resp_id?
     def plot_order(self,
-                   id: Optional[IdType] = None,
+                   id: Optional[Union[IdType, IdTypes]] = None,
                    orders=None,
                    replot=False, overplot=False,
                    clearwindow=True,
@@ -13287,9 +13312,15 @@ class Session(sherpa.ui.utils.Session):
         in that it displays the model after passing through a
         response, but allows the user to select which response to use.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int or str, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         orders : optional
@@ -13333,20 +13364,28 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_order_plot(id, orders=orders, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_order_plot,
+                                         recalc=not replot,
+                                         orders=orders)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_bkg(self,
-                 id: Optional[IdType] = None,
+                 id: Optional[Union[IdType, IdTypes]] = None,
                  bkg_id: Optional[IdType] = None,
                  replot=False, overplot=False, clearwindow=True,
                  **kwargs) -> None:
         """Plot the background values for a PHA data set.
 
+        .. versionchanged:: 4.17.0
+           Multiple data sets can be displayed by using a list of
+           identifiers. Scalar keyword arguments are sent to each data
+           set, so to send in per-dataset values use a list for the
+           keyword.
+
         Parameters
         ----------
-        id : int, str, or None, optional
+        id : int, str, sequence of int or str, or None, optional
            The data set that provides the data. If not given then the
            default identifier is used, as returned by `get_default_id`.
         bkg_id : int, str, or None, optional
@@ -13401,9 +13440,11 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        plotobj = self.get_bkg_plot(id, bkg_id, recalc=not replot)
-        self._plot(plotobj, overplot=overplot, clearwindow=clearwindow,
-                   **kwargs)
+        plotobj = self._get_plot_objects(id, self.get_bkg_plot,
+                                         recalc=not replot,
+                                         bkg_id=bkg_id)
+        self._plot(plotobj, overplot=overplot,
+                   clearwindow=clearwindow, **kwargs)
 
     def plot_bkg_model(self,
                        id: Optional[IdType] = None,
@@ -14176,8 +14217,10 @@ class Session(sherpa.ui.utils.Session):
         self._plot(pfplot, overplot=overplot, clearwindow=clearwindow,
                    **kwargs)
 
-    def _bkg_jointplot2(self, plot1, plot2, overplot=False,
-                        clearwindow=True, **kwargs) -> None:
+    def _bkg_jointplot2(self, plot1, plot2,
+                        overplot: bool = False,
+                        clearwindow: bool = True,
+                        **kwargs) -> None:
         """Create a joint plot for bkg, vertically aligned, fit data on the top.
 
         Parameters
@@ -14195,13 +14238,18 @@ class Session(sherpa.ui.utils.Session):
 
         """
 
-        # See sherpa.ui.utils.Session._jointplot2
+        # See sherpa.ui.utils.Session._jointplot2.
+        # TODO: is this not the same as _jointplot2.
         #
-        self._jointplot.reset()
+        # Split up the kwargs so that they are per-plot.
+        #
+        kwstore = get_per_plot_kwargs(2, kwargs)
 
+        self._jointplot.reset()
         with sherpa.plot.backend:
             self._jointplot.plottop(plot1, overplot=overplot,
-                                    clearwindow=clearwindow, **kwargs)
+                                    clearwindow=clearwindow,
+                                    **kwstore[0])
 
             # We know the plot types here but still use get_plot_prefs
             # to keep the encapsulation.
@@ -14214,7 +14262,8 @@ class Session(sherpa.ui.utils.Session):
             if dprefs['xlog'] or mprefs['xlog']:
                 p2prefs['xlog'] = True
 
-            self._jointplot.plotbot(plot2, overplot=overplot, **kwargs)
+            self._jointplot.plotbot(plot2, overplot=overplot,
+                                    **kwstore[1])
 
             p2prefs['xlog'] = oldval
 
