@@ -162,12 +162,13 @@ Conda can be used to install all the dependencies for Sherpa, including
 
 ::
 
-    conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge ds9 astropy ciao
+    conda create -n sherpaciao -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge ds9 ciao
     conda install -n sherpaciao --only-deps -c https://cxc.cfa.harvard.edu/conda/ciao -c conda-forge sherpa
     conda activate sherpaciao
+    pip install astropy
 
 The first line installs the full `CIAO release
-<https://cxc.harvard.edu/ciao/>`_ and astropy, required for building
+<https://cxc.harvard.edu/ciao/>`_, required for building
 and running tests locally.
 
 If you want to also build the documentation then add (after you have
