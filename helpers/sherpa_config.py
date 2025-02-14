@@ -146,7 +146,8 @@ class sherpa_config(Command):
         #
         libdir = os.path.join('lib',
                               f'python{version}',
-                              'site-packages')
+                              'site-packages',
+                              'sherpa')
         dfiles = []
         if not self.disable_group:
             configure.append('--enable-group')
