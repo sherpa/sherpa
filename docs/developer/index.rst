@@ -14,7 +14,7 @@ problems or feature requests on github
 At present we do not have any explicit documentation on how
 to contribute to Sherpa, but it is similar to other open-source
 packages such as
-`AstroPy <https://docs.astropy.org/en/stable/index.html#contributing>`_.
+`AstroPy <https://docs.astropy.org/en/stable/index_dev.html>`_.
 
 The developer documentation is also currently lacking.
 
