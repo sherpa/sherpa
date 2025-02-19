@@ -23,15 +23,15 @@
 """
 
 import logging
+from typing import Sequence
 import warnings
 
 import numpy as np
 
 import pytest
 
-from sherpa.astro.data import DataARF, DataPHA, DataRMF
+from sherpa.astro.data import DataARF, DataPHA, DataRMF, DataMultiRMF
 from sherpa.astro.instrument import RMF1D, create_arf, create_delta_rmf
-from sherpa.astro.instrument import create_delta_rmf
 from sherpa.astro import io
 from sherpa.astro.io.types import HeaderItem, Header, Column, TableBlock, BlockList
 from sherpa.data import Data1DInt
@@ -1088,17 +1088,11 @@ def test_write_rmf_fits_xmm_epn(make_data_path, tmp_path, caplog):
     check(new)
 
 
-@requires_fits
-def test_read_multi_matrix_rmf(tmp_path, caplog):
-    """Check reading in a multi-MATRIX RMF block.
-
-    As we don't currently have one "in the wild" we manually create
-    one.
-
-    This is a regression test since we currently only read in one of
-    the matrices.
-
-    """
+def create_multi_matrix_rmf(outfile: str
+                            ) -> tuple[np.ndarray, np.ndarray,
+                                       np.ndarray, np.ndarray,
+                                       Sequence[float]]:
+    """Use set_hdus to write out a multi-matrix RMF."""
 
     # First block is "perfect" and the second adds a "blob"
     # component.
@@ -1138,21 +1132,32 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     blocks = [blocks1.blocks[0], blocks2.blocks[0], blocks1.blocks[1]]
     blist = BlockList(blocks=blocks, header=header)
 
-    outpath = tmp_path / "multi.rmf"
-    outfile = str(outpath)
     io.backend.set_hdus(outfile, blist)
+    return (elo, ehi, e4lo, e4hi, blur)
+
+
+@requires_fits
+def test_read_multi_matrix_rmf(tmp_path, caplog):
+    """Check reading in a multi-MATRIX RMF block.
+
+    As we don't currently have one "in the wild" we manually create
+    one. This uses set_hdus to create the file rather than write_rmf.
+    See test_write_multi_matrix_rmf.
+
+    This is a regression test.
+
+    """
+
+    outfile = str(tmp_path / "multi.rmf")
+    elo, ehi, e4lo, e4hi, blur = create_multi_matrix_rmf(outfile)
 
     # What happens if we try to read this in?
     #
     assert len(caplog.record_tuples) == 0
     rmf = io.read_rmf(outfile)
-    assert len(caplog.record_tuples) == 1
-
-    lname, lvl, msg = caplog.record_tuples[0]
-    assert lname == "sherpa.astro.io"
-    assert lvl == logging.ERROR
-    assert msg.startswith("RMF in ")
-    assert msg.endswith("/multi.rmf contains 2 MATRIX blocks; Sherpa only uses the first block!")
+    assert len(caplog.record_tuples) == 0
+    assert isinstance(rmf, DataRMF)
+    assert isinstance(rmf, DataMultiRMF)
 
     # What happens if we apply the RMF to a model?
     #
@@ -1166,8 +1171,8 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
     chans = np.arange(1, 21, dtype=np.int16)
     y = conv(chans)
 
-    # We create the responses from both matrices as eventually we will
-    # need both (i.e. when multi-matrix RMF are supported).
+    # We create the responses from both matrices since they get summed
+    # together. First the "perfect" model.
     #
     expected_perfect = mdl(elo, ehi)
 
@@ -1179,7 +1184,67 @@ def test_read_multi_matrix_rmf(tmp_path, caplog):
 
     expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
 
-    assert y == pytest.approx(expected_perfect)
+    # We include both matrices now.
+    #
+    expected = expected_perfect + expected_blurry
+    assert y == pytest.approx(expected)
+
+
+@requires_fits
+def test_write_multi_matrix_rmf(tmp_path, caplog):
+    """Check writing a multi-MATRIX RMF block.
+
+    As we don't currently have one "in the wild" we manually create
+    one. This replicates the logic from test_read_multi_matrix_rmf.
+
+    This is a regression test since we currently only write out one of
+    the matrices.
+
+    """
+
+    outfile1 = str(tmp_path / "multi1.rmf")
+    elo, ehi, e4lo, e4hi, blur = create_multi_matrix_rmf(outfile1)
+
+    mrmf = io.read_rmf(outfile1)
+    assert isinstance(mrmf, DataMultiRMF)
+
+    outfile2 = str(tmp_path / "multi2.rmf")
+    assert len(caplog.record_tuples) == 0
+    io.write_rmf(outfile2, mrmf)
+    assert len(caplog.record_tuples) == 0
+
+    # Check what is written out
+    #
+    fname, blocks, hdrs = io.read_table_blocks(outfile2)
+    assert fname.endswith("/multi2.rmf")
+    assert list(blocks.keys()) == [1, 2, 3]
+    assert list(hdrs.keys()) == [1, 2, 3]
+
+    # First block is empty, and the headers are not worth checking.
+    #
+    assert len(blocks[1]) == 0
+
+    # Second block is the "high resolution" MATRIX block.
+    # This is a minimal check.
+    #
+    assert blocks[2]["ENERG_LO"] == pytest.approx(elo)
+    assert blocks[2]["ENERG_HI"] == pytest.approx(ehi)
+    assert blocks[2]["N_GRP"] == pytest.approx([1] * 20)
+
+    assert hdrs[2]["HDUCLAS2"] == "RSP_MATRIX"
+    assert hdrs[2]["CHANTYPE"] == "PI"
+    assert hdrs[2]["DETCHANS"] == 20
+    assert hdrs[2]["TESTBLCK"] == 1
+
+    # Third block is the EBOUNDS block
+    #
+    assert blocks[3]["CHANNEL"] == pytest.approx(np.arange(1, 21, dtype=int))
+    assert blocks[3]["E_MIN"] == pytest.approx(elo)
+    assert blocks[3]["E_MAX"] == pytest.approx(ehi)
+
+    assert hdrs[3]["HDUCLAS2"] == "EBOUNDS"
+    assert hdrs[3]["CHANTYPE"] == "PI"
+    assert hdrs[3]["DETCHANS"] == 20
 
 
 @requires_fits

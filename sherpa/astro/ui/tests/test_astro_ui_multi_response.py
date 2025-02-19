@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2022, 2023
+#  Copyright (C) 2019, 2020, 2022 - 2024
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -20,7 +20,8 @@
 
 """
 Test the handling of "multiple" responses - that is, those handled by
-load_multi_arfs and load_multi_rmfs in the UI layer.
+load_multi_arfs and load_multi_rmfs in the UI layer. There is also
+now a check of handling multi-matrix RMF files.
 
 Note that the load_multi_xxx commands are just simple wrappers
 around load_arf/rmf, so this is aiming at checking we are passing
@@ -29,15 +30,16 @@ are working correctly once done so.
 
 """
 
+from typing import Sequence
+
 import numpy as np
 
 import pytest
 
-from sherpa.utils.testing import requires_data, requires_fits
-
-from sherpa.astro import ui
-from sherpa.astro.instrument import create_arf
+from sherpa.astro import io, ui
 from sherpa.astro.data import DataRMF
+from sherpa.astro.instrument import RMF1D, create_arf, create_delta_rmf
+from sherpa.astro.io.types import HeaderItem, Header, BlockList
 from sherpa.utils.err import PlotErr
 from sherpa.utils.testing import requires_data, requires_fits
 
@@ -597,3 +599,203 @@ def test_get_plot_order_knows_bad_response_single(orders, make_data_path, clean_
     # This currently works, no matter the order value.
     #
     ui.get_order_plot(orders=orders)
+
+
+def create_multi_matrix_rmf(outfile: str
+                            ) -> tuple[np.ndarray, np.ndarray,
+                                       np.ndarray, np.ndarray,
+                                       Sequence[float]]:
+    """Use set_hdus to write out a multi-matrix RMF."""
+
+    # First block is "perfect" and the second adds a "blob"
+    # component.
+    #
+    egrid = np.linspace(0.1, 2.1, 21)
+    elo = egrid[:-1]
+    ehi = egrid[1:]
+    rmf1 = create_delta_rmf(elo, ehi, e_min=elo, e_max=ehi,
+                            name="perfect")
+    rmf1.header["TESTBLCK"] = 1
+
+    # reduce the "energy" resolution of the second block.
+    #
+    e4grid = np.linspace(0.1, 2.1, 6)
+    e4lo = e4grid[:-1]
+    e4hi = e4grid[1:]
+    matrix = np.zeros((5, 4), dtype=np.float32)
+    blur = [0.1, 0.3, 0.4, 0.2]
+    for i in range(5):
+        matrix[i] = blur
+
+    rmf2 = DataRMF("blob", detchans=rmf1.detchans,
+                   energ_lo=e4lo, energ_hi=e4hi,
+                   n_grp=np.ones(5, dtype=np.int32),
+                   f_chan=np.asarray([2, 4, 6, 8, 10], dtype=np.int32),
+                   n_chan=4 * np.ones(5, dtype=np.int32),
+                   matrix=matrix.flatten(),
+                   e_min=elo, e_max=ehi,
+                   header={"TESTBLCK": 2})
+
+    # Extract the data and then reconstruct a "multi" RMF.
+    #
+    blocks1 = io._pack_rmf(rmf1)
+    blocks2 = io._pack_rmf(rmf2)
+
+    header = Header([HeaderItem(name="TESTKEY", value=12)])
+    blocks = [blocks1.blocks[0], blocks2.blocks[0], blocks1.blocks[1]]
+    blist = BlockList(blocks=blocks, header=header)
+
+    io.backend.set_hdus(outfile, blist)
+    return (elo, ehi, e4lo, e4hi, blur)
+
+
+@requires_fits
+def test_load_multi_matrix_rmf(tmp_path, clean_astro_ui, caplog):
+    """Can we load in a multi-matrix RMF?
+
+    We have to create the file on disk since we do not have one to
+    add to sherpa-test-data at this time. Based on
+    sherpa/astri/io/tests/test_io_response.py::test_read_multi_matrix_rmf
+
+    """
+
+    outpath = tmp_path / "multi.rmf"
+    outfile = str(outpath)
+    elo, ehi, e4lo, e4hi, blur = create_multi_matrix_rmf(outfile)
+
+    ui.dataspace1d(1, 20, 1, dstype=ui.DataPHA)
+
+    # What happens if we try to read this in? We could use unpack_rmf
+    # but use load_rmf to check how that works
+    #
+    assert len(caplog.record_tuples) == 0
+    ui.load_rmf(outfile)
+    assert len(caplog.record_tuples) == 0
+
+    rmf = ui.get_rmf()
+
+    # Note that the RMF is wrapped within the RMF1D class here,
+    # unlike sherpa/astri/io/tests/test_io_response.py.
+    #
+    assert isinstance(rmf, RMF1D)
+
+    # This appears like the "high-res" version. I do not want to
+    # test access to the internals of the DataMultiRMF class here.
+    #
+    assert rmf.detchans == 20
+    assert rmf.offset == 1
+
+    assert rmf.energ_lo == pytest.approx(elo)
+    assert rmf.energ_hi == pytest.approx(ehi)
+    assert rmf.e_min == pytest.approx(elo)
+    assert rmf.e_max == pytest.approx(ehi)
+    assert rmf.n_grp == pytest.approx([1] * 20)
+
+    # Set up the ARF.
+    #
+    yarf = np.full(20, 0.8)
+    arf = create_arf(elo, ehi, specresp=yarf)
+    ui.set_arf(arf)
+
+    # When you apply it you get the combined result.
+    #
+    mdl = ui.create_model_component("gauss1d", "mdl")
+    mdl.pos = 1.1
+    mdl.fwhm = 0.8
+    mdl.ampl = 1e4
+
+    ui.set_source(mdl)
+
+    # The "perfect" response.
+    #
+    expected_perfect = mdl(elo, ehi)
+
+    # Create a 2D array to represent the blurry matrix
+    #
+    blurry_matrix = np.zeros((5, 20))
+    for idx, fchan in enumerate([2, 4, 6, 8, 10]):
+        blurry_matrix[idx, fchan - 1:fchan + 3] = blur
+
+    expected_blurry = mdl(e4lo, e4hi) @ blurry_matrix
+
+    # We include both matrices, and then include the "ARF".
+    #
+    expected = 0.8 * (expected_perfect + expected_blurry)
+
+    # Correct for the bin widths.
+    #
+    yplot = expected / (ehi - elo)
+
+    mplot = ui.get_model_plot()
+    assert mplot.xlo == pytest.approx(elo)
+    assert mplot.xhi == pytest.approx(ehi)
+    assert mplot.y == pytest.approx(yplot)
+
+
+@requires_fits
+def test_save_multi_matrix_rmf(tmp_path, clean_astro_ui, caplog):
+    """Can we write out a multi-matrix RMF?
+
+    As we don't currently have one "in the wild" we manually create
+    one. This replicates the logic from test_load_multi_matrix_rmf.
+
+    This is a regression test since we currently only write out one of
+    the matrices.
+
+    """
+
+    outfile1 = str(tmp_path / "multi1.rmf")
+    elo, ehi, e4lo, e4hi, blur = create_multi_matrix_rmf(outfile1)
+
+    yarf = np.full(20, 0.8)
+    arf = create_arf(elo, ehi, specresp=yarf)
+
+    mrmf = ui.unpack_rmf(outfile1)
+
+    ui.dataspace1d(1, 20, 1, dstype=ui.DataPHA)
+    ui.set_rmf(mrmf)
+    ui.set_arf(arf)
+
+    outfile2 = str(tmp_path / "multi2.rmf")
+    assert len(caplog.record_tuples) == 0
+    ui.save_rmf(outfile2)
+    assert len(caplog.record_tuples) == 0
+
+    # Try to validate the on-disk format using UI routines (so this is a
+    # check of how much we can round-trip data).
+    #
+    ormf = ui.unpack_rmf(outfile2)
+    assert isinstance(ormf, RMF1D)
+
+    ui.dataspace1d(1, 20, 1, dstype=ui.DataPHA, id=2)
+    ui.set_rmf(2, ormf)
+    ui.set_arf(2, arf)
+
+    mdl = ui.create_model_component("gauss1d", "g1")
+    mdl.pos = 1.1
+    mdl.fwhm = 0.8
+    mdl.ampl = 1e4
+
+    ui.set_source(1, mdl)
+    ui.set_source(2, mdl)
+
+    # The two plots should be different, as m1plot has the combination
+    # response
+    #
+    # - high-res is "perfect"
+    # - low-res is blurry
+    #
+    # and m2plot should just be the ideal plot. This is not needed here,
+    # but once we can write out multi-matrix RMF files we can change to
+    # testing equality of m1 and m2.
+    #
+    m1 = ui.get_model_plot(id=1, recalc=True).y.copy()
+    m2 = ui.get_model_plot(id=2, recalc=True).y.copy()
+
+    assert m2 != pytest.approx(m1)
+
+    # Check that this is the "perfect" RMF being used. We need to account
+    # for bin widths in the plot, and the ARF.
+    #
+    expected = 0.8 * mdl(elo, ehi) / (ehi - elo)
+    assert m2 == pytest.approx(expected)
