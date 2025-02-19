@@ -173,7 +173,7 @@ def test_choice_rng_is_none():
 def test_uniform_ranges():
     """Check uniform behaves as expected.
 
-    The behaviour tested here is disussed in
+    The behaviour tested here is discussed in
     https://github.com/sherpa/sherpa/pull/2047
     so check it works
 
