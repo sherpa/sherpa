@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2016, 2018 - 2024
+#  Copyright (C) 2007, 2016, 2018 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -68,29 +68,29 @@ Best-fit value: 4.0
 
 """
 
+from typing import Sequence, SupportsFloat
+
 import numpy as np
 
-from sherpa.optmethods.ncoresde import ncoresDifEvo
-from sherpa.optmethods.ncoresnm import ncoresNelderMead
-
+from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import FuncCounter
 from sherpa.utils.parallel import parallel_map
-from sherpa.utils._utils import sao_fcmp  # type: ignore
 from sherpa.utils import random
-from sherpa.utils.types import ArrayType
+from sherpa.utils.types import ArrayType, OptReturn, StatFunc
 
 from . import _saoopt  # type: ignore
+from .ncoresde import ncoresDifEvo
+from .ncoresnm import ncoresNelderMead
+
 
 __all__ = ('difevo', 'difevo_lm', 'difevo_nm', 'grid_search', 'lmdif',
            'minim', 'montecarlo', 'neldermead')
 
 
-#
 # Use FLT_EPSILON as default tolerance
 #
 EPSILON = np.float64(np.finfo(np.float32).eps)
 
-#
 # Maximum callback function value, used to indicate that the optimizer
 # has exceeded parameter boundaries.  All the optimizers expect double
 # precision arguments, so we use np.float64 instead of SherpaFloat.
@@ -165,22 +165,94 @@ def _narrow_limits(factor: float,
     return myxmin, myxmax
 
 
-def _par_at_boundary(low, val, high, tol):
+def _par_at_boundary(low: np.ndarray,
+                     val: np.ndarray,
+                     high: np.ndarray,
+                     tol: SupportsFloat
+                     ) -> bool:
+    """Are any val elements equal to low or high?"""
+
     for par_min, par_val, par_max in zip(low, val, high):
         if sao_fcmp(par_val, par_min, tol) == 0:
             return True
         if sao_fcmp(par_val, par_max, tol) == 0:
             return True
+
     return False
 
 
-def _outside_limits(x, xmin, xmax):
-    return (np.any(x < xmin) or np.any(x > xmax))
+def _outside_limits(x: np.ndarray,
+                    xmin: np.ndarray,
+                    xmax: np.ndarray
+                    ) -> bool:
+    """Are any x values outside the xmin/max range?"""
+    return bool(np.any(x < xmin) or np.any(x > xmax))
 
 
-def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-           seed=2005815, population_size=None, xprob=0.9,
-           weighting_factor=0.8):
+class Callback:
+    """Handle the callback argument for the optimizers.
+
+    See Also
+    --------
+    InfinitePotential
+
+    """
+
+    __slots__ = ("func",)
+
+    def __init__(self,
+                 func: StatFunc) -> None:
+        self.func = func
+
+    def __call__(self, pars: np.ndarray) -> float:
+        return self.func(pars)[0]
+
+
+class InfinitePotential:
+    """Ensure the parameter values stay within bounds.
+
+    The idea is that if sent a value outside the parameter limits we
+    return "infinity" (here defined to be the maximum value we'd
+    expect rather than inf, to avoid causing problems to the
+    optimizer).
+
+    See Also
+    --------
+    Callback
+
+    """
+
+    __slots__ = ("func", "minval", "maxval")
+
+    def __init__(self,
+                 func: StatFunc,
+                 minval: np.ndarray,
+                 maxval: np.ndarray) -> None:
+        self.func = func
+        self.minval = minval
+        self.maxval = maxval
+
+    def __call__(self, pars: np.ndarray) -> SupportsFloat:
+        if np.isnan(pars).any() or _outside_limits(pars,
+                                                   self.minval,
+                                                   self.maxval):
+            return FUNC_MAX
+
+        return self.func(pars)[0]
+
+
+def difevo(fcn: StatFunc,
+           x0: ArrayType,
+           xmin: ArrayType,
+           xmax: ArrayType,
+           ftol: SupportsFloat = EPSILON,
+           maxfev: int | None = None,
+           verbose: int = 0,
+           seed: int = 2005815,
+           population_size: int | None = None,
+           xprob: float = 0.9,
+           weighting_factor: float = 0.8
+           ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -209,9 +281,18 @@ def difevo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-              seed=2005815, population_size=None, xprob=0.9,
-              weighting_factor=0.8):
+def difevo_lm(fcn: StatFunc,
+              x0: ArrayType,
+              xmin: ArrayType,
+              xmax: ArrayType,
+              ftol: SupportsFloat = EPSILON,
+              maxfev: int | None = None,
+              verbose: int = 0,
+              seed: int = 2005815,
+              population_size: int | None = None,
+              xprob: float = 0.9,
+              weighting_factor: float = 0.8
+              ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -241,11 +322,20 @@ def difevo_lm(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
-              population_size, xprob, weighting_factor):
+def difevo_nm(fcn: StatFunc,
+              x0: ArrayType,
+              xmin: ArrayType,
+              xmax: ArrayType,
+              ftol: SupportsFloat,
+              maxfev: int | None,
+              verbose: int,
+              seed: int,
+              population_size: int | None,
+              xprob: float,
+              weighting_factor: float
+              ) -> OptReturn:
 
-    def stat_cb0(pars):
-        return fcn(pars)[0]
+    stat_cb0 = Callback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -275,8 +365,18 @@ def difevo_nm(fcn, x0, xmin, xmax, ftol, maxfev, verbose, seed,
     return (status, x, fval, msg, {'info': ierr, 'nfev': nfev})
 
 
-def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
-                maxfev=None, ftol=EPSILON, method=None, verbose=0):
+def grid_search(fcn: StatFunc,
+                x0: ArrayType,
+                xmin: ArrayType,
+                xmax: ArrayType,
+                num: int = 16,
+                sequence: Sequence[ArrayType] | None = None,
+                numcores: int | None = 1,
+                maxfev: int | None = None,
+                ftol: SupportsFloat = EPSILON,
+                method: str | None = None,
+                verbose: int = 0
+                ) -> OptReturn:
     """Grid Search optimization method.
 
     This method evaluates the fit statistic for each point in the
@@ -402,8 +502,19 @@ def grid_search(fcn, x0, xmin, xmax, num=16, sequence=None, numcores=1,
 #
 # C-version of minim
 #
-def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
-          nloop=1, iquad=1, simp=None, verbose=-1, reflect=True):
+def minim(fcn: StatFunc,
+          x0: ArrayType,
+          xmin: ArrayType,
+          xmax: ArrayType,
+          ftol: SupportsFloat = EPSILON,
+          maxfev: int | None = None,
+          step: ArrayType | None = None,
+          nloop: int = 1,
+          iquad: int = 1,
+          simp: SupportsFloat | None = None,
+          verbose: int = -1,
+          reflect: bool = True
+          ) -> OptReturn:
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -411,15 +522,12 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
         step = np.full(x.shape, 0.4, dtype=np.float64)
 
     if simp is None:
-        simp = 1.0e-2 * ftol
+        simp = 1.0e-2 * float(ftol)
 
     if maxfev is None:
         maxfev = 512 * len(x)
 
-    def stat_cb0(x_new):
-        if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
-            return FUNC_MAX
-        return fcn(x_new)[0]
+    stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
     init = 0
     x, fval, neval, ifault = _saoopt.minim(reflect, verbose, maxfev, init, \
@@ -442,9 +550,20 @@ def minim(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, step=None,
 #
 # Monte Carlo
 #
-def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
-               seed=74815, population_size=None, xprob=0.9,
-               weighting_factor=0.8, numcores=1, rng=None):
+def montecarlo(fcn: StatFunc,
+               x0: ArrayType,
+               xmin: ArrayType,
+               xmax: ArrayType,
+               ftol: SupportsFloat = EPSILON,
+               maxfev: int | None = None,
+               verbose: int = 0,
+               seed: int = 74815,
+               population_size: int | None = None,
+               xprob: float = 0.9,
+               weighting_factor: float = 0.8,
+               numcores: int = 1,
+               rng: random.RandomType | None = None
+               ) -> OptReturn:
     """Monte Carlo optimization method.
 
     This is an implementation of the differential-evolution algorithm
@@ -519,8 +638,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
     """
 
-    def stat_cb0(pars):
-        return fcn(pars)[0]
+    stat_cb0 = Callback(fcn)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
@@ -551,12 +669,6 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
         xmin = xxx[1]
         xmax = xxx[2]
         maxfev_per_iter = 512 * x.size
-
-        def random_start(xmin, xmax):
-            xx = []
-            for ii in range(len(xmin)):
-                xx.append(random.uniform(rng, xmin[ii], xmax[ii]))
-            return np.asarray(xx)
 
         ############################# NelderMead #############################
         mymaxfev = min(maxfev_per_iter, maxfev)
@@ -612,7 +724,7 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
             xmin, xmax = _narrow_limits(factor, x, xmin, xmax)
 
             ############################ nmDifEvo #############################
-            y = random_start(xmin, xmax)
+            y = random.uniform(rng, xmin, xmax)
             mymaxfev = min(maxfev_per_iter, maxfev - nfev)
 
             if numcores == 1:
@@ -636,9 +748,9 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 
         return x, nfval, nfev
 
-    x, fval, nfev = myopt(fcn, [x, xmin, xmax], np.sqrt(ftol), maxfev,
-                          seed, population_size, xprob, weighting_factor,
-                          factor=2.0)
+    x, fval, nfev = myopt(fcn, [x, xmin, xmax], np.sqrt(float(ftol)),
+                          maxfev, seed, population_size, xprob,
+                          weighting_factor, factor=2.0)
 
     if nfev < maxfev:
         if all(x == 0.0):
@@ -675,9 +787,19 @@ def montecarlo(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None, verbose=0,
 #
 # Nelder Mead
 #
-def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
-               initsimplex=0, finalsimplex=9, step=None, iquad=1,
-               verbose=0, reflect=True):
+def neldermead(fcn: StatFunc,
+               x0: ArrayType,
+               xmin: ArrayType,
+               xmax: ArrayType,
+               ftol: SupportsFloat = EPSILON,
+               maxfev: int | None = None,
+               initsimplex: int = 0,
+               finalsimplex: int = 9,
+               step: ArrayType | None = None,
+               iquad: int = 1,
+               verbose: int = 0,
+               reflect: bool = True
+               ) -> OptReturn:
     r"""Nelder-Mead Simplex optimization method.
 
     The Nelder-Mead Simplex algorithm, devised by J.A. Nelder and
@@ -884,17 +1006,12 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
 
-    if step is None or (np.iterable(step) and len(step) != len(x)):
+    if step is None:
         step = np.full(x.shape, 1.2, dtype=np.float64)
-    elif np.isscalar(step):
-        step = np.full(x.shape, step, dtype=np.float64)
 
     # A safeguard just in case the initial simplex is outside the bounds
     #
-    def stat_cb0(x_new):
-        if np.isnan(x_new).any() or _outside_limits(x_new, xmin, xmax):
-            return FUNC_MAX
-        return fcn(x_new)[0]
+    stat_cb0 = InfinitePotential(fcn, xmin, xmax)
 
     if np.isscalar(finalsimplex) and not np.iterable(finalsimplex):
         farg = int(finalsimplex)
@@ -965,8 +1082,9 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
 
     covarerr = None
     if len(fsimplex) >= 3 and 0 != iquad:
-        nelmea = minim(fcn, x, xmin, xmax, ftol=10.0*ftol,
-                       maxfev=maxfev - nfev - 12, iquad=1, reflect=reflect)
+        nelmea = minim(fcn, x, xmin, xmax, ftol=10.0 * float(ftol),
+                       maxfev=maxfev - nfev - 12, iquad=1,
+                       reflect=reflect)
         nelmea_x = np.asarray(nelmea[1], np.float64)
         nelmea_nfev = nelmea[4].get('nfev')
         covarerr = nelmea[4].get('covarerr')
@@ -999,8 +1117,19 @@ def neldermead(fcn, x0, xmin, xmax, ftol=EPSILON, maxfev=None,
     return (status, x, fval, msg, imap)
 
 
-def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
-          maxfev=None, epsfcn=EPSILON, factor=100.0, numcores=1, verbose=0):
+def lmdif(fcn: StatFunc,
+          x0: ArrayType,
+          xmin: ArrayType,
+          xmax: ArrayType,
+          ftol: SupportsFloat = EPSILON,
+          xtol: SupportsFloat = EPSILON,
+          gtol: SupportsFloat = EPSILON,
+          maxfev: int | None = None,
+          epsfcn: SupportsFloat = EPSILON,
+          factor: float = 100.0,
+          numcores: int = 1,
+          verbose: int = 0
+          ) -> OptReturn:
     """Levenberg-Marquardt optimization method.
 
     The Levenberg-Marquardt method is an interface to the MINPACK
@@ -1097,11 +1226,12 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
 
         def calc_params(self):
             params = []
-            for ii in range(len(self.h)):
-                tmp_pars = np.copy(self.pars)
-                tmp_pars[ii] += self.h[ii]
-                tmp_pars = np.append(ii, tmp_pars)
-                params.append(tmp_pars)
+            for idx, h in enumerate(self.h):
+                hadj = np.copy(self.pars)
+                hadj[idx] += h
+                pars = np.append(idx, hadj)
+                params.append(pars)
+
             return tuple(params)
 
     x, xmin, xmax = _check_args(x0, xmin, xmax)
@@ -1140,9 +1270,10 @@ def lmdif(fcn, x0, xmin, xmax, ftol=EPSILON, xtol=EPSILON, gtol=EPSILON,
             covar = fjac
 
         if _par_at_boundary(xmin, x, xmax, xtol):
-            nm_result = neldermead(fcn, x, xmin, xmax, ftol=np.sqrt(ftol),
-                                   maxfev=maxfev-nfev, finalsimplex=2, iquad=0,
-                                   verbose=0)
+            nm_result = neldermead(fcn, x, xmin, xmax,
+                                   ftol=np.sqrt(float(ftol)),
+                                   maxfev=maxfev-nfev, finalsimplex=2,
+                                   iquad=0, verbose=0)
             nfev += nm_result[4]['nfev']
             x = nm_result[1]
             fval = nm_result[2]
