@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2017, 2018, 2020 - 2024
+#  Copyright (C) 2017, 2018, 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -44,7 +44,7 @@ from sherpa.utils.err import ArgumentErr, ArgumentTypeErr, DataErr, \
 from sherpa.utils.logging import SherpaVerbosity
 from sherpa.utils.random import poisson_noise
 from sherpa.utils.testing import requires_data, requires_fits, \
-    requires_region, requires_wcs, requires_xspec
+    requires_group, requires_region, requires_wcs, requires_xspec
 
 
 def backend_is(name: str) -> bool:
@@ -3367,6 +3367,7 @@ def test_pha_group_filter_ignore_bad(caplog, clean_astro_ui):
     assert r.getMessage() == "dataset 1: 1:4 -> 1:5 Channel"
 
 
+@requires_group
 def test_pha_group_ignore_bad_group(caplog, clean_astro_ui):
     """Regression test.
 
