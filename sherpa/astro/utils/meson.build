@@ -1,0 +1,94 @@
+# sherpa/astro/utils
+
+sources = [
+  '__init__.py',
+  'smoke.py',
+  'xspec.py'
+]
+
+py.install_sources(
+  sources,
+  subdir: 'sherpa/astro/utils'
+)
+
+# extension: _wcs (optional; at present unbuilt)
+#
+wcs_sources = [
+  'src/_wcs.cc'
+]
+
+# TODO: how do we pass in location of wcs.h?
+wcs_include = [
+  incdir_numpy,
+  '../../include'
+]
+
+#py.extension_module(
+#  '_wcs',
+#  wcs_sources,
+#  subdir: 'sherpa/astro/utils',
+#  include_directories: wcs_include,
+#  install: true
+#)
+
+# extension: _region (optional; at present unbuilt)
+#
+region_sources = [
+  'src/_region.cc'
+]
+
+# TODO: how do we pass in location of cxcregion.h and possibly ascdm.h?
+region_include = [
+  incdir_numpy,
+  '../../include'
+]
+
+#py.extension_module(
+#  '_region',
+#  region_sources,
+#  subdir: 'sherpa/astro/utils',
+#  include_directories: region_include,
+#  install: true
+#)
+
+# extension: _pileup
+#
+pileup_sources = [
+  'src/fftn.c',
+  'src/pileup.cc',
+  'src/_pileup.cc'
+]
+
+pileup_include = [
+  incdir_numpy,
+  '../../include'
+]
+
+py.extension_module(
+  '_pileup',
+  pileup_sources,
+  subdir: 'sherpa/astro/utils',
+  include_directories: pileup_include,
+  install: true
+)
+
+# extension: _utils
+#
+utils_sources = [
+  'src/_utils.cc'
+]
+
+utils_include = [
+  incdir_numpy,
+  '../../include'
+]
+
+py.extension_module(
+  '_utils',
+  utils_sources,
+  subdir: 'sherpa/astro/utils',
+  include_directories: utils_include,
+  install: true
+)
+
+subdir('tests')
