@@ -80,7 +80,7 @@ jobs:
         curl -L https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-$(uname)-$(uname -m).sh -o conda-installer.sh
         bash conda-installer.sh -b -p ${conda_loc}
         source ${conda_loc}/etc/profile.d/conda.sh
-        conda create -yq -n builder conda-build conda-verify
+        conda create -yq -n builder "conda-build==25.1.2=*_0" conda-verify
 
     #Checkout the code with a depth of 0 to grab the tags/branches as well
     - name: Checkout Code
