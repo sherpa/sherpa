@@ -18,33 +18,52 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
-from collections.abc import Sequence
+from __future__ import annotations
+
+from collections.abc import Mapping, Sequence
 from contextlib import nullcontext
 from functools import wraps
 import logging
 import os
 from pathlib import Path
 import signal
-from typing import Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import numpy as np
 
 from sherpa.data import Data, DataSimulFit
-from sherpa.estmethods import Covariance, EstNewMin
-from sherpa.models import SimulFitModel
-from sherpa.optmethods import LevMar, NelderMead
+from sherpa.estmethods import EstMethod, Covariance, EstNewMin
+from sherpa.models import Model, SimulFitModel
+from sherpa.models.parameter import Parameter
+from sherpa.optmethods import OptMethod, LevMar, NelderMead
 from sherpa.stats import Stat, Chi2, Chi2Gehrels, Cash, Chi2ModVar, \
     LeastSq, Likelihood
 from sherpa.utils import NoNewAttributesAfterInit, print_fields, erf, \
     bool_cast, is_iterable, list_to_open_interval, sao_fcmp, formatting
 from sherpa.utils.err import DataErr, EstErr, FitErr, SherpaErr
-from sherpa.utils.types import IdType
+from sherpa.utils.types import ArrayType, IdType, OptReturn, \
+    StatFunc, StatResults
 
 
 warning = logging.getLogger(__name__).warning
 info = logging.getLogger(__name__).info
 
 __all__ = ('FitResults', 'ErrorEstResults', 'Fit')
+
+
+# Fit-like function used by both the optimisation and fit modules,
+# although only needed here.
+#
+class FitFunc(Protocol):
+    def __call__(self,
+                 statfunc: StatFunc,
+                 pars: ArrayType,
+                 parmins: ArrayType,
+                 parmaxes: ArrayType,
+                 statargs: Sequence[Any] = (),
+                 statkwargs: Mapping[str, Any] | None = None
+                 ) -> OptReturn:
+        ...
 
 
 def evaluates_model(func):
@@ -276,7 +295,12 @@ class FitResults(NoNewAttributesAfterInit):
                'dstatval', 'numpoints', 'dof', 'qval', 'rstat', 'message',
                'nfev')
 
-    def __init__(self, fit, results, init_stat, param_warnings):
+    def __init__(self,
+                 fit: Fit,
+                 results: OptReturn,
+                 init_stat: float,
+                 param_warnings: str
+                 ) -> None:
         _vals = fit.data.eval_model_to_fit(fit.model)
         _dof = len(_vals) - len(tuple(results[1]))
         _covar = results[4].get('covar')
@@ -286,8 +310,8 @@ class FitResults(NoNewAttributesAfterInit):
         self.parnames = tuple(p.fullname for p in fit.model.get_thawed_pars())
         self.parvals = tuple(float(r) for r in results[1])
         self.istatval = init_stat
-        self.statval = results[2]
-        self.dstatval = np.abs(results[2] - init_stat)
+        self.statval = float(results[2])
+        self.dstatval = np.abs(self.statval - init_stat)
         self.numpoints = len(_vals)
         self.dof = _dof
         self.qval = _qval
@@ -303,7 +327,10 @@ class FitResults(NoNewAttributesAfterInit):
         statname = _cleanup_chi2_name(fit.stat, fit.data)
 
         self.statname = statname
-        self.datasets = None  # To be filled by calling function
+
+        # To be filled by calling function
+        self.datasets: list[IdType] | None = None
+
         self.param_warnings = param_warnings
 
         super().__init__()
@@ -314,20 +341,20 @@ class FitResults(NoNewAttributesAfterInit):
         if 'itermethodname' not in state:
             self.__dict__['itermethodname'] = 'none'
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.succeeded
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return '<Fit results instance>'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return print_fields(self._fields, vars(self))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the fit results."""
         return html_fitresults(self)
 
-    def format(self):
+    def format(self) -> str:
         """Return a string representation of the fit results.
 
         Returns
@@ -429,29 +456,36 @@ class ErrorEstResults(NoNewAttributesAfterInit):
                'sigma', 'percent', 'parnames', 'parvals', 'parmins',
                'parmaxes', 'nfits')
 
-    def __init__(self, fit, results, parlist=None):
-        if parlist is None:
-            parlist = fit.model.get_thawed_pars()
+    def __init__(self,
+                 fit: Fit,
+                 results,
+                 parlist: Sequence[Parameter] | None = None
+                 ) -> None:
 
-        # TODO: Can we not just import them at the top level?  It may
-        # cause an import loop.
-        #
+        if parlist is None:
+            pars = fit.model.get_thawed_pars()
+        else:
+            pars = parlist
+
+        # Avoid an import loop
         from sherpa.estmethods import est_hardmin, est_hardmax, \
             est_hardminmax
 
-        self.datasets = None  # To be set by calling function
+        # To be filled by calling function
+        self.datasets: list[IdType] | None = None
+
         self.methodname = type(fit.estmethod).__name__.lower()
         self.iterfitname = fit._iterfit.itermethod_opts['name']
         self.fitname = type(fit.method).__name__.lower()
         self.statname = type(fit.stat).__name__.lower()
         self.sigma = fit.estmethod.sigma
         self.percent = erf(self.sigma / np.sqrt(2.0)) * 100.0
-        self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
-        self.parvals = tuple(float(p.val) for p in parlist if not p.frozen)
+        self.parnames = tuple(p.fullname for p in pars if not p.frozen)
+        self.parvals = tuple(float(p.val) for p in pars if not p.frozen)
 
         pmins = []
         pmaxes = []
-        for i in range(len(parlist)):
+        for i in range(len(pars)):
             if (results[2][i] == est_hardmin or
                 results[2][i] == est_hardminmax or
                 results[0][i] is None  # It looks like confidence does not set the flag
@@ -483,17 +517,17 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         if 'iterfitname' not in state:
             self.__dict__['iterfitname'] = 'none'
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{self.methodname} results instance>'
 
-    def __str__(self):
+    def __str__(self) -> str:
         return print_fields(self._fields, vars(self))
 
-    def _repr_html_(self):
+    def _repr_html_(self) -> str:
         """Return a HTML (string) representation of the error estimates."""
         return html_errresults(self)
 
-    def format(self):
+    def format(self) -> str:
         """Return a string representation of the error estimates.
 
         Returns
@@ -653,9 +687,19 @@ class IterFit:
 
     """
 
-    def __init__(self, data, model, stat, method, itermethod_opts=None):
+    def __init__(self,
+                 # DataSimulFit does not derive from Data, but
+                 # SimulFitModel does derive from Model.
+                 data: Data | DataSimulFit,
+                 model: Model,
+                 stat: Stat,
+                 method: OptMethod,
+                 itermethod_opts: Mapping[str, Any] | None = None
+                 ) -> None:
         if itermethod_opts is None:
-            itermethod_opts = {'name': 'none'}
+            iopts = {'name': 'none'}
+        else:
+            iopts = itermethod_opts
 
         # Even if there is only a single data set, I will
         # want to treat the data and models I am given as
@@ -683,11 +727,15 @@ class IterFit:
         self._syserror = None
 
         # Options to send to iterative fitting method
-        self.itermethod_opts = itermethod_opts
+        self.itermethod_opts = iopts
+
+        self.funcs: dict[str, FitFunc]
         self.funcs = {'sigmarej': self.sigmarej}
+
+        self.current_func: FitFunc | None
         self.current_func = None
         try:
-            iname = itermethod_opts['name']
+            iname = iopts['name']
         except KeyError:
             raise ValueError("Missing name field in itermethod_opts argument") from None
 
@@ -729,14 +777,24 @@ class IterFit:
         except ValueError as e:
             warning(e)
 
+        # Store the original set of data that is to be fit.
+        #
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
         return IterCallback(data=self.data, model=self.model,
                             stat=self.stat, fh=fh)
 
-    def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs=(),
-                 statkwargs=None, cache=True):
+    # TODO: look at the cache argument
+    def sigmarej(self,
+                 statfunc: StatFunc,
+                 pars: ArrayType,
+                 parmins: ArrayType,
+                 parmaxes: ArrayType,
+                 statargs: Sequence[Any] = (),
+                 statkwargs: Mapping[str, Any] | None = None,
+                 cache: bool = True
+                 ) -> OptReturn:
         """Exclude points that are significately far away from the best fit.
 
         The `sigmarej` scheme is based on the IRAF ``sfit`` function
@@ -943,10 +1001,18 @@ class IterFit:
         # the above exception block.
 
         # Return results from sigma rejection
+        assert final_fit_results is not None
+
         return final_fit_results
 
-    def fit(self, statfunc, pars, parmins, parmaxes,
-            statargs=(), statkwargs=None):
+    def fit(self,
+            statfunc: StatFunc,
+            pars: ArrayType,
+            parmins: ArrayType,
+            parmaxes: ArrayType,
+            statargs: Sequence[Any] = (),
+            statkwargs: Mapping[str, Any] | None = None
+            ) -> OptReturn:
 
         if statkwargs is None:
             statkwargs = {}
@@ -1025,8 +1091,16 @@ class Fit(NoNewAttributesAfterInit):
 
     """
 
-    def __init__(self, data, model, stat=None, method=None, estmethod=None,
-                 itermethod_opts=None):
+    def __init__(self,
+                 # DataSimulFit does not derive from Data, but
+                 # SimulFitModel does derive from Model.
+                 data: Data | DataSimulFit,
+                 model: Model,
+                 stat: Stat | None = None,
+                 method: OptMethod | None = None,
+                 estmethod: EstMethod | None = None,
+                 itermethod_opts: Mapping[str, Any] | None = None
+                 ) -> None:
 
         # Ensure the data and model match dimensionality. It is
         # expected that both data and model have a ndim attribute
@@ -1039,19 +1113,15 @@ class Fit(NoNewAttributesAfterInit):
             raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
 
         if itermethod_opts is None:
-            itermethod_opts = {'name': 'none'}
+            iopts = {'name': 'none'}
+        else:
+            iopts = itermethod_opts
+
         self.data = data
         self.model = model
 
-        if stat is None:
-            stat = Chi2Gehrels()
-        if method is None:
-            method = LevMar()
-        if estmethod is None:
-            estmethod = Covariance()
-
-        self.method = method
-        self.estmethod = estmethod
+        self.method = LevMar() if method is None else method
+        self.estmethod = Covariance() if estmethod is None else estmethod
         self.current_frozen = -1
 
         # The number of times that reminimization has occurred
@@ -1060,15 +1130,17 @@ class Fit(NoNewAttributesAfterInit):
         # further attempt to reminimize.
         self.refits = 0
 
+        statobj = Chi2Gehrels() if stat is None else stat
+
         # Set up an IterFit object, so that the user can select
         # an iterative fitting option.
-        self._iterfit = IterFit(self.data, self.model, stat, self.method,
-                                itermethod_opts)
+        self._iterfit = IterFit(self.data, self.model, statobj,
+                                self.method, iopts)
 
         # We need to set the statistic *after* creating the _iterfit
         # attribute
         #
-        self.stat = stat
+        self.stat = statobj
 
         super().__init__()
 
@@ -1091,7 +1163,7 @@ class Fit(NoNewAttributesAfterInit):
                                                 self.stat, self.method,
                                                 {'name': 'none'})
 
-    def __str__(self):
+    def __str__(self) -> str:
         out = [f'data      = {self.data.name}',
                f'model     = {self.model.name}',
                f'stat      = {type(self.stat).__name__}',
@@ -1099,7 +1171,7 @@ class Fit(NoNewAttributesAfterInit):
                f'estmethod = {type(self.estmethod).__name__}']
         return "\n".join(out)
 
-    def guess(self, **kwargs):
+    def guess(self, **kwargs) -> None:
         """Guess parameter values and limits.
 
         The model's `sherpa.models.model.Model.guess` method
@@ -1109,7 +1181,7 @@ class Fit(NoNewAttributesAfterInit):
         self.model.guess(*self.data.to_guess(), **kwargs)
 
     # QUS: should this have an @evaluates_model decorator?
-    def _calc_stat(self):
+    def _calc_stat(self) -> StatResults:
         """Calculate the current statistic value.
 
         Returns
@@ -1122,7 +1194,7 @@ class Fit(NoNewAttributesAfterInit):
         #       self._iterfit.get_extra_args calculates?
         return self.stat.calc_stat(self.data, self.model)
 
-    def calc_stat(self):
+    def calc_stat(self) -> float:
         """Calculate the statistic value.
 
         Evaluate the statistic for the current model and data
@@ -1141,7 +1213,7 @@ class Fit(NoNewAttributesAfterInit):
 
         return self._calc_stat()[0]
 
-    def calc_chisqr(self):
+    def calc_chisqr(self) -> np.ndarray | None:
         """Calculate the per-bin chi-squared statistic.
 
         Evaluate the per-bin statistic for the current model and data
@@ -1169,7 +1241,7 @@ class Fit(NoNewAttributesAfterInit):
 
         return self.stat.calc_chisqr(self.data, self.model)
 
-    def calc_stat_info(self):
+    def calc_stat_info(self) -> StatInfoResults:
         """Calculate the statistic value and related information.
 
         Evaluate the statistic for the current model and data
@@ -1356,7 +1428,7 @@ class Fit(NoNewAttributesAfterInit):
         return FitResults(self, output, init_stat, param_warnings.strip("\n"))
 
     @evaluates_model
-    def simulfit(self, *others):
+    def simulfit(self, *others: Fit) -> FitResults:
         """Fit multiple data sets and models simultaneously.
 
         The current fit object is combined with the other fit
@@ -1389,7 +1461,10 @@ class Fit(NoNewAttributesAfterInit):
         return f.fit()
 
     @evaluates_model
-    def est_errors(self, methoddict=None, parlist=None):
+    def est_errors(self,
+                   methoddict: Mapping[str, Any] | None = None,
+                   parlist: Sequence[Parameter] | None = None
+                   ) -> ErrorEstResults:
         """Estimate errors.
 
         Calculate the low and high errors for one or more of the
@@ -1696,7 +1771,7 @@ class Fit(NoNewAttributesAfterInit):
 
 # Notebook representation
 #
-def html_fitresults(fit):
+def html_fitresults(fit: FitResults) -> str:
     """Construct the HTML to display the FitResults object."""
 
     has_covar = fit.covar is not None
@@ -1718,6 +1793,7 @@ def html_fitresults(fit):
 
     rows = []
     if has_covar:
+        assert fit.covar is not None  # already checked
         for pname, pval, perr in zip(fit.parnames, fit.parvals,
                                      np.sqrt(fit.covar.diagonal())):
             rows.append((pname, f'{pval:12g}',
@@ -1776,8 +1852,8 @@ def html_fitresults(fit):
     return formatting.html_from_sections(fit, ls)
 
 
-def html_errresults(errs):
-    """Construct the HTML to display the FitResults object."""
+def html_errresults(errs: ErrorEstResults) -> str:
+    """Construct the HTML to display the ErrorEstResults object."""
 
     ls = []
 
@@ -1840,7 +1916,8 @@ def html_errresults(errs):
     return formatting.html_from_sections(errs, ls)
 
 
-def html_statinfo(stats):
+def html_statinfo(stats: StatInfoResults) -> str:
+    """Construct the HTML to display the StatInfoResults object."""
 
     meta = []
 

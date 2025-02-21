@@ -112,7 +112,7 @@ const1d
 
 """
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 import logging
 from typing import Any
 
@@ -242,7 +242,7 @@ class OptMethod(NoNewAttributesAfterInit):
             parmins: ArrayType,
             parmaxes: ArrayType,
             statargs: Sequence[Any] = (),
-            statkwargs: dict[str, Any] | None = None
+            statkwargs: Mapping[str, Any] | None = None
             ) -> OptReturn:
         """Run the optimiser.
 
