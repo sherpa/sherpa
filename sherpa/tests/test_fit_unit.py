@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2016, 2018, 2020 - 2024
+#  Copyright (C) 2016, 2018, 2020 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -103,7 +103,7 @@ from sherpa.astro.instrument import create_delta_rmf
 from sherpa.models.model import SimulFitModel
 from sherpa.models.basic import Const1D, Const2D, Gauss1D, Polynom1D,\
     Scale1D, StepLo1D
-from sherpa.utils.err import DataErr, EstErr, FitErr, StatErr
+from sherpa.utils.err import DataErr, EstErr, FitErr, StatErr, SherpaErr
 from sherpa.utils import poisson_noise
 
 from sherpa.stats import LeastSq, Chi2, Chi2Gehrels, Chi2DataVar, \
@@ -3354,3 +3354,39 @@ def test_repeated_model_expression(setup_ldata):
     # Just as a safety check
     assert mdl1.fwhm.val == pytest.approx(LPAR_FWHM)
     assert mdl1.ampl.val == pytest.approx(LPAR_AMPL / 2)
+
+
+@pytest.mark.parametrize("arg,value",
+                         [("maxiters", 0),
+                          ("maxiters", 2.3),
+                          ("maxiters", "2"),
+                          ("hrej", "2.3"),
+                          ("hrej", 0),
+                          ("lrej", "2.3"),
+                          ("lrej", 0),
+                          ("grow", "2"),
+                          ("grow", 2.0),
+                          ("grow", -5)
+                          ])
+def test_sigmarej_invalid_argument(arg, value):
+    """Check we error out.
+
+    Note that at present the error message is uninformative.
+    """
+
+    x = np.linspace(0, 30, 7)
+    y = np.asarray([8.722, 21.012, 30.780, 40.920, 22.84, 59.34, 68.20])
+    dy = np.ones(x.size) * 1.2
+
+    data = Data1D('idata', x, y, staterror=dy)
+
+    mdl = Polynom1D("poly")
+    mdl.c1.frozen = False
+
+    iopts = {'name': 'sigmarej', 'maxiters': 5,
+             'hrej': 3, 'lrej': 3, 'grow': 0}
+    iopts[arg] = value
+    f = Fit(data, mdl, itermethod_opts=iopts)
+    with pytest.raises(SherpaErr,
+                       match="^Generic Error$"):
+        f.fit()

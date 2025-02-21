@@ -18,6 +18,8 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from typing import Callable, Sequence, SupportsFloat
+
 import numpy
 
 from sherpa.utils.parallel import parallel_map, ncpus
@@ -238,9 +240,18 @@ class Strategy9(Strategy):
 
 class MyDifEvo(Opt):
 
-    def __init__(self, func, xpar, xmin, xmax, npop, sfactor, xprob, step,
-                 seed, rng=None):
-        Opt.__init__(self, func, xmin, xmax)
+    def __init__(self,
+                 func: Callable[..., SupportsFloat],
+                 xpar: Sequence[SupportsFloat],
+                 xmin: Sequence[SupportsFloat],
+                 xmax: Sequence[SupportsFloat],
+                 npop: int,
+                 sfactor,
+                 xprob,
+                 step,
+                 seed: int,
+                 rng=None) -> None:
+        super().__init__(func, xmin, xmax)
         self.ncores_nm = ncoresNelderMead()
         self.key2 = Key2()
         self.npop = min(npop, 4096)
@@ -260,12 +271,12 @@ class MyDifEvo(Opt):
                                  rng=numpy.random.default_rng(sseed))
                            for strat, sseed in zip(strats, sseeds)]
 
-        xpar = numpy.asarray(xpar)
+        xpar_a = numpy.asarray(xpar)
         if step is None:
-            step = xpar * 1.2 + 1.2
+            step = xpar_a * 1.2 + 1.2
         factor = 10
         self.rng = rng
-        self.polytope = SimplexRandom(func=func, npop=npop, xpar=xpar,
+        self.polytope = SimplexRandom(func=func, npop=npop, xpar=xpar_a,
                                       xmin=xmin, xmax=xmax, step=step,
                                       seed=seed, factor=factor, rng=rng)
         self.local_opt = self.ncores_nm.algo
