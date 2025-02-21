@@ -1,5 +1,6 @@
 #
-#  Copyright (C) 2019, 2020, 2021  Smithsonian Astrophysical Observatory
+#  Copyright (C) 2019-2021, 2025
+#  Smithsonian Astrophysical Observatory
 #
 #
 #  This program is free software; you can redistribute it and/or modify
@@ -18,7 +19,7 @@
 
 import pytest
 
-from sherpa.optmethods import _tstoptfct
+from sherpa.optmethods import _tstoptfct  # type: ignore
 from sherpa.optmethods.ncoresnm import ncoresNelderMead
 from sherpa.optmethods.ncoresde import ncoresDifEvo
 

@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2018, 2019, 2020, 2021, 2023
+#  Copyright (C) 2007, 2015-2016, 2018-2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -19,7 +19,7 @@
 
 import pytest
 
-from sherpa.optmethods import _tstoptfct
+from sherpa.optmethods import _tstoptfct  # type: ignore
 from sherpa.optmethods.optfcts import lmdif, minim, montecarlo, neldermead
 from sherpa.utils.parallel import ncpus
 

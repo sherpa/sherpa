@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2019, 2020, 2021, 2023
+#  Copyright (C) 2019-2021, 2023, 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -84,6 +84,8 @@ ncoresNelderMead [0. 0. 0. 0. 0. 0. 0. 0.]  =  0.0 in 4701 nfevs
 
 """
 
+from typing import Any
+
 import numpy as np
 
 import pytest
@@ -92,7 +94,7 @@ from sherpa.optmethods.ncoresde import DifEvo, ncoresDifEvo, ncoresDifEvoNelderM
 from sherpa.optmethods.ncoresnm import ncoresNelderMead, NelderMead0, NelderMead1, \
     NelderMead2, NelderMead3, NelderMead4, NelderMead5, NelderMead6, NelderMead7
 from sherpa.optmethods.opt import SimplexNoStep, SimplexStep, SimplexRandom
-from sherpa.optmethods import _tstoptfct
+from sherpa.optmethods import _tstoptfct  # type: ignore
 
 
 def Ackley(x):
@@ -926,6 +928,12 @@ if __name__ == "__main__":
     options = parser.parse_args()
     if options.num % 2 != 0:
         raise ValueError("-N option must be an even number")
+
+    # The algorithms do not have a common ancestor so they are hard to
+    # type accurately.
+    #
+    algo_de: list[Any]
+    algo_nm: list[Any]
 
     if options.difevo:
         algo_de = [DifEvo()]
