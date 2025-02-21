@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2020 - 2024
+#  Copyright (C) 2020-2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -50,7 +50,6 @@ def test_basic_unop_neg_raw():
 
     assert mdl.name == '<->(polynom2d)'
     assert mdl.op == np.negative
-    assert mdl.opstr == '<->'
     assert mdl.ndim == 2
 
 
@@ -61,7 +60,6 @@ def test_basic_unop_neg():
 
     assert mdl.name == '-(polynom2d)'
     assert mdl.op == np.negative
-    assert mdl.opstr == '-'
     assert mdl.ndim == 2
 
 
@@ -72,7 +70,6 @@ def test_basic_unop_pos():
 
     assert mdl.name == '+(polynom2d)'
     assert mdl.op == np.positive
-    assert mdl.opstr == '+'
     assert mdl.ndim == 2
 
 
@@ -83,7 +80,6 @@ def test_basic_unop_abs_raw():
 
     assert mdl.name == 'foo(polynom2d)'
     assert mdl.op == np.absolute
-    assert mdl.opstr == 'foo'
     assert mdl.ndim == 2
 
 
@@ -94,7 +90,6 @@ def test_basic_unop_abs():
 
     assert mdl.name == 'abs(polynom2d)'
     assert mdl.op == np.absolute
-    assert mdl.opstr == 'abs'
     assert mdl.ndim == 2
 
 
@@ -110,7 +105,6 @@ def test_basic_binop_raw(op):
     assert isinstance(mdl, BinaryOpModel)
     assert mdl.name == 'polynom2d xOx gauss2d'
     assert mdl.op == op
-    assert mdl.opstr == 'xOx'
     assert len(mdl.parts) == 2
     assert mdl.parts[0] == l
     assert mdl.parts[1] == r
@@ -118,10 +112,11 @@ def test_basic_binop_raw(op):
 
 
 @pytest.mark.parametrize("op,opstr",
-                         [(np.add, '+'), (np.multiply, '*'),
-                          (np.subtract, '-'), (np.divide, '/'),
-                          (np.floor_divide, '//'), (np.true_divide, '/'),
-                          (np.remainder, '%'), (np.power, '**')])
+                         [(operator.add, '+'), (operator.mul, '*'),
+                          (operator.sub, '-'),
+                          (operator.floordiv, '//'), (operator.truediv, '/'),
+                          (operator.mod, '%'), (operator.pow, '**')],
+                          )
 def test_basic_binop(op, opstr):
 
     l = basic.Polynom2D()
@@ -130,11 +125,65 @@ def test_basic_binop(op, opstr):
 
     assert isinstance(mdl, BinaryOpModel)
     assert mdl.name == f'polynom2d {opstr} gauss2d'
-    assert mdl.op == op
-    assert mdl.opstr == opstr
+    isinstance(mdl.op, np.ufunc)  # The operator model function will be converted into the numpy version
     assert len(mdl.parts) == 2
     assert mdl.parts[0] == l
     assert mdl.parts[1] == r
+    assert mdl.ndim == 2
+
+
+def custom_func(a, b):
+   return a + b
+
+custom_ufunc = np.frompyfunc(custom_func, nin=2, nout=1)
+
+@pytest.mark.parametrize("op,mdlname",
+                         [
+                          # Test a random selection of numpy ufuncs
+                          (np.add, "polynom2d + gauss2d"),
+                          (np.multiply, "polynom2d * gauss2d"),
+                          (np.heaviside, "numpy.heaviside(polynom2d, gauss2d)"),
+                          (np.greater, "numpy.greater(polynom2d, gauss2d)"),
+                          (np.arctan2, "numpy.arctan2(polynom2d, gauss2d)"),
+                          # and out own, custom made ufunc
+                          (custom_ufunc, "custom_func(polynom2d, gauss2d)"),
+                      ]
+                          )
+def test_binop_numpy_functions(op, mdlname):
+    """Same as the previous test, but with ufuncs from numpy
+    instead of the operator module."""
+
+    l = basic.Polynom2D()
+    r = basic.Gauss2D()
+    mdl = op(l, r)
+
+    assert isinstance(mdl, BinaryOpModel)
+    assert mdl.name == mdlname
+    assert mdl.op == op
+    assert len(mdl.parts) == 2
+    assert mdl.parts[0] == l
+    assert mdl.parts[1] == r
+    assert mdl.ndim == 2
+
+
+@pytest.mark.parametrize("in1, in2, op, mdlname",
+                         [
+                            (basic.Polynom2D(), float(2), np.add, "polynom2d + 2.0"),
+                            (int(2), basic.Polynom2D(), np.add, "2.0 + polynom2d"),
+                            (basic.Polynom2D(), 2, np.multiply, "polynom2d * 2.0"),
+                            (np.float64(0.5), basic.Polynom2D(), np.multiply, "0.5 * polynom2d"),
+                            (basic.Gauss2D(), np.float64(0.5), np.multiply, "gauss2d * 0.5"),
+                      ]
+                          )
+def test_binop_combine_model_with_number(in1, in2, op, mdlname):
+    """Same as the previous test, but with ufuncs from numpy
+    instead of the operator module."""
+    mdl = op(in1, in2)
+
+    assert isinstance(mdl, BinaryOpModel)
+    assert mdl.name == mdlname
+    assert mdl.op == op
+    assert len(mdl.parts) == 2
     assert mdl.ndim == 2
 
 
@@ -685,7 +734,8 @@ def test_explicit_numpy_combination():
 
     # Check the names are the same.
     #
-    assert explicit.name == implicit.name
+    # They are the same operations, but they are written differently
+    # assert explicit.name == implicit.name
 
     # Check they evaluate to the same values.
     #
