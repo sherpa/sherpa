@@ -423,14 +423,16 @@ class ErrorEstResults(NoNewAttributesAfterInit):
                'parmaxes', 'nfits')
 
     def __init__(self, fit, results, parlist=None):
-        if parlist is None:
-            parlist = fit.model.get_thawed_pars()
 
-        # TODO: Can we not just import them at the top level?  It may
-        # cause an import loop.
+        # Avoid an import loop.
         #
         from sherpa.estmethods import est_hardmin, est_hardmax, \
             est_hardminmax
+
+        if parlist is None:
+            pars = fit.model.get_thawed_pars()
+        else:
+            pars = parlist
 
         self.datasets = None  # To be set by calling function
         self.methodname = type(fit.estmethod).__name__.lower()
@@ -439,12 +441,12 @@ class ErrorEstResults(NoNewAttributesAfterInit):
         self.statname = type(fit.stat).__name__.lower()
         self.sigma = fit.estmethod.sigma
         self.percent = erf(self.sigma / np.sqrt(2.0)) * 100.0
-        self.parnames = tuple(p.fullname for p in parlist if not p.frozen)
-        self.parvals = tuple(float(p.val) for p in parlist if not p.frozen)
+        self.parnames = tuple(p.fullname for p in pars if not p.frozen)
+        self.parvals = tuple(float(p.val) for p in pars if not p.frozen)
 
         pmins = []
         pmaxes = []
-        for i in range(len(parlist)):
+        for i in range(len(pars)):
             if (results[2][i] == est_hardmin or
                 results[2][i] == est_hardminmax or
                 results[0][i] is None  # It looks like confidence does not set the flag
@@ -648,7 +650,9 @@ class IterFit:
 
     def __init__(self, data, model, stat, method, itermethod_opts=None):
         if itermethod_opts is None:
-            itermethod_opts = {'name': 'none'}
+            iopts = {'name': 'none'}
+        else:
+            iopts = itermethod_opts
 
         # Even if there is only a single data set, I will
         # want to treat the data and models I am given as
@@ -676,11 +680,11 @@ class IterFit:
         self._syserror = None
 
         # Options to send to iterative fitting method
-        self.itermethod_opts = itermethod_opts
+        self.itermethod_opts = iopts
         self.funcs = {'sigmarej': self.sigmarej}
         self.current_func = None
         try:
-            iname = itermethod_opts['name']
+            iname = self.itermethod_opts['name']
         except KeyError:
             raise ValueError("Missing name field in itermethod_opts argument") from None
 
@@ -722,12 +726,15 @@ class IterFit:
         except ValueError as e:
             warning(e)
 
+        # Store the original set of data that is to be fit.
+        #
         self._dep, self._staterror, self._syserror = self.data.to_fit(
             self.stat.calc_staterror)
 
         return IterCallback(data=self.data, model=self.model,
                             stat=self.stat, fh=fh)
 
+    # TODO: look at the cache argument
     def sigmarej(self, statfunc, pars, parmins, parmaxes, statargs=(),
                  statkwargs=None, cache=True):
         """Exclude points that are significately far away from the best fit.
@@ -785,14 +792,14 @@ class IterFit:
         # to include with rejected data point).
 
         maxiters = self.itermethod_opts['maxiters']
-        if type(maxiters) != int:
+        if not isinstance(maxiters, int):
             raise SherpaErr(
                 "'maxiters' value for sigma rejection method must be an integer")
         if maxiters < 1:
             raise SherpaErr("'maxiters' must be one or greater")
 
         hrej = self.itermethod_opts['hrej']
-        if type(hrej) != int and type(hrej) != float:
+        if not isinstance(hrej, (int, float)):
             raise SherpaErr(
                 "'hrej' value for sigma rejection method must be a number")
         if hrej <= 0:
@@ -801,14 +808,14 @@ class IterFit:
         lrej = self.itermethod_opts['lrej']
         # FIXME: [OL] There are more reliable ways of checking if an object
         # is (not) a number.
-        if type(lrej) != int and type(lrej) != float:
+        if not isinstance(lrej, (int, float)):
             raise SherpaErr(
                 "'lrej' value for sigma rejection method must be a number")
         if lrej <= 0:
             raise SherpaErr("'lrej' must be greater than zero")
 
         grow = self.itermethod_opts['grow']
-        if type(grow) != int:
+        if not isinstance(grow, int):
             raise SherpaErr(
                 "'grow' value for sigma rejection method must be an integer")
         if grow < 0:
@@ -936,6 +943,7 @@ class IterFit:
         # the above exception block.
 
         # Return results from sigma rejection
+        assert final_fit_results is not None  # safety check
         return final_fit_results
 
     def fit(self, statfunc, pars, parmins, parmaxes,
@@ -1032,19 +1040,21 @@ class Fit(NoNewAttributesAfterInit):
             raise DataErr(f"Data and model dimensionality do not match: {ddim}D and {mdim}D")
 
         if itermethod_opts is None:
-            itermethod_opts = {'name': 'none'}
+            iopts = {'name': 'none'}
+        else:
+            iopts = itermethod_opts
+
         self.data = data
         self.model = model
 
-        if stat is None:
-            stat = Chi2Gehrels()
-        if method is None:
-            method = LevMar()
-        if estmethod is None:
-            estmethod = Covariance()
+        # It is not clear why this can not just set self.stat but
+        # there is a comment below that suggests it should not be done
+        # here.
+        #
+        statobj = Chi2Gehrels() if stat is None else stat
 
-        self.method = method
-        self.estmethod = estmethod
+        self.method = LevMar() if method is None else method
+        self.estmethod = Covariance() if estmethod is None else estmethod
         self.current_frozen = -1
 
         # The number of times that reminimization has occurred
@@ -1055,13 +1065,13 @@ class Fit(NoNewAttributesAfterInit):
 
         # Set up an IterFit object, so that the user can select
         # an iterative fitting option.
-        self._iterfit = IterFit(self.data, self.model, stat, self.method,
-                                itermethod_opts)
+        self._iterfit = IterFit(self.data, self.model, statobj,
+                                self.method, iopts)
 
         # We need to set the statistic *after* creating the _iterfit
         # attribute
         #
-        self.stat = stat
+        self.stat = statobj
 
         super().__init__()
 
@@ -1304,8 +1314,8 @@ class Fit(NoNewAttributesAfterInit):
 
         if ((np.iterable(staterror) and 0.0 in staterror) and
                 isinstance(self.stat, Chi2) and
-                type(self.stat) != Chi2 and
-                type(self.stat) != Chi2ModVar):
+                type(self.stat) is not Chi2 and
+                type(self.stat) is not Chi2ModVar):
             raise FitErr('binhas0')
 
         init_stat = self.calc_stat()
@@ -1451,11 +1461,14 @@ class Fit(NoNewAttributesAfterInit):
             thawedpars[idx].frozen = True
             self.current_frozen = idx
 
+            # Identify those parameters that are not frozen.
             keep_pars = np.ones_like(pars)
             keep_pars[idx] = 0
-            current_pars = pars[np.where(keep_pars)]
-            current_parmins = parmins[np.where(keep_pars)]
-            current_parmaxes = parmaxes[np.where(keep_pars)]
+            pars_idx = np.where(keep_pars)
+
+            current_pars = pars[pars_idx]
+            current_parmins = parmins[pars_idx]
+            current_parmaxes = parmaxes[pars_idx]
             return (current_pars, current_parmins, current_parmaxes)
 
         def thaw_par(idx):
@@ -1578,8 +1591,9 @@ class Fit(NoNewAttributesAfterInit):
         # is numpars.)
         parnums = []
         if parlist is not None:
+            pars = parlist
             allpars = self.model.get_thawed_pars()
-            for p in parlist:
+            for p in pars:
                 count = 0
                 match = False
                 for par in allpars:
@@ -1593,7 +1607,7 @@ class Fit(NoNewAttributesAfterInit):
 
             parnums = np.array(parnums)
         else:
-            parlist = self.model.get_thawed_pars()
+            pars = self.model.get_thawed_pars()
             parnums = np.arange(len(startpars))
 
         # If we are here, we are ready to try to derive confidence limits.
@@ -1634,11 +1648,13 @@ class Fit(NoNewAttributesAfterInit):
 
             # First report results of new fit, then call
             # compute limits for those new best-fit parameters
-            for p in parlist:
+            for p in pars:
                 p.frozen = False
             self.current_frozen = -1
 
             if e.args:
+                # Reset the parameter values to those reported in the
+                # exception.
                 self.model.thawedpars = e.args[0]
 
             self.model.thawedparmins = startsoftmins
@@ -1650,7 +1666,7 @@ class Fit(NoNewAttributesAfterInit):
             warning("New best-fit parameters:\n%s", results.format())
 
             # Now, recompute errors for new best-fit parameters
-            results = self.est_errors(methoddict, parlist)
+            results = self.est_errors(methoddict, pars)
             self.model.thawedparmins = startsoftmins
             self.model.thawedparmaxes = startsoftmaxs
             self.method = oldmethod
@@ -1658,7 +1674,7 @@ class Fit(NoNewAttributesAfterInit):
                 self.estmethod.remin = oldremin
             return results
         except:
-            for p in parlist:
+            for p in pars:
                 p.frozen = False
             self.current_frozen = -1
             self.model.thawedpars = startpars
@@ -1669,14 +1685,14 @@ class Fit(NoNewAttributesAfterInit):
                 self.estmethod.remin = oldremin
             raise
 
-        for p in parlist:
+        for p in pars:
             p.frozen = False
 
         self.current_frozen = -1
         self.model.thawedpars = startpars
         self.model.thawedparmins = startsoftmins
         self.model.thawedparmaxes = startsoftmaxs
-        results = ErrorEstResults(self, output, parlist)
+        results = ErrorEstResults(self, output, pars)
         self.method = oldmethod
         if hasattr(self.estmethod, "remin"):
             self.estmethod.remin = oldremin

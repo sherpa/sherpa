@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023, 2024
+#  Copyright (C) 2007, 2015, 2016, 2019 - 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -84,8 +84,11 @@ est_hitnan = 7
 #    "Reached a parameter hard maximum"
 #    pass
 #
-class EstNewMin(Exception):
 
+# This class is used to send around the "new parameter values" in
+# sherpa.fit.Fit.est_errors.
+#
+class EstNewMin(Exception):
     "Reached a new minimum fit statistic"
     pass
 #
