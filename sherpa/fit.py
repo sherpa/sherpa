@@ -792,14 +792,14 @@ class IterFit:
         # to include with rejected data point).
 
         maxiters = self.itermethod_opts['maxiters']
-        if type(maxiters) != int:
+        if not isinstance(maxiters, int):
             raise SherpaErr(
                 "'maxiters' value for sigma rejection method must be an integer")
         if maxiters < 1:
             raise SherpaErr("'maxiters' must be one or greater")
 
         hrej = self.itermethod_opts['hrej']
-        if type(hrej) != int and type(hrej) != float:
+        if not isinstance(hrej, (int, float)):
             raise SherpaErr(
                 "'hrej' value for sigma rejection method must be a number")
         if hrej <= 0:
@@ -808,14 +808,14 @@ class IterFit:
         lrej = self.itermethod_opts['lrej']
         # FIXME: [OL] There are more reliable ways of checking if an object
         # is (not) a number.
-        if type(lrej) != int and type(lrej) != float:
+        if not isinstance(lrej, (int, float)):
             raise SherpaErr(
                 "'lrej' value for sigma rejection method must be a number")
         if lrej <= 0:
             raise SherpaErr("'lrej' must be greater than zero")
 
         grow = self.itermethod_opts['grow']
-        if type(grow) != int:
+        if not isinstance(grow, int):
             raise SherpaErr(
                 "'grow' value for sigma rejection method must be an integer")
         if grow < 0:
@@ -1311,8 +1311,8 @@ class Fit(NoNewAttributesAfterInit):
 
         if ((np.iterable(staterror) and 0.0 in staterror) and
                 isinstance(self.stat, Chi2) and
-                type(self.stat) != Chi2 and
-                type(self.stat) != Chi2ModVar):
+                type(self.stat) is not Chi2 and
+                type(self.stat) is not Chi2ModVar):
             raise FitErr('binhas0')
 
         init_stat = self.calc_stat()
