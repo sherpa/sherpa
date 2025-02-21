@@ -582,8 +582,14 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_NORM(srcut, 3),                    // XSsrcut
   XSPECMODELFCT_NORM(sresc, 3),                    // XSsresc
   XSPECMODELFCT_NORM(ssa, 3),                      // XSssa
+#ifdef XSPEC_12_14_1
+  XSPECMODELFCT_NORM(sssed, 15),                   // XSsssed
+#endif
   XSPECMODELFCT_NORM(xsstep, 3),                   // XSstep
   XSPECMODELFCT_C_NORM(C_tapec, 5),                // XStapec
+#ifdef XSPEC_12_14_1
+  XSPECMODELFCT_C_NORM(C_vagauss, 3),              // XSvagauss
+#endif
   XSPECMODELFCT_C_NORM(C_vapec, 16),               // XSvapec
   XSPECMODELFCT_NORM(xsbrmv, 3),                   // XSvbremss
 #ifdef XSPEC_12_14_0
@@ -598,6 +604,9 @@ static PyMethodDef XSpecMethods[] = {
 #endif
   XSPECMODELFCT_C_NORM(C_vequil, 15),              // XSvequil
   XSPECMODELFCT_C_NORM(C_vgaussDem, 20),           // XSvgadem
+#ifdef XSPEC_12_14_1
+  XSPECMODELFCT_C_NORM(C_vgaussianLine, 3),        // XSvgaussian
+#endif
   XSPECMODELFCT_C_NORM(C_vgnei, 18),               // XSvgnei
   XSPECMODELFCT_C_NORM(C_vmeka, 18),               // XSvmeka
   XSPECMODELFCT_C_NORM(C_vmekal, 19),              // XSvmekal
@@ -683,6 +692,9 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(C_tbrel, 42),                    // XSTBrel
   XSPECMODELFCT(xsred, 1),                         // XSuvred
   XSPECMODELFCT(xsabsv, 18),                       // XSvarabs
+#ifdef XSPEC_12_14_1
+  XSPECMODELFCT_C(C_vgaussianAbsorptionLine, 3),   // XSvgabs
+#endif
   XSPECMODELFCT(xsvphb, 18),                       // XSvphabs
   XSPECMODELFCT(xsabsw, 1),                        // XSwabs
   XSPECMODELFCT(xswnab, 2),                        // XSwndabs
@@ -691,6 +703,9 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT_C(xszbabs, 4),                     // XSzbabs
   XSPECMODELFCT(mszdst, 4),                        // XSzdust
   XSPECMODELFCT(xszedg, 3),                        // XSzedge
+#ifdef XSPEC_12_14_1
+  XSPECMODELFCT_C(C_zgaussianAbsorptionLine, 4),   // XSzgabs
+#endif
   XSPECMODELFCT(xszhcu, 3),                        // XSzhighect
   XSPECMODELFCT(zigm, 3),                          // XSzigm
   XSPECMODELFCT(xszabp, 3),                        // XSzpcfabs
@@ -700,8 +715,19 @@ static PyMethodDef XSpecMethods[] = {
   XSPECMODELFCT(xszcrd, 2),                        // XSzredden
   XSPECMODELFCT(msldst, 4),                        // XSzsmdust
   XSPECMODELFCT_C(C_ztbabs, 2),                    // XSzTBabs
+
+#ifdef XSPEC_12_14_1
+  XSPECMODELFCT_C_NORM(C_zvagauss, 4),             // XSzvagauss
+#endif
+
   XSPECMODELFCT(xszvab, 19),                       // XSzvarabs
   XSPECMODELFCT(xszvfe, 5),                        // XSzvfeabs
+#ifdef XSPEC_12_14_1
+  XSPECMODELFCT_C(C_zvgaussianAbsorptionLine, 4),  // XSzvgabs
+
+  XSPECMODELFCT_C_NORM(C_zvgaussianLine, 4),       // XSzvgaussian
+#endif
+
   XSPECMODELFCT(xszvph, 19),                       // XSzvphabs
   XSPECMODELFCT(xszabs, 2),                        // XSzwabs
   XSPECMODELFCT(xszwnb, 3),                        // XSzwndabs

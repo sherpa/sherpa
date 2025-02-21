@@ -239,7 +239,20 @@ by the actual path to the HEADAS installation, and the versions of
 the libraries - such as ``CCfits_2.6`` - may need to be changed to
 match the contents of the XSPEC installation.
 
-1. If the full XSPEC 12.14.0 system has been built then use::
+1. If the full XSPEC 12.14.1 system has been built then use::
+
+       with-xspec = True
+       xspec_version = 12.14.1
+       xspec_lib_dirs = $HEADAS/lib
+       xspec_include_dirs = $HEADAS/include
+       xspec_libraries = XSFunctions XSUtil XS hdsp_6.34
+       ccfits_libraries = CCfits_2.6
+       wcslib_libraries = wcs-8.3
+
+   where the version numbers were taken from version 6.34 of HEASOFT and
+   may need updating with a newer release.
+
+2. If the full XSPEC 12.14.0 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.14.0
@@ -252,7 +265,7 @@ match the contents of the XSPEC installation.
    where the version numbers were taken from version 6.33.1 of HEASOFT and
    may need updating with a newer release.
 
-2. If the full XSPEC 12.13.1 system has been built then use::
+3. If the full XSPEC 12.13.1 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.13.1
@@ -265,7 +278,7 @@ match the contents of the XSPEC installation.
    where the version numbers were taken from version 6.32 of HEASOFT and
    may need updating with a newer release.
 
-3. If the full XSPEC 12.13.0 system has been built then use::
+4. If the full XSPEC 12.13.0 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.13.0
@@ -275,7 +288,7 @@ match the contents of the XSPEC installation.
        ccfits_libraries = CCfits_2.6
        wcslib_libraries = wcs-7.7
 
-4. If the full XSPEC 12.12.1 system has been built then use::
+5. If the full XSPEC 12.12.1 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.12.1
@@ -285,7 +298,7 @@ match the contents of the XSPEC installation.
        ccfits_libraries = CCfits_2.6
        wcslib_libraries = wcs-7.7
 
-5. If the full XSPEC 12.12.0 system has been built then use::
+6. If the full XSPEC 12.12.0 system has been built then use::
 
        with-xspec = True
        xspec_version = 12.12.0
@@ -295,7 +308,7 @@ match the contents of the XSPEC installation.
        ccfits_libraries = CCfits_2.6
        wcslib_libraries = wcs-7.3.1
 
-6. If the model-only build of XSPEC - created with the
+7. If the model-only build of XSPEC - created with the
    ``--enable-xs-models-only`` flag when building HEASOFT - has been
    installed, then the configuration is similar, but the library names
    may not need version numbers and locations, depending on how the
@@ -320,7 +333,7 @@ module, but a quick check of an installed version can be made with
 the following command::
 
     % python -c 'from sherpa.astro import xspec; print(xspec.get_xsversion())'
-    12.14.0i
+    12.14.1
 
 Other options
 ^^^^^^^^^^^^^
