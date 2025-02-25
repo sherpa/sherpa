@@ -48,10 +48,8 @@ from sherpa.utils.testing import requires_data, requires_fits, \
 try:
     from sherpa.astro.io import backend
     is_crates_io = backend.name == "crates"
-    is_astropy_io = backend.name == "pyfits"
 except ImportError:
     is_crates_io = False
-    is_astropy_io = False
 
 
 def test_can_not_group_ungrouped():
@@ -6540,7 +6538,6 @@ def test_problem_pha(tmp_path, offset):
 
 
 @requires_fits
-@pytest.mark.xfail(is_astropy_io, reason="tests known to fail with AstroPy")
 # The test only passes with crates for offset=0 by "luck" (as the
 # string TLMIN value gets interpreted as 0 for whatever value is in
 # the string).  This really needs DM/Crates fixes and not something

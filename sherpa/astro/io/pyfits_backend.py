@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2011, 2015 - 2024
+#  Copyright (C) 2011, 2015 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -748,6 +748,22 @@ def copycol(hdu: fits.BinTableHDU,
 
     with suppress(KeyError):
         out.maxval = hdu.header[f"TLMAX{pos}"]
+
+    # Deal with the possibility of the TLMIN/MAX values
+    # being encoded as a string. See
+    # https://github.com/sherpa/sherpa/issues/2185
+    #
+    if isinstance(out.minval, str) or isinstance(out.maxval, str):
+        # Handle VLF data
+        dtype = vals.dtype
+        if dtype == object:
+            dtype = vals[0].dtype
+
+        if isinstance(out.minval, str):
+            out.minval = dtype.type(out.minval)
+
+        if isinstance(out.maxval, str):
+            out.maxval = dtype.type(out.maxval)
 
     return out
 
