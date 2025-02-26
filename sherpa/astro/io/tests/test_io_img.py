@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021, 2023, 2024
+#  Copyright (C) 2021, 2023 - 2025
 #  Smithsonian Astrophysical Observatory
 #
 #
@@ -346,7 +346,8 @@ def test_read_image_object(make_data_path):
 
     try:
         from sherpa.astro.io import wcs
-        # Technically the following depends on WCS support
+        # Technically the following depends on WCS support, even
+        # though we do not use the wcs symbol.
         assert img.sky.crval == pytest.approx([4083.7, 4083.7])
         assert img.eqpos.crval == pytest.approx([112.71019, 40.82296])
 

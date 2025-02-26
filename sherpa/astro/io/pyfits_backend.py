@@ -30,10 +30,11 @@ References
 
 """
 
+from collections.abc import Sequence
 from contextlib import nullcontext, suppress
 import logging
 import os
-from typing import TYPE_CHECKING, Any, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Any
 import warnings
 
 import numpy as np
@@ -75,15 +76,15 @@ name: str = "pyfits"
 """The name of the I/O backend."""
 
 
-DatasetType = Union[str, fits.HDUList]
-HDUType = Union[fits.PrimaryHDU, fits.BinTableHDU, fits.ImageHDU]
+DatasetType = str | fits.HDUList
+HDUType = fits.PrimaryHDU | fits.BinTableHDU | fits.ImageHDU
 
 
 def _try_key(hdu: HDUType,
              name: str,
              *,
              fix_type: bool = False,
-             dtype: type = SherpaFloat) -> Optional[KeyType]:
+             dtype: type = SherpaFloat) -> KeyType | None:
 
     value = hdu.header.get(name, None)
     if value is None:
@@ -215,7 +216,7 @@ def read_table_blocks(arg: DatasetType,
 
     with cm as hdus:
         header = _get_meta_data_header(hdus[0])
-        blocks: list[Union[TableBlock, ImageBlock]] = []
+        blocks: list[TableBlock | ImageBlock] = []
         for hdu in hdus[1:]:
             hdr = _get_meta_data_header(hdu)
             cols = [copycol(hdu, filename, name) for name in hdu.columns.names]
@@ -278,7 +279,7 @@ def _get_file_contents(arg: DatasetType,
 
 def _find_binary_table(tbl: fits.HDUList,
                        filename: str,
-                       blockname: Optional[str] = None) -> fits.BinTableHDU:
+                       blockname: str | None = None) -> fits.BinTableHDU:
     """Return the first binary table extension we find. If blockname
     is not None then the name of the block has to match (case-insensitive
     match), and any spaces are removed from blockname before checking.
@@ -310,8 +311,8 @@ def _find_binary_table(tbl: fits.HDUList,
 
 
 def get_header_data(arg: DatasetType,
-                    blockname: Optional[str] = None,
-                    hdrkeys: Optional[NamesType] = None
+                    blockname: str | None = None,
+                    hdrkeys: NamesType | None = None
                     ) -> Header:
     """Read in the header data."""
 
@@ -352,7 +353,7 @@ def get_column_data(*args) -> list[np.ndarray]:
 
 def get_ascii_data(filename: str,
                    ncols: int = 2,
-                   colkeys: Optional[list[str]] = None,
+                   colkeys: list[str] | None = None,
                    **kwargs
                    ) -> tuple[TableBlock, str]:
     """Read columns from an ASCII file"""
@@ -376,11 +377,11 @@ def get_ascii_data(filename: str,
 
 def get_table_data(arg: DatasetType,
                    ncols: int = 1,
-                   colkeys: Optional[NamesType] = None,
+                   colkeys: NamesType | None = None,
                    make_copy: bool = False,
                    fix_type: bool = False,
-                   blockname: Optional[str] = None,
-                   hdrkeys: Optional[NamesType] = None
+                   blockname: str | None = None,
+                   hdrkeys: NamesType | None = None
                    ) -> tuple[TableBlock, str]:
     """Read columns."""
 
@@ -431,7 +432,7 @@ def get_table_data(arg: DatasetType,
 # As the return value depends on whether the WCS code has been
 # compiled, typing this is awkward.
 #
-def _make_wcs(img: fits.ImageHDU) -> tuple[Optional[WCS], Optional[WCS]]:
+def _make_wcs(img: fits.ImageHDU) -> tuple[WCS | None, WCS | None]:
     """Create the WCS for the SKY and EQPOS transforms.
 
     This is rather CIAO specific.
@@ -443,7 +444,7 @@ def _make_wcs(img: fits.ImageHDU) -> tuple[Optional[WCS], Optional[WCS]]:
         return sky, eqpos
 
     def _get_wcs_key(prefix: str,
-                     suffix: str = "") -> Optional[np.ndarray]:
+                     suffix: str = "") -> np.ndarray | None:
         """WCS 2D keywords."""
 
         key1 = f"{prefix}1{suffix}"
@@ -549,7 +550,7 @@ def get_image_data(arg: DatasetType,
 
 def _is_ogip_block(hdu: HDUType,
                    bltype1: str,
-                   bltype2: Optional[str] = None) -> bool:
+                   bltype2: str | None = None) -> bool:
     """Does the block contain the expected HDUCLAS1 or HDUCLAS2 values?
 
     If given, we need both HDUCLAS1 and 2 to be set correctly.
@@ -672,7 +673,7 @@ def _find_matrix_blocks(filename: str,
 def copycol(hdu: fits.BinTableHDU,
             filename: str,
             name: str,
-            dtype: Optional[type] = None) -> Column:
+            dtype: type | None = None) -> Column:
     """Copy the column data (which must exist).
 
     Parameters
@@ -756,7 +757,7 @@ def copycol(hdu: fits.BinTableHDU,
     if isinstance(out.minval, str) or isinstance(out.maxval, str):
         # Handle VLF data
         dtype = vals.dtype
-        if dtype == object:
+        if dtype == object:  # this must not use 'is' rather than '=='
             dtype = vals[0].dtype
 
         if isinstance(out.minval, str):
@@ -1095,7 +1096,7 @@ def set_image_data(filename: str,
 
 def set_arrays(filename: str,
                args: Sequence[np.ndarray],
-               fields: Optional[NamesType] = None,
+               fields: NamesType | None = None,
                ascii: bool = True,
                clobber: bool = False) -> None:
 

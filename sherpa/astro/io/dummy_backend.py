@@ -1,5 +1,5 @@
 #
-#  Copyright (C) 2021 - 2024
+#  Copyright (C) 2021 - 2025
 #  MIT
 #
 #
@@ -27,17 +27,16 @@ available.
 
 '''
 
+from collections.abc import Sequence
 import logging
-from typing import Any, Optional, Sequence
+from typing import Any
 
 import numpy as np
 
 from ..data import Data1D
 
-from .types import NamesType, HdrTypeArg, HdrType, \
-    ColumnsType, ColumnsTypeArg, DataTypeArg, DataType, \
-    Header, BlockList, TableBlock, ImageBlock, \
-    SpectrumBlock, SpecrespBlock, MatrixBlock, EboundsBlock
+from .types import NamesType, Header, BlockList, TableBlock, \
+    ImageBlock, SpectrumBlock, SpecrespBlock, MatrixBlock, EboundsBlock
 
 
 __all__ = ('get_table_data', 'get_header_data', 'get_image_data',
@@ -63,11 +62,11 @@ warning("""Cannot import usable I/O backend.
 
 def get_table_data(arg,
                    ncols: int = 1,
-                   colkeys: Optional[NamesType] = None,
+                   colkeys: NamesType | None = None,
                    make_copy: bool = True,
                    fix_type: bool = True,
-                   blockname: Optional[str] = None,
-                   hdrkeys: Optional[NamesType] = None
+                   blockname: str | None = None,
+                   hdrkeys: NamesType | None = None
                    ) -> tuple[TableBlock, str]:
     """Read columns from a file or object.
 
@@ -121,8 +120,8 @@ def get_table_data(arg,
 
 
 def get_header_data(arg,
-                    blockname: Optional[str] = None,
-                    hdrkeys: Optional[NamesType] = None
+                    blockname: str | None = None,
+                    hdrkeys: NamesType | None = None
                     ) -> Header:
     """Read the metadata.
 
@@ -228,7 +227,7 @@ def get_column_data(*args) -> list[np.ndarray]:
 #
 def get_ascii_data(filename: str,
                    ncols: int = 2,
-                   colkeys: Optional[NamesType] = None,
+                   colkeys: NamesType | None = None,
                    sep: str = ' ',
                    dstype: type = Data1D,
                    comment: str = '#',
@@ -694,7 +693,7 @@ def read_table_blocks(arg,
 
 def set_arrays(filename: str,
                args: Sequence[np.ndarray],
-               fields: Optional[NamesType] = None,
+               fields: NamesType | None = None,
                ascii: bool = True,
                clobber: bool = False) -> None:
     """Write out columns.

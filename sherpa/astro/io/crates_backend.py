@@ -18,11 +18,12 @@
 #  51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 #
 
+from collections.abc import Sequence
 from collections import defaultdict
 from contextlib import suppress
 import logging
 import os
-from typing import Any, Optional, Sequence, Union
+from typing import Any
 
 import numpy as np
 
@@ -62,8 +63,8 @@ name: str = "crates"
 """The name of the I/O backend."""
 
 
-CrateType = Union[TABLECrate, IMAGECrate]
-DatasetType = Union[str, CrateDataset]
+CrateType = TABLECrate | IMAGECrate
+DatasetType = str | CrateDataset
 
 
 def open_crate(filename: str) -> CrateType:
@@ -160,7 +161,7 @@ def get_filename_from_dmsyntax(filename: str) -> str:
 
 def _try_key(crate: CrateType,
              name: str,
-             dtype: type = str) -> Optional[KeyType]:
+             dtype: type = str) -> KeyType | None:
     """Access the key from the crate returning None if it does not exist.
 
     There's no way to differentiate between a key that does not exist
@@ -201,7 +202,7 @@ def _try_key(crate: CrateType,
 
     # byte strings are to be decoded to strings
     #
-    if dtype == str and isinstance(value, bytes):
+    if dtype is str and isinstance(value, bytes):
         return dtype(value, "utf-8")
 
     return dtype(value)
@@ -258,7 +259,7 @@ def _require_image(crate: IMAGECrate,
 
 
 def _get_crate_by_blockname(dataset: CrateDataset,
-                            blkname: str) -> Optional[CrateType]:
+                            blkname: str) -> CrateType | None:
     """Select the given block name.
 
     Parameters
@@ -292,7 +293,7 @@ def _get_crate_by_blockname(dataset: CrateDataset,
 
 # This should be added to the official backend API.
 #
-def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
+def read_table_blocks(arg: str | CrateDataset | TABLECrate,
                       make_copy: bool = False
                       ) -> tuple[BlockList, str]:
     """Read in tabular data with no restrictions on the columns."""
@@ -327,9 +328,9 @@ def read_table_blocks(arg: Union[str, CrateDataset, TABLECrate],
     return BlockList(blocks=blocks, header=header), filename
 
 
-def get_header_data(arg: Union[str, TABLECrate],
-                    blockname: Optional[str] = None,
-                    hdrkeys: Optional[NamesType] = None
+def get_header_data(arg: str | TABLECrate,
+                    blockname: str | None = None,
+                    hdrkeys: NamesType | None = None
                     ) -> Header:
     """Read the metadata."""
 
@@ -390,7 +391,7 @@ def get_column_data(*args) -> list[np.ndarray]:
 
 def get_ascii_data(filename: str,
                    ncols: int = 2,
-                   colkeys: Optional[NamesType] = None,
+                   colkeys: NamesType | None = None,
                    **kwargs
                    ) -> tuple[TableBlock, str]:
     """Read columns from an ASCII file"""
@@ -398,13 +399,13 @@ def get_ascii_data(filename: str,
     return get_table_data(filename, ncols, colkeys)
 
 
-def get_table_data(arg: Union[str, TABLECrate],
+def get_table_data(arg: str | TABLECrate,
                    ncols: int = 1,
-                   colkeys: Optional[NamesType] = None,
-                   make_copy: bool = True,
+                   colkeys: NamesType | None = None,
+                   make_copy: bool = True,  # unused
                    fix_type: bool = True,
-                   blockname: Optional[str] = None,
-                   hdrkeys: Optional[NamesType] = None
+                   blockname: str | None = None,
+                   hdrkeys: NamesType | None = None
                    ) -> tuple[TableBlock, str]:
     """Read columns from a file or crate."""
 
@@ -416,7 +417,7 @@ def get_table_data(arg: Union[str, TABLECrate],
 
     elif isinstance(arg, TABLECrate):
         tbl = arg
-        make_copy = False
+
     else:
         raise IOErr('badfile', arg, 'TABLECrate obj')
 
@@ -485,7 +486,7 @@ def get_table_data(arg: Union[str, TABLECrate],
     return TableBlock("TABLE", header=headers, columns=cols), filename
 
 
-def get_image_data(arg: Union[str, IMAGECrate],
+def get_image_data(arg: str | IMAGECrate,
                    make_copy: bool = True,
                    fix_type: bool = True
                    ) -> tuple[ImageBlock, str]:
@@ -553,8 +554,8 @@ def get_image_data(arg: Union[str, IMAGECrate],
     return block, filename
 
 
-def get_arf_data(arg: Union[str, TABLECrate],
-                 make_copy: bool = True
+def get_arf_data(arg: str | TABLECrate,
+                 make_copy: bool = True  # unused
                  ) -> tuple[SpecrespBlock, str]:
     """Read an ARF from a file or crate"""
 
@@ -566,7 +567,6 @@ def get_arf_data(arg: Union[str, TABLECrate],
     elif isinstance(arg, TABLECrate):
         arf = arg
         filename = arg.get_filename()
-        make_copy = False
 
     else:
         raise IOErr('badfile', arg, "ARFCrate obj")
@@ -644,7 +644,8 @@ def _find_matrix_blocks(filename: str,
 def copycol(cr: TABLECrate,
             filename: str,
             name: str,
-            dtype: Optional[type] = None) -> Column:
+            dtype: type | None = None
+            ) -> Column:
     """Copy the column data (which must exist).
 
     Parameters
@@ -794,8 +795,8 @@ def _read_rmf_ebounds(rmfdataset: pycrates.RMFCrateDataset,
     return EboundsBlock("EBOUNDS", header=eheaders, columns=ecols)
 
 
-def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
-                 make_copy: bool = True
+def get_rmf_data(arg: str | pycrates.RMFCrateDataset,
+                 make_copy: bool = True  # unused
                  ) -> tuple[list[MatrixBlock], EboundsBlock, str]:
     """Read a RMF from a file or crate.
 
@@ -817,7 +818,6 @@ def get_rmf_data(arg: Union[str, pycrates.RMFCrateDataset],
     elif pycrates.is_rmf(arg) == 1:
         rmfdataset = arg
         filename = arg.get_filename()
-        make_copy = False
 
     else:
         raise IOErr('badfile', arg, "RMFCrateDataset obj")
@@ -876,8 +876,8 @@ def _read_pha(pha: TABLECrate,
     return SpectrumBlock(pha.name, header=headers, columns=cols)
 
 
-def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
-                 make_copy: bool = True,
+def get_pha_data(arg: str | pycrates.PHACrateDataset,
+                 make_copy: bool = True,  # unused
                  use_background: bool = False
                  ) -> tuple[SpectrumBlock, str]:
     """Read PHA data from a file or crate.
@@ -899,7 +899,6 @@ def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
     elif pycrates.is_pha(arg) == 1:
         phadataset = arg
         filename = arg.get_filename()
-        make_copy = False
 
     else:
         raise IOErr('badfile', arg, "PHACrateDataset obj")
@@ -934,7 +933,7 @@ def get_pha_data(arg: Union[str, pycrates.PHACrateDataset],
 # Write/Pack Functions #
 #
 
-def write_dataset(dataset: Union[TABLECrate, IMAGECrate, CrateDataset],
+def write_dataset(dataset: TABLECrate | IMAGECrate | CrateDataset,
                   filename: str,
                   *,
                   ascii: bool,
@@ -1144,7 +1143,7 @@ def set_rmf_data(filename: str,
 
 def set_arrays(filename: str,
                args: Sequence[np.ndarray],
-               fields: Optional[NamesType] = None,
+               fields: NamesType | None = None,
                ascii: bool = True,
                clobber: bool = False) -> None:
     """Write out the columns."""
