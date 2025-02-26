@@ -49,10 +49,16 @@ if [ -n "${XSPECVER}" ];
  then export XSPEC="xspec-modelsonly=${XSPECVER}";
 fi
 
-echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD}"
+# Install FFTW rather than use the version bundled with Sherpa.  This
+# requires pkg-config as well, otherwise the build system can not find
+# it!
+#
+FFTW="fftw pkg-config"
+
+echo "dependencies: ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${FFTW}"
 echo "compilers:    ${compilers}"
 
 # Create and activate conda build environment
-conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${compilers}
+conda create --yes -n build python"=${PYTHONVER}.*=*cpython*" pip ${MATPLOTLIB} ${BOKEH} ${NUMPY} ${XSPEC} ${FITSBUILD} ${FFTW} ${compilers}
 
 conda activate build

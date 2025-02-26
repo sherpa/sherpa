@@ -87,6 +87,12 @@ jobs:
         BOKEHVER: ${{ matrix.BOKEH-pkg }}
         ARVIZVER: ${{ matrix.arviz-pkg }}
       run: |
+        # Install FFTW rather than use the version bundled with
+        # Sherpa, and ensure we have pkg-config set up.
+        #
+        sudo apt-get install -q -y libfftw3-double3 libfftw3-dev pkg-config
+        echo "** fftw3"
+        pkg-config fftw3 --cflags --libs
         # In case we forget to set matrix.numpy-pkg
         if [ ! -n "${NUMPYVER}" ] ; then
           NUMPYVER='numpy'
